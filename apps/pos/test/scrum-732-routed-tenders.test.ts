@@ -844,3 +844,31 @@ describe('a pass sale a reload left unpaid at the till', () => {
     expect(rebuilt?.eventPass).toBe(eventPass);
   });
 });
+
+/**
+ * SCRUM-979 (points 1, 11, 12, 13) — a party's balance by card that the
+ * counter's box refused before the terminal was asked: the platform's reason
+ * in the place of the party's own line; a real decline keeps that line.
+ */
+describe("a party's card the terminal was never asked for", () => {
+  const NOT_READY = 'The card terminal is not ready on this counter yet. Try again in a moment, or take another way to pay.';
+  for (const [name, responseText, line] of [
+    ['never sent: the platform’s reason', NOT_READY, NOT_READY],
+    ['a real decline: the party’s own line, as before', 'Bank error (code 05)',
+      'Payment declined. Press again or go back to choose another payment method.'],
+  ] as const) {
+    it(name, async () => {
+      postMock.mockResolvedValue(started('card_terminal', { method: 'card' }) as never);
+      const test = mountTender({ method: 'card' });
+      await test.stage().submit();
+      await settle();
+      vi.spyOn(paymentsApi, 'read').mockResolvedValue({ ...readBack({ status: 'declined', method: 'card' }), route: 'card_terminal', responseText } as never);
+      await test.stage().retry();
+      await settle();
+      expect(test.stage().state.phase).toBe('ready');
+      expect(test.stage().state.error).toBe(line);
+      expect(test.stage().state.notStarted).toBe(responseText === NOT_READY);
+      expect(test.record).not.toHaveBeenCalled();
+    });
+  }
+});
