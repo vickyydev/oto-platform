@@ -292,6 +292,8 @@ export function partyKitchenOfRow(
 }
 
 export interface PartyPlanRead {
+  /** A real view row supplied its source; absence is not the legacy format. */
+  rowPresent: boolean;
   /** The plan with its package: what a settlement prices. */
   plan: PartyPlan | null;
   /** SCRUM-906: the kitchen plan, with or without a package: what the page shows and the slips print. */
@@ -304,11 +306,11 @@ export interface PartyPlanRead {
 /** The party's plan and why it has none, read through the seam. */
 export async function readPartyPlan(db: Exec, q: { branchId: string; eventId: string }): Promise<PartyPlanRead> {
   const { seam, row } = await getEventPackage(db, q);
-  if (seam === 'missing') return { plan: null, kitchen: null, status: 'seam_missing', source: 'legacy' };
-  if (seam === 'not_granted') return { plan: null, kitchen: null, status: 'seam_not_granted', source: 'legacy' };
+  if (seam === 'missing') return { plan: null, kitchen: null, status: 'seam_missing', source: 'legacy', rowPresent: false };
+  if (seam === 'not_granted') return { plan: null, kitchen: null, status: 'seam_not_granted', source: 'legacy', rowPresent: false };
   const plan = row ? partyPlanOfRow(row) : null;
   const kitchen = row ? partyKitchenOfRow(row, plan) : null;
-  return { plan, kitchen, status: plan ? 'ready' : 'no_package', source: row ? partyPlanSourceOf(row) : 'legacy' };
+  return { plan, kitchen, status: plan ? 'ready' : 'no_package', source: row ? partyPlanSourceOf(row) : 'legacy', rowPresent: row !== null };
 }
 
 /**

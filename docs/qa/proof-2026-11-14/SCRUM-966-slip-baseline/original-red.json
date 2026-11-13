@@ -1,0 +1,18 @@
+{
+  "base": "f7df3150f9405dd6aa3480d11c6ab166abf345b2",
+  "originalSourceBlobs": {
+    "apps/api/src/services/party-slips.ts": "950b866ad8709a57478658d77d95171965176f27",
+    "apps/api/src/services/party-plan.ts": "2c0f4800149ee86aecfbb11a75f86c2c9a776866"
+  },
+  "installExit": 0,
+  "wholeFile": "apps/api/test/party-slips.test.ts",
+  "tests": 57,
+  "failed": 9,
+  "passed": 48,
+  "log": "C:\\oto-lanes\\audit-takeover-20261113\\slip-original-red.log",
+  "logSha256": "8b5b5be86e1f95a0b104fa17e23a38ce5b83891a74878a41ae57e1f4c1266dbc",
+  "noSetupFailure": true,
+  "reason": "Real first-upgrade edit/routing loss, missing-row epoch and known-empty loss, missing explicit historical fallback audit reason, and actual-paper cancellation mismatch",
+  "historicalAuditPins": 3,
+  "physicalHardware": false
+}

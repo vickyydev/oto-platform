@@ -1,0 +1,103 @@
+{
+  "baseSha": "f7df3150f9405dd6aa3480d11c6ab166abf345b2",
+  "atUtc": "2026-11-13T22:54:21.998339+00:00",
+  "branch": "lane/codex-slip-baseline-20261114",
+  "sourceReview": "Root design approved; concrete independent source review pending",
+  "sourceHashes": {
+    "apps/api/src/services/party-slips.ts": "e257a5b0dc59066c92c73edc008189decc782fdcf9a73f8b15bb0b362271059d",
+    "apps/api/src/services/party-plan.ts": "bdfa951a175fd736c93087350bcf9bad49c21ef32875e72fc591465b00aff2c6",
+    "apps/api/test/party-slips.test.ts": "d0a872ed201f2c4da3710bbf246e6566c8cc53be26d922fbff354a765ff65cdf",
+    "apps/api/test/s966-slip-review.test.ts": "d5297befbfaebbca6cb3fca76f12d53a9f779272eee1d82f5e947eb247cf7c0e"
+  },
+  "sourceGitBlobs": {
+    "apps/api/src/services/party-slips.ts": "32053e611886f22661227c2000f401a1e130f8a9",
+    "apps/api/src/services/party-plan.ts": "146a8f37bfbdba7d81d190366a9f1332d6070533",
+    "apps/api/test/party-slips.test.ts": "cadfa0d396976ba08f7805219af9a6351bb41e8e",
+    "apps/api/test/s966-slip-review.test.ts": "511c6bf81d8c8aac266f45dad1c2bd8557f8c622"
+  },
+  "checks": {
+    "slip-install.log": {
+      "path": "C:\\oto-lanes\\audit-takeover-20261113\\slip-install.log",
+      "sha256": "b1249135ebbe757316aeae9a94f2ef3f222ed542c4b43195e3810d43c7c5c0f3",
+      "bytes": 3834
+    },
+    "slip-original-red.log": {
+      "path": "C:\\oto-lanes\\audit-takeover-20261113\\slip-original-red.log",
+      "sha256": "8b5b5be86e1f95a0b104fa17e23a38ce5b83891a74878a41ae57e1f4c1266dbc",
+      "bytes": 46724
+    },
+    "slip-fixed-tests.log": {
+      "path": "C:\\oto-lanes\\audit-takeover-20261113\\slip-fixed-tests.log",
+      "sha256": "5ba78097c05cbf1f8f59caac171c22f2dd9c8ecce841d6bd48a7e760e7638293",
+      "bytes": 38308
+    },
+    "slip-api-types.log": {
+      "path": "C:\\oto-lanes\\audit-takeover-20261113\\slip-api-types.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "slip-lint.log": {
+      "path": "C:\\oto-lanes\\audit-takeover-20261113\\slip-lint.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "slip-final-integration.log": {
+      "path": "C:\\oto-lanes\\audit-takeover-20261113\\slip-final-integration.log",
+      "sha256": "9814321c4924b489d48d14558e105920b96ba342e289c7cedd99fd59dfb111a0",
+      "bytes": 21126
+    },
+    "slip-final-api-types.log": {
+      "path": "C:\\oto-lanes\\audit-takeover-20261113\\slip-final-api-types.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "slip-final-lint.log": {
+      "path": "C:\\oto-lanes\\audit-takeover-20261113\\slip-final-lint.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  },
+  "originalCompleteFile": {
+    "tests": 57,
+    "failed": 9,
+    "passed": 48,
+    "setupFailure": false
+  },
+  "finalUniqueTests": 96,
+  "completeFiles": 4,
+  "finalFileCounts": {
+    "party-slips.test.ts": 59,
+    "s966-slip-review.test.ts": 11,
+    "party-menu-product.test.ts": 19,
+    "prep-slips.test.ts": 7
+  },
+  "batchHistory": {
+    "initialFixed": {
+      "files": 4,
+      "passed": 95
+    },
+    "finalChangedFile": {
+      "files": 1,
+      "passed": 59
+    }
+  },
+  "countsNotAdditive": true,
+  "apiTypes": {
+    "exit": 0,
+    "outputBytes": 0
+  },
+  "lint": {
+    "exit": 0,
+    "files": 4
+  },
+  "migration": "none",
+  "composerGenerationBump": false,
+  "staging": "not run; zero fixtures/sessions",
+  "limits": [
+    "No source push, hosted CI or named staging acceptance yet.",
+    "Current main red is a separately reproduced live-weekend POS fixture failure; release remains held.",
+    "Historical missing/invalid snapshots keep an explicit one-time fallback; lost past edits are not reconstructed.",
+    "Queued/test slip documents do not prove physical printer output.",
+    "No settlement/pricing/app-editor ownership changes."
+  ]
+}

@@ -1,4 +1,5 @@
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { z } from 'zod';
 import {
   account,
   branch,
@@ -14,6 +15,9 @@ import {
 } from '@oto/db';
 import {
   PARTY_SLIP_COMPOSER,
+  PartyKitchenPlanSchema,
+  PartyPlanMenuItemSchema,
+  PartyPlanBarItemSchema,
   PARTY_SLIP_STATIONS,
   businessDate,
   clockMinutes,
@@ -290,10 +294,64 @@ export const PARTY_NO_PLAN = {
 // --- What each station holds, and under which composer (SCRUM-906) ------------------
 
 type BaselineRow = typeof partySlipBaseline.$inferSelect;
+const ComposePlanSchema = PartyKitchenPlanSchema.pick({
+  setMenu: true, barItems: true, kitchen: true, counts: true, cake: true,
+}).extend({
+  setMenu: z.array(PartyPlanMenuItemSchema.omit({ lineId: true, unitPriceSatang: true, onTillMenu: true })),
+  barItems: z.array(PartyPlanBarItemSchema.pick({ productCode: true, name: true, qty: true, note: true })),
+});
+const ComposeInputSchema = z.object({
+  version: z.literal(1),
+  plan: ComposePlanSchema.nullable(),
+  partyName: z.string(),
+  location: z.string().nullable(),
+  prepStations: z.record(z.string(), z.enum(['kitchen', 'bar', 'none']).nullable()),
+}).strict();
+type ComposeInput = z.infer<typeof ComposeInputSchema>;
 interface HeldLines {
   lines: PartySlipLine[];
   orderRef: string;
+  /** Serializable semantic input, not a reconstruction from rendered text. */
+  composeInput?: ComposeInput;
 }
+
+/** Read the supported complete snapshot; old/malformed JSON needs the historical fallback. */
+export function partySlipComposeInputOf(value: unknown): ComposeInput | null {
+  const parsed = ComposeInputSchema.safeParse(value);
+  if (!parsed.success) return null;
+  const input = parsed.data;
+  if (input.plan && codesOf(input.plan).some((code) => !Object.hasOwn(input.prepStations, code))) return null;
+  return input;
+}
+
+function composeInputOf(
+  plan: PartyKitchenPlan | null,
+  party: { title: string; location: string | null } | null,
+  prep: ReadonlyMap<string, 'kitchen' | 'bar' | 'none'> = new Map(),
+): ComposeInput {
+  const input = partySlipComposeInputOf({
+    version: 1,
+    plan,
+    partyName: party?.title ?? '',
+    location: party?.location ?? null,
+    prepStations: Object.fromEntries((plan ? [...new Set(codesOf(plan))] : []).map((code) => [code, prep.get(code) ?? null])),
+  });
+  if (!input) throw new Error('The party slip compose input could not be recorded');
+  return input;
+}
+
+function composeRecorded(input: ComposeInput, printedAt: string): Record<PartySlipStation, PartySlipDocument | null> {
+  return input.plan ? composePartySlips({
+    ...input,
+    plan: input.plan,
+    printedAt,
+    prepStationOf: (code) => input.prepStations[code] ?? null,
+  }) : { kitchen: null, bar: null };
+}
+
+const asHeld = (document: PartySlipDocument | null): PartySlipHeld | null => document
+  ? { fingerprint: partySlipFingerprint(document), lines: document.lines, orderRef: document.orderRef }
+  : null;
 
 /**
  * Which slip each station was last given for a party on its day — the rule
@@ -337,14 +395,17 @@ async function baselinesOf(db: Exec, q: { eventId: string; partyDate: string }):
   return Object.fromEntries(rows.map((r) => [r.station, r]));
 }
 
-/** What a slip holds, as a mark keeps it. */
-const heldOf = (document: Pick<PartySlipDocument, 'lines' | 'orderRef'> | null): HeldLines | null =>
-  document ? { lines: [...document.lines], orderRef: document.orderRef } : null;
+/** Keep explicit empty input too: a later returned plan must compare against nothing. */
+const heldOf = (document: Pick<PartySlipDocument, 'lines' | 'orderRef'> | null, composeInput: ComposeInput): HeldLines => ({
+  lines: document ? [...document.lines] : [],
+  orderRef: document?.orderRef ?? composeInput.partyName,
+  composeInput,
+});
 
 /**
- * Mark what each station holds and under which composer: beside every slip this
- * release puts on paper (`rebased` false), and for a slip printed before it
- * that a look takes as the plan composes now (`rebased` true).
+ * Mark a station beside each print/change, or normalize its previous semantic
+ * snapshot without printing (`rebased` true). A historical mark without usable
+ * input retains its explicit one-time rebase to current composition.
  */
 async function markHeld(
   tx: Tx,
@@ -419,6 +480,7 @@ export async function printPartySlips(tx: Tx, input: PrintPartySlipsInput): Prom
   const b = await branchOf(tx, input.operatorId, input.branchId);
   const named = await slipStationOf(tx, b);
   const prep = await prepStationsByCode(tx, input.operatorId, codesOf(plan));
+  const composeInput = composeInputOf(plan, party, prep);
   const documents = composePartySlips({
     plan,
     partyName: party.title,
@@ -509,7 +571,7 @@ export async function printPartySlips(tx: Tx, input: PrintPartySlipsInput): Prom
       source: `print:${run}`,
       rebased: false,
       fingerprint: partySlipFingerprint(documents[st]),
-      held: heldOf(documents[st]),
+      held: heldOf(documents[st], composeInput),
     })),
   );
 
@@ -608,17 +670,15 @@ export type PrintPartySlipChangesResult =
  * holds, and the next look finds it unchanged and writes nothing. Under the
  * same lock as the slip time's run and a press of "Print party slips now".
  *
- * SCRUM-906 — A RELEASE IS NOT A CHANGE. Each station's newest slip is marked
- * with the composer that printed it (`pos.party_slip_baseline`, written beside
- * every slip this release prints). A station whose newest slip carries no mark
- * of the composer the plan is read under now — a slip printed before the
- * release that made the whole kitchen plan reach the till, or before the OTO
- * App published it — is never compared with what the plan composes now: more
- * lines arriving, "Fried rice: Veggie" for "Veggie", the cake, are the
- * release's, not the BEO's. That composition is taken as what the station
- * holds (a `rebased` mark, nothing printed, an audit row), and the next real
- * change of the plan is compared with it and printed as before. A cancelled
- * party is not taken so: what the kitchen holds is voided, whoever composed it.
+ * A release is not a staff edit. A matching-source semantic snapshot is
+ * recomposed under the current composer, then compared with the actual current
+ * plan. This suppresses presentation-only changes without erasing an edit made
+ * before the first upgraded tick. Its original routing remains the before side.
+ *
+ * Historical marks without usable semantic input retain the established one-time
+ * rebase to current composition; their pre-release input cannot be reconstructed.
+ * The fallback is audited and captures a prospective snapshot. Cancellation
+ * always voids the actual last-given lines, including after a silent rebase.
  */
 export async function printPartySlipChanges(
   tx: Tx,
@@ -655,51 +715,51 @@ export async function printPartySlipChanges(
     !plan || plan.partyDate !== partyDate || !party || party.archived || party.status === 'cancelled';
   const b = await branchOf(tx, input.operatorId, input.branchId);
   const time = clockAt(input.now, b.timezone);
-  let after: Record<PartySlipStation, PartySlipDocument | null> = { kitchen: null, bar: null };
+  let afterInput = composeInputOf(null, party);
   if (!cancelled && plan && party) {
     const prep = await prepStationsByCode(tx, input.operatorId, codesOf(plan));
-    after = composePartySlips({
-      plan,
-      partyName: party.title,
-      location: party.location,
-      prepStationOf: (code) => prep.get(code) ?? null,
-      printedAt: time,
-    });
+    afterInput = composeInputOf(plan, party, prep);
   }
+  const after = composeRecorded(afterInput, time);
   const before: Record<PartySlipStation, PartySlipHeld | null> = await partySlipsLastGiven(tx, { eventId, partyDate });
-  // SCRUM-906: a station's slip is compared with the plan only under the composer that printed it.
-  const composer = partySlipComposerOf(read.source);
   const sources = await heldSourcesOf(tx, { eventId, partyDate });
   const marks = await baselinesOf(tx, { eventId, partyDate });
+  // No row says nothing about its publication format. Retain each station's actual epoch.
+  const currentComposer = read.rowPresent ? partySlipComposerOf(read.source) : null;
+  const composerOf = (st: PartySlipStation) => currentComposer ?? marks[st]?.composer;
   const rebased: PartySlipStation[] = [];
+  const normalized: Parameters<typeof markHeld>[2] = [];
+  const reasons: Partial<Record<PartySlipStation, string>> = {};
   for (const st of PARTY_SLIP_STATIONS) {
     const mark = marks[st];
+    const composer = composerOf(st);
     if (mark && mark.composer === composer && mark.source === sources[st]) {
-      if (mark.rebased) {
+      if (mark.rebased && !cancelled) {
         const held = mark.held as HeldLines | null;
-        before[st] = held ? { fingerprint: mark.fingerprint, lines: held.lines, orderRef: held.orderRef } : null;
+        before[st] = mark.fingerprint === partySlipFingerprint(null) || !held
+          ? null : { fingerprint: mark.fingerprint, lines: held.lines, orderRef: held.orderRef };
       }
       continue;
     }
+    // Cancellation voids actual given lines, not their new presentation.
     if (cancelled) continue;
-    // Printed before this composer: what the plan composes now is what the station is taken to hold.
-    const now = after[st];
-    before[st] = now ? { fingerprint: partySlipFingerprint(now), lines: now.lines, orderRef: now.orderRef } : null;
+    const priorInput = mark?.source === sources[st]
+      ? partySlipComposeInputOf((mark.held as HeldLines | null)?.composeInput) : null;
+    // A recorded VOID without UPDATED is reliable empty state even without old semantic JSON.
+    const knownEmpty = before[st] === null && sources[st].startsWith('change:');
+    const normalizedInput = priorInput ?? (knownEmpty ? composeInputOf(null, party) : afterInput);
+    const prior = composeRecorded(normalizedInput, time)[st];
+    before[st] = asHeld(prior);
     rebased.push(st);
+    reasons[st] = priorInput ? 'semantic_snapshot' : knownEmpty ? 'recorded_empty' : 'historical_without_snapshot';
+    normalized.push({
+      station: st, composer: composer!, source: sources[st], rebased: true,
+      fingerprint: partySlipFingerprint(prior), held: heldOf(prior, normalizedInput),
+    });
   }
-  if (rebased.length > 0) {
-    await markHeld(
-      tx,
-      { operatorId: input.operatorId, branchId: input.branchId, eventId, partyDate },
-      rebased.map((st) => ({
-        station: st,
-        composer,
-        source: sources[st],
-        rebased: true,
-        fingerprint: partySlipFingerprint(after[st]),
-        held: heldOf(after[st]),
-      })),
-    );
+  if (normalized.length > 0) {
+    // Normalize PREVIOUS held semantics atomically even when no change slip is needed.
+    await markHeld(tx, { operatorId: input.operatorId, branchId: input.branchId, eventId, partyDate }, normalized);
     await audit.record(tx, {
       actorAccountId: null,
       operatorId: input.operatorId,
@@ -708,7 +768,7 @@ export async function printPartySlipChanges(
       entityType: 'party',
       entityId: eventId,
       actionId: input.actionId,
-      after: { partyDate, composer, stations: rebased.map((st) => ({ station: st, source: sources[st] })) },
+      after: { partyDate, composer: currentComposer, stations: rebased.map((st) => ({ station: st, source: sources[st], reason: reasons[st] })) },
     });
   }
   const targets = prepSlipTargets(partyPrepSlips({ before, after, cancelled, time }));
@@ -737,14 +797,15 @@ export async function printPartySlipChanges(
   await markHeld(
     tx,
     { operatorId: input.operatorId, branchId: input.branchId, eventId, partyDate },
-    sent.map((st) => ({
-      station: st,
-      composer,
-      source: `change:${run}`,
-      rebased: false,
-      fingerprint: partySlipFingerprint(cancelled ? null : after[st]),
-      held: cancelled ? null : heldOf(after[st]),
-    })),
+    sent.flatMap((st) => {
+      const composer = composerOf(st);
+      // A historical unmarked missing row supplies no trustworthy epoch to invent.
+      return composer ? [{
+        station: st, composer, source: `change:${run}`, rebased: false,
+        fingerprint: partySlipFingerprint(cancelled ? null : after[st]),
+        held: heldOf(cancelled ? null : after[st], afterInput),
+      }] : [];
+    }),
   );
   await audit.record(tx, {
     actorAccountId: null,

@@ -49,7 +49,7 @@ import {
 } from '@oto/shared';
 import { loadEnv } from '../src/env';
 import { buildDefaultJobs } from '../src/services/jobs';
-import { partyKitchenOfRow, partyPlanOfRow } from '../src/services/party-plan';
+import { partyKitchenOfRow, partyPlanOfRow, readPartyPlan } from '../src/services/party-plan';
 import { PARTY_SLIPS_JOB, runPartySlipsJob } from '../src/services/party-slips';
 import { buildPrintDocument } from '../src/services/sale-printing';
 import {
@@ -1523,5 +1523,187 @@ describe('SCRUM-906 — the whole kitchen plan, through the OTO App view (0050)'
       ['bar', 'void'],
     ]);
     expect(docOf(rows[0]!)).toMatchObject({ details: [PARTY_CANCELLED], lines: [{ qty: 3, name: 'Margherita' }, { qty: 2, name: 'French fries' }, { qty: 2, name: 'Fruit skewers' }] });
+  });
+
+
+  // Independent review: a release normalizes previous semantic inputs, never the current edit.
+  const olderComposer = async (id: string) => ctx.db.update(partySlipBaseline)
+    .set({ composer: '2:kitchen_plan_1' }).where(eq(partySlipBaseline.eventId, id));
+
+  it('HIGH SCRUM-966: an edit before the first upgraded tick is compared with the previous semantic choice', async () => {
+    const id = await appParty({ id: newId(), title: 'ZZ TEST old composer real edit', date: T, slipsTime: '17:10' });
+    await runPartySlipsJob(ctx.db, atBangkok(T, '17:10'));
+    await olderComposer(id);
+    await staffChoose(id, ['Hawaiian']);
+    await runPartySlipsJob(ctx.db, atBangkok(T, '17:11'));
+    const rows = await changesOf(id);
+    expect(rows.map((r) => [r.station, r.variant])).toEqual([['kitchen', 'void'], ['kitchen', 'updated']]);
+    expect(docOf(rows[0]!).lines).toEqual([{ qty: 3, name: 'Pizza: Margherita' }]);
+    expect(docOf(rows[1]!).lines[0]).toEqual({ qty: 3, name: 'Pizza: Hawaiian' });
+    const marks = await baselinesOf(id);
+    expect(marks.map((m) => [m.station, m.composer, m.source])).toEqual([
+      ['bar', '3:kitchen_plan_1', 'print:1'], ['kitchen', '3:kitchen_plan_1', 'change:1'],
+    ]);
+    await runPartySlipsJob(ctx.db, atBangkok(T, '17:12'));
+    expect(await changesOf(id)).toHaveLength(2);
+  });
+
+  it('HIGH SCRUM-945: saved routing is the before side when a product moves stations across an upgrade', async () => {
+    const id = await appParty({ id: newId(), title: 'ZZ TEST routing changed over release', date: T, slipsTime: '17:13' });
+    await runPartySlipsJob(ctx.db, atBangkok(T, '17:13'));
+    await olderComposer(id);
+    const [item] = await ctx.db.select().from(product).where(and(eq(product.operatorId, operatorId), eq(product.code, 'CF-24')));
+    try {
+      await ctx.db.update(product).set({ prepStationOverride: 'bar' }).where(eq(product.id, item!.id));
+      await runPartySlipsJob(ctx.db, atBangkok(T, '17:14'));
+      const rows = await changesOf(id);
+      expect(rows.map((r) => [r.station, r.variant])).toEqual([
+        ['kitchen', 'void'], ['kitchen', 'updated'], ['bar', 'updated'],
+      ]);
+      expect(docOf(rows[0]!).lines).toEqual([{ qty: 3, name: 'Pizza: Margherita' }]);
+      expect(docOf(rows.find((r) => r.station === 'bar')!).lines).toContainEqual({ qty: 3, name: 'Pizza: Margherita' });
+    } finally {
+      await ctx.db.update(product).set({ prepStationOverride: item!.prepStationOverride }).where(eq(product.id, item!.id));
+    }
+  });
+
+  it('HIGH SCRUM-966: an unchanged upgrade normalizes once and leaves the following real edit visible', async () => {
+    const id = await appParty({ id: newId(), title: 'ZZ TEST unchanged upgrade', date: T, slipsTime: '17:15' });
+    await runPartySlipsJob(ctx.db, atBangkok(T, '17:15'));
+    await olderComposer(id);
+    await runPartySlipsJob(ctx.db, atBangkok(T, '17:16'));
+    expect(await changesOf(id)).toEqual([]);
+    expect((await baselinesOf(id)).every((m) => m.composer === '3:kitchen_plan_1')).toBe(true);
+    await runPartySlipsJob(ctx.db, atBangkok(T, '17:17'));
+    expect(await changesOf(id)).toEqual([]);
+    await staffChoose(id, ['Hawaiian']);
+    await runPartySlipsJob(ctx.db, atBangkok(T, '17:18'));
+    expect((await changesOf(id)).map((r) => [r.station, r.variant])).toEqual([['kitchen', 'void'], ['kitchen', 'updated']]);
+  });
+
+  it.each([false, true])('HIGH SCRUM-945: a missing row creates no composer epoch; returned plan changed=%s is not swallowed', async (changed) => {
+    const id = await appParty({ id: newId(), title: `ZZ TEST returned plan ${changed}`, date: T, slipsTime: '17:20' });
+    await runPartySlipsJob(ctx.db, atBangkok(T, '17:20'));
+    await ctx.db.execute(sql`alter view otoapp_v.event_packages rename to event_packages_slip_review_original`);
+    try {
+      expect(id).toMatch(/^[0-9a-f-]{36}$/);
+      await ctx.db.execute(sql.raw(`create view otoapp_v.event_packages as select * from otoapp_v.event_packages_slip_review_original where event_id::text <> '${id}'`));
+      const missing = await readPartyPlan(ctx.db, { branchId: central, eventId: id });
+      expect(missing.status).toBe('no_package');
+      await runPartySlipsJob(ctx.db, atBangkok(T, '17:21'));
+      expect((await changesOf(id)).map((r) => [r.station, r.variant])).toEqual([['kitchen', 'void'], ['bar', 'void']]);
+      expect((await baselinesOf(id)).every((m) => m.composer === '3:kitchen_plan_1')).toBe(true);
+    } finally {
+      await ctx.db.execute(sql`drop view if exists otoapp_v.event_packages`);
+      await ctx.db.execute(sql`alter view otoapp_v.event_packages_slip_review_original rename to event_packages`);
+    }
+    if (changed) await staffChoose(id, ['Hawaiian']);
+    await runPartySlipsJob(ctx.db, atBangkok(T, '17:22'));
+    const returned = (await changesOf(id)).filter((r) => r.run === 2);
+    expect(returned.map((r) => [r.station, r.variant])).toEqual([['kitchen', 'updated'], ['bar', 'updated']]);
+    expect(docOf(returned[0]!).lines[0]).toEqual({ qty: 3, name: changed ? 'Pizza: Hawaiian' : 'Pizza: Margherita' });
+    await runPartySlipsJob(ctx.db, atBangkok(T, '17:23'));
+    expect(await changesOf(id)).toHaveLength(4);
+  });
+
+
+  it.each(['missing', 'version', 'routing'] as const)('HIGH SCRUM-966: %s historical snapshot takes the explicit fallback once, then protects later edits', async (invalid) => {
+    const id = await appParty({ id: newId(), title: `ZZ TEST historical fallback ${invalid}`, date: T, slipsTime: '17:25' });
+    await runPartySlipsJob(ctx.db, atBangkok(T, '17:25'));
+    for (const mark of await baselinesOf(id)) {
+      const held = mark.held as Record<string, unknown>;
+      const input = held.composeInput as Record<string, unknown> | undefined;
+      const composeInput = invalid === 'missing' ? undefined
+        : invalid === 'version' ? { ...input, version: 99 } : { ...input, prepStations: {} };
+      await ctx.db.update(partySlipBaseline).set({ composer: '2:kitchen_plan_1', held: { ...held, composeInput } })
+        .where(eq(partySlipBaseline.id, mark.id));
+    }
+    await staffChoose(id, ['Hawaiian']);
+    await runPartySlipsJob(ctx.db, atBangkok(T, '17:26'));
+    // An original semantic choice cannot be guessed from old/malformed JSON.
+    expect(await changesOf(id)).toEqual([]);
+    const [audit] = await ctx.db.select().from(auditLog).where(and(eq(auditLog.action, 'party.slips_rebase'), eq(auditLog.entityId, id)));
+    expect(audit?.after).toMatchObject({ stations: expect.arrayContaining([expect.objectContaining({ reason: 'historical_without_snapshot' })]) });
+    await staffChoose(id, ['Pepperoni']);
+    await runPartySlipsJob(ctx.db, atBangkok(T, '17:27'));
+    expect((await changesOf(id)).map((r) => [r.station, r.variant])).toEqual([['kitchen', 'void'], ['kitchen', 'updated']]);
+    expect(docOf((await changesOf(id))[0]!).lines).toEqual([{ qty: 3, name: 'Pizza: Hawaiian' }]);
+  });
+
+  it('HIGH SCRUM-945: a historical unmarked disappearance records empty change state without inventing a format', async () => {
+    const id = await appParty({ id: newId(), title: 'ZZ TEST unmarked return', date: T, slipsTime: '17:30' });
+    await runPartySlipsJob(ctx.db, atBangkok(T, '17:30'));
+    await ctx.db.delete(partySlipBaseline).where(eq(partySlipBaseline.eventId, id));
+    await ctx.db.execute(sql`alter view otoapp_v.event_packages rename to event_packages_slip_review_original`);
+    try {
+      expect(id).toMatch(/^[0-9a-f-]{36}$/);
+      await ctx.db.execute(sql.raw(`create view otoapp_v.event_packages as select * from otoapp_v.event_packages_slip_review_original where event_id::text <> '${id}'`));
+      await runPartySlipsJob(ctx.db, atBangkok(T, '17:31'));
+      expect((await changesOf(id)).map((r) => [r.station, r.variant])).toEqual([['kitchen', 'void'], ['bar', 'void']]);
+      expect(await baselinesOf(id)).toEqual([]);
+    } finally {
+      await ctx.db.execute(sql`drop view if exists otoapp_v.event_packages`);
+      await ctx.db.execute(sql`alter view otoapp_v.event_packages_slip_review_original rename to event_packages`);
+    }
+    await staffChoose(id, ['Hawaiian']);
+    await runPartySlipsJob(ctx.db, atBangkok(T, '17:32'));
+    expect((await changesOf(id)).filter((r) => r.run === 2).map((r) => [r.station, r.variant]))
+      .toEqual([['kitchen', 'updated'], ['bar', 'updated']]);
+  });
+
+
+  it('HIGH SCRUM-945: cancellation after a silent upgrade voids the actual old paper, not normalized presentation', async () => {
+    const id = await appParty({ id: newId(), title: 'ZZ TEST actual cancelled paper', date: T, slipsTime: '17:35' });
+    await runPartySlipsJob(ctx.db, atBangkok(T, '17:35'));
+    const kitchen = (await slipsOf(id)).find((r) => r.station === 'kitchen')!;
+    const document = kitchen.document as PartySlipDocument;
+    const originalLines = [{ qty: 3, name: 'Margherita' }, ...document.lines.slice(1)];
+    await ctx.db.update(partySlipPrint).set({ document: { ...document, lines: originalLines } }).where(eq(partySlipPrint.id, kitchen.id));
+    await olderComposer(id);
+    await runPartySlipsJob(ctx.db, atBangkok(T, '17:36'));
+    expect(await changesOf(id)).toEqual([]);
+    await ctx.db.execute(sql`update otoapp.core_events set status = 'cancelled' where id = ${id}`);
+    await runPartySlipsJob(ctx.db, atBangkok(T, '17:37'));
+    const rows = await changesOf(id);
+    expect(rows.every((r) => r.variant === 'void')).toBe(true);
+    expect(docOf(rows.find((r) => r.station === 'kitchen')!).lines).toEqual(originalLines);
+  });
+
+
+  it('HIGH SCRUM-945: a real legacy row has known source, distinct from absence', async () => {
+    const id = await appParty({ id: newId(), title: 'ZZ TEST real legacy source', date: T, slipsTime: '17:45' });
+    expect((await readPartyPlan(ctx.db, { branchId: central, eventId: id })).rowPresent).toBe(true);
+    await ctx.db.execute(sql`alter view otoapp_v.event_packages rename to event_packages_slip_review_original`);
+    try {
+      await ctx.db.execute(sql`create view otoapp_v.event_packages as
+        select event_id, core_branch_id, party_date, start_time, end_time, package,
+               counts, add_ons, entertainment, set_menu, bar_items, kitchen, settlement,
+               null::jsonb as kitchen_plan from otoapp_v.event_packages_slip_review_original`);
+      const read = await readPartyPlan(ctx.db, { branchId: central, eventId: id });
+      expect(read).toMatchObject({ status: 'ready', source: 'legacy', rowPresent: true });
+      expect(read.plan).not.toBeNull();
+      expect((await readPartyPlan(ctx.db, { branchId: central, eventId: newId() })).rowPresent).toBe(false);
+    } finally {
+      await ctx.db.execute(sql`drop view if exists otoapp_v.event_packages`);
+      await ctx.db.execute(sql`alter view otoapp_v.event_packages_slip_review_original rename to event_packages`);
+    }
+  });
+
+
+  it('HIGH SCRUM-966: a snapshot tied to a different given run cannot replace the actual held source', async () => {
+    const id = await appParty({ id: newId(), title: 'ZZ TEST stale source snapshot', date: T, slipsTime: '17:50' });
+    await runPartySlipsJob(ctx.db, atBangkok(T, '17:50'));
+    await ctx.db.update(partySlipBaseline).set({ composer: '2:kitchen_plan_1', source: 'print:0' })
+      .where(eq(partySlipBaseline.eventId, id));
+    await staffChoose(id, ['Hawaiian']);
+    await runPartySlipsJob(ctx.db, atBangkok(T, '17:51'));
+    expect(await changesOf(id)).toEqual([]);
+    const [audit] = await ctx.db.select().from(auditLog).where(and(eq(auditLog.action, 'party.slips_rebase'), eq(auditLog.entityId, id)));
+    expect(audit?.after).toMatchObject({ stations: expect.arrayContaining([expect.objectContaining({ source: 'print:1', reason: 'historical_without_snapshot' })]) });
+    await staffChoose(id, ['Pepperoni']);
+    await runPartySlipsJob(ctx.db, atBangkok(T, '17:52'));
+    const rows = await changesOf(id);
+    expect(rows.map((r) => [r.station, r.variant])).toEqual([['kitchen', 'void'], ['kitchen', 'updated']]);
+    expect(docOf(rows[0]!).lines).toEqual([{ qty: 3, name: 'Pizza: Hawaiian' }]);
   });
 });
