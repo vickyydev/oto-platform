@@ -1,0 +1,26 @@
+{
+  "at": "2026-11-13T22:14:21.450Z",
+  "candidate": "857535fd9baefced3e7118d3dd9f80f452992312",
+  "sourcePublished": false,
+  "stagingChanged": false,
+  "tickets": [
+    {
+      "key": "SCRUM-910",
+      "beforeStatus": "To Do",
+      "afterStatus": "In Progress",
+      "commentId": "14751",
+      "posted": true,
+      "bodySha256": "7cef912e6f74ed95db9a36325440aefe9726c60819bb6b9041bd6485ee60cbd4",
+      "readbackVerified": true
+    },
+    {
+      "key": "SCRUM-966",
+      "beforeStatus": "In Progress",
+      "afterStatus": "In Progress",
+      "commentId": "14752",
+      "posted": true,
+      "bodySha256": "89eba827bc03f6776b85878f6b473b190fe873b60a02be94d51f10bf1b544ddf",
+      "readbackVerified": true
+    }
+  ]
+}
