@@ -1,0 +1,74 @@
+{
+  "at": "2026-11-13T12:02:03.839Z",
+  "events": [
+    {
+      "id": "01a1d376-81ec-7f08-8eef-61a9c4d7cbbe",
+      "title": "ZZ Test Kai's 6th Birthday",
+      "archived": true,
+      "write": 200,
+      "read": 200
+    },
+    {
+      "id": "01a1d379-5180-71b0-990d-e56e7140edbe",
+      "title": "ZZ Test Lou's 7th Birthday",
+      "archived": true,
+      "write": 200,
+      "read": 200
+    },
+    {
+      "id": "01a1d37b-ed41-7d44-bbd9-b15ce5450a04",
+      "title": "ZZ Test Zoe's 5th Birthday",
+      "archived": true,
+      "write": 200,
+      "read": 200
+    },
+    {
+      "id": "b7b15e2f-d73b-4370-87c9-8277061e906e",
+      "title": "ZZ TEST 978 recent updates",
+      "archived": true,
+      "write": 200,
+      "read": 200
+    },
+    {
+      "id": "617dcb37-e511-47e9-add6-42833f25bbce",
+      "title": "ZZ TEST 978 adults code",
+      "archived": true,
+      "write": 200,
+      "read": 200
+    }
+  ],
+  "conversations": [
+    {
+      "id": "01a1d367-dc17-75a1-b633-b91149afe033",
+      "name": "ZZ TEST 978 date beside",
+      "status": "handled",
+      "handledAt": "2026-11-13T12:02:07.621Z",
+      "write": 200,
+      "read": 200
+    },
+    {
+      "id": "01a1d367-e8ce-75f8-9aa3-9981e2e65c3e",
+      "name": "ZZ TEST 978 same words",
+      "status": "handled",
+      "handledAt": "2026-11-13T12:02:09.020Z",
+      "write": 200,
+      "read": 200
+    },
+    {
+      "id": "01a1d367-f21f-75ce-b95a-be9f150d7565",
+      "name": "ZZ TEST 978 switch on",
+      "status": "handled",
+      "handledAt": "2026-11-13T12:02:10.014Z",
+      "write": 200,
+      "read": 200
+    }
+  ],
+  "station": {
+    "id": "01a1d36d-ed48-7adb-9f6f-8236d38b2233",
+    "archived": true,
+    "devices": 0,
+    "sales": 0
+  },
+  "activeUpcomingOwnEvents": 0,
+  "completedAt": "2026-11-13T12:02:10.536Z"
+}

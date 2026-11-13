@@ -1,0 +1,7 @@
+const fs=await import('node:fs');const ledger=JSON.parse(fs.readFileSync(S.OUT+'/interrupted-fixture-ledger.json','utf8'));
+const result={at:new Date().toISOString(),events:[],conversations:[]};
+for(const ev of ledger.events){const r=await S.appCall('GET',`/admin/events/${ev.id}`);S.assert.equal(r.status,200);const b=r.body;result.events.push({id:ev.id,key:ev.key,expectedTitle:ev.title,title:b.title,archived:!!(b.archivedAt||b.isArchived),branchId:b.branchId});}
+for(const c of ledger.conversations){const r=await S.call(S.ctxs.inbox.ctx,S.INBOX,'GET',`/inbox/conversations/${c.id}`);S.assert.equal(r.status,200);const b=r.body.conversation??r.body;result.conversations.push({id:c.id,key:c.key,expectedName:c.name,name:b.customerName??b.name??b.contactName??null,state:b.status??b.state,linkedEvent:r.body.event?.id??null,keys:Object.keys(b)});}
+const r=await S.ctxs.pos.api.get('/api/stations/'+ledger.station.id);S.assert.equal(r.status(),200);const row=(await r.json()).station;result.station={id:row.id,name:row.name,archived:row.archived,devices:row.devices.length,branchId:row.branchId};
+const sales=await S.ctxs.pos.api.get(`/api/sales?branchId=${row.branchId}&stationId=${row.id}&limit=50`);S.assert.equal(sales.status(),200);result.sales=(await sales.json()).sales.map(x=>({id:x.id,status:x.status}));
+S.st.resumeCensus=result;S.save();fs.writeFileSync(S.OUT+'/interrupted-fixture-census.json',JSON.stringify(result,null,2)+'\n');return result;

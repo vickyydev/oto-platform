@@ -1,0 +1,61 @@
+{
+  "events": [
+    {
+      "id": "01a1d376-81ec-7f08-8eef-61a9c4d7cbbe",
+      "title": "ZZ Test Kai's 6th Birthday",
+      "date": "2026-12-25",
+      "startTime": "14:00",
+      "bookedAt": "2026-11-13T05:54:06.831Z",
+      "key": "A"
+    },
+    {
+      "id": "01a1d379-5180-71b0-990d-e56e7140edbe",
+      "title": "ZZ Test Lou's 7th Birthday",
+      "date": "2026-12-19",
+      "startTime": "11:00",
+      "bookedAt": "2026-11-13T05:57:12.616Z",
+      "key": "B"
+    },
+    {
+      "id": "01a1d37b-ed41-7d44-bbd9-b15ce5450a04",
+      "title": "ZZ Test Zoe's 5th Birthday",
+      "date": "2026-12-20",
+      "startTime": "10:00",
+      "bookedAt": "2026-11-13T06:00:03.562Z",
+      "key": "C"
+    },
+    {
+      "id": "b7b15e2f-d73b-4370-87c9-8277061e906e",
+      "title": "ZZ TEST 978 recent updates",
+      "key": "E1"
+    },
+    {
+      "id": "617dcb37-e511-47e9-add6-42833f25bbce",
+      "title": "ZZ TEST 978 adults code",
+      "key": "E2"
+    }
+  ],
+  "conversations": [
+    {
+      "key": "A",
+      "id": "01a1d367-dc17-75a1-b633-b91149afe033",
+      "name": "ZZ TEST 978 date beside"
+    },
+    {
+      "key": "B",
+      "id": "01a1d367-e8ce-75f8-9aa3-9981e2e65c3e",
+      "name": "ZZ TEST 978 same words"
+    },
+    {
+      "key": "C",
+      "id": "01a1d367-f21f-75ce-b95a-be9f150d7565",
+      "name": "ZZ TEST 978 switch on"
+    }
+  ],
+  "station": {
+    "id": "01a1d36d-ed48-7adb-9f6f-8236d38b2233",
+    "name": "ZZ TEST SCRUM-978 proof till 1794548558937",
+    "prefix": "Z97801"
+  },
+  "source": "1916bfbd73ebcfcba2dbe85c7a7a9d2bf63e9152"
+}
