@@ -17,6 +17,9 @@ work is landed and proven, and the tools. Kept current at every landing._
 
 ## 2. Where the work stands
 
+**13 November 2026, 19:22 Bangkok, BEO EVIDENCE PUBLISHED.** SCRUM-978 is Deployed with inspected images;976 remains Testing,966/968 In Progress. Attachments and comments14720-14723 independently read back in SCRUM-978/jira-proof.json. Stage2.3 complete with the explicit remaining983 defects. No live fixture/session. Next lane C:/oto-lanes/codex-payment-handover-20261113 for982+scoped981, then stage3; stop for owner review afterstage3.
+
+
 **13 November 2026, 19:18 Bangkok, SCRUM-978/976 BOUNDED PROOF AND CLEANUP COMPLETE.** App1916bfbd73ebcfcba2dbe85c7a7a9d2bf63e9152 remains live, verified natively and via Render. All23 preserved images inspected; fresh third AI read retained Different for adults and one coded adult EXTRA3 at400 after approval/reopen. Privacy has zero auth/email/permission diagnostics; three Today render-count lines remain, with false substring name hits explained. Five interrupted events plus one fresh event archived, four conversations handled, old empty till retired, six session readbacks401 and browser closed. Receipts and explicit limits in docs/qa/proof-2026-11-13/SCRUM-978/README.md. The known text2-to21, nullx PDF and submitted-line defects remain983 stage3; no acceptance claim for them. 978 ready for Deployed with images;976 Testing and966/968 In Progress for remaining scope/holds. TillCI43419051479 still running; API43414621425 green6/6, app sourceCI43371426014 green. Next982+scoped981, then approved stage3 including910 deposit retention, then STOP for owner review. No active fixtures/sessions; slot free. Worktree C:/oto-lanes/codex-beo-proof-20261113.
 
 

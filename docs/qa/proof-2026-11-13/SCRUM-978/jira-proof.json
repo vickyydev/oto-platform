@@ -1,0 +1,94 @@
+[
+  {
+    "key": "SCRUM-978",
+    "before": {
+      "status": "Testing",
+      "summary": "OTO App: \"Recent Updates\" opens Edit Event with blank defaults, the BEO PDF loses the adults' price of a dish the kids also have, and the app writes the signed-in person's record to the browser console"
+    },
+    "after": {
+      "status": "Deployed",
+      "summary": "OTO App: \"Recent Updates\" opens Edit Event with blank defaults, the BEO PDF loses the adults' price of a dish the kids also have, and the app writes the signed-in person's record to the browser console"
+    },
+    "comment": "14720",
+    "attachments": [
+      {
+        "id": "13500",
+        "name": "20261113-01c-recent-updates-reopened-reads-9.png"
+      },
+      {
+        "id": "13501",
+        "name": "20261113-02c-pdf-margherita-kids-only-400-and-adults-only-450.png"
+      },
+      {
+        "id": "13502",
+        "name": "20261113-03-console-privacy-counts.png"
+      }
+    ],
+    "verified": true
+  },
+  {
+    "key": "SCRUM-976",
+    "before": {
+      "status": "Testing",
+      "summary": "BEO fill and PDF: a date read as a chat total, the adults' line on the PDF, and small points left by the reviews of the read-fix lane"
+    },
+    "after": {
+      "status": "Testing",
+      "summary": "BEO fill and PDF: a date read as a chat total, the adults' line on the PDF, and small points left by the reviews of the read-fix lane"
+    },
+    "comment": "14721",
+    "attachments": [
+      {
+        "id": "13503",
+        "name": "20261113-07c3-resumed-review-different-adults.png"
+      },
+      {
+        "id": "13504",
+        "name": "20261113-07c5-resumed-adults-switch-and-extra-after-reopen.png"
+      }
+    ],
+    "verified": true
+  },
+  {
+    "key": "SCRUM-966",
+    "before": {
+      "status": "In Progress",
+      "summary": "Kitchen plan on the till: the BEO's \"kitchen required\" switch, the extras' amounts with a service charge, and points left by the reviews"
+    },
+    "after": {
+      "status": "In Progress",
+      "summary": "Kitchen plan on the till: the BEO's \"kitchen required\" switch, the extras' amounts with a service charge, and points left by the reviews"
+    },
+    "comment": "14722",
+    "attachments": [
+      {
+        "id": "13505",
+        "name": "20261113-05b-till-party-page-our-cake-3.png"
+      },
+      {
+        "id": "13506",
+        "name": "20261113-06a-day-of-door-accepts-stored-values-refuses-in-plain-words.png"
+      }
+    ],
+    "verified": true
+  },
+  {
+    "key": "SCRUM-968",
+    "before": {
+      "status": "In Progress",
+      "summary": "BEO extras and the fill: the holiday price in the hint, a coded line the till menu does not list, and points left by the reviews"
+    },
+    "after": {
+      "status": "In Progress",
+      "summary": "BEO extras and the fill: the holiday price in the hint, a coded line the till menu does not list, and points left by the reviews"
+    },
+    "comment": "14723",
+    "attachments": [
+      {
+        "id": "13507",
+        "name": "20261113-08c-till-party-page-adults-chicken-8-named.png"
+      }
+    ],
+    "verified": true
+  }
+]
