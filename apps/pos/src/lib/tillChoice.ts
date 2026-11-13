@@ -109,8 +109,10 @@ export function getTillChoice(): TillKind {
 
 export function subscribeTillChoice(listener: () => void): () => void {
   listeners.add(listener);
-  if (!stopWatching && typeof window !== 'undefined') stopWatching = watch();
-  // A resize before the first reader subscribed is caught up now.
+  if (typeof window === 'undefined') return () => { listeners.delete(listener); };
+  if (!stopWatching) stopWatching = watch();
+  // The first reader measures; a resize between its read and this is caught up now.
+  getTillChoice();
   decide();
   return () => {
     listeners.delete(listener);
