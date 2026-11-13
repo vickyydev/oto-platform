@@ -6,6 +6,7 @@ import { toOtoEvent } from '@/api/events';
 import { PartyDetail } from '@/components/parties/PartyDetail';
 import { PartyBalanceModal } from '@/components/parties/PartyBalanceModal';
 import { PartySettleModal } from '@/components/parties/PartySettleModal';
+import { PartyEditForm } from '@/components/parties/PartyEditForm';
 import { MobilePartyDetail } from '@/components/mobile/parties/MobilePartyDetail';
 import { StepPayment } from '@/components/till/StepPayment';
 import {
@@ -739,5 +740,98 @@ describe('SCRUM-902 — Resume settlement never shows ฿0 before the balance is
     const stage = elementOf(host.result.current, StepPayment)!.props.paymentStage as { recovering?: boolean; state: { outstandingSatang: number } };
     expect(stage.recovering).toBe(false);
     expect(stage.state.outstandingSatang).toBe(1_690_000);
+  });
+});
+
+describe('SCRUM-967 — the bill and Take balance follow a manager’s kitchen edit at once', () => {
+  const putMock = vi.mocked(api.put);
+  /** The BEO's kitchen plan after the manager added two Calamari as an EXTRA on the till (฿355). */
+  const EDITED: PartyPlan = {
+    ...PLAN,
+    setMenu: [...PLAN.setMenu, { lineId: 'zz967-calamari', productCode: 'CF-14', name: 'ZZ TEST calamari', qty: 2, choiceGroup: null,
+      chosenOption: null, note: null, origin: 'extra', onTillMenu: true }],
+  };
+  /** The platform's price of Settle party on that plan: the extra charged beside the package. */
+  const REPRICED: PartySettleQuote = { ...QUOTE, addOnsSatang: 35_500, totalSatang: 1_725_500, balanceSatang: 1_625_500 };
+
+  it('a kitchen Save prices the party again without a reload: Take balance waits while it is read, then names the new balance', async () => {
+    let plan = PLAN;
+    getMock.mockImplementation((async (url: string) => {
+      if (url.startsWith(`/parties/${PARTY}/kitchen-plan/choices`)) return { status: 'ok', message: null, groups: [] };
+      if (url.startsWith(`/parties/${PARTY}`)) return { branchId: HKT_CENTRAL, date: T, event: viewOf(null), plan, planStatus: 'ready' };
+      return { member: null };
+    }) as unknown as typeof api.get);
+    // The platform prices each plan as it stands; the second read is held so the wait can be seen.
+    let release: (() => void) | null = null;
+    postMock.mockImplementation((async (url: string) => {
+      if (url !== `/parties/${PARTY}/settle/preview`) return undefined;
+      if (plan === PLAN) return { quote: QUOTE };
+      await new Promise<void>((resolve) => { release = resolve; });
+      return { quote: REPRICED };
+    }) as unknown as typeof api.post);
+    putMock.mockReset();
+    putMock.mockImplementation((async () => {
+      plan = EDITED;
+      return { branchId: HKT_CENTRAL, date: T, event: viewOf(null), plan: EDITED, planStatus: 'ready', kitchenEdit: { id: 'zz-edit', replayed: false } };
+    }) as unknown as typeof api.put);
+
+    const page = partyPage(partyOf(null));
+    await settle();
+    expect(flat(page.result.current)).toContain('Outstanding ฿15900');
+    expect(buttonIn(page.result.current, 'Take balance ฿15900')!.props.disabled).toBe(false);
+
+    // The manager's kitchen edit, saved on the same page (no reload, no remount).
+    (buttonIn(page.result.current, 'Edit party')!.props.onClick as () => void)();
+    await settle();
+    const form = elementOf(page.result.current, PartyEditForm)!;
+    await (form.props.onSave as (p: unknown, c: unknown) => Promise<void>)({ ...partyOf(null) }, [{ op: 'set', lineId: 'zz967-fries', qty: 3 }]);
+    await settle();
+    expect(putMock).toHaveBeenCalledTimes(1);
+    expect(elementOf(page.result.current, PartyEditForm)).toBeNull();
+
+    // The plan is read again and priced again: while that price is on its way, nothing is taken.
+    expect(release === null).toBe(false);
+    const waiting = buttonIn(page.result.current, 'Take balance —');
+    expect(waiting === null).toBe(false);
+    expect(waiting!.props.disabled).toBe(true);
+    expect(buttonIn(page.result.current, 'Take balance ฿15900')).toBeNull();
+
+    // The new price: the bill and the button say it, on the page as it stands.
+    release!();
+    await settle();
+    const text = flat(page.result.current);
+    expect(text).toContain('Outstanding ฿16255');
+    expect(text.includes('Outstanding ฿15900')).toBe(false);
+    const take = buttonIn(page.result.current, 'Take balance ฿16255');
+    expect(take === null).toBe(false);
+    expect(take!.props.disabled).toBe(false);
+    // And Take balance opens Settle party, which takes the platform's own fresh figure.
+    (take!.props.onClick as () => void)();
+    await settle();
+    expect(elementOf(page.result.current, PartySettleModal)?.props).toMatchObject({ open: true, plan: EDITED });
+  });
+
+  it('a plan changed in the OTO App is priced again at the page’s next read of it', async () => {
+    let plan = PLAN;
+    getMock.mockImplementation((async (url: string) => {
+      if (url.startsWith(`/parties/${PARTY}`)) return { branchId: HKT_CENTRAL, date: T, event: viewOf(null), plan, planStatus: 'ready' };
+      return { member: null };
+    }) as unknown as typeof api.get);
+    postMock.mockImplementation((async (url: string) => (url === `/parties/${PARTY}/settle/preview`
+      ? { quote: plan === PLAN ? QUOTE : REPRICED } : undefined)) as unknown as typeof api.post);
+    const win = new EventTarget();
+    vi.stubGlobal('window', win);
+    try {
+      const page = partyPage(partyOf(null));
+      await settle();
+      expect(buttonIn(page.result.current, 'Take balance ฿15900') === null).toBe(false);
+      plan = EDITED;
+      win.dispatchEvent(new Event('focus'));
+      await settle();
+      expect(flat(page.result.current)).toContain('Outstanding ฿16255');
+      expect(buttonIn(page.result.current, 'Take balance ฿16255') === null).toBe(false);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

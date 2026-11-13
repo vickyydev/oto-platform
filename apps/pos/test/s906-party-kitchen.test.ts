@@ -201,13 +201,18 @@ describe('the words: every line with the slip\'s marks, the bar, the cake', () =
       'Fried rice · Veggie · not on the till menu',
       'French fries',
       'Hot dish',
-      'Mango sticky rice · not on the till menu',
+      // SCRUM-967 — the line's note shows, as the bar's does (it was left off before).
+      'Mango sticky rice · no nuts · not on the till menu',
       'Pizza · Margherita · kids only',
     ]);
     expect(partyMenuLineLabel({ ...KITCHEN.setMenu[1]!, adultsNote: '' })).toBe('French fries · adults: no note');
     // A plan from a platform before SCRUM-906 marks nothing it does not know.
     expect(partyMenuLineLabel({ productCode: null, name: 'Fruit skewers', qty: 2, choiceGroup: null, chosenOption: null, note: null })).toBe('Fruit skewers');
     expect(KITCHEN.barItems.map(partyBarLineLabel)).toEqual(['Cranberry mors', 'Juice pitcher · orange · not on the till menu']);
+    // SCRUM-967 — a food line's note is on the card, after the chosen dish, before the slip's marks; a blank one is not.
+    expect(partyMenuLineLabel({ ...KITCHEN.setMenu[0]!, note: 'no sauce' })).toBe('Fried rice · Veggie · no sauce · not on the till menu');
+    expect(partyMenuLineLabel({ ...KITCHEN.setMenu[4]!, note: 'no sauce' })).toBe('Pizza · Margherita · no sauce · kids only');
+    expect(partyMenuLineLabel({ ...KITCHEN.setMenu[1]!, note: '  ' })).toBe('French fries');
   });
 
   it('the cake as the BEO says it, in the page\'s own words; no cake is none', () => {
@@ -232,7 +237,7 @@ describe('the words: every line with the slip\'s marks, the bar, the cake', () =
         { id: 'line-1', name: 'Fried rice · Veggie · not on the till menu', qty: 3 },
         { id: 'line-2', name: 'French fries', qty: 2 },
         { id: 'line-3', name: 'Hot dish', qty: 2 },
-        { id: 'line-4', name: 'Mango sticky rice · not on the till menu', qty: 2 },
+        { id: 'line-4', name: 'Mango sticky rice · no nuts · not on the till menu', qty: 2 },
         { id: 'line-5', name: 'Pizza · Margherita · kids only', qty: 0 },
       ],
       cake: { type: 'our', qty: 2, time: '15:30', note: 'chocolate, "Mali 6"' },
@@ -263,7 +268,7 @@ describe('the desk party page: a kitchen plan with no package is shown, the cake
       'Slips print 11:00',
       'Fried rice · Veggie · not on the till menu ×3',
       'French fries ×2',
-      'Mango sticky rice · not on the till menu ×2',
+      'Mango sticky rice · no nuts · not on the till menu ×2',
       'Pizza · Margherita · kids only',
       'Our cake ×2 · 15:30',
       'chocolate, "Mali 6"',
@@ -298,7 +303,7 @@ describe('the phone party page reads the plan too', () => {
       'Food service 14:00',
       'Menu type Set menu',
       'Fried rice · Veggie · not on the till menu ×3',
-      'Mango sticky rice · not on the till menu ×2',
+      'Mango sticky rice · no nuts · not on the till menu ×2',
       'Our cake ×2 · 15:30',
       'Bar service 14:30',
       'Juice pitcher · orange · not on the till menu ×1',

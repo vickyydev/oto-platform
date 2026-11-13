@@ -25,6 +25,8 @@ import {
   kitchenDraftOf,
   kitchenLineRemovable,
   kitchenMenuMatches,
+  kitchenReadAgainSaid,
+  KITCHEN_READ_AGAIN_ASK,
   type KitchenDraft,
 } from '@/lib/partyKitchenEdit';
 import type { PartyBooking } from '@/types';
@@ -343,7 +345,8 @@ describe('the platform calls', () => {
     for (const code of ['OTOAPP_LINE_NOT_FOUND', 'OTOAPP_CHOICE_ALREADY_MADE']) {
       putMock.mockRejectedValueOnce(new ApiError(409, code, 'The OTO App did not change the kitchen plan: read the party again.'));
       const refused = await editPartyKitchenOnPlatform({ party: { id: PARTY, branchId: 'hkt-central' }, changes: [{ op: 'set', lineId: 'm1', qty: 3 }], ids: { id: 'x', actionId: 'y' } });
-      expect(refused).toEqual({ ok: false, message: 'The OTO App did not change the kitchen plan: read the party again.', retryable: false, readAgain: true });
+      // SCRUM-967 — the code comes with it, so the till can say it in its own words.
+      expect(refused).toEqual({ ok: false, message: 'The OTO App did not change the kitchen plan: read the party again.', retryable: false, readAgain: true, code });
     }
     putMock.mockRejectedValueOnce(new ApiError(409, 'OTOAPP_NOT_A_PARTY', 'Only a party.'));
     const other = await editPartyKitchenOnPlatform({ party: { id: PARTY, branchId: 'hkt-central' }, changes: [{ op: 'set', lineId: 'm1', qty: 3 }], ids: { id: 'x', actionId: 'y' } });
@@ -406,7 +409,11 @@ describe('the Edit form', () => {
     const removes = [...walk(drawn)].map((el) => el.props['aria-label']).filter((l): l is string => typeof l === 'string' && l.startsWith('Remove') && l.endsWith(' item'));
     expect(removes).toEqual(['Remove Calamari item', 'Remove ZZ fruit plate item']);
     const values = [...walk(drawn)].map((el) => el.props.value).filter((v): v is string => typeof v === 'string');
-    expect(values).toContain(`Fried rice · Veggie · ${PARTY_NOT_ON_TILL_MENU}`);
+    // SCRUM-967 — the name box holds the dish; its mark is whole on a line of its own under it
+    // (it was at the end of the one-line box, where a long name cut it).
+    expect(values).toContain('Fried rice · Veggie');
+    const marks = [...walk(drawn)].filter((el) => el.props['data-testid'] === 'kitchen-line-marks').map((el) => textOf(el.props.children).trim());
+    expect(marks).toContain(PARTY_NOT_ON_TILL_MENU);
     expect(values).toContain('20:30');
     expect(values).toContain('ZZ unicorn');
   });
@@ -548,7 +555,9 @@ describe('the party page saves the kitchen plan to the BEO', () => {
     expect(onChanged.mock.calls.length).toBeGreaterThan(changedBefore);
     expect(toastMock).toHaveBeenCalledWith({
       title: 'Kitchen plan not saved',
-      description: `${LINE_GONE} Press Cancel, then Edit party: it opens on the plan read again.`,
+      // SCRUM-967 — the dish by its name from the till's own copy of the plan, and one thing to do.
+      // It said the OTO App's sentence with the line's id (m1) and two instructions before.
+      description: 'Calamari was changed in the BEO since this form opened. Close this form and open it again to see the latest plan.',
       variant: 'destructive',
     });
     const readsAtCancel = planReads();
@@ -802,5 +811,30 @@ describe('SCRUM-950 — Settle party names each extra it charges', () => {
     const text = await summaryOf(before);
     expect(text).toContain('Add-ons ฿4,815');
     expect(text).not.toContain('Calamari');
+  });
+});
+
+describe('SCRUM-967 — the BEO moved under the form: the dish by its name, and one thing to do', () => {
+  const ASK = 'Close this form and open it again to see the latest plan.';
+  it('names a line the till’s copy of the plan knows by its dish, never by the BEO’s id', () => {
+    expect(KITCHEN_READ_AGAIN_ASK).toBe(ASK);
+    const said = kitchenReadAgainSaid({ code: 'OTOAPP_LINE_NOT_FOUND', message:
+      'The OTO App did not change the kitchen plan: A line of the kitchen plan was changed in the BEO since the till read it (b2). Read the party again and make the change once more.' }, KITCHEN);
+    expect(said).toBe(`Orange juice was changed in the BEO since this form opened. ${ASK}`);
+    expect(said).not.toContain('(b2)');
+    expect(said.match(/again/g)).toHaveLength(1);
+  });
+
+  it('a line it does not know is a line of the kitchen plan; still no id, still one instruction', () => {
+    const said = kitchenReadAgainSaid({ code: 'OTOAPP_LINE_NOT_FOUND', message:
+      'The OTO App did not change the kitchen plan: A line of the kitchen plan was changed in the BEO since the till read it (menu_1731450000000). Read the party again and make the change once more.' }, KITCHEN);
+    expect(said).toBe(`A line of the kitchen plan was changed in the BEO since this form opened. ${ASK}`);
+    expect(said).not.toContain('menu_');
+  });
+
+  it('a choice made in the BEO keeps the app’s own first sentence and the one instruction', () => {
+    expect(kitchenReadAgainSaid({ code: 'OTOAPP_CHOICE_ALREADY_MADE', message:
+      'The OTO App did not change the kitchen plan: Fried rice was chosen in the BEO since the till read it. Read the party again and change the choice once more.' }, KITCHEN))
+      .toBe(`The OTO App did not change the kitchen plan: Fried rice was chosen in the BEO since the till read it. ${ASK}`);
   });
 });
