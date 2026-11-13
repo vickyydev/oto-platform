@@ -56,6 +56,7 @@ import { PartyTicketModal } from './PartyTicketModal';
 import { PartySettleModal } from './PartySettleModal';
 import { PartyEditForm, type PartyEditPatch } from './PartyEditForm';
 import { PartySlipsCard } from './PartySlipsCard';
+import { PARTY_ACTIONS_ROW } from './partyLayout';
 import { MessagingPanel, type MessagingContext } from '@/components/shared/MessagingPanel';
 import {
   ArrowLeft,
@@ -149,14 +150,6 @@ type WriteKey = 'payment' | 'fnb' | 'ticket' | 'edit' | 'kitchen';
 /** "a", "a and b", "a, b and c" — for naming what the OTO App keeps. */
 const listOf = (items: string[]) =>
   items.length <= 1 ? (items[0] ?? '') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
-
-/**
- * SCRUM-953 — the party page's button row (Message parent, Edit party,
- * Settle or Resume settlement, Cancel settlement, Add F&B, Take balance): the
- * prototype's one row, wrapping inside its column when it does not fit, as it
- * did not at 1440 or 1024 with a settlement open. A row that fits is as before.
- */
-export const PARTY_ACTIONS_ROW = 'flex flex-wrap items-center gap-3 shrink-0 max-w-full';
 
 export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyDetailProps) {
   const { operator, locked: operatorLocked, can } = useOperator();
