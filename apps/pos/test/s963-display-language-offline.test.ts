@@ -236,10 +236,12 @@ describe('what still locks the form (SCRUM-963, 1)', () => {
 });
 
 describe('the answers that go again by themselves', () => {
-  it('the form’s live fill and the family’s language; nothing else', () => {
+  it('the form’s live fill and the family’s language (and, since SCRUM-975, a photo); nothing else', () => {
     expect(goesAgainByItself({ type: 'display.set_language', payload: { language: 'th' } })).toBe(true);
     expect(goesAgainByItself({ type: 'display.consent', payload: { action: 'fill' } })).toBe(true);
-    for (const action of ['done', 'staff_help', 'photo', 'acknowledge']) {
+    // SCRUM-975 (point 12) — a photo's answer goes as a fill does, with no Retry bar over the form.
+    expect(goesAgainByItself({ type: 'display.consent', payload: { action: 'photo' } })).toBe(true);
+    for (const action of ['done', 'staff_help', 'acknowledge']) {
       expect(goesAgainByItself({ type: 'display.consent', payload: { action } }), action).toBe(false);
     }
     for (const type of ['display.identify', 'display.contact_done', 'display.child_review', 'display.answer_prompt']) {
