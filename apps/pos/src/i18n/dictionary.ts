@@ -535,7 +535,8 @@ export const DICTIONARY: Record<string, Record<SupportedLang, string>> = {
   'display.tender.payByCard': { en: 'Pay by card', zh: '银行卡付款', th: 'ชำระด้วยบัตร', ru: 'Оплатите картой', fr: 'Payer par carte' },
   'display.tender.confirmed': { en: 'Payment confirmed. Please wait for the team.', zh: '付款已确认。请等待工作人员。', th: 'ยืนยันการชำระเงินแล้ว กรุณารอพนักงาน', ru: 'Оплата подтверждена. Пожалуйста, подождите сотрудника.', fr: "Paiement confirmé. Veuillez attendre le personnel." },
   // SCRUM-943 — the family's form while the connection is down: what they enter goes by itself when it returns.
-  'display.reconnectingSendsItself': { en: 'Reconnecting… what you enter is sent by itself when the connection returns.', zh: '正在重新连接……连接恢复后，您填写的内容会自动发送。', th: 'กำลังเชื่อมต่อใหม่… ข้อมูลที่คุณกรอกจะถูกส่งเองเมื่อการเชื่อมต่อกลับมา', ru: 'Переподключение… введённое вами отправится само, когда связь восстановится.', fr: 'Reconnexion… ce que vous saisissez sera envoyé automatiquement au retour de la connexion.' },
+  // SCRUM-975 — one line on the 600-wide counter display in every language (it wrapped over the heading's first line).
+  'display.reconnectingSendsItself': { en: 'Reconnecting… what you enter is sent by itself.', zh: '正在重新连接……您填写的内容会自动发送。', th: 'กำลังเชื่อมต่อใหม่… ข้อมูลที่กรอกจะถูกส่งเอง', ru: 'Переподключение… введённое отправится само.', fr: 'Reconnexion… votre saisie sera envoyée d’elle-même.' },
   // SCRUM-942 — the family pressed Done and the till has not taken it yet (it may be locked).
   'display.teamInAMoment': { en: 'Thank you. The team will be with you in a moment.', zh: '谢谢。工作人员马上为您服务。', th: 'ขอบคุณ ทีมงานจะมาดูแลคุณในอีกสักครู่', ru: 'Спасибо. Сотрудник подойдёт к вам через минуту.', fr: "Merci. L'équipe est à vous dans un instant." },
   'display.retry': { en: 'Retry', zh: '重试', th: 'ลองอีกครั้ง', ru: 'Повторить', fr: 'Réessayer' },

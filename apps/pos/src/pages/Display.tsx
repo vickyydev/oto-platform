@@ -73,7 +73,8 @@ import { PublicMerchCustomerDisplay, type PublicMerchStage } from '@/components/
 import { PublicConsentCapture } from '@/components/till/PublicConsentCapture';
 import { FORM_RECONNECTING_LINE } from '@/components/till/consentFormLayout';
 import { clearConsentDraft } from '@/lib/consentDraftStore';
-import { goesAgainByItself } from '@/lib/displaySendQueue';
+import { goesAgainByItself, sentAgainWhenBack } from '@/lib/displaySendQueue';
+import { displayIdleForUpdate, setDisplayIdle } from '@/pwa/displayIdle';
 
 /** Pairing and station polling deliberately live outside every staff provider. */
 export default function Display() {
@@ -387,22 +388,18 @@ export default function Display() {
    * SCRUM-874 — a fill the family's form sent while the line was down is
    * kept (its reply never came) and goes again, as it was, the moment the
    * box is heard from again: the form sends the rest once the till has it.
-   */
-  useEffect(() => {
-    const intent = pending.current;
-    if (connection !== 'connected' || !intent || intent.type !== 'display.consent'
-      || (intent.payload as { action?: unknown }).action !== 'fill') return;
-    void send(intent.type, intent.payload, true);
-  }, [connection, send]);
-
-  /**
    * SCRUM-963 — and so does a language the family chose while the line was
    * down: this screen took it at once (it is the family's own), and the box
    * is told the moment it is heard from again, under the same action id.
+   * SCRUM-975 — and so does every other answer kept while it was out (Done,
+   * Ask the team, the first screen's number, the review's answers): the lock
+   * stays while it is out, and nobody has to find Retry once the line is back
+   * (`lib/displaySendQueue.ts`, `sentAgainWhenBack`). Quietly: a refusal now
+   * means the till moved past it, and the screen follows the till.
    */
   useEffect(() => {
     const intent = pending.current;
-    if (connection !== 'connected' || !intent || intent.type !== 'display.set_language') return;
+    if (connection !== 'connected' || !intent || !sentAgainWhenBack(intent)) return;
     void send(intent.type, intent.payload, true);
   }, [connection, send]);
 
@@ -484,10 +481,13 @@ export default function Display() {
    * the box still answers (no reconnect to send it again on, above) is sent
    * again every few seconds until it is taken, where a Retry used to wait.
    * SCRUM-963 — a language whose reply was lost goes again the same way.
+   * SCRUM-975 — and every other kept answer (a locked one keeps its lock and
+   * its Retry meanwhile): a reply lost while the box still answers, or a
+   * message that ran out of its time (`displayBridgeApi.intent`).
    */
   useEffect(() => {
     const intent = pending.current;
-    if (connection !== 'connected' || !error || busy || !intent || !goesAgainByItself(intent)) return;
+    if (connection !== 'connected' || !error || busy || !intent || !sentAgainWhenBack(intent)) return;
     const timer = setTimeout(() => { void send(intent.type, intent.payload, true); }, FILL_RESEND_MS);
     return () => clearTimeout(timer);
   }, [connection, error, busy, send]);
@@ -509,6 +509,15 @@ export default function Display() {
   const language = useLanguageChoice(firstScreen, saleKey);
   // SCRUM-929 — the look the till's Display switch last told this screen, kept through a reload.
   const theme = useDisplayTheme(document?.theme);
+  // SCRUM-975 — whether a new build may be taken now (`pwa/DisplayUpdater.tsx`): the welcome screen, nobody on it.
+  const idleForUpdate = displayIdleForUpdate({
+    paired: !!session, connected: connection === 'connected' && !silent, sending: busy || !!pending.current,
+    stage: document?.stage ?? null, prompt: document?.prompt ?? null, member: document?.member ?? null,
+  });
+  useEffect(() => {
+    setDisplayIdle(idleForUpdate);
+  }, [idleForUpdate]);
+  useEffect(() => () => setDisplayIdle(false), []);
 
   return <div className={`${theme} h-[100dvh] w-full min-w-0 overflow-hidden bg-background text-foreground flex flex-col`} data-testid="separate-display">
     {session && reconnecting && !onConsentForm && <p role="status" className="shrink-0 px-4 py-2 text-sm">{t('display.reconnecting')}</p>}

@@ -32,6 +32,7 @@ import { useTillChoice } from "@/lib/tillChoice";
 import { staffThemeController } from "@/lib/themePref";
 import { LanguageProvider } from "@/i18n/LanguageContext";
 import { ServiceWorkerUpdater } from "@/pwa/ServiceWorkerUpdater";
+import { DisplayUpdater } from "@/pwa/DisplayUpdater";
 import { usePageScanShell } from "@/lib/pageScan";
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
@@ -224,6 +225,8 @@ function App() {
     <Switch>
       <Route path="/display">
         <TooltipProvider><LanguageProvider storageKey="oto.display.language"><Display /></LanguageProvider></TooltipProvider>
+        {/* SCRUM-975 — takes a new web build by itself, only on its idle welcome screen. */}
+        <DisplayUpdater />
       </Route>
       {/* S2-20 K2 — the self-service kiosk: a paired device, no staff session, a
           guest's own language that goes back to the default for the next guest. */}

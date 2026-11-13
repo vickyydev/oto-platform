@@ -377,6 +377,16 @@ export function watchBridgeSnapshots(stationId: string, options: {
  * THE CUSTOMER DISPLAY'S SIDE (OD-10): the paired credential, never the staff
  * session, and never a cookie.
  */
+/**
+ * SCRUM-975 — how long one display message to the box may take: the display's
+ * other calls to the platform give up after the same eight seconds
+ * (`displayRequest`, `api/display.ts`). One that hung kept Done or "Ask the
+ * team" at "Sending…" until the browser gave up; past this it is a message
+ * that reached nothing (`NetworkError`), which the display keeps and sends
+ * again under the same action id (`lib/displaySendQueue.ts`).
+ */
+export const DISPLAY_INTENT_LIMIT_MS = 8_000;
+
 export const displayBridgeApi = {
   session: async (stationId: string, bearer: string, signal?: AbortSignal) => {
     const answer = await request<{
@@ -392,13 +402,28 @@ export const displayBridgeApi = {
     intent: StationIntent,
     signal?: AbortSignal,
   ) => {
-    const answer = await request<{ document: StationSessionDocument }>(
-      'POST',
-      stationId,
-      'display/intents',
-      intent,
-      { bearer, signal },
-    );
-    return { document: StationSessionDocumentSchema.parse(answer.document) };
+    const controller = new AbortController();
+    const abort = () => controller.abort();
+    signal?.addEventListener('abort', abort, { once: true });
+    if (signal?.aborted) abort();
+    let outOfTime = false;
+    const deadline = setTimeout(() => { outOfTime = true; controller.abort(); }, DISPLAY_INTENT_LIMIT_MS);
+    try {
+      const answer = await request<{ document: StationSessionDocument }>(
+        'POST',
+        stationId,
+        'display/intents',
+        intent,
+        { bearer, signal: controller.signal },
+      );
+      return { document: StationSessionDocumentSchema.parse(answer.document) };
+    } catch (err) {
+      // Our own limit, not the caller's: the message reached nothing that answered.
+      if (outOfTime) throw new NetworkError(err);
+      throw err;
+    } finally {
+      clearTimeout(deadline);
+      signal?.removeEventListener('abort', abort);
+    }
   },
 };
