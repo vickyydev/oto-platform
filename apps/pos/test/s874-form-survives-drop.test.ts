@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ConsentAction, ConsentPrompt } from '@oto/shared';
 import { LIVE_FILL_MS, PublicConsentCapture } from '@/components/till/PublicConsentCapture';
 import { CONSENT_DRAFT_TTL_MS, clearConsentDraft, keepConsentDraft, readConsentDraft } from '@/lib/consentDraftStore';
+import { sentAgainWhenBack } from '@/lib/displaySendQueue';
 import { renderHook } from './support/hooks';
 
 vi.mock('react', async (original) => ({ ...(await original<typeof import('react')>()), ...(await import('./support/hooks')) }));
@@ -220,7 +221,10 @@ describe('the draft kept for a visitor', () => {
 
 describe('the paired display', () => {
   it('sends a fill whose reply was lost again, as it was, once the box is heard from', () => {
-    expect(display).toMatch(/if \(connection !== 'connected' \|\| !intent \|\| intent\.type !== 'display\.consent'\s*\|\| \(intent\.payload as \{ action\?: unknown \}\)\.action !== 'fill'\) return;\s*void send\(intent\.type, intent\.payload, true\);\s*\}, \[connection, send\]\);/);
+    // SCRUM-975 (point 9): one rule now sends every kept answer again when the box is heard from,
+    // the fill among them (`sentAgainWhenBack`, lib/displaySendQueue.ts), quietly, as the fill went.
+    expect(display).toMatch(/if \(connection !== 'connected' \|\| !intent \|\| !sentAgainWhenBack\(intent\)\) return;\s*void send\(intent\.type, intent\.payload, true\);\s*\}, \[connection, send\]\);/);
+    expect(sentAgainWhenBack({ type: 'display.consent' })).toBe(true);
   });
 
   it('clears the draft once it has moved on to the first screen, payment or thank-you', () => {
