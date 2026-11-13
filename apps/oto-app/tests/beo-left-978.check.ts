@@ -14,11 +14,15 @@
 //      row's price cell holds for it too; the kids' list is read from menus;
 //   2. PARTY HOST and SETUP PLAN print only with something under them;
 //   3. the editor's Save writes the cake count (the row, the BEO's read, the
-//      till's plan view), and the till's kitchen edit keeps it;
-//   4. PUT /api/events/:eventId/beo/kitchen-plan refuses a malformed body
-//      with 400 and its reason, nothing written, and takes every body the
-//      day-of view sends; the shape takes what the editor's Save, the AI
-//      approval and the till's kitchen edit write;
+//      till's plan view; "4" as 4), and the till's kitchen edit keeps it;
+//   4. PUT /api/events/:eventId/beo/kitchen-plan refuses only a body no
+//      reader can read, with 400 and its reason in staff words, nothing
+//      written; it takes every body the day-of view sends, the whole stored
+//      list with what a park's BEO holds (a count of null, "", 0 or "2", a
+//      price of "" or "120", a line with no name, a time of 14:00:00, a cake
+//      price of "800"), written as stored but numeric text as its number;
+//      the shape takes what the editor's Save, the AI approval and the
+//      till's kitchen edit write;
 //   5. a date or a clock time is never the chat's total; the fold's reason
 //      quotes the words that say the adults eat the same; "ต่อ" is "per" only
 //      before a count or a unit;
@@ -58,7 +62,8 @@ process.env.LOG_LEVEL ??= "warn";
 const beoRoutes = await import("../server/beo-routes");
 const { applyTillKitchenEdit, planTillKitchenEdit } = await import("../server/lib/tillKitchenEdit");
 const { approveBeoAiFill } = await import("../server/lib/beoAiApprove");
-const { kitchenPlanPutBodySchema } = await import("../server/lib/kitchenPlanBody");
+const { kitchenPlanPutBodySchema, isCakeCount } = await import("../server/lib/kitchenPlanBody");
+const { adultsDifferOf } = await import("../shared/kitchenAdults");
 const { chatTotalOf, adultsSameAsKidsFolds, figureSaidEach, chatPriceIsTotal } = await import("../server/lib/beoCatalogueFill");
 const { beoPdfHtml } = await import("../server/pdf");
 const { BeoAiApproveBodySchema } = await import("../shared/beoAiFill");
@@ -109,6 +114,8 @@ const ev = {
   cake: randomUUID(), body: randomUUID(), rice: randomUUID(), riceSame: randomUUID(), link: randomUUID(), on: randomUUID(), off: randomUUID(), more: randomUUID(),
   // The lane's review: the editor's own uncoded copy, the day-of view's, and a repeat of a kids' extra.
   riceCopy: randomUUID(), riceDay: randomUUID(), riceTill: randomUUID(), onExtra: randomUUID(), offExtra: randomUUID(),
+  // The lane's last review: a stored party whose lines hold what the day-of view sends back.
+  odd: randomUUID(),
 };
 
 function fakeAuth(req: Request, res: Response, next: NextFunction) {
@@ -262,10 +269,14 @@ try {
     assert.equal((await planOf(ev.cake))!.cake_quantity, 1);
     assert.equal((await send("PUT", `/api/events/${ev.cake}/beo`, { kitchenPlan: { ...kitchen, cakeQuantity: 0 } })).status, 200);
     assert.equal((await planOf(ev.cake))!.cake_quantity, 1, "0 is no count: the plan keeps 1");
+    // A count given as numeric text is its number (the lane's review): written as the number.
+    assert.equal((await send("PUT", `/api/events/${ev.cake}/beo`, { kitchenPlan: { ...kitchen, cakeQuantity: "4" } })).status, 200);
+    assert.equal((await planOf(ev.cake))!.cake_quantity, 4, "\"4\" is 4");
     assert.deepEqual(
-      [3, 99, 100, 0, -1, 2.5, "2", null, undefined].map((n) => "cakeQuantity" in beoRoutes.kitchenPlanDbDataOf({ cakeQuantity: n })),
-      [true, true, false, false, false, false, false, false, false],
+      [3, 99, 100, 0, -1, 2.5, "2", null, undefined, "two"].map((n) => beoRoutes.kitchenPlanDbDataOf({ cakeQuantity: n }).cakeQuantity),
+      [3, 99, undefined, undefined, undefined, undefined, 2, undefined, undefined, undefined],
     );
+    assert.deepEqual([3, "2", 100, "two"].map((n) => isCakeCount(n)), [true, true, false, false]);
   });
 
   // --- 4. The kitchen plan's body ----------------------------------------------------------------
@@ -273,30 +284,139 @@ try {
     const menus = { kids: [line("k1", "Nuggets", 8, { productCode: "CF-14" })], adults: [], adultsDiffer: false, kidsFoodTime: "14:00", cakePrice: 0, cakeIncluded: true };
     await kitchenPlan(ev.body, menus, { setMenu: false });
     const before = JSON.stringify(await planOf(ev.body));
-    const refusals: Array<[unknown, RegExp]> = [
-      [{ menus: { ...menus, kids: "Nuggets" } }, /^The kitchen plan was not saved: menus\.kids: a food list is a list of lines\.$/],
-      [{ menus: { ...menus, kids: [{ ...menus.kids[0], quantity: 0 }] } }, /menus\.kids\.0\.quantity: a count is 1 or more\.$/],
-      [{ menus: { ...menus, kids: [{ ...menus.kids[0], quantity: 2.5 }] } }, /menus\.kids\.0\.quantity: a count is a whole number\.$/],
-      [{ menus: { ...menus, kids: [{ ...menus.kids[0], quantity: "8" }] } }, /menus\.kids\.0\.quantity: a count is a whole number\.$/],
-      [{ menus: { ...menus, kids: [{ ...menus.kids[0], price: "120" }] } }, /menus\.kids\.0\.price: a price is a number of baht\.$/],
-      [{ menus: { ...menus, kids: [{ ...menus.kids[0], price: -5 }] } }, /menus\.kids\.0\.price: a price is 0 or more\.$/],
-      [{ menus: { ...menus, kids: [{ quantity: 1 }] } }, /menus\.kids\.0\.itemName: each line has a name\.$/],
-      [{ menus: { ...menus, adults: [null] } }, /menus\.adults\.0: /],
-      [{ menus: { ...menus, kidsFoodTime: "noon" } }, /menus\.kidsFoodTime: a time is written as HH:mm, or left empty\.$/],
-      [{ menus: { ...menus, adultsDiffer: "yes" } }, /menus\.adultsDiffer: "Different for adults" is on or off\.$/],
-      [{ menus: "kids" }, /^The kitchen plan was not saved: menus: the menus are an object\.$/],
-      [{ foodRequired: "no" }, /foodRequired: "Kitchen required" is on or off\.$/],
-      [{ setMenuTemplateId: "the pizza one" }, /setMenuTemplateId: the set menu is named by its id\.$/],
-      [{ cakeQuantity: 0 }, /cakeQuantity: the cake count is 1 or more\.$/],
-      [{ cakeMode: "BIG" }, /cakeMode: the cake is NONE, INTERNAL or EXTERNAL\.$/],
-      [[1, 2], /the kitchen plan is an object\.$/],
+    // Only what no reader can read, each in staff words: a line by its place, anything else by its plain name.
+    const kidsLine = (over: Record<string, unknown>) => ({ menus: { ...menus, kids: [menus.kids[0], { ...menus.kids[0], id: "k2", ...over }] } });
+    const said = (words: string) => `The kitchen plan was not saved: ${words}.`;
+    const refusals: Array<[unknown, string]> = [
+      [{ menus: { ...menus, kids: "Nuggets" } }, said("the kids' menu is a list of lines")],
+      [kidsLine({ quantity: "two" }), said("line 2 of the kids' menu: the count is a number")],
+      [kidsLine({ quantity: -1 }), said("line 2 of the kids' menu: the count is 0 or more")],
+      [kidsLine({ quantity: true }), said("line 2 of the kids' menu: the count is a number")],
+      [kidsLine({ quantity: 10_000_000 }), said("line 2 of the kids' menu: the count is at most 999,999")],
+      [kidsLine({ price: "a lot" }), said("line 2 of the kids' menu: the price is a number of baht")],
+      [kidsLine({ price: -5 }), said("line 2 of the kids' menu: the price is 0 or more")],
+      [kidsLine({ price: { baht: 120 } }), said("line 2 of the kids' menu: the price is a number of baht")],
+      [kidsLine({ itemName: { name: "Nuggets" } }), said("line 2 of the kids' menu: the name is text")],
+      [kidsLine({ notes: ["no sauce"] }), said("line 2 of the kids' menu: the note is text")],
+      [kidsLine({ itemName: "x".repeat(501) }), said("line 2 of the kids' menu: the name is at most 500 characters")],
+      [{ menus: { ...menus, adults: [null] } }, said("line 1 of the adults' menu: it is not a line of the menu")],
+      [{ menus: { ...menus, adults: [menus.kids[0], "Fries"] } }, said("line 2 of the adults' menu: it is not a line of the menu")],
+      [{ menus: { ...menus, kids: Array.from({ length: 501 }, () => menus.kids[0]) } }, said("the kids' menu holds at most 500 lines")],
+      [{ menus: { ...menus, kidsFoodTime: "noon" } }, said("the kids' food time is a time such as 14:00, or empty")],
+      [{ menus: { ...menus, adultsFoodTime: 1400 } }, said("the adults' food time is a time such as 14:00, or empty")],
+      [{ menus: { ...menus, cakePrice: "free" } }, said("the cake's price is a number of baht")],
+      [{ menus: { ...menus, adultsDiffer: "yes" } }, said("\"Different for adults\" is on or off")],
+      [{ menus: "kids" }, said("the menus are not a kitchen menu")],
+      [{ foodRequired: "no" }, said("\"Kitchen needed\" is on or off")],
+      [{ setMenuTemplateId: "the pizza one" }, said("the set menu template is not a set menu")],
+      [{ cakeQuantity: 0 }, said("the cake count is a whole number from 1 to 99")],
+      [{ cakeQuantity: "two" }, said("the cake count is a whole number from 1 to 99")],
+      [{ cakeMode: "BIG" }, said("the cake is no cake, our cake or the family's own")],
+      [{ cakeTime: "after the song" }, said("the cake time is a time such as 14:00, or empty")],
+      [[1, 2], said("what was sent is not a kitchen plan")],
     ];
     for (const [body, reason] of refusals) {
       const res = await send("PUT", `/api/events/${ev.body}/beo/kitchen-plan`, body);
-      assert.equal(res.status, 400, JSON.stringify([body, res.body]));
-      assert.match(String(res.body?.error), reason, JSON.stringify(body));
+      assert.equal(res.status, 400, JSON.stringify([body, res.body]).slice(0, 400));
+      assert.equal(String(res.body?.error), reason, JSON.stringify(body).slice(0, 400));
     }
     assert.equal(JSON.stringify(await planOf(ev.body)), before, "nothing written");
+  });
+
+  await check("a stored party's own values are taken: the day-of view's every change is written, untouched lines as stored", async () => {
+    // The lane's review: what the park's BEOs can hold and every reader reads (server/lib/kitchenPlanBody.ts).
+    const stored = {
+      kids: [
+        { id: "o1", itemName: "ZZ Nuggets", quantity: null, notes: "", included: false, price: 0 },
+        { id: "o2", itemName: "ZZ Fries", quantity: "2", notes: "", included: false, price: "120", source: "additional", productCode: "CF-11" },
+        { id: "o3", itemName: "ZZ Rice", quantity: 0, notes: "", included: false, price: "" },
+        { id: "o4", quantity: 1, notes: "", included: true },
+        { id: "o5", itemName: "", quantity: "", notes: "", included: true, price: null },
+        { id: "o6", itemName: "ZZ Pizza", quantity: 3, notes: "no basil", included: true, price: 400, source: "set_menu", groupId: PIZZA, extra: { kept: true } },
+        { id: "o7", itemName: "ZZ Juice" },
+      ],
+      adults: [],
+      adultsDiffer: false,
+      kidsFoodTime: "14:00:00",
+      adultsFoodTime: "9:30",
+      cakePrice: "800",
+      cakeIncluded: false,
+      zzOwnKey: "kept",
+    };
+    await kitchenPlan(ev.odd, stored, { setMenu: false, cakeMode: "INTERNAL", cakeQuantity: 2 });
+    // What the day-of view holds and sends (beo-day-of-view.tsx: its effect on the BEO's read, buildMenusPayload).
+    const kp = (await send("GET", `/api/events/${ev.odd}/beo`)).body.kitchenPlan;
+    const existingMenus = kp.menus as Record<string, unknown>;
+    type DayLine = Record<string, unknown>;
+    const localKids = (kp.menus?.kids || []) as DayLine[];
+    const localDiffer = adultsDifferOf(kp.menus);
+    const localAdults = (localDiffer ? kp.menus?.adults || [] : []) as DayLine[];
+    const buildMenusPayload = (over: { kids?: DayLine[]; adults?: DayLine[]; adultsDiffer?: boolean; kidsFoodTime?: string; adultsFoodTime?: string } = {}) => {
+      const adultsDiffer = over.adultsDiffer ?? localDiffer;
+      return {
+        ...existingMenus,
+        kids: over.kids ?? localKids,
+        adults: adultsDiffer ? over.adults ?? localAdults : [],
+        adultsDiffer,
+        kidsFoodTime: over.kidsFoodTime ?? (kp.menus?.kidsFoodTime || ""),
+        adultsFoodTime: over.adultsFoodTime ?? (kp.menus?.adultsFoodTime || ""),
+      };
+    };
+    const door = (body: Record<string, unknown>) => send("PUT", `/api/events/${ev.odd}/beo/kitchen-plan`, { ...body, setMenuSelectionSubmittedAt: kp.setMenuSelectionStatus?.submittedAt ?? null });
+    // The day-of + on ZZ Juice, a line with no count: `m.quantity + 1` is NaN, which arrives as null.
+    const plus = localKids.map((m) => (m.id === "o7" ? { ...m, quantity: (m.quantity as number) + 1 } : m));
+    const first = await door({ menus: buildMenusPayload({ kids: plus }) });
+    assert.equal(first.status, 200, JSON.stringify(first.body));
+    const row = (await planOf(ev.odd))!;
+    // Every untouched line as stored, numeric text aside ("2" is 2, "120" is 120); ZZ Juice now null.
+    const want = stored.kids.map((l) => (l.id === "o2" ? { ...l, quantity: 2, price: 120 } : l.id === "o7" ? { ...l, quantity: null } : l));
+    assert.deepEqual(row.menus.kids, want, "the kids' lines");
+    assert.deepEqual(row.simplified_menus.kids, want, "the older copy of the lists");
+    assert.deepEqual(
+      { ...row.menus, kids: undefined },
+      { ...stored, kids: undefined, cakePrice: 800 },
+      "the plan's other keys: the times as stored, the cake's price as its number, the park's own key kept",
+    );
+    assert.equal(row.cake_quantity, 2, "the cake count is the plan's own");
+    // Every reader reads them as before: the till's plan view counts null, 0 and "" as 1, skips the unnamed.
+    const lines = ((await viewOf(ev.odd))?.lines ?? []) as Array<{ line_id: string; qty: number; unit_price_satang: number | null }>;
+    assert.deepEqual(
+      lines.map((l) => [l.line_id, l.qty, l.unit_price_satang]),
+      [["o1", 1, null], ["o2", 2, 12000], ["o3", 1, null], ["o6", 3, 40000], ["o7", 1, null]],
+    );
+    // Each value on its own, as the day-of view sends it back, and the door's other tolerated values.
+    const tolerated: Array<[string, Record<string, unknown>, (r: Record<string, any>) => unknown, unknown]> = [ // eslint-disable-line @typescript-eslint/no-explicit-any -- a row read field by field
+      ["a count of null", { menus: buildMenusPayload({ kids: [{ id: "t1", itemName: "ZZ A", quantity: null }] }) }, (r) => r.menus.kids[0].quantity, null],
+      ["a count of \"2\"", { menus: buildMenusPayload({ kids: [{ id: "t1", itemName: "ZZ A", quantity: "2" }] }) }, (r) => r.menus.kids[0].quantity, 2],
+      ["a count of \"\"", { menus: buildMenusPayload({ kids: [{ id: "t1", itemName: "ZZ A", quantity: "" }] }) }, (r) => r.menus.kids[0].quantity, ""],
+      ["a count of 0", { menus: buildMenusPayload({ kids: [{ id: "t1", itemName: "ZZ A", quantity: 0 }] }) }, (r) => r.menus.kids[0].quantity, 0],
+      ["a count of 2.5", { menus: buildMenusPayload({ kids: [{ id: "t1", itemName: "ZZ A", quantity: 2.5 }] }) }, (r) => r.menus.kids[0].quantity, 2.5],
+      ["a price of \"\"", { menus: buildMenusPayload({ kids: [{ id: "t1", itemName: "ZZ A", quantity: 1, price: "" }] }) }, (r) => r.menus.kids[0].price, ""],
+      ["a price of \"120\"", { menus: buildMenusPayload({ kids: [{ id: "t1", itemName: "ZZ A", quantity: 1, price: "120" }] }) }, (r) => r.menus.kids[0].price, 120],
+      ["a line with no name", { menus: buildMenusPayload({ kids: [{ id: "t1", quantity: 1 }] }) }, (r) => r.menus.kids[0], { id: "t1", quantity: 1 }],
+      ["a kids' time of 14:00:00", { menus: buildMenusPayload({ kidsFoodTime: "14:00:00" }) }, (r) => r.menus.kidsFoodTime, "14:00:00"],
+      ["an adults' time of 9:30", { menus: buildMenusPayload({ adultsFoodTime: "9:30" }) }, (r) => r.menus.adultsFoodTime, "9:30"],
+      ["a cake price of \"800\"", { menus: { ...buildMenusPayload(), cakePrice: "800" } }, (r) => r.menus.cakePrice, 800],
+      ["the adults' own copy of those lines", { menus: buildMenusPayload({ adults: stored.kids.map((l) => ({ ...l, id: `${l.id}_a` })), adultsDiffer: true }) }, (r) => r.menus.adults.length, 7],
+      ["a cake count of \"3\"", { cakeQuantity: "3" }, (r) => r.cake_quantity, 3],
+      ["a cake time of 16:00:00", { cakeTime: "16:00:00" }, (r) => r.cake_time, "16:00:00"],
+      ["a set menu template's id", { setMenuEnabled: false, setMenuTemplateId: setMenuId }, (r) => r.set_menu_template_id, setMenuId],
+      ["a set menu template of \"\"", { setMenuEnabled: false, setMenuTemplateId: "" }, (r) => r.set_menu_template_id, null],
+    ];
+    const missed: string[] = [];
+    for (const [what, body, read, value] of tolerated) {
+      const res = await door(body);
+      if (res.status !== 200) {
+        missed.push(`${what}: ${res.status} ${JSON.stringify(res.body)}`);
+        continue;
+      }
+      try {
+        assert.deepEqual(read((await planOf(ev.odd))!), value);
+      } catch {
+        missed.push(`${what}: written as ${JSON.stringify(read((await planOf(ev.odd))!))}`);
+      }
+    }
+    assert.deepEqual(missed, [], "each tolerated value is taken and written");
   });
 
   await check("the day-of view's every body is taken, and only the plan's own fields are written", async () => {
@@ -608,4 +728,4 @@ try {
   await pool.end();
   await appDbPool.end().catch(() => undefined);
 }
-process.exit(checks === 14 && failed.length === 0 ? 0 : 1);
+process.exit(checks === 15 && failed.length === 0 ? 0 : 1);
