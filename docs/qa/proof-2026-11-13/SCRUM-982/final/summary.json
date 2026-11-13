@@ -1,0 +1,784 @@
+{
+  "source": "3e29803bf0d2c935a9a0c23f76c60c4182bcc104",
+  "sourceReview": "approved by root 14 November 2026",
+  "nativeStartedAt": "2026-11-13T19:16:19.434Z",
+  "nativeFinishedAt": "2026-11-13T19:37:28.559Z",
+  "points": {
+    "desktop-ticket-paid-qr": {
+      "verdict": "PASSED",
+      "pictures": [
+        "final/01b-ticket-B-continued-qr.png",
+        "final/01c-ticket-B-paid-qr.png"
+      ],
+      "seen": {
+        "saleId": "01a1d658-4dd9-7698-af66-4eb7b4ff5a66",
+        "status": "finalised",
+        "receipt": "Z98204-000001",
+        "soldBy": {
+          "accountId": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+          "name": "ZZ TEST 964 A"
+        },
+        "stationSaleCount": 1,
+        "attempts": [
+          {
+            "id": "01a1d658-532f-753b-8601-368f8b4bd155",
+            "status": "approved",
+            "method": "qr",
+            "amountSatang": 104000
+          }
+        ],
+        "postsAfterContinue": [
+          {
+            "path": "/api/sales/:id/finalise",
+            "method": "none",
+            "kind": "other"
+          }
+        ]
+      }
+    },
+    "desktop-fnb-cancelled-qr-cash": {
+      "verdict": "PASSED",
+      "pictures": [
+        "final/02a-fnb-A-continued-qr.png",
+        "final/02b-fnb-A-cash-same-sale.png"
+      ],
+      "seen": {
+        "saleId": "01a1d65a-04d3-7281-b402-35cb7ac1235d",
+        "status": "finalised",
+        "receipt": "Z98204-000002",
+        "soldBy": {
+          "accountId": "01a1d2f9-710f-7e6e-bb8e-d8f17975d09f",
+          "name": "ZZ TEST 964 B"
+        },
+        "stationSaleCount": 2,
+        "attempts": [
+          {
+            "id": "01a1d65a-09b7-7d64-aabe-2b5c84d4026c",
+            "status": "cancelled",
+            "method": "qr",
+            "amountSatang": 17500
+          },
+          {
+            "id": "01a1d65a-1a01-709f-8a88-cfb84e3d6a7f",
+            "status": "approved",
+            "method": "cash",
+            "amountSatang": 17500
+          }
+        ]
+      }
+    },
+    "desktop-shop-paid-qr": {
+      "verdict": "PASSED",
+      "pictures": [
+        "final/03a-shop-B-continued-qr.png",
+        "final/03b-shop-B-paid-qr.png"
+      ],
+      "seen": {
+        "saleId": "01a1d65c-f1d4-7bd0-a7bf-68ea5e1896a3",
+        "status": "finalised",
+        "receipt": "Z98204-000003",
+        "soldBy": {
+          "accountId": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+          "name": "ZZ TEST 964 A"
+        },
+        "stationSaleCount": 3,
+        "attempts": [
+          {
+            "id": "01a1d65c-f5db-76ba-a4da-511a883ff1c7",
+            "status": "approved",
+            "method": "qr",
+            "amountSatang": 6500
+          }
+        ],
+        "postsAfterContinue": [
+          {
+            "path": "/api/sales/:id/finalise",
+            "method": "none",
+            "kind": "other"
+          }
+        ]
+      }
+    },
+    "waiting-card-handover": {
+      "verdict": "PASSED",
+      "pictures": [
+        "final/07-card-B-continued-waiting.png"
+      ],
+      "seen": {
+        "saleId": "01a1d65f-2395-7572-9488-e54373f0256f",
+        "attemptId": "01a1d65f-28d6-7127-ad02-1b39691a1584",
+        "status": "sent_to_terminal",
+        "method": "card",
+        "route": "card_terminal",
+        "stationSaleCount": 1,
+        "soldBy": {
+          "accountId": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+          "name": "ZZ TEST 964 A"
+        },
+        "postsAfterContinue": [],
+        "limits": "Own simulated NEXGO terminal deliberately returns no response; no physical hardware or bank acceptance"
+      }
+    },
+    "phone-ticket-cancelled-qr-cash": {
+      "verdict": "PASSED",
+      "pictures": [
+        "final/04a-phone-ticket-B-continued-qr.png",
+        "final/04b-phone-ticket-B-cash-same-sale.png"
+      ],
+      "seen": {
+        "saleId": "01a1d664-971e-7be7-899c-9eae103f2b6b",
+        "status": "finalised",
+        "stationSaleCount": 1,
+        "soldBy": {
+          "accountId": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+          "name": "ZZ TEST 964 A"
+        },
+        "attempts": [
+          {
+            "id": "01a1d664-9c6a-7371-9cf0-c2a9398ca21c",
+            "status": "cancelled",
+            "method": "qr",
+            "amountSatang": 104000
+          },
+          {
+            "id": "01a1d665-47a1-7cc8-a99d-a6d01a43afb2",
+            "status": "approved",
+            "method": "cash",
+            "amountSatang": 104000
+          }
+        ],
+        "postsAfterContinue": [
+          {
+            "path": "/api/sales/:id/finalise",
+            "method": "cash",
+            "kind": "cash"
+          }
+        ],
+        "harnessNote": "The first Cash click occurred while QR cancellation was settling and was ignored. API cancellation was then confirmed before selecting Cash; no payment was duplicated."
+      }
+    },
+    "phone-fnb-paid-qr": {
+      "verdict": "PASSED",
+      "pictures": [
+        "final/05a-phone-fnb-A-continued-qr.png",
+        "final/05b-phone-fnb-A-paid-qr.png"
+      ],
+      "seen": {
+        "saleId": "01a1d665-abfb-7cac-a729-0198cf75ca61",
+        "status": "finalised",
+        "stationSaleCount": 2,
+        "soldBy": {
+          "accountId": "01a1d2f9-710f-7e6e-bb8e-d8f17975d09f",
+          "name": "ZZ TEST 964 B"
+        },
+        "attempts": [
+          {
+            "id": "01a1d665-b00c-7e03-b7c1-a5a0e784d7f1",
+            "status": "approved",
+            "method": "qr",
+            "amountSatang": 17500
+          }
+        ],
+        "postsAfterContinue": [
+          {
+            "path": "/api/sales/:id/finalise",
+            "method": "none",
+            "kind": "other"
+          }
+        ]
+      }
+    },
+    "qr-created-paid-during-lock": {
+      "verdict": "PASSED",
+      "pictures": [
+        "final/06-qr-created-and-paid-while-locked.png"
+      ],
+      "seen": {
+        "saleId": "01a1d666-5fe4-77b5-9771-097881fb1e6a",
+        "status": "finalised",
+        "stationSaleCount": 4,
+        "soldBy": {
+          "accountId": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+          "name": "ZZ TEST 964 A"
+        },
+        "attempts": [
+          {
+            "id": "01a1d666-6a96-7262-8392-9dcfbecbd25c",
+            "status": "approved",
+            "method": "qr",
+            "amountSatang": 104000
+          }
+        ],
+        "postsAfterContinue": [],
+        "initialAttemptsBeforeLock": 0
+      }
+    },
+    "genuine-cart-correction": {
+      "verdict": "PASSED",
+      "pictures": [
+        "final/08a-cart-before-quantity-edit.png",
+        "final/08b-cart-corrected-cash-receipt.png"
+      ],
+      "seen": {
+        "oldSaleId": "01a1d667-06bf-700b-a95d-df37dcae72e5",
+        "newSaleId": "01a1d667-082f-7e65-af9a-9327d6ea1de3",
+        "oldStatus": "voided",
+        "newStatus": "finalised",
+        "oldGrossSatang": 104000,
+        "newGrossSatang": 139000,
+        "oldPay": "Pay \u0e3f1040",
+        "correctedPay": "Pay \u0e3f1390",
+        "stationSaleCount": 6,
+        "soldBy": {
+          "accountId": "01a1d2f9-710f-7e6e-bb8e-d8f17975d09f",
+          "name": "ZZ TEST 964 B"
+        },
+        "lines": [
+          {
+            "id": "01a1d667-082f-7f4e-93e6-5759db349b98",
+            "lineNo": 1,
+            "cartLineId": "01a1d667-06bd-74da-8e7a-ce66d5e713a2",
+            "kind": "kids",
+            "label": "Kids",
+            "componentKey": "kids",
+            "ticketPackageId": "01a0bbdc-8cc2-7d1c-a8bf-09c2552eb6bc",
+            "productId": null,
+            "revenueCategory": "tickets",
+            "taxableCategory": "tickets",
+            "quantity": 1,
+            "unitSatang": 69000,
+            "baseSatang": 69000,
+            "discountSatang": 0,
+            "netSatang": 64486,
+            "serviceChargeSatang": 0,
+            "taxSatang": 4514,
+            "taxMode": "inclusive",
+            "taxRateBp": 700,
+            "taxName": "VAT",
+            "grossSatang": 69000,
+            "customerTier": "tourist",
+            "kidCount": 1,
+            "adultCount": 2,
+            "freeAdultCount": 0,
+            "stayHours": 1,
+            "stayDurationLabel": "1 Hour",
+            "modifiers": null,
+            "note": null,
+            "variant": null,
+            "prepStation": null,
+            "variantBreakdown": null,
+            "prepaid": null,
+            "holderCheckinId": null,
+            "supervised": false,
+            "childName": null
+          },
+          {
+            "id": "01a1d667-082f-7814-94a3-7ee710cc95da",
+            "lineNo": 2,
+            "cartLineId": "01a1d667-06bd-74da-8e7a-ce66d5e713a2",
+            "kind": "adults_paid",
+            "label": "Adults",
+            "componentKey": "adults",
+            "ticketPackageId": "01a0bbdc-8cc2-7d1c-a8bf-09c2552eb6bc",
+            "productId": null,
+            "revenueCategory": "tickets",
+            "taxableCategory": "tickets",
+            "quantity": 2,
+            "unitSatang": 35000,
+            "baseSatang": 70000,
+            "discountSatang": 0,
+            "netSatang": 65421,
+            "serviceChargeSatang": 0,
+            "taxSatang": 4579,
+            "taxMode": "inclusive",
+            "taxRateBp": 700,
+            "taxName": "VAT",
+            "grossSatang": 70000,
+            "customerTier": "tourist",
+            "kidCount": 1,
+            "adultCount": 2,
+            "freeAdultCount": 0,
+            "stayHours": 1,
+            "stayDurationLabel": "1 Hour",
+            "modifiers": null,
+            "note": null,
+            "variant": null,
+            "prepStation": null,
+            "variantBreakdown": null,
+            "prepaid": null,
+            "holderCheckinId": null,
+            "supervised": false,
+            "childName": null
+          }
+        ],
+        "attempts": [
+          {
+            "id": "01a1d667-0c34-7f95-9b67-4d8cf0ce2c4f",
+            "status": "approved",
+            "method": "cash",
+            "amountSatang": 139000
+          }
+        ]
+      }
+    }
+  },
+  "sourceBefore": {
+    "at": "2026-11-13T19:17:51.451Z",
+    "expected": "3e29803bf0d2c935a9a0c23f76c60c4182bcc104",
+    "assets": [
+      {
+        "path": "/assets/index-CYejgRrr.js",
+        "status": 200,
+        "sha256Parts": [
+          "231522173e678ecb2ad6dabd670ed3af",
+          "96f7f38a77291430d7cb30788ca79090"
+        ]
+      }
+    ]
+  },
+  "sourceAfter": {
+    "at": "2026-11-13T19:35:05.040Z",
+    "expected": "3e29803bf0d2c935a9a0c23f76c60c4182bcc104",
+    "assets": [
+      {
+        "path": "/assets/index-CYejgRrr.js",
+        "status": 200,
+        "sha256Parts": [
+          "231522173e678ecb2ad6dabd670ed3af",
+          "96f7f38a77291430d7cb30788ca79090"
+        ]
+      }
+    ]
+  },
+  "cleanup": {
+    "finalMoney": {
+      "at": "2026-11-13T19:35:34.366Z",
+      "rows": [
+        {
+          "id": "01a1d667-082f-7e65-af9a-9327d6ea1de3",
+          "stationId": "01a1d656-e1d2-7664-af9d-17831c80a710",
+          "status": "refunded",
+          "refundStatus": "refunded",
+          "refundedSatang": 139000
+        },
+        {
+          "id": "01a1d667-06bf-700b-a95d-df37dcae72e5",
+          "stationId": "01a1d656-e1d2-7664-af9d-17831c80a710",
+          "status": "voided",
+          "attempts": 0
+        },
+        {
+          "id": "01a1d666-5fe4-77b5-9771-097881fb1e6a",
+          "stationId": "01a1d656-e1d2-7664-af9d-17831c80a710",
+          "status": "refunded",
+          "refundStatus": "refunded",
+          "refundedSatang": 104000
+        },
+        {
+          "id": "01a1d65c-f1d4-7bd0-a7bf-68ea5e1896a3",
+          "stationId": "01a1d656-e1d2-7664-af9d-17831c80a710",
+          "status": "refunded",
+          "refundStatus": "refunded",
+          "refundedSatang": 6500
+        },
+        {
+          "id": "01a1d65a-04d3-7281-b402-35cb7ac1235d",
+          "stationId": "01a1d656-e1d2-7664-af9d-17831c80a710",
+          "status": "refunded",
+          "refundStatus": "refunded",
+          "refundedSatang": 17500
+        },
+        {
+          "id": "01a1d658-4dd9-7698-af66-4eb7b4ff5a66",
+          "stationId": "01a1d656-e1d2-7664-af9d-17831c80a710",
+          "status": "refunded",
+          "refundStatus": "refunded",
+          "refundedSatang": 104000
+        },
+        {
+          "id": "01a1d665-abfb-7cac-a729-0198cf75ca61",
+          "stationId": "01a1d656-e2c4-7ca7-ae7d-764989f88877",
+          "status": "refunded",
+          "refundStatus": "refunded",
+          "refundedSatang": 17500
+        },
+        {
+          "id": "01a1d664-971e-7be7-899c-9eae103f2b6b",
+          "stationId": "01a1d656-e2c4-7ca7-ae7d-764989f88877",
+          "status": "refunded",
+          "refundStatus": "refunded",
+          "refundedSatang": 104000
+        },
+        {
+          "id": "01a1d65f-2395-7572-9488-e54373f0256f",
+          "stationId": "01a1d656-e3d3-73f9-af04-901726a734a0",
+          "status": "voided",
+          "attempts": [
+            {
+              "id": "01a1d65f-28d6-7127-ad02-1b39691a1584",
+              "status": "declined",
+              "method": "card"
+            }
+          ]
+        }
+      ],
+      "refundedSatang": 492500,
+      "paidRows": 7,
+      "voidedRows": 2
+    },
+    "finalFixtures": {
+      "at": "2026-11-13T19:35:54.654Z",
+      "stations": [
+        {
+          "id": "01a1d656-e1d2-7664-af9d-17831c80a710",
+          "name": "ZZ TEST SCRUM-982 final desk till 1794597379646",
+          "archived": true,
+          "devices": 0
+        },
+        {
+          "id": "01a1d656-e2c4-7ca7-ae7d-764989f88877",
+          "name": "ZZ TEST SCRUM-982 final phone till 1794597379853",
+          "archived": true,
+          "devices": 0
+        },
+        {
+          "id": "01a1d656-e3d3-73f9-af04-901726a734a0",
+          "name": "ZZ TEST SCRUM-982 final card till 1794597380167",
+          "archived": true,
+          "devices": 0
+        }
+      ],
+      "accounts": [
+        {
+          "id": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+          "name": "ZZ TEST 964 A",
+          "status": "inactive",
+          "liveSessions": 0,
+          "totalSessions": 25,
+          "signInStatus": 401
+        },
+        {
+          "id": "01a1d2f9-710f-7e6e-bb8e-d8f17975d09f",
+          "name": "ZZ TEST 964 B",
+          "status": "inactive",
+          "liveSessions": 0,
+          "totalSessions": 19,
+          "signInStatus": 401
+        }
+      ],
+      "sessions": [
+        {
+          "label": "desk-final",
+          "signOut": 200,
+          "meAfter": 401
+        },
+        {
+          "label": "card-final",
+          "signOut": 200,
+          "meAfter": 401
+        },
+        {
+          "label": "phone-final",
+          "signOut": 200,
+          "meAfter": 401
+        }
+      ],
+      "terminal": {
+        "id": "7c5abeba-c737-4c6b-9bff-8d97ed4bff42",
+        "label": "ZZ TEST SCRUM-982 card terminal 1794578753622",
+        "archived": true,
+        "transport": "simulated"
+      }
+    },
+    "independent": {
+      "at": "2026-11-13T19:36:25.556Z",
+      "money": [
+        {
+          "id": "01a1d667-082f-7e65-af9a-9327d6ea1de3",
+          "status": "refunded",
+          "refundStatus": "refunded",
+          "refunds": [
+            {
+              "id": "01a1d668-76b9-784b-a694-be6cde29e1cd",
+              "amountSatang": 139000
+            }
+          ],
+          "allocations": []
+        },
+        {
+          "id": "01a1d667-06bf-700b-a95d-df37dcae72e5",
+          "status": "voided",
+          "refundStatus": "none",
+          "refunds": [],
+          "allocations": []
+        },
+        {
+          "id": "01a1d666-5fe4-77b5-9771-097881fb1e6a",
+          "status": "refunded",
+          "refundStatus": "refunded",
+          "refunds": [
+            {
+              "id": "01a1d668-77fe-7194-a680-c903263feb21",
+              "amountSatang": 104000
+            }
+          ],
+          "allocations": []
+        },
+        {
+          "id": "01a1d65c-f1d4-7bd0-a7bf-68ea5e1896a3",
+          "status": "refunded",
+          "refundStatus": "refunded",
+          "refunds": [
+            {
+              "id": "01a1d668-794d-7859-a3f0-89fbb4b1a16e",
+              "amountSatang": 6500
+            }
+          ],
+          "allocations": []
+        },
+        {
+          "id": "01a1d65a-04d3-7281-b402-35cb7ac1235d",
+          "status": "refunded",
+          "refundStatus": "refunded",
+          "refunds": [
+            {
+              "id": "01a1d668-7a6c-70f1-bea4-eddd86050da5",
+              "amountSatang": 17500
+            }
+          ],
+          "allocations": []
+        },
+        {
+          "id": "01a1d658-4dd9-7698-af66-4eb7b4ff5a66",
+          "status": "refunded",
+          "refundStatus": "refunded",
+          "refunds": [
+            {
+              "id": "01a1d668-7b62-7834-9200-7fc058f4a46c",
+              "amountSatang": 104000
+            }
+          ],
+          "allocations": []
+        },
+        {
+          "id": "01a1d665-abfb-7cac-a729-0198cf75ca61",
+          "status": "refunded",
+          "refundStatus": "refunded",
+          "refunds": [
+            {
+              "id": "01a1d668-7ca3-73e6-aafc-694efd3c15f6",
+              "amountSatang": 17500
+            }
+          ],
+          "allocations": []
+        },
+        {
+          "id": "01a1d664-971e-7be7-899c-9eae103f2b6b",
+          "status": "refunded",
+          "refundStatus": "refunded",
+          "refunds": [
+            {
+              "id": "01a1d668-7dd2-74cf-9fb8-30b64f2ab71a",
+              "amountSatang": 104000
+            }
+          ],
+          "allocations": []
+        },
+        {
+          "id": "01a1d65f-2395-7572-9488-e54373f0256f",
+          "status": "voided",
+          "refundStatus": "none",
+          "refunds": [],
+          "allocations": []
+        }
+      ],
+      "display": [
+        {
+          "id": "01a1d4fd-6e09-7ff8-a64d-8c5f09837f53",
+          "revokedAt": "2026-11-13T13:59:45.816Z",
+          "connection": null
+        },
+        {
+          "id": "01a1d658-3de4-747f-b6c7-5ee2d543ec55",
+          "revokedAt": "2026-11-13T19:33:12.528Z",
+          "connection": null
+        }
+      ],
+      "refundKeys": [
+        "timeExtension",
+        "sale",
+        "correctionBandShortCode",
+        "refundStatus",
+        "refundableSatang",
+        "refunds",
+        "printJobs",
+        "bands",
+        "grants",
+        "issuedVouchers",
+        "pickupCode",
+        "attempts",
+        "taxBreakdown",
+        "taxConfig",
+        "lines",
+        "discounts"
+      ],
+      "settledRefunds": [
+        {
+          "saleId": "01a1d667-082f-7e65-af9a-9327d6ea1de3",
+          "refundId": "01a1d668-76b9-784b-a694-be6cde29e1cd",
+          "pending": false,
+          "amountSatang": 139000,
+          "tenderAllocation": [
+            {
+              "route": "cash",
+              "method": "cash",
+              "status": "done",
+              "provider": "manual",
+              "attemptId": "01a1d667-0c34-7f95-9b67-4d8cf0ce2c4f",
+              "methodCode": "cash",
+              "amountSatang": 139000
+            }
+          ]
+        },
+        {
+          "saleId": "01a1d666-5fe4-77b5-9771-097881fb1e6a",
+          "refundId": "01a1d668-77fe-7194-a680-c903263feb21",
+          "pending": false,
+          "amountSatang": 104000,
+          "tenderAllocation": [
+            {
+              "route": "gateway_refund",
+              "detail": "Voided at the gateway",
+              "method": "qr",
+              "status": "done",
+              "provider": "simulator",
+              "respCode": "00",
+              "attemptId": "01a1d666-6a96-7262-8392-9dcfbecbd25c",
+              "settledAt": "2026-11-13T19:35:33.143Z",
+              "methodCode": "qr",
+              "processType": "V",
+              "providerRef": "SIMRF321B0EAAA4",
+              "amountSatang": 104000
+            }
+          ]
+        },
+        {
+          "saleId": "01a1d65c-f1d4-7bd0-a7bf-68ea5e1896a3",
+          "refundId": "01a1d668-794d-7859-a3f0-89fbb4b1a16e",
+          "pending": false,
+          "amountSatang": 6500,
+          "tenderAllocation": [
+            {
+              "route": "gateway_refund",
+              "detail": "Voided at the gateway",
+              "method": "qr",
+              "status": "done",
+              "provider": "simulator",
+              "respCode": "00",
+              "attemptId": "01a1d65c-f5db-76ba-a4da-511a883ff1c7",
+              "settledAt": "2026-11-13T19:35:33.470Z",
+              "methodCode": "promptpay",
+              "processType": "V",
+              "providerRef": "SIMRFED0F1D84F4",
+              "amountSatang": 6500
+            }
+          ]
+        },
+        {
+          "saleId": "01a1d65a-04d3-7281-b402-35cb7ac1235d",
+          "refundId": "01a1d668-7a6c-70f1-bea4-eddd86050da5",
+          "pending": false,
+          "amountSatang": 17500,
+          "tenderAllocation": [
+            {
+              "route": "cash",
+              "method": "cash",
+              "status": "done",
+              "provider": "manual",
+              "attemptId": "01a1d65a-1a01-709f-8a88-cfb84e3d6a7f",
+              "methodCode": "cash",
+              "amountSatang": 17500
+            }
+          ]
+        },
+        {
+          "saleId": "01a1d658-4dd9-7698-af66-4eb7b4ff5a66",
+          "refundId": "01a1d668-7b62-7834-9200-7fc058f4a46c",
+          "pending": false,
+          "amountSatang": 104000,
+          "tenderAllocation": [
+            {
+              "route": "gateway_refund",
+              "detail": "Voided at the gateway",
+              "method": "qr",
+              "status": "done",
+              "provider": "simulator",
+              "respCode": "00",
+              "attemptId": "01a1d658-532f-753b-8601-368f8b4bd155",
+              "settledAt": "2026-11-13T19:35:34.004Z",
+              "methodCode": "promptpay",
+              "processType": "V",
+              "providerRef": "SIMRF145C33D983",
+              "amountSatang": 104000
+            }
+          ]
+        },
+        {
+          "saleId": "01a1d665-abfb-7cac-a729-0198cf75ca61",
+          "refundId": "01a1d668-7ca3-73e6-aafc-694efd3c15f6",
+          "pending": false,
+          "amountSatang": 17500,
+          "tenderAllocation": [
+            {
+              "route": "gateway_refund",
+              "detail": "Voided at the gateway",
+              "method": "qr",
+              "status": "done",
+              "provider": "simulator",
+              "respCode": "00",
+              "attemptId": "01a1d665-b00c-7e03-b7c1-a5a0e784d7f1",
+              "settledAt": "2026-11-13T19:35:34.324Z",
+              "methodCode": "promptpay",
+              "processType": "V",
+              "providerRef": "SIMRFFC8EC0D81B",
+              "amountSatang": 17500
+            }
+          ]
+        },
+        {
+          "saleId": "01a1d664-971e-7be7-899c-9eae103f2b6b",
+          "refundId": "01a1d668-7dd2-74cf-9fb8-30b64f2ab71a",
+          "pending": false,
+          "amountSatang": 104000,
+          "tenderAllocation": [
+            {
+              "route": "cash",
+              "method": "cash",
+              "status": "done",
+              "provider": "manual",
+              "attemptId": "01a1d665-47a1-7cc8-a99d-a6d01a43afb2",
+              "methodCode": "cash",
+              "amountSatang": 104000
+            }
+          ]
+        }
+      ]
+    },
+    "finalManager": {
+      "signOut": 200,
+      "meAfter": 401
+    },
+    "finalAdmin": {
+      "signOut": 200,
+      "meAfter": 401,
+      "browserClosed": true,
+      "at": "2026-11-13T19:37:28.559Z"
+    }
+  },
+  "limits": [
+    "Simulated QR gateway and own simulated terminal; no real bank, physical terminal/printer or park device acceptance.",
+    "Existing paired-display held-minute lease can retain its previous screen; the local till can continue and its own lease hint is visible.",
+    "No new native acceptance for owner-held SCRUM-981 choices, app-view collision or shared End-of-Day composer.",
+    "Two earlier CI failures and their unchanged local reproductions remain in this folder."
+  ]
+}

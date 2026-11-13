@@ -1,25 +1,55 @@
 {
-  "head": "dff15bc27013edee5f9d43b58b4210460da6c331",
+  "head": "3e29803bf0d2c935a9a0c23f76c60c4182bcc104",
   "branch": "lane/codex-payment-handover-20261113",
-  "stagedProduct": "157d6cb24d1764dea4d5356615942882f2970e7c",
-  "sourceRepair": "root reviewed and approved 14 November 2026; landing authorized",
+  "stagedProduct": "3e29803bf0d2c935a9a0c23f76c60c4182bcc104",
+  "sourceRepair": "root reviewed and approved 14 November 2026; landed after clean rebase and commit-list inspection",
   "validation": "cart-scope-validation.json",
+  "nativeProof": "8/8 passed; final/summary.json",
   "driver": {
     "port": 47982,
-    "pty": 24721,
+    "running": false,
     "browserOpen": false,
-    "secrets": "memory only"
+    "secrets": "destroyed with driver exit; never recorded"
   },
   "cleanup": {
-    "refundedSatang": 353500,
-    "paidSalesRefunded": 6,
-    "unpaidSalesVoided": 1,
-    "stationsArchived": 3,
-    "displayRevoked": true,
-    "browserContextsClosed401": 3,
+    "finalRefundedSatang": 492500,
+    "finalPaidSalesRefunded": 7,
+    "finalUnpaidSalesVoided": 2,
+    "allOldFinalStationsArchived": 6,
+    "displayCredentialsRevoked": 2,
+    "simulatedTerminalArchived": true,
+    "proofStaffInactive": true,
     "proofStaffLiveSessions": 0,
-    "retainedOwnUnassignedSimulatorTerminal": true
+    "nativeManagerAdminReadback401": true
   },
-  "next": "land after clean rebase, deploy both named tills, full-SHA CI and fresh final-source native matrix",
-  "stage3": "not released"
+  "sourceCI": {
+    "run": 43489637902,
+    "sha": "3e29803bf0d2c935a9a0c23f76c60c4182bcc104",
+    "state": "five jobs green; API shard 3 running"
+  },
+  "jira": "982 and 964 ready for Testing evidence publication; Deployed awaits final source CI. 981 remains In Progress.",
+  "unselectedHistoricalImages": {
+    "archive": "C:\\oto-lanes\\audit-takeover-20261113\\982-unselected-native",
+    "files": [
+      "01a-ticket-A-waiting-qr.png",
+      "02a-fnb-B-waiting-qr.png",
+      "02b-fnb-A-continued-qr.png",
+      "02c-fnb-A-cash-same-sale.png",
+      "03a-shop-A-waiting-qr.png",
+      "03b-shop-B-continued-qr.png",
+      "03c-shop-B-paid-qr.png",
+      "04a-phone-ticket-A-waiting-qr.png",
+      "04b-phone-ticket-B-continued-qr.png",
+      "04d-phone-ticket-B-continued-staff-qr.png",
+      "04e-phone-ticket-B-cash-same-sale.png",
+      "04f-phone-ticket-B-cash-clean.png",
+      "05a-phone-fnb-B-waiting-qr.png",
+      "05b-phone-fnb-A-continued-qr.png",
+      "05c-phone-fnb-A-paid-qr.png",
+      "06-qr-created-and-paid-while-locked.png",
+      "final/01a-ticket-A-waiting-qr.png"
+    ]
+  },
+  "next": "commit inspected evidence, publish Jira and read back; finish exact-source CI, close 982/964 to Deployed, then release approved stage 3",
+  "stage3": "not released until final CI and Jira readback"
 }

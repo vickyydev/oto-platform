@@ -1,0 +1,22 @@
+{
+  "source": "3e29803bf0d2c935a9a0c23f76c60c4182bcc104",
+  "inspectedAt": "2026-11-13T19:38:00Z",
+  "images": [
+    "final/01b-ticket-B-continued-qr.png",
+    "final/01c-ticket-B-paid-qr.png",
+    "final/02a-fnb-A-continued-qr.png",
+    "final/02b-fnb-A-cash-same-sale.png",
+    "final/03a-shop-B-continued-qr.png",
+    "final/03b-shop-B-paid-qr.png",
+    "final/04a-phone-ticket-B-continued-qr.png",
+    "final/04b-phone-ticket-B-cash-same-sale.png",
+    "final/05a-phone-fnb-A-continued-qr.png",
+    "final/05b-phone-fnb-A-paid-qr.png",
+    "final/06-qr-created-and-paid-while-locked.png",
+    "final/07-card-B-continued-waiting.png",
+    "final/08a-cart-before-quantity-edit.png",
+    "final/08b-cart-corrected-cash-receipt.png",
+    "final/09-proof-cleanup-card.png"
+  ],
+  "result": "All selected native images were opened and inspected. Payment and benefit QR blocks are masked; receipts, amounts and true methods remain readable. Phone toasts cover part of the heading in two captures, with receipt/method still visible. Paired displays can remain on the prior payment during the existing held-minute lease; no immediate display-refresh acceptance is claimed."
+}

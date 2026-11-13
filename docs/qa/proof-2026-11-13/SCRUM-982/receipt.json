@@ -3,7 +3,7 @@
     "SCRUM-982",
     "SCRUM-981 scoped reliability"
   ],
-  "sha": "157d6cb24d1764dea4d5356615942882f2970e7c",
+  "sha": "3e29803bf0d2c935a9a0c23f76c60c4182bcc104",
   "startedAt": "2026-11-13T12:55:34.361Z",
   "deploysAtStart": {
     "readAt": "2026-11-13T12:58:05.746Z",
@@ -208,7 +208,12 @@
       "0898988210",
       "0898988211",
       "0898988212",
-      "0898988213"
+      "0898988213",
+      "0898988214",
+      "0898988215",
+      "0898988216",
+      "0898988217",
+      "0898988218"
     ]
   },
   "created": [
@@ -303,33 +308,132 @@
       "stationId": "01a1d53a-ac20-73cf-b851-591d91d64f68",
       "label": "card",
       "phase": "Fresh simulated card terminal and a single waiting card sale"
+    },
+    {
+      "kind": "station",
+      "id": "01a1d656-e1d2-7664-af9d-17831c80a710",
+      "name": "ZZ TEST SCRUM-982 final desk till 1794597379646",
+      "prefix": "Z98204",
+      "paymentRouting": {
+        "card": "manual",
+        "qr": "gateway"
+      }
+    },
+    {
+      "kind": "station",
+      "id": "01a1d656-e2c4-7ca7-ae7d-764989f88877",
+      "name": "ZZ TEST SCRUM-982 final phone till 1794597379853",
+      "prefix": "Z98205",
+      "paymentRouting": {
+        "card": "manual",
+        "qr": "gateway"
+      }
+    },
+    {
+      "kind": "station",
+      "id": "01a1d656-e3d3-73f9-af04-901726a734a0",
+      "name": "ZZ TEST SCRUM-982 final card till 1794597380167",
+      "prefix": "Z98206",
+      "paymentRouting": {
+        "card": "card_terminal",
+        "qr": "none"
+      }
+    },
+    {
+      "kind": "display",
+      "label": "final-desk",
+      "id": "01a1d658-3de4-747f-b6c7-5ee2d543ec55",
+      "station": "01a1d656-e1d2-7664-af9d-17831c80a710"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1d658-4dd9-7698-af66-4eb7b4ff5a66",
+      "stationId": "01a1d656-e1d2-7664-af9d-17831c80a710",
+      "label": "desk-final",
+      "phase": "Final source: native asset identity and desktop ticket waiting QR"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1d65a-04d3-7281-b402-35cb7ac1235d",
+      "stationId": "01a1d656-e1d2-7664-af9d-17831c80a710",
+      "label": "desk-final",
+      "phase": "Final F&B: B waits on QR, A cancels it and takes Cash on the same sale"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1d65c-f1d4-7bd0-a7bf-68ea5e1896a3",
+      "stationId": "01a1d656-e1d2-7664-af9d-17831c80a710",
+      "label": "desk-final",
+      "phase": "Final Shop: choose the visible product directly and finish QR handover"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1d65f-2395-7572-9488-e54373f0256f",
+      "stationId": "01a1d656-e3d3-73f9-af04-901726a734a0",
+      "label": "card-final",
+      "phase": "Final waiting-card case: B continues A's single unresolved terminal payment"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1d664-971e-7be7-899c-9eae103f2b6b",
+      "stationId": "01a1d656-e2c4-7ca7-ae7d-764989f88877",
+      "label": "phone-final",
+      "phase": "Final phone ticket: A starts QR, B cancels it and records Cash"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1d665-abfb-7cac-a729-0198cf75ca61",
+      "stationId": "01a1d656-e2c4-7ca7-ae7d-764989f88877",
+      "label": "phone-final",
+      "phase": "Final phone F&B: B starts QR, A continues the same paid order"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1d666-5fe4-77b5-9771-097881fb1e6a",
+      "stationId": "01a1d656-e1d2-7664-af9d-17831c80a710",
+      "label": "desk-final",
+      "phase": "Final late-QR case: no attempt before lock, payment arrives while locked"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1d667-06bf-700b-a95d-df37dcae72e5",
+      "stationId": "01a1d656-e1d2-7664-af9d-17831c80a710",
+      "label": "desk-final",
+      "phase": "Final corrected-cart case: replace the unpaid charge after a genuine quantity edit"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1d667-082f-7e65-af9a-9327d6ea1de3",
+      "stationId": "01a1d656-e1d2-7664-af9d-17831c80a710",
+      "label": "desk-final",
+      "phase": "Final corrected-cart case: replace the unpaid charge after a genuine quantity edit"
     }
   ],
   "points": {
     "desktop-ticket-paid-qr": {
       "verdict": "PASSED",
       "pictures": [
-        "01a-ticket-A-waiting-qr.png",
-        "01b-ticket-B-continued-waiting-qr.png",
-        "01c-ticket-B-paid-qr-actual-label.png"
+        "final/01b-ticket-B-continued-qr.png",
+        "final/01c-ticket-B-paid-qr.png"
       ],
       "seen": {
-        "saleId": "01a1d500-2c19-7232-90d4-4d18ba6d4aa3",
+        "saleId": "01a1d658-4dd9-7698-af66-4eb7b4ff5a66",
         "status": "finalised",
-        "saleCount": 1,
+        "receipt": "Z98204-000001",
         "soldBy": {
           "accountId": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
           "name": "ZZ TEST 964 A"
         },
+        "stationSaleCount": 1,
         "attempts": [
           {
-            "id": "01a1d500-305e-7743-bef5-e5512919b633",
+            "id": "01a1d658-532f-753b-8601-368f8b4bd155",
             "status": "approved",
             "method": "qr",
             "amountSatang": 104000
           }
         ],
-        "writesAfterContinue": [
+        "postsAfterContinue": [
           {
             "path": "/api/sales/:id/finalise",
             "method": "none",
@@ -341,59 +445,58 @@
     "desktop-fnb-cancelled-qr-cash": {
       "verdict": "PASSED",
       "pictures": [
-        "02a-fnb-B-waiting-qr.png",
-        "02b-fnb-A-continued-qr.png",
-        "02c-fnb-A-cash-same-sale.png"
+        "final/02a-fnb-A-continued-qr.png",
+        "final/02b-fnb-A-cash-same-sale.png"
       ],
       "seen": {
-        "saleId": "01a1d522-20a9-7161-a0b9-2f5cf6e958f8",
+        "saleId": "01a1d65a-04d3-7281-b402-35cb7ac1235d",
         "status": "finalised",
-        "stationSaleCount": 2,
+        "receipt": "Z98204-000002",
         "soldBy": {
           "accountId": "01a1d2f9-710f-7e6e-bb8e-d8f17975d09f",
           "name": "ZZ TEST 964 B"
         },
+        "stationSaleCount": 2,
         "attempts": [
           {
-            "id": "01a1d522-248d-78bb-b769-0d5e1b92025f",
+            "id": "01a1d65a-09b7-7d64-aabe-2b5c84d4026c",
             "status": "cancelled",
             "method": "qr",
             "amountSatang": 17500
           },
           {
-            "id": "01a1d522-9cf1-7ca0-b5b1-17a45b9677cd",
+            "id": "01a1d65a-1a01-709f-8a88-cfb84e3d6a7f",
             "status": "approved",
             "method": "cash",
             "amountSatang": 17500
           }
-        ],
-        "label": "Total ฿175 Cash ฿175 Thank you"
+        ]
       }
     },
     "desktop-shop-paid-qr": {
       "verdict": "PASSED",
       "pictures": [
-        "03a-shop-A-waiting-qr.png",
-        "03b-shop-B-continued-qr.png",
-        "03c-shop-B-paid-qr.png"
+        "final/03a-shop-B-continued-qr.png",
+        "final/03b-shop-B-paid-qr.png"
       ],
       "seen": {
-        "saleId": "01a1d525-17eb-7418-bc46-f7ef87e38db4",
+        "saleId": "01a1d65c-f1d4-7bd0-a7bf-68ea5e1896a3",
         "status": "finalised",
-        "stationSaleCount": 3,
+        "receipt": "Z98204-000003",
         "soldBy": {
           "accountId": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
           "name": "ZZ TEST 964 A"
         },
+        "stationSaleCount": 3,
         "attempts": [
           {
-            "id": "01a1d525-1b17-7541-bad5-a34d83f1b8ef",
+            "id": "01a1d65c-f5db-76ba-a4da-511a883ff1c7",
             "status": "approved",
             "method": "qr",
             "amountSatang": 6500
           }
         ],
-        "writesAfterContinue": [
+        "postsAfterContinue": [
           {
             "path": "/api/sales/:id/finalise",
             "method": "none",
@@ -402,14 +505,34 @@
         ]
       }
     },
+    "waiting-card-handover": {
+      "verdict": "PASSED",
+      "pictures": [
+        "final/07-card-B-continued-waiting.png"
+      ],
+      "seen": {
+        "saleId": "01a1d65f-2395-7572-9488-e54373f0256f",
+        "attemptId": "01a1d65f-28d6-7127-ad02-1b39691a1584",
+        "status": "sent_to_terminal",
+        "method": "card",
+        "route": "card_terminal",
+        "stationSaleCount": 1,
+        "soldBy": {
+          "accountId": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+          "name": "ZZ TEST 964 A"
+        },
+        "postsAfterContinue": [],
+        "limits": "Own simulated NEXGO terminal deliberately returns no response; no physical hardware or bank acceptance"
+      }
+    },
     "phone-ticket-cancelled-qr-cash": {
       "verdict": "PASSED",
       "pictures": [
-        "04d-phone-ticket-B-continued-staff-qr.png",
-        "04f-phone-ticket-B-cash-clean.png"
+        "final/04a-phone-ticket-B-continued-qr.png",
+        "final/04b-phone-ticket-B-cash-same-sale.png"
       ],
       "seen": {
-        "saleId": "01a1d526-2a77-70ff-a672-e72ca7917cbf",
+        "saleId": "01a1d664-971e-7be7-899c-9eae103f2b6b",
         "status": "finalised",
         "stationSaleCount": 1,
         "soldBy": {
@@ -418,30 +541,36 @@
         },
         "attempts": [
           {
-            "id": "01a1d526-2ea9-777a-8595-76c90c95bdb2",
+            "id": "01a1d664-9c6a-7371-9cf0-c2a9398ca21c",
             "status": "cancelled",
             "method": "qr",
             "amountSatang": 104000
           },
           {
-            "id": "01a1d52a-3b87-7403-9a69-130f9078fd4c",
+            "id": "01a1d665-47a1-7cc8-a99d-a6d01a43afb2",
             "status": "approved",
             "method": "cash",
             "amountSatang": 104000
           }
         ],
-        "phoneFlow": "Continue retained the hand-to-family prompt; Customer is ready and Done returned to staff; Cash was selected after QR cancellation completed"
+        "postsAfterContinue": [
+          {
+            "path": "/api/sales/:id/finalise",
+            "method": "cash",
+            "kind": "cash"
+          }
+        ],
+        "harnessNote": "The first Cash click occurred while QR cancellation was settling and was ignored. API cancellation was then confirmed before selecting Cash; no payment was duplicated."
       }
     },
     "phone-fnb-paid-qr": {
       "verdict": "PASSED",
       "pictures": [
-        "05a-phone-fnb-B-waiting-qr.png",
-        "05b-phone-fnb-A-continued-qr.png",
-        "05c-phone-fnb-A-paid-qr.png"
+        "final/05a-phone-fnb-A-continued-qr.png",
+        "final/05b-phone-fnb-A-paid-qr.png"
       ],
       "seen": {
-        "saleId": "01a1d52f-a657-763e-b86b-fd49560a4488",
+        "saleId": "01a1d665-abfb-7cac-a729-0198cf75ca61",
         "status": "finalised",
         "stationSaleCount": 2,
         "soldBy": {
@@ -450,10 +579,17 @@
         },
         "attempts": [
           {
-            "id": "01a1d52f-a980-73a7-a624-3e26464873c2",
+            "id": "01a1d665-b00c-7e03-b7c1-a5a0e784d7f1",
             "status": "approved",
             "method": "qr",
             "amountSatang": 17500
+          }
+        ],
+        "postsAfterContinue": [
+          {
+            "path": "/api/sales/:id/finalise",
+            "method": "none",
+            "kind": "other"
           }
         ]
       }
@@ -461,12 +597,11 @@
     "qr-created-paid-during-lock": {
       "verdict": "PASSED",
       "pictures": [
-        "06-qr-created-and-paid-while-locked.png"
+        "final/06-qr-created-and-paid-while-locked.png"
       ],
       "seen": {
-        "saleId": "01a1d535-cce5-7882-9432-2538e7af493f",
+        "saleId": "01a1d666-5fe4-77b5-9771-097881fb1e6a",
         "status": "finalised",
-        "receiptNumber": "Z98201-000004",
         "stationSaleCount": 4,
         "soldBy": {
           "accountId": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
@@ -474,83 +609,200 @@
         },
         "attempts": [
           {
-            "id": "01a1d535-d6a4-768b-85c5-163d77f0a244",
+            "id": "01a1d666-6a96-7262-8392-9dcfbecbd25c",
             "status": "approved",
             "method": "qr",
             "amountSatang": 104000
           }
         ],
-        "writesAfterContinue": [],
-        "initialAttemptsBeforeLock": 0,
-        "issuance": "receipt and credit grant present after the existing asynchronous issuance read"
+        "postsAfterContinue": [],
+        "initialAttemptsBeforeLock": 0
+      }
+    },
+    "genuine-cart-correction": {
+      "verdict": "PASSED",
+      "pictures": [
+        "final/08a-cart-before-quantity-edit.png",
+        "final/08b-cart-corrected-cash-receipt.png"
+      ],
+      "seen": {
+        "oldSaleId": "01a1d667-06bf-700b-a95d-df37dcae72e5",
+        "newSaleId": "01a1d667-082f-7e65-af9a-9327d6ea1de3",
+        "oldStatus": "voided",
+        "newStatus": "finalised",
+        "oldGrossSatang": 104000,
+        "newGrossSatang": 139000,
+        "oldPay": "Pay ฿1040",
+        "correctedPay": "Pay ฿1390",
+        "stationSaleCount": 6,
+        "soldBy": {
+          "accountId": "01a1d2f9-710f-7e6e-bb8e-d8f17975d09f",
+          "name": "ZZ TEST 964 B"
+        },
+        "lines": [
+          {
+            "id": "01a1d667-082f-7f4e-93e6-5759db349b98",
+            "lineNo": 1,
+            "cartLineId": "01a1d667-06bd-74da-8e7a-ce66d5e713a2",
+            "kind": "kids",
+            "label": "Kids",
+            "componentKey": "kids",
+            "ticketPackageId": "01a0bbdc-8cc2-7d1c-a8bf-09c2552eb6bc",
+            "productId": null,
+            "revenueCategory": "tickets",
+            "taxableCategory": "tickets",
+            "quantity": 1,
+            "unitSatang": 69000,
+            "baseSatang": 69000,
+            "discountSatang": 0,
+            "netSatang": 64486,
+            "serviceChargeSatang": 0,
+            "taxSatang": 4514,
+            "taxMode": "inclusive",
+            "taxRateBp": 700,
+            "taxName": "VAT",
+            "grossSatang": 69000,
+            "customerTier": "tourist",
+            "kidCount": 1,
+            "adultCount": 2,
+            "freeAdultCount": 0,
+            "stayHours": 1,
+            "stayDurationLabel": "1 Hour",
+            "modifiers": null,
+            "note": null,
+            "variant": null,
+            "prepStation": null,
+            "variantBreakdown": null,
+            "prepaid": null,
+            "holderCheckinId": null,
+            "supervised": false,
+            "childName": null
+          },
+          {
+            "id": "01a1d667-082f-7814-94a3-7ee710cc95da",
+            "lineNo": 2,
+            "cartLineId": "01a1d667-06bd-74da-8e7a-ce66d5e713a2",
+            "kind": "adults_paid",
+            "label": "Adults",
+            "componentKey": "adults",
+            "ticketPackageId": "01a0bbdc-8cc2-7d1c-a8bf-09c2552eb6bc",
+            "productId": null,
+            "revenueCategory": "tickets",
+            "taxableCategory": "tickets",
+            "quantity": 2,
+            "unitSatang": 35000,
+            "baseSatang": 70000,
+            "discountSatang": 0,
+            "netSatang": 65421,
+            "serviceChargeSatang": 0,
+            "taxSatang": 4579,
+            "taxMode": "inclusive",
+            "taxRateBp": 700,
+            "taxName": "VAT",
+            "grossSatang": 70000,
+            "customerTier": "tourist",
+            "kidCount": 1,
+            "adultCount": 2,
+            "freeAdultCount": 0,
+            "stayHours": 1,
+            "stayDurationLabel": "1 Hour",
+            "modifiers": null,
+            "note": null,
+            "variant": null,
+            "prepStation": null,
+            "variantBreakdown": null,
+            "prepaid": null,
+            "holderCheckinId": null,
+            "supervised": false,
+            "childName": null
+          }
+        ],
+        "attempts": [
+          {
+            "id": "01a1d667-0c34-7f95-9b67-4d8cf0ce2c4f",
+            "status": "approved",
+            "method": "cash",
+            "amountSatang": 139000
+          }
+        ]
       }
     }
   },
   "reads": {
-    "retiredStaffCensus": [
-      {
-        "who": "A",
-        "id": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
-        "name": "ZZ TEST 964 A",
-        "phone": "+66298964901",
-        "status": "inactive",
-        "liveSessions": 0,
-        "totalSessions": 12
-      },
-      {
-        "who": "B",
-        "id": "01a1d2f9-710f-7e6e-bb8e-d8f17975d09f",
-        "name": "ZZ TEST 964 B",
-        "phone": "+66298964902",
-        "status": "inactive",
-        "liveSessions": 0,
-        "totalSessions": 8
+    "finalPreflight": {
+      "at": "2026-11-13T19:13:54.874Z",
+      "accounts": [
+        {
+          "who": "A",
+          "id": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+          "name": "ZZ TEST 964 A",
+          "status": "active",
+          "liveSessions": 0,
+          "totalSessions": 19
+        },
+        {
+          "who": "B",
+          "id": "01a1d2f9-710f-7e6e-bb8e-d8f17975d09f",
+          "name": "ZZ TEST 964 B",
+          "status": "active",
+          "liveSessions": 0,
+          "totalSessions": 14
+        }
+      ],
+      "terminal": {
+        "id": "7c5abeba-c737-4c6b-9bff-8d97ed4bff42",
+        "label": "ZZ TEST SCRUM-982 card terminal 1794578753622",
+        "archived": false,
+        "transport": "simulated"
       }
-    ],
-    "gateway": {
-      "status": 200,
-      "provider": "simulator",
-      "simulatorAvailable": true,
-      "fellBack": false
+    },
+    "unusedPhones": {
+      "checkedAt": "2026-11-13T19:15:03.476Z",
+      "unused": [],
+      "priorUsed": [
+        "0898988210",
+        "0898988211",
+        "0898988212",
+        "0898988213"
+      ]
     },
     "nativeSourceBefore": {
-      "at": "2026-11-13T12:59:03.206Z",
-      "url": "https://oto-pos-web-staging.onrender.com/",
+      "at": "2026-11-13T19:17:51.451Z",
+      "expected": "3e29803bf0d2c935a9a0c23f76c60c4182bcc104",
       "assets": [
         {
-          "path": "/assets/index-BsEDqOAS.js",
+          "path": "/assets/index-CYejgRrr.js",
           "status": 200,
-          "handoverGuard": true,
           "sha256Parts": [
-            "a7131ad765b30f03835580def48717da",
-            "bbd4bdf9089353d706daeadd9562bf9c"
+            "231522173e678ecb2ad6dabd670ed3af",
+            "96f7f38a77291430d7cb30788ca79090"
           ]
         }
       ]
     },
     "ticketBefore": {
-      "saleId": "01a1d500-2c19-7232-90d4-4d18ba6d4aa3",
-      "attemptId": "01a1d500-305e-7743-bef5-e5512919b633",
-      "status": "sent_to_terminal",
-      "method": "qr"
+      "saleId": "01a1d658-4dd9-7698-af66-4eb7b4ff5a66",
+      "attemptId": "01a1d658-532f-753b-8601-368f8b4bd155",
+      "status": "sent_to_terminal"
     },
     "ticketAfter": {
-      "saleId": "01a1d500-2c19-7232-90d4-4d18ba6d4aa3",
+      "saleId": "01a1d658-4dd9-7698-af66-4eb7b4ff5a66",
       "status": "finalised",
-      "saleCount": 1,
+      "receipt": "Z98204-000001",
       "soldBy": {
         "accountId": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
         "name": "ZZ TEST 964 A"
       },
+      "stationSaleCount": 1,
       "attempts": [
         {
-          "id": "01a1d500-305e-7743-bef5-e5512919b633",
+          "id": "01a1d658-532f-753b-8601-368f8b4bd155",
           "status": "approved",
           "method": "qr",
           "amountSatang": 104000
         }
       ],
-      "writesAfterContinue": [
+      "postsAfterContinue": [
         {
           "path": "/api/sales/:id/finalise",
           "method": "none",
@@ -558,71 +810,58 @@
         }
       ]
     },
-    "ciDiagnosisSessionClosure": [
-      {
-        "who": "A",
-        "sessionsEnded": 0,
-        "at": "2026-11-13T13:08:16.166Z",
-        "atMs": 1794575296166
-      },
-      {
-        "who": "B",
-        "sessionsEnded": 1,
-        "at": "2026-11-13T13:08:16.247Z",
-        "atMs": 1794575296247
-      }
-    ],
     "fnbBefore": {
-      "saleId": "01a1d522-20a9-7161-a0b9-2f5cf6e958f8",
-      "attemptId": "01a1d522-248d-78bb-b769-0d5e1b92025f",
+      "saleId": "01a1d65a-04d3-7281-b402-35cb7ac1235d",
+      "attemptId": "01a1d65a-09b7-7d64-aabe-2b5c84d4026c",
       "status": "sent_to_terminal"
     },
     "fnbAfter": {
-      "saleId": "01a1d522-20a9-7161-a0b9-2f5cf6e958f8",
+      "saleId": "01a1d65a-04d3-7281-b402-35cb7ac1235d",
       "status": "finalised",
-      "stationSaleCount": 2,
+      "receipt": "Z98204-000002",
       "soldBy": {
         "accountId": "01a1d2f9-710f-7e6e-bb8e-d8f17975d09f",
         "name": "ZZ TEST 964 B"
       },
+      "stationSaleCount": 2,
       "attempts": [
         {
-          "id": "01a1d522-248d-78bb-b769-0d5e1b92025f",
+          "id": "01a1d65a-09b7-7d64-aabe-2b5c84d4026c",
           "status": "cancelled",
           "method": "qr",
           "amountSatang": 17500
         },
         {
-          "id": "01a1d522-9cf1-7ca0-b5b1-17a45b9677cd",
+          "id": "01a1d65a-1a01-709f-8a88-cfb84e3d6a7f",
           "status": "approved",
           "method": "cash",
           "amountSatang": 17500
         }
-      ],
-      "label": "Total ฿175 Cash ฿175 Thank you"
+      ]
     },
     "shopBefore": {
-      "saleId": "01a1d525-17eb-7418-bc46-f7ef87e38db4",
-      "attemptId": "01a1d525-1b17-7541-bad5-a34d83f1b8ef",
+      "saleId": "01a1d65c-f1d4-7bd0-a7bf-68ea5e1896a3",
+      "attemptId": "01a1d65c-f5db-76ba-a4da-511a883ff1c7",
       "status": "sent_to_terminal"
     },
     "shopAfter": {
-      "saleId": "01a1d525-17eb-7418-bc46-f7ef87e38db4",
+      "saleId": "01a1d65c-f1d4-7bd0-a7bf-68ea5e1896a3",
       "status": "finalised",
-      "stationSaleCount": 3,
+      "receipt": "Z98204-000003",
       "soldBy": {
         "accountId": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
         "name": "ZZ TEST 964 A"
       },
+      "stationSaleCount": 3,
       "attempts": [
         {
-          "id": "01a1d525-1b17-7541-bad5-a34d83f1b8ef",
+          "id": "01a1d65c-f5db-76ba-a4da-511a883ff1c7",
           "status": "approved",
           "method": "qr",
           "amountSatang": 6500
         }
       ],
-      "writesAfterContinue": [
+      "postsAfterContinue": [
         {
           "path": "/api/sales/:id/finalise",
           "method": "none",
@@ -630,18 +869,65 @@
         }
       ]
     },
-    "phoneTicketBefore": {
-      "saleId": "01a1d526-2a77-70ff-a672-e72ca7917cbf",
-      "attemptId": "01a1d526-2ea9-777a-8595-76c90c95bdb2",
-      "status": "sent_to_terminal",
-      "viewport": {
-        "width": 390,
-        "height": 844,
-        "touch": 1
+    "cardReadiness": {
+      "at": "2026-11-13T19:24:05.187Z",
+      "status": 200,
+      "applied": true,
+      "errorCode": null,
+      "station": {
+        "id": "01a1d656-e3d3-73f9-af04-901726a734a0",
+        "archived": false,
+        "roles": [
+          {
+            "role": "adult_band",
+            "deviceId": "01a0be8c-89b2-7f21-84e0-74c754838f5b"
+          },
+          {
+            "role": "card_terminal",
+            "deviceId": "7c5abeba-c737-4c6b-9bff-8d97ed4bff42"
+          },
+          {
+            "role": "kids_band",
+            "deviceId": "01a0be8c-89af-7c2b-861f-f3d1f0f5d27b"
+          },
+          {
+            "role": "receipt",
+            "deviceId": "01a0be8c-89a4-756b-aca1-3be1082c669d"
+          }
+        ],
+        "paymentRouting": {
+          "qr": "none",
+          "card": "card_terminal"
+        }
       }
     },
+    "cardBefore": {
+      "saleId": "01a1d65f-2395-7572-9488-e54373f0256f",
+      "attemptId": "01a1d65f-28d6-7127-ad02-1b39691a1584",
+      "status": "sent_to_terminal",
+      "startedAt": "2026-11-13T19:25:22.199Z"
+    },
+    "cardAfter": {
+      "saleId": "01a1d65f-2395-7572-9488-e54373f0256f",
+      "attemptId": "01a1d65f-28d6-7127-ad02-1b39691a1584",
+      "status": "sent_to_terminal",
+      "method": "card",
+      "route": "card_terminal",
+      "stationSaleCount": 1,
+      "soldBy": {
+        "accountId": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+        "name": "ZZ TEST 964 A"
+      },
+      "postsAfterContinue": [],
+      "limits": "Own simulated NEXGO terminal deliberately returns no response; no physical hardware or bank acceptance"
+    },
+    "phoneTicketBefore": {
+      "saleId": "01a1d664-971e-7be7-899c-9eae103f2b6b",
+      "attemptId": "01a1d664-9c6a-7371-9cf0-c2a9398ca21c",
+      "status": "sent_to_terminal"
+    },
     "phoneTicketAfter": {
-      "saleId": "01a1d526-2a77-70ff-a672-e72ca7917cbf",
+      "saleId": "01a1d664-971e-7be7-899c-9eae103f2b6b",
       "status": "finalised",
       "stationSaleCount": 1,
       "soldBy": {
@@ -650,27 +936,34 @@
       },
       "attempts": [
         {
-          "id": "01a1d526-2ea9-777a-8595-76c90c95bdb2",
+          "id": "01a1d664-9c6a-7371-9cf0-c2a9398ca21c",
           "status": "cancelled",
           "method": "qr",
           "amountSatang": 104000
         },
         {
-          "id": "01a1d52a-3b87-7403-9a69-130f9078fd4c",
+          "id": "01a1d665-47a1-7cc8-a99d-a6d01a43afb2",
           "status": "approved",
           "method": "cash",
           "amountSatang": 104000
         }
       ],
-      "phoneFlow": "Continue retained the hand-to-family prompt; Customer is ready and Done returned to staff; Cash was selected after QR cancellation completed"
+      "postsAfterContinue": [
+        {
+          "path": "/api/sales/:id/finalise",
+          "method": "cash",
+          "kind": "cash"
+        }
+      ],
+      "harnessNote": "The first Cash click occurred while QR cancellation was settling and was ignored. API cancellation was then confirmed before selecting Cash; no payment was duplicated."
     },
     "phoneFnbBefore": {
-      "saleId": "01a1d52f-a657-763e-b86b-fd49560a4488",
-      "attemptId": "01a1d52f-a980-73a7-a624-3e26464873c2",
+      "saleId": "01a1d665-abfb-7cac-a729-0198cf75ca61",
+      "attemptId": "01a1d665-b00c-7e03-b7c1-a5a0e784d7f1",
       "status": "sent_to_terminal"
     },
     "phoneFnbAfter": {
-      "saleId": "01a1d52f-a657-763e-b86b-fd49560a4488",
+      "saleId": "01a1d665-abfb-7cac-a729-0198cf75ca61",
       "status": "finalised",
       "stationSaleCount": 2,
       "soldBy": {
@@ -679,27 +972,33 @@
       },
       "attempts": [
         {
-          "id": "01a1d52f-a980-73a7-a624-3e26464873c2",
+          "id": "01a1d665-b00c-7e03-b7c1-a5a0e784d7f1",
           "status": "approved",
           "method": "qr",
           "amountSatang": 17500
         }
+      ],
+      "postsAfterContinue": [
+        {
+          "path": "/api/sales/:id/finalise",
+          "method": "none",
+          "kind": "other"
+        }
       ]
     },
     "noAttemptBeforeLock": {
-      "saleId": "01a1d535-cce5-7882-9432-2538e7af493f",
+      "saleId": "01a1d666-5fe4-77b5-9771-097881fb1e6a",
       "status": "tendering",
       "attempts": 0
     },
     "noAttemptPaidWhileLocked": {
-      "saleId": "01a1d535-cce5-7882-9432-2538e7af493f",
-      "attemptId": "01a1d535-d6a4-768b-85c5-163d77f0a244",
+      "saleId": "01a1d666-5fe4-77b5-9771-097881fb1e6a",
+      "attemptId": "01a1d666-6a96-7262-8392-9dcfbecbd25c",
       "method": "qr"
     },
     "noAttemptAfter": {
-      "saleId": "01a1d535-cce5-7882-9432-2538e7af493f",
+      "saleId": "01a1d666-5fe4-77b5-9771-097881fb1e6a",
       "status": "finalised",
-      "receiptNumber": "Z98201-000004",
       "stationSaleCount": 4,
       "soldBy": {
         "accountId": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
@@ -707,105 +1006,278 @@
       },
       "attempts": [
         {
-          "id": "01a1d535-d6a4-768b-85c5-163d77f0a244",
+          "id": "01a1d666-6a96-7262-8392-9dcfbecbd25c",
           "status": "approved",
           "method": "qr",
           "amountSatang": 104000
         }
       ],
-      "writesAfterContinue": [],
-      "initialAttemptsBeforeLock": 0,
-      "issuance": "receipt and credit grant present after the existing asynchronous issuance read"
+      "postsAfterContinue": [],
+      "initialAttemptsBeforeLock": 0
     },
-    "secondCiDiagnosis": {
-      "records": [
+    "correctedCart": {
+      "oldSaleId": "01a1d667-06bf-700b-a95d-df37dcae72e5",
+      "newSaleId": "01a1d667-082f-7e65-af9a-9327d6ea1de3",
+      "oldStatus": "voided",
+      "newStatus": "finalised",
+      "oldGrossSatang": 104000,
+      "newGrossSatang": 139000,
+      "oldPay": "Pay ฿1040",
+      "correctedPay": "Pay ฿1390",
+      "stationSaleCount": 6,
+      "soldBy": {
+        "accountId": "01a1d2f9-710f-7e6e-bb8e-d8f17975d09f",
+        "name": "ZZ TEST 964 B"
+      },
+      "lines": [
         {
-          "stationId": "01a1d4fc-d6ed-72df-af7b-7d57916ccf58",
-          "name": "ZZ TEST SCRUM-982 desk till 1794574701707",
-          "sales": [
-            {
-              "id": "01a1d535-cce5-7882-9432-2538e7af493f",
-              "status": "finalised",
-              "grossSatang": 104000,
-              "receiptNumber": "Z98201-000004"
-            },
-            {
-              "id": "01a1d525-17eb-7418-bc46-f7ef87e38db4",
-              "status": "finalised",
-              "grossSatang": 6500,
-              "receiptNumber": "Z98201-000003"
-            },
-            {
-              "id": "01a1d522-20a9-7161-a0b9-2f5cf6e958f8",
-              "status": "finalised",
-              "grossSatang": 17500,
-              "receiptNumber": "Z98201-000002"
-            },
-            {
-              "id": "01a1d500-2c19-7232-90d4-4d18ba6d4aa3",
-              "status": "finalised",
-              "grossSatang": 104000,
-              "receiptNumber": "Z98201-000001"
-            }
-          ]
+          "id": "01a1d667-082f-7f4e-93e6-5759db349b98",
+          "lineNo": 1,
+          "cartLineId": "01a1d667-06bd-74da-8e7a-ce66d5e713a2",
+          "kind": "kids",
+          "label": "Kids",
+          "componentKey": "kids",
+          "ticketPackageId": "01a0bbdc-8cc2-7d1c-a8bf-09c2552eb6bc",
+          "productId": null,
+          "revenueCategory": "tickets",
+          "taxableCategory": "tickets",
+          "quantity": 1,
+          "unitSatang": 69000,
+          "baseSatang": 69000,
+          "discountSatang": 0,
+          "netSatang": 64486,
+          "serviceChargeSatang": 0,
+          "taxSatang": 4514,
+          "taxMode": "inclusive",
+          "taxRateBp": 700,
+          "taxName": "VAT",
+          "grossSatang": 69000,
+          "customerTier": "tourist",
+          "kidCount": 1,
+          "adultCount": 2,
+          "freeAdultCount": 0,
+          "stayHours": 1,
+          "stayDurationLabel": "1 Hour",
+          "modifiers": null,
+          "note": null,
+          "variant": null,
+          "prepStation": null,
+          "variantBreakdown": null,
+          "prepaid": null,
+          "holderCheckinId": null,
+          "supervised": false,
+          "childName": null
         },
         {
-          "stationId": "01a1d4fc-de19-71bb-967b-9b069f0c6e89",
-          "name": "ZZ TEST SCRUM-982 phone till 1794574703544",
-          "sales": [
-            {
-              "id": "01a1d52f-a657-763e-b86b-fd49560a4488",
-              "status": "finalised",
-              "grossSatang": 17500,
-              "receiptNumber": "Z98202-000002"
-            },
-            {
-              "id": "01a1d526-2a77-70ff-a672-e72ca7917cbf",
-              "status": "finalised",
-              "grossSatang": 104000,
-              "receiptNumber": "Z98202-000001"
-            }
-          ]
-        },
-        {
-          "stationId": "01a1d53a-ac20-73cf-b851-591d91d64f68",
-          "name": "ZZ TEST SCRUM-982 card till 1794578753922",
-          "sales": [
-            {
-              "id": "01a1d53a-ce4b-704f-b9f8-6b7c990e2394",
-              "status": "tendering",
-              "grossSatang": 104000,
-              "receiptNumber": null
-            }
-          ]
+          "id": "01a1d667-082f-7814-94a3-7ee710cc95da",
+          "lineNo": 2,
+          "cartLineId": "01a1d667-06bd-74da-8e7a-ce66d5e713a2",
+          "kind": "adults_paid",
+          "label": "Adults",
+          "componentKey": "adults",
+          "ticketPackageId": "01a0bbdc-8cc2-7d1c-a8bf-09c2552eb6bc",
+          "productId": null,
+          "revenueCategory": "tickets",
+          "taxableCategory": "tickets",
+          "quantity": 2,
+          "unitSatang": 35000,
+          "baseSatang": 70000,
+          "discountSatang": 0,
+          "netSatang": 65421,
+          "serviceChargeSatang": 0,
+          "taxSatang": 4579,
+          "taxMode": "inclusive",
+          "taxRateBp": 700,
+          "taxName": "VAT",
+          "grossSatang": 70000,
+          "customerTier": "tourist",
+          "kidCount": 1,
+          "adultCount": 2,
+          "freeAdultCount": 0,
+          "stayHours": 1,
+          "stayDurationLabel": "1 Hour",
+          "modifiers": null,
+          "note": null,
+          "variant": null,
+          "prepStation": null,
+          "variantBreakdown": null,
+          "prepaid": null,
+          "holderCheckinId": null,
+          "supervised": false,
+          "childName": null
         }
       ],
-      "revokes": [
+      "attempts": [
         {
-          "who": "A",
-          "sessionsEnded": 1,
-          "at": "2026-11-13T14:09:36.362Z",
-          "atMs": 1794578976362
-        },
-        {
-          "who": "B",
-          "sessionsEnded": 1,
-          "at": "2026-11-13T14:09:36.446Z",
-          "atMs": 1794578976446
-        }
-      ],
-      "refusals": [
-        {
-          "via": "platform admin",
-          "method": "POST",
-          "path": "/payments/terminal-simulator",
-          "status": 409,
-          "errorCode": "NO_SIMULATOR_FOR_DEVICE"
+          "id": "01a1d667-0c34-7f95-9b67-4d8cf0ce2c4f",
+          "status": "approved",
+          "method": "cash",
+          "amountSatang": 139000
         }
       ]
-    }
+    },
+    "nativeSourceAfter": {
+      "at": "2026-11-13T19:35:05.040Z",
+      "expected": "3e29803bf0d2c935a9a0c23f76c60c4182bcc104",
+      "assets": [
+        {
+          "path": "/assets/index-CYejgRrr.js",
+          "status": 200,
+          "sha256Parts": [
+            "231522173e678ecb2ad6dabd670ed3af",
+            "96f7f38a77291430d7cb30788ca79090"
+          ]
+        }
+      ]
+    },
+    "finalSalesBeforeCleanup": [
+      {
+        "id": "01a1d667-082f-7e65-af9a-9327d6ea1de3",
+        "stationId": "01a1d656-e1d2-7664-af9d-17831c80a710",
+        "stationPrefix": "Z98204",
+        "status": "finalised",
+        "grossSatang": 139000,
+        "attempts": [
+          {
+            "id": "01a1d667-0c34-7f95-9b67-4d8cf0ce2c4f",
+            "status": "approved",
+            "method": "cash",
+            "amountSatang": 139000
+          }
+        ]
+      },
+      {
+        "id": "01a1d667-06bf-700b-a95d-df37dcae72e5",
+        "stationId": "01a1d656-e1d2-7664-af9d-17831c80a710",
+        "stationPrefix": "Z98204",
+        "status": "voided",
+        "grossSatang": 104000,
+        "attempts": []
+      },
+      {
+        "id": "01a1d666-5fe4-77b5-9771-097881fb1e6a",
+        "stationId": "01a1d656-e1d2-7664-af9d-17831c80a710",
+        "stationPrefix": "Z98204",
+        "status": "finalised",
+        "grossSatang": 104000,
+        "attempts": [
+          {
+            "id": "01a1d666-6a96-7262-8392-9dcfbecbd25c",
+            "status": "approved",
+            "method": "qr",
+            "amountSatang": 104000
+          }
+        ]
+      },
+      {
+        "id": "01a1d65c-f1d4-7bd0-a7bf-68ea5e1896a3",
+        "stationId": "01a1d656-e1d2-7664-af9d-17831c80a710",
+        "stationPrefix": "Z98204",
+        "status": "finalised",
+        "grossSatang": 6500,
+        "attempts": [
+          {
+            "id": "01a1d65c-f5db-76ba-a4da-511a883ff1c7",
+            "status": "approved",
+            "method": "qr",
+            "amountSatang": 6500
+          }
+        ]
+      },
+      {
+        "id": "01a1d65a-04d3-7281-b402-35cb7ac1235d",
+        "stationId": "01a1d656-e1d2-7664-af9d-17831c80a710",
+        "stationPrefix": "Z98204",
+        "status": "finalised",
+        "grossSatang": 17500,
+        "attempts": [
+          {
+            "id": "01a1d65a-09b7-7d64-aabe-2b5c84d4026c",
+            "status": "cancelled",
+            "method": "qr",
+            "amountSatang": 17500
+          },
+          {
+            "id": "01a1d65a-1a01-709f-8a88-cfb84e3d6a7f",
+            "status": "approved",
+            "method": "cash",
+            "amountSatang": 17500
+          }
+        ]
+      },
+      {
+        "id": "01a1d658-4dd9-7698-af66-4eb7b4ff5a66",
+        "stationId": "01a1d656-e1d2-7664-af9d-17831c80a710",
+        "stationPrefix": "Z98204",
+        "status": "finalised",
+        "grossSatang": 104000,
+        "attempts": [
+          {
+            "id": "01a1d658-532f-753b-8601-368f8b4bd155",
+            "status": "approved",
+            "method": "qr",
+            "amountSatang": 104000
+          }
+        ]
+      },
+      {
+        "id": "01a1d665-abfb-7cac-a729-0198cf75ca61",
+        "stationId": "01a1d656-e2c4-7ca7-ae7d-764989f88877",
+        "stationPrefix": "Z98205",
+        "status": "finalised",
+        "grossSatang": 17500,
+        "attempts": [
+          {
+            "id": "01a1d665-b00c-7e03-b7c1-a5a0e784d7f1",
+            "status": "approved",
+            "method": "qr",
+            "amountSatang": 17500
+          }
+        ]
+      },
+      {
+        "id": "01a1d664-971e-7be7-899c-9eae103f2b6b",
+        "stationId": "01a1d656-e2c4-7ca7-ae7d-764989f88877",
+        "stationPrefix": "Z98205",
+        "status": "finalised",
+        "grossSatang": 104000,
+        "attempts": [
+          {
+            "id": "01a1d664-9c6a-7371-9cf0-c2a9398ca21c",
+            "status": "cancelled",
+            "method": "qr",
+            "amountSatang": 104000
+          },
+          {
+            "id": "01a1d665-47a1-7cc8-a99d-a6d01a43afb2",
+            "status": "approved",
+            "method": "cash",
+            "amountSatang": 104000
+          }
+        ]
+      },
+      {
+        "id": "01a1d65f-2395-7572-9488-e54373f0256f",
+        "stationId": "01a1d656-e3d3-73f9-af04-901726a734a0",
+        "stationPrefix": "Z98206",
+        "status": "tendering",
+        "grossSatang": 104000,
+        "attempts": [
+          {
+            "id": "01a1d65f-28d6-7127-ad02-1b39691a1584",
+            "status": "awaiting_staff_confirmation",
+            "method": "card",
+            "amountSatang": 104000
+          }
+        ]
+      }
+    ],
+    "finalProofFinishedAt": "2026-11-13T19:35:06.270Z"
   },
   "odd": [
+    {
+      "what": "the browser disconnected"
+    },
     {
       "what": "the browser disconnected"
     }
@@ -2737,6 +3209,684 @@
       "at": "Retire old-source stations and close browser sessions after exact money cleanup",
       "kind": "console.error",
       "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final source: native asset identity and desktop ticket waiting QR",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final source: native asset identity and desktop ticket waiting QR",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final ticket: B continues A's waiting QR and it closes as QR",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final ticket: B continues A's waiting QR and it closes as QR",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final ticket: B continues A's waiting QR and it closes as QR",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final ticket: B continues A's waiting QR and it closes as QR",
+      "kind": "http",
+      "text": "GET /api/branches/:id/occupancy 401"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final ticket: B continues A's waiting QR and it closes as QR",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final ticket: B continues A's waiting QR and it closes as QR",
+      "kind": "http",
+      "text": "GET /api/me/station/link 401"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final ticket: B continues A's waiting QR and it closes as QR",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final ticket: B continues A's waiting QR and it closes as QR",
+      "kind": "http",
+      "text": "GET /api/stations/:id/displays 401"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final ticket: B continues A's waiting QR and it closes as QR",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final ticket: B continues A's waiting QR and it closes as QR",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final ticket: B continues A's waiting QR and it closes as QR",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final ticket: B continues A's waiting QR and it closes as QR",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final ticket: B continues A's waiting QR and it closes as QR",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final ticket: B continues A's waiting QR and it closes as QR",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final ticket: B continues A's waiting QR and it closes as QR",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final ticket: B continues A's waiting QR and it closes as QR",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final ticket: B continues A's waiting QR and it closes as QR",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final ticket: B continues A's waiting QR and it closes as QR",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final ticket: B continues A's waiting QR and it closes as QR",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final F&B: B waits on QR, A cancels it and takes Cash on the same sale",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/intents 401"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final F&B: B waits on QR, A cancels it and takes Cash on the same sale",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final F&B: B waits on QR, A cancels it and takes Cash on the same sale",
+      "kind": "http",
+      "text": "GET /api/branches/:id/occupancy 401"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final F&B: B waits on QR, A cancels it and takes Cash on the same sale",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final F&B: B waits on QR, A cancels it and takes Cash on the same sale",
+      "kind": "http",
+      "text": "GET /api/me/station/link 401"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final F&B: B waits on QR, A cancels it and takes Cash on the same sale",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final F&B: B waits on QR, A cancels it and takes Cash on the same sale",
+      "kind": "http",
+      "text": "GET /api/stations/:id/displays 401"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final F&B: B waits on QR, A cancels it and takes Cash on the same sale",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final F&B: B waits on QR, A cancels it and takes Cash on the same sale",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final F&B: B waits on QR, A cancels it and takes Cash on the same sale",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final F&B: B waits on QR, A cancels it and takes Cash on the same sale",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final F&B: B waits on QR, A cancels it and takes Cash on the same sale",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final F&B: B waits on QR, A cancels it and takes Cash on the same sale",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final F&B: B waits on QR, A cancels it and takes Cash on the same sale",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final F&B: B waits on QR, A cancels it and takes Cash on the same sale",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final F&B: B waits on QR, A cancels it and takes Cash on the same sale",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final F&B: B waits on QR, A cancels it and takes Cash on the same sale",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final F&B: B waits on QR, A cancels it and takes Cash on the same sale",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final F&B: B waits on QR, A cancels it and takes Cash on the same sale",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final F&B: B waits on QR, A cancels it and takes Cash on the same sale",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final F&B: B waits on QR, A cancels it and takes Cash on the same sale",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final F&B: B waits on QR, A cancels it and takes Cash on the same sale",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final Shop: B continues A's waiting QR and it completes without Cash",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final Shop: B continues A's waiting QR and it completes without Cash",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final Shop: B continues A's waiting QR and it completes without Cash",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final Shop: B continues A's waiting QR and it completes without Cash",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final Shop: choose the visible product directly and finish QR handover",
+      "kind": "http",
+      "text": "GET /api/payments/attempts/:id 401"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final Shop: choose the visible product directly and finish QR handover",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final Shop: choose the visible product directly and finish QR handover",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final Shop: choose the visible product directly and finish QR handover",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final Shop: choose the visible product directly and finish QR handover",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final Shop: choose the visible product directly and finish QR handover",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final Shop: choose the visible product directly and finish QR handover",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final Shop: choose the visible product directly and finish QR handover",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final Shop: choose the visible product directly and finish QR handover",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final Shop: choose the visible product directly and finish QR handover",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "card-final",
+      "at": "Final waiting-card case: B continues A's single unresolved terminal payment",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "card-final",
+      "at": "Final waiting-card case: B continues A's single unresolved terminal payment",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "card-final",
+      "at": "Final waiting-card case: B continues A's single unresolved terminal payment",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "card-final",
+      "at": "Final waiting-card case: B continues A's single unresolved terminal payment",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "card-final",
+      "at": "Final waiting-card case: B continues A's single unresolved terminal payment",
+      "kind": "http",
+      "text": "GET /api/me/station/link 401"
+    },
+    {
+      "page": "card-final",
+      "at": "Final waiting-card case: B continues A's single unresolved terminal payment",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "card-final",
+      "at": "Final waiting-card case: B continues A's single unresolved terminal payment",
+      "kind": "http",
+      "text": "GET /api/branches/:id/occupancy 401"
+    },
+    {
+      "page": "card-final",
+      "at": "Final waiting-card case: B continues A's single unresolved terminal payment",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone-final",
+      "at": "Final phone ticket: A starts QR, B cancels it and records Cash",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "phone-final",
+      "at": "Final phone ticket: A starts QR, B cancels it and records Cash",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone-final",
+      "at": "Final phone ticket: A starts QR, B cancels it and records Cash",
+      "kind": "http",
+      "text": "GET /api/branches/:id/occupancy 401"
+    },
+    {
+      "page": "phone-final",
+      "at": "Final phone ticket: A starts QR, B cancels it and records Cash",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone-final",
+      "at": "Final phone ticket: A starts QR, B cancels it and records Cash",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "phone-final",
+      "at": "Final phone ticket: A starts QR, B cancels it and records Cash",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone-final",
+      "at": "Final phone F&B: B starts QR, A continues the same paid order",
+      "kind": "http",
+      "text": "GET /api/payments/attempts/:id 401"
+    },
+    {
+      "page": "phone-final",
+      "at": "Final phone F&B: B starts QR, A continues the same paid order",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone-final",
+      "at": "Final phone F&B: B starts QR, A continues the same paid order",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "phone-final",
+      "at": "Final phone F&B: B starts QR, A continues the same paid order",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "card-final",
+      "at": "Final phone F&B: B starts QR, A continues the same paid order",
+      "kind": "http",
+      "text": "GET /api/stations/:id/displays 401"
+    },
+    {
+      "page": "card-final",
+      "at": "Final phone F&B: B starts QR, A continues the same paid order",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final phone F&B: B starts QR, A continues the same paid order",
+      "kind": "http",
+      "text": "GET /api/stations/:id/printers 401"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final phone F&B: B starts QR, A continues the same paid order",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final phone F&B: B starts QR, A continues the same paid order",
+      "kind": "http",
+      "text": "GET /api/stations/:id/displays 401"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final phone F&B: B starts QR, A continues the same paid order",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final phone F&B: B starts QR, A continues the same paid order",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final phone F&B: B starts QR, A continues the same paid order",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final late-QR case: no attempt before lock, payment arrives while locked",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final late-QR case: no attempt before lock, payment arrives while locked",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final late-QR case: no attempt before lock, payment arrives while locked",
+      "kind": "http",
+      "text": "GET /api/stations/:id/displays 403"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final late-QR case: no attempt before lock, payment arrives while locked",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 403 ()"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final late-QR case: no attempt before lock, payment arrives while locked",
+      "kind": "http",
+      "text": "GET /api/me/station/link 409"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final late-QR case: no attempt before lock, payment arrives while locked",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "card-final",
+      "at": "Final late-QR case: no attempt before lock, payment arrives while locked",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "card-final",
+      "at": "Final late-QR case: no attempt before lock, payment arrives while locked",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone-final",
+      "at": "Final late-QR case: no attempt before lock, payment arrives while locked",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "phone-final",
+      "at": "Final late-QR case: no attempt before lock, payment arrives while locked",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final late-QR case: no attempt before lock, payment arrives while locked",
+      "kind": "http",
+      "text": "GET /api/branches/:id/occupancy 401"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final late-QR case: no attempt before lock, payment arrives while locked",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final late-QR case: no attempt before lock, payment arrives while locked",
+      "kind": "http",
+      "text": "GET /api/me/station/link 401"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final late-QR case: no attempt before lock, payment arrives while locked",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final late-QR case: no attempt before lock, payment arrives while locked",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk-final",
+      "at": "Final late-QR case: no attempt before lock, payment arrives while locked",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "card-final",
+      "at": "Final corrected-cart case: replace the unpaid charge after a genuine quantity edit",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "card-final",
+      "at": "Final corrected-cart case: replace the unpaid charge after a genuine quantity edit",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone-final",
+      "at": "Final corrected-cart case: replace the unpaid charge after a genuine quantity edit",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "phone-final",
+      "at": "Final corrected-cart case: replace the unpaid charge after a genuine quantity edit",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "card-final",
+      "at": "Final native source readback and exact sales census before cleanup",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "card-final",
+      "at": "Final native source readback and exact sales census before cleanup",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone-final",
+      "at": "Final native source readback and exact sales census before cleanup",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "phone-final",
+      "at": "Final native source readback and exact sales census before cleanup",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk-final",
+      "at": "Retire exact final fixtures and synthetic staff",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "desk-final",
+      "at": "Retire exact final fixtures and synthetic staff",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "card-final",
+      "at": "Retire exact final fixtures and synthetic staff",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "card-final",
+      "at": "Retire exact final fixtures and synthetic staff",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone-final",
+      "at": "Retire exact final fixtures and synthetic staff",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "phone-final",
+      "at": "Retire exact final fixtures and synthetic staff",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
     }
   ],
   "requests": [
@@ -3395,6 +4545,792 @@
       "method": "GET",
       "path": "/branches/:id/stations",
       "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/accounts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/accounts/:id/sessions",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/accounts/:id/sessions",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/stations/:id/displays/claim",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/accounts/:id/sessions/revoke",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/webhooks/2c2p/simulator",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/accounts/:id/sessions/revoke",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/accounts/:id/sessions/revoke",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/webhooks/2c2p/simulator",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/payments/terminal-simulator",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/accounts/:id/sessions/revoke",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/accounts/:id/sessions/revoke",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/accounts/:id/sessions/revoke",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/webhooks/2c2p/simulator",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/credentials/:id/revoke",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/accounts/:id/sessions/revoke",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/payments/attempts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/webhooks/2c2p/simulator",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/payments/attempts/:id/confirm",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/sales/:id/void",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "DELETE",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/accounts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/accounts/:id/sessions/revoke",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "PATCH",
+      "path": "/accounts/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/accounts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/accounts/:id/sessions",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/accounts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/accounts/:id/sessions/revoke",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "PATCH",
+      "path": "/accounts/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/accounts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/accounts/:id/sessions",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches/:id/credentials",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches/:id/credentials",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
     }
   ],
   "revokes": [
@@ -3467,6 +5403,69 @@
       "bangkok": "21:09:36",
       "sessionsEnded": 1,
       "phase": "Exact fixture census while the corrected-cart CI failure is reproduced"
+    },
+    {
+      "who": "A",
+      "at": "2026-11-13T19:18:52.396Z",
+      "bangkok": "02:18:52",
+      "sessionsEnded": 1,
+      "phase": "Final ticket: B continues A's waiting QR and it closes as QR"
+    },
+    {
+      "who": "B",
+      "at": "2026-11-13T19:19:46.645Z",
+      "bangkok": "02:19:46",
+      "sessionsEnded": 1,
+      "phase": "Final F&B: B waits on QR, A cancels it and takes Cash on the same sale"
+    },
+    {
+      "who": "A",
+      "at": "2026-11-13T19:22:58.173Z",
+      "bangkok": "02:22:58",
+      "sessionsEnded": 1,
+      "phase": "Final Shop: choose the visible product directly and finish QR handover"
+    },
+    {
+      "who": "A",
+      "at": "2026-11-13T19:25:22.279Z",
+      "bangkok": "02:25:22",
+      "sessionsEnded": 1,
+      "phase": "Final waiting-card case: B continues A's single unresolved terminal payment"
+    },
+    {
+      "who": "A",
+      "at": "2026-11-13T19:31:19.652Z",
+      "bangkok": "02:31:19",
+      "sessionsEnded": 1,
+      "phase": "Final phone ticket: A starts QR, B cancels it and records Cash"
+    },
+    {
+      "who": "B",
+      "at": "2026-11-13T19:32:30.120Z",
+      "bangkok": "02:32:30",
+      "sessionsEnded": 3,
+      "phase": "Final phone F&B: B starts QR, A continues the same paid order"
+    },
+    {
+      "who": "A",
+      "at": "2026-11-13T19:33:16.182Z",
+      "bangkok": "02:33:16",
+      "sessionsEnded": 2,
+      "phase": "Final late-QR case: no attempt before lock, payment arrives while locked"
+    },
+    {
+      "who": "A",
+      "at": "2026-11-13T19:35:56.050Z",
+      "bangkok": "02:35:56",
+      "sessionsEnded": 0,
+      "phase": "Retire exact final fixtures and synthetic staff"
+    },
+    {
+      "who": "B",
+      "at": "2026-11-13T19:35:56.578Z",
+      "bangkok": "02:35:56",
+      "sessionsEnded": 1,
+      "phase": "Retire exact final fixtures and synthetic staff"
     }
   ],
   "restarts": [],
@@ -3475,6 +5474,11 @@
       {
         "label": "desk",
         "id": "01a1d4fd-6e09-7ff8-a64d-8c5f09837f53",
+        "revoked": true
+      },
+      {
+        "label": "final-desk",
+        "id": "01a1d658-3de4-747f-b6c7-5ee2d543ec55",
         "revoked": true
       }
     ],
@@ -3543,6 +5547,18 @@
       "card@2026-11-13T14:32:20.831Z": {
         "signOut": 200,
         "meAfter": 401
+      },
+      "desk-final@2026-11-13T19:35:57.080Z": {
+        "signOut": 200,
+        "meAfter": 401
+      },
+      "card-final@2026-11-13T19:35:57.257Z": {
+        "signOut": 200,
+        "meAfter": 401
+      },
+      "phone-final@2026-11-13T19:35:57.428Z": {
+        "signOut": 200,
+        "meAfter": 401
       }
     },
     "oldSourceFixtures": {
@@ -3584,10 +5600,429 @@
         }
       ]
     },
-    "retainedForFinalSource": {
-      "deviceId": "7c5abeba-c737-4c6b-9bff-8d97ed4bff42",
-      "label": "ZZ TEST SCRUM-982 card terminal 1794578753622",
-      "reason": "Own simulated terminal retained unassigned for final-source proof; no attempt was started"
+    "retainedForFinalSource": null,
+    "finalManager": {
+      "signOut": 200,
+      "meAfter": 401
+    },
+    "finalMoney": {
+      "at": "2026-11-13T19:35:34.366Z",
+      "rows": [
+        {
+          "id": "01a1d667-082f-7e65-af9a-9327d6ea1de3",
+          "stationId": "01a1d656-e1d2-7664-af9d-17831c80a710",
+          "status": "refunded",
+          "refundStatus": "refunded",
+          "refundedSatang": 139000
+        },
+        {
+          "id": "01a1d667-06bf-700b-a95d-df37dcae72e5",
+          "stationId": "01a1d656-e1d2-7664-af9d-17831c80a710",
+          "status": "voided",
+          "attempts": 0
+        },
+        {
+          "id": "01a1d666-5fe4-77b5-9771-097881fb1e6a",
+          "stationId": "01a1d656-e1d2-7664-af9d-17831c80a710",
+          "status": "refunded",
+          "refundStatus": "refunded",
+          "refundedSatang": 104000
+        },
+        {
+          "id": "01a1d65c-f1d4-7bd0-a7bf-68ea5e1896a3",
+          "stationId": "01a1d656-e1d2-7664-af9d-17831c80a710",
+          "status": "refunded",
+          "refundStatus": "refunded",
+          "refundedSatang": 6500
+        },
+        {
+          "id": "01a1d65a-04d3-7281-b402-35cb7ac1235d",
+          "stationId": "01a1d656-e1d2-7664-af9d-17831c80a710",
+          "status": "refunded",
+          "refundStatus": "refunded",
+          "refundedSatang": 17500
+        },
+        {
+          "id": "01a1d658-4dd9-7698-af66-4eb7b4ff5a66",
+          "stationId": "01a1d656-e1d2-7664-af9d-17831c80a710",
+          "status": "refunded",
+          "refundStatus": "refunded",
+          "refundedSatang": 104000
+        },
+        {
+          "id": "01a1d665-abfb-7cac-a729-0198cf75ca61",
+          "stationId": "01a1d656-e2c4-7ca7-ae7d-764989f88877",
+          "status": "refunded",
+          "refundStatus": "refunded",
+          "refundedSatang": 17500
+        },
+        {
+          "id": "01a1d664-971e-7be7-899c-9eae103f2b6b",
+          "stationId": "01a1d656-e2c4-7ca7-ae7d-764989f88877",
+          "status": "refunded",
+          "refundStatus": "refunded",
+          "refundedSatang": 104000
+        },
+        {
+          "id": "01a1d65f-2395-7572-9488-e54373f0256f",
+          "stationId": "01a1d656-e3d3-73f9-af04-901726a734a0",
+          "status": "voided",
+          "attempts": [
+            {
+              "id": "01a1d65f-28d6-7127-ad02-1b39691a1584",
+              "status": "declined",
+              "method": "card"
+            }
+          ]
+        }
+      ],
+      "refundedSatang": 492500,
+      "paidRows": 7,
+      "voidedRows": 2
+    },
+    "finalFixtures": {
+      "at": "2026-11-13T19:35:54.654Z",
+      "stations": [
+        {
+          "id": "01a1d656-e1d2-7664-af9d-17831c80a710",
+          "name": "ZZ TEST SCRUM-982 final desk till 1794597379646",
+          "archived": true,
+          "devices": 0
+        },
+        {
+          "id": "01a1d656-e2c4-7ca7-ae7d-764989f88877",
+          "name": "ZZ TEST SCRUM-982 final phone till 1794597379853",
+          "archived": true,
+          "devices": 0
+        },
+        {
+          "id": "01a1d656-e3d3-73f9-af04-901726a734a0",
+          "name": "ZZ TEST SCRUM-982 final card till 1794597380167",
+          "archived": true,
+          "devices": 0
+        }
+      ],
+      "accounts": [
+        {
+          "id": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+          "name": "ZZ TEST 964 A",
+          "status": "inactive",
+          "liveSessions": 0,
+          "totalSessions": 25,
+          "signInStatus": 401
+        },
+        {
+          "id": "01a1d2f9-710f-7e6e-bb8e-d8f17975d09f",
+          "name": "ZZ TEST 964 B",
+          "status": "inactive",
+          "liveSessions": 0,
+          "totalSessions": 19,
+          "signInStatus": 401
+        }
+      ],
+      "sessions": [
+        {
+          "label": "desk-final",
+          "signOut": 200,
+          "meAfter": 401
+        },
+        {
+          "label": "card-final",
+          "signOut": 200,
+          "meAfter": 401
+        },
+        {
+          "label": "phone-final",
+          "signOut": 200,
+          "meAfter": 401
+        }
+      ],
+      "terminal": {
+        "id": "7c5abeba-c737-4c6b-9bff-8d97ed4bff42",
+        "label": "ZZ TEST SCRUM-982 card terminal 1794578753622",
+        "archived": true,
+        "transport": "simulated"
+      }
+    },
+    "independent": {
+      "at": "2026-11-13T19:36:25.556Z",
+      "money": [
+        {
+          "id": "01a1d667-082f-7e65-af9a-9327d6ea1de3",
+          "status": "refunded",
+          "refundStatus": "refunded",
+          "refunds": [
+            {
+              "id": "01a1d668-76b9-784b-a694-be6cde29e1cd",
+              "amountSatang": 139000
+            }
+          ],
+          "allocations": []
+        },
+        {
+          "id": "01a1d667-06bf-700b-a95d-df37dcae72e5",
+          "status": "voided",
+          "refundStatus": "none",
+          "refunds": [],
+          "allocations": []
+        },
+        {
+          "id": "01a1d666-5fe4-77b5-9771-097881fb1e6a",
+          "status": "refunded",
+          "refundStatus": "refunded",
+          "refunds": [
+            {
+              "id": "01a1d668-77fe-7194-a680-c903263feb21",
+              "amountSatang": 104000
+            }
+          ],
+          "allocations": []
+        },
+        {
+          "id": "01a1d65c-f1d4-7bd0-a7bf-68ea5e1896a3",
+          "status": "refunded",
+          "refundStatus": "refunded",
+          "refunds": [
+            {
+              "id": "01a1d668-794d-7859-a3f0-89fbb4b1a16e",
+              "amountSatang": 6500
+            }
+          ],
+          "allocations": []
+        },
+        {
+          "id": "01a1d65a-04d3-7281-b402-35cb7ac1235d",
+          "status": "refunded",
+          "refundStatus": "refunded",
+          "refunds": [
+            {
+              "id": "01a1d668-7a6c-70f1-bea4-eddd86050da5",
+              "amountSatang": 17500
+            }
+          ],
+          "allocations": []
+        },
+        {
+          "id": "01a1d658-4dd9-7698-af66-4eb7b4ff5a66",
+          "status": "refunded",
+          "refundStatus": "refunded",
+          "refunds": [
+            {
+              "id": "01a1d668-7b62-7834-9200-7fc058f4a46c",
+              "amountSatang": 104000
+            }
+          ],
+          "allocations": []
+        },
+        {
+          "id": "01a1d665-abfb-7cac-a729-0198cf75ca61",
+          "status": "refunded",
+          "refundStatus": "refunded",
+          "refunds": [
+            {
+              "id": "01a1d668-7ca3-73e6-aafc-694efd3c15f6",
+              "amountSatang": 17500
+            }
+          ],
+          "allocations": []
+        },
+        {
+          "id": "01a1d664-971e-7be7-899c-9eae103f2b6b",
+          "status": "refunded",
+          "refundStatus": "refunded",
+          "refunds": [
+            {
+              "id": "01a1d668-7dd2-74cf-9fb8-30b64f2ab71a",
+              "amountSatang": 104000
+            }
+          ],
+          "allocations": []
+        },
+        {
+          "id": "01a1d65f-2395-7572-9488-e54373f0256f",
+          "status": "voided",
+          "refundStatus": "none",
+          "refunds": [],
+          "allocations": []
+        }
+      ],
+      "display": [
+        {
+          "id": "01a1d4fd-6e09-7ff8-a64d-8c5f09837f53",
+          "revokedAt": "2026-11-13T13:59:45.816Z",
+          "connection": null
+        },
+        {
+          "id": "01a1d658-3de4-747f-b6c7-5ee2d543ec55",
+          "revokedAt": "2026-11-13T19:33:12.528Z",
+          "connection": null
+        }
+      ],
+      "refundKeys": [
+        "timeExtension",
+        "sale",
+        "correctionBandShortCode",
+        "refundStatus",
+        "refundableSatang",
+        "refunds",
+        "printJobs",
+        "bands",
+        "grants",
+        "issuedVouchers",
+        "pickupCode",
+        "attempts",
+        "taxBreakdown",
+        "taxConfig",
+        "lines",
+        "discounts"
+      ],
+      "settledRefunds": [
+        {
+          "saleId": "01a1d667-082f-7e65-af9a-9327d6ea1de3",
+          "refundId": "01a1d668-76b9-784b-a694-be6cde29e1cd",
+          "pending": false,
+          "amountSatang": 139000,
+          "tenderAllocation": [
+            {
+              "route": "cash",
+              "method": "cash",
+              "status": "done",
+              "provider": "manual",
+              "attemptId": "01a1d667-0c34-7f95-9b67-4d8cf0ce2c4f",
+              "methodCode": "cash",
+              "amountSatang": 139000
+            }
+          ]
+        },
+        {
+          "saleId": "01a1d666-5fe4-77b5-9771-097881fb1e6a",
+          "refundId": "01a1d668-77fe-7194-a680-c903263feb21",
+          "pending": false,
+          "amountSatang": 104000,
+          "tenderAllocation": [
+            {
+              "route": "gateway_refund",
+              "detail": "Voided at the gateway",
+              "method": "qr",
+              "status": "done",
+              "provider": "simulator",
+              "respCode": "00",
+              "attemptId": "01a1d666-6a96-7262-8392-9dcfbecbd25c",
+              "settledAt": "2026-11-13T19:35:33.143Z",
+              "methodCode": "qr",
+              "processType": "V",
+              "providerRef": "SIMRF321B0EAAA4",
+              "amountSatang": 104000
+            }
+          ]
+        },
+        {
+          "saleId": "01a1d65c-f1d4-7bd0-a7bf-68ea5e1896a3",
+          "refundId": "01a1d668-794d-7859-a3f0-89fbb4b1a16e",
+          "pending": false,
+          "amountSatang": 6500,
+          "tenderAllocation": [
+            {
+              "route": "gateway_refund",
+              "detail": "Voided at the gateway",
+              "method": "qr",
+              "status": "done",
+              "provider": "simulator",
+              "respCode": "00",
+              "attemptId": "01a1d65c-f5db-76ba-a4da-511a883ff1c7",
+              "settledAt": "2026-11-13T19:35:33.470Z",
+              "methodCode": "promptpay",
+              "processType": "V",
+              "providerRef": "SIMRFED0F1D84F4",
+              "amountSatang": 6500
+            }
+          ]
+        },
+        {
+          "saleId": "01a1d65a-04d3-7281-b402-35cb7ac1235d",
+          "refundId": "01a1d668-7a6c-70f1-bea4-eddd86050da5",
+          "pending": false,
+          "amountSatang": 17500,
+          "tenderAllocation": [
+            {
+              "route": "cash",
+              "method": "cash",
+              "status": "done",
+              "provider": "manual",
+              "attemptId": "01a1d65a-1a01-709f-8a88-cfb84e3d6a7f",
+              "methodCode": "cash",
+              "amountSatang": 17500
+            }
+          ]
+        },
+        {
+          "saleId": "01a1d658-4dd9-7698-af66-4eb7b4ff5a66",
+          "refundId": "01a1d668-7b62-7834-9200-7fc058f4a46c",
+          "pending": false,
+          "amountSatang": 104000,
+          "tenderAllocation": [
+            {
+              "route": "gateway_refund",
+              "detail": "Voided at the gateway",
+              "method": "qr",
+              "status": "done",
+              "provider": "simulator",
+              "respCode": "00",
+              "attemptId": "01a1d658-532f-753b-8601-368f8b4bd155",
+              "settledAt": "2026-11-13T19:35:34.004Z",
+              "methodCode": "promptpay",
+              "processType": "V",
+              "providerRef": "SIMRF145C33D983",
+              "amountSatang": 104000
+            }
+          ]
+        },
+        {
+          "saleId": "01a1d665-abfb-7cac-a729-0198cf75ca61",
+          "refundId": "01a1d668-7ca3-73e6-aafc-694efd3c15f6",
+          "pending": false,
+          "amountSatang": 17500,
+          "tenderAllocation": [
+            {
+              "route": "gateway_refund",
+              "detail": "Voided at the gateway",
+              "method": "qr",
+              "status": "done",
+              "provider": "simulator",
+              "respCode": "00",
+              "attemptId": "01a1d665-b00c-7e03-b7c1-a5a0e784d7f1",
+              "settledAt": "2026-11-13T19:35:34.324Z",
+              "methodCode": "promptpay",
+              "processType": "V",
+              "providerRef": "SIMRFFC8EC0D81B",
+              "amountSatang": 17500
+            }
+          ]
+        },
+        {
+          "saleId": "01a1d664-971e-7be7-899c-9eae103f2b6b",
+          "refundId": "01a1d668-7dd2-74cf-9fb8-30b64f2ab71a",
+          "pending": false,
+          "amountSatang": 104000,
+          "tenderAllocation": [
+            {
+              "route": "cash",
+              "method": "cash",
+              "status": "done",
+              "provider": "manual",
+              "attemptId": "01a1d665-47a1-7cc8-a99d-a6d01a43afb2",
+              "methodCode": "cash",
+              "amountSatang": 104000
+            }
+          ]
+        }
+      ]
+    },
+    "finalAdmin": {
+      "signOut": 200,
+      "meAfter": 401,
+      "browserClosed": true,
+      "at": "2026-11-13T19:37:28.559Z"
     }
   },
   "checks": {
@@ -3608,5 +6043,695 @@
       "name": "ZZ TEST 964 B",
       "phone": "+66298964902"
     }
-  ]
+  ],
+  "preScopeRepair": {
+    "sha": "157d6cb24d1764dea4d5356615942882f2970e7c",
+    "points": {
+      "desktop-ticket-paid-qr": {
+        "verdict": "PASSED",
+        "pictures": [
+          "01a-ticket-A-waiting-qr.png",
+          "01b-ticket-B-continued-waiting-qr.png",
+          "01c-ticket-B-paid-qr-actual-label.png"
+        ],
+        "seen": {
+          "saleId": "01a1d500-2c19-7232-90d4-4d18ba6d4aa3",
+          "status": "finalised",
+          "saleCount": 1,
+          "soldBy": {
+            "accountId": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+            "name": "ZZ TEST 964 A"
+          },
+          "attempts": [
+            {
+              "id": "01a1d500-305e-7743-bef5-e5512919b633",
+              "status": "approved",
+              "method": "qr",
+              "amountSatang": 104000
+            }
+          ],
+          "writesAfterContinue": [
+            {
+              "path": "/api/sales/:id/finalise",
+              "method": "none",
+              "kind": "other"
+            }
+          ]
+        }
+      },
+      "desktop-fnb-cancelled-qr-cash": {
+        "verdict": "PASSED",
+        "pictures": [
+          "02a-fnb-B-waiting-qr.png",
+          "02b-fnb-A-continued-qr.png",
+          "02c-fnb-A-cash-same-sale.png"
+        ],
+        "seen": {
+          "saleId": "01a1d522-20a9-7161-a0b9-2f5cf6e958f8",
+          "status": "finalised",
+          "stationSaleCount": 2,
+          "soldBy": {
+            "accountId": "01a1d2f9-710f-7e6e-bb8e-d8f17975d09f",
+            "name": "ZZ TEST 964 B"
+          },
+          "attempts": [
+            {
+              "id": "01a1d522-248d-78bb-b769-0d5e1b92025f",
+              "status": "cancelled",
+              "method": "qr",
+              "amountSatang": 17500
+            },
+            {
+              "id": "01a1d522-9cf1-7ca0-b5b1-17a45b9677cd",
+              "status": "approved",
+              "method": "cash",
+              "amountSatang": 17500
+            }
+          ],
+          "label": "Total ฿175 Cash ฿175 Thank you"
+        }
+      },
+      "desktop-shop-paid-qr": {
+        "verdict": "PASSED",
+        "pictures": [
+          "03a-shop-A-waiting-qr.png",
+          "03b-shop-B-continued-qr.png",
+          "03c-shop-B-paid-qr.png"
+        ],
+        "seen": {
+          "saleId": "01a1d525-17eb-7418-bc46-f7ef87e38db4",
+          "status": "finalised",
+          "stationSaleCount": 3,
+          "soldBy": {
+            "accountId": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+            "name": "ZZ TEST 964 A"
+          },
+          "attempts": [
+            {
+              "id": "01a1d525-1b17-7541-bad5-a34d83f1b8ef",
+              "status": "approved",
+              "method": "qr",
+              "amountSatang": 6500
+            }
+          ],
+          "writesAfterContinue": [
+            {
+              "path": "/api/sales/:id/finalise",
+              "method": "none",
+              "kind": "other"
+            }
+          ]
+        }
+      },
+      "phone-ticket-cancelled-qr-cash": {
+        "verdict": "PASSED",
+        "pictures": [
+          "04d-phone-ticket-B-continued-staff-qr.png",
+          "04f-phone-ticket-B-cash-clean.png"
+        ],
+        "seen": {
+          "saleId": "01a1d526-2a77-70ff-a672-e72ca7917cbf",
+          "status": "finalised",
+          "stationSaleCount": 1,
+          "soldBy": {
+            "accountId": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+            "name": "ZZ TEST 964 A"
+          },
+          "attempts": [
+            {
+              "id": "01a1d526-2ea9-777a-8595-76c90c95bdb2",
+              "status": "cancelled",
+              "method": "qr",
+              "amountSatang": 104000
+            },
+            {
+              "id": "01a1d52a-3b87-7403-9a69-130f9078fd4c",
+              "status": "approved",
+              "method": "cash",
+              "amountSatang": 104000
+            }
+          ],
+          "phoneFlow": "Continue retained the hand-to-family prompt; Customer is ready and Done returned to staff; Cash was selected after QR cancellation completed"
+        }
+      },
+      "phone-fnb-paid-qr": {
+        "verdict": "PASSED",
+        "pictures": [
+          "05a-phone-fnb-B-waiting-qr.png",
+          "05b-phone-fnb-A-continued-qr.png",
+          "05c-phone-fnb-A-paid-qr.png"
+        ],
+        "seen": {
+          "saleId": "01a1d52f-a657-763e-b86b-fd49560a4488",
+          "status": "finalised",
+          "stationSaleCount": 2,
+          "soldBy": {
+            "accountId": "01a1d2f9-710f-7e6e-bb8e-d8f17975d09f",
+            "name": "ZZ TEST 964 B"
+          },
+          "attempts": [
+            {
+              "id": "01a1d52f-a980-73a7-a624-3e26464873c2",
+              "status": "approved",
+              "method": "qr",
+              "amountSatang": 17500
+            }
+          ]
+        }
+      },
+      "qr-created-paid-during-lock": {
+        "verdict": "PASSED",
+        "pictures": [
+          "06-qr-created-and-paid-while-locked.png"
+        ],
+        "seen": {
+          "saleId": "01a1d535-cce5-7882-9432-2538e7af493f",
+          "status": "finalised",
+          "receiptNumber": "Z98201-000004",
+          "stationSaleCount": 4,
+          "soldBy": {
+            "accountId": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+            "name": "ZZ TEST 964 A"
+          },
+          "attempts": [
+            {
+              "id": "01a1d535-d6a4-768b-85c5-163d77f0a244",
+              "status": "approved",
+              "method": "qr",
+              "amountSatang": 104000
+            }
+          ],
+          "writesAfterContinue": [],
+          "initialAttemptsBeforeLock": 0,
+          "issuance": "receipt and credit grant present after the existing asynchronous issuance read"
+        }
+      }
+    },
+    "reads": {
+      "retiredStaffCensus": [
+        {
+          "who": "A",
+          "id": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+          "name": "ZZ TEST 964 A",
+          "phone": "+66298964901",
+          "status": "inactive",
+          "liveSessions": 0,
+          "totalSessions": 12
+        },
+        {
+          "who": "B",
+          "id": "01a1d2f9-710f-7e6e-bb8e-d8f17975d09f",
+          "name": "ZZ TEST 964 B",
+          "phone": "+66298964902",
+          "status": "inactive",
+          "liveSessions": 0,
+          "totalSessions": 8
+        }
+      ],
+      "gateway": {
+        "status": 200,
+        "provider": "simulator",
+        "simulatorAvailable": true,
+        "fellBack": false
+      },
+      "nativeSourceBefore": {
+        "at": "2026-11-13T12:59:03.206Z",
+        "url": "https://oto-pos-web-staging.onrender.com/",
+        "assets": [
+          {
+            "path": "/assets/index-BsEDqOAS.js",
+            "status": 200,
+            "handoverGuard": true,
+            "sha256Parts": [
+              "a7131ad765b30f03835580def48717da",
+              "bbd4bdf9089353d706daeadd9562bf9c"
+            ]
+          }
+        ]
+      },
+      "ticketBefore": {
+        "saleId": "01a1d500-2c19-7232-90d4-4d18ba6d4aa3",
+        "attemptId": "01a1d500-305e-7743-bef5-e5512919b633",
+        "status": "sent_to_terminal",
+        "method": "qr"
+      },
+      "ticketAfter": {
+        "saleId": "01a1d500-2c19-7232-90d4-4d18ba6d4aa3",
+        "status": "finalised",
+        "saleCount": 1,
+        "soldBy": {
+          "accountId": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+          "name": "ZZ TEST 964 A"
+        },
+        "attempts": [
+          {
+            "id": "01a1d500-305e-7743-bef5-e5512919b633",
+            "status": "approved",
+            "method": "qr",
+            "amountSatang": 104000
+          }
+        ],
+        "writesAfterContinue": [
+          {
+            "path": "/api/sales/:id/finalise",
+            "method": "none",
+            "kind": "other"
+          }
+        ]
+      },
+      "ciDiagnosisSessionClosure": [
+        {
+          "who": "A",
+          "sessionsEnded": 0,
+          "at": "2026-11-13T13:08:16.166Z",
+          "atMs": 1794575296166
+        },
+        {
+          "who": "B",
+          "sessionsEnded": 1,
+          "at": "2026-11-13T13:08:16.247Z",
+          "atMs": 1794575296247
+        }
+      ],
+      "fnbBefore": {
+        "saleId": "01a1d522-20a9-7161-a0b9-2f5cf6e958f8",
+        "attemptId": "01a1d522-248d-78bb-b769-0d5e1b92025f",
+        "status": "sent_to_terminal"
+      },
+      "fnbAfter": {
+        "saleId": "01a1d522-20a9-7161-a0b9-2f5cf6e958f8",
+        "status": "finalised",
+        "stationSaleCount": 2,
+        "soldBy": {
+          "accountId": "01a1d2f9-710f-7e6e-bb8e-d8f17975d09f",
+          "name": "ZZ TEST 964 B"
+        },
+        "attempts": [
+          {
+            "id": "01a1d522-248d-78bb-b769-0d5e1b92025f",
+            "status": "cancelled",
+            "method": "qr",
+            "amountSatang": 17500
+          },
+          {
+            "id": "01a1d522-9cf1-7ca0-b5b1-17a45b9677cd",
+            "status": "approved",
+            "method": "cash",
+            "amountSatang": 17500
+          }
+        ],
+        "label": "Total ฿175 Cash ฿175 Thank you"
+      },
+      "shopBefore": {
+        "saleId": "01a1d525-17eb-7418-bc46-f7ef87e38db4",
+        "attemptId": "01a1d525-1b17-7541-bad5-a34d83f1b8ef",
+        "status": "sent_to_terminal"
+      },
+      "shopAfter": {
+        "saleId": "01a1d525-17eb-7418-bc46-f7ef87e38db4",
+        "status": "finalised",
+        "stationSaleCount": 3,
+        "soldBy": {
+          "accountId": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+          "name": "ZZ TEST 964 A"
+        },
+        "attempts": [
+          {
+            "id": "01a1d525-1b17-7541-bad5-a34d83f1b8ef",
+            "status": "approved",
+            "method": "qr",
+            "amountSatang": 6500
+          }
+        ],
+        "writesAfterContinue": [
+          {
+            "path": "/api/sales/:id/finalise",
+            "method": "none",
+            "kind": "other"
+          }
+        ]
+      },
+      "phoneTicketBefore": {
+        "saleId": "01a1d526-2a77-70ff-a672-e72ca7917cbf",
+        "attemptId": "01a1d526-2ea9-777a-8595-76c90c95bdb2",
+        "status": "sent_to_terminal",
+        "viewport": {
+          "width": 390,
+          "height": 844,
+          "touch": 1
+        }
+      },
+      "phoneTicketAfter": {
+        "saleId": "01a1d526-2a77-70ff-a672-e72ca7917cbf",
+        "status": "finalised",
+        "stationSaleCount": 1,
+        "soldBy": {
+          "accountId": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+          "name": "ZZ TEST 964 A"
+        },
+        "attempts": [
+          {
+            "id": "01a1d526-2ea9-777a-8595-76c90c95bdb2",
+            "status": "cancelled",
+            "method": "qr",
+            "amountSatang": 104000
+          },
+          {
+            "id": "01a1d52a-3b87-7403-9a69-130f9078fd4c",
+            "status": "approved",
+            "method": "cash",
+            "amountSatang": 104000
+          }
+        ],
+        "phoneFlow": "Continue retained the hand-to-family prompt; Customer is ready and Done returned to staff; Cash was selected after QR cancellation completed"
+      },
+      "phoneFnbBefore": {
+        "saleId": "01a1d52f-a657-763e-b86b-fd49560a4488",
+        "attemptId": "01a1d52f-a980-73a7-a624-3e26464873c2",
+        "status": "sent_to_terminal"
+      },
+      "phoneFnbAfter": {
+        "saleId": "01a1d52f-a657-763e-b86b-fd49560a4488",
+        "status": "finalised",
+        "stationSaleCount": 2,
+        "soldBy": {
+          "accountId": "01a1d2f9-710f-7e6e-bb8e-d8f17975d09f",
+          "name": "ZZ TEST 964 B"
+        },
+        "attempts": [
+          {
+            "id": "01a1d52f-a980-73a7-a624-3e26464873c2",
+            "status": "approved",
+            "method": "qr",
+            "amountSatang": 17500
+          }
+        ]
+      },
+      "noAttemptBeforeLock": {
+        "saleId": "01a1d535-cce5-7882-9432-2538e7af493f",
+        "status": "tendering",
+        "attempts": 0
+      },
+      "noAttemptPaidWhileLocked": {
+        "saleId": "01a1d535-cce5-7882-9432-2538e7af493f",
+        "attemptId": "01a1d535-d6a4-768b-85c5-163d77f0a244",
+        "method": "qr"
+      },
+      "noAttemptAfter": {
+        "saleId": "01a1d535-cce5-7882-9432-2538e7af493f",
+        "status": "finalised",
+        "receiptNumber": "Z98201-000004",
+        "stationSaleCount": 4,
+        "soldBy": {
+          "accountId": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+          "name": "ZZ TEST 964 A"
+        },
+        "attempts": [
+          {
+            "id": "01a1d535-d6a4-768b-85c5-163d77f0a244",
+            "status": "approved",
+            "method": "qr",
+            "amountSatang": 104000
+          }
+        ],
+        "writesAfterContinue": [],
+        "initialAttemptsBeforeLock": 0,
+        "issuance": "receipt and credit grant present after the existing asynchronous issuance read"
+      },
+      "secondCiDiagnosis": {
+        "records": [
+          {
+            "stationId": "01a1d4fc-d6ed-72df-af7b-7d57916ccf58",
+            "name": "ZZ TEST SCRUM-982 desk till 1794574701707",
+            "sales": [
+              {
+                "id": "01a1d535-cce5-7882-9432-2538e7af493f",
+                "status": "finalised",
+                "grossSatang": 104000,
+                "receiptNumber": "Z98201-000004"
+              },
+              {
+                "id": "01a1d525-17eb-7418-bc46-f7ef87e38db4",
+                "status": "finalised",
+                "grossSatang": 6500,
+                "receiptNumber": "Z98201-000003"
+              },
+              {
+                "id": "01a1d522-20a9-7161-a0b9-2f5cf6e958f8",
+                "status": "finalised",
+                "grossSatang": 17500,
+                "receiptNumber": "Z98201-000002"
+              },
+              {
+                "id": "01a1d500-2c19-7232-90d4-4d18ba6d4aa3",
+                "status": "finalised",
+                "grossSatang": 104000,
+                "receiptNumber": "Z98201-000001"
+              }
+            ]
+          },
+          {
+            "stationId": "01a1d4fc-de19-71bb-967b-9b069f0c6e89",
+            "name": "ZZ TEST SCRUM-982 phone till 1794574703544",
+            "sales": [
+              {
+                "id": "01a1d52f-a657-763e-b86b-fd49560a4488",
+                "status": "finalised",
+                "grossSatang": 17500,
+                "receiptNumber": "Z98202-000002"
+              },
+              {
+                "id": "01a1d526-2a77-70ff-a672-e72ca7917cbf",
+                "status": "finalised",
+                "grossSatang": 104000,
+                "receiptNumber": "Z98202-000001"
+              }
+            ]
+          },
+          {
+            "stationId": "01a1d53a-ac20-73cf-b851-591d91d64f68",
+            "name": "ZZ TEST SCRUM-982 card till 1794578753922",
+            "sales": [
+              {
+                "id": "01a1d53a-ce4b-704f-b9f8-6b7c990e2394",
+                "status": "tendering",
+                "grossSatang": 104000,
+                "receiptNumber": null
+              }
+            ]
+          }
+        ],
+        "revokes": [
+          {
+            "who": "A",
+            "sessionsEnded": 1,
+            "at": "2026-11-13T14:09:36.362Z",
+            "atMs": 1794578976362
+          },
+          {
+            "who": "B",
+            "sessionsEnded": 1,
+            "at": "2026-11-13T14:09:36.446Z",
+            "atMs": 1794578976446
+          }
+        ],
+        "refusals": [
+          {
+            "via": "platform admin",
+            "method": "POST",
+            "path": "/payments/terminal-simulator",
+            "status": 409,
+            "errorCode": "NO_SIMULATOR_FOR_DEVICE"
+          }
+        ]
+      },
+      "finalPreflight": {
+        "at": "2026-11-13T19:13:54.874Z",
+        "accounts": [
+          {
+            "who": "A",
+            "id": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+            "name": "ZZ TEST 964 A",
+            "status": "active",
+            "liveSessions": 0,
+            "totalSessions": 19
+          },
+          {
+            "who": "B",
+            "id": "01a1d2f9-710f-7e6e-bb8e-d8f17975d09f",
+            "name": "ZZ TEST 964 B",
+            "status": "active",
+            "liveSessions": 0,
+            "totalSessions": 14
+          }
+        ],
+        "terminal": {
+          "id": "7c5abeba-c737-4c6b-9bff-8d97ed4bff42",
+          "label": "ZZ TEST SCRUM-982 card terminal 1794578753622",
+          "archived": false,
+          "transport": "simulated"
+        }
+      },
+      "finalFreePhones": {
+        "checkedAt": "2026-11-13T19:15:03.476Z",
+        "unused": [],
+        "priorUsed": [
+          "0898988210",
+          "0898988211",
+          "0898988212",
+          "0898988213"
+        ]
+      }
+    }
+  },
+  "finalSourceStartedAt": "2026-11-13T19:16:19.434Z",
+  "finalDeploysAtStart": {
+    "readAt": "2026-11-13T19:15:46.369Z",
+    "expected": "3e29803bf0d2c935a9a0c23f76c60c4182bcc104",
+    "exactTillsLive": true,
+    "services": [
+      {
+        "service": "oto-pos-staging",
+        "deploys": [
+          {
+            "id": "dep-dbrm1n0n74is7398u3t0",
+            "status": "live",
+            "sha": "3e29803bf0d2c935a9a0c23f76c60c4182bcc104",
+            "finishedAt": "2026-11-13T19:12:36.319706Z",
+            "createdAt": "2026-11-13T19:11:24.805362Z"
+          },
+          {
+            "id": "dep-dbrggnlckfvc73e78bcg",
+            "status": "deactivated",
+            "sha": "157d6cb24d1764dea4d5356615942882f2970e7c",
+            "finishedAt": "2026-11-13T12:55:03.892982Z",
+            "createdAt": "2026-11-13T12:53:50.937995Z"
+          },
+          {
+            "id": "dep-dbrferec6qcc73dofm5g",
+            "status": "deactivated",
+            "sha": "239ef48248d7ec1af739f432db7c91dda778c2c0",
+            "finishedAt": "2026-11-13T11:42:50.373571Z",
+            "createdAt": "2026-11-13T11:41:33.841699Z"
+          },
+          {
+            "id": "dep-dbrf8368bjmc73bo5ob0",
+            "status": "deactivated",
+            "sha": "7f5ac6f1359df9c0627fa7cd4ffaca6f2b9b2c6c",
+            "finishedAt": "2026-11-13T11:28:36.030527Z",
+            "createdAt": "2026-11-13T11:27:08.799637Z"
+          },
+          {
+            "id": "dep-dbrc022jnfac739a1ddg",
+            "status": "deactivated",
+            "sha": "26c308edc5c09c3f576d5189b9e58ad8f1cbabe7",
+            "finishedAt": "2026-11-13T07:46:27.104674Z",
+            "createdAt": "2026-11-13T07:45:12.679634Z"
+          },
+          {
+            "id": "dep-dbrabsavcj2c73emo6h0",
+            "status": "deactivated",
+            "sha": "1916bfbd73ebcfcba2dbe85c7a7a9d2bf63e9152",
+            "finishedAt": "2026-11-13T05:55:22.509771Z",
+            "createdAt": "2026-11-13T05:53:53.826543Z"
+          }
+        ]
+      },
+      {
+        "service": "oto-pos-web-staging",
+        "deploys": [
+          {
+            "id": "dep-dbrm1nmtlv9c73b1ura0",
+            "status": "live",
+            "sha": "3e29803bf0d2c935a9a0c23f76c60c4182bcc104",
+            "finishedAt": "2026-11-13T19:14:56.034866Z",
+            "createdAt": "2026-11-13T19:11:26.148162Z"
+          },
+          {
+            "id": "dep-dbrggo5g1s2s738eb0qg",
+            "status": "deactivated",
+            "sha": "157d6cb24d1764dea4d5356615942882f2970e7c",
+            "finishedAt": "2026-11-13T12:57:55.068391Z",
+            "createdAt": "2026-11-13T12:53:52.380162Z"
+          },
+          {
+            "id": "dep-dbrferdbedkc73df2jn0",
+            "status": "deactivated",
+            "sha": "239ef48248d7ec1af739f432db7c91dda778c2c0",
+            "finishedAt": "2026-11-13T11:45:40.405443Z",
+            "createdAt": "2026-11-13T11:41:33.883296Z"
+          },
+          {
+            "id": "dep-dbrf8368bjmc73bo5o00",
+            "status": "deactivated",
+            "sha": "7f5ac6f1359df9c0627fa7cd4ffaca6f2b9b2c6c",
+            "finishedAt": "2026-11-13T11:31:47.547149Z",
+            "createdAt": "2026-11-13T11:27:08.456257Z"
+          },
+          {
+            "id": "dep-dbrc022jnfac739a1d40",
+            "status": "deactivated",
+            "sha": "26c308edc5c09c3f576d5189b9e58ad8f1cbabe7",
+            "finishedAt": "2026-11-13T07:49:07.700202Z",
+            "createdAt": "2026-11-13T07:45:12.588986Z"
+          },
+          {
+            "id": "dep-dbrabsavcj2c73emo670",
+            "status": "deactivated",
+            "sha": "1916bfbd73ebcfcba2dbe85c7a7a9d2bf63e9152",
+            "finishedAt": "2026-11-13T05:58:16.489837Z",
+            "createdAt": "2026-11-13T05:53:53.458395Z"
+          }
+        ]
+      },
+      {
+        "service": "oto-api-staging",
+        "deploys": [
+          {
+            "id": "dep-dbrgits9v7es73a7iu0g",
+            "status": "live",
+            "sha": "239ef48248d7ec1af739f432db7c91dda778c2c0",
+            "finishedAt": "2026-11-13T13:04:28.211678Z",
+            "createdAt": "2026-11-13T12:58:32.003415Z"
+          },
+          {
+            "id": "dep-dbrfobff3r2c73c0c6dg",
+            "status": "deactivated",
+            "sha": "0ea85faaf5b4e62204eaabdda5d691dd2b9a248c",
+            "finishedAt": "2026-11-13T12:07:15.560018Z",
+            "createdAt": "2026-11-13T12:01:49.953793Z"
+          },
+          {
+            "id": "dep-dbrevcgu01pc73b1vjp0",
+            "status": "deactivated",
+            "sha": "0ea85faaf5b4e62204eaabdda5d691dd2b9a248c",
+            "finishedAt": "2026-11-13T11:13:52.427358Z",
+            "createdAt": "2026-11-13T11:08:34.256994Z"
+          },
+          {
+            "id": "dep-dbrc022jnfac739a1c20",
+            "status": "deactivated",
+            "sha": "26c308edc5c09c3f576d5189b9e58ad8f1cbabe7",
+            "finishedAt": "2026-11-13T07:50:59.834434Z",
+            "createdAt": "2026-11-13T07:45:12.457758Z"
+          },
+          {
+            "id": "dep-dbrabs2vcj2c73emo54g",
+            "status": "deactivated",
+            "sha": "1916bfbd73ebcfcba2dbe85c7a7a9d2bf63e9152",
+            "finishedAt": "2026-11-13T05:59:38.651872Z",
+            "createdAt": "2026-11-13T05:53:52.970565Z"
+          },
+          {
+            "id": "dep-dbr8lpqjnfac7396ifjg",
+            "status": "deactivated",
+            "sha": "3d58a9d8848e4e117b2b372c6e9586d43062639b",
+            "finishedAt": "2026-11-13T04:03:27.492383Z",
+            "createdAt": "2026-11-13T03:58:31.614448Z"
+          }
+        ]
+      }
+    ]
+  },
+  "finalCompleteAt": "2026-11-13T19:37:28.559Z"
 }

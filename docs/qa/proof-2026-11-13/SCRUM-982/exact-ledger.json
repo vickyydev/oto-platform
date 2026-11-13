@@ -1,5 +1,5 @@
 {
-  "sha": "157d6cb24d1764dea4d5356615942882f2970e7c",
+  "sha": "3e29803bf0d2c935a9a0c23f76c60c4182bcc104",
   "created": [
     {
       "kind": "station",
@@ -92,6 +92,105 @@
       "stationId": "01a1d53a-ac20-73cf-b851-591d91d64f68",
       "label": "card",
       "phase": "Fresh simulated card terminal and a single waiting card sale"
+    },
+    {
+      "kind": "station",
+      "id": "01a1d656-e1d2-7664-af9d-17831c80a710",
+      "name": "ZZ TEST SCRUM-982 final desk till 1794597379646",
+      "prefix": "Z98204",
+      "paymentRouting": {
+        "card": "manual",
+        "qr": "gateway"
+      }
+    },
+    {
+      "kind": "station",
+      "id": "01a1d656-e2c4-7ca7-ae7d-764989f88877",
+      "name": "ZZ TEST SCRUM-982 final phone till 1794597379853",
+      "prefix": "Z98205",
+      "paymentRouting": {
+        "card": "manual",
+        "qr": "gateway"
+      }
+    },
+    {
+      "kind": "station",
+      "id": "01a1d656-e3d3-73f9-af04-901726a734a0",
+      "name": "ZZ TEST SCRUM-982 final card till 1794597380167",
+      "prefix": "Z98206",
+      "paymentRouting": {
+        "card": "card_terminal",
+        "qr": "none"
+      }
+    },
+    {
+      "kind": "display",
+      "label": "final-desk",
+      "id": "01a1d658-3de4-747f-b6c7-5ee2d543ec55",
+      "station": "01a1d656-e1d2-7664-af9d-17831c80a710"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1d658-4dd9-7698-af66-4eb7b4ff5a66",
+      "stationId": "01a1d656-e1d2-7664-af9d-17831c80a710",
+      "label": "desk-final",
+      "phase": "Final source: native asset identity and desktop ticket waiting QR"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1d65a-04d3-7281-b402-35cb7ac1235d",
+      "stationId": "01a1d656-e1d2-7664-af9d-17831c80a710",
+      "label": "desk-final",
+      "phase": "Final F&B: B waits on QR, A cancels it and takes Cash on the same sale"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1d65c-f1d4-7bd0-a7bf-68ea5e1896a3",
+      "stationId": "01a1d656-e1d2-7664-af9d-17831c80a710",
+      "label": "desk-final",
+      "phase": "Final Shop: choose the visible product directly and finish QR handover"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1d65f-2395-7572-9488-e54373f0256f",
+      "stationId": "01a1d656-e3d3-73f9-af04-901726a734a0",
+      "label": "card-final",
+      "phase": "Final waiting-card case: B continues A's single unresolved terminal payment"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1d664-971e-7be7-899c-9eae103f2b6b",
+      "stationId": "01a1d656-e2c4-7ca7-ae7d-764989f88877",
+      "label": "phone-final",
+      "phase": "Final phone ticket: A starts QR, B cancels it and records Cash"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1d665-abfb-7cac-a729-0198cf75ca61",
+      "stationId": "01a1d656-e2c4-7ca7-ae7d-764989f88877",
+      "label": "phone-final",
+      "phase": "Final phone F&B: B starts QR, A continues the same paid order"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1d666-5fe4-77b5-9771-097881fb1e6a",
+      "stationId": "01a1d656-e1d2-7664-af9d-17831c80a710",
+      "label": "desk-final",
+      "phase": "Final late-QR case: no attempt before lock, payment arrives while locked"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1d667-06bf-700b-a95d-df37dcae72e5",
+      "stationId": "01a1d656-e1d2-7664-af9d-17831c80a710",
+      "label": "desk-final",
+      "phase": "Final corrected-cart case: replace the unpaid charge after a genuine quantity edit"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1d667-082f-7e65-af9a-9327d6ea1de3",
+      "stationId": "01a1d656-e1d2-7664-af9d-17831c80a710",
+      "label": "desk-final",
+      "phase": "Final corrected-cart case: replace the unpaid charge after a genuine quantity edit"
     }
   ],
   "reusedStaff": [
@@ -115,6 +214,15 @@
     "01a1d526-2a77-70ff-a672-e72ca7917cbf",
     "01a1d52f-a657-763e-b86b-fd49560a4488",
     "01a1d535-cce5-7882-9432-2538e7af493f",
-    "01a1d53a-ce4b-704f-b9f8-6b7c990e2394"
+    "01a1d53a-ce4b-704f-b9f8-6b7c990e2394",
+    "01a1d658-4dd9-7698-af66-4eb7b4ff5a66",
+    "01a1d65a-04d3-7281-b402-35cb7ac1235d",
+    "01a1d65c-f1d4-7bd0-a7bf-68ea5e1896a3",
+    "01a1d65f-2395-7572-9488-e54373f0256f",
+    "01a1d664-971e-7be7-899c-9eae103f2b6b",
+    "01a1d665-abfb-7cac-a729-0198cf75ca61",
+    "01a1d666-5fe4-77b5-9771-097881fb1e6a",
+    "01a1d667-06bf-700b-a95d-df37dcae72e5",
+    "01a1d667-082f-7e65-af9a-9327d6ea1de3"
   ]
 }

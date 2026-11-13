@@ -1,24 +1,42 @@
 # SCRUM-982 and scoped SCRUM-981 proof
 
-Source review and focused gates are in REVIEW.md. Native staging proof is pending.
-The source changes collection recovery and narrow display/read-only wording only;
-it adds no API behavior, migration, production operation or physical-hardware claim.
+The reviewed repair is live on both staging tills at `3e29803bf0d2c935a9a0c23f76c60c4182bcc104`. Eight fresh native journeys passed on 14 November 2026. Exact-source CI 43489637902 is still running; five jobs have passed, including the workspace browser suite, and API shard 3 remains active. This is not yet a final green CI claim.
 
-Planned native matrix: desktop ticket/F&B/Shop plus phone ticket/F&B through a
-waiting QR and a different proof account, true paid-QR completion, cancelled-QR
-then cash, and a bounded waiting-card handover. A separate case introduces and
-pays a QR while a sale with no earlier attempt is locked. Confirm one sale per
-journey, original seller, actual tender and no Cash gesture for QR completion.
-Capture both staff screen and paired display where applicable, inspect every retained
-PNG, and bind the two till deployments before and after. QR codes and other
-families/staff are masked. The two reused ZZ TEST 964 staff keep their original
-names/history; their exact committed identity must match fresh inactive and
-readback showing zero live sessions before reactivation. The account-create route sends
-SMS on staging and must never be called. Temporary/final passwords stay in memory.
+Root reviewed and approved the final shared scope helper and all five selling-screen integrations. Complete local validation passed 3,902 POS tests in 274 files, three POS type configurations, zero-output API types, touched lint, eleven adversarial pins, four new scope cases and seven production-build browser journeys. The original corrected-order amount, row-count and quantity assertions remain unchanged. See `cart-scope-validation.json` and `REVIEW.md`.
 
-Cleanup refunds only this proof's simulated paid money and voids its unpaid sales,
-revokes its displays, removes device assignments and archives its own stations,
-deactivates the two synthetic staff accounts again and verifies all sessions ended/401.
-The independent exact-ledger.json preserves safe fixture IDs for resumability.
-Stage 3 holds include the forward-only app-view repair for the set-menu/extra-name
-collision; SCRUM-981's owner-held behavior and shared End-of-Day composer remain open.
+## Exact staging sources
+
+- `oto-pos-staging`: `dep-dbrm1n0n74is7398u3t0`, live 14 November at 02:12:36 Bangkok.
+- `oto-pos-web-staging`: `dep-dbrm1nmtlv9c73b1ura0`, live 14 November at 02:14:56 Bangkok.
+- Both deploys remained live at the same source after the proof. `final-deploys-start.json` and `final-deploys-end.json` bind these reads. The old `deploys-start.json` is historical evidence for 157d6cb.
+- Native JavaScript `/assets/index-CYejgRrr.js` returned 200 before and after; its SHA-256 parts match in `final/native-source-before.json` and `final/native-source-after.json`.
+- The API was live at `239ef48248d7ec1af739f432db7c91dda778c2c0`. Its API, shared and database source is unchanged from the verified 979 release `0ea85faaf5b4e62204eaabdda5d691dd2b9a248c`. No API deployment was requested for this till repair.
+
+## Native results
+
+| Case | Observed result |
+| --- | --- |
+| Desktop ticket, A to B | The same waiting QR completed as PromptPay, with one approved attempt and seller A. |
+| Desktop F&B, B to A | The retained QR was cancelled, then one Cash payment closed the same sale with seller B. |
+| Desktop Shop, A to B | The same QR completed as Thai QR / PromptPay; seller A and one approved attempt remained. |
+| Phone ticket, A to B | The waiting QR survived Continue and the family hand-back flow. Cancellation followed by Cash closed the same sale with seller A. |
+| Phone F&B, B to A | The same waiting QR completed as Thai QR / PromptPay, with seller B. |
+| QR introduced during lock | The sale had zero attempts before lock. A QR was created and paid while locked. B's Continue restored PromptPay automatically, with zero financial POSTs after Continue. |
+| Waiting terminal payment, A to B | B retained the exact card attempt, terminal route and original seller A. Continue sent no new tender. The own simulator deliberately returned no response. |
+| Genuine cart correction | Adding an adult directly on payment voided the original 104,000-satang charge and paid a distinct 139,000-satang sale. The ledger contains Kids 1, Adults 2 and one approved Cash attempt, with seller B. No unpaid orphan remains. |
+
+The final matrix created nine sale rows on three fresh ZZ TEST stations: seven paid, one original corrected-cart row voided by the till, and one unresolved simulated card row. Detailed IDs and readbacks are in `final/summary.json`, `receipt.json` and `exact-ledger.json`. All fifteen selected images were opened and inspected; their list and limits are in `final/inspected-images.json`. Payment and benefit QR blocks are masked. The committed Jira copies have the `s982-final-` prefix.
+
+## Cleanup and limits
+
+Seven final-source simulated paid sales were refunded exactly: 492,500 satang (4,925 baht). Every refund reads `pending=false`, with its tender allocations done. The no-response simulated card was confirmed as no money taken and then voided; its attempt is declined. Together with the already voided corrected-cart row, both unpaid rows are closed. The three final stations have no device assignments and are archived; the own simulated terminal is archived. Both old and final display credentials read revoked.
+
+Both reused ZZ TEST 964 staff retain their original names and history, are inactive again and have zero live sessions. Sign-in returned 401 for each. All three native sessions and the separate manager/admin contexts signed out and read 401; browser and driver are closed. Earlier old-source fixtures were also fully retired: six refunds totalling 353,500 satang, one unpaid void and three archived stations. No live fixture or credential remains.
+
+This is bounded staging proof with simulated QR and terminal providers. No physical terminal, bank, printer or park-device acceptance is claimed. The existing paired-display lease can hold the previous screen for a minute after a staff change; the staff screen can continue and the own-display notice is visible. Some screenshots show that held-minute state or an existing printer toast. Printer output is not acceptance in this run.
+
+SCRUM-964's earlier seven points were already proved; this matrix closes its remaining cross-staff waiting-payment dependency after final CI and Jira publication. SCRUM-981 remains partial: its owner-held choices, the app-view set-menu/extra-name collision reserved for stage 3 and the shared End-of-Day composer are still open. Family read-blip, long-name layout, stock wording and other narrow till pins have local regression coverage; this run does not add a native claim beyond the visible own-display hint and the payment matrix.
+
+The earlier CI failures are preserved honestly. Run 43429015391 exposed two stale test selectors/timings, reproduced as complete files and repaired without weaker assertions. Run 43435242291 exposed a real corrected-cart regression, reproduced with the complete original three-case browser file. The final captured-scope repair fixed that source fault. Historical 157d6cb images are not acceptance of the final repair; unselected intermediate images remain in the scratch archive.
+
+Jira publication and final full-SHA CI readback remain to be recorded before the stage 2.4 release. Only the owner moves tickets to Done.

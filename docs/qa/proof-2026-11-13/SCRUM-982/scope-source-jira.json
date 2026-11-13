@@ -1,0 +1,35 @@
+{
+  "sha": "3e29803bf0d2c935a9a0c23f76c60c4182bcc104",
+  "records": [
+    {
+      "key": "SCRUM-982",
+      "before": {
+        "status": "In Progress",
+        "summary": "A QR payment that is waiting is forgotten when a different person continues a kept sale: the till asks for the money again and can record cash on a sale the QR already paid"
+      },
+      "posted": {
+        "status": 201,
+        "commentId": "14739"
+      },
+      "after": {
+        "status": "In Progress",
+        "summary": "A QR payment that is waiting is forgotten when a different person continues a kept sale: the till asks for the money again and can record cash on a sale the QR already paid"
+      }
+    },
+    {
+      "key": "SCRUM-981",
+      "before": {
+        "status": "In Progress",
+        "summary": "After the kept-sale lane: a second person continuing a cart loses the first person's approved rate with no word, the display keeps the ended person's screen for up to a minute, and points left by the reviews"
+      },
+      "posted": {
+        "status": 201,
+        "commentId": "14740"
+      },
+      "after": {
+        "status": "In Progress",
+        "summary": "After the kept-sale lane: a second person continuing a cart loses the first person's approved rate with no word, the display keeps the ended person's screen for up to a minute, and points left by the reviews"
+      }
+    }
+  ]
+}

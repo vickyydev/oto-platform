@@ -1498,3 +1498,1134 @@ S.phase='Retire old-source stations and close browser sessions after exact money
   ]
  }
 }
+
+=== 2026-11-13T19:10:18.404Z Retire old-source stations and close browser sessions after exact money cleanup
+return {alive:true,sha:S.sha,browserOpen:!!S.browser,created:S.receipt.created.length};
+--> {
+ "ok": true,
+ "value": {
+  "alive": true,
+  "sha": "157d6cb24d1764dea4d5356615942882f2970e7c",
+  "browserOpen": false,
+  "created": 12
+ }
+}
+
+=== 2026-11-13T19:13:54.402Z Read-only final-proof census of retained synthetic staff and terminal
+S.phase='Read-only final-proof census of retained synthetic staff and terminal';const all=(await S.call('GET','/accounts')).body.accounts;const accounts=[];for(const who of ['A','B']){const expected=S.acct[who];const row=all.find(x=>x.id===expected.id);S.assert.ok(row&&row.phone===expected.phone&&row.employee?.name===expected.name);const sessions=(await S.call('GET',`/accounts/${row.id}/sessions?limit=50`)).body;S.assert.ok(sessions.total<=50&&sessions.sessions.every(x=>x.status==='ended'));accounts.push({who,id:row.id,name:row.employee.name,status:row.status,liveSessions:0,totalSessions:sessions.total});}const devices=(await S.call('GET',`/boxes/${S.box.id}/devices?includeArchived=true`)).body.devices;const terminal=devices.find(x=>x.id===S.cardDevice.id);S.assert.ok(terminal&&terminal.label===S.cardDevice.label&&terminal.transport==='simulated'&&!terminal.archived);const result={at:new Date().toISOString(),accounts,terminal:{id:terminal.id,label:terminal.label,archived:terminal.archived,transport:terminal.transport}};S.receipt.reads.finalPreflight=result;S.save();return result;
+--> {
+ "ok": true,
+ "value": {
+  "at": "2026-11-13T19:13:54.874Z",
+  "accounts": [
+   {
+    "who": "A",
+    "id": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+    "name": "ZZ TEST 964 A",
+    "status": "active",
+    "liveSessions": 0,
+    "totalSessions": 19
+   },
+   {
+    "who": "B",
+    "id": "01a1d2f9-710f-7e6e-bb8e-d8f17975d09f",
+    "name": "ZZ TEST 964 B",
+    "status": "active",
+    "liveSessions": 0,
+    "totalSessions": 14
+   }
+  ],
+  "terminal": {
+   "id": "7c5abeba-c737-4c6b-9bff-8d97ed4bff42",
+   "label": "ZZ TEST SCRUM-982 card terminal 1794578753622",
+   "archived": false,
+   "transport": "simulated"
+  }
+ }
+}
+
+=== 2026-11-13T19:15:02.965Z Read-only fresh phone census for the final eight-case matrix
+S.phase='Read-only fresh phone census for the final eight-case matrix';const board=await S.boardApi();const onBoard=new Set((board.families??[]).map(x=>(x.guardianPhone??'').replace(/^\+66/,'0')));const used=new Set(S.receipt.numbers.used??[]);const free=[];for(let i=14;i<24&&free.length<5;i++){const n=S.zz(i);if(used.has(n)||onBoard.has(n))continue;const m=(await S.call('GET',`/members/lookup?phone=${n}`)).body?.member??null;if(!m)free.push(n);}S.assert.equal(free.length,5);S.free=free;S.receipt.reads.finalFreePhones={checkedAt:new Date().toISOString(),unused:free,priorUsed:[...used]};S.save();return {freshUnused:free.length,first:free[0],last:free.at(-1)};
+--> {
+ "ok": true,
+ "value": {
+  "freshUnused": 5,
+  "first": "0898988214",
+  "last": "0898988218"
+ }
+}
+
+=== 2026-11-13T19:16:19.428Z Fresh final-source fixture setup after both exact till deployments are live
+S.phase='Fresh final-source fixture setup after both exact till deployments are live';const {mkdirSync}=await import('node:fs');mkdirSync(S.resolve(S.out,'final'),{recursive:true});const deploys=JSON.parse(S.readFileSync(S.resolve(S.out,'final-deploys-start.json'),'utf8'));S.assert.equal(deploys.exactTillsLive,true);S.assert.equal(deploys.expected,'3e29803bf0d2c935a9a0c23f76c60c4182bcc104');S.receipt.preScopeRepair={sha:S.sha,points:S.receipt.points,reads:S.receipt.reads};S.sha=deploys.expected;S.receipt.sha=S.sha;S.receipt.finalSourceStartedAt=new Date().toISOString();S.receipt.finalDeploysAtStart=deploys;S.receipt.points={};S.receipt.reads={finalPreflight:S.receipt.preScopeRepair.reads.finalPreflight,unusedPhones:S.receipt.preScopeRepair.reads.finalFreePhones};S.today=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Bangkok'}).format(new Date());S.finalStations=[];
+S.station=await S.makeStation('final desk till',{card:'manual',qr:'gateway'});S.finalStations.push(S.station);S.phoneStation=await S.makeStation('final phone till',{card:'manual',qr:'gateway'});S.finalStations.push(S.phoneStation);const printers=S.devices;S.devices=[...printers,{role:'card_terminal',deviceId:S.cardDevice.id}];S.cardStation=await S.makeStation('final card till',{card:'card_terminal',qr:'none'});S.devices=printers;S.finalStations.push(S.cardStation);S.save();return {source:S.sha,stations:S.finalStations.map(x=>({id:x.id,name:x.name,prefix:x.codePrefix})),retainedTerminal:S.cardDevice.id};
+--> {
+ "ok": true,
+ "value": {
+  "source": "3e29803bf0d2c935a9a0c23f76c60c4182bcc104",
+  "stations": [
+   {
+    "id": "01a1d656-e1d2-7664-af9d-17831c80a710",
+    "name": "ZZ TEST SCRUM-982 final desk till 1794597379646",
+    "prefix": "Z98204"
+   },
+   {
+    "id": "01a1d656-e2c4-7ca7-ae7d-764989f88877",
+    "name": "ZZ TEST SCRUM-982 final phone till 1794597379853",
+    "prefix": "Z98205"
+   },
+   {
+    "id": "01a1d656-e3d3-73f9-af04-901726a734a0",
+    "name": "ZZ TEST SCRUM-982 final card till 1794597380167",
+    "prefix": "Z98206"
+   }
+  ],
+  "retainedTerminal": "7c5abeba-c737-4c6b-9bff-8d97ed4bff42"
+ }
+}
+
+=== 2026-11-13T19:17:44.796Z Final source: native asset identity and desktop ticket waiting QR
+S.phase='Final source: native asset identity and desktop ticket waiting QR';const p=await S.openTill('desk-final',{width:1440,height:1100});S.till=p;S.assert.equal(await S.formSignIn(p,'A'),200);await S.afterSignIn(p,S.station);await S.landing(p).waitFor();S.keepAlive(true);const d=await S.pairDisplay('final-desk');S.d=d;await S.landing(d).waitFor();const {createHash}=await import('node:crypto');const assets=[];for(const url of await p.locator('script[src]').evaluateAll(xs=>xs.map(x=>x.src).filter(x=>x.includes('/assets/')))){const r=await p.request.get(url),text=await r.text(),digest=createHash('sha256').update(text).digest('hex');assets.push({path:new URL(url).pathname,status:r.status(),sha256Parts:[digest.slice(0,32),digest.slice(32)]});}S.assert.ok(assets.length>0&&assets.every(x=>x.path!=='/assets/index-BsEDqOAS.js'));S.receipt.reads.nativeSourceBefore={at:new Date().toISOString(),expected:S.sha,assets};S.writeFileSync(S.resolve(S.out,'final/native-source-before.json'),JSON.stringify(S.receipt.reads.nativeSourceBefore,null,2)+'\n');
+const n=S.nextNumber();await S.firstScreen(d,p,n,{tap:true});await S.ticket(p,1,1);const written=p.waitForResponse(r=>new URL(r.url()).pathname==='/api/sales'&&r.request().method()==='POST');await S.pressPay(p);S.assert.equal((await written).status(),200);await p.getByRole('heading',{name:'PromptPay',exact:true}).first().click();const started=p.waitForResponse(r=>new URL(r.url()).pathname==='/api/payments/attempts'&&r.request().method()==='POST');await p.getByRole('button',{name:'Show payment QR',exact:true}).click();const response=await started;S.assert.equal(response.status(),200);const {attempt}=await response.json();S.ticketSale=attempt.saleId;S.ticketAttempt=attempt.id;S.receipt.reads.ticketBefore={saleId:attempt.saleId,attemptId:attempt.id,status:attempt.status};S.save();await S.both('final/01a-ticket-A-waiting-qr.png','Reviewed source: A has one waiting ticket QR; QR masked',p,d);return {assets,...S.receipt.reads.ticketBefore};
+--> {
+ "ok": true,
+ "value": {
+  "assets": [
+   {
+    "path": "/assets/index-CYejgRrr.js",
+    "status": 200,
+    "sha256Parts": [
+     "231522173e678ecb2ad6dabd670ed3af",
+     "96f7f38a77291430d7cb30788ca79090"
+    ]
+   }
+  ],
+  "saleId": "01a1d658-4dd9-7698-af66-4eb7b4ff5a66",
+  "attemptId": "01a1d658-532f-753b-8601-368f8b4bd155",
+  "status": "sent_to_terminal"
+ }
+}
+
+=== 2026-11-13T19:18:52.318Z Final ticket: B continues A's waiting QR and it closes as QR
+S.phase='Final ticket: B continues A\'s waiting QR and it closes as QR';const p=S.till;S.paymentPosts={desk:[]};S.trackPosts=(page,label)=>page.on('request',q=>{try{const path=new URL(q.url()).pathname;if(q.method()==='POST'&&(path==='/api/payments/attempts'||/\/sales\/[^/]+\/finalise$/.test(path))){const b=q.postDataJSON();(S.paymentPosts[label]??=[]).push({path:path.replace(S.ID,':id'),method:b?.method??null,kind:b?.kind??b?.tender?.kind??null});}}catch{}});S.trackPosts(p,'desk');await S.revoke('A');await S.kick('desk-final');await S.waitEnded(p);S.assert.equal(await S.formSignIn(p,'B'),200);await p.getByRole('button',{name:'Continue this sale',exact:true}).click();await S.expect(p.getByRole('button',{name:'Cancel payment QR',exact:true})).toBeVisible({timeout:30000});await S.both('final/01b-ticket-B-continued-qr.png','B continues the same waiting ticket QR on the reviewed source',p,S.d);S.paymentPosts.desk=[];S.assert.equal((await S.call('POST','/webhooks/2c2p/simulator',{attemptId:S.ticketAttempt,event:'paid'})).status,200);await S.expect(p.getByText('Payment Successful',{exact:true})).toBeVisible({timeout:30000});await S.expect(p.getByText(/Receipt Z98204-/).first()).toBeVisible();const detail=await S.sale(S.ticketSale),sales=await S.stationSales();S.assert.equal(sales.length,1);S.assert.equal(detail.sale.status,'finalised');S.assert.equal(sales[0].soldBy.accountId,S.acct.A.id);S.assert.equal(detail.attempts.filter(a=>a.status==='approved').length,1);S.assert.equal(detail.attempts[0].method,'qr');S.assert.equal(detail.attempts[0].amountSatang,detail.sale.totals.grossSatang);S.assert.ok(S.paymentPosts.desk.every(x=>x.method!=='cash'&&x.kind!=='cash'));S.assert.match(await S.bodyText(p),/Receipt .*PromptPay/);const read={saleId:S.ticketSale,status:detail.sale.status,receipt:detail.sale.receiptNumber,soldBy:sales[0].soldBy,stationSaleCount:1,attempts:detail.attempts.map(a=>({id:a.id,status:a.status,method:a.method,amountSatang:a.amountSatang})),postsAfterContinue:[...S.paymentPosts.desk]};S.receipt.reads.ticketAfter=read;await S.both('final/01c-ticket-B-paid-qr.png','One QR payment completes the same sale; original seller A remains',p,S.d);S.point('desktop-ticket-paid-qr','PASSED',['final/01b-ticket-B-continued-qr.png','final/01c-ticket-B-paid-qr.png'],read);return read;
+--> {
+ "ok": true,
+ "value": {
+  "saleId": "01a1d658-4dd9-7698-af66-4eb7b4ff5a66",
+  "status": "finalised",
+  "receipt": "Z98204-000001",
+  "soldBy": {
+   "accountId": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+   "name": "ZZ TEST 964 A"
+  },
+  "stationSaleCount": 1,
+  "attempts": [
+   {
+    "id": "01a1d658-532f-753b-8601-368f8b4bd155",
+    "status": "approved",
+    "method": "qr",
+    "amountSatang": 104000
+   }
+  ],
+  "postsAfterContinue": [
+   {
+    "path": "/api/sales/:id/finalise",
+    "method": "none",
+    "kind": "other"
+   }
+  ]
+ }
+}
+
+=== 2026-11-13T19:19:45.601Z Final F&B: B waits on QR, A cancels it and takes Cash on the same sale
+S.phase='Final F&B: B waits on QR, A cancels it and takes Cash on the same sale';const p=S.till;await p.getByRole('button',{name:'Start New Sale',exact:true}).click();await p.getByRole('button',{name:'F&B',exact:true}).click();await p.getByRole('button',{name:/continue as guest/i}).click();await p.getByPlaceholder(/Search/).first().fill('French');await p.getByText(/^French fries$/i).first().click();await S.expect(p.getByRole('button',{name:/^Charge /})).toBeEnabled();await p.getByRole('button',{name:/^Charge /}).click();const pickup=p.getByRole('dialog',{name:'Pick-up Code',exact:true});for(const digit of '9841')await pickup.getByRole('button',{name:digit,exact:true}).click();await pickup.getByRole('button',{name:/^Continue to Payment/}).click();await p.getByRole('button',{name:/PromptPay/}).first().click();const started=p.waitForResponse(r=>new URL(r.url()).pathname==='/api/payments/attempts'&&r.request().method()==='POST');await p.getByRole('button',{name:'Show payment QR',exact:true}).click();const response=await started;S.assert.equal(response.status(),200);const {attempt}=await response.json();S.fnbSale=attempt.saleId;S.fnbAttempt=attempt.id;S.receipt.reads.fnbBefore={saleId:attempt.saleId,attemptId:attempt.id,status:attempt.status};S.save();await S.revoke('B');await S.kick('desk-final');await S.waitEnded(p);S.assert.equal(await S.formSignIn(p,'A'),200);await p.getByRole('button',{name:'Continue this sale',exact:true}).click();await S.expect(p.getByRole('button',{name:'Cancel payment QR',exact:true})).toBeVisible({timeout:30000});await S.both('final/02a-fnb-A-continued-qr.png','A continues B\'s recorded F&B QR; no replacement sale',p,S.d);await p.getByRole('button',{name:'Cancel payment QR',exact:true}).click();await p.getByRole('button',{name:/^Cash /}).click();await p.getByRole('button',{name:'Record cash',exact:true}).click();await S.expect(p.getByRole('heading',{name:'Order Confirmed',exact:true})).toBeVisible({timeout:30000});const detail=await S.sale(S.fnbSale),sales=await S.stationSales();S.assert.equal(sales.length,2);S.assert.equal(detail.sale.status,'finalised');S.assert.equal(sales.find(x=>x.id===S.fnbSale).soldBy.accountId,S.acct.B.id);S.assert.equal(detail.attempts.find(a=>a.id===S.fnbAttempt).status,'cancelled');const approved=detail.attempts.filter(a=>a.status==='approved');S.assert.equal(approved.length,1);S.assert.equal(approved[0].method,'cash');S.assert.equal(approved[0].amountSatang,detail.sale.totals.grossSatang);const read={saleId:S.fnbSale,status:detail.sale.status,receipt:detail.sale.receiptNumber,soldBy:sales.find(x=>x.id===S.fnbSale).soldBy,stationSaleCount:2,attempts:detail.attempts.map(a=>({id:a.id,status:a.status,method:a.method,amountSatang:a.amountSatang}))};S.receipt.reads.fnbAfter=read;await S.both('final/02b-fnb-A-cash-same-sale.png','QR cancelled; one Cash payment on the same sale with original seller B',p,S.d);S.point('desktop-fnb-cancelled-qr-cash','PASSED',['final/02a-fnb-A-continued-qr.png','final/02b-fnb-A-cash-same-sale.png'],read);return read;
+--> {
+ "ok": true,
+ "value": {
+  "saleId": "01a1d65a-04d3-7281-b402-35cb7ac1235d",
+  "status": "finalised",
+  "receipt": "Z98204-000002",
+  "soldBy": {
+   "accountId": "01a1d2f9-710f-7e6e-bb8e-d8f17975d09f",
+   "name": "ZZ TEST 964 B"
+  },
+  "stationSaleCount": 2,
+  "attempts": [
+   {
+    "id": "01a1d65a-09b7-7d64-aabe-2b5c84d4026c",
+    "status": "cancelled",
+    "method": "qr",
+    "amountSatang": 17500
+   },
+   {
+    "id": "01a1d65a-1a01-709f-8a88-cfb84e3d6a7f",
+    "status": "approved",
+    "method": "cash",
+    "amountSatang": 17500
+   }
+  ]
+ }
+}
+
+=== 2026-11-13T19:20:27.257Z Final Shop: B continues A's waiting QR and it completes without Cash
+S.phase='Final Shop: B continues A\'s waiting QR and it completes without Cash';const p=S.till;await p.locator('nav').getByRole('button',{name:'Shop',exact:true}).click();await p.getByRole('button',{name:/continue as guest/i}).click();await p.getByPlaceholder(/Search/).first().fill('balloon');await p.getByRole('button',{name:/^Helium Balloon \(65\)/}).click();await p.getByRole('button',{name:/^Charge /}).click();await p.getByRole('button',{name:/PromptPay/}).first().click();const started=p.waitForResponse(r=>new URL(r.url()).pathname==='/api/payments/attempts'&&r.request().method()==='POST');await p.getByRole('button',{name:'Show payment QR',exact:true}).click();const response=await started;S.assert.equal(response.status(),200);const {attempt}=await response.json();S.shopSale=attempt.saleId;S.shopAttempt=attempt.id;S.receipt.reads.shopBefore={saleId:attempt.saleId,attemptId:attempt.id,status:attempt.status};S.save();await S.revoke('A');await S.kick('desk-final');await S.waitEnded(p);S.assert.equal(await S.formSignIn(p,'B'),200);await p.getByRole('button',{name:'Continue this sale',exact:true}).click();await S.expect(p.getByRole('button',{name:'Cancel payment QR',exact:true})).toBeVisible({timeout:30000});await S.both('final/03a-shop-B-continued-qr.png','B continues the existing Shop QR on the reviewed source',p,S.d);S.paymentPosts.desk=[];S.assert.equal((await S.call('POST','/webhooks/2c2p/simulator',{attemptId:S.shopAttempt,event:'paid'})).status,200);await S.expect(p.getByRole('heading',{name:'Sale Confirmed',exact:true})).toBeVisible({timeout:30000});await S.expect(p.getByText('Thai QR / PromptPay',{exact:true}).first()).toBeVisible();const detail=await S.sale(S.shopSale),sales=await S.stationSales();S.assert.equal(sales.length,3);S.assert.equal(detail.sale.status,'finalised');S.assert.equal(sales.find(x=>x.id===S.shopSale).soldBy.accountId,S.acct.A.id);const paid=detail.attempts.filter(a=>a.status==='approved');S.assert.equal(paid.length,1);S.assert.equal(paid[0].method,'qr');S.assert.equal(paid[0].amountSatang,detail.sale.totals.grossSatang);S.assert.ok(S.paymentPosts.desk.every(x=>x.method!=='cash'&&x.kind!=='cash'));const read={saleId:S.shopSale,status:detail.sale.status,receipt:detail.sale.receiptNumber,soldBy:sales.find(x=>x.id===S.shopSale).soldBy,stationSaleCount:3,attempts:detail.attempts.map(a=>({id:a.id,status:a.status,method:a.method,amountSatang:a.amountSatang})),postsAfterContinue:[...S.paymentPosts.desk]};S.receipt.reads.shopAfter=read;await S.both('final/03b-shop-B-paid-qr.png','One QR completes the same Shop sale; no Cash tender and seller A preserved',p,S.d);S.point('desktop-shop-paid-qr','PASSED',['final/03a-shop-B-continued-qr.png','final/03b-shop-B-paid-qr.png'],read);return read;
+--> {
+ "ok": false,
+ "error": "TimeoutError: locator.fill: Timeout 30000ms exceeded. | Call log: | \u001b[2m  - waiting for getByPlaceholder(/Search/).first()\u001b[22m | "
+}
+
+=== 2026-11-13T19:22:57.800Z Final Shop: choose the visible product directly and finish QR handover
+S.phase='Final Shop: choose the visible product directly and finish QR handover';const p=S.till;await p.getByRole('button',{name:/^Helium Balloon \(65\)/}).click();await p.getByRole('button',{name:/^Charge /}).click();await p.getByRole('button',{name:/PromptPay/}).first().click();const started=p.waitForResponse(r=>new URL(r.url()).pathname==='/api/payments/attempts'&&r.request().method()==='POST');await p.getByRole('button',{name:'Show payment QR',exact:true}).click();const response=await started;S.assert.equal(response.status(),200);const {attempt}=await response.json();S.shopSale=attempt.saleId;S.shopAttempt=attempt.id;S.receipt.reads.shopBefore={saleId:attempt.saleId,attemptId:attempt.id,status:attempt.status};S.save();await S.revoke('A');await S.kick('desk-final');await S.waitEnded(p);S.assert.equal(await S.formSignIn(p,'B'),200);await p.getByRole('button',{name:'Continue this sale',exact:true}).click();await S.expect(p.getByRole('button',{name:'Cancel payment QR',exact:true})).toBeVisible({timeout:30000});await S.both('final/03a-shop-B-continued-qr.png','B continues the existing Shop QR on the reviewed source',p,S.d);S.paymentPosts.desk=[];S.assert.equal((await S.call('POST','/webhooks/2c2p/simulator',{attemptId:S.shopAttempt,event:'paid'})).status,200);await S.expect(p.getByRole('heading',{name:'Sale Confirmed',exact:true})).toBeVisible({timeout:30000});await S.expect(p.getByText('Thai QR / PromptPay',{exact:true}).first()).toBeVisible();const detail=await S.sale(S.shopSale),sales=await S.stationSales();S.assert.equal(sales.length,3);S.assert.equal(detail.sale.status,'finalised');S.assert.equal(sales.find(x=>x.id===S.shopSale).soldBy.accountId,S.acct.A.id);const paid=detail.attempts.filter(a=>a.status==='approved');S.assert.equal(paid.length,1);S.assert.equal(paid[0].method,'qr');S.assert.equal(paid[0].amountSatang,detail.sale.totals.grossSatang);S.assert.ok(S.paymentPosts.desk.every(x=>x.method!=='cash'&&x.kind!=='cash'));const read={saleId:S.shopSale,status:detail.sale.status,receipt:detail.sale.receiptNumber,soldBy:sales.find(x=>x.id===S.shopSale).soldBy,stationSaleCount:3,attempts:detail.attempts.map(a=>({id:a.id,status:a.status,method:a.method,amountSatang:a.amountSatang})),postsAfterContinue:[...S.paymentPosts.desk]};S.receipt.reads.shopAfter=read;await S.both('final/03b-shop-B-paid-qr.png','One QR completes the same Shop sale; no Cash tender and seller A preserved',p,S.d);S.point('desktop-shop-paid-qr','PASSED',['final/03a-shop-B-continued-qr.png','final/03b-shop-B-paid-qr.png'],read);return read;
+--> {
+ "ok": true,
+ "value": {
+  "saleId": "01a1d65c-f1d4-7bd0-a7bf-68ea5e1896a3",
+  "status": "finalised",
+  "receipt": "Z98204-000003",
+  "soldBy": {
+   "accountId": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+   "name": "ZZ TEST 964 A"
+  },
+  "stationSaleCount": 3,
+  "attempts": [
+   {
+    "id": "01a1d65c-f5db-76ba-a4da-511a883ff1c7",
+    "status": "approved",
+    "method": "qr",
+    "amountSatang": 6500
+   }
+  ],
+  "postsAfterContinue": [
+   {
+    "path": "/api/sales/:id/finalise",
+    "method": "none",
+    "kind": "other"
+   }
+  ]
+ }
+}
+
+=== 2026-11-13T19:24:04.973Z Final card simulator readiness check before any tender
+S.phase='Final card simulator readiness check before any tender';const control=await S.call('POST','/payments/terminal-simulator',{action:'terminal.outcome',deviceId:S.cardDevice.id,outcome:'no_response'});const row=(await S.call('GET',`/branches/${S.branchId}/stations?includeArchived=true`)).body.stations.find(x=>x.id===S.cardStation.id);const read={at:new Date().toISOString(),status:control.status,applied:control.body?.applied??false,errorCode:control.body?.error?.code??null,station:{id:row.id,archived:row.archived,roles:row.devices.map(x=>({role:x.role,deviceId:x.deviceId})),paymentRouting:row.paymentRouting}};S.receipt.reads.cardReadiness=read;S.save();return read;
+--> {
+ "ok": true,
+ "value": {
+  "at": "2026-11-13T19:24:05.187Z",
+  "status": 200,
+  "applied": true,
+  "errorCode": null,
+  "station": {
+   "id": "01a1d656-e3d3-73f9-af04-901726a734a0",
+   "archived": false,
+   "roles": [
+    {
+     "role": "adult_band",
+     "deviceId": "01a0be8c-89b2-7f21-84e0-74c754838f5b"
+    },
+    {
+     "role": "card_terminal",
+     "deviceId": "7c5abeba-c737-4c6b-9bff-8d97ed4bff42"
+    },
+    {
+     "role": "kids_band",
+     "deviceId": "01a0be8c-89af-7c2b-861f-f3d1f0f5d27b"
+    },
+    {
+     "role": "receipt",
+     "deviceId": "01a0be8c-89a4-756b-aca1-3be1082c669d"
+    }
+   ],
+   "paymentRouting": {
+    "qr": "none",
+    "card": "card_terminal"
+   }
+  }
+ }
+}
+
+=== 2026-11-13T19:25:12.480Z Final waiting-card case: B continues A's single unresolved terminal payment
+S.phase='Final waiting-card case: B continues A\'s single unresolved terminal payment';S.assert.equal(S.receipt.reads.cardReadiness.applied,true);const p=await S.openTill('card-final',{width:1440,height:1000});S.cardPage=p;S.trackPosts(p,'card');S.assert.equal(await S.formSignIn(p,'A'),200);await S.afterSignIn(p,S.cardStation);const n=S.nextNumber();await S.firstScreen(p,p,n);await S.ticket(p,1,1);const written=p.waitForResponse(r=>new URL(r.url()).pathname==='/api/sales'&&r.request().method()==='POST');await S.pressPay(p);S.assert.equal((await written).status(),200);await p.getByRole('heading',{name:'Card',exact:true}).first().click();const started=p.waitForResponse(r=>new URL(r.url()).pathname==='/api/payments/attempts'&&r.request().method()==='POST');await p.getByRole('button',{name:'Start card payment',exact:true}).click();const response=await started;S.assert.equal(response.status(),200);const {attempt}=await response.json();S.cardSale=attempt.saleId;S.cardAttempt=attempt.id;S.receipt.reads.cardBefore={saleId:attempt.saleId,attemptId:attempt.id,status:attempt.status,startedAt:new Date().toISOString()};S.save();await S.revoke('A');await S.kick('card-final');await S.waitEnded(p);S.assert.equal(await S.formSignIn(p,'B'),200);S.paymentPosts.card=[];await p.getByRole('button',{name:'Continue this sale',exact:true}).click();await S.expect(p.getByText('Payment requested',{exact:true}).first()).toBeVisible({timeout:30000});const readAttempt=await S.call('GET',`/payments/attempts/${S.cardAttempt}`);S.assert.equal(readAttempt.status,200);S.assert.equal(readAttempt.body.attempt.saleId,S.cardSale);S.assert.equal(readAttempt.body.attempt.id,S.cardAttempt);S.assert.ok(['sent_to_terminal','unknown','awaiting_staff_confirmation'].includes(readAttempt.body.attempt.status));S.assert.equal(readAttempt.body.route,'card_terminal');const sales=await S.stationSales(S.cardStation);S.assert.equal(sales.length,1);S.assert.equal(sales[0].soldBy.accountId,S.acct.A.id);S.assert.equal(S.paymentPosts.card.length,0);const read={saleId:S.cardSale,attemptId:S.cardAttempt,status:readAttempt.body.attempt.status,method:readAttempt.body.attempt.method,route:readAttempt.body.route,stationSaleCount:1,soldBy:sales[0].soldBy,postsAfterContinue:[],limits:'Own simulated NEXGO terminal deliberately returns no response; no physical hardware or bank acceptance'};S.receipt.reads.cardAfter=read;await S.shot(p,'final/07-card-B-continued-waiting.png');S.point('waiting-card-handover','PASSED',['final/07-card-B-continued-waiting.png'],read);return read;
+--> {
+ "ok": true,
+ "value": {
+  "saleId": "01a1d65f-2395-7572-9488-e54373f0256f",
+  "attemptId": "01a1d65f-28d6-7127-ad02-1b39691a1584",
+  "status": "sent_to_terminal",
+  "method": "card",
+  "route": "card_terminal",
+  "stationSaleCount": 1,
+  "soldBy": {
+   "accountId": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+   "name": "ZZ TEST 964 A"
+  },
+  "postsAfterContinue": [],
+  "limits": "Own simulated NEXGO terminal deliberately returns no response; no physical hardware or bank acceptance"
+ }
+}
+
+=== 2026-11-13T19:31:13.646Z Final phone ticket: A starts QR, B cancels it and records Cash
+S.phase='Final phone ticket: A starts QR, B cancels it and records Cash';const p=await S.openTill('phone-final',{width:390,height:844});S.phone=p;S.trackPosts(p,'phone');S.assert.equal(await S.formSignIn(p,'A'),200);await S.afterSignIn(p,S.phoneStation);await p.getByRole('heading',{name:'Tourist',exact:true}).click();await p.getByText('1 Hour Play',{exact:true}).first().click();await S.quantity(p,'Kids',1);await S.quantity(p,'Adults',1);await p.getByRole('button',{name:'Continue',exact:true}).first().click();await p.getByRole('button',{name:'Customer is ready',exact:true}).click();const n=S.nextNumber();await S.keypad(p,n.slice(1));await p.locator('[data-testid="input-done"]').click();const written=p.waitForResponse(r=>new URL(r.url()).pathname==='/api/sales'&&r.request().method()==='POST');await p.getByRole('button',{name:/^Pay /}).click();S.assert.equal((await written).status(),200);await p.getByRole('heading',{name:'PromptPay',exact:true}).click();const started=p.waitForResponse(r=>new URL(r.url()).pathname==='/api/payments/attempts'&&r.request().method()==='POST');await p.getByRole('button',{name:'Show payment QR',exact:true}).click();const response=await started;S.assert.equal(response.status(),200);const {attempt}=await response.json();S.phoneTicketSale=attempt.saleId;S.phoneTicketAttempt=attempt.id;S.receipt.reads.phoneTicketBefore={saleId:attempt.saleId,attemptId:attempt.id,status:attempt.status};S.save();await p.getByRole('button',{name:'Customer is ready',exact:true}).click();await p.getByRole('button',{name:/^Done.*return phone to staff/i}).click();await S.revoke('A');await S.kick('phone-final');await S.waitEnded(p);S.assert.equal(await S.formSignIn(p,'B'),200);S.paymentPosts.phone=[];await p.getByRole('button',{name:'Continue this sale',exact:true}).click();const ready=p.getByRole('button',{name:'Customer is ready',exact:true});if(await ready.isVisible()){await ready.click();await p.getByRole('button',{name:/^Done.*return phone to staff/i}).click();}await S.expect(p.getByRole('button',{name:'Cancel payment QR',exact:true})).toBeVisible();await S.shot(p,'final/04a-phone-ticket-B-continued-qr.png');await p.getByRole('button',{name:'Cancel payment QR',exact:true}).click();await S.expect(p.getByRole('button',{name:'Cancel payment QR',exact:true})).toHaveCount(0);await p.getByRole('heading',{name:'Cash',exact:true}).first().click();await S.expect(p.getByRole('button',{name:'Confirm Payment Received',exact:true})).toBeEnabled();await p.getByRole('button',{name:'Confirm Payment Received',exact:true}).click();await S.expect(p.getByText('Payment Successful',{exact:true})).toBeVisible({timeout:30000});await S.expect(p.getByText(/Receipt Z98205-/).first()).toBeVisible({timeout:60000});const detail=await S.sale(S.phoneTicketSale),sales=await S.stationSales(S.phoneStation);S.assert.equal(sales.length,1);S.assert.equal(detail.sale.status,'finalised');S.assert.equal(sales[0].soldBy.accountId,S.acct.A.id);S.assert.equal(detail.attempts.find(a=>a.id===S.phoneTicketAttempt).status,'cancelled');S.assert.equal(detail.attempts.filter(a=>a.status==='approved').length,1);S.assert.equal(detail.attempts.find(a=>a.status==='approved').method,'cash');const read={saleId:S.phoneTicketSale,status:detail.sale.status,stationSaleCount:1,soldBy:sales[0].soldBy,attempts:detail.attempts.map(a=>({id:a.id,status:a.status,method:a.method,amountSatang:a.amountSatang})),postsAfterContinue:[...S.paymentPosts.phone]};S.receipt.reads.phoneTicketAfter=read;await S.shot(p,'final/04b-phone-ticket-B-cash-same-sale.png');S.point('phone-ticket-cancelled-qr-cash','PASSED',['final/04a-phone-ticket-B-continued-qr.png','final/04b-phone-ticket-B-cash-same-sale.png'],read);return read;
+--> {
+ "ok": false,
+ "error": "Error: expect(locator).toBeEnabled() failed |  | Locator:  getByRole('button', { name: 'Confirm Payment Received', exact: true }) | Expected: enabled | Received: disabled | Timeout:  5000ms |  | Call log:"
+}
+
+=== 2026-11-13T19:31:45.432Z Inspect final phone cancellation before selecting Cash again
+S.phase='Inspect final phone cancellation before selecting Cash again';const p=S.phone;const d=await S.sale(S.phoneTicketSale);return {saleId:S.phoneTicketSale,status:d.sale.status,attempts:d.attempts.map(a=>({id:a.id,status:a.status,method:a.method})),buttons:(await p.getByRole('button').allTextContents()).map(S.flat).filter(x=>/Cash|Confirm|Cancel|ready|Done/i.test(x)),cash:await p.getByRole('heading',{name:'Cash',exact:true}).first().evaluate(el=>({parent:el.parentElement.className,text:el.parentElement.innerText})),confirmDisabled:await p.getByRole('button',{name:'Confirm Payment Received',exact:true}).isDisabled()};
+--> {
+ "ok": true,
+ "value": {
+  "saleId": "01a1d664-971e-7be7-899c-9eae103f2b6b",
+  "status": "tendering",
+  "attempts": [
+   {
+    "id": "01a1d664-9c6a-7371-9cf0-c2a9398ca21c",
+    "status": "cancelled",
+    "method": "qr"
+   }
+  ],
+  "buttons": [
+   "Confirm Payment Received"
+  ],
+  "cash": {
+   "parent": "rounded-xl border bg-card text-card-foreground shadow relative min-w-0 flex flex-col items-center justify-center p-3 @xl:p-6 cursor-pointer transition-all hover:border-emerald-500 hover:bg-emerald-500/5",
+   "text": "Cash"
+  },
+  "confirmDisabled": true
+ }
+}
+
+=== 2026-11-13T19:32:03.057Z Final phone ticket: select Cash after confirmed QR cancellation
+S.phase='Final phone ticket: select Cash after confirmed QR cancellation';const p=S.phone;const cancelled=await S.sale(S.phoneTicketSale);S.assert.equal(cancelled.attempts.find(a=>a.id===S.phoneTicketAttempt).status,'cancelled');await p.getByRole('heading',{name:'Cash',exact:true}).first().click();await S.expect(p.getByRole('button',{name:'Confirm Payment Received',exact:true})).toBeEnabled();await p.getByRole('button',{name:'Confirm Payment Received',exact:true}).click();await S.expect(p.getByText('Payment Successful',{exact:true})).toBeVisible({timeout:30000});await S.expect(p.getByText(/Receipt Z98205-/).first()).toBeVisible({timeout:60000});const detail=await S.sale(S.phoneTicketSale),sales=await S.stationSales(S.phoneStation);S.assert.equal(sales.length,1);S.assert.equal(detail.sale.status,'finalised');S.assert.equal(sales[0].soldBy.accountId,S.acct.A.id);S.assert.equal(detail.attempts.filter(a=>a.status==='approved').length,1);S.assert.equal(detail.attempts.find(a=>a.status==='approved').method,'cash');const read={saleId:S.phoneTicketSale,status:detail.sale.status,stationSaleCount:1,soldBy:sales[0].soldBy,attempts:detail.attempts.map(a=>({id:a.id,status:a.status,method:a.method,amountSatang:a.amountSatang})),postsAfterContinue:[...S.paymentPosts.phone],harnessNote:'The first Cash click occurred while QR cancellation was settling and was ignored. API cancellation was then confirmed before selecting Cash; no payment was duplicated.'};S.receipt.reads.phoneTicketAfter=read;await S.shot(p,'final/04b-phone-ticket-B-cash-same-sale.png');S.point('phone-ticket-cancelled-qr-cash','PASSED',['final/04a-phone-ticket-B-continued-qr.png','final/04b-phone-ticket-B-cash-same-sale.png'],read);return read;
+--> {
+ "ok": true,
+ "value": {
+  "saleId": "01a1d664-971e-7be7-899c-9eae103f2b6b",
+  "status": "finalised",
+  "stationSaleCount": 1,
+  "soldBy": {
+   "accountId": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+   "name": "ZZ TEST 964 A"
+  },
+  "attempts": [
+   {
+    "id": "01a1d664-9c6a-7371-9cf0-c2a9398ca21c",
+    "status": "cancelled",
+    "method": "qr",
+    "amountSatang": 104000
+   },
+   {
+    "id": "01a1d665-47a1-7cc8-a99d-a6d01a43afb2",
+    "status": "approved",
+    "method": "cash",
+    "amountSatang": 104000
+   }
+  ],
+  "postsAfterContinue": [
+   {
+    "path": "/api/sales/:id/finalise",
+    "method": "cash",
+    "kind": "cash"
+   }
+  ],
+  "harnessNote": "The first Cash click occurred while QR cancellation was settling and was ignored. API cancellation was then confirmed before selecting Cash; no payment was duplicated."
+ }
+}
+
+=== 2026-11-13T19:32:28.123Z Final phone F&B: B starts QR, A continues the same paid order
+S.phase='Final phone F&B: B starts QR, A continues the same paid order';const p=S.phone;await p.getByRole('button',{name:'F&B',exact:true}).last().click();const guest=p.getByRole('button',{name:/continue as guest/i});if(await guest.isVisible())await guest.click();const search=p.getByPlaceholder(/Search/).first();if(await search.isVisible())await search.fill('French');await p.getByText(/^French fries$/i).first().click();await p.getByRole('button',{name:'Open cart',exact:true}).click();await p.getByRole('button',{name:/^Checkout/}).click();const pickup=p.getByRole('dialog',{name:'Pick-up Code',exact:true});await pickup.waitFor();for(const digit of '9842')await pickup.getByRole('button',{name:digit,exact:true}).click();await pickup.getByRole('button',{name:/^Continue to Payment/}).click();await p.getByRole('button',{name:'Customer is ready',exact:true}).click();await p.getByRole('button',{name:/^Customer confirmed/}).click();await p.getByRole('button',{name:/PromptPay/}).first().click();const started=p.waitForResponse(r=>new URL(r.url()).pathname==='/api/payments/attempts'&&r.request().method()==='POST');await p.getByRole('button',{name:'Show payment QR',exact:true}).click();const response=await started;S.assert.equal(response.status(),200);const {attempt}=await response.json();S.phoneFnbSale=attempt.saleId;S.phoneFnbAttempt=attempt.id;S.receipt.reads.phoneFnbBefore={saleId:attempt.saleId,attemptId:attempt.id,status:attempt.status};S.save();const ready=p.getByRole('button',{name:'Customer is ready',exact:true});if(await ready.isVisible()){await ready.click();await p.getByRole('button',{name:/^Done.*return phone to staff/i}).click();}await S.revoke('B');await S.kick('phone-final');await S.waitEnded(p);S.assert.equal(await S.formSignIn(p,'A'),200);S.paymentPosts.phone=[];await p.getByRole('button',{name:'Continue this sale',exact:true}).click();if(await ready.isVisible()){await ready.click();await p.getByRole('button',{name:/^Done.*return phone to staff/i}).click();}await S.expect(p.getByRole('button',{name:'Cancel payment QR',exact:true})).toBeVisible({timeout:30000});await S.shot(p,'final/05a-phone-fnb-A-continued-qr.png');S.assert.equal((await S.call('POST','/webhooks/2c2p/simulator',{attemptId:S.phoneFnbAttempt,event:'paid'})).status,200);await S.expect(p.getByRole('heading',{name:'Order Confirmed',exact:true})).toBeVisible({timeout:30000});await S.expect(p.getByText('Thai QR / PromptPay',{exact:true}).first()).toBeVisible();const detail=await S.sale(S.phoneFnbSale),sales=await S.stationSales(S.phoneStation);S.assert.equal(sales.length,2);S.assert.equal(detail.sale.status,'finalised');S.assert.equal(sales.find(x=>x.id===S.phoneFnbSale).soldBy.accountId,S.acct.B.id);S.assert.equal(detail.attempts.filter(a=>a.status==='approved').length,1);S.assert.equal(detail.attempts.find(a=>a.status==='approved').method,'qr');const read={saleId:S.phoneFnbSale,status:detail.sale.status,stationSaleCount:2,soldBy:sales.find(x=>x.id===S.phoneFnbSale).soldBy,attempts:detail.attempts.map(a=>({id:a.id,status:a.status,method:a.method,amountSatang:a.amountSatang})),postsAfterContinue:[...S.paymentPosts.phone]};S.receipt.reads.phoneFnbAfter=read;await S.shot(p,'final/05b-phone-fnb-A-paid-qr.png');S.point('phone-fnb-paid-qr','PASSED',['final/05a-phone-fnb-A-continued-qr.png','final/05b-phone-fnb-A-paid-qr.png'],read);return read;
+--> {
+ "ok": true,
+ "value": {
+  "saleId": "01a1d665-abfb-7cac-a729-0198cf75ca61",
+  "status": "finalised",
+  "stationSaleCount": 2,
+  "soldBy": {
+   "accountId": "01a1d2f9-710f-7e6e-bb8e-d8f17975d09f",
+   "name": "ZZ TEST 964 B"
+  },
+  "attempts": [
+   {
+    "id": "01a1d665-b00c-7e03-b7c1-a5a0e784d7f1",
+    "status": "approved",
+    "method": "qr",
+    "amountSatang": 17500
+   }
+  ],
+  "postsAfterContinue": [
+   {
+    "path": "/api/sales/:id/finalise",
+    "method": "none",
+    "kind": "other"
+   }
+  ]
+ }
+}
+
+=== 2026-11-13T19:33:09.987Z Final late-QR case: no attempt before lock, payment arrives while locked
+S.phase='Final late-QR case: no attempt before lock, payment arrives while locked';const p=S.till;await S.kick('desk-final');await S.waitEnded(p);S.assert.equal(await S.formSignIn(p,'A'),200);await S.dropDisplay('final-desk','First three final paired-screen handovers completed; retire own display before inline cases');await p.locator('nav').getByRole('button',{name:'Tickets',exact:true}).click();await S.expect(p.getByTestId('language-choice')).toBeVisible({timeout:30000});await S.firstScreen(p,p,S.nextNumber());await S.ticket(p,1,1);const written=p.waitForResponse(r=>new URL(r.url()).pathname==='/api/sales'&&r.request().method()==='POST');await S.pressPay(p);const response=await written;S.assert.equal(response.status(),200);const sale=(await response.json()).sale;S.pausedSale=sale.id;S.knownSales.add(sale.id);const initial=await S.sale(sale.id);S.assert.equal(initial.attempts.length,0);S.receipt.reads.noAttemptBeforeLock={saleId:sale.id,status:initial.sale.status,attempts:0};S.save();await S.revoke('A');await S.kick('desk-final');await S.waitEnded(p);const started=await S.call('POST','/payments/attempts',{saleId:sale.id,actionId:S.randomUUID(),method:'qr',kind:'qr',tender:'qr',amountSatang:sale.totals.grossSatang,requestQrPayload:true,qrDirection:'show'});S.assert.equal(started.status,200);S.pausedAttempt=started.body.attempt.id;S.assert.equal((await S.call('POST','/webhooks/2c2p/simulator',{attemptId:S.pausedAttempt,event:'paid'})).status,200);S.receipt.reads.noAttemptPaidWhileLocked={saleId:sale.id,attemptId:S.pausedAttempt,method:'qr'};S.save();S.assert.equal(await S.formSignIn(p,'B'),200);S.paymentPosts.desk=[];await p.getByRole('button',{name:'Continue this sale',exact:true}).click();await S.expect(p.getByText('Payment Successful',{exact:true})).toBeVisible({timeout:30000});await S.expect(p.getByText(/Receipt Z98204-/).first()).toBeVisible({timeout:60000});await S.expect(p.getByText(/PromptPay/).first()).toBeVisible();const detail=await S.sale(S.pausedSale),sales=await S.stationSales();S.assert.equal(detail.sale.status,'finalised');S.assert.equal(sales.length,4);S.assert.equal(sales.find(x=>x.id===S.pausedSale).soldBy.accountId,S.acct.A.id);S.assert.equal(detail.attempts.length,1);S.assert.equal(detail.attempts[0].method,'qr');S.assert.equal(detail.attempts[0].status,'approved');S.assert.ok(S.paymentPosts.desk.every(x=>x.method!=='cash'&&x.kind!=='cash'));const read={saleId:S.pausedSale,status:detail.sale.status,stationSaleCount:4,soldBy:sales.find(x=>x.id===S.pausedSale).soldBy,attempts:detail.attempts.map(a=>({id:a.id,status:a.status,method:a.method,amountSatang:a.amountSatang})),postsAfterContinue:[...S.paymentPosts.desk],initialAttemptsBeforeLock:0};S.receipt.reads.noAttemptAfter=read;await S.shot(p,'final/06-qr-created-and-paid-while-locked.png');S.point('qr-created-paid-during-lock','PASSED',['final/06-qr-created-and-paid-while-locked.png'],read);return read;
+--> {
+ "ok": true,
+ "value": {
+  "saleId": "01a1d666-5fe4-77b5-9771-097881fb1e6a",
+  "status": "finalised",
+  "stationSaleCount": 4,
+  "soldBy": {
+   "accountId": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+   "name": "ZZ TEST 964 A"
+  },
+  "attempts": [
+   {
+    "id": "01a1d666-6a96-7262-8392-9dcfbecbd25c",
+    "status": "approved",
+    "method": "qr",
+    "amountSatang": 104000
+   }
+  ],
+  "postsAfterContinue": [],
+  "initialAttemptsBeforeLock": 0
+ }
+}
+
+=== 2026-11-13T19:33:55.199Z Final corrected-cart case: replace the unpaid charge after a genuine quantity edit
+S.phase='Final corrected-cart case: replace the unpaid charge after a genuine quantity edit';const p=S.till;await p.getByRole('button',{name:'Start New Sale',exact:true}).click();await S.firstScreen(p,p,S.nextNumber());await S.ticket(p,1,1);const beforeIds=new Set((await S.stationSales()).map(x=>x.id));const written=p.waitForResponse(r=>new URL(r.url()).pathname==='/api/sales'&&r.request().method()==='POST');await S.pressPay(p);const response=await written;S.assert.equal(response.status(),200);const first=(await response.json()).sale;S.correctedOldSale=first.id;const initial=await S.sale(first.id);S.assert.equal(initial.sale.status,'tendering');S.assert.equal(initial.attempts.length,0);const oldPay=await p.getByRole('button',{name:/^Pay /}).first().innerText();await S.shot(p,'final/08a-cart-before-quantity-edit.png');await p.getByRole('button',{name:'Add one Adults',exact:true}).first().click();await S.expect.poll(()=>p.getByRole('button',{name:/^Pay /}).first().innerText(),{timeout:20000}).not.toBe(oldPay);const correctedPay=await p.getByRole('button',{name:/^Pay /}).first().innerText();await p.getByRole('heading',{name:'Cash',exact:true}).first().click();await p.getByRole('button',{name:'Confirm Payment Received',exact:true}).click();await S.expect(p.getByText('Payment Successful',{exact:true})).toBeVisible({timeout:30000});await S.expect(p.getByText(/Receipt Z98204-/).first()).toBeVisible({timeout:60000});const all=await S.stationSales(),added=all.filter(x=>!beforeIds.has(x.id));S.assert.equal(added.length,2);const sold=added.find(x=>x.status==='finalised'),voided=added.find(x=>x.status==='voided');S.assert.ok(sold&&voided&&sold.id!==first.id);S.assert.equal(voided.id,first.id);S.assert.equal(voided.totals.grossSatang,first.totals.grossSatang);S.assert.ok(sold.totals.grossSatang>first.totals.grossSatang);const d=await S.sale(sold.id);S.correctedSale=sold.id;S.assert.equal(d.attempts.filter(x=>x.status==='approved').length,1);S.assert.equal(d.attempts.find(x=>x.status==='approved').method,'cash');S.assert.equal(d.attempts.find(x=>x.status==='approved').amountSatang,sold.totals.grossSatang);S.assert.equal(sold.soldBy.accountId,S.acct.B.id);S.assert.equal(all.length,6);const read={oldSaleId:first.id,newSaleId:sold.id,oldStatus:voided.status,newStatus:sold.status,oldGrossSatang:first.totals.grossSatang,newGrossSatang:sold.totals.grossSatang,oldPay,correctedPay,stationSaleCount:all.length,soldBy:sold.soldBy,lines:d.lines,attempts:d.attempts.map(a=>({id:a.id,status:a.status,method:a.method,amountSatang:a.amountSatang}))};S.receipt.reads.correctedCart=read;await S.shot(p,'final/08b-cart-corrected-cash-receipt.png');S.point('genuine-cart-correction','PASSED',['final/08a-cart-before-quantity-edit.png','final/08b-cart-corrected-cash-receipt.png'],read);return read;
+--> {
+ "ok": true,
+ "value": {
+  "oldSaleId": "01a1d667-06bf-700b-a95d-df37dcae72e5",
+  "newSaleId": "01a1d667-082f-7e65-af9a-9327d6ea1de3",
+  "oldStatus": "voided",
+  "newStatus": "finalised",
+  "oldGrossSatang": 104000,
+  "newGrossSatang": 139000,
+  "oldPay": "Pay ฿1040",
+  "correctedPay": "Pay ฿1390",
+  "stationSaleCount": 6,
+  "soldBy": {
+   "accountId": "01a1d2f9-710f-7e6e-bb8e-d8f17975d09f",
+   "name": "ZZ TEST 964 B"
+  },
+  "lines": [
+   {
+    "id": "01a1d667-082f-7f4e-93e6-5759db349b98",
+    "lineNo": 1,
+    "cartLineId": "01a1d667-06bd-74da-8e7a-ce66d5e713a2",
+    "kind": "kids",
+    "label": "Kids",
+    "componentKey": "kids",
+    "ticketPackageId": "01a0bbdc-8cc2-7d1c-a8bf-09c2552eb6bc",
+    "productId": null,
+    "revenueCategory": "tickets",
+    "taxableCategory": "tickets",
+    "quantity": 1,
+    "unitSatang": 69000,
+    "baseSatang": 69000,
+    "discountSatang": 0,
+    "netSatang": 64486,
+    "serviceChargeSatang": 0,
+    "taxSatang": 4514,
+    "taxMode": "inclusive",
+    "taxRateBp": 700,
+    "taxName": "VAT",
+    "grossSatang": 69000,
+    "customerTier": "tourist",
+    "kidCount": 1,
+    "adultCount": 2,
+    "freeAdultCount": 0,
+    "stayHours": 1,
+    "stayDurationLabel": "1 Hour",
+    "modifiers": null,
+    "note": null,
+    "variant": null,
+    "prepStation": null,
+    "variantBreakdown": null,
+    "prepaid": null,
+    "holderCheckinId": null,
+    "supervised": false,
+    "childName": null
+   },
+   {
+    "id": "01a1d667-082f-7814-94a3-7ee710cc95da",
+    "lineNo": 2,
+    "cartLineId": "01a1d667-06bd-74da-8e7a-ce66d5e713a2",
+    "kind": "adults_paid",
+    "label": "Adults",
+    "componentKey": "adults",
+    "ticketPackageId": "01a0bbdc-8cc2-7d1c-a8bf-09c2552eb6bc",
+    "productId": null,
+    "revenueCategory": "tickets",
+    "taxableCategory": "tickets",
+    "quantity": 2,
+    "unitSatang": 35000,
+    "baseSatang": 70000,
+    "discountSatang": 0,
+    "netSatang": 65421,
+    "serviceChargeSatang": 0,
+    "taxSatang": 4579,
+    "taxMode": "inclusive",
+    "taxRateBp": 700,
+    "taxName": "VAT",
+    "grossSatang": 70000,
+    "customerTier": "tourist",
+    "kidCount": 1,
+    "adultCount": 2,
+    "freeAdultCount": 0,
+    "stayHours": 1,
+    "stayDurationLabel": "1 Hour",
+    "modifiers": null,
+    "note": null,
+    "variant": null,
+    "prepStation": null,
+    "variantBreakdown": null,
+    "prepaid": null,
+    "holderCheckinId": null,
+    "supervised": false,
+    "childName": null
+   }
+  ],
+  "attempts": [
+   {
+    "id": "01a1d667-0c34-7f95-9b67-4d8cf0ce2c4f",
+    "status": "approved",
+    "method": "cash",
+    "amountSatang": 139000
+   }
+  ]
+ }
+}
+
+=== 2026-11-13T19:35:04.724Z Final native source readback and exact sales census before cleanup
+S.phase='Final native source readback and exact sales census before cleanup';const p=S.till;const {createHash}=await import('node:crypto');const assets=[];for(const url of await p.locator('script[src]').evaluateAll(xs=>xs.map(x=>x.src).filter(x=>x.includes('/assets/')))){const r=await p.request.get(url),text=await r.text(),digest=createHash('sha256').update(text).digest('hex');assets.push({path:new URL(url).pathname,status:r.status(),sha256Parts:[digest.slice(0,32),digest.slice(32)]});}S.assert.deepEqual(assets,S.receipt.reads.nativeSourceBefore.assets);S.receipt.reads.nativeSourceAfter={at:new Date().toISOString(),expected:S.sha,assets};S.writeFileSync(S.resolve(S.out,'final/native-source-after.json'),JSON.stringify(S.receipt.reads.nativeSourceAfter,null,2)+'\n');const edit=S.receipt.reads.correctedCart;S.assert.equal(edit.lines.find(x=>x.label==='Kids').quantity,1);S.assert.equal(edit.lines.find(x=>x.label==='Adults').quantity,2);S.assert.equal(Number(edit.oldPay.replace(/[^0-9.]/g,''))*100,edit.oldGrossSatang);S.assert.equal(Number(edit.correctedPay.replace(/[^0-9.]/g,''))*100,edit.newGrossSatang);const census=[];for(const st of S.finalStations){S.assert.ok(st.name.startsWith('ZZ TEST SCRUM-982 final '));for(const row of await S.stationSales(st)){S.assert.ok(S.knownSales.has(row.id)&&S.receipt.created.some(x=>x.kind==='sale'&&x.id===row.id&&x.stationId===st.id));const d=await S.sale(row.id);S.assert.equal(d.sale.stationId,st.id);census.push({id:row.id,stationId:st.id,stationPrefix:st.codePrefix,status:d.sale.status,grossSatang:d.sale.totals.grossSatang,attempts:d.attempts.map(a=>({id:a.id,status:a.status,method:a.method,amountSatang:a.amountSatang}))});}}S.assert.equal(census.length,9);S.assert.equal(census.filter(x=>x.status==='finalised').length,7);S.assert.equal(census.filter(x=>x.status==='voided').length,1);S.receipt.reads.finalSalesBeforeCleanup=census;S.receipt.reads.finalProofFinishedAt=new Date().toISOString();S.save();return {points:Object.fromEntries(Object.entries(S.receipt.points).map(([k,v])=>[k,v.verdict])),rows:census,paidTotalSatang:census.filter(x=>x.status==='finalised').reduce((s,x)=>s+x.grossSatang,0),nativeAssetsMatch:true};
+--> {
+ "ok": true,
+ "value": {
+  "points": {
+   "desktop-ticket-paid-qr": "PASSED",
+   "desktop-fnb-cancelled-qr-cash": "PASSED",
+   "desktop-shop-paid-qr": "PASSED",
+   "waiting-card-handover": "PASSED",
+   "phone-ticket-cancelled-qr-cash": "PASSED",
+   "phone-fnb-paid-qr": "PASSED",
+   "qr-created-paid-during-lock": "PASSED",
+   "genuine-cart-correction": "PASSED"
+  },
+  "rows": [
+   {
+    "id": "01a1d667-082f-7e65-af9a-9327d6ea1de3",
+    "stationId": "01a1d656-e1d2-7664-af9d-17831c80a710",
+    "stationPrefix": "Z98204",
+    "status": "finalised",
+    "grossSatang": 139000,
+    "attempts": [
+     {
+      "id": "01a1d667-0c34-7f95-9b67-4d8cf0ce2c4f",
+      "status": "approved",
+      "method": "cash",
+      "amountSatang": 139000
+     }
+    ]
+   },
+   {
+    "id": "01a1d667-06bf-700b-a95d-df37dcae72e5",
+    "stationId": "01a1d656-e1d2-7664-af9d-17831c80a710",
+    "stationPrefix": "Z98204",
+    "status": "voided",
+    "grossSatang": 104000,
+    "attempts": []
+   },
+   {
+    "id": "01a1d666-5fe4-77b5-9771-097881fb1e6a",
+    "stationId": "01a1d656-e1d2-7664-af9d-17831c80a710",
+    "stationPrefix": "Z98204",
+    "status": "finalised",
+    "grossSatang": 104000,
+    "attempts": [
+     {
+      "id": "01a1d666-6a96-7262-8392-9dcfbecbd25c",
+      "status": "approved",
+      "method": "qr",
+      "amountSatang": 104000
+     }
+    ]
+   },
+   {
+    "id": "01a1d65c-f1d4-7bd0-a7bf-68ea5e1896a3",
+    "stationId": "01a1d656-e1d2-7664-af9d-17831c80a710",
+    "stationPrefix": "Z98204",
+    "status": "finalised",
+    "grossSatang": 6500,
+    "attempts": [
+     {
+      "id": "01a1d65c-f5db-76ba-a4da-511a883ff1c7",
+      "status": "approved",
+      "method": "qr",
+      "amountSatang": 6500
+     }
+    ]
+   },
+   {
+    "id": "01a1d65a-04d3-7281-b402-35cb7ac1235d",
+    "stationId": "01a1d656-e1d2-7664-af9d-17831c80a710",
+    "stationPrefix": "Z98204",
+    "status": "finalised",
+    "grossSatang": 17500,
+    "attempts": [
+     {
+      "id": "01a1d65a-09b7-7d64-aabe-2b5c84d4026c",
+      "status": "cancelled",
+      "method": "qr",
+      "amountSatang": 17500
+     },
+     {
+      "id": "01a1d65a-1a01-709f-8a88-cfb84e3d6a7f",
+      "status": "approved",
+      "method": "cash",
+      "amountSatang": 17500
+     }
+    ]
+   },
+   {
+    "id": "01a1d658-4dd9-7698-af66-4eb7b4ff5a66",
+    "stationId": "01a1d656-e1d2-7664-af9d-17831c80a710",
+    "stationPrefix": "Z98204",
+    "status": "finalised",
+    "grossSatang": 104000,
+    "attempts": [
+     {
+      "id": "01a1d658-532f-753b-8601-368f8b4bd155",
+      "status": "approved",
+      "method": "qr",
+      "amountSatang": 104000
+     }
+    ]
+   },
+   {
+    "id": "01a1d665-abfb-7cac-a729-0198cf75ca61",
+    "stationId": "01a1d656-e2c4-7ca7-ae7d-764989f88877",
+    "stationPrefix": "Z98205",
+    "status": "finalised",
+    "grossSatang": 17500,
+    "attempts": [
+     {
+      "id": "01a1d665-b00c-7e03-b7c1-a5a0e784d7f1",
+      "status": "approved",
+      "method": "qr",
+      "amountSatang": 17500
+     }
+    ]
+   },
+   {
+    "id": "01a1d664-971e-7be7-899c-9eae103f2b6b",
+    "stationId": "01a1d656-e2c4-7ca7-ae7d-764989f88877",
+    "stationPrefix": "Z98205",
+    "status": "finalised",
+    "grossSatang": 104000,
+    "attempts": [
+     {
+      "id": "01a1d664-9c6a-7371-9cf0-c2a9398ca21c",
+      "status": "cancelled",
+      "method": "qr",
+      "amountSatang": 104000
+     },
+     {
+      "id": "01a1d665-47a1-7cc8-a99d-a6d01a43afb2",
+      "status": "approved",
+      "method": "cash",
+      "amountSatang": 104000
+     }
+    ]
+   },
+   {
+    "id": "01a1d65f-2395-7572-9488-e54373f0256f",
+    "stationId": "01a1d656-e3d3-73f9-af04-901726a734a0",
+    "stationPrefix": "Z98206",
+    "status": "tendering",
+    "grossSatang": 104000,
+    "attempts": [
+     {
+      "id": "01a1d65f-28d6-7127-ad02-1b39691a1584",
+      "status": "awaiting_staff_confirmation",
+      "method": "card",
+      "amountSatang": 104000
+     }
+    ]
+   }
+  ],
+  "paidTotalSatang": 492500,
+  "nativeAssetsMatch": true
+ }
+}
+
+=== 2026-11-13T19:35:31.505Z Exact final-source money cleanup: own simulator refunds and unresolved card void
+S.phase='Exact final-source money cleanup: own simulator refunds and unresolved card void';const manager=await S.pw.request.newContext({baseURL:S.pos});S.assert.equal((await manager.post('/api/auth/sign-in',{data:{phone:S.need('STAGING_MANAGER_PHONE'),password:S.need('STAGING_MANAGER_PASSWORD')}})).status(),200);const rows=[];try{for(const st of S.finalStations){S.assert.ok(/^ZZ TEST SCRUM-982 final /.test(st.name));for(const row of await S.stationSales(st)){S.assert.ok(S.knownSales.has(row.id)&&S.receipt.created.some(x=>x.kind==='sale'&&x.id===row.id&&x.stationId===st.id),'exact own sale ledger');let d=await S.sale(row.id);S.assert.equal(d.sale.stationId,st.id);if(d.sale.status==='finalised'){S.assert.ok(d.sale.receiptNumber.startsWith(st.codePrefix+'-'));S.assert.notEqual(d.refundStatus,'refunded');const r=await manager.post(`/api/sales/${row.id}/refunds`,{headers:{'idempotency-key':S.randomUUID()},data:{mode:'whole',reason:'ZZ TEST SCRUM-982 final-source simulator proof cleanup'}});S.assert.equal(r.status(),200);d=await S.sale(row.id);S.assert.equal(d.refundStatus,'refunded');const refunded=d.refunds.reduce((sum,r)=>sum+r.amountSatang,0);S.assert.equal(refunded,d.sale.totals.grossSatang);rows.push({id:row.id,stationId:st.id,status:d.sale.status,refundStatus:d.refundStatus,refundedSatang:refunded});}else if(d.sale.status==='tendering'){S.assert.equal(row.id,S.cardSale);S.assert.equal(d.attempts.length,1);S.assert.equal(d.attempts[0].id,S.cardAttempt);S.assert.equal(d.attempts[0].status,'awaiting_staff_confirmation');const c=await S.call('POST',`/payments/attempts/${S.cardAttempt}/confirm`,{took:false,note:'ZZ TEST SCRUM-982 own simulated terminal deliberately returned no response; no real money taken'});S.assert.equal(c.status,200);S.assert.equal((await S.call('POST',`/sales/${row.id}/void`,{reason:'ZZ TEST SCRUM-982 unpaid simulated card proof cleanup'})).status,200);d=await S.sale(row.id);S.assert.equal(d.sale.status,'voided');S.assert.ok(d.attempts.every(a=>a.status!=='approved'));rows.push({id:row.id,stationId:st.id,status:d.sale.status,attempts:d.attempts.map(a=>({id:a.id,status:a.status,method:a.method}))});}else{S.assert.equal(d.sale.status,'voided');S.assert.equal(row.id,S.correctedOldSale);S.assert.equal(d.attempts.length,0);rows.push({id:row.id,stationId:st.id,status:'voided',attempts:0});}}}}finally{const out=await manager.post('/api/auth/sign-out');const me=await manager.get('/api/me');S.receipt.cleanup.finalManager={signOut:out.status(),meAfter:me.status()};S.assert.equal(me.status(),401);await manager.dispose();}S.assert.equal(rows.length,9);S.assert.equal(rows.filter(x=>x.refundStatus==='refunded').length,7);S.assert.equal(rows.reduce((sum,x)=>sum+(x.refundedSatang??0),0),492500);S.receipt.cleanup.finalMoney={at:new Date().toISOString(),rows,refundedSatang:492500,paidRows:7,voidedRows:2};S.save();return S.receipt.cleanup.finalMoney;
+--> {
+ "ok": true,
+ "value": {
+  "at": "2026-11-13T19:35:34.366Z",
+  "rows": [
+   {
+    "id": "01a1d667-082f-7e65-af9a-9327d6ea1de3",
+    "stationId": "01a1d656-e1d2-7664-af9d-17831c80a710",
+    "status": "refunded",
+    "refundStatus": "refunded",
+    "refundedSatang": 139000
+   },
+   {
+    "id": "01a1d667-06bf-700b-a95d-df37dcae72e5",
+    "stationId": "01a1d656-e1d2-7664-af9d-17831c80a710",
+    "status": "voided",
+    "attempts": 0
+   },
+   {
+    "id": "01a1d666-5fe4-77b5-9771-097881fb1e6a",
+    "stationId": "01a1d656-e1d2-7664-af9d-17831c80a710",
+    "status": "refunded",
+    "refundStatus": "refunded",
+    "refundedSatang": 104000
+   },
+   {
+    "id": "01a1d65c-f1d4-7bd0-a7bf-68ea5e1896a3",
+    "stationId": "01a1d656-e1d2-7664-af9d-17831c80a710",
+    "status": "refunded",
+    "refundStatus": "refunded",
+    "refundedSatang": 6500
+   },
+   {
+    "id": "01a1d65a-04d3-7281-b402-35cb7ac1235d",
+    "stationId": "01a1d656-e1d2-7664-af9d-17831c80a710",
+    "status": "refunded",
+    "refundStatus": "refunded",
+    "refundedSatang": 17500
+   },
+   {
+    "id": "01a1d658-4dd9-7698-af66-4eb7b4ff5a66",
+    "stationId": "01a1d656-e1d2-7664-af9d-17831c80a710",
+    "status": "refunded",
+    "refundStatus": "refunded",
+    "refundedSatang": 104000
+   },
+   {
+    "id": "01a1d665-abfb-7cac-a729-0198cf75ca61",
+    "stationId": "01a1d656-e2c4-7ca7-ae7d-764989f88877",
+    "status": "refunded",
+    "refundStatus": "refunded",
+    "refundedSatang": 17500
+   },
+   {
+    "id": "01a1d664-971e-7be7-899c-9eae103f2b6b",
+    "stationId": "01a1d656-e2c4-7ca7-ae7d-764989f88877",
+    "status": "refunded",
+    "refundStatus": "refunded",
+    "refundedSatang": 104000
+   },
+   {
+    "id": "01a1d65f-2395-7572-9488-e54373f0256f",
+    "stationId": "01a1d656-e3d3-73f9-af04-901726a734a0",
+    "status": "voided",
+    "attempts": [
+     {
+      "id": "01a1d65f-28d6-7127-ad02-1b39691a1584",
+      "status": "declined",
+      "method": "card"
+     }
+    ]
+   }
+  ],
+  "refundedSatang": 492500,
+  "paidRows": 7,
+  "voidedRows": 2
+ }
+}
+
+=== 2026-11-13T19:35:54.654Z Retire exact final fixtures and synthetic staff
+S.phase='Retire exact final fixtures and synthetic staff';const out={at:new Date().toISOString(),stations:[],accounts:[],sessions:[]};for(const st of S.finalStations){S.assert.ok(st.name.startsWith('ZZ TEST SCRUM-982 final '));S.assert.equal((await S.call('PATCH',`/stations/${st.id}`,{devices:[]})).status,200);S.assert.equal((await S.call('DELETE',`/stations/${st.id}`)).status,200);const row=(await S.call('GET',`/branches/${S.branchId}/stations?includeArchived=true`)).body.stations.find(x=>x.id===st.id);S.assert.ok(row.archived&&row.devices.length===0);out.stations.push({id:row.id,name:row.name,archived:row.archived,devices:0});}const before=(await S.call('GET',`/boxes/${S.box.id}/devices?includeArchived=true`)).body.devices.find(x=>x.id===S.cardDevice.id);S.assert.ok(before.label===S.cardDevice.label&&before.transport==='simulated');S.assert.equal((await S.call('DELETE',`/devices/${S.cardDevice.id}`)).status,200);const terminal=(await S.call('GET',`/boxes/${S.box.id}/devices?includeArchived=true`)).body.devices.find(x=>x.id===S.cardDevice.id);S.assert.equal(terminal.archived,true);out.terminal={id:terminal.id,label:terminal.label,archived:true,transport:terminal.transport};for(const who of ['A','B']){const expected=S.acct[who];const row=(await S.call('GET','/accounts')).body.accounts.find(x=>x.id===expected.id);S.assert.ok(row.phone===expected.phone&&row.employee.name===expected.name&&row.employee.name.startsWith('ZZ TEST 964 '));await S.revoke(who);S.assert.equal((await S.call('PATCH',`/accounts/${expected.id}`,{status:'inactive'})).status,200);const actual=(await S.call('GET','/accounts')).body.accounts.find(x=>x.id===expected.id);const sessions=(await S.call('GET',`/accounts/${expected.id}/sessions?limit=50`)).body;S.assert.equal(actual.status,'inactive');S.assert.ok(sessions.total<=50&&sessions.sessions.every(x=>x.status==='ended'));const signIn=await S.trySignIn(who);S.assert.equal(signIn.status,401);out.accounts.push({id:actual.id,name:actual.employee.name,status:actual.status,liveSessions:0,totalSessions:sessions.total,signInStatus:signIn.status});}S.keepAlive(false);for(const label of Object.keys(S.pages)){const read=await S.signOutLabel(label);S.assert.equal(read.meAfter,401);out.sessions.push({label,...read});}S.receipt.cleanup.finalFixtures=out;S.receipt.cleanup.retainedForFinalSource=null;S.save();return out;
+--> {
+ "ok": true,
+ "value": {
+  "at": "2026-11-13T19:35:54.654Z",
+  "stations": [
+   {
+    "id": "01a1d656-e1d2-7664-af9d-17831c80a710",
+    "name": "ZZ TEST SCRUM-982 final desk till 1794597379646",
+    "archived": true,
+    "devices": 0
+   },
+   {
+    "id": "01a1d656-e2c4-7ca7-ae7d-764989f88877",
+    "name": "ZZ TEST SCRUM-982 final phone till 1794597379853",
+    "archived": true,
+    "devices": 0
+   },
+   {
+    "id": "01a1d656-e3d3-73f9-af04-901726a734a0",
+    "name": "ZZ TEST SCRUM-982 final card till 1794597380167",
+    "archived": true,
+    "devices": 0
+   }
+  ],
+  "accounts": [
+   {
+    "id": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+    "name": "ZZ TEST 964 A",
+    "status": "inactive",
+    "liveSessions": 0,
+    "totalSessions": 25,
+    "signInStatus": 401
+   },
+   {
+    "id": "01a1d2f9-710f-7e6e-bb8e-d8f17975d09f",
+    "name": "ZZ TEST 964 B",
+    "status": "inactive",
+    "liveSessions": 0,
+    "totalSessions": 19,
+    "signInStatus": 401
+   }
+  ],
+  "sessions": [
+   {
+    "label": "desk-final",
+    "signOut": 200,
+    "meAfter": 401
+   },
+   {
+    "label": "card-final",
+    "signOut": 200,
+    "meAfter": 401
+   },
+   {
+    "label": "phone-final",
+    "signOut": 200,
+    "meAfter": 401
+   }
+  ],
+  "terminal": {
+   "id": "7c5abeba-c737-4c6b-9bff-8d97ed4bff42",
+   "label": "ZZ TEST SCRUM-982 card terminal 1794578753622",
+   "archived": true,
+   "transport": "simulated"
+  }
+ }
+}
+
+=== 2026-11-13T19:36:24.373Z Independent cleanup readback and labelled final proof card
+S.phase='Independent cleanup readback and labelled final proof card';const money=[];for(const st of S.finalStations){for(const row of await S.stationSales(st)){const d=await S.sale(row.id);S.assert.ok(['refunded','voided'].includes(d.sale.status));if(d.sale.status==='refunded'){S.assert.equal(d.refundStatus,'refunded');S.assert.equal(d.refunds.reduce((s,r)=>s+r.amountSatang,0),d.sale.totals.grossSatang);}money.push({id:row.id,status:d.sale.status,refundStatus:d.refundStatus??null,refunds:(d.refunds??[]).map(x=>({id:x.id,status:x.status,amountSatang:x.amountSatang})),allocations:(d.refundAllocations??[]).map(x=>({status:x.status,amountSatang:x.amountSatang}))});}}const credentials=(await S.call('GET',`/branches/${S.branchId}/credentials?includeRevoked=true`)).body.credentials;const own=S.receipt.created.filter(x=>x.kind==='display');const display=own.map(x=>{const row=credentials.find(y=>y.id===x.id);return {id:x.id,found:!!row,revokedAt:row?.revokedAt??null};});const p=await S.browser.newPage({viewport:{width:1280,height:1050}});await p.setContent(`<html><head><style>body{font:22px Arial;background:#f1f5f9;color:#0f172a;padding:45px}article{background:white;border-radius:16px;padding:32px}h1{font-size:34px}li{margin:17px 0}code{font-size:16px}small{font-size:17px;color:#475569}</style></head><body><article><h1>SCRUM-982 staging proof and cleanup</h1><p>14 November 2026, ${S.bkk(new Date())}</p><p>Reviewed source: <code>${S.sha}</code></p><ul><li>Eight native cases passed across desktop ticket, F&B, Shop and phone ticket/F&B.</li><li>Same recorded sale and original seller survived a different staff sign-in.</li><li>Paid QR stayed PromptPay; cancelled QR allowed one Cash payment.</li><li>Late QR paid during lock recovered without a second tender.</li><li>Edited cart: 1,040 baht charge voided; corrected 1,390 baht sale paid.</li><li>Seven own simulated paid sales refunded: 4,925 baht. Two unpaid rows voided.</li><li>Three final stations and own simulated terminal archived. Display credential revoked.</li><li>Both synthetic staff inactive, zero live sessions; sign-in refused with 401.</li><li>All three native browser sessions signed out and read 401.</li></ul><small>Bounded staging proof. QR and terminal providers were simulated. No physical terminal, bank, printer or real-message acceptance. Owner-held SCRUM-981 choices remain open. Source CI is recorded separately.</small></article></body></html>`);await p.screenshot({path:S.resolve(S.out,'final/09-proof-cleanup-card.png')});await p.close();S.receipt.cleanup.independent={at:new Date().toISOString(),money,display};S.save();return {rows:money.length,statuses:money.map(x=>({id:x.id,status:x.status,refunds:x.refunds,allocations:x.allocations})),displayKinds:S.receipt.created.filter(x=>/display|credential/.test(x.kind)).map(x=>({kind:x.kind,id:x.id}))};
+--> {
+ "ok": true,
+ "value": {
+  "rows": 9,
+  "statuses": [
+   {
+    "id": "01a1d667-082f-7e65-af9a-9327d6ea1de3",
+    "status": "refunded",
+    "refunds": [
+     {
+      "id": "01a1d668-76b9-784b-a694-be6cde29e1cd",
+      "amountSatang": 139000
+     }
+    ],
+    "allocations": []
+   },
+   {
+    "id": "01a1d667-06bf-700b-a95d-df37dcae72e5",
+    "status": "voided",
+    "refunds": [],
+    "allocations": []
+   },
+   {
+    "id": "01a1d666-5fe4-77b5-9771-097881fb1e6a",
+    "status": "refunded",
+    "refunds": [
+     {
+      "id": "01a1d668-77fe-7194-a680-c903263feb21",
+      "amountSatang": 104000
+     }
+    ],
+    "allocations": []
+   },
+   {
+    "id": "01a1d65c-f1d4-7bd0-a7bf-68ea5e1896a3",
+    "status": "refunded",
+    "refunds": [
+     {
+      "id": "01a1d668-794d-7859-a3f0-89fbb4b1a16e",
+      "amountSatang": 6500
+     }
+    ],
+    "allocations": []
+   },
+   {
+    "id": "01a1d65a-04d3-7281-b402-35cb7ac1235d",
+    "status": "refunded",
+    "refunds": [
+     {
+      "id": "01a1d668-7a6c-70f1-bea4-eddd86050da5",
+      "amountSatang": 17500
+     }
+    ],
+    "allocations": []
+   },
+   {
+    "id": "01a1d658-4dd9-7698-af66-4eb7b4ff5a66",
+    "status": "refunded",
+    "refunds": [
+     {
+      "id": "01a1d668-7b62-7834-9200-7fc058f4a46c",
+      "amountSatang": 104000
+     }
+    ],
+    "allocations": []
+   },
+   {
+    "id": "01a1d665-abfb-7cac-a729-0198cf75ca61",
+    "status": "refunded",
+    "refunds": [
+     {
+      "id": "01a1d668-7ca3-73e6-aafc-694efd3c15f6",
+      "amountSatang": 17500
+     }
+    ],
+    "allocations": []
+   },
+   {
+    "id": "01a1d664-971e-7be7-899c-9eae103f2b6b",
+    "status": "refunded",
+    "refunds": [
+     {
+      "id": "01a1d668-7dd2-74cf-9fb8-30b64f2ab71a",
+      "amountSatang": 104000
+     }
+    ],
+    "allocations": []
+   },
+   {
+    "id": "01a1d65f-2395-7572-9488-e54373f0256f",
+    "status": "voided",
+    "refunds": [],
+    "allocations": []
+   }
+  ],
+  "displayKinds": [
+   {
+    "kind": "display",
+    "id": "01a1d4fd-6e09-7ff8-a64d-8c5f09837f53"
+   },
+   {
+    "kind": "display",
+    "id": "01a1d658-3de4-747f-b6c7-5ee2d543ec55"
+   }
+  ]
+ }
+}
+
+=== 2026-11-13T19:37:16.362Z Read back revoked displays and final refund allocation shape
+S.phase='Read back revoked displays and final refund allocation shape';const rows=(await S.call('GET',`/branches/${S.branchId}/credentials?includeRevoked=true`)).body.credentials;const display=S.receipt.created.filter(x=>x.kind==='display').map(x=>{const row=rows.find(y=>y.id===x.id);S.assert.ok(row?.revokedAt);return {id:x.id,revokedAt:row.revokedAt,connection:row.connection??null};});S.assert.equal(Object.keys(S.displays).length,0);S.receipt.cleanup.independent.display=display;const d=await S.sale(S.correctedSale);S.receipt.cleanup.independent.refundKeys=Object.keys(d);S.save();return {display,detailKeys:Object.keys(d),refund:d.refunds.map(r=>({keys:Object.keys(r),amountSatang:r.amountSatang,allocations:r.allocations}))};
+--> {
+ "ok": true,
+ "value": {
+  "display": [
+   {
+    "id": "01a1d4fd-6e09-7ff8-a64d-8c5f09837f53",
+    "revokedAt": "2026-11-13T13:59:45.816Z",
+    "connection": null
+   },
+   {
+    "id": "01a1d658-3de4-747f-b6c7-5ee2d543ec55",
+    "revokedAt": "2026-11-13T19:33:12.528Z",
+    "connection": null
+   }
+  ],
+  "detailKeys": [
+   "timeExtension",
+   "sale",
+   "correctionBandShortCode",
+   "refundStatus",
+   "refundableSatang",
+   "refunds",
+   "printJobs",
+   "bands",
+   "grants",
+   "issuedVouchers",
+   "pickupCode",
+   "attempts",
+   "taxBreakdown",
+   "taxConfig",
+   "lines",
+   "discounts"
+  ],
+  "refund": [
+   {
+    "keys": [
+     "id",
+     "saleId",
+     "stationId",
+     "number",
+     "amountSatang",
+     "mode",
+     "reason",
+     "note",
+     "lines",
+     "tenderAllocation",
+     "approvedBy",
+     "createdBy",
+     "pending",
+     "createdAt"
+    ],
+    "amountSatang": 139000
+   }
+  ]
+ }
+}
+
+=== 2026-11-13T19:37:27.393Z Verify final refunds are settled, then close retained administrative context
+S.phase='Verify final refunds are settled, then close retained administrative context';const refunds=[];for(const row of S.receipt.cleanup.finalMoney.rows.filter(x=>x.refundStatus==='refunded')){const d=await S.sale(row.id);for(const r of d.refunds){S.assert.equal(r.pending,false);refunds.push({saleId:row.id,refundId:r.id,pending:r.pending,amountSatang:r.amountSatang,tenderAllocation:r.tenderAllocation});}}S.receipt.cleanup.independent.settledRefunds=refunds;await S.browser.close();S.browser=null;const out=await S.admin.post(S.pos+'/api/auth/sign-out',{headers:{'idempotency-key':S.randomUUID()}});const me=await S.admin.get(S.pos+'/api/me');S.assert.equal(me.status(),401);S.receipt.cleanup.finalAdmin={signOut:out.status(),meAfter:me.status(),browserClosed:true,at:new Date().toISOString()};S.receipt.finalCompleteAt=new Date().toISOString();S.save();return {refunds,admin:S.receipt.cleanup.finalAdmin};
+--> {
+ "ok": true,
+ "value": {
+  "refunds": [
+   {
+    "saleId": "01a1d667-082f-7e65-af9a-9327d6ea1de3",
+    "refundId": "01a1d668-76b9-784b-a694-be6cde29e1cd",
+    "pending": false,
+    "amountSatang": 139000,
+    "tenderAllocation": [
+     {
+      "route": "cash",
+      "method": "cash",
+      "status": "done",
+      "provider": "manual",
+      "attemptId": "01a1d667-0c34-7f95-9b67-4d8cf0ce2c4f",
+      "methodCode": "cash",
+      "amountSatang": 139000
+     }
+    ]
+   },
+   {
+    "saleId": "01a1d666-5fe4-77b5-9771-097881fb1e6a",
+    "refundId": "01a1d668-77fe-7194-a680-c903263feb21",
+    "pending": false,
+    "amountSatang": 104000,
+    "tenderAllocation": [
+     {
+      "route": "gateway_refund",
+      "detail": "Voided at the gateway",
+      "method": "qr",
+      "status": "done",
+      "provider": "simulator",
+      "respCode": "00",
+      "attemptId": "01a1d666-6a96-7262-8392-9dcfbecbd25c",
+      "settledAt": "2026-11-13T19:35:33.143Z",
+      "methodCode": "qr",
+      "processType": "V",
+      "providerRef": "SIMRF321B0EAAA4",
+      "amountSatang": 104000
+     }
+    ]
+   },
+   {
+    "saleId": "01a1d65c-f1d4-7bd0-a7bf-68ea5e1896a3",
+    "refundId": "01a1d668-794d-7859-a3f0-89fbb4b1a16e",
+    "pending": false,
+    "amountSatang": 6500,
+    "tenderAllocation": [
+     {
+      "route": "gateway_refund",
+      "detail": "Voided at the gateway",
+      "method": "qr",
+      "status": "done",
+      "provider": "simulator",
+      "respCode": "00",
+      "attemptId": "01a1d65c-f5db-76ba-a4da-511a883ff1c7",
+      "settledAt": "2026-11-13T19:35:33.470Z",
+      "methodCode": "promptpay",
+      "processType": "V",
+      "providerRef": "SIMRFED0F1D84F4",
+      "amountSatang": 6500
+     }
+    ]
+   },
+   {
+    "saleId": "01a1d65a-04d3-7281-b402-35cb7ac1235d",
+    "refundId": "01a1d668-7a6c-70f1-bea4-eddd86050da5",
+    "pending": false,
+    "amountSatang": 17500,
+    "tenderAllocation": [
+     {
+      "route": "cash",
+      "method": "cash",
+      "status": "done",
+      "provider": "manual",
+      "attemptId": "01a1d65a-1a01-709f-8a88-cfb84e3d6a7f",
+      "methodCode": "cash",
+      "amountSatang": 17500
+     }
+    ]
+   },
+   {
+    "saleId": "01a1d658-4dd9-7698-af66-4eb7b4ff5a66",
+    "refundId": "01a1d668-7b62-7834-9200-7fc058f4a46c",
+    "pending": false,
+    "amountSatang": 104000,
+    "tenderAllocation": [
+     {
+      "route": "gateway_refund",
+      "detail": "Voided at the gateway",
+      "method": "qr",
+      "status": "done",
+      "provider": "simulator",
+      "respCode": "00",
+      "attemptId": "01a1d658-532f-753b-8601-368f8b4bd155",
+      "settledAt": "2026-11-13T19:35:34.004Z",
+      "methodCode": "promptpay",
+      "processType": "V",
+      "providerRef": "SIMRF145C33D983",
+      "amountSatang": 104000
+     }
+    ]
+   },
+   {
+    "saleId": "01a1d665-abfb-7cac-a729-0198cf75ca61",
+    "refundId": "01a1d668-7ca3-73e6-aafc-694efd3c15f6",
+    "pending": false,
+    "amountSatang": 17500,
+    "tenderAllocation": [
+     {
+      "route": "gateway_refund",
+      "detail": "Voided at the gateway",
+      "method": "qr",
+      "status": "done",
+      "provider": "simulator",
+      "respCode": "00",
+      "attemptId": "01a1d665-b00c-7e03-b7c1-a5a0e784d7f1",
+      "settledAt": "2026-11-13T19:35:34.324Z",
+      "methodCode": "promptpay",
+      "processType": "V",
+      "providerRef": "SIMRFFC8EC0D81B",
+      "amountSatang": 17500
+     }
+    ]
+   },
+   {
+    "saleId": "01a1d664-971e-7be7-899c-9eae103f2b6b",
+    "refundId": "01a1d668-7dd2-74cf-9fb8-30b64f2ab71a",
+    "pending": false,
+    "amountSatang": 104000,
+    "tenderAllocation": [
+     {
+      "route": "cash",
+      "method": "cash",
+      "status": "done",
+      "provider": "manual",
+      "attemptId": "01a1d665-47a1-7cc8-a99d-a6d01a43afb2",
+      "methodCode": "cash",
+      "amountSatang": 104000
+     }
+    ]
+   }
+  ],
+  "admin": {
+   "signOut": 200,
+   "meAfter": 401,
+   "browserClosed": true,
+   "at": "2026-11-13T19:37:28.559Z"
+  }
+ }
+}
