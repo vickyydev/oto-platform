@@ -538,6 +538,67 @@ describe('a SALE acknowledgement that carries too little', () => {
     expect((await terminalCommands(held.attemptId)).filter((c) => modeOf(c) === 'void')).toHaveLength(1);
     expect((await readAttempt(held.attemptId)).attempt.reversalPending).toBe(true);
   });
+
+  async function confirmTook(attemptId: string) {
+    return ctx.app.inject({
+      method: 'POST', url: `/payments/attempts/${attemptId}/confirm`, headers: { cookie },
+      payload: { took: true, note: 'The terminal screen says APPROVED' },
+    });
+  }
+
+  async function expectStillHeld(attemptId: string, owed: number) {
+    const row = await attemptRow(attemptId);
+    expect(row.status).toBe('awaiting_staff_confirmation');
+    expect(row.paidAt).toBeNull();
+    expect(row.staffConfirmedByAccountId).toBeNull();
+    expect(await audits(attemptId, 'payment.attempt.confirm')).toHaveLength(0);
+    expect((await readAttempt(attemptId)).outstandingSatang).toBe(owed);
+  }
+
+  it('a partial approval cannot be confirmed as paid in full, and the till reads why', async () => {
+    const held = await claimedTender();
+    await postAck(held.command.id, boxAck({
+      attemptId: held.attemptId, mode: 'sale', deviceId: cardDeviceId, protocol: 'ghl_linkpos',
+      outcome: 'partial_approval', terminalRef: '261113979011', responseCode: '10',
+    }));
+    const read = await ctx.app.inject({ method: 'GET', url: `/payments/attempts/${held.attemptId}`, headers: { cookie } });
+    expect(read.statusCode, read.body).toBe(200);
+    expect(read.json().responseText).toMatch(/approved a different amount.*cannot be confirmed as paid in full/);
+
+    const took = await confirmTook(held.attemptId);
+    expect(took.statusCode, took.body).toBe(409);
+    expect(took.json().error).toMatchObject({
+      code: 'PARTIAL_APPROVAL_NOT_CONFIRMABLE', details: { held: 'partial' },
+    });
+    await expectStillHeld(held.attemptId, held.owed);
+  });
+
+  it('an inquiry’s approval after a partial approval does not lift the hold', async () => {
+    const held = await claimedTender('qr');
+    await postAck(held.command.id, boxAck({
+      attemptId: held.attemptId, mode: 'sale', deviceId: qrDeviceId, protocol: 'digio_tlv',
+      outcome: 'partial_approval', terminalRef: '979012', responseCode: '00',
+    }));
+    expect((await attemptRow(held.attemptId)).status).toBe('awaiting_staff_confirmation');
+    // A person asks the terminal again; only the acknowledgement of that comes back.
+    const asked = await ctx.app.inject({ method: 'POST', url: `/payments/attempts/${held.attemptId}/inquire`, headers: { cookie } });
+    expect(asked.statusCode, asked.body).toBe(200);
+    const inquiry = (await terminalCommands(held.attemptId)).find((row) => modeOf(row) === 'inquire')!;
+    await claim(inquiry.id);
+    await postAck(inquiry.id, boxAck({
+      attemptId: held.attemptId, mode: 'inquire', deviceId: qrDeviceId, protocol: 'digio_tlv',
+      outcome: 'approved', terminalRef: '979012', responseCode: '00',
+    }));
+    const row = await attemptRow(held.attemptId);
+    expect((row.payload as { fromCommand?: unknown }).fromCommand).toMatchObject({
+      mode: 'inquire', commandId: inquiry.id, outcome: 'approved', held: 'partial',
+    });
+
+    const took = await confirmTook(held.attemptId);
+    expect(took.statusCode, took.body).toBe(409);
+    expect(took.json().error.code).toBe('PARTIAL_APPROVAL_NOT_CONFIRMABLE');
+    await expectStillHeld(held.attemptId, held.owed);
+  });
 });
 
 // --- A refund's VOID answered only on its acknowledgement ---------------------
