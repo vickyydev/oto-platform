@@ -58,7 +58,9 @@ vi.mock('@/auth/offlinePreparation', () => ({ forgetOfflinePreparation: vi.fn(),
   readOfflinePreparation: () => null }));
 
 import { OperatorProvider, type useOperator } from '@/auth/OperatorContext';
-import { useTicketDisplay, type TicketDisplayState } from '@/lib/displaySession';
+import { DISPLAY_HANDOVER_WAIT, useTicketDisplay, type TicketDisplayState } from '@/lib/displaySession';
+import { ApiError } from '@/api/client';
+import { lockedFamilyForm, lockedFamilyFormLine, useLockedFamilyFormWatch } from '@/lib/lockedFamilyForm';
 import { setSaleAtStake } from '@/pwa/openSale';
 
 Object.assign(globalThis, { React });
@@ -158,5 +160,166 @@ describe('SCRUM-878 — the customer display after a session that ended', () => 
       display.unmount();
       provider.unmount();
     }
+  });
+});
+
+describe('SCRUM-964 — the display follows a DIFFERENT person who continues the kept sale', () => {
+  const BEN = { id: 'zz-test-ben', name: 'ZZ TEST Ben' };
+  const TTL_MS = 60_000;
+
+  it('B continues A’s kept sale: never renewed or published under A’s lease, then B’s own lease and the sale on the display as B has it', async () => {
+    let who = ANN;
+    /** The account the till's requests carry (its session cookie); null once the session has ended. */
+    let cookie: string | null = ANN.id;
+    seam.me.mockImplementation(async () => {
+      if (!cookie) throw new ApiError(401, 'UNAUTHORIZED', 'Not signed in');
+      return {
+        account: { id: who.id, phone: 'ZZ TEST', mustChangePassword: false, operatorId: 'zz-test-operator' },
+        employee: { name: who.name }, branch: { id: 'zz-test-park', code: 'zz-test-park' }, sessionLocked: false, impersonation: null,
+        sessionEnd: { at: new Date(signedInAt + 12 * 3_600_000).toISOString(), inSeconds: 43_000, afterHours: 12 },
+      };
+    });
+    seam.signIn.mockImplementation(async () => { signedInAt = Date.now(); cookie = who.id; return {}; });
+    // The box as `packages/box-agent/src/station-session.ts` answers: a lease is the account's that claimed it.
+    const refuse = (status: number, code: string, message: string) => new ApiError(status, code, message, { document: box });
+    const live = () => box.lease !== null && Date.parse(box.lease.expiresAt) > Date.now();
+    seam.box.lease.mockImplementation(async (_station: string, holder: string) => {
+      const held = box.lease;
+      const same = held !== null && held.holder === holder && held.accountId === cookie;
+      if (live() && !same) throw refuse(409, 'STATION_NO_LEASE', 'Another till is using this station. A manager can take it over.');
+      leases += 1;
+      box = { ...box, sequence: box.sequence + 1, lease: { leaseId: `lease-${leases}`, holder, holderKind: 'till', accountId: cookie,
+        startedAt: new Date().toISOString(), heartbeatAt: new Date().toISOString(), expiresAt: new Date(Date.now() + TTL_MS).toISOString() } };
+      return { lease: { leaseId: box.lease!.leaseId }, document: box };
+    });
+    seam.box.renew.mockImplementation(async (_station: string, leaseId: string) => {
+      if (box.lease?.leaseId !== leaseId) throw refuse(409, 'STATION_STALE', 'Session moved to another till.');
+      if (box.lease.accountId !== cookie) throw refuse(403, 'STATION_NOT_PERMITTED', 'Another till is holding this station. A manager can take it over.');
+      box = { ...box, lease: { ...box.lease, expiresAt: new Date(Date.now() + TTL_MS).toISOString() } };
+      return { document: box };
+    });
+    seam.box.publish.mockImplementation(async (_station: string, intent: { leaseId: string; payload: Record<string, unknown> }) => {
+      if (box.lease?.leaseId !== intent.leaseId) throw refuse(409, 'STATION_STALE', 'Session moved to another till.');
+      if (box.lease.accountId !== cookie) throw refuse(403, 'STATION_NOT_PERMITTED', 'Another till is holding this station. A manager can take it over.');
+      box = { ...box, ...intent.payload, sequence: box.sequence + 1 };
+      return { document: box };
+    });
+
+    const provider = renderHook(() => OperatorProvider({ children: null }));
+    const operator = () => provider.result.current.props.value as ReturnType<typeof useOperator>;
+    await vi.advanceTimersByTimeAsync(0);
+    const display = renderHook((props: { shown: TicketDisplayState; active: boolean }) =>
+      useTicketDisplay(STATION, props.shown, vi.fn(), props.active), { shown: screen('ZZ TEST A’s cart'), active: !operator().locked });
+    try {
+      setSaleAtStake('till', true);
+      await vi.advanceTimersByTimeAsync(100);
+      expect(box.lease?.accountId).toBe(ANN.id);
+      expect(box.prompt?.nickname).toBe('ZZ TEST A’s cart');
+
+      // A's session is ended from elsewhere: the till locks over the sale; A's calls answer 401.
+      cookie = null;
+      window.dispatchEvent(new Event('oto:unauthorized'));
+      expect(operator().sessionEnded?.saleKept).toBe(true);
+      display.rerender({ shown: screen('ZZ TEST A’s cart'), active: !operator().locked });
+
+      // B signs in on the same till and continues the sale.
+      who = { id: BEN.id, name: BEN.name };
+      await operator().signIn('ZZ TEST other phone', 'ZZ TEST synthetic password');
+      expect(operator().keptOffer?.startedBy).toBe(ANN.name);
+      operator().continueKept();
+      expect(operator().locked).toBe(false);
+      const renews = seam.box.renew.mock.calls.length;
+      const publishes = seam.box.publish.mock.calls.length;
+      display.rerender({ shown: screen('ZZ TEST A’s cart, B’s second kid'), active: !operator().locked });
+      await vi.advanceTimersByTimeAsync(200);
+      // Nothing under A's lease as B; the till names the wait truthfully.
+      expect(seam.box.renew.mock.calls.slice(renews)).toEqual([]);
+      expect(seam.box.publish.mock.calls.slice(publishes)).toEqual([]);
+      expect(display.result.current.error).toBe(DISPLAY_HANDOVER_WAIT);
+      expect(box.lease?.accountId).toBe(ANN.id);
+
+      // The box frees A's lease 60 s after it was last renewed: B's lease, and B's sale on the display.
+      await vi.advanceTimersByTimeAsync(TTL_MS - 1_000);
+      expect(box.lease?.accountId).toBe(ANN.id);
+      await vi.advanceTimersByTimeAsync(2_000);
+      expect(box.lease?.accountId).toBe(BEN.id);
+      expect(box.prompt?.nickname).toBe('ZZ TEST A’s cart, B’s second kid');
+      expect(display.result.current.error).toBeNull();
+    } finally {
+      display.unmount();
+      provider.unmount();
+    }
+  });
+});
+
+describe('SCRUM-964 (point 2) — the family form line under an ENDED session, through the real path', () => {
+  const FAMILY_LINE = 'A family is filling in the drop-off form on the display.';
+
+  it('the session ends while the family fills the form: the presence read is refused 401, the till locks, and the line is on the sign-in form', async () => {
+    // The box's status read, which a locked till asks: refused too once the session has gone.
+    const status = vi.fn(async () => { throw new ApiError(401, 'UNAUTHORIZED', 'Not signed in'); });
+    Object.assign(seam.box, { status });
+    const provider = renderHook(() => OperatorProvider({ children: null }));
+    const operator = () => provider.result.current.props.value as ReturnType<typeof useOperator>;
+    await vi.advanceTimersByTimeAsync(0);
+    // The family's form on the paired display, as `Till.tsx` composes it: open while the
+    // display link covers it (no error, a display watching), and watched while locked.
+    const till = renderHook((props: { locked: boolean; ended: boolean }) => {
+      const linked = useTicketDisplay(STATION, screen('ZZ TEST family typing'), vi.fn(), !props.locked);
+      const inlineDisplay = !linked.connected.length || !linked.supported || !!linked.error;
+      useLockedFamilyFormWatch({ locked: props.locked, stationId: STATION, formOpen: !inlineDisplay, ended: props.ended });
+      return linked;
+    }, { locked: false, ended: false });
+    try {
+      setSaleAtStake('till', true);
+      await vi.advanceTimersByTimeAsync(100);
+      expect(till.result.current.connected).toHaveLength(1);
+      expect(lockedFamilyForm.get()).toBeNull();
+
+      // The platform ends the session: the next platform read is refused 401, which the till's
+      // client turns into `oto:unauthorized` before it throws (`api/client.ts`), as on staging.
+      seam.get.mockImplementation(async () => {
+        window.dispatchEvent(new CustomEvent('oto:unauthorized', { detail: { sentAt: Date.now() } }));
+        throw new ApiError(401, 'UNAUTHORIZED', 'Not signed in');
+      });
+      await vi.advanceTimersByTimeAsync(2_000);
+      expect(operator().locked).toBe(true);
+      expect(operator().sessionEnded).not.toBeNull();
+      till.rerender({ locked: operator().locked, ended: !!operator().sessionEnded });
+      expect(lockedFamilyFormLine(lockedFamilyForm.get())).toBe(FAMILY_LINE);
+      // Read over 12 s, as the proof did: the status reads are refused and the line stands.
+      for (let i = 0; i < 4; i += 1) {
+        await vi.advanceTimersByTimeAsync(4_000);
+        expect(lockedFamilyFormLine(lockedFamilyForm.get())).toBe(FAMILY_LINE);
+      }
+      expect(status).toHaveBeenCalled();
+
+      // The same person signs in: the till shows the form itself, and the line goes.
+      seam.get.mockResolvedValue({ displays: [{ id: 'display', name: 'ZZ TEST display', connected: true }] });
+      await operator().signIn('ZZ TEST phone', 'ZZ TEST synthetic password');
+      till.rerender({ locked: operator().locked, ended: !!operator().sessionEnded });
+      expect(lockedFamilyForm.get()).toBeNull();
+    } finally {
+      till.unmount();
+      provider.unmount();
+    }
+    expect(lockedFamilyForm.get()).toBeNull();
+  });
+
+  it('discarded by the next person, the kept screen goes and the line with it', async () => {
+    const provider = renderHook(() => OperatorProvider({ children: null }));
+    const operator = () => provider.result.current.props.value as ReturnType<typeof useOperator>;
+    await vi.advanceTimersByTimeAsync(0);
+    const till = renderHook((props: { locked: boolean; ended: boolean }) => {
+      useLockedFamilyFormWatch({ locked: props.locked, stationId: null, formOpen: !props.locked, ended: props.ended });
+    }, { locked: false, ended: false });
+    setSaleAtStake('till', true);
+    window.dispatchEvent(new Event('oto:unauthorized'));
+    till.rerender({ locked: operator().locked, ended: !!operator().sessionEnded });
+    expect(lockedFamilyFormLine(lockedFamilyForm.get())).toBe(FAMILY_LINE);
+    // Discard gives a fresh seat: `App.tsx` mounts a new till, and the kept one goes.
+    till.unmount();
+    expect(lockedFamilyForm.get()).toBeNull();
+    provider.unmount();
   });
 });

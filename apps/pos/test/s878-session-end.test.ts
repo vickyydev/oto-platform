@@ -6,7 +6,7 @@ import { renderHook } from './support/hooks';
 import { OperatorProvider, type useOperator } from '@/auth/OperatorContext';
 import { ApiError } from '@/api/client';
 import { INACTIVITY_TIMEOUT_MS } from '@/auth/timings';
-import { getSaleOpen, saleOpenSince, setSaleAtStake, setSaleOpen } from '@/pwa/openSale';
+import { getSaleOpen, rungUpSaleOf, saleOpenSince, saleRungUp, setSaleAtStake, setSaleOpen, setSaleRungUp } from '@/pwa/openSale';
 import { rememberSaleOnScreen } from '@/lib/saleOnScreen';
 import {
   afterSignIn,
@@ -60,6 +60,7 @@ const seam = vi.hoisted(() => {
   return {
     browser, me: vi.fn(), permissions: vi.fn(), signIn: vi.fn(), signOut: vi.fn(), onlineUnlock: vi.fn(), lock: vi.fn(),
     setLang: vi.fn(), setTheme: vi.fn(), boxLock: vi.fn(async (_station: string) => undefined),
+    getSale: vi.fn(),
   };
 });
 vi.mock('react', async original => ({ ...await original<typeof import('react')>(), ...await import('./support/hooks') }));
@@ -76,6 +77,7 @@ vi.mock('@/lib/lane', () => ({ currentLane: () => 'platform', laneStation: () =>
   noteLaneFailure: vi.fn(), platformNeedsUnlock: () => false, refreshLane: async () => 'platform', platformUnlocked: vi.fn() }));
 vi.mock('@/api/catalogBridge', () => ({ loadCatalogFromApi: async () => undefined, restorePreparedCatalog: vi.fn() }));
 vi.mock('@/lib/displaySession', () => ({ takeTicketDisplayLeaseForSignOut: async () => null }));
+vi.mock('@/api/history', () => ({ getSale: seam.getSale }));
 vi.mock('@/auth/offlinePreparation', () => ({ forgetOfflinePreparation: vi.fn(), prepareOfflineOperator: vi.fn(),
   readOfflinePreparation: () => null }));
 Object.assign(globalThis, { React });
@@ -132,7 +134,10 @@ beforeEach(() => {
   seam.onlineUnlock.mockResolvedValue({});
 });
 afterEach(() => {
-  setSaleAtStake('till', false);
+  for (const surface of ['till', 'order-station', 'merch-station', 'mobile-till', 'mobile-fnb']) {
+    setSaleAtStake(surface, false);
+    setSaleRungUp(surface, null);
+  }
   setSaleOpen('till', false);
   setSaleOpen('ticket-display', false);
   vi.useRealTimers();
@@ -412,8 +417,9 @@ describe('SCRUM-878 — a different person signs in over the kept sale', () => {
       const seat = value().tillSeat;
       vi.setSystemTime(T0 + 11 * 3_600_000 + 35 * 60_000);
       setSaleAtStake('till', true);
-      // Pay pressed: the till remembers the rung-up sale for its payment screen, as `Till.tsx` does.
-      rememberSaleOnScreen('zz-test-station', 'zz-test-sale-878');
+      // Pay pressed: the till says which sale it has rung up, as `Till.tsx` does from its writer.
+      // SCRUM-964 — the surface's own mark now, not the stored one (an earlier sale's could be stale).
+      setSaleRungUp('till', 'zz-test-sale-878');
       pastTheMark();
       refused();
       expect(value().sessionEnded?.saleKept).toBe(true);
@@ -718,7 +724,12 @@ describe('SCRUM-878 — the security rules', () => {
   it('nothing is written anywhere, and no password, token or session value is kept with the sale', async () => {
     const { hook, value } = await endedThenOffered();
     try {
-      expect(writes).toEqual([]);
+      // SCRUM-964 — the one thing written: this tab's record of the END for a reload at the
+      // sign-in form (the line and who may have the screen), never the sale's contents. It said
+      // nothing at all was written before the owner asked for the end to survive a reload.
+      expect(writes.map((w) => `${w.store}:${w.key}`)).toEqual(['sessionStorage:oto.till.sessionEnded']);
+      expect(writes[0]!.value.includes(PASSWORD)).toBe(false);
+      expect(writes[0]!.value).not.toMatch(/token|password|cookie|session_?id|phone|nickname|member/i);
       const said = JSON.stringify({ ended: value().sessionEnded, offer: value().keptOffer });
       expect(said.includes(PASSWORD)).toBe(false);
       expect(said).not.toMatch(/token|password|cookie|session_?id/i);
@@ -836,5 +847,208 @@ describe('SCRUM-878 — the gate keys the selling screen by its seat', () => {
     expect(app).toContain('<MerchStation key={`${seat}:');
     expect(app).toContain('<div key={seat} className="contents" hidden={locked} inert={locked}');
     expect(app).not.toContain('key={`${operator.id}:');
+  });
+});
+
+describe('SCRUM-964 — a rung-up sale on every selling surface, and a mark that is never stale', () => {
+  const src = (rel: string) => readFileSync(path.resolve(import.meta.dirname, '..', 'src', rel), 'utf8').replace(/\r\n/g, '\n');
+
+  it.each([
+    ['order-station', 'the counter’s F&B'],
+    ['merch-station', 'the Shop, desk and phone'],
+    ['mobile-fnb', 'the phone’s F&B'],
+    ['mobile-till', 'the phone’s till'],
+  ])('a sale rung up on %s (%s) is offered to another person to continue only, as the ticket till’s is', async (surface) => {
+    const { hook, value } = await signedIn();
+    try {
+      setSaleAtStake(surface, true);
+      setSaleRungUp(surface, `zz-test-${surface}-sale`);
+      pastTheMark();
+      refused();
+      who = { ...BEN, branchId: 'zz-test-park', operatorId: 'zz-test-operator' };
+      await value().signIn('ZZ TEST other phone', PASSWORD);
+      expect(value().keptOffer?.rungUpSaleId).toBe(`zz-test-${surface}-sale`);
+      expect(keptSaleOfferAsk(value().keptOffer!)).toBe('Continue it to read its payment back, then finish it or cancel it.');
+    } finally { hook.unmount(); }
+  });
+
+  it('a mark stored for an earlier sale never makes a plain cart Continue-only, and a closed sale’s mark goes with it', async () => {
+    const { hook, value } = await signedIn();
+    try {
+      // The ticket till remembered an earlier rung-up sale for a reload; the cart now is a plain one.
+      rememberSaleOnScreen('zz-test-station', 'zz-test-sale-earlier');
+      // The F&B order was rung up, then finished (its writer closed it): the mark goes.
+      setSaleAtStake('order-station', true);
+      setSaleRungUp('order-station', 'zz-test-fnb-finished');
+      setSaleRungUp('order-station', null);
+      setSaleAtStake('till', true);
+      expect(saleRungUp()).toBeNull();
+      pastTheMark();
+      refused();
+      who = { ...BEN, branchId: 'zz-test-park', operatorId: 'zz-test-operator' };
+      await value().signIn('ZZ TEST other phone', PASSWORD);
+      expect(value().keptOffer).not.toBeNull();
+      expect(value().keptOffer?.rungUpSaleId).toBeUndefined();
+      expect(keptSaleOfferAsk(value().keptOffer!)).toBe('Continue it, or discard it and start a new sale.');
+    } finally { hook.unmount(); }
+  });
+
+  it('only a surface with a sale at stake names its rung-up sale; the writer’s states that are rung up', () => {
+    setSaleRungUp('merch-station', 'zz-test-left-alone');
+    expect(saleRungUp()).toBeNull();
+    setSaleAtStake('merch-station', true);
+    expect(saleRungUp()).toEqual({ surface: 'merch-station', saleId: 'zz-test-left-alone' });
+    for (const kind of ['writing', 'committed', 'finalising']) expect(rungUpSaleOf({ kind, saleId: 's' })).toBe('s');
+    expect(rungUpSaleOf({ kind: 'failed', saleId: 's', stage: 'finalise' })).toBe('s');
+    for (const state of [{ kind: 'idle' }, { kind: 'written', saleId: 's' }, { kind: 'failed', saleId: 's', stage: 'commit' }, { kind: 'unwritten', saleId: 's' }]) {
+      expect(rungUpSaleOf(state)).toBeNull();
+    }
+  });
+
+  it('every selling surface says its rung-up sale from its own writer; the phone’s F&B is kept under a lock and says its sale at stake', () => {
+    for (const [file, surface] of [
+      ['pages/Till.tsx', 'till'], ['pages/OrderStation.tsx', 'order-station'], ['pages/MerchStation.tsx', 'merch-station'],
+      ['components/mobile/MobileTill.tsx', 'mobile-till'], ['components/mobile/order-station/MobileOrderStation.tsx', 'mobile-fnb'],
+    ] as const) {
+      const text = src(file);
+      expect(text, file).toContain('const rungUpNow = rungUpSaleOf(saleWriter.state);');
+      expect(text, file).toContain(`setSaleRungUp('${surface}', rungUpNow);`);
+    }
+    const phoneFnb = src('components/mobile/order-station/MobileOrderStation.tsx');
+    expect(phoneFnb).toContain("setSaleAtStake('mobile-fnb', orderAtStake);");
+    expect(phoneFnb).toContain("setSaleOpen('mobile-fnb', orderOnScreen);");
+    expect(phoneFnb).toContain('paused: locked,');
+    const lockedReturn = phoneFnb.indexOf('if (locked) return null;');
+    expect(lockedReturn).toBeGreaterThan(phoneFnb.indexOf('usePaymentStage({'));
+    // No hook after it in the station itself (the small parts below it are components of their own).
+    const stationEnd = phoneFnb.indexOf('\nfunction ', lockedReturn);
+    expect(phoneFnb.slice(lockedReturn, stationEnd > 0 ? stationEnd : undefined)).not.toMatch(/\buse[A-Z]\w*\(/);
+    expect(src('App.tsx')).toContain("const phoneOrderStation = isMobile && location === '/order-station';");
+    // The offer reads the surfaces' own mark, never the one stored for a reload.
+    expect(src('auth/OperatorContext.tsx')).not.toContain('saleOnScreen(');
+  });
+});
+
+describe('SCRUM-964 — a reload at the sign-in form an ended session left', () => {
+  /** The page goes and comes back: a new provider over the same tab's storage, with no session behind it. */
+  async function reloaded() {
+    seam.me.mockRejectedValue(new ApiError(401, 'UNAUTHORIZED', 'Not signed in'));
+    const page = mount();
+    await vi.waitFor(() => expect(page.value().sessionResolved).toBe(true));
+    // The next sign-in has a session again.
+    seam.me.mockImplementation(async () => ({
+      account: { id: who.id, phone: 'ZZ TEST', mustChangePassword: false, operatorId: who.operatorId },
+      employee: { name: who.name }, branch: { id: who.branchId, code: 'zz-test-park' }, sessionLocked: false, impersonation: null,
+      sessionEnd: { at: new Date(signedInAt + HOURS_12).toISOString(), inSeconds: 43_000, afterHours: 12 },
+    }));
+    return page;
+  }
+
+  async function endedRungUp() {
+    const till = await signedIn();
+    vi.setSystemTime(T0 + 11 * 3_600_000 + 35 * 60_000);
+    setSaleAtStake('till', true);
+    setSaleRungUp('till', 'zz-test-sale-964');
+    pastTheMark();
+    refused();
+    expect(till.value().sessionEnded?.saleKept).toBe(true);
+    // The tab reloads: the page and its memory go.
+    till.hook.unmount();
+    setSaleAtStake('till', false);
+    setSaleRungUp('till', null);
+    return reloaded();
+  }
+
+  it('the form still says the session ended; a sale the counter till rang up is still offered, and Continue opens it from the platform', async () => {
+    const page = await endedRungUp();
+    try {
+      expect(page.value().operator).toBeNull();
+      expect(page.value().sessionEnded).toEqual({ name: ANN.name, expired: true, afterHours: 12, saleKept: true });
+      expect(sessionEndedLine(page.value().sessionEnded!))
+        .toBe('The session of ZZ TEST Ann ended after twelve hours. Sign in again to carry on. The sale in progress is kept on this till.');
+      seam.getSale.mockResolvedValue({ sale: { id: 'zz-test-sale-964', status: 'tendering', stationId: 'zz-test-station' } });
+      who = { ...BEN, branchId: 'zz-test-park', operatorId: 'zz-test-operator' };
+      await page.value().signIn('ZZ TEST other phone', PASSWORD);
+      expect(seam.getSale).toHaveBeenCalledWith('zz-test-sale-964');
+      expect(page.value().keptOffer).toMatchObject({ startedBy: ANN.name, rungUpSaleId: 'zz-test-sale-964', stationId: 'zz-test-station' });
+      expect(page.value().keptResume).toBeNull();
+      page.value().continueKept();
+      expect(page.value().locked).toBe(false);
+      expect(page.value().keptResume).toBe('zz-test-sale-964');
+      page.value().takeKeptResume();
+      expect(page.value().keptResume).toBeNull();
+    } finally { page.hook.unmount(); }
+  });
+
+  it('the same person after the reload carries on: no offer, and the till opens the sale again', async () => {
+    const page = await endedRungUp();
+    try {
+      seam.getSale.mockResolvedValue({ sale: { id: 'zz-test-sale-964', status: 'tendering', stationId: 'zz-test-station' } });
+      await page.value().signIn('ZZ TEST phone', PASSWORD);
+      expect(page.value().keptOffer).toBeNull();
+      expect(page.value().locked).toBe(false);
+      expect(page.value().keptResume).toBe('zz-test-sale-964');
+    } finally { page.hook.unmount(); }
+  });
+
+  it('a sale paid or voided meanwhile is not offered: a fresh till', async () => {
+    const page = await endedRungUp();
+    try {
+      seam.getSale.mockResolvedValue({ sale: { id: 'zz-test-sale-964', status: 'finalised', stationId: 'zz-test-station' } });
+      who = { ...BEN, branchId: 'zz-test-park', operatorId: 'zz-test-operator' };
+      await page.value().signIn('ZZ TEST other phone', PASSWORD);
+      expect(page.value().keptOffer).toBeNull();
+      expect(page.value().keptResume).toBeNull();
+      expect(page.value().locked).toBe(false);
+    } finally { page.hook.unmount(); }
+  });
+
+  it('an unwritten cart cannot survive the reload: the form says the session ended and never that a sale is kept; nothing is offered', async () => {
+    const till = await signedIn();
+    setSaleAtStake('till', true);
+    pastTheMark();
+    refused();
+    expect(till.value().sessionEnded?.saleKept).toBe(true);
+    till.hook.unmount();
+    setSaleAtStake('till', false);
+    const page = await reloaded();
+    try {
+      expect(page.value().sessionEnded).toEqual({ name: ANN.name, expired: true, afterHours: 12, saleKept: false });
+      expect(sessionEndedLine(page.value().sessionEnded!)).toBe('The session of ZZ TEST Ann ended after twelve hours. Sign in again to carry on.');
+      who = { ...BEN, branchId: 'zz-test-park', operatorId: 'zz-test-operator' };
+      await page.value().signIn('ZZ TEST other phone', PASSWORD);
+      expect(page.value().keptOffer).toBeNull();
+      expect(page.value().locked).toBe(false);
+      expect(seam.getSale).not.toHaveBeenCalled();
+    } finally { page.hook.unmount(); }
+  });
+
+  it('an F&B order rung up cannot be opened again after a reload: the form says only that the session ended', async () => {
+    const till = await signedIn();
+    setSaleAtStake('order-station', true);
+    setSaleRungUp('order-station', 'zz-test-fnb');
+    pastTheMark();
+    refused();
+    till.hook.unmount();
+    setSaleAtStake('order-station', false);
+    setSaleRungUp('order-station', null);
+    const page = await reloaded();
+    try {
+      expect(page.value().sessionEnded?.saleKept).toBe(false);
+    } finally { page.hook.unmount(); }
+  });
+
+  it('a sign-in takes the end, and a sign-out keeps nothing of it', async () => {
+    const till = await signedIn();
+    setSaleAtStake('till', true);
+    setSaleRungUp('till', 'zz-test-sale-964');
+    pastTheMark();
+    refused();
+    expect(sessionStorage.getItem('oto.till.sessionEnded')).not.toBeNull();
+    await till.value().signIn('ZZ TEST phone', PASSWORD);
+    expect(sessionStorage.getItem('oto.till.sessionEnded')).toBeNull();
+    till.value().logout();
+    expect(sessionStorage.getItem('oto.till.sessionEnded')).toBeNull();
+    till.hook.unmount();
   });
 });

@@ -243,7 +243,8 @@ describe('SCRUM-371 — the phone till keeps its sale through a staff lock, as t
   it('the gate keeps the phone shell mounted under the lock screen on the ticket tab, in one shape locked or not', () => {
     const app = src('App.tsx');
     expect(app).toContain('const phoneTicketTill = isMobile && location === "/";');
-    expect(app).toContain('(locked && (!(retainedStation || phoneTicketTill || phoneMerchStation) || mustChangePassword');
+    // SCRUM-964 — the phone's F&B is kept under the lock too, so an order a session's end keeps is still there.
+    expect(app).toContain('(locked && (!(retainedStation || phoneTicketTill || phoneMerchStation || phoneOrderStation) || mustChangePassword');
     const mobile = app.slice(app.indexOf('if (isMobile) {'), app.indexOf('<Router />'));
     expect(mobile).toMatch(/hidden=\{locked\} inert=\{locked\}[\s\S]*<MobileShell \/>[\s\S]*\{locked \? <LockScreen \/> : <InactivityWarning \/>\}/);
   });

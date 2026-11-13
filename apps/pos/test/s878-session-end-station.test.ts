@@ -186,6 +186,32 @@ describe('SCRUM-878 — the station of a screen carried on by a new session', ()
     } finally { hook.unmount(); }
   });
 
+  it('SCRUM-964 — the new session is LOCKED when the station is asked for (423): after the unlock the same station is asked for again', async () => {
+    const { hook, value, pick, set } = await atTheStation();
+    try {
+      pick.mockRejectedValueOnce(new ApiError(423, 'SESSION_LOCKED', 'Session is locked'));
+      set({ reseat: 1 });
+      await vi.waitFor(() => expect(pick).toHaveBeenCalledTimes(2));
+      // The lock that refused it: nothing is asked while it holds.
+      set({ locked: true });
+      await flush();
+      expect(pick).toHaveBeenCalledTimes(2);
+      expect(value().station?.stationId).toBe(STATION);
+      // The unlock: the same station is asked for, for this session, once.
+      set({ locked: false });
+      await vi.waitFor(() => expect(pick).toHaveBeenCalledTimes(3));
+      expect(pick.mock.calls[2]).toEqual([STATION]);
+      await flush();
+      expect(value().station?.stationId).toBe(STATION);
+      expect(value().notice).toBeNull();
+      // A later lock and unlock asks nothing more: it was asked again once.
+      set({ locked: true });
+      set({ locked: false });
+      await flush();
+      expect(pick).toHaveBeenCalledTimes(3);
+    } finally { hook.unmount(); }
+  });
+
   it('any other sign-in is a new seat: the whole question is asked again, as before', async () => {
     const { hook, value, pick, set } = await atTheStation();
     try {
