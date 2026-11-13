@@ -235,6 +235,8 @@ describe('SCRUM-973 — the display says "Reconnecting" as soon as it knows the 
     const view = await mount();
     listener.onSnapshot(document); listener.onState(true); listener.onActivity!();
     vi.stubGlobal('navigator', { onLine: false });
+    // The line is truly down: every read asked from now on fails, as it does in a browser that is offline.
+    mock.session.mockRejectedValue(new Error('offline'));
     window.dispatchEvent(new Event('offline'));
     await settle();
     expect(view.text()).toContain('Reconnecting');
@@ -251,6 +253,28 @@ describe('SCRUM-973 — the display says "Reconnecting" as soon as it knows the 
     window.dispatchEvent(new Event('online'));
     await vi.advanceTimersByTimeAsync(1_000);
     expect(view.text()).not.toContain('Reconnecting');
+    view.hook.unmount();
+  });
+
+  it('the browser says it is offline but the box still answers a read asked after that (a display on the box\'s own machine): the word goes and nothing is paused', async () => {
+    const view = await mount();
+    listener.onSnapshot(document); listener.onState(true); listener.onActivity!();
+    vi.stubGlobal('navigator', { onLine: false });
+    window.dispatchEvent(new Event('offline'));
+    await settle();
+    expect(view.text()).toContain('Reconnecting');
+    // An answer already on its way still does not lift the word...
+    listener.onSnapshot({ ...document, sequence: 6 });
+    await settle();
+    expect(view.text()).toContain('Reconnecting');
+    // ...but the next read, asked a second after the browser said "offline", is answered by the box: the line to it works.
+    mock.session.mockResolvedValue({ ...session, document: { ...document, sequence: 7 } });
+    await vi.advanceTimersByTimeAsync(1_100);
+    expect(view.text()).not.toContain('Reconnecting');
+    // And it stays so: the fifteen-second grace that began at "offline" no longer runs.
+    await vi.advanceTimersByTimeAsync(20_000);
+    expect(view.text()).not.toContain('Reconnecting');
+    expect(view.text()).not.toContain(PAUSED);
     view.hook.unmount();
   });
 

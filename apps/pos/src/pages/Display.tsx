@@ -90,11 +90,17 @@ export default function Display() {
     setConnection('reconnecting');
     grace.current = setTimeout(() => setConnection('paused'), Math.max(0, knownGoodAt + GRACE_MS - Date.now()));
   }, []);
-  const recovered = useCallback(() => {
-    // SCRUM-973 — the browser's own word that the line is down outlasts an
-    // answer that was already on its way: it lifts "Reconnecting" only once
-    // the browser is online again and the box answers afresh.
-    if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
+  /** SCRUM-973 — when the browser last said the line went down; null once it says the line is back. */
+  const offlineAt = useRef<number | null>(null);
+  const recovered = useCallback((askedAt?: number) => {
+    // SCRUM-973 — while the browser says the line is down, an answer that was
+    // already on its way does not lift "Reconnecting" (Chromium still delivers
+    // it, and keeps a stream that was open running). An answer to a read ASKED
+    // after the browser said so is another matter: the box is reachable all the
+    // same (a display on the box's own machine while the park's network is
+    // down), and that answer lifts the word as any answer did before.
+    if (typeof navigator !== 'undefined' && navigator.onLine === false
+      && !(askedAt !== undefined && askedAt > (offlineAt.current ?? 0))) return;
     clearTimeout(grace.current);
     grace.current = undefined;
     setConnection('connected');
@@ -125,12 +131,12 @@ export default function Display() {
    * even with a lower number: a box restored from an earlier copy would
    * otherwise leave this screen paused until its sequence caught up.
    */
-  const adopt = useCallback((incoming: DisplaySession, freshRead = false) => {
+  const adopt = useCallback((incoming: DisplaySession, freshRead = false, askedAt?: number) => {
     if (!freshRead && newerDisplaySession(sessionRef.current, incoming) !== incoming) return false;
     sessionRef.current = incoming;
     accepted.current += 1;
     setSession(incoming);
-    recovered();
+    recovered(askedAt);
     return true;
   }, [recovered]);
   const pending = useRef<StationIntent | null>(null);
@@ -167,6 +173,8 @@ export default function Display() {
           const acceptedBefore = accepted.current;
           const asking = askBox.current;
           askBox.current = false;
+          // SCRUM-973 — when this read was asked: an answer to a read asked after the browser said "offline" proves the box is reachable.
+          const askedAt = Date.now();
           try {
             current = await readThroughBox(stationId, bearer, controller.signal);
           } catch (failure) {
@@ -176,7 +184,7 @@ export default function Display() {
           }
           if (inactive()) return;
           lastHeard.current = Date.now();
-          adopt(current, accepted.current === acceptedBefore);
+          adopt(current, accepted.current === acceptedBefore, askedAt);
           knownPaired = true;
           setPairing(null);
           const answer = current.document.prompt?.answer as { actionId?: string } | undefined;
@@ -209,7 +217,8 @@ export default function Display() {
       } catch (failure) {
         if (inactive()) return;
         if (failure instanceof DisplayError && (failure.status === 401 || failure.code === 'DISPLAY_ALREADY_PAIRED')) {
-          recovered();
+          // The pairing is gone: there is no line to wait for, whatever the browser says of the network.
+          recovered(Number.POSITIVE_INFINITY);
           setSession(null);
           setPairing(null);
           pending.current = null;
@@ -229,10 +238,10 @@ export default function Display() {
   useEffect(() => {
     if (!stationId) return;
     // The browser names the moment the line went down, so nothing is estimated from the last byte.
-    const offline = () => { streaming.current = false; disconnect(Date.now()); };
+    const offline = () => { offlineAt.current = Date.now(); streaming.current = false; disconnect(Date.now()); };
     window.addEventListener('offline', offline);
     // SCRUM-973 — back online: the box is asked afresh, and its answer lifts "Reconnecting".
-    const online = () => { askBox.current = true; };
+    const online = () => { offlineAt.current = null; askBox.current = true; };
     window.addEventListener('online', online);
     // SCRUM-973 — a line gone silent without the browser knowing is said once
     // nothing has been heard for `DISPLAY_SILENCE_MS`, and the box is asked
@@ -264,7 +273,7 @@ export default function Display() {
       },
       onFailure: failure => {
         if (failure instanceof ApiError && failure.status === 401) {
-          recovered();
+          recovered(Number.POSITIVE_INFINITY);
           setSession(null);
           setRestart(value => value + 1);
         }
