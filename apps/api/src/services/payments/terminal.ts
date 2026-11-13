@@ -1044,9 +1044,9 @@ const SALE_COMMAND_WINDOW_MS = 5 * 60_000;
 
 /**
  * SCRUM-979 — THE COMMAND, FOUND BY THE ATTEMPT ITSELF, on whichever of the
- * operator's boxes it was queued: a terminal moved to another box since, or
- * unassigned, no longer points at it. No lock: the caller locks only when
- * there is something to settle.
+ * operator's boxes it was queued: a terminal moved to another box since (and
+ * perhaps retired there) no longer points at it. No lock: the caller locks
+ * only when there is something to settle.
  *
  * Served by `box_command_history_idx` (box_id, created_at), one short range
  * per box of the operator (`box_operator_idx`): the command is never older

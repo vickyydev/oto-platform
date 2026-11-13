@@ -522,7 +522,10 @@ describe('commands that are still the terminal’s business', () => {
     expect(await audits(held.attemptId, 'payment.attempt.result_missing')).toHaveLength(0);
   });
 
-  it('a succeeded SALE with a result is untouched, however long ago it ended', async () => {
+  // SCRUM-979 changed this rule: the terminal's answer on the box's
+  // acknowledgement is taken when its result post never landed. It is still
+  // no missing result and no refusal, however long ago it ended.
+  it('a succeeded SALE with a result takes that answer, and is no missing result', async () => {
     const held = await claimedTender();
     const acked = await ctx.app.inject({
       method: 'POST', url: `/box/v1/commands/${held.command.id}/result`,
@@ -536,7 +539,7 @@ describe('commands that are still the terminal’s business', () => {
     await ctx.db.update(boxCommand).set({ claimedAt: new Date(Date.now() - 600_000) })
       .where(eq(boxCommand.id, held.command.id));
     const view = await readAttempt(held.attemptId);
-    expect(view.attempt.status).toBe('sent_to_terminal');
+    expect(view.attempt.status).toBe('approved');
     expect(await audits(held.attemptId, 'payment.attempt.not_sent')).toHaveLength(0);
     expect(await audits(held.attemptId, 'payment.attempt.result_missing')).toHaveLength(0);
     expect((await terminalCommands(held.attemptId))[0]).toMatchObject({ state: 'succeeded', errorCode: null });
