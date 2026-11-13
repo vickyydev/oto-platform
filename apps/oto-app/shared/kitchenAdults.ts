@@ -196,13 +196,21 @@ export function adultsCopiesOf<T extends KitchenLineLike>(lines: T[]): T[] {
  * line and carries no code of its own, as the kids' line carries none: the
  * till's plan view (app migration 0050) then reads the two as one dish, as
  * before. Every other line is returned as it is.
+ *
+ * SCRUM-978: only in the case the plan view folds (name, count and code the
+ * kids' line's, `sameKitchenDish`): an adults' line in another count (kids
+ * Chicken 12, adults Chicken 8) is a line of the adults' own on the till, and
+ * keeps its code, so the till names it and never lists it "not on the till
+ * menu".
  */
 export function adultsSetCopiesUncoded<T extends KitchenLineLike>(kids: readonly KitchenLineLike[], adults: T[]): T[] {
   const groupOf = (line: KitchenLineLike) => (typeof line.groupId === "string" ? line.groupId.trim() : "");
   const kidsSet = kids.filter((k) => k.source === "set_menu" && groupOf(k) !== "");
   return adults.map((line) => {
     if (line.source !== "set_menu" || !codeOf(line) || !groupOf(line)) return line;
-    const copy = kidsSet.some((k) => groupOf(k) === groupOf(line) && foldDishName(k.itemName) === foldDishName(line.itemName) && codeOf(k) === "");
+    const copy = kidsSet.some(
+      (k) => groupOf(k) === groupOf(line) && foldDishName(k.itemName) === foldDishName(line.itemName) && codeOf(k) === "" && qtyOf(k) === qtyOf(line),
+    );
     if (!copy) return line;
     const { productCode: _code, ...rest } = line;
     return rest as T;
