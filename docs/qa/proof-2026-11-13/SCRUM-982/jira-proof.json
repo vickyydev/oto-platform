@@ -1,0 +1,106 @@
+{
+  "at": "2026-11-13T19:44:56.960Z",
+  "source": "3e29803bf0d2c935a9a0c23f76c60c4182bcc104",
+  "sourceCI": {
+    "run": 43489637902,
+    "conclusion": "success",
+    "jobs": 6,
+    "appSkippedSteps": 113,
+    "workspaceSkippedSteps": 3
+  },
+  "evidenceCommit": "3ba37114323fb1daa752b4bf831ee512b9890e51",
+  "tickets": {
+    "SCRUM-982": {
+      "before": "Deployed",
+      "status": "Deployed",
+      "commentId": "14745",
+      "commentReadback": true,
+      "attachments": [
+        {
+          "id": "13508",
+          "filename": "s982-final-01b-ticket-B-continued-qr.png"
+        },
+        {
+          "id": "13509",
+          "filename": "s982-final-01c-ticket-B-paid-qr.png"
+        },
+        {
+          "id": "13510",
+          "filename": "s982-final-02b-fnb-A-cash-same-sale.png"
+        },
+        {
+          "id": "13511",
+          "filename": "s982-final-03b-shop-B-paid-qr.png"
+        },
+        {
+          "id": "13512",
+          "filename": "s982-final-04a-phone-ticket-B-continued-qr.png"
+        },
+        {
+          "id": "13513",
+          "filename": "s982-final-04b-phone-ticket-B-cash-same-sale.png"
+        },
+        {
+          "id": "13514",
+          "filename": "s982-final-05b-phone-fnb-A-paid-qr.png"
+        },
+        {
+          "id": "13515",
+          "filename": "s982-final-06-qr-created-and-paid-while-locked.png"
+        },
+        {
+          "id": "13516",
+          "filename": "s982-final-07-card-B-continued-waiting.png"
+        },
+        {
+          "id": "13517",
+          "filename": "s982-final-08a-cart-before-quantity-edit.png"
+        },
+        {
+          "id": "13518",
+          "filename": "s982-final-08b-cart-corrected-cash-receipt.png"
+        },
+        {
+          "id": "13519",
+          "filename": "s982-final-09-proof-cleanup-card.png"
+        }
+      ]
+    },
+    "SCRUM-964": {
+      "before": "Testing",
+      "status": "Deployed",
+      "commentId": "14746",
+      "commentReadback": true,
+      "attachments": [
+        {
+          "id": "13520",
+          "filename": "s982-final-01b-ticket-B-continued-qr.png"
+        },
+        {
+          "id": "13521",
+          "filename": "s982-final-02b-fnb-A-cash-same-sale.png"
+        },
+        {
+          "id": "13522",
+          "filename": "s982-final-03b-shop-B-paid-qr.png"
+        },
+        {
+          "id": "13523",
+          "filename": "s982-final-09-proof-cleanup-card.png"
+        }
+      ]
+    },
+    "SCRUM-981": {
+      "before": "In Progress",
+      "status": "In Progress",
+      "commentId": "14747",
+      "commentReadback": true,
+      "attachments": [
+        {
+          "id": "13524",
+          "filename": "s982-final-01b-ticket-B-continued-qr.png"
+        }
+      ]
+    }
+  }
+}

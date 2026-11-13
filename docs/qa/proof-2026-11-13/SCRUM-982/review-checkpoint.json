@@ -25,9 +25,28 @@
   "sourceCI": {
     "run": 43489637902,
     "sha": "3e29803bf0d2c935a9a0c23f76c60c4182bcc104",
-    "state": "five jobs green; API shard 3 running"
+    "state": "success",
+    "jobs": 6,
+    "appSkippedSteps": 113,
+    "workspaceSkippedSteps": 3
   },
-  "jira": "982 and 964 ready for Testing evidence publication; Deployed awaits final source CI. 981 remains In Progress.",
+  "jira": {
+    "SCRUM-982": {
+      "status": "Deployed",
+      "commentId": "14745",
+      "attachments": 12
+    },
+    "SCRUM-964": {
+      "status": "Deployed",
+      "commentId": "14746",
+      "attachments": 4
+    },
+    "SCRUM-981": {
+      "status": "In Progress",
+      "commentId": "14747",
+      "attachments": 1
+    }
+  },
   "unselectedHistoricalImages": {
     "archive": "C:\\oto-lanes\\audit-takeover-20261113\\982-unselected-native",
     "files": [
@@ -50,6 +69,6 @@
       "final/01a-ticket-A-waiting-qr.png"
     ]
   },
-  "next": "commit inspected evidence, publish Jira and read back; finish exact-source CI, close 982/964 to Deployed, then release approved stage 3",
-  "stage3": "not released until final CI and Jira readback"
+  "next": "Push final reconciliation with same-push Jira note/readback; notify root and release approved stage 3 implementations",
+  "stage3": "authorized for release after this completed stage 2.4 checkpoint"
 }
