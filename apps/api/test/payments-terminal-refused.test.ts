@@ -8,6 +8,7 @@ import {
   device,
   member,
   paymentAttempt,
+  refund,
   sale,
   station,
   stationDevice,
@@ -19,9 +20,10 @@ import {
   type AgentFetch,
   type BoxAgent,
 } from '@oto/box-agent';
-import { newId } from '@oto/shared';
+import { businessDate, newId, parseDayStart } from '@oto/shared';
 import {
   ADMIN,
+  BRANCH_MANAGER,
   RECEPTION,
   createTestContext,
   signInAs,
@@ -52,6 +54,7 @@ import { TERMINAL_NOTHING_SENT_CODES, terminalNotSentWords } from '../src/servic
 let ctx: TestContext;
 let cookie: string;
 let adminCookie: string;
+let managerCookie: string;
 let agent: BoxAgent;
 let operatorId: string;
 let branchId: string;
@@ -93,6 +96,7 @@ beforeAll(async () => {
   ctx = await createTestContext();
   cookie = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
   adminCookie = await signInAs(ctx.app, ADMIN.phone, ADMIN.password);
+  managerCookie = await signInAs(ctx.app, BRANCH_MANAGER.phone, BRANCH_MANAGER.password);
 
   const branches = await ctx.db.select().from(branch);
   const hkt = branches.find((row) => row.code === 'hkt-central') ?? branches[0]!;
@@ -175,7 +179,7 @@ async function readAttempt(id: string) {
   const res = await ctx.app.inject({ method: 'GET', url: `/payments/attempts/${id}`, headers: { cookie } });
   expect(res.statusCode, res.body).toBe(200);
   return res.json() as {
-    attempt: { status: string; inquirySupported: boolean };
+    attempt: { status: string; inquirySupported: boolean; reversalPending?: boolean };
     responseText: string | null;
     outstandingSatang: number | null;
   };
@@ -613,5 +617,219 @@ describe('the Health alert for payments waiting more than ten minutes', () => {
     }));
     await flagPendingPayments(ctx.db, ctx.app.env, later());
     expect(await listed()).toBe(false);
+  });
+});
+
+// --- A VOID the box could not send -------------------------------------------
+
+const VOID_NOT_SENT_DETAIL = 'The box could not send the void to the terminal — hand it back in cash';
+
+async function setOutcome(deviceId: string, body: Record<string, unknown>) {
+  const res = await ctx.app.inject({
+    method: 'POST', url: '/payments/terminal-simulator', headers: { cookie: adminCookie },
+    payload: { action: 'terminal.outcome', deviceId, ...body },
+  });
+  expect(res.statusCode, res.body).toBe(200);
+}
+
+/**
+ * A whole card tender taken on EDC 1, the sale closed, then refunded whole: a
+ * VOID is queued. The tender is written as `sales-printing.test.ts` writes it,
+ * rather than run through the box, to keep this file under the box's own
+ * request ceiling (`BOX_RATE_LIMIT_MAX`, 240 a minute).
+ */
+async function refundedCardSale() {
+  const committed = await commitSale();
+  const attemptId = newId();
+  const [hkt] = await ctx.db.select().from(branch).where(eq(branch.id, branchId));
+  await ctx.db.insert(paymentAttempt).values({
+    id: attemptId, operatorId, branchId, saleId: committed.saleId, stationId, deviceId: cardDeviceId,
+    businessDate: businessDate(new Date(), hkt!.timezone, parseDayStart(hkt!.businessDayStart)),
+    method: 'card', methodCode: 'card', provider: 'simulator', status: 'approved',
+    amountSatang: committed.owed, tranRef: `TR${attemptId.slice(-8)}`, approvalCode: 'A1B2C3', last4: '4242',
+    paidAt: new Date(), payload: { tender: 'card', protocol: 'ghl_linkpos' },
+  });
+  const closed = await ctx.app.inject({
+    method: 'POST', url: `/sales/${committed.saleId}/finalise`, headers: { cookie }, payload: {},
+  });
+  expect(closed.statusCode, closed.body).toBe(200);
+  const refunded = await ctx.app.inject({
+    method: 'POST', url: `/sales/${committed.saleId}/refunds`, headers: { cookie: managerCookie },
+    payload: { mode: 'whole', reason: 'Charged twice', actionId: newId() },
+  });
+  expect(refunded.statusCode, refunded.body).toBe(200);
+  const refundId = refunded.json().refund.id as string;
+  const [slice] = refunded.json().refund.tenderAllocation as Array<{ actionId: string }>;
+  expect(slice).toMatchObject({
+    attemptId, route: 'terminal_void', status: 'pending', detail: 'Void sent to the terminal',
+  });
+  const voidCommand = (await terminalCommands(attemptId)).find((row) => row.actionId === slice!.actionId)!;
+  expect(modeOf(voidCommand)).toBe('void');
+  expect(voidCommand.state).toBe('queued');
+  return { ...committed, attemptId, refundId, voidActionId: slice!.actionId, voidCommand };
+}
+
+async function refundSlice(refundId: string) {
+  const [row] = await ctx.db.select().from(refund).where(eq(refund.id, refundId));
+  return row!.tenderAllocation![0]!;
+}
+
+const voidCommandsOf = async (attemptId: string) =>
+  (await terminalCommands(attemptId)).filter((row) => modeOf(row) === 'void');
+
+describe('a refund’s VOID the box proves it never sent', () => {
+  it.each([...NOTHING_SENT.map(([code]) => code)])(
+    '%s: the slice falls back to cash, audited, and no second VOID is queued',
+    async (code) => {
+      const held = await refundedCardSale();
+      await claim(held.voidCommand.id);
+      await reportFailure(held.voidCommand.id, boxFailure(code, {
+        attemptId: held.attemptId, deviceId: cardDeviceId, mode: 'void',
+      }));
+
+      // Settled in the command's own transaction: nobody has read anything yet.
+      expect(await refundSlice(held.refundId)).toMatchObject({
+        route: 'terminal_void', status: 'failed', fallback: 'cash', detail: VOID_NOT_SENT_DETAIL,
+      });
+      const refused = await audits(held.refundId, 'refund.void_refused');
+      expect(refused).toHaveLength(1);
+      expect(refused[0]!.after).toMatchObject({ slice: { status: 'failed', fallback: 'cash' }, saleId: held.saleId });
+      const notSent = await audits(held.attemptId, 'payment.attempt.void_not_sent');
+      expect(notSent).toHaveLength(1);
+      expect(notSent[0]!.after).toMatchObject({
+        reason: 'refund', errorCode: code, commandId: held.voidCommand.id, commandState: 'failed',
+        voidActionId: held.voidActionId,
+      });
+      // The attempt is still the money that was taken.
+      const row = await attemptRow(held.attemptId);
+      expect(row.status).toBe('approved');
+      expect((row.payload as { void?: { result?: unknown } }).void?.result).toMatchObject({
+        outcome: 'not_sent', errorCode: code, commandId: held.voidCommand.id,
+      });
+
+      // A read and a box poll change nothing: one VOID, one audit.
+      await readAttempt(held.attemptId);
+      await agent.runPendingCommands();
+      expect(await voidCommandsOf(held.attemptId)).toHaveLength(1);
+      expect(await audits(held.attemptId, 'payment.attempt.void_not_sent')).toHaveLength(1);
+      expect(await audits(held.refundId, 'refund.void_refused')).toHaveLength(1);
+    },
+  );
+});
+
+describe('a refund’s VOID that may have reached the terminal', () => {
+  it.each(['TERMINAL_UNREACHABLE', 'TERMINAL_WRITE_FAILED', 'TERMINAL_BAD_FRAME', 'SOMETHING_NEW'])(
+    '%s leaves the slice pending for a person and queues no second VOID',
+    async (code) => {
+      const held = await refundedCardSale();
+      await claim(held.voidCommand.id);
+      await reportFailure(held.voidCommand.id, boxFailure(code, {
+        attemptId: held.attemptId, deviceId: cardDeviceId, mode: 'void',
+      }));
+      await readAttempt(held.attemptId);
+      await agent.runPendingCommands();
+
+      expect(await refundSlice(held.refundId)).toMatchObject({
+        route: 'terminal_void', status: 'pending', detail: 'Void sent to the terminal',
+      });
+      expect(await audits(held.refundId, 'refund.void_refused')).toHaveLength(0);
+      expect(await audits(held.attemptId, 'payment.attempt.void_not_sent')).toHaveLength(0);
+      expect((await attemptRow(held.attemptId)).payload).not.toHaveProperty('void.result');
+      expect(await voidCommandsOf(held.attemptId)).toHaveLength(1);
+    },
+  );
+
+  it('a VOID still running, however long, is left alone', async () => {
+    const held = await refundedCardSale();
+    await claim(held.voidCommand.id);
+    await ctx.db.update(boxCommand).set({ claimedAt: new Date(Date.now() - 600_000) })
+      .where(eq(boxCommand.id, held.voidCommand.id));
+    await readAttempt(held.attemptId);
+    expect(await refundSlice(held.refundId)).toMatchObject({ status: 'pending' });
+    expect((await voidCommandsOf(held.attemptId))[0]).toMatchObject({ state: 'running', errorCode: null });
+    expect(await audits(held.attemptId, 'payment.attempt.void_not_sent')).toHaveLength(0);
+  });
+});
+
+describe('a refund’s VOID already held when this lands, freed by an ordinary read', () => {
+  it('a failed VOID with the box’s result object is settled by GET /payments/attempts/:id', async () => {
+    const held = await refundedCardSale();
+    // What the old code left: the command failed, the slice still pending.
+    const failure = boxFailure('TERMINAL_NOT_CONFIGURED', {
+      attemptId: held.attemptId, deviceId: cardDeviceId, mode: 'void',
+    });
+    await ctx.db.update(boxCommand).set({
+      state: 'failed', finishedAt: new Date(), result: failure.result as never,
+      errorCode: 'TERMINAL_NOT_CONFIGURED', errorMessage: 'this box has no void password configured',
+    }).where(eq(boxCommand.id, held.voidCommand.id));
+    expect(await refundSlice(held.refundId)).toMatchObject({ status: 'pending' });
+
+    await readAttempt(held.attemptId);
+    expect(await refundSlice(held.refundId)).toMatchObject({
+      status: 'failed', fallback: 'cash', detail: VOID_NOT_SENT_DETAIL,
+    });
+    await readAttempt(held.attemptId);
+    expect(await audits(held.refundId, 'refund.void_refused')).toHaveLength(1);
+    expect(await audits(held.attemptId, 'payment.attempt.void_not_sent')).toHaveLength(1);
+  });
+
+  it('a VOID that expired in the queue was never run: the slice falls back to cash on a read', async () => {
+    const held = await refundedCardSale();
+    await ctx.db.update(boxCommand).set({ expiresAt: new Date(Date.now() - 1_000) })
+      .where(eq(boxCommand.id, held.voidCommand.id));
+    await readAttempt(held.attemptId);
+    expect(await refundSlice(held.refundId)).toMatchObject({
+      status: 'failed', fallback: 'cash', detail: VOID_NOT_SENT_DETAIL,
+    });
+    expect((await voidCommandsOf(held.attemptId))[0]).toMatchObject({ state: 'expired', attempts: 0 });
+    expect((await audits(held.attemptId, 'payment.attempt.void_not_sent'))[0]!.after)
+      .toMatchObject({ errorCode: 'BOX_COMMAND_EXPIRED', commandState: 'expired' });
+    await agent.runPendingCommands();
+    expect((await voidCommandsOf(held.attemptId))[0]!.state).toBe('expired');
+  });
+});
+
+describe('a partial approval whose rescue VOID the box cannot send', () => {
+  it('records why on the attempt, keeps the charge reserved, and never sends the VOID again', async () => {
+    const committed = await commitSale();
+    // EDC 3 speaks Digio; this box has no Digio void password, so the box
+    // itself refuses the rescue (digio.ts:908-913) — the staging case.
+    await setOutcome(qrDeviceId, { outcome: 'partial', approvedSatang: committed.owed - 100 });
+    const started = await startTender(committed.saleId, { tender: 'qr', method: 'promptpay', actionId: newId() });
+    expect(started.statusCode, started.body).toBe(200);
+    const attemptId = started.json().attempt.id as string;
+    for (let i = 0; i < 10; i += 1) {
+      const [rescue] = await voidCommandsOf(attemptId);
+      if (rescue && !['queued', 'running'].includes(rescue.state)) break;
+      await agent.runPendingCommands();
+    }
+    const [rescue] = await voidCommandsOf(attemptId);
+    expect(rescue).toMatchObject({ state: 'failed', errorCode: 'TERMINAL_NOT_CONFIGURED' });
+    expect(rescue!.result).toMatchObject({
+      attemptId, mode: 'void', deviceId: qrDeviceId, outcome: null, terminalRef: null, responseCode: null,
+    });
+
+    const row = await attemptRow(attemptId);
+    expect(row.status).toBe('declined');
+    expect((row.payload as { void?: { reason?: string; result?: unknown } }).void).toMatchObject({
+      reason: 'partial_approval',
+      result: { outcome: 'not_sent', errorCode: 'TERMINAL_NOT_CONFIGURED', commandId: rescue!.id },
+    });
+    const notSent = await audits(attemptId, 'payment.attempt.void_not_sent');
+    expect(notSent).toHaveLength(1);
+    expect(notSent[0]!.after).toMatchObject({
+      reason: 'partial_approval', errorCode: 'TERMINAL_NOT_CONFIGURED', amountSatang: committed.owed - 100,
+    });
+
+    // The money rule: the partial charge is still on the guest, so the sale is
+    // not silently freed.
+    expect((await readAttempt(attemptId)).attempt.reversalPending).toBe(true);
+    const blocked = await voidSale(committed.saleId);
+    expect(blocked.statusCode).toBe(409);
+    expect(blocked.json().error.code).toBe('PAYMENT_IN_FLIGHT');
+    await agent.runPendingCommands();
+    expect(await voidCommandsOf(attemptId)).toHaveLength(1);
+    expect((await terminalCommands(attemptId)).filter((c) => modeOf(c) === 'sale')).toHaveLength(1);
+    expect(await audits(attemptId, 'payment.attempt.void_not_sent')).toHaveLength(1);
   });
 });
