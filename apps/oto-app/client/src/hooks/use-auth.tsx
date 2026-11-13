@@ -7,6 +7,7 @@ import {
 } from "@tanstack/react-query";
 import { User as SelectUser, InsertUser, UserWithBranchAccess } from "@shared/schema";
 import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
+import { authDiag } from "../lib/auth-diag";
 import { useToast } from "@/hooks/use-toast";
 import { readSignInOptions, withSignOutMarker, type SignInOptions } from "@/lib/sign-in-options";
 import { useThemeOptional } from "@/components/theme-provider";
@@ -34,7 +35,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryKey: ["/api/user"],
     queryFn: getQueryFn({ on401: "returnNull" }),
     select: (data) => {
-      console.log("[auth-diag] /api/user query select: typeof=", typeof data, "value=", JSON.stringify(data)?.slice(0, 200));
+      // SCRUM-978: the person's id only, never their record (the e-mail address and name were printed).
+      authDiag("[auth-diag] /api/user query select: typeof=", typeof data, "user=", data ? (data as { id?: unknown }).id : String(data));
       return data;
     },
   });
@@ -48,16 +50,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
-      console.log("[auth-diag] POST /api/login");
+      authDiag("[auth-diag] POST /api/login");
       const res = await apiRequest("POST", "/api/login", { identifier: credentials.identifier, password: credentials.password });
       const data = await res.json();
-      console.log("[auth-diag] POST /api/login response:", JSON.stringify({ id: data?.id, role: data?.role, isActive: data?.isActive }));
+      authDiag("[auth-diag] POST /api/login response:", JSON.stringify({ id: data?.id, role: data?.role, isActive: data?.isActive }));
       return data;
     },
     onSuccess: (user: UserWithBranchAccess) => {
-      console.log("[auth-diag] loginMutation onSuccess: writing user to cache", user?.id);
+      authDiag("[auth-diag] loginMutation onSuccess: writing user to cache", user?.id);
       queryClient.setQueryData(["/api/user"], user);
-      console.log("[auth-diag] /api/user cache is now:", JSON.stringify(queryClient.getQueryData(["/api/user"])));
+      authDiag("[auth-diag] /api/user cache is now:", (queryClient.getQueryData(["/api/user"]) as { id?: unknown } | null | undefined)?.id ?? null);
     },
     onError: (error: Error) => {
       toast({
@@ -109,7 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  console.log("[auth-diag] AuthProvider render: isLoading=", isLoading, "user=", user === undefined ? "undefined" : user === null ? "null" : user?.id);
+  authDiag("[auth-diag] AuthProvider render: isLoading=", isLoading, "user=", user === undefined ? "undefined" : user === null ? "null" : user?.id);
 
   useEffect(() => {
     if (user) {

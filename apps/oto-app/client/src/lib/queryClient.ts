@@ -1,5 +1,6 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 import { EMPLOYMENT_ENDED } from "@shared/payOnly";
+import { authDiag } from "./auth-diag";
 
 export class ApiError extends Error {
   status: number;
@@ -54,14 +55,14 @@ export const getQueryFn: <T>(options: {
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
     const url = queryKey.join("/") as string;
-    console.log(`[auth-diag] fetch ${url}`);
+    authDiag(`[auth-diag] fetch ${url}`);
     const res = await fetch(url, {
       credentials: "include",
     });
-    console.log(`[auth-diag] fetch ${url} -> ${res.status}`);
+    authDiag(`[auth-diag] fetch ${url} -> ${res.status}`);
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      console.log(`[auth-diag] fetch ${url}: 401, returning null (on401=returnNull)`);
+      authDiag(`[auth-diag] fetch ${url}: 401, returning null (on401=returnNull)`);
       return null;
     }
 
@@ -93,9 +94,9 @@ queryClient.getQueryCache().subscribe((event) => {
   if (event.type === "updated" && event.action.type === "error") {
     const err = event.action.error;
     const queryKey = event.query.queryKey;
-    console.log(`[auth-diag] query cache error event: key=${JSON.stringify(queryKey)} error=${err instanceof ApiError ? `ApiError(${err.status})` : String(err)}`);
+    authDiag(`[auth-diag] query cache error event: key=${JSON.stringify(queryKey)} error=${err instanceof ApiError ? `ApiError(${err.status})` : String(err)}`);
     if (err instanceof ApiError && err.status === 401) {
-      console.log(`[auth-diag] 401 from key=${JSON.stringify(queryKey)}, clearing /api/user cache`);
+      authDiag(`[auth-diag] 401 from key=${JSON.stringify(queryKey)}, clearing /api/user cache`);
       queryClient.setQueryData(["/api/user"], null);
     }
     // SCRUM-769: the employment ended while this page was open (the 03:00
