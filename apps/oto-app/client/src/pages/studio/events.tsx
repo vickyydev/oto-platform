@@ -230,6 +230,10 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [deleteEventId, setDeleteEventId] = useState<string | null>(null);
   const [formData, setFormData] = useState<EventFormData>(defaultFormData);
+  // SCRUM-978: the event the Edit Event form was last filled from (openEditDialog). Update writes only
+  // a form filled from the event it edits, never the blank defaults over a party.
+  const [formFilledFromId, setFormFilledFromId] = useState<string | null>(null);
+  const editFormUnfilled = !!editingEvent && formFilledFromId !== editingEvent.id;
   const [selectedBranchId, setSelectedBranchId] = useState<string | null>(activeBranchId);
   
   // Task creation state
@@ -595,6 +599,7 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
       queryClient.invalidateQueries({ queryKey: ["/api/tasks/grouped"] });
       setEditingEvent(null);
       setFormData(defaultFormData);
+      setFormFilledFromId(null);
       setPendingTasks([]);
       setTasksToDelete([]);
       // SCRUM-840: a deposit that moved while this form was open (the family paid through the
@@ -810,6 +815,7 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
       prepaymentMethod: event.prepaymentMethod || null,
       status: event.status,
     });
+    setFormFilledFromId(event.id);
     setSelectedBranchId(event.branchId);
     setEditingEvent(event);
     setPendingTasks([]);
@@ -1227,6 +1233,8 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
     const { whatsappCountryCode, ...submitData } = processedFormData;
     
     if (editingEvent) {
+      // SCRUM-978: a form not filled from this event is never written over it.
+      if (editFormUnfilled) return;
       const newTasks = pendingTasks.filter(t => !t.isExisting);
       updateMutation.mutate({ 
         id: editingEvent.id, 
@@ -2072,10 +2080,9 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
                           className="w-full text-left py-2 border-b last:border-b-0 border-border/50 hover-elevate rounded-sm px-1 -mx-1 cursor-pointer"
                           onClick={() => {
                             const matchingEvent = events?.find(e => e.id === activity.id);
-                            if (matchingEvent) {
-                              setSelectedBranchId(matchingEvent.branchId);
-                              setEditingEvent(matchingEvent);
-                            }
+                            // SCRUM-978: opened as every other way in opens it: the form filled from the
+                            // event (it opened with the blank defaults, and Update would have written them).
+                            if (matchingEvent) openEditDialog(matchingEvent);
                           }}
                           data-testid={`events-activity-${activity.id}`}
                         >
@@ -2791,7 +2798,7 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
           </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setShowCreateDialog(false); setEditingEvent(null); setSelectedBranchId(activeBranchId); }}>Cancel</Button>
-            <Button onClick={handleSubmit} disabled={createMutation.isPending || updateMutation.isPending} data-testid="button-submit-event">
+            <Button onClick={handleSubmit} disabled={createMutation.isPending || updateMutation.isPending || editFormUnfilled} data-testid="button-submit-event">
               {editingEvent ? "Update" : "Create"}
             </Button>
           </DialogFooter>
