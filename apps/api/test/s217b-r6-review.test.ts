@@ -551,7 +551,10 @@ describe('A. fences and seams', () => {
       // SCRUM-978: the BEO's Save writes the cake count the form sends (kitchenPlanDbDataOf), the kitchen-plan
       // route checks its body before writing (server/lib/kitchenPlanBody.ts), and the parent link's read
       // answers the park's time zone; where the BEO's documents live is unchanged.
-      'beo-routes.ts': 'a7e16afed79912dd4ecfa7787604d96e799dbcd3cf49a3ef89eda3ad3168e066',
+      // SCRUM-978 (the lane's review): the kitchen plan's writers give an adults' set-menu line copied
+      // without a till code, at a count of the adults' own, the code the party's set menu gives it
+      // (withAdultsSetCodes); where the BEO's documents live is unchanged.
+      'beo-routes.ts': 'becb5999afec8c512d737b99ee4ee44ef0ff7481df0258ace70152346cb2e819',
       'orgChartRoutes.ts': 'eff8d4478165e8b0157ef07d37891222104f751b49932e70f525f06366fe9d90',
     };
     for (const [file, hash] of Object.entries(main)) expect(sha256(committed(join(APP_SERVER, file))), file).toBe(hash);
