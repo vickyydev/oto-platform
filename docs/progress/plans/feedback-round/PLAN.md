@@ -341,3 +341,10 @@ For the counter Pi: if its screen opens the staging web address, the display tak
 11. The Shop's dialog now reads "The sale is left as it is … this screen starts a new sale." Right?
 12. The display's own language always wins over the box's copy when they next talk. Wanted?
 13. On the counter display's first screen the WhatsApp / Telegram / LINE pills and language choices are still 40 pixels. Make them 44 as on the form?
+
+## The till lane after the one building now (written 13 November 07:24)
+It starts when keptsale964 has landed (one till lane builds at a time). Tickets and what it holds:
+1. HIGH, SCRUM-977: a phone till turned on its side becomes the desk till and the family's form and the sale are lost (the till decides phone or desk by the window's width alone: apps/pos/src/hooks/use-mobile.tsx 3, App.tsx 74 to 81). Wanted: a device that started as the phone till stays the phone till while a sale or a form is open; a phone on its side is still a phone; the form and the sale survive the turn both ways; a real desk window that is resized works as today; on the sideways phone the form gets the room.
+2. SCRUM-975, the points that need no answer: "Ask the team to remove a child" readable on a dark display; the French form's line clear of the language button; "Ask the team" pressed while cut off goes by itself when the connection is back; the category arrows at the row's ends; the English reconnecting notice on one line at 600 wide; a lost photo answer without the Retry bar; a time limit on display messages; the open display page takes a new build by itself when no family is on the form.
+3. SCRUM-953, the party-page points still open (3 and the parts of 6), and point 6 of SCRUM-967 (a dish added on the till that the set menu already holds).
+Not in it (the owner's answers first): the first screen's pills at 44 pixels, the first screen and the review staying open offline (SCRUM-975 points 1 and 2), SCRUM-892 (the whole order line above the QR on the phone).
