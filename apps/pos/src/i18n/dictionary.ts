@@ -60,6 +60,8 @@ export const DICTIONARY: Record<string, Record<SupportedLang, string>> = {
   'payment.stage.status.sent_to_terminal': { en: 'Payment requested', zh: '已请求付款', th: 'ส่งคำขอชำระเงินแล้ว', ru: 'Платёж запрошен', fr: 'Paiement demandé' },
   'payment.stage.status.approved': { en: 'Payment approved', zh: '付款已批准', th: 'อนุมัติการชำระเงินแล้ว', ru: 'Оплата одобрена', fr: 'Paiement approuvé' },
   'payment.stage.status.declined': { en: 'Payment declined', zh: '付款被拒绝', th: 'การชำระเงินถูกปฏิเสธ', ru: 'Оплата отклонена', fr: 'Paiement refusé' },
+  // SCRUM-979 — a card payment the counter's box ended before the terminal was asked.
+  'payment.stage.status.notStarted': { en: 'Card payment not started', zh: '银行卡付款未开始', th: 'ยังไม่ได้เริ่มชำระด้วยบัตร', ru: 'Оплата картой не начата', fr: 'Paiement par carte non démarré' },
   'payment.stage.status.cancelled': { en: 'Payment cancelled', zh: '付款已取消', th: 'ยกเลิกการชำระเงินแล้ว', ru: 'Оплата отменена', fr: 'Paiement annulé' },
   'payment.stage.status.unknown': { en: 'Payment result unknown', zh: '付款结果未知', th: 'ยังไม่ทราบผลการชำระเงิน', ru: 'Результат оплаты неизвестен', fr: 'Résultat du paiement inconnu' },
   'payment.stage.status.inquiring': { en: 'Checking with terminal', zh: '正在查询终端', th: 'กำลังตรวจสอบกับเครื่องรับบัตร', ru: 'Проверка на терминале', fr: 'Vérification auprès du terminal' },

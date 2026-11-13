@@ -3362,6 +3362,8 @@ export default function Till() {
     // The customer display reads the chosen method off the preview sale: once
     // the QR is cancelled it goes back to the amount, not "Scan to Pay".
     onTenderCancelled: () => setPendingPaymentMethod(null),
+    // SCRUM-979 — and once a tender ended without money: no "Paying by Card" after a decline.
+    onTenderEnded: () => setPendingPaymentMethod(null),
   });
   const paymentDisplay = completionRetry
     ? { ...paymentStage.display, saleId: completionRetry.sale.id, status: 'paid' as const }

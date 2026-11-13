@@ -8,6 +8,7 @@ import type { SaleWriteOutcome } from './saleWriter';
 import { currentLane } from './lane';
 import { findPaymentMethod, getEnabledPaymentMethods } from './payments';
 import { isStockRefusalCode, stockRefusalWords } from './stockRefusal';
+import { endedTenderLine, endedWithoutMoney } from './paymentEnded';
 import { lookup } from '@/i18n/dictionary';
 
 /** Staff chrome stays English; customer displays select their own locale. */
@@ -97,6 +98,12 @@ export interface PaymentStageState {
    * taken, the next one starts at the remaining balance again.
    */
   partial?: boolean;
+  /**
+   * SCRUM-979 — the attempt on the card ended without the terminal being
+   * asked (the platform's reason is in `error`, `lib/paymentEnded.ts`): its
+   * status card reads "Card payment not started", not "Payment declined".
+   */
+  notStarted?: boolean;
 }
 export interface PaymentStageOptions {
   scope: string | number;
@@ -119,6 +126,13 @@ export interface PaymentStageOptions {
    * (the ticket till, for its customer display) lets it go here.
    */
   onTenderCancelled?: (saleId: string | null) => void;
+  /**
+   * SCRUM-979 — a tender ended without money (declined, cancelled, not on
+   * the terminal) and the stage is back at "choose a payment method": a
+   * station's own copy of the chosen method (the ticket till's, for "Paying
+   * by …" on its customer display) lets it go here too.
+   */
+  onTenderEnded?: (saleId: string | null) => void;
 }
 export interface PaymentStageController {
   state: PaymentStageState;
@@ -369,7 +383,8 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
       ...(attempt.partyDeposit ? { partyDeposit: true as const } : {}),
     }] });
   };
-  const adopt = async (ctx: Context, attempt: PaymentAttemptView, outstanding: number | null, qr?: PaymentQrMetadata) => {
+  const adopt = async (ctx: Context, attempt: PaymentAttemptView, outstanding: number | null,
+    qr?: PaymentQrMetadata & { responseText?: string | null }) => {
     if (!current(ctx)) { left(ctx, attempt.saleId ?? ctx.saleId ?? ''); return; }
     if (stateRef.current.phase === 'complete') return;
     if (attempt.saleId !== ctx.saleId) throw new Error('The payment answer belongs to another sale.');
@@ -381,7 +396,7 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
       metadata.expiresAt = stateRef.current.attempt?.id === attempt.id && stateRef.current.qr.expiresAt
         ? stateRef.current.qr.expiresAt : new Date(Date.now() + metadata.expiryTimerMs).toISOString();
     }
-    update({ attempt, qr: metadata, error: null, retryable: false,
+    update({ attempt, qr: metadata, error: null, retryable: false, notStarted: false,
       ...(outstanding !== null && money(outstanding) ? { outstandingSatang: outstanding } : {}) });
     if (attempt.reversalPending) {
       update({ phase: 'blocked', error: paymentStageText('reversalPending') });
@@ -398,7 +413,10 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
           attempt: null, route: null, qr: emptyQr, partial: false });
       }
     } else if (!unresolved(attempt)) {
-      update({ phase: 'ready', method: null, error: `Payment ${attempt.status.replaceAll('_', ' ')}. Choose a payment method.`, qr: emptyQr });
+      // SCRUM-979 — the platform's reason for a card never sent; a real decline keeps these words.
+      const ended = endedTenderLine(attempt, qr?.responseText, (status) => `Payment ${status}. Choose a payment method.`);
+      update({ phase: 'ready', method: null, error: ended.line, notStarted: ended.notStarted, qr: emptyQr });
+      optionsRef.current.onTenderEnded?.(attempt.saleId ?? ctx.saleId);
     } else {
       update({ phase: ['unknown', 'awaiting_staff_confirmation'].includes(attempt.status) ? 'blocked' : 'pending' });
     }
@@ -835,7 +853,13 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
         }
         const outstanding = answer.outstandingSatang!;
         resumedSale.current = saleId;
-        update({ phase: 'ready', outstandingSatang: outstanding, amountSatang: outstanding, tenderedSatang: outstanding, method: null, error: null, retryable: false, partial: false });
+        // SCRUM-979 — the last tender ended without money (a reload in the second
+        // between the press and its end): the till says so, as it would have.
+        const ended = endedWithoutMoney(answer.attempt) && !answer.attempt.partyDeposit
+          ? endedTenderLine(answer.attempt, answer.responseText, (status) => `Payment ${status}. Choose a payment method.`) : null;
+        update({ phase: 'ready', outstandingSatang: outstanding, amountSatang: outstanding, tenderedSatang: outstanding, method: null,
+          error: ended?.line ?? null, retryable: false, partial: false,
+          ...(ended ? { attempt: answer.attempt, notStarted: ended.notStarted } : {}) });
       } else {
         const outstanding = detail.sale.status === 'paid' ? 0 : detail.sale.totals.grossSatang;
         resumedSale.current = saleId;
@@ -901,7 +925,7 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
       const selected = findPaymentMethod(token);
       if (!selected?.enabled) return;
       retryOperation.current = null;
-      update({ method: token, kind: selected.kind, phase: 'ready', attempt: null, route: null, qr: emptyQr, error: null, retryable: false, cancelRefusal: null });
+      update({ method: token, kind: selected.kind, phase: 'ready', attempt: null, route: null, qr: emptyQr, error: null, retryable: false, cancelRefusal: null, notStarted: false });
     },
     setAmountSatang: (amount) => {
       if (!locked && state.phase !== 'manual' && money(amount)) update({ amountSatang: amount,

@@ -104,7 +104,8 @@ export function PaymentTenderPanel({ stage, showSubmit = true, fixedAmount = fal
         <Button type="button" variant="outline" className="w-full h-12" disabled={(text ?? '').includes('.')} onClick={() => enter(`${text || '0'}.`)}>{label('decimalPoint')}</Button></>}
     </div>}
     {state.attempt && <div className="rounded-xl border p-4" data-testid="payment-attempt-status">
-      <p className="font-bold">{label(`status.${state.attempt.status}`)}</p>
+      {/* SCRUM-979 — a card the terminal was never asked for is not "declined". */}
+      <p className="font-bold">{label(state.notStarted ? 'status.notStarted' : `status.${state.attempt.status}`)}</p>
       <p className="text-sm text-muted-foreground">{state.attempt.provider} · ฿{format(state.attempt.amountSatang)}</p>
       {state.attempt.offline && <p className="mt-2 font-semibold">{label('offlineRecorded')}</p>}
     </div>}

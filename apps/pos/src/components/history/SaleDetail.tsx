@@ -102,6 +102,7 @@ import {
   Wallet,
 } from 'lucide-react';
 import { satangText } from '@/lib/bahtText';
+import { endedWithoutMoney } from '@/lib/paymentEnded';
 
 /**
  * ONE SALE OUT OF THE PLATFORM LEDGER — SCRUM-238.
@@ -488,6 +489,11 @@ export function PaymentRow({
   fmt: (iso: string) => string;
 }) {
   const status = tenderStatusOf(attempt);
+  // SCRUM-979 — a tender that took no money (a declined card, a cancelled QR)
+  // has no amount in the money column, which reads as money taken: what was
+  // asked goes into the line's words, greyed. A party's deposit kept with the
+  // party keeps its amount (SCRUM-953).
+  const noMoney = endedWithoutMoney(attempt) && !attempt.partyDeposit;
   const Icon =
     attempt.method === 'cash' ? Banknote : attempt.method === 'qr' ? QrCode : attempt.method === 'wallet' || attempt.method === 'other' ? Wallet : CreditCard;
   const detail = [
@@ -508,6 +514,7 @@ export function PaymentRow({
           <span className="block font-semibold">
             {tenderLabel(attempt, sale)}
             <span className={`font-normal text-sm ${status.tone}`}> · {status.label}</span>
+            {noMoney && <span className="font-normal text-sm text-muted-foreground"> (฿{satangText(attempt.amountSatang)} asked)</span>}
           </span>
           <span className="block text-xs text-muted-foreground">
             {attempt.paidAt ? fmt(attempt.paidAt) : fmt(attempt.createdAt)}
@@ -515,7 +522,7 @@ export function PaymentRow({
           </span>
         </span>
       </span>
-      <span className="tabular-nums shrink-0 font-semibold">฿{satangText(attempt.amountSatang)}</span>
+      {!noMoney && <span className="tabular-nums shrink-0 font-semibold">฿{satangText(attempt.amountSatang)}</span>}
     </div>
   );
 }

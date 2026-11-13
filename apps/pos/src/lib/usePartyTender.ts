@@ -12,6 +12,7 @@ import {
 } from '@/api/parties';
 import type { PartyBooking, PartyPaymentMethod } from '@/types';
 import { findPaymentMethod, getEnabledPaymentMethods } from './payments';
+import { endedTenderLine } from './paymentEnded';
 import { paymentStageText, type PaymentStageController, type PaymentStageState } from './usePaymentStage';
 
 /**
@@ -200,7 +201,7 @@ export function usePartyTender(options: PartyTenderOptions): PaymentStageControl
     optionsRef.current.onRefused();
   };
 
-  const adopt = async (ids: PartyWriteIds, attempt: PaymentAttemptView, qr?: PaymentQrMetadata) => {
+  const adopt = async (ids: PartyWriteIds, attempt: PaymentAttemptView, qr?: PaymentQrMetadata & { responseText?: string | null }) => {
     if (stateRef.current.phase === 'complete') return;
     const metadata = qr ? { ...qr } : stateRef.current.qr;
     if (!metadata.expiresAt && metadata.expiryTimerMs !== null) {
@@ -208,7 +209,7 @@ export function usePartyTender(options: PartyTenderOptions): PaymentStageControl
         ? stateRef.current.qr.expiresAt
         : new Date(Date.now() + metadata.expiryTimerMs).toISOString();
     }
-    update({ attempt, qr: metadata, error: null, retryable: false });
+    update({ attempt, qr: metadata, error: null, retryable: false, notStarted: false });
     if (attempt.reversalPending) {
       update({ phase: 'blocked', error: paymentStageText('reversalPending') });
     } else if (taken(attempt)) {
@@ -218,10 +219,14 @@ export function usePartyTender(options: PartyTenderOptions): PaymentStageControl
       // It did not happen. The next press is another tender, under its own id.
       pressRef.current = null;
       retryOperation.current = null;
+      // SCRUM-979 — the platform's reason for a card never sent; a real decline keeps these words.
+      const ended = endedTenderLine(attempt, qr?.responseText,
+        (status) => `Payment ${status}. Press again or go back to choose another payment method.`);
       update({
         phase: 'ready',
         ...noTender(),
-        error: `Payment ${attempt.status.replaceAll('_', ' ')}. Press again or go back to choose another payment method.`,
+        error: ended.line,
+        notStarted: ended.notStarted,
       });
     } else {
       update({ phase: ['unknown', 'awaiting_staff_confirmation'].includes(attempt.status) ? 'blocked' : 'pending' });

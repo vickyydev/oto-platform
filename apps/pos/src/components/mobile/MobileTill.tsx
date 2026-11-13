@@ -2036,6 +2036,8 @@ export default function MobileTill() {
     onComplete: completeSale,
     onLeftBehind: (saleId) => { if (saleId) noteSaleLeftBehind(null, saleId); },
     onTenderCancelled: () => setPendingPaymentMethod(null),
+    // SCRUM-979 — and once a tender ended without money: no "Paying by Card" after a decline.
+    onTenderEnded: () => setPendingPaymentMethod(null),
   });
   const paymentDisplay = completionRetry
     ? { ...paymentStage.display, saleId: completionRetry.sale.id, status: 'paid' as const }
