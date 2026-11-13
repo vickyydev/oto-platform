@@ -47,3 +47,7 @@ Whole API files only, serial embedded PostgreSQL after the coordinated heavy slo
 Run the complete `apps/api/test/party-slips.test.ts`, the new scoped review file, relevant whole party-plan reader tests if found, zero-output API types and touched-file lint. Shared prep-slips whole suite only if its code changes. Existing tests that simulate historical missing marks remain as historical-fallback coverage, not weakened. Native staging proof and inspected evidence after root-approved landing will be bounded to simulated/queued records; physical printer acceptance remains unclaimed.
 
 Implementation awaits root design review. BEO agent currently owns the heavy slot after deposit install release; this lane is light read/design only. No landing before app844 and root source review.
+
+## Review clarification: publication formats
+
+Independent S1 review confirmed that replay is prospective within a known published format. An expanded publication can expose semantics absent from an old input, so a format transition keeps the historical one-time fallback even when old JSON is otherwise valid. Across formats an empty station is trusted only with explicit null-plan input or an actual cancellation-only VOID; ordinary empty station content does not prove that newly exposed dishes are a staff edit. This preserves the existing release-is-not-a-change behavior and requires no new owner choice. Actual missing/returned plan behavior and owner holds remain unchanged.

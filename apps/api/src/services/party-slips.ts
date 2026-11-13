@@ -15,6 +15,7 @@ import {
 } from '@oto/db';
 import {
   PARTY_SLIP_COMPOSER,
+  PARTY_CANCELLED,
   PartyKitchenPlanSchema,
   PartyPlanMenuItemSchema,
   PartyPlanBarItemSchema,
@@ -359,7 +360,7 @@ const asHeld = (document: PartySlipDocument | null): PartySlipHeld | null => doc
  * printing of the party's slips, or its newest change run when that is as new
  * or newer — named "print:<run>", "change:<run>", or "none".
  */
-async function heldSourcesOf(db: Exec, q: { eventId: string; partyDate: string }): Promise<Record<PartySlipStation, string>> {
+async function heldSourcesOf(db: Exec, q: { eventId: string; partyDate: string }): Promise<{ sources: Record<PartySlipStation, string>; cancelledEmpty: Record<PartySlipStation, boolean> }> {
   const eventId = q.eventId.toLowerCase();
   const printed = await db
     .select({ station: partySlipPrint.station, run: partySlipPrint.run, createdAt: partySlipPrint.createdAt })
@@ -367,11 +368,16 @@ async function heldSourcesOf(db: Exec, q: { eventId: string; partyDate: string }
     .where(and(eq(partySlipPrint.eventId, eventId), eq(partySlipPrint.partyDate, q.partyDate)))
     .orderBy(asc(partySlipPrint.createdAt), asc(partySlipPrint.run));
   const changed = await db
-    .select({ station: prepSlipPrint.station, run: prepSlipPrint.run, createdAt: prepSlipPrint.createdAt })
+    .select({
+      station: prepSlipPrint.station, run: prepSlipPrint.run, createdAt: prepSlipPrint.createdAt,
+      variant: prepSlipPrint.variant,
+      cancelled: sql<boolean>`coalesce((${prepSlipPrint.document}->'details') @> ${JSON.stringify([PARTY_CANCELLED])}::jsonb, false)`,
+    })
     .from(prepSlipPrint)
     .where(and(eq(prepSlipPrint.eventId, eventId), eq(prepSlipPrint.partyDate, q.partyDate)))
     .orderBy(asc(prepSlipPrint.createdAt), asc(prepSlipPrint.run));
   const out: Record<PartySlipStation, string> = { kitchen: 'none', bar: 'none' };
+  const cancelledEmpty: Record<PartySlipStation, boolean> = { kitchen: false, bar: false };
   for (const st of PARTY_SLIP_STATIONS) {
     const lastPrinted = printed.filter((r) => r.station === st).at(-1);
     const runs = changed.filter((r) => r.station === st);
@@ -380,11 +386,14 @@ async function heldSourcesOf(db: Exec, q: { eventId: string; partyDate: string }
     const printedAt = lastPrinted?.createdAt ?? null;
     if (lastRun !== null && changeAt && (!printedAt || changeAt.getTime() >= printedAt.getTime())) {
       out[st] = `change:${lastRun}`;
+      const lastChange = runs.filter((r) => r.run === lastRun);
+      cancelledEmpty[st] = !lastChange.some((r) => r.variant === 'updated')
+        && lastChange.some((r) => r.variant === 'void' && r.cancelled);
     } else if (lastPrinted) {
       out[st] = `print:${lastPrinted.run}`;
     }
   }
-  return out;
+  return { sources: out, cancelledEmpty };
 }
 
 async function baselinesOf(db: Exec, q: { eventId: string; partyDate: string }): Promise<Partial<Record<PartySlipStation, BaselineRow>>> {
@@ -670,13 +679,13 @@ export type PrintPartySlipChangesResult =
  * holds, and the next look finds it unchanged and writes nothing. Under the
  * same lock as the slip time's run and a press of "Print party slips now".
  *
- * A release is not a staff edit. A matching-source semantic snapshot is
+ * A release is not a staff edit. A matching-source, same-publication snapshot is
  * recomposed under the current composer, then compared with the actual current
  * plan. This suppresses presentation-only changes without erasing an edit made
  * before the first upgraded tick. Its original routing remains the before side.
  *
- * Historical marks without usable semantic input retain the established one-time
- * rebase to current composition; their pre-release input cannot be reconstructed.
+ * Historical marks without usable input, or publication-format transitions, keep
+ * the established one-time rebase; newly exposed semantics cannot be reconstructed.
  * The fallback is audited and captures a prospective snapshot. Cancellation
  * always voids the actual last-given lines, including after a silent rebase.
  */
@@ -722,7 +731,7 @@ export async function printPartySlipChanges(
   }
   const after = composeRecorded(afterInput, time);
   const before: Record<PartySlipStation, PartySlipHeld | null> = await partySlipsLastGiven(tx, { eventId, partyDate });
-  const sources = await heldSourcesOf(tx, { eventId, partyDate });
+  const { sources, cancelledEmpty } = await heldSourcesOf(tx, { eventId, partyDate });
   const marks = await baselinesOf(tx, { eventId, partyDate });
   // No row says nothing about its publication format. Retain each station's actual epoch.
   const currentComposer = read.rowPresent ? partySlipComposerOf(read.source) : null;
@@ -743,15 +752,23 @@ export async function printPartySlipChanges(
     }
     // Cancellation voids actual given lines, not their new presentation.
     if (cancelled) continue;
-    const priorInput = mark?.source === sources[st]
-      ? partySlipComposeInputOf((mark.held as HeldLines | null)?.composeInput) : null;
-    // A recorded VOID without UPDATED is reliable empty state even without old semantic JSON.
-    const knownEmpty = before[st] === null && sources[st].startsWith('change:');
+    const matchingSource = mark?.source === sources[st];
+    const samePublication = mark?.composer.endsWith(`:${read.source}`) ?? false;
+    // A newly published format can expose semantics absent from the old input.
+    // Even a valid snapshot cannot reconstruct those fields without a staff edit.
+    const recordedInput = matchingSource
+      ? partySlipComposeInputOf((mark?.held as HeldLines | null)?.composeInput) : null;
+    const priorInput = samePublication ? recordedInput : null;
+    // Ordinary empty station content can also gain lines from publication alone.
+    // Across formats trust only explicit null-plan input or an actual cancellation VOID.
+    const knownEmpty = before[st] === null && sources[st].startsWith('change:')
+      && (samePublication || recordedInput?.plan === null || cancelledEmpty[st]);
     const normalizedInput = priorInput ?? (knownEmpty ? composeInputOf(null, party) : afterInput);
     const prior = composeRecorded(normalizedInput, time)[st];
     before[st] = asHeld(prior);
     rebased.push(st);
-    reasons[st] = priorInput ? 'semantic_snapshot' : knownEmpty ? 'recorded_empty' : 'historical_without_snapshot';
+    reasons[st] = priorInput ? 'semantic_snapshot' : knownEmpty ? 'recorded_empty'
+      : matchingSource && !samePublication ? 'historical_publication_transition' : 'historical_without_snapshot';
     normalized.push({
       station: st, composer: composer!, source: sources[st], rebased: true,
       fingerprint: partySlipFingerprint(prior), held: heldOf(prior, normalizedInput),

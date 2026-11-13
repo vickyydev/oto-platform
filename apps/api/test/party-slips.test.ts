@@ -1706,4 +1706,81 @@ describe('SCRUM-906 — the whole kitchen plan, through the OTO App view (0050)'
     expect(rows.map((r) => [r.station, r.variant])).toEqual([['kitchen', 'void'], ['kitchen', 'updated']]);
     expect(docOf(rows[0]!).lines).toEqual([{ qty: 3, name: 'Pizza: Hawaiian' }]);
   });
+
+
+  it('HIGH S1: a publication-format expansion alone sends no false UPDATED, then protects a real later edit', async () => {
+    const id = await appParty({ id: newId(), title: 'ZZ TEST publication format release', date: T, slipsTime: '18:00' });
+    const extra = [{ id: 'format-extra', itemName: 'ZZ TEST newly exposed dish', quantity: 2, notes: '', included: false, price: 0, source: 'extra' }];
+    const addExtra = () => ctx.db.execute(sql`update otoapp.beo_kitchen_plans
+      set menus = jsonb_set(menus, '{kids}', (menus->'kids') || ${JSON.stringify(extra)}::jsonb) where event_id = ${id}`);
+    await addExtra();
+    await ctx.db.execute(sql`alter view otoapp_v.event_packages rename to event_packages_slip_review_original`);
+    try {
+      await ctx.db.execute(sql`create view otoapp_v.event_packages as
+        select event_id, core_branch_id, party_date, start_time, end_time, package,
+               counts, add_ons, entertainment, set_menu, bar_items, kitchen, settlement,
+               null::jsonb as kitchen_plan from otoapp_v.event_packages_slip_review_original`);
+      const old = await readPartyPlan(ctx.db, { branchId: central, eventId: id });
+      expect(old).toMatchObject({ source: 'legacy', rowPresent: true });
+      expect(old.kitchen!.setMenu.some((m) => m.name === extra[0]!.itemName)).toBe(false);
+      await runPartySlipsJob(ctx.db, atBangkok(T, '18:00'));
+      expect((await baselinesOf(id)).every((m) => m.composer === '3:legacy')).toBe(true);
+    } finally {
+      await ctx.db.execute(sql`drop view if exists otoapp_v.event_packages`);
+      await ctx.db.execute(sql`alter view otoapp_v.event_packages_slip_review_original rename to event_packages`);
+    }
+    const published = await readPartyPlan(ctx.db, { branchId: central, eventId: id });
+    expect(published.kitchen!.setMenu.some((m) => m.name === extra[0]!.itemName)).toBe(true);
+    // No BEO write occurred between the old print and the expanded publication.
+    await runPartySlipsJob(ctx.db, atBangkok(T, '18:01'));
+    expect(await changesOf(id)).toEqual([]);
+    const audits = await ctx.db.select().from(auditLog).where(and(eq(auditLog.action, 'party.slips_rebase'), eq(auditLog.entityId, id)));
+    expect(audits.at(-1)?.after).toMatchObject({ stations: expect.arrayContaining([expect.objectContaining({ reason: 'historical_publication_transition' })]) });
+    expect((await baselinesOf(id)).every((m) => m.composer === '3:kitchen_plan_1')).toBe(true);
+    await staffChoose(id, ['Hawaiian']);
+    await addExtra();
+    await runPartySlipsJob(ctx.db, atBangkok(T, '18:02'));
+    const rows = await changesOf(id);
+    expect(rows.map((r) => [r.station, r.variant])).toEqual([['kitchen', 'void'], ['kitchen', 'updated']]);
+    expect(docOf(rows[0]!).lines).toEqual([{ qty: 3, name: 'Pizza: Margherita' }]);
+    expect(docOf(rows[1]!).lines.some((m) => m.name === extra[0]!.itemName)).toBe(true);
+  });
+
+
+  it.each([false, true])('HIGH S1: an empty non-cancelled station still rebases a format-only expansion, historical=%s', async (historical) => {
+    const id = await appParty({ id: newId(), title: `ZZ TEST empty publication ${historical}`, date: T, slipsTime: '18:10', setMenu: false });
+    const hidden = { id: 'hidden', itemName: 'ZZ TEST previously hidden dish', quantity: 2, source: 'extra', included: false, price: 0, notes: '' };
+    const coded = { id: 'old-code', itemName: 'Margherita', productCode: 'CF-24', quantity: 3, source: 'extra', included: false, price: 0, notes: '' };
+    await ctx.db.execute(sql`insert into otoapp.beo_kitchen_plans (id, event_id, set_menu_enabled, menus, kitchen_ready_offset_minutes)
+      values (${newId()}, ${id}, false, ${JSON.stringify({ kidsFoodTime: '14:00', kids: [coded, hidden], adults: [] })}::jsonb, 20)`);
+    await ctx.db.execute(sql`alter view otoapp_v.event_packages rename to event_packages_slip_review_original`);
+    try {
+      await ctx.db.execute(sql`create view otoapp_v.event_packages as
+        select event_id, core_branch_id, party_date, start_time, end_time, package,
+               counts, add_ons, entertainment, set_menu, bar_items, kitchen, settlement,
+               null::jsonb as kitchen_plan from otoapp_v.event_packages_slip_review_original`);
+      const legacy = await readPartyPlan(ctx.db, { branchId: central, eventId: id });
+      expect(legacy.kitchen!.setMenu.map((m) => m.name)).toEqual(['Margherita']);
+      await runPartySlipsJob(ctx.db, atBangkok(T, '18:10'));
+      // Staff remove the only published food; this genuine removal already gets its VOID.
+      await ctx.db.execute(sql`update otoapp.beo_kitchen_plans set menus = jsonb_set(menus, '{kids}', ${JSON.stringify([hidden])}::jsonb) where event_id = ${id}`);
+      await runPartySlipsJob(ctx.db, atBangkok(T, '18:11'));
+      const rows = await changesOf(id);
+      expect(rows.map((r) => [r.station, r.variant])).toEqual([['kitchen', 'void']]);
+      expect(docOf(rows[0]!).details).toEqual([PARTY_PLAN_CHANGED]);
+      const mark = (await baselinesOf(id)).find((m) => m.station === 'kitchen')!;
+      expect((mark.held as { composeInput: { plan: unknown } }).composeInput.plan).not.toBeNull();
+      if (historical) {
+        const held = mark.held as Record<string, unknown>;
+        await ctx.db.update(partySlipBaseline).set({ held: { ...held, composeInput: undefined } }).where(eq(partySlipBaseline.id, mark.id));
+      }
+    } finally {
+      await ctx.db.execute(sql`drop view if exists otoapp_v.event_packages`);
+      await ctx.db.execute(sql`alter view otoapp_v.event_packages_slip_review_original rename to event_packages`);
+    }
+    // Only the publication expanded. Empty paper is not proof that this hidden line was newly requested.
+    expect((await readPartyPlan(ctx.db, { branchId: central, eventId: id })).kitchen!.setMenu.some((m) => m.name === hidden.itemName)).toBe(true);
+    await runPartySlipsJob(ctx.db, atBangkok(T, '18:12'));
+    expect((await changesOf(id)).map((r) => [r.station, r.variant])).toEqual([['kitchen', 'void']]);
+  });
 });

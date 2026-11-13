@@ -1,18 +1,18 @@
 {
   "baseSha": "f7df3150f9405dd6aa3480d11c6ab166abf345b2",
-  "atUtc": "2026-11-13T22:54:21.998339+00:00",
+  "atUtc": "2026-11-13T23:19:46.206580+00:00",
   "branch": "lane/codex-slip-baseline-20261114",
-  "sourceReview": "Root design approved; concrete independent source review pending",
+  "sourceReview": "53be requested changes HIGH S1; corrected candidate awaiting focused independent re-review",
   "sourceHashes": {
-    "apps/api/src/services/party-slips.ts": "e257a5b0dc59066c92c73edc008189decc782fdcf9a73f8b15bb0b362271059d",
+    "apps/api/src/services/party-slips.ts": "a3c85c96fc1d657fdf9498cbf7af43ecc88b123e56c2fc7740c2b6d6b097b812",
     "apps/api/src/services/party-plan.ts": "bdfa951a175fd736c93087350bcf9bad49c21ef32875e72fc591465b00aff2c6",
-    "apps/api/test/party-slips.test.ts": "d0a872ed201f2c4da3710bbf246e6566c8cc53be26d922fbff354a765ff65cdf",
+    "apps/api/test/party-slips.test.ts": "2b8f0998c48215ecabd0507f5dd9b6dd94105392bdac229859b3d0acd9e49b49",
     "apps/api/test/s966-slip-review.test.ts": "d5297befbfaebbca6cb3fca76f12d53a9f779272eee1d82f5e947eb247cf7c0e"
   },
   "sourceGitBlobs": {
-    "apps/api/src/services/party-slips.ts": "32053e611886f22661227c2000f401a1e130f8a9",
+    "apps/api/src/services/party-slips.ts": "35f56bf57fa0bc4c65c50c8e5c1e225444d96f2e",
     "apps/api/src/services/party-plan.ts": "146a8f37bfbdba7d81d190366a9f1332d6070533",
-    "apps/api/test/party-slips.test.ts": "cadfa0d396976ba08f7805219af9a6351bb41e8e",
+    "apps/api/test/party-slips.test.ts": "b447f7eb179aa6141733a40474db5a1b50681b9b",
     "apps/api/test/s966-slip-review.test.ts": "511c6bf81d8c8aac266f45dad1c2bd8557f8c622"
   },
   "checks": {
@@ -55,6 +55,46 @@
       "path": "C:\\oto-lanes\\audit-takeover-20261113\\slip-final-lint.log",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "bytes": 0
+    },
+    "slip-S1-red.log": {
+      "path": "C:\\oto-lanes\\audit-takeover-20261113\\slip-S1-red.log",
+      "sha256": "5f058c4a99456ae951cbc530c2faa09534a7b2726999f9e32c86f6abaf526524",
+      "bytes": 36918
+    },
+    "slip-S1-green.log": {
+      "path": "C:\\oto-lanes\\audit-takeover-20261113\\slip-S1-green.log",
+      "sha256": "ec11cc33f7b0e501a78f4f967e7cc8b495595fada39ba35c5f43f42b7279c725",
+      "bytes": 38800
+    },
+    "slip-S1-api-types.log": {
+      "path": "C:\\oto-lanes\\audit-takeover-20261113\\slip-S1-api-types.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "slip-S1-lint.log": {
+      "path": "C:\\oto-lanes\\audit-takeover-20261113\\slip-S1-lint.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "slip-S1-empty-red.log": {
+      "path": "C:\\oto-lanes\\audit-takeover-20261113\\slip-S1-empty-red.log",
+      "sha256": "e31b230f2d00611a8cbc78a81f1b4c99f875e1657096fc52f4990bab9dc99588",
+      "bytes": 34834
+    },
+    "slip-S1-final-green.log": {
+      "path": "C:\\oto-lanes\\audit-takeover-20261113\\slip-S1-final-green.log",
+      "sha256": "778e9d6d49a45fc86464339587bceb8511b6432b8cbc7f041b2d6b9ab1136adf",
+      "bytes": 39526
+    },
+    "slip-S1-final-api-types.log": {
+      "path": "C:\\oto-lanes\\audit-takeover-20261113\\slip-S1-final-api-types.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "slip-S1-final-lint.log": {
+      "path": "C:\\oto-lanes\\audit-takeover-20261113\\slip-S1-final-lint.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
     }
   },
   "originalCompleteFile": {
@@ -63,10 +103,10 @@
     "passed": 48,
     "setupFailure": false
   },
-  "finalUniqueTests": 96,
+  "finalUniqueTests": 99,
   "completeFiles": 4,
   "finalFileCounts": {
-    "party-slips.test.ts": 59,
+    "party-slips.test.ts": 62,
     "s966-slip-review.test.ts": 11,
     "party-menu-product.test.ts": 19,
     "prep-slips.test.ts": 7
@@ -99,5 +139,36 @@
     "Historical missing/invalid snapshots keep an explicit one-time fallback; lost past edits are not reconstructed.",
     "Queued/test slip documents do not prove physical printer output.",
     "No settlement/pricing/app-editor ownership changes."
-  ]
+  ],
+  "peerReviewFinding": {
+    "key": "S1",
+    "severity": "HIGH",
+    "reviewedCandidate": "53be0beca1245b6e9cafca3405ab633ff5528176",
+    "originalVerdict": "independent-review-53be.md",
+    "controlledRed": {
+      "failed": 1,
+      "passed": 59,
+      "files": 1,
+      "cause": "false UPDATED after actual publication-only expansion"
+    },
+    "firstGuardGreen": {
+      "passed": 97,
+      "files": 4
+    },
+    "emptyBoundaryRed": {
+      "failed": 2,
+      "passed": 60,
+      "files": 1,
+      "sourceBlobs": {
+        "apps/api/src/services/party-slips.ts": "4c4d2dd23d20d1ed30470c19b1312c0f75912135",
+        "apps/api/src/services/party-plan.ts": "146a8f37bfbdba7d81d190366a9f1332d6070533"
+      },
+      "cause": "ordinary non-cancelled empty station incorrectly bypassed cross-format fallback"
+    },
+    "finalGreen": {
+      "passed": 99,
+      "files": 4
+    },
+    "status": "implemented, final independent re-review pending"
+  }
 }
