@@ -16,6 +16,7 @@ import {
 import {
   OCCUPANCY_STALE_AFTER_S,
   addDaysToIsoDate,
+  bandShortCode,
   businessDate,
   newId,
   parseDayStart,
@@ -420,7 +421,10 @@ export async function strandedOf(
     return {
       kind: 'band',
       subjectId: b.id,
-      bandCode: b.code,
+      // SCRUM-971 — the short code under the band's QR and on the receipt
+      // (`T1-7KMQ4X`, as History and the door check-in name a band), never
+      // the stored code: that is the signed gate credential.
+      bandCode: bandShortCode(b.code),
       childName: null,
       childrenWithBand: first ? (kidsByGroup.get(group) ?? 0) : 0,
       lastGateEvent: ev ? { kind: ev.kind, at: ev.createdAt.toISOString(), stationName: ev.stationName } : null,
@@ -435,7 +439,7 @@ export async function strandedOf(
     rows.push({
       kind: 'checkin',
       subjectId: c.id,
-      bandCode: c.bandCode,
+      bandCode: c.bandCode ? bandShortCode(c.bandCode) : null,
       childName: c.childName,
       childrenWithBand: 0,
       lastGateEvent: null,
