@@ -1,0 +1,1 @@
+S.phase='revoke own display after cancelling cart';await S.dropDisplay('main');await S.till.reload();await S.till.waitForTimeout(1500);return {buttons:await S.till.getByRole('button').allTextContents(),landing:await S.landing(S.till).count(),sales:await S.stationSales()};

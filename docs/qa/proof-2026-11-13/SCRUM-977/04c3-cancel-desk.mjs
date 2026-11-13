@@ -1,0 +1,1 @@
+S.phase='cancel own desk cart and revoke display';const r=await S.cancelSale(S.till);await S.landing(S.till).waitFor();await S.dropDisplay('main');return {cancel:r,registrations:S.receipt.registrationsPosted.length};

@@ -1,0 +1,18 @@
+S.phase='phone rotation preserves the family form and entered data';
+const {expect,assert}=S;
+await S.setup();
+S.phoneStation=await S.makeStation('phone till');
+const p=await S.signIn('phone','STAGING_RECEPTION_PHONE','STAGING_RECEPTION_PASSWORD',{width:390,height:844},{station:S.phoneStation});S.phone=p;
+S.aliveTimer=setInterval(()=>{for(const l of Object.keys(S.pages))S.alive(l);},30000);
+await S.ticket(p,1,0);
+await p.getByPlaceholder("Child's name").first().fill('ZZ TEST 977 child');
+await p.getByRole('button',{name:/Tap to set age/}).first().tap();
+const dlg=p.getByRole('dialog').last();await dlg.waitFor();
+await dlg.getByRole('button',{name:'6',exact:true}).tap();
+await dlg.getByRole('button',{name:/^Jan/}).first().tap();
+await dlg.getByRole('button',{name:'1',exact:true}).first().tap();
+await dlg.getByRole('button',{name:/Confirm/}).tap();await dlg.waitFor({state:'hidden'});
+await p.getByRole('button',{name:'Continue to payment',exact:true}).click();
+await p.getByRole('button',{name:/Customer is ready/}).click();
+await p.getByTestId('consent-form-body').waitFor();
+return {inputs:await p.locator('input').evaluateAll(xs=>xs.filter(x=>x.getBoundingClientRect().width>0).map(x=>({placeholder:x.placeholder,type:x.type,value:x.value,aria:x.getAttribute('aria-label')}))),buttons:await p.getByRole('button').allTextContents()};

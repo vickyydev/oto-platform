@@ -1,0 +1,1 @@
+S.phase='reload own unpaid sale and retain not-started reason';const p=S.till;await p.reload();await p.waitForTimeout(2000);return {text:S.flat(await p.locator('body').innerText()).slice(0,1800),buttons:await p.getByRole('button').allTextContents()};

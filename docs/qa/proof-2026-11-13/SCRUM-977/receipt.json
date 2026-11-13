@@ -1,0 +1,875 @@
+{
+  "tickets": [
+    "SCRUM-977",
+    "SCRUM-975",
+    "SCRUM-979 (till points)"
+  ],
+  "sha": "239ef48248d7ec1af739f432db7c91dda778c2c0",
+  "startedAt": "2026-11-13T11:43:14.678Z",
+  "deploysAtStart": [
+    {
+      "name": "oto-pos-staging",
+      "deploys": [
+        {
+          "id": "dep-dbrferec6qcc73dofm5g",
+          "status": "build_in_progress",
+          "sha": "239ef48248d7ec1af739f432db7c91dda778c2c0"
+        },
+        {
+          "id": "dep-dbrf8368bjmc73bo5ob0",
+          "status": "live",
+          "sha": "7f5ac6f1359df9c0627fa7cd4ffaca6f2b9b2c6c",
+          "finishedAt": "2026-11-13T11:28:36.030527Z"
+        },
+        {
+          "id": "dep-dbrc022jnfac739a1ddg",
+          "status": "deactivated",
+          "sha": "26c308edc5c09c3f576d5189b9e58ad8f1cbabe7",
+          "finishedAt": "2026-11-13T07:46:27.104674Z"
+        },
+        {
+          "id": "dep-dbrabsavcj2c73emo6h0",
+          "status": "deactivated",
+          "sha": "1916bfbd73ebcfcba2dbe85c7a7a9d2bf63e9152",
+          "finishedAt": "2026-11-13T05:55:22.509771Z"
+        },
+        {
+          "id": "dep-dbr8lpqjnfac7396igq0",
+          "status": "deactivated",
+          "sha": "3d58a9d8848e4e117b2b372c6e9586d43062639b",
+          "finishedAt": "2026-11-13T03:59:55.656397Z"
+        },
+        {
+          "id": "dep-dbr86mtbedkc73crbb60",
+          "status": "deactivated",
+          "sha": "3d58a9d8848e4e117b2b372c6e9586d43062639b",
+          "finishedAt": "2026-11-13T03:27:27.435888Z"
+        },
+        {
+          "id": "dep-dbr7ms1srm7s73dmcfp0",
+          "status": "deactivated",
+          "sha": "1b9885a321ff7799ba122caa2a0adff30aa99807",
+          "finishedAt": "2026-11-13T02:53:57.586614Z"
+        },
+        {
+          "id": "dep-dbr76mm7bikc73ekorjg",
+          "status": "deactivated",
+          "sha": "0e8e2badfafc4f7fc51929b3f7aefecc2702328f",
+          "finishedAt": "2026-11-13T02:19:26.378744Z"
+        }
+      ]
+    },
+    {
+      "name": "oto-pos-web-staging",
+      "deploys": [
+        {
+          "id": "dep-dbrferdbedkc73df2jn0",
+          "status": "build_in_progress",
+          "sha": "239ef48248d7ec1af739f432db7c91dda778c2c0"
+        },
+        {
+          "id": "dep-dbrf8368bjmc73bo5o00",
+          "status": "live",
+          "sha": "7f5ac6f1359df9c0627fa7cd4ffaca6f2b9b2c6c",
+          "finishedAt": "2026-11-13T11:31:47.547149Z"
+        },
+        {
+          "id": "dep-dbrc022jnfac739a1d40",
+          "status": "deactivated",
+          "sha": "26c308edc5c09c3f576d5189b9e58ad8f1cbabe7",
+          "finishedAt": "2026-11-13T07:49:07.700202Z"
+        },
+        {
+          "id": "dep-dbrabsavcj2c73emo670",
+          "status": "deactivated",
+          "sha": "1916bfbd73ebcfcba2dbe85c7a7a9d2bf63e9152",
+          "finishedAt": "2026-11-13T05:58:16.489837Z"
+        },
+        {
+          "id": "dep-dbr8lpqjnfac7396igm0",
+          "status": "deactivated",
+          "sha": "3d58a9d8848e4e117b2b372c6e9586d43062639b",
+          "finishedAt": "2026-11-13T04:02:36.46874Z"
+        },
+        {
+          "id": "dep-dbr86n56e07s73artfc0",
+          "status": "deactivated",
+          "sha": "3d58a9d8848e4e117b2b372c6e9586d43062639b",
+          "finishedAt": "2026-11-13T03:30:08.406689Z"
+        },
+        {
+          "id": "dep-dbr7ms1srm7s73dmcffg",
+          "status": "deactivated",
+          "sha": "1b9885a321ff7799ba122caa2a0adff30aa99807",
+          "finishedAt": "2026-11-13T02:56:42.280526Z"
+        },
+        {
+          "id": "dep-dbr76mm7bikc73ekorfg",
+          "status": "deactivated",
+          "sha": "0e8e2badfafc4f7fc51929b3f7aefecc2702328f",
+          "finishedAt": "2026-11-13T02:22:15.237791Z"
+        }
+      ]
+    },
+    {
+      "name": "oto-api-staging",
+      "deploys": [
+        {
+          "id": "dep-dbrevcgu01pc73b1vjp0",
+          "status": "live",
+          "sha": "0ea85faaf5b4e62204eaabdda5d691dd2b9a248c",
+          "finishedAt": "2026-11-13T11:13:52.427358Z"
+        },
+        {
+          "id": "dep-dbrc022jnfac739a1c20",
+          "status": "deactivated",
+          "sha": "26c308edc5c09c3f576d5189b9e58ad8f1cbabe7",
+          "finishedAt": "2026-11-13T07:50:59.834434Z"
+        },
+        {
+          "id": "dep-dbrabs2vcj2c73emo54g",
+          "status": "deactivated",
+          "sha": "1916bfbd73ebcfcba2dbe85c7a7a9d2bf63e9152",
+          "finishedAt": "2026-11-13T05:59:38.651872Z"
+        },
+        {
+          "id": "dep-dbr8lpqjnfac7396ifjg",
+          "status": "deactivated",
+          "sha": "3d58a9d8848e4e117b2b372c6e9586d43062639b",
+          "finishedAt": "2026-11-13T04:03:27.492383Z"
+        },
+        {
+          "id": "dep-dbr86ndg1s2s73fni4f0",
+          "status": "deactivated",
+          "sha": "3d58a9d8848e4e117b2b372c6e9586d43062639b",
+          "finishedAt": "2026-11-13T03:31:32.052954Z"
+        },
+        {
+          "id": "dep-dbr7mrpsrm7s73dmce9g",
+          "status": "deactivated",
+          "sha": "1b9885a321ff7799ba122caa2a0adff30aa99807",
+          "finishedAt": "2026-11-13T02:58:27.49873Z"
+        },
+        {
+          "id": "dep-dbr77g0874rs73fipqsg",
+          "status": "deactivated",
+          "sha": "1b9885a321ff7799ba122caa2a0adff30aa99807",
+          "finishedAt": "2026-11-13T02:29:00.34247Z"
+        },
+        {
+          "id": "dep-dbr76me7bikc73ekoqc0",
+          "status": "deactivated",
+          "sha": "0e8e2badfafc4f7fc51929b3f7aefecc2702328f",
+          "finishedAt": "2026-11-13T02:23:05.889249Z"
+        }
+      ]
+    }
+  ],
+  "numbers": {},
+  "created": [
+    {
+      "kind": "device",
+      "key": "receipt",
+      "id": "6e8e99b8-b42f-4e66-b261-7b12d22f109f",
+      "label": "ZZ TEST 977 receipt printer"
+    },
+    {
+      "kind": "device",
+      "key": "band",
+      "id": "3785afd0-4e92-4d64-8a1d-1ba13c82f527",
+      "label": "ZZ TEST 977 band printer"
+    },
+    {
+      "kind": "device",
+      "key": "card",
+      "id": "89c9e83d-08ce-42b3-b9c8-d5ca21a930cf",
+      "label": "ZZ TEST 977 card terminal",
+      "transport": "simulated"
+    },
+    {
+      "kind": "station",
+      "id": "01a1d4ba-e2df-75dd-aaf5-35d2d3719aff",
+      "name": "ZZ TEST SCRUM-977 desk till 1794570379456",
+      "prefix": "Z97701"
+    },
+    {
+      "kind": "station",
+      "id": "01a1d4ba-e3a1-7fb0-aa3a-c77d285de700",
+      "name": "ZZ TEST SCRUM-977 phone till 1794570379651",
+      "prefix": "Z97702"
+    },
+    {
+      "kind": "display",
+      "label": "main",
+      "id": "01a1d4bb-67c4-70df-9f11-c9270a7b4fab",
+      "station": "01a1d4ba-e2df-75dd-aaf5-35d2d3719aff"
+    },
+    {
+      "kind": "not-started-card-sale",
+      "id": "01a1d4bf-b869-7d06-a9ed-7c8f8e11b924",
+      "station": "01a1d4ba-e2df-75dd-aaf5-35d2d3719aff"
+    }
+  ],
+  "points": {},
+  "reads": {
+    "phoneRotation": [
+      {
+        "width": 390,
+        "height": 844,
+        "formHeight": 624,
+        "share": 0.7393364928909952,
+        "scrollWidth": 390,
+        "touch": 1
+      },
+      {
+        "width": 844,
+        "height": 390,
+        "formHeight": 272,
+        "share": 0.6974358974358974,
+        "scrollWidth": 844,
+        "touch": 1
+      },
+      {
+        "width": 390,
+        "height": 844,
+        "formHeight": 624,
+        "share": 0.7393364928909952,
+        "scrollWidth": 390,
+        "touch": 1
+      },
+      {
+        "width": 360,
+        "height": 740,
+        "formHeight": 520,
+        "share": 0.7027027027027027,
+        "scrollWidth": 360,
+        "touch": 1
+      },
+      {
+        "width": 740,
+        "height": 360,
+        "formHeight": 242,
+        "share": 0.6722222222222223,
+        "scrollWidth": 740,
+        "touch": 1
+      },
+      {
+        "width": 360,
+        "height": 740,
+        "formHeight": 520,
+        "share": 0.7027027027027027,
+        "scrollWidth": 360,
+        "touch": 1
+      }
+    ],
+    "phoneCart": {
+      "child": "ZZ TEST 977 child rotated",
+      "text": "0 no gate Oto Play Park, Central Floresta [staff] Children Playing Alone Tourist Cancel Children playing alone No adult on this sale. Name each child and confirm their age so we know who needs supervision. 6 yrs Drop-off required Before payment • ZZ TEST 977 child rotated (age 6) needs drop-off supervision. • ZZ TEST 977 child rotated needs a photo taken. • Parent must give their name and consent on the customer screen. • Parent must accept every required confirmation on the customer screen. • Parent must give the number for messages about their child on the customer screen. Back Continue to payment 1 1 item ฿690 Tickets F&B Shop Check-in Events History Today 7 Messages"
+    },
+    "displayReconnect": {
+      "line": {
+        "text": "Reconnecting… what you enter is sent by itself.",
+        "height": 37,
+        "lineHeight": 20
+      },
+      "restoredMs": 1342,
+      "retryPressed": false,
+      "tillLine": "The family asked for help: fill the form here with them. The agreement ticks stay theirs, on the display.",
+      "sent": [
+        {
+          "path": "/api/box/v1/station/01a1d4ba-e2df-75dd-aaf5-35d2d3719aff/display/intents",
+          "action": "display.consent",
+          "id": "a6d30318-e107-4d2d-9821-8e7fe39590dd"
+        },
+        {
+          "path": "/api/box/v1/station/01a1d4ba-e2df-75dd-aaf5-35d2d3719aff/display/intents",
+          "action": "display.consent",
+          "id": "a6d30318-e107-4d2d-9821-8e7fe39590dd"
+        },
+        {
+          "path": "/api/box/v1/station/01a1d4ba-e2df-75dd-aaf5-35d2d3719aff/display/intents",
+          "action": "display.set_language",
+          "id": "1920782d-9e80-40c3-a599-2717b620e768"
+        },
+        {
+          "path": "/api/box/v1/station/01a1d4ba-e2df-75dd-aaf5-35d2d3719aff/display/intents",
+          "action": "display.set_language",
+          "id": "f27263f9-8126-4cbe-9884-144de46e9f31"
+        }
+      ]
+    },
+    "displayLayout": {
+      "overlap": {
+        "heading": "Parlez-nous de votre enfant",
+        "language": "Français",
+        "overlap": 0
+      },
+      "sw": {
+        "registrations": 1,
+        "controller": true
+      },
+      "deskKept": true
+    },
+    "cardNotStarted": {
+      "sale": "01a1d4bf-b869-7d06-a9ed-7c8f8e11b924",
+      "attempt": "01a1d4bf-bcaf-7304-841c-43338c670a44",
+      "ui": "Amount Due ฿1040 Select Payment Method Cash Card PromptPay Card payment not started simulator · ฿1040.00 The card terminal is not ready on this counter yet. Try again in a moment, or take another way to pay. Hold sale Back Confirm Payment Received",
+      "read": {
+        "route": "card_terminal",
+        "attempt": {
+          "id": "01a1d4bf-bcaf-7304-841c-43338c670a44",
+          "saleId": "01a1d4bf-b869-7d06-a9ed-7c8f8e11b924",
+          "method": "card",
+          "provider": "simulator",
+          "status": "declined",
+          "amountSatang": 104000,
+          "tenderedSatang": null,
+          "changeSatang": null,
+          "terminalRef": null,
+          "inquirySupported": false,
+          "tid": null,
+          "approvalCode": null,
+          "last4": null,
+          "invoiceNo": null,
+          "tranRef": null,
+          "actionId": "01a1d4bf-ba78-767a-815e-1f6a56f1d9b2",
+          "offline": false,
+          "paidAt": null,
+          "createdAt": "2026-11-13T11:51:37.887Z"
+        },
+        "qrPayload": null,
+        "qrImageUrl": null,
+        "expiresAt": null,
+        "expiryTimerMs": null,
+        "deviceLabel": "ZZ TEST 977 card terminal",
+        "responseText": "The card terminal is not ready on this counter yet. Try again in a moment, or take another way to pay.",
+        "outstandingSatang": 104000
+      }
+    },
+    "cardCommands": [
+      {
+        "id": "01a1d4bf-bcb3-7cf0-b93c-3b8eca9929bf",
+        "state": "failed",
+        "errorCode": "TERMINAL_NOT_ON_THIS_BOX",
+        "kind": "terminal_sale",
+        "mode": "sale"
+      }
+    ],
+    "refusalReload": {
+      "sameSale": true,
+      "saleId": "01a1d4bf-b869-7d06-a9ed-7c8f8e11b924",
+      "reason": "The card terminal is not ready on this counter yet. Try again in a moment, or take another way to pay."
+    }
+  },
+  "odd": [],
+  "hunt": [],
+  "pageErrors": [
+    {
+      "page": "phone",
+      "at": "phone rotation preserves the family form and entered data",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "phone",
+      "at": "phone rotation preserves the family form and entered data",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "till",
+      "at": "own counter display and new family form",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": "own counter display and new family form",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "display-main",
+      "at": "display offline Ask the team automatically resends",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "display offline Ask the team automatically resends",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "display offline Ask the team automatically resends",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "display offline Ask the team automatically resends",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "display offline Ask the team automatically resends",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "display offline Ask the team automatically resends",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "display offline Ask the team automatically resends",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "display offline Ask the team automatically resends",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "display offline Ask the team automatically resends",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "display offline Ask the team automatically resends",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "phone",
+      "at": "exact own fixture cleanup",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "phone",
+      "at": "exact own fixture cleanup",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "till",
+      "at": "exact own fixture cleanup",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": "exact own fixture cleanup",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/:id/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/:id/revoke",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/commands",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    }
+  ],
+  "registrationsPosted": [],
+  "cleanup": {
+    "displays": [
+      {
+        "label": "main",
+        "id": "01a1d4bb-67c4-70df-9f11-c9270a7b4fab",
+        "revoked": true
+      }
+    ],
+    "signOuts": {
+      "phone": {
+        "signOut": 200,
+        "meAfter": 401
+      },
+      "till": {
+        "signOut": 200,
+        "meAfter": 401
+      }
+    },
+    "records": {
+      "sales": [
+        {
+          "id": "01a1d4bf-b869-7d06-a9ed-7c8f8e11b924",
+          "status": "voided"
+        }
+      ],
+      "stations": [
+        {
+          "id": "01a1d4ba-e2df-75dd-aaf5-35d2d3719aff",
+          "archived": true,
+          "devices": 0
+        },
+        {
+          "id": "01a1d4ba-e3a1-7fb0-aa3a-c77d285de700",
+          "archived": true,
+          "devices": 0
+        }
+      ],
+      "devices": [
+        {
+          "id": "6e8e99b8-b42f-4e66-b261-7b12d22f109f",
+          "archived": true
+        },
+        {
+          "id": "3785afd0-4e92-4d64-8a1d-1ba13c82f527",
+          "archived": true
+        },
+        {
+          "id": "89c9e83d-08ce-42b3-b9c8-d5ca21a930cf",
+          "archived": true
+        }
+      ]
+    },
+    "adminMe": 401,
+    "noRegistrations": true
+  },
+  "checks": {
+    "numbersCheckedUnused": 20,
+    "first": "0898977010",
+    "last": "0898977029"
+  },
+  "finishedAt": "2026-11-13T11:55:08.131Z"
+}

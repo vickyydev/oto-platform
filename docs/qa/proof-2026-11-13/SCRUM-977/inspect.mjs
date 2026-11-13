@@ -1,0 +1,1 @@
+return {phone:await S.phone.getByRole('button').allTextContents(),desk:await S.till.getByRole('button').allTextContents(),phoneDialogs:await S.phone.getByRole('dialog').allTextContents(),deskDialogs:await S.till.getByRole('dialog').allTextContents()};

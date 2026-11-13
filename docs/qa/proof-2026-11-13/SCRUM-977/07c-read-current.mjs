@@ -1,0 +1,1 @@
+return {text:S.flat(await S.till.locator('body').innerText()).slice(0,1800),pay:await S.till.getByRole('button',{name:/^Pay /}).evaluate(x=>({disabled:x.disabled,aria:x.getAttribute('aria-disabled')})),sales:(await S.stationSales()).map(x=>({id:x.id,status:x.status}))};

@@ -1,0 +1,1 @@
+const offer=S.till.getByRole('dialog',{name:'New member?',exact:true});if(await offer.isVisible())await offer.getByRole('button',{name:'Continue as walk-in',exact:true}).click();await S.cancelSale(S.till);return {reset:true};

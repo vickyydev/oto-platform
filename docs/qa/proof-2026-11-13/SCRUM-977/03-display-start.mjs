@@ -1,0 +1,12 @@
+S.phase='own counter display and new family form';const {expect,assert}=S;
+S.till=await S.signIn('till','STAGING_RECEPTION_PHONE','STAGING_RECEPTION_PASSWORD',{width:1440,height:900});
+const till=S.till,d=await S.pairDisplay('main');S.d=d;
+await d.getByTestId('language-choice-en').tap();await d.getByTestId('identify-safety').waitFor();
+await S.keypad(d.locator('body'),S.free[0],{tap:true});await d.getByRole('button',{name:'Continue',exact:true}).tap();
+const offer=till.getByRole('dialog',{name:'New member?',exact:true});await expect(offer).toContainText(S.spaced(S.free[0]));await offer.getByRole('button',{name:'Continue as walk-in',exact:true}).click();
+await S.ticket(till,1,0);const c=d.getByTestId('display-consent');await c.waitFor();
+await c.getByTestId('consent-child-name').tap();await S.typeKeys(d,'ZZ TEST 977 DISPLAY');await S.hideKeys(d);
+await c.getByRole('button',{name:/Tap to set age|yrs/}).first().tap();const dlg=d.getByRole('dialog').last();await dlg.waitFor();
+await dlg.getByRole('button',{name:'6',exact:true}).tap();await dlg.getByRole('button',{name:/^Jan/}).first().tap();await dlg.getByRole('button',{name:'1',exact:true}).first().tap();await dlg.getByRole('button',{name:/Confirm/}).tap();await dlg.waitFor({state:'hidden'});
+await c.getByRole('button',{name:'Continue',exact:true}).tap();await c.getByTestId('consent-allergies').waitFor();
+await S.shot(d,'03-display-care-online.png');return {form:true};

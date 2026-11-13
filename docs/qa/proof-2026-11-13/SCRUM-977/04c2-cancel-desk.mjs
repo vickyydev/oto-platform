@@ -1,0 +1,1 @@
+S.phase='cancel desk gate via Back';await S.till.getByRole('button',{name:'Back',exact:true}).first().click();await S.till.waitForTimeout(600);return {buttons:await S.till.getByRole('button').allTextContents()};

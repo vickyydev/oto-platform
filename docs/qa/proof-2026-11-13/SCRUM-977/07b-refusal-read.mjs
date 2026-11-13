@@ -1,0 +1,1 @@
+S.phase='read refusal after returning to same unpaid sale';const p=S.till;await p.getByRole('button',{name:/^Pay /}).click();await S.paymentStep(p).waitFor();await p.waitForTimeout(1000);const before=S.flat(await S.paymentStep(p).innerText());await S.shot(p,'07b-not-started-reopened.png');return {before,after:S.flat(await S.paymentStep(p).innerText())};

@@ -1,0 +1,1 @@
+S.phase='native cancellation of the own unpaid card sale';const p=S.till;const r=await S.cancelSale(p);const detail=await S.sale(S.refusedSale);S.assert.equal(detail.sale.status,'voided');return {dialog:r,id:S.refusedSale,status:detail.sale.status,attempts:detail.attempts.map(x=>({id:x.id,status:x.status}))};

@@ -1,0 +1,882 @@
+
+=== 2026-11-13T11:46:17.030Z phone rotation preserves the family form and entered data
+S.phase='phone rotation preserves the family form and entered data';
+const {expect,assert}=S;
+await S.setup();
+S.phoneStation=await S.makeStation('phone till');
+const p=await S.signIn('phone','STAGING_RECEPTION_PHONE','STAGING_RECEPTION_PASSWORD',{width:390,height:844},{station:S.phoneStation});S.phone=p;
+S.aliveTimer=setInterval(()=>{for(const l of Object.keys(S.pages))S.alive(l);},30000);
+await S.ticket(p,1,0);
+await p.getByPlaceholder("Child's name").first().fill('ZZ TEST 977 child');
+await p.getByRole('button',{name:/Tap to set age/}).first().tap();
+const dlg=p.getByRole('dialog').last();await dlg.waitFor();
+await dlg.getByRole('button',{name:'6',exact:true}).tap();
+await dlg.getByRole('button',{name:/^Jan/}).first().tap();
+await dlg.getByRole('button',{name:'1',exact:true}).first().tap();
+await dlg.getByRole('button',{name:/Confirm/}).tap();await dlg.waitFor({state:'hidden'});
+await p.getByRole('button',{name:'Continue to payment',exact:true}).click();
+await p.getByRole('button',{name:/Customer is ready/}).click();
+await p.getByTestId('consent-form-body').waitFor();
+return {inputs:await p.locator('input').evaluateAll(xs=>xs.filter(x=>x.getBoundingClientRect().width>0).map(x=>({placeholder:x.placeholder,type:x.type,value:x.value,aria:x.getAttribute('aria-label')}))),buttons:await p.getByRole('button').allTextContents()};
+--> {
+ "ok": true,
+ "value": {
+  "inputs": [
+   {
+    "placeholder": "Child's name",
+    "type": "text",
+    "value": "ZZ TEST 977 child",
+    "aria": null
+   },
+   {
+    "placeholder": "Full name",
+    "type": "text",
+    "value": "ZZ TEST 977 child",
+    "aria": null
+   },
+   {
+    "placeholder": "e.g. halal, no pork — optional",
+    "type": "text",
+    "value": "",
+    "aria": null
+   },
+   {
+    "placeholder": "Your full name",
+    "type": "text",
+    "value": "",
+    "aria": null
+   },
+   {
+    "placeholder": "818953926",
+    "type": "tel",
+    "value": "",
+    "aria": null
+   }
+  ],
+  "buttons": [
+   "0in parkno gate",
+   "",
+   "",
+   "",
+   "Cancel",
+   "6 yrs",
+   " Back",
+   "Continue to payment",
+   "11 item฿690",
+   "English",
+   "6 yrs",
+   " Start camera",
+   "No food",
+   "Prepaid credit",
+   "Choose items",
+   "🇹🇭+66",
+   "WhatsApp",
+   "Telegram",
+   "LINE",
+   "Done",
+   "Return phone to staff",
+   "Tickets",
+   "F&B",
+   "Shop",
+   "Check-in",
+   "Events",
+   "History",
+   "Today",
+   "7Messages",
+   ""
+  ]
+ }
+}
+
+=== 2026-11-13T11:46:37.509Z phone both rotations retain typed child and guardian
+S.phase='phone both rotations retain typed child and guardian';
+const p=S.phone,{expect,assert}=S;
+await p.getByTestId('consent-child-name').fill('ZZ TEST 977 child rotated');
+await p.getByTestId('consent-guardian').fill('ZZ TEST 977 parent rotated');
+const reads=[];
+for(const [width,height] of [[390,844],[844,390],[390,844],[360,740],[740,360],[360,740]]){
+ await p.setViewportSize({width,height});await p.waitForTimeout(800);
+ await expect(p.getByTestId('consent-child-name')).toHaveValue('ZZ TEST 977 child rotated');
+ await expect(p.getByTestId('consent-guardian')).toHaveValue('ZZ TEST 977 parent rotated');
+ const r=await p.getByTestId('consent-form-body').evaluate(el=>({width:innerWidth,height:innerHeight,formHeight:el.getBoundingClientRect().height,share:el.getBoundingClientRect().height/innerHeight,scrollWidth:document.documentElement.scrollWidth,touch:navigator.maxTouchPoints}));
+ assert.equal(r.scrollWidth,width,'no horizontal page overflow');if(width>height)assert.ok(r.share>=.5,'form keeps at least half the height');reads.push(r);
+ await S.shot(p,`02-phone-${width}x${height}-kept-form.png`);
+}
+S.receipt.reads.phoneRotation=reads;S.save();
+return {reads,registrationWrites:S.receipt.registrationsPosted.length,sales:(await S.stationSales(S.phoneStation)).map(x=>({id:x.id,status:x.status}))};
+--> {
+ "ok": true,
+ "value": {
+  "reads": [
+   {
+    "width": 390,
+    "height": 844,
+    "formHeight": 624,
+    "share": 0.7393364928909952,
+    "scrollWidth": 390,
+    "touch": 1
+   },
+   {
+    "width": 844,
+    "height": 390,
+    "formHeight": 272,
+    "share": 0.6974358974358974,
+    "scrollWidth": 844,
+    "touch": 1
+   },
+   {
+    "width": 390,
+    "height": 844,
+    "formHeight": 624,
+    "share": 0.7393364928909952,
+    "scrollWidth": 390,
+    "touch": 1
+   },
+   {
+    "width": 360,
+    "height": 740,
+    "formHeight": 520,
+    "share": 0.7027027027027027,
+    "scrollWidth": 360,
+    "touch": 1
+   },
+   {
+    "width": 740,
+    "height": 360,
+    "formHeight": 242,
+    "share": 0.6722222222222223,
+    "scrollWidth": 740,
+    "touch": 1
+   },
+   {
+    "width": 360,
+    "height": 740,
+    "formHeight": 520,
+    "share": 0.7027027027027027,
+    "scrollWidth": 360,
+    "touch": 1
+   }
+  ],
+  "registrationWrites": 0,
+  "sales": []
+ }
+}
+
+=== 2026-11-13T11:46:48.481Z own counter display and new family form
+S.phase='own counter display and new family form';const {expect,assert}=S;
+S.till=await S.signIn('till','STAGING_RECEPTION_PHONE','STAGING_RECEPTION_PASSWORD',{width:1440,height:900});
+const till=S.till,d=await S.pairDisplay('main');S.d=d;
+await d.getByTestId('language-choice-en').tap();await d.getByTestId('identify-safety').waitFor();
+await S.keypad(d.locator('body'),S.free[0],{tap:true});await d.getByRole('button',{name:'Continue',exact:true}).tap();
+const offer=till.getByRole('dialog',{name:'New member?',exact:true});await expect(offer).toContainText(S.spaced(S.free[0]));await offer.getByRole('button',{name:'Continue as walk-in',exact:true}).click();
+await S.ticket(till,1,0);const c=d.getByTestId('display-consent');await c.waitFor();
+await c.getByTestId('consent-child-name').tap();await S.typeKeys(d,'ZZ TEST 977 DISPLAY');await S.hideKeys(d);
+await c.getByRole('button',{name:/Tap to set age|yrs/}).first().tap();const dlg=d.getByRole('dialog').last();await dlg.waitFor();
+await dlg.getByRole('button',{name:'6',exact:true}).tap();await dlg.getByRole('button',{name:/^Jan/}).first().tap();await dlg.getByRole('button',{name:'1',exact:true}).first().tap();await dlg.getByRole('button',{name:/Confirm/}).tap();await dlg.waitFor({state:'hidden'});
+await c.getByRole('button',{name:'Continue',exact:true}).tap();await c.getByTestId('consent-allergies').waitFor();
+await S.shot(d,'03-display-care-online.png');return {form:true};
+--> {
+ "ok": false,
+ "error": "TimeoutError: locator.tap: Timeout 30000ms exceeded. | Call log: | \u001b[2m  - waiting for getByTestId('screen-keyboard').getByRole('button', { name: '9', exact: true })\u001b[22m | "
+}
+
+=== 2026-11-13T11:47:42.648Z phone form at the top after rotation and retained cart
+S.phase='phone form at the top after rotation and retained cart';const p=S.phone,{expect}=S;
+await p.setViewportSize({width:740,height:360});await p.getByTestId('consent-form-body').evaluate(el=>el.scrollTop=0);await p.waitForTimeout(500);
+await S.shot(p,'02b-phone-740x360-top-kept-child.png');
+await p.setViewportSize({width:390,height:844});await p.getByTestId('consent-form-body').evaluate(el=>el.scrollTop=0);await p.waitForTimeout(500);
+await S.shot(p,'02c-phone-upright-again-kept-child.png');
+await p.getByRole('button',{name:'Return phone to staff',exact:true}).click();
+await expect(p.getByPlaceholder("Child's name").first()).toHaveValue('ZZ TEST 977 child rotated');
+const result={child:await p.getByPlaceholder("Child's name").first().inputValue(),text:S.flat(await p.locator('body').innerText()).slice(0,700)};
+await S.shot(p,'02d-phone-returned-same-cart.png');S.receipt.reads.phoneCart=result;S.save();return result;
+--> {
+ "ok": true,
+ "value": {
+  "child": "ZZ TEST 977 child rotated",
+  "text": "0 no gate Oto Play Park, Central Floresta [staff] Children Playing Alone Tourist Cancel Children playing alone No adult on this sale. Name each child and confirm their age so we know who needs supervision. 6 yrs Drop-off required Before payment • ZZ TEST 977 child rotated (age 6) needs drop-off supervision. • ZZ TEST 977 child rotated needs a photo taken. • Parent must give their name and consent on the customer screen. • Parent must accept every required confirmation on the customer screen. • Parent must give the number for messages about their child on the customer screen. Back Continue to payment 1 1 item ฿690 Tickets F&B Shop Check-in Events History Today 7 Messages"
+ }
+}
+
+=== 2026-11-13T11:47:51.905Z display proof continued after harness tried a digit on the letter keyboard
+S.phase='display proof continued after harness tried a digit on the letter keyboard';const d=S.d,c=d.getByTestId('display-consent'),{expect,assert}=S;
+await S.typeKeys(d,'DISPLAY');await S.hideKeys(d);
+await c.getByRole('button',{name:/Tap to set age|yrs/}).first().tap();const dlg=d.getByRole('dialog').last();await dlg.waitFor();
+await dlg.getByRole('button',{name:'6',exact:true}).tap();await dlg.getByRole('button',{name:/^Jan/}).first().tap();await dlg.getByRole('button',{name:'1',exact:true}).first().tap();await dlg.getByRole('button',{name:/Confirm/}).tap();await dlg.waitFor({state:'hidden'});
+await c.getByRole('button',{name:'Continue',exact:true}).tap();await c.getByTestId('consent-allergies').waitFor();
+await S.shot(d,'03-display-care-online.png');return {form:true};
+--> {
+ "ok": true,
+ "value": {
+  "form": true
+ }
+}
+
+=== 2026-11-13T11:47:59.248Z display offline Ask the team automatically resends
+S.phase='display offline Ask the team automatically resends';const {expect,assert}=S;
+const d=S.d,till=S.till,ctx=S.displays.main.ctx,c=d.getByTestId('display-consent');
+const sent=[];d.on('request',r=>{if(r.method()==='POST'&&/display/.test(r.url())){try{const b=r.postDataJSON();if(b?.actionId||b?.id)sent.push({path:new URL(r.url()).pathname,action:b.action??b.type,id:b.actionId??b.id});}catch{}}});
+await S.chooseLang(d,'English');
+await ctx.setOffline(true);await d.getByTestId('display-form-reconnecting').waitFor();
+const line=await d.getByTestId('display-form-reconnecting').evaluate(el=>({text:el.textContent,height:el.getBoundingClientRect().height,lineHeight:parseFloat(getComputedStyle(el).lineHeight)}));
+await S.shot(d,'04a-display-offline-one-line.png');
+await c.getByRole('button',{name:'Ask the team',exact:true}).tap();await d.waitForTimeout(9000);
+await S.shot(d,'04b-display-kept-help-offline.png');
+const restored=Date.now();await ctx.setOffline(false);
+await expect(till.getByTestId('consent-staff-status')).toContainText(/asked|help|take over/i,{timeout:30000});
+await expect(d.getByRole('alert')).toHaveCount(0,{timeout:30000});
+const result={line,restoredMs:Date.now()-restored,retryPressed:false,tillLine:S.flat(await till.getByTestId('consent-staff-status').innerText()),sent};
+await S.both('04c-display-help-delivered-after-reconnect.png','Own ZZ TEST family: the kept help request arrived without Retry',till,d);
+S.receipt.reads.displayReconnect=result;S.save();return result;
+--> {
+ "ok": true,
+ "value": {
+  "line": {
+   "text": "Reconnecting… what you enter is sent by itself.",
+   "height": 37,
+   "lineHeight": 20
+  },
+  "restoredMs": 1342,
+  "retryPressed": false,
+  "tillLine": "The family asked for help: fill the form here with them. The agreement ticks stay theirs, on the display.",
+  "sent": [
+   {
+    "path": "/api/box/v1/station/01a1d4ba-e2df-75dd-aaf5-35d2d3719aff/display/intents",
+    "action": "display.consent",
+    "id": "a6d30318-e107-4d2d-9821-8e7fe39590dd"
+   },
+   {
+    "path": "/api/box/v1/station/01a1d4ba-e2df-75dd-aaf5-35d2d3719aff/display/intents",
+    "action": "display.consent",
+    "id": "a6d30318-e107-4d2d-9821-8e7fe39590dd"
+   }
+  ]
+ }
+}
+
+=== 2026-11-13T11:48:42.656Z French form heading and category arrows on deployed build
+S.phase='French form heading and category arrows on deployed build';const {assert}=S,d=S.d,p=S.till;
+await S.chooseLang(d,'Fran?ais');await d.waitForTimeout(500);
+const overlap=await d.evaluate(()=>{const h=[...document.querySelectorAll('h2')].find(x=>x.getBoundingClientRect().width);const b=[...document.querySelectorAll('button')].find(x=>x.getAttribute('aria-label')?.includes('langue'));const r=h?.getBoundingClientRect(),l=b?.getBoundingClientRect();return {heading:h?.textContent,language:b?.textContent,overlap:r&&l?Math.max(0,Math.min(r.right,l.right)-Math.max(r.left,l.left))*Math.max(0,Math.min(r.bottom,l.bottom)-Math.max(r.top,l.top)):null};});assert.equal(overlap.overlap,0);
+await S.shot(d,'04d-display-french-heading-clear.png');await S.chooseLang(d,'English');
+const sw=await d.evaluate(async()=>({registrations:(await navigator.serviceWorker.getRegistrations()).length,controller:Boolean(navigator.serviceWorker.controller)}));
+await p.setViewportSize({width:700,height:900});await p.waitForTimeout(500);
+const deskKept=await p.getByRole('heading',{name:'Children playing alone',exact:true}).isVisible();assert.ok(deskKept);await p.setViewportSize({width:1440,height:900});
+S.receipt.reads.displayLayout={overlap,sw,deskKept};S.save();return {overlap,sw,deskKept};
+--> {
+ "ok": false,
+ "error": "TimeoutError: locator.tap: Timeout 30000ms exceeded. | Call log: | \u001b[2m  - waiting for getByRole('button', { name: 'Fran?ais', exact: true }).last()\u001b[22m | "
+}
+
+=== 2026-11-13T11:49:19.132Z French form heading and category arrows on deployed build
+S.phase='French form heading and category arrows on deployed build';const {assert}=S,d=S.d,p=S.till;
+const french=d.getByRole('button',{name:/^Fran/}).last();if(!(await french.isVisible()))await S.openLang(d);await french.tap();await d.waitForTimeout(500);
+const overlap=await d.evaluate(()=>{const h=[...document.querySelectorAll('h2')].find(x=>x.getBoundingClientRect().width);const b=[...document.querySelectorAll('button')].find(x=>x.getAttribute('aria-label')?.includes('langue'));const r=h?.getBoundingClientRect(),l=b?.getBoundingClientRect();return {heading:h?.textContent,language:b?.textContent,overlap:r&&l?Math.max(0,Math.min(r.right,l.right)-Math.max(r.left,l.left))*Math.max(0,Math.min(r.bottom,l.bottom)-Math.max(r.top,l.top)):null};});assert.equal(overlap.overlap,0);
+await S.shot(d,'04d-display-french-heading-clear.png');await S.chooseLang(d,'English');
+const sw=await d.evaluate(async()=>({registrations:(await navigator.serviceWorker.getRegistrations()).length,controller:Boolean(navigator.serviceWorker.controller)}));
+await p.setViewportSize({width:700,height:900});await p.waitForTimeout(500);
+const deskKept=await p.getByRole('heading',{name:'Children playing alone',exact:true}).isVisible();assert.ok(deskKept);await p.setViewportSize({width:1440,height:900});
+S.receipt.reads.displayLayout={overlap,sw,deskKept};S.save();return {overlap,sw,deskKept};
+--> {
+ "ok": true,
+ "value": {
+  "overlap": {
+   "heading": "Parlez-nous de votre enfant",
+   "language": "Français",
+   "overlap": 0
+  },
+  "sw": {
+   "registrations": 1,
+   "controller": true
+  },
+  "deskKept": true
+ }
+}
+
+=== 2026-11-13T11:49:28.163Z cancel own unfinished family forms before payment proof
+S.phase='cancel own unfinished family forms before payment proof';
+const result={phone:await S.cancelSale(S.phone),desk:await S.cancelSale(S.till)};
+await S.landing(S.till).waitFor();
+await S.dropDisplay('main');
+return result;
+--> {
+ "ok": false,
+ "error": "TimeoutError: locator.click: Timeout 30000ms exceeded. | Call log: | \u001b[2m  - waiting for getByRole('button', { name: 'Cancel', exact: true }).last()\u001b[22m | "
+}
+
+=== 2026-11-13T11:50:03.618Z cancel own unfinished family forms before payment proof
+return {phone:await S.phone.getByRole('button').allTextContents(),desk:await S.till.getByRole('button').allTextContents(),phoneDialogs:await S.phone.getByRole('dialog').allTextContents(),deskDialogs:await S.till.getByRole('dialog').allTextContents()};
+--> {
+ "ok": true,
+ "value": {
+  "phone": [
+   "0in parkno gate",
+   "",
+   "",
+   "Redeem Online Booking",
+   "No items yet฿0",
+   "Tickets",
+   "F&B",
+   "Shop",
+   "Check-in",
+   "Events",
+   "History",
+   "Today",
+   "7Messages"
+  ],
+  "desk": [
+   "Hide customer display",
+   "0in parkno gate",
+   "F&B",
+   "Shop",
+   "Events",
+   "Check-in",
+   "History",
+   "Today",
+   "7Messages",
+   "Cash",
+   "",
+   "ZZ TEST SCRUM-977 desk till 1794570379456",
+   "",
+   "7 overdueReview →",
+   "Private child details",
+   "6 yrs",
+   " Back",
+   "Continue to payment",
+   "1. Your children",
+   "2. Care details",
+   "3. Agreements",
+   "Ask the team",
+   "Back",
+   "Continue"
+  ],
+  "phoneDialogs": [],
+  "deskDialogs": []
+ }
+}
+
+=== 2026-11-13T11:50:10.617Z cancel desk gate via Back
+S.phase='cancel desk gate via Back';await S.till.getByRole('button',{name:'Back',exact:true}).first().click();await S.till.waitForTimeout(600);return {buttons:await S.till.getByRole('button').allTextContents()};
+--> {
+ "ok": true,
+ "value": {
+  "buttons": [
+   "Hide customer display",
+   "0in parkno gate",
+   "F&B",
+   "Shop",
+   "Events",
+   "Check-in",
+   "History",
+   "Today",
+   "7Messages",
+   "Cash",
+   "",
+   "ZZ TEST SCRUM-977 desk till 1794570379456",
+   "",
+   "7 overdueReview →",
+   "Add drop-off child",
+   "Done Adding",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "Apply",
+   "Redeem",
+   "Issue a voucher…",
+   "Add manual discount",
+   "Cancel",
+   "Pay ฿690"
+  ]
+ }
+}
+
+=== 2026-11-13T11:50:21.079Z cancel own desk cart and revoke display
+S.phase='cancel own desk cart and revoke display';const r=await S.cancelSale(S.till);await S.landing(S.till).waitFor();await S.dropDisplay('main');return {cancel:r,registrations:S.receipt.registrationsPosted.length};
+--> {
+ "ok": false,
+ "error": "TimeoutError: locator.waitFor: Timeout 30000ms exceeded. | Call log: | \u001b[2m  - waiting for locator('[data-testid=\"language-choice\"],[data-testid=\"identify-safety\"]').first() to be visible\u001b[22m | "
+}
+
+=== 2026-11-13T11:51:10.475Z revoke own display after cancelling cart
+S.phase='revoke own display after cancelling cart';await S.dropDisplay('main');await S.till.reload();await S.till.waitForTimeout(1500);return {buttons:await S.till.getByRole('button').allTextContents(),landing:await S.landing(S.till).count(),sales:await S.stationSales()};
+--> {
+ "ok": true,
+ "value": {
+  "buttons": [
+   "Hide customer display",
+   "0in parkno gate",
+   "F&B",
+   "Shop",
+   "Events",
+   "Check-in",
+   "History",
+   "Today",
+   "7Messages",
+   "Cash",
+   "",
+   "ZZ TEST SCRUM-977 desk till 1794570379456",
+   "",
+   "7 overdueReview →",
+   "Redeem Booking",
+   "Apply",
+   "Redeem",
+   "Issue a voucher…",
+   "Add manual discount",
+   "Cancel",
+   "Pay ฿0",
+   "EnglishContinue in English",
+   "中文使用中文继续",
+   "ไทยดำเนินการต่อเป็นภาษาไทย",
+   "РусскийПродолжить на русском",
+   "FrançaisContinuer en français"
+  ],
+  "landing": 1,
+  "sales": []
+ }
+}
+
+=== 2026-11-13T11:51:17.720Z revoke own display after cancelling cart
+S.stationRow=async(id=S.station.id)=>(await S.call('GET',`/branches/${S.branchId}/stations?includeArchived=true`)).body.stations.find(x=>x.id===id);
+S.rolesOf=row=>Object.fromEntries((row?.devices??[]).map(d=>[d.role,d.label]));
+S.walkIn = async (page, number) => {
+  await page.goto('/');
+  await S.landing(page).waitFor();
+  if (await page.getByTestId('language-choice').isVisible()) await page.getByTestId('language-choice-en').click();
+  await page.getByTestId('identify-safety').waitFor();
+  const scope = S.halfOf(page.getByTestId('identify-safety'));
+  await S.keypad(scope, number);
+  await scope.getByRole('button', { name: 'Continue', exact: true }).click();
+  const offer = page.getByRole('dialog', { name: 'New member?', exact: true });
+  await expect(offer).toContainText(S.spaced(number));
+  await offer.getByRole('button', { name: 'Continue as walk-in', exact: true }).click();
+  return scope;
+};
+S.withoutTerminal = row => row.devices.filter(d => d.role !== 'card_terminal').map(d => ({ role: d.role, deviceId: d.deviceId }));
+S.assignTerminal = async (stationId = S.station.id) => {
+  const row = await S.stationRow(stationId);
+  const devices = S.withoutTerminal(row).concat([{ role: 'card_terminal', deviceId: S.dev.card.id }]);
+  const p = await S.call('PATCH', `/stations/${stationId}`, { devices, paymentRouting: { card: 'card_terminal', qr: 'none' } });
+  S.lastAssignAt = Date.now();
+  return { status: p.status, code: p.body?.error?.code ?? null, roles: S.rolesOf(p.body?.station), paymentRouting: p.body?.station?.paymentRouting ?? null, configVersion: p.body?.station?.configVersion ?? null, at: new Date(S.lastAssignAt).toISOString() };
+};
+S.unassignTerminal = async (stationId = S.station.id) => {
+  const row = await S.stationRow(stationId);
+  const p = await S.call('PATCH', `/stations/${stationId}`, { devices: S.withoutTerminal(row), paymentRouting: { card: 'manual', qr: 'none' } });
+  S.lastUnassignAt = Date.now();
+  return { status: p.status, code: p.body?.error?.code ?? null, roles: S.rolesOf(p.body?.station), paymentRouting: p.body?.station?.paymentRouting ?? null, configVersion: p.body?.station?.configVersion ?? null, at: new Date(S.lastUnassignAt).toISOString() };
+};
+return {helpers:true};
+--> {
+ "ok": true,
+ "value": {
+  "helpers": true
+ }
+}
+
+=== 2026-11-13T11:51:17.796Z card not started is distinct from a bank decline
+S.phase='card not started is distinct from a bank decline';const {expect,assert}=S;
+const p=S.till;await S.unlock('till');await S.walkIn(p,S.free[1]);await S.ticket(p,1,1);
+const sale=await S.saleWritten('not-started-card-sale');S.refusedSale=sale.id;
+await expect(S.paymentStep(p)).toBeVisible();
+await S.assignTerminal();
+await p.getByRole('heading',{name:'Card',exact:true}).first().click();
+const pending=p.waitForResponse(r=>r.request().method()==='POST'&&new URL(r.url()).pathname==='/api/payments/attempts');
+await p.getByRole('button',{name:'Start card payment',exact:true}).click();
+const res=await pending,b=await res.json();S.refusedAttempt=b.attempt?.id;
+assert.equal(res.status(),200);assert.ok(S.refusedAttempt);
+await expect(S.paymentStep(p)).toContainText('not ready on this counter yet',{timeout:30000});
+const result={sale:sale.id,attempt:S.refusedAttempt,ui:S.flat(await S.paymentStep(p).innerText()),read:(await S.call('GET',`/payments/attempts/${S.refusedAttempt}`)).body};
+assert.equal(result.read.attempt.status,'declined');
+assert.ok(!result.ui.includes('Payment declined. Choose a payment method.'));
+await S.shot(p,'06-card-not-started-true-reason.png');
+await p.getByRole('heading',{name:'Cash',exact:true}).first().click();
+await expect(S.paymentStep(p)).not.toContainText('Payment in progress');
+await S.shot(p,'06b-other-method-no-stale-card.png');
+S.receipt.reads.cardNotStarted=result;S.save();return {sale:sale.id,attempt:S.refusedAttempt,ui:result.ui};
+--> {
+ "ok": false,
+ "error": "ReferenceError: expect is not defined"
+}
+
+=== 2026-11-13T11:51:31.543Z card not started is distinct from a bank decline
+const {expect,assert}=S;
+S.stationRow=async(id=S.station.id)=>(await S.call('GET',`/branches/${S.branchId}/stations?includeArchived=true`)).body.stations.find(x=>x.id===id);
+S.rolesOf=row=>Object.fromEntries((row?.devices??[]).map(d=>[d.role,d.label]));
+S.walkIn = async (page, number) => {
+  await page.goto('/');
+  await S.landing(page).waitFor();
+  if (await page.getByTestId('language-choice').isVisible()) await page.getByTestId('language-choice-en').click();
+  await page.getByTestId('identify-safety').waitFor();
+  const scope = S.halfOf(page.getByTestId('identify-safety'));
+  await S.keypad(scope, number);
+  await scope.getByRole('button', { name: 'Continue', exact: true }).click();
+  const offer = page.getByRole('dialog', { name: 'New member?', exact: true });
+  await expect(offer).toContainText(S.spaced(number));
+  await offer.getByRole('button', { name: 'Continue as walk-in', exact: true }).click();
+  return scope;
+};
+S.withoutTerminal = row => row.devices.filter(d => d.role !== 'card_terminal').map(d => ({ role: d.role, deviceId: d.deviceId }));
+S.assignTerminal = async (stationId = S.station.id) => {
+  const row = await S.stationRow(stationId);
+  const devices = S.withoutTerminal(row).concat([{ role: 'card_terminal', deviceId: S.dev.card.id }]);
+  const p = await S.call('PATCH', `/stations/${stationId}`, { devices, paymentRouting: { card: 'card_terminal', qr: 'none' } });
+  S.lastAssignAt = Date.now();
+  return { status: p.status, code: p.body?.error?.code ?? null, roles: S.rolesOf(p.body?.station), paymentRouting: p.body?.station?.paymentRouting ?? null, configVersion: p.body?.station?.configVersion ?? null, at: new Date(S.lastAssignAt).toISOString() };
+};
+S.unassignTerminal = async (stationId = S.station.id) => {
+  const row = await S.stationRow(stationId);
+  const p = await S.call('PATCH', `/stations/${stationId}`, { devices: S.withoutTerminal(row), paymentRouting: { card: 'manual', qr: 'none' } });
+  S.lastUnassignAt = Date.now();
+  return { status: p.status, code: p.body?.error?.code ?? null, roles: S.rolesOf(p.body?.station), paymentRouting: p.body?.station?.paymentRouting ?? null, configVersion: p.body?.station?.configVersion ?? null, at: new Date(S.lastUnassignAt).toISOString() };
+};
+return {helpers:true};
+--> {
+ "ok": true,
+ "value": {
+  "helpers": true
+ }
+}
+
+=== 2026-11-13T11:51:31.612Z card not started is distinct from a bank decline
+const offer=S.till.getByRole('dialog',{name:'New member?',exact:true});if(await offer.isVisible())await offer.getByRole('button',{name:'Continue as walk-in',exact:true}).click();await S.cancelSale(S.till);return {reset:true};
+--> {
+ "ok": true,
+ "value": {
+  "reset": true
+ }
+}
+
+=== 2026-11-13T11:51:33.155Z card not started is distinct from a bank decline
+S.phase='card not started is distinct from a bank decline';const {expect,assert}=S;
+const p=S.till;await S.unlock('till');await S.walkIn(p,S.free[1]);await S.ticket(p,1,1);
+const sale=await S.saleWritten('not-started-card-sale');S.refusedSale=sale.id;
+await expect(S.paymentStep(p)).toBeVisible();
+await S.assignTerminal();
+await p.getByRole('heading',{name:'Card',exact:true}).first().click();
+const pending=p.waitForResponse(r=>r.request().method()==='POST'&&new URL(r.url()).pathname==='/api/payments/attempts');
+await p.getByRole('button',{name:'Start card payment',exact:true}).click();
+const res=await pending,b=await res.json();S.refusedAttempt=b.attempt?.id;
+assert.equal(res.status(),200);assert.ok(S.refusedAttempt);
+await expect(S.paymentStep(p)).toContainText('not ready on this counter yet',{timeout:30000});
+const result={sale:sale.id,attempt:S.refusedAttempt,ui:S.flat(await S.paymentStep(p).innerText()),read:(await S.call('GET',`/payments/attempts/${S.refusedAttempt}`)).body};
+assert.equal(result.read.attempt.status,'declined');
+assert.ok(!result.ui.includes('Payment declined. Choose a payment method.'));
+await S.shot(p,'06-card-not-started-true-reason.png');
+await p.getByRole('heading',{name:'Cash',exact:true}).first().click();
+await expect(S.paymentStep(p)).not.toContainText('Payment in progress');
+await S.shot(p,'06b-other-method-no-stale-card.png');
+S.receipt.reads.cardNotStarted=result;S.save();return {sale:sale.id,attempt:S.refusedAttempt,ui:result.ui};
+--> {
+ "ok": true,
+ "value": {
+  "sale": "01a1d4bf-b869-7d06-a9ed-7c8f8e11b924",
+  "attempt": "01a1d4bf-bcaf-7304-841c-43338c670a44",
+  "ui": "Amount Due ฿1040 Select Payment Method Cash Card PromptPay Card payment not started simulator · ฿1040.00 The card terminal is not ready on this counter yet. Try again in a moment, or take another way to pay. Hold sale Back Confirm Payment Received"
+ }
+}
+
+=== 2026-11-13T11:52:04.325Z not-started card command and History truth
+S.phase='not-started card command and History truth';const {assert}=S;
+const cmds=(await S.call('GET',`/boxes/${S.box.id}/commands?limit=100`)).body.commands.filter(c=>c.payload?.attemptId===S.refusedAttempt);
+assert.equal(cmds.length,1);assert.equal(cmds[0].state,'failed');assert.equal(cmds[0].errorCode,'TERMINAL_NOT_ON_THIS_BOX');
+const a=(await S.call('GET',`/payments/attempts/${S.refusedAttempt}`)).body;
+assert.equal(a.attempt.status,'declined');
+S.receipt.reads.cardCommands=cmds.map(c=>({id:c.id,state:c.state,errorCode:c.errorCode,kind:c.kind,mode:c.payload?.mode}));
+const p=S.till;await p.getByRole('button',{name:'Back',exact:true}).first().click();await p.waitForTimeout(500);
+return {commands:S.receipt.reads.cardCommands,buttons:await p.getByRole('button').allTextContents()};
+--> {
+ "ok": true,
+ "value": {
+  "commands": [
+   {
+    "id": "01a1d4bf-bcb3-7cf0-b93c-3b8eca9929bf",
+    "state": "failed",
+    "errorCode": "TERMINAL_NOT_ON_THIS_BOX",
+    "kind": "terminal_sale",
+    "mode": "sale"
+   }
+  ],
+  "buttons": [
+   "Hide customer display",
+   "0in parkno gate",
+   "F&B",
+   "Shop",
+   "Events",
+   "Check-in",
+   "History",
+   "Today",
+   "7Messages",
+   "Cash",
+   "",
+   "ZZ TEST SCRUM-977 desk till 1794570379456",
+   "",
+   "7 overdueReview →",
+   "Back",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "Apply",
+   "Redeem",
+   "Issue a voucher…",
+   "Add manual discount",
+   "Cancel",
+   "Pay ฿1040",
+   "English",
+   "Done"
+  ]
+ }
+}
+
+=== 2026-11-13T11:52:38.899Z read refusal after returning to same unpaid sale
+S.phase='read refusal after returning to same unpaid sale';const p=S.till;await p.getByRole('button',{name:/^Pay /}).click();await S.paymentStep(p).waitFor();await p.waitForTimeout(1000);const before=S.flat(await S.paymentStep(p).innerText());await S.shot(p,'07b-not-started-reopened.png');return {before,after:S.flat(await S.paymentStep(p).innerText())};
+--> {
+ "ok": false,
+ "error": "TimeoutError: locator.waitFor: Timeout 30000ms exceeded. | Call log: | \u001b[2m  - waiting for getByTestId('payment-step') to be visible\u001b[22m | "
+}
+
+=== 2026-11-13T11:53:32.949Z read refusal after returning to same unpaid sale
+return {phone:await S.phone.getByRole('button').allTextContents(),desk:await S.till.getByRole('button').allTextContents(),phoneDialogs:await S.phone.getByRole('dialog').allTextContents(),deskDialogs:await S.till.getByRole('dialog').allTextContents()};
+--> {
+ "ok": true,
+ "value": {
+  "phone": [
+   "0in parkno gate",
+   "",
+   "",
+   "Redeem Online Booking",
+   "No items yet฿0",
+   "Tickets",
+   "F&B",
+   "Shop",
+   "Check-in",
+   "Events",
+   "History",
+   "Today",
+   "7Messages"
+  ],
+  "desk": [
+   "Hide customer display",
+   "0in parkno gate",
+   "F&B",
+   "Shop",
+   "Events",
+   "Check-in",
+   "History",
+   "Today",
+   "7Messages",
+   "Cash",
+   "",
+   "ZZ TEST SCRUM-977 desk till 1794570379456",
+   "",
+   "7 overdueReview →",
+   "Back",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "Apply",
+   "Redeem",
+   "Issue a voucher…",
+   "Add manual discount",
+   "Cancel",
+   "Pay ฿1040",
+   "English",
+   "Done"
+  ],
+  "phoneDialogs": [],
+  "deskDialogs": []
+ }
+}
+
+=== 2026-11-13T11:53:41.878Z read refusal after returning to same unpaid sale
+return {text:S.flat(await S.till.locator('body').innerText()).slice(0,1800),pay:await S.till.getByRole('button',{name:/^Pay /}).evaluate(x=>({disabled:x.disabled,aria:x.getAttribute('aria-disabled')})),sales:(await S.stationSales()).map(x=>({id:x.id,status:x.status}))};
+--> {
+ "ok": true,
+ "value": {
+  "text": "Test harness — staff till and customer display share one live sale. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing [staff] 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Customer Details Ask the customer to enter their details on their display. Waiting for the customer… The customer display is now their turn to enter a phone & nickname. Phone +66 89 897 7011 Nickname — Back Current Order TOURIST 1 Hour Play ฿1040 Kids ฿690 each 1 Adults ฿350 each 1 Regular Socks ฿60 each 0 Apply Redeem Issue a voucher… Add manual discount Subtotal ฿1040 VAT included ฿68.04 Total ฿1040 Cancel Pay ฿1040 English YOUR TURN Enter your details For membership & so we can reach you Phone number +66 89 897 7011 We will use the number you gave at the start. Nickname Done",
+  "pay": {
+   "disabled": false,
+   "aria": null
+  },
+  "sales": [
+   {
+    "id": "01a1d4bf-b869-7d06-a9ed-7c8f8e11b924",
+    "status": "tendering"
+   }
+  ]
+ }
+}
+
+=== 2026-11-13T11:53:53.754Z same unpaid payment after customer details
+S.phase='same unpaid payment after customer details';const p=S.till;await p.getByRole('button',{name:'Done',exact:true}).click();await S.paymentStep(p).waitFor();await p.waitForTimeout(500);const text=S.flat(await S.paymentStep(p).innerText());const alert=S.paymentStep(p).getByRole('alert');if(await alert.count())await alert.first().scrollIntoViewIfNeeded();await S.shot(p,'07d-same-sale-payment-detail.png');return {text};
+--> {
+ "ok": true,
+ "value": {
+  "text": "Amount Due ฿1040 Select Payment Method Cash Card PromptPay Hold sale Back Confirm Payment Received"
+ }
+}
+
+=== 2026-11-13T11:54:11.726Z reload own unpaid sale and retain not-started reason
+S.phase='reload own unpaid sale and retain not-started reason';const p=S.till;await p.reload();await p.waitForTimeout(2000);return {text:S.flat(await p.locator('body').innerText()).slice(0,1800),buttons:await p.getByRole('button').allTextContents()};
+--> {
+ "ok": true,
+ "value": {
+  "text": "Test harness — staff till and customer display share one live sale. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing [staff] 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Amount Due ฿1040 Select Payment Method Cash Card PromptPay Resumed after a reload: this sale was rung up at this till 13 Nov 2026 18:51. Take the payment, or Cancel to void it. Card payment not started simulator · ฿1040.00 The card terminal is not ready on this counter yet. Try again in a moment, or take another way to pay. Hold sale Back Confirm Payment Received Current Order TOURIST 1 Hour Play ฿1040 Kids ฿690 each 1 Adults ฿350 each 1 Regular Socks ฿60 each 0 Apply Redeem Issue a voucher… Add manual discount Subtotal ฿1040 VAT included ฿68.04 Total ฿1040 Cancel Pay ฿1040 O Oto Play Park Your Order English 1 Hour Play ฿1040 Kids1 × ฿690 ฿690 Adults1 × ฿350 ฿350 VAT included ฿68.04 Total ฿1040 Please pay ฿1040 to our staff",
+  "buttons": [
+   "Hide customer display",
+   "0in parkno gate",
+   "F&B",
+   "Shop",
+   "Events",
+   "Check-in",
+   "History",
+   "Today",
+   "7Messages",
+   "Cash",
+   "",
+   "ZZ TEST SCRUM-977 desk till 1794570379456",
+   "",
+   "7 overdueReview →",
+   "Hold sale",
+   "Back",
+   "Confirm Payment Received",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "Apply",
+   "Redeem",
+   "Issue a voucher…",
+   "Add manual discount",
+   "Cancel",
+   "Pay ฿1040",
+   "English"
+  ]
+ }
+}
+
+=== 2026-11-13T11:54:24.712Z same not-started reason visible after reload
+S.phase='same not-started reason visible after reload';const p=S.till;const a=S.paymentStep(p).getByRole('alert').filter({hasText:'not ready on this counter'});await a.scrollIntoViewIfNeeded();await S.shot(p,'07f-card-not-started-reason-after-reload.png');const sales=await S.stationSales();S.assert.equal(sales.length,1);S.assert.equal(sales[0].id,S.refusedSale);S.receipt.reads.refusalReload={sameSale:true,saleId:S.refusedSale,reason:S.flat(await a.innerText())};S.save();return S.receipt.reads.refusalReload;
+--> {
+ "ok": true,
+ "value": {
+  "sameSale": true,
+  "saleId": "01a1d4bf-b869-7d06-a9ed-7c8f8e11b924",
+  "reason": "The card terminal is not ready on this counter yet. Try again in a moment, or take another way to pay."
+ }
+}
+
+=== 2026-11-13T11:54:35.420Z native cancellation of the own unpaid card sale
+S.phase='native cancellation of the own unpaid card sale';const p=S.till;const r=await S.cancelSale(p);const detail=await S.sale(S.refusedSale);S.assert.equal(detail.sale.status,'voided');return {dialog:r,id:S.refusedSale,status:detail.sale.status,attempts:detail.attempts.map(x=>({id:x.id,status:x.status}))};
+--> {
+ "ok": true,
+ "value": {
+  "dialog": null,
+  "id": "01a1d4bf-b869-7d06-a9ed-7c8f8e11b924",
+  "status": "voided",
+  "attempts": [
+   {
+    "id": "01a1d4bf-bcaf-7304-841c-43338c670a44",
+    "status": "declined"
+   }
+  ]
+ }
+}
+
+=== 2026-11-13T11:54:43.185Z exact own fixture cleanup
+S.phase='exact own fixture cleanup';const {assert}=S;
+const result={sales:[],stations:[],devices:[]};
+for(const st of S.stations){
+ const row=(await S.call('GET',`/stations/${st.id}`)).body.station;assert.equal(row.name,st.name);assert.ok(row.name.startsWith('ZZ TEST SCRUM-977'));
+ const sales=await S.stationSales(st);
+ for(const v of sales){
+  const s=await S.sale(v.id);assert.equal(s.sale.stationId,st.id);
+  assert.ok(!(s.attempts??[]).some(a=>['approved','sent_to_terminal','awaiting_staff_confirmation','pending'].includes(a.status)),'only known unpaid attempts may be voided here');
+  if(['open','tendering'].includes(s.sale.status))assert.equal((await S.call('POST',`/sales/${v.id}/void`,{reason:'ZZ TEST 977 unpaid proof cleanup'})).status,200);
+  const after=await S.sale(v.id);assert.equal(after.sale.status,'voided');result.sales.push({id:v.id,status:after.sale.status});
+ }
+}
+for(const label of Object.keys(S.displays))await S.dropDisplay(label);
+for(const st of S.stations){
+ assert.equal((await S.call('PATCH',`/stations/${st.id}`,{devices:[],paymentRouting:{card:'manual',qr:'none'}})).status,200);
+ assert.equal((await S.call('DELETE',`/stations/${st.id}`)).status,200);
+ const after=(await S.call('GET',`/branches/${S.branchId}/stations?includeArchived=true`)).body.stations.find(x=>x.id===st.id);
+ assert.ok(after.archived);assert.equal(after.devices.length,0);result.stations.push({id:st.id,archived:after.archived,devices:after.devices.length});
+}
+for(const dev of Object.values(S.dev)){
+ const all=(await S.call('GET',`/boxes/${S.box.id}/devices?includeArchived=true`)).body.devices;
+ const row=all.find(x=>x.id===dev.id);assert.ok(row.label.startsWith('ZZ TEST 977'));
+ assert.equal((await S.call('DELETE',`/devices/${dev.id}`)).status,200);
+ const after=(await S.call('GET',`/boxes/${S.box.id}/devices?includeArchived=true`)).body.devices.find(x=>x.id===dev.id);assert.ok(after.archived);result.devices.push({id:dev.id,archived:after.archived});
+}
+assert.equal(S.receipt.registrationsPosted.length,0,'no family registration submitted by this proof');
+for(const label of Object.keys(S.pages)){const r=await S.signOut(label);assert.equal(r.meAfter,401);}
+S.receipt.cleanup.records=result;S.save();return result;
+--> {
+ "ok": true,
+ "value": {
+  "sales": [
+   {
+    "id": "01a1d4bf-b869-7d06-a9ed-7c8f8e11b924",
+    "status": "voided"
+   }
+  ],
+  "stations": [
+   {
+    "id": "01a1d4ba-e2df-75dd-aaf5-35d2d3719aff",
+    "archived": true,
+    "devices": 0
+   },
+   {
+    "id": "01a1d4ba-e3a1-7fb0-aa3a-c77d285de700",
+    "archived": true,
+    "devices": 0
+   }
+  ],
+  "devices": [
+   {
+    "id": "6e8e99b8-b42f-4e66-b261-7b12d22f109f",
+    "archived": true
+   },
+   {
+    "id": "3785afd0-4e92-4d64-8a1d-1ba13c82f527",
+    "archived": true
+   },
+   {
+    "id": "89c9e83d-08ce-42b3-b9c8-d5ca21a930cf",
+    "archived": true
+   }
+  ]
+ }
+}
+
+=== 2026-11-13T11:55:07.421Z final cleanup and evidence limits
+S.phase='final cleanup and evidence limits';
+await S.admin.post('/api/auth/sign-out',{headers:{'idempotency-key':S.randomUUID()}});
+S.receipt.cleanup.adminMe=(await S.admin.get('/api/me')).status();S.assert.equal(S.receipt.cleanup.adminMe,401);
+S.receipt.cleanup.noRegistrations=S.receipt.registrationsPosted.length===0;S.save();
+const p=await S.browser.newPage({viewport:{width:1180,height:900}});
+const body=JSON.stringify({source:S.sha,at:new Date().toISOString(),cleanup:S.receipt.cleanup,proof:{phoneRotation:'both sizes, values and cart kept',landscapeFormShare:'67 to 70 percent',displayHelp:'same action ID; automatic in 1.342 seconds; no Retry',card:'one not-sent command; true reason; same sale after reload'},limits:['Browser and simulator proof only; no physical terminal or Pi acceptance','Idle updater and photo retry/contrast/party pins tested locally; no second staging build or physical offline photo test']},null,2).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+await p.setContent(`<body style="margin:0;padding:24px;background:#102030;color:#f1f5f9;font:16px/1.5 system-ui"><h2>SCRUM-977 / 975 / 979 - staging cleanup readback</h2><pre style="white-space:pre-wrap;font:14px/1.4 monospace">${body}</pre></body>`);
+await p.screenshot({path:S.resolve(S.out,'10-cleanup-and-proof-limits.png'),fullPage:true});await p.close();return {adminMe:401,closedPages:Object.keys(S.pages).length};
+--> {
+ "ok": true,
+ "value": {
+  "adminMe": 401,
+  "closedPages": 0
+ }
+}

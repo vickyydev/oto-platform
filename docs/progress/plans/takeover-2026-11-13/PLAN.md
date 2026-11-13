@@ -55,3 +55,5 @@ Stage 2.1: API guard and six source commits pass the focused landing gates (406 
 Stage 2.1 API staging proof is complete, with exact cleanup and five inspected pictures; full-SHA CI is running. The whole 979 ticket remains In Progress for its till points. Stage 2.2 (977/975) is next. The owner deposit ruling remains unchanged.
 
 Stage 2.2: fourteen preserved till commits pass review and 733 tests / 50 files, all POS types, build and lint. Both named till deployments and native proof are next. See SCRUM-977/review.md and validation.json.
+
+Stage2.2 scoped staging proof and cleanup complete at239ef48248d7ec1af739f432db7c91dda778c2c0. 977 rotation proved;975/979 delivered points and remaining holds are distinguished in the proof README. Till fullCI pending; next978/976 exact old-fixture cleanup.

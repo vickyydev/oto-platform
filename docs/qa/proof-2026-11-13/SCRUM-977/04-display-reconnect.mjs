@@ -1,0 +1,15 @@
+S.phase='display offline Ask the team automatically resends';const {expect,assert}=S;
+const d=S.d,till=S.till,ctx=S.displays.main.ctx,c=d.getByTestId('display-consent');
+const sent=[];d.on('request',r=>{if(r.method()==='POST'&&/display/.test(r.url())){try{const b=r.postDataJSON();if(b?.actionId||b?.id)sent.push({path:new URL(r.url()).pathname,action:b.action??b.type,id:b.actionId??b.id});}catch{}}});
+await S.chooseLang(d,'English');
+await ctx.setOffline(true);await d.getByTestId('display-form-reconnecting').waitFor();
+const line=await d.getByTestId('display-form-reconnecting').evaluate(el=>({text:el.textContent,height:el.getBoundingClientRect().height,lineHeight:parseFloat(getComputedStyle(el).lineHeight)}));
+await S.shot(d,'04a-display-offline-one-line.png');
+await c.getByRole('button',{name:'Ask the team',exact:true}).tap();await d.waitForTimeout(9000);
+await S.shot(d,'04b-display-kept-help-offline.png');
+const restored=Date.now();await ctx.setOffline(false);
+await expect(till.getByTestId('consent-staff-status')).toContainText(/asked|help|take over/i,{timeout:30000});
+await expect(d.getByRole('alert')).toHaveCount(0,{timeout:30000});
+const result={line,restoredMs:Date.now()-restored,retryPressed:false,tillLine:S.flat(await till.getByTestId('consent-staff-status').innerText()),sent};
+await S.both('04c-display-help-delivered-after-reconnect.png','Own ZZ TEST family: the kept help request arrived without Retry',till,d);
+S.receipt.reads.displayReconnect=result;S.save();return result;
