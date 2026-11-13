@@ -159,3 +159,19 @@ The rule that changed: the "same as the kids" note and the chat's total are deci
 9. A camp's or workshop's BEO PDF does not ask the till, so a coded EXTRA with no price prints "EXTRA" alone there. Fine?
 10. When the family writes a price for each ("2 pizzas at 450 each") and the read returns no price, the till's price is used. Should the fill take the price each from the chat's words?
 11. Still open from before: the park's cake priced in the BEO is charged nowhere by the till; a weekend party's line picked from the till's menu is written at the weekday price.
+
+## The OTO App leftovers lane landed (13 November 12:20, main 1916bfbd7)
+Tickets: SCRUM-978 (Edit Event from Recent Updates; the PDF's adults' row; no person's record in the console), SCRUM-976 (the read-fix lane's leftovers), point 5 of SCRUM-966 (the editor's Save writes the cake count; the day-of save is checked), points 4 and 7 of SCRUM-968. Service: the OTO App only; no migration. Left and ticketed: SCRUM-983.
+Held once before landing: the first form of the day-of save's check refused values the app itself has stored (a count as text or empty, an empty price, a time as HH:mm:ss); it now takes everything its readers read and refuses only what nothing can read.
+
+### Questions for the owner from this lane
+1. PDF: kids Margherita 3 at 400 and adults 2 at 450 now print as two rows ("kids only" and "adults only", each with its price), as the editor and the till have them. The layout you want, or one row naming both prices?
+2. A dish the till charges once (the same dish, count and till code for kids and adults) still prints once at the kids' price. Should the till charge such an adults' copy separately?
+3. Cake count: the editor offers 1, 2, 3; the AI fill may write up to 20; the Save now keeps any whole count from 1 to 99. Should the editor offer more than 3?
+4. Adults' lines are folded into "the same as the kids" only when ALL of them repeat the kids' menu; a repeat mixed with a dish of their own is written as the copy of the kids' line. Keep that, or fold each repeat on its own?
+5. A figure written like "25.12" or "21.30" with no money word is read as a date or a time, never a chat total; "900.50 baht" stays money. Agree?
+6. The Thai "ต่อ" counts as "per" only before a count or one of the listed units (ถาด ชิ้น จาน ที่ แก้ว กล่อง ท่าน คน ชุด and others). Any unit to add?
+7. The family's link prints "Submitted on" with the park's day in the device's own date format. Or "13 Nov 2026" as the PDF?
+8. A coded EXTRA whose till item is switched off, belongs to another park or is not a menu item is left out of the till's menu door, but the till still charges it, while the BEO says "not charged". Should the door also answer those codes?
+9. With "Different for adults" already on, a repeat of a kids' EXTRA is now the copy of the kids' line and is charged once (before, it was written as the adults' own extra and charged a second time). Is once right?
+10. A line whose price is stored as text ("120") is written back as the number 120 at the party's next day-of change, and the till then charges 120 for each (today the till ignores a text price). No such line is known in the park's data. Is that the charge you want?
