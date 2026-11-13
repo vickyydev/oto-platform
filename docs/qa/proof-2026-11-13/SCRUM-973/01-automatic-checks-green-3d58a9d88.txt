@@ -1,0 +1,33 @@
+GitHub automatic checks, run 43358957334, commit 3d58a9d88 (the kept-sale and party-bill lane), 13 November 2026
+
+conclusion: success   started 2026-11-13T03:26:19Z   finished 2026-11-13T03:58:29Z
+
+job ci: success
+   success   Typecheck
+   success   Lint
+   success   Build
+   success   Till end-to-end
+   success   Install Chromium for the Console end-to-end set
+   success   Console end-to-end
+   skipped   Console end-to-end report
+job oto-app: success
+   skipped   Install the OTO App
+   skipped   Build the OTO App
+   skipped   The OTO App's inherited typecheck ceiling
+job pos-tests: success
+   success   Build the POS's dependencies
+job api-tests (3): success
+   success   Build the api's dependencies
+   success   Api tests (shard 3 of 3)
+job api-tests (1): success
+   success   Build the api's dependencies
+   success   Api tests (shard 1 of 3)
+job api-tests (2): success
+   success   Build the api's dependencies
+   success   Api tests (shard 2 of 3)
+
+The two checks of SCRUM-973 run inside the step "Till end-to-end":
+   e2e/dropoff-paid-online.spec.ts  (the paid online drop-off picker)
+   e2e/smoke.spec.ts  SCRUM-929 separate display takes the till Display theme live
+
+Also run on the laptop before landing, with the clock set to 00:30, 03:00, 05:30 and 23:30 at the park: dropoff-paid-online.spec.ts 4 of 4 passed each time (it failed at 00:30 before the fix, at line 183, exactly as on GitHub).

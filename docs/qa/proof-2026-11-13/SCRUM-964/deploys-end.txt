@@ -1,0 +1,4 @@
+read 2026-11-13T04:18:26Z with node scripts/agent/render.mjs status (three services of the lane)
+oto-pos-web-staging        live           3d58a9d8  fix(pos): a fresh answer from the box lifts reconn
+oto-pos-staging            live           3d58a9d8  fix(pos): a fresh answer from the box lifts reconn
+oto-api-staging            live           3d58a9d8  fix(pos): a fresh answer from the box lifts reconn
