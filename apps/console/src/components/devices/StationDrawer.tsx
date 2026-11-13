@@ -35,6 +35,7 @@ import {
   rolesForStationKind,
   stationKindWord,
   stationTakesMoney,
+  stationUsesCodePrefix,
 } from '@/lib/fleetWords';
 
 /**
@@ -150,6 +151,9 @@ export function StationDrawer({
   // A booth is a free prize wheel and is not asked how money reaches it
   // (SCRUM-434); a paid spin would bring the step back — see `stationTakesMoney`.
   const takesMoney = stationTakesMoney(kind);
+  // SCRUM-971 — a gate and a customer display mint no code, so they are not
+  // asked for a prefix; whatever an older setup saved is sent back as it was.
+  const usesPrefix = stationUsesCodePrefix(kind);
 
   const write = (): StationWrite => ({
     name: name.trim(),
@@ -163,7 +167,7 @@ export function StationDrawer({
     devices: Object.entries(assignments)
       .filter(([, deviceId]) => Boolean(deviceId))
       .map(([role, deviceId]) => ({ role: role as StationDeviceRole, deviceId: deviceId as string })),
-    codePrefix: codePrefix.trim().toUpperCase() || null,
+    codePrefix: usesPrefix ? codePrefix.trim().toUpperCase() || null : (filled?.codePrefix ?? null),
     // Merged rather than replaced: the routing document is shared with tenders
     // this page does not know about yet, and sending only what it understands
     // would delete the rest.
@@ -381,28 +385,28 @@ export function StationDrawer({
               options={STATION_KINDS.map((k) => ({ value: k, label: stationKindWord(k) }))}
             />
           </Field>
-          <Field
-            label="Code prefix"
-            hint={
-              kind === 'till' || kind === 'kiosk' ? (
-                'Leads every band code and receipt number. Use a prefix no other till at this park has used, including archived tills.'
-              ) : !isBooth ? (
-                'Leads every band code and receipt number this station mints. Two live stations cannot share one.'
-              ) : prefixMissing ? (
-                <span style={{ color: 'hsl(var(--status-down))' }}>{prefixMissing}</span>
-              ) : (
-                'The first two characters of every voucher code.'
-              )
-            }
-          >
-            <TextInput
-              value={codePrefix}
-              onChange={(v) => setCodePrefix(v.toUpperCase())}
-              placeholder={isBooth ? 'B2' : 'T1'}
-              maxLength={isBooth ? BOOTH_CODE_PREFIX_LENGTH : 6}
-              disabled={!canEdit}
-            />
-          </Field>
+          {usesPrefix && (
+            <Field
+              label="Code prefix"
+              hint={
+                kind === 'till' || kind === 'kiosk' ? (
+                  'Leads every band code and receipt number. Use a prefix no other till at this park has used, including archived tills.'
+                ) : prefixMissing ? (
+                  <span style={{ color: 'hsl(var(--status-down))' }}>{prefixMissing}</span>
+                ) : (
+                  'The first two characters of every voucher code.'
+                )
+              }
+            >
+              <TextInput
+                value={codePrefix}
+                onChange={(v) => setCodePrefix(v.toUpperCase())}
+                placeholder={isBooth ? 'B2' : 'T1'}
+                maxLength={isBooth ? BOOTH_CODE_PREFIX_LENGTH : 6}
+                disabled={!canEdit}
+              />
+            </Field>
+          )}
         </div>
 
         {kind === 'till' && (

@@ -32,6 +32,14 @@ import { SimulatorPanel } from '@/components/devices/SimulatorPanel';
 import { PrintPanel } from '@/components/devices/PrintPanel';
 import { StationRefusalsPanel } from '@/components/devices/DisplayDiagnosticsPanel';
 import type { BoxDeviceList } from '@/lib/deviceList';
+import { deviceEdits, hasEdits } from '@/lib/deviceEdit';
+import {
+  chosenStationPrinter,
+  printerChoiceValue,
+  printerChoices,
+  stationPrinters,
+  type StationPrinter,
+} from '@/lib/stationPrinters';
 import {
   ADDRESS_PLACEHOLDER,
   NOT_SET_UP,
@@ -984,45 +992,22 @@ export function EditDeviceForm({
 
   const save = async () => {
     if (!working.isCurrent()) return;
+    // SCRUM-971 — only what was changed is sent, and a settings section only
+    // when something in it was (`deviceEdits`): a row with no settings keeps
+    // none, and the box's defaults still apply. Whatever else the row's
+    // settings hold — a cutter, a drawer kick, the band stock's width, a
+    // scanner's suffix — rides along untouched when a section is sent.
+    const edits = deviceEdits(device, {
+      label, address, model, protocol, terminalId, merchantId, dotsPerLine, bandStock, scanner,
+    });
+    if (!hasEdits(edits)) {
+      onClose();
+      return;
+    }
     setBusy(true);
     setFailed(null);
     try {
-      await working.run(() => fleetApi.updateDevice(device.id, {
-        label: label.trim(),
-        address: address.trim() || null,
-        model: model.trim() || null,
-        protocol: protocol.trim() || null,
-        terminalId: terminalId.trim() || null,
-        merchantId: merchantId.trim() || null,
-        // Sent whole like every field above, and only for a printer: the
-        // ESC/POS section for a receipt, kitchen or bar printer, the label
-        // section for a band printer. Whatever else the row holds — a cutter,
-        // a drawer kick, the band stock's width — rides along untouched.
-        ...(printsEscpos(device.kind)
-          ? {
-              settings: {
-                ...(device.settings ?? {}),
-                escpos: { ...(device.settings?.escpos ?? {}), dotsPerLine },
-              },
-            }
-          : printsBands(device.kind)
-            ? {
-                settings: {
-                  ...(device.settings ?? {}),
-                  label: withBandStock(device.settings?.label, bandStock),
-                },
-              }
-            : isScanner
-              ? {
-                  // The scanner section, with its suffix, burst gap and
-                  // button key carried along untouched (SCRUM-700).
-                  settings: {
-                    ...(device.settings ?? {}),
-                    scanner: withScannerSetup(device.settings?.scanner, scanner),
-                  },
-                }
-              : {}),
-      }));
+      await working.run(() => fleetApi.updateDevice(device.id, edits));
       if (!working.isCurrent()) return;
       onSaved();
       onClose();
@@ -1177,42 +1162,6 @@ const SAFE_COMMANDS: { kind: BoxCommandKind; needsPrinter?: boolean; detail: str
 /** The same test the agent and the panels above apply: a kind that ends in `printer`. */
 const isPrinter = (kind: string): boolean => kind.endsWith('printer');
 
-/** One printer a station uses, and the job it does there. */
-interface StationPrinter {
-  deviceId: string;
-  /** The `station_device` role — `receipt`, `kids_band`, `kitchen`. */
-  role: string;
-  label: string;
-}
-
-/**
- * The printers one station can print on, newest read of the box's devices
- * deciding what is still there.
- *
- * WHY THE LIST IS THE STATION'S AND NOT THE BOX'S. A queued test print is
- * routed ON THE BOX by the job a printer does at a station — `routeTo` in
- * `packages/box-agent/src/printing/queue.ts` matches `role` against that
- * station's assignments and never looks at a device id — so a printer this
- * station does not use cannot be asked for: naming it would queue a command
- * whose paper comes out of the station's receipt printer instead, which is
- * exactly the kind of quiet wrong answer this control is being fixed for. The
- * role therefore travels in the payload beside the device id.
- *
- * The device row is looked up rather than trusted from the assignment, because
- * an archived device keeps its assignment until somebody re-points the station
- * and must not be offered as somewhere to print.
- */
-function stationPrinters(station: StationRow | undefined, boxDevices: DeviceRow[]): StationPrinter[] {
-  const live = new Map(boxDevices.filter((d) => !d.archived).map((d) => [d.id, d] as const));
-  const printers: StationPrinter[] = [];
-  for (const assignment of station?.devices ?? []) {
-    const device = live.get(assignment.deviceId);
-    if (!device || !isPrinter(device.kind)) continue;
-    printers.push({ deviceId: device.id, role: assignment.role, label: device.label });
-  }
-  return printers;
-}
-
 /**
  * Why Test print cannot be pressed, in words, or null when it can.
  *
@@ -1350,14 +1299,11 @@ function BoxControls({
   /**
    * The station's receipt printer is the default, because it is the one whose
    * paper path a person is standing in front of — the same choice
-   * `ROLE_FOR_KIND.test_page` makes on the box. A choice already made wins
-   * while that printer is still on the station.
+   * `ROLE_FOR_KIND.test_page` makes on the box. A choice already made — a
+   * printer AND its job (SCRUM-971) — wins while that printer still does that
+   * job at the station.
    */
-  const selected =
-    printers.find((p) => p.deviceId === chosenPrinter) ??
-    printers.find((p) => p.role === 'receipt') ??
-    printers[0] ??
-    null;
+  const selected = chosenStationPrinter(printers, chosenPrinter);
   const blockedReason = testPrintBlockedReason(deviceList, stations, station, printers);
 
   return (
@@ -1389,9 +1335,9 @@ function BoxControls({
               hint="The printers this station uses. The box routes a test page by the job a printer does here, so it is that job the command names."
             >
               <Select
-                value={selected?.deviceId ?? ''}
+                value={selected ? printerChoiceValue(selected) : ''}
                 onChange={setChosenPrinter}
-                options={printers.map((p) => ({ value: p.deviceId, label: p.label }))}
+                options={printerChoices(printers)}
               />
             </Field>
           )}

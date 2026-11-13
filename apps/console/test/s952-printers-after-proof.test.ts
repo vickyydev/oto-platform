@@ -5,11 +5,13 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { Router } from 'wouter';
 import { describe, expect, it } from 'vitest';
 import { ApiError } from '@/api/client';
+import type { DeviceRow, StationRow } from '@/api/fleet';
 import type { HealthBox } from '@/api/observability';
 import { FleetSummary } from '@/components/devices/FleetSummary';
 import { commandLabel } from '@/lib/fleetWords';
 import { healthDeviceTone, readAsNotSetUp } from '@/lib/printerAddress';
 import { STATION_CHANGED_WORDS, stationSaveRefusal } from '@/lib/stationForm';
+import { chosenStationPrinter, printerChoiceValue, printerChoices, stationPrinters } from '@/lib/stationPrinters';
 
 /**
  * SCRUM-952 — the printers after their staging proof, as the Console shows
@@ -141,5 +143,65 @@ describe('point 6 — the Health page reads a printer with no address as not set
     expect(healthDeviceTone(notSetUp)).toBe('down');
     expect(healthDeviceTone(addressed)).toBe('ok');
     expect(healthDeviceTone({ kind: 'scanner', reachability: 'unknown', lastError: 'DEVICE_NO_ADDRESS' })).toBe('idle');
+  });
+});
+
+/**
+ * SCRUM-971 point 12 — the box drawer's Controls, "Printer it comes out of".
+ *
+ * Seen in the SCRUM-952 proof: the ZZ TEST band printer did three jobs at the
+ * ZZ TEST till (the kids', the adults' and the drop-off bracelets) and the
+ * picker listed it three times under one name, every one of them picking its
+ * first job. Each choice now names the printer and the job, in the Console's
+ * words for the roles, and picks THAT job; a printer with one job reads as
+ * before.
+ */
+describe('SCRUM-971 — the Controls picker names each job a printer does', () => {
+  const BOX_DRAWER = resolve(import.meta.dirname, '../src/components/devices/BoxDrawer.tsx');
+  const device = (id: string, kind: string, label: string): DeviceRow =>
+    ({ id, boxId: 'box', kind, label, transport: 'simulated', address: '192.0.2.53:9100' }) as DeviceRow;
+  const band = device('band', 'band_printer', 'ZZ TEST 952 band printer');
+  const receipt = device('receipt', 'receipt_printer', 'ZZ TEST 952 receipt printer');
+  const scanner = device('scanner', 'scanner', 'ZZ TEST scanner');
+  const till = {
+    id: 'till', branchId: 'branch', boxId: 'box', name: 'ZZ TEST 952 till', kind: 'till', codePrefix: 'Z95201',
+    devices: [
+      { role: 'receipt', deviceId: receipt.id },
+      { role: 'kids_band', deviceId: band.id },
+      { role: 'adult_band', deviceId: band.id },
+      { role: 'dropoff_band', deviceId: band.id },
+      { role: 'scanner', deviceId: scanner.id },
+    ],
+  } as unknown as StationRow;
+  const printers = stationPrinters(till, [band, receipt, scanner]);
+
+  it('lists the band printer once per job, named by the job; the receipt printer as it was', () => {
+    expect(printerChoices(printers).map((c) => c.label)).toEqual([
+      'ZZ TEST 952 receipt printer',
+      "ZZ TEST 952 band printer · Kids' band printer",
+      'ZZ TEST 952 band printer · Adult band printer',
+      'ZZ TEST 952 band printer · Drop-off band printer',
+    ]);
+    const values = printerChoices(printers).map((c) => c.value);
+    expect(new Set(values).size).toBe(values.length);
+  });
+
+  it('a choice picks THAT job, not the printer’s first', () => {
+    const dropoff = printerChoices(printers).find((c) => c.label.endsWith('Drop-off band printer'))!;
+    expect(chosenStationPrinter(printers, dropoff.value)).toMatchObject({ deviceId: band.id, role: 'dropoff_band' });
+    const adult = printerChoices(printers).find((c) => c.label.endsWith('Adult band printer'))!;
+    expect(chosenStationPrinter(printers, adult.value)).toMatchObject({ deviceId: band.id, role: 'adult_band' });
+  });
+
+  it('with nothing chosen, or a choice the station no longer has, the receipt printer stands', () => {
+    expect(chosenStationPrinter(printers, null)).toMatchObject({ role: 'receipt' });
+    expect(chosenStationPrinter(printers, printerChoiceValue({ deviceId: band.id, role: 'kitchen', label: '' })))
+      .toMatchObject({ role: 'receipt' });
+  });
+
+  it('the box drawer’s picker is built from these choices', () => {
+    const source = readFileSync(BOX_DRAWER, 'utf8');
+    expect(source.includes('options={printerChoices(printers)}')).toBe(true);
+    expect(source.includes('chosenStationPrinter(printers, chosenPrinter)')).toBe(true);
   });
 });

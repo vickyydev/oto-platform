@@ -386,6 +386,17 @@ export function stationTakesMoney(kind: string): boolean {
   return kind === 'till' || kind === 'kiosk';
 }
 
+/**
+ * SCRUM-971 — whether a station of this kind mints codes, and so is asked for
+ * a code prefix: a till and a kiosk number their receipts and their bands with
+ * it (the api's `numbersReceipts`), and a booth starts every voucher code with
+ * it. A gate and a customer display issue nothing, so the station drawer does
+ * not show them the field (proof picture 03b: a display offered "T1").
+ */
+export function stationUsesCodePrefix(kind: string): boolean {
+  return kind === 'till' || kind === 'kiosk' || kind === 'booth';
+}
+
 /** The kinds of screen that pair to a station. A box pairs by claim code instead. */
 export const PAIRABLE_KINDS: CredentialKind[] = ['display', 'kiosk', 'booth'];
 
