@@ -1,0 +1,60 @@
+S.phase = 'Close only this run’s simulated sales and retire its exact fixtures';
+const cleanup = { sales: [], devices: [] };
+const own = async id => {
+  S.assert.ok(S.receipt.created.some(x => x.id === id && x.kind.startsWith('sale-')));
+  const s = await S.sale(id);
+  S.assert.equal(s.sale.stationId, S.station.id);
+  return s;
+};
+await own(S.waiting.sale);
+let current = (await S.attempt(S.waiting.attempt)).body.attempt;
+if (current.status === 'awaiting_staff_confirmation') {
+  const r = await S.call('POST', `/payments/attempts/${S.waiting.attempt}/confirm`, { took: false, note: 'ZZ TEST 979 simulator deliberately returned no response; no real payment' });
+  S.assert.equal(r.status, 200);
+}
+const voided = await S.call('POST', `/sales/${S.waiting.sale}/void`, { reason: 'ZZ TEST 979 simulated waiting payment cleanup' });
+S.assert.equal(voided.status, 200);
+const waitingSale = await own(S.waiting.sale);
+S.assert.equal(waitingSale.sale.status, 'void');
+cleanup.sales.push({ id: S.waiting.sale, status: waitingSale.sale.status });
+const paid = await own(S.paid.sale);
+S.assert.ok(String(paid.sale.receiptNumber).startsWith('Z979'));
+const outcome = await S.call('POST', '/payments/terminal-simulator', { action: 'terminal.outcome', deviceId: S.dev.card.id, outcome: 'approved' });
+S.assert.equal(outcome.status, 200);
+const manager = await S.pw.request.newContext({ baseURL: S.pos });
+try {
+  S.assert.equal((await manager.post('/api/auth/sign-in', { data: { phone: S.need('STAGING_MANAGER_PHONE'), password: S.need('STAGING_MANAGER_PASSWORD') } })).status(), 200);
+  if (paid.refundStatus !== 'refunded') {
+    const r = await manager.post(`/api/sales/${S.paid.sale}/refunds`, { headers: { 'idempotency-key': S.randomUUID() }, data: { mode: 'whole', reason: 'ZZ TEST 979 simulated card proof cleanup' } });
+    S.assert.equal(r.status(), 200);
+  }
+} finally {
+  await manager.post('/api/auth/sign-out', { headers: { 'idempotency-key': S.randomUUID() } });
+  cleanup.managerMe = (await manager.get('/api/me')).status();
+  await manager.dispose();
+}
+await S.expect.poll(async () => (await own(S.paid.sale)).refundStatus, { timeout: 120000, intervals: [3000] }).toBe('refunded');
+const refunded = await own(S.paid.sale);
+cleanup.sales.push({ id: S.paid.sale, status: refunded.sale.status, refundStatus: refunded.refundStatus, tenderAllocation: refunded.refunds.map(x => x.tenderAllocation) });
+const station = await S.stationRow();
+S.assert.equal(station.name, 'ZZ TEST 979 till');
+S.assert.equal((await S.call('PATCH', `/stations/${S.station.id}`, { devices: [], paymentRouting: { card: 'manual', qr: 'none' } })).status, 200);
+S.assert.equal((await S.call('DELETE', `/stations/${S.station.id}`)).status, 200);
+const retired = await S.stationRow();
+S.assert.ok(retired.archived);
+S.assert.equal(retired.devices.length, 0);
+cleanup.station = { id: retired.id, archived: retired.archived, devices: retired.devices.length };
+for (const d of Object.values(S.dev)) {
+  const now = (await S.devicesOnBox()).find(x => x.id === d.id);
+  S.assert.ok(now.label.startsWith('ZZ TEST 979 '));
+  if (!now.archived) S.assert.equal((await S.call('DELETE', `/devices/${d.id}`)).status, 200);
+  const after = (await S.devicesOnBox()).find(x => x.id === d.id);
+  S.assert.ok(after.archived);
+  cleanup.devices.push({ id: d.id, label: after.label, archived: after.archived });
+}
+cleanup.tillSession = await S.close('till');
+S.assert.equal(cleanup.tillSession.me, 401);
+S.assert.equal(cleanup.managerMe, 401);
+S.receipt.cleanup.records = cleanup; S.save();
+await S.txtShot(JSON.stringify(cleanup, null, 2), '04-staging-cleanup.png', 'SCRUM-979: exact simulated sales and fixture cleanup readback');
+return cleanup;

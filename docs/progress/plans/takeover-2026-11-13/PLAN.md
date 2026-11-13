@@ -49,3 +49,5 @@ The audit report and all 75 remaining-item assessments are under docs/qa/takeove
 ## Current stage
 
 Stage 1: local preservation and reconciliation complete. All 75 open tickets have current descriptions, priorities, progress comments and verified readbacks in jira-reconciliation-receipt.json. Seven partially delivered tickets were corrected from To Do to In Progress. The audit exceptions remain explicit; no delivery evidence was invented. No feature gate, deployment, new cleanup or final acceptance is claimed in this checkpoint.
+
+Stage 2.1: API guard and six source commits pass the focused landing gates (406 integration tests). Named deployment and new-fixture staging proof are next; 979 till points remain with 977/975. See docs/qa/proof-2026-11-13/SCRUM-979/validation.json and review.md.

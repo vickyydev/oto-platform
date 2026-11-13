@@ -1,0 +1,63 @@
+{
+  "at": "2026-11-13T11:08:04.025Z",
+  "source": "34d903fd5174c43d24cf522750af38be2c68c87a",
+  "base": "7f5ac6f1359df9c0627fa7cd4ffaca6f2b9b2c6c",
+  "ownCommits": 6,
+  "tests": {
+    "payments": 204,
+    "sales": 202,
+    "files": 15
+  },
+  "regression": {
+    "before": {
+      "passed": 22,
+      "failed": 1,
+      "http": 409
+    },
+    "after": {
+      "passed": 23,
+      "failed": 0,
+      "http": 200
+    }
+  },
+  "harnessInterruption": "PowerShell treated a Fastify stderr deprecation warning as fatal; wrapper corrected and affected batch rerun completely.",
+  "gates": [
+    {
+      "name": "typecheck",
+      "exit": 0,
+      "path": "C:/oto-lanes/audit-takeover-20261113/979-typecheck.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "payments",
+      "exit": 0,
+      "path": "C:/oto-lanes/audit-takeover-20261113/979-payments.log",
+      "bytes": 85492,
+      "sha256": "2f40975cf6a8cd19c4f983ba92c9a6a7d92247db90af29fc31780b3712693979"
+    },
+    {
+      "name": "sales",
+      "exit": 0,
+      "path": "C:/oto-lanes/audit-takeover-20261113/979-sales.log",
+      "bytes": 46904,
+      "sha256": "590669a1cdacc55b8291052c96cf82a562c76d61084ae0b796cde5e023528f28"
+    },
+    {
+      "name": "contracts",
+      "exit": 0,
+      "path": "C:/oto-lanes/audit-takeover-20261113/979-contracts.log",
+      "bytes": 1962,
+      "sha256": "e55110d2629ed8c1d998dc14ed12b69052efee2d108df8444b52581a47f7e904"
+    },
+    {
+      "name": "lint",
+      "exit": 0,
+      "path": "C:/oto-lanes/audit-takeover-20261113/979-lint.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "staging": "pending",
+  "ci": "pending"
+}

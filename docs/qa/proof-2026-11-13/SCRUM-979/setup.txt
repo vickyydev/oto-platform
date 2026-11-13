@@ -1,0 +1,10 @@
+S.phase = 'Set up only the new ZZ TEST 979 simulated till';
+await S.setup();
+const assigned = await S.assignTerminal();
+S.assert.equal(assigned.status, 200);
+const beats = await S.heartbeats(S.lastAssignAt, 2);
+S.till = await S.signIn('till', 'STAGING_RECEPTION_PHONE', 'STAGING_RECEPTION_PASSWORD');
+S.receipt.reads.setup.assign = assigned;
+S.receipt.reads.setup.heartbeats = beats;
+S.save();
+return { station: S.station, terminal: S.dev.card, beats };
