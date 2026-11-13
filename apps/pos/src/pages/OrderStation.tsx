@@ -1,3 +1,5 @@
+import { DISPLAY_HANDOVER_WAIT } from '@/lib/displaySession';
+import { paymentOrderIdentity } from '@/lib/paymentScope';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
 import { StationHeader } from '@/components/shared/StationHeader';
@@ -468,7 +470,7 @@ export default function OrderStation() {
     );
   }, [lines, order.quote.lineTotals]);
   const paymentEpoch = orderEpochRef.current;
-  const paymentScope = JSON.stringify([paymentEpoch, orderIdentity, lines, manualDiscounts, voucherCodes, orderNote, benefit?.applicationId]);
+  const paymentScope = JSON.stringify([paymentEpoch, paymentOrderIdentity(orderIdentity), lines, manualDiscounts, voucherCodes, orderNote, benefit?.applicationId]);
   const paymentScopeRef = useRef({ epoch: paymentEpoch, scope: paymentScope });
   paymentScopeRef.current = { epoch: paymentEpoch, scope: paymentScope };
   const paymentContextCurrent = (): boolean => orderEpochRef.current === paymentEpoch && paymentScopeRef.current.scope === paymentScope;
@@ -1195,6 +1197,10 @@ export default function OrderStation() {
    * closed by "Complete Order" (S2-10b), so until then it can still be voided.
    */
   const recordOrderOnPlatform = async (epoch: number): Promise<SaleWriteOutcome> => {
+    if (staffLocked.current || orderEpochRef.current !== epoch || !paymentContextCurrent()) return { ok: false, saleId: '', message: 'This order is locked or changed before it could be saved.', retryable: false };
+    // A rung-up order stays this sale even when the operator changes.
+    const existing = saleWriter.committed;
+    if (existing) return { ok: true, written: true, saleId: existing.id, sale: existing, replay: true };
     const payload = commitPayload();
     const refused = (message: string): SaleWriteOutcome => ({ ok: false, saleId: saleWriter.committed?.id ?? '', message, retryable: false });
     if (staffLocked.current) return refused('Unlock this station before saving the order.');
@@ -1330,10 +1336,11 @@ export default function OrderStation() {
     );
   };
 
-  if (stage === 'payment' && paymentSnapshotRef.current?.epoch !== paymentEpoch) {
+  if (stage === 'payment') {
     paymentSnapshotRef.current = { epoch: paymentEpoch, scope: paymentScope, prepare: () => recordOrderOnPlatform(paymentEpoch), complete: completeOrder };
   }
   const paymentStage = usePaymentStage({
+    resumeSaleId: saleWriter.committed?.id,
     scope: paymentScope,
     isCurrentScope: (scope) => !staffLocked.current && scope === paymentScopeRef.current.scope && paymentScopeRef.current.epoch === orderEpochRef.current,
     active: stage === 'payment',
@@ -1361,10 +1368,11 @@ export default function OrderStation() {
   const promoRows = voucher.held
     ? order.totals.scannedDiscounts.filter((p) => p.code !== voucher.held?.code)
     : order.totals.scannedDiscounts;
-  const backFromPayment = () => {
+  const backFromPayment = async () => {
     // A pending gateway QR: Back abandons it and stays at the method choice.
     if (paymentStage.canCancel) { void paymentStage.cancel(); return; }
     if (!paymentStage.canBack) return;
+    if (!(await letOrderGo())) return;
     orderEpochRef.current += 1;
     paymentSnapshotRef.current = null;
     setStage('order');
@@ -1622,6 +1630,7 @@ export default function OrderStation() {
 
         {stage === 'payment' && (
           <div className="h-full min-h-0 overflow-y-auto">
+            {cancelRefusal && <TillRefusalNotice message={cancelRefusal} onDismiss={() => setCancelRefusal(null)} testId="payment-cancel-refusal" />}
             <FnbPayment
               total={total}
               wristband={wristband}
@@ -1679,7 +1688,7 @@ export default function OrderStation() {
             {separateDisplay.connected.length
               ? separateDisplay.supported ? 'Separate display connected — guest order and payment are shared.'
                 : 'Separate display connected — follow the staff screen for this flow.'
-              : separateDisplay.error ? 'Separate display unavailable — use the inline customer display.'
+              : separateDisplay.error ? separateDisplay.error === DISPLAY_HANDOVER_WAIT ? DISPLAY_HANDOVER_WAIT : 'Separate display unavailable — use the inline customer display.'
                 : 'Test harness — staff station (left) + customer display (right) share one live order. In production the customer display runs on a separate device.'}
           </span>
         </div>

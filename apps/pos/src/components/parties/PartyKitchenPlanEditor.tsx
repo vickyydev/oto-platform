@@ -152,7 +152,7 @@ function LineRows({
                 ) : l.added && !readOnly ? (
                   <MenuPickInput line={l} menu={menu} onPick={(patch) => update(l.key, patch)} />
                 ) : (
-                  <Input value={lineLabel(l)} readOnly disabled aria-label={`${label} item`} className="flex-1 min-w-0" />
+                  <div role="textbox" aria-readonly="true" aria-label={`${label} item`} className="flex-1 min-w-0 min-h-10 rounded-md border border-input bg-background px-3 py-2 text-sm whitespace-normal break-words">{lineLabel(l)}</div>
                 )}
                 {l.qty !== null &&
                   (editable ? (

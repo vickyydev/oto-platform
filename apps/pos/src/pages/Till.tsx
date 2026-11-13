@@ -3131,6 +3131,11 @@ export default function Till() {
       }
       return refusal(RESUMED_ORDER_FROZEN);
     }
+    if (staffLocked.current || saleEpochRef.current !== epoch || paymentScopeRef.current.scope !== scope) return refusal('This order is locked or changed before it could be saved.');
+    const existing = saleWriter.committed;
+    if (existing) return { ok: true, written: true, saleId: existing.id, sale: existing, replay: true };
+    const stockViolations = cartStockShortfalls(lines, getAddOns());
+    if (stockViolations.length > 0) return refusal(`Cannot complete sale — stock too low: ${stockViolations.join(' · ')}`);
     if (!preflightSale()) return refusal('Finish the order before taking payment.');
     const payload = commitPayload();
     if (!payload) return refusal(unwritableReason());
@@ -3353,7 +3358,7 @@ export default function Till() {
     totalSatang: toSatang(cart.totals.total),
     // A resumed sale: the money already taken on it is read from the platform
     // before anything more is collected, as a lost-reply retry reads it.
-    ...(resumed ? { resumeSaleId: resumed.saleId } : {}),
+    resumeSaleId: resumed?.saleId ?? saleWriter.committed?.id,
     // SCRUM-732 — a pass left behind brings its door with it: a child waits on this sale.
     prepareSale: () => preparePaymentSale(paymentEpoch, paymentScope),
     finaliseSale: saleWriter.finalise,
@@ -3526,7 +3531,7 @@ export default function Till() {
     });
   };
 
-  const handlePaymentBack = () => {
+  const handlePaymentBack = async () => {
     if (completionRetry) return;
     // A gateway QR is pending: Back abandons it and stays on this step, back
     // at the method grid; the sale is still rung up for the next tender.
@@ -3534,6 +3539,11 @@ export default function Till() {
     if (!paymentStage.canBack) return;
     // A resumed sale has no order step behind it: it is paid, or Cancel voids it.
     if (orderFrozen()) return;
+    const epoch = saleEpochRef.current;
+    const cancelled = await saleWriter.cancel(CANCELLED_AT_THE_TILL);
+    if (staffLocked.current || saleEpochRef.current !== epoch) return;
+    if (!cancelled.ok) { setCancelRefusal(cancelled.message); return; }
+    if (cancelled.voided) saleWriter.reset();
     setPendingPaymentMethod(null);
     // SCRUM-762 — a number already given is shown on the details screen, not asked again.
     setInputPhoneKept(customerPhone.trim().length > 0);
@@ -3984,7 +3994,7 @@ export default function Till() {
   // SCRUM-942 — while this till is locked with the family's form open on its
   // paired display, the lock screen says so, and says when they press Done.
   // SCRUM-964 — `ended`: under an ended session the line stands as the till last knew it.
-  useLockedFamilyFormWatch({ locked, stationId: station?.stationId ?? null, ended: !!sessionEnded,
+  useLockedFamilyFormWatch({ locked, stationId: station?.stationId ?? null, ended: !!sessionEnded, available: displayOnline,
     formOpen: consentMirror && !consentCandidate.completed && !consentFinishing });
 
   // Retain the same visitor through a staff lock, but unmount every child

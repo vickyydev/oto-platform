@@ -37,8 +37,6 @@ describe('the payment scope is the cart body', () => {
       stationId: 'station-1',
       tier: 'thai',
       tierClaimActionId: 'claim-1',
-      accountId: 'account-1',
-      accountName: 'Som',
     });
   });
 
@@ -50,6 +48,11 @@ describe('the payment scope is the cart body', () => {
 
   it('answers null for a till with no platform identity', () => {
     expect(cartBodyIdentity(null)).toBeNull();
+  });
+
+  it('SCRUM-982: another staff member continuing the same order keeps its payment scope', () => {
+    const first = { stationId: 's', memberId: null, accountId: 'staff-a', accountName: 'A' };
+    expect(cartBodyIdentity(first)).toEqual(cartBodyIdentity({ ...first, accountId: 'staff-b', accountName: 'B' }));
   });
 
   it('is what both tills build their payment scope from', () => {

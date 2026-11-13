@@ -1,3 +1,5 @@
+import { DISPLAY_HANDOVER_WAIT } from '@/lib/displaySession';
+import { paymentOrderIdentity } from '@/lib/paymentScope';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { StationHeader } from '@/components/shared/StationHeader';
 import { rungUpSaleOf, setSaleAtStake, setSaleOpen, setSaleRungUp } from '@/pwa/openSale';
@@ -235,7 +237,7 @@ export default function MerchStation() {
     );
   }, [lines, sale.quote.lineTotals]);
   const paymentEpoch = saleEpochRef.current;
-  const paymentScope = JSON.stringify([paymentEpoch, saleIdentity, lines, manualDiscounts, promoCodes]);
+  const paymentScope = JSON.stringify([paymentEpoch, paymentOrderIdentity(saleIdentity), lines, manualDiscounts, promoCodes]);
   const paymentScopeRef = useRef({ epoch: paymentEpoch, scope: paymentScope });
   paymentScopeRef.current = { epoch: paymentEpoch, scope: paymentScope };
   const paymentContextCurrent = (): boolean => saleEpochRef.current === paymentEpoch && paymentScopeRef.current.scope === paymentScope;
@@ -580,6 +582,10 @@ export default function MerchStation() {
 
   /** Reaching the payment screen is the Pay press — the till's seam (S2-09a). */
   const recordSaleOnPlatform = async (epoch: number): Promise<SaleWriteOutcome> => {
+    if (staffLocked.current || saleEpochRef.current !== epoch || !paymentContextCurrent()) return { ok: false, saleId: '', message: 'This order is locked or changed before it could be saved.', retryable: false };
+    // A rung-up order stays this sale even when the operator changes.
+    const existing = saleWriter.committed;
+    if (existing) return { ok: true, written: true, saleId: existing.id, sale: existing, replay: true };
     if (staffLocked.current) return { ok: false, saleId: saleWriter.committed?.id ?? '', message: 'Unlock this station before saving the sale.', retryable: false };
     if (saleEpochRef.current !== epoch || !paymentContextCurrent()) return { ok: false, saleId: saleWriter.committed?.id ?? '', message: 'This sale or station changed before it could be saved.', retryable: false };
     const payload = commitPayload();
@@ -647,10 +653,11 @@ export default function MerchStation() {
     void announceSalePrinting(written.id, () => undefined);
   };
 
-  if (stage === 'payment' && paymentSnapshotRef.current?.epoch !== paymentEpoch) {
+  if (stage === 'payment') {
     paymentSnapshotRef.current = { epoch: paymentEpoch, scope: paymentScope, prepare: () => recordSaleOnPlatform(paymentEpoch), complete: completeSale };
   }
   const paymentStage = usePaymentStage({
+    resumeSaleId: saleWriter.committed?.id,
     scope: paymentScope,
     isCurrentScope: (scope) => !staffLocked.current && scope === paymentScopeRef.current.scope && paymentScopeRef.current.epoch === saleEpochRef.current,
     active: stage === 'payment',
@@ -670,10 +677,11 @@ export default function MerchStation() {
   // payment has taken anything, so a figure being settled is never changed.
   useHeldBandOnBox(wristband, setWristband, () => stage !== 'confirmation' && !paymentStage.busy
     && paymentStage.state.settlements.length === 0 && paymentStage.state.creditSaleId === null);
-  const backFromPayment = () => {
+  const backFromPayment = async () => {
     // A pending gateway QR: Back abandons it and stays at the method choice.
     if (paymentStage.canCancel) { void paymentStage.cancel(); return; }
     if (!paymentStage.canBack) return;
+    if (!(await letOrderGo())) return;
     saleEpochRef.current += 1;
     paymentSnapshotRef.current = null;
     setStage('order');
@@ -771,6 +779,7 @@ export default function MerchStation() {
 
         {stage === 'payment' && (
           <div className="h-full min-h-0 overflow-y-auto">
+            {cancelRefusal && <TillRefusalNotice message={cancelRefusal} onDismiss={() => setCancelRefusal(null)} testId="payment-cancel-refusal" />}
             <FnbPayment
               total={total}
               wristband={wristband}
@@ -859,7 +868,7 @@ export default function MerchStation() {
           <span className="truncate">
             {separateDisplay.connected.length
               ? `Display connected: ${separateDisplay.connected.map(device => device.name).join(', ')} — ${separateDisplay.supported ? 'guest purchase and payment are shared.' : 'follow the staff screen for this flow.'}`
-              : separateDisplay.error ? 'Separate display unavailable — use the inline customer display.'
+              : separateDisplay.error ? separateDisplay.error === DISPLAY_HANDOVER_WAIT ? DISPLAY_HANDOVER_WAIT : 'Separate display unavailable — use the inline customer display.'
                 : 'Test harness — staff station (left) + customer display (right) share one live sale. In production the customer display runs on a separate device.'}
           </span>
         </div>

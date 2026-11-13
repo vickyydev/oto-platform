@@ -106,6 +106,7 @@ beforeEach(() => {
 afterEach(() => {
   signedInAccount.set(null);
   vi.useRealTimers();
+  vi.unstubAllGlobals();
 });
 
 /** A's session at the till: the sale on screen is published under A's own lease. */
@@ -120,6 +121,25 @@ async function annAtTheTill() {
 }
 
 describe('SCRUM-964 — the display lease follows the person carrying the sale on', () => {
+  it('SCRUM-981: a reloaded tab recognises only its own persisted lease and retries when it expires', async () => {
+    const data = new Map<string, string>();
+    vi.stubGlobal('sessionStorage', { getItem: (key: string) => data.get(key) ?? null,
+      setItem: (key: string, value: string) => data.set(key, value), removeItem: (key: string) => data.delete(key) });
+    // A fresh module/tab has no in-memory lease. Its own previous id is the only hint.
+    box.lease = { leaseId: 'previous', holder: 'old-holder', holderKind: 'till', accountId: ANN,
+      startedAt: new Date().toISOString(), heartbeatAt: new Date().toISOString(), expiresAt: new Date(Date.now() + TTL_MS).toISOString() };
+    data.set('oto.display.own-lease.station', JSON.stringify({ leaseId: 'previous', account: ANN, renewedAt: Date.now() }));
+    caller = BEN; signedInAccount.set(BEN);
+    const till = renderHook(() => useTicketDisplay('station', screen('ZZ TEST kept cart'), vi.fn(), true));
+    try {
+      await vi.advanceTimersByTimeAsync(100);
+      expect(till.result.current.error).toBe(DISPLAY_HANDOVER_WAIT);
+      await vi.advanceTimersByTimeAsync(TTL_MS + 1000);
+      expect(box.lease?.accountId).toBe(BEN);
+      expect(till.result.current.error).toBeNull();
+      expect([...data.values()].join('')).not.toContain('ZZ TEST kept cart');
+    } finally { till.unmount(); }
+  });
   it('HIGH: another person continues the kept sale: the till lets the ended session’s lease go, takes its own when the box frees it, and the display shows the sale at once', async () => {
     const till = await annAtTheTill();
     try {

@@ -36,6 +36,7 @@ const split = params.get('split') === '1';
 /** What the measurement reads of one line: its name box, and its marks under it. */
 export interface KitchenLineReading {
   name: string;
+  nameWhole: boolean;
   marks: string | null;
   /** The marks' whole text laid out: nothing cut, nothing past their box. */
   marksWhole: boolean;
@@ -83,7 +84,7 @@ const VIEW: EventView = {
 
 function readKitchenLines(): KitchenLineReading[] {
   const out: KitchenLineReading[] = [];
-  for (const input of document.querySelectorAll<HTMLInputElement>('input[aria-label="Food items item"], input[aria-label="Bar items item"]')) {
+  for (const input of document.querySelectorAll<HTMLElement>('[aria-label="Food items item"], [aria-label="Bar items item"]')) {
     const row = input.closest('.space-y-1');
     const marksEl = row?.querySelector<HTMLElement>('[data-testid="kitchen-line-marks"]') ?? null;
     let marksWhole = false;
@@ -99,7 +100,7 @@ function readKitchenLines(): KitchenLineReading[] {
       marksInside = box.left >= cardBox.left - 0.5 && box.right <= cardBox.right + 0.5
         && box.left >= 0 && box.right <= window.innerWidth + 0.5;
     }
-    out.push({ name: input.value, marks: marksEl?.textContent ?? null, marksWhole, marksInside });
+    out.push({ name: input instanceof HTMLInputElement ? input.value : input.textContent ?? '', nameWhole: input.scrollWidth <= input.clientWidth + 1 && input.scrollHeight <= input.clientHeight + 1, marks: marksEl?.textContent ?? null, marksWhole, marksInside });
   }
   return out;
 }

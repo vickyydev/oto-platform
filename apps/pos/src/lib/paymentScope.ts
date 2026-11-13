@@ -18,9 +18,16 @@
  * — branch, station, tier, the document check, the lines, the discounts.
  */
 export function cartBodyIdentity<
-  T extends { memberId?: string | null; customerPhone?: string | null; customerNickname?: string | null },
->(identity: T | null): Omit<T, 'memberId' | 'customerPhone' | 'customerNickname'> | null {
+  T extends { memberId?: string | null; customerPhone?: string | null; customerNickname?: string | null; accountId?: string; accountName?: string },
+>(identity: T | null): Omit<T, 'memberId' | 'customerPhone' | 'customerNickname' | 'accountId' | 'accountName'> | null {
   if (!identity) return null;
-  const { memberId: _member, customerPhone: _phone, customerNickname: _nickname, ...body } = identity;
+  const { memberId: _member, customerPhone: _phone, customerNickname: _nickname, accountId: _account, accountName: _name, ...body } = identity;
   return body;
+}
+
+/** SCRUM-982: collection belongs to the order; the request's session identifies the confirmer. */
+export function paymentOrderIdentity<T extends { accountId?: string; accountName?: string }>(identity: T | null): Omit<T, 'accountId' | 'accountName'> | null {
+  if (!identity) return null;
+  const { accountId: _account, accountName: _name, ...order } = identity;
+  return order;
 }

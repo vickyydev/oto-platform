@@ -1816,6 +1816,9 @@ export default function MobileTill() {
       }
       return refusal(RESUMED_ORDER_FROZEN);
     }
+    if (staffLocked.current || saleEpochRef.current !== epoch || paymentScopeRef.current.scope !== scope) return refusal('This order is locked or changed before it could be saved.');
+    const existing = saleWriter.committed;
+    if (existing) return { ok: true, written: true, saleId: existing.id, sale: existing, replay: true };
     if (!preflightSale()) return refusal('Finish the order before taking payment.');
     const payload = commitPayload();
     if (!payload) return refusal(unwritableReason());
@@ -2030,7 +2033,7 @@ export default function MobileTill() {
     totalSatang: toSatang(cart.totals.total),
     // SCRUM-774 — a resumed sale: what was already taken on it is read from
     // the platform before anything more is collected — the balance only.
-    ...(resumed ? { resumeSaleId: resumed.saleId } : {}),
+    resumeSaleId: resumed?.saleId ?? saleWriter.committed?.id,
     prepareSale: () => preparePaymentSale(paymentEpoch, paymentScope),
     finaliseSale: saleWriter.finalise,
     onComplete: completeSale,
@@ -2419,7 +2422,7 @@ export default function MobileTill() {
     ['tickets', 'configure', 'dropoff-config', 'supervision', 'review', 'payment'] as MobileStep[]
   ).includes(mStep) && (mStep !== 'payment' || (!completionRetry && ((paymentStage.canBack && !resumed) || paymentStage.canCancel)));
 
-  const handleBack = () => {
+  const handleBack = async () => {
     switch (mStep) {
       case 'tickets': setMStep('tier'); break;
       case 'configure': handleBackToGrid(); break;
@@ -2435,6 +2438,13 @@ export default function MobileTill() {
         if (resumed) {
           toast({ title: 'The order cannot be changed', description: RESUMED_ORDER_FROZEN });
           return;
+        }
+        {
+          const epoch = saleEpochRef.current;
+          const cancelled = await saleWriter.cancel(CANCELLED_AT_THE_TILL);
+          if (staffLocked.current || saleEpochRef.current !== epoch) return;
+          if (!cancelled.ok) { toast({ title: 'Could not leave payment', description: cancelled.message, variant: 'destructive' }); return; }
+          if (cancelled.voided) saleWriter.reset();
         }
         setPendingPaymentMethod(null);
         setMStep('review');

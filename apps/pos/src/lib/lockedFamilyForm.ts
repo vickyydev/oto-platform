@@ -77,23 +77,26 @@ export function lockedFamilyFormLine(state: LockedFamilyForm): string | null {
  * saw it signed in — until somebody signs in (the till then shows the form
  * itself) or the sale is dropped (its screen goes, and the line with it).
  */
-export function useLockedFamilyFormWatch({ locked, formOpen, stationId, ended = false }: {
+export function useLockedFamilyFormWatch({ locked, formOpen, stationId, ended = false, available = true }: {
   locked: boolean;
   formOpen: boolean;
   stationId: string | null;
   ended?: boolean;
+  /** A connection/quote blip cannot prove that the family left the form. */
+  available?: boolean;
 }): void {
   /** Whether the form was open on the display as the till last knew it signed in. */
   const lastOpen = useRef(false);
+  const lastKnown = useRef<LockedFamilyForm>(null);
   useEffect(() => {
-    if (!locked) lastOpen.current = formOpen;
+    if (!locked && available) { lastOpen.current = formOpen; lastKnown.current = formOpen ? 'filling' : null; }
     else if (formOpen) lastOpen.current = true;
     const open = formOpen || (locked && ended && lastOpen.current);
     if (!locked || !open) {
       lockedFamilyForm.set(null);
       return;
     }
-    lockedFamilyForm.set('filling');
+    lockedFamilyForm.set(lastKnown.current ?? 'filling');
     if (!stationId) return () => { lockedFamilyForm.set(null); };
     let stopped = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -101,8 +104,10 @@ export function useLockedFamilyFormWatch({ locked, formOpen, stationId, ended = 
       try {
         const status = await bridgeApi.status(stationId);
         if (stopped) return;
-        if (status.familyForm === 'done' || status.familyForm === 'filling') lockedFamilyForm.set(status.familyForm);
-        else if (status.familyForm === null) lockedFamilyForm.set(null);
+        if (status.familyForm === 'done' || status.familyForm === 'filling' || status.familyForm === null) {
+          lastKnown.current = status.familyForm;
+          lockedFamilyForm.set(status.familyForm);
+        }
         // Absent: a box from before the field; the line from the lock stands.
       } catch {
         // Not answered this time: the line stands, and the next read decides.
@@ -116,5 +121,5 @@ export function useLockedFamilyFormWatch({ locked, formOpen, stationId, ended = 
       clearTimeout(timer);
       lockedFamilyForm.set(null);
     };
-  }, [locked, formOpen, stationId, ended]);
+  }, [locked, formOpen, stationId, ended, available]);
 }

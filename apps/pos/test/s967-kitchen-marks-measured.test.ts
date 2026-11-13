@@ -57,6 +57,7 @@ describe.skipIf(!browser)('SCRUM-967 — every kitchen and bar line’s mark is 
         expect(lines.map((l) => l.name).sort()).toEqual(Object.keys(MARKS).sort());
         for (const line of lines) {
           expect(line.name.includes('not on the till'), line.name).toBe(false);
+          expect(line.nameWhole, line.name + ': full dish name visible').toBe(true);
           expect(line.marks, line.name).toBe(MARKS[line.name]);
           expect(line.marksWhole, `${line.name}: ${line.marks} laid out whole`).toBe(true);
           expect(line.marksInside, `${line.name}: ${line.marks} inside its card and on screen`).toBe(true);

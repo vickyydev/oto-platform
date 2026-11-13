@@ -480,6 +480,24 @@ function holderFor(stationId: string): string {
  */
 interface OwnLease { leaseId: string; account: string | null; renewedAt: number }
 const ownLeases = new Map<string, OwnLease>();
+const OWN_LEASE_PREFIX = 'oto.display.own-lease.';
+function saveOwnLease(stationId: string, lease: OwnLease): void {
+  ownLeases.set(stationId, lease);
+  try { globalThis.sessionStorage?.setItem(OWN_LEASE_PREFIX + stationId, JSON.stringify(lease)); } catch { /* memory only */ }
+}
+function ownLeaseFor(stationId: string): OwnLease | undefined {
+  const held = ownLeases.get(stationId);
+  if (held) return held;
+  try {
+    const raw = globalThis.sessionStorage?.getItem(OWN_LEASE_PREFIX + stationId);
+    if (!raw) return undefined;
+    const value = JSON.parse(raw) as OwnLease;
+    if (typeof value.leaseId !== 'string' || typeof value.account !== 'string' || !Number.isFinite(value.renewedAt)
+      || value.renewedAt > Date.now() || Date.now() - value.renewedAt > 120_000) return undefined;
+    ownLeases.set(stationId, value);
+    return value;
+  } catch { return undefined; }
+}
 
 /** SCRUM-964 — said while the till waits out its own lease from the session that ended. */
 export const DISPLAY_HANDOVER_WAIT = 'The display is still held under the session that ended here; it follows this till within a minute.';
@@ -500,7 +518,7 @@ export function forgetDisplayHolders(): void {
       const keys: string[] = [];
       for (let i = 0; i < store.length; i += 1) {
         const key = store.key(i);
-        if (key && key.startsWith(HOLDER_KEY_PREFIX)) keys.push(key);
+        if (key && (key.startsWith(HOLDER_KEY_PREFIX) || key.startsWith(OWN_LEASE_PREFIX))) keys.push(key);
       }
       for (const key of keys) store.removeItem(key);
     } catch {
@@ -813,7 +831,7 @@ export function useStationDisplay(stationId: string | null, state: StationDispla
           channel.leaseId = claimed.lease.leaseId;
           channel.account = who;
           channel.claiming = null;
-          ownLeases.set(stationId, { leaseId: claimed.lease.leaseId, account: who, renewedAt: Date.now() });
+          saveOwnLease(stationId, { leaseId: claimed.lease.leaseId, account: who, renewedAt: Date.now() });
           if (paused()) return;
           channel.renewedAt = Date.now();
           document = claimed.document;
@@ -823,8 +841,8 @@ export function useStationDisplay(stationId: string | null, state: StationDispla
           if (paused()) return;
           document = renewed.document;
           channel.renewedAt = Date.now();
-          const own = ownLeases.get(stationId);
-          if (own?.leaseId === channel.leaseId) own.renewedAt = channel.renewedAt;
+          const own = ownLeaseFor(stationId);
+          if (own?.leaseId === channel.leaseId) saveOwnLease(stationId, { ...own, renewedAt: channel.renewedAt });
         } else if (documentCache && !askBox && (!refresh || streaming)) {
           document = documentCache;
         } else {
@@ -895,7 +913,7 @@ export function useStationDisplay(stationId: string | null, state: StationDispla
           // retried under it: a lease of the till's own for the person here now.
           handOver(true);
         }
-        const own = ownLeases.get(stationId);
+        const own = ownLeaseFor(stationId);
         const now = signedInAccount.get();
         if (failure instanceof ApiError && failure.code === 'STATION_NO_LEASE' && !channel.leaseId && own
           && own.account !== null && now !== null && own.account !== now && refusedLeaseId(failure) === own.leaseId) {

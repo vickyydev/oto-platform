@@ -1,3 +1,4 @@
+import { paymentOrderIdentity } from '@/lib/paymentScope';
 import { takeCorrectedOrder } from '@/lib/correctedOrder';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
@@ -70,6 +71,8 @@ export function MobileOrderStation() {
   // SCRUM-964 — the phone's F&B keeps its order under a lock, as the phone's
   // till and shop do (`App.tsx`): while locked it asks nothing and draws nothing.
   const { operator, locked } = useOperator();
+  const staffLocked = useRef(locked);
+  staffLocked.current = locked;
   const { station } = useStation();
   const { branch } = useBranch();
   const { t } = useLanguage();
@@ -138,7 +141,7 @@ export function MobileOrderStation() {
   const displayLines = useMemo(() => lines.map((line) => orderQuote.quote.lineTotals?.[line.id] === undefined
     ? line : { ...line, lineTotal: orderQuote.quote.lineTotals[line.id] }), [lines, orderQuote.quote.lineTotals]);
   const paymentEpoch = orderEpochRef.current;
-  const paymentScope = JSON.stringify([paymentEpoch, orderIdentity, lines, manualDiscounts, orderNote]);
+  const paymentScope = JSON.stringify([paymentEpoch, paymentOrderIdentity(orderIdentity), lines, manualDiscounts, orderNote]);
   const paymentScopeRef = useRef({ epoch: paymentEpoch, scope: paymentScope });
   paymentScopeRef.current = { epoch: paymentEpoch, scope: paymentScope };
   const paymentContextCurrent = (): boolean => orderEpochRef.current === paymentEpoch && paymentScopeRef.current.scope === paymentScope;
@@ -372,6 +375,10 @@ export function MobileOrderStation() {
   };
 
   const recordOrderOnPlatform = async (epoch: number): Promise<SaleWriteOutcome> => {
+    if (staffLocked.current || orderEpochRef.current !== epoch || !paymentContextCurrent()) return { ok: false, saleId: '', message: 'This order is locked or changed before it could be saved.', retryable: false };
+    // A rung-up order stays this sale even when the operator changes.
+    const existing = saleWriter.committed;
+    if (existing) return { ok: true, written: true, saleId: existing.id, sale: existing, replay: true };
     const refused = (message: string): SaleWriteOutcome => ({ ok: false, saleId: saleWriter.committed?.id ?? '', message, retryable: false });
     if (!station) {
       promptSetupStation(navigate);
@@ -431,11 +438,12 @@ export function MobileOrderStation() {
     void announceSalePrinting(written.id, () => dispatchPrintJobs(fnbPrintJobs(station, order)));
   };
 
-  if (stage === 'payment' && paymentSnapshotRef.current?.epoch !== paymentEpoch) {
+  if (stage === 'payment') {
     paymentSnapshotRef.current = { epoch: paymentEpoch, scope: paymentScope, prepare: () => recordOrderOnPlatform(paymentEpoch), complete: handleConfirmPayment };
   }
   const paymentStage = usePaymentStage({
-    scope: paymentScope, isCurrentScope: (scope) => scope === paymentScopeRef.current.scope && paymentScopeRef.current.epoch === orderEpochRef.current,
+    resumeSaleId: saleWriter.committed?.id,
+    scope: paymentScope, isCurrentScope: (scope) => !staffLocked.current && scope === paymentScopeRef.current.scope && paymentScopeRef.current.epoch === orderEpochRef.current,
     active: stage === 'payment', paused: locked, totalSatang: Math.round(total * 100),
     prepareSale: () => paymentSnapshotRef.current?.prepare() ?? recordOrderOnPlatform(paymentEpoch), finaliseSale: saleWriter.finalise,
     onComplete: (sale, settlements) => paymentSnapshotRef.current?.complete(sale, settlements),
@@ -455,10 +463,16 @@ export function MobileOrderStation() {
     setPaymentContextLocked('mobile-fnb', paymentContextLocked);
     return () => setPaymentContextLocked('mobile-fnb', false);
   }, [paymentContextLocked]);
-  const backFromPayment = () => {
+  const backFromPayment = async () => {
     // A pending gateway QR: Back abandons it and stays at the method choice.
     if (paymentStage.canCancel) { void paymentStage.cancel(); return; }
     if (!paymentStage.canBack) return;
+    const epoch = orderEpochRef.current;
+    const scope = paymentScopeRef.current.scope;
+    const cancelled = await saleWriter.cancel('Cancelled at the till');
+    if (staffLocked.current || orderEpochRef.current !== epoch || paymentScopeRef.current.scope !== scope) return;
+    if (!cancelled.ok) { toast({ title: 'Could not leave payment', description: cancelled.message, variant: 'destructive' }); return; }
+    if (cancelled.voided) saleWriter.reset();
     orderEpochRef.current += 1;
     paymentSnapshotRef.current = null;
     setHandoffMode(null);

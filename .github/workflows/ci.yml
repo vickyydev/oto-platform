@@ -177,6 +177,8 @@ jobs:
           # harness runs only the smoke flows unless it is named a spec. This one
           # pays through the simulated gateway, and a skip fails this gate.
           PAYMENTS_SIMULATOR=on pnpm --filter @oto/pos e2e e2e/dropoff-paid-online.spec.ts
+            # A new staff session must continue the original QR/order, never charge it twice.
+            PAYMENTS_SIMULATOR=on pnpm --filter @oto/pos e2e e2e/payment-handover.spec.ts
           pnpm --filter @oto/pos e2e e2e/dropoff-paid-at-till.spec.ts
           pnpm --filter @oto/pos e2e e2e/ticket-free-items.spec.ts
           pnpm --filter @oto/pos e2e e2e/ticket-free-socks.spec.ts

@@ -272,7 +272,11 @@ interface ResumeEvidence { saleId: string; attempt?: PaymentAttemptView | null; 
  * Online collection, and — on the box lane — cash and credit through the box.
  * A timer or a failed request never proves money was not taken.
  */
-export function usePaymentStage(options: PaymentStageOptions): PaymentStageController {
+export function usePaymentStage(supplied: PaymentStageOptions): PaymentStageController {
+  // A locally rung-up box sale has no platform row to recover. Its retained
+  // tender still follows the existing box path; a platform sale must be read.
+  const options = { ...supplied, resumeSaleId: supplied.resumeSaleId && laneSale(supplied.resumeSaleId)?.lane !== 'box'
+    ? supplied.resumeSaleId : undefined };
   const optionsRef = useRef(options);
   optionsRef.current = options;
   const [state, setState] = useState(() => initial(options.totalSatang));
@@ -763,12 +767,18 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
   useEffect(() => {
     if (options.paused) {
       resumeNeeded.current = true;
+      // A payment can change elsewhere while this staff session is locked.
+      // Re-read every recorded attempt, including one first created in the pause.
+      if (options.resumeSaleId) resumedSale.current = null;
       readSequence.current += 1;
       return;
     }
     if (!resumeNeeded.current || options.active === false || !online) return;
     resumeNeeded.current = false;
     if (isComplete()) return;
+    // An explicit platform sale id owns full reconciliation below. Retained
+    // evidence alone cannot discover a payment started while we were locked.
+    if (options.resumeSaleId) return;
     const ctx = context();
     const pending = inFlight.current;
     const beforeResume = stateRef.current;
@@ -817,7 +827,7 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
     if (!saleId || resumedSale.current === saleId || !online || options.paused || options.active === false) return;
     const ctx = context();
     ctx.saleId = saleId;
-    update({ phase: 'blocked', saleId, error: 'Checking the unfinished payment.', retryable: false });
+    const beforeRecovery = stateRef.current;
     const recover: Operation = async (ctx) => {
       const detail = await api.get<{ sale: ApiSale; attempts?: PaymentAttemptView[] }>(`/sales/${encodeURIComponent(saleId)}`);
       if (!current(ctx)) return;
@@ -826,13 +836,14 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
         update({ phase: 'blocked', error: 'This charge is no longer open for payment.', retryable: false });
         return;
       }
-      if (detail.sale.status === 'finalised') { resumedSale.current = saleId; await finish(ctx, detail.sale); return; }
-      if (!detail.attempts) throw new Error('The recorded payments could not be confirmed.');
+      if (!detail.attempts || (detail.sale.status === 'finalised' && detail.sale.totals.grossSatang > 0
+        && !detail.attempts.some(taken))) throw new Error('The recorded payments could not be confirmed.');
       if (detail.attempts.some((attempt) => attempt.saleId !== saleId)) throw new Error('The payment answer belongs to another sale.');
       for (const attempt of detail.attempts) {
         const method = findPaymentMethod(attempt.method) ?? getEnabledPaymentMethods().find((item) => item.kind === attempt.method);
         settlement(attempt, method?.id ?? attempt.method, method?.kind ?? 'other');
       }
+      if (detail.sale.status === 'finalised') { resumedSale.current = saleId; await finish(ctx, detail.sale); return; }
       const unresolvedAttempts = detail.attempts.filter(unresolved);
       if (unresolvedAttempts.length > 1) throw new Error('More than one payment needs review. Resolve the recorded payments before collecting again.');
       const pending = unresolvedAttempts[0];
@@ -853,6 +864,9 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
         }
         const outstanding = answer.outstandingSatang!;
         resumedSale.current = saleId;
+        // SCRUM-982: a paid QR is closed without asking for Cash, and its
+        // recorded method above supplies the confirmation and display.
+        if (outstanding === 0) { await close(ctx); return; }
         // SCRUM-979 — the last tender ended without money (a reload in the second
         // between the press and its end): the till says so, as it would have.
         const ended = endedWithoutMoney(answer.attempt) && !answer.attempt.partyDeposit
@@ -862,12 +876,28 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
           ...(ended ? { attempt: answer.attempt, notStarted: ended.notStarted } : {}) });
       } else {
         const outstanding = detail.sale.status === 'paid' ? 0 : detail.sale.totals.grossSatang;
+        if (detail.sale.status === 'paid' && detail.sale.totals.grossSatang > 0) throw new Error('The recorded payments could not be confirmed.');
         resumedSale.current = saleId;
-        update({ phase: 'ready', outstandingSatang: outstanding, amountSatang: outstanding, tenderedSatang: outstanding, method: null, error: null, retryable: false, partial: false });
+        // An unsent manual form takes no money; preserve its entered details
+        // only after the platform confirmed no attempt was created meanwhile.
+        if (beforeRecovery.phase === 'manual' && beforeRecovery.route === 'manual') {
+          update({ phase: 'manual', route: 'manual', error: null, retryable: false });
+        } else {
+          update({ phase: 'ready', outstandingSatang: outstanding, amountSatang: outstanding, tenderedSatang: outstanding, method: null, error: null, retryable: false, partial: false });
+        }
       }
       resumedSale.current = saleId;
     };
-    void perform(recover, ctx);
+    // The writer may have just supplied this id while the first tender is
+    // still on the wire. Reconcile after that operation; never discard its
+    // answer or silently skip recovery because perform is already busy.
+    const pending = inFlight.current;
+    void (async () => {
+      await pending;
+      if (!current(ctx) || isComplete() || resumedSale.current === saleId) return;
+      update({ phase: 'blocked', saleId, error: 'Checking the unfinished payment.', retryable: false });
+      await perform(recover, ctx);
+    })();
     // Recovery owns this charge and uses the same cancellation guards as collection.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [options.resumeSaleId, options.scope, options.active, options.paused, online]);

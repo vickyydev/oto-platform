@@ -244,7 +244,7 @@ describe('every ticket till at the branch has the two buttons and the list', () 
 
   it('the phone opens a resumed sale on its payment step, asking only for the balance', () => {
     const text = src('components/mobile/MobileTill.tsx');
-    expect(text).toContain('...(resumed ? { resumeSaleId: resumed.saleId } : {}),');
+    expect(text).toContain('resumeSaleId: resumed?.saleId ?? saleWriter.committed?.id,');
     expect(text).toContain("if (mStep !== 'payment' || resumed) return;");
     expect(text).toContain('if (!saleWriter.adopt(adopted)) return false;');
     expect(text).toContain("setMStep('payment');");

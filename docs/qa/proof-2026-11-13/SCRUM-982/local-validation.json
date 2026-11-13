@@ -1,0 +1,29 @@
+{
+  "base": "396a637518f3d65bcda23feb1caa2d7305232c27",
+  "sourceReview": "approved after second review fixes",
+  "posTypes": {
+    "exit": 0,
+    "configurations": 3
+  },
+  "apiTypes": {
+    "exit": 0,
+    "outputBytes": 0
+  },
+  "posTests": {
+    "files": 52,
+    "passed": 672
+  },
+  "apiReviewPins": 11,
+  "touchedLintExit": 0,
+  "productionBuildBrowserTests": {
+    "passed": 12,
+    "failed": 0,
+    "disposableDatabaseRemoved": true
+  },
+  "reviewRedBeforeFix": {
+    "failed": 2,
+    "passed": 6
+  },
+  "recoveryRegressionCasesAfterFix": 9,
+  "staging": "pending"
+}

@@ -25,7 +25,7 @@ import { settle } from './support/fixtures';
 beforeEach(() => { vi.useFakeTimers(); status.read.mockReset(); lockedFamilyForm.set(null); });
 afterEach(() => { vi.useRealTimers(); });
 
-function watch(start: { locked: boolean; formOpen: boolean; stationId: string | null }) {
+function watch(start: { locked: boolean; formOpen: boolean; stationId: string | null; ended?: boolean; available?: boolean }) {
   return renderHook((props: typeof start) => useLockedFamilyFormWatch(props), start);
 }
 
@@ -83,6 +83,30 @@ describe('the locked till watches the family’s form', () => {
     await settle();
     expect(lockedFamilyForm.get()).toBe('filling');
     expect(status.read).not.toHaveBeenCalled();
+    till.unmount();
+  });
+});
+
+describe('SCRUM-981 remembered family state', () => {
+  it('keeps the last open form through an offline blip and session end', async () => {
+    status.read.mockRejectedValue(new Error('offline'));
+    const till = watch({ locked: false, formOpen: true, stationId: 'zz-station' });
+    till.rerender({ locked: false, formOpen: false, stationId: 'zz-station', available: false });
+    till.rerender({ locked: true, formOpen: false, stationId: 'zz-station', available: false, ended: true });
+    await settle();
+    expect(lockedFamilyForm.get()).toBe('filling');
+    till.unmount();
+  });
+  it('does not forget Done when the lock becomes an ended session', async () => {
+    status.read.mockResolvedValue({ familyForm: 'done' });
+    const till = watch({ locked: true, formOpen: true, stationId: 'zz-station' });
+    await settle();
+    expect(lockedFamilyForm.get()).toBe('done');
+    status.read.mockRejectedValue(new Error('session ended'));
+    till.rerender({ locked: true, formOpen: false, stationId: 'zz-station', ended: true });
+    expect(lockedFamilyForm.get()).toBe('done');
+    await settle();
+    expect(lockedFamilyForm.get()).toBe('done');
     till.unmount();
   });
 });
