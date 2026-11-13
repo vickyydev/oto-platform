@@ -628,11 +628,11 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
       description:
         'Ages out operational runs, resolved alerts, box heartbeats, the sync ledger, the change feed, station telemetry, the print record and spent sign-in throttles, and expires stale box commands',
       intervalSeconds: deps.env.HOUSEKEEPING_INTERVAL_S,
-      run: async ({ db }) => {
+      run: async ({ db, log }) => {
         const sync = syncSettings();
         return {
           detail: {
-            ...(await legacySweeps(db, deps.env)),
+            ...(await legacySweeps(db, deps.env, log)),
             /**
              * The sync core's four windows (S2-05). The reasoning behind each
              * is on its table in `packages/db/src/schema/sync.ts`; what matters
@@ -1315,7 +1315,7 @@ export function buildOtoAppNightJobs(
 }
 
 /** The sweeps that existed before the sync core, unchanged. */
-async function legacySweeps(db: Db, env: Env): Promise<Record<string, number>> {
+async function legacySweeps(db: Db, env: Env, log?: FastifyBaseLogger): Promise<Record<string, number>> {
   return {
     runsDeleted: await purgeOldOpsRuns(db, env.OPS_RUN_RETENTION_DAYS),
     alertsDeleted: await purgeResolvedAlerts(db, env.OPS_RUN_RETENTION_DAYS),
@@ -1334,7 +1334,7 @@ async function legacySweeps(db: Db, env: Env): Promise<Record<string, number>> {
      * is removed, because `box_command`'s restricting foreign key is what makes
      * "a box is archived, never deleted" a database fact.
      */
-    commandsExpired: await expireStaleCommands(db),
+    commandsExpired: await expireStaleCommands(db, log ? { log } : {}),
     /** Sign-in, code and rate-limit buckets whose window or cooldown is over (SCRUM-386). */
     throttlesDeleted: await purgeExpiredThrottles(db),
   };

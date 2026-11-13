@@ -210,7 +210,7 @@ export async function boxRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const auth = boxAuth(req);
-      const commands = await pollCommands(app.db, auth, req.body.max, req.body.kinds);
+      const commands = await pollCommands(app.db, auth, req.body.max, req.body.kinds, boxCtx(req, auth));
       return { commands, serverTime: new Date().toISOString() };
     },
   );

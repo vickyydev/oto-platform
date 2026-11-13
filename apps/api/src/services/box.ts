@@ -45,9 +45,12 @@ import { currentBandKey } from './bands';
 import { processRoles } from './jobs';
 import { recordRun, scrubDetail } from './ops';
 import {
+  afterTerminalSettled,
   lockAttemptOfTerminalCommand,
   readStationsSellingReadiness,
-  settleFailedTerminalCommand,
+  settleEndedTerminalCommand,
+  settleExpiredTerminalCommands,
+  type TerminalSettled,
 } from './payments/terminal';
 import { registerProductBarcodeHandler } from './scanning-product';
 import {
@@ -1355,18 +1358,20 @@ export async function pollCommands(
   auth: BoxAuth,
   max: number,
   kinds?: readonly BoxCommandKind[],
+  ctx: OpContext = {},
 ): Promise<BoxCommandHandout[]> {
-  return db.transaction(async (tx) => {
+  const polled = await db.transaction(async (tx) => {
     // A test print queued for a box that was offline all week must not fire
     // when it finally wakes up. Expiring them here rather than in a sweep
     // means it is true at the only moment it matters. Deliberately not
     // narrowed by `kinds`: a command is out of time whatever this poll came
     // for, and leaving stale rows queued because an offline box asked for
     // something else is how the late test print survives to fire.
-    await tx.execute(
+    const expired = await tx.execute<{ id: string; kind: string }>(
       sql`update edge.box_command set state = 'expired', finished_at = now(), updated_at = now()
           where box_id = ${auth.boxId} and state = 'queued'
-            and expires_at is not null and expires_at <= now()`,
+            and expires_at is not null and expires_at <= now()
+          returning id, kind`,
     );
     /**
      * `sql.param`, not the array on its own: an array interpolated bare into a
@@ -1418,16 +1423,28 @@ export async function pollCommands(
             from claimed
            order by created_at, id`,
     );
-    return claimed.rows.map((row) => ({
-      id: row.id,
-      kind: row.kind,
-      payload: row.payload ?? null,
-      actionId: row.action_id,
-      attempts: row.attempts,
-      expiresAt: row.expires_at ? new Date(row.expires_at).toISOString() : null,
-      createdAt: new Date(row.created_at).toISOString(),
-    }));
+    return {
+      expiredTerminal: expired.rows.filter((row) => row.kind === 'terminal_sale').map((row) => row.id),
+      handout: claimed.rows.map((row) => ({
+        id: row.id,
+        kind: row.kind,
+        payload: row.payload ?? null,
+        actionId: row.action_id,
+        attempts: row.attempts,
+        expiresAt: row.expires_at ? new Date(row.expires_at).toISOString() : null,
+        createdAt: new Date(row.created_at).toISOString(),
+      })),
+    };
   });
+  /**
+   * SCRUM-979 — a card SALE or VOID that ran out of time in this box's queue
+   * settles its payment now, not when somebody next reads it: a SALE frees its
+   * sale, a refund's VOID falls back to cash. After the transaction above, not
+   * in it: that statement holds the commands' locks, and the attempt's lock
+   * has to be taken before a command's (`settleExpiredTerminalCommands`).
+   */
+  if (polled.expiredTerminal.length) await settleExpiredTerminalCommands(db, ctx, polled.expiredTerminal);
+  return polled.handout;
 }
 
 /**
@@ -1482,14 +1499,23 @@ export async function completeCommand(
       })
       .where(and(eq(boxCommand.id, commandId), eq(boxCommand.state, 'running')))
       .returning({ id: boxCommand.id, state: boxCommand.state });
-    if (!updated[0]) return { replayed: true as const, epoch: auth.currentEpoch };
+    if (!updated[0]) return { replayed: true as const, epoch: auth.currentEpoch, settled: null };
     /**
-     * SCRUM-972 — a terminal command the box could not finish settles its
-     * attempt in this transaction: a SALE it proves it never sent frees the
-     * sale now, anything else waits for a person. Never a second SALE.
+     * SCRUM-972 / SCRUM-979 — a terminal command settles its attempt in this
+     * transaction: a SALE the box proves it never sent frees the sale now,
+     * one that may have reached the terminal waits for a person, and one the
+     * box acknowledged with the terminal's answer on it takes that answer when
+     * the result post never landed. Never a second SALE or VOID. In a
+     * savepoint: what the box did is recorded whatever the settlement meets,
+     * and the read-time net and the payments sweep try the settlement again.
      */
-    if (existing.kind === 'terminal_sale' && input.state === 'failed') {
-      await settleFailedTerminalCommand(tx, ctx, auth.operatorId, existing.id);
+    let settled: TerminalSettled | null = null;
+    if (existing.kind === 'terminal_sale') {
+      try {
+        settled = await tx.transaction((sp) => settleEndedTerminalCommand(sp, ctx, auth.operatorId, existing.id));
+      } catch (err) {
+        ctx.log?.error({ err, commandId: existing.id }, 'a terminal command could not settle its payment');
+      }
     }
 
     let epoch = auth.currentEpoch;
@@ -1544,8 +1570,11 @@ export async function completeCommand(
         requestId: ctx.requestId,
       });
     }
-    return { replayed: false as const, epoch };
+    return { replayed: false as const, epoch, settled };
   });
+
+  // SCRUM-979 — the terminal answer's run and write-backs, as the result route writes them.
+  if (!outcome.replayed) await afterTerminalSettled(db, ctx.log, outcome.settled);
 
   if (!outcome.replayed) {
     /**
@@ -1695,13 +1724,22 @@ export function withinOpeningHours(openingHours: unknown, timezone: string, at: 
  * so the table grows at human pace and has no retention problem to solve —
  * unlike `box_heartbeat`, which arrives on a timer and is swept beside this.
  */
-export async function expireStaleCommands(db: Db): Promise<number> {
-  const result = await db.execute(
+export async function expireStaleCommands(db: Db, ctx: OpContext = {}): Promise<number> {
+  const result = await db.execute<{ id: string; kind: string }>(
     sql`update edge.box_command
            set state = 'expired', finished_at = now(), updated_at = now()
-         where state = 'queued' and expires_at is not null and expires_at <= now()`,
+         where state = 'queued' and expires_at is not null and expires_at <= now()
+     returning id, kind`,
   );
-  return result.rowCount ?? 0;
+  /**
+   * SCRUM-979 — a card SALE or VOID among them settles its payment now, each
+   * in a transaction of its own after this statement (the attempt's lock comes
+   * before a command's): a refund's VOID falls back to cash, a SALE frees its
+   * sale, without anybody reading either.
+   */
+  const terminal = result.rows.filter((row) => row.kind === 'terminal_sale').map((row) => row.id);
+  if (terminal.length) await settleExpiredTerminalCommands(db, ctx, terminal);
+  return result.rowCount ?? result.rows.length;
 }
 
 export async function purgeOldBoxHeartbeats(db: Db, retentionDays?: number): Promise<number> {

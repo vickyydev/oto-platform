@@ -29,6 +29,7 @@ import { refundsOfSale } from '../services/refund-slices';
 import { refundSale, settleGatewayRefunds, type RefundActor } from '../services/refunds';
 import { reprintSale } from '../services/sale-printing';
 import { gatewayFor } from '../services/payments/gateway';
+import { recoverSaleTerminalAttempts } from '../services/payments/terminal';
 import { opCtx, withTx } from '../services/tx';
 import { queueDrawerKick, type DrawerKick } from '../services/payments/drawer';
 import { writeBackSalePass } from '../services/booking-event-passes';
@@ -1235,6 +1236,12 @@ export async function saleRoutes(app: App): Promise<void> {
       const view = detail.sale as { branchId: string };
       // A sale at another branch is only readable by somebody scoped to it.
       await req.requirePermission('pos:sale:read', { branchId: view.branchId });
+      // SCRUM-979 — a card payment that ended at the box settles on this read
+      // as on its own (`GET /payments/attempts/:id`), so History's detail is not
+      // left holding "Void unpaid sale" back. This one sale's attempts only.
+      if (await recoverSaleTerminalAttempts(app.db, opCtx(req), auth.operatorId, req.params.id)) {
+        return getSaleDetail(app.db, auth.operatorId, req.params.id);
+      }
       return detail;
     },
   );

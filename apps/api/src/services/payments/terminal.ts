@@ -1,4 +1,5 @@
-import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, lte, sql } from 'drizzle-orm';
+import type { FastifyBaseLogger } from 'fastify';
 import {
   box,
   boxCommand,
@@ -22,6 +23,7 @@ import {
 } from '@oto/shared';
 import {
   roleForTender,
+  TERMINAL_OUTCOME_KINDS,
   TERMINAL_TIMEOUTS,
   terminalProtocolOf,
   type TerminalOutcomeKind,
@@ -138,6 +140,11 @@ export interface TerminalFinalReport {
   responseText?: string | null;
   elapsedMs?: number | null;
   at?: string | null;
+  /**
+   * SCRUM-979 — set when this answer was read off the box's acknowledgement of
+   * the command rather than posted on the result route (`takeCommandAnswer`).
+   */
+  source?: { commandId: string } | null;
 }
 
 export interface TerminalProgressReport {
@@ -174,6 +181,8 @@ interface AttemptPayload {
   inquiry?: Record<string, unknown>;
   staffConfirmation?: Record<string, unknown>;
   manual?: Record<string, unknown>;
+  /** SCRUM-979 — the SALE's or inquiry's answer, as read off the box's acknowledgement. */
+  fromCommand?: Record<string, unknown>;
   [key: string]: unknown;
 }
 
@@ -460,28 +469,86 @@ export async function lockAttemptOfTerminalCommand(
 }
 
 /**
- * SCRUM-972 — THE MOMENT THE BOX SAYS A TERMINAL COMMAND FAILED, in the same
- * transaction as `completeCommand`'s state change. A SALE the box proves it
- * never sent ends the attempt now, so the till is freed on its next poll and
- * not only when somebody reads the attempt; one that may have reached the
- * terminal takes the missing-result road. A VOID it never sent ends
- * `not_sent`, and a refund's slice falls back to cash. Never a second SALE.
+ * What a settlement found at the box hands to the work done after its commit.
+ * `run` is the `ops_run` the result route would have written, and is set only
+ * when a terminal's answer was taken (SCRUM-979); a command proved never sent,
+ * or one handed to a person, writes none, as the read-time net never did.
  */
-export async function settleFailedTerminalCommand(
+export interface TerminalSettled {
+  attemptId: string;
+  operatorId: string;
+  branchId: string;
+  stationId: string | null;
+  saleId: string | null;
+  actionId: string | null;
+  run: { name: string; failed: boolean; detail: Record<string, unknown> } | null;
+  startedAt: Date;
+}
+
+function settledFrom(
+  current: AttemptRow,
+  command: CommandRow,
+  run: TerminalSettled['run'],
+): TerminalSettled {
+  return {
+    attemptId: current.id,
+    operatorId: current.operatorId,
+    branchId: current.branchId,
+    stationId: current.stationId,
+    saleId: current.saleId,
+    actionId: command.actionId ?? current.actionId,
+    run,
+    startedAt: command.claimedAt ?? command.createdAt,
+  };
+}
+
+/**
+ * SCRUM-972 / SCRUM-979 — A TERMINAL COMMAND THAT HAS ENDED, settled for its
+ * attempt: a command the box reports `failed`, one that `expired` in the queue,
+ * and one it acknowledged `succeeded` with the terminal's answer on it. Called
+ * in `completeCommand`'s transaction, and by the expiry sweeps right after
+ * theirs. The ATTEMPT's lock is taken before the COMMAND's, the order the
+ * read-time net takes them in, so the paths cannot deadlock one another.
+ *
+ * A SALE the box proves it never sent ends the attempt now; one that may have
+ * reached the terminal takes the missing-result road; one the terminal
+ * answered takes THAT answer. A VOID never sent ends `not_sent`, and a
+ * refund's slice falls back to cash. Never a second SALE or VOID.
+ */
+export async function settleEndedTerminalCommand(
   tx: Tx,
   ctx: OpContext,
   operatorId: string,
   commandId: string,
-): Promise<void> {
-  const [command] = await tx.select().from(boxCommand).where(eq(boxCommand.id, commandId)).limit(1);
-  if (!command || command.kind !== 'terminal_sale' || command.state !== 'failed') return;
+): Promise<TerminalSettled | null> {
+  const [seen] = await tx.select().from(boxCommand).where(eq(boxCommand.id, commandId)).limit(1);
+  if (!seen || seen.kind !== 'terminal_sale') return null;
+  await lockAttemptOfTerminalCommand(tx, operatorId, seen);
+  const [command] = await tx.select().from(boxCommand).where(eq(boxCommand.id, commandId)).for('update').limit(1);
+  if (!command || !['failed', 'expired', 'succeeded'].includes(command.state)) return null;
   const facts = commandFacts(command);
-  if (!facts.attemptId || !facts.deviceId || !/^[0-9a-f-]{36}$/i.test(facts.attemptId)) return;
+  if (!facts.attemptId || !facts.deviceId || !/^[0-9a-f-]{36}$/i.test(facts.attemptId)) return null;
   const [current] = await tx.select().from(paymentAttempt)
     .where(and(eq(paymentAttempt.id, facts.attemptId), eq(paymentAttempt.operatorId, operatorId)))
     .for('update').limit(1);
-  if (!current || current.deviceId !== facts.deviceId) return;
-  await settleStalledCommand(tx, ctx, current, command, Date.now());
+  if (!current || current.deviceId !== facts.deviceId) return null;
+  return settleCommandForAttempt(tx, ctx, current, command, Date.now());
+}
+
+/** One ended command against its locked attempt: its answer, or what its silence means. */
+async function settleCommandForAttempt(
+  tx: Tx,
+  ctx: OpContext,
+  current: AttemptRow,
+  command: CommandRow,
+  now: number,
+): Promise<TerminalSettled | null> {
+  if (command.state === 'succeeded') {
+    return commandFacts(command).answered ? takeCommandAnswer(tx, ctx, current, command) : null;
+  }
+  return (await settleStalledCommand(tx, ctx, current, command, now))
+    ? settledFrom(current, command, null)
+    : null;
 }
 
 /**
@@ -495,7 +562,7 @@ export async function settleFailedTerminalCommand(
  * to a person, as an inquiry with no conclusive answer does
  * (`recordTerminalResult`). Its VOID: proved never sent, the void ends
  * `not_sent` (a refund's slice falls back to cash); anything else stays
- * pending for a person. Never a second SALE or VOID.
+ * pending for a person. Never a second SALE or VOID. True when it wrote.
  */
 async function settleStalledCommand(
   tx: Tx,
@@ -503,51 +570,51 @@ async function settleStalledCommand(
   current: AttemptRow,
   command: CommandRow,
   now: number,
-): Promise<void> {
+): Promise<boolean> {
   const facts = commandFacts(command);
-  if (facts.answered) return;
+  if (facts.answered) return false;
   const inquiry = facts.mode === 'inquire';
   const voiding = facts.mode === 'void';
   if (inquiry) {
-    if (current.status !== 'inquiring') return;
+    if (current.status !== 'inquiring') return false;
     const asked = ((current.payload ?? {}) as AttemptPayload).inquiry?.actionId;
-    if (!asked || asked !== command.actionId) return;
+    if (!asked || asked !== command.actionId) return false;
   } else if (voiding) {
     // Only the void this attempt is waiting on, and only once.
     const reversal = ((current.payload ?? {}) as AttemptPayload).void;
-    if (!reversal || reversal.actionId !== command.actionId || reversal.result) return;
+    if (!reversal || reversal.actionId !== command.actionId || reversal.result) return false;
   } else if (facts.mode !== 'sale' || !['created', 'sent_to_terminal'].includes(current.status)) {
-    return;
+    return false;
   }
 
   let state = command.state;
   if (state === 'queued') {
     // Never handed to the box, and from here never will be: the claim needs
     // `expires_at > now()`, and this row is locked.
-    if (!command.expiresAt || command.expiresAt.getTime() > now) return;
+    if (!command.expiresAt || command.expiresAt.getTime() > now) return false;
     const [expired] = await tx.update(boxCommand)
       .set({ state: 'expired', finishedAt: new Date(now) })
       .where(and(eq(boxCommand.id, command.id), eq(boxCommand.state, 'queued')))
       .returning({ id: boxCommand.id });
-    if (!expired) return;
+    if (!expired) return false;
     state = 'expired';
   }
   if (state === 'running') {
     // A void that may be on the terminal stays pending for a person.
-    if (voiding) return;
+    if (voiding) return false;
     // A still-running exchange gets its full budget.
-    if (!command.claimedAt || now - command.claimedAt.getTime() < EXCHANGE_BUDGET_MS) return;
+    if (!command.claimedAt || now - command.claimedAt.getTime() < EXCHANGE_BUDGET_MS) return false;
     await tx.update(boxCommand).set({
       errorCode: 'TERMINAL_RESULT_MISSING',
       errorMessage: 'The terminal result did not arrive. Check the terminal before confirming the payment.',
     }).where(and(eq(boxCommand.id, command.id), eq(boxCommand.state, 'running')));
   } else if (state !== 'failed' && state !== 'expired') {
-    return;
+    return false;
   }
 
   if (inquiry) {
     await returnInquiryToPerson(tx, ctx, current, command, state);
-    return;
+    return true;
   }
   const notSent = state === 'expired'
     ? { code: COMMAND_EXPIRED, words: COMMAND_EXPIRED_WORDS }
@@ -556,14 +623,16 @@ async function settleStalledCommand(
       : null;
   if (voiding) {
     // A void that may have reached the terminal stays pending for a person.
-    if (notSent) await endVoidNotSent(tx, ctx, current, command, state, notSent.code);
-    return;
+    if (!notSent) return false;
+    await endVoidNotSent(tx, ctx, current, command, state, notSent.code);
+    return true;
   }
   if (notSent) {
     await endAttemptNotSent(tx, ctx, current, command, state, notSent);
-    return;
+    return true;
   }
   await markTerminalResultMissing(tx, ctx, current, command, state);
+  return true;
 }
 
 /** A SALE the box never sent: the attempt ends, the sale is free (SCRUM-972). */
@@ -724,45 +793,483 @@ async function endVoidNotSent(
   }
 }
 
+// --- When the terminal's answer reached the platform only on the command (SCRUM-979)
+
 /**
- * The read-time net: a stopped exchange, a failed command or one that expired
- * in the queue, found when the attempt is read. Never replays SALE or VOID.
+ * SCRUM-979 — WHAT THE BOX'S ACKNOWLEDGEMENT CARRIES, against its result post.
+ *
+ * The box posts the terminal's answer on `POST /payments/attempts/:id/result`
+ * (`terminalResultBody`, agent.ts:1973-1994) and then acknowledges the command
+ * (agent.ts:4155-4169). When the post is refused — a 404 for a terminal moved
+ * to another box since the tender, the rate ceiling, a 5xx — or skipped by a
+ * box in offline mode (agent.ts:1962), the box only logs it (:1968-1970) and
+ * the acknowledgement still arrives, `succeeded`, with this result:
+ *
+ *   { attemptId, mode, deviceId, stationId, role, protocol,
+ *     outcome, terminalRef, responseCode }
+ *
+ * The same for GHL and Digio: both adapters answer into one `TerminalResult`
+ * (ghl.ts:467-575, digio.ts:657-740) and the acknowledgement is built from it
+ * whatever the dialect. It does NOT carry what the post does beside that:
+ * requestedSatang, approvedSatang, tranRef, invoiceNo, approvalCode, last4,
+ * tid, mid, qrPayload, responseText, elapsedMs, at.
+ *
+ * Taken, through `recordTerminalResult` as the post would be:
+ *  - a SALE `approved`, when the command asked for this attempt's amount. Both
+ *    adapters turn an approval for any other amount into `partial_approval`
+ *    before the result is built (ghl.ts:542-549, digio.ts:694-713), so the
+ *    approved amount is the command's own. Missing: the slip — approval code,
+ *    last four, invoice number, transaction id. The receipt prints without
+ *    them, and a later refund's terminal void is keyed on the reference
+ *    (refunds.ts `queueRefundVoid`), which the terminal may refuse; the
+ *    refund then falls back to cash.
+ *  - on a SALE or an inquiry: declined, cancelled, not_found, no_response,
+ *    timeout, unsupported. None of them needs an amount or a handle.
+ *  - a VOID approved, declined, cancelled, not_found or unsupported.
+ * Handed to a person (`heldBecause`), because the acknowledgement is too little:
+ *  - a SALE `partial_approval`: neither the amount taken nor the transaction
+ *    to void it by;
+ *  - an inquiry `approved`: an inquiry's amount is not checked on the box
+ *    (contract.ts:72-79), and the platform's check needs `approvedSatang`;
+ *  - a VOID no_response, timeout or partial_approval: the void may have
+ *    reached the terminal, and stays pending for a person, as one that may
+ *    have been sent does (SCRUM-972).
+ */
+const COMMAND_SOURCE = 'box_command';
+
+/** What the post carries and the acknowledgement does not. */
+const MISSING_FROM_ACK = [
+  'approvedSatang', 'tranRef', 'invoiceNo', 'approvalCode', 'last4', 'tid', 'mid', 'responseText',
+] as const;
+
+interface CommandAnswer {
+  outcome: TerminalOutcomeKind;
+  terminalRef: string | null;
+  responseCode: string | null;
+  protocol: string | null;
+  deviceId: string | null;
+}
+
+/** The terminal's answer on a `succeeded` acknowledgement, at the result route's own limits. */
+function commandAnswerOf(row: Pick<CommandRow, 'state' | 'result'>): CommandAnswer | null {
+  if (row.state !== 'succeeded') return null;
+  const result = (row.result ?? null) as Record<string, unknown> | null;
+  const outcome = result?.outcome;
+  if (typeof outcome !== 'string' || !(TERMINAL_OUTCOME_KINDS as readonly string[]).includes(outcome)) return null;
+  const text = (value: unknown, max: number): string | null =>
+    typeof value === 'string' && value.length > 0 && value.length <= max ? value : null;
+  return {
+    outcome: outcome as TerminalOutcomeKind,
+    terminalRef: text(result?.terminalRef, 32),
+    responseCode: text(result?.responseCode, 8),
+    protocol: text(result?.protocol, 32),
+    deviceId: text(result?.deviceId, 36),
+  };
+}
+
+const HELD_WORDS = {
+  unreadable: 'The box acknowledged the terminal command with an answer the platform cannot read. Check the terminal before confirming the payment.',
+  partial: 'The terminal approved a different amount, and only the box’s acknowledgement reached the platform: it names neither the amount taken nor the transaction to void. Check the terminal before confirming the payment.',
+  amount: 'The terminal command asked for a different amount from this payment. Check the terminal before confirming the payment.',
+  inquiry: 'The terminal says the payment went through, but only the box’s acknowledgement reached the platform and it carries no amount to check. Check the terminal before confirming the payment.',
+  void: 'The terminal gave no final answer to the void, so it may have gone through. A person has to check the terminal.',
+} as const;
+
+/** Why this acknowledgement is too little to settle on, or null when it is enough. */
+function heldBecause(
+  mode: TerminalPhase,
+  answer: CommandAnswer | null,
+  command: CommandRow,
+  current: AttemptRow,
+): keyof typeof HELD_WORDS | null {
+  if (!answer) return 'unreadable';
+  if (mode === 'sale') {
+    if (answer.outcome === 'partial_approval') return 'partial';
+    const asked = (command.payload as { amountSatang?: unknown } | null)?.amountSatang;
+    if (answer.outcome === 'approved' && asked !== current.amountSatang) return 'amount';
+    return null;
+  }
+  if (mode === 'inquire') {
+    return answer.outcome === 'approved' || answer.outcome === 'partial_approval' ? 'inquiry' : null;
+  }
+  return ['no_response', 'timeout', 'partial_approval'].includes(answer.outcome) ? 'void' : null;
+}
+
+/** The answer this attempt is waiting on from this command, not yet taken; null otherwise. */
+function waitingModeFor(current: AttemptRow, command: CommandRow): TerminalPhase | null {
+  const payload = (current.payload ?? {}) as AttemptPayload;
+  const mode = commandFacts(command).mode;
+  if (mode === 'sale') return ['created', 'sent_to_terminal'].includes(current.status) ? 'sale' : null;
+  if (mode === 'inquire') {
+    return current.status === 'inquiring' && command.actionId && payload.inquiry?.actionId === command.actionId
+      ? 'inquire' : null;
+  }
+  if (mode === 'void') {
+    const reversal = payload.void;
+    if (!reversal || !command.actionId || reversal.actionId !== command.actionId || reversal.result) return null;
+    // A void already handed to a person from this acknowledgement is not read twice.
+    return (reversal.commandAnswer as { commandId?: unknown } | undefined)?.commandId === command.id ? null : 'void';
+  }
+  return null;
+}
+
+/**
+ * SCRUM-979 — TAKE THE TERMINAL'S ANSWER OFF THE BOX'S ACKNOWLEDGEMENT, when
+ * its result post never landed. The attempt's lock is held. Only the answer the
+ * attempt is still waiting on, and only once: a result post that arrives after
+ * this changes nothing (`answerTakenFromCommand`), and one that arrived before
+ * it has already moved the attempt on, so this finds nothing to do. Never a
+ * second SALE or VOID: this writes what the terminal said and queues only what
+ * the result route would — an inquiry after a silence.
+ */
+async function takeCommandAnswer(
+  tx: Tx,
+  ctx: OpContext,
+  current: AttemptRow,
+  command: CommandRow,
+): Promise<TerminalSettled | null> {
+  const mode = waitingModeFor(current, command);
+  if (!mode) return null;
+  const payload = (current.payload ?? {}) as AttemptPayload;
+  const answer = commandAnswerOf(command);
+  const at = (command.finishedAt ?? new Date()).toISOString();
+  const taken = {
+    mode,
+    commandId: command.id,
+    actionId: command.actionId,
+    outcome: answer?.outcome ?? null,
+    terminalRef: answer?.terminalRef ?? null,
+    responseCode: answer?.responseCode ?? null,
+    at,
+  };
+  const auditAfter = {
+    mode,
+    commandId: command.id,
+    commandState: command.state,
+    outcome: taken.outcome,
+    responseCode: taken.responseCode,
+    missing: [...MISSING_FROM_ACK],
+    saleId: current.saleId,
+    amountSatang: current.amountSatang,
+  };
+
+  const held = heldBecause(mode, answer, command, current);
+  if (held) {
+    const fromCommand = { ...taken, held, reason: HELD_WORDS[held] };
+    const stamped = mode === 'void'
+      ? await stampAttempt(tx, current.id, {
+          payload: { ...payload, void: { ...(payload.void ?? {}), commandAnswer: fromCommand } },
+        })
+      : await stampAttempt(tx, current.id, {
+          status: 'awaiting_staff_confirmation',
+          ...(answer?.terminalRef && !current.terminalRef ? { terminalRef: answer.terminalRef } : {}),
+          payload: { ...payload, fromCommand },
+        });
+    await audit.record(tx, {
+      actorAccountId: ctx.actorAccountId ?? null, operatorId: current.operatorId, branchId: current.branchId,
+      action: 'payment.attempt.result_from_command', entityType: 'payment_attempt', entityId: current.id,
+      actionId: command.actionId ?? current.actionId, requestId: ctx.requestId,
+      before: { status: current.status },
+      after: { ...auditAfter, status: stamped.status, held },
+    });
+    return settledFrom(current, command, null);
+  }
+  // `heldBecause` answers 'unreadable' for no answer; this narrows it for the compiler.
+  if (!answer) return null;
+
+  // The same code the result route runs, with what the acknowledgement holds.
+  const [deviceRow] = current.deviceId
+    ? await tx.select().from(device)
+      .where(and(eq(device.id, current.deviceId), eq(device.operatorId, current.operatorId))).limit(1)
+    : [];
+  const asked = (command.payload as { amountSatang?: unknown } | null)?.amountSatang;
+  const recorded = await recordTerminalResult(
+    tx,
+    ctx,
+    { attempt: current, device: deviceRow ?? null },
+    {
+      deviceId: answer.deviceId ?? commandFacts(command).deviceId,
+      protocol: answer.protocol,
+      outcome: answer.outcome,
+      requestedSatang: typeof asked === 'number' ? asked : current.amountSatang,
+      approvedSatang: null,
+      terminalRef: answer.terminalRef,
+      responseCode: answer.responseCode,
+      at,
+      source: { commandId: command.id },
+    },
+    command.actionId,
+  );
+  if (recorded.replayed) return null;
+  await audit.record(tx, {
+    actorAccountId: ctx.actorAccountId ?? null, operatorId: current.operatorId, branchId: current.branchId,
+    action: 'payment.attempt.result_from_command', entityType: 'payment_attempt', entityId: current.id,
+    actionId: command.actionId ?? current.actionId, requestId: ctx.requestId,
+    before: { status: current.status },
+    after: { ...auditAfter, status: recorded.attempt.status, phase: recorded.phase },
+  });
+  return settledFrom(current, command, recorded.run);
+}
+
+/**
+ * An answer the box's acknowledgement already gave, so the result post that
+ * arrives after it is a replay. A SALE's handed to a person is not: the post
+ * carries what the acknowledgement lacked, and is the terminal's answer.
+ */
+function answerTakenFromCommand(payload: AttemptPayload, phase: TerminalPhase): boolean {
+  if (phase === 'sale') return Boolean(payload.fromCommand && !payload.fromCommand.held);
+  if (phase === 'void') return (payload.void?.result as { source?: unknown } | undefined)?.source === COMMAND_SOURCE;
+  return false;
+}
+
+// --- Finding the command an attempt waits on ---------------------------------
+
+/** Which command an attempt is waiting on, read off the attempt alone. */
+function waitingOnOf(row: AttemptRow): { mode: TerminalPhase; actionId: string | null } | null {
+  if (!row.deviceId) return null;
+  const facts = (row.payload ?? {}) as AttemptPayload;
+  if (['created', 'sent_to_terminal'].includes(row.status)) return { mode: 'sale', actionId: null };
+  if (row.status === 'inquiring' && typeof facts.inquiry?.actionId === 'string') {
+    return { mode: 'inquire', actionId: facts.inquiry.actionId };
+  }
+  // A void (a refund's, or a partial approval's rescue) still waiting on its answer.
+  if (facts.void && !facts.void.result && typeof facts.void.actionId === 'string') {
+    return { mode: 'void', actionId: facts.void.actionId };
+  }
+  return null;
+}
+
+/** The SALE command is written in the attempt's own transaction; this only bounds the scan. */
+const SALE_COMMAND_WINDOW_MS = 5 * 60_000;
+
+/**
+ * SCRUM-979 — THE COMMAND, FOUND BY THE ATTEMPT ITSELF, on whichever of the
+ * operator's boxes it was queued: a terminal moved to another box since, or
+ * unassigned, no longer points at it. No lock: the caller locks only when
+ * there is something to settle.
+ *
+ * Served by `box_command_history_idx` (box_id, created_at), one short range
+ * per box of the operator (`box_operator_idx`): the command is never older
+ * than its attempt, and a SALE is written in the attempt's own transaction, so
+ * its range is closed five minutes on. An inquiry or a void is found by its
+ * action id (`box_command_action_idx`).
+ */
+async function findTerminalCommand(
+  tx: Tx,
+  operatorId: string,
+  seen: AttemptRow,
+  waiting: { mode: TerminalPhase; actionId: string | null },
+): Promise<CommandRow | null> {
+  const [row] = await tx.select().from(boxCommand).where(and(
+    eq(boxCommand.kind, 'terminal_sale'),
+    inArray(boxCommand.boxId, tx.select({ id: box.id }).from(box).where(eq(box.operatorId, operatorId))),
+    gte(boxCommand.createdAt, seen.createdAt),
+    ...(waiting.mode === 'sale'
+      ? [lte(boxCommand.createdAt, new Date(seen.createdAt.getTime() + SALE_COMMAND_WINDOW_MS))]
+      : [eq(boxCommand.actionId, waiting.actionId ?? '')]),
+    inArray(boxCommand.state, ['queued', 'running', 'failed', 'expired', 'succeeded']),
+    sql`${boxCommand.payload}->>'attemptId' = ${seen.id}`,
+    sql`${boxCommand.payload}->>'deviceId' = ${seen.deviceId}`,
+    sql`${boxCommand.payload}->>'mode' = ${waiting.mode}`,
+  )).orderBy(asc(boxCommand.createdAt), asc(boxCommand.id)).limit(1);
+  return row ?? null;
+}
+
+/**
+ * Is there anything for the net to settle on this command? Read without a
+ * lock (SCRUM-979): a queued command inside its time, or an exchange inside its
+ * budget, is the box's business, and locking it on every till poll would make
+ * the box's `skip locked` claim pass it over for a poll.
+ */
+function commandNeedsSettling(command: CommandRow, current: AttemptRow, now: number): boolean {
+  switch (command.state) {
+    case 'queued':
+      return Boolean(command.expiresAt && command.expiresAt.getTime() <= now);
+    case 'running':
+      return commandFacts(command).mode !== 'void'
+        && Boolean(command.claimedAt && now - command.claimedAt.getTime() >= EXCHANGE_BUDGET_MS);
+    case 'failed':
+    case 'expired':
+      return true;
+    case 'succeeded':
+      return commandFacts(command).answered && waitingModeFor(current, command) !== null;
+    default:
+      return false;
+  }
+}
+
+/**
+ * The read-time net: a stopped exchange, a failed command, one that expired
+ * in the queue, or one the box acknowledged with the terminal's answer on it
+ * (SCRUM-979), found when the attempt is read. Never replays SALE or VOID.
+ *
+ * Read first and lock only when there is something to settle: the attempt's
+ * lock, then the command's — the order every other path takes them in — and
+ * then everything is looked at again under them.
  */
 export async function recoverMissingTerminalResult(
   tx: Tx,
   ctx: OpContext,
   operatorId: string,
   id: string,
-): Promise<void> {
+): Promise<TerminalSettled | null> {
+  const [seen] = await tx.select().from(paymentAttempt)
+    .where(and(eq(paymentAttempt.id, id), eq(paymentAttempt.operatorId, operatorId))).limit(1);
+  const waiting = seen ? waitingOnOf(seen) : null;
+  if (!seen || !waiting) return null;
+  const found = await findTerminalCommand(tx, operatorId, seen, waiting);
+  if (!found || !commandNeedsSettling(found, seen, Date.now())) return null;
+
   const [current] = await tx.select().from(paymentAttempt)
     .where(and(eq(paymentAttempt.id, id), eq(paymentAttempt.operatorId, operatorId)))
     .for('update').limit(1);
-  if (!current?.deviceId) return;
-  const facts = (current.payload ?? {}) as AttemptPayload;
-  const waitingOnSale = ['created', 'sent_to_terminal'].includes(current.status);
-  const inquiryActionId = current.status === 'inquiring' ? facts.inquiry?.actionId : null;
-  // A void (a refund's, or a partial approval's rescue) still waiting on its answer.
-  const voidActionId = facts.void && !facts.void.result ? facts.void.actionId : null;
-  const waitingOn = waitingOnSale
-    ? sql`${boxCommand.payload}->>'mode' = 'sale'`
-    : typeof inquiryActionId === 'string'
-      ? and(sql`${boxCommand.payload}->>'mode' = 'inquire'`, eq(boxCommand.actionId, inquiryActionId))
-      : typeof voidActionId === 'string'
-        ? and(sql`${boxCommand.payload}->>'mode' = 'void'`, eq(boxCommand.actionId, voidActionId))
-        : null;
-  if (!waitingOn) return;
-  const [terminal] = await tx.select().from(device)
-    .where(and(eq(device.id, current.deviceId), eq(device.operatorId, operatorId))).limit(1);
-  if (!terminal?.boxId) return;
-  const [command] = await tx.select().from(boxCommand).where(and(
-    eq(boxCommand.boxId, terminal.boxId), eq(boxCommand.kind, 'terminal_sale'),
-    inArray(boxCommand.state, ['queued', 'running', 'failed', 'expired']),
-    sql`${boxCommand.payload}->>'attemptId' = ${id}`,
-    sql`${boxCommand.payload}->>'deviceId' = ${current.deviceId}`,
-    waitingOn,
-  )).for('update').limit(1);
-  if (!command) return;
-  await settleStalledCommand(tx, ctx, current, command, Date.now());
+  const still = current ? waitingOnOf(current) : null;
+  if (!current || !still || still.mode !== waiting.mode || still.actionId !== waiting.actionId) return null;
+  const [command] = await tx.select().from(boxCommand).where(eq(boxCommand.id, found.id)).for('update').limit(1);
+  if (!command) return null;
+  return settleCommandForAttempt(tx, ctx, current, command, Date.now());
+}
+
+/**
+ * The work after a settlement's commit, as the result route does it: the
+ * `ops_run` of the terminal's answer, and the write-backs of a pass or a party
+ * this money closed. Never throws — the money is committed.
+ */
+export async function afterTerminalSettled(
+  db: Db,
+  log: FastifyBaseLogger | undefined,
+  settled: TerminalSettled | null,
+): Promise<void> {
+  if (!settled?.run) return;
+  try {
+    await recordTerminalRun(db, {
+      run: settled.run,
+      operatorId: settled.operatorId,
+      branchId: settled.branchId,
+      stationId: settled.stationId,
+      actionId: settled.actionId,
+      startedAt: settled.startedAt,
+    });
+    if (settled.saleId) {
+      // Imported here: both modules sit on the sale's import graph, as this one does.
+      const { writeBackSalePass } = await import('../booking-event-passes');
+      await writeBackSalePass(db, log, settled.saleId);
+      const { writeBackPartySettlement } = await import('../party-settlement');
+      await writeBackPartySettlement(db, log, settled.saleId);
+    }
+  } catch (err) {
+    log?.error({ err, attemptId: settled.attemptId }, 'a card payment settled at the box could not finish its follow-up');
+  }
+}
+
+/** The read-time net in a transaction of its own, then its follow-up. True when it wrote. */
+export async function recoverTerminalAttempt(
+  db: Db,
+  ctx: OpContext,
+  operatorId: string,
+  id: string,
+): Promise<boolean> {
+  const settled = await db.transaction((tx) => recoverMissingTerminalResult(tx, ctx, operatorId, id));
+  await afterTerminalSettled(db, ctx.log, settled);
+  return settled !== null;
+}
+
+/**
+ * SCRUM-979 — A SALE'S READ FREES ITS HELD CARD PAYMENTS. History's detail
+ * reads `GET /sales/:id`, and an attempt held only because nobody had read it
+ * kept "Void unpaid sale" hidden there. Only this one sale's attempts that are
+ * waiting on the terminal; each in a transaction of its own, and one that fails
+ * is logged and never stops the read. The number that changed.
+ */
+export async function recoverSaleTerminalAttempts(
+  db: Db,
+  ctx: OpContext,
+  operatorId: string,
+  saleId: string,
+): Promise<number> {
+  const rows = await db.select().from(paymentAttempt).where(and(
+    eq(paymentAttempt.saleId, saleId), eq(paymentAttempt.operatorId, operatorId), isNotNull(paymentAttempt.deviceId),
+  ));
+  let changed = 0;
+  for (const row of rows) {
+    if (!waitingOnOf(row)) continue;
+    try {
+      if (await recoverTerminalAttempt(db, ctx, operatorId, row.id)) changed += 1;
+    } catch (err) {
+      ctx.log?.error({ err, attemptId: row.id, saleId }, 'a held card payment could not be settled on the sale read');
+    }
+  }
+  return changed;
+}
+
+/** How many held terminal tenders one sweep looks at. */
+export const HELD_TENDERS_PER_SWEEP = 25;
+
+/**
+ * SCRUM-979 — THE SWEEP FREES HELD CARD PAYMENTS NOBODY READS. The attempts
+ * `job:payments.pending` would list as waiting on a terminal (sent or being
+ * asked, older than the cut-off, at a counter), newest first and at most
+ * `HELD_TENDERS_PER_SWEEP` a run; each through the read-time net in a
+ * transaction of its own, and a failure of one never stops the others.
+ * `unknown` is not looked at: nothing at the box can move it, only a person.
+ */
+export async function recoverHeldTerminalTenders(
+  db: Db,
+  ctx: OpContext,
+  cutoff: Date,
+): Promise<{ tried: number; recovered: number; failed: number }> {
+  const rows = await db
+    .select({ id: paymentAttempt.id, operatorId: paymentAttempt.operatorId })
+    .from(paymentAttempt)
+    .where(and(
+      inArray(paymentAttempt.status, ['sent_to_terminal', 'inquiring']),
+      sql`${paymentAttempt.createdAt} < ${cutoff}`,
+      isNotNull(paymentAttempt.stationId),
+      isNotNull(paymentAttempt.deviceId),
+    ))
+    .orderBy(desc(paymentAttempt.createdAt))
+    .limit(HELD_TENDERS_PER_SWEEP);
+  let recovered = 0;
+  let failed = 0;
+  for (const row of rows) {
+    try {
+      if (await recoverTerminalAttempt(db, ctx, row.operatorId, row.id)) recovered += 1;
+    } catch (err) {
+      failed += 1;
+      ctx.log?.error({ err, attemptId: row.id }, 'the payments sweep could not settle a held card payment');
+    }
+  }
+  return { tried: rows.length, recovered, failed };
+}
+
+/**
+ * SCRUM-979 — A TERMINAL COMMAND THAT EXPIRED IN THE BOX'S QUEUE, settled
+ * right after the transaction that expired it: the claim-time expiry in
+ * `pollCommands` and the hourly `expireStaleCommands` hold the commands' row
+ * locks in their own statement, and the attempt's lock has to come first. A
+ * refund's void that never left the queue falls back to cash; a SALE frees its
+ * sale. Each command in a transaction of its own; never throws.
+ */
+export async function settleExpiredTerminalCommands(
+  db: Db,
+  ctx: OpContext,
+  commandIds: readonly string[],
+): Promise<number> {
+  let settled = 0;
+  for (const commandId of commandIds) {
+    try {
+      const done = await db.transaction(async (tx) => {
+        const [row] = await tx.select({ operatorId: box.operatorId }).from(boxCommand)
+          .innerJoin(box, eq(box.id, boxCommand.boxId)).where(eq(boxCommand.id, commandId)).limit(1);
+        return row ? settleEndedTerminalCommand(tx, ctx, row.operatorId, commandId) : null;
+      });
+      await afterTerminalSettled(db, ctx.log, done);
+      if (done) settled += 1;
+    } catch (err) {
+      ctx.log?.error({ err, commandId }, 'an expired terminal command could not settle its payment');
+    }
+  }
+  return settled;
 }
 
 // --- Writing what only this file can write -----------------------------------
@@ -1340,6 +1847,8 @@ function exchangeFacts(
     responseText: report.responseText ?? null,
     elapsedMs: report.elapsedMs ?? null,
     at: report.at ?? new Date().toISOString(),
+    // SCRUM-979 — read off the box's acknowledgement, not posted.
+    ...(report.source ? { source: COMMAND_SOURCE, commandId: report.source.commandId } : {}),
   };
 }
 
@@ -1449,6 +1958,16 @@ export async function recordTerminalResult(
     },
   };
 
+  /**
+   * SCRUM-979 — AN ANSWER ALREADY TAKEN FROM THE BOX'S ACKNOWLEDGEMENT. The
+   * box posts before it acknowledges, so this is a post that was lost, slow or
+   * retried: the terminal said one thing, once, and it is already recorded.
+   * Nothing is written, and no second inquiry is queued.
+   */
+  if (!report.source && answerTakenFromCommand(payload, phase)) {
+    return { attempt: attemptView(current), replayed: true, phase, run };
+  }
+
   // --- A void's answer never moves the attempt ------------------------------
   if (phase === 'void') {
     const stamped = await stampAttempt(tx, current.id, {
@@ -1507,6 +2026,10 @@ export async function recordTerminalResult(
     ...payload,
     terminal: projectedTerminalPayload(report),
     exchange: facts,
+    // SCRUM-979 — the SALE's answer came off the acknowledgement: a late post is a replay.
+    ...(report.source && phase === 'sale'
+      ? { fromCommand: { mode: 'sale', commandId: report.source.commandId, outcome: report.outcome, at: facts.at } }
+      : {}),
   };
 
   const approvedSatang = report.approvedSatang ?? null;
@@ -1611,8 +2134,11 @@ export async function recordTerminalResult(
    * inquiry rule runs — if the dialect has one for this tender.
    */
   const inquiryActionId = newId();
+  // SCRUM-979 — and a box to ask it through: an `inquiring` with no inquiry
+  // queued would wait for ever. Only an acknowledgement can arrive for a
+  // terminal taken off its box; a post comes from the terminal's own box.
   const canAsk =
-    canInquire(protocol, tender) && Boolean(report.terminalRef ?? current.terminalRef);
+    canInquire(protocol, tender) && Boolean(report.terminalRef ?? current.terminalRef) && Boolean(deviceRow?.boxId);
   const nextPayload: AttemptPayload = {
     ...settledPayload,
     ...(canAsk

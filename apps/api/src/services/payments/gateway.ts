@@ -2423,6 +2423,12 @@ export interface PendingSummary extends Record<string, unknown> {
   cleared: number;
   /** S2-12, OD-A11 — unpaid bookings whose hold ran out on this sweep. */
   bookingsExpired: number;
+  /** SCRUM-979 — held card payments this sweep looked at, settled, and could not settle. */
+  heldTried: number;
+  heldSettled: number;
+  heldFailed: number;
+  /** SCRUM-979 — card payments waiting for a person, on their own Health line. */
+  awaitingStaff: number;
 }
 
 /**
@@ -2465,11 +2471,22 @@ export async function flagPendingPayments(
    */
   const bookingsExpired = await expireOverdueBookings(db, log, now);
   const cutoff = new Date(now.getTime() - env.PAYMENT_PENDING_MIN * 60_000);
+  /**
+   * SCRUM-979 — BEFORE COUNTING, FREE WHAT THE BOX ALREADY ANSWERED. A card
+   * payment held only because nobody has read it since its command failed,
+   * expired, or was acknowledged with the terminal's answer on it is settled
+   * here, through the same net a till's read runs, so it is freed within a
+   * minute even when nobody opens it, and is no longer counted below.
+   * Imported here: `terminal.ts` sits on this file's own import graph.
+   */
+  const { recoverHeldTerminalTenders } = await import('./terminal');
+  const held = await recoverHeldTerminalTenders(db, { actorAccountId: null, ...(log ? { log } : {}) }, cutoff);
   const rows = await db
     .select({
       id: paymentAttempt.id,
       operatorId: paymentAttempt.operatorId,
       branchId: paymentAttempt.branchId,
+      deviceId: paymentAttempt.deviceId,
       method: paymentAttempt.method,
       status: paymentAttempt.status,
       createdAt: paymentAttempt.createdAt,
@@ -2477,31 +2494,49 @@ export async function flagPendingPayments(
     .from(paymentAttempt)
     .where(
       and(
-        inArray(paymentAttempt.status, ['sent_to_terminal', 'unknown', 'inquiring']),
+        inArray(paymentAttempt.status, ['sent_to_terminal', 'unknown', 'inquiring', 'awaiting_staff_confirmation']),
         sql`${paymentAttempt.createdAt} < ${cutoff}`,
         isNotNull(paymentAttempt.stationId),
       ),
     )
     .limit(500);
 
-  const byBranch = new Map<string, { operatorId: string; ids: string[]; oldest: Date }>();
-  for (const row of rows) {
-    const bucket = byBranch.get(row.branchId) ?? {
-      operatorId: row.operatorId,
-      ids: [],
-      oldest: row.createdAt,
-    };
+  type Bucket = { operatorId: string; ids: string[]; oldest: Date };
+  const bucketInto = (map: Map<string, Bucket>, row: (typeof rows)[number]) => {
+    const bucket = map.get(row.branchId) ?? { operatorId: row.operatorId, ids: [], oldest: row.createdAt };
     bucket.ids.push(row.id);
     if (row.createdAt < bucket.oldest) bucket.oldest = row.createdAt;
-    byBranch.set(row.branchId, bucket);
+    map.set(row.branchId, bucket);
+  };
+  const byBranch = new Map<string, Bucket>();
+  /**
+   * SCRUM-979 — a card on a terminal waiting for a person to read it is not a
+   * tender with no outcome: its own line. Terminal attempts only: a gateway
+   * payment waiting for a person raises its own alert where it is flagged.
+   */
+  const waitingStaff = new Map<string, Bucket>();
+  let pending = 0;
+  let awaitingStaff = 0;
+  for (const row of rows) {
+    if (row.status !== 'awaiting_staff_confirmation') {
+      pending += 1;
+      bucketInto(byBranch, row);
+    } else if (row.deviceId) {
+      awaitingStaff += 1;
+      bucketInto(waitingStaff, row);
+    }
   }
 
   const summary: PendingSummary = {
-    pending: rows.length,
+    pending,
     branches: byBranch.size,
     opened: 0,
     cleared: 0,
     bookingsExpired,
+    heldTried: held.tried,
+    heldSettled: held.recovered,
+    heldFailed: held.failed,
+    awaitingStaff,
   };
 
   for (const [branchId, bucket] of byBranch) {
@@ -2523,6 +2558,26 @@ export async function flagPendingPayments(
     );
     if (raised.outcome === 'opened') summary.opened += 1;
   }
+  for (const [branchId, bucket] of waitingStaff) {
+    const n = bucket.ids.length;
+    const raised = await raiseAlert(
+      db,
+      {
+        key: `payments.awaiting_staff:${branchId}`,
+        category: 'payments.awaiting_staff',
+        severity: 'warning',
+        subject: 'Card payments waiting for staff',
+        summary:
+          `${n} card payment${n === 1 ? '' : 's'} at this branch ${n === 1 ? 'has' : 'have'} been waiting ` +
+          `more than ${env.PAYMENT_PENDING_MIN} minutes for a member of staff to check the terminal and confirm ${n === 1 ? 'it' : 'them'}.`,
+        detail: { attemptIds: bucket.ids.slice(0, 20), oldestAt: bucket.oldest.toISOString() },
+        operatorId: bucket.operatorId,
+        branchId,
+      },
+      { flapWindowSeconds: env.ALERT_FLAP_WINDOW_S },
+    );
+    if (raised.outcome === 'opened') summary.opened += 1;
+  }
 
   /**
    * And the other direction: a branch whose tenders have all been answered
@@ -2535,6 +2590,8 @@ export async function flagPendingPayments(
     .from(paymentAttempt)
     .groupBy(paymentAttempt.branchId);
   for (const { branchId } of open) {
+    if (!waitingStaff.has(branchId)
+      && await resolveAlert(db, `payments.awaiting_staff:${branchId}`, 'answered')) summary.cleared += 1;
     if (stillPending.has(branchId)) continue;
     if (await resolveAlert(db, `payments.pending:${branchId}`, 'answered')) summary.cleared += 1;
   }
