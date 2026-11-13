@@ -83,10 +83,11 @@ test('375 px payment fits; Pay → Back → Cancel voids the sale and reload lea
     await page.screenshot({ path: await picture(testInfo, 'phone-payment-375.png'), mask: [page.locator('input[type="password"]')] });
     await panel.getByRole('button', { name: 'Confirm Payment Received', exact: true }).scrollIntoViewIfNeeded();
     await page.screenshot({ path: await picture(testInfo, 'phone-payment-actions-375.png'), mask: [page.locator('input[type="password"]')] });
-    await panel.getByRole('button', { name: 'Back', exact: true }).click();
+    // Back must void the rung-up charge before the cart can be edited.
     const voided = page.waitForResponse(r => new URL(r.url()).pathname === `/api/sales/${saleId}/void`);
-    await page.getByRole('button', { name: 'Cancel', exact: true }).first().click();
+    await panel.getByRole('button', { name: 'Back', exact: true }).click();
     expect((await voided).status()).toBe(200);
+    await page.getByRole('button', { name: 'Cancel', exact: true }).first().click();
     const read = await page.request.get(`/api/sales/${saleId}`);
     expect(read.status()).toBe(200);
     expect((await read.json()).sale.status).toBe('voided');
@@ -104,17 +105,25 @@ test('375 px payment fits; Pay → Back → Cancel voids the sale and reload lea
   }
 });
 
-test('a refused phone cancellation keeps the order and offers the refusal', async ({ page }) => {
+test('a refused phone Back keeps the payment and offers the refusal', async ({ page }) => {
   try {
     await signIn(page);
     const saleId = await ringUp(page);
-    await page.getByTestId('payment-step').getByRole('button', { name: 'Back', exact: true }).click();
     await page.route(`**/api/sales/${saleId}/void`, route => route.fulfill({ status: 409, contentType: 'application/json',
       body: JSON.stringify({ error: { code: 'SALE_HAS_PAYMENTS', message: 'Money has been taken for this sale' } }) }));
-    await page.getByRole('button', { name: 'Cancel', exact: true }).first().click();
-    await expect(page.getByTestId('cancel-refusal')).toContainText('Money has been taken for this sale');
-    await expect(page.getByRole('button', { name: /^Pay ฿/ })).toBeVisible();
+    const panel = page.getByTestId('payment-step');
+    const refused = page.waitForResponse(r => new URL(r.url()).pathname === `/api/sales/${saleId}/void`);
+    await panel.getByRole('button', { name: 'Back', exact: true }).click();
+    expect((await refused).status()).toBe(409);
+    await expect(page.getByText('Money has been taken for this sale', { exact: true })).toBeVisible();
+    await expect(panel).toBeVisible();
+    await expect(panel.getByRole('heading', { name: 'Amount Due', exact: true })).toBeVisible();
+    const retained = await page.request.get(`/api/sales/${saleId}`);
+    expect((await retained.json()).sale.status).toBe('tendering');
     await page.unroute(`**/api/sales/${saleId}/void`);
+    const voided = page.waitForResponse(r => new URL(r.url()).pathname === `/api/sales/${saleId}/void`);
+    await panel.getByRole('button', { name: 'Back', exact: true }).click();
+    expect((await voided).status()).toBe(200);
     await page.getByRole('button', { name: 'Cancel', exact: true }).first().click();
     await expect(page.getByRole('heading', { name: 'Tourist', exact: true })).toBeVisible();
   } finally {

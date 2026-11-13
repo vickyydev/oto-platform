@@ -1,0 +1,100 @@
+{
+  "productSource": "157d6cb24d1764dea4d5356615942882f2970e7c",
+  "testRepair": "read-only dish selector with non-editability checks",
+  "execution": "serial, one worker, browser files individually and other files in chunks behind headroom gate",
+  "filesPassed": 273,
+  "testsPassed": 3898,
+  "chunks": [
+    {
+      "log": "982-full-pos-browser-0.log",
+      "filesPassed": 1,
+      "testsPassed": 11
+    },
+    {
+      "log": "982-full-pos-browser-1.log",
+      "filesPassed": 1,
+      "testsPassed": 3
+    },
+    {
+      "log": "982-full-pos-browser-2.log",
+      "filesPassed": 1,
+      "testsPassed": 59
+    },
+    {
+      "log": "982-full-pos-browser-3.log",
+      "filesPassed": 1,
+      "testsPassed": 13
+    },
+    {
+      "log": "982-full-pos-browser-4.log",
+      "filesPassed": 1,
+      "testsPassed": 27
+    },
+    {
+      "log": "982-full-pos-browser-5.log",
+      "filesPassed": 1,
+      "testsPassed": 75
+    },
+    {
+      "log": "982-full-pos-browser-6.log",
+      "filesPassed": 1,
+      "testsPassed": 20
+    },
+    {
+      "log": "982-full-pos-unit-0.log",
+      "filesPassed": 38,
+      "testsPassed": 557
+    },
+    {
+      "log": "982-full-pos-unit-114.log",
+      "filesPassed": 38,
+      "testsPassed": 482
+    },
+    {
+      "log": "982-full-pos-unit-152.log",
+      "filesPassed": 38,
+      "testsPassed": 697
+    },
+    {
+      "log": "982-full-pos-unit-190.log",
+      "filesPassed": 38,
+      "testsPassed": 479
+    },
+    {
+      "log": "982-full-pos-unit-228.log",
+      "filesPassed": 38,
+      "testsPassed": 562
+    },
+    {
+      "log": "982-full-pos-unit-38.log",
+      "filesPassed": 38,
+      "testsPassed": 473
+    },
+    {
+      "log": "982-full-pos-unit-76.log",
+      "filesPassed": 38,
+      "testsPassed": 440
+    }
+  ],
+  "posTypecheckExit": 0,
+  "lintExit": 0,
+  "apiTypecheck": "zero-output check on unchanged product source remains applicable",
+  "status": "full POS gate and complete phone-payment browser file passed after test-only repairs",
+  "phonePaymentBrowser": {
+    "redExactProductSource": {
+      "passed": 1,
+      "failed": 1
+    },
+    "fixedCompleteFile": {
+      "passed": 2,
+      "failed": 0,
+      "seconds": 29.7
+    },
+    "productionBuild": true,
+    "disposableDatabaseRemoved": true
+  },
+  "lintFiles": [
+    "apps/pos/test/s907-party-kitchen-edit.test.ts",
+    "apps/pos/e2e/phone-payment.spec.ts"
+  ]
+}

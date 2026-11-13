@@ -411,7 +411,13 @@ describe('the Edit form', () => {
     const values = [...walk(drawn)].map((el) => el.props.value).filter((v): v is string => typeof v === 'string');
     // SCRUM-967 — the name box holds the dish; its mark is whole on a line of its own under it
     // (it was at the end of the one-line box, where a long name cut it).
-    expect(values).toContain('Fried rice · Veggie');
+    const dishNames = [...walk(drawn)].filter((el) => el.props.role === 'textbox');
+    expect(dishNames.map((el) => textOf(el.props.children))).toContain('Fried rice · Veggie');
+    const setDish = dishNames.find((el) => textOf(el.props.children) === 'Fried rice · Veggie')!;
+    expect(setDish.type).toBe('div');
+    expect(setDish.props['aria-readonly']).toBe('true');
+    expect(setDish.props.contentEditable).toBeUndefined();
+    expect(setDish.props.onChange).toBeUndefined();
     const marks = [...walk(drawn)].filter((el) => el.props['data-testid'] === 'kitchen-line-marks').map((el) => textOf(el.props.children).trim());
     expect(marks).toContain(PARTY_NOT_ON_TILL_MENU);
     expect(values).toContain('20:30');

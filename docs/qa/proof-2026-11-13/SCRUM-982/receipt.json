@@ -1,0 +1,838 @@
+{
+  "tickets": [
+    "SCRUM-982",
+    "SCRUM-981 scoped reliability"
+  ],
+  "sha": "157d6cb24d1764dea4d5356615942882f2970e7c",
+  "startedAt": "2026-11-13T12:55:34.361Z",
+  "deploysAtStart": {
+    "readAt": "2026-11-13T12:58:05.746Z",
+    "expected": "157d6cb24d1764dea4d5356615942882f2970e7c",
+    "exactTillsLive": true,
+    "services": [
+      {
+        "service": "oto-pos-staging",
+        "deploys": [
+          {
+            "id": "dep-dbrggnlckfvc73e78bcg",
+            "status": "live",
+            "sha": "157d6cb24d1764dea4d5356615942882f2970e7c",
+            "finishedAt": "2026-11-13T12:55:03.892982Z",
+            "createdAt": "2026-11-13T12:53:50.937995Z"
+          },
+          {
+            "id": "dep-dbrferec6qcc73dofm5g",
+            "status": "deactivated",
+            "sha": "239ef48248d7ec1af739f432db7c91dda778c2c0",
+            "finishedAt": "2026-11-13T11:42:50.373571Z",
+            "createdAt": "2026-11-13T11:41:33.841699Z"
+          },
+          {
+            "id": "dep-dbrf8368bjmc73bo5ob0",
+            "status": "deactivated",
+            "sha": "7f5ac6f1359df9c0627fa7cd4ffaca6f2b9b2c6c",
+            "finishedAt": "2026-11-13T11:28:36.030527Z",
+            "createdAt": "2026-11-13T11:27:08.799637Z"
+          },
+          {
+            "id": "dep-dbrc022jnfac739a1ddg",
+            "status": "deactivated",
+            "sha": "26c308edc5c09c3f576d5189b9e58ad8f1cbabe7",
+            "finishedAt": "2026-11-13T07:46:27.104674Z",
+            "createdAt": "2026-11-13T07:45:12.679634Z"
+          },
+          {
+            "id": "dep-dbrabsavcj2c73emo6h0",
+            "status": "deactivated",
+            "sha": "1916bfbd73ebcfcba2dbe85c7a7a9d2bf63e9152",
+            "finishedAt": "2026-11-13T05:55:22.509771Z",
+            "createdAt": "2026-11-13T05:53:53.826543Z"
+          },
+          {
+            "id": "dep-dbr8lpqjnfac7396igq0",
+            "status": "deactivated",
+            "sha": "3d58a9d8848e4e117b2b372c6e9586d43062639b",
+            "finishedAt": "2026-11-13T03:59:55.656397Z",
+            "createdAt": "2026-11-13T03:58:31.793546Z"
+          }
+        ]
+      },
+      {
+        "service": "oto-pos-web-staging",
+        "deploys": [
+          {
+            "id": "dep-dbrggo5g1s2s738eb0qg",
+            "status": "live",
+            "sha": "157d6cb24d1764dea4d5356615942882f2970e7c",
+            "finishedAt": "2026-11-13T12:57:55.068391Z",
+            "createdAt": "2026-11-13T12:53:52.380162Z"
+          },
+          {
+            "id": "dep-dbrferdbedkc73df2jn0",
+            "status": "deactivated",
+            "sha": "239ef48248d7ec1af739f432db7c91dda778c2c0",
+            "finishedAt": "2026-11-13T11:45:40.405443Z",
+            "createdAt": "2026-11-13T11:41:33.883296Z"
+          },
+          {
+            "id": "dep-dbrf8368bjmc73bo5o00",
+            "status": "deactivated",
+            "sha": "7f5ac6f1359df9c0627fa7cd4ffaca6f2b9b2c6c",
+            "finishedAt": "2026-11-13T11:31:47.547149Z",
+            "createdAt": "2026-11-13T11:27:08.456257Z"
+          },
+          {
+            "id": "dep-dbrc022jnfac739a1d40",
+            "status": "deactivated",
+            "sha": "26c308edc5c09c3f576d5189b9e58ad8f1cbabe7",
+            "finishedAt": "2026-11-13T07:49:07.700202Z",
+            "createdAt": "2026-11-13T07:45:12.588986Z"
+          },
+          {
+            "id": "dep-dbrabsavcj2c73emo670",
+            "status": "deactivated",
+            "sha": "1916bfbd73ebcfcba2dbe85c7a7a9d2bf63e9152",
+            "finishedAt": "2026-11-13T05:58:16.489837Z",
+            "createdAt": "2026-11-13T05:53:53.458395Z"
+          },
+          {
+            "id": "dep-dbr8lpqjnfac7396igm0",
+            "status": "deactivated",
+            "sha": "3d58a9d8848e4e117b2b372c6e9586d43062639b",
+            "finishedAt": "2026-11-13T04:02:36.46874Z",
+            "createdAt": "2026-11-13T03:58:31.752551Z"
+          }
+        ]
+      },
+      {
+        "service": "oto-api-staging",
+        "deploys": [
+          {
+            "id": "dep-dbrfobff3r2c73c0c6dg",
+            "status": "live",
+            "sha": "0ea85faaf5b4e62204eaabdda5d691dd2b9a248c",
+            "finishedAt": "2026-11-13T12:07:15.560018Z",
+            "createdAt": "2026-11-13T12:01:49.953793Z"
+          },
+          {
+            "id": "dep-dbrevcgu01pc73b1vjp0",
+            "status": "deactivated",
+            "sha": "0ea85faaf5b4e62204eaabdda5d691dd2b9a248c",
+            "finishedAt": "2026-11-13T11:13:52.427358Z",
+            "createdAt": "2026-11-13T11:08:34.256994Z"
+          },
+          {
+            "id": "dep-dbrc022jnfac739a1c20",
+            "status": "deactivated",
+            "sha": "26c308edc5c09c3f576d5189b9e58ad8f1cbabe7",
+            "finishedAt": "2026-11-13T07:50:59.834434Z",
+            "createdAt": "2026-11-13T07:45:12.457758Z"
+          },
+          {
+            "id": "dep-dbrabs2vcj2c73emo54g",
+            "status": "deactivated",
+            "sha": "1916bfbd73ebcfcba2dbe85c7a7a9d2bf63e9152",
+            "finishedAt": "2026-11-13T05:59:38.651872Z",
+            "createdAt": "2026-11-13T05:53:52.970565Z"
+          },
+          {
+            "id": "dep-dbr8lpqjnfac7396ifjg",
+            "status": "deactivated",
+            "sha": "3d58a9d8848e4e117b2b372c6e9586d43062639b",
+            "finishedAt": "2026-11-13T04:03:27.492383Z",
+            "createdAt": "2026-11-13T03:58:31.614448Z"
+          },
+          {
+            "id": "dep-dbr86ndg1s2s73fni4f0",
+            "status": "deactivated",
+            "sha": "3d58a9d8848e4e117b2b372c6e9586d43062639b",
+            "finishedAt": "2026-11-13T03:31:32.052954Z",
+            "createdAt": "2026-11-13T03:26:21.921025Z"
+          }
+        ]
+      }
+    ]
+  },
+  "accounts": {
+    "reusePreflight": [
+      {
+        "who": "A",
+        "id": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+        "name": "ZZ TEST 964 A",
+        "phone": "+66298964901",
+        "status": "inactive",
+        "liveSessions": 0,
+        "priorSessions": 12
+      },
+      {
+        "who": "B",
+        "id": "01a1d2f9-710f-7e6e-bb8e-d8f17975d09f",
+        "name": "ZZ TEST 964 B",
+        "phone": "+66298964902",
+        "status": "inactive",
+        "liveSessions": 0,
+        "priorSessions": 8
+      }
+    ],
+    "made": {
+      "A": {
+        "id": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+        "signInWithTemporary": 200,
+        "mustChangeAtFirst": true,
+        "changePassword": 200,
+        "signOut": 200,
+        "status": "active",
+        "mustChangePassword": false,
+        "assignments": [
+          "reception branch park"
+        ],
+        "holdsSaleCreate": true
+      },
+      "B": {
+        "id": "01a1d2f9-710f-7e6e-bb8e-d8f17975d09f",
+        "signInWithTemporary": 200,
+        "mustChangeAtFirst": true,
+        "changePassword": 200,
+        "signOut": 200,
+        "status": "active",
+        "mustChangePassword": false,
+        "assignments": [
+          "reception branch park"
+        ],
+        "holdsSaleCreate": true
+      }
+    }
+  },
+  "numbers": {
+    "used": [
+      "0898988210"
+    ]
+  },
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1d4fc-d6ed-72df-af7b-7d57916ccf58",
+      "name": "ZZ TEST SCRUM-982 desk till 1794574701707",
+      "prefix": "Z98201",
+      "paymentRouting": {
+        "card": "manual",
+        "qr": "gateway"
+      }
+    },
+    {
+      "kind": "station",
+      "id": "01a1d4fc-de19-71bb-967b-9b069f0c6e89",
+      "name": "ZZ TEST SCRUM-982 phone till 1794574703544",
+      "prefix": "Z98202",
+      "paymentRouting": {
+        "card": "manual",
+        "qr": "gateway"
+      }
+    },
+    {
+      "kind": "display",
+      "label": "desk",
+      "id": "01a1d4fd-6e09-7ff8-a64d-8c5f09837f53",
+      "station": "01a1d4fc-d6ed-72df-af7b-7d57916ccf58"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1d500-2c19-7232-90d4-4d18ba6d4aa3",
+      "stationId": "01a1d4fc-d6ed-72df-af7b-7d57916ccf58",
+      "label": "desk",
+      "phase": "Desktop ticket: A rings up one sale and shows a simulator QR"
+    }
+  ],
+  "points": {
+    "desktop-ticket-paid-qr": {
+      "verdict": "PASSED",
+      "pictures": [
+        "01a-ticket-A-waiting-qr.png",
+        "01b-ticket-B-continued-waiting-qr.png",
+        "01c-ticket-B-paid-qr-actual-label.png"
+      ],
+      "seen": {
+        "saleId": "01a1d500-2c19-7232-90d4-4d18ba6d4aa3",
+        "status": "finalised",
+        "saleCount": 1,
+        "soldBy": {
+          "accountId": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+          "name": "ZZ TEST 964 A"
+        },
+        "attempts": [
+          {
+            "id": "01a1d500-305e-7743-bef5-e5512919b633",
+            "status": "approved",
+            "method": "qr",
+            "amountSatang": 104000
+          }
+        ],
+        "writesAfterContinue": [
+          {
+            "path": "/api/sales/:id/finalise",
+            "method": "none",
+            "kind": "other"
+          }
+        ]
+      }
+    }
+  },
+  "reads": {
+    "retiredStaffCensus": [
+      {
+        "who": "A",
+        "id": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+        "name": "ZZ TEST 964 A",
+        "phone": "+66298964901",
+        "status": "inactive",
+        "liveSessions": 0,
+        "totalSessions": 12
+      },
+      {
+        "who": "B",
+        "id": "01a1d2f9-710f-7e6e-bb8e-d8f17975d09f",
+        "name": "ZZ TEST 964 B",
+        "phone": "+66298964902",
+        "status": "inactive",
+        "liveSessions": 0,
+        "totalSessions": 8
+      }
+    ],
+    "gateway": {
+      "status": 200,
+      "provider": "simulator",
+      "simulatorAvailable": true,
+      "fellBack": false
+    },
+    "nativeSourceBefore": {
+      "at": "2026-11-13T12:59:03.206Z",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "assets": [
+        {
+          "path": "/assets/index-BsEDqOAS.js",
+          "status": 200,
+          "handoverGuard": true,
+          "sha256Parts": [
+            "a7131ad765b30f03835580def48717da",
+            "bbd4bdf9089353d706daeadd9562bf9c"
+          ]
+        }
+      ]
+    },
+    "ticketBefore": {
+      "saleId": "01a1d500-2c19-7232-90d4-4d18ba6d4aa3",
+      "attemptId": "01a1d500-305e-7743-bef5-e5512919b633",
+      "status": "sent_to_terminal",
+      "method": "qr"
+    },
+    "ticketAfter": {
+      "saleId": "01a1d500-2c19-7232-90d4-4d18ba6d4aa3",
+      "status": "finalised",
+      "saleCount": 1,
+      "soldBy": {
+        "accountId": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+        "name": "ZZ TEST 964 A"
+      },
+      "attempts": [
+        {
+          "id": "01a1d500-305e-7743-bef5-e5512919b633",
+          "status": "approved",
+          "method": "qr",
+          "amountSatang": 104000
+        }
+      ],
+      "writesAfterContinue": [
+        {
+          "path": "/api/sales/:id/finalise",
+          "method": "none",
+          "kind": "other"
+        }
+      ]
+    },
+    "ciDiagnosisSessionClosure": [
+      {
+        "who": "A",
+        "sessionsEnded": 0,
+        "at": "2026-11-13T13:08:16.166Z",
+        "atMs": 1794575296166
+      },
+      {
+        "who": "B",
+        "sessionsEnded": 1,
+        "at": "2026-11-13T13:08:16.247Z",
+        "atMs": 1794575296247
+      }
+    ]
+  },
+  "odd": [],
+  "hunt": [],
+  "pageErrors": [
+    {
+      "page": "desk",
+      "at": "Desktop ticket: A signs in at the fresh till and pairs a fresh family display",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "desk",
+      "at": "Desktop ticket: A signs in at the fresh till and pairs a fresh family display",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Desktop ticket: B continues A's waiting QR, then QR completes without Cash",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "desk",
+      "at": "Desktop ticket: B continues A's waiting QR, then QR completes without Cash",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "Desktop ticket: B continues A's waiting QR, then QR completes without Cash",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Desktop ticket: B continues A's waiting QR, then QR completes without Cash",
+      "kind": "http",
+      "text": "GET /api/branches/:id/occupancy 401"
+    },
+    {
+      "page": "desk",
+      "at": "Desktop ticket: B continues A's waiting QR, then QR completes without Cash",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Desktop ticket: B continues A's waiting QR, then QR completes without Cash",
+      "kind": "http",
+      "text": "GET /api/me/station/link 401"
+    },
+    {
+      "page": "desk",
+      "at": "Desktop ticket: B continues A's waiting QR, then QR completes without Cash",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Desktop ticket: B continues A's waiting QR, then QR completes without Cash",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "desk",
+      "at": "Desktop ticket: B continues A's waiting QR, then QR completes without Cash",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Desktop ticket: B continues A's waiting QR, then QR completes without Cash",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "desk",
+      "at": "Desktop ticket: B continues A's waiting QR, then QR completes without Cash",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Desktop ticket: B continues A's waiting QR, then QR completes without Cash",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "desk",
+      "at": "Desktop ticket: B continues A's waiting QR, then QR completes without Cash",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Desktop ticket: B continues A's waiting QR, then QR completes without Cash",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "desk",
+      "at": "Desktop ticket: B continues A's waiting QR, then QR completes without Cash",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "http",
+      "text": "GET /api/me/station/link 401"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "http",
+      "text": "GET /api/branches/:id/pricing-mode 401"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "http",
+      "text": "GET /api/stations/:id/printers 401"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "requests": [
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/me",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches/:id/tax-config",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches/:id/tax-overrides",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/health/version",
+      "status": 404,
+      "errorCode": "ROUTE_NOT_FOUND"
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/accounts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/accounts/:id/sessions",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/accounts/:id/sessions",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches/:id/menu",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/webhooks/2c2p/simulator",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/accounts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/accounts/:id/sessions",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/accounts/:id/sessions",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "PATCH",
+      "path": "/accounts/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/accounts/:id/temp-password",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/accounts/:id/permissions",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/accounts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "PATCH",
+      "path": "/accounts/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/accounts/:id/temp-password",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/accounts/:id/permissions",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/accounts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/stations/:id/displays/claim",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/accounts/:id/sessions/revoke",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/webhooks/2c2p/simulator",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/accounts/:id/sessions/revoke",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/accounts/:id/sessions/revoke",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    }
+  ],
+  "revokes": [
+    {
+      "who": "A",
+      "at": "2026-11-13T13:02:35.636Z",
+      "bangkok": "20:02:35",
+      "sessionsEnded": 1,
+      "phase": "Desktop ticket: B continues A's waiting QR, then QR completes without Cash"
+    },
+    {
+      "who": "A",
+      "at": "2026-11-13T13:08:16.166Z",
+      "bangkok": "20:08:16",
+      "sessionsEnded": 0,
+      "phase": "End synthetic staff sessions while the source CI selector failure is reproduced"
+    },
+    {
+      "who": "B",
+      "at": "2026-11-13T13:08:16.247Z",
+      "bangkok": "20:08:16",
+      "sessionsEnded": 1,
+      "phase": "End synthetic staff sessions while the source CI selector failure is reproduced"
+    }
+  ],
+  "restarts": [],
+  "cleanup": {},
+  "checks": {
+    "walkInNumbersCheckedUnused": 8,
+    "first": "0898988210",
+    "last": "0898988217"
+  },
+  "reusedStaff": [
+    {
+      "who": "A",
+      "id": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+      "name": "ZZ TEST 964 A",
+      "phone": "+66298964901"
+    },
+    {
+      "who": "B",
+      "id": "01a1d2f9-710f-7e6e-bb8e-d8f17975d09f",
+      "name": "ZZ TEST 964 B",
+      "phone": "+66298964902"
+    }
+  ]
+}

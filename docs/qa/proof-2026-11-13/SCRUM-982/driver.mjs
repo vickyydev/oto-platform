@@ -331,7 +331,7 @@ S.markMine = (page, list) => page.evaluate((list) => {
 }, list);
 S.extraInPlace = []; // functions page => locator, added by steps (e.g. other rows on End of Day)
 S.inPlace = page => [page.getByLabel('Lock screen').locator('..'), S.otherSales(page), ...S.extraInPlace.map(f => f(page))];
-S.masks = page => [page.locator('input[type="password"]'), page.getByTestId('display-pairing-code'), page.locator('canvas'), page.getByText(/^QR-[A-Z0-9]+$/)];
+S.masks = page => [page.locator('input[type="password"]'), page.getByTestId('display-pairing-code'), page.locator('canvas'), page.locator('[data-testid="payment-qr"],[data-testid="payment-qr-waiting"]'), page.getByText(/^QR-[A-Z0-9]+$/)];
 const MASK_CSS = '[data-zz-mask]{background:#18181b!important;color:#18181b!important;border-color:#18181b!important;border-radius:2px} [data-zz-mask] *{color:#18181b!important;background:#18181b!important;border-color:#18181b!important} [data-zz-mask] img,[data-zz-mask] video,[data-zz-mask] picture,[data-zz-mask] canvas,[data-zz-mask] svg{opacity:0!important}';
 S.capture = async (page, opts = {}, extra = []) => {
   for (const loc of S.inPlace(page)) await loc.evaluateAll(els => { for (const e of els) e.setAttribute('data-zz-mask', '1'); }).catch(() => {});
@@ -382,7 +382,7 @@ S.both = async (name, caption, left, right, opts = {}) => {
   const ctx = await S.browser.newContext({ viewport: { width: 2000, height: 800 } });
   const sheet = await ctx.newPage();
   const e = s => String(s ?? '').replace(/[<>&]/g, '');
-  await sheet.setContent(`<html><body style="margin:0;background:#fff;font:15px system-ui;color:#111"><div style="padding:8px 12px"><b>SCRUM-982</b> Â· ${e(caption)} Â· captured together at ${S.bkk(at)} Bangkok</div><div style="display:flex;gap:10px;padding:0 10px 10px;align-items:flex-start"><figure style="margin:0;flex:${opts.leftFlex ?? lv.width}"><figcaption style="font-size:13px;margin-bottom:3px">${e(opts.leftLabel ?? `Till (${lv.width}Ã—${lv.height})`)}</figcaption><img style="width:100%;border:1px solid #888" src="data:image/png;base64,${a.toString('base64')}"></figure><figure style="margin:0;flex:${opts.rightFlex ?? rv.width}"><figcaption style="font-size:13px;margin-bottom:3px">${e(opts.rightLabel ?? `Paired ZZ TEST counter display (${rv.width}Ã—${rv.height})`)}</figcaption><img style="width:100%;border:1px solid #888" src="data:image/png;base64,${b.toString('base64')}"></figure></div></body></html>`);
+  await sheet.setContent(`<html><body style="margin:0;background:#fff;font:15px system-ui;color:#111"><div style="padding:8px 12px"><b>SCRUM-982</b> · ${e(caption)} · captured together at ${S.bkk(at)} Bangkok</div><div style="display:flex;gap:10px;padding:0 10px 10px;align-items:flex-start"><figure style="margin:0;flex:${opts.leftFlex ?? lv.width}"><figcaption style="font-size:13px;margin-bottom:3px">${e(opts.leftLabel ?? `Till (${lv.width}×${lv.height})`)}</figcaption><img style="width:100%;border:1px solid #888" src="data:image/png;base64,${a.toString('base64')}"></figure><figure style="margin:0;flex:${opts.rightFlex ?? rv.width}"><figcaption style="font-size:13px;margin-bottom:3px">${e(opts.rightLabel ?? `Paired ZZ TEST counter display (${rv.width}×${rv.height})`)}</figcaption><img style="width:100%;border:1px solid #888" src="data:image/png;base64,${b.toString('base64')}"></figure></div></body></html>`);
   await sheet.screenshot({ path: resolve(out, name), fullPage: true });
   await ctx.close();
   S.shots.push(name);
@@ -415,7 +415,7 @@ S.firstScreen = async (surface, till, number, { lang = 'en', tap = false, walkIn
   const scope = surface === till ? S.halfOf(surface.getByTestId('identify-safety')) : surface.locator('body');
   await S.keypad(scope, number, { tap });
   if (!press) return scope;
-  const cont = scope.getByRole('button', { name: /^(Continue|à¸”à¸³à¹€à¸™à¸´à¸™à¸à¸²à¸£à¸•à¹ˆà¸­)$/ });
+  const cont = scope.getByRole('button', { name: /^(Continue|ดำเนินการต่อ)$/ });
   if (tap) await cont.tap(); else await cont.click();
   if (!walkIn) return scope;
   const offer = till.getByRole('dialog', { name: 'New member?', exact: true });
@@ -439,7 +439,7 @@ S.ticket = async (page, kids, adults, pkg = '1 Hour Play', go = false) => {
 };
 S.cartState = async page => {
   const configure = await page.getByRole('heading', { name: /^Configure:/ }).first().innerText().catch(() => null);
-  const pay = await page.getByRole('button', { name: /^Pay à¸¿/ }).first().innerText().catch(() => null);
+  const pay = await page.getByRole('button', { name: /^Pay ฿/ }).first().innerText().catch(() => null);
   const panel = await page.evaluate(() => { const h = [...document.querySelectorAll('h2,h3')].find(x => /Current Order/.test(x.textContent)); let el = h; for (let i = 0; i < 4 && el && el.innerText.length < 60; i++) el = el.parentElement; return el ? el.innerText.replace(/\s+/g, ' ').trim().slice(0, 500) : null; });
   const payment = await page.getByTestId('payment-step').count();
   return { configure: configure && S.flat(configure), pay: pay && S.flat(pay), panel: panel && S.scrub(panel), membershipCheck: (await page.getByText('Membership Check', { exact: true }).count()) > 0, paymentStep: payment > 0, url: new URL(page.url()).pathname };
@@ -459,7 +459,7 @@ S.payCash = async page => {
 };
 /** Pay pressed; a walk-in may hand the display over for a number first (Done hands it back). */
 S.pressPay = async page => {
-  await page.getByRole('button', { name: /^Pay à¸¿/ }).first().click();
+  await page.getByRole('button', { name: /^Pay ฿/ }).first().click();
   const done = page.getByRole('button', { name: 'Done', exact: true });
   const due = page.getByRole('heading', { name: 'Amount Due' });
   await expect.poll(async () => (await done.isVisible()) || (await due.isVisible()), { timeout: 30000 }).toBe(true);

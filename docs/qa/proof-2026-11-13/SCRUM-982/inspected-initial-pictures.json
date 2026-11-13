@@ -1,0 +1,16 @@
+{
+  "inspected": [
+    "01b-ticket-B-continued-waiting-qr.png",
+    "01c-ticket-B-paid-qr-actual-label.png"
+  ],
+  "limits": [
+    "Waiting image masks part of a low payment control; successful native Cancel control visibility is also checked by the driver.",
+    "Paired display remains on the ended session during the recorded hold; that owner-held behavior is unchanged."
+  ],
+  "excluded": [
+    {
+      "file": "01a-ticket-A-waiting-qr.png",
+      "reason": "One late-rendered simulator QR was not masked. Retain locally only, exclude from commits and attachments; future capture masks both the QR image and its waiting placeholder."
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+Source 157d6cb24d1764dea4d5356615942882f2970e7c
+Run 43429015391, completed workspace job 131899638185
+
+2026-11-13T13:17:58.2801156Z   1) e2e/phone-payment.spec.ts:107:1 › a refused phone cancellation keeps the order and offers the refusal 
+2026-11-13T13:17:58.2801800Z 
+2026-11-13T13:17:58.2802115Z     Error: expect(locator).toContainText(expected) failed
+2026-11-13T13:17:58.2802471Z 
+2026-11-13T13:17:58.2802700Z     Locator: getByTestId('cancel-refusal')
+2026-11-13T13:17:58.2803208Z     Expected substring: "Money has been taken for this sale"
+2026-11-13T13:17:58.2803641Z     Timeout: 5000ms
+2026-11-13T13:17:58.2803985Z     Error: element(s) not found
+2026-11-13T13:17:58.2804242Z 
+2026-11-13T13:17:58.2804420Z     Call log:
+2026-11-13T13:17:58.2804871Z       - Expect "toContainText" getByTestId('cancel-refusal') with timeout 5000ms
+2026-11-13T13:17:58.2805470Z       - waiting for getByTestId('cancel-refusal')
+2026-11-13T13:17:58.2806179Z 
+2026-11-13T13:17:58.2806266Z 
+2026-11-13T13:17:58.2806828Z       113 |       body: JSON.stringify({ error: { code: 'SALE_HAS_PAYMENTS', message: 'Money has been taken for this sale' } }) }));
+2026-11-13T13:17:58.2807840Z       114 |     await page.getByRole('button', { name: 'Cancel', exact: true }).first().click();
+2026-11-13T13:17:58.2808709Z     > 115 |     await expect(page.getByTestId('cancel-refusal')).toContainText('Money has been taken for this sale');
+2026-11-13T13:17:58.2809417Z           |                                                      ^
+2026-11-13T13:17:58.2810179Z       116 |     await expect(page.getByRole('button', { name: /^Pay ฿/ })).toBeVisible();
+2026-11-13T13:17:58.2810728Z       117 |     await page.unroute(`**/api/sales/${saleId}/void`);
+2026-11-13T13:17:58.2811503Z       118 |     await page.getByRole('button', { name: 'Cancel', exact: true }).first().click();
+2026-11-13T13:17:58.2812188Z         at /home/runner/work/oto-platform/oto-platform/apps/pos/e2e/phone-payment.spec.ts:115:54
+2026-11-13T13:17:58.2812639Z 
+2026-11-13T13:17:58.2813290Z     Error Context: test-results/phone-payment-a-refused-ph-31e12-rder-and-offers-the-refusal/error-context.md
+2026-11-13T13:17:58.2813814Z 
+2026-11-13T13:17:58.2813953Z   1 failed
+2026-11-13T13:17:58.2814524Z     e2e/phone-payment.spec.ts:107:1 › a refused phone cancellation keeps the order and offers the refusal 
+2026-11-13T13:17:58.2815029Z   1 passed (21.2s)
+2026-11-13T13:17:58.3166618Z [pos-e2e] Child process exited with 1
+2026-11-13T13:17:58.3447768Z [pos-e2e] disposable database removed
+2026-11-13T13:17:58.3628457Z /home/runner/work/oto-platform/oto-platform/apps/pos:
+2026-11-13T13:17:58.3629233Z  ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @oto/pos@0.1.0 e2e: `node e2e/run.mjs e2e/phone-payment.spec.ts`
+2026-11-13T13:17:58.3629602Z Exit status 1
+2026-11-13T13:17:58.3795546Z ##[error]Process completed with exit code 1.

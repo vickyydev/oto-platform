@@ -1,0 +1,30 @@
+Source 157d6cb24d1764dea4d5356615942882f2970e7c
+Run 43429015391, completed POS job 131899638084, first attempt
+
+2026-11-13T13:04:46.6504345Z  FAIL  test/s907-party-kitchen-edit.test.ts > the Edit form > a manager's kitchen section offers Add item and a remove on an EXTRA, never on a set-menu dish, and names a line the till does not sell
+2026-11-13T13:04:46.6528124Z AssertionError: expected [ '14:00', '', '', '', …(4) ] to include 'Fried rice · Veggie'
+2026-11-13T13:04:46.6529395Z  ❯ test/s907-party-kitchen-edit.test.ts:414:20
+2026-11-13T13:04:46.6763928Z     412|     // SCRUM-967 — the name box holds the dish; its mark is whole on a…
+2026-11-13T13:04:46.6764593Z 
+2026-11-13T13:04:46.6770914Z     413|     // (it was at the end of the one-line box, where a long name cut i…
+2026-11-13T13:04:46.6772586Z     414|     expect(values).toContain('Fried rice · Veggie');
+2026-11-13T13:04:46.6773695Z        |                    ^
+2026-11-13T13:04:46.6774695Z     415|     const marks = [...walk(drawn)].filter((el) => el.props['data-testi…
+2026-11-13T13:04:46.6775986Z     416|     expect(marks).toContain(PARTY_NOT_ON_TILL_MENU);
+2026-11-13T13:04:46.6776702Z 
+2026-11-13T13:04:46.6777302Z ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+2026-11-13T13:04:46.6777735Z 
+2026-11-13T13:04:46.6813782Z  Test Files  1 failed | 272 passed (273)
+2026-11-13T13:04:46.6843380Z       Tests  1 failed | 3897 passed (3898)
+2026-11-13T13:04:46.6865774Z    Start at  12:59:33
+2026-11-13T13:04:46.6873645Z    Duration  313.45s (transform 13.09s, setup 0ms, collect 252.26s, tests 532.00s, environment 75ms, prepare 30.70s)
+2026-11-13T13:04:46.6874263Z 
+2026-11-13T13:04:46.6874438Z 
+2026-11-13T13:04:46.6902432Z ##[error]AssertionError: expected [ '14:00', '', '', '', …(4) ] to include 'Fried rice · Veggie'
+ ❯ test/s907-party-kitchen-edit.test.ts:414:20
+
+
+2026-11-13T13:04:46.8100837Z undefined
+2026-11-13T13:04:46.8109470Z /home/runner/work/oto-platform/oto-platform/apps/pos:
+2026-11-13T13:04:46.8110459Z  ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL  Command failed with exit code 1: vitest run
+2026-11-13T13:04:46.8313666Z ##[error]Process completed with exit code 1.

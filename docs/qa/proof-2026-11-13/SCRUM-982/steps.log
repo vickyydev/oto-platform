@@ -1,0 +1,448 @@
+
+=== 2026-11-13T12:56:39.773Z Read-only tax and service configuration for the owner question
+S.phase='Read-only tax and service configuration for the owner question';
+const config=await S.call('GET',`/branches/${S.branchId}/tax-config`);
+const overrides=await S.call('GET',`/branches/${S.branchId}/tax-overrides`);
+const version=await S.call('GET','/health/version');
+const result={readAt:new Date().toISOString(),branch:{id:S.branch.id,name:S.branch.name,code:S.branch.code??null},taxConfig:{status:config.status,body:config.body},taxOverrides:{status:overrides.status,body:overrides.body},version:{status:version.status,body:version.status===200?version.body:{code:version.body?.error?.code}}};
+S.writeFileSync('C:/oto-lanes/audit-takeover-20261113/maria-tax-runtime.json',JSON.stringify(result,null,2)+'\n');
+return result;
+--> {
+ "ok": true,
+ "value": {
+  "readAt": "2026-11-13T12:56:40.065Z",
+  "branch": {
+   "id": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+   "name": "Oto Play Park, Central Floresta",
+   "code": "hkt-central"
+  },
+  "taxConfig": {
+   "status": 200,
+   "body": {
+    "config": {
+     "rates": [
+      {
+       "id": "vat",
+       "name": "VAT",
+       "percent": 7
+      }
+     ],
+     "categoryRules": [
+      {
+       "category": "tickets",
+       "taxRateId": "vat",
+       "taxMode": "inclusive",
+       "serviceChargePercent": 0,
+       "taxOnServiceCharge": false
+      },
+      {
+       "category": "fnb",
+       "taxRateId": "vat",
+       "taxMode": "inclusive",
+       "serviceChargePercent": 0,
+       "taxOnServiceCharge": false
+      },
+      {
+       "category": "bar",
+       "taxRateId": "vat",
+       "taxMode": "inclusive",
+       "serviceChargePercent": 0,
+       "taxOnServiceCharge": false
+      },
+      {
+       "category": "drop_off",
+       "taxRateId": "vat",
+       "taxMode": "inclusive",
+       "serviceChargePercent": 0,
+       "taxOnServiceCharge": false
+      },
+      {
+       "category": "parties",
+       "taxRateId": "vat",
+       "taxMode": "inclusive",
+       "serviceChargePercent": 0,
+       "taxOnServiceCharge": false
+      },
+      {
+       "category": "addons",
+       "taxRateId": "vat",
+       "taxMode": "inclusive",
+       "serviceChargePercent": 0,
+       "taxOnServiceCharge": false
+      },
+      {
+       "category": "merch",
+       "taxRateId": "vat",
+       "taxMode": "inclusive",
+       "serviceChargePercent": 0,
+       "taxOnServiceCharge": false
+      },
+      {
+       "category": "stored_value",
+       "taxMode": "none",
+       "serviceChargePercent": 0,
+       "taxOnServiceCharge": false
+      }
+     ],
+     "discountPlacement": "before_tax"
+    }
+   }
+  },
+  "taxOverrides": {
+   "status": 200,
+   "body": {
+    "overrides": []
+   }
+  },
+  "version": {
+   "status": 404,
+   "body": {
+    "code": "ROUTE_NOT_FOUND"
+   }
+  }
+ }
+}
+
+=== 2026-11-13T12:57:12.771Z Read-only census of the two retired synthetic proof staff
+S.phase='Read-only census of the two retired synthetic proof staff';
+const prior=JSON.parse(S.readFileSync(S.resolve(S.out,'../SCRUM-964/receipt.json'),'utf8'));
+const all=(await S.call('GET','/accounts')).body.accounts;
+const census=[];
+for(const f of prior.created.filter(x=>x.kind==='login user')) {
+ const row=all.find(a=>a.id===f.id);S.assert.ok(row&&row.phone===f.phone&&row.employee?.name===f.name&&row.status==='inactive');
+ const sessions=(await S.call('GET',`/accounts/${f.id}/sessions?limit=50`)).body;
+ S.assert.ok(sessions.total<=50&&sessions.sessions.every(x=>x.status==='ended'));
+ census.push({who:f.who,id:f.id,name:f.name,phone:f.phone,status:row.status,liveSessions:0,totalSessions:sessions.total});
+}
+S.receipt.reads.retiredStaffCensus=census;S.save();return census;
+--> {
+ "ok": true,
+ "value": [
+  {
+   "who": "A",
+   "id": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+   "name": "ZZ TEST 964 A",
+   "phone": "+66298964901",
+   "status": "inactive",
+   "liveSessions": 0,
+   "totalSessions": 12
+  },
+  {
+   "who": "B",
+   "id": "01a1d2f9-710f-7e6e-bb8e-d8f17975d09f",
+   "name": "ZZ TEST 964 B",
+   "phone": "+66298964902",
+   "status": "inactive",
+   "liveSessions": 0,
+   "totalSessions": 8
+  }
+ ]
+}
+
+=== 2026-11-13T12:57:47.549Z Read-only example item and modifier prices for the owner question
+S.phase='Read-only example item and modifier prices for the owner question';
+const menu=await S.call('GET',`/branches/${S.branchId}/menu`);S.assert.equal(menu.status,200);
+const products=menu.body.products??[];
+const p=products.find(x=>/french fries/i.test(x.name));S.assert.ok(p,'known French fries item');
+const category=(menu.body.categories??[]).find(x=>x.id===p.categoryId);
+const groupIds=new Set(p.linkedModifierGroupIds??[]);
+const groups=(menu.body.modifierGroups??[]).filter(x=>x.productId===p.id||groupIds.has(x.id));
+const sample={item:{id:p.id,name:p.name,kind:p.kind,categoryId:p.categoryId,priceSatang:p.priceSatang,priceWeekendSatang:p.priceWeekendSatang,effectiveWeekendSatang:p.effectiveWeekendSatang,costSatang:p.costSatang,taxCategoryOverride:p.taxCategoryOverride,effectiveTaxCategory:p.effectiveTaxCategory},category:category?{id:category.id,name:category.name,taxableCategory:category.taxableCategory,effectiveTaxCategory:category.effectiveTaxCategory}:null,modifierGroups:groups.map(g=>({id:g.id,name:g.name,productId:g.productId,options:g.options.map(o=>({id:o.id,name:o.name,priceSatang:o.priceSatang,priceWeekendSatang:o.priceWeekendSatang,costSatang:o.costSatang}))}))};
+const path='C:/oto-lanes/audit-takeover-20261113/maria-tax-runtime.json';const result=JSON.parse(S.readFileSync(path,'utf8'));result.sample=sample;S.writeFileSync(path,JSON.stringify(result,null,2)+'\n');return sample;
+--> {
+ "ok": true,
+ "value": {
+  "item": {
+   "id": "01a1bee7-299b-7ff5-8484-b3bd65f387d1",
+   "name": "French fries",
+   "kind": "menu",
+   "categoryId": "01a1bee7-295c-788c-930a-505cf93aed4e",
+   "priceSatang": 17500,
+   "priceWeekendSatang": null,
+   "effectiveWeekendSatang": 17500,
+   "costSatang": null,
+   "taxCategoryOverride": null,
+   "effectiveTaxCategory": "fnb"
+  },
+  "category": {
+   "id": "01a1bee7-295c-788c-930a-505cf93aed4e",
+   "name": "Sharing",
+   "taxableCategory": "fnb",
+   "effectiveTaxCategory": "fnb"
+  },
+  "modifierGroups": []
+ }
+}
+
+=== 2026-11-13T12:58:20.620Z Fresh SCRUM-982 selling fixtures and verified reuse of the two retired QA staff
+S.phase='Fresh SCRUM-982 selling fixtures and verified reuse of the two retired QA staff';
+const deploys=JSON.parse(S.readFileSync(S.resolve(S.out,'deploys-start.json'),'utf8'));S.assert.equal(deploys.expected,S.sha);S.assert.equal(deploys.exactTillsLive,true);S.receipt.deploysAtStart=deploys;
+const setup=await S.setup();S.assert.equal(setup.gateway.provider,'simulator');S.assert.equal(setup.gateway.simulatorAvailable,true);
+const accounts=await S.makeAccounts();S.phoneStation=await S.makeStation('phone till',{card:'manual',qr:'gateway'});S.save();
+return {setup,accounts,phoneStation:{id:S.phoneStation.id,name:S.phoneStation.name}};
+--> {
+ "ok": true,
+ "value": {
+  "setup": {
+   "free": 8,
+   "first": "0898988210",
+   "station": "01a1d4fc-d6ed-72df-af7b-7d57916ccf58",
+   "prefix": "Z98201",
+   "gateway": {
+    "status": 200,
+    "provider": "simulator",
+    "simulatorAvailable": true,
+    "fellBack": false
+   },
+   "qr": "gateway"
+  },
+  "accounts": {
+   "A": {
+    "id": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+    "signInWithTemporary": 200,
+    "mustChangeAtFirst": true,
+    "changePassword": 200,
+    "signOut": 200,
+    "status": "active",
+    "mustChangePassword": false,
+    "assignments": [
+     "reception branch park"
+    ],
+    "holdsSaleCreate": true
+   },
+   "B": {
+    "id": "01a1d2f9-710f-7e6e-bb8e-d8f17975d09f",
+    "signInWithTemporary": 200,
+    "mustChangeAtFirst": true,
+    "changePassword": 200,
+    "signOut": 200,
+    "status": "active",
+    "mustChangePassword": false,
+    "assignments": [
+     "reception branch park"
+    ],
+    "holdsSaleCreate": true
+   }
+  },
+  "phoneStation": {
+   "id": "01a1d4fc-de19-71bb-967b-9b069f0c6e89",
+   "name": "ZZ TEST SCRUM-982 phone till 1794574703544"
+  }
+ }
+}
+
+=== 2026-11-13T12:58:56.524Z Desktop ticket: A signs in at the fresh till and pairs a fresh family display
+S.phase='Desktop ticket: A signs in at the fresh till and pairs a fresh family display';
+const p=await S.openTill('desk',{width:1440,height:1000});S.till=p;S.assert.equal(await S.formSignIn(p,'A'),200);const picked=await S.afterSignIn(p);await S.landing(p).waitFor({timeout:60000});S.keepAlive(true);
+const d=await S.pairDisplay('desk');S.d=d;await S.landing(d).waitFor({timeout:60000});
+const scripts=await p.locator('script[src]').evaluateAll(xs=>xs.map(x=>x.src));const {createHash}=await import('node:crypto');const assets=[];
+for(const url of scripts.filter(x=>/\/assets\//.test(x))){const r=await p.request.get(url);const text=await r.text();assets.push({path:new URL(url).pathname,status:r.status(),sha256:createHash('sha256').update(text).digest('hex'),handoverGuard:text.includes('This order is locked or changed before it could be saved.')});}
+S.assert.ok(assets.some(x=>x.handoverGuard),'browser received reviewed recovery source');S.receipt.reads.nativeSourceBefore={at:new Date().toISOString(),url:p.url(),assets};S.save();return {picked,assets,displayReady:true};
+--> {
+ "ok": true,
+ "value": {
+  "picked": {
+   "pickerAsked": true
+  },
+  "assets": [
+   {
+    "path": "/assets/index-BsEDqOAS.js",
+    "status": 200,
+    "sha256": "<token>06daeadd9562bf9c",
+    "handoverGuard": true
+   }
+  ],
+  "displayReady": true
+ }
+}
+
+=== 2026-11-13T13:00:47.580Z Correct proof-harness text encoding and preserve the native asset fingerprint
+S.phase='Correct proof-harness text encoding and preserve the native asset fingerprint';
+const {expect,assert,resolve,writeFileSync,readFileSync,randomUUID}=S;
+const dec=new TextDecoder('windows-1252');const bytes=new Map();for(let i=0;i<256;i++)bytes.set(dec.decode(Uint8Array.of(i)),i);
+const repair=text=>new TextDecoder('utf-8',{fatal:true}).decode(Uint8Array.from([...text].map(c=>{const b=bytes.get(c);assert.notEqual(b,undefined);return b;})));
+for(const key of ['cartState','pressPay','firstScreen','both','facts'])S[key]=eval('('+repair(S[key].toString())+')');
+const source=S.receipt.reads.nativeSourceBefore;S.writeFileSync(S.resolve(S.out,'native-source-before.json'),JSON.stringify(source,null,2)+'\n');
+for(const asset of source.assets){asset.sha256Parts=[asset.sha256.slice(0,32),asset.sha256.slice(32)];delete asset.sha256;}
+S.save();return {helpersRepaired:true,asset:source.assets[0]};
+--> {
+ "ok": false,
+ "error": "AssertionError: Expected \"actual\" to be strictly unequal to: |  | undefined"
+}
+
+=== 2026-11-13T13:01:03.910Z Correct proof-harness text encoding and preserve the native asset fingerprint
+const dec=new TextDecoder('windows-1252');const bytes=new Map();for(let i=0;i<256;i++)bytes.set(dec.decode(Uint8Array.of(i)),i);
+return Object.fromEntries(['cartState','pressPay','firstScreen','both','facts'].map(key=>[key,[...new Set([...S[key].toString()].filter(c=>!bytes.has(c)).map(c=>c.codePointAt(0).toString(16)))]]));
+--> {
+ "ok": true,
+ "value": {
+  "cartState": [
+   "e3f"
+  ],
+  "pressPay": [
+   "e3f"
+  ],
+  "firstScreen": [
+   "201d",
+   "20ac",
+   "2122",
+   "2022",
+   "2c6"
+  ],
+  "both": [
+   "2014"
+  ],
+  "facts": []
+ }
+}
+
+=== 2026-11-13T13:01:42.122Z Install readable proof-card helpers and retain the exact browser asset digest
+S.phase='Install readable proof-card helpers and retain the exact browser asset digest';
+S.both=async(name,caption,left,right,opts={})=>{const a=await S.capture(left),b=await S.capture(right);const lv=left.viewportSize(),rv=right.viewportSize();const ctx=await S.browser.newContext({viewport:{width:1600,height:1100}}),p=await ctx.newPage();const esc=v=>S.scrub(String(v)).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));await p.setContent(`<html><body style="margin:0;background:white;color:#111;font:15px Arial"><div style="padding:12px"><b>SCRUM-982</b> - ${esc(caption)} - ${S.bkk(new Date())} Bangkok</div><div style="display:flex;gap:10px;padding:10px;align-items:flex-start"><figure style="margin:0;flex:${lv.width}"><figcaption>Staff screen</figcaption><img style="width:100%;border:1px solid #888" src="data:image/png;base64,${a.toString('base64')}"></figure><figure style="margin:0;flex:${rv.width}"><figcaption>Own paired family display</figcaption><img style="width:100%;border:1px solid #888" src="data:image/png;base64,${b.toString('base64')}"></figure></div></body></html>`);await p.screenshot({path:S.resolve(S.out,name),fullPage:true});await ctx.close();S.shots.push(name);return name;};
+const source=S.receipt.reads.nativeSourceBefore;S.writeFileSync(S.resolve(S.out,'native-source-before.json'),JSON.stringify(source,null,2)+'\n');for(const asset of source.assets){asset.sha256Parts=[asset.sha256.slice(0,32),asset.sha256.slice(32)];delete asset.sha256;}S.save();return {cardHelperReady:true,asset:source.assets[0]};
+--> {
+ "ok": true,
+ "value": {
+  "cardHelperReady": true,
+  "asset": {
+   "path": "/assets/index-BsEDqOAS.js",
+   "status": 200,
+   "handoverGuard": true,
+   "sha256Parts": [
+    "a7131ad765b30f03835580def48717da",
+    "bbd4bdf9089353d706daeadd9562bf9c"
+   ]
+  }
+ }
+}
+
+=== 2026-11-13T13:01:58.555Z Desktop ticket: A rings up one sale and shows a simulator QR
+S.phase='Desktop ticket: A rings up one sale and shows a simulator QR';
+const p=S.till,d=S.d;const n=S.nextNumber();await S.firstScreen(d,p,n,{tap:true});await S.ticket(p,1,1,'1 Hour Play');
+const written=p.waitForResponse(r=>new URL(r.url()).pathname==='/api/sales'&&r.request().method()==='POST'&&r.status()===200);await S.pressPay(p);const sale=(await (await written).json()).sale;S.ticketSale=sale.id;S.knownSales.add(sale.id);S.save();
+await p.getByRole('heading',{name:'PromptPay',exact:true}).first().click();const started=p.waitForResponse(r=>new URL(r.url()).pathname==='/api/payments/attempts'&&r.request().method()==='POST');await p.getByRole('button',{name:'Show payment QR',exact:true}).click();const response=await started;S.assert.equal(response.status(),200);const attempt=(await response.json()).attempt;S.ticketAttempt=attempt.id;
+S.receipt.reads.ticketBefore={saleId:sale.id,attemptId:attempt.id,status:attempt.status,method:attempt.method};S.save();await S.expect(p.getByRole('button',{name:'Cancel payment QR',exact:true})).toBeVisible();await S.both('01a-ticket-A-waiting-qr.png','A has one rung-up ticket sale and one waiting QR; QR masked',p,d);return S.receipt.reads.ticketBefore;
+--> {
+ "ok": true,
+ "value": {
+  "saleId": "01a1d500-2c19-7232-90d4-4d18ba6d4aa3",
+  "attemptId": "01a1d500-305e-7743-bef5-e5512919b633",
+  "status": "sent_to_terminal",
+  "method": "qr"
+ }
+}
+
+=== 2026-11-13T13:02:35.543Z Desktop ticket: B continues A's waiting QR, then QR completes without Cash
+S.phase='Desktop ticket: B continues A\'s waiting QR, then QR completes without Cash';
+const p=S.till,d=S.d;S.tenderWrites=[];p.on('request',q=>{try{const path=new URL(q.url()).pathname;if(q.method()==='POST'&&(path==='/api/payments/attempts'||/\/sales\/[^/]+\/finalise$/.test(path))){const b=q.postDataJSON();S.tenderWrites.push({path:path.replace(S.ID,':id'),method:b?.method??null,kind:b?.kind??b?.tender?.kind??null});}}catch{}});
+await S.revoke('A');await S.kick('desk');await S.waitEnded(p);S.assert.equal(await S.formSignIn(p,'B'),200);await p.getByRole('button',{name:'Continue this sale',exact:true}).click();await S.expect(p.getByRole('button',{name:'Cancel payment QR',exact:true})).toBeVisible({timeout:30000});
+await S.both('01b-ticket-B-continued-waiting-qr.png','B continues the existing waiting QR; no new collection offered; held display is labelled',p,d);
+const paid=await S.call('POST','/webhooks/2c2p/simulator',{attemptId:S.ticketAttempt,event:'paid'});S.assert.equal(paid.status,200);
+await S.expect(p.getByText('Payment Successful',{exact:true})).toBeVisible({timeout:45000});await S.expect(p.getByText('Thai QR / PromptPay',{exact:true}).first()).toBeVisible();
+const detail=await S.sale(S.ticketSale),sales=await S.stationSales();S.assert.equal(detail.sale.status,'finalised');S.assert.equal(sales.length,1);S.assert.equal(sales[0].soldBy.accountId,S.acct.A.id);S.assert.equal(detail.attempts.filter(a=>a.status==='approved').length,1);S.assert.equal(detail.attempts.find(a=>a.status==='approved').method,'qr');S.assert.ok(S.tenderWrites.every(x=>x.method!=='cash'&&x.kind!=='cash'));
+S.receipt.reads.ticketAfter={saleId:S.ticketSale,status:detail.sale.status,saleCount:sales.length,soldBy:sales[0].soldBy,attempts:detail.attempts.map(a=>({id:a.id,status:a.status,method:a.method,amountSatang:a.amountSatang})),writesAfterContinue:S.tenderWrites};S.save();await S.both('01c-ticket-B-paid-qr-true-method.png','The same sale closes as Thai QR / PromptPay with no Cash press',p,d);return S.receipt.reads.ticketAfter;
+--> {
+ "ok": false,
+ "error": "Error: expect(locator).toBeVisible() failed |  | Locator: getByText('Thai QR / PromptPay', { exact: true }).first() | Expected: visible | Timeout: 5000ms | Error: element(s) not found |  | Call log:"
+}
+
+=== 2026-11-13T13:03:10.184Z Read the native ticket success label after a proof-label mismatch
+S.phase='Read the native ticket success label after a proof-label mismatch';const p=S.till;const detail=await S.sale(S.ticketSale),sales=await S.stationSales();const text=S.scrub(await S.bodyText(p));await S.both('01c-ticket-B-paid-qr-actual-label.png','The ticket success screen after paid QR; actual native label read back',p,S.d);return {text,detail:{status:detail.sale.status,attempts:detail.attempts.map(a=>({id:a.id,status:a.status,method:a.method,amountSatang:a.amountSatang}))},ownSales:sales.map(s=>({id:s.id,status:s.status,soldBy:s.soldBy})),writes:S.tenderWrites};
+--> {
+ "ok": true,
+ "value": {
+  "text": "Test harness — staff till and customer display share one live sale. Hide customer display Display connection: The display is still held under the session that ended here; it follows this till within a minute. The team can continue using this screen. 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing ZZ TEST 964 B 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Oto Play Park Payment Successful Receipt Z98201-000001 • ฿1040 • PromptPay VAT included ฿68.04 Thank you for visiting! · Tax ID 0105500000000 Bracelets to Print 2 TOTAL 1× Child bracelet 1 Hour • 1 Hour Play Z98201-CFRXWH 1 HOUR 1× Adult bracelet 1 Hour • 1 Hour Play Z98201-24H87B 1 HOUR Credit Grants Issued 1 TOTAL Credit ฿350 credit #1 Start New Sale English Thank you! Here's what you're receiving — enjoy your play! 1 Child bracelet 1 Adult bracelet Credit Grants Credit ฿350",
+  "detail": {
+   "status": "finalised",
+   "attempts": [
+    {
+     "id": "01a1d500-305e-7743-bef5-e5512919b633",
+     "status": "approved",
+     "method": "qr",
+     "amountSatang": 104000
+    }
+   ]
+  },
+  "ownSales": [
+   {
+    "id": "01a1d500-2c19-7232-90d4-4d18ba6d4aa3",
+    "status": "finalised",
+    "soldBy": {
+     "accountId": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+     "name": "ZZ TEST 964 A"
+    }
+   }
+  ],
+  "writes": [
+   {
+    "path": "/api/sales/:id/finalise",
+    "method": "none",
+    "kind": "other"
+   }
+  ]
+ }
+}
+
+=== 2026-11-13T13:04:15.890Z Record passed desktop ticket proof and prepare B's waiting F&B QR
+S.phase='Record passed desktop ticket proof and prepare B\'s waiting F&B QR';
+const p=S.till;const detail=await S.sale(S.ticketSale),sales=await S.stationSales();S.assert.equal(detail.sale.status,'finalised');S.assert.equal(sales.length,1);S.assert.equal(sales[0].soldBy.accountId,S.acct.A.id);S.assert.equal(detail.attempts.filter(a=>a.status==='approved'&&a.method==='qr').length,1);S.assert.ok(S.tenderWrites.every(x=>x.method!=='cash'&&x.kind!=='cash'));S.assert.match(await S.bodyText(p),/Receipt Z98201-000001.*PromptPay/);S.receipt.reads.ticketAfter={saleId:S.ticketSale,status:detail.sale.status,saleCount:sales.length,soldBy:sales[0].soldBy,attempts:detail.attempts.map(a=>({id:a.id,status:a.status,method:a.method,amountSatang:a.amountSatang})),writesAfterContinue:S.tenderWrites};S.point('desktop-ticket-paid-qr','PASSED',['01a-ticket-A-waiting-qr.png','01b-ticket-B-continued-waiting-qr.png','01c-ticket-B-paid-qr-actual-label.png'],S.receipt.reads.ticketAfter);
+await p.getByRole('button',{name:'Start New Sale',exact:true}).click();await p.getByRole('button',{name:'F&B',exact:true}).click();await p.getByRole('button',{name:/No wristband.*continue as guest/}).click();await p.getByPlaceholder('Search dish\u2026').fill('French fries');await p.getByRole('button',{name:/French fries/i}).click();await p.getByRole('dialog').getByRole('button',{name:/^Add to order/}).click();await p.getByRole('button',{name:/^Charge /}).click();const pickup=p.getByRole('dialog',{name:'Pick-up Code',exact:true});await pickup.getByRole('button',{name:'9',exact:true}).click();await pickup.getByRole('button',{name:'8',exact:true}).click();await pickup.getByRole('button',{name:'2',exact:true}).click();await pickup.getByRole('button',{name:'1',exact:true}).click();await pickup.getByRole('button',{name:/^Continue to Payment/}).click();
+await p.getByRole('button',{name:/^(PromptPay|QR)/}).click();const started=p.waitForResponse(r=>new URL(r.url()).pathname==='/api/payments/attempts'&&r.request().method()==='POST');await p.getByRole('button',{name:'Show payment QR',exact:true}).click();const response=await started;S.assert.equal(response.status(),200);const {attempt}=await response.json();S.fnbSale=attempt.saleId;S.fnbAttempt=attempt.id;S.receipt.reads.fnbBefore={saleId:attempt.saleId,attemptId:attempt.id,status:attempt.status};S.save();await S.both('02a-fnb-B-waiting-qr.png','B has one F&B sale and its waiting QR; QR masked',p,S.d);return S.receipt.reads.fnbBefore;
+--> {
+ "ok": false,
+ "error": "TimeoutError: locator.click: Timeout 30000ms exceeded. | Call log: | \u001b[2m  - waiting for getByRole('dialog').getByRole('button', { name: /^Add to order/ })\u001b[22m | "
+}
+
+=== 2026-11-13T13:05:08.180Z Read the staging F&B picker after the disposable-seed dialog differed
+S.phase='Read the staging F&B picker after the disposable-seed dialog differed';const p=S.till;return {dialogs:await p.getByRole('dialog').allInnerTexts(),buttons:(await p.getByRole('button').allTextContents()).map(S.flat).filter(x=>/French|Charge|order|Add|Pick|Cash|QR/i.test(x)).slice(-20),cart:await S.cartState(p),ownSales:(await S.stationSales()).map(x=>({id:x.id,status:x.status}))};
+--> {
+ "ok": true,
+ "value": {
+  "dialogs": [],
+  "buttons": [
+   "Cash",
+   "1French fries฿175",
+   "French friesTap to add a note",
+   "Add manual discount",
+   "Charge ฿175"
+  ],
+  "cart": {
+   "configure": null,
+   "pay": null,
+   "panel": null,
+   "membershipCheck": false,
+   "paymentStep": false,
+   "url": "/order-station"
+  },
+  "ownSales": [
+   {
+    "id": "01a1d500-2c19-7232-90d4-4d18ba6d4aa3",
+    "status": "finalised"
+   }
+  ]
+ }
+}
+
+=== 2026-11-13T13:08:16.081Z End synthetic staff sessions while the source CI selector failure is reproduced
+S.phase='End synthetic staff sessions while the source CI selector failure is reproduced';S.keepAlive(false);const revokes=[];for(const who of ['A','B'])revokes.push(await S.revoke(who));S.receipt.reads.ciDiagnosisSessionClosure=revokes;S.save();return {revokes,ownSaleCount:(await S.stationSales()).length,cartNotRungUp:true};
+--> {
+ "ok": true,
+ "value": {
+  "revokes": [
+   {
+    "who": "A",
+    "sessionsEnded": 0,
+    "at": "2026-11-13T13:08:16.166Z",
+    "atMs": 1794575296166
+   },
+   {
+    "who": "B",
+    "sessionsEnded": 1,
+    "at": "2026-11-13T13:08:16.247Z",
+    "atMs": 1794575296247
+   }
+  ],
+  "ownSaleCount": 1,
+  "cartNotRungUp": true
+ }
+}

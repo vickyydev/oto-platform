@@ -1,0 +1,12 @@
+{
+  "at": "2026-11-13T12:59:03.206Z",
+  "url": "https://oto-pos-web-staging.onrender.com/",
+  "assets": [
+    {
+      "path": "/assets/index-BsEDqOAS.js",
+      "status": 200,
+      "sha256": "a7131ad765b30f03835580def48717dabbd4bdf9089353d706daeadd9562bf9c",
+      "handoverGuard": true
+    }
+  ]
+}

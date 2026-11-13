@@ -1,0 +1,55 @@
+{
+  "sha": "157d6cb24d1764dea4d5356615942882f2970e7c",
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1d4fc-d6ed-72df-af7b-7d57916ccf58",
+      "name": "ZZ TEST SCRUM-982 desk till 1794574701707",
+      "prefix": "Z98201",
+      "paymentRouting": {
+        "card": "manual",
+        "qr": "gateway"
+      }
+    },
+    {
+      "kind": "station",
+      "id": "01a1d4fc-de19-71bb-967b-9b069f0c6e89",
+      "name": "ZZ TEST SCRUM-982 phone till 1794574703544",
+      "prefix": "Z98202",
+      "paymentRouting": {
+        "card": "manual",
+        "qr": "gateway"
+      }
+    },
+    {
+      "kind": "display",
+      "label": "desk",
+      "id": "01a1d4fd-6e09-7ff8-a64d-8c5f09837f53",
+      "station": "01a1d4fc-d6ed-72df-af7b-7d57916ccf58"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1d500-2c19-7232-90d4-4d18ba6d4aa3",
+      "stationId": "01a1d4fc-d6ed-72df-af7b-7d57916ccf58",
+      "label": "desk",
+      "phase": "Desktop ticket: A rings up one sale and shows a simulator QR"
+    }
+  ],
+  "reusedStaff": [
+    {
+      "who": "A",
+      "id": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+      "name": "ZZ TEST 964 A",
+      "phone": "+66298964901"
+    },
+    {
+      "who": "B",
+      "id": "01a1d2f9-710f-7e6e-bb8e-d8f17975d09f",
+      "name": "ZZ TEST 964 B",
+      "phone": "+66298964902"
+    }
+  ],
+  "knownSales": [
+    "01a1d500-2c19-7232-90d4-4d18ba6d4aa3"
+  ]
+}
