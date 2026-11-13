@@ -150,3 +150,104 @@ describe('SCRUM-952 — the platform reads a printer with no address as not set 
       .toEqual({ reachability: 'unreachable', paperStatus: 'out', lastError: 'PRINTER_PAPER_OUT' });
   });
 });
+
+/**
+ * SCRUM-971 point 1 — A PRINTER GIVEN AN ADDRESS IS NO LONGER "NOT SET UP".
+ *
+ * Seen in the SCRUM-952 staging proof: a printer's box reported
+ * `DEVICE_NO_ADDRESS` while it had none, somebody then gave it an address,
+ * and it went on reading "not set up" — until its box reported on it again,
+ * and for ever on a box that is switched off — because the row keeps the
+ * box's last error and the Console and the till read "not set up" from that
+ * code. A printer whose address the box can open is now read as not yet
+ * checked since the address was set: reachability and paper unknown, no
+ * error. The box's next report is read as it comes; the audit keeps the row.
+ */
+describe('SCRUM-971 — a printer given an address is never read as not set up', () => {
+  const ADDRESS = '192.0.2.71:9100';
+  const NOT_YET_CHECKED = { reachability: 'unknown', paperStatus: 'unknown', lastError: null };
+  let staleId: string;
+
+  it('before the address: its box’s own report, read as not set up', async () => {
+    staleId = newId();
+    // As its box left it on its last heartbeat (`probeAll`): unknown, unknown, DEVICE_NO_ADDRESS.
+    await ctx.db.insert(device).values({
+      id: staleId,
+      operatorId,
+      branchId,
+      boxId,
+      kind: 'band_printer',
+      label: 'ZZ TEST SCRUM-971 printer given an address',
+      transport: 'simulated',
+      protocol: 'tspl2',
+      reachability: 'unknown',
+      paperStatus: 'unknown',
+      lastError: 'DEVICE_NO_ADDRESS',
+      lastSeenAt: new Date(),
+    });
+    // On the till, where its light reads it: the drop-off band role is free on the seeded T1.
+    await ctx.db.insert(stationDevice).values({ id: newId(), stationId: tillId, role: 'dropoff_band', deviceId: staleId });
+    const res = await get(`/boxes/${boxId}/devices`);
+    expect(res.statusCode, res.body).toBe(200);
+    expect((res.json().devices as Array<Record<string, unknown>>).find((d) => d.id === staleId)).toMatchObject({ address: null, ...NOT_SET_UP });
+  });
+
+  it('the edit that gives it an address answers "not yet checked", never DEVICE_NO_ADDRESS', async () => {
+    const res = await ctx.app.inject({
+      method: 'PATCH',
+      url: `/devices/${staleId}`,
+      headers: { cookie: admin, 'idempotency-key': newId() },
+      payload: { address: ADDRESS },
+    });
+    expect(res.statusCode, res.body).toBe(200);
+    expect(res.json().device).toMatchObject({ address: ADDRESS, ...NOT_YET_CHECKED });
+    // The row and the audit keep what the box last said, untouched.
+    const [row] = await ctx.db.select().from(device).where(eq(device.id, staleId));
+    expect(row).toMatchObject({ address: ADDRESS, lastError: 'DEVICE_NO_ADDRESS' });
+    const [audited] = await ctx.db
+      .select()
+      .from(auditLog)
+      .where(and(eq(auditLog.action, 'device.update'), eq(auditLog.entityId, staleId)));
+    expect(audited!.after).toMatchObject({ address: ADDRESS, lastError: 'DEVICE_NO_ADDRESS' });
+  });
+
+  it('with no box report since: the device list, the till’s light and Health all read it as not yet checked', async () => {
+    const list = await get(`/boxes/${boxId}/devices`);
+    expect(list.statusCode, list.body).toBe(200);
+    expect((list.json().devices as Array<Record<string, unknown>>).find((d) => d.id === staleId))
+      .toMatchObject({ address: ADDRESS, ...NOT_YET_CHECKED });
+
+    const printers = await get(`/stations/${tillId}/printers`);
+    expect(printers.statusCode, printers.body).toBe(200);
+    expect((printers.json().printers as Array<Record<string, unknown>>).find((p) => p.deviceId === staleId))
+      .toMatchObject({ role: 'dropoff_band', ...NOT_YET_CHECKED });
+
+    const health = await get('/ops/health');
+    expect(health.statusCode, health.body).toBe(200);
+    const mine = (health.json().boxes as Array<{ id: string; devices: Array<Record<string, unknown>> }>).find((b) => b.id === boxId)!;
+    expect(mine.devices.find((d) => d.id === staleId)).toMatchObject(NOT_YET_CHECKED);
+  });
+
+  it('the box’s next report on it is read as it comes', async () => {
+    await ctx.db
+      .update(device)
+      .set({ reachability: 'unreachable', paperStatus: 'unknown', lastError: 'PRINTER_UNREACHABLE' })
+      .where(eq(device.id, staleId));
+    const res = await get(`/boxes/${boxId}/devices`);
+    expect((res.json().devices as Array<Record<string, unknown>>).find((d) => d.id === staleId))
+      .toMatchObject({ reachability: 'unreachable', paperStatus: 'unknown', lastError: 'PRINTER_UNREACHABLE' });
+  });
+
+  it('the reading itself: DEVICE_NO_ADDRESS is dropped only once the box can open the address', () => {
+    const reported = { reachability: 'unknown', paperStatus: 'unknown', lastError: 'DEVICE_NO_ADDRESS' };
+    expect(printerReading({ ...reported, kind: 'receipt_printer', address: ADDRESS })).toEqual(NOT_YET_CHECKED);
+    expect(printerReading({ ...reported, reachability: 'reachable', paperStatus: 'ok', kind: 'kitchen_printer', address: '127.0.0.1:9100' }))
+      .toEqual(NOT_YET_CHECKED);
+    // Still none: still not set up.
+    expect(printerReading({ ...reported, kind: 'receipt_printer', address: '' })).toEqual(NOT_SET_UP);
+    // An address the box cannot open is skipped by the box as none, so its report stands.
+    expect(printerReading({ ...reported, kind: 'receipt_printer', address: 'printer one' })).toEqual(reported);
+    // Not a printer: its row, as before.
+    expect(printerReading({ ...reported, kind: 'scanner', address: ADDRESS })).toEqual(reported);
+  });
+});

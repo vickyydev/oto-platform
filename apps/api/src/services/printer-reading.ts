@@ -20,7 +20,23 @@ import { isPrinterKind, printerAddressProblem } from '@oto/shared';
  * Console's Health page draws it as not set up, as the box drawer does.
  *
  * Only a printer with NO address is read anew. A printer with an address,
- * and every device that is not a printer, reads exactly what its row says.
+ * and every device that is not a printer, reads exactly what its row says —
+ * with one exception, below.
+ *
+ * SCRUM-971 — A PRINTER GIVEN AN ADDRESS IS NO LONGER "NOT SET UP".
+ *
+ * The row keeps `DEVICE_NO_ADDRESS` as its last error until its box reports
+ * on it again: until the next heartbeat after the box has pulled the new
+ * address, and for ever on a box that is switched off. The Console and the
+ * till read that code as "not set up" (`readAsNotSetUp`, the till's printer
+ * light), so a printer somebody had just given an address kept saying it had
+ * none. A printer whose address the box can open and whose stored error is
+ * still `DEVICE_NO_ADDRESS` is therefore read as what is true of it: not yet
+ * checked since its address was set — its reachability and its paper unknown,
+ * and no error. The box's next report on it is read as it comes. A legacy
+ * address the box cannot open is left as its row says: the box skips it for
+ * the same reason (`adapterFor` reads it as no address), so the code is still
+ * true of it. The audit trail keeps the raw row either way.
  */
 export const NO_ADDRESS_ERROR = 'DEVICE_NO_ADDRESS';
 
@@ -37,8 +53,14 @@ export function printerReading(row: {
   paperStatus: string;
   lastError: string | null;
 }): PrinterReading {
-  if (isPrinterKind(row.kind) && printerAddressProblem(row.address) === 'missing') {
-    return { reachability: 'unknown', paperStatus: 'unknown', lastError: NO_ADDRESS_ERROR };
+  if (isPrinterKind(row.kind)) {
+    const problem = printerAddressProblem(row.address);
+    if (problem === 'missing') {
+      return { reachability: 'unknown', paperStatus: 'unknown', lastError: NO_ADDRESS_ERROR };
+    }
+    if (problem === null && row.lastError === NO_ADDRESS_ERROR) {
+      return { reachability: 'unknown', paperStatus: 'unknown', lastError: null };
+    }
   }
   return { reachability: row.reachability, paperStatus: row.paperStatus, lastError: row.lastError };
 }
