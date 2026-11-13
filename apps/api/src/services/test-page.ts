@@ -10,7 +10,7 @@ import type { Exec } from './tx';
  *
  * A test print from the till's or the Console's printer card used to print
  * the renderer's committed fixture whatever printer it ran on: "Device Main
- * counter, Model Welltech G4, Address 192.168.88.202:9100" — a printer of the
+ * counter, Model Welltech G4" and a park-network address — a printer of the
  * park's own network, on a ZZ TEST printer of the virtual box (SCRUM-930
  * proof, picture 02d). The box rendered that sample itself
  * (`testPrintJob` in `packages/box-agent/src/printing/index.ts`).

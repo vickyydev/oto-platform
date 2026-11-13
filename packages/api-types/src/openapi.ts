@@ -41075,7 +41075,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description The document for one of this box’s print jobs — a receipt, a prep ticket, a band or an item voucher — as the renderer’s `{ kind, data }` job. Built from the ledger when asked, so a reprint prints the sale as it stands. 404 for a job on another box, and for a job that has no platform document (a test page). */
+        /** @description The document for one of this box’s print jobs — a receipt, a prep ticket, a band, an item voucher, or a test page asked for at a station (composed for the printer the job was routed to) — as the renderer’s `{ kind, data }` job. Built from the ledger when asked, so a reprint prints the sale as it stands. 404 for a job on another box, and for a job that has no platform document (a test page asked for at no station, or whose printer is gone). */
         get: {
             parameters: {
                 query?: never;

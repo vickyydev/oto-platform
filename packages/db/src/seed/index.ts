@@ -1066,8 +1066,8 @@ export async function seed(db: Db = getDb(), opts: SeedOptions = {}): Promise<vo
   // `simulated` transport, so the adapters are written against the truth and
   // only the physical link changes on site.
   //
-  // SCRUM-952 — their addresses are NOT the park's. A seeded printer at the
-  // park's own 192.168.88.x read, on a test page and on the Console, as a
+  // SCRUM-952 — their addresses are NOT the park's. A seeded printer at a
+  // park-network address read, on a test page and on the Console, as a
   // printer of the park's network on a database that is not the park's. Each
   // is in TEST-NET-1 (RFC 5737, kept for documentation) with the last number
   // of the unit it stands for, as Chalong's below: a simulated printer only

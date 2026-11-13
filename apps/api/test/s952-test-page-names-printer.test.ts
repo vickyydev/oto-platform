@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { and, eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { box, boxCommand, branch, device, printJob, station, stationDevice } from '@oto/db';
@@ -14,9 +16,8 @@ import { ADMIN, createTestContext, signInAs, teardownAll, type TestContext } fro
  *
  * Seen in the SCRUM-930 staging proof (picture 02d): a test print from the
  * till's drop-off card came out of a ZZ TEST band printer reading "Device
- * Main counter", "Welltech G4", "Address 192.168.88.202:9100" — the
- * renderer's committed fixture, which the box printed whatever printer it ran
- * on, carrying an address of the park's own network.
+ * Main counter", "Welltech G4" and a park-network address — the renderer's
+ * committed fixture, which the box printed whatever printer it ran on.
  *
  * A station's test page is now composed by the platform for the printer the
  * job is routed to and fetched by the box like a sale's receipt
@@ -147,6 +148,34 @@ describe('SCRUM-952 — a station test page names the printer it runs on', () =>
     const { payload } = await testPrint('receipt', 'bar');
     expect(payload.document).toBeUndefined();
     expect(payload).toMatchObject({ kind: 'receipt', role: 'bar' });
+  });
+
+  /**
+   * SCRUM-971 point 4 — the route's own description said a test page has no
+   * platform document, which stopped being true with the page above.
+   */
+  it('the document route says a station’s test page is one of its documents', () => {
+    const doc = ctx.app.swagger() as { paths?: Record<string, { get?: { description?: string } }> };
+    const said = doc.paths?.['/box/v1/print-jobs/{id}/document']?.get?.description ?? '';
+    expect(said).toContain('a test page asked for at a station');
+    expect(said).not.toContain('no platform document (a test page)');
+  });
+
+  /**
+   * SCRUM-971 point 6 — the comments that describe the old page say a
+   * park-network address without quoting one.
+   */
+  it('the files that describe the old page quote no address of the park’s network', () => {
+    const park = ['192', '168', '88', ''].join('.');
+    const at = (path: string) => fileURLToPath(new URL(path, import.meta.url));
+    for (const file of [
+      at('../src/services/test-page.ts'),
+      at('./s952-test-page-names-printer.test.ts'),
+      at('../../../packages/db/src/seed/index.ts'),
+      at('../../console/src/lib/printerAddress.ts'),
+    ]) {
+      expect(readFileSync(file, 'utf8').includes(park), file).toBe(false);
+    }
   });
 
   it('a copy asked for from History is composed for the same printer', async () => {

@@ -32,8 +32,8 @@ export interface AddressField {
 const OTHER_DEVICE_HINT = `For example ${PRINTER_ADDRESS_EXAMPLE}, or /dev/ttyACM0.`;
 
 /**
- * SCRUM-932 — the Add a device form's grey Address placeholder. It read
- * "192.168.88.204:9100", the park's kids band printer, as if already filled
+ * SCRUM-932 — the Add a device form's grey Address placeholder. It read a
+ * park-network address, the park's kids band printer, as if already filled
  * in; it is an example, and says so.
  */
 export const ADDRESS_PLACEHOLDER = `e.g. ${PRINTER_ADDRESS_EXAMPLE}`;
