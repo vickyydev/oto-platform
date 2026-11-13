@@ -13,7 +13,9 @@
 //   2. a built app writes nothing of a person to the browser's console: the
 //      auth provider, rendered with the build's flags, writes no "[auth-diag]"
 //      line and never the person's e-mail address or name; under Vite's
-//      development server it writes its lines, still without them;
+//      development server it writes its lines, still without them; and no
+//      console line of the app takes a person's record (the employee
+//      editor's Save, the permissions panel: read off the client's files);
 //   3. a text box given `disabled` (the BEO editor's read-only bar lines and
 //      acts) never opens for typing; an enabled one opens as before;
 //   4. the "Get Parent Link" dialog and the AI Fill review dialog carry a
@@ -22,7 +24,7 @@
 // Run from apps/oto-app:
 //   TSX_TSCONFIG_PATH=tests/tsconfig.jsx.json npx tsx tests/beo-left-978-ui.check.ts
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { createRequire, Module } from "node:module";
 import { fileURLToPath } from "node:url";
 import { buildSync } from "esbuild";
@@ -258,6 +260,34 @@ await check("a built app writes nothing of the person to the console; developmen
   }
 });
 
+await check("no console line of the app takes a person's record: the employee editor's Save, the permissions panel", () => {
+  // The lane's review: the employee editor printed the whole form on Save (name, e-mail address, phone,
+  // address, birthday, tax id) and its validation errors (each holding its input); the permissions
+  // panel printed the person's e-mail address. Read off every client file, as text.
+  const SRC = new URL("../client/src/", import.meta.url);
+  const files = (readdirSync(SRC, { recursive: true }) as string[]).filter((f) => /\.(ts|tsx)$/.test(f) && !/auth-diag\.ts$/.test(f));
+  const taken: string[] = [];
+  for (const file of files) {
+    const text = readFileSync(new URL(file.replace(/\\/g, "/"), SRC), "utf8");
+    for (const m of text.matchAll(/\b(console\.(?:log|info|debug)|devLog)\(([^\n]*)/g)) {
+      const args = m[2]!;
+      if (/[(,]\s*(data|errors|values|user|employee|form|formData|record)\s*[,)]/.test(args) || /\b(email|fullName|thaiName|phone|taxIdNumber|ssoNumber)\b/.test(args)) {
+        taken.push(`${file}: ${m[0].slice(0, 120)}`);
+      }
+    }
+  }
+  assert.deepEqual(taken, [], "a console line handed a person's record");
+  const switcher = readFileSync(new URL("../client/src/components/mode-switcher.tsx", import.meta.url), "utf8");
+  const at = switcher.indexOf("const permInfo = {");
+  assert.ok(at > 0, "the permissions panel's line");
+  const permInfo = switcher.slice(at, switcher.indexOf("};", at));
+  assert.equal(/email/i.test(permInfo), false, "the permissions panel's line names no e-mail address");
+  assert.equal(/\bconsole\.log\("\[PERMS DEBUG\]"/.test(switcher), false, "and it is written on the developer's machine only (devLog)");
+  const editor = readFileSync(new URL("../client/src/pages/employee-editor-page.tsx", import.meta.url), "utf8");
+  assert.equal(editor.includes('devLog("Form submitted");'), true, "the editor's Save: no form data");
+  assert.equal(editor.includes('devLog("Form validation failed on:", keys);'), true, "its validation: the fields' names only");
+});
+
 await check("a disabled text box never opens for typing; an enabled one does", async () => {
   const box = doc.createElement("div");
   doc.body.appendChild(box);
@@ -299,4 +329,4 @@ await check("the Parent Link and AI Fill review dialogs carry a hidden descripti
 await act(async () => { root.unmount(); });
 console.log = realLog;
 console.log(`beo-left-978-ui.check: ${checks} checks passed`);
-process.exit(checks === 5 ? 0 : 1);
+process.exit(checks === 6 ? 0 : 1);

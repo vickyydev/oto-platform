@@ -7,7 +7,15 @@
  * only while the app runs under Vite's development server
  * (`import.meta.env.DEV`); a built app writes none. No line, even then,
  * holds more of a person than their id and role.
+ *
+ * The lane's review: the same for the app's other diagnostic lines that
+ * touched a person (`devLog`: the employee editor's Save, the permissions
+ * panel's line), each stripped of the person's record as well.
  */
-export function authDiag(...args: unknown[]): void {
+export function devLog(...args: unknown[]): void {
   if (import.meta.env?.DEV === true) console.log(...args);
+}
+
+export function authDiag(...args: unknown[]): void {
+  devLog(...args);
 }

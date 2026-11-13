@@ -69,6 +69,7 @@ import {
 } from "@/components/ui/dialog";
 import { differenceInDays } from "date-fns";
 import { formatDate, formatCurrency as _formatCurrency } from "@/lib/format-utils";
+import { devLog } from "@/lib/auth-diag";
 import { QRCodeSVG } from "qrcode.react";
 
 // The editor's tabs (SCRUM-563); `?tab=` opens one directly.
@@ -3067,7 +3068,8 @@ export default function EmployeeEditorPage() {
   });
 
   const onSubmit = (data: EmployeeFormData) => {
-    console.log("Form submitted successfully with data:", data);
+    // SCRUM-978: the person's record is never written to the console (it printed the whole form).
+    devLog("Form submitted");
     if (isNew) {
       createMutation.mutate(data);
     } else {
@@ -3077,8 +3079,9 @@ export default function EmployeeEditorPage() {
 
   // Debug: Log form errors when they occur
   const handleFormSubmit = form.handleSubmit(onSubmit, (errors) => {
-    console.log("Form validation failed with errors:", errors);
     const keys = Object.keys(errors);
+    // SCRUM-978: the fields' names only, on the developer's machine (each error holds its input).
+    devLog("Form validation failed on:", keys);
     const personalKeys = /^(fullName|thaiName|nickname|email|phone|address|birthday|nationality|isForeignStaff|visa|workPermit|ssoNumber|taxIdNumber)/;
     // Pay lives on the Payroll tab here (our gated fields), so its errors open that tab.
     const payError = !!(errors.dailyRate || errors.incentiveClauseText || errors.foodAllowancePerDay || errors.defaultMergeData?.salaryThb);

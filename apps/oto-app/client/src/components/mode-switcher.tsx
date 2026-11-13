@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Zap, Palette, Users, Bug, CalendarDays, ClipboardCheck, Settings } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEffect, useState } from "react";
+import { devLog } from "@/lib/auth-diag";
 
 const modeConfig: Record<AppMode, { label: string; icon: typeof Zap; path: string }> = {
   core: { label: "Today", icon: Zap, path: "/core" },
@@ -26,9 +27,10 @@ function PermsDebugPanel() {
     setShowDebug(debugEnabled);
     
     if (debugEnabled && user) {
+      // SCRUM-978: no e-mail address in the console, and the line on the developer's machine only;
+      // the panel below shows the signed-in person their own details on screen, as before.
       const permInfo = {
         userId: user.id,
-        email: user.email,
         role: user.role,
         modules: user.modules,
         currentMode: mode,
@@ -36,7 +38,7 @@ function PermsDebugPanel() {
         shouldShowModuleSwitcher: availableModes.length >= 2,
         hasModulesFromPolicy: !!user.modules,
       };
-      console.log("[PERMS DEBUG]", permInfo);
+      devLog("[PERMS DEBUG]", permInfo);
     }
   }, [user, mode, availableModes]);
   
