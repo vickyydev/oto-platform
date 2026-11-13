@@ -439,7 +439,12 @@ describe('a terminal answer whose result post never landed, taken from the ackno
     expect((await attemptRow(attemptId)).status).toBe('inquiring');
     const sale = (await terminalCommands(attemptId)).find((c) => modeOf(c) === 'sale')!;
     expect(sale).toMatchObject({ state: 'succeeded' });
-    expect(sale.result).toMatchObject({ attemptId, mode: 'sale', outcome: 'timeout', deviceId: qrDeviceId });
+    // The real agent's acknowledgement, key for key: the shape `boxAck` copies.
+    const terminalRef = (await attemptRow(attemptId)).terminalRef;
+    expect(sale.result).toEqual(boxAck({
+      attemptId, mode: 'sale', deviceId: qrDeviceId, protocol: 'digio_tlv',
+      outcome: 'timeout', terminalRef, responseCode: '401',
+    }).result);
     expect((await terminalCommands(attemptId)).filter((c) => modeOf(c) === 'inquire')).toHaveLength(1);
     expect(await audits(attemptId, 'payment.attempt.result_from_command')).toHaveLength(0);
   });

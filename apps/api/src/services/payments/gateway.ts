@@ -2456,6 +2456,11 @@ export interface PendingSummary extends Record<string, unknown> {
  * a counter's tender that nobody at a counter could act on. An abandoned
  * checkout is not a stuck tender. Its booking expires through the hold below,
  * and the poller closes its attempt.
+ *
+ * SCRUM-979 — before it counts, it settles the held card payments the box has
+ * already answered for (`recoverHeldTerminalTenders`), and a card on a
+ * terminal waiting for a person has its own line, "Card payments waiting for
+ * staff" (`payments.awaiting_staff:<branch>`), rather than none.
  */
 export async function flagPendingPayments(
   db: Db,
