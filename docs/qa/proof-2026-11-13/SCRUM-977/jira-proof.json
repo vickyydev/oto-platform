@@ -1,0 +1,79 @@
+[
+  {
+    "key": "SCRUM-977",
+    "before": {
+      "status": "In Progress",
+      "summary": "A phone till turned on its side becomes the desk till, and the family's form and the sale are lost"
+    },
+    "after": {
+      "status": "Deployed",
+      "summary": "A phone till turned on its side becomes the desk till, and the family's form and the sale are lost"
+    },
+    "comment": "14708",
+    "attachments": [
+      {
+        "id": "13492",
+        "name": "2026-11-13-till-02b-phone-740x360-top-kept-child.png"
+      },
+      {
+        "id": "13493",
+        "name": "2026-11-13-till-02c-phone-upright-again-kept-child.png"
+      },
+      {
+        "id": "13494",
+        "name": "2026-11-13-till-10-cleanup-and-proof-limits.png"
+      }
+    ],
+    "verified": true
+  },
+  {
+    "key": "SCRUM-975",
+    "before": {
+      "status": "In Progress",
+      "summary": "Counter display after the display-fix lane: the first screen's pills at 40 pixels, a lost photo answer still shows Retry, a display left open never takes a new build, and small points"
+    },
+    "after": {
+      "status": "In Progress",
+      "summary": "Counter display after the display-fix lane: the first screen's pills at 40 pixels, a lost photo answer still shows Retry, a display left open never takes a new build, and small points"
+    },
+    "comment": "14710",
+    "attachments": [
+      {
+        "id": "13495",
+        "name": "2026-11-13-till-04c-display-help-delivered-after-reconnect.png"
+      },
+      {
+        "id": "13496",
+        "name": "2026-11-13-till-04d-display-french-heading-clear.png"
+      },
+      {
+        "id": "13497",
+        "name": "2026-11-13-till-10-cleanup-and-proof-limits.png"
+      }
+    ],
+    "verified": true
+  },
+  {
+    "key": "SCRUM-979",
+    "before": {
+      "status": "In Progress",
+      "summary": "Card payments after the refused-command fix: the till says \"Payment declined\" where the terminal was never asked, a lost terminal answer still holds the sale, and points left by the reviews"
+    },
+    "after": {
+      "status": "In Progress",
+      "summary": "Card payments after the refused-command fix: the till says \"Payment declined\" where the terminal was never asked, a lost terminal answer still holds the sale, and points left by the reviews"
+    },
+    "comment": "14711",
+    "attachments": [
+      {
+        "id": "13498",
+        "name": "2026-11-13-till-07f-card-not-started-reason-after-reload.png"
+      },
+      {
+        "id": "13499",
+        "name": "2026-11-13-till-10-cleanup-and-proof-limits.png"
+      }
+    ],
+    "verified": true
+  }
+]
