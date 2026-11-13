@@ -1,0 +1,527 @@
+[
+  {
+    "key": "SCRUM-221",
+    "title": "S2-23 — Console: the owner's super-admin control surface across the whole suite",
+    "status": "To Do",
+    "assessment": "Reconcile the umbrella with delivered Console phases and explicitly retained exclusions (649 and other follow-ups). Do not rebuild the Console from this old description.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-221"
+  },
+  {
+    "key": "SCRUM-222",
+    "title": "S2-22 — The park's own data: production restore into the central database, platform seeding from it, Radar on real figures, cutover rehearsal",
+    "status": "To Do",
+    "assessment": "Reconcile the broad cutover story with 791 and the HR production run. Platform seeding, media, analytics history and repeatable final cutover remain separate acceptance work.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-222"
+  },
+  {
+    "key": "SCRUM-223",
+    "title": "S2-24 — Branch box image and on-site readiness: the bring-up runbook and the switch from simulator to real device",
+    "status": "In Progress",
+    "assessment": "Keep the gate/bench story paused at its owner freeze. Counter verification is a narrower existing workstream.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-223"
+  },
+  {
+    "key": "SCRUM-224",
+    "title": "S2-16 — Sprint 2 acceptance run, load and soak checks, Render staging refresh, sprint-2 tag, SPRINT_2_REPORT.md and Jira evidence per story",
+    "status": "To Do",
+    "assessment": "Run final cross-module acceptance, load/soak and release report after the defect and hardware gates; no sprint-complete claim yet.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-224"
+  },
+  {
+    "key": "SCRUM-274",
+    "title": "The staff app stores times with no timezone, and the platform writes into those columns",
+    "status": "To Do",
+    "assessment": "Latest comment says UTC interpretation was established and the item is buildable. Re-census current columns and final dump before designing immutable migrations; do not use the old Bangkok conversion proposal.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-274"
+  },
+  {
+    "key": "SCRUM-277",
+    "title": "Twenty-seven built endpoints have no screen calling them, including photo storage and ending a shift",
+    "status": "To Do",
+    "assessment": "Re-run the current caller inventory. The original 27-endpoint description is obsolete; distinguish now-used routes, intentionally API-only routes and owner build-or-remove choices.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-277"
+  },
+  {
+    "key": "SCRUM-426",
+    "title": "Legacy four-digit codes at the till when the Radar dump arrives (audit §3.1, T26)",
+    "status": "To Do",
+    "assessment": "Retain the legacy-code input/ruling dependency; match to the current Radar dump and existing compatibility work before building.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-426"
+  },
+  {
+    "key": "SCRUM-482",
+    "title": "Rulings needed: who may issue credit vouchers, and what the promotions report counts",
+    "status": "To Do",
+    "assessment": "Owner choices remain for issuing credit vouchers and reporting redeemed/refunded promotions; preserve current rules meanwhile.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-482"
+  },
+  {
+    "key": "SCRUM-485",
+    "title": "Stock rulings: count approvals, starting figures, booth prizes, who moves stock, the opening count",
+    "status": "To Do",
+    "assessment": "Reconcile status: latest comment says the remaining opening-stock decision is settled, but Jira remains To Do. Verify any separately recorded booth-stock remainder before closure.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-485"
+  },
+  {
+    "key": "SCRUM-513",
+    "title": "A sale recorded after its day closed has no correction path",
+    "status": "To Do",
+    "assessment": "Design the owner-approved late-sale correction and acknowledgement flow for an already closed day; preserve the closed-day freeze.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-513"
+  },
+  {
+    "key": "SCRUM-553",
+    "title": "OTO App QA Assistant AI intake - Maria and park testers",
+    "status": "In Progress",
+    "assessment": "Keep as the ongoing QA intake, not a finite feature awaiting implementation. Reconcile its old empty-intake comment with the 17 current subtasks.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-553"
+  },
+  {
+    "key": "SCRUM-564",
+    "title": "Payroll for real: the park payroll rulebook built on the central database",
+    "status": "In Progress",
+    "assessment": "R0-R7 have delivered evidence; verify the full-month retirement gate before R8. Keep the remaining four children distinct.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-564"
+  },
+  {
+    "key": "SCRUM-672",
+    "title": "Record verified deployment events in Admin release history",
+    "status": "Testing",
+    "assessment": "Stage-one UI is proven; the release feed is deliberately disabled pending the owner decision on service credentials. Prove actual deployment ingestion and replay only after that decision.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-672"
+  },
+  {
+    "key": "SCRUM-675",
+    "title": "Q27 Stage 2: dated analytics cutover after the legacy dump",
+    "status": "To Do",
+    "assessment": "Dated analytics cutover remains gated on verified frozen legacy history. HR database restore alone does not supply that acceptance.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-675"
+  },
+  {
+    "key": "SCRUM-687",
+    "title": "Receipt prints as one slip with the F&B credit and larger bold type",
+    "status": "Testing",
+    "assessment": "Printed receipt software has recorded release evidence; obtain the physical slip photo and verify one cut, layout and wallet QR on the counter.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-687"
+  },
+  {
+    "key": "SCRUM-688",
+    "title": "Band printer that answers status only in error is held as \"stopped answering\" after its first error",
+    "status": "Testing",
+    "assessment": "Re-test paper-out then reload on the real band printer without restarting the box; keep Testing until the physical recovery is proven.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-688"
+  },
+  {
+    "key": "SCRUM-689",
+    "title": "Band printer settings: black-mark sensing and print window for wristband stock",
+    "status": "Testing",
+    "assessment": "Verify black-mark sensing and the white print window on real stock and attach the printed-band evidence.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-689"
+  },
+  {
+    "key": "SCRUM-700",
+    "title": "Counter box reads the USB barcode scanner itself and publishes scans to the till",
+    "status": "Testing",
+    "assessment": "Old comment says Pi-to-till transport is missing; 736 subsequently shipped it. Reconcile that superseded blocker and prove the actual USB cradle on the Pi.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-700"
+  },
+  {
+    "key": "SCRUM-701",
+    "title": "Boxes join the private network at install, and a release is pushed to any box with one command",
+    "status": "Testing",
+    "assessment": "Installer key-based network join and pushing a release by private-network name remain separate proof points; a manual browser join/local-IP push is insufficient.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-701"
+  },
+  {
+    "key": "SCRUM-705",
+    "title": "A gate station has only one assignment slot for its controller and readers",
+    "status": "To Do",
+    "assessment": "Gate controller/reader assignment obstruction belongs to paused 223. Do not silently fold physical gate activation into counter work.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-705"
+  },
+  {
+    "key": "SCRUM-709",
+    "title": "2C2P PromptPay: what the park must obtain before real QR payments can be taken",
+    "status": "To Do",
+    "assessment": "Production gateway inputs are an owner/provider prerequisite; simulator proof is not real PromptPay acceptance.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-709"
+  },
+  {
+    "key": "SCRUM-711",
+    "title": "The counter box drives the customer display screen",
+    "status": "Testing",
+    "assessment": "The Pi has a recorded successful reboot/display proof; finish the installer and child-ticket checks instead of calling the entire hardware story complete.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-711"
+  },
+  {
+    "key": "SCRUM-713",
+    "title": "The counter keeps selling with the internet down: the box serves the display and the till reaches it on the counter network",
+    "status": "Testing",
+    "assessment": "Reconcile old comments with delivered child fixes; real router-outage selling/display and secure bridge configuration still need a bounded counter proof.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-713"
+  },
+  {
+    "key": "SCRUM-714",
+    "title": "Replace the counter Pi boot drive: NVMe SSD on an M.2 HAT, or an endurance microSD",
+    "status": "To Do",
+    "assessment": "Owner hardware purchase/replacement decision, then clone/restore and degraded-drive checks. No drive changes under the software resume.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-714"
+  },
+  {
+    "key": "SCRUM-733",
+    "title": "The till Messages tab is sample data and shows a message as delivered and read when nothing was sent",
+    "status": "To Do",
+    "assessment": "Confirmed mock MessagingPanel: it simulates delivered/read with timers. Real parent messaging is NOT BUILT on this surface; agree wiring or truthful disabling before use.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-733"
+  },
+  {
+    "key": "SCRUM-770",
+    "title": "One employee profile for the whole employment: offboard, occasional shifts, rehire",
+    "status": "In Review",
+    "assessment": "Rehire and pay-only access already shipped under 794/769. Remaining decision is single-shift employment/pay handling; do not implement another rehire system.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-770"
+  },
+  {
+    "key": "SCRUM-780",
+    "title": "Tickets screen says \"Unlock this till on its box first\" right after the till is unlocked on its box",
+    "status": "Testing",
+    "assessment": "Till-side fix exists; real box-agent staging proof and startup wording decision remain. Prior one-run temporary-settings approval is not a standing configuration mandate.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-780"
+  },
+  {
+    "key": "SCRUM-791",
+    "title": "Restore the OTO App's production data into staging so the HR app is tested on the park's own records",
+    "status": "Testing",
+    "assessment": "Restore tooling and runs exist, including a later production use. Reconcile the staging acceptance checklist and explicit media/face limitations; do not repeat restore without a planned cutover.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-791"
+  },
+  {
+    "key": "SCRUM-864",
+    "title": "Till flow consistency follow-ups before the park demo",
+    "status": "In Progress",
+    "assessment": "Use as the till follow-up umbrella; close only after its remaining children and decisions are reconciled.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-864"
+  },
+  {
+    "key": "SCRUM-921",
+    "title": "HR app go-live: 14 active people have no phone number and cannot sign in at the launcher",
+    "status": "In Progress",
+    "assessment": "Obtain and verify the 14 missing staff phone numbers through the owner process; no invented contact information.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-921"
+  },
+  {
+    "key": "SCRUM-922",
+    "title": "HR app go-live: one real staff member signs in on the live link",
+    "status": "To Do",
+    "assessment": "Observe one authorized real staff sign-in on production; administrator health checks do not satisfy this.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-922"
+  },
+  {
+    "key": "SCRUM-923",
+    "title": "HR app go-live: switch the domains to the production launcher and HR app",
+    "status": "To Do",
+    "assessment": "Owner-controlled domain/DNS cutover remains separate approval and execution.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-923"
+  },
+  {
+    "key": "SCRUM-924",
+    "title": "Production: land the one-off set-up script (company, parks, first administrator, launcher tiles)",
+    "status": "To Do",
+    "assessment": "Review the three local production-bootstrap commits against current main, then land only within the approved production-tool scope.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-924"
+  },
+  {
+    "key": "SCRUM-925",
+    "title": "Production: settings and data to put in place before the till goes live there",
+    "status": "To Do",
+    "assessment": "Prepare production till configuration, data and payment readiness separately; staging fixes do not authorize production till launch.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-925"
+  },
+  {
+    "key": "SCRUM-959",
+    "title": "Split view at 1440: the header tabs stay in view, and the cut labels found in the proof",
+    "status": "Testing",
+    "assessment": "Retain the remaining header/tab design ruling; distinguish already fixed layout points.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-959"
+  },
+  {
+    "key": "SCRUM-961",
+    "title": "Measure the party slip job's read of the OTO App's event-packages view on staging, and turn the JIT compiler off for the platform if it costs time",
+    "status": "To Do",
+    "assessment": "Measure the party-view query and JIT cost on staging before proposing a connection setting change; test-only speedup is not production evidence.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-961"
+  },
+  {
+    "key": "SCRUM-962",
+    "title": "The printed receipt adds up after a code, and small points left by the family form's second lane",
+    "status": "To Do",
+    "assessment": "Reconcile proved language/name/sideways-small-screen parts; receipt arithmetic presentation, charge-mode confirmation and Pi kiosk-source verification remain.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-962"
+  },
+  {
+    "key": "SCRUM-964",
+    "title": "A kept sale after a session end: F&B and Shop orders with a payment waiting, and small points left by the reviews",
+    "status": "Testing",
+    "assessment": "Keep Testing. Seven of eight proof points passed; cross-staff waiting-payment continuation failed and is owned by 982.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-964"
+  },
+  {
+    "key": "SCRUM-969",
+    "title": "After the split-view follow-up: End of Day's words for a part-paid food order, the phone F&B at a session end, and small points",
+    "status": "To Do",
+    "assessment": "Points 1 and 2 have landed proof. Retain the remaining promo/display, narrow layout and proof-driver issues; correct stale 'not started' text.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-969"
+  },
+  {
+    "key": "SCRUM-974",
+    "title": "Counter box installer: points left by the reviews of the vertical display lane (a missing end marker, --no-kiosk on a box that had a screen, the release's own guide)",
+    "status": "To Do",
+    "assessment": "Fix installer malformed-marker handling and truthful no-kiosk behavior; preserve user-managed configuration and test failures without touching a live Pi.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-974"
+  },
+  {
+    "key": "SCRUM-975",
+    "title": "Counter display after the display-fix lane: the first screen's pills at 40 pixels, a lost photo answer still shows Retry, a display left open never takes a new build, and small points",
+    "status": "In Progress",
+    "assessment": "Finish the paused till lane's review and proof; separate owner questions about pill sizes/offline screens from already scoped fixes.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-975"
+  },
+  {
+    "key": "SCRUM-977",
+    "title": "A phone till turned on its side becomes the desk till, and the family's form and the sale are lost",
+    "status": "In Progress",
+    "assessment": "Main still chooses phone/desk by width. Complete the saved 14-commit lane, second review and rotation proof before landing.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-977"
+  },
+  {
+    "key": "SCRUM-979",
+    "title": "Card payments after the refused-command fix: the till says \"Payment declined\" where the terminal was never asked, a lost terminal answer still holds the sale, and points left by the reviews",
+    "status": "In Progress",
+    "assessment": "Preserve five local commits; add caught recovery/logging plus the real GET regression test, rebase, gate, deploy named API and prove. Till messaging points land through 977.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-979"
+  },
+  {
+    "key": "SCRUM-980",
+    "title": "Devices in the Console: a prefix left on a display station cannot be cleared, \"Add a device\" writes settings nobody chose, and small points left by the reviews",
+    "status": "To Do",
+    "assessment": "Fix stale prefix/assignments when changing station kind and safe retry behavior; retain printer-creation defaults and seeded printer choices for the owner.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-980"
+  },
+  {
+    "key": "SCRUM-981",
+    "title": "After the kept-sale lane: a second person continuing a cart loses the first person's approved rate with no word, the display keeps the ended person's screen for up to a minute, and points left by the reviews",
+    "status": "To Do",
+    "assessment": "Implement only the already scoped handover reliability points with 982. Keep rate carry-over, attribution and display-hold policy choices explicit.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-981"
+  },
+  {
+    "key": "SCRUM-982",
+    "title": "A QR payment that is waiting is forgotten when a different person continues a kept sale: the till asks for the money again and can record cash on a sale the QR already paid",
+    "status": "To Do",
+    "assessment": "Highest immediate new money defect: restore the sale's existing payment after staff changes and prohibit a second sale. Ticket path falsely says Cash; F&B proof created a second cash sale while the old QR was live.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-982"
+  },
+  {
+    "key": "SCRUM-984",
+    "title": "F&B menu: the categories grouped under three tabs, Food, Drinks and Special (staging)",
+    "status": "Testing",
+    "assessment": "Records grouped on staging; inspect Food/Drinks/Special on desktop and phone and attach proof. Category combining and production application remain unapproved.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-984"
+  },
+  {
+    "key": "SCRUM-776",
+    "title": "Drop-off check-in notice sent to the parent on real WhatsApp, with a Confirm button",
+    "status": "In Review",
+    "assessment": "Reconcile the old direct-Meta prerequisite with the newer Twilio direction on 908; real notice delivery and parent-confirmation handling remain unproven.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-776"
+  },
+  {
+    "key": "SCRUM-823",
+    "title": "In Birthdays & Events, advice and choice questions go to a person at once, who is notified",
+    "status": "Testing",
+    "assessment": "Routing part has proof; bell/GM notification half waits for the recorded permission change and its proof. Do not close the whole ticket.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-823"
+  },
+  {
+    "key": "SCRUM-844",
+    "title": "The older free-text AI Fill can read a deposit that was only ASKED as a deposit RECEIVED",
+    "status": "To Do",
+    "assessment": "Prioritize a regression and fix for the legacy free-text requested-versus-received deposit distinction; do not infer that catalogue-fill protections cover it.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-844"
+  },
+  {
+    "key": "SCRUM-908",
+    "title": "Connect a real WhatsApp number to the unified inbox through Twilio",
+    "status": "Testing",
+    "assessment": "Adapter/sandbox work exists; owner/provider configuration and authorized real end-to-end delivery remain. No unsolicited messages.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-908"
+  },
+  {
+    "key": "SCRUM-945",
+    "title": "Kitchen plan to the till: points left by the reviews of SCRUM-906",
+    "status": "To Do",
+    "assessment": "Prioritize legacy duplicated adults/kids money risk and slip update/rebase cases. Current 0050 preserves the older list rule; census affected data and settle the interpretation before changing historical charges.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-945"
+  },
+  {
+    "key": "SCRUM-965",
+    "title": "Book Date: old readings after a Fetch from chat, the waiting line on a phone, and a cleared pick",
+    "status": "To Do",
+    "assessment": "Fix stale Book Date alternatives and phone footer layout; retain the cleared-pick rule for owner confirmation.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-965"
+  },
+  {
+    "key": "SCRUM-966",
+    "title": "Kitchen plan on the till: the BEO's \"kitchen required\" switch, the extras' amounts with a service charge, and points left by the reviews",
+    "status": "To Do",
+    "assessment": "Point 5 is landed with 978; points 1/6 are owner decisions, 2-4 are separate platform/slip work, and the toast belongs to the till. Do not rebuild the whole bundle.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-966"
+  },
+  {
+    "key": "SCRUM-968",
+    "title": "BEO extras and the fill: the holiday price in the hint, a coded line the till menu does not list, and points left by the reviews",
+    "status": "To Do",
+    "assessment": "Points 4 and app-side 7 are landed. Holiday pricing, unseen codes, adult-extra copying and PARTY-code charging need separately tracked decisions/work.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-968"
+  },
+  {
+    "key": "SCRUM-976",
+    "title": "BEO fill and PDF: a date read as a chat total, the adults' line on the PDF, and small points left by the reviews of the read-fix lane",
+    "status": "Testing",
+    "assessment": "Finish the combined 978 proof and publish its evidence; keep Testing until the missing scenarios and cleanup are verified.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-976"
+  },
+  {
+    "key": "SCRUM-978",
+    "title": "OTO App: \"Recent Updates\" opens Edit Event with blank defaults, the BEO PDF loses the adults' price of a dish the kids also have, and the app writes the signed-in person's record to the browser console",
+    "status": "Testing",
+    "assessment": "First census and remove only the interrupted run's exact fixtures, then complete privacy and adults-switch scenarios, inspect/publish proof and verify cleanup. Existing 23 PNGs are untracked partial evidence.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-978"
+  },
+  {
+    "key": "SCRUM-983",
+    "title": "BEO editor and PDF: the + button joins a count stored as text, a line with no count prints \"nullx\", and points left by the reviews of the leftovers lane",
+    "status": "To Do",
+    "assessment": "Confirmed text count concatenation and raw null PDF quantities. Fix these reliability faults, complete editor read-only behavior and date labeling; separate money-rule and API catalogue questions.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-983"
+  },
+  {
+    "key": "SCRUM-497",
+    "title": "Till details for the owner to confirm",
+    "status": "In Progress",
+    "assessment": "Consolidate only genuinely unanswered decisions. The October 13 reference is superseded in part by October 14 and November rulings.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-497"
+  },
+  {
+    "key": "SCRUM-573",
+    "title": "Payroll R8: retire the old payroll engine",
+    "status": "To Do",
+    "assessment": "Retire old payroll engine only after the recorded full-month gate is actually satisfied; calendar time passing is not proof.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-573"
+  },
+  {
+    "key": "SCRUM-574",
+    "title": "Payroll: drop the old payroll tables (contract)",
+    "status": "To Do",
+    "assessment": "Forward-only payroll table removal only after 573 and restore/count evidence; no premature destructive cleanup.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-574"
+  },
+  {
+    "key": "SCRUM-575",
+    "title": "Payroll: revenue reader for month inputs",
+    "status": "To Do",
+    "assessment": "Build the monthly revenue/VAT/service-charge reader from POS under the approved payroll scope, preserving golden calculations.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-575"
+  },
+  {
+    "key": "SCRUM-576",
+    "title": "Payroll: trim the legacy month-end feed",
+    "status": "To Do",
+    "assessment": "Trim the legacy feed only behind parity tests after the retirement prerequisites.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-576"
+  },
+  {
+    "key": "SCRUM-649",
+    "title": "P5-7 Data tools: demo reset, seed profiles, retention, PDPA erasure, backup status, rehearsal",
+    "status": "To Do",
+    "assessment": "P5 Data tools remain explicitly descoped and NOT BUILT as a delivered suite. Do not reopen as an incidental Console repair.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-649"
+  },
+  {
+    "key": "SCRUM-753",
+    "title": "History cannot look up a wristband during a platform outage",
+    "status": "To Do",
+    "assessment": "Offline History lookup remains separate from scanner delivery; agree cache completeness and permitted actions, then test online/offline on a real agent.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-753"
+  },
+  {
+    "key": "SCRUM-892",
+    "title": "The phone till payment screen shows a whole order line above the QR",
+    "status": "To Do",
+    "assessment": "Owner layout choice on showing a complete order line above phone QR; do not shrink payment affordances by preference.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-892"
+  },
+  {
+    "key": "SCRUM-895",
+    "title": "A counter screen that starts before the Wi-Fi recovers by itself",
+    "status": "Testing",
+    "assessment": "Installer code landed; prove boot-before-network recovery on the actual Pi.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-895"
+  },
+  {
+    "key": "SCRUM-896",
+    "title": "The counter screen may use its webcam without a tap on Allow",
+    "status": "Testing",
+    "assessment": "Installer camera-permission option landed; prove the requested physical camera behavior on the Pi.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-896"
+  },
+  {
+    "key": "SCRUM-910",
+    "title": "A party's deposit is counted once after a settled party is refunded whole",
+    "status": "To Do",
+    "assessment": "Owner ruled on13 November: keep the deposit with the party after a full settlement refund; refund only till-taken money. Implementation and proof are now authorized in stage3; the prior policy hold is resolved.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-910"
+  },
+  {
+    "key": "SCRUM-919",
+    "title": "One Thai typeface across the till, the customer display and the receipt preview",
+    "status": "To Do",
+    "assessment": "Thai font is bundled and portions of the UI have proof; finish tablet/Pi/separate-display/receipt checks and owner visual acceptance.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-919"
+  },
+  {
+    "key": "SCRUM-928",
+    "title": "The box installer sets up a customer display that stands vertically, with touch following the turn",
+    "status": "Testing",
+    "assessment": "Vertical display/touch installer is landed; inspect existing Pi settings and prove installation, all four touch corners and reboots.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-928"
+  },
+  {
+    "key": "SCRUM-929",
+    "title": "The till's Display theme switch changes a separate paired customer display",
+    "status": "Testing",
+    "assessment": "Web display theme behavior has automated evidence; prove it on the actual paired counter display before closure.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-929"
+  },
+  {
+    "key": "SCRUM-937",
+    "title": "The Thai drop-off form shows its three confirmations in Thai and spaces a child's name from the Thai words",
+    "status": "To Do",
+    "assessment": "Thai consent strings are still English in recorded proof. Provide the approved translated settings and spacing, with 919.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-937"
+  },
+  {
+    "key": "SCRUM-942",
+    "title": "A till does not leave a family half-way through the form on the paired display",
+    "status": "Testing",
+    "assessment": "Lock-screen waiting-family messaging is built/proven; keeping the till awake from family activity remains an owner choice and Pi release proof remains.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-942"
+  },
+  {
+    "key": "SCRUM-953",
+    "title": "Money screens: a settlement is headed once, the discount stays on one line, and small points from the proof",
+    "status": "Testing",
+    "assessment": "Several money-screen points have proof; remaining party-page loading/layout points overlap the saved till lane. Reconcile rather than repeat completed work.",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-953"
+  }
+]

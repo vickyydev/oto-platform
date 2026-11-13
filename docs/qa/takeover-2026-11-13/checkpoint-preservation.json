@@ -1,0 +1,260 @@
+{
+  "createdAt": "2026-11-13T10:46:14.912Z",
+  "main": "26c308edc5c09c3f576d5189b9e58ad8f1cbabe7",
+  "lanes": [
+    {
+      "name": "979",
+      "lane": "C:/oto-lanes/payleft979-20261113",
+      "branch": "lane/payleft979-20261113",
+      "head": "79a4d896ba3a1837845e23240d18ac101fec5903",
+      "base": "ac98c5d6a64793ab49b68e26d9b7ecdb3ca6c57f",
+      "commits": [
+        "22039b4cd00fdcb2839cc719dfc636f99cab9a48",
+        "df1f8ab9a26dec93f3c922b2a82f5cbb2cb07186",
+        "f1f969698e18862918c7f347a624d56ef40d89c6",
+        "1bd2895b1fe35eb8fcaab1da028f22bbf5099429",
+        "79a4d896ba3a1837845e23240d18ac101fec5903"
+      ],
+      "bundle": "C:\\oto-lanes\\takeover-preserved-20261113\\979-79a4d896b.bundle",
+      "sha256": "f70055f97f38c9ee0be3ede6948505a9a513ec1fbfe9ea1036b9a0a6ee8d9274",
+      "verified": true
+    },
+    {
+      "name": "977",
+      "lane": "C:/oto-lanes/phoneturn977-20261113",
+      "branch": "lane/phoneturn977-20261113",
+      "head": "2a4e18576e8a4b477c2b84b0e0deb8df5a0af42d",
+      "base": "faaca6f622e3a7fab221a4d993ff4a738e918ecf",
+      "commits": [
+        "53148fe1c635e5aed18019fe5a55b2d875d88bc5",
+        "a12975936c038fd42e5429eb01497abd6c8a4e9b",
+        "f3d2981a910d644ff9685ad75f985c0ab1e87daa",
+        "4545becc084fc8f32ce28e39ef16ef342abfb894",
+        "70e4cadd234f096086aea494a5ef9cf789e663c0",
+        "a0fb600375f8304a3005c36449bfd1cdac333b53",
+        "67420cc468e9acfb396d4e12cf3a4f7eb0ae09b2",
+        "84d59e953dca5e9afea8d22b2e90d3d53967538f",
+        "108f2c2230a2880878f7352cf6b24142c2a428fc",
+        "a8de9378886721ac2cef56af6870c348c576070d",
+        "e6aa42dcece29cd24a09bf7ef2f53e41b645d806",
+        "3823c80889d93811c1f16b72f1b1db1084aa8ba7",
+        "954df7f0adf01c8cc016bd125abd1ac1267e1992",
+        "2a4e18576e8a4b477c2b84b0e0deb8df5a0af42d"
+      ],
+      "bundle": "C:\\oto-lanes\\takeover-preserved-20261113\\977-2a4e18576.bundle",
+      "sha256": "d53164cbf5344e85e5e27d13f5408378938dcf638499cd699b65b655164e2550",
+      "verified": true
+    },
+    {
+      "name": "production-bootstrap",
+      "lane": "C:/oto-lanes/golive-2026-11-12",
+      "branch": "lane/golive-2026-11-12",
+      "head": "d286ce0ecfdb55eb55382985a775cfb73731019f",
+      "base": "2e12675fb26054bd02e5ade8e4d0846fba45e2d2",
+      "commits": [
+        "fd8b54800102ea51950e94eabb251d9a1e39f2a8",
+        "2b9f29637bacb6986f9bf9ea28dafb2755d8465f",
+        "d286ce0ecfdb55eb55382985a775cfb73731019f"
+      ],
+      "bundle": "C:\\oto-lanes\\takeover-preserved-20261113\\production-bootstrap-d286ce0ec.bundle",
+      "sha256": "086910a620eca82366a069526278a283b134139f2bd261f3a93592582150280c",
+      "verified": true
+    }
+  ],
+  "proof": [
+    {
+      "file": "01a-recent-updates-edit-event-own-values.png",
+      "source": "C:\\Users\\waqar\\OneDrive\\Desktop\\Projects\\oto-pos\\docs\\qa\\proof-2026-11-13\\SCRUM-978\\01a-recent-updates-edit-event-own-values.png",
+      "backup": "C:\\oto-lanes\\takeover-preserved-20261113\\SCRUM-978-partial\\01a-recent-updates-edit-event-own-values.png",
+      "sha256": "da654dae996a8cd65ea50391a74a82ee36234ab042a9c5d410954d1ba57ce49a"
+    },
+    {
+      "file": "01b-recent-updates-adults-9-before-update.png",
+      "source": "C:\\Users\\waqar\\OneDrive\\Desktop\\Projects\\oto-pos\\docs\\qa\\proof-2026-11-13\\SCRUM-978\\01b-recent-updates-adults-9-before-update.png",
+      "backup": "C:\\oto-lanes\\takeover-preserved-20261113\\SCRUM-978-partial\\01b-recent-updates-adults-9-before-update.png",
+      "sha256": "d9f9c80f1db624f0f0b7aeb19fb5f7228da623ef892a64d8c9e8013324e7ca0d"
+    },
+    {
+      "file": "01c-recent-updates-reopened-reads-9.png",
+      "source": "C:\\Users\\waqar\\OneDrive\\Desktop\\Projects\\oto-pos\\docs\\qa\\proof-2026-11-13\\SCRUM-978\\01c-recent-updates-reopened-reads-9.png",
+      "backup": "C:\\oto-lanes\\takeover-preserved-20261113\\SCRUM-978-partial\\01c-recent-updates-reopened-reads-9.png",
+      "sha256": "74227dde0659cbc0dc4c808f5e863f17378c28417bbc2b393875527aeef37a40"
+    },
+    {
+      "file": "01d-recent-updates-adults-back-to-8-before-update.png",
+      "source": "C:\\Users\\waqar\\OneDrive\\Desktop\\Projects\\oto-pos\\docs\\qa\\proof-2026-11-13\\SCRUM-978\\01d-recent-updates-adults-back-to-8-before-update.png",
+      "backup": "C:\\oto-lanes\\takeover-preserved-20261113\\SCRUM-978-partial\\01d-recent-updates-adults-back-to-8-before-update.png",
+      "sha256": "f5a1f2a130cf8d95fc00df6a6ec4ecd4c380a75040a1c5b5d808c70a0ecc3808"
+    },
+    {
+      "file": "02a-editor-kids-margherita-3-at-400.png",
+      "source": "C:\\Users\\waqar\\OneDrive\\Desktop\\Projects\\oto-pos\\docs\\qa\\proof-2026-11-13\\SCRUM-978\\02a-editor-kids-margherita-3-at-400.png",
+      "backup": "C:\\oto-lanes\\takeover-preserved-20261113\\SCRUM-978-partial\\02a-editor-kids-margherita-3-at-400.png",
+      "sha256": "f842816d681fee131129e34e904a57404c606b69862f58e4848bf9e217ef1671"
+    },
+    {
+      "file": "02b-editor-adults-margherita-2-at-450.png",
+      "source": "C:\\Users\\waqar\\OneDrive\\Desktop\\Projects\\oto-pos\\docs\\qa\\proof-2026-11-13\\SCRUM-978\\02b-editor-adults-margherita-2-at-450.png",
+      "backup": "C:\\oto-lanes\\takeover-preserved-20261113\\SCRUM-978-partial\\02b-editor-adults-margherita-2-at-450.png",
+      "sha256": "bb54382287e0a7add07f7da7c10b8dce5563bfc227aaecabacc101aef04c34e2"
+    },
+    {
+      "file": "02c-pdf-margherita-kids-only-400-and-adults-only-450.png",
+      "source": "C:\\Users\\waqar\\OneDrive\\Desktop\\Projects\\oto-pos\\docs\\qa\\proof-2026-11-13\\SCRUM-978\\02c-pdf-margherita-kids-only-400-and-adults-only-450.png",
+      "backup": "C:\\oto-lanes\\takeover-preserved-20261113\\SCRUM-978-partial\\02c-pdf-margherita-kids-only-400-and-adults-only-450.png",
+      "sha256": "6348185a05e7924ffe1305464b706581ba6a5639cf906d38d7771df80c777634"
+    },
+    {
+      "file": "04a-get-parent-link-dialog-described.png",
+      "source": "C:\\Users\\waqar\\OneDrive\\Desktop\\Projects\\oto-pos\\docs\\qa\\proof-2026-11-13\\SCRUM-978\\04a-get-parent-link-dialog-described.png",
+      "backup": "C:\\oto-lanes\\takeover-preserved-20261113\\SCRUM-978-partial\\04a-get-parent-link-dialog-described.png",
+      "sha256": "93a6a1126ff9018ed165a6d551c7bca8f96fde60851332884ae527839d4e98cf"
+    },
+    {
+      "file": "05a-editor-our-cake-3-after-save-and-reload.png",
+      "source": "C:\\Users\\waqar\\OneDrive\\Desktop\\Projects\\oto-pos\\docs\\qa\\proof-2026-11-13\\SCRUM-978\\05a-editor-our-cake-3-after-save-and-reload.png",
+      "backup": "C:\\oto-lanes\\takeover-preserved-20261113\\SCRUM-978-partial\\05a-editor-our-cake-3-after-save-and-reload.png",
+      "sha256": "43cc0731038ee4368828d26bdb5ba00d75e1f43dd5d17c6e7a9e9c16e02a0da0"
+    },
+    {
+      "file": "05b-till-party-page-our-cake-3.png",
+      "source": "C:\\Users\\waqar\\OneDrive\\Desktop\\Projects\\oto-pos\\docs\\qa\\proof-2026-11-13\\SCRUM-978\\05b-till-party-page-our-cake-3.png",
+      "backup": "C:\\oto-lanes\\takeover-preserved-20261113\\SCRUM-978-partial\\05b-till-party-page-our-cake-3.png",
+      "sha256": "2d18afe8bb31633a16a00a2e6e20c6fb25b8c35db98e743eed6c3201e00519d9"
+    },
+    {
+      "file": "05c-day-of-hummus-plus-saved.png",
+      "source": "C:\\Users\\waqar\\OneDrive\\Desktop\\Projects\\oto-pos\\docs\\qa\\proof-2026-11-13\\SCRUM-978\\05c-day-of-hummus-plus-saved.png",
+      "backup": "C:\\oto-lanes\\takeover-preserved-20261113\\SCRUM-978-partial\\05c-day-of-hummus-plus-saved.png",
+      "sha256": "0e31d48d31034dba07ba6b59e5245baeee28159088d22b8062a16c65e8fa61f4"
+    },
+    {
+      "file": "06a-day-of-door-accepts-stored-values-refuses-in-plain-words.png",
+      "source": "C:\\Users\\waqar\\OneDrive\\Desktop\\Projects\\oto-pos\\docs\\qa\\proof-2026-11-13\\SCRUM-978\\06a-day-of-door-accepts-stored-values-refuses-in-plain-words.png",
+      "backup": "C:\\oto-lanes\\takeover-preserved-20261113\\SCRUM-978-partial\\06a-day-of-door-accepts-stored-values-refuses-in-plain-words.png",
+      "sha256": "50bdc9cace83706f12724ededbfd8ca0b6a953cd95814bee92d73f82b87561c6"
+    },
+    {
+      "file": "07a-thread-a-review-adults-margherita-for-25-12-no-chat-total.png",
+      "source": "C:\\Users\\waqar\\OneDrive\\Desktop\\Projects\\oto-pos\\docs\\qa\\proof-2026-11-13\\SCRUM-978\\07a-thread-a-review-adults-margherita-for-25-12-no-chat-total.png",
+      "backup": "C:\\oto-lanes\\takeover-preserved-20261113\\SCRUM-978-partial\\07a-thread-a-review-adults-margherita-for-25-12-no-chat-total.png",
+      "sha256": "0b8a9a8e8ba28fd4d4d47146027ddf2c9084a91ce8680159028f96e2a0d40398"
+    },
+    {
+      "file": "07b-thread-b-review-note-quotes-and-the-same-for-the-adults.png",
+      "source": "C:\\Users\\waqar\\OneDrive\\Desktop\\Projects\\oto-pos\\docs\\qa\\proof-2026-11-13\\SCRUM-978\\07b-thread-b-review-note-quotes-and-the-same-for-the-adults.png",
+      "backup": "C:\\oto-lanes\\takeover-preserved-20261113\\SCRUM-978-partial\\07b-thread-b-review-note-quotes-and-the-same-for-the-adults.png",
+      "sha256": "b5be352db4103f75e04e7269206356ba60ebd8b495efd011a43cdca9c942b471"
+    },
+    {
+      "file": "07c1-thread-c-before-fill-adults-own-menu-switch-on.png",
+      "source": "C:\\Users\\waqar\\OneDrive\\Desktop\\Projects\\oto-pos\\docs\\qa\\proof-2026-11-13\\SCRUM-978\\07c1-thread-c-before-fill-adults-own-menu-switch-on.png",
+      "backup": "C:\\oto-lanes\\takeover-preserved-20261113\\SCRUM-978-partial\\07c1-thread-c-before-fill-adults-own-menu-switch-on.png",
+      "sha256": "304e485620a63f75f7568fd92a60b2665e3c1f0429433047601c22ccdcdf2041"
+    },
+    {
+      "file": "08a-editor-adults-chicken-8-before-save.png",
+      "source": "C:\\Users\\waqar\\OneDrive\\Desktop\\Projects\\oto-pos\\docs\\qa\\proof-2026-11-13\\SCRUM-978\\08a-editor-adults-chicken-8-before-save.png",
+      "backup": "C:\\oto-lanes\\takeover-preserved-20261113\\SCRUM-978-partial\\08a-editor-adults-chicken-8-before-save.png",
+      "sha256": "535d1892b5293bb9604003d581677386c650b1a61345e9f22aef41c1f05cf555"
+    },
+    {
+      "file": "08b-editor-adults-chicken-8-after-save-reload.png",
+      "source": "C:\\Users\\waqar\\OneDrive\\Desktop\\Projects\\oto-pos\\docs\\qa\\proof-2026-11-13\\SCRUM-978\\08b-editor-adults-chicken-8-after-save-reload.png",
+      "backup": "C:\\oto-lanes\\takeover-preserved-20261113\\SCRUM-978-partial\\08b-editor-adults-chicken-8-after-save-reload.png",
+      "sha256": "6fa615b7555df07b9875f4c7a98dfb3609a0dddbfd290f64f76aab0f0f047a5a"
+    },
+    {
+      "file": "08c-till-party-page-adults-chicken-8-named.png",
+      "source": "C:\\Users\\waqar\\OneDrive\\Desktop\\Projects\\oto-pos\\docs\\qa\\proof-2026-11-13\\SCRUM-978\\08c-till-party-page-adults-chicken-8-named.png",
+      "backup": "C:\\oto-lanes\\takeover-preserved-20261113\\SCRUM-978-partial\\08c-till-party-page-adults-chicken-8-named.png",
+      "sha256": "b1af51cfbc56d5c64f86449987a53df481c0f9e33ad4393e9965c17e126d9603"
+    },
+    {
+      "file": "09a-family-link-right-after-submit-no-submitted-on-line.png",
+      "source": "C:\\Users\\waqar\\OneDrive\\Desktop\\Projects\\oto-pos\\docs\\qa\\proof-2026-11-13\\SCRUM-978\\09a-family-link-right-after-submit-no-submitted-on-line.png",
+      "backup": "C:\\oto-lanes\\takeover-preserved-20261113\\SCRUM-978-partial\\09a-family-link-right-after-submit-no-submitted-on-line.png",
+      "sha256": "191604d5434d7f89768d6be9a9a769ead72388c0521b26cdc5d1adc2ee11e88d"
+    },
+    {
+      "file": "09b-family-link-reloaded-submitted-on-park-day.png",
+      "source": "C:\\Users\\waqar\\OneDrive\\Desktop\\Projects\\oto-pos\\docs\\qa\\proof-2026-11-13\\SCRUM-978\\09b-family-link-reloaded-submitted-on-park-day.png",
+      "backup": "C:\\oto-lanes\\takeover-preserved-20261113\\SCRUM-978-partial\\09b-family-link-reloaded-submitted-on-park-day.png",
+      "sha256": "69d986a571b3810855a844cd81595c0fd2b9e2cd7e28129754f28bb07ad53d24"
+    },
+    {
+      "file": "h01-hunt-pdf-line-with-no-count-prints-nullx.png",
+      "source": "C:\\Users\\waqar\\OneDrive\\Desktop\\Projects\\oto-pos\\docs\\qa\\proof-2026-11-13\\SCRUM-978\\h01-hunt-pdf-line-with-no-count-prints-nullx.png",
+      "backup": "C:\\oto-lanes\\takeover-preserved-20261113\\SCRUM-978-partial\\h01-hunt-pdf-line-with-no-count-prints-nullx.png",
+      "sha256": "f4d9b9f87cb96758bdbf12789ff07df0ec7c3008589e2e0f3b6f22347da559c9"
+    },
+    {
+      "file": "h02-hunt-day-of-plus-on-text-2-reads-21.png",
+      "source": "C:\\Users\\waqar\\OneDrive\\Desktop\\Projects\\oto-pos\\docs\\qa\\proof-2026-11-13\\SCRUM-978\\h02-hunt-day-of-plus-on-text-2-reads-21.png",
+      "backup": "C:\\oto-lanes\\takeover-preserved-20261113\\SCRUM-978-partial\\h02-hunt-day-of-plus-on-text-2-reads-21.png",
+      "sha256": "9c027d9ee1ac88e5668908430871f3d1795dfbb8e1215fef5109918f85119f41"
+    },
+    {
+      "file": "h03-hunt-editor-plus-on-text-2-not-saved.png",
+      "source": "C:\\Users\\waqar\\OneDrive\\Desktop\\Projects\\oto-pos\\docs\\qa\\proof-2026-11-13\\SCRUM-978\\h03-hunt-editor-plus-on-text-2-not-saved.png",
+      "backup": "C:\\oto-lanes\\takeover-preserved-20261113\\SCRUM-978-partial\\h03-hunt-editor-plus-on-text-2-not-saved.png",
+      "sha256": "8c4eb7a42297ed4585f228549e3c6eba07f5818a5fd5c45bd81e0ea215aa0997"
+    }
+  ],
+  "scratch": [
+    {
+      "file": "l979/args.json",
+      "source": "C:\\Users\\waqar\\AppData\\Local\\Temp\\claude\\9d4c56906b777e8e\\317fcfce-2754-44c9-bec5-9a762ab18d03\\scratchpad\\l979\\args.json",
+      "backup": "C:\\oto-lanes\\takeover-preserved-20261113\\scratch\\l979\\args.json",
+      "sha256": "73a78a57d01543f4dadf92479c8125e8534fc0bdb3c60359baa9d7b539eedbcd"
+    },
+    {
+      "file": "l979/brief.txt",
+      "source": "C:\\Users\\waqar\\AppData\\Local\\Temp\\claude\\9d4c56906b777e8e\\317fcfce-2754-44c9-bec5-9a762ab18d03\\scratchpad\\l979\\brief.txt",
+      "backup": "C:\\oto-lanes\\takeover-preserved-20261113\\scratch\\l979\\brief.txt",
+      "sha256": "4b90cfe6a5edb802aef573ee4bcef28747f073a7cb56f87027aef7e5b9b5382a"
+    },
+    {
+      "file": "l979/build-report.json",
+      "source": "C:\\Users\\waqar\\AppData\\Local\\Temp\\claude\\9d4c56906b777e8e\\317fcfce-2754-44c9-bec5-9a762ab18d03\\scratchpad\\l979\\build-report.json",
+      "backup": "C:\\oto-lanes\\takeover-preserved-20261113\\scratch\\l979\\build-report.json",
+      "sha256": "3696240196d3ca40342667e4817abd82a0f9cb179ef162af466d514faba62d8c"
+    },
+    {
+      "file": "l979/wf-report.out",
+      "source": "C:\\Users\\waqar\\AppData\\Local\\Temp\\claude\\9d4c56906b777e8e\\317fcfce-2754-44c9-bec5-9a762ab18d03\\scratchpad\\l979\\wf-report.out",
+      "backup": "C:\\oto-lanes\\takeover-preserved-20261113\\scratch\\l979\\wf-report.out",
+      "sha256": "12fa741e975b650112fad44956f8972d436fea64857a626532f409b2839e4e6e"
+    },
+    {
+      "file": "l977/args.json",
+      "source": "C:\\Users\\waqar\\AppData\\Local\\Temp\\claude\\9d4c56906b777e8e\\317fcfce-2754-44c9-bec5-9a762ab18d03\\scratchpad\\l977\\args.json",
+      "backup": "C:\\oto-lanes\\takeover-preserved-20261113\\scratch\\l977\\args.json",
+      "sha256": "ef28a6e2054031f3227ca0f20da1846ad15cde206d878ada5291a7a8441ef18f"
+    },
+    {
+      "file": "l977/brief.txt",
+      "source": "C:\\Users\\waqar\\AppData\\Local\\Temp\\claude\\9d4c56906b777e8e\\317fcfce-2754-44c9-bec5-9a762ab18d03\\scratchpad\\l977\\brief.txt",
+      "backup": "C:\\oto-lanes\\takeover-preserved-20261113\\scratch\\l977\\brief.txt",
+      "sha256": "2a59947bb2510df298816db27cb12c9110bcc4b8e2ed9d1274e1c9ae11988cd5"
+    },
+    {
+      "file": "l982/brief.txt",
+      "source": "C:\\Users\\waqar\\AppData\\Local\\Temp\\claude\\9d4c56906b777e8e\\317fcfce-2754-44c9-bec5-9a762ab18d03\\scratchpad\\l982\\brief.txt",
+      "backup": "C:\\oto-lanes\\takeover-preserved-20261113\\scratch\\l982\\brief.txt",
+      "sha256": "9e0694b8bea4c902c0025ccfc7d485467e711acdd7e0a4fd7ee1643cc0d026aa"
+    },
+    {
+      "file": "wait-headroom.sh",
+      "source": "C:\\Users\\waqar\\AppData\\Local\\Temp\\claude\\9d4c56906b777e8e\\317fcfce-2754-44c9-bec5-9a762ab18d03\\scratchpad\\wait-headroom.sh",
+      "backup": "C:\\oto-lanes\\takeover-preserved-20261113\\scratch\\wait-headroom.sh",
+      "sha256": "dd5056924df3831972c9e39f23dc4c9a0bab23270445a555bfa4e8487f861239"
+    },
+    {
+      "file": "watch-mem.mjs",
+      "source": "C:\\Users\\waqar\\AppData\\Local\\Temp\\claude\\9d4c56906b777e8e\\317fcfce-2754-44c9-bec5-9a762ab18d03\\scratchpad\\watch-mem.mjs",
+      "backup": "C:\\oto-lanes\\takeover-preserved-20261113\\scratch\\watch-mem.mjs",
+      "sha256": "6d741a052e462e405693fa565fe339a2bc4ab6c20c54d2ff804f5cec73f4e8a7"
+    }
+  ]
+}

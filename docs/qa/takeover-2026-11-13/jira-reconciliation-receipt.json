@@ -1,0 +1,677 @@
+[
+  {
+    "key": "SCRUM-221",
+    "before": "To Do",
+    "status": "In Progress",
+    "priority": "Medium",
+    "commentId": "14624",
+    "verified": true,
+    "at": "2026-11-13T10:49:31.565Z"
+  },
+  {
+    "key": "SCRUM-222",
+    "before": "To Do",
+    "status": "In Progress",
+    "priority": "Medium",
+    "commentId": "14625",
+    "verified": true,
+    "at": "2026-11-13T10:49:36.171Z"
+  },
+  {
+    "key": "SCRUM-223",
+    "before": "In Progress",
+    "status": "In Progress",
+    "priority": "Medium",
+    "commentId": "14626",
+    "verified": true,
+    "at": "2026-11-13T10:49:38.798Z"
+  },
+  {
+    "key": "SCRUM-224",
+    "before": "To Do",
+    "status": "To Do",
+    "priority": "Medium",
+    "commentId": "14627",
+    "verified": true,
+    "at": "2026-11-13T10:49:40.974Z"
+  },
+  {
+    "key": "SCRUM-274",
+    "before": "To Do",
+    "status": "To Do",
+    "priority": "Medium",
+    "commentId": "14628",
+    "verified": true,
+    "at": "2026-11-13T10:49:42.960Z"
+  },
+  {
+    "key": "SCRUM-277",
+    "before": "To Do",
+    "status": "To Do",
+    "priority": "Medium",
+    "commentId": "14629",
+    "verified": true,
+    "at": "2026-11-13T10:49:45.274Z"
+  },
+  {
+    "key": "SCRUM-426",
+    "before": "To Do",
+    "status": "To Do",
+    "priority": "Low",
+    "commentId": "14630",
+    "verified": true,
+    "at": "2026-11-13T10:49:47.753Z"
+  },
+  {
+    "key": "SCRUM-482",
+    "before": "To Do",
+    "status": "To Do",
+    "priority": "Medium",
+    "commentId": "14631",
+    "verified": true,
+    "at": "2026-11-13T10:49:49.545Z"
+  },
+  {
+    "key": "SCRUM-485",
+    "before": "To Do",
+    "status": "To Do",
+    "priority": "Low",
+    "commentId": "14632",
+    "verified": true,
+    "at": "2026-11-13T10:49:51.582Z"
+  },
+  {
+    "key": "SCRUM-513",
+    "before": "To Do",
+    "status": "To Do",
+    "priority": "Low",
+    "commentId": "14633",
+    "verified": true,
+    "at": "2026-11-13T10:49:53.686Z"
+  },
+  {
+    "key": "SCRUM-553",
+    "before": "In Progress",
+    "status": "In Progress",
+    "priority": "High",
+    "commentId": "14634",
+    "verified": true,
+    "at": "2026-11-13T10:49:55.917Z"
+  },
+  {
+    "key": "SCRUM-564",
+    "before": "In Progress",
+    "status": "In Progress",
+    "priority": "High",
+    "commentId": "14635",
+    "verified": true,
+    "at": "2026-11-13T10:49:58.305Z"
+  },
+  {
+    "key": "SCRUM-672",
+    "before": "Testing",
+    "status": "Testing",
+    "priority": "Medium",
+    "commentId": "14636",
+    "verified": true,
+    "at": "2026-11-13T10:50:00.215Z"
+  },
+  {
+    "key": "SCRUM-675",
+    "before": "To Do",
+    "status": "To Do",
+    "priority": "Medium",
+    "commentId": "14637",
+    "verified": true,
+    "at": "2026-11-13T10:50:02.203Z"
+  },
+  {
+    "key": "SCRUM-687",
+    "before": "Testing",
+    "status": "Testing",
+    "priority": "High",
+    "commentId": "14638",
+    "verified": true,
+    "at": "2026-11-13T10:50:04.400Z"
+  },
+  {
+    "key": "SCRUM-688",
+    "before": "Testing",
+    "status": "Testing",
+    "priority": "High",
+    "commentId": "14639",
+    "verified": true,
+    "at": "2026-11-13T10:50:06.002Z"
+  },
+  {
+    "key": "SCRUM-689",
+    "before": "Testing",
+    "status": "Testing",
+    "priority": "Medium",
+    "commentId": "14640",
+    "verified": true,
+    "at": "2026-11-13T10:50:07.898Z"
+  },
+  {
+    "key": "SCRUM-700",
+    "before": "Testing",
+    "status": "Testing",
+    "priority": "Medium",
+    "commentId": "14641",
+    "verified": true,
+    "at": "2026-11-13T10:50:09.671Z"
+  },
+  {
+    "key": "SCRUM-701",
+    "before": "Testing",
+    "status": "Testing",
+    "priority": "Medium",
+    "commentId": "14642",
+    "verified": true,
+    "at": "2026-11-13T10:50:11.543Z"
+  },
+  {
+    "key": "SCRUM-705",
+    "before": "To Do",
+    "status": "To Do",
+    "priority": "High",
+    "commentId": "14643",
+    "verified": true,
+    "at": "2026-11-13T10:50:13.166Z"
+  },
+  {
+    "key": "SCRUM-709",
+    "before": "To Do",
+    "status": "To Do",
+    "priority": "Medium",
+    "commentId": "14644",
+    "verified": true,
+    "at": "2026-11-13T10:50:14.759Z"
+  },
+  {
+    "key": "SCRUM-711",
+    "before": "Testing",
+    "status": "Testing",
+    "priority": "High",
+    "commentId": "14645",
+    "verified": true,
+    "at": "2026-11-13T10:50:16.503Z"
+  },
+  {
+    "key": "SCRUM-713",
+    "before": "Testing",
+    "status": "Testing",
+    "priority": "High",
+    "commentId": "14646",
+    "verified": true,
+    "at": "2026-11-13T10:50:18.453Z"
+  },
+  {
+    "key": "SCRUM-714",
+    "before": "To Do",
+    "status": "To Do",
+    "priority": "Medium",
+    "commentId": "14647",
+    "verified": true,
+    "at": "2026-11-13T10:50:20.151Z"
+  },
+  {
+    "key": "SCRUM-733",
+    "before": "To Do",
+    "status": "To Do",
+    "priority": "Medium",
+    "commentId": "14648",
+    "verified": true,
+    "at": "2026-11-13T10:50:22.476Z"
+  },
+  {
+    "key": "SCRUM-770",
+    "before": "In Review",
+    "status": "In Review",
+    "priority": "Medium",
+    "commentId": "14649",
+    "verified": true,
+    "at": "2026-11-13T10:50:24.065Z"
+  },
+  {
+    "key": "SCRUM-780",
+    "before": "Testing",
+    "status": "Testing",
+    "priority": "Low",
+    "commentId": "14650",
+    "verified": true,
+    "at": "2026-11-13T10:50:25.534Z"
+  },
+  {
+    "key": "SCRUM-791",
+    "before": "Testing",
+    "status": "Testing",
+    "priority": "High",
+    "commentId": "14651",
+    "verified": true,
+    "at": "2026-11-13T10:50:27.291Z"
+  },
+  {
+    "key": "SCRUM-864",
+    "before": "In Progress",
+    "status": "In Progress",
+    "priority": "High",
+    "commentId": "14652",
+    "verified": true,
+    "at": "2026-11-13T10:50:29.196Z"
+  },
+  {
+    "key": "SCRUM-921",
+    "before": "In Progress",
+    "status": "In Progress",
+    "priority": "High",
+    "commentId": "14653",
+    "verified": true,
+    "at": "2026-11-13T10:50:31.063Z"
+  },
+  {
+    "key": "SCRUM-922",
+    "before": "To Do",
+    "status": "To Do",
+    "priority": "Medium",
+    "commentId": "14654",
+    "verified": true,
+    "at": "2026-11-13T10:50:32.603Z"
+  },
+  {
+    "key": "SCRUM-923",
+    "before": "To Do",
+    "status": "To Do",
+    "priority": "High",
+    "commentId": "14655",
+    "verified": true,
+    "at": "2026-11-13T10:50:34.291Z"
+  },
+  {
+    "key": "SCRUM-924",
+    "before": "To Do",
+    "status": "To Do",
+    "priority": "Medium",
+    "commentId": "14656",
+    "verified": true,
+    "at": "2026-11-13T10:50:36.147Z"
+  },
+  {
+    "key": "SCRUM-925",
+    "before": "To Do",
+    "status": "To Do",
+    "priority": "Medium",
+    "commentId": "14657",
+    "verified": true,
+    "at": "2026-11-13T10:50:37.848Z"
+  },
+  {
+    "key": "SCRUM-959",
+    "before": "Testing",
+    "status": "Testing",
+    "priority": "High",
+    "commentId": "14658",
+    "verified": true,
+    "at": "2026-11-13T10:50:39.507Z"
+  },
+  {
+    "key": "SCRUM-961",
+    "before": "To Do",
+    "status": "To Do",
+    "priority": "Low",
+    "commentId": "14659",
+    "verified": true,
+    "at": "2026-11-13T10:50:41.423Z"
+  },
+  {
+    "key": "SCRUM-962",
+    "before": "To Do",
+    "status": "In Progress",
+    "priority": "Medium",
+    "commentId": "14660",
+    "verified": true,
+    "at": "2026-11-13T10:50:44.354Z"
+  },
+  {
+    "key": "SCRUM-964",
+    "before": "Testing",
+    "status": "Testing",
+    "priority": "High",
+    "commentId": "14661",
+    "verified": true,
+    "at": "2026-11-13T10:50:46.128Z"
+  },
+  {
+    "key": "SCRUM-969",
+    "before": "To Do",
+    "status": "In Progress",
+    "priority": "High",
+    "commentId": "14662",
+    "verified": true,
+    "at": "2026-11-13T10:50:48.737Z"
+  },
+  {
+    "key": "SCRUM-974",
+    "before": "To Do",
+    "status": "To Do",
+    "priority": "Low",
+    "commentId": "14663",
+    "verified": true,
+    "at": "2026-11-13T10:50:50.299Z"
+  },
+  {
+    "key": "SCRUM-975",
+    "before": "In Progress",
+    "status": "In Progress",
+    "priority": "Low",
+    "commentId": "14664",
+    "verified": true,
+    "at": "2026-11-13T10:50:51.865Z"
+  },
+  {
+    "key": "SCRUM-977",
+    "before": "In Progress",
+    "status": "In Progress",
+    "priority": "High",
+    "commentId": "14665",
+    "verified": true,
+    "at": "2026-11-13T10:50:53.410Z"
+  },
+  {
+    "key": "SCRUM-979",
+    "before": "In Progress",
+    "status": "In Progress",
+    "priority": "High",
+    "commentId": "14666",
+    "verified": true,
+    "at": "2026-11-13T10:50:54.992Z"
+  },
+  {
+    "key": "SCRUM-980",
+    "before": "To Do",
+    "status": "To Do",
+    "priority": "Low",
+    "commentId": "14667",
+    "verified": true,
+    "at": "2026-11-13T10:50:56.724Z"
+  },
+  {
+    "key": "SCRUM-981",
+    "before": "To Do",
+    "status": "To Do",
+    "priority": "Medium",
+    "commentId": "14668",
+    "verified": true,
+    "at": "2026-11-13T10:50:58.311Z"
+  },
+  {
+    "key": "SCRUM-982",
+    "before": "To Do",
+    "status": "To Do",
+    "priority": "High",
+    "commentId": "14669",
+    "verified": true,
+    "at": "2026-11-13T10:50:59.871Z"
+  },
+  {
+    "key": "SCRUM-984",
+    "before": "Testing",
+    "status": "Testing",
+    "priority": "Medium",
+    "commentId": "14670",
+    "verified": true,
+    "at": "2026-11-13T10:51:01.593Z"
+  },
+  {
+    "key": "SCRUM-776",
+    "before": "In Review",
+    "status": "In Review",
+    "priority": "High",
+    "commentId": "14671",
+    "verified": true,
+    "at": "2026-11-13T10:51:03.522Z"
+  },
+  {
+    "key": "SCRUM-823",
+    "before": "Testing",
+    "status": "Testing",
+    "priority": "High",
+    "commentId": "14672",
+    "verified": true,
+    "at": "2026-11-13T10:51:05.204Z"
+  },
+  {
+    "key": "SCRUM-844",
+    "before": "To Do",
+    "status": "To Do",
+    "priority": "High",
+    "commentId": "14673",
+    "verified": true,
+    "at": "2026-11-13T10:51:07.104Z"
+  },
+  {
+    "key": "SCRUM-908",
+    "before": "Testing",
+    "status": "Testing",
+    "priority": "High",
+    "commentId": "14674",
+    "verified": true,
+    "at": "2026-11-13T10:51:08.712Z"
+  },
+  {
+    "key": "SCRUM-945",
+    "before": "To Do",
+    "status": "To Do",
+    "priority": "High",
+    "commentId": "14675",
+    "verified": true,
+    "at": "2026-11-13T10:51:10.355Z"
+  },
+  {
+    "key": "SCRUM-965",
+    "before": "To Do",
+    "status": "To Do",
+    "priority": "Low",
+    "commentId": "14676",
+    "verified": true,
+    "at": "2026-11-13T10:51:12.186Z"
+  },
+  {
+    "key": "SCRUM-966",
+    "before": "To Do",
+    "status": "In Progress",
+    "priority": "Medium",
+    "commentId": "14677",
+    "verified": true,
+    "at": "2026-11-13T10:51:14.830Z"
+  },
+  {
+    "key": "SCRUM-968",
+    "before": "To Do",
+    "status": "In Progress",
+    "priority": "Medium",
+    "commentId": "14678",
+    "verified": true,
+    "at": "2026-11-13T10:51:17.708Z"
+  },
+  {
+    "key": "SCRUM-976",
+    "before": "Testing",
+    "status": "Testing",
+    "priority": "Low",
+    "commentId": "14679",
+    "verified": true,
+    "at": "2026-11-13T10:51:19.381Z"
+  },
+  {
+    "key": "SCRUM-978",
+    "before": "Testing",
+    "status": "Testing",
+    "priority": "Medium",
+    "commentId": "14680",
+    "verified": true,
+    "at": "2026-11-13T10:51:20.953Z"
+  },
+  {
+    "key": "SCRUM-983",
+    "before": "To Do",
+    "status": "To Do",
+    "priority": "High",
+    "commentId": "14681",
+    "verified": true,
+    "at": "2026-11-13T10:51:22.561Z"
+  },
+  {
+    "key": "SCRUM-497",
+    "before": "In Progress",
+    "status": "In Progress",
+    "priority": "Medium",
+    "commentId": "14682",
+    "verified": true,
+    "at": "2026-11-13T10:51:24.107Z"
+  },
+  {
+    "key": "SCRUM-573",
+    "before": "To Do",
+    "status": "To Do",
+    "priority": "Medium",
+    "commentId": "14683",
+    "verified": true,
+    "at": "2026-11-13T10:51:25.687Z"
+  },
+  {
+    "key": "SCRUM-574",
+    "before": "To Do",
+    "status": "To Do",
+    "priority": "Low",
+    "commentId": "14684",
+    "verified": true,
+    "at": "2026-11-13T10:51:27.278Z"
+  },
+  {
+    "key": "SCRUM-575",
+    "before": "To Do",
+    "status": "To Do",
+    "priority": "Low",
+    "commentId": "14685",
+    "verified": true,
+    "at": "2026-11-13T10:51:28.893Z"
+  },
+  {
+    "key": "SCRUM-576",
+    "before": "To Do",
+    "status": "To Do",
+    "priority": "Low",
+    "commentId": "14686",
+    "verified": true,
+    "at": "2026-11-13T10:51:30.542Z"
+  },
+  {
+    "key": "SCRUM-649",
+    "before": "To Do",
+    "status": "To Do",
+    "priority": "Medium",
+    "commentId": "14687",
+    "verified": true,
+    "at": "2026-11-13T10:51:32.219Z"
+  },
+  {
+    "key": "SCRUM-753",
+    "before": "To Do",
+    "status": "To Do",
+    "priority": "Medium",
+    "commentId": "14688",
+    "verified": true,
+    "at": "2026-11-13T10:51:34.126Z"
+  },
+  {
+    "key": "SCRUM-892",
+    "before": "To Do",
+    "status": "To Do",
+    "priority": "Low",
+    "commentId": "14689",
+    "verified": true,
+    "at": "2026-11-13T10:51:35.739Z"
+  },
+  {
+    "key": "SCRUM-895",
+    "before": "Testing",
+    "status": "Testing",
+    "priority": "Medium",
+    "commentId": "14690",
+    "verified": true,
+    "at": "2026-11-13T10:51:37.250Z"
+  },
+  {
+    "key": "SCRUM-896",
+    "before": "Testing",
+    "status": "Testing",
+    "priority": "Low",
+    "commentId": "14691",
+    "verified": true,
+    "at": "2026-11-13T10:51:38.836Z"
+  },
+  {
+    "key": "SCRUM-910",
+    "before": "To Do",
+    "status": "To Do",
+    "priority": "High",
+    "commentId": "14692",
+    "verified": true,
+    "at": "2026-11-13T10:51:40.436Z"
+  },
+  {
+    "key": "SCRUM-919",
+    "before": "To Do",
+    "status": "In Progress",
+    "priority": "Medium",
+    "commentId": "14693",
+    "verified": true,
+    "at": "2026-11-13T10:51:43.023Z"
+  },
+  {
+    "key": "SCRUM-928",
+    "before": "Testing",
+    "status": "Testing",
+    "priority": "Medium",
+    "commentId": "14694",
+    "verified": true,
+    "at": "2026-11-13T10:51:44.536Z"
+  },
+  {
+    "key": "SCRUM-929",
+    "before": "Testing",
+    "status": "Testing",
+    "priority": "High",
+    "commentId": "14695",
+    "verified": true,
+    "at": "2026-11-13T10:51:46.204Z"
+  },
+  {
+    "key": "SCRUM-937",
+    "before": "To Do",
+    "status": "To Do",
+    "priority": "Medium",
+    "commentId": "14696",
+    "verified": true,
+    "at": "2026-11-13T10:51:47.740Z"
+  },
+  {
+    "key": "SCRUM-942",
+    "before": "Testing",
+    "status": "Testing",
+    "priority": "Medium",
+    "commentId": "14697",
+    "verified": true,
+    "at": "2026-11-13T10:51:49.352Z"
+  },
+  {
+    "key": "SCRUM-953",
+    "before": "Testing",
+    "status": "Testing",
+    "priority": "Low",
+    "commentId": "14698",
+    "verified": true,
+    "at": "2026-11-13T10:51:50.889Z"
+  }
+]

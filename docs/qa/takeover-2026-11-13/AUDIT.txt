@@ -1,0 +1,393 @@
+OTO sprint takeover audit
+13 November 2026
+Execution remains paused pending the owner's approval.
+
+Conclusion
+The saved takeover checkpoint is credible and most delivery claims have traceable implementation and evidence. Jira is not a dependable standalone completion list: parent statuses, old descriptions and mixed-scope tickets obscure both delivered work and remaining money, hardware and production gates. Resume from the saved lanes, but use the expanded risk queue below.
+
+Scope and method
+Included every board sprint except SCRUM Sprint 1, Migration Sprint and backlog: Sprint 2 - Complete build (3), OTO App - QA and Bug Triage (36), Inbox & BEO (69). The board lists only those five sprints. QA and Inbox & BEO are marked future even though substantial work has shipped.
+The direct sprint query returns 528 tickets. It omits 256 subtasks of those tickets; those are included here. Two subtasks belonging outside the selected parent set were excluded. Total: 784 unique tickets, 4,257 comments retrieved with pagination completed, and 3,231 attachment records.
+All 784 were included in the mechanical document/commit/source/test/attachment trace. All 75 tickets below Deployed/Done have an individual remaining-work assessment below. Manual code and proof inspection concentrated on payment continuation/refunds, BEO quantities/deposits, mobile mode, messaging, HR access, uploads, Console acceptance and hardware prerequisites. This is not a fresh execution of all 784 acceptance criteria, all 3,231 attachments, or every historic test. No new application test suite or live business journey was run.
+Source snapshot: 26c308edc5c09c3f576d5189b9e58ad8f1cbabe7. Repository, Jira and deployments were not modified. Audit scripts, downloaded evidence and reports were saved only outside the repository under C:/oto-lanes/audit-takeover-20261113.
+
+Sprint census including subtasks
+Sprint 2: 678 total; 615 Deployed; 1 Done; 35 To Do; 8 In Progress; 19 Testing. 62 below Deployed/Done.
+OTO App QA: 39 total; 11 Deployed; 26 Done; 1 In Progress; 1 In Review. 2 below Deployed/Done.
+Inbox & BEO: 67 total; 56 Deployed; 0 Done; 6 To Do; 1 In Review; 4 Testing. 11 below Deployed/Done.
+Combined: 682 Deployed, 27 Done, 75 below those stages. These are workflow counts, not a measured feature-completion percentage. Existing Done states were not changed and their owner acceptance was not independently re-established.
+
+What the evidence supports
+- 639 of 682 Deployed tickets have a main-history commit naming the ticket and touching source, tooling or workflow files. Missing a direct ticket reference does not mean missing implementation: umbrellas, data/configuration work and linked delivery tickets explain several cases.
+- 500 Deployed tickets have an explicit ticket mention in a current test file. This is a traceability measure, not a test pass or coverage claim; other tests use abbreviated IDs and app check-file names.
+- 679 of 682 Deployed tickets have an image attachment. SCRUM-205, 211 and 303 do not. Their comments deliberately point to child/related-ticket evidence; this is an evidence-location exception to the current per-ticket rule, not proof that payments, wallets or the tenancy work were never built.
+- Deployed tickets have 2,969 image attachments. A filename check found 44 without an exact filename in the current tracked tree. These 44 plus seven representative matching-name images were downloaded from Jira and hashed. Eight of 51 matched tracked image bytes, including one renamed SCRUM-334 image. The other 43 have no byte-identical copy among current tracked PNG/JPEG/WebP files. Three belong to the deliberate production-evidence exception on SCRUM-920. The remaining 40 need archive reconciliation; a changed encoding, older Git history, another format or a local original may explain them. They remain accessible on Jira. This is not a claim that their pictured behavior is false.
+- Eleven images were opened visually in this audit: the eight downloaded samples for 972, 970, 668, 748, 642, 682, 769 and 973, plus the 964 Cash-after-QR failure and two partial 978 images. The Console screenshot is explicitly a masked partial viewport; the 972 and 973 images are labelled test-run cards; neither is a physical-terminal proof.
+- SCRUM-978 has 23 untracked PNGs, not a completed acceptance package. Its checkpoint identifies missing privacy and adults-switch scenarios and leftover fixtures. No new staging census or cleanup was performed in this audit.
+
+High-priority findings
+1. SCRUM-982: payment continuation across staff changes is BROKEN in the recorded staging proof and matches the current state-reset structure.
+   Ticket till: after QR payment, choosing Cash made POST /api/sales/:id/finalise return 200 and displayed Cash, but the stored attempt was QR only. The proof does NOT show a second cash payment on that same ticket sale.
+   F&B: Charge again created a new cash sale while the earlier sale and its QR remained payable. This is a duplicate-sale/double-collection risk.
+   Source: apps/pos/src/pages/Till.tsx:3344, apps/pos/src/lib/usePaymentStage.ts:311 onward; proof docs/qa/proof-2026-11-13/SCRUM-964/receipt.json, hunt ranks 1 and 2. Keep 964 Testing until 982 proves all relevant flows.
+
+2. SCRUM-979: the local five-commit recovery lane is not yet ready to land.
+   C:/oto-lanes/payleft979-20261113 is clean, five commits ahead and 43 behind current origin/main. The GET handler still awaits recoverTerminalAttempt without a catch at apps/api/src/routes/payments.ts:314 in that lane. A settlement collision can break the ordinary status poll. Add the specified caught/logged recovery and a real HTTP regression before rebase, gates and deployment.
+   SCRUM-972's existing refusal fix has meaningful handler tests and a staging card, but does not close all 979 leftovers.
+
+3. SCRUM-977/975: phone rotation repair exists only in the saved lane.
+   C:/oto-lanes/phoneturn977-20261113 is clean, 14 commits ahead and 30 behind main. Main still selects phone/desktop with the 768px viewport hook. Finish the interrupted second review, integrate findings, then prove rotation and sale/form retention. Do not mark the local implementation deployed.
+
+4. SCRUM-910: Jira contains a material contradiction.
+   The description says the deposit protection is built; the later comment says the double count remains unfixed pending a ruling. Current main still excludes deposit attempts from refunds only for part-paid sales (apps/api/src/services/refunds.ts:379), while a new settlement can record the party deposit again (party-settlement.ts:729-809). The saved failing test exists in C:/oto-lanes/xland-20261112/apps/api/test/xland-party-refunds.test.ts.
+   Choose whether a whole refund returns the deposit or leaves it with the party; either outcome must prevent reusing money already returned. No new failing-test run or live refund was made during this audit.
+
+5. SCRUM-844 and 945 need promotion into the money-risk queue.
+   844: the legacy free-text AI path lacks the catalogue path's explicit asked/received split; server/lib/aiFill.ts retains a single prepayment field. A linked catalogue fix does not establish that this older path is fixed.
+   945: migration 0050 retains coded adult lines when the adults-different switch is off, matching the recorded risk of legacy repeated kids/adults lines reaching settlement twice. Do not modify applied migration 0050. Census affected saved data and resolve the intended historic interpretation before a forward-only repair.
+
+6. SCRUM-983 quantity defects are still in current source.
+   beo-day-of-view.tsx:234 uses m.quantity + 1; the stored-text case becomes 21. pdf.ts:730/813 renders the raw quantity. The inspected partial proof shows the 21 case. These are reliability fixes, not a new feature request.
+   966/968 also retain money/presentation issues: named extras omit added service/tax from their displayed line total (party-settlement.ts:332-338), while the BEO's holiday hint and available-code list can differ from settlement. Do not broaden a staging VAT-inclusive proof to other charge modes.
+
+7. SCRUM-733's real till messaging is NOT BUILT.
+   MessagingPanel imports mockApi and advances outbound status to delivered/read with timers (lines 156-165). This is separate from the real Unified Inbox infrastructure. Do not represent these ticks as actual delivery. SCRUM-776's older Meta prerequisites also need reconciliation with the later Twilio direction on 908.
+
+Document and workflow discrepancies
+- SCRUM-221 still reads To Do although Console phases and audit repairs have been delivered. Its last comment says it closes after P5; the current plan explicitly excludes 649 and records other limits. Reconcile the umbrella's actual remaining scope, not just its status.
+- SCRUM-222 is still the broad original cutover brief without progress comments, while restore work exists under 791 and the production HR run. The broader story is not complete: a restored HR database does not prove platform seeding, storage/media, analytics cutover or final rehearsal.
+- SCRUM-485's latest comment says its remaining opening-stock decision is settled, but it remains To Do.
+- SCRUM-770's description says rehire cannot reuse the profile; later comments and current source show 794/769 delivered rehire and pay-only access. The remaining choice concerns occasional shifts.
+- SCRUM-700's latest comment still names 736 as an unbuilt blocker even though the subsequent scanner relay delivery exists. Physical USB/Pi proof must still be distinguished.
+- SCRUM-962, 966, 968 and 969 contain landed sub-points while retaining To Do/not-started text. SCRUM-953 has proved parts and remaining party-page parts. Give each numbered point its own current state.
+- Payroll PLAN.md still says plan only near the top, whereas 564 and 565-572 record R0-R7 delivery. R8 and 574-576 remain open, and the full-month gate cannot be inferred from elapsed time.
+- The root ESLint config excludes apps/oto-app/** and the app package has no lint script. This conflicts with the blanket touched-file lint wording. Root lint success is not app lint evidence. The current app typecheck ceiling is 414, not the older 418. Preserve the ceiling and describe checks actually run.
+- Future-state sprints 36 and 69 already contain delivered work. Sprint calendar/status housekeeping should follow an owner decision; it should not trigger bulk ticket closure.
+
+Live release readback
+Main full SHA 26c308edc5c09c3f576d5189b9e58ad8f1cbabe7 is green in GitHub run 43384261303 (all six jobs).
+That run's app job skipped 113 steps. It is not a new complete app acceptance run.
+The actual app-source run 43371426014 at 1916bfbd73ebcfcba2dbe85c7a7a9d2bf63e9152 is green and the app job skipped zero steps.
+Read-only Render checks confirm API, Console and both staging tills live at 26c308edc5c09c3f576d5189b9e58ad8f1cbabe7; OTO App staging at 1916bfbd73ebcfcba2dbe85c7a7a9d2bf63e9152.
+These are deployment observations, not fresh feature walkthroughs. Production actions were not performed.
+
+Proposed execution plan for approval
+A. Preserve and reconcile: back up the saved local commits and partial proof; publish a takeover checkpoint; update the named contradictory ticket descriptions/current-state summaries without erasing history or moving Done.
+B. Finish the saved sequence: 979 guard and API proof; 977/975 review, landing and till proof; exact 978 fixture census/cleanup then remaining 978/976 proof; 982 plus the scoped 981 reliability fixes. One till lane at a time.
+C. Money and BEO correctness before cosmetic follow-ups: 844, 983 reliability fixes, and the relevant 945/966/968 accounting discrepancies. Bring 910 and historic-data/charging interpretations to the owner before changing rules. Existing defaults remain until ruled.
+D. Complete remaining ordinary repairs/proofs: 980/974, 965, 969 remainders, 959/953, 984 screen proof and 961 measurement. Close only the numbered parts actually demonstrated.
+E. Counter proof when available: installer rotation/touch, boot/network/camera, theme, USB scanner, printer recovery/stock and offline round-trip with exact release and inspected pictures. Keep gate story 223 and drive replacement 714 separate.
+F. Resolve external prerequisites separately: WhatsApp/parent confirmation (908/776), bell permission (823), release-feed credentials (672), real staff login/phones and domain/cutover inputs (921-925). Approval of staging repairs is not approval to send real messages, switch DNS, erase production data or start production till trading.
+G. Finish scope closure: reconcile Console/data/payroll/QA umbrellas; preserve explicitly descoped 649 and genuinely outstanding rules; then run 224's cross-module acceptance, regression/load/soak and final report. Owner accepts Done.
+
+Each shipped unit needs a scoped lane, current-main integration, adversarial checks, honest compiler/lint results, full-SHA CI observation, named staging deployment, relevant native proof, exact synthetic cleanup, Jira evidence/readback and current handover. No weaker test assertions to obtain green. Approval would authorize the stated staging-first work, while listed owner choices and production operations remain separate.
+
+Supporting files
+jira-inventory.json: 784-ticket metadata inventory, source references and attachment names; no credentials.
+traceability.json: main commit, source path, test mention and tracked attachment mapping for every ticket. Mechanical matches are leads, not behavioral proof.
+image-verification.json: 51 attachment download/hash outcomes.
+open-work-assessment.json: all 75 remaining-ticket assessments.
+ticket-index.txt: human-readable index for every ticket.
+The downloaded-evidence directory is local audit material and has not been committed or attached anywhere.
+
+Individual remaining work
+SCRUM-221 | To Do | S2-23 — Console: the owner's super-admin control surface across the whole suite
+Reconcile the umbrella with delivered Console phases and explicitly retained exclusions (649 and other follow-ups). Do not rebuild the Console from this old description.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-221
+
+SCRUM-222 | To Do | S2-22 — The park's own data: production restore into the central database, platform seeding from it, Radar on real figures, cutover rehearsal
+Reconcile the broad cutover story with 791 and the HR production run. Platform seeding, media, analytics history and repeatable final cutover remain separate acceptance work.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-222
+
+SCRUM-223 | In Progress | S2-24 — Branch box image and on-site readiness: the bring-up runbook and the switch from simulator to real device
+Keep the gate/bench story paused at its owner freeze. Counter verification is a narrower existing workstream.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-223
+
+SCRUM-224 | To Do | S2-16 — Sprint 2 acceptance run, load and soak checks, Render staging refresh, sprint-2 tag, SPRINT_2_REPORT.md and Jira evidence per story
+Run final cross-module acceptance, load/soak and release report after the defect and hardware gates; no sprint-complete claim yet.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-224
+
+SCRUM-274 | To Do | The staff app stores times with no timezone, and the platform writes into those columns
+Latest comment says UTC interpretation was established and the item is buildable. Re-census current columns and final dump before designing immutable migrations; do not use the old Bangkok conversion proposal.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-274
+
+SCRUM-277 | To Do | Twenty-seven built endpoints have no screen calling them, including photo storage and ending a shift
+Re-run the current caller inventory. The original 27-endpoint description is obsolete; distinguish now-used routes, intentionally API-only routes and owner build-or-remove choices.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-277
+
+SCRUM-426 | To Do | Legacy four-digit codes at the till when the Radar dump arrives (audit §3.1, T26)
+Retain the legacy-code input/ruling dependency; match to the current Radar dump and existing compatibility work before building.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-426
+
+SCRUM-482 | To Do | Rulings needed: who may issue credit vouchers, and what the promotions report counts
+Owner choices remain for issuing credit vouchers and reporting redeemed/refunded promotions; preserve current rules meanwhile.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-482
+
+SCRUM-485 | To Do | Stock rulings: count approvals, starting figures, booth prizes, who moves stock, the opening count
+Reconcile status: latest comment says the remaining opening-stock decision is settled, but Jira remains To Do. Verify any separately recorded booth-stock remainder before closure.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-485
+
+SCRUM-497 | In Progress | Till details for the owner to confirm
+Consolidate only genuinely unanswered decisions. The October 13 reference is superseded in part by October 14 and November rulings.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-497
+
+SCRUM-513 | To Do | A sale recorded after its day closed has no correction path
+Design the owner-approved late-sale correction and acknowledgement flow for an already closed day; preserve the closed-day freeze.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-513
+
+SCRUM-553 | In Progress | OTO App QA Assistant AI intake - Maria and park testers
+Keep as the ongoing QA intake, not a finite feature awaiting implementation. Reconcile its old empty-intake comment with the 17 current subtasks.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-553
+
+SCRUM-564 | In Progress | Payroll for real: the park payroll rulebook built on the central database
+R0-R7 have delivered evidence; verify the full-month retirement gate before R8. Keep the remaining four children distinct.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-564
+
+SCRUM-573 | To Do | Payroll R8: retire the old payroll engine
+Retire old payroll engine only after the recorded full-month gate is actually satisfied; calendar time passing is not proof.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-573
+
+SCRUM-574 | To Do | Payroll: drop the old payroll tables (contract)
+Forward-only payroll table removal only after 573 and restore/count evidence; no premature destructive cleanup.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-574
+
+SCRUM-575 | To Do | Payroll: revenue reader for month inputs
+Build the monthly revenue/VAT/service-charge reader from POS under the approved payroll scope, preserving golden calculations.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-575
+
+SCRUM-576 | To Do | Payroll: trim the legacy month-end feed
+Trim the legacy feed only behind parity tests after the retirement prerequisites.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-576
+
+SCRUM-649 | To Do | P5-7 Data tools: demo reset, seed profiles, retention, PDPA erasure, backup status, rehearsal
+P5 Data tools remain explicitly descoped and NOT BUILT as a delivered suite. Do not reopen as an incidental Console repair.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-649
+
+SCRUM-672 | Testing | Record verified deployment events in Admin release history
+Stage-one UI is proven; the release feed is deliberately disabled pending the owner decision on service credentials. Prove actual deployment ingestion and replay only after that decision.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-672
+
+SCRUM-675 | To Do | Q27 Stage 2: dated analytics cutover after the legacy dump
+Dated analytics cutover remains gated on verified frozen legacy history. HR database restore alone does not supply that acceptance.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-675
+
+SCRUM-687 | Testing | Receipt prints as one slip with the F&B credit and larger bold type
+Printed receipt software has recorded release evidence; obtain the physical slip photo and verify one cut, layout and wallet QR on the counter.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-687
+
+SCRUM-688 | Testing | Band printer that answers status only in error is held as "stopped answering" after its first error
+Re-test paper-out then reload on the real band printer without restarting the box; keep Testing until the physical recovery is proven.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-688
+
+SCRUM-689 | Testing | Band printer settings: black-mark sensing and print window for wristband stock
+Verify black-mark sensing and the white print window on real stock and attach the printed-band evidence.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-689
+
+SCRUM-700 | Testing | Counter box reads the USB barcode scanner itself and publishes scans to the till
+Old comment says Pi-to-till transport is missing; 736 subsequently shipped it. Reconcile that superseded blocker and prove the actual USB cradle on the Pi.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-700
+
+SCRUM-701 | Testing | Boxes join the private network at install, and a release is pushed to any box with one command
+Installer key-based network join and pushing a release by private-network name remain separate proof points; a manual browser join/local-IP push is insufficient.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-701
+
+SCRUM-705 | To Do | A gate station has only one assignment slot for its controller and readers
+Gate controller/reader assignment obstruction belongs to paused 223. Do not silently fold physical gate activation into counter work.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-705
+
+SCRUM-709 | To Do | 2C2P PromptPay: what the park must obtain before real QR payments can be taken
+Production gateway inputs are an owner/provider prerequisite; simulator proof is not real PromptPay acceptance.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-709
+
+SCRUM-711 | Testing | The counter box drives the customer display screen
+The Pi has a recorded successful reboot/display proof; finish the installer and child-ticket checks instead of calling the entire hardware story complete.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-711
+
+SCRUM-713 | Testing | The counter keeps selling with the internet down: the box serves the display and the till reaches it on the counter network
+Reconcile old comments with delivered child fixes; real router-outage selling/display and secure bridge configuration still need a bounded counter proof.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-713
+
+SCRUM-714 | To Do | Replace the counter Pi boot drive: NVMe SSD on an M.2 HAT, or an endurance microSD
+Owner hardware purchase/replacement decision, then clone/restore and degraded-drive checks. No drive changes under the software resume.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-714
+
+SCRUM-733 | To Do | The till Messages tab is sample data and shows a message as delivered and read when nothing was sent
+Confirmed mock MessagingPanel: it simulates delivered/read with timers. Real parent messaging is NOT BUILT on this surface; agree wiring or truthful disabling before use.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-733
+
+SCRUM-753 | To Do | History cannot look up a wristband during a platform outage
+Offline History lookup remains separate from scanner delivery; agree cache completeness and permitted actions, then test online/offline on a real agent.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-753
+
+SCRUM-770 | In Review | One employee profile for the whole employment: offboard, occasional shifts, rehire
+Rehire and pay-only access already shipped under 794/769. Remaining decision is single-shift employment/pay handling; do not implement another rehire system.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-770
+
+SCRUM-776 | In Review | Drop-off check-in notice sent to the parent on real WhatsApp, with a Confirm button
+Reconcile the old direct-Meta prerequisite with the newer Twilio direction on 908; real notice delivery and parent-confirmation handling remain unproven.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-776
+
+SCRUM-780 | Testing | Tickets screen says "Unlock this till on its box first" right after the till is unlocked on its box
+Till-side fix exists; real box-agent staging proof and startup wording decision remain. Prior one-run temporary-settings approval is not a standing configuration mandate.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-780
+
+SCRUM-791 | Testing | Restore the OTO App's production data into staging so the HR app is tested on the park's own records
+Restore tooling and runs exist, including a later production use. Reconcile the staging acceptance checklist and explicit media/face limitations; do not repeat restore without a planned cutover.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-791
+
+SCRUM-823 | Testing | In Birthdays & Events, advice and choice questions go to a person at once, who is notified
+Routing part has proof; bell/GM notification half waits for the recorded permission change and its proof. Do not close the whole ticket.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-823
+
+SCRUM-844 | To Do | The older free-text AI Fill can read a deposit that was only ASKED as a deposit RECEIVED
+Prioritize a regression and fix for the legacy free-text requested-versus-received deposit distinction; do not infer that catalogue-fill protections cover it.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-844
+
+SCRUM-864 | In Progress | Till flow consistency follow-ups before the park demo
+Use as the till follow-up umbrella; close only after its remaining children and decisions are reconciled.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-864
+
+SCRUM-892 | To Do | The phone till payment screen shows a whole order line above the QR
+Owner layout choice on showing a complete order line above phone QR; do not shrink payment affordances by preference.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-892
+
+SCRUM-895 | Testing | A counter screen that starts before the Wi-Fi recovers by itself
+Installer code landed; prove boot-before-network recovery on the actual Pi.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-895
+
+SCRUM-896 | Testing | The counter screen may use its webcam without a tap on Allow
+Installer camera-permission option landed; prove the requested physical camera behavior on the Pi.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-896
+
+SCRUM-908 | Testing | Connect a real WhatsApp number to the unified inbox through Twilio
+Adapter/sandbox work exists; owner/provider configuration and authorized real end-to-end delivery remain. No unsolicited messages.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-908
+
+SCRUM-910 | To Do | A party's deposit is counted once after a settled party is refunded whole
+Jira description says 'built now' but the latest comment and current main show the double-counting case remains open. Owner must choose deposit returned versus retained; preserve the saved failing test.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-910
+
+SCRUM-919 | To Do | One Thai typeface across the till, the customer display and the receipt preview
+Thai font is bundled and portions of the UI have proof; finish tablet/Pi/separate-display/receipt checks and owner visual acceptance.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-919
+
+SCRUM-921 | In Progress | HR app go-live: 14 active people have no phone number and cannot sign in at the launcher
+Obtain and verify the 14 missing staff phone numbers through the owner process; no invented contact information.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-921
+
+SCRUM-922 | To Do | HR app go-live: one real staff member signs in on the live link
+Observe one authorized real staff sign-in on production; administrator health checks do not satisfy this.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-922
+
+SCRUM-923 | To Do | HR app go-live: switch the domains to the production launcher and HR app
+Owner-controlled domain/DNS cutover remains separate approval and execution.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-923
+
+SCRUM-924 | To Do | Production: land the one-off set-up script (company, parks, first administrator, launcher tiles)
+Review the three local production-bootstrap commits against current main, then land only within the approved production-tool scope.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-924
+
+SCRUM-925 | To Do | Production: settings and data to put in place before the till goes live there
+Prepare production till configuration, data and payment readiness separately; staging fixes do not authorize production till launch.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-925
+
+SCRUM-928 | Testing | The box installer sets up a customer display that stands vertically, with touch following the turn
+Vertical display/touch installer is landed; inspect existing Pi settings and prove installation, all four touch corners and reboots.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-928
+
+SCRUM-929 | Testing | The till's Display theme switch changes a separate paired customer display
+Web display theme behavior has automated evidence; prove it on the actual paired counter display before closure.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-929
+
+SCRUM-937 | To Do | The Thai drop-off form shows its three confirmations in Thai and spaces a child's name from the Thai words
+Thai consent strings are still English in recorded proof. Provide the approved translated settings and spacing, with 919.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-937
+
+SCRUM-942 | Testing | A till does not leave a family half-way through the form on the paired display
+Lock-screen waiting-family messaging is built/proven; keeping the till awake from family activity remains an owner choice and Pi release proof remains.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-942
+
+SCRUM-945 | To Do | Kitchen plan to the till: points left by the reviews of SCRUM-906
+Prioritize legacy duplicated adults/kids money risk and slip update/rebase cases. Current 0050 preserves the older list rule; census affected data and settle the interpretation before changing historical charges.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-945
+
+SCRUM-953 | Testing | Money screens: a settlement is headed once, the discount stays on one line, and small points from the proof
+Several money-screen points have proof; remaining party-page loading/layout points overlap the saved till lane. Reconcile rather than repeat completed work.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-953
+
+SCRUM-959 | Testing | Split view at 1440: the header tabs stay in view, and the cut labels found in the proof
+Retain the remaining header/tab design ruling; distinguish already fixed layout points.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-959
+
+SCRUM-961 | To Do | Measure the party slip job's read of the OTO App's event-packages view on staging, and turn the JIT compiler off for the platform if it costs time
+Measure the party-view query and JIT cost on staging before proposing a connection setting change; test-only speedup is not production evidence.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-961
+
+SCRUM-962 | To Do | The printed receipt adds up after a code, and small points left by the family form's second lane
+Reconcile proved language/name/sideways-small-screen parts; receipt arithmetic presentation, charge-mode confirmation and Pi kiosk-source verification remain.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-962
+
+SCRUM-964 | Testing | A kept sale after a session end: F&B and Shop orders with a payment waiting, and small points left by the reviews
+Keep Testing. Seven of eight proof points passed; cross-staff waiting-payment continuation failed and is owned by 982.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-964
+
+SCRUM-965 | To Do | Book Date: old readings after a Fetch from chat, the waiting line on a phone, and a cleared pick
+Fix stale Book Date alternatives and phone footer layout; retain the cleared-pick rule for owner confirmation.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-965
+
+SCRUM-966 | To Do | Kitchen plan on the till: the BEO's "kitchen required" switch, the extras' amounts with a service charge, and points left by the reviews
+Point 5 is landed with 978; points 1/6 are owner decisions, 2-4 are separate platform/slip work, and the toast belongs to the till. Do not rebuild the whole bundle.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-966
+
+SCRUM-968 | To Do | BEO extras and the fill: the holiday price in the hint, a coded line the till menu does not list, and points left by the reviews
+Points 4 and app-side 7 are landed. Holiday pricing, unseen codes, adult-extra copying and PARTY-code charging need separately tracked decisions/work.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-968
+
+SCRUM-969 | To Do | After the split-view follow-up: End of Day's words for a part-paid food order, the phone F&B at a session end, and small points
+Points 1 and 2 have landed proof. Retain the remaining promo/display, narrow layout and proof-driver issues; correct stale 'not started' text.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-969
+
+SCRUM-974 | To Do | Counter box installer: points left by the reviews of the vertical display lane (a missing end marker, --no-kiosk on a box that had a screen, the release's own guide)
+Fix installer malformed-marker handling and truthful no-kiosk behavior; preserve user-managed configuration and test failures without touching a live Pi.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-974
+
+SCRUM-975 | In Progress | Counter display after the display-fix lane: the first screen's pills at 40 pixels, a lost photo answer still shows Retry, a display left open never takes a new build, and small points
+Finish the paused till lane's review and proof; separate owner questions about pill sizes/offline screens from already scoped fixes.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-975
+
+SCRUM-976 | Testing | BEO fill and PDF: a date read as a chat total, the adults' line on the PDF, and small points left by the reviews of the read-fix lane
+Finish the combined 978 proof and publish its evidence; keep Testing until the missing scenarios and cleanup are verified.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-976
+
+SCRUM-977 | In Progress | A phone till turned on its side becomes the desk till, and the family's form and the sale are lost
+Main still chooses phone/desk by width. Complete the saved 14-commit lane, second review and rotation proof before landing.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-977
+
+SCRUM-978 | Testing | OTO App: "Recent Updates" opens Edit Event with blank defaults, the BEO PDF loses the adults' price of a dish the kids also have, and the app writes the signed-in person's record to the browser console
+First census and remove only the interrupted run's exact fixtures, then complete privacy and adults-switch scenarios, inspect/publish proof and verify cleanup. Existing 23 PNGs are untracked partial evidence.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-978
+
+SCRUM-979 | In Progress | Card payments after the refused-command fix: the till says "Payment declined" where the terminal was never asked, a lost terminal answer still holds the sale, and points left by the reviews
+Preserve five local commits; add caught recovery/logging plus the real GET regression test, rebase, gate, deploy named API and prove. Till messaging points land through 977.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-979
+
+SCRUM-980 | To Do | Devices in the Console: a prefix left on a display station cannot be cleared, "Add a device" writes settings nobody chose, and small points left by the reviews
+Fix stale prefix/assignments when changing station kind and safe retry behavior; retain printer-creation defaults and seeded printer choices for the owner.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-980
+
+SCRUM-981 | To Do | After the kept-sale lane: a second person continuing a cart loses the first person's approved rate with no word, the display keeps the ended person's screen for up to a minute, and points left by the reviews
+Implement only the already scoped handover reliability points with 982. Keep rate carry-over, attribution and display-hold policy choices explicit.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-981
+
+SCRUM-982 | To Do | A QR payment that is waiting is forgotten when a different person continues a kept sale: the till asks for the money again and can record cash on a sale the QR already paid
+Highest immediate new money defect: restore the sale's existing payment after staff changes and prohibit a second sale. Ticket path falsely says Cash; F&B proof created a second cash sale while the old QR was live.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-982
+
+SCRUM-983 | To Do | BEO editor and PDF: the + button joins a count stored as text, a line with no count prints "nullx", and points left by the reviews of the leftovers lane
+Confirmed text count concatenation and raw null PDF quantities. Fix these reliability faults, complete editor read-only behavior and date labeling; separate money-rule and API catalogue questions.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-983
+
+SCRUM-984 | Testing | F&B menu: the categories grouped under three tabs, Food, Drinks and Special (staging)
+Records grouped on staging; inspect Food/Drinks/Special on desktop and phone and attach proof. Category combining and production application remain unapproved.
+https://oto-suite-dev.atlassian.net/browse/SCRUM-984
+

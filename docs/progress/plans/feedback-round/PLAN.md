@@ -1,3 +1,5 @@
+**13 November 2026, 17:50 Bangkok, OWNER RESUMED THE FIRST THREE TAKEOVER STAGES.** Follow [the approved takeover plan](../takeover-2026-11-13/PLAN.md): checkpoints/reconciliation, then979 ->977/975 ->978/976 proof and cleanup ->982 with scoped981, then844/983 and relevant945/966/968 plus the ruled910 fix. **Stop for owner review after these stages.** For910 the owner chose to keep the original deposit with the party on a full settlement refund. Preserve all other unresolved numbered choices. The older broader go below does not authorize later rounds before that review.
+
 # The feedback round — the 8 November topics built (12 November 2026)
 
 The owner's go, 12 November: build, test, deploy and prove every change noted from the

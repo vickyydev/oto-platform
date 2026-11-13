@@ -59,7 +59,7 @@ not a generator.
   red; report a red run before anything else; reproduce locally on the exact SHA and
   re-run once if local is green (the known setup-flake class is SCRUM-510).
 - **Typecheck output is read whole:** the api must print zero lines; the OTO App's ratchet
-  (`npm run check:ratchet`) holds at 418/418 errors and that count may never rise. Eslint every
+  (`npm run check:ratchet`) holds at its committed baseline (currently 414 diagnostics) and that count may never rise. Eslint every
   touched file. Never use `vitest -t` on serial suites.
 - **Be honest about lost or partial work.** Never claim something is built, tested or
   deployed that you did not see built, tested or deployed. Three answers only to "is X
@@ -103,7 +103,20 @@ raced cross-service call is Retry on the Failures page.
 - **Jira browsing** can also use the Atlassian MCP configured in
   `C:\Users\waqar\.codex\config.toml`; writes go through `scripts/agent/jira.mjs`.
 
-## Current direction (11 November 2026)
+## Current direction (13 November 2026)
+
+The owner approved the three-stage takeover round tracked by SCRUM-985 and
+`docs/progress/plans/takeover-2026-11-13/PLAN.md`. Preserve and reconcile first; then
+979 -> 977/975 -> 978/976 proof and cleanup -> 982 with scoped981; then844/983 and
+relevant945/966/968 plus910 under the ruling that the deposit stays with the party.
+Stop after those stages for owner review. The takeover includes these named prior
+planner lanes; the old parallel-ownership boundary below is historical for them.
+Production, real messages, gate/Pi work and later repair rounds remain outside this
+approval. The 12 November focused-gate/named-staging-deploy ruling is recorded in the
+feedback plan; full-SHA CI remains observed and red runs investigated. Root ESLint
+excludes the OTO App; do not claim root lint checked app files.
+
+## Historical direction (11 November 2026)
 
 The open work for Codex is **the till and platform defect round** —
 `docs/progress/plans/codex-till-round/PLAN.md` is the brief (eight units, in order, each with

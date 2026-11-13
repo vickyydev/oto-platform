@@ -1,3 +1,5 @@
+**13 November 2026, 17:50 Bangkok, CURRENT STATE CORRECTION:** R0-R7 are delivered under SCRUM-565 through572 with recorded proof; the old 'plan only' opening below describes the original document, not today's implementation. SCRUM-564 remains In Progress for573-576 and its explicit full-month retirement gate. The audit does not satisfy that gate. Payroll execution is outside the three-stage takeover round and stays for the owner's later review.
+
 # Payroll, built for real — the rulebook as the OTO App's month-end
 
 **Ticket:** SCRUM-564. **Spec:** `docs/features/oto-app-payroll-rulebook.md`.
