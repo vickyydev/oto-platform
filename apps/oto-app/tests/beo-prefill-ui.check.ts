@@ -359,6 +359,13 @@ g.fetch = async (input: string | URL | Request, init?: RequestInit) => {
   }
   if (url.pathname === "/api/ai/parse-beo" && method === "POST") {
     const text = String(body.text ?? "");
+    if (text.includes("ZZ TEST LEGACY DEPOSIT")) {
+      const partyDetails = text.includes("RECEIVED")
+        ? { prepaymentReceived: 3000, depositReceived: true, depositWords: "We received 3,000 baht.", depositDate: "2026-11-14" }
+        : text.includes("OLD-ANSWER") ? { prepaymentReceived: 3000, depositDate: "2026-11-14" }
+        : { depositRequested: 3000, depositReceived: false };
+      return json({ partyDetails, ...(text.includes("NO-CATALOGUE") ? {} : { review: review("pasted") }) });
+    }
     // A paste on a park with a catalogue opens the review; one that says "no catalogue" the preview of before.
     if (text.includes("NO-CATALOGUE")) return json({ ...FILL, proposals: FILL.proposals });
     return json({ ...FILL, proposals: FILL.proposals, review: review("pasted") });
@@ -634,6 +641,46 @@ await check("a pasted message opens the same review and approves the same way; w
   assert.equal(text("input-child-name"), "Emma");
 });
 
+await check("SCRUM-844: requests and old answers keep the stored deposit; received money needs confirmation in both free-text paths", async () => {
+  for (const variant of ["OLD-ANSWER", "REQUEST", "RECEIVED-UNTICKED", "RECEIVED-TICKED", "CATALOGUE-RECEIVED-TICKED"] as const) {
+    beos.get(E_PLAIN)!.partyDetails = { prepaymentReceived: 2000, depositDate: "2026-11-01", items: [] };
+    await open(E_PLAIN);
+    await click("button-ai-fill-beo");
+    const source = `ZZ TEST LEGACY DEPOSIT ${variant} ${variant.startsWith("CATALOGUE") ? "" : "NO-CATALOGUE"}. ${variant.includes("RECEIVED") ? "We received 3,000 baht." : "Please pay the 3,000 deposit tomorrow."}`;
+    await setValue(required("textarea-ai-fill-beo") as HTMLTextAreaElement, source);
+    await click("button-ai-parse-beo");
+    await settle(8);
+    if (variant.startsWith("CATALOGUE")) {
+      await click("button-ai-review-fallback");
+      await settle(6);
+    }
+    if (variant.includes("RECEIVED")) {
+      const received = required("checkbox-ai-fill-deposit-received");
+      assert.equal(received.getAttribute("aria-checked"), "false", `${variant}: no automatic receipt confirmation`);
+      if (variant.endsWith("TICKED") && !variant.endsWith("UNTICKED")) await click("checkbox-ai-fill-deposit-received");
+    } else {
+      assert.equal(byTestId("checkbox-ai-fill-deposit-received"), null);
+    }
+    const sawUnconfirmed = doc.body.textContent?.includes("Deposit requested / not confirmed received");
+    await click("button-ai-fill-confirm");
+    await settle(6);
+    if (!byTestId("input-prepayment")) await click("accordion-party-details");
+    const confirmed = variant.endsWith("TICKED") && !variant.endsWith("UNTICKED");
+    assert.equal(text("input-prepayment")?.replace(/[.,\s]/g, ""), String(confirmed ? 3000 : 2000), `${variant}: the actual Deposit field`);
+    if (!variant.includes("RECEIVED")) assert.ok(sawUnconfirmed, `${variant}: the amount is visible as unconfirmed`);
+    asked.length = 0;
+    await click("button-save-beo");
+    await settle(8);
+    const saved = asked.find((request) => request.method === "PUT" && request.path === `/api/events/${E_PLAIN}/beo`);
+    assert.ok(saved, `${variant}: the editor's real Save ran`);
+    const details = saved.body.partyDetails as { prepaymentReceived: number; depositDate: string };
+    assert.equal(details.prepaymentReceived, confirmed ? 3000 : 2000, `${variant}: Save carries only confirmed received money`);
+    assert.equal(details.depositDate, confirmed ? "2026-11-14" : "2026-11-01", `${variant}: a requested date cannot replace the receipt date`);
+    // Force a fresh editor for the next proposal; review confirmation never leaks into another read.
+    await open(E_TYPED);
+  }
+});
+
 await check("text typed before AI Fill survives the approval: the review keeps it, the one Save writes it, the read-back shows it", async () => {
   await open(E_TYPED);
   await typeInto("textarea-special-requests", "ZZ typed: a quiet corner, please");
@@ -762,5 +809,5 @@ await check("SCRUM-904: a catalogue that could not be read is said so, never cal
 
 await act(async () => { root.unmount(); });
 console.log(`beo-prefill-ui.check: ${checks} checks passed`);
-// SCRUM-904: twelve, the unread catalogue's case among them.
-process.exit(checks === 12 ? 0 : 1);
+// SCRUM-844 adds the legacy deposit proposal/confirmation cases.
+process.exit(checks === 13 ? 0 : 1);

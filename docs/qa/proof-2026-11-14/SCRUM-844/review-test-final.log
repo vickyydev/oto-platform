@@ -1,0 +1,13 @@
+
+> @oto/api@0.1.0 test C:\oto-lanes\codex-beo-money-stage3-20261114\apps\api
+> vitest run --pool=forks "test/s844-review.test.ts"
+
+
+ RUN  v3.2.7 C:/oto-lanes/codex-beo-money-stage3-20261114/apps/api
+
+ ✓ test/s844-review.test.ts (11 tests) 13ms
+
+ Test Files  1 passed (1)
+      Tests  11 passed (11)
+   Start at  03:24:41
+   Duration  731ms (transform 85ms, setup 0ms, collect 83ms, tests 13ms, environment 0ms, prepare 306ms)

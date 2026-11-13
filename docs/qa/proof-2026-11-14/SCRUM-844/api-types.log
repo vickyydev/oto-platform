@@ -1,0 +1,330 @@
+test/s727-box-unlock-review.test.ts(174,48): error TS2322: Type 'import("C:/oto-lanes/codex-payment-handover-20261113/packages/box-agent/src/agent").BoxAgent' is not assignable to type 'import("C:/oto-lanes/codex-beo-money-stage3-20261114/packages/box-agent/src/agent").BoxAgent'.
+  The types returned by 'sessions()' are incompatible between these types.
+    Type 'import("C:/oto-lanes/codex-payment-handover-20261113/packages/box-agent/src/station-session").StationSessionManager | null' is not assignable to type 'import("C:/oto-lanes/codex-beo-money-stage3-20261114/packages/box-agent/src/station-session").StationSessionManager | null'.
+      Type 'import("C:/oto-lanes/codex-payment-handover-20261113/packages/box-agent/src/station-session").StationSessionManager' is not assignable to type 'import("C:/oto-lanes/codex-beo-money-stage3-20261114/packages/box-agent/src/station-session").StationSessionManager'.
+        Types have separate declarations of a private property 'store'.
+../pos/test/support/consent-harness/server.ts(4,51): error TS2307: Cannot find module '@playwright/test' or its corresponding type declarations.
+../pos/test/support/consent-harness/server.ts(5,30): error TS2307: Cannot find module 'vite' or its corresponding type declarations.
+../pos/test/support/consent-harness/server.ts(6,19): error TS2307: Cannot find module '@vitejs/plugin-react' or its corresponding type declarations.
+../pos/test/support/consent-harness/server.ts(7,25): error TS2307: Cannot find module '@tailwindcss/vite' or its corresponding type declarations.
+../../packages/box-agent/src/agent.ts(116,8): error TS2307: Cannot find module '@oto/shared' or its corresponding type declarations.
+../../packages/box-agent/src/agent.ts(118,78): error TS2307: Cannot find module '@oto/shared' or its corresponding type declarations.
+../../packages/box-agent/src/benefit-credential.ts(17,8): error TS2307: Cannot find module '@oto/shared' or its corresponding type declarations.
+../../packages/box-agent/src/benefit-credential.ts(217,40): error TS7006: Parameter 'e' implicitly has an 'any' type.
+../../packages/box-agent/src/blob-store.ts(3,56): error TS2307: Cannot find module '@oto/shared' or its corresponding type declarations.
+../../packages/box-agent/src/booth-draw.ts(41,39): error TS2307: Cannot find module '@oto/shared' or its corresponding type declarations.
+../../packages/box-agent/src/booth.ts(40,19): error TS2307: Cannot find module 'zod' or its corresponding type declarations.
+../../packages/box-agent/src/booth.ts(60,8): error TS2307: Cannot find module '@oto/shared' or its corresponding type declarations.
+../../packages/box-agent/src/booth.ts(61,49): error TS2307: Cannot find module '@oto/print' or its corresponding type declarations.
+../../packages/box-agent/src/booth.ts(1153,56): error TS7006: Parameter 'p' implicitly has an 'any' type.
+../../packages/box-agent/src/booth.ts(1422,12): error TS7006: Parameter 'candidate' implicitly has an 'any' type.
+../../packages/box-agent/src/booth.ts(1671,8): error TS7006: Parameter 'candidate' implicitly has an 'any' type.
+../../packages/box-agent/src/booth.ts(1719,8): error TS7006: Parameter 'w' implicitly has an 'any' type.
+../../packages/box-agent/src/booth.ts(1724,10): error TS7006: Parameter 'candidate' implicitly has an 'any' type.
+../../packages/box-agent/src/booth.ts(1761,14): error TS7006: Parameter 'candidate' implicitly has an 'any' type.
+../../packages/box-agent/src/booth.ts(1764,12): error TS7006: Parameter 'candidate' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(62,8): error TS2307: Cannot find module '@oto/shared' or its corresponding type declarations.
+../../packages/box-agent/src/checkin-desk.ts(182,49): error TS7006: Parameter 'e' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(182,92): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(182,97): error TS7006: Parameter 'e' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(325,37): error TS7006: Parameter 'c' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(326,47): error TS7006: Parameter 'g' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(368,42): error TS7006: Parameter 'c' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(377,43): error TS7006: Parameter 'g' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(388,44): error TS7006: Parameter 'n' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(408,43): error TS7006: Parameter 'c' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(439,60): error TS7006: Parameter 'it' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(533,53): error TS7006: Parameter 'k' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(595,45): error TS7006: Parameter 'l' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(688,40): error TS7006: Parameter 'm' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(731,49): error TS7006: Parameter 'it' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(772,31): error TS7006: Parameter 's' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(797,63): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{ registered: number; in_park: number; out: number; }'.
+../../packages/box-agent/src/checkin-desk.ts(826,8): error TS7006: Parameter 'c' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(844,48): error TS7031: Binding element '_n' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(844,66): error TS7031: Binding element '_o' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(863,18): error TS7006: Parameter 'g' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(864,16): error TS7006: Parameter 'a' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(864,19): error TS7006: Parameter 'b' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(865,15): error TS7006: Parameter 'g' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(898,72): error TS7006: Parameter 'g' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(966,43): error TS7006: Parameter 'c' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(1070,34): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/checkin-desk.ts(1077,15): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/checkin-desk.ts(1078,27): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/checkin-desk.ts(1079,20): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/checkin-desk.ts(1088,28): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/checkin-desk.ts(1088,82): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/checkin-desk.ts(1179,36): error TS7006: Parameter 'c' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(1194,40): error TS7006: Parameter 'c' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(1213,41): error TS7006: Parameter 'c' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(1213,66): error TS7006: Parameter 'id' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(1218,26): error TS7006: Parameter 'id' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(1227,43): error TS7006: Parameter 'c' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(1232,47): error TS7006: Parameter 'it' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(1239,44): error TS7006: Parameter 's' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(1239,47): error TS7006: Parameter 'it' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(1280,60): error TS7006: Parameter 'c' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(1347,35): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/checkin-desk.ts(1349,20): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/checkin-desk.ts(1349,48): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/checkin-desk.ts(1353,19): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/checkin-desk.ts(1353,52): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/checkin-desk.ts(1353,94): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/checkin-desk.ts(1357,42): error TS2698: Spread types may only be created from object types.
+../../packages/box-agent/src/checkin-desk.ts(1374,18): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/checkin-desk.ts(1374,46): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/checkin-desk.ts(1374,83): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/checkin-desk.ts(1389,27): error TS7006: Parameter 'e' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(1453,37): error TS7006: Parameter 'e' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(1462,22): error TS7006: Parameter 's' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(1465,30): error TS7006: Parameter 's' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(1466,27): error TS7006: Parameter 's' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(1505,21): error TS7006: Parameter 's' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(1520,49): error TS7006: Parameter 's' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(1560,37): error TS7006: Parameter 's' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(1560,40): error TS7006: Parameter 'i' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(1630,30): error TS7006: Parameter 's' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(1657,37): error TS7006: Parameter 'e' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(1674,22): error TS7006: Parameter 's' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(1675,58): error TS7006: Parameter 's' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(1681,18): error TS7006: Parameter 's' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(1726,56): error TS7006: Parameter 's' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(1841,38): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/checkin-desk.ts(1842,83): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/checkin-desk.ts(1843,42): error TS7006: Parameter 'g' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(1843,57): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/checkin-desk.ts(1845,77): error TS2345: Argument of type 'unknown' is not assignable to parameter of type '{ guardianId: string; registrationId: string; name: string; relationship?: string | null | undefined; phone?: string | null | undefined; source: BridgeGuardian; photoId?: string | null | undefined; }'.
+../../packages/box-agent/src/checkin-desk.ts(1864,32): error TS7006: Parameter 'g' implicitly has an 'any' type.
+../../packages/box-agent/src/checkin-desk.ts(2001,72): error TS7006: Parameter 'x' implicitly has an 'any' type.
+../../packages/box-agent/src/events-desk.ts(22,8): error TS2307: Cannot find module '@oto/shared' or its corresponding type declarations.
+../../packages/box-agent/src/events-desk.ts(176,37): error TS7006: Parameter 'e' implicitly has an 'any' type.
+../../packages/box-agent/src/events-desk.ts(177,45): error TS7006: Parameter 'a' implicitly has an 'any' type.
+../../packages/box-agent/src/events-desk.ts(200,32): error TS7006: Parameter 'e' implicitly has an 'any' type.
+../../packages/box-agent/src/events-desk.ts(202,37): error TS7006: Parameter 'a' implicitly has an 'any' type.
+../../packages/box-agent/src/events-desk.ts(376,23): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/events-desk.ts(379,49): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/events-desk.ts(379,63): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/events-desk.ts(384,42): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/events-desk.ts(453,38): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/events-desk.ts(480,49): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/events-desk.ts(480,63): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/events-desk.ts(520,40): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/events-desk.ts(534,49): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/events-desk.ts(534,63): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/gate/config.ts(21,19): error TS2307: Cannot find module 'zod' or its corresponding type declarations.
+../../packages/box-agent/src/gate/config.ts(127,52): error TS2538: Type 'symbol' cannot be used as an index type.
+../../packages/box-agent/src/gate/config.ts(130,29): error TS2538: Type 'symbol' cannot be used as an index type.
+../../packages/box-agent/src/gate/config.ts(131,41): error TS2731: Implicit conversion of a 'symbol' to a 'string' will fail at runtime. Consider wrapping this expression in 'String(...)'.
+../../packages/box-agent/src/gate/decision.ts(43,8): error TS2307: Cannot find module '@oto/shared' or its corresponding type declarations.
+../../packages/box-agent/src/gate/decision.ts(124,50): error TS7053: Element implicitly has an 'any' type because expression of type 'GateDenyReason' can't be used to index type '{ readonly welcome: "Welcome / ยินดีต้อนรับ"; readonly goodbye: "Goodbye / ขอบคุณที่มาเที่ยว"; readonly NOT_A_BAND: "Scan your wristband / สแกนสายรัดข้อมือ"; readonly BOX_NOT_READY: "Please see reception / กรุณาติดต่อเคาน์เตอร์"; ... 8 more ...; readonly GATE_NOT_READY: "Gate not ready, see reception / ประตูยังไม่พร...'.
+../../packages/box-agent/src/gate/host.ts(68,37): error TS2307: Cannot find module '@oto/shared' or its corresponding type declarations.
+../../packages/box-agent/src/gate/host.ts(395,52): error TS7053: Element implicitly has an 'any' type because expression of type 'GateDenyReason' can't be used to index type '{ readonly welcome: "Welcome / ยินดีต้อนรับ"; readonly goodbye: "Goodbye / ขอบคุณที่มาเที่ยว"; readonly NOT_A_BAND: "Scan your wristband / สแกนสายรัดข้อมือ"; readonly BOX_NOT_READY: "Please see reception / กรุณาติดต่อเคาน์เตอร์"; ... 8 more ...; readonly GATE_NOT_READY: "Gate not ready, see reception / ประตูยังไม่พร...'.
+../../packages/box-agent/src/offline-pricing.ts(49,8): error TS2307: Cannot find module '@oto/shared' or its corresponding type declarations.
+../../packages/box-agent/src/offline-pricing.ts(663,58): error TS7006: Parameter 'addOn' implicitly has an 'any' type.
+../../packages/box-agent/src/offline-pricing.ts(746,56): error TS7006: Parameter 'm' implicitly has an 'any' type.
+../../packages/box-agent/src/offline-pricing.ts(757,21): error TS2339: Property 'some' does not exist on type '{}'.
+../../packages/box-agent/src/offline-pricing.ts(757,27): error TS7006: Parameter 'id' implicitly has an 'any' type.
+../../packages/box-agent/src/offline-pricing.ts(762,19): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(iterable?: Iterable<unknown> | null | undefined): Set<unknown>', gave the following error.
+    Argument of type '{}' is not assignable to parameter of type 'Iterable<unknown>'.
+      Property '[Symbol.iterator]' is missing in type '{}' but required in type 'Iterable<unknown>'.
+  Overload 2 of 2, '(values?: readonly any[] | null | undefined): Set<any>', gave the following error.
+    Argument of type '{}' is not assignable to parameter of type 'readonly any[]'.
+      Type '{}' is missing the following properties from type 'readonly any[]': length, concat, join, slice, and 26 more.
+../../packages/box-agent/src/offline-pricing.ts(762,49): error TS2339: Property 'length' does not exist on type '{}'.
+../../packages/box-agent/src/offline-pricing.ts(767,44): error TS2339: Property 'length' does not exist on type '{}'.
+../../packages/box-agent/src/offline-pricing.ts(769,39): error TS2339: Property 'length' does not exist on type '{}'.
+../../packages/box-agent/src/offline-pricing.ts(793,36): error TS2339: Property 'map' does not exist on type '{}'.
+../../packages/box-agent/src/offline-pricing.ts(793,41): error TS7006: Parameter 'optionId' implicitly has an 'any' type.
+../../packages/box-agent/src/offline-pricing.ts(821,12): error TS7006: Parameter 'id' implicitly has an 'any' type.
+../../packages/box-agent/src/offline-pricing.ts(887,48): error TS7006: Parameter 'entry' implicitly has an 'any' type.
+../../packages/box-agent/src/offline-pricing.ts(916,8): error TS7006: Parameter 'd' implicitly has an 'any' type.
+../../packages/box-agent/src/offline-pricing.ts(951,35): error TS7006: Parameter 'd' implicitly has an 'any' type.
+../../packages/box-agent/src/offline-pricing.ts(983,28): error TS7006: Parameter 'line' implicitly has an 'any' type.
+../../packages/box-agent/src/offline-pricing.ts(983,62): error TS7006: Parameter 'a' implicitly has an 'any' type.
+../../packages/box-agent/src/offline-pricing.ts(984,24): error TS7006: Parameter 'item' implicitly has an 'any' type.
+../../packages/box-agent/src/offline-pricing.ts(991,43): error TS7006: Parameter 'l' implicitly has an 'any' type.
+../../packages/box-agent/src/offline-pricing.ts(992,42): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
+../../packages/box-agent/src/offline-pricing.ts(1084,46): error TS7006: Parameter 'promo' implicitly has an 'any' type.
+../../packages/box-agent/src/offline-pricing.ts(1135,21): error TS7006: Parameter 'unit' implicitly has an 'any' type.
+../../packages/box-agent/src/offline-pricing.ts(1135,27): error TS7006: Parameter 'index' implicitly has an 'any' type.
+../../packages/box-agent/src/photo-upload.ts(1,34): error TS2307: Cannot find module '@oto/shared' or its corresponding type declarations.
+../../packages/box-agent/src/printing/adapter.ts(31,8): error TS2307: Cannot find module '@oto/print' or its corresponding type declarations.
+../../packages/box-agent/src/printing/index.ts(19,29): error TS2307: Cannot find module '@oto/shared' or its corresponding type declarations.
+../../packages/box-agent/src/printing/index.ts(20,61): error TS2307: Cannot find module '@oto/shared' or its corresponding type declarations.
+../../packages/box-agent/src/printing/index.ts(217,37): error TS2307: Cannot find module '@oto/print/fixtures' or its corresponding type declarations.
+../../packages/box-agent/src/printing/index.ts(218,34): error TS7006: Parameter 'f' implicitly has an 'any' type.
+../../packages/box-agent/src/printing/queue.ts(103,8): error TS2307: Cannot find module '@oto/print' or its corresponding type declarations.
+../../packages/box-agent/src/printing/queue.ts(104,29): error TS2307: Cannot find module '@oto/shared' or its corresponding type declarations.
+../../packages/box-agent/src/printing/queue.ts(105,63): error TS2307: Cannot find module '@oto/shared' or its corresponding type declarations.
+../../packages/box-agent/src/printing/queue.ts(167,34): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+../../packages/box-agent/src/printing/queue.ts(169,45): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+../../packages/box-agent/src/printing/queue.ts(170,78): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+../../packages/box-agent/src/printing/queue.ts(953,38): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+../../packages/box-agent/src/printing/queue.ts(961,36): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+../../packages/box-agent/src/printing/queue.ts(979,7): error TS2322: Type '{ status: "skipped"; deviceId: null; errorCode: string; errorMessage: string; id: string; attempts: number; role: string | undefined; stationId: string | null; overflow: string[]; elapsedMs: number | null; }' is not assignable to type 'PrintJobOutcome'.
+  Types of property 'role' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string | null'.
+      Type 'undefined' is not assignable to type 'string | null'.
+../../packages/box-agent/src/printing/queue.ts(993,7): error TS2322: Type '{ status: "skipped"; deviceId: string; errorCode: PrinterErrorCode; errorMessage: string; id: string; attempts: number; role: string | undefined; stationId: string | null; overflow: string[]; elapsedMs: number | null; }' is not assignable to type 'PrintJobOutcome'.
+  Types of property 'role' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string | null'.
+      Type 'undefined' is not assignable to type 'string | null'.
+../../packages/box-agent/src/printing/queue.ts(1020,7): error TS2322: Type '{ status: "failed"; deviceId: string; errorCode: string; errorMessage: string; id: string; attempts: number; role: string | undefined; stationId: string | null; overflow: string[]; elapsedMs: number | null; }' is not assignable to type 'PrintJobOutcome'.
+  Types of property 'role' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string | null'.
+      Type 'undefined' is not assignable to type 'string | null'.
+../../packages/box-agent/src/printing/queue.ts(1050,7): error TS2322: Type '{ status: "printed"; deviceId: string; errorCode: null; errorMessage: null; overflow: string[]; elapsedMs: number; id: string; attempts: number; role: string | undefined; stationId: string | null; }' is not assignable to type 'PrintJobOutcome'.
+  Types of property 'role' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string | null'.
+      Type 'undefined' is not assignable to type 'string | null'.
+../../packages/box-agent/src/printing/queue.ts(1064,7): error TS2322: Type '{ status: "failed" | "queued"; deviceId: string; errorCode: PrinterErrorCode; errorMessage: string; overflow: string[]; id: string; attempts: number; role: string | undefined; stationId: string | null; elapsedMs: number | null; }' is not assignable to type 'PrintJobOutcome'.
+  Types of property 'role' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string | null'.
+      Type 'undefined' is not assignable to type 'string | null'.
+../../packages/box-agent/src/printing/queue.ts(1275,11): error TS2322: Type '(request: DrawerPulseRequest) => Promise<{ opened: false; deviceId: null; errorCode: string; errorMessage: string; role: string | undefined; stationId: string | null; elapsedMs: number | null; } | { ...; } | { ...; }>' is not assignable to type '(request: DrawerPulseRequest) => Promise<DrawerPulseOutcome>'.
+  Type 'Promise<{ opened: false; deviceId: null; errorCode: string; errorMessage: string; role: string | undefined; stationId: string | null; elapsedMs: number | null; } | { opened: false; deviceId: string; ... 4 more ...; elapsedMs: number | null; } | { ...; }>' is not assignable to type 'Promise<DrawerPulseOutcome>'.
+    Type '{ opened: false; deviceId: null; errorCode: string; errorMessage: string; role: string | undefined; stationId: string | null; elapsedMs: number | null; } | { opened: false; deviceId: string; ... 4 more ...; elapsedMs: number | null; } | { ...; }' is not assignable to type 'DrawerPulseOutcome'.
+      Type '{ opened: false; deviceId: null; errorCode: string; errorMessage: string; role: string | undefined; stationId: string | null; elapsedMs: number | null; }' is not assignable to type 'DrawerPulseOutcome'.
+        Types of property 'role' are incompatible.
+          Type 'string | undefined' is not assignable to type 'string'.
+            Type 'undefined' is not assignable to type 'string'.
+../../packages/box-agent/src/printing/queue.ts(1277,48): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+../../packages/box-agent/src/printing/queue.ts(1395,40): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+../../packages/box-agent/src/printing/queue.ts(1399,32): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+../../packages/box-agent/src/printing/queue.ts(1418,35): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+../../packages/box-agent/src/printing/queue.ts(1422,34): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+../../packages/box-agent/src/printing/simulator.ts(38,28): error TS2307: Cannot find module '@oto/print' or its corresponding type declarations.
+../../packages/box-agent/src/printing/simulator.ts(39,62): error TS2307: Cannot find module '@oto/print/reader' or its corresponding type declarations.
+../../packages/box-agent/src/printing/simulator.ts(40,35): error TS2307: Cannot find module '@oto/shared' or its corresponding type declarations.
+../../packages/box-agent/src/protocol.ts(1,19): error TS2307: Cannot find module 'zod' or its corresponding type declarations.
+../../packages/box-agent/src/protocol.ts(2,42): error TS2307: Cannot find module '@oto/shared' or its corresponding type declarations.
+../../packages/box-agent/src/protocol.ts(652,8): error TS2307: Cannot find module '@oto/shared' or its corresponding type declarations.
+../../packages/box-agent/src/runner/bridge-server.ts(8,8): error TS2307: Cannot find module '@oto/shared' or its corresponding type declarations.
+../../packages/box-agent/src/runner/home.ts(26,19): error TS2307: Cannot find module 'zod' or its corresponding type declarations.
+../../packages/box-agent/src/runner/home.ts(134,14): error TS7006: Parameter 'dots' implicitly has an 'any' type.
+../../packages/box-agent/src/runner/store-restore.ts(7,44): error TS2307: Cannot find module '@oto/shared' or its corresponding type declarations.
+../../packages/box-agent/src/sale-queue.ts(15,8): error TS2307: Cannot find module '@oto/shared' or its corresponding type declarations.
+../../packages/box-agent/src/sale-queue.ts(1097,58): error TS7006: Parameter 'r' implicitly has an 'any' type.
+../../packages/box-agent/src/sale-queue.ts(1195,60): error TS7006: Parameter 'l' implicitly has an 'any' type.
+../../packages/box-agent/src/scan-input.ts(6,8): error TS2307: Cannot find module '@oto/shared' or its corresponding type declarations.
+../../packages/box-agent/src/scan.ts(20,8): error TS2307: Cannot find module '@oto/shared' or its corresponding type declarations.
+../../packages/box-agent/src/scanner-device.ts(11,8): error TS2307: Cannot find module '@oto/shared' or its corresponding type declarations.
+../../packages/box-agent/src/staff-token.ts(1,56): error TS2307: Cannot find module '@oto/shared' or its corresponding type declarations.
+../../packages/box-agent/src/station-bridge.ts(105,8): error TS2307: Cannot find module '@oto/shared' or its corresponding type declarations.
+../../packages/box-agent/src/station-bridge.ts(1073,70): error TS7006: Parameter 'c' implicitly has an 'any' type.
+../../packages/box-agent/src/station-bridge.ts(1117,28): error TS2538: Type 'symbol' cannot be used as an index type.
+../../packages/box-agent/src/station-bridge.ts(1638,44): error TS7006: Parameter 'prefix' implicitly has an 'any' type.
+../../packages/box-agent/src/station-bridge.ts(2112,41): error TS7006: Parameter 'type' implicitly has an 'any' type.
+../../packages/box-agent/src/station-bridge.ts(2214,16): error TS2538: Type 'symbol' cannot be used as an index type.
+../../packages/box-agent/src/station-bridge.ts(2242,49): error TS7006: Parameter 'c' implicitly has an 'any' type.
+../../packages/box-agent/src/station-bridge.ts(2243,31): error TS7006: Parameter 'id' implicitly has an 'any' type.
+../../packages/box-agent/src/station-bridge.ts(2251,42): error TS2339: Property 'childIds' does not exist on type 'Record<string, unknown> | { id: any; memberId: string; visitDate: string; status: string; }'.
+  Property 'childIds' does not exist on type '{ id: any; memberId: string; visitDate: string; status: string; }'.
+../../packages/box-agent/src/station-bridge.ts(2251,61): error TS2339: Property 'childIds' does not exist on type 'Record<string, unknown> | { id: any; memberId: string; visitDate: string; status: string; }'.
+  Property 'childIds' does not exist on type '{ id: any; memberId: string; visitDate: string; status: string; }'.
+../../packages/box-agent/src/station-bridge.ts(2273,49): error TS7006: Parameter 'c' implicitly has an 'any' type.
+../../packages/box-agent/src/station-bridge.ts(2274,31): error TS7006: Parameter 'id' implicitly has an 'any' type.
+../../packages/box-agent/src/station-bridge.ts(2551,55): error TS7006: Parameter 'c' implicitly has an 'any' type.
+../../packages/box-agent/src/station-bridge.ts(2573,42): error TS2339: Property 'id' does not exist on type 'OfflineLedgerLine'.
+../../packages/box-agent/src/station-bridge.ts(2583,28): error TS2339: Property 'stayHours' does not exist on type 'OfflineLedgerLine'.
+../../packages/box-agent/src/station-bridge.ts(2633,20): error TS2339: Property 'id' does not exist on type 'OfflineLedgerLine'.
+../../packages/box-agent/src/station-bridge.ts(2634,22): error TS2339: Property 'kind' does not exist on type 'OfflineLedgerLine'.
+../../packages/box-agent/src/station-bridge.ts(2635,23): error TS2339: Property 'label' does not exist on type 'OfflineLedgerLine'.
+../../packages/box-agent/src/station-bridge.ts(2636,26): error TS2339: Property 'quantity' does not exist on type 'OfflineLedgerLine'.
+../../packages/box-agent/src/station-bridge.ts(2637,29): error TS2339: Property 'grossSatang' does not exist on type 'OfflineLedgerLine'.
+../../packages/box-agent/src/station-bridge.ts(2638,24): error TS2339: Property 'ticket' does not exist on type 'OfflineLedgerLine'.
+../../packages/box-agent/src/station-bridge.ts(2639,25): error TS2339: Property 'payload' does not exist on type 'OfflineLedgerLine'.
+../../packages/box-agent/src/station-bridge.ts(2640,27): error TS2339: Property 'stayHours' does not exist on type 'OfflineLedgerLine'.
+../../packages/box-agent/src/station-bridge.ts(2641,35): error TS2339: Property 'stayDurationLabel' does not exist on type 'OfflineLedgerLine'.
+../../packages/box-agent/src/station-bridge.ts(2642,29): error TS2339: Property 'productCode' does not exist on type 'OfflineLedgerLine'.
+../../packages/box-agent/src/station-bridge.ts(2663,48): error TS7006: Parameter 'p' implicitly has an 'any' type.
+../../packages/box-agent/src/station-bridge.ts(2750,61): error TS7006: Parameter 'e' implicitly has an 'any' type.
+../../packages/box-agent/src/station-bridge.ts(2833,42): error TS7006: Parameter 'e' implicitly has an 'any' type.
+../../packages/box-agent/src/station-bridge.ts(3173,7): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(3175,53): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(3180,53): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(3189,42): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(3423,45): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4145,7): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4146,46): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4148,53): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4156,45): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4158,13): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4166,50): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4169,27): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4181,13): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4182,48): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4188,13): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4191,13): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4193,13): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4195,22): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4200,15): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4207,19): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4209,21): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4210,19): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4211,17): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4268,7): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4269,46): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4269,59): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4271,53): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4273,41): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4273,54): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4320,7): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4321,46): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4321,59): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4323,53): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4325,41): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4325,54): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4339,14): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4345,29): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4346,22): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4352,25): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4353,15): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4353,35): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4378,7): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4379,46): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4379,59): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4381,53): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4383,41): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4383,54): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4402,43): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4402,56): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4404,17): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4431,72): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4560,21): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4561,23): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4562,27): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4573,39): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4584,23): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4642,39): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4644,45): error TS18046: 'body' is of type 'unknown'.
+../../packages/box-agent/src/station-bridge.ts(4931,15): error TS7006: Parameter 'b' implicitly has an 'any' type.
+../../packages/box-agent/src/station-bridge.ts(4932,18): error TS7006: Parameter 'c' implicitly has an 'any' type.
+../../packages/box-agent/src/station-session.ts(46,8): error TS2307: Cannot find module '@oto/shared' or its corresponding type declarations.
+../../packages/box-agent/src/station-session.ts(1097,54): error TS7006: Parameter 'slot' implicitly has an 'any' type.
+../../packages/box-agent/src/station-session.ts(1101,35): error TS7006: Parameter 'choice' implicitly has an 'any' type.
+../../packages/box-agent/src/station-session.ts(1102,33): error TS7006: Parameter 'slot' implicitly has an 'any' type.
+../../packages/box-agent/src/station-session.ts(1106,41): error TS7006: Parameter 'slot' implicitly has an 'any' type.
+../../packages/box-agent/src/stock-lane.ts(12,8): error TS2307: Cannot find module '@oto/shared' or its corresponding type declarations.
+../../packages/box-agent/src/stock-lane.ts(274,33): error TS7006: Parameter 'e' implicitly has an 'any' type.
+../../packages/box-agent/src/stock-lane.ts(365,40): error TS7006: Parameter 'e' implicitly has an 'any' type.
+../../packages/box-agent/src/store.ts(7,49): error TS2307: Cannot find module '@oto/print' or its corresponding type declarations.
+../../packages/box-agent/src/terminal/contract.ts(51,19): error TS2307: Cannot find module 'zod' or its corresponding type declarations.
+../../packages/box-agent/src/terminal/counter.ts(27,44): error TS2307: Cannot find module '@oto/shared' or its corresponding type declarations.
+../../packages/box-agent/src/terminal/index.ts(20,64): error TS2307: Cannot find module '@oto/shared' or its corresponding type declarations.
+../../packages/box-agent/src/wallet-lane.ts(11,8): error TS2307: Cannot find module '@oto/shared' or its corresponding type declarations.
+undefined
+C:\oto-lanes\codex-beo-money-stage3-20261114\apps\api:
+ ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL  Command failed with exit code 2: tsc -p tsconfig.json --pretty false

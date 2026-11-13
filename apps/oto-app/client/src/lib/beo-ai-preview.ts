@@ -163,6 +163,7 @@ export function aiFillPartyDetailsShown(partyDetails: Record<string, unknown> | 
     filled(text(partyDetails.packageName)) ||
     filled(partyDetails.packageBasePrice) ||
     filled(partyDetails.prepaymentReceived) ||
+    filled(partyDetails.depositRequested) ||
     filled(text(partyDetails.notes)) ||
     (Array.isArray(partyDetails.items) && partyDetails.items.length > 0)
   );

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { sameKitchenDishNames } from "@shared/kitchenAdults";
+import { LEGACY_DEPOSIT_INSTRUCTION, legacyDepositFieldsOf } from "@shared/beoLegacyDeposit";
 import { DEFAULT_AI_MODEL, resolveAiModel, stripJsonFences, type AiCompleteOptions } from "./anthropic";
 
 /**
@@ -144,6 +145,9 @@ export const BUILT_IN_BEO_PARSING_OUTPUT_FORMAT = `Parse the message and return 
     "packageName": "Package or POS name",
     "packageBasePrice": 0,
     "prepaymentReceived": 0,
+    "depositRequested": 0,
+    "depositReceived": false,
+    "depositWords": "Exact words confirming receipt, only when received",
     "depositDate": "YYYY-MM-DD",
     "notes": "Package notes",
     "items": [
@@ -489,10 +493,13 @@ export const BeoFillSchema = z.object({
     packageName: optText(300),
     packageBasePrice: optAmount,
     prepaymentReceived: optAmount,
+    depositRequested: optAmount,
+    depositReceived: optBool,
+    depositWords: optText(1000),
     depositDate: optDate,
     notes: optText(4000),
     items: list(PackageItemSchema),
-  }),
+  }).transform((details) => details ? { ...details, ...legacyDepositFieldsOf(details) } : details),
   timeline: list(z.object({ time: reqTime, label: reqText(300) })),
   team: section({
     partyHost: namedPerson,
@@ -725,6 +732,7 @@ async function runAiHelperOnce<T>(
     "\n\n" +
     prompt.outputFormat +
     requiredFieldsBlock(requiredShape) +
+    (input.helper === "beo_parsing" && requiredShape instanceof z.ZodObject && "partyDetails" in requiredShape.shape ? "\n\n" + LEGACY_DEPOSIT_INSTRUCTION : "") +
     (input.systemExtra ?? "") +
     "\n\nReturn ONLY a valid JSON object, with no markdown fences or commentary.";
 

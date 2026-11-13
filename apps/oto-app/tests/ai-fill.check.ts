@@ -58,6 +58,7 @@
 //     list, kept as answered.
 import assert from "node:assert/strict";
 import { z } from "zod";
+import { LEGACY_DEPOSIT_INSTRUCTION } from "../shared/beoLegacyDeposit";
 import {
   AI_FILL_MESSAGES,
   AI_SETTING_KEYS,
@@ -253,6 +254,28 @@ try {
     assert.match(BUILT_IN_BEO_PARSING_OUTPUT_FORMAT, /"team"/);
     assert.match(BUILT_IN_BEO_PARSING_ADVICE, /Never choose a person yourself/);
     assert.match(BUILT_IN_EVENT_EXTRACTION_OUTPUT_FORMAT, /"suggested_branch_id"/);
+  });
+
+  await check("legacyDepositNeedsExplicitReceipt", async () => {
+    for (const partyDetails of [
+      { prepaymentReceived: 3000, depositDate: "2026-11-14" },
+      { prepaymentReceived: 3000, depositReceived: false, depositDate: "2026-11-14" },
+      { prepaymentReceived: 3000, depositReceived: true },
+    ]) {
+      const parsed = BeoFillSchema.parse({ partyDetails }).partyDetails!;
+      assert.equal(parsed.prepaymentReceived, undefined);
+      assert.equal(parsed.depositRequested, 3000);
+      assert.equal(parsed.depositDate, undefined);
+    }
+    const received = BeoFillSchema.parse({ partyDetails: { prepaymentReceived: 1000, depositRequested: 3000, depositReceived: true, depositWords: "We received 1,000 baht.", depositDate: "2026-11-14" } }).partyDetails!;
+    assert.equal(received.prepaymentReceived, 1000);
+    assert.equal(received.depositRequested, 3000);
+    const model = stubModel(() => JSON.stringify({ partyDetails: { prepaymentReceived: 3000 } }));
+    const run = await beoRun(deps(model.complete, { [AI_SETTING_KEYS.beoAdvice]: "ZZ TEST OLD ADVICE", [AI_SETTING_KEYS.beoOutputFormat]: "Return the old deposit amount." }), "Please pay 3,000 tomorrow");
+    assert.equal(run.ok, true);
+    if (run.ok) assert.equal(run.value.partyDetails?.prepaymentReceived, undefined);
+    assert.ok(model.calls[0]!.system.startsWith("ZZ TEST OLD ADVICE"));
+    assert.ok(model.calls[0]!.system.indexOf("Deposit amounts are not evidence") > model.calls[0]!.system.indexOf("Return the old deposit amount."));
   });
 
   await check("defaultsWhenNoSetting", async () => {
@@ -616,7 +639,7 @@ try {
     assert.match(BUILT_IN_BEO_PARSING_ADVICE, /never from the existing event data/);
     // A real day and the message's own words are kept.
     const read = readModelAnswer(
-      JSON.stringify({ event: { childName: "Маша", eventDate: "2026-11-21", eventDateText: "21 ноября" }, partyDetails: { depositDate: "2026-11-09" } }),
+      JSON.stringify({ event: { childName: "Маша", eventDate: "2026-11-21", eventDateText: "21 ноября" }, partyDetails: { prepaymentReceived: 1000, depositReceived: true, depositWords: "Received 1,000 baht.", depositDate: "2026-11-09" } }),
       BeoFillSchema,
     );
     assert.equal(read.ok, true);
@@ -678,7 +701,7 @@ try {
     // The saved advice and format still word it, first; the fields the app reads ride right after
     // them, before the catalogue and today.
     const block = requiredFieldsBlock(BEO_FILL_WITH_CATALOGUE_SHAPE);
-    assert.ok(system.startsWith(`PARK ADVICE\n\n${SAVED_MAY_FORMAT}${block}\n\nTHE PARK'S CATALOGUE`), system.slice(0, 600));
+    assert.ok(system.startsWith(`PARK ADVICE\n\n${SAVED_MAY_FORMAT}${block}\n\n${LEGACY_DEPOSIT_INSTRUCTION}\n\nTHE PARK'S CATALOGUE`), system.slice(0, 600));
     assert.ok(system.indexOf("THE PARK'S CATALOGUE") < system.indexOf("Today at ZZ TEST Park is 2026-11-10"));
     assert.ok(block.startsWith(`\n\n${REQUIRED_FIELDS_HEADING}\n`));
     assert.match(block, /required in addition to whatever the format above describes/);
@@ -753,7 +776,7 @@ try {
     }
     const builtIn = stubModel(() => JSON.stringify(ANSWERS.en));
     await beoRun(deps(builtIn.complete));
-    assert.ok(builtIn.calls[0]!.system.includes(`${BUILT_IN_BEO_PARSING_OUTPUT_FORMAT}${requiredFieldsBlock(BeoFillSchema)}\n\nReturn ONLY`));
+    assert.ok(builtIn.calls[0]!.system.includes(`${BUILT_IN_BEO_PARSING_OUTPUT_FORMAT}${requiredFieldsBlock(BeoFillSchema)}\n\n${LEGACY_DEPOSIT_INSTRUCTION}\n\nReturn ONLY`));
   });
   await check("aCakeTimeWithNoOwnerLeavesTheCakeType", async () => {
     // SCRUM-787: "the cake at 15:30" says when, not whose cake it is.
@@ -1141,4 +1164,4 @@ try {
 }
 
 console.log(JSON.stringify({ results, failures }, null, 2));
-if (Object.values(results).some((ok) => !ok) || Object.keys(results).length !== 18) process.exit(1);
+if (Object.values(results).some((ok) => !ok) || Object.keys(results).length !== 19) process.exit(1);

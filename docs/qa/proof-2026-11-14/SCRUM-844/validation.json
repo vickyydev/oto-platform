@@ -1,0 +1,104 @@
+{
+  "baseSha": "f7df3150f9405dd6aa3480d11c6ab166abf345b2",
+  "rootReview": "pending",
+  "landing": "not pushed",
+  "staging": "not deployed or tested",
+  "checks": {
+    "aiFill": {
+      "passed": 19,
+      "total": 19,
+      "log": "ai-fill-final.log"
+    },
+    "editor": {
+      "passed": 13,
+      "total": 13,
+      "log": "ui-fixed-2.log"
+    },
+    "actualRoutes": {
+      "passed": 15,
+      "total": 15,
+      "log": "app-db-checks-final.log"
+    },
+    "catalogue": {
+      "passed": 22,
+      "total": 22,
+      "log": "app-db-checks.log"
+    },
+    "depositApproval": {
+      "passed": 7,
+      "total": 7,
+      "log": "app-db-checks.log"
+    },
+    "adversarialReview": {
+      "passed": 11,
+      "total": 11,
+      "log": "review-test-final.log"
+    },
+    "appRatchet": {
+      "exit": 0,
+      "diagnostics": 414,
+      "ceiling": 414,
+      "files": 54,
+      "wholeOutputRead": true,
+      "outputLines": 652
+    },
+    "appBuild": {
+      "exit": 0,
+      "existingWarnings": [
+        "PostCSS missing from",
+        "large chunks",
+        "duplicate assignedRoleId/assignedDepartmentId in unchanged tasksRoutes"
+      ]
+    },
+    "scopedLint": {
+      "exit": 0,
+      "baselineDiagnostics": 78,
+      "currentDiagnostics": 78,
+      "added": 0,
+      "note": "App ignore removed only in scratch config; no root lint config changes",
+      "log": "scoped-lint-final.log"
+    },
+    "apiTypes": {
+      "exit": 0,
+      "diagnosticLines": 0,
+      "wholeOutputRead": true,
+      "log": "api-types-final.log",
+      "priorEnvironmentFailure": {
+        "exit": 1,
+        "lines": 330,
+        "wholeOutputRead": true,
+        "log": "api-types.log",
+        "resolvedBy": "Removed own dependency junctions and ran lane-local pnpm install --frozen-lockfile; no source workaround"
+      }
+    },
+    "workspaceInstall": {
+      "exit": 0,
+      "frozenLockfile": true,
+      "lockfilesChanged": false,
+      "log": "workspace-install.log"
+    }
+  },
+  "baselineRegression": {
+    "exit": 1,
+    "actualDeposit": 3000,
+    "expectedPreservedDeposit": 2000,
+    "sourceRestored": true,
+    "log": "ui-baseline.log"
+  },
+  "sourceSha256": {
+    "apps/oto-app/shared/beoLegacyDeposit.ts": "0cc22225b52a68092e3a865ba9430019401e47e4210318e8f1ef1f75392fad7b",
+    "apps/oto-app/server/lib/aiFill.ts": "30841c4cb47ced32be20896f957af4e1932d9e2ce76f23b486fe1de1294e9b00",
+    "apps/oto-app/server/ai-routes.ts": "85a6d8c7704d71b93e41ae06406285f3ef5ca85ca3b2fab57fe7348d9ad149d9",
+    "apps/oto-app/client/src/components/beo/beo-event-editor.tsx": "eed7c7196aede54d748df02cf388d891b689e25b8f2f3c2e8656b14f9c083798",
+    "apps/oto-app/client/src/lib/beo-ai-preview.ts": "c5716f629070bf68de295ed1167f38a3fef0c2770ed3267d3ec8582ade7b569c"
+  },
+  "limits": [
+    "Model answers are stubs; no live-model accuracy claim",
+    "No migration",
+    "No staging fixture, screenshot or acceptance yet",
+    "Root source review, exact-source CI/deployment, native proof/evidence/Jira still required"
+  ],
+  "allFocusedLocalGatesPassed": true,
+  "sourceSha256VerifiedAfterGates": true,
+  "capturedLogs": "UTF8/LF display output, trailing whitespace removed; diagnostic text and command outcomes retained"
+}

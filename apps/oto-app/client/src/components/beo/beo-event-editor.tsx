@@ -79,6 +79,8 @@ import { BeoAiReviewDialog, SourceMark, type BeoAiPending } from "./beo-ai-revie
 import { BeoFetchFromChatDialog } from "./beo-fetch-from-chat";
 import { NO_DECLINED, fetchedMarksOf, type DeclinedChanges, type FetchAnswer, type FetchChange, type FetchFormValues, type FetchHeldCatalogue } from "@/lib/beo-fetch-from-chat";
 import { aiFillCakeApply, aiFillCakeLine, aiFillCakeNotSaidNote, aiFillPartyDetailsShown } from "@/lib/beo-ai-preview";
+import { legacyDepositFieldsOf } from "@shared/beoLegacyDeposit";
+import { Checkbox } from "@/components/ui/checkbox";
 import { CakeUnderNoCake } from "./beo-cake-under-no-cake";
 import {
   REVIEW_TEAM_FIELDS,
@@ -680,6 +682,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
   const [aiFillAccepted, setAiFillAccepted] = useState<Set<AiTeamField>>(new Set());
   // SCRUM-814: the date the message names replaces the booked one only where a person ticks it.
   const [aiFillUseDate, setAiFillUseDate] = useState(false);
+  const [aiFillDepositConfirmed, setAiFillDepositConfirmed] = useState(false);
   // SCRUM-660: Create BEO's AI Fill — the inbox message it read, and why it did not run.
   const [aiFillSource, setAiFillSource] = useState<AiFillInboxSource | null>(null);
   const [aiFillNotice, setAiFillNotice] = useState<string | null>(null);
@@ -1584,6 +1587,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
     setAiFillParsed(fill);
     setAiFillAccepted(new Set());
     setAiFillUseDate(false);
+    setAiFillDepositConfirmed(false);
     setAiFillSource(source);
     if (source) setAiFillText(source.body);
     setAiFillError(null);
@@ -1910,8 +1914,11 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
       const pd = p.partyDetails;
       if (pd.packageName) setPackageName(pd.packageName);
       if (pd.packageBasePrice) setPackageBasePrice(pd.packageBasePrice);
-      if (pd.prepaymentReceived) setPrepaymentReceived(pd.prepaymentReceived);
-      if (pd.depositDate) setDepositDate(pd.depositDate);
+      const deposit = legacyDepositFieldsOf(pd, aiFillText);
+      if (aiFillDepositConfirmed && deposit.prepaymentReceived) {
+        setPrepaymentReceived(deposit.prepaymentReceived);
+        if (deposit.depositDate) setDepositDate(deposit.depositDate);
+      }
       if (pd.notes) setPackageNotes(pd.notes);
       if (pd.items?.length > 0) {
         setPackageItems(pd.items.map((item: any) => ({
@@ -1963,6 +1970,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
   const aiFillDate = aiFillDateLine(aiFillParsed, eventData.eventDate);
   // SCRUM-787: the cake as the AI Fill read it, its type "not said" when the message does not say whose cake.
   const aiFillCake = aiFillCakeLine(aiFillParsed?.kitchenPlan);
+  const aiFillDeposit = legacyDepositFieldsOf(aiFillParsed?.partyDetails ?? {}, aiFillText);
   // SCRUM-787: beside it, the form's own type that stays, and what to choose when that type is No Cake.
   const aiFillCakeNote = aiFillCakeNotSaidNote(aiFillCake, cakeMode);
 
@@ -4249,7 +4257,17 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                         </ul>
                       </div>
                     )}
-                    <AiFillRow label="Prepayment" value={aiFillParsed.partyDetails.prepaymentReceived ? `${aiFillParsed.partyDetails.prepaymentReceived.toLocaleString()}฿` : null} />
+                    <AiFillRow label="Deposit requested / not confirmed received" value={aiFillDeposit.depositRequested ? `${aiFillDeposit.depositRequested.toLocaleString()}฿` : null} />
+                    {aiFillDeposit.prepaymentReceived && (
+                      <div className="space-y-1" data-testid="ai-fill-deposit-review">
+                        <AiFillRow label="Deposit received" value={`${aiFillParsed.partyDetails.prepaymentReceived.toLocaleString()}฿`} />
+                        <p className="text-xs text-muted-foreground" data-testid="ai-fill-deposit-words">{aiFillParsed.partyDetails.depositWords}</p>
+                        <label className="flex items-center gap-2 text-sm">
+                          <Checkbox checked={aiFillDepositConfirmed} onCheckedChange={(checked) => setAiFillDepositConfirmed(checked === true)} data-testid="checkbox-ai-fill-deposit-received" />
+                          I confirm this deposit was received. Apply it to the Deposit field.
+                        </label>
+                      </div>
+                    )}
                     <AiFillRow label="Notes" value={aiFillParsed.partyDetails.notes} />
                   </AiFillSection>
                 )}

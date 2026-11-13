@@ -1,0 +1,174 @@
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-660-yETyrG ...
+ok
+
+creating subdirectories ...
+ok
+
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ...
+100
+selecting default shared_buffers ...
+128MB
+selecting default time zone ...
+UTC
+creating configuration files ...
+ok
+running bootstrap script ...
+ok
+
+performing post-bootstrap initialization ...
+ok
+syncing data to disk ...
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-payment^-handover^-20261113^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-660^-yETyrG^" -l logfile start
+
+
+2026-11-13 20:06:45.695 UTC [107064] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+2026-11-13 20:06:45.700 UTC [107064] LOG:  listening on IPv6 address "::1", port 58159
+
+2026-11-13 20:06:45.701 UTC [107064] LOG:  listening on IPv4 address "127.0.0.1", port 58159
+
+2026-11-13 20:06:45.765 UTC [67516] LOG:  database system was shut down at 2026-11-13 20:06:42 UTC
+
+2026-11-13 20:06:45.803 UTC [107064] LOG:  database system is ready to accept connections
+
+
+> rest-express@1.0.0 db:migrate
+> node script/migrate.mjs
+
+migrate: relation "employee_offboarding_employee_unique" already exists, skipping
+migrate: relation "employee_offboarding_employee_unique" already exists, skipping
+migrate: applied 0000_otoapp_baseline
+migrate: applied 0001_platform_user_id
+migrate: applied 0002_core_branch_id_unique
+migrate: applied 0003_events_seam
+migrate: applied 0004_otoapp_v_views
+migrate: applied 0005_otoapp_v_employees
+migrate: applied 0006_tenant_ownership_expand
+migrate: applied 0007_tenant_ownership_contract
+migrate: applied 0008_document_tenant_ownership_expand
+migrate: applied 0009_document_finance_constraints
+migrate: applied 0010_document_tenant_ownership_contract
+migrate: applied 0011_sop_revision_history
+migrate: applied 0012_attendance_evidence
+migrate: applied 0013_presence_notification_delivery
+migrate: applied 0014_camp_family_sms
+migrate: applied 0015_employee_action_receipts
+migrate: applied 0016_qa_reports
+migrate: applied 0018_flexible_leave_types
+migrate: applied 0019_person_birthdays
+migrate: applied 0020_user_preferences
+migrate: applied 0021_payroll_config
+migrate: applied 0022_payroll_profiles
+migrate: applied 0023_payroll_month_inputs_and_rewards
+migrate: applied 0024_payroll_run_inputs_ot_bank_and_leave_valuation
+migrate: applied 0025_payroll_run_lifecycle_and_snapshots
+migrate: applied 0026_payroll_statutory_documents
+migrate: applied 0027_fix_report_urgent_notification
+migrate: applied 0028_checklist_template_assignees
+migrate: applied 0029_platform_roles_enabled
+migrate: applied 0030_department_read_seam
+migrate: applied 0031_login_lifecycle
+migrate: applied 0032_schedule_audit_view_as
+migrate: applied 0033_fix_report_delete_and_comment_media
+migrate: applied 0034_checklist_branch_added_at
+migrate: applied 0035_core_event_inbox_link
+migrate: applied 0036_schedule_audit_change_set
+migrate: applied 0037_onboard_again
+migrate: applied 0038_offboarding_one_open
+migrate: applied 0039_offboarding_again
+migrate: applied 0041_birthday_package_fields
+migrate: applied 0042_otoapp_v_event_packages
+migrate: applied 0043_users_access_mode
+migrate: applied 0044_login_lifecycle_restrict
+migrate: applied 0045_otoapp_v_event_packages_one_deposit
+migrate: applied 0046_inbox_handover_notification
+migrate: applied 0047_otoapp_v_event_packages_party_menu
+migrate: applied 0048_otoapp_v_event_packages_adults_mirror
+migrate: applied 0049_login_lifecycle_retries
+migrate: applied 0050_otoapp_v_event_packages_kitchen_plan
+migrate: otoapp now at 49 of 49 migration(s).
+MIGRATE 1 EXIT 0
+
+> rest-express@1.0.0 db:migrate
+> node script/migrate.mjs
+
+migrate: otoapp is up to date — 49 migration(s) already applied.
+MIGRATE 2 EXIT 0
+{"level":"info","time":"2026-11-13T20:07:04.822Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":125,"answerChars":219,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"e98a88e5-5e8f-4bc8-8590-4c77f86ad11e","team":{"named":1,"matched":1},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-13T20:07:04.903Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":152,"answerChars":272,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"256fe995-4708-4df1-a5bb-c01170f950a9","team":{"named":3,"matched":2},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-13T20:07:04.955Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":102,"answerChars":236,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"715e6980-7d79-409a-890a-27a62efa2edb","team":{"named":2,"matched":1},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-13T20:07:04.972Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":125,"answerChars":219,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"e98a88e5-5e8f-4bc8-8590-4c77f86ad11e","team":{"named":1,"matched":1},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-13T20:07:04.995Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":102,"answerChars":236,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"715e6980-7d79-409a-890a-27a62efa2edb","team":{"named":2,"matched":1},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-13T20:07:05.020Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":152,"answerChars":325,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"256fe995-4708-4df1-a5bb-c01170f950a9","team":{"named":3,"matched":2},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-13T20:07:05.041Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":152,"answerChars":325,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"256fe995-4708-4df1-a5bb-c01170f950a9","team":{"named":3,"matched":2},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-13T20:07:05.058Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":152,"answerChars":272,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"256fe995-4708-4df1-a5bb-c01170f950a9","team":{"named":3,"matched":2},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-13T20:07:05.078Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":125,"answerChars":219,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"e98a88e5-5e8f-4bc8-8590-4c77f86ad11e","team":{"named":1,"matched":1},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-13T20:07:05.107Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":102,"answerChars":236,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"715e6980-7d79-409a-890a-27a62efa2edb","team":{"named":2,"matched":1},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-13T20:07:05.131Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":110,"answerChars":195,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"3683c675-8f11-4c93-aaf2-ee6588d2dfd5","team":{"named":3,"matched":3},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-13T20:07:05.152Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":110,"answerChars":86,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"3683c675-8f11-4c93-aaf2-ee6588d2dfd5","team":{"named":2,"matched":1},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-13T20:07:05.161Z","service":"oto-app","env":"local","reason":"no_conversation","eventId":"baeb364d-42cd-4747-a5af-ed988e6082bd","msg":"ai fill from the inbox did not run"}
+{"level":"info","time":"2026-11-13T20:07:05.183Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":184,"answerChars":219,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"baeb364d-42cd-4747-a5af-ed988e6082bd","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-13T20:07:05.194Z","service":"oto-app","env":"local","reason":"not_from_inbox","eventId":"fc607345-3637-4816-83c5-0a3780782905","msg":"ai fill from the inbox did not run"}
+{"level":"info","time":"2026-11-13T20:07:05.204Z","service":"oto-app","env":"local","reason":"event_mismatch","eventId":"34083266-1486-4464-a768-6bc4a09a509b","msg":"ai fill from the inbox did not run"}
+{"level":"info","time":"2026-11-13T20:07:05.206Z","service":"oto-app","env":"local","reason":"inbox_not_visible","eventId":"30cae007-410c-437c-bcbb-e855675fda7e","msg":"ai fill from the inbox did not run"}
+{"level":"info","time":"2026-11-13T20:07:05.215Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":152,"answerChars":33,"outcome":"unreadable","issues":["not JSON"],"source":"inbox","purpose":"fill","eventId":"fbefa661-f20e-40af-862a-239d2c7559ac","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-13T20:07:05.230Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":152,"answerChars":272,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"256fe995-4708-4df1-a5bb-c01170f950a9","team":{"named":3,"matched":2},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-13T20:07:05.317Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":102,"answerChars":236,"outcome":"filled","issues":[],"source":"pasted","purpose":"fill","eventId":"715e6980-7d79-409a-890a-27a62efa2edb","team":{"named":2,"matched":1},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-13T20:07:05.372Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":152,"answerChars":272,"outcome":"filled","issues":[],"source":"pasted","purpose":"fill","eventId":"256fe995-4708-4df1-a5bb-c01170f950a9","team":{"named":3,"matched":2},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-13T20:07:05.391Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":152,"answerChars":272,"outcome":"filled","issues":[],"source":"pasted","purpose":"fill","eventId":null,"team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-13T20:07:05.416Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"setting","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":20,"answerChars":71,"outcome":"filled","issues":[],"source":"pasted","purpose":"fill","eventId":null,"team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-13T20:07:05.422Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"setting","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":25,"answerChars":68,"outcome":"filled","issues":[],"source":"pasted","purpose":"fill","eventId":null,"team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-13T20:07:05.430Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"setting","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":25,"answerChars":102,"outcome":"filled","issues":[],"source":"pasted","purpose":"fill","eventId":null,"team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-13T20:07:05.436Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"setting","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":40,"answerChars":159,"outcome":"filled","issues":[],"source":"pasted","purpose":"fill","eventId":null,"team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-13T20:07:05.445Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"setting","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":152,"answerChars":272,"outcome":"filled","issues":[],"source":"pasted","purpose":"fill","eventId":null,"team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-13T20:07:05.452Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":152,"answerChars":272,"outcome":"filled","issues":[],"source":"pasted","purpose":"fill","eventId":null,"team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-13T20:07:05.486Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":152,"answerChars":272,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"256fe995-4708-4df1-a5bb-c01170f950a9","team":{"named":3,"matched":2},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-13T20:07:05.498Z","service":"oto-app","env":"local","reason":"inbox_not_visible","eventId":"30cae007-410c-437c-bcbb-e855675fda7e","msg":"ai fill from the inbox did not run"}
+{"level":"info","time":"2026-11-13T20:07:05.501Z","service":"oto-app","env":"local","reason":"not_a_birthday","eventId":"baeb364d-42cd-4747-a5af-ed988e6082bd","msg":"ai fill from the inbox did not run"}
+{"level":"info","time":"2026-11-13T20:07:05.503Z","service":"oto-app","env":"local","reason":"inbox_unreachable","eventId":"fbefa661-f20e-40af-862a-239d2c7559ac","msg":"ai fill from the inbox did not run"}
+{"level":"info","time":"2026-11-13T20:07:05.507Z","service":"oto-app","env":"local","reason":"inbox_unreachable","eventId":"e98a88e5-5e8f-4bc8-8590-4c77f86ad11e","msg":"ai fill from the inbox did not run"}
+{"level":"info","time":"2026-11-13T20:07:05.511Z","service":"oto-app","env":"local","reason":"signed_out","eventId":"256fe995-4708-4df1-a5bb-c01170f950a9","msg":"ai fill from the inbox did not run"}
+{"level":"info","time":"2026-11-13T20:07:05.512Z","service":"oto-app","env":"local","reason":"no_platform_session","eventId":"256fe995-4708-4df1-a5bb-c01170f950a9","msg":"ai fill from the inbox did not run"}
+{"level":"info","time":"2026-11-13T20:07:05.528Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":102,"answerChars":358,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"715e6980-7d79-409a-890a-27a62efa2edb","team":{"named":2,"matched":1},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-13T20:07:05.560Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":102,"answerChars":82,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"715e6980-7d79-409a-890a-27a62efa2edb","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-13T20:07:05.570Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":102,"answerChars":236,"outcome":"filled","issues":[],"source":"pasted","purpose":"fill","eventId":null,"team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-13T20:07:05.576Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"setting","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":102,"answerChars":236,"outcome":"filled","issues":[],"source":"pasted","purpose":"fill","eventId":null,"team":{"named":0,"matched":0},"msg":"ai fill run"}
+{
+  "results": {
+    "thaiEnglishRussianFromTheInbox": true,
+    "personsFinalMessageIsKept": true,
+    "teamProposedFromTheParksPeopleOnly": true,
+    "aRoleWordOrTheBeforeTheNameIsNotTheName": true,
+    "noConfirmationFillsFromTheConversation": true,
+    "eventMustBeTheCallersAndFromTheInbox": true,
+    "malformedAnswerIsAPlainMessage": true,
+    "activityRowsCarryNoText": true,
+    "logCarriesNoText": true,
+    "pastedMessageWithTheEvent": true,
+    "legacyDepositQuotesTheTextActuallyRead": true,
+    "savedSettingWinsOnTheRoutes": true,
+    "readsThePlatformAsThePerson": true,
+    "todayAtTheParkAndTheReadDateBesideTheBooked": true,
+    "deepLinkFill": true
+  },
+  "failures": {}
+}
+CHECK tests/beo-inbox-fill.check.ts EXIT 0
+2026-11-13 20:06:47.593 UTC [84244] ERROR:  relation "otoapp.__drizzle_migrations" does not exist at character 24
+2026-11-13 20:06:47.593 UTC [84244] STATEMENT:  select created_at from "otoapp"."__drizzle_migrations" order by created_at

@@ -1,0 +1,53 @@
+Scope: all 18 workspace projects
+Lockfile is up to date, resolution step is skipped
+Progress: resolved 1, reused 0, downloaded 0, added 0
+Packages: +605
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 605, reused 207, downloaded 0, added 0
+Progress: resolved 605, reused 402, downloaded 0, added 0
+Progress: resolved 605, reused 544, downloaded 0, added 0
+Progress: resolved 605, reused 592, downloaded 0, added 19
+Progress: resolved 605, reused 595, downloaded 0, added 59
+Progress: resolved 605, reused 598, downloaded 0, added 109
+Progress: resolved 605, reused 599, downloaded 0, added 165
+Progress: resolved 605, reused 600, downloaded 0, added 229
+Progress: resolved 605, reused 600, downloaded 0, added 245
+Progress: resolved 605, reused 600, downloaded 0, added 303
+Progress: resolved 605, reused 600, downloaded 0, added 341
+Progress: resolved 605, reused 600, downloaded 0, added 344
+Progress: resolved 605, reused 600, downloaded 0, added 380
+Progress: resolved 605, reused 600, downloaded 0, added 388
+Progress: resolved 605, reused 601, downloaded 0, added 413
+Progress: resolved 605, reused 603, downloaded 0, added 458
+Progress: resolved 605, reused 605, downloaded 0, added 504
+Progress: resolved 605, reused 605, downloaded 0, added 505
+Progress: resolved 605, reused 605, downloaded 0, added 545
+Progress: resolved 605, reused 605, downloaded 0, added 563
+Progress: resolved 605, reused 605, downloaded 0, added 581
+Progress: resolved 605, reused 605, downloaded 0, added 583
+Progress: resolved 605, reused 605, downloaded 0, added 586
+Progress: resolved 605, reused 605, downloaded 0, added 587
+Progress: resolved 605, reused 605, downloaded 0, added 589
+Progress: resolved 605, reused 605, downloaded 0, added 590
+Progress: resolved 605, reused 605, downloaded 0, added 593
+Progress: resolved 605, reused 605, downloaded 0, added 596
+Progress: resolved 605, reused 605, downloaded 0, added 597
+Progress: resolved 605, reused 605, downloaded 0, added 598
+Progress: resolved 605, reused 605, downloaded 0, added 599
+Progress: resolved 605, reused 605, downloaded 0, added 600
+Progress: resolved 605, reused 605, downloaded 0, added 601
+Progress: resolved 605, reused 605, downloaded 0, added 602
+Progress: resolved 605, reused 605, downloaded 0, added 604
+Progress: resolved 605, reused 605, downloaded 0, added 605
+Progress: resolved 605, reused 605, downloaded 0, added 605, done
+
+devDependencies:
++ @eslint/js 9.39.5
++ eslint 9.39.5
++ eslint-plugin-react-hooks 7.1.1
++ prettier 3.9.6
++ turbo 2.10.12
++ typescript 5.9.3
++ typescript-eslint 8.70.0
+
+Done in 51.5s using pnpm v10.33.0

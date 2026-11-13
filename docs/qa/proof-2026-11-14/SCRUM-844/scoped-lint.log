@@ -1,0 +1,56 @@
+[
+  {
+    "file": "apps/oto-app/shared/beoLegacyDeposit.ts",
+    "baseline": 0,
+    "current": 0,
+    "added": []
+  },
+  {
+    "file": "apps/oto-app/server/lib/aiFill.ts",
+    "baseline": 6,
+    "current": 6,
+    "added": []
+  },
+  {
+    "file": "apps/oto-app/server/ai-routes.ts",
+    "baseline": 6,
+    "current": 6,
+    "added": []
+  },
+  {
+    "file": "apps/oto-app/client/src/components/beo/beo-event-editor.tsx",
+    "baseline": 56,
+    "current": 56,
+    "added": []
+  },
+  {
+    "file": "apps/oto-app/client/src/lib/beo-ai-preview.ts",
+    "baseline": 0,
+    "current": 0,
+    "added": []
+  },
+  {
+    "file": "apps/oto-app/tests/ai-fill.check.ts",
+    "baseline": 0,
+    "current": 0,
+    "added": []
+  },
+  {
+    "file": "apps/oto-app/tests/beo-inbox-fill.check.ts",
+    "baseline": 10,
+    "current": 10,
+    "added": []
+  },
+  {
+    "file": "apps/oto-app/tests/beo-prefill-ui.check.ts",
+    "baseline": 0,
+    "current": 0,
+    "added": []
+  },
+  {
+    "file": "apps/api/test/s844-review.test.ts",
+    "baseline": 0,
+    "current": 0,
+    "added": []
+  }
+]

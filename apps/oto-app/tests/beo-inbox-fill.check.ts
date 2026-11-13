@@ -600,6 +600,29 @@ try {
     assert.deepEqual(bare.body.proposals, { partyHost: null, entertainmentHost: null, setupResponsible: null });
   });
 
+  await check("legacyDepositQuotesTheTextActuallyRead", async () => {
+    const was = modelReply;
+    try {
+      for (const [text, partyDetails, expected] of [
+        ["The deposit is 3,000", { prepaymentReceived: 3000, depositDate: "2026-11-14" }, undefined],
+        ["Please pay 3,000 tomorrow", { prepaymentReceived: 3000, depositReceived: false }, undefined],
+        ["Please pay 3,000 tomorrow", { prepaymentReceived: 3000, depositReceived: true, depositWords: "We received 3,000" }, undefined],
+        ["Requested 3,000. We received 1,000 baht.", { depositRequested: 3000, prepaymentReceived: 1000, depositReceived: true, depositWords: "We received 1,000 baht.", depositDate: "2026-11-14" }, 1000],
+      ] as const) {
+        modelReply = () => JSON.stringify({ partyDetails });
+        // No event means the actual no-catalogue route, not catalogue approval.
+        const response = await post("/api/ai/parse-beo", { text, existingData: { partyDetails: { prepaymentReceived: 2000, depositDate: "2026-11-01" } } }, "b");
+        assert.equal(response.status, 200);
+        assert.equal(response.body.partyDetails.prepaymentReceived, expected, text);
+        if (expected === undefined) {
+          assert.equal(response.body.partyDetails.depositRequested, 3000);
+          assert.equal(response.body.partyDetails.depositDate, undefined);
+        } else assert.equal(response.body.partyDetails.depositDate, "2026-11-14");
+        assert.ok(modelCalls.at(-1)!.system.includes("Deposit amounts are not evidence"), "saved advice cannot omit the receipt instruction");
+      }
+    } finally { modelReply = was; }
+  });
+
   await check("savedSettingWinsOnTheRoutes", async () => {
     const calls = modelCalls.length;
     const res = await post("/api/ai/parse-beo", { text: MESSAGES.en }, "b");
@@ -701,7 +724,8 @@ try {
       // The read date and its words come back as read, beside the booked one, and differ.
       assert.equal(res.body.fill.event.eventDate, "2099-03-22");
       assert.equal(res.body.fill.event.eventDateText, "22 марта");
-      assert.equal(res.body.fill.partyDetails.depositDate, "2026-11-09");
+      assert.equal(res.body.fill.partyDetails.depositDate, undefined, "an amount-only answer cannot fill a receipt date");
+      assert.equal(res.body.fill.partyDetails.depositRequested, 3000);
       const booked = (await pool.query<{ event_date: string }>(`select event_date from core_events where id = $1`, [ev.ru])).rows[0]!;
       assert.deepEqual(aiFillDateLine(res.body.fill, booked.event_date), {
         read: "2099-03-22",
@@ -755,4 +779,4 @@ try {
 
 console.log(JSON.stringify({ results, failures }, null, 2));
 // The app's modules loaded here keep handles of their own open; the verdict is final.
-process.exit(Object.values(results).some((ok) => !ok) || Object.keys(results).length !== 14 ? 1 : 0);
+process.exit(Object.values(results).some((ok) => !ok) || Object.keys(results).length !== 15 ? 1 : 0);

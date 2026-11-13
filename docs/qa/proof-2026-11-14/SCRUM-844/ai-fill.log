@@ -1,0 +1,27 @@
+{
+  "results": {
+    "builtInAdviceNamesTheThreeLanguagesAndKeepsWording": true,
+    "legacyDepositNeedsExplicitReceipt": true,
+    "defaultsWhenNoSetting": true,
+    "savedSettingWins": true,
+    "savedModelNotServedFallsBack": true,
+    "thaiEnglishRussianConfirmations": true,
+    "finalMessageToParent": true,
+    "malformedAnswerIsAPlainMessage": true,
+    "modelProblemsAreSaid": true,
+    "aRunThatMayRetryAsksOnceMore": true,
+    "logFieldsCarryNoText": true,
+    "teamProposals": true,
+    "beoPromptKnowsTheParksToday": true,
+    "eventDateReadBesideTheBookedDate": false,
+    "savedFormatStillCarriesTheFieldsTheAppReads": false,
+    "aCakeTimeWithNoOwnerLeavesTheCakeType": true,
+    "theRestOfTheBeoIsProposedWithItsSource": true,
+    "theReviewKeepsWhatIsHeldAndSendsTheRest": true,
+    "theAdultsListFoldsIntoTheKidsUnlessItIsTheirOwn": true
+  },
+  "failures": {
+    "eventDateReadBesideTheBookedDate": "Expected values to be strictly equal:\n+ actual - expected\n\n+ undefined\n- '2026-11-09'\n",
+    "savedFormatStillCarriesTheFieldsTheAppReads": "PARK ADVICE\n\nParse the BEO document and return a JSON object with the following structure:\n{\n  \"summary\": \"One sentence summary of the event\",\n  \"event\": { \"title\": \"Event title\", \"childName\": \"Name of the birthday child or main guest\", \"numChildren\": 0, \"startTime\": \"HH:MM (24-hour)\" },\n  \"partyDetails\": { \"packageName\": \"Package or POS name\", \"prepaymentReceived\": 0, \"depositDate\": \"YYYY-MM-DD\" }\n}\n\nOmit any top-level key entirely if no relevant information was found for it.\n\nFIELDS THE APP REQUIRES\nThe app's own code reads your answer by the keys below. They are required in addition to what"
+  }
+}

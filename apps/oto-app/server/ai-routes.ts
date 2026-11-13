@@ -1,5 +1,6 @@
 import { Express, Request, Response, NextFunction } from "express";
 import { z } from "zod";
+import { legacyDepositFieldsOf } from "@shared/beoLegacyDeposit";
 import { db } from "./db";
 import { branches, coreEvents } from "../shared/schema";
 import { and, eq } from "drizzle-orm";
@@ -406,6 +407,9 @@ export async function runBeoFill(
   // nothing of the form's own fields (no message was read for them): the review holds the rest.
   const run: AiRun<BeoFill & { catalogue?: unknown }> =
     formRun ?? (catalogueRun!.ok ? { ok: true, value: {}, facts: catalogueRun!.facts } : catalogueRun!);
+  if (run.ok && run.value.partyDetails) {
+    run.value.partyDetails = { ...run.value.partyDetails, ...legacyDepositFieldsOf(run.value.partyDetails, ruling ?? "") };
+  }
   let proposal: BeoAiProposal | null = null;
   /** SCRUM-970: the catalogue section as the model answered it, for the activity row's shape (counts only). */
   let readAnswer: unknown = undefined;

@@ -1,0 +1,24 @@
+{
+  "results": {
+    "builtInAdviceNamesTheThreeLanguagesAndKeepsWording": true,
+    "legacyDepositNeedsExplicitReceipt": true,
+    "defaultsWhenNoSetting": true,
+    "savedSettingWins": true,
+    "savedModelNotServedFallsBack": true,
+    "thaiEnglishRussianConfirmations": true,
+    "finalMessageToParent": true,
+    "malformedAnswerIsAPlainMessage": true,
+    "modelProblemsAreSaid": true,
+    "aRunThatMayRetryAsksOnceMore": true,
+    "logFieldsCarryNoText": true,
+    "teamProposals": true,
+    "beoPromptKnowsTheParksToday": true,
+    "eventDateReadBesideTheBookedDate": true,
+    "savedFormatStillCarriesTheFieldsTheAppReads": true,
+    "aCakeTimeWithNoOwnerLeavesTheCakeType": true,
+    "theRestOfTheBeoIsProposedWithItsSource": true,
+    "theReviewKeepsWhatIsHeldAndSendsTheRest": true,
+    "theAdultsListFoldsIntoTheKidsUnlessItIsTheirOwn": true
+  },
+  "failures": {}
+}

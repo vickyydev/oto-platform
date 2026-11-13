@@ -1,0 +1,29 @@
+  ok  Create BEO: the review opens with every section proposed and marked — the park's default, the family's lines, the team's
+  ok  a value the form holds stays; the chat's is offered beside it and taken with one press
+  ok  ONE press writes everything, with its sources; no second preview opens
+  ok  the form reads the BEO back: the chat's sections open and marked, each field its own mark; an edit says changed here
+  ok  Save sends the form once, the chat's fields in it
+  ok  Fetch from chat after the approval: a field re-filled from a newer team line wears that line's mark; the model's title is never offered
+  ok  a pasted message opens the same review and approves the same way; without a catalogue the preview of before is the only step
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: OLD-ANSWER: the actual Deposit field
+
+null !== '2000'
+
+    at <anonymous> (C:\oto-lanes\codex-beo-money-stage3-20261114\apps\oto-app\tests\beo-prefill-ui.check.ts:668:12)
+    at async check (C:\oto-lanes\codex-beo-money-stage3-20261114\apps\oto-app\tests\beo-prefill-ui.check.ts:438:3)
+    at async <anonymous> (C:\oto-lanes\codex-beo-money-stage3-20261114\apps\oto-app\tests\beo-prefill-ui.check.ts:644:1) {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: null,
+  expected: '2000',
+  operator: 'strictEqual'
+}
+
+Node.js v22.17.1

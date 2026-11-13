@@ -1,0 +1,29 @@
+  ok  Create BEO: the review opens with every section proposed and marked — the park's default, the family's lines, the team's
+  ok  a value the form holds stays; the chat's is offered beside it and taken with one press
+  ok  ONE press writes everything, with its sources; no second preview opens
+  ok  the form reads the BEO back: the chat's sections open and marked, each field its own mark; an edit says changed here
+  ok  Save sends the form once, the chat's fields in it
+  ok  Fetch from chat after the approval: a field re-filled from a newer team line wears that line's mark; the model's title is never offered
+tsx.cmd : Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+At line:2 char:66
++ ... v:TZ='UTC'; & './node_modules/.bin/tsx.cmd' tests/beo-prefill-ui.chec ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Warning: Missin...DialogContent}.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+  ok  a pasted message opens the same review and approves the same way; without a catalogue the preview of before is the only step
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+  ok  SCRUM-844: requests and old answers keep the stored deposit; received money needs confirmation in both free-text paths
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+  ok  text typed before AI Fill survives the approval: the review keeps it, the one Save writes it, the read-back shows it
+  ok  a time, the cake or the setup's who edited after the approval says changed here
+  ok  an empty BEO's sections say plain words, never a placeholder
+  ok  SCRUM-903: no team confirmation and an empty catalogue — the review says so, shows the chat's words under each value, offers no Load into Editor, and writes only on Approve and create
+  ok  SCRUM-904: a catalogue that could not be read is said so, never called empty
+beo-prefill-ui.check: 13 checks passed

@@ -1,0 +1,98 @@
+  ok  Create BEO: the review opens with every section proposed and marked — the park's default, the family's lines, the team's
+  ok  a value the form holds stays; the chat's is offered beside it and taken with one press
+  ok  ONE press writes everything, with its sources; no second preview opens
+  ok  the form reads the BEO back: the chat's sections open and marked, each field its own mark; an edit says changed here
+  ok  Save sends the form once, the chat's fields in it
+  ok  Fetch from chat after the approval: a field re-filled from a newer team line wears that line's mark; the model's title is never offered
+tsx.cmd : Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+At line:2 char:66
++ ... v:TZ='UTC'; & './node_modules/.bin/tsx.cmd' tests/beo-prefill-ui.chec ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Warning: Missin...DialogContent}.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+  ok  a pasted message opens the same review and approves the same way; without a catalogue the preview of before is the only step
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+ReferenceError: Checkbox is not defined
+    at BeoEventEditor
+(C:\oto-lanes\codex-beo-money-stage3-20261114\apps\oto-app\tests/beo-prefill-ui.native.cjs:12024:63)
+    at renderWithHooks
+(C:\oto-lanes\beoleft978-20261113\apps\oto-app\node_modules\react-dom\cjs\react-dom.development.js:15486:18)
+    at updateFunctionComponent
+(C:\oto-lanes\beoleft978-20261113\apps\oto-app\node_modules\react-dom\cjs\react-dom.development.js:19617:20)
+    at beginWork
+(C:\oto-lanes\beoleft978-20261113\apps\oto-app\node_modules\react-dom\cjs\react-dom.development.js:21640:16)
+    at HTMLUnknownElement.callCallback
+(C:\oto-lanes\beoleft978-20261113\apps\oto-app\node_modules\react-dom\cjs\react-dom.development.js:4164:14)
+    at HTMLUnknownElement.callTheUserObjectsOperation
+(C:\oto-lanes\beoleft978-20261113\apps\oto-app\node_modules\jsdom\lib\jsdom\living\generated\EventListener.js:26:30)
+    at innerInvokeEventListeners
+(C:\oto-lanes\beoleft978-20261113\apps\oto-app\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js:360:16)
+    at invokeEventListeners
+(C:\oto-lanes\beoleft978-20261113\apps\oto-app\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js:296:3)
+    at HTMLUnknownElementImpl._dispatch
+(C:\oto-lanes\beoleft978-20261113\apps\oto-app\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js:243:9)
+    at HTMLUnknownElementImpl.dispatchEvent
+(C:\oto-lanes\beoleft978-20261113\apps\oto-app\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js:114:17)
+ReferenceError: Checkbox is not defined
+    at BeoEventEditor
+(C:\oto-lanes\codex-beo-money-stage3-20261114\apps\oto-app\tests/beo-prefill-ui.native.cjs:12024:63)
+    at renderWithHooks
+(C:\oto-lanes\beoleft978-20261113\apps\oto-app\node_modules\react-dom\cjs\react-dom.development.js:15486:18)
+    at updateFunctionComponent
+(C:\oto-lanes\beoleft978-20261113\apps\oto-app\node_modules\react-dom\cjs\react-dom.development.js:19617:20)
+    at beginWork
+(C:\oto-lanes\beoleft978-20261113\apps\oto-app\node_modules\react-dom\cjs\react-dom.development.js:21640:16)
+    at HTMLUnknownElement.callCallback
+(C:\oto-lanes\beoleft978-20261113\apps\oto-app\node_modules\react-dom\cjs\react-dom.development.js:4164:14)
+    at HTMLUnknownElement.callTheUserObjectsOperation
+(C:\oto-lanes\beoleft978-20261113\apps\oto-app\node_modules\jsdom\lib\jsdom\living\generated\EventListener.js:26:30)
+    at innerInvokeEventListeners
+(C:\oto-lanes\beoleft978-20261113\apps\oto-app\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js:360:16)
+    at invokeEventListeners
+(C:\oto-lanes\beoleft978-20261113\apps\oto-app\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js:296:3)
+    at HTMLUnknownElementImpl._dispatch
+(C:\oto-lanes\beoleft978-20261113\apps\oto-app\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js:243:9)
+    at HTMLUnknownElementImpl.dispatchEvent
+(C:\oto-lanes\beoleft978-20261113\apps\oto-app\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js:114:17)
+The above error occurred in the <BeoEventEditor> component:
+
+    at BeoEventEditor
+(C:\oto-lanes\codex-beo-money-stage3-20261114\apps\oto-app\tests/beo-prefill-ui.native.cjs:8556:27)
+    at QueryClientProvider
+(C:\oto-lanes\beoleft978-20261113\apps\oto-app\node_modules\@tanstack\react-query\src\QueryClientProvider.tsx:30:3)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+C:\oto-lanes\codex-beo-money-stage3-20261114\apps\oto-app\tests/beo-prefill-ui.native.cjs:12024
+                /* @__PURE__ */ (0, import_jsx_runtime33.jsx)(Checkbox, { checked: aiFillDepositConfirmed,
+onCheckedChange: (checked) => setAiFillDepositConfirmed(checked === true), "data-testid":
+"checkbox-ai-fill-deposit-received" }),
+                                                              ^
+
+ReferenceError: Checkbox is not defined
+    at BeoEventEditor
+(C:\oto-lanes\codex-beo-money-stage3-20261114\apps\oto-app\tests/beo-prefill-ui.native.cjs:12024:63)
+    at renderWithHooks
+(C:\oto-lanes\beoleft978-20261113\apps\oto-app\node_modules\react-dom\cjs\react-dom.development.js:15486:18)
+    at updateFunctionComponent
+(C:\oto-lanes\beoleft978-20261113\apps\oto-app\node_modules\react-dom\cjs\react-dom.development.js:19617:20)
+    at beginWork
+(C:\oto-lanes\beoleft978-20261113\apps\oto-app\node_modules\react-dom\cjs\react-dom.development.js:21640:16)
+    at beginWork$1
+(C:\oto-lanes\beoleft978-20261113\apps\oto-app\node_modules\react-dom\cjs\react-dom.development.js:27465:14)
+    at performUnitOfWork
+(C:\oto-lanes\beoleft978-20261113\apps\oto-app\node_modules\react-dom\cjs\react-dom.development.js:26599:12)
+    at workLoopSync
+(C:\oto-lanes\beoleft978-20261113\apps\oto-app\node_modules\react-dom\cjs\react-dom.development.js:26505:5)
+    at renderRootSync
+(C:\oto-lanes\beoleft978-20261113\apps\oto-app\node_modules\react-dom\cjs\react-dom.development.js:26473:7)
+    at recoverFromConcurrentError
+(C:\oto-lanes\beoleft978-20261113\apps\oto-app\node_modules\react-dom\cjs\react-dom.development.js:25889:20)
+    at performConcurrentWorkOnRoot
+(C:\oto-lanes\beoleft978-20261113\apps\oto-app\node_modules\react-dom\cjs\react-dom.development.js:25789:22)
+
+Node.js v22.17.1
