@@ -1,4 +1,4 @@
-import { createElement as h, useState } from 'react';
+import { createElement as h, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { ConsentAction, ConsentFormStep, ConsentPrompt } from '@oto/shared';
 import { ConsentCapture } from '../../../src/components/till/ConsentCapture';
@@ -11,6 +11,8 @@ import Display from '../../../src/pages/Display';
 import { installBox } from './station';
 import { LanguageProvider, useLanguage } from '../../../src/i18n/LanguageContext';
 import type { ContactChannel, SupervisionPolicy } from '../../../src/types';
+import { useTillChoice } from '../../../src/lib/tillChoice';
+import { setSaleOpen } from '../../../src/pwa/openSale';
 import '../../../src/index.css';
 
 /**
@@ -38,9 +40,20 @@ import '../../../src/index.css';
  *  ?screen=gate      the phone till's supervision gate in its step's frame, under
  *                    the phone's bars (&desk=1: the counter till's step instead)
  *
+ * SCRUM-977 / SCRUM-975:
+ *  ?screen=turn      the till's own choice of till (`lib/tillChoice.ts`, as
+ *                    App.tsx's gate reads it): the phone side is the phone's
+ *                    form handed to the parent over a sale's two lines, the
+ *                    desk side a sale's lines with "Add a line"; each says it
+ *                    holds something open as the real tills do (`setSaleOpen`)
+ *  &newChild=1       the review with a third child, not saved before ("new")
+ *  &fonts=1          the till's own fonts (Inter, Till Thai), so a measured
+ *                    line reads the same on Windows and on Linux
+ *
  * `#till` holds what the till has: the display's last fill, or the half's state.
  */
 const query = new URLSearchParams(location.search);
+if (query.get('fonts') === '1') await import('../../../src/fonts.css');
 const screen = query.get('screen') ?? 'display';
 const step = (query.get('step') ?? 'children') as ConsentFormStep;
 const theme = query.get('theme') === 'light' ? 'light' : 'dark';
@@ -183,6 +196,7 @@ function ReviewScreen() {
   const slots = [
     { id: 'zz-review-a', savedChildId: 'zz-saved-a', name: 'ZZ TEST Aya', age: '6', dateOfBirth: '2020-01-01' },
     { id: 'zz-review-b', savedChildId: 'zz-saved-b', name: 'ZZ TEST Ben', age: '8', dateOfBirth: '2018-01-01' },
+    ...(query.get('newChild') === '1' ? [{ id: 'zz-review-c', name: 'ZZ TEST Cha', age: '4', dateOfBirth: '2022-01-01' }] : []),
   ];
   const saved = [
     { id: 'zz-saved-a', childName: 'ZZ TEST Aya', dateOfBirth: '2020-01-01', childAge: 6 },
@@ -223,6 +237,45 @@ function GateScreen() {
     h('div', { className: 'shrink-0', style: { height: 110 } }));
 }
 
+/**
+ * SCRUM-977 — the phone till: "Ring up" puts a sale's two lines in and hands
+ * the family's form over, and from then the sale is open, as MobileTill's is
+ * once it is past its first step (`mStep !== 'tier'`). Before it, nothing is.
+ */
+function PhoneTurnTill() {
+  const [rung, setRung] = useState(false);
+  useEffect(() => {
+    setSaleOpen('mobile-till', rung);
+    return () => setSaleOpen('mobile-till', false);
+  }, [rung]);
+  if (!rung) {
+    return h('div', { className: 'h-[100dvh] bg-background', id: 'ready' },
+      h('button', { type: 'button', onClick: () => setRung(true) }, 'Ring up'));
+  }
+  return h('div', null,
+    h('ul', { className: 'sr-only', 'data-testid': 'phone-sale' },
+      h('li', null, 'ZZ TEST 1 Hour Play Kids ×1'), h('li', null, 'ZZ TEST 1 Hour Play Adults ×1')),
+    h(PhoneForm));
+}
+
+/** SCRUM-977 — the desk till with a sale's lines: "Add a line" puts one in, and the sale is open while it has any. */
+function DeskTurnTill() {
+  const [lines, setLines] = useState<string[]>([]);
+  useEffect(() => {
+    setSaleOpen('till', lines.length > 0);
+    return () => setSaleOpen('till', false);
+  }, [lines.length]);
+  return h('div', { className: 'light h-[100dvh] bg-background text-foreground p-6', id: 'ready' },
+    h('button', { type: 'button', onClick: () => setLines((all) => [...all, `ZZ TEST desk line ${all.length + 1}`]) }, 'Add a line'),
+    h('ul', null, ...lines.map((line) => h('li', { key: line, 'data-testid': 'desk-line' }, line))));
+}
+
+/** SCRUM-977 — the gate's choice, read as App.tsx reads it (each side draws its own `#ready`). */
+function TurnScreen() {
+  const kind = useTillChoice();
+  return h('div', { 'data-till': kind }, kind === 'phone' ? h(PhoneTurnTill) : h(DeskTurnTill));
+}
+
 /** SCRUM-963 — the display page itself, paired to the stand-in box. */
 function PairedScreen() {
   return h('div', { id: 'ready' }, h(Display));
@@ -233,5 +286,5 @@ createRoot(document.getElementById('root')!).render(
   screen === 'paired'
     ? h(LanguageProvider, { storageKey: 'oto.display.language', children: h(PairedScreen) })
     : h(LanguageProvider, null,
-      screen === 'half' ? h(HalfForm) : screen === 'phone' ? h(PhoneForm) : screen === 'review' ? h(ReviewScreen)
+      screen === 'half' ? h(HalfForm) : screen === 'phone' ? h(PhoneForm) : screen === 'turn' ? h(TurnScreen) : screen === 'review' ? h(ReviewScreen)
         : screen === 'gate' ? h(GateScreen) : h(DisplayForm)));

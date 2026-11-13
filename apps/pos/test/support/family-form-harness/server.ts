@@ -18,8 +18,11 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const posRoot = path.resolve(here, '../../..');
 
 export interface FamilyFormHarness {
-  /** Opens the form with the query given (see `main.ts`) at that size, and waits for it to draw. */
-  open: (query: string, viewport: { width: number; height: number }) => Promise<Page>;
+  /**
+   * Opens the form with the query given (see `main.ts`) at that size, and waits for it to draw.
+   * A touch page (a finger is the main pointer) unless `touch: false` (SCRUM-977: a desk window, a mouse).
+   */
+  open: (query: string, viewport: { width: number; height: number }, options?: { touch?: boolean }) => Promise<Page>;
   close: () => Promise<void>;
 }
 
@@ -56,9 +59,9 @@ export async function startFamilyFormHarness(): Promise<{ harness: FamilyFormHar
     return {
       why: '',
       harness: {
-        async open(query, viewport) {
+        async open(query, viewport, options) {
           await page?.close();
-          page = await browser.newPage({ viewport, hasTouch: true });
+          page = await browser.newPage({ viewport, hasTouch: options?.touch ?? true });
           // Vite can ask for a reload during its first dependency pre-bundle.
           for (let attempt = 0; ; attempt++) {
             await page.goto(`${url}?${query}`);
