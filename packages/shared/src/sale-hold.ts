@@ -180,9 +180,16 @@ const WAYS_OUT: Record<WayOut, { alone: string; clause: string }> = {
     alone: 'Take the balance on that till, or save it as partly paid there and refund what was paid from Held sales',
     clause: 'for one open on a ticket till, take the balance there, or save it as partly paid and refund what was paid from Held sales',
   },
+  /**
+   * SCRUM-969 — an order the restaurant or shop counter saved as partly paid
+   * cannot be opened at any counter again (it never goes into Held sales, and
+   * neither counter reopens a sale by its id), so only a manager's refund from
+   * History closes it. Collecting its balance at the counter is the owner's
+   * open question.
+   */
   other: {
-    alone: 'Take the balance at that counter, or have a manager refund what was paid from History',
-    clause: 'for one open at the restaurant or shop counter, take the balance there, or have a manager refund what was paid from History',
+    alone: 'For a restaurant or shop order, have a manager refund what was paid from History',
+    clause: 'for one from the restaurant or shop counter, have a manager refund what was paid from History',
   },
 };
 

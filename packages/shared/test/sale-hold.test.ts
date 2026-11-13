@@ -93,13 +93,17 @@ describe('partPaidCloseRefusal — the End of Day says why it cannot close', () 
     );
   });
 
-  it('never sends an F&B or shop order to Held sales: it is paid at its counter or refunded from History', () => {
+  it('never sends an F&B or shop order to Held sales, and never to its counter: only a manager’s refund from History closes it', () => {
     const message = partPaidCloseRefusal([row({ held: false, label: 'Walk-in', stationName: 'F&B 1', counter: 'other' })]);
+    // SCRUM-969 — the owner's rule: the counter cannot open an order saved as
+    // partly paid again, so its balance cannot be taken there (this sentence
+    // said "Take the balance at that counter" before).
     expect(message).toBe(
       'End of Day cannot close: 1 sale is partly paid — Walk-in (open on F&B 1), ฿200 paid, balance ฿350. ' +
-        'Take the balance at that counter, or have a manager refund what was paid from History, then close the day.',
+        'For a restaurant or shop order, have a manager refund what was paid from History, then close the day.',
     );
     expect(message).not.toContain('Held sales');
+    expect(message).not.toMatch(/take the balance/i);
   });
 
   it('gives each kind of sale its own way out when they are mixed', () => {
@@ -107,10 +111,22 @@ describe('partPaidCloseRefusal — the End of Day says why it cannot close', () 
       row({}),
       row({ held: false, label: 'Walk-in', stationName: 'F&B 1', counter: 'other' }),
     ])!;
+    // SCRUM-969 — the F&B or shop clause names only the manager's refund (it said "take the balance there" before).
     expect(message).toContain(
       'For one in Held sales, take the balance or refund what was paid from Held sales on a till; ' +
-        'for one open at the restaurant or shop counter, take the balance there, or have a manager refund what was paid from History. ' +
+        'for one from the restaurant or shop counter, have a manager refund what was paid from History. ' +
         'Then close the day.',
+    );
+  });
+
+  it('SCRUM-969 — a ticket sale still on its till keeps "take the balance there"; the F&B or shop order beside it says only the refund', () => {
+    const message = partPaidCloseRefusal([
+      row({ held: false, label: 'Walk-in', stationName: 'Counter 2' }),
+      row({ held: false, label: 'Guest', stationName: 'Shop 1', counter: 'other' }),
+    ])!;
+    expect(message).toContain(
+      'For one open on a ticket till, take the balance there, or save it as partly paid and refund what was paid from Held sales; ' +
+        'for one from the restaurant or shop counter, have a manager refund what was paid from History. Then close the day.',
     );
   });
 

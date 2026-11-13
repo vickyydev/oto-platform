@@ -74,9 +74,12 @@ interface FnbPaymentProps {
   saleWord?: 'order' | 'sale';
 }
 
-/** SCRUM-960 / SCRUM-963 — the Save as partly paid dialog's words, in the counter's own word for what it sells. */
+/**
+ * SCRUM-960 / SCRUM-963 — the Save as partly paid dialog's words, in the counter's own word for what it sells.
+ * SCRUM-969 — and that End of Day's Close Day waits for that refund (`partPaidCloseRefusal`).
+ */
 export function partPaidDialogWords(paid: string, balance: string, saleWord: 'order' | 'sale' = 'order'): string {
-  return `${paid} paid, balance ${balance}. The ${saleWord} is left as it is: History lists it as Partly paid with its balance, and a manager can refund what was paid from there. Nothing is printed for it, and this screen starts a new ${saleWord}.`;
+  return `${paid} paid, balance ${balance}. The ${saleWord} is left as it is: History lists it as Partly paid with its balance, and a manager can refund what was paid from there. Close Day waits until a manager has refunded it from History. Nothing is printed for it, and this screen starts a new ${saleWord}.`;
 }
 
 /**

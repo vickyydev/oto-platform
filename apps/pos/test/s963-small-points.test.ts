@@ -142,10 +142,13 @@ describe('SCRUM-963 (4) — a finger’s presses on the family’s screens', () 
 
 describe('SCRUM-963 (10) — the Shop’s “Save as partly paid” says sale', () => {
   it('the words, the Shop’s and F&B’s', () => {
+    // SCRUM-969 — one sentence more: Close Day waits for the manager's refund.
     expect(partPaidDialogWords('฿30', '฿145', 'sale')).toBe('฿30 paid, balance ฿145. The sale is left as it is: History lists it as Partly paid with its balance, '
-      + 'and a manager can refund what was paid from there. Nothing is printed for it, and this screen starts a new sale.');
+      + 'and a manager can refund what was paid from there. Close Day waits until a manager has refunded it from History. '
+      + 'Nothing is printed for it, and this screen starts a new sale.');
     expect(partPaidDialogWords('฿30', '฿145')).toBe('฿30 paid, balance ฿145. The order is left as it is: History lists it as Partly paid with its balance, '
-      + 'and a manager can refund what was paid from there. Nothing is printed for it, and this screen starts a new order.');
+      + 'and a manager can refund what was paid from there. Close Day waits until a manager has refunded it from History. '
+      + 'Nothing is printed for it, and this screen starts a new order.');
   });
 
   it('the Shop asks for its word; F&B, at the desk and on the phone, keeps order', () => {
