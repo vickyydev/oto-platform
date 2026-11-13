@@ -389,3 +389,17 @@ describe('the plan is read again on focus and every minute while the page is ope
     expect(reads).toBe(2);
   });
 });
+
+describe('SCRUM-953 (3) — nothing is said of the kitchen while the plan is being read', () => {
+  it('desk and phone: no "No kitchen service" before the read answers; said once it answers with none', async () => {
+    getMock.mockReset();
+    getMock.mockImplementation((() => new Promise(() => undefined)) as unknown as typeof api.get);
+    const reading = [deskPage(partyOf()), phonePage(partyOf())];
+    await settle();
+    for (const page of reading) expect(flat(page.result.current)).not.toContain('No kitchen service for this party');
+    serve(null);
+    const read = [deskPage(partyOf()), phonePage(partyOf())];
+    await settle();
+    for (const page of read) expect(flat(page.result.current)).toContain('No kitchen service for this party');
+  });
+});

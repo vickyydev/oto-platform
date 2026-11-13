@@ -887,3 +887,17 @@ describe('SCRUM-967 — the bill and Take balance follow a manager’s kitchen e
     }
   });
 });
+
+describe('SCRUM-953 — the phone’s party bill names the package the plan names, as the counter’s does', () => {
+  it('the plan’s package on its row once read; "Base package" only while the plan is being read', async () => {
+    const page = phonePage(partyOf(null));
+    await settle();
+    const text = flat(page.result.current);
+    expect(text).toContain('Birthday package, Central Floresta ฿16900');
+    expect(text.includes('Base package')).toBe(false);
+    getMock.mockImplementation((() => new Promise(() => undefined)) as unknown as typeof api.get);
+    const reading = phonePage(partyOf(null));
+    await settle();
+    expect(flat(reading.result.current)).toContain('Base package —');
+  });
+});
