@@ -1,0 +1,3586 @@
+{
+  "unit": "SCRUM-970 staging proof: the BEO read-fix lane with the real read (the same-as-the-kids note, the chat total, the adults' set line's till code, the BEO PDF); closes the open points of SCRUM-958 and SCRUM-946",
+  "landed": {
+    "sha": "97600c139fca3a573bea0259126880782f5e98ac",
+    "service": "oto-app-staging"
+  },
+  "ranAt": {
+    "start": "2026-11-13T00:06:40.518Z",
+    "end": "2026-11-13T00:53:03.536Z",
+    "zone": "times are UTC; Bangkok is +7 (the run was 07:03 to 07:53 Bangkok, 13 Nov 2026)"
+  },
+  "deploys": {
+    "how": "`node scripts/agent/render.mjs status` only (read-only), before the browser started and after it closed",
+    "before": [
+      {
+        "service": "oto-pos-web-staging",
+        "status": "live",
+        "commit": "92d8e397"
+      },
+      {
+        "service": "oto-inbox-staging",
+        "status": "live",
+        "commit": "3f465947"
+      },
+      {
+        "service": "oto-qa-worker-staging",
+        "status": "live",
+        "commit": "4cdcf5d1"
+      },
+      {
+        "service": "oto-radar-staging",
+        "status": "live",
+        "commit": "608b1fd1"
+      },
+      {
+        "service": "oto-booth-staging",
+        "status": "live",
+        "commit": "3f465947"
+      },
+      {
+        "service": "oto-app-staging",
+        "status": "live",
+        "commit": "97600c13"
+      },
+      {
+        "service": "oto-console-staging",
+        "status": "live",
+        "commit": "3f465947"
+      },
+      {
+        "service": "oto-launcher-staging",
+        "status": "live",
+        "commit": "3f465947"
+      },
+      {
+        "service": "oto-pos-staging",
+        "status": "live",
+        "commit": "92d8e397"
+      },
+      {
+        "service": "oto-api-staging",
+        "status": "live",
+        "commit": "3f465947"
+      },
+      {
+        "readAt": "2026-11-13T00:03:47Z"
+      }
+    ],
+    "after": [
+      {
+        "service": "oto-pos-web-staging",
+        "status": "live",
+        "commit": "97600c13"
+      },
+      {
+        "service": "oto-inbox-staging",
+        "status": "live",
+        "commit": "97600c13"
+      },
+      {
+        "service": "oto-qa-worker-staging",
+        "status": "live",
+        "commit": "97600c13"
+      },
+      {
+        "service": "oto-radar-staging",
+        "status": "live",
+        "commit": "608b1fd1"
+      },
+      {
+        "service": "oto-booth-staging",
+        "status": "live",
+        "commit": "97600c13"
+      },
+      {
+        "service": "oto-app-staging",
+        "status": "live",
+        "commit": "97600c13"
+      },
+      {
+        "service": "oto-console-staging",
+        "status": "live",
+        "commit": "97600c13"
+      },
+      {
+        "service": "oto-launcher-staging",
+        "status": "live",
+        "commit": "97600c13"
+      },
+      {
+        "service": "oto-pos-staging",
+        "status": "live",
+        "commit": "97600c13"
+      },
+      {
+        "service": "oto-api-staging",
+        "status": "live",
+        "commit": "97600c13"
+      },
+      {
+        "readAt": "2026-11-13T00:53:09Z"
+      }
+    ],
+    "note": "oto-app-staging was live at 97600c13 from before the first step to the end. During the run the platform services (api, inbox, console, launcher, booth: 3f465947 at the start) and the tills (pos-web, pos: 92d8e397) were redeployed to 97600c13 by someone else; git shows no change under apps/api/src, apps/inbox/src, apps/console/src, apps/launcher/src, apps/booth/src, packages (3f465947..97600c13) or apps/pos/src (92d8e397..97600c13), so what they serve did not change."
+  },
+  "harness": {
+    "file": "proof.mjs (every script of the run as text; `node proof.mjs <folder>` writes them out)",
+    "browser": "Microsoft Edge (headless) 157.0.4341.46",
+    "oneBrowser": true,
+    "memory": "wait-headroom.sh 6 1.5 30 printed \"headroom ok\" before the browser started (13.2 GB commit headroom, 1.6 GB free) and before the till context (11.8 / 2.1); NODE_OPTIONS=--max-old-space-size=2048",
+    "credentials": "by name through scripts/agent/env.mjs need(); never printed or written"
+  },
+  "modelReadsPressed": {
+    "fillFromChat": 6,
+    "note": "There is no button named \"Fill from chat\": the read the brief means is the AI Fill that \"Create BEO\" runs (POST /api/events/:id/beo/ai-fill/inbox). Pressed ONCE per thread: G, I, A, B, R and F (F is the hunt's one extra read: the only way to see a fold and a chat total together). \"Fetch from chat\" was never pressed. Book Date also reads the chat once per thread when opened (6 reads, GET .../book-date-proposal).",
+    "presses": [
+      {
+        "at": "2026-11-13T00:16:55.140Z",
+        "key": "G",
+        "tag": null,
+        "what": "Create BEO on the ZZ TEST thread: its AI Fill reads the chat (POST /api/events/:id/beo/ai-fill/inbox)"
+      },
+      {
+        "at": "2026-11-13T00:20:38.051Z",
+        "key": "I",
+        "tag": null,
+        "what": "Create BEO on the ZZ TEST thread: its AI Fill reads the chat (POST /api/events/:id/beo/ai-fill/inbox)"
+      },
+      {
+        "at": "2026-11-13T00:25:18.700Z",
+        "key": "A",
+        "tag": null,
+        "what": "Create BEO on the ZZ TEST thread: its AI Fill reads the chat (POST /api/events/:id/beo/ai-fill/inbox)"
+      },
+      {
+        "at": "2026-11-13T00:29:26.041Z",
+        "key": "B",
+        "tag": null,
+        "what": "Create BEO on the ZZ TEST thread: its AI Fill reads the chat (POST /api/events/:id/beo/ai-fill/inbox)"
+      },
+      {
+        "at": "2026-11-13T00:38:23.702Z",
+        "key": "R",
+        "tag": null,
+        "what": "Create BEO on the ZZ TEST thread: its AI Fill reads the chat (POST /api/events/:id/beo/ai-fill/inbox)"
+      },
+      {
+        "at": "2026-11-13T00:42:34.299Z",
+        "key": "F",
+        "tag": null,
+        "what": "Create BEO on the ZZ TEST thread: its AI Fill reads the chat (POST /api/events/:id/beo/ai-fill/inbox)"
+      }
+    ]
+  },
+  "threads": {
+    "G": {
+      "name": "ZZ TEST 970 mirror",
+      "conversationId": "01a1d23b-602f-7c20-81de-84d92b59fb5e",
+      "from": "a ZZ TEST simulator number of this run (66899097017), searched in the inbox first: unused",
+      "lines": [
+        {
+          "text": "Hi, a party for ZZ Test Remy turning 6, Saturday 12 December 11:00-13:00, 12 kids and 8 adults. (ZZ TEST)",
+          "status": 200,
+          "at": "2026-11-13T00:07:48.119Z"
+        },
+        {
+          "text": "The Floresta birthday package with the Margherita pizza for the kids. The adults will eat the same as the kids, the Margherita pizza for them too. (ZZ TEST)",
+          "status": 200,
+          "at": "2026-11-13T00:08:41.396Z"
+        }
+      ],
+      "assistant": [
+        {
+          "turnShown": true,
+          "turns": [
+            "ai_handover:birthday_details"
+          ],
+          "lines": [
+            "Thank you so much! Our birthday manager will be with you shortly."
+          ]
+        },
+        {
+          "turnShown": false,
+          "turns": [],
+          "lines": []
+        }
+      ],
+      "event": {
+        "id": "01a1d241-9476-7f3f-86cd-1844c74d1f63",
+        "title": "ZZ Test Remy's 6th Birthday",
+        "date": "2026-12-12",
+        "startTime": "11:00",
+        "bookedAt": "2026-11-13T00:16:43.067Z"
+      }
+    },
+    "I": {
+      "name": "ZZ TEST 970 till price",
+      "conversationId": "01a1d23b-69ca-78c7-990a-dcba7073b642",
+      "from": "a ZZ TEST simulator number of this run (66899097019), searched in the inbox first: unused",
+      "lines": [
+        {
+          "text": "Hi, a party for ZZ Test Noa turning 5, Sunday 27 December 14:00-16:00, 10 kids and 5 adults. (ZZ TEST)",
+          "status": 200,
+          "at": "2026-11-13T00:07:50.581Z"
+        },
+        {
+          "text": "The Floresta birthday package, Hawaiian pizza for the kids. For the adults a Pepperoni pizza at 300 please, and 2 Margherita pizzas for 900. And 3 extra portions of French fries for the kids. (ZZ TEST)",
+          "status": 200,
+          "at": "2026-11-13T00:08:43.884Z"
+        }
+      ],
+      "assistant": [
+        {
+          "turnShown": true,
+          "turns": [
+            "ai_handover:birthday_details"
+          ],
+          "lines": [
+            "Thank you so much! Our birthday manager will be with you shortly."
+          ]
+        },
+        {
+          "turnShown": false,
+          "turns": [],
+          "lines": []
+        }
+      ],
+      "event": {
+        "id": "01a1d245-104c-7cfe-b5e2-49a2302e151c",
+        "title": "ZZ Test Noa's 5th Birthday",
+        "date": "2026-12-27",
+        "startTime": "14:00",
+        "bookedAt": "2026-11-13T00:20:31.206Z"
+      }
+    },
+    "A": {
+      "name": "ZZ TEST 970 family only",
+      "conversationId": "01a1d23b-73ac-7b53-9e15-9da40d6366e0",
+      "from": "a ZZ TEST simulator number of this run (66899097011), searched in the inbox first: unused",
+      "lines": [
+        {
+          "text": "Hi! We'd like to book a birthday party for our daughter ZZ Test Lina, she turns 6. Saturday 5 December, from 14:00 to 16:30, 12 kids and 8 adults. (ZZ TEST)",
+          "status": 200,
+          "at": "2026-11-13T00:07:53.111Z"
+        },
+        {
+          "text": "We'd like the Floresta birthday package. Hawaiian pizza for the kids, no pineapple on half. And chicken fried rice for the adults. (ZZ TEST)",
+          "status": 200,
+          "at": "2026-11-13T00:08:46.296Z"
+        },
+        {
+          "text": "Could we have the bubble show at 15:00? And 2 of the park's cakes at 800 baht each, at 16:00 please. For decoration a jungle theme with green and gold balloons. (ZZ TEST)",
+          "status": 200,
+          "at": "2026-11-13T00:08:48.720Z"
+        },
+        {
+          "text": "Important: she is allergic to peanuts. For the setup, balloons at the entrance by 13:30 please. If you can't reach me, please call my husband on 089 870 0417. We will transfer the 3,000 baht deposit tomorrow. (ZZ TEST)",
+          "status": 200,
+          "at": "2026-11-13T00:08:51.128Z"
+        }
+      ],
+      "assistant": [
+        {
+          "turnShown": true,
+          "turns": [
+            "ai_handover:birthday_details"
+          ],
+          "lines": [
+            "Thank you so much! Our birthday manager will be with you shortly."
+          ]
+        },
+        {
+          "turnShown": false,
+          "turns": [],
+          "lines": []
+        }
+      ],
+      "event": {
+        "id": "01a1d249-57ae-7144-af64-8681bca3e3ff",
+        "title": "ZZ Test Lina's 6th Birthday",
+        "date": "2026-12-05",
+        "startTime": "14:00",
+        "bookedAt": "2026-11-13T00:25:11.828Z"
+      }
+    },
+    "B": {
+      "name": "ZZ TEST 970 no option",
+      "conversationId": "01a1d23b-7d31-7a1a-92c3-8e2910368a19",
+      "from": "a ZZ TEST simulator number of this run (66899097012), searched in the inbox first: unused",
+      "lines": [
+        {
+          "text": "Hello, a birthday party for ZZ Test Mika turning 7 on Sunday 13 December, 10:00 to 12:00, 10 kids and 6 adults. (ZZ TEST)",
+          "status": 200,
+          "at": "2026-11-13T00:07:55.650Z"
+        },
+        {
+          "text": "The Floresta birthday package please, and fried rice for the adults please. I already transferred the 3,000 deposit. (ZZ TEST)",
+          "status": 200,
+          "at": "2026-11-13T00:08:53.630Z"
+        }
+      ],
+      "assistant": [
+        {
+          "turnShown": true,
+          "turns": [
+            "ai_handover:birthday_details"
+          ],
+          "lines": [
+            "Thank you so much! Our birthday manager will be with you shortly."
+          ]
+        },
+        {
+          "turnShown": false,
+          "turns": [],
+          "lines": []
+        }
+      ],
+      "event": {
+        "id": "01a1d24d-21f6-7b37-9e83-9f5c47598758",
+        "title": "ZZ Test Mika's 7th Birthday",
+        "date": "2026-12-13",
+        "startTime": "10:00",
+        "bookedAt": "2026-11-13T00:29:19.148Z"
+      }
+    },
+    "R": {
+      "name": "ZZ TEST 970 price each",
+      "conversationId": "01a1d23b-889c-7021-b019-6302a1c55631",
+      "from": "a ZZ TEST simulator number of this run (66899097013), searched in the inbox first: unused",
+      "lines": [
+        {
+          "text": "Hi, a party for ZZ Test Ari turning 6, Wednesday 16 December 15:00-17:00, 10 kids and 4 adults. (ZZ TEST)",
+          "status": 200,
+          "at": "2026-11-13T00:07:58.484Z"
+        },
+        {
+          "text": "The Floresta birthday package, Hawaiian pizza for the kids. For the adults 2 Margherita pizzas for 450/each please. (ZZ TEST)",
+          "status": 200,
+          "at": "2026-11-13T00:08:56.057Z"
+        }
+      ],
+      "assistant": [
+        {
+          "turnShown": true,
+          "turns": [
+            "ai_handover:birthday_details"
+          ],
+          "lines": [
+            "Thank you so much! Our birthday manager will be with you shortly."
+          ]
+        },
+        {
+          "turnShown": false,
+          "turns": [],
+          "lines": []
+        }
+      ],
+      "event": {
+        "id": "01a1d255-5211-7205-b94a-510d46c023ab",
+        "title": "ZZ Test Ari's 6th Birthday",
+        "date": "2026-12-16",
+        "startTime": "15:00",
+        "bookedAt": "2026-11-13T00:38:16.765Z"
+      }
+    },
+    "F": {
+      "name": "ZZ TEST 970 fold and total",
+      "conversationId": "01a1d258-733a-71ad-a5b3-2a31f0865509",
+      "from": "a ZZ TEST simulator number of this run (66899097016), searched in the inbox first: unused",
+      "lines": [
+        {
+          "text": "Hi, a party for ZZ Test Juno turning 6, Saturday 19 December 11:00-13:00, 12 kids and 8 adults. (ZZ TEST)",
+          "status": 200,
+          "at": "2026-11-13T00:39:33.602Z"
+        },
+        {
+          "text": "The Floresta birthday package with the Margherita pizza for the kids. The adults will eat the same as the kids, the Margherita pizza for them too. And 3 extra portions of French fries for the kids, 450 baht total. (ZZ TEST)",
+          "status": 200,
+          "at": "2026-11-13T00:39:59.201Z"
+        }
+      ],
+      "assistant": [
+        {
+          "turnShown": true,
+          "turns": [
+            "ai_handover:birthday_details"
+          ],
+          "lines": [
+            "Thank you so much! Our birthday manager will be with you shortly."
+          ]
+        }
+      ],
+      "event": {
+        "id": "01a1d259-2927-79a2-a412-abda70d5e721",
+        "title": "ZZ Test Juno's 6th Birthday",
+        "date": "2026-12-19",
+        "startTime": "11:00",
+        "bookedAt": "2026-11-13T00:42:27.414Z"
+      }
+    }
+  },
+  "numberCheck": {
+    "at": "2026-11-13T00:07:34.916Z",
+    "route": "GET /api/inbox/conversations?phone=… and ?q=<contact name>, status active and handled",
+    "threads": {
+      "G": {
+        "number": "66899097017",
+        "byPhone": {
+          "statuses": [
+            200,
+            200
+          ],
+          "found": 0
+        },
+        "byName": {
+          "statuses": [
+            200,
+            200
+          ],
+          "found": 0
+        }
+      },
+      "I": {
+        "number": "66899097019",
+        "byPhone": {
+          "statuses": [
+            200,
+            200
+          ],
+          "found": 0
+        },
+        "byName": {
+          "statuses": [
+            200,
+            200
+          ],
+          "found": 0
+        }
+      },
+      "A": {
+        "number": "66899097011",
+        "byPhone": {
+          "statuses": [
+            200,
+            200
+          ],
+          "found": 0
+        },
+        "byName": {
+          "statuses": [
+            200,
+            200
+          ],
+          "found": 0
+        }
+      },
+      "B": {
+        "number": "66899097012",
+        "byPhone": {
+          "statuses": [
+            200,
+            200
+          ],
+          "found": 0
+        },
+        "byName": {
+          "statuses": [
+            200,
+            200
+          ],
+          "found": 0
+        }
+      },
+      "R": {
+        "number": "66899097013",
+        "byPhone": {
+          "statuses": [
+            200,
+            200
+          ],
+          "found": 0
+        },
+        "byName": {
+          "statuses": [
+            200,
+            200
+          ],
+          "found": 0
+        }
+      },
+      "F": {
+        "byPhone": 0,
+        "byName": 0
+      }
+    },
+    "positiveControl": {
+      "number": "the SCRUM-958 thread G number",
+      "found": 1
+    }
+  },
+  "points": {
+    "1": {
+      "verdict": "PASSED",
+      "what": "Thread G, the same-as-the-kids note (SCRUM-946 open point)",
+      "pictures": [
+        "01a-thread-g-review-note-same-as-kids.png",
+        "01b-thread-g-review-kids-hawaiian-adults-set-line.png",
+        "01c-thread-g-review-back-to-margherita-note-returns.png",
+        "01d-thread-g-toast-after-approve-note-sentence.png",
+        "01f-thread-g-beo-adults-menu-eat-kids-menu.png"
+      ],
+      "fill": {
+        "route": "POST /api/events/:id/beo/ai-fill/inbox",
+        "status": 200,
+        "seconds": 13.5,
+        "readAnswered": {
+          "setMenuChoices": [
+            {
+              "option": "Margherita",
+              "said": "the Margherita pizza for the kids"
+            }
+          ],
+          "menuLines": [],
+          "adultsFolded": [
+            {
+              "dish": "Margherita",
+              "from": {
+                "source": "family",
+                "at": "2026-11-13T00:08:42.000Z",
+                "line": 2,
+                "quote": "the Margherita pizza for them too"
+              },
+              "itemId": "item_cf_bday_pizza",
+              "option": "Margherita"
+            }
+          ]
+        }
+      },
+      "review": {
+        "pizza": {
+          "label": "Pizza",
+          "value": "Margherita",
+          "match": [
+            "the Margherita pizza for the kids → Margherita (CF-24)"
+          ],
+          "says": [
+            "The chat says “the Margherita pizza for the kids”from the family· Fri 13 Nov 07:08"
+          ],
+          "parent": null
+        },
+        "lines": [],
+        "note": {
+          "note": "The adults' line only repeats the kids' menu: the adults eat the kids' menu, and \"Different for adults\" stays off.",
+          "says": [
+            "The chat says “the Margherita pizza for them too”from the family· Fri 13 Nov 07:08"
+          ]
+        }
+      },
+      "kidsPizzaHawaiian": {
+        "pizza": "Hawaiian",
+        "lines": [
+          {
+            "menu": "Adults",
+            "count": "1",
+            "item": "the Margherita pizza for them too → Margherita (CF-24)",
+            "tillPrice": null,
+            "chatSays": [
+              "The chat says “the Margherita pizza for them too”from the family· Fri 13 Nov 07:08"
+            ],
+            "chatTotal": null,
+            "setWords": "The set menu's Pizza, on the adults' own menu: a SET line, not charged.",
+            "optionWords": null,
+            "option": null,
+            "priceBox": null,
+            "priceWords": null
+          }
+        ],
+        "note": null
+      },
+      "backToMargherita": {
+        "pizza": "Margherita",
+        "lines": [],
+        "note": {
+          "note": "The adults' line only repeats the kids' menu: the adults eat the kids' menu, and \"Different for adults\" stays off.",
+          "says": [
+            "The chat says “the Margherita pizza for them too”from the family· Fri 13 Nov 07:08"
+          ]
+        }
+      },
+      "approval": {
+        "route": "POST /api/events/:id/beo/ai-fill/approve",
+        "status": 200,
+        "written": {
+          "event": true,
+          "package": true,
+          "addOns": 0,
+          "setMenu": true,
+          "choices": 1,
+          "kitchenLines": 0,
+          "freeKitchenLines": 0,
+          "adultsLinesFolded": 1
+        },
+        "menuLinesSent": [],
+        "adultsFoldedSent": 1,
+        "toast": "BEO created from the conversation Saved: the event's details (name, counts, times), the package and the kitchen plan. The adults' line only repeats the kids' menu: the adults eat the kids' menu, and \"Different for adults\" stays off.",
+        "toastPicture": "01d-thread-g-toast-after-approve-note-sentence.png",
+        "reviewGone": true,
+        "noSecondDialog": true
+      },
+      "beoAfter": {
+        "kids": [
+          "SET Margherita x1 included:true note \"(Pizza)\" group item_cf_bday_pizza src set_menu",
+          "SET French fries x1 included:true group item_cf_bday_fries src set_menu",
+          "SET Veggie sticks x1 included:true group item_cf_bday_veggie_sticks src set_menu",
+          "SET Fruit skewers x1 included:true group item_cf_bday_fruit_skewers src set_menu"
+        ],
+        "adults": [],
+        "adultsDiffer": false,
+        "setMenuSelection": {
+          "status": 200,
+          "isSubmitted": true,
+          "selections": [
+            {
+              "groupId": "item_cf_bday_pizza",
+              "recordedFrom": "chat",
+              "chosenOptions": [
+                "Margherita"
+              ]
+            }
+          ]
+        }
+      },
+      "editorAdultsMenu": "Kitchen Plan from the chat Not Needed Needed Menus Kids Menu (4) Adults Menu (4) Service: Set Time Different for adults Off: the adults eat what was chosen for the kids. On: start from the kids' menu and change it for the adults. Same as the kids' menu 1 Margherita (Pizza) 1 French fries 1 Veggie sticks 1 Fruit skewers Cake No Cake Our Cake Own Cake"
+    },
+    "2": {
+      "verdict": "PASSED",
+      "what": "Thread I, the chat's total (SCRUM-958 failed point)",
+      "pictures": [
+        "02a-thread-i-review-chat-total-900-for-2.png",
+        "02b-thread-i-toast-after-approve.png",
+        "02c-thread-i-beo-prices-after-approve-adults.png",
+        "02c-thread-i-beo-prices-after-approve-kids.png",
+        "02c-thread-i-beo-prices-after-approve-bar.png"
+      ],
+      "partyDay": "Sunday 27 December 2026 (a weekend party). The till's Margherita (CF-24) is 400 on weekdays and 400 at the weekend (read on the till origin, GET /api/branches/<park>/menu), so the ฿400 shown is the weekend price, the same figure as the weekday one.",
+      "tillPrices": {
+        "CF-24": "Margherita: weekday 400, weekend 400, station kitchen",
+        "CF-27": "Hawaiian: weekday 515, weekend 515, station kitchen",
+        "CF-31": "Pepperoni: weekday 420, weekend 420, station kitchen",
+        "CF-15": "Caesar salad: weekday 370, weekend 370, station kitchen",
+        "CF-11": "French fries: weekday 175, weekend 175, station kitchen",
+        "CF-43": "Fried rice: weekday 240, weekend 240, station kitchen",
+        "CF-63-1": "Fresh cold pressed orange juice: weekday 210, weekend 210, station bar",
+        "CF-58-4": "Latte: weekday 145, weekend 145, station bar"
+      },
+      "fill": {
+        "route": "POST /api/events/:id/beo/ai-fill/inbox",
+        "status": 200,
+        "seconds": 21,
+        "readAnswered": {
+          "setMenuChoices": [
+            {
+              "option": "Hawaiian",
+              "said": "Hawaiian pizza for the kids"
+            }
+          ],
+          "menuLines": [
+            {
+              "menu": "adults",
+              "itemName": "Pepperoni pizza",
+              "quantity": 1,
+              "productCode": "CF-31",
+              "matchedName": "Pepperoni",
+              "notInMenu": false,
+              "chatPrice": 300,
+              "from": {
+                "source": "family",
+                "at": "2026-11-13T00:08:44.000Z",
+                "line": 2,
+                "quote": "Pepperoni pizza"
+              },
+              "ownOrder": true
+            },
+            {
+              "menu": "adults",
+              "itemName": "Margherita pizzas",
+              "quantity": 2,
+              "productCode": "CF-24",
+              "matchedName": "Margherita",
+              "notInMenu": false,
+              "chatPrice": null,
+              "chatTotal": {
+                "amount": 900,
+                "quantity": 2
+              },
+              "from": {
+                "source": "family",
+                "at": "2026-11-13T00:08:44.000Z",
+                "line": 2,
+                "quote": "Margherita pizzas"
+              },
+              "ownOrder": true
+            },
+            {
+              "menu": "kids",
+              "itemName": "3 extra portions of French fries for the kids",
+              "quantity": 3,
+              "productCode": "CF-11",
+              "matchedName": "French fries",
+              "notInMenu": false,
+              "chatPrice": null,
+              "from": {
+                "source": "family",
+                "at": "2026-11-13T00:08:44.000Z",
+                "line": 2,
+                "quote": "3 extra portions of French fries for the kids"
+              }
+            }
+          ],
+          "adultsFolded": null
+        }
+      },
+      "review": [
+        {
+          "menu": "Adults",
+          "count": "1",
+          "item": "Pepperoni pizza → Pepperoni (CF-31)",
+          "tillPrice": "Till ฿420",
+          "chatSays": [
+            "The chat says “Pepperoni pizza”from the family· Fri 13 Nov 07:08"
+          ],
+          "chatTotal": null,
+          "setWords": null,
+          "optionWords": null,
+          "option": null,
+          "priceBox": "300",
+          "priceWords": "THB each, written on the line as an EXTRA — the chat's price."
+        },
+        {
+          "menu": "Adults",
+          "count": "2",
+          "item": "Margherita pizzas → Margherita (CF-24)",
+          "tillPrice": "Till ฿400",
+          "chatSays": [
+            "The chat says “Margherita pizzas”from the family· Fri 13 Nov 07:08"
+          ],
+          "chatTotal": "The chat says ฿900 for 2; the till's price is ฿400 each.",
+          "setWords": null,
+          "optionWords": null,
+          "option": null,
+          "priceBox": "400",
+          "priceWords": "THB each, written on the line as an EXTRA (2 × ฿400 = ฿800) — the till's price."
+        },
+        {
+          "menu": "Kids",
+          "count": "3",
+          "item": "3 extra portions of French fries for the kids → French fries (CF-11)",
+          "tillPrice": "Till ฿175",
+          "chatSays": [
+            "The chat says “3 extra portions of French fries for the kids”from the family· Fri 13 Nov 07:08"
+          ],
+          "chatTotal": null,
+          "setWords": null,
+          "optionWords": null,
+          "option": null,
+          "priceBox": "175",
+          "priceWords": "THB each, written on the line as an EXTRA (3 × ฿175 = ฿525) — the till's price."
+        }
+      ],
+      "approval": {
+        "route": "POST /api/events/:id/beo/ai-fill/approve",
+        "status": 200,
+        "written": {
+          "event": true,
+          "package": true,
+          "addOns": 0,
+          "setMenu": true,
+          "choices": 1,
+          "kitchenLines": 3,
+          "freeKitchenLines": 0,
+          "tillLines": 3
+        },
+        "menuLinesSent": [
+          {
+            "menu": "adults",
+            "itemName": "Pepperoni pizza",
+            "quantity": 1,
+            "productCode": "CF-31",
+            "notes": null,
+            "price": 300
+          },
+          {
+            "menu": "adults",
+            "itemName": "Margherita pizzas",
+            "quantity": 2,
+            "productCode": "CF-24",
+            "notes": null,
+            "price": 400
+          },
+          {
+            "menu": "kids",
+            "itemName": "3 extra portions of French fries for the kids",
+            "quantity": 3,
+            "productCode": "CF-11",
+            "notes": null,
+            "price": 175
+          }
+        ],
+        "adultsFoldedSent": null,
+        "toast": "BEO created from the conversation Saved: the event's details (name, counts, times), the package and the kitchen plan.",
+        "toastPicture": "02b-thread-i-toast-after-approve.png",
+        "reviewGone": true,
+        "noSecondDialog": true
+      },
+      "beoAfter": {
+        "kids": [
+          "SET Hawaiian x1 included:true note \"(Pizza)\" group item_cf_bday_pizza src set_menu",
+          "SET French fries x1 included:true group item_cf_bday_fries src set_menu",
+          "SET Veggie sticks x1 included:true group item_cf_bday_veggie_sticks src set_menu",
+          "SET Fruit skewers x1 included:true group item_cf_bday_fruit_skewers src set_menu",
+          "EXTRA French fries x3 @175 [CF-11] included:false src additional"
+        ],
+        "adults": [
+          "SET Hawaiian x1 included:true note \"(Pizza)\" group item_cf_bday_pizza src set_menu",
+          "SET French fries x1 included:true group item_cf_bday_fries src set_menu",
+          "SET Veggie sticks x1 included:true group item_cf_bday_veggie_sticks src set_menu",
+          "SET Fruit skewers x1 included:true group item_cf_bday_fruit_skewers src set_menu",
+          "EXTRA Pepperoni x1 @300 [CF-31] included:false src additional",
+          "EXTRA Margherita x2 @400 [CF-24] included:false src additional"
+        ],
+        "adultsDiffer": true,
+        "setMenuSelection": {
+          "status": 200,
+          "isSubmitted": true,
+          "selections": [
+            {
+              "groupId": "item_cf_bday_pizza",
+              "recordedFrom": "chat",
+              "chosenOptions": [
+                "Hawaiian"
+              ]
+            }
+          ]
+        }
+      },
+      "editorAfter": {
+        "adults": [
+          "SET Hawaiian x1",
+          "SET French fries x1",
+          "SET Veggie sticks x1",
+          "SET Fruit skewers x1",
+          "EXTRA Pepperoni x1 300 each",
+          "EXTRA Margherita x2 400 each"
+        ],
+        "total": "Extras charged at the till: ฿1,625"
+      }
+    },
+    "3": {
+      "verdict": "PASSED",
+      "what": "The shape record: the fills' activity rows, read through the Activity Logbook's own route (GET /api/activity-logs?types=beo_ai_fill&branchId=<park>); no screen shows the shape, so no picture",
+      "route": {
+        "status": 200,
+        "rowsRead": 100,
+        "totalCount": 120
+      },
+      "G": [
+        {
+          "at": "2026-11-13T00:17:10.704Z",
+          "summary": "AI Fill read the inbox conversation for the BEO of \"ZZ Test Remy's 6th Birthday\"",
+          "metadataKeys": [
+            "eventId",
+            "source",
+            "purpose",
+            "inboxConversationId",
+            "inboxMessageId",
+            "outcome",
+            "model",
+            "promptFrom",
+            "inputChars",
+            "sections",
+            "team",
+            "transcriptLines",
+            "transcriptCut",
+            "catalogueRead",
+            "ruling",
+            "catalogue",
+            "answerShape"
+          ],
+          "answerShape": {
+            "read": {
+              "choices": 1,
+              "kidsLines": 0,
+              "adultsLines": 0,
+              "barLines": 0,
+              "pricedLines": 0
+            },
+            "proposed": {
+              "choices": 1,
+              "kidsLines": 0,
+              "adultsLines": 0,
+              "adultsSetLines": 0,
+              "barLines": 0,
+              "folds": 1,
+              "chatTotals": 0
+            }
+          },
+          "chatWordsFoundInTheRow": []
+        }
+      ],
+      "I": [
+        {
+          "at": "2026-11-13T00:21:01.968Z",
+          "summary": "AI Fill read the inbox conversation for the BEO of \"ZZ Test Noa's 5th Birthday\"",
+          "metadataKeys": [
+            "eventId",
+            "source",
+            "purpose",
+            "inboxConversationId",
+            "inboxMessageId",
+            "outcome",
+            "model",
+            "promptFrom",
+            "inputChars",
+            "sections",
+            "team",
+            "transcriptLines",
+            "transcriptCut",
+            "catalogueRead",
+            "ruling",
+            "catalogue",
+            "answerShape"
+          ],
+          "answerShape": {
+            "read": {
+              "choices": 1,
+              "kidsLines": 1,
+              "adultsLines": 2,
+              "barLines": 0,
+              "pricedLines": 1
+            },
+            "proposed": {
+              "choices": 1,
+              "kidsLines": 1,
+              "adultsLines": 2,
+              "adultsSetLines": 0,
+              "barLines": 0,
+              "folds": 0,
+              "chatTotals": 1
+            }
+          },
+          "chatWordsFoundInTheRow": []
+        }
+      ],
+      "A": [
+        {
+          "at": "2026-11-13T00:25:51.749Z",
+          "summary": "AI Fill read the inbox conversation for the BEO of \"ZZ Test Lina's 6th Birthday\"",
+          "metadataKeys": [
+            "eventId",
+            "source",
+            "purpose",
+            "inboxConversationId",
+            "inboxMessageId",
+            "outcome",
+            "model",
+            "promptFrom",
+            "inputChars",
+            "sections",
+            "team",
+            "transcriptLines",
+            "transcriptCut",
+            "catalogueRead",
+            "ruling",
+            "catalogue",
+            "answerShape"
+          ],
+          "answerShape": {
+            "read": {
+              "choices": 2,
+              "kidsLines": 0,
+              "adultsLines": 0,
+              "barLines": 0,
+              "pricedLines": 0
+            },
+            "proposed": {
+              "choices": 1,
+              "kidsLines": 0,
+              "adultsLines": 1,
+              "adultsSetLines": 1,
+              "barLines": 0,
+              "folds": 0,
+              "chatTotals": 0
+            }
+          },
+          "chatWordsFoundInTheRow": []
+        }
+      ],
+      "B": [
+        {
+          "at": "2026-11-13T00:29:44.365Z",
+          "summary": "AI Fill read the inbox conversation for the BEO of \"ZZ Test Mika's 7th Birthday\"",
+          "metadataKeys": [
+            "eventId",
+            "source",
+            "purpose",
+            "inboxConversationId",
+            "inboxMessageId",
+            "outcome",
+            "model",
+            "promptFrom",
+            "inputChars",
+            "sections",
+            "team",
+            "transcriptLines",
+            "transcriptCut",
+            "catalogueRead",
+            "ruling",
+            "catalogue",
+            "answerShape"
+          ],
+          "answerShape": {
+            "read": {
+              "choices": 0,
+              "kidsLines": 0,
+              "adultsLines": 1,
+              "barLines": 0,
+              "pricedLines": 0
+            },
+            "proposed": {
+              "choices": 0,
+              "kidsLines": 0,
+              "adultsLines": 1,
+              "adultsSetLines": 1,
+              "barLines": 0,
+              "folds": 0,
+              "chatTotals": 0
+            }
+          },
+          "chatWordsFoundInTheRow": []
+        }
+      ],
+      "R": [
+        {
+          "at": "2026-11-13T00:38:41.204Z",
+          "summary": "AI Fill read the inbox conversation for the BEO of \"ZZ Test Ari's 6th Birthday\"",
+          "metadataKeys": [
+            "eventId",
+            "source",
+            "purpose",
+            "inboxConversationId",
+            "inboxMessageId",
+            "outcome",
+            "model",
+            "promptFrom",
+            "inputChars",
+            "sections",
+            "team",
+            "transcriptLines",
+            "transcriptCut",
+            "catalogueRead",
+            "ruling",
+            "catalogue",
+            "answerShape"
+          ],
+          "answerShape": {
+            "read": {
+              "choices": 1,
+              "kidsLines": 0,
+              "adultsLines": 1,
+              "barLines": 0,
+              "pricedLines": 1
+            },
+            "proposed": {
+              "choices": 1,
+              "kidsLines": 0,
+              "adultsLines": 1,
+              "adultsSetLines": 0,
+              "barLines": 0,
+              "folds": 0,
+              "chatTotals": 0
+            }
+          },
+          "chatWordsFoundInTheRow": []
+        }
+      ],
+      "F": [
+        {
+          "at": "2026-11-13T00:42:50.473Z",
+          "summary": "AI Fill read the inbox conversation for the BEO of \"ZZ Test Juno's 6th Birthday\"",
+          "metadataKeys": [
+            "eventId",
+            "source",
+            "purpose",
+            "inboxConversationId",
+            "inboxMessageId",
+            "outcome",
+            "model",
+            "promptFrom",
+            "inputChars",
+            "sections",
+            "team",
+            "transcriptLines",
+            "transcriptCut",
+            "catalogueRead",
+            "ruling",
+            "catalogue",
+            "answerShape"
+          ],
+          "answerShape": {
+            "read": {
+              "choices": 1,
+              "kidsLines": 1,
+              "adultsLines": 0,
+              "barLines": 0,
+              "pricedLines": 0
+            },
+            "proposed": {
+              "choices": 1,
+              "kidsLines": 1,
+              "adultsLines": 0,
+              "adultsSetLines": 0,
+              "barLines": 0,
+              "folds": 1,
+              "chatTotals": 1
+            }
+          },
+          "chatWordsFoundInTheRow": []
+        }
+      ],
+      "shapeTheRealReadAnsweredIn": {
+        "G": "read: 1 set-menu choice (Pizza: Margherita for the kids), 0 kids', 0 adults', 0 bar lines, 0 priced: the real read gave NO adults' line; the fold (1) was named from the chat's own words (\"the Margherita pizza for them too\").",
+        "I": "read: 1 choice, 1 kids' line, 2 adults' lines, 1 priced line (the Pepperoni at 300; the Margherita came with no price): the chat total (1, ฿900 for 2) was named from the chat's own words, not from a price the read gave."
+      },
+      "countsOnly": "Every read row's metadata holds counts only: none of the chat's words (Margherita, Pepperoni, \"for them too\", \"same as the kids\", 900, French fries, Hawaiian, the package words, 450/each, fried rice, ZZ Test) is in it. The separate \"AI Fill approved\" row names catalogue items it matched (till names and codes), as before this lane."
+    },
+    "4": {
+      "verdict": "PASSED",
+      "what": "Thread A, the adults' set line's till code",
+      "pictures": [
+        "04a-thread-a-review-kitchen-plan-adults-chicken-set.png",
+        "04b-thread-a-toast-after-approve.png",
+        "04c-thread-a-beo-adults-menu-set-chicken-cf43.png",
+        "04d-thread-a-beo-kids-menu.png",
+        "04e-thread-a-till-party-page-kitchen-plan.png",
+        "04e-thread-a-till-edit-form-kitchen-plan.png"
+      ],
+      "fill": {
+        "route": "POST /api/events/:id/beo/ai-fill/inbox",
+        "status": 200,
+        "seconds": 31.1,
+        "readAnswered": {
+          "setMenuChoices": [
+            {
+              "option": "Hawaiian",
+              "said": "Hawaiian pizza for the kids"
+            }
+          ],
+          "menuLines": [
+            {
+              "menu": "adults",
+              "itemName": "chicken fried rice for the adults",
+              "quantity": 1,
+              "productCode": "CF-43",
+              "matchedName": "Fried rice (Chicken)",
+              "notInMenu": false,
+              "chatPrice": null,
+              "setMenuItemId": "item_cf_bday_fried_rice",
+              "from": {
+                "source": "family",
+                "at": "2026-11-13T00:08:47.000Z",
+                "line": 2,
+                "quote": "chicken fried rice for the adults"
+              }
+            }
+          ],
+          "adultsFolded": null
+        }
+      },
+      "review": [
+        {
+          "menu": "Adults",
+          "count": "1",
+          "item": "chicken fried rice for the adults → Fried rice (Chicken) (CF-43)",
+          "tillPrice": null,
+          "chatSays": [
+            "The chat says “chicken fried rice for the adults”from the family· Fri 13 Nov 07:08"
+          ],
+          "chatTotal": null,
+          "setWords": "The set menu's Fried rice, on the adults' own menu: a SET line, not charged.",
+          "optionWords": "Option:",
+          "option": "Fried rice (Chicken)",
+          "priceBox": null,
+          "priceWords": null
+        }
+      ],
+      "approval": {
+        "route": "POST /api/events/:id/beo/ai-fill/approve",
+        "status": 200,
+        "written": {
+          "event": true,
+          "package": true,
+          "addOns": 0,
+          "setMenu": true,
+          "choices": 1,
+          "kitchenLines": 1,
+          "freeKitchenLines": 0,
+          "adultsSetLines": 1,
+          "cake": true,
+          "entertainment": 1,
+          "entertainmentActs": 1,
+          "setup": true,
+          "setupTasks": 1,
+          "deposit": true
+        },
+        "menuLinesSent": [
+          {
+            "menu": "adults",
+            "itemName": "chicken fried rice for the adults",
+            "quantity": 1,
+            "productCode": "CF-43",
+            "notes": null,
+            "setMenuItemId": "item_cf_bday_fried_rice",
+            "option": "Fried rice (Chicken)"
+          }
+        ],
+        "adultsFoldedSent": null,
+        "toast": "BEO created from the conversation Saved: the event's details (name, counts, times), the package, the kitchen plan, the entertainment, the setup plan and the deposit.",
+        "toastPicture": "04b-thread-a-toast-after-approve.png",
+        "reviewGone": true,
+        "noSecondDialog": true
+      },
+      "beoAfter": {
+        "kids": [
+          "SET Hawaiian x1 included:true note \"(Pizza) · no pineapple on half\" group item_cf_bday_pizza src set_menu",
+          "SET French fries x1 included:true group item_cf_bday_fries src set_menu",
+          "SET Veggie sticks x1 included:true group item_cf_bday_veggie_sticks src set_menu",
+          "SET Fruit skewers x1 included:true group item_cf_bday_fruit_skewers src set_menu"
+        ],
+        "adults": [
+          "SET Hawaiian x1 included:true note \"(Pizza) · no pineapple on half\" group item_cf_bday_pizza src set_menu",
+          "SET French fries x1 included:true group item_cf_bday_fries src set_menu",
+          "SET Veggie sticks x1 included:true group item_cf_bday_veggie_sticks src set_menu",
+          "SET Fruit skewers x1 included:true group item_cf_bday_fruit_skewers src set_menu",
+          "SET Chicken x1 [CF-43] included:true note \"(Fried rice)\" group item_cf_bday_fried_rice src set_menu"
+        ],
+        "adultsDiffer": true,
+        "till": {
+          "lines": [
+            "set_menu | Pizza: Hawaiian x1 | code CF-27 | note (Pizza) · no pineapple on half | group Pizza",
+            "set_menu | Hot dish | code - | group Hot dish",
+            "set_menu | French fries x1 | code CF-11",
+            "set_menu | Waffles or pancakes | code - | group Waffles or pancakes",
+            "set_menu | Fried rice | code CF-43 | group Fried rice",
+            "set_menu | Veggie sticks x1 | code CF-53",
+            "set_menu | Fruit skewers x1 | code -",
+            "set_menu | Drinks pitcher | code - | group Drinks pitcher",
+            "set_menu | Chicken x1 | code CF-43 | note (Fried rice) | adults"
+          ],
+          "status": 200
+        },
+        "setMenuSelection": {
+          "status": 200,
+          "isSubmitted": true,
+          "selections": [
+            {
+              "groupId": "item_cf_bday_pizza",
+              "recordedFrom": "chat",
+              "chosenOptions": [
+                "Hawaiian"
+              ]
+            }
+          ]
+        }
+      },
+      "editorAdultsMenu": [
+        "Kitchen Plan from the chat Not Needed Needed Menus Kids Menu (4) Adults Menu (5) Service: Set Time Different for adults Off: the adults eat what was chosen for the kids. On: start from the kids' menu and change it for the adults. SET 1 Hawaiian (Pizza) · no pineapple on half SET 1 French fries SET 1 Veggie sticks SET 1 Fruit skewers SET 1 Chicken (Fried rice) CF-43 + EXTRA + NEW ITEM (not in the menu) Cake from the family No Cake Our Cake Own Cake Qty 1 2 3 EXTRA Cake Time 16:00 800 2 of the park's cakes at 800 baht each",
+        "Kitchen Plan from the chat Not Needed Needed Menus Kids Menu (4) Adults Menu (5) Service: Set Time Set Menu Attach a birthday package set menu and send a link to parents for their choices Set Menu Template Birthday set menu, Central Floresta SET MENU Birthday set menu, Central Floresta Chosen from the chat INCLUDED ITEMS French fries Always Veggie sticks Always Fruit skewers Always Pizza→ Hawaiian Choice Hot dishpending parent selection Choice Waffles or pancakespending parent selection Choice Fried ricepending parent selection Choice Drinks pitcherpending parent selection Choice RESOLVED ITEMS (EDITABLE) SET 1 Hawaiian (Pizza) · no pineapple on half SET 1 French fries SET 1 Veggie sticks SET 1 Fruit skewers + Add item Get Parent Link Reset Selections Chosen from the chat 13/11/2026 ADDITIONAL ITEMS + EXTRA + NEW ITEM (not in the menu) Cake from the family No Cake Our Cake Own Cake Qty 1 2 3 EXTRA Cake Time 16:00 800 2 of the park's cakes at 800 baht each"
+      ],
+      "till": {
+        "who": "the staging branch manager, signed in at this run's ZZ TEST till on the virtual box",
+        "reads": [
+          {
+            "at": "2026-11-13T00:26:45.069Z",
+            "key": "A",
+            "title": "ZZ Test Lina's 6th Birthday",
+            "date": "2026-12-05",
+            "page": "Kitchen plan Package Birthday package, Central Floresta Ready 20 min before Slips print 11:00 Pizza · Hawaiian ×1 Hot dish French fries ×1 Waffles or pancakes Fried rice Veggie sticks ×1 Fruit skewers · not on the till menu ×1 Drinks pitcher Chicken · adults ×1 Our cake ×2 · 16:00 2 of the park's cakes at 800 baht each Included: Kids' table reserved for 3 hours · Special birthday set menu · Interactive birthday animation program, 30 minutes · Ice-cream cake with candles and birthday song · Entry for 4 accompanying adults · Socks for all children",
+            "pagePicture": "04e-thread-a-till-party-page-kitchen-plan.png",
+            "form": "Kitchen plan Kitchen service needed Food service time Set menu Food items Pizza: Hawaiian 1 Hot dish: choose 1 Waffles or pancakes: choose Fried rice: choose 1 1 Drinks pitcher: choose 1 Add item Cake Cake type Our cake Cake time Cake quantity ×2 Cake note",
+            "formChoices": [
+              {
+                "label": "Pizza choice",
+                "shown": "Pizza: Hawaiian"
+              },
+              {
+                "label": "Hot dish choice",
+                "shown": "Hot dish: choose"
+              },
+              {
+                "label": "Waffles or pancakes choice",
+                "shown": "Waffles or pancakes: choose"
+              },
+              {
+                "label": "Fried rice choice",
+                "shown": "Fried rice: choose"
+              },
+              {
+                "label": "Drinks pitcher choice",
+                "shown": "Drinks pitcher: choose"
+              },
+              {
+                "label": null,
+                "shown": "Our cake"
+              }
+            ],
+            "formPicture": "04e-thread-a-till-edit-form-kitchen-plan.png",
+            "cancel": {
+              "pressed": true,
+              "writesWhileCancelling": 0,
+              "editHeadingGone": true
+            }
+          }
+        ]
+      }
+    },
+    "5": {
+      "verdict": "PASSED",
+      "what": "Thread B: the option held, Shrimp, the family's link, the code kept",
+      "pictures": [
+        "05a-thread-b-review-option-held.png",
+        "05b-thread-b-review-shrimp-picked.png",
+        "05c-thread-b-toast-after-approve.png",
+        "05d-thread-b-after-approve-till-party-page-kitchen-plan.png",
+        "05e-thread-b-family-link-choices-before-confirm.png",
+        "05f-thread-b-family-link-selections-received-listed.png",
+        "05h-thread-b-beo-adults-menu-after-family-link.png",
+        "05i-thread-b-after-family-link-till-party-page-kitchen-plan.png"
+      ],
+      "fill": {
+        "route": "POST /api/events/:id/beo/ai-fill/inbox",
+        "status": 200,
+        "seconds": 16.4,
+        "readAnswered": {
+          "setMenuChoices": [],
+          "menuLines": [
+            {
+              "menu": "adults",
+              "itemName": "fried rice",
+              "quantity": 1,
+              "productCode": "CF-43",
+              "matchedName": null,
+              "notInMenu": false,
+              "chatPrice": null,
+              "from": {
+                "source": "family",
+                "at": "2026-11-13T00:08:54.000Z",
+                "line": 2,
+                "quote": "fried rice"
+              },
+              "setMenuItemId": "item_cf_bday_fried_rice"
+            }
+          ],
+          "adultsFolded": null
+        }
+      },
+      "reviewHeld": {
+        "lines": [
+          {
+            "menu": "Adults",
+            "count": "1",
+            "item": "fried rice → CF-43",
+            "tillPrice": null,
+            "chatSays": [
+              "The chat says “fried rice”from the family· Fri 13 Nov 07:08"
+            ],
+            "chatTotal": null,
+            "setWords": "The set menu's Fried rice, on the adults' own menu: a SET line, not charged.",
+            "optionWords": "Which option? The chat does not say: choose it before approving.",
+            "option": "Not chosen yet",
+            "priceBox": null,
+            "priceWords": null
+          }
+        ],
+        "approveEnabled": false,
+        "optionsOpen": "Choose the option of the dish the chat does not say before approving."
+      },
+      "afterShrimp": {
+        "lines": [
+          {
+            "menu": "Adults",
+            "count": "1",
+            "item": "fried rice → Fried rice (Shrimp) (CF-43)",
+            "tillPrice": null,
+            "chatSays": [
+              "The chat says “fried rice”from the family· Fri 13 Nov 07:08"
+            ],
+            "chatTotal": null,
+            "setWords": "The set menu's Fried rice, on the adults' own menu: a SET line, not charged.",
+            "optionWords": "Option:",
+            "option": "Fried rice (Shrimp)",
+            "priceBox": null,
+            "priceWords": null
+          }
+        ],
+        "approveEnabled": true
+      },
+      "approval": {
+        "route": "POST /api/events/:id/beo/ai-fill/approve",
+        "status": 200,
+        "written": {
+          "event": true,
+          "package": true,
+          "addOns": 0,
+          "setMenu": true,
+          "choices": 0,
+          "kitchenLines": 1,
+          "freeKitchenLines": 0,
+          "adultsSetLines": 1,
+          "deposit": true
+        },
+        "menuLinesSent": [
+          {
+            "menu": "adults",
+            "itemName": "fried rice",
+            "quantity": 1,
+            "productCode": "CF-43",
+            "notes": null,
+            "setMenuItemId": "item_cf_bday_fried_rice",
+            "option": "Fried rice (Shrimp)"
+          }
+        ],
+        "adultsFoldedSent": null,
+        "toast": "BEO created from the conversation Saved: the event's details (name, counts, times), the package, the kitchen plan and the deposit.",
+        "toastPicture": "05c-thread-b-toast-after-approve.png",
+        "reviewGone": true,
+        "noSecondDialog": true
+      },
+      "beoAfterApprove": {
+        "kids": [
+          "SET French fries x1 included:true group item_cf_bday_fries src set_menu",
+          "SET Veggie sticks x1 included:true group item_cf_bday_veggie_sticks src set_menu",
+          "SET Fruit skewers x1 included:true group item_cf_bday_fruit_skewers src set_menu"
+        ],
+        "adults": [
+          "SET French fries x1 included:true group item_cf_bday_fries src set_menu",
+          "SET Veggie sticks x1 included:true group item_cf_bday_veggie_sticks src set_menu",
+          "SET Fruit skewers x1 included:true group item_cf_bday_fruit_skewers src set_menu",
+          "SET Shrimp x1 [CF-43] included:true note \"(Fried rice)\" group item_cf_bday_fried_rice src set_menu"
+        ],
+        "adultsDiffer": true,
+        "till": {
+          "lines": [
+            "set_menu | Pizza | code - | group Pizza",
+            "set_menu | Hot dish | code - | group Hot dish",
+            "set_menu | French fries x1 | code CF-11",
+            "set_menu | Waffles or pancakes | code - | group Waffles or pancakes",
+            "set_menu | Fried rice | code CF-43 | group Fried rice",
+            "set_menu | Veggie sticks x1 | code CF-53",
+            "set_menu | Fruit skewers x1 | code -",
+            "set_menu | Drinks pitcher | code - | group Drinks pitcher",
+            "set_menu | Shrimp x1 | code CF-43 | note (Fried rice) | adults"
+          ],
+          "status": 200
+        },
+        "setMenuSelection": {
+          "status": 200
+        }
+      },
+      "familyLink": {
+        "linkShape": "https://oto-app-staging.onrender.com/menu-select/<token>",
+        "chosen": [
+          "Pizza: Margherita",
+          "Hot dish: Chicken schnitzel",
+          "Waffles or pancakes: Waffles",
+          "Fried rice: Veggie",
+          "Drinks pitcher: Juice"
+        ],
+        "submit": {
+          "route": "POST /api/beo/set-menu-selections/public/:token/submit",
+          "status": 200
+        },
+        "pageAfterConfirm": "ZZ Test Mika's Birthday 13 Dec 2026 Birthday set menu, Central Floresta Selections Received! Thank you! Your menu selections have been sent to the team. We'll take care of the rest. Pizza: Margherita Hot dish: Chicken schnitzel Waffles or pancakes: Waffles Fried rice: Veggie Drinks pitcher: Juice",
+        "readAfter": {
+          "kids": [
+            "SET Margherita x1 included:true note \"(Pizza)\" group item_cf_bday_pizza src set_menu",
+            "SET Chicken schnitzel x1 included:true note \"(Hot dish)\" group item_cf_bday_hot_dish src set_menu",
+            "SET French fries x1 included:true group item_cf_bday_fries src set_menu",
+            "SET Waffles x1 included:true note \"(Waffles or pancakes)\" group item_cf_bday_waffles_pancakes src set_menu",
+            "SET Veggie x1 included:true note \"(Fried rice)\" group item_cf_bday_fried_rice src set_menu",
+            "SET Veggie sticks x1 included:true group item_cf_bday_veggie_sticks src set_menu",
+            "SET Fruit skewers x1 included:true group item_cf_bday_fruit_skewers src set_menu",
+            "SET Juice x1 included:true note \"(Drinks pitcher)\" group item_cf_bday_drinks src set_menu"
+          ],
+          "adults": [
+            "SET Margherita x1 included:true note \"(Pizza)\" group item_cf_bday_pizza src set_menu",
+            "SET Chicken schnitzel x1 included:true note \"(Hot dish)\" group item_cf_bday_hot_dish src set_menu",
+            "SET French fries x1 included:true group item_cf_bday_fries src set_menu",
+            "SET Waffles x1 included:true note \"(Waffles or pancakes)\" group item_cf_bday_waffles_pancakes src set_menu",
+            "SET Veggie sticks x1 included:true group item_cf_bday_veggie_sticks src set_menu",
+            "SET Fruit skewers x1 included:true group item_cf_bday_fruit_skewers src set_menu",
+            "SET Juice x1 included:true note \"(Drinks pitcher)\" group item_cf_bday_drinks src set_menu",
+            "SET Shrimp x1 [CF-43] included:true note \"(Fried rice)\" group item_cf_bday_fried_rice src set_menu"
+          ],
+          "till": [
+            "set_menu | Pizza: Margherita x1 | code CF-24 | group Pizza",
+            "set_menu | Hot dish: Chicken schnitzel x1 | code CF-37 | group Hot dish",
+            "set_menu | French fries x1 | code CF-11",
+            "set_menu | Waffles or pancakes: Waffles x1 | code CF-4 | group Waffles or pancakes",
+            "set_menu | Fried rice: Veggie x1 | code CF-43 | kids | group Fried rice",
+            "set_menu | Veggie sticks x1 | code CF-53",
+            "set_menu | Fruit skewers x1 | code -",
+            "set_menu | Drinks pitcher: Juice x1 | code - | group Drinks pitcher",
+            "set_menu | Shrimp x1 | code CF-43 | note (Fried rice) | adults"
+          ]
+        }
+      },
+      "reopened": {
+        "editorReload": {
+          "at": "2026-11-13T00:31:04.091Z",
+          "key": "B",
+          "url": "/studio/events/kanban",
+          "consoleCount": 32,
+          "dialogTitleWarnings": [],
+          "errors": [],
+          "warnings": [],
+          "fillRequests": []
+        },
+        "editorAdultsMenu": "Kitchen Plan Not Needed Needed Menus Kids Menu (8) Adults Menu (8) Service: Set Time Set Menu Attach a birthday package set menu and send a link to parents for their choices Set Menu Template Birthday set menu, Central Floresta SET MENU Birthday set menu, Central Floresta Selections received INCLUDED ITEMS French fries Always Veggie sticks Always Fruit skewers Always Pizza→ Margherita Choice Hot dish→ Chicken schnitzel Choice Waffles or pancakes→ Waffles Choice Fried rice→ Veggie Choice Drinks pitcher→ Juice Choice RESOLVED ITEMS (EDITABLE) SET 1 Margherita (Pizza) SET 1 Chicken schnitzel (Hot dish) SET 1 French fries SET 1 Waffles (Waffles or pancakes) SET 1 Veggie (Fried rice) SET 1 Veggie sticks SET 1 Fruit skewers SET 1 Juice (Drinks pitcher) + Add item Get Parent Link Reset Selections Received 13/11/2026 ADDITIONAL ITEMS + EXTRA + NEW ITEM (not in the menu) Cake No Cake Our Cake Own Cake"
+      },
+      "till": {
+        "reads": [
+          {
+            "at": "2026-11-13T00:30:22.984Z",
+            "key": "B",
+            "title": "ZZ Test Mika's 7th Birthday",
+            "date": "2026-12-13",
+            "page": "Kitchen plan Package Birthday package, Central Floresta Ready 20 min before Slips print 11:00 Pizza Hot dish French fries ×1 Waffles or pancakes Fried rice Veggie sticks ×1 Fruit skewers · not on the till menu ×1 Drinks pitcher Shrimp · adults ×1 Included: Kids' table reserved for 3 hours · Special birthday set menu · Interactive birthday animation program, 30 minutes · Ice-cream cake with candles and birthday song · Entry for 4 accompanying adults · Socks for all children",
+            "pagePicture": "05d-thread-b-after-approve-till-party-page-kitchen-plan.png"
+          },
+          {
+            "at": "2026-11-13T00:31:23.642Z",
+            "key": "B",
+            "title": "ZZ Test Mika's 7th Birthday",
+            "date": "2026-12-13",
+            "page": "Kitchen plan Package Birthday package, Central Floresta Ready 20 min before Slips print 11:00 Pizza · Margherita ×1 Hot dish · Chicken schnitzel ×1 French fries ×1 Waffles or pancakes · Waffles ×1 Fried rice · Veggie · kids only ×1 Veggie sticks ×1 Fruit skewers · not on the till menu ×1 Drinks pitcher · Juice · not on the till menu ×1 Shrimp · adults ×1 Included: Kids' table reserved for 3 hours · Special birthday set menu · Interactive birthday animation program, 30 minutes · Ice-cream cake with candles and birthday song · Entry for 4 accompanying adults · Socks for all children",
+            "pagePicture": "05i-thread-b-after-family-link-till-party-page-kitchen-plan.png"
+          }
+        ]
+      }
+    },
+    "6": {
+      "verdict": "PASSED (the midnight-to-07:00 case met through SCRUM-958's archived thread B, read only)",
+      "what": "The BEO PDF",
+      "pictures": [
+        "06a-thread-i-beo-pdf-adults-margherita-extra-400-each.png",
+        "06b-thread-i-editor-pepperoni-price-cleared-till-price.png",
+        "06c-thread-i-beo-pdf-pepperoni-till-price-420-weekend.png",
+        "06d-thread-i-editor-mango-typed-no-price.png",
+        "06e-thread-i-beo-pdf-mango-not-charged.png",
+        "06f-thread-b-beo-pdf-received-13-nov-generated-13-11.png",
+        "06g-scrum-958-thread-b-beo-pdf-received-0245-bangkok-reads-13-nov.png",
+        "06h-thread-b-editor-kids-menu-received-day.png"
+      ],
+      "asApproved": {
+        "route": "GET /api/events/:id/beo/pdf",
+        "status": 200,
+        "bytes": 86973,
+        "text": "ZZ Test Noa's 5th Birthday\n27 December '26 • 14:00 –\n16:00\nTENTATIVE\nOto Play Park, Central Floresta\n199 Moo 4, Vichitsongkram Road, Wichit, Muang, Phuket 83000,\nThailand\nEVENT DETAILS\nDate:\n27 December '26\nTime:\n14:00 – 16:00\nChild:\nZZ Test Noa\nBooking Name: ZZ TEST 970 till price\nParent:\nZZ TEST 970 till price\nWhatsApp:\n[number]\nKid Turning Age: 5\nChildren:\n10\nAdults:\n5\nPOS: BIRTHDAY PACKAGE, CENTRAL FLORESTA\nExpected total (from the till):\n฿23,025\nDeposit paid:\n฿0\nOutstanding:\n฿23,025\nKITCHEN PLAN\nKids Menu\nSET MENU\nBirthday set menu, Central Floresta — Received 13 Nov\nHawaiian (Pizza)\nSET\nFrench fries\nSET\nVeggie sticks\nSET\nFruit skewers\nSET\nAdditional Items\n3x\nFrench fries — kids only\nEXTRA 175฿ each\n1x\nPepperoni — adults only\nEXTRA 300฿ each\n2x\nMargherita — adults only\nEXTRA 400฿ each\nAdults: different for adults — their changes are marked above\nTIMELINE\nTIME\nACTIVITY\n14:00\nGuests arrive\nGenerated 13/11/2026 • Banquet Event Order\n"
+      },
+      "pepperoniCleared": {
+        "edit": [
+          {
+            "typed": "(cleared)",
+            "before": {
+              "shown": "300",
+              "hint": "each"
+            },
+            "after": {
+              "shown": "Price ฿",
+              "hint": "till price 420 (weekend)"
+            }
+          }
+        ],
+        "save": {
+          "at": "2026-11-13T00:33:25.647Z",
+          "key": "I",
+          "writes": [
+            {
+              "method": "PUT",
+              "path": "/api/events/:id/beo",
+              "status": 200
+            }
+          ],
+          "toast": "BEO data saved successfully",
+          "reloaded": true
+        },
+        "pdf": {
+          "route": "GET /api/events/:id/beo/pdf",
+          "status": 200,
+          "bytes": 87735,
+          "text": "ZZ Test Noa's 5th Birthday\n27 December '26 • 14:00 –\n16:00\nTENTATIVE\nOto Play Park, Central Floresta\n199 Moo 4, Vichitsongkram Road, Wichit, Muang, Phuket 83000,\nThailand\nEVENT DETAILS\nDate:\n27 December '26\nTime:\n14:00 – 16:00\nChild:\nZZ Test Noa\nBooking Name: ZZ TEST 970 till price\nParent:\nZZ TEST 970 till price\nWhatsApp:\n[number]\nKid Turning Age: 5\nChildren:\n10\nAdults:\n5\nPARTY HOST\nPOS: BIRTHDAY PACKAGE, CENTRAL FLORESTA\nExpected total (from the till):\n฿23,145\nDeposit paid:\n฿0\nOutstanding:\n฿23,145\nSETUP PLAN\nKITCHEN PLAN\nKids Menu\nSET MENU\nBirthday set menu, Central Floresta — Received 13 Nov\nHawaiian (Pizza)\nSET\nFrench fries\nSET\nVeggie sticks\nSET\nFruit skewers\nSET\nAdditional Items\n3x\nFrench fries — kids only\nEXTRA 175฿ each\n1x\nPepperoni — adults only\nEXTRA till price 420\n(weekend)\n2x\nMargherita — adults only\nEXTRA 400฿ each\nAdults: different for adults — their changes are marked above\nTIMELINE\nTIME\nACTIVITY\n14:00\nGuests arrive\nGenerated 13/11/2026 • Banquet Event Order\n"
+        }
+      },
+      "mangoAdded": {
+        "row": {
+          "badge": "EXTRA",
+          "priceBox": 1,
+          "priceShown": "Price ฿",
+          "hint": "not charged",
+          "text": "EXTRA 1 Price ฿ not charged ZZ TEST mango sticky rice"
+        },
+        "save": {
+          "at": "2026-11-13T00:34:50.351Z",
+          "key": "I",
+          "writes": [
+            {
+              "method": "PUT",
+              "path": "/api/events/:id/beo",
+              "status": 200
+            }
+          ],
+          "toast": "BEO data saved successfully",
+          "reloaded": true
+        },
+        "pdf": {
+          "route": "GET /api/events/:id/beo/pdf",
+          "status": 200,
+          "bytes": 89659,
+          "text": "ZZ Test Noa's 5th Birthday\n27 December '26 • 14:00 –\n16:00\nTENTATIVE\nOto Play Park, Central Floresta\n199 Moo 4, Vichitsongkram Road, Wichit, Muang, Phuket 83000,\nThailand\nEVENT DETAILS\nDate:\n27 December '26\nTime:\n14:00 – 16:00\nChild:\nZZ Test Noa\nBooking Name: ZZ TEST 970 till price\nParent:\nZZ TEST 970 till price\nWhatsApp:\n[number]\nKid Turning Age: 5\nChildren:\n10\nAdults:\n5\nPARTY HOST\nPOS: BIRTHDAY PACKAGE, CENTRAL FLORESTA\nExpected total (from the till):\n฿23,145\nDeposit paid:\n฿0\nOutstanding:\n฿23,145\nSETUP PLAN\nKITCHEN PLAN\nKids Menu\nSET MENU\nBirthday set menu, Central Floresta — Received 13 Nov\nHawaiian (Pizza)\nSET\nFrench fries\nSET\nVeggie sticks\nSET\nFruit skewers\nSET\nAdditional Items\n3x\nFrench fries — kids only\nEXTRA 175฿ each\n1x\nPepperoni — adults only\nEXTRA till price 420\n(weekend)\n2x\nMargherita — adults only\nEXTRA 400฿ each\n1x\nZZ TEST mango sticky rice — adults only\nEXTRA not charged\nAdults: different for adults — their changes are marked above\nTIMELINE\nTIME\nACTIVITY\n14:00\nGuests arrive\nGenerated 13/11/2026 • Banquet Event Order\n"
+        },
+        "beoAfter": {
+          "kids": [
+            "SET Hawaiian x1 included:true note \"(Pizza)\" group item_cf_bday_pizza src set_menu",
+            "SET French fries x1 included:true group item_cf_bday_fries src set_menu",
+            "SET Veggie sticks x1 included:true group item_cf_bday_veggie_sticks src set_menu",
+            "SET Fruit skewers x1 included:true group item_cf_bday_fruit_skewers src set_menu",
+            "EXTRA French fries x3 @175 [CF-11] included:false src additional"
+          ],
+          "adults": [
+            "SET Hawaiian x1 included:true note \"(Pizza)\" group item_cf_bday_pizza src set_menu",
+            "SET French fries x1 included:true group item_cf_bday_fries src set_menu",
+            "SET Veggie sticks x1 included:true group item_cf_bday_veggie_sticks src set_menu",
+            "SET Fruit skewers x1 included:true group item_cf_bday_fruit_skewers src set_menu",
+            "EXTRA Pepperoni x1 [CF-31] included:false src additional",
+            "EXTRA Margherita x2 @400 [CF-24] included:false src additional",
+            "EXTRA ZZ TEST mango sticky rice x1 included:false src additional"
+          ],
+          "adultsDiffer": true,
+          "setMenuSelection": {
+            "status": 200,
+            "isSubmitted": true,
+            "selections": [
+              {
+                "groupId": "item_cf_bday_pizza",
+                "recordedFrom": "chat",
+                "chosenOptions": [
+                  "Hawaiian"
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "dates": {
+        "thisRun": {
+          "selection": {
+            "status": 200,
+            "keys": [
+              "id",
+              "eventId",
+              "templateId",
+              "token",
+              "isSubmitted",
+              "submittedAt",
+              "selections",
+              "createdAt",
+              "updatedAt"
+            ],
+            "timesUtc": {
+              "submittedAt": "2026-11-13T00:30:43.532Z",
+              "createdAt": "2026-11-13T00:30:39.883Z",
+              "updatedAt": "2026-11-13T00:30:43.532Z"
+            },
+            "timesBangkok": {
+              "submittedAt": "13 Nov 2026, 07:30",
+              "createdAt": "13 Nov 2026, 07:30",
+              "updatedAt": "13 Nov 2026, 07:30"
+            },
+            "isSubmitted": true
+          },
+          "pdf": {
+            "route": "GET /api/events/:id/beo/pdf",
+            "status": 200,
+            "bytes": 92526,
+            "text": "ZZ Test Mika's 7th Birthday\n13 December '26 • 10:00 –\n12:00\nTENTATIVE\nOto Play Park, Central Floresta\n199 Moo 4, Vichitsongkram Road, Wichit, Muang, Phuket 83000,\nThailand\nEVENT DETAILS\nDate:\n13 December '26\nTime:\n10:00 – 12:00\nChild:\nZZ Test Mika\nBooking Name: ZZ TEST 970 no option\nParent:\nZZ TEST 970 no option\nWhatsApp:\n[number]\nKid Turning Age: 7\nChildren:\n10\nAdults:\n6\nPOS: BIRTHDAY PACKAGE, CENTRAL FLORESTA\nExpected total (from the till):\n฿21,900\nDeposit paid:\n฿0\nOutstanding:\n฿21,900\nKITCHEN PLAN\nKids Menu\nSET MENU\nBirthday set menu, Central Floresta — Received 13 Nov\nMargherita (Pizza)\nSET\nChicken schnitzel (Hot dish)\nSET\nFrench fries\nSET\nWaffles (Waffles or pancakes)\nSET\nVeggie (Fried rice) — kids only\nSET\nVeggie sticks\nSET\nFruit skewers\nSET\nJuice (Drinks pitcher)\nSET\n1x\nShrimp (Fried rice) — adults only\nSET\nAdults: different for adults — their changes are marked above\nTIMELINE\nTIME\nACTIVITY\n10:00\nGuests arrive\nGenerated 13/11/2026 • Banquet Event Order\n"
+          },
+          "editor": "Received 13/11/2026 (the editor's Kids Menu, set menu block)"
+        },
+        "midnightCase": {
+          "why": "this run started after 07:00 Bangkok (07:03), so no choice recorded in it falls between midnight and 07:00; SCRUM-958's thread B (archived ZZ TEST event, its family's link pressed 13 Nov 02:45 Bangkok = 12 Nov 19:45 UTC) was read instead, read only",
+          "selection": {
+            "status": 200,
+            "keys": [
+              "id",
+              "eventId",
+              "templateId",
+              "token",
+              "isSubmitted",
+              "submittedAt",
+              "selections",
+              "createdAt",
+              "updatedAt"
+            ],
+            "timesUtc": {
+              "submittedAt": "2026-11-12T19:45:17.655Z",
+              "createdAt": "2026-11-12T19:43:46.505Z",
+              "updatedAt": "2026-11-12T19:45:17.655Z"
+            },
+            "timesBangkok": {
+              "submittedAt": "13 Nov 2026, 02:45",
+              "createdAt": "13 Nov 2026, 02:43",
+              "updatedAt": "13 Nov 2026, 02:45"
+            },
+            "isSubmitted": true
+          },
+          "pdf": {
+            "route": "GET /api/events/:id/beo/pdf",
+            "status": 200,
+            "bytes": 92749,
+            "text": "ZZ Test Mika's 7th Birthday\n13 December '26 • 10:00 –\n12:00\nTENTATIVE\nOto Play Park, Central Floresta\n199 Moo 4, Vichitsongkram Road, Wichit, Muang, Phuket 83000,\nThailand\nEVENT DETAILS\nDate:\n13 December '26\nTime:\n10:00 – 12:00\nChild:\nZZ Test Mika\nBooking Name: ZZ TEST 958 no option\nParent:\nZZ TEST 958 no option\nWhatsApp:\n[number]\nKid Turning Age: 7\nChildren:\n10\nAdults:\n6\nPOS: BIRTHDAY PACKAGE, CENTRAL FLORESTA\nExpected total (from the till):\n฿21,900\nDeposit paid:\n฿0\nOutstanding:\n฿21,900\nKITCHEN PLAN\nKids Menu\nSET MENU\nBirthday set menu, Central Floresta — Received 13 Nov\nMargherita (Pizza)\nSET\nChicken schnitzel (Hot dish)\nSET\nFrench fries\nSET\nWaffles (Waffles or pancakes)\nSET\nVeggie (Fried rice) — kids only\nSET\nVeggie sticks\nSET\nFruit skewers\nSET\nJuice (Drinks pitcher)\nSET\n1x\nShrimp (Fried rice) — adults only\nSET\nAdults: different for adults — their changes are marked above\nTIMELINE\nTIME\nACTIVITY\n10:00\nGuests arrive\nGenerated 13/11/2026 • Banquet Event Order\n"
+          }
+        }
+      }
+    },
+    "7": {
+      "verdict": "PASSED",
+      "what": "The review's high finding: \"2 Margherita pizzas for 450/each\" for the adults",
+      "pictures": [
+        "07a-thread-r-review-450-each-no-chat-total.png",
+        "07b-thread-r-toast-after-approve.png"
+      ],
+      "fill": {
+        "route": "POST /api/events/:id/beo/ai-fill/inbox",
+        "status": 200,
+        "seconds": 15.2,
+        "readAnswered": {
+          "setMenuChoices": [
+            {
+              "option": "Hawaiian",
+              "said": "Hawaiian pizza for the kids"
+            }
+          ],
+          "menuLines": [
+            {
+              "menu": "adults",
+              "itemName": "2 Margherita pizzas",
+              "quantity": 2,
+              "productCode": "CF-24",
+              "matchedName": "Margherita",
+              "notInMenu": false,
+              "chatPrice": 450,
+              "from": {
+                "source": "family",
+                "at": "2026-11-13T00:08:56.000Z",
+                "line": 2,
+                "quote": "2 Margherita pizzas"
+              },
+              "ownOrder": true
+            }
+          ],
+          "adultsFolded": null
+        }
+      },
+      "review": [
+        {
+          "menu": "Adults",
+          "count": "2",
+          "item": "2 Margherita pizzas → Margherita (CF-24)",
+          "tillPrice": "Till ฿400",
+          "chatSays": [
+            "The chat says “2 Margherita pizzas”from the family· Fri 13 Nov 07:08"
+          ],
+          "chatTotal": null,
+          "setWords": null,
+          "optionWords": null,
+          "option": null,
+          "priceBox": "450",
+          "priceWords": "THB each, written on the line as an EXTRA (2 × ฿450 = ฿900) — the chat's price."
+        }
+      ],
+      "approval": {
+        "route": "POST /api/events/:id/beo/ai-fill/approve",
+        "status": 200,
+        "written": {
+          "event": true,
+          "package": true,
+          "addOns": 0,
+          "setMenu": true,
+          "choices": 1,
+          "kitchenLines": 1,
+          "freeKitchenLines": 0,
+          "tillLines": 1
+        },
+        "menuLinesSent": [
+          {
+            "menu": "adults",
+            "itemName": "2 Margherita pizzas",
+            "quantity": 2,
+            "productCode": "CF-24",
+            "notes": null,
+            "price": 450
+          }
+        ],
+        "adultsFoldedSent": null,
+        "toast": "BEO created from the conversation Saved: the event's details (name, counts, times), the package and the kitchen plan.",
+        "toastPicture": "07b-thread-r-toast-after-approve.png",
+        "reviewGone": true,
+        "noSecondDialog": true
+      },
+      "beoAfter": {
+        "kids": [
+          "SET Hawaiian x1 included:true note \"(Pizza)\" group item_cf_bday_pizza src set_menu",
+          "SET French fries x1 included:true group item_cf_bday_fries src set_menu",
+          "SET Veggie sticks x1 included:true group item_cf_bday_veggie_sticks src set_menu",
+          "SET Fruit skewers x1 included:true group item_cf_bday_fruit_skewers src set_menu"
+        ],
+        "adults": [
+          "SET Hawaiian x1 included:true note \"(Pizza)\" group item_cf_bday_pizza src set_menu",
+          "SET French fries x1 included:true group item_cf_bday_fries src set_menu",
+          "SET Veggie sticks x1 included:true group item_cf_bday_veggie_sticks src set_menu",
+          "SET Fruit skewers x1 included:true group item_cf_bday_fruit_skewers src set_menu",
+          "EXTRA Margherita x2 @450 [CF-24] included:false src additional"
+        ],
+        "adultsDiffer": true,
+        "setMenuSelection": {
+          "status": 200,
+          "isSubmitted": true,
+          "selections": [
+            {
+              "groupId": "item_cf_bday_pizza",
+              "recordedFrom": "chat",
+              "chosenOptions": [
+                "Hawaiian"
+              ]
+            }
+          ]
+        }
+      },
+      "plain": "No \"The chat says ฿450 for 2\" (no chat-total line at all). The price shown is 450, \"THB each, written on the line as an EXTRA (2 × ฿450 = ฿900) — the chat's price.\": the read returned chatPrice 450 for the line. Approve wrote EXTRA Margherita x2 at 450 each [CF-24] on the adults' menu."
+    },
+    "8": {
+      "verdict": "PASSED (the review dialog still logs the warning, as known)",
+      "what": "The BEO sheets' console warning",
+      "pictures": [
+        "08-beo-editor-sheet-from-studio-events.png",
+        "08-beo-day-of-sheet-from-studio-events.png"
+      ],
+      "sheets": {
+        "at": "2026-11-13T00:49:54.853Z",
+        "key": "A",
+        "editorSheet": {
+          "opened": true,
+          "sheetTitles": [
+            {
+              "label": "BEO editor",
+              "described": "The party's Banquet Event Order, to read and change."
+            }
+          ],
+          "dialogWarnings": [],
+          "allConsole": []
+        },
+        "editorPicture": "08-beo-editor-sheet-from-studio-events.png",
+        "recentRowFound": true,
+        "viewDialog": true,
+        "cardDialog": {
+          "which": "button-open-dayof-from-edit",
+          "warningsOnOpen": []
+        },
+        "dayOfSheet": {
+          "dialogWarnings": [],
+          "allConsole": [],
+          "sheets": [
+            {
+              "label": "Edit Event",
+              "described": "Update event details"
+            },
+            {
+              "label": "BEO day-of view",
+              "described": "The party's Banquet Event Order for the day itself."
+            }
+          ]
+        },
+        "dayOfPicture": "08-beo-day-of-sheet-from-studio-events.png",
+        "boardToDayOfWarnings": []
+      },
+      "dialogContentWarningsAllRun": [
+        {
+          "at": "2026-11-13T00:17:09.642Z",
+          "type": "warning",
+          "path": "oto-app-staging.onrender.com/studio/events/kanban",
+          "text": "Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}."
+        },
+        {
+          "at": "2026-11-13T00:21:00.863Z",
+          "type": "warning",
+          "path": "oto-app-staging.onrender.com/studio/events/kanban",
+          "text": "Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}."
+        },
+        {
+          "at": "2026-11-13T00:25:50.648Z",
+          "type": "warning",
+          "path": "oto-app-staging.onrender.com/studio/events/kanban",
+          "text": "Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}."
+        },
+        {
+          "at": "2026-11-13T00:29:43.259Z",
+          "type": "warning",
+          "path": "oto-app-staging.onrender.com/studio/events/kanban",
+          "text": "Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}."
+        },
+        {
+          "at": "2026-11-13T00:30:38.759Z",
+          "type": "warning",
+          "path": "oto-app-staging.onrender.com/studio/events/kanban",
+          "text": "Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}."
+        },
+        {
+          "at": "2026-11-13T00:38:40.100Z",
+          "type": "warning",
+          "path": "oto-app-staging.onrender.com/studio/events/kanban",
+          "text": "Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}."
+        },
+        {
+          "at": "2026-11-13T00:42:49.353Z",
+          "type": "warning",
+          "path": "oto-app-staging.onrender.com/studio/events/kanban",
+          "text": "Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}."
+        }
+      ],
+      "plain": "Opening the BEO editor sheet (deep link and card) and the day-of sheet (Edit Event > Day-of View) logged no \"Missing Description or aria-describedby for DialogContent\" warning; each sheet has its hidden title and description. The warning was logged 7 times in the run: 6 times about 15 s after each Create BEO (when the AI Fill review dialog opens: G, I, A, B, R, F) and once at 00:30:38 UTC, when \"Get Parent Link\" opened its dialog in thread B's editor."
+    }
+  },
+  "hunt": [
+    {
+      "severity": "medium",
+      "finding": "The BEO PDF prints one row for a dish the kids and the adults both have as extras in different counts and prices, at the kids' price only: kids EXTRA Margherita x3 at 400 and adults EXTRA Margherita x2 at 450 print as \"3x Margherita — kids 3 · adults 2 · EXTRA 400฿ each\"; the adults' 450 appears nowhere and \"3x\" is the kids' count only. The till charges 3 × 400 + 2 × 450 = 2,100 (settle preview).",
+      "pictures": [
+        "h06-hunt-thread-r-editor-margherita-kids3-adults2-kids.png",
+        "h06-hunt-thread-r-editor-margherita-kids3-adults2-adults.png",
+        "h07-hunt-thread-r-beo-pdf-kids3-adults2-one-row-400-each.png"
+      ],
+      "where": "apps/oto-app/shared/kitchenAdults.ts:149-165 (kitchenAdultsMarks matches by name and compares count and note, never price); apps/oto-app/server/pdf.ts:733-739 and the Additional Items rows (the mark is put beside the kids' row, priced from it)",
+      "seen": {
+        "pdf": {
+          "route": "GET /api/events/:id/beo/pdf",
+          "status": 200,
+          "bytes": 84360,
+          "text": "ZZ Test Ari's 6th Birthday\n16 December '26 • 15:00 –\n17:00\nTENTATIVE\nOto Play Park, Central Floresta\n199 Moo 4, Vichitsongkram Road, Wichit, Muang, Phuket 83000,\nThailand\nEVENT DETAILS\nDate:\n16 December '26\nTime:\n15:00 – 17:00\nChild:\nZZ Test Ari\nBooking Name: ZZ TEST 970 price each\nParent:\nZZ TEST 970 price each\nWhatsApp:\n[number]\nKid Turning Age: 6\nChildren:\n10\nAdults:\n4\nPARTY HOST\nPOS: BIRTHDAY PACKAGE, CENTRAL FLORESTA\nExpected total (from the till):\n฿19,000\nDeposit paid:\n฿0\nOutstanding:\n฿19,000\nSETUP PLAN\nKITCHEN PLAN\nKids Menu\nSET MENU\nBirthday set menu, Central Floresta — Received 13 Nov\nHawaiian (Pizza)\nSET\nFrench fries\nSET\nVeggie sticks\nSET\nFruit skewers\nSET\nAdditional Items\n3x\nMargherita — kids 3 · adults 2\nEXTRA 400฿ each\nAdults: different for adults — their changes are marked above\nTIMELINE\nTIME\nACTIVITY\n15:00\nGuests arrive\nGenerated 13/11/2026 • Banquet Event Order\n"
+        },
+        "beo": {
+          "kids": [
+            "SET Hawaiian x1 included:true note \"(Pizza)\" group item_cf_bday_pizza src set_menu",
+            "SET French fries x1 included:true group item_cf_bday_fries src set_menu",
+            "SET Veggie sticks x1 included:true group item_cf_bday_veggie_sticks src set_menu",
+            "SET Fruit skewers x1 included:true group item_cf_bday_fruit_skewers src set_menu",
+            "EXTRA Margherita x3 @400 [CF-24] included:false src additional"
+          ],
+          "adults": [
+            "SET Hawaiian x1 included:true note \"(Pizza)\" group item_cf_bday_pizza src set_menu",
+            "SET French fries x1 included:true group item_cf_bday_fries src set_menu",
+            "SET Veggie sticks x1 included:true group item_cf_bday_veggie_sticks src set_menu",
+            "SET Fruit skewers x1 included:true group item_cf_bday_fruit_skewers src set_menu",
+            "EXTRA Margherita x2 @450 [CF-24] included:false src additional"
+          ],
+          "adultsDiffer": true,
+          "till": {
+            "lines": [
+              "set_menu | Pizza: Hawaiian x1 | code CF-27 | group Pizza",
+              "set_menu | Hot dish | code - | group Hot dish",
+              "set_menu | French fries x1 | code CF-11",
+              "set_menu | Waffles or pancakes | code - | group Waffles or pancakes",
+              "set_menu | Fried rice | code CF-43 | group Fried rice",
+              "set_menu | Veggie sticks x1 | code CF-53",
+              "set_menu | Fruit skewers x1 | code -",
+              "set_menu | Drinks pitcher | code - | group Drinks pitcher",
+              "extra | Margherita x3 | code CF-24 | entered 400",
+              "extra | Margherita x2 | code CF-24 | entered 450 | adults"
+            ],
+            "status": 200
+          },
+          "setMenuSelection": {
+            "status": 200,
+            "isSubmitted": true,
+            "selections": [
+              {
+                "groupId": "item_cf_bday_pizza",
+                "recordedFrom": "chat",
+                "chosenOptions": [
+                  "Hawaiian"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "severity": "medium",
+      "finding": "Studio > Events, \"Recent Updates\": pressing an event's row opens \"Edit Event\" with the form's defaults, not the event: Title and Child empty, Date = today (13 Nov 2026), Children 10, Adults 5 (thread A is 5 Dec, 12 kids, 8 adults). \"Update\" is enabled; it was NOT pressed (it would send those values for the event). The same dialog is the way to the Day-of View.",
+      "pictures": [
+        "h08-hunt-recent-updates-edit-event-form-not-loaded.png",
+        "08-beo-day-of-sheet-from-studio-events.png"
+      ],
+      "where": "apps/oto-app/client/src/pages/studio/events.tsx:2073-2078 (setEditingEvent without openEditDialog, which fills the form at :764); defaults at :135-157; Update at :2794 / handleSubmit :1229-1242",
+      "seen": {
+        "what": "Recent Updates opens Edit Event with the default form, not the event",
+        "key": "A",
+        "event": {
+          "date": "2026-12-05",
+          "kids": 12,
+          "adults": 8,
+          "title": "ZZ Test Lina's 6th Birthday"
+        },
+        "formAsOpened": [
+          {
+            "tag": "BUTTON",
+            "placeholder": null,
+            "value": "Oto Play Park, Central Floresta"
+          },
+          {
+            "tag": "INPUT",
+            "placeholder": "e.g., Emma's 5th Birthday",
+            "value": ""
+          },
+          {
+            "tag": "INPUT",
+            "placeholder": "Birthday child's name",
+            "value": ""
+          },
+          {
+            "tag": "INPUT",
+            "placeholder": "Contact person",
+            "value": ""
+          },
+          {
+            "tag": "BUTTON",
+            "placeholder": null,
+            "value": "+66 TH"
+          },
+          {
+            "tag": "INPUT",
+            "placeholder": "Phone number",
+            "value": ""
+          },
+          {
+            "tag": "INPUT",
+            "placeholder": null,
+            "value": "10"
+          },
+          {
+            "tag": "INPUT",
+            "placeholder": null,
+            "value": "5"
+          },
+          {
+            "tag": "INPUT",
+            "placeholder": "e.g., 15000",
+            "value": ""
+          },
+          {
+            "tag": "INPUT",
+            "placeholder": "e.g., 5000",
+            "value": ""
+          },
+          {
+            "tag": "BUTTON",
+            "placeholder": null,
+            "value": "Select method"
+          }
+        ],
+        "picture": "h08-hunt-recent-updates-edit-event-form-not-loaded.png",
+        "writesWhileCancelling": 0
+      }
+    },
+    {
+      "severity": "medium (privacy, not this lane)",
+      "finding": "The OTO App on staging writes \"[auth-diag]\" lines to the browser console on every page load, one of them the signed-in person's /api/user record (id, e-mail, full name, …, cut at 200 characters). The run dropped every console \"log\" line from its files and withheld the e-mail it caught.",
+      "pictures": [],
+      "where": "apps/oto-app/client/src/hooks/use-auth.tsx:37 (and :51-60), apps/oto-app/client/src/App.tsx:360-378; present since the app was lifted (9d9ebc1af)"
+    },
+    {
+      "severity": "low",
+      "finding": "\"Get Parent Link\" in the BEO editor opens a dialog that logs the \"Missing Description or aria-describedby for DialogContent\" warning (the review dialog too, as known).",
+      "pictures": [],
+      "where": "apps/oto-app/client/src/components/beo/beo-event-editor.tsx:4376-4383 (the Parent Link dialog: a DialogTitle, no DialogDescription)"
+    },
+    {
+      "severity": "low",
+      "finding": "After the editor's Save, the BEO PDF prints the headings \"PARTY HOST\" and \"SETUP PLAN\" with nothing under them (the PDF as approved, before any Save, had neither).",
+      "pictures": [
+        "06a-thread-i-beo-pdf-adults-margherita-extra-400-each.png",
+        "06c-thread-i-beo-pdf-pepperoni-till-price-420-weekend.png"
+      ]
+    },
+    {
+      "severity": "note",
+      "finding": "With a fold AND a chat total (thread F, the one extra read), the review shows both (the total under the fries line, the note under the plan) and the toast ends with the fold sentence only: \"…the package and the kitchen plan. The adults' line only repeats the kids' menu: the adults eat the kids' menu, and \\\"Different for adults\\\" stays off.\" A chat total is never said in the toast; the line was written at the till's 175 each (3 × 175 = 525) while the chat said ฿450 for 3.",
+      "pictures": [
+        "h03-hunt-thread-f-review-fold-and-chat-total.png",
+        "h04-hunt-thread-f-review-fold-and-total-phone-width.png",
+        "h05-hunt-thread-f-toast-fold-and-chat-total.png"
+      ],
+      "seen": {
+        "fill": {
+          "route": "POST /api/events/:id/beo/ai-fill/inbox",
+          "status": 200,
+          "seconds": 14.1,
+          "readAnswered": {
+            "setMenuChoices": [
+              {
+                "option": "Margherita",
+                "said": "the Margherita pizza for the kids"
+              }
+            ],
+            "menuLines": [
+              {
+                "menu": "kids",
+                "itemName": "3 extra portions of French fries",
+                "quantity": 3,
+                "productCode": "CF-11",
+                "matchedName": "French fries",
+                "notInMenu": false,
+                "chatPrice": null,
+                "chatTotal": {
+                  "amount": 450,
+                  "quantity": 3
+                },
+                "from": {
+                  "source": "family",
+                  "at": "2026-11-13T00:40:00.000Z",
+                  "line": 2,
+                  "quote": "3 extra portions of French fries"
+                }
+              }
+            ],
+            "adultsFolded": [
+              {
+                "dish": "Margherita",
+                "from": {
+                  "source": "family",
+                  "at": "2026-11-13T00:40:00.000Z",
+                  "line": 2,
+                  "quote": "the Margherita pizza for them too"
+                },
+                "itemId": "item_cf_bday_pizza",
+                "option": "Margherita"
+              }
+            ]
+          }
+        },
+        "review": [
+          {
+            "menu": "Kids",
+            "count": "3",
+            "item": "3 extra portions of French fries → French fries (CF-11)",
+            "tillPrice": "Till ฿175",
+            "chatSays": [
+              "The chat says “3 extra portions of French fries”from the family· Fri 13 Nov 07:40"
+            ],
+            "chatTotal": "The chat says ฿450 for 3; the till's price is ฿175 each.",
+            "setWords": null,
+            "optionWords": null,
+            "option": null,
+            "priceBox": "175",
+            "priceWords": "THB each, written on the line as an EXTRA (3 × ฿175 = ฿525) — the till's price."
+          }
+        ],
+        "note": {
+          "note": "The adults' line only repeats the kids' menu: the adults eat the kids' menu, and \"Different for adults\" stays off.",
+          "says": [
+            "The chat says “the Margherita pizza for them too”from the family· Fri 13 Nov 07:40"
+          ]
+        },
+        "approval": {
+          "route": "POST /api/events/:id/beo/ai-fill/approve",
+          "status": 200,
+          "written": {
+            "event": true,
+            "package": true,
+            "addOns": 0,
+            "setMenu": true,
+            "choices": 1,
+            "kitchenLines": 1,
+            "freeKitchenLines": 0,
+            "tillLines": 1,
+            "adultsLinesFolded": 1
+          },
+          "menuLinesSent": [
+            {
+              "menu": "kids",
+              "itemName": "3 extra portions of French fries",
+              "quantity": 3,
+              "productCode": "CF-11",
+              "notes": null,
+              "price": 175
+            }
+          ],
+          "adultsFoldedSent": 1,
+          "toast": "BEO created from the conversation Saved: the event's details (name, counts, times), the package and the kitchen plan. The adults' line only repeats the kids' menu: the adults eat the kids' menu, and \"Different for adults\" stays off.",
+          "toastPicture": "h05-hunt-thread-f-toast-fold-and-chat-total.png",
+          "reviewGone": true,
+          "noSecondDialog": true
+        },
+        "beoAfter": {
+          "kids": [
+            "SET Margherita x1 included:true note \"(Pizza)\" group item_cf_bday_pizza src set_menu",
+            "SET French fries x1 included:true group item_cf_bday_fries src set_menu",
+            "SET Veggie sticks x1 included:true group item_cf_bday_veggie_sticks src set_menu",
+            "SET Fruit skewers x1 included:true group item_cf_bday_fruit_skewers src set_menu",
+            "EXTRA French fries x3 @175 [CF-11] included:false src additional"
+          ],
+          "adults": [],
+          "adultsDiffer": false,
+          "setMenuSelection": {
+            "status": 200,
+            "isSubmitted": true,
+            "selections": [
+              {
+                "groupId": "item_cf_bday_pizza",
+                "recordedFrom": "chat",
+                "chosenOptions": [
+                  "Margherita"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "severity": "none",
+      "finding": "At phone width (390 px) the note and the chat total wrap inside the review; nothing runs past the dialog (no horizontal scroll).",
+      "pictures": [
+        "h01-hunt-thread-g-review-note-phone-width.png",
+        "h02-hunt-thread-i-review-chat-total-phone-width.png",
+        "h04-hunt-thread-f-review-fold-and-total-phone-width.png"
+      ],
+      "seen": {
+        "G": [
+          {
+            "at": "2026-11-13T00:17:32.026Z",
+            "key": "G",
+            "picture": "h01-hunt-thread-g-review-note-phone-width.png",
+            "geom": {
+              "dialog": {
+                "left": 0,
+                "right": 390,
+                "width": 390
+              },
+              "viewport": 390,
+              "docScrollW": 390,
+              "blocks": [
+                {
+                  "tid": "text-ai-review-chat-says",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "The chat says “Hi, a party for ZZ Test Remy turning 6, Saturday 12 December 11:00-13:00, 12 kids and 8 adults. (ZZ TEST)”from the family· Fri 13 Nov 07:07"
+                },
+                {
+                  "tid": "text-ai-review-chat-says",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "The chat says “turning 6”from the family· Fri 13 Nov 07:07"
+                },
+                {
+                  "tid": "text-ai-review-chat-says",
+                  "left": 158,
+                  "right": 348,
+                  "width": 190,
+                  "scrollW": 190,
+                  "clientW": 190,
+                  "beyondDialog": false,
+                  "text": "The chat says “Saturday 12 December”from the family· Fri 13 Nov 07:07"
+                },
+                {
+                  "tid": "text-ai-review-chat-says",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "The chat says “Hi, a party for ZZ Test Remy turning 6, Saturday 12 December 11:00-13:00, 12 kids and 8 adults. (ZZ TEST)”from the family· Fri 13 Nov 07:07"
+                },
+                {
+                  "tid": "text-ai-review-chat-says",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "The chat says “Hi, a party for ZZ Test Remy turning 6, Saturday 12 December 11:00-13:00, 12 kids and 8 adults. (ZZ TEST)”from the family· Fri 13 Nov 07:07"
+                },
+                {
+                  "tid": "text-ai-review-chat-says",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "The chat says “Hi, a party for ZZ Test Remy turning 6, Saturday 12 December 11:00-13:00, 12 kids and 8 adults. (ZZ TEST)”from the family· Fri 13 Nov 07:07"
+                },
+                {
+                  "tid": "text-ai-review-chat-says",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "The chat says “Hi, a party for ZZ Test Remy turning 6, Saturday 12 December 11:00-13:00, 12 kids and 8 adults. (ZZ TEST)”from the family· Fri 13 Nov 07:07"
+                },
+                {
+                  "tid": "text-ai-review-chat-says",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "The chat says “The Floresta birthday package”from the family· Fri 13 Nov 07:08"
+                },
+                {
+                  "tid": "text-ai-review-chat-says",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "The chat says “The Floresta birthday package with the Margherita pizza for the kids”from the family· Fri 13 Nov 07:08"
+                },
+                {
+                  "tid": "text-ai-review-chat-says",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "The chat says “the Margherita pizza for the kids”from the family· Fri 13 Nov 07:08"
+                },
+                {
+                  "tid": "text-ai-review-adults-folded",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "The adults' line only repeats the kids' menu: the adults eat the kids' menu, and \"Different for adults\" stays off."
+                },
+                {
+                  "tid": "text-ai-review-chat-says",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "The chat says “the Margherita pizza for them too”from the family· Fri 13 Nov 07:08"
+                }
+              ]
+            }
+          }
+        ],
+        "I": [
+          {
+            "at": "2026-11-13T00:21:26.500Z",
+            "key": "I",
+            "picture": "h02-hunt-thread-i-review-chat-total-phone-width.png",
+            "geom": {
+              "dialog": {
+                "left": 0,
+                "right": 390,
+                "width": 390
+              },
+              "viewport": 390,
+              "docScrollW": 390,
+              "blocks": [
+                {
+                  "tid": "text-ai-review-chat-says",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "The chat says “Hi, a party for ZZ Test Noa turning 5, Sunday 27 December 14:00-16:00, 10 kids and 5 adults. (ZZ TEST)”from the family· Fri 13 Nov 07:07"
+                },
+                {
+                  "tid": "text-ai-review-chat-says",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "The chat says “turning 5”from the family· Fri 13 Nov 07:07"
+                },
+                {
+                  "tid": "text-ai-review-chat-says",
+                  "left": 158,
+                  "right": 348,
+                  "width": 190,
+                  "scrollW": 190,
+                  "clientW": 190,
+                  "beyondDialog": false,
+                  "text": "The chat says “Sunday 27 December”from the family· Fri 13 Nov 07:07"
+                },
+                {
+                  "tid": "text-ai-review-chat-says",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "The chat says “Hi, a party for ZZ Test Noa turning 5, Sunday 27 December 14:00-16:00, 10 kids and 5 adults. (ZZ TEST)”from the family· Fri 13 Nov 07:07"
+                },
+                {
+                  "tid": "text-ai-review-chat-says",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "The chat says “Hi, a party for ZZ Test Noa turning 5, Sunday 27 December 14:00-16:00, 10 kids and 5 adults. (ZZ TEST)”from the family· Fri 13 Nov 07:07"
+                },
+                {
+                  "tid": "text-ai-review-chat-says",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "The chat says “Hi, a party for ZZ Test Noa turning 5, Sunday 27 December 14:00-16:00, 10 kids and 5 adults. (ZZ TEST)”from the family· Fri 13 Nov 07:07"
+                },
+                {
+                  "tid": "text-ai-review-chat-says",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "The chat says “Hi, a party for ZZ Test Noa turning 5, Sunday 27 December 14:00-16:00, 10 kids and 5 adults. (ZZ TEST)”from the family· Fri 13 Nov 07:07"
+                },
+                {
+                  "tid": "text-ai-review-chat-says",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "The chat says “The Floresta birthday package”from the family· Fri 13 Nov 07:08"
+                },
+                {
+                  "tid": "text-ai-review-chat-says",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "The chat says “The Floresta birthday package”from the family· Fri 13 Nov 07:08"
+                },
+                {
+                  "tid": "text-ai-review-chat-says",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "The chat says “Hawaiian pizza for the kids”from the family· Fri 13 Nov 07:08"
+                },
+                {
+                  "tid": "ai-review-menu-line",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "KidsAdultsBarPepperoni pizza → Pepperoni (CF-31)Till ฿420from the familyThe chat says “Pepperoni pizza”from the family· Fri 13 Nov 07:08Price:THB each, written "
+                },
+                {
+                  "tid": "text-ai-review-chat-says",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "The chat says “Pepperoni pizza”from the family· Fri 13 Nov 07:08"
+                },
+                {
+                  "tid": "ai-review-menu-price",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "Price:THB each, written on the line as an EXTRA — the chat's price."
+                },
+                {
+                  "tid": "ai-review-menu-line",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "KidsAdultsBarMargherita pizzas → Margherita (CF-24)Till ฿400from the familyThe chat says “Margherita pizzas”from the family· Fri 13 Nov 07:08The chat says ฿900 "
+                },
+                {
+                  "tid": "text-ai-review-chat-says",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "The chat says “Margherita pizzas”from the family· Fri 13 Nov 07:08"
+                },
+                {
+                  "tid": "text-ai-review-chat-total",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "The chat says ฿900 for 2; the till's price is ฿400 each."
+                },
+                {
+                  "tid": "ai-review-menu-price",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "Price:THB each, written on the line as an EXTRA (2 × ฿400 = ฿800) — the till's price."
+                },
+                {
+                  "tid": "ai-review-menu-line",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "KidsAdultsBar3 extra portions of French fries for the kids → French fries (CF-11)Till ฿175from the familyThe chat says “3 extra portions of French fries for the"
+                },
+                {
+                  "tid": "text-ai-review-chat-says",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "The chat says “3 extra portions of French fries for the kids”from the family· Fri 13 Nov 07:08"
+                },
+                {
+                  "tid": "ai-review-menu-price",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "Price:THB each, written on the line as an EXTRA (3 × ฿175 = ฿525) — the till's price."
+                }
+              ]
+            }
+          }
+        ],
+        "F": [
+          {
+            "at": "2026-11-13T00:43:04.400Z",
+            "key": "F",
+            "picture": "h04-hunt-thread-f-review-fold-and-total-phone-width.png",
+            "geom": {
+              "dialog": {
+                "left": 0,
+                "right": 390,
+                "width": 390
+              },
+              "viewport": 390,
+              "docScrollW": 390,
+              "blocks": [
+                {
+                  "tid": "text-ai-review-chat-says",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "The chat says “Hi, a party for ZZ Test Juno turning 6, Saturday 19 December 11:00-13:00, 12 kids and 8 adults. (ZZ TEST)”from the family· Fri 13 Nov 07:39"
+                },
+                {
+                  "tid": "text-ai-review-chat-says",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "The chat says “turning 6”from the family· Fri 13 Nov 07:39"
+                },
+                {
+                  "tid": "text-ai-review-chat-says",
+                  "left": 158,
+                  "right": 348,
+                  "width": 190,
+                  "scrollW": 190,
+                  "clientW": 190,
+                  "beyondDialog": false,
+                  "text": "The chat says “Saturday 19 December”from the family· Fri 13 Nov 07:39"
+                },
+                {
+                  "tid": "text-ai-review-chat-says",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "The chat says “Hi, a party for ZZ Test Juno turning 6, Saturday 19 December 11:00-13:00, 12 kids and 8 adults. (ZZ TEST)”from the family· Fri 13 Nov 07:39"
+                },
+                {
+                  "tid": "text-ai-review-chat-says",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "The chat says “Hi, a party for ZZ Test Juno turning 6, Saturday 19 December 11:00-13:00, 12 kids and 8 adults. (ZZ TEST)”from the family· Fri 13 Nov 07:39"
+                },
+                {
+                  "tid": "text-ai-review-chat-says",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "The chat says “Hi, a party for ZZ Test Juno turning 6, Saturday 19 December 11:00-13:00, 12 kids and 8 adults. (ZZ TEST)”from the family· Fri 13 Nov 07:39"
+                },
+                {
+                  "tid": "text-ai-review-chat-says",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "The chat says “Hi, a party for ZZ Test Juno turning 6, Saturday 19 December 11:00-13:00, 12 kids and 8 adults. (ZZ TEST)”from the family· Fri 13 Nov 07:39"
+                },
+                {
+                  "tid": "text-ai-review-chat-says",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "The chat says “The Floresta birthday package”from the family· Fri 13 Nov 07:40"
+                },
+                {
+                  "tid": "text-ai-review-chat-says",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "The chat says “The Floresta birthday package with the Margherita pizza for the kids”from the family· Fri 13 Nov 07:40"
+                },
+                {
+                  "tid": "text-ai-review-chat-says",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "The chat says “the Margherita pizza for the kids”from the family· Fri 13 Nov 07:40"
+                },
+                {
+                  "tid": "ai-review-menu-line",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "KidsAdultsBar3 extra portions of French fries → French fries (CF-11)Till ฿175from the familyThe chat says “3 extra portions of French fries”from the family· Fri"
+                },
+                {
+                  "tid": "text-ai-review-chat-says",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "The chat says “3 extra portions of French fries”from the family· Fri 13 Nov 07:40"
+                },
+                {
+                  "tid": "text-ai-review-chat-total",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "The chat says ฿450 for 3; the till's price is ฿175 each."
+                },
+                {
+                  "tid": "ai-review-menu-price",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "Price:THB each, written on the line as an EXTRA (3 × ฿175 = ฿525) — the till's price."
+                },
+                {
+                  "tid": "text-ai-review-adults-folded",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "The adults' line only repeats the kids' menu: the adults eat the kids' menu, and \"Different for adults\" stays off."
+                },
+                {
+                  "tid": "text-ai-review-chat-says",
+                  "left": 38,
+                  "right": 348,
+                  "width": 310,
+                  "scrollW": 310,
+                  "clientW": 310,
+                  "beyondDialog": false,
+                  "text": "The chat says “the Margherita pizza for them too”from the family· Fri 13 Nov 07:40"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "severity": "note",
+      "finding": "After staff change the kids' pizza and change it back, the Pizza row keeps \"changed here\" and no longer shows the chat's reason line; the fold note and its reason return.",
+      "pictures": [
+        "01c-thread-g-review-back-to-margherita-note-returns.png"
+      ]
+    }
+  ],
+  "cleanup": {
+    "events": {
+      "G": {
+        "id": "01a1d241-9476-7f3f-86cd-1844c74d1f63",
+        "title": "ZZ Test Remy's 6th Birthday",
+        "archive": {
+          "route": "POST /api/admin/events/:id/archive",
+          "status": 200,
+          "archivedAt": "2026-11-13T00:52:38.340Z",
+          "isArchived": true,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/admin/events/:id",
+          "status": 200,
+          "archivedAt": "2026-11-13T00:52:38.340Z",
+          "isArchived": true
+        }
+      },
+      "I": {
+        "id": "01a1d245-104c-7cfe-b5e2-49a2302e151c",
+        "title": "ZZ Test Noa's 5th Birthday",
+        "archive": {
+          "route": "POST /api/admin/events/:id/archive",
+          "status": 200,
+          "archivedAt": "2026-11-13T00:52:38.484Z",
+          "isArchived": true,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/admin/events/:id",
+          "status": 200,
+          "archivedAt": "2026-11-13T00:52:38.484Z",
+          "isArchived": true
+        }
+      },
+      "A": {
+        "id": "01a1d249-57ae-7144-af64-8681bca3e3ff",
+        "title": "ZZ Test Lina's 6th Birthday",
+        "archive": {
+          "route": "POST /api/admin/events/:id/archive",
+          "status": 200,
+          "archivedAt": "2026-11-13T00:52:38.679Z",
+          "isArchived": true,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/admin/events/:id",
+          "status": 200,
+          "archivedAt": "2026-11-13T00:52:38.679Z",
+          "isArchived": true
+        }
+      },
+      "B": {
+        "id": "01a1d24d-21f6-7b37-9e83-9f5c47598758",
+        "title": "ZZ Test Mika's 7th Birthday",
+        "archive": {
+          "route": "POST /api/admin/events/:id/archive",
+          "status": 200,
+          "archivedAt": "2026-11-13T00:52:38.869Z",
+          "isArchived": true,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/admin/events/:id",
+          "status": 200,
+          "archivedAt": "2026-11-13T00:52:38.869Z",
+          "isArchived": true
+        }
+      },
+      "R": {
+        "id": "01a1d255-5211-7205-b94a-510d46c023ab",
+        "title": "ZZ Test Ari's 6th Birthday",
+        "archive": {
+          "route": "POST /api/admin/events/:id/archive",
+          "status": 200,
+          "archivedAt": "2026-11-13T00:52:39.018Z",
+          "isArchived": true,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/admin/events/:id",
+          "status": 200,
+          "archivedAt": "2026-11-13T00:52:39.018Z",
+          "isArchived": true
+        }
+      },
+      "F": {
+        "id": "01a1d259-2927-79a2-a412-abda70d5e721",
+        "title": "ZZ Test Juno's 6th Birthday",
+        "archive": {
+          "route": "POST /api/admin/events/:id/archive",
+          "status": 200,
+          "archivedAt": "2026-11-13T00:52:39.164Z",
+          "isArchived": true,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/admin/events/:id",
+          "status": 200,
+          "archivedAt": "2026-11-13T00:52:39.164Z",
+          "isArchived": true
+        }
+      }
+    },
+    "conversations": {
+      "G": {
+        "id": "01a1d23b-602f-7c20-81de-84d92b59fb5e",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-13T00:52:39.851Z",
+          "event": {
+            "id": "01a1d241-9476-7f3f-86cd-1844c74d1f63",
+            "archived": true,
+            "statusName": "Tentative"
+          }
+        }
+      },
+      "I": {
+        "id": "01a1d23b-69ca-78c7-990a-dcba7073b642",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-13T00:52:40.846Z",
+          "event": {
+            "id": "01a1d245-104c-7cfe-b5e2-49a2302e151c",
+            "archived": true,
+            "statusName": "Tentative"
+          }
+        }
+      },
+      "A": {
+        "id": "01a1d23b-73ac-7b53-9e15-9da40d6366e0",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-13T00:52:41.829Z",
+          "event": {
+            "id": "01a1d249-57ae-7144-af64-8681bca3e3ff",
+            "archived": true,
+            "statusName": "Tentative"
+          }
+        }
+      },
+      "B": {
+        "id": "01a1d23b-7d31-7a1a-92c3-8e2910368a19",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-13T00:52:42.841Z",
+          "event": {
+            "id": "01a1d24d-21f6-7b37-9e83-9f5c47598758",
+            "archived": true,
+            "statusName": "Tentative"
+          }
+        }
+      },
+      "R": {
+        "id": "01a1d23b-889c-7021-b019-6302a1c55631",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-13T00:52:43.831Z",
+          "event": {
+            "id": "01a1d255-5211-7205-b94a-510d46c023ab",
+            "archived": true,
+            "statusName": "Tentative"
+          }
+        }
+      },
+      "F": {
+        "id": "01a1d258-733a-71ad-a5b3-2a31f0865509",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-13T00:52:44.819Z",
+          "event": {
+            "id": "01a1d259-2927-79a2-a412-abda70d5e721",
+            "archived": true,
+            "statusName": "Tentative"
+          }
+        }
+      }
+    },
+    "extra": {
+      "thisRunsEventsInTheList": [
+        {
+          "title": "ZZ Test Lina's 6th Birthday",
+          "archived": true
+        },
+        {
+          "title": "ZZ Test Remy's 6th Birthday",
+          "archived": true
+        },
+        {
+          "title": "ZZ Test Mika's 7th Birthday",
+          "archived": true
+        },
+        {
+          "title": "ZZ Test Ari's 6th Birthday",
+          "archived": true
+        },
+        {
+          "title": "ZZ Test Juno's 6th Birthday",
+          "archived": true
+        },
+        {
+          "title": "ZZ Test Noa's 5th Birthday",
+          "archived": true
+        }
+      ],
+      "salesAtTheTill": {
+        "status": 200,
+        "count": 0
+      },
+      "till": {
+        "patchDevices": 200,
+        "delete": 200,
+        "readBack": {
+          "archived": true,
+          "devices": 0
+        }
+      }
+    },
+    "readBack": {
+      "status": 200,
+      "thisRunsLiveUpcoming": 0,
+      "zz970Live": 0
+    },
+    "zzTestTill": {
+      "made": {
+        "id": "01a1d24c-5f7a-7f1c-90d9-635e207a9386",
+        "name": "ZZ TEST SCRUM-970 proof till 1794529581764",
+        "prefix": "Z97001"
+      },
+      "retired": {
+        "patchDevices": 200,
+        "delete": 200,
+        "readBack": {
+          "archived": true,
+          "devices": 0
+        }
+      },
+      "salesAtIt": {
+        "status": 200,
+        "count": 0
+      }
+    },
+    "bubbleTeas": {
+      "how": "Console > Catalogue > Menu, park Central Floresta, each row's \"Delete <name>\", \"Delete menu item?\" confirmed (an archive: DELETE /api/branches/:id/menu/products/:id)",
+      "result": {
+        "at": "2026-11-13T00:51:37.594Z",
+        "items": {
+          "ZZ TEST 822 bubble tea": {
+            "dialogSaid": "Delete menu item? “ZZ TEST 822 bubble tea” will be removed and no longer available in the F&B order station. Cancel Delete",
+            "writes": [
+              {
+                "method": "DELETE",
+                "path": "/api/branches/:id/menu/products/:id",
+                "status": 200
+              }
+            ],
+            "listedAfter": false
+          },
+          "ZZ TEST 829 bubble tea": {
+            "dialogSaid": "Delete menu item? “ZZ TEST 829 bubble tea” will be removed and no longer available in the F&B order station. Cancel Delete",
+            "writes": [
+              {
+                "method": "DELETE",
+                "path": "/api/branches/:id/menu/products/:id",
+                "status": 200
+              }
+            ],
+            "listedAfter": false
+          }
+        },
+        "signedIn": true,
+        "park": "Oto Play Park, Central Floresta",
+        "before": {
+          "ZZ TEST 822 bubble tea": {
+            "text": "ZZ TEST 822 bubble tea BEO only ฿125",
+            "beoOnly": true
+          },
+          "ZZ TEST 829 bubble tea": {
+            "text": "ZZ TEST 829 bubble tea BEO only ฿125",
+            "beoOnly": true
+          }
+        },
+        "zzTestRowsBefore": [
+          "ZZ TEST 822 bubble tea",
+          "ZZ TEST 829 bubble tea",
+          "ZZ TEST 829 coffee",
+          "ZZ TEST 829 juice",
+          "ZZ TEST 829 nuggets"
+        ],
+        "beforePicture": "h09-cleanup-console-menu-zz-test-bubble-teas-before.png",
+        "zzTestRowsAfter": [
+          "ZZ TEST 829 coffee",
+          "ZZ TEST 829 juice",
+          "ZZ TEST 829 nuggets"
+        ],
+        "afterPicture": "h10-cleanup-console-menu-party-menu-after.png",
+        "consoleSignOut": {
+          "status": 200,
+          "meAfter": 401
+        }
+      },
+      "tillReadBack": {
+        "plain": {
+          "status": 200,
+          "zz": []
+        },
+        "?includeBeoOnly=true": {
+          "status": 200,
+          "zz": [
+            "ZZ TEST 829 coffee active:true archived:false beoOnly:true",
+            "ZZ TEST 829 juice active:true archived:false beoOnly:true",
+            "ZZ TEST 829 nuggets active:true archived:false beoOnly:true"
+          ]
+        },
+        "?beoOnly=true": {
+          "status": 200,
+          "zz": []
+        }
+      },
+      "pictures": [
+        "h09-cleanup-console-menu-zz-test-bubble-teas-before.png",
+        "h10-cleanup-console-menu-party-menu-after.png"
+      ]
+    },
+    "leftOnStaging": [
+      "three older ZZ TEST party-only items not asked about: \"ZZ TEST 829 coffee\", \"ZZ TEST 829 juice\", \"ZZ TEST 829 nuggets\" (BEO only, Central Floresta)",
+      "one live upcoming \"ZZ Test Child's 7th Birthday\" (28 Nov) from an earlier proof, not this run's",
+      "this run's six ZZ TEST events archived, six conversations handled, the family link of thread B stays on its archived event"
+    ]
+  },
+  "signOuts": {
+    "driver": {
+      "at": "2026-11-13T00:53:03.120Z",
+      "inboxContext": {
+        "inboxSignOut": {
+          "route": "POST /api/auth/sign-out (inbox)",
+          "status": 200
+        },
+        "beoTabAppLogout": {
+          "route": "POST /api/logout (OTO App, the BEO tab)",
+          "status": 200
+        },
+        "launcherSignOut": {
+          "route": "POST /api/auth/sign-out (launcher)",
+          "status": 200
+        },
+        "readBack": {
+          "inboxMe": 401,
+          "appUser": 401,
+          "launcherMe": 401
+        }
+      },
+      "appContext": {
+        "appLogout": {
+          "route": "POST /api/logout (OTO App)",
+          "status": 200
+        },
+        "launcherSignOut": {
+          "route": "POST /api/auth/sign-out (launcher)",
+          "status": 200
+        },
+        "readBack": {
+          "appUser": 401,
+          "launcherMe": 401
+        }
+      },
+      "tillOrigin": {
+        "signOut": {
+          "route": "POST /api/auth/sign-out (till origin)",
+          "status": 200
+        },
+        "readBack": {
+          "me": 401
+        }
+      }
+    },
+    "tillManager": {
+      "mgr": {
+        "signOut": 200,
+        "meAfter": 401
+      }
+    },
+    "console": {
+      "status": 200,
+      "meAfter": 401
+    }
+  },
+  "notes": [
+    "Before the run started, `node docs/qa/proof-2026-11-12/SCRUM-898/proof.mjs <folder>` was run by mistake (taken for a bundle): it stopped at its first assertion (\"unknown phase\") before any sign-in, sent one unauthenticated GET /api/me (401), and wrote one stray file into docs/qa/proof-2026-11-12/SCRUM-898/ (receipt-src898.json), which was deleted at once.",
+    "the app's [auth-diag] console log lines (they print the signed-in person's /api/user record, e-mail included) were dropped from the work file; 0 e-mail address(es) replaced by [withheld]",
+    "Numbers: the ZZ TEST simulator numbers are invented; on pictures every run of nine or more digits is masked; the BEO PDFs' WhatsApp line is boxed."
+  ],
+  "images": [
+    {
+      "file": "01a-thread-g-review-note-same-as-kids.png",
+      "at": "2026-11-13T00:17:22.925Z",
+      "shows": "The review's Kitchen Plan (G, first-read)",
+      "namesMasked": 57,
+      "masks": 0
+    },
+    {
+      "file": "h01-hunt-thread-g-review-note-phone-width.png",
+      "at": "2026-11-13T00:17:31.401Z",
+      "shows": "The review at phone width (390 px), G: the Kitchen Plan with the note or the chat's total",
+      "namesMasked": 1,
+      "masks": 0
+    },
+    {
+      "file": "01b-thread-g-review-kids-hawaiian-adults-set-line.png",
+      "at": "2026-11-13T00:17:40.170Z",
+      "shows": "The review's Kitchen Plan after staff chose Pizza Hawaiian (G, hawaiian)",
+      "namesMasked": 57,
+      "masks": 0
+    },
+    {
+      "file": "01c-thread-g-review-back-to-margherita-note-returns.png",
+      "at": "2026-11-13T00:17:48.026Z",
+      "shows": "The review's Kitchen Plan after staff chose Pizza Margherita (G, margherita-again)",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "01d-thread-g-toast-after-approve-note-sentence.png",
+      "at": "2026-11-13T00:17:58.484Z",
+      "shows": "The toast after Approve and create",
+      "namesMasked": 1,
+      "masks": 0
+    },
+    {
+      "file": "01f-thread-g-beo-adults-menu-eat-kids-menu.png",
+      "at": "2026-11-13T00:18:10.171Z",
+      "shows": "Thread G after Approve and create: the BEO Kitchen Plan, Adults Menu: the adults eat the kids' menu (Different for adults off, no own list)",
+      "namesMasked": 1,
+      "masks": 0
+    },
+    {
+      "file": "02a-thread-i-review-chat-total-900-for-2.png",
+      "at": "2026-11-13T00:21:07.896Z",
+      "shows": "The review's Kitchen Plan (I, first-read)",
+      "namesMasked": 57,
+      "masks": 0
+    },
+    {
+      "file": "h02-hunt-thread-i-review-chat-total-phone-width.png",
+      "at": "2026-11-13T00:21:25.859Z",
+      "shows": "The review at phone width (390 px), I: the Kitchen Plan with the note or the chat's total",
+      "namesMasked": 1,
+      "masks": 0
+    },
+    {
+      "file": "02b-thread-i-toast-after-approve.png",
+      "at": "2026-11-13T00:21:37.027Z",
+      "shows": "The toast after Approve and create",
+      "namesMasked": 57,
+      "masks": 0
+    },
+    {
+      "file": "02c-thread-i-beo-prices-after-approve-kids.png",
+      "at": "2026-11-13T00:22:20.434Z",
+      "shows": "I (after-approve): the Kitchen Plan, Kids Menu, the price boxes and hints",
+      "namesMasked": 1,
+      "masks": 0
+    },
+    {
+      "file": "02c-thread-i-beo-prices-after-approve-adults.png",
+      "at": "2026-11-13T00:22:21.738Z",
+      "shows": "I (after-approve): the Kitchen Plan, Adults Menu, the price boxes and hints",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "02c-thread-i-beo-prices-after-approve-bar.png",
+      "at": "2026-11-13T00:22:22.259Z",
+      "shows": "I (after-approve): the Bar Plan, the price boxes and hints",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "04a-thread-a-review-kitchen-plan-adults-chicken-set.png",
+      "at": "2026-11-13T00:25:52.956Z",
+      "shows": "The review's Kitchen Plan (A, first-read)",
+      "namesMasked": 57,
+      "masks": 0
+    },
+    {
+      "file": "04b-thread-a-toast-after-approve.png",
+      "at": "2026-11-13T00:26:01.329Z",
+      "shows": "The toast after Approve and create",
+      "namesMasked": 1,
+      "masks": 0
+    },
+    {
+      "file": "04c-thread-a-beo-adults-menu-set-chicken-cf43.png",
+      "at": "2026-11-13T00:26:11.927Z",
+      "shows": "Thread A after Approve and create: the BEO Kitchen Plan, Adults Menu: SET Chicken (Fried rice) with its till code",
+      "namesMasked": 1,
+      "masks": 0
+    },
+    {
+      "file": "04d-thread-a-beo-kids-menu.png",
+      "at": "2026-11-13T00:26:14.029Z",
+      "shows": "Thread A after Approve and create: the BEO Kitchen Plan, Kids Menu",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "04e-thread-a-till-party-page-kitchen-plan.png",
+      "at": "2026-11-13T00:26:46.676Z",
+      "shows": "Thread A's party on this run's ZZ TEST till (the staging manager): the Kitchen plan card",
+      "namesMasked": 2,
+      "masks": 2
+    },
+    {
+      "file": "04e-thread-a-till-edit-form-kitchen-plan.png",
+      "at": "2026-11-13T00:26:51.239Z",
+      "shows": "Thread A's party, the manager's Edit party form: its Kitchen plan (nothing changed; Cancel pressed after)",
+      "namesMasked": 0,
+      "masks": 2
+    },
+    {
+      "file": "05a-thread-b-review-option-held.png",
+      "at": "2026-11-13T00:29:45.628Z",
+      "shows": "The review's Kitchen Plan (B, first-read)",
+      "namesMasked": 57,
+      "masks": 0
+    },
+    {
+      "file": "05b-thread-b-review-shrimp-picked.png",
+      "at": "2026-11-13T00:29:52.560Z",
+      "shows": "The review's Kitchen Plan (B, shrimp)",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "05c-thread-b-toast-after-approve.png",
+      "at": "2026-11-13T00:29:55.181Z",
+      "shows": "The toast after Approve and create",
+      "namesMasked": 1,
+      "masks": 0
+    },
+    {
+      "file": "05d-thread-b-after-approve-till-party-page-kitchen-plan.png",
+      "at": "2026-11-13T00:30:24.567Z",
+      "shows": "Thread B's party on this run's ZZ TEST till (the staging manager): the Kitchen plan card",
+      "namesMasked": 2,
+      "masks": 2
+    },
+    {
+      "file": "05e-thread-b-family-link-choices-before-confirm.png",
+      "at": "2026-11-13T00:30:42.317Z",
+      "shows": "Thread B's family link (a private browser, no session): every group chosen, Fried rice Veggie, before Submit",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "05f-thread-b-family-link-selections-received-listed.png",
+      "at": "2026-11-13T00:30:44.178Z",
+      "shows": "Thread B's family link right after Confirm: Selections Received! with each group and its choice listed under it (no reload)",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "05h-thread-b-beo-adults-menu-after-family-link.png",
+      "at": "2026-11-13T00:31:07.164Z",
+      "shows": "Thread B reopened after the family's link (Fried rice Veggie for the kids): the BEO Adults Menu keeps Shrimp with its till code",
+      "namesMasked": 59,
+      "masks": 0
+    },
+    {
+      "file": "05i-thread-b-after-family-link-till-party-page-kitchen-plan.png",
+      "at": "2026-11-13T00:31:25.228Z",
+      "shows": "Thread B's party on this run's ZZ TEST till (the staging manager): the Kitchen plan card",
+      "namesMasked": 2,
+      "masks": 2
+    },
+    {
+      "file": "06a-thread-i-beo-pdf-adults-margherita-extra-400-each.png",
+      "at": "2026-11-13T00:32:25.665Z",
+      "shows": "Thread I's BEO PDF (as approved): 2x Margherita adults only EXTRA 400฿ each, 1x Pepperoni EXTRA 300฿ each; Received 13 Nov, Generated 13/11/2026",
+      "from": "pdf/I-first-p1.png",
+      "note": "a page of the BEO PDF as the app served it, rendered by pdfshot.py; names (if any) boxed"
+    },
+    {
+      "file": "06b-thread-i-editor-pepperoni-price-cleared-till-price.png",
+      "at": "2026-11-13T00:33:12.664Z",
+      "shows": "I: Adults Menu after staff cleared in Pepperoni's Price box",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "06c-thread-i-beo-pdf-pepperoni-till-price-420-weekend.png",
+      "at": "2026-11-13T00:33:47.167Z",
+      "shows": "Thread I's BEO PDF after the Pepperoni's typed price was cleared in the editor and saved: 1x Pepperoni adults only EXTRA till price 420 (weekend)",
+      "from": "pdf/I-pepperoni-cleared-p1.png",
+      "note": "a page of the BEO PDF as the app served it, rendered by pdfshot.py; names (if any) boxed"
+    },
+    {
+      "file": "06d-thread-i-editor-mango-typed-no-price.png",
+      "at": "2026-11-13T00:34:37.695Z",
+      "shows": "I: Adults Menu after \"+ EXTRA\" and \"ZZ TEST mango sticky rice\" typed with no price, before Save",
+      "namesMasked": 59,
+      "masks": 0
+    },
+    {
+      "file": "06e-thread-i-beo-pdf-mango-not-charged.png",
+      "at": "2026-11-13T00:35:14.007Z",
+      "shows": "Thread I's BEO PDF after a typed line ZZ TEST mango sticky rice with no price was added in the editor and saved: EXTRA not charged",
+      "from": "pdf/I-mango-p1.png",
+      "note": "a page of the BEO PDF as the app served it, rendered by pdfshot.py; names (if any) boxed"
+    },
+    {
+      "file": "06f-thread-b-beo-pdf-received-13-nov-generated-13-11.png",
+      "at": "2026-11-13T00:35:52.927Z",
+      "shows": "Thread B's BEO PDF: the set menu's choices recorded through the family's link in this run (13 Nov 07:30 Bangkok): Received 13 Nov, Generated 13/11/2026",
+      "from": "pdf/B-dates-p1.png",
+      "note": "a page of the BEO PDF as the app served it, rendered by pdfshot.py; names (if any) boxed"
+    },
+    {
+      "file": "06g-scrum-958-thread-b-beo-pdf-received-0245-bangkok-reads-13-nov.png",
+      "at": "2026-11-13T00:35:53.259Z",
+      "shows": "The archived ZZ TEST BEO of SCRUM-958's thread B, read only: its family's link was pressed 13 Nov 02:45 Bangkok (12 Nov 19:45 UTC); the PDF now reads Received 13 Nov (the park's day)",
+      "from": "pdf/idcccecb-958B-p1.png",
+      "note": "a page of the BEO PDF as the app served it, rendered by pdfshot.py; names (if any) boxed"
+    },
+    {
+      "file": "06h-thread-b-editor-kids-menu-received-day.png",
+      "at": "2026-11-13T00:35:55.378Z",
+      "shows": "Thread B's BEO editor, Kids Menu: the set menu block with the day the family's choices were received, as the editor shows it",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "07a-thread-r-review-450-each-no-chat-total.png",
+      "at": "2026-11-13T00:38:42.714Z",
+      "shows": "The review's Kitchen Plan (R, first-read)",
+      "namesMasked": 57,
+      "masks": 0
+    },
+    {
+      "file": "07b-thread-r-toast-after-approve.png",
+      "at": "2026-11-13T00:38:52.291Z",
+      "shows": "The toast after Approve and create",
+      "namesMasked": 1,
+      "masks": 0
+    },
+    {
+      "file": "h03-hunt-thread-f-review-fold-and-chat-total.png",
+      "at": "2026-11-13T00:42:51.727Z",
+      "shows": "The review's Kitchen Plan (F, first-read)",
+      "namesMasked": 59,
+      "masks": 0
+    },
+    {
+      "file": "h04-hunt-thread-f-review-fold-and-total-phone-width.png",
+      "at": "2026-11-13T00:43:03.767Z",
+      "shows": "The review at phone width (390 px), F: the Kitchen Plan with the note or the chat's total",
+      "namesMasked": 1,
+      "masks": 0
+    },
+    {
+      "file": "h05-hunt-thread-f-toast-fold-and-chat-total.png",
+      "at": "2026-11-13T00:43:07.482Z",
+      "shows": "The toast after Approve and create",
+      "namesMasked": 59,
+      "masks": 0
+    },
+    {
+      "file": "h06-hunt-thread-r-editor-margherita-kids3-adults2-kids.png",
+      "at": "2026-11-13T00:45:34.769Z",
+      "shows": "R (before-save): the Kitchen Plan, Kids Menu, the price boxes and hints",
+      "namesMasked": 1,
+      "masks": 0
+    },
+    {
+      "file": "h06-hunt-thread-r-editor-margherita-kids3-adults2-adults.png",
+      "at": "2026-11-13T00:45:41.823Z",
+      "shows": "R (before-save): the Kitchen Plan, Adults Menu, the price boxes and hints",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "h06-hunt-thread-r-editor-margherita-kids3-adults2-bar.png",
+      "at": "2026-11-13T00:45:45.900Z",
+      "shows": "R (before-save): the Bar Plan, the price boxes and hints",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "h07-hunt-thread-r-beo-pdf-kids3-adults2-one-row-400-each.png",
+      "at": "2026-11-13T00:46:34.349Z",
+      "shows": "Hunt: thread R's BEO PDF with the kids' EXTRA Margherita x3 at 400 and the adults' EXTRA Margherita x2 at 450: one row 3x Margherita — kids 3 · adults 2, EXTRA 400฿ each (the adults' 450 is not printed)",
+      "from": "pdf/R-repeat-count-p1.png",
+      "note": "a page of the BEO PDF as the app served it, rendered by pdfshot.py; names (if any) boxed"
+    },
+    {
+      "file": "08-beo-editor-sheet-from-studio-events.png",
+      "at": "2026-11-13T00:50:02.894Z",
+      "shows": "Studio > Events: the BEO editor sheet opened on its deep link, with the console recorded (the board behind hidden)",
+      "namesMasked": 61,
+      "masks": 0
+    },
+    {
+      "file": "08-beo-day-of-sheet-from-studio-events.png",
+      "at": "2026-11-13T00:50:19.511Z",
+      "shows": "Studio > Events: the event's dialog (from Recent Updates), Day-of View: the day-of sheet, with the console recorded (the board behind hidden)",
+      "namesMasked": 61,
+      "masks": 0
+    },
+    {
+      "file": "h08-hunt-recent-updates-edit-event-form-not-loaded.png",
+      "at": "2026-11-13T00:50:48.958Z",
+      "shows": "Hunt: Studio > Events, Recent Updates, thread A's row pressed: 'Edit Event' opens with the form's defaults (date today, 10 kids, 5 adults, title and child empty), not the event's own values (5 Dec, 12 kids, 8 adults). Update was not pressed.",
+      "namesMasked": 61,
+      "masks": 0
+    },
+    {
+      "file": "h09-cleanup-console-menu-zz-test-bubble-teas-before.png",
+      "at": "2026-11-13T00:51:53.139Z",
+      "shows": "Console > Catalogue > Menu, Central Floresta: the two old ZZ TEST party-only items (BEO only) before the clean-up",
+      "namesMasked": 2,
+      "masks": 0
+    },
+    {
+      "file": "h10-cleanup-console-menu-party-menu-after.png",
+      "at": "2026-11-13T00:52:02.156Z",
+      "shows": "Console > Catalogue > Menu, Central Floresta: the Party menu category after the two ZZ TEST bubble teas were deleted (archived)",
+      "namesMasked": 0,
+      "masks": 0
+    }
+  ]
+}
