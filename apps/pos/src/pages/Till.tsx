@@ -3981,8 +3981,9 @@ export default function Till() {
   }, [displayInUse]);
   // SCRUM-942 — while this till is locked with the family's form open on its
   // paired display, the lock screen says so, and says when they press Done.
-  useLockedFamilyFormWatch({ locked, stationId: station?.stationId ?? null,
-    formOpen: consentMirror && !consentCandidate.completed && !consentFinishing, ended: !!sessionEnded });
+  // SCRUM-964 — `ended`: under an ended session the line stands as the till last knew it.
+  useLockedFamilyFormWatch({ locked, stationId: station?.stationId ?? null, ended: !!sessionEnded,
+    formOpen: consentMirror && !consentCandidate.completed && !consentFinishing });
 
   // Retain the same visitor through a staff lock, but unmount every child
   // surface and portal so no member details or staff controls remain visible.
