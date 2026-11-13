@@ -61,6 +61,7 @@ import { onStaff } from "./lib/payOnlyAccess";
 import { resolveSetMenuLines, setMenuChoicesOfKitchenPlan } from "./lib/setMenuResolve";
 import { adultsCopiesOf, adultsDifferOf, adultsSetCopiesUncoded, foldDishName } from "@shared/kitchenAdults";
 import { refuseStartTime } from "@shared/eventStartTime";
+import { isCakeCount, kitchenPlanBodyRefusal, kitchenPlanPutBodySchema } from "./lib/kitchenPlanBody";
 
 type KitchenMenuBucket = "kids" | "adults";
 type KitchenMenuLine = { source?: string; [key: string]: unknown };
@@ -252,6 +253,11 @@ export function kitchenPlanDbDataOf(kp: Record<string, any>): Record<string, any
   return {
     foodRequired: kp.foodRequired ?? true,
     cakeMode: kp.cakeMode || "NONE",
+    // SCRUM-978 (SCRUM-966 point 5): how many cakes, as the editor's Save sends it (the editor held
+    // and sent it, and it was never written: a count changed in the editor was back after a reload).
+    // Written only when the form names one: a writer that sends none (the till's kitchen edit) keeps
+    // the plan's own count, never resets it.
+    ...(isCakeCount(kp.cakeQuantity) ? { cakeQuantity: kp.cakeQuantity } : {}),
     cakeNotes: kp.cakeNotes || null,
     cakeTime: kp.cakeTime || null,
     serviceSchedule: kp.serviceSchedule || [],
@@ -1363,14 +1369,19 @@ export function registerBeoRoutes(app: Express) {
       if (!(await verifyEventAccess(eventId, req.userWithAccess))) {
         return res.status(404).json({ error: "Event not found" });
       }
-      
+      // SCRUM-978: the body is read against the plan's shape before anything is written
+      // (server/lib/kitchenPlanBody.ts); a malformed one is refused with its reason.
+      const checked = kitchenPlanPutBodySchema.safeParse(req.body ?? {});
+      if (!checked.success) return res.status(400).json({ error: kitchenPlanBodyRefusal(checked.error) });
+      const body = checked.data;
+
       const result = await db.transaction(async (tx) => {
         await lockKitchenPlanMutation(tx, eventId);
         const [existing] = await tx.select().from(beoKitchenPlans)
           .where(eq(beoKitchenPlans.eventId, eventId));
 
         if (existing) {
-          const { setMenuSelectionSubmittedAt, ...updates } = req.body;
+          const { setMenuSelectionSubmittedAt, ...updates } = body;
           const [selection] = await tx.select({
             isSubmitted: beoSetMenuSelections.isSubmitted,
             submittedAt: beoSetMenuSelections.submittedAt,
@@ -1390,7 +1401,8 @@ export function registerBeoRoutes(app: Express) {
           return { status: 200, kitchenPlan: updated };
         }
 
-        const parsed = insertBeoKitchenPlanSchema.parse({ ...req.body, eventId });
+        const { setMenuSelectionSubmittedAt: _submittedAt, ...fields } = body;
+        const parsed = insertBeoKitchenPlanSchema.parse({ ...fields, eventId });
         const [created] = await tx.insert(beoKitchenPlans).values(parsed).returning();
         return { status: 201, kitchenPlan: created };
       });
