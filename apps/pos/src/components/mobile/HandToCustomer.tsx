@@ -84,11 +84,14 @@ export function HandToCustomer({
   return (
     <div className="fixed inset-0 z-50 flex flex-col overflow-hidden animate-in fade-in duration-200">
       <div className="flex-1 overflow-y-auto">{children}</div>
-      <div className="shrink-0 p-4 border-t bg-slate-950/90 backdrop-blur-sm">
+      {/* SCRUM-977 — on a phone held sideways (under 520 pixels tall) the bar
+          is tighter, so the family's form keeps most of the screen; an
+          upright phone is as it was. */}
+      <div className="shrink-0 p-4 border-t bg-slate-950/90 backdrop-blur-sm [@media(max-height:519.98px)]:py-2">
         <Button
           size="lg"
           variant="outline"
-          className="w-full h-14 text-base font-semibold rounded-2xl border-white/20 text-white hover:bg-white/10"
+          className="w-full h-14 text-base font-semibold rounded-2xl border-white/20 text-white hover:bg-white/10 [@media(max-height:519.98px)]:h-11"
           onClick={onDone}
         >
           {resolvedHandBackLabel}

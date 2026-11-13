@@ -11,7 +11,7 @@ import { resolveDropOffPricing } from '@/lib/dropoff';
 import { resolveGroupRequirements, resolveSupervisionOutcome, sortedConfirmations } from '@/lib/supervision';
 import { PhoneInput } from '@/components/shared/PhoneInput';
 import { TouchText } from './TouchText';
-import { DISPLAY_TOUCH, NARROW_BAR, NARROW_HEAD, NARROW_LINE, PHONE_SCROLL, PHONE_SCROLL_FORM, SHORT_HIDE } from './consentFormLayout';
+import { DISPLAY_TOUCH, NARROW_BAR, NARROW_HEAD, NARROW_LINE, PHONE_SCROLL, PHONE_SCROLL_FORM, PHONE_SHORT_BAR, PHONE_SHORT_LINE, SHORT_HIDE } from './consentFormLayout';
 import { kioskFlags } from '@/lib/kioskFlags';
 import { Checkbox } from '@/components/ui/checkbox';
 import { CameraCapture } from '@/components/shared/CameraCapture';
@@ -587,10 +587,11 @@ export function ConsentCapture({
 
       {/* SCRUM-857 — the family's Done, on the till's own customer half. */}
       {onDone && (
-        <div className={cn('shrink-0 border-t border-foreground/10 px-8 py-4 flex flex-wrap items-center justify-end gap-3', NARROW_BAR)} data-testid="consent-done-bar">
+        <div className={cn('shrink-0 border-t border-foreground/10 px-8 py-4 flex flex-wrap items-center justify-end gap-3', NARROW_BAR, phoneScroll && PHONE_SHORT_BAR)} data-testid="consent-done-bar">
           {doneBusy ? <p role="status">{t('superviseConsent.finishing')}</p> : <>
             {doneNotSaved && <p role="status" className="w-full text-right text-base text-(--cd-amber)" data-testid="consent-not-saved">{t('superviseConsent.notSaved')}</p>}
-            {missingLine && <p className={cn('w-full text-right text-base text-foreground/60', NARROW_LINE)} data-testid="consent-missing">{missingLine}</p>}
+            {/* SCRUM-977 — on a phone held sideways the line stands beside Done (`PHONE_SHORT_LINE`). */}
+            {missingLine && <p className={cn('w-full text-right text-base text-foreground/60', NARROW_LINE, phoneScroll && PHONE_SHORT_LINE)} data-testid="consent-missing">{missingLine}</p>}
             <Button disabled={!doneReady} onClick={onDone}>{t('common.done')}</Button>
           </>}
         </div>

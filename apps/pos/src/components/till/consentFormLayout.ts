@@ -28,6 +28,20 @@ export const PHONE_SCROLL_FORM =
   '[@media(max-width:519.98px),(max-height:519.98px)]:flex-none [@media(max-width:519.98px),(max-height:519.98px)]:overflow-visible';
 
 /**
+ * SCRUM-977 — a phone held sideways (740 by 360, 844 by 390) left the family's
+ * form 140 of its 360 pixels: the bar of "Still needed" and Done took 131 and
+ * "Return phone to staff" (`HandToCustomer`) 89. Under 520 pixels of HEIGHT,
+ * on the phone till's form only, the "Still needed" line stands beside Done in
+ * one compact row (every word kept, wrapping beside the button when it is
+ * long), and the hand-back bar is tighter (`HandToCustomer`). Nothing applies
+ * to an upright phone, the counter display or the till's own half.
+ */
+export const PHONE_SHORT_BAR = '[@media(max-height:519.98px)]:py-2';
+export const PHONE_SHORT_LINE =
+  '[@media(max-height:519.98px)]:w-auto [@media(max-height:519.98px)]:min-w-0 [@media(max-height:519.98px)]:flex-1 '
+  + '[@media(max-height:519.98px)]:basis-0 [@media(max-height:519.98px)]:text-left [@media(max-height:519.98px)]:text-sm';
+
+/**
  * SCRUM-894 — on a short screen (a landscape tablet, 1024 by 600) the box
  * being typed in and its keys did not fit between the heading and the bottom
  * bar. Below 700 pixels of height the heading's subtitle is left out (the
