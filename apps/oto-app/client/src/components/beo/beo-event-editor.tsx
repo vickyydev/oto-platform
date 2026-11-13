@@ -28,6 +28,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { DatePicker } from "@/components/ui/date-picker";
 import { LoadingScreen } from "@/components/ui/loading-spinner";
@@ -4383,6 +4384,8 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
               <Link2 className="h-4 w-4" />
               Parent Menu Selection Link
             </DialogTitle>
+            {/* SCRUM-978: the description the console asked for, for screen readers; nothing visible changes. */}
+            <DialogDescription className="sr-only">The link the family opens to choose the party's set menu.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             {setMenuSelection?.isSubmitted ? (

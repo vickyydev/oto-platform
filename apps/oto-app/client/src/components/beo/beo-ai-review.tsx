@@ -1,7 +1,7 @@
 import { createContext, useContext, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
@@ -1197,6 +1197,8 @@ export function BeoAiReviewDialog({
             <Sparkles className="h-5 w-5 text-primary" />
             AI Fill — Review, edit and approve
           </DialogTitle>
+          {/* SCRUM-978: the description the console asked for, for screen readers; nothing visible changes. */}
+          <DialogDescription className="sr-only">What the chat says for the party's BEO, to check, change and approve.</DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto space-y-3 pr-1">
           <div className="border rounded-lg p-3 space-y-1 text-xs text-muted-foreground" data-testid="ai-review-conversation">
