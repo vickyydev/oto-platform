@@ -828,7 +828,8 @@ async function endVoidNotSent(
  *  - a VOID approved, declined, cancelled, not_found or unsupported.
  * Handed to a person (`heldBecause`), because the acknowledgement is too little:
  *  - a SALE `partial_approval`: neither the amount taken nor the transaction
- *    to void it by;
+ *    to void it by. The person may not answer "taken" (`confirmAttempt`), and
+ *    an inquiry's approval after it does not lift that;
  *  - an inquiry `approved`: an inquiry's amount is not checked on the box
  *    (contract.ts:72-79), and the platform's check needs `approvedSatang`;
  *  - a VOID no_response, timeout or partial_approval: the void may have
@@ -869,11 +870,24 @@ function commandAnswerOf(row: Pick<CommandRow, 'state' | 'result'>): CommandAnsw
 
 const HELD_WORDS = {
   unreadable: 'The box acknowledged the terminal command with an answer the platform cannot read. Check the terminal before confirming the payment.',
-  partial: 'The terminal approved a different amount, and only the box’s acknowledgement reached the platform: it names neither the amount taken nor the transaction to void. Check the terminal before confirming the payment.',
-  amount: 'The terminal command asked for a different amount from this payment. Check the terminal before confirming the payment.',
+  partial: 'The terminal approved a different amount, and only the box’s acknowledgement reached the platform: it names neither the amount taken nor the transaction to void. It cannot be confirmed as paid in full; check the terminal.',
+  amount: 'The terminal command asked for a different amount from this payment, so it cannot be confirmed as paid in full; check the terminal.',
   inquiry: 'The terminal says the payment went through, but only the box’s acknowledgement reached the platform and it carries no amount to check. Check the terminal before confirming the payment.',
   void: 'The terminal gave no final answer to the void, so it may have gone through. A person has to check the terminal.',
 } as const;
+
+/**
+ * Holds that KNOW the terminal took an amount other than this payment's. A
+ * person may not confirm such an attempt as paid (`confirmAttempt`): that would
+ * record the whole amount against a card charged for another.
+ */
+const AMOUNT_HOLDS: readonly string[] = ['partial', 'amount'];
+
+/** The amount hold an attempt's SALE answer left on it, if any. */
+function amountHoldOf(payload: AttemptPayload): 'partial' | 'amount' | null {
+  const held = payload.fromCommand?.held;
+  return typeof held === 'string' && AMOUNT_HOLDS.includes(held) ? (held as 'partial' | 'amount') : null;
+}
 
 /** Why this acknowledgement is too little to settle on, or null when it is enough. */
 function heldBecause(
@@ -953,7 +967,11 @@ async function takeCommandAnswer(
     amountSatang: current.amountSatang,
   };
 
-  const held = heldBecause(mode, answer, command, current);
+  const asked = (command.payload as { amountSatang?: unknown } | null)?.amountSatang;
+  const found = heldBecause(mode, answer, command, current);
+  // An inquiry's approval names no amount, so it does not undo a SALE answer
+  // that already said the terminal took another amount: that hold stands.
+  const held = found === 'inquiry' ? (amountHoldOf(payload) ?? found) : found;
   if (held) {
     const fromCommand = { ...taken, held, reason: HELD_WORDS[held] };
     const stamped = mode === 'void'
@@ -963,7 +981,26 @@ async function takeCommandAnswer(
       : await stampAttempt(tx, current.id, {
           status: 'awaiting_staff_confirmation',
           ...(answer?.terminalRef && !current.terminalRef ? { terminalRef: answer.terminalRef } : {}),
-          payload: { ...payload, fromCommand },
+          payload: {
+            ...payload,
+            fromCommand,
+            // Why a person is asked, on the read view's `responseText` as
+            // `endAttemptNotSent` writes it. A result post arriving later
+            // replaces it with the terminal's own words.
+            exchange: {
+              mode,
+              outcome: taken.outcome,
+              protocol: answer?.protocol ?? payload.protocol ?? null,
+              requestedSatang: typeof asked === 'number' ? asked : current.amountSatang,
+              approvedSatang: null,
+              responseCode: taken.responseCode,
+              responseText: HELD_WORDS[held],
+              elapsedMs: null,
+              at,
+              source: COMMAND_SOURCE,
+              commandId: command.id,
+            },
+          },
         });
     await audit.record(tx, {
       actorAccountId: ctx.actorAccountId ?? null, operatorId: current.operatorId, branchId: current.branchId,
@@ -982,7 +1019,6 @@ async function takeCommandAnswer(
     ? await tx.select().from(device)
       .where(and(eq(device.id, current.deviceId), eq(device.operatorId, current.operatorId))).limit(1)
     : [];
-  const asked = (command.payload as { amountSatang?: unknown } | null)?.amountSatang;
   const recorded = await recordTerminalResult(
     tx,
     ctx,
@@ -2414,6 +2450,21 @@ export async function confirmAttempt(
     );
   }
   const payload = (current.payload ?? {}) as AttemptPayload;
+  /**
+   * SCRUM-979 — NEVER "PAID IN FULL" OVER AN ANSWER THAT SAID OTHERWISE. When
+   * the terminal's SALE answer, read off the box's acknowledgement, was an
+   * approval for another amount, "the money was taken" would record this
+   * attempt's whole amount against a card charged for a different one. The
+   * terminal's answer is known, so the attempt keeps it: "taken" is refused.
+   */
+  const amountHold = amountHoldOf(payload);
+  if (input.took && amountHold) {
+    throw errors.conflict(
+      'PARTIAL_APPROVAL_NOT_CONFIRMABLE',
+      'The terminal approved a different amount from this payment, so it cannot be confirmed as paid in full',
+      { status: current.status, held: amountHold, reason: HELD_WORDS[amountHold] },
+    );
+  }
   const confirmation = {
     accountId: actor.accountId,
     took: input.took,
