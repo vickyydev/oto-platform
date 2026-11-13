@@ -1,3 +1,4 @@
+import { availablePartyDeposit } from './party-deposit-balance';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 import type { FastifyBaseLogger } from 'fastify';
 import {
@@ -286,7 +287,7 @@ interface BuiltSettlement {
   cart: PartySettlementCart;
   socksProductId: string | null;
   /** SCRUM-950: the kitchen plan's extras, each named, as Settle party lists them. */
-  extras: PartySettleExtra[];
+  extras: (PartySettleExtra & { componentKey?: string; cartLineId?: string })[];
 }
 
 function refuse(result: { code: string; message: string; details?: Record<string, unknown> }): never {
@@ -329,8 +330,10 @@ async function buildSettlement(
   const extraCharges = await partyExtraChargesOf(db, actor.operatorId, plan, c.rateMode);
   const partyMenu = [...(await partyMenuChargesOf(db, actor.operatorId, plan.setMenu, c.rateMode)), ...extraCharges.charges];
   // SCRUM-950: each extra by name, as the sale charges it (the price of one times the count), then those it does not charge.
-  const namedExtras: PartySettleExtra[] = [
+  const namedExtras: BuiltSettlement['extras'] = [
     ...partyMenu.map((m) => ({
+      componentKey: m.id,
+      cartLineId: deriveId(settlementId, `party-settlement:add-ons`),
       name: m.name,
       productCode: m.code,
       qty: m.qty,
@@ -502,7 +505,7 @@ async function walkUpsOnTab(db: Exec, branchId: string, eventId: string): Promis
 /** The settlement's figures, read off the engine's priced lines and nothing else. */
 function quoteOf(
   built: BuiltSettlement,
-  lines: readonly Pick<PricedLine, 'label' | 'quantity' | 'unitSatang' | 'grossSatang' | 'payload'>[],
+  lines: readonly Pick<PricedLine, 'label' | 'quantity' | 'unitSatang' | 'grossSatang' | 'payload' | 'componentKey' | 'cartLineId'>[],
   grossSatang: number,
   walkUps: WalkUpsOnTab,
 ): PartySettleQuote {
@@ -536,7 +539,10 @@ function quoteOf(
     balanceSatang: grossSatang - depositSatang,
     walkUps: walkUps.count,
     walkUpsSatang: walkUps.satang,
-    ...(built.extras.length > 0 ? { extras: built.extras } : {}),
+    ...(built.extras.length > 0 ? { extras: built.extras.map(({ componentKey, cartLineId, ...extra }) => ({
+      ...extra,
+      totalSatang: extra.charged ? lines.filter((l) => l.cartLineId === cartLineId && l.componentKey === componentKey).reduce((n, l) => n + l.grossSatang, 0) : extra.totalSatang,
+    })) } : {}),
   };
 }
 
@@ -601,6 +607,7 @@ export async function quotePartySettlement(
   });
   // Answered, not refused: the form shows the walk-ups and why Confirm is off.
   const walkUps = await walkUpsOnTab(db, branchId, event.id);
+  built.plan = { ...built.plan, settlement: { ...built.plan.settlement, depositSatang: await availablePartyDeposit(db, { branchId, eventId: event.id, recordedSatang: built.plan.settlement.depositSatang }) } };
   return quoteOf(built, priced.lines, priced.money.grossSatang, walkUps);
 }
 
@@ -781,6 +788,10 @@ export async function settleParty(
       throw errors.conflict('SALE_ID_IN_USE', 'That sale id already belongs to another sale — nothing was saved');
     }
     const gross = committed.sale.totals.grossSatang;
+    // Reread after the party lock; a deposit notification may have completed since preview.
+    const current = await readPartyPlan(tx, { branchId, eventId: event.id });
+    if (!current.plan) throw errors.conflict('PARTY_PLAN_CHANGED', 'Reload the party before settling it.');
+    built.plan = { ...built.plan, settlement: { ...built.plan.settlement, depositSatang: await availablePartyDeposit(tx, { branchId, eventId: event.id, recordedSatang: current.plan.settlement.depositSatang }) } };
     const quote = quoteOf(built, committed.lines, gross, walkUps);
 
     let depositAttemptId: string | null = null;

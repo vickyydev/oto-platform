@@ -43,6 +43,8 @@ interface RefundModalProps {
   onOpenChange: (open: boolean) => void;
   /** Largest amount that may still be refunded on this transaction. */
   maxRefund: number;
+  retainedPartyDeposit?: number;
+  allowRetainedClosure?: boolean;
   /** F&B credit still restorable to the wristband. 0 for tickets. */
   restorableCredit: number;
   lines: RefundLineOption[];
@@ -89,6 +91,8 @@ export function RefundModal({
   open,
   onOpenChange,
   maxRefund,
+  retainedPartyDeposit = 0,
+  allowRetainedClosure = false,
   restorableCredit,
   lines,
   reasons,
@@ -147,7 +151,8 @@ export function RefundModal({
   // F&B credit is refunded first; only the F&B credit portion returns to the tab.
   const creditRestoredTHB = Math.min(amountTHB, restorableCredit);
 
-  const canConfirm = !!reason && resolved.amountSatang > 0 && !busy;
+  const retainOnly = allowRetainedClosure && mode === 'full' && resolved.amountSatang === 0 && retainedPartyDeposit > 0;
+  const canConfirm = !!reason && (resolved.amountSatang > 0 || retainOnly) && !busy;
 
   const handleConfirm = () => {
     if (!canConfirm) return;
@@ -312,6 +317,7 @@ export function RefundModal({
           <div className="rounded-lg bg-muted p-4 space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Refund amount</span>
+              {retainedPartyDeposit > 0 && <p className="text-sm">Deposit stays with this party: THB {bahtText(retainedPartyDeposit)}</p>}
               <span className="text-2xl font-black text-rose-400 tabular-nums">−฿{bahtText(amountTHB)}</span>
             </div>
             {creditRestoredTHB > 0 && (
@@ -370,7 +376,7 @@ export function RefundModal({
                 ? 'Refunding…'
                 : offline
                   ? `Note refund request ฿${bahtText(amountTHB)}`
-                  : `Refund ฿${bahtText(amountTHB)}`}
+                  : retainOnly ? `Close settlement; return THB 0; keep deposit` : `Refund ฿${bahtText(amountTHB)}`}
           </Button>
         </div>
       </DialogContent>

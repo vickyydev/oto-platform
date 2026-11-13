@@ -1,3 +1,4 @@
+import { assertPartyDepositHistory, partyRefundBalanceOf } from './party-deposit-balance';
 import { and, asc, desc, eq, inArray, isNotNull, isNull, or } from 'drizzle-orm';
 import {
   account,
@@ -28,6 +29,7 @@ import {
 } from '@oto/db';
 import {
   PAYMENT_ATTEMPT_TAKEN_STATUSES,
+  isPartyDepositAttempt,
   eventBandDocument,
   groupPrepTickets,
   isPartyTicketLine,
@@ -1332,7 +1334,12 @@ export async function salePrintSnapshotOf(db: Exec, saleRow: SaleRow): Promise<S
     .from(paymentAttempt)
     .where(eq(paymentAttempt.saleId, saleRow.id))
     .orderBy(asc(paymentAttempt.createdAt));
-  const taken = attempts.filter((a) => PAYMENT_ATTEMPT_TAKEN_STATUSES.includes(a.status));
+  // A receipt copy describes the original paid sale. Releasing its deposit
+  // allocation back to the party must not erase that original coverage.
+  const retained = saleRow.status === 'refunded' ? await partyRefundBalanceOf(db, saleRow.id) : null;
+  if (retained && retained.retainedSatang > 0) assertPartyDepositHistory(retained);
+  const taken = attempts.filter((a) => PAYMENT_ATTEMPT_TAKEN_STATUSES.includes(a.status)
+    || (retained && retained.retainedSatang > 0 && a.id === retained.depositAttemptId && a.status === 'cancelled' && isPartyDepositAttempt(a)));
   const bandRows = await db
     .select({
       band,

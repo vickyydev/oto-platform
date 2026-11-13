@@ -94,7 +94,7 @@ const attempt = (over: Partial<PaymentAttemptView> & Pick<PaymentAttemptView, 'i
   ...over,
 });
 
-async function open(txn: HistoryTxn, attempts: PaymentAttemptView[], refundableSatang?: number) {
+async function open(txn: HistoryTxn, attempts: PaymentAttemptView[], refundableSatang?: number, extra: Partial<ApiSaleDetail> = {}) {
   const detail: ApiSaleDetail = {
     sale: txn.ledger,
     lines: [],
@@ -103,6 +103,7 @@ async function open(txn: HistoryTxn, attempts: PaymentAttemptView[], refundableS
     attempts,
     refunds: [],
     printJobs: [],
+    ...extra,
     ...(refundableSatang !== undefined ? { refundableSatang } : {}),
   };
   const get = vi.spyOn(api, 'get').mockResolvedValue(detail);
@@ -192,6 +193,28 @@ describe('History offers Void or Refund by what the sale took', () => {
       attempt({ id: 'c', method: 'card', status: 'sent_to_terminal', amountSatang: 4_000 }),
     ]);
     expect(state).toMatchObject({ refundable: false, partPaidOpen: false, tookNoMoney: false });
+    done();
+  });
+});
+
+describe('SCRUM-910 retained-deposit History state', () => {
+  it.each([0, 1_490_000])('a closed party refunded by %i reads refunded even below original gross', async (refunded) => {
+    const txn = row('retained-closed', 'refunded', 1_690_000);
+    txn.ledger.totals.refundedSatang = refunded;
+    const { state, done } = await open(txn, [], 0);
+    expect(state).toMatchObject({ badge: 'refunded', refundable: false, remainingSatang: 0, tookNoMoney: false });
+    done();
+  });
+  it('a deposit-only finalised party keeps the whole closure action with zero cash', async () => {
+    const txn = row('retained-zero', 'finalised', 1_690_000);
+    const { state, done } = await open(txn, [attempt({ id: 'dep', method: 'other', status: 'approved', amountSatang: 1_690_000, partyDeposit: true })], 0, { canCloseWithRetainedDeposit: true, partyDepositRetainableSatang: 1_690_000 });
+    expect(state).toMatchObject({ badge: 'paid', refundable: true, remainingSatang: 0 });
+    done();
+  });
+  it('an unresolved historical return cannot offer another refund', async () => {
+    const txn = row('retained-review', 'finalised', 1_690_000);
+    const { state, done } = await open(txn, [], 0, { partyDepositReviewRequired: true });
+    expect(state.refundable).toBe(false);
     done();
   });
 });

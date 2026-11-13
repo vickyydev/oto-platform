@@ -59079,6 +59079,12 @@
                               "bill": {
                                 "type": "object",
                                 "properties": {
+                                  "depositReviewRequired": {
+                                    "type": "boolean"
+                                  },
+                                  "depositReturnedSatang": {
+                                    "type": "integer"
+                                  },
                                   "baseSatang": {
                                     "type": "integer"
                                   },
@@ -59850,6 +59856,12 @@
                               "bill": {
                                 "type": "object",
                                 "properties": {
+                                  "depositReviewRequired": {
+                                    "type": "boolean"
+                                  },
+                                  "depositReturnedSatang": {
+                                    "type": "integer"
+                                  },
                                   "baseSatang": {
                                     "type": "integer"
                                   },
@@ -60628,6 +60640,12 @@
                             "bill": {
                               "type": "object",
                               "properties": {
+                                "depositReviewRequired": {
+                                  "type": "boolean"
+                                },
+                                "depositReturnedSatang": {
+                                  "type": "integer"
+                                },
                                 "baseSatang": {
                                   "type": "integer"
                                 },
@@ -61405,6 +61423,12 @@
                             "bill": {
                               "type": "object",
                               "properties": {
+                                "depositReviewRequired": {
+                                  "type": "boolean"
+                                },
+                                "depositReturnedSatang": {
+                                  "type": "integer"
+                                },
                                 "baseSatang": {
                                   "type": "integer"
                                 },
@@ -62560,6 +62584,12 @@
                             "bill": {
                               "type": "object",
                               "properties": {
+                                "depositReviewRequired": {
+                                  "type": "boolean"
+                                },
+                                "depositReturnedSatang": {
+                                  "type": "integer"
+                                },
                                 "baseSatang": {
                                   "type": "integer"
                                 },
@@ -64428,6 +64458,12 @@
                             "bill": {
                               "type": "object",
                               "properties": {
+                                "depositReviewRequired": {
+                                  "type": "boolean"
+                                },
+                                "depositReturnedSatang": {
+                                  "type": "integer"
+                                },
                                 "baseSatang": {
                                   "type": "integer"
                                 },
@@ -65623,6 +65659,12 @@
                             "bill": {
                               "type": "object",
                               "properties": {
+                                "depositReviewRequired": {
+                                  "type": "boolean"
+                                },
+                                "depositReturnedSatang": {
+                                  "type": "integer"
+                                },
                                 "baseSatang": {
                                   "type": "integer"
                                 },
@@ -68162,6 +68204,12 @@
                             "bill": {
                               "type": "object",
                               "properties": {
+                                "depositReviewRequired": {
+                                  "type": "boolean"
+                                },
+                                "depositReturnedSatang": {
+                                  "type": "integer"
+                                },
                                 "baseSatang": {
                                   "type": "integer"
                                 },
@@ -69149,6 +69197,12 @@
                             "bill": {
                               "type": "object",
                               "properties": {
+                                "depositReviewRequired": {
+                                  "type": "boolean"
+                                },
+                                "depositReturnedSatang": {
+                                  "type": "integer"
+                                },
                                 "baseSatang": {
                                   "type": "integer"
                                 },
@@ -85332,6 +85386,9 @@
                               "amountSatang": {
                                 "type": "integer"
                               },
+                              "retainedPartyDepositSatang": {
+                                "type": "integer"
+                              },
                               "mode": {
                                 "type": "string"
                               },
@@ -85422,6 +85479,7 @@
                               "branchId",
                               "number",
                               "amountSatang",
+                              "retainedPartyDepositSatang",
                               "mode",
                               "reason",
                               "approvedBy",

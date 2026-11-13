@@ -315,6 +315,9 @@ export interface ApiSaleDetail {
   refundStatus?: RefundStatus;
   /** What may still be refunded, in satang. 0 on a sale that is not finalised. */
   refundableSatang?: number;
+  partyDepositReviewRequired?: boolean;
+  partyDepositRetainableSatang?: number;
+  canCloseWithRetainedDeposit?: boolean;
   /** Every refund, oldest first — the prototype's "Refund history". */
   refunds?: ApiRefund[];
   /** Every print job, newest first; a reprint names its original in `reprintOf`. */
@@ -359,6 +362,7 @@ export interface ApiRefund {
   /** `T1-R-000003`. */
   number: string;
   amountSatang: number;
+  retainedPartyDepositSatang?: number;
   mode: RefundMode | string;
   reason: string;
   note: string | null;
@@ -460,6 +464,7 @@ export function isDropOff(sale: ApiSaleListItem): boolean {
 /** What the badge says, refunds included. */
 export function badgeOf(sale: ApiSaleListItem): BadgeStatus {
   if (sale.status === 'voided') return 'voided';
+  if (sale.status === 'refunded') return 'refunded';
   // SCRUM-890 — open with money taken on it: partly paid, not unpaid.
   if (sale.status === 'tendering') return sale.partPaid ? 'part_paid' : 'unpaid';
   const refunded = sale.totals.refundedSatang;

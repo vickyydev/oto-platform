@@ -37,7 +37,7 @@ const trace = (kind: 'sale' | 'payment_attempt', id: string) => ({ kind, id, hre
 const refunds: MoneyRefunds = {
   scope, basis: 'original-sale-business-date',
   refunds: { count: 1, totalSatang: 40_000, truncated: false, rows: [{
-    branchId: PARK, number: 'ZZC-R-000001', amountSatang: 40_000, mode: 'custom', reason: 'Wrong ticket', approvedBy: 'Manager May',
+    branchId: PARK, number: 'ZZC-R-000001', amountSatang: 40_000, retainedPartyDepositSatang: 0, mode: 'custom', reason: 'Wrong ticket', approvedBy: 'Manager May',
     createdBy: 'Till Tom', pending: false, createdAt: '2026-10-01T06:00:00.000Z',
     sale: { receiptNumber: 'ZZC-000005', businessDate: '2026-10-01', grossSatang: 100_000, status: 'finalised' },
     refundId: null, saleId: null, trace: null,
@@ -133,6 +133,17 @@ describe('Money oversight page (SCRUM-647)', () => {
     expect(html).toContain('ZZC-000005');
     expect(html).toContain('฿60');
     expect(html).toContain('owed ฿300');
+  });
+
+  it('SCRUM-910: shows retained party deposit separately from zero money returned', () => {
+    const retained = structuredClone(refunds);
+    retained.refunds.totalSatang = 0;
+    retained.refunds.rows[0]!.amountSatang = 0;
+    retained.refunds.rows[0]!.retainedPartyDepositSatang = 200_000;
+    const text = render(full({ refunds: ok(retained) })).replace(/<[^>]*>/g, '');
+    expect(text).toContain('Deposit stays with the party: \u0e3f2,000');
+    const position = text.indexOf('ZZC-R-000001');
+    expect(text.slice(position, position + 70)).toContain('\u0e3f0');
   });
 
   it('draws a source that is not there as not available, never as a zero', () => {

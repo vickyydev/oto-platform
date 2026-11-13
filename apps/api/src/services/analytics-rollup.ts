@@ -200,6 +200,7 @@ interface SaleFactRow extends Record<string, unknown> {
   merch_lines: number;
   drop_off: boolean;
   refunded: string | number;
+  retained_deposit: string | number;
   non_credit: string | number;
   credit_used: string | number;
   credit_restored: string | number;
@@ -266,6 +267,7 @@ export async function saleFactsOf(db: Exec, branchId: string, date: string): Pro
                 and (l.kind = 'service_fee' or exists (select 1 from pos.checkin c where c.id = l.cart_line_id))
            ) as drop_off,
            coalesce((select sum(r.amount_satang) from pos.refund r where r.sale_id = day.id), 0)::bigint as refunded,
+           coalesce((select sum(r.retained_party_deposit_satang) from pos.refund r where r.sale_id = day.id), 0)::bigint as retained_deposit,
            coalesce((select sum(a.amount_satang) from pos.payment_attempt a
                       where a.sale_id = day.id and a.status in (${taken}) and not ${credit}), 0)::bigint as non_credit,
            coalesce((select sum(a.amount_satang) from pos.payment_attempt a
@@ -298,6 +300,7 @@ export async function saleFactsOf(db: Exec, branchId: string, date: string): Pro
       hour: Number(r.hour),
       grossSatang: Number(r.gross_satang),
       refundedSatang: Number(r.refunded),
+      retainedPartyDepositSatang: Number(r.retained_deposit),
       nonCreditSatang: Number(r.non_credit),
       creditUsedSatang: Number(r.credit_used),
       creditRestoredSatang: Number(r.credit_restored),

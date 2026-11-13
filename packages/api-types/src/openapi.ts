@@ -24984,6 +24984,8 @@ export interface paths {
                                         at: string;
                                     } | null;
                                     bill?: {
+                                        depositReviewRequired?: boolean;
+                                        depositReturnedSatang?: number;
                                         baseSatang: number;
                                         chargesSatang: number;
                                         totalSatang: number;
@@ -25180,6 +25182,8 @@ export interface paths {
                                         at: string;
                                     } | null;
                                     bill?: {
+                                        depositReviewRequired?: boolean;
+                                        depositReturnedSatang?: number;
                                         baseSatang: number;
                                         chargesSatang: number;
                                         totalSatang: number;
@@ -25378,6 +25382,8 @@ export interface paths {
                                         at: string;
                                     } | null;
                                     bill?: {
+                                        depositReviewRequired?: boolean;
+                                        depositReturnedSatang?: number;
                                         baseSatang: number;
                                         chargesSatang: number;
                                         totalSatang: number;
@@ -25576,6 +25582,8 @@ export interface paths {
                                         at: string;
                                     } | null;
                                     bill?: {
+                                        depositReviewRequired?: boolean;
+                                        depositReturnedSatang?: number;
                                         baseSatang: number;
                                         chargesSatang: number;
                                         totalSatang: number;
@@ -25900,6 +25908,8 @@ export interface paths {
                                         at: string;
                                     } | null;
                                     bill?: {
+                                        depositReviewRequired?: boolean;
+                                        depositReturnedSatang?: number;
                                         baseSatang: number;
                                         chargesSatang: number;
                                         totalSatang: number;
@@ -26327,6 +26337,8 @@ export interface paths {
                                         at: string;
                                     } | null;
                                     bill?: {
+                                        depositReviewRequired?: boolean;
+                                        depositReturnedSatang?: number;
                                         baseSatang: number;
                                         chargesSatang: number;
                                         totalSatang: number;
@@ -26643,6 +26655,8 @@ export interface paths {
                                         at: string;
                                     } | null;
                                     bill?: {
+                                        depositReviewRequired?: boolean;
+                                        depositReturnedSatang?: number;
                                         baseSatang: number;
                                         chargesSatang: number;
                                         totalSatang: number;
@@ -27294,6 +27308,8 @@ export interface paths {
                                         at: string;
                                     } | null;
                                     bill?: {
+                                        depositReviewRequired?: boolean;
+                                        depositReturnedSatang?: number;
                                         baseSatang: number;
                                         chargesSatang: number;
                                         totalSatang: number;
@@ -27543,6 +27559,8 @@ export interface paths {
                                         at: string;
                                     } | null;
                                     bill?: {
+                                        depositReviewRequired?: boolean;
+                                        depositReturnedSatang?: number;
                                         baseSatang: number;
                                         chargesSatang: number;
                                         totalSatang: number;
@@ -33229,6 +33247,7 @@ export interface paths {
                                     branchId: string;
                                     number: string;
                                     amountSatang: number;
+                                    retainedPartyDepositSatang: number;
                                     mode: string;
                                     reason: string;
                                     approvedBy: string | null;

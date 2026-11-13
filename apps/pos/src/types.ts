@@ -1471,6 +1471,9 @@ export interface ChargeTarget {
 }
 
 export interface PartyBooking {
+  /** Remaining deposit credit; deposit itself stays the original editable received figure. */
+  availableDeposit?: number;
+  depositReviewRequired?: boolean;
   id: string;
   branchId: string;
   status: PartyStatus;

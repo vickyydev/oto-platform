@@ -1588,6 +1588,8 @@ export const refund = pos.table(
     /** e.g. `T1-R-000003`, from `receipt_series` kind `refund`. */
     number: text('number').notNull(),
     amountSatang: bigint('amount_satang', { mode: 'number' }).notNull(),
+    /** Deposit allocation released back to this party; never money handed back. */
+    retainedPartyDepositSatang: bigint('retained_party_deposit_satang', { mode: 'number' }).notNull().default(0),
     mode: text('mode').$type<RefundMode>().notNull(),
     /** Required, as a void's is: a refund with no reason is what the report exists to stop. */
     reason: text('reason').notNull(),
@@ -1612,13 +1614,14 @@ export const refund = pos.table(
     uniqueIndex('refund_action_unique')
       .on(t.operatorId, t.actionId)
       .where(sql`action_id is not null`),
+    uniqueIndex('refund_retained_party_deposit_sale_unique').on(t.saleId).where(sql`retained_party_deposit_satang > 0`),
     index('refund_operator_idx').on(t.operatorId),
     index('refund_sale_idx').on(t.saleId),
     index('refund_station_idx').on(t.stationId),
     index('refund_branch_created_idx').on(t.branchId, t.createdAt),
     index('refund_approved_by_idx').on(t.approvedByAccountId),
     index('refund_created_by_idx').on(t.createdByAccountId),
-    check('refund_amount_check', sql`${t.amountSatang} > 0`),
+    check('refund_amount_check', sql`${t.amountSatang} >= 0 and ${t.retainedPartyDepositSatang} >= 0 and (${t.amountSatang} > 0 or (${t.mode} = 'whole' and ${t.retainedPartyDepositSatang} > 0))`),
     check('refund_mode_check', sql`${t.mode} in ('whole','items','custom')`),
     check('refund_reason_check', sql`length(trim(${t.reason})) > 0`),
   ],

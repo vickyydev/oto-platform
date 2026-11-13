@@ -1,3 +1,4 @@
+import { assertPartyDepositHistory } from './party-deposit-balance';
 import { and, asc, eq, inArray, ne, or, sql } from 'drizzle-orm';
 import type { FastifyBaseLogger } from 'fastify';
 import { branch, partyCharge, partyEdit, partyPayment, paymentAttempt, station, type Db } from '@oto/db';
@@ -159,6 +160,7 @@ export async function stationAt(db: Exec, operatorId: string, branchId: string, 
 async function liveBill(tx: Exec, branchId: string, partyId: string) {
   const confirmed = await partyOf(tx, branchId, partyId);
   const ledgers = (await partyLedgersOf(tx, { branchId, eventIds: [confirmed.id] })).get(confirmed.id)!;
+  if (ledgers.depositHistory) assertPartyDepositHistory(ledgers.depositHistory);
   const party = overlayPartyEdits(confirmed, ledgers.edits);
   const walkUps = (await linksOfEvents(tx, { branchId, eventIds: [confirmed.id] }))
     .filter((l) => l.billing === 'party_tab')

@@ -65,6 +65,7 @@ export interface RefundView {
   /** `T1-R-000003` — the refund's own number, from its own series. */
   number: string;
   amountSatang: number;
+  retainedPartyDepositSatang: number;
   mode: string;
   reason: string;
   note: string | null;
@@ -88,6 +89,7 @@ export function refundViewOf(
     stationId: row.stationId,
     number: row.number,
     amountSatang: row.amountSatang,
+    retainedPartyDepositSatang: row.retainedPartyDepositSatang,
     mode: row.mode,
     reason: row.reason,
     note: row.note,

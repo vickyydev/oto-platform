@@ -482,13 +482,16 @@ export function PaymentRow({
   attempt,
   sale,
   fmt,
+  retainedPartyDepositSatang,
 }: {
   attempt: PaymentAttemptView;
+  retainedPartyDepositSatang?: number;
   /** The sale the tender settled: a booking's redemption names its money "Paid online". */
   sale: Pick<ApiSale, 'note'>;
   fmt: (iso: string) => string;
 }) {
   const status = tenderStatusOf(attempt);
+  const shownAmount = attempt.partyDeposit && attempt.status === 'cancelled' ? retainedPartyDepositSatang ?? attempt.amountSatang : attempt.amountSatang;
   // SCRUM-979 — a tender that took no money (a declined card, a cancelled QR)
   // has no amount in the money column, which reads as money taken: what was
   // asked goes into the line's words, greyed. A party's deposit kept with the
@@ -503,6 +506,7 @@ export function PaymentRow({
     attempt.last4 ? `•••• ${attempt.last4}` : null,
     attempt.approvalCode ? `Approval ${attempt.approvalCode}` : null,
     attempt.terminalRef ?? attempt.tranRef ?? attempt.invoiceNo,
+    shownAmount !== attempt.amountSatang ? `Original allocation THB ${satangText(attempt.amountSatang)}` : null,
     attempt.offline ? 'Taken offline' : null,
   ].filter(Boolean) as string[];
 
@@ -522,7 +526,7 @@ export function PaymentRow({
           </span>
         </span>
       </span>
-      {!noMoney && <span className="tabular-nums shrink-0 font-semibold">฿{satangText(attempt.amountSatang)}</span>}
+      {!noMoney && <span className="tabular-nums shrink-0 font-semibold">฿{satangText(shownAmount)}</span>}
     </div>
   );
 }
@@ -606,6 +610,7 @@ export function RefundHistory({ refunds, fmt }: { refunds: readonly ApiRefund[];
                   );
                 })}
               </div>
+              {(r.retainedPartyDepositSatang ?? 0) > 0 && <p className="text-sm text-muted-foreground">Deposit stays with the party: THB {satangText(r.retainedPartyDepositSatang!)}</p>}
               <div className="text-xs text-muted-foreground">
                 by {by}
                 {r.approvedBy.accountId === r.createdBy.accountId
@@ -897,6 +902,8 @@ export function useSaleDetail({ txn, timeZone, onRefunded }: SaleDetailProps) {
   const badge: BadgeStatus =
     status === 'voided'
       ? 'voided'
+      : status === 'refunded'
+        ? 'refunded'
       : status === 'tendering'
         // SCRUM-890 — money taken on it and still open: partly paid, not unpaid
         // (the list row's word until the detail's tenders are read).
@@ -981,7 +988,7 @@ export function useSaleDetail({ txn, timeZone, onRefunded }: SaleDetailProps) {
    * in cash goes the same way, its deposit untouched.
    */
   const partPaidOpen = detail !== null && status === 'tendering' && attempts.some(tookMoney) && noneInFlight;
-  const refundable = closed || partPaidOpen;
+  const refundable = (closed || partPaidOpen) && status !== 'refunded' && !detail?.partyDepositReviewRequired;
   const takenSatang = attempts.filter(tookMoney).reduce((sum, a) => sum + a.amountSatang, 0);
   const remainingSatang = partPaidOpen
     ? Math.max(0, takenSatang - totals.refundedSatang)
@@ -1565,7 +1572,7 @@ export function SaleDetail(props: SaleDetailProps) {
               </div>
               <div className="space-y-3">
                 {attempts.map((attempt) => (
-                  <PaymentRow key={attempt.id} attempt={attempt} sale={sale} fmt={fmt} />
+                  <PaymentRow key={attempt.id} attempt={attempt} sale={sale} fmt={fmt} retainedPartyDepositSatang={detail?.refunds?.some((r) => (r.retainedPartyDepositSatang ?? 0) > 0) ? detail.refunds.reduce((n, r) => n + (r.retainedPartyDepositSatang ?? 0), 0) : undefined} />
                 ))}
               </div>
             </Card>
@@ -1616,12 +1623,14 @@ export function SaleDetail(props: SaleDetailProps) {
               can take paid extra time; an unpaid sale that took no money can
               be voided, in Refund's place; a voided sale has nothing to refund
               and shows neither (SCRUM-430). */}
+          {detail?.partyDepositReviewRequired && <p role="alert">This party has an unresolved deposit refund. Review its payment records before refunding it.</p>}
           {justRefunded ? (
             <Card className="p-4 bg-card/50 space-y-2" data-testid="refund-recorded">
               <div className="text-sm font-semibold flex items-center gap-2 text-emerald-400">
                 <Check className="w-4 h-4" />
-                Refund recorded · {justRefunded.number} · −฿{satangText(justRefunded.amountSatang)}
+                Money returned · {justRefunded.number} · −฿{satangText(justRefunded.amountSatang)}
               </div>
+              {(justRefunded.retainedPartyDepositSatang ?? 0) > 0 && <p>Deposit stays with the party: THB {satangText(justRefunded.retainedPartyDepositSatang!)}</p>}
               {justRefunded.tenderAllocation.map((slice, i) => {
                 const words = refundSliceWords(slice);
                 return (
@@ -1675,7 +1684,7 @@ export function SaleDetail(props: SaleDetailProps) {
                     </p>
                   )}
                 </>
-              ) : status === 'voided' ? null : closed && remainingSatang <= 0 ? (
+              ) : status === 'voided' ? null : closed && remainingSatang <= 0 && !detail?.canCloseWithRetainedDeposit && !detail?.partyDepositReviewRequired ? (
                 <div className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
                   Fully refunded — nothing left to refund.
                 </div>
@@ -1690,7 +1699,9 @@ export function SaleDetail(props: SaleDetailProps) {
                     data-testid="refund-sale"
                   >
                     {offline ? <WifiOff className="w-5 h-5" /> : <Undo2 className="w-5 h-5" />}
-                    {!refundable
+                    {detail?.canCloseWithRetainedDeposit
+                      ? 'Close settlement; deposit stays with party'
+                      : !refundable
                       ? 'Refund'
                       : offline
                         ? `Refund — online only (฿${satangText(remainingSatang)} left)`
@@ -1752,7 +1763,9 @@ export function SaleDetail(props: SaleDetailProps) {
         reasons={getDiscountReasons()}
         operatorName={operator?.name ?? 'this account'}
         {...(refundHint ? { refundMode: refundHint } : {})}
-        wholeOnly={partPaidOpen}
+        wholeOnly={partPaidOpen || detail?.canCloseWithRetainedDeposit}
+        retainedPartyDeposit={baht(detail?.partyDepositRetainableSatang ?? 0)}
+        allowRetainedClosure={detail?.canCloseWithRetainedDeposit ?? false}
         onConfirm={(result) => void confirmRefund(result)}
         closeOnConfirm={false}
         busy={refundBusy}

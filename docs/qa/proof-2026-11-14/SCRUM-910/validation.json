@@ -1,0 +1,169 @@
+{
+  "baseSha": "f7df3150f9405dd6aa3480d11c6ab166abf345b2",
+  "branch": "lane/codex-deposit-910-20261114",
+  "atUtc": "2026-11-13T21:13:48.388663+00:00",
+  "sourceHashes": {
+    "apps/api/src/routes/console-money.ts": "efaff7da578415e829f17c45de1d6db6e49c85bb28eeabd4c403e3a6ed71a526",
+    "apps/api/src/services/analytics-rollup.ts": "be3bd80419d5377840d6f33e089f5342b0de7026e55cd1d054dcca07fe1de303",
+    "apps/api/src/services/console-money.ts": "709096f5dbd4ba2211fce40b46bd897405da81992c509da7a195d8520458483f",
+    "apps/api/src/services/parties.ts": "96bdb61ae8a9b5c31c823434c9478c87f8a43a4a9b363e32f3bf0408873f4385",
+    "apps/api/src/services/party-deposit-balance.ts": "8bef1444cd86c4c5889dd12d17bd509253b93909a0c8f65f8cfe41c5d3a32e9a",
+    "apps/api/src/services/party-settlement.ts": "c2e811ef8cc1f2b50c7ab3c78a1efa84b68b6dbcdae87ca8f525d83fdb5fe499",
+    "apps/api/src/services/party-tab.ts": "3e9a2908c9a9fb601afa78d052bf5a9e31770af6dea9fd84adcaebcb9b3d2d00",
+    "apps/api/src/services/refund-slices.ts": "d7737bfc5d330229b127286602de4e5f3b90a5daf8217e7784822d427bb654cb",
+    "apps/api/src/services/refunds.ts": "f56f948bb1dbf3c1f96b37604313b182bf8d6fa7c3d638437f60bef879b7f818",
+    "apps/api/src/services/sale-printing.ts": "c88cb6fc9074b40084ef9ea134281598cf1190e1d495fe4374de9b183a27f00b",
+    "apps/api/src/services/sale.ts": "0736e9fd964b40aa8bf0fe565b0e1007020fcf9e04f4c6f1f4c1c0b91c564619",
+    "apps/api/test/party-settlement.test.ts": "ba897dcbe5c370259de72d4ef051fddfb4952fce6c899382e0e960f8250e0c2d",
+    "apps/api/test/s910-review.test.ts": "f61eb6e9a9288bb5e75d0d2750695b3bd42064703e6aea36175b7e1c4e0389c3",
+    "apps/console/src/pages/MoneyOversight.tsx": "f8def85a86f7b8c4429dd9c6bd293337cb1c4d666871e9ec38ba097958a4a93d",
+    "apps/console/test/money-oversight-markup.test.ts": "f9cdd30b098a771957439e7b7e560b4e6413efbe87b460397dc98fab895f42b0",
+    "apps/pos/src/api/events.ts": "fd382558186d3a39e272ab74b8993a61c675fe578ee7004172895e08ce881012",
+    "apps/pos/src/api/history.ts": "33ae24c2b51ed5e66403c5905a83b9fef546b1baf51ddedee48b5b5811baa905",
+    "apps/pos/src/components/history/RefundModal.tsx": "760b01b60ceae87246b45b10a1f7165ae88167ee3466591bcd948760b4c80940",
+    "apps/pos/src/components/history/SaleDetail.tsx": "dd8640599693839aaf9498361f38d220546e0be048b037348bd8c08aa5f332f8",
+    "apps/pos/src/components/mobile/parties/MobilePartyPayment.tsx": "7cdd596bb2babe253ec479267c285b507c49fcfc96b0094343175c63c53c06b4",
+    "apps/pos/src/components/parties/PartyBalanceModal.tsx": "d48a8e05d6344b5622bd0208ca034bdddfcd2765af6939a439873f6a51e1da3a",
+    "apps/pos/src/components/parties/PartyDetail.tsx": "cf8940b0125708675dd404a4ac049f02f0b20ec6882e8cf9145e5deb458a2e22",
+    "apps/pos/src/components/parties/PartySettlementCustomerScreen.tsx": "0af661edcb30141864c93687ac3ea14ff35367daa92263d33bda28523a16bafe",
+    "apps/pos/src/lib/party.ts": "420be1b4c9658f7c9fc5a01a4351c37adb372445c5e268b7cab1bcc3927298f4",
+    "apps/pos/src/lib/partySettlementBill.ts": "48f4ec134bfa4ccecbaccaf9891a0e8e24e530392c62c0ba81f0a1b55fae5dde",
+    "apps/pos/src/types.ts": "d6883d663bc4b69d87ca151a8eeeb35120addd953c3971a96febbdcd347d23b4",
+    "apps/pos/test/s876-history-actions.test.ts": "b6156ef1cc32959b89ee6b003a8822cdd09b431aa30ce1731cf1aea91dd3e626",
+    "apps/pos/test/s936-party-bill-before-settle.test.ts": "37050c2f40bb80d9ccfadc9e4d1c6b42590f436e4e6daf01b73d2d607b5004ad",
+    "apps/pos/test/s954-small-points.test.ts": "7611caf98acca92bf1cd7a122ac6a2ff5b2cb62642cbf16bbb0727cdc517987f",
+    "packages/api-types/openapi.json": "1fd156ffe147ffba77b68abd6c7788d82532eea274e3ad5142955d64cf9997ef",
+    "packages/api-types/src/openapi.ts": "e01ff84aebbfc7b40de55302fb0de2b4a6250c6ee285c82d48967408347d1e06",
+    "packages/db/migrations/0125_retained_party_deposit.sql": "4f449f6afe613fa876e78b5bca0b2e3c3ac78adf0d33d9c7e62bfaa43697bcd9",
+    "packages/db/migrations/meta/0125_snapshot.json": "1050b93dcb2645b16d3a479008a0c86abadf620a2671f0f559ae7f35718be531",
+    "packages/db/migrations/meta/_journal.json": "f3595a0c157c4fb41368957c0541fa7aec44c7dc36be4dbe8d347ac2a1c54376",
+    "packages/db/src/schema/sales.ts": "7675042d4e8fed08c932bd9b3295b69f4d25bc22a4bde8d5c428093e480f66e2",
+    "packages/shared/src/analytics.ts": "b64c877ede0a36b9ba7ea36b8976b0ce0c7e5cec26f4948d01df2dd0cfa16ac1",
+    "packages/shared/src/events.ts": "2fa2717892b2dc156ac1c87a23a78ecb6ec8fe7a9d645a49f0bb397c779d8395",
+    "packages/shared/src/refund.ts": "cfa8e3bbe21fc3b761b7d8d21ea15244a55ccd3d277b5e7ce23850e9c637fcf5"
+  },
+  "checks": {
+    "API regression batch": {
+      "passed": 187,
+      "files": 14,
+      "log": "C:\\oto-lanes\\audit-takeover-20261113\\910-regressions.log",
+      "sha256": "fdd1a86cab7ca51dcdb01ba0594c8db4b50e8bb6e9138da580de83e27dd85f3f"
+    },
+    "Final printing/integrity followup": {
+      "passed": 57,
+      "files": 5,
+      "log": "C:\\oto-lanes\\audit-takeover-20261113\\910-receipt-green.log",
+      "sha256": "9a93bb4d9d4fa3645151294dce7ea69203e8f7ea17e2ac44771984cb175386bb"
+    },
+    "Final adversarial review": {
+      "passed": 9,
+      "files": 1,
+      "log": "C:\\oto-lanes\\audit-takeover-20261113\\910-review-final.log",
+      "sha256": "9cba67bd19efede1cd78fe2a90288a371638b1963009b7e7d50c4c22f67633d9"
+    },
+    "POS regression batch": {
+      "passed": 347,
+      "files": 15,
+      "log": "C:\\oto-lanes\\audit-takeover-20261113\\910-pos-tests.log",
+      "sha256": "9571dc51732bd155333db6bdac53bbd5fb28048aca1d9c3eeed865cfb0b26946"
+    },
+    "Console money markup": {
+      "passed": 8,
+      "files": 1,
+      "log": "C:\\oto-lanes\\audit-takeover-20261113\\910-console-tests.log",
+      "sha256": "76fd21e64da9cdb6371651b1ab7710920efeb7950f6752ea659ccbdeff32e6d1"
+    },
+    "Shared refund/analytics": {
+      "passed": 18,
+      "files": 2,
+      "log": "C:\\oto-lanes\\audit-takeover-20261113\\910-shared-tests.log",
+      "sha256": "37d6f38b077cb8e6e9ee979dbc694bd38b7701f3a3f897c4cd320a8f820206de"
+    },
+    "910-api-types-final5.log": {
+      "exitCode": 0,
+      "log": "C:\\oto-lanes\\audit-takeover-20261113\\910-api-types-final5.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "910-pos-types.log": {
+      "exitCode": 0,
+      "log": "C:\\oto-lanes\\audit-takeover-20261113\\910-pos-types.log",
+      "sha256": "5c3a6e5cc55e5c5a984f9b7b6ae94f5ef0b3f2e104c2f512b33133e796dc54ce"
+    },
+    "910-console-types-rerun.log": {
+      "exitCode": 0,
+      "log": "C:\\oto-lanes\\audit-takeover-20261113\\910-console-types-rerun.log",
+      "sha256": "d59dcb41152d8fe8d42857d3a8609cffe11e6bb503f5f63e1a1f36b6148b255f"
+    },
+    "910-lint.log": {
+      "exitCode": 0,
+      "log": "C:\\oto-lanes\\audit-takeover-20261113\\910-lint.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "910-pos-build.log": {
+      "exitCode": 0,
+      "log": "C:\\oto-lanes\\audit-takeover-20261113\\910-pos-build.log",
+      "sha256": "af93dd8a8f248481126f0165431b36feaa473a235d419bc9b3f8fd265d81b272"
+    },
+    "910-console-build.log": {
+      "exitCode": 0,
+      "log": "C:\\oto-lanes\\audit-takeover-20261113\\910-console-build.log",
+      "sha256": "ed2aeb1e5bce0435f1d586319a2d7bc715b4e838bf19f4a4506fe7dc205a5f85"
+    },
+    "910-contracts-check.log": {
+      "exitCode": 0,
+      "log": "C:\\oto-lanes\\audit-takeover-20261113\\910-contracts-check.log",
+      "sha256": "ce492a7e400e8547a9986bd6c95d8aa6537f3be1f3bbb48445c2e8235464fb09"
+    }
+  },
+  "countsAreNotAdditive": "Reader followups overlap the broad API batch.",
+  "limits": [
+    "Unpublished local candidate; root review required",
+    "App844 must land before this source",
+    "No hosted exact-SHA CI or native staging acceptance yet",
+    "No staging fixture/session created",
+    "No OTO App source/gates in this lane",
+    "API compiler required4096MB heap; prior3072MB OOM retained"
+  ],
+  "staging": "not run",
+  "jiraWrites": "none",
+  "sourceGitBlobs": {
+    "apps/api/src/routes/console-money.ts": "1f8d5e04979bb89d8d1f04c93e9f6240f978049a",
+    "apps/api/src/services/analytics-rollup.ts": "4581d4fa5cde04f5f9b59824ba4dc2e49a53b217",
+    "apps/api/src/services/console-money.ts": "c3c4d001573a4a42d50a5569478a90aa18cd7b17",
+    "apps/api/src/services/parties.ts": "c99fd98dcf3ab4509c946ccb7257ce4b408121fa",
+    "apps/api/src/services/party-deposit-balance.ts": "8be892a956faa83793856bf77c60990a462e13f7",
+    "apps/api/src/services/party-settlement.ts": "4fa7bc52d971889da0ae4d425b10e6bf04121f13",
+    "apps/api/src/services/party-tab.ts": "f0a3b24af9e29ca6b7de6858b595dfca6f54e982",
+    "apps/api/src/services/refund-slices.ts": "aa6039fa71e85a354921f6cd72e440f54ae68457",
+    "apps/api/src/services/refunds.ts": "dade7c5a82f716a79d6351d4612d34d72ec418c0",
+    "apps/api/src/services/sale-printing.ts": "730cefd8f41ce9d72a3a747c370c360e7fd81bbe",
+    "apps/api/src/services/sale.ts": "8dbf9d7bd5fee67ce94bf9afaefb278b6706f377",
+    "apps/api/test/party-settlement.test.ts": "a8de4294b0ccc3e4ea86c522a196e56bc49f660f",
+    "apps/api/test/s910-review.test.ts": "3659376fc200d71d21febe3a6883cbbd4df39dea",
+    "apps/console/src/pages/MoneyOversight.tsx": "57b71e54a67b6ccd126ea2a93eac48327c2ea8e2",
+    "apps/console/test/money-oversight-markup.test.ts": "4b932b9fa72bf955c69dcb013cf9dacc4897c5b6",
+    "apps/pos/src/api/events.ts": "fc1c55618c89651176a5eb9aedcc5f8c6b014623",
+    "apps/pos/src/api/history.ts": "a616a1160f36bc2e8ecc569be8c525444995e003",
+    "apps/pos/src/components/history/RefundModal.tsx": "3b4238c0e4de009d22bf9624b69bfb7ded84dd77",
+    "apps/pos/src/components/history/SaleDetail.tsx": "98637e6204aac76fc62a123c090227504c1138c4",
+    "apps/pos/src/components/mobile/parties/MobilePartyPayment.tsx": "1d6c33ac909a04aa231b9cb9bd3bbaed90bca39e",
+    "apps/pos/src/components/parties/PartyBalanceModal.tsx": "9f749d5aba49bf4268d669f343c9b87937db9e63",
+    "apps/pos/src/components/parties/PartyDetail.tsx": "1a6bf64051617553d71a7fce1cf062d1de2d0d2f",
+    "apps/pos/src/components/parties/PartySettlementCustomerScreen.tsx": "2c1b0e53ea707401c74efb63f6eb0b5a42c79883",
+    "apps/pos/src/lib/party.ts": "f4da9904839051594dac7ec51f22404a22fb1ba5",
+    "apps/pos/src/lib/partySettlementBill.ts": "c7b15709711714b02a3cfc63057312573f974741",
+    "apps/pos/src/types.ts": "deb169be994f1374a64a12eb009dd674322b75d8",
+    "apps/pos/test/s876-history-actions.test.ts": "526abac0ff583ad4160bfa31bf6deeb09541d5fe",
+    "apps/pos/test/s936-party-bill-before-settle.test.ts": "74d68ac710c4a077b54332dd791c24b53da01e10",
+    "apps/pos/test/s954-small-points.test.ts": "4a19eb11812829256bcbee20a1e3ccc27ba23761",
+    "packages/api-types/openapi.json": "9f2ee925cf66a3da8f40e8db74e85075a407e6e8",
+    "packages/api-types/src/openapi.ts": "a1285f1272b5901455b65aeeefe7e5c6fea2fb87",
+    "packages/db/migrations/0125_retained_party_deposit.sql": "391e64d0104e7828e7d4abdc69c7f3fcb0c099da",
+    "packages/db/migrations/meta/0125_snapshot.json": "145cd7c490fca49f5f9000ad74a8157f93eed6e8",
+    "packages/db/migrations/meta/_journal.json": "b1587bd3843af0ecd16e5dcf1ddeeaabd866034e",
+    "packages/db/src/schema/sales.ts": "fd789b545f97418f33dc62b6a9cfc2ea09d9f266",
+    "packages/shared/src/analytics.ts": "2d77a2137803134b4be2b5400bb7e7920364743c",
+    "packages/shared/src/events.ts": "15ba2e57a13c1d11053287a37cd720206cd1e819",
+    "packages/shared/src/refund.ts": "787580aa632364a04c97fe1943539d2432c71f19"
+  }
+}

@@ -1,3 +1,4 @@
+import { partyDepositHistoriesOf, type PartyDepositHistory } from './party-deposit-balance';
 import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 import { account, employee, partyCharge, partyEdit, partyPayment, partySettlement, paymentAttempt, sale } from '@oto/db';
 import {
@@ -42,6 +43,7 @@ export type PartyEditWithStaff = EditRow & { staffName: string | null };
 
 /** The POS's half of one party. */
 export interface PartyLedgers {
+  depositHistory?: PartyDepositHistory;
   charges: PartyChargeView[];
   payments: PartyPaymentView[];
   /** Every edit a till made, oldest first, whatever the OTO App made of it. */
@@ -214,6 +216,11 @@ export async function partyLedgersOf(
       };
     }
   }
+  const histories = await partyDepositHistoriesOf(db, q);
+  for (const [id, history] of histories) {
+    const entry = out.get(id);
+    if (entry) entry.depositHistory = history;
+  }
   return out;
 }
 
@@ -320,13 +327,13 @@ export function lastEditedOf(edits: readonly PartyEditWithStaff[]): { by: string
 export function billOfParty(
   e: SeamEvent,
   walkUpsSatang: number,
-  ledgers: Pick<PartyLedgers, 'charges' | 'payments'> & { settlement?: PartySettlementView | null },
+  ledgers: Pick<PartyLedgers, 'charges' | 'payments' | 'depositHistory'> & { settlement?: PartySettlementView | null },
 ): PartyBill {
   const settled = partySettlementLive(ledgers.settlement);
-  return partyBillOf({
+  return { ...partyBillOf({
     baseSatang: settled ? 0 : (e.totalValueSatang ?? 0),
     chargesSatang: walkUpsSatang + ledgers.charges.reduce((sum, c) => sum + c.totalSatang, 0),
-    depositSatang: settled ? 0 : (e.depositSatang ?? 0),
+    depositSatang: settled || ledgers.depositHistory?.reviewRequired ? 0 : Math.max(0, (e.depositSatang ?? 0) - (ledgers.depositHistory?.returnedSatang ?? 0)),
     paidSatang: ledgers.payments.reduce((sum, p) => sum + p.amountSatang, 0),
-  });
+  }), ...(ledgers.depositHistory?.reviewRequired ? { depositReviewRequired: true } : {}), ...(ledgers.depositHistory?.returnedSatang ? { depositReturnedSatang: ledgers.depositHistory.returnedSatang } : {}) };
 }

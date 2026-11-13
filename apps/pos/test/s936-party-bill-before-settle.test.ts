@@ -901,3 +901,14 @@ describe('SCRUM-953 — the phone’s party bill names the package the plan name
     expect(flat(reading.result.current)).toContain('Base package —');
   });
 });
+
+describe('SCRUM-910 historical returned deposit is separate from editable received deposit', () => {
+  it('uses remaining credit for bills without replacing the raw received figure used by edits', () => {
+    const view = viewOf(null, 1_690_000);
+    view.party!.bill = { baseSatang: 1_690_000, chargesSatang: 0, totalSatang: 1_690_000, depositSatang: 50_000, depositReturnedSatang: 50_000, paidSatang: 0, outstandingSatang: 1_640_000 };
+    const party = toOtoEvent(view, 'hkt-central') as unknown as PartyBooking;
+    expect(party.deposit).toBe(1_000);
+    expect(party.availableDeposit).toBe(500);
+    expect(partyBillShown(party)).toMatchObject({ deposit: 500, outstanding: 16_400 });
+  });
+});

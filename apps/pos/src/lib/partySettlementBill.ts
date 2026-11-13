@@ -96,7 +96,7 @@ export function partyBillShown(party: PartyBooking, quote?: PartySettleQuote | n
         settlementOwed: planned.balanceSatang / 100,
       };
     }
-    return { total, deposit: party.deposit, paid, outstanding, settlementOwed: 0 };
+    return { total, deposit: party.availableDeposit ?? party.deposit, paid, outstanding, settlementOwed: 0 };
   }
   const takenAtTill = Math.max(0, open.paidSatang - open.depositSatang);
   return {

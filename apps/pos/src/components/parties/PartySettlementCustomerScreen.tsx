@@ -196,7 +196,7 @@ export function PartySettlementCustomerScreen({
 
             <div className="border-t border-foreground/10 pt-3 space-y-2">
               <BillRow label={t('party.review.total')} value={`฿${total}`} strong />
-              <BillRow label={t('party.review.lessDeposit')} value={`−฿${party.deposit}`} muted />
+              <BillRow label={t('party.review.lessDeposit')} value={`−฿${party.availableDeposit ?? party.deposit}`} muted />
               {prior > 0 && (
                 <BillRow label={t('party.review.lessPayments')} value={`−฿${prior}`} muted />
               )}

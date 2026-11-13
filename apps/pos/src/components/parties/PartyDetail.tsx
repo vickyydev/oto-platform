@@ -568,6 +568,7 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
           <span>Total</span>
           <span className="tabular-nums">{unpriced ? '—' : `฿${bahtText(bill.total)}`}</span>
         </div>
+        {party.depositReviewRequired && <p role="alert" className="text-sm text-amber-500">This party has an unresolved deposit refund. Review its payment records before settling it.</p>}
         <InfoRow label="Deposit paid" value={`−฿${bahtText(bill.deposit)}`} />
         {bill.paid > 0 && <InfoRow label="Payments taken" value={`−฿${bahtText(bill.paid)}`} />}
         <div className="flex items-center justify-between mt-2 pt-3 border-t">

@@ -210,7 +210,8 @@ describe('SCRUM-953 (4) — a deposit kept by the party is not "Cancelled" in Hi
     changeSatang: null, terminalRef: null, tid: null, approvalCode: null, last4: null, invoiceNo: null, tranRef: null,
     actionId: null, offline: false, paidAt: '2026-11-12T14:15:00.000Z', createdAt: '2026-11-12T14:15:00.000Z', ...over,
   });
-  const row = (over: Partial<PaymentAttemptView>) => plain(renderToStaticMarkup(createElement(PaymentRow, {
+  const row = (over: Partial<PaymentAttemptView>, retainedPartyDepositSatang?: number) => plain(renderToStaticMarkup(createElement(PaymentRow, {
+    retainedPartyDepositSatang,
     attempt: attempt(over), sale: { note: 'Party: ZZ TEST SCRUM-936 party' }, fmt: () => '12 Nov, 21:15',
   })));
 
@@ -221,6 +222,13 @@ describe('SCRUM-953 (4) — a deposit kept by the party is not "Cancelled" in Hi
     expect(html).toContain(' · Stays with the party');
     expect(html.includes('Cancelled')).toBe(false);
     expect(html).toContain('฿1000');
+  });
+
+  it('SCRUM-910: a partially returned old deposit shows only the retained remainder as staying', () => {
+    const html = row({ partyDeposit: true, status: 'cancelled', amountSatang: 200_000 }, 150_000);
+    expect(html).toContain('Original allocation THB 2000');
+    expect(html).toContain('1500');
+    expect(html).toContain('Stays with the party');
   });
 
   it('a deposit on a settlement still open reads Approved, and any other cancelled tender Cancelled, as before', () => {

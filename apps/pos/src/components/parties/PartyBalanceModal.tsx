@@ -267,7 +267,7 @@ export function PartyBalanceModal({
                       )}
                       <div className="flex items-center justify-between border-t pt-2 mt-1">
                         <span className="text-muted-foreground">Deposit paid</span>
-                        <span className="tabular-nums">−฿{bahtText(party.deposit)}</span>
+                        <span className="tabular-nums">−฿{bahtText(party.availableDeposit ?? party.deposit)}</span>
                       </div>
                       {paid > 0 && (
                         <div className="flex items-center justify-between">

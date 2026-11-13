@@ -876,6 +876,13 @@
       "when": 1794485859219,
       "tag": "0124_party_slip_schedule_start",
       "breakpoints": true
+    },
+    {
+      "idx": 125,
+      "version": "7",
+      "when": 1794600985017,
+      "tag": "0125_retained_party_deposit",
+      "breakpoints": true
     }
   ]
 }

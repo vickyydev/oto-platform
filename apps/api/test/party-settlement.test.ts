@@ -6,6 +6,7 @@ import {
   band,
   box,
   branch,
+  branchTaxConfig,
   partyEdit,
   partySettlement,
   paymentAttempt,
@@ -21,6 +22,7 @@ import {
 } from '@oto/db';
 import {
   PARTY_DEPOSIT_TENDER,
+  TAXABLE_CATEGORIES,
   PARTY_SETTLE_REFUSALS,
   PartyDetailAnswerSchema,
   PartySettleAnswerSchema,
@@ -1417,6 +1419,47 @@ describe('SCRUM-906: an EXTRA line is charged at its entered price, else a till 
       [`party_extra:${MORS}:6000`, 'ZZ TEST Cranberry mors', 3, 6_000, 'bar'],
     ]);
     expect(lines.some((l) => l.label === 'ZZ TEST pizza' || /balloon|old dish|Juice pitcher/.test(l.label))).toBe(false);
+  });
+
+  it.each([0, 10])('SCRUM-966 HIGH: each named extra is its exact engine component with exclusive VAT and %i percent service', async (serviceChargePercent) => {
+    const id = newId();
+    await appParty(id, 'ZZ TEST 966 engine contributions', WEEKDAY, 16_900, 0);
+    await appPlan(id, WEEKDAY, FLORESTA, { addOns: [BALLOONS], entertainment: [ZOMBIE], setMenu: [] });
+    await withKitchenPlan(id);
+    const [before] = await ctx.db.select().from(branchTaxConfig).where(eq(branchTaxConfig.branchId, central));
+    try {
+      await ctx.db.update(branchTaxConfig).set({ config: {
+        rates: [{ id: 'vat', name: 'VAT', percent: 7 }],
+        categoryRules: TAXABLE_CATEGORIES.map((category) => ({ category, taxRateId: 'vat', taxMode: 'exclusive', serviceChargePercent, taxOnServiceCharge: true })),
+        discountPlacement: 'before_tax',
+      } }).where(eq(branchTaxConfig.branchId, central));
+      const body = { kids: 10, adults: 4, socksGiven: 0, addOnIds: [BALLOONS.template_id], entertainmentIds: [ZOMBIE.template_id] };
+      const quoted = await preview(id, body);
+      expect(quoted.status, JSON.stringify(quoted.body)).toBe(200);
+      const settled = await settle(id, body);
+      expect(settled.status, JSON.stringify(settled.body)).toBe(200);
+      expect(settled.body.quote).toEqual(quoted.body.quote);
+      const lines = await linesOf(settled.body.sale.id);
+      const named = settled.body.quote.extras!.filter((e) => e.charged);
+      const expected = [
+        { code: FRIES, unit: 9_000, qty: 2, key: `party_extra:${FRIES}:9000` },
+        { code: FRIES, unit: 15_000, qty: 1, key: `party_extra:${FRIES}:15000` },
+        { code: null, unit: 12_000, qty: 2, key: 'party_extra_line:fnb:m3' },
+        { code: MORS, unit: 6_000, qty: 3, key: `party_extra:${MORS}:6000` },
+      ];
+      expect(named).toHaveLength(expected.length);
+      for (const e of expected) {
+        const matching = named.filter((n) => n.productCode === e.code && n.unitSatang === e.unit);
+        expect(matching).toHaveLength(1);
+        const actual = lines.filter((l) => l.componentKey === e.key).reduce((n, l) => n + l.grossSatang, 0);
+        expect(matching[0]).toMatchObject({ qty: e.qty, unitSatang: e.unit, totalSatang: actual });
+        expect(actual).toBe(Math.round(e.unit * e.qty * (1 + serviceChargePercent / 100) * 1.07));
+      }
+      expect(named.reduce((n, e) => n + e.totalSatang, 0)).toBeLessThan(settled.body.quote.addOnsSatang);
+      expect(settled.body.quote.extras!.filter((e) => !e.charged).every((e) => e.totalSatang === 0)).toBe(true);
+    } finally {
+      await ctx.db.update(branchTaxConfig).set({ config: before!.config }).where(eq(branchTaxConfig.branchId, central));
+    }
   });
 
   it('a party whose plan has no package is shown with its kitchen plan and still cannot be settled (decision 8)', async () => {

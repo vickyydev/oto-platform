@@ -1,4 +1,5 @@
 import { and, asc, eq } from 'drizzle-orm';
+import { assertPartyDepositHistory, partyRefundBalanceOf } from './party-deposit-balance';
 import { assertNoPendingExtensions, assertExtensionRefund, cancelSaleExtension } from './sale-extension-lifecycle';
 import { device, paymentAttempt, refund, sale, saleLine, station } from '@oto/db';
 import {
@@ -170,13 +171,16 @@ async function answerFor(
   refundRow: typeof refund.$inferSelect,
   extra: { replay: boolean; requestedSatang: number; clamped: boolean },
 ): Promise<Omit<RefundSaleResult, 'printing'>> {
+  const party = await partyRefundBalanceOf(db, saleRow.id);
+  let refundable = party ? party.reviewRequired ? 0 : party.remainingSatang : refundableSatang(saleRow.grossSatang, saleRow.refundedSatang);
+  if (saleRow.status === 'voided' || saleRow.status === 'refunded') refundable = 0;
   return {
     replay: extra.replay,
     refund: await viewOfRefund(db, refundRow),
     sale: await saleViewOf(db, saleRow),
     // A part-paid sale closed by its refund gave back everything it took (SCRUM-891: as the sale read says).
     refundStatus: saleRefundStatusOf(saleRow),
-    refundableSatang: saleRow.status === 'voided' ? 0 : refundableSatang(saleRow.grossSatang, saleRow.refundedSatang),
+    refundableSatang: refundable,
     requestedSatang: extra.requestedSatang,
     clamped: extra.clamped,
   };
@@ -249,7 +253,9 @@ export async function refundSale(
   await assertNoPendingExtensions(tx, row.id);
   if (!reason) throw errors.badRequest('A refund needs a reason');
 
-  let remaining = refundableSatang(row.grossSatang, row.refundedSatang);
+  const party = await partyRefundBalanceOf(tx, saleId);
+  if (party) assertPartyDepositHistory(party);
+  let remaining = party?.remainingSatang ?? refundableSatang(row.grossSatang, row.refundedSatang);
   let heldVouchers: { id: string; code: string }[] = [];
   /**
    * SCRUM-876 — a party's deposit on a part-paid settlement (`isPartyDepositAttempt`)
@@ -285,11 +291,18 @@ export async function refundSale(
         { takenSatang },
       );
     }
-    remaining = Math.max(0, takenSatang - row.refundedSatang);
+    remaining = party?.remainingSatang ?? Math.max(0, takenSatang - row.refundedSatang);
     // Sale first, its vouchers next: the order the payment path and the void take.
     heldVouchers = await lockVouchersHeldFor(tx, { saleId, operatorId: row.operatorId });
   }
-  if (remaining <= 0) throw errors.conflict('NOTHING_TO_REFUND', 'Nothing is left to refund on this sale');
+  const retainOnly = !partPaid && input.mode === 'whole' && remaining === 0 && (party?.retainableSatang ?? 0) > 0;
+  if (remaining <= 0 && !retainOnly) throw errors.conflict('NOTHING_TO_REFUND', 'Nothing is left to refund on this sale');
+  if (party && !partPaid) {
+    const tried = await tx.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, saleId));
+    if (tried.some((a) => !PAYMENT_ATTEMPT_TERMINAL_STATUSES.includes(a.status) || isPaymentReversalPending(a.payload))) {
+      throw errors.conflict('PAYMENT_IN_FLIGHT', 'A payment is still in progress. Resolve it before refunding this settlement.');
+    }
+  }
 
   const lines = await tx
     .select()
@@ -323,7 +336,9 @@ export async function refundSale(
     itemsSatang: picked.reduce((sum, l) => sum + l.grossSatang, 0),
     customSatang: input.amountSatang,
   });
-  if (amount.amountSatang <= 0) throw errors.badRequest('A refund has to give something back');
+  if (amount.amountSatang <= 0 && !retainOnly) throw errors.badRequest('A refund has to give something back');
+  const closesParty = party !== null && amount.amountSatang >= remaining;
+  const retainedPartyDepositSatang = closesParty ? party.retainableSatang : 0;
   await assertExtensionRefund(tx, row.id, amount.amountSatang, remaining);
 
   // --- The lines it covers, and what goes back to stock ---------------------
@@ -376,7 +391,7 @@ export async function refundSale(
   // --- Where the money goes back ---------------------------------------------
   const attempts = (
     await tx.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, saleId))
-  ).filter((a) => PAYMENT_ATTEMPT_TAKEN_STATUSES.includes(a.status) && !(partPaid && isPartyDepositAttempt(a)));
+  ).filter((a) => PAYMENT_ATTEMPT_TAKEN_STATUSES.includes(a.status) && !isPartyDepositAttempt(a));
   const sentBack = new Map<string, number>();
   for (const earlierRefund of earlier) {
     for (const entry of earlierRefund.tenderAllocation ?? []) {
@@ -455,6 +470,7 @@ export async function refundSale(
       stationId: series.id,
       number: number.number,
       amountSatang: amount.amountSatang,
+      retainedPartyDepositSatang,
       mode: input.mode,
       reason,
       note: input.note?.trim() || null,
@@ -541,7 +557,7 @@ export async function refundSale(
   );
 
   const refundedSatang = row.refundedSatang + amount.amountSatang;
-  const full = refundedSatang >= row.grossSatang;
+  const full = closesParty || refundedSatang >= row.grossSatang;
 
   /**
    * SCRUM-798 — a refund that pays back a Golden Ticket takes its code back
@@ -610,12 +626,15 @@ export async function refundSale(
     .returning();
   if (!after) throw new Error('the sale was not updated');
   // SCRUM-876 — the deposit's record goes with the closed settlement; the deposit stays the party's.
+  if (closesParty && !partPaid && party.depositAttemptId && retainedPartyDepositSatang > 0) {
+    deposits = await tx.select({ id: paymentAttempt.id, payload: paymentAttempt.payload }).from(paymentAttempt).where(eq(paymentAttempt.id, party.depositAttemptId));
+  }
   for (const deposit of deposits) {
     await failAttempt(tx, deposit.id, {
       status: 'cancelled',
       payload: {
         ...((deposit.payload as Record<string, unknown> | null) ?? {}),
-        cancelledWithSale: { at: now.toISOString(), accountId: actor.accountId, reason, refundId },
+        cancelledWithSale: { at: now.toISOString(), accountId: actor.accountId, reason, refundId, retainedPartyDepositSatang },
       },
     });
   }
@@ -715,6 +734,7 @@ export async function refundSale(
       number: number.number,
       amountSatang: amount.amountSatang,
       requestedSatang: amount.requestedSatang,
+      retainedPartyDepositSatang,
       mode: input.mode,
       reason,
       approvedByAccountId: actor.accountId,

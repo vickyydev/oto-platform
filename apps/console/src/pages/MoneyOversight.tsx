@@ -219,6 +219,7 @@ export function MoneyOversightContent({ data, onRetry }: { data: MoneyData; onRe
       <SlotBody slot={data.refunds} what="Refunds and voids" onRetry={onRetry}>{(d) => <>
         {d.refunds.rows.length === 0 ? <EmptyNote title="No refunds in these dates" /> : <ul className="divide-y divide-border" aria-label="Refunds">
           {d.refunds.rows.map((row) => <li key={row.number + row.branchId} className="min-w-0 space-y-1 py-2 text-sm">
+            {(row.retainedPartyDepositSatang ?? 0) > 0 && <p>Deposit stays with the party: {money(row.retainedPartyDepositSatang)}</p>}
             <p className="font-semibold break-words">{row.number} · {money(row.amountSatang)} · {row.reason}</p>
             <p className="text-muted-foreground">Approved by {row.approvedBy ?? 'an unnamed account'} · original sale {row.sale.receiptNumber ?? 'without a receipt number'} ({row.sale.businessDate}, {money(row.sale.grossSatang)}){row.pending ? ' · still settling' : ''}</p>
             <TraceLink trace={row.trace} />

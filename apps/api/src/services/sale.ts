@@ -1,3 +1,4 @@
+import { partyRefundBalanceOf } from './party-deposit-balance';
 import { and, asc, desc, eq, gte, inArray, isNull, lte, or, sql } from 'drizzle-orm';
 import {
   account,
@@ -5888,6 +5889,7 @@ export async function getSaleDetail(
     .innerJoin(band, eq(band.id, checkin.bandId))
     .where(and(eq(checkin.id, holderIds[0]!), eq(checkin.operatorId, operatorId), eq(checkin.branchId, row.branchId))) : [];
 
+  const partyRefund = await partyRefundBalanceOf(db, saleId);
   return {
     timeExtension: timeExtension ?? null,
     sale: {
@@ -5907,9 +5909,12 @@ export async function getSaleDetail(
     // SCRUM-891 — a part-paid sale refunded whole reads `refunded`, as the refund's answer says.
     refundStatus: saleRefundStatusOf(row),
     refundableSatang:
-      row.status === 'finalised' || row.status === 'refunded'
-        ? refundableSatang(row.grossSatang, row.refundedSatang)
+      row.status === 'finalised'
+        ? partyRefund ? partyRefund.reviewRequired ? 0 : partyRefund.remainingSatang : refundableSatang(row.grossSatang, row.refundedSatang)
         : 0,
+    partyDepositReviewRequired: partyRefund?.reviewRequired ?? false,
+    partyDepositRetainableSatang: row.status === 'finalised' && !partyRefund?.reviewRequired ? partyRefund?.retainableSatang ?? 0 : 0,
+    canCloseWithRetainedDeposit: row.status === 'finalised' && !!partyRefund && !partyRefund.reviewRequired && !partyRefund.inFlight && partyRefund.remainingSatang === 0 && partyRefund.retainableSatang > 0,
     refunds: await refundsOfSale(db, saleId),
     printJobs: await printJobsOfSale(db, saleId),
     bands: await bandsOfSale(db, saleId),

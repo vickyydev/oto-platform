@@ -194,6 +194,8 @@ export function toOtoEvent(v: EventView, branchSlug: string): OtoEvent {
     basePrice: settled ? 0 : baht(v.party.totalValueSatang),
     lineItems: [],
     deposit: settled ? 0 : baht(v.party.depositSatang),
+    ...(v.party.bill?.depositReturnedSatang || v.party.bill?.depositReviewRequired ? { availableDeposit: settled ? 0 : baht(v.party.bill.depositSatang) } : {}),
+    ...(v.party.bill?.depositReviewRequired ? { depositReviewRequired: true } : {}),
     ...(v.party.depositDate ? { depositDate: v.party.depositDate } : {}),
     // SCRUM-906: none until the party's own read brings its kitchen plan (`withPartyKitchen`).
     kitchen: { needed: false, kidsMenu: [], adultsMenu: [], foodItems: [], cake: { type: 'none' } },

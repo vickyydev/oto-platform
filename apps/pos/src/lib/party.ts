@@ -63,7 +63,7 @@ export const computePartyTotal = (party: PartyBooking): number =>
   party.basePrice + partyLineItemsTotal(party) + partyExtraChargesTotal(party);
 
 export const computePartyOutstanding = (party: PartyBooking): number =>
-  Math.max(0, computePartyTotal(party) - party.deposit - partyPaymentsTotal(party));
+  Math.max(0, computePartyTotal(party) - (party.availableDeposit ?? party.deposit) - partyPaymentsTotal(party));
 
 export const PARTY_STATUS_LABELS: Record<PartyStatus, string> = {
   upcoming: 'Upcoming',

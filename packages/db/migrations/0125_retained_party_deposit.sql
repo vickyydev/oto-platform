@@ -1,0 +1,4 @@
+ALTER TABLE "pos"."refund" DROP CONSTRAINT "refund_amount_check";--> statement-breakpoint
+ALTER TABLE "pos"."refund" ADD COLUMN "retained_party_deposit_satang" bigint DEFAULT 0 NOT NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX "refund_retained_party_deposit_sale_unique" ON "pos"."refund" USING btree ("sale_id") WHERE retained_party_deposit_satang > 0;--> statement-breakpoint
+ALTER TABLE "pos"."refund" ADD CONSTRAINT "refund_amount_check" CHECK ("pos"."refund"."amount_satang" >= 0 and "pos"."refund"."retained_party_deposit_satang" >= 0 and ("pos"."refund"."amount_satang" > 0 or ("pos"."refund"."mode" = 'whole' and "pos"."refund"."retained_party_deposit_satang" > 0)));

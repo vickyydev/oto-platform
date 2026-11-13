@@ -2,6 +2,7 @@ import { and, asc, eq, gte, inArray, lte, sql, type SQL } from 'drizzle-orm';
 import { factWalletLiabilityDaily, refund, sale, type Db } from '@oto/db';
 import {
   PAYMENT_ATTEMPT_TAKEN_STATUSES,
+  PARTY_DEPOSIT_TENDER,
   RECON_TOLERANCE,
   addDaysToIsoDate,
   isCalendarDate,
@@ -302,6 +303,7 @@ export interface MoneyRefundRow {
   /** The refund's own number on its own series. */
   number: string;
   amountSatang: number;
+  retainedPartyDepositSatang: number;
   mode: string;
   reason: string;
   approvedBy: string | null;
@@ -404,6 +406,7 @@ export async function moneyRefundsOf(tx: Tx, input: MoneyQuery): Promise<MoneyRe
           branchId: row.branchId,
           number: view.number,
           amountSatang: view.amountSatang,
+          retainedPartyDepositSatang: view.retainedPartyDepositSatang,
           mode: view.mode,
           reason: view.reason,
           approvedBy: view.approvedBy.name,
@@ -908,13 +911,26 @@ async function receiptGaps(tx: Tx, operatorId: string, ids: readonly string[]): 
 
 /** (b) A recorded sale whose taken money (`PAYMENT_ATTEMPT_TAKEN_STATUSES`) is short of its gross — `outstandingAfter`'s rule. */
 async function salesWithoutPayment(tx: Tx, input: MoneyQuery, ids: readonly string[]): Promise<IntegrityRow[]> {
+  // Released settlement allocations still explain how the original gross was
+  // covered. They are not new cash takings. Bind to the numbered retention
+  // document and original allocation so an ordinary canceled tender never counts.
+  const releasedDeposit = sql`a.status = 'cancelled' and a.method_code = ${PARTY_DEPOSIT_TENDER.code}
+    and a.payload->>'partyDeposit' = 'true' and exists (
+      select 1 from pos.party_settlement ps join pos.refund r on r.sale_id = ps.sale_id
+       where ps.sale_id = s.id and ps.deposit_attempt_id = a.id
+         and ps.operator_id = s.operator_id and ps.branch_id = s.branch_id
+         and ps.deposit_satang = a.amount_satang and r.retained_party_deposit_satang > 0
+         and a.payload->'cancelledWithSale'->>'refundId' = r.id::text
+         and a.payload->'cancelledWithSale'->>'retainedPartyDepositSatang' = r.retained_party_deposit_satang::text)`;
+  const taken = sql`coalesce(sum(a.amount_satang) filter (where a.status in (${sql.join(TAKEN.map((t) => sql`${t}`), sql`, `)})), 0)`;
+  const allocated = sql`coalesce(sum(a.amount_satang) filter (where ${releasedDeposit}), 0)`;
   const { rows } = await tx.execute<{
     id: string; branch_id: string; station_id: string; station_name: string | null; receipt_number: string | null;
-    business_date: string; status: string; gross: string; taken: string; action_id: string | null;
+    business_date: string; status: string; gross: string; taken: string; allocated_deposit: string; action_id: string | null;
   }>(sql`
     select s.id, s.branch_id, s.station_id, st.name as station_name, s.receipt_number, s.business_date::text as business_date,
            s.status, s.gross_satang::text as gross,
-           coalesce(sum(a.amount_satang) filter (where a.status in (${sql.join(TAKEN.map((t) => sql`${t}`), sql`, `)})), 0)::text as taken,
+           ${taken}::text as taken, ${allocated}::text as allocated_deposit,
            s.action_id
       from pos.sale s
       left join core.station st on st.id = s.station_id
@@ -923,7 +939,7 @@ async function salesWithoutPayment(tx: Tx, input: MoneyQuery, ids: readonly stri
        and s.business_date between ${input.from}::date and ${input.to}::date
        and s.status in ('finalised', 'refunded') and s.gross_satang > 0
      group by s.id, st.name
-    having coalesce(sum(a.amount_satang) filter (where a.status in (${sql.join(TAKEN.map((t) => sql`${t}`), sql`, `)})), 0) < s.gross_satang
+    having ${taken} + ${allocated} < s.gross_satang
      order by s.business_date, s.receipt_number nulls last, s.id
      limit ${MONEY_ROW_LIMIT + 1}`);
   return rows.map((r) => ({
@@ -931,10 +947,10 @@ async function salesWithoutPayment(tx: Tx, input: MoneyQuery, ids: readonly stri
     branchId: r.branch_id,
     stationId: r.station_id,
     stationName: r.station_name,
-    title: `Sale ${r.receipt_number ?? 'without a receipt number'}: ${baht(num(r.gross) - num(r.taken))} not settled`,
-    detail: `Charged ${baht(num(r.gross))}; payments taken ${baht(num(r.taken))}. Status ${r.status}.`,
+    title: `Sale ${r.receipt_number ?? 'without a receipt number'}: ${baht(num(r.gross) - num(r.taken) - num(r.allocated_deposit))} not settled`,
+    detail: `Charged ${baht(num(r.gross))}; payments taken ${baht(num(r.taken))}. Original released deposit allocation ${baht(num(r.allocated_deposit))}. Status ${r.status}.`,
     businessDate: day(r.business_date),
-    amountSatang: num(r.gross) - num(r.taken),
+    amountSatang: num(r.gross) - num(r.taken) - num(r.allocated_deposit),
     saleId: r.id,
     actionId: r.action_id,
     receiptNumber: r.receipt_number,

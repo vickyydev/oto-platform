@@ -433,6 +433,8 @@ export type PartyEditState = z.infer<typeof PartyEditStateSchema>;
  * payments).
  */
 export const PartyBillSchema = z.object({
+  depositReviewRequired: z.boolean().optional(),
+  depositReturnedSatang: z.number().int().optional(),
   baseSatang: z.number().int(),
   chargesSatang: z.number().int(),
   totalSatang: z.number().int(),

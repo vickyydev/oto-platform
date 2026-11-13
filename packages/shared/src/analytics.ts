@@ -125,6 +125,8 @@ export interface AnalyticsSaleFacts {
   grossSatang: Satang;
   /** Every refund of this sale, whenever it was made. */
   refundedSatang: Satang;
+  /** Noncash deposit allocation released back to its party. */
+  retainedPartyDepositSatang?: Satang;
   /** Money taken on the sale other than stored-value credit (cash, card, QR, other tenders). */
   nonCreditSatang: Satang;
   /** Stored-value credit spent on the sale. */
@@ -214,7 +216,7 @@ export function analyticsSaleRevenueV1(sale: AnalyticsSaleFacts): AnalyticsSaleR
   if (sale.kind === 'ticket') {
     return {
       bucket: sale.dropOff ? 'dropoff' : 'tickets',
-      amountSatang: Math.max(0, sale.grossSatang - sale.refundedSatang),
+      amountSatang: Math.max(0, sale.grossSatang - sale.refundedSatang - (sale.retainedPartyDepositSatang ?? 0)),
       creditPaidSatang: 0,
     };
   }

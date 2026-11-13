@@ -149,6 +149,7 @@ export function saleRefundStatusOf(sale: {
   grossSatang: Satang;
   refundedSatang: Satang;
 }): 'none' | 'partially_refunded' | 'refunded' {
+  if (sale.status === 'refunded') return 'refunded';
   if (sale.status === 'voided' && sale.refundedSatang > 0) return 'refunded';
   return refundStatusOf(sale.grossSatang, sale.refundedSatang);
 }

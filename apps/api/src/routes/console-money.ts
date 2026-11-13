@@ -60,7 +60,7 @@ export const MoneyRefundsSchema = z.object({
   refunds: z.object({
     count, totalSatang: satang, truncated: z.boolean(),
     rows: z.array(z.object({
-      branchId: UUID, number: z.string(), amountSatang: satang, mode: z.string(), reason: z.string(),
+      branchId: UUID, number: z.string(), amountSatang: satang, retainedPartyDepositSatang: satang, mode: z.string(), reason: z.string(),
       approvedBy: z.string().nullable(), createdBy: z.string().nullable(), pending: z.boolean(), createdAt: z.string(),
       sale: z.object({ receiptNumber: z.string().nullable(), businessDate: DATE, grossSatang: satang, status: z.string() }).strict(),
       refundId: UUID.nullable(), saleId: UUID.nullable(), trace: trace.nullable(),
