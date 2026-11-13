@@ -64,6 +64,17 @@ export const FORM_RECONNECTING_LINE =
   'pointer-events-none absolute inset-x-0 top-0 z-30 border-b border-foreground/10 bg-background/95 py-2 pl-4 pr-36 sm:pl-36 text-center text-sm';
 
 /**
+ * SCRUM-975 — the family form's first line ("Playing with us today") on the
+ * paired display, from 520 pixels wide: kept clear of the language button at
+ * the top right by the reconnecting line's 9rem at each side of the screen
+ * (the head's own 2rem padding counted), so a long one wraps rather than runs
+ * under the button (the French at 600 wide ran 28 pixels under it). Every
+ * language's line fits on one line at 1024, and the English, Thai, Russian
+ * and Chinese at 600, so only the French wraps, and only there.
+ */
+export const PLAYING_TODAY_CLEAR = 'min-[520px]:max-w-[calc(100%-14rem)]';
+
+/**
  * SCRUM-954 — on the paired display's own form (the counter's 10-inch touch
  * monitor) every press in the bottom bar, each step pill and the language
  * button stand at least 44 pixels tall, a finger's size. The till's read-only

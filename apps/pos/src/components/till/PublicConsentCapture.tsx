@@ -9,7 +9,7 @@ import { ChildDobPicker } from '@/components/shared/ChildDobPicker';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { PhoneInput } from '@/components/shared/PhoneInput';
 import { TouchText } from './TouchText';
-import { DISPLAY_TOUCH, NARROW_BAR, NARROW_HEAD, NARROW_HEAD_TOUCH, NARROW_LINE, SHORT_HIDE } from './consentFormLayout';
+import { DISPLAY_TOUCH, NARROW_BAR, NARROW_HEAD, NARROW_HEAD_TOUCH, NARROW_LINE, PLAYING_TODAY_CLEAR, SHORT_HIDE } from './consentFormLayout';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { consentFormPhone, consentPhoneShown, messagingPhoneProblem } from '@/lib/consentForm';
 import { clearConsentDraft, keepConsentDraft, readConsentDraft } from '@/lib/consentDraftStore';
@@ -595,8 +595,12 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
       : <div className="absolute top-4 right-4 z-40"><LanguageSwitcher variant="dark" buttonClassName={DISPLAY_TOUCH} /></div>}
     {/* SCRUM-943 — at phone width the language button sits above the heading, not over it. */}
     <div className={cn('shrink-0 px-8 pb-4 text-center', mirror ? 'pt-3' : `pt-8 ${NARROW_HEAD} ${NARROW_HEAD_TOUCH}`)}>
-      <div className="mb-2 inline-flex items-center gap-2 text-primary"><ShieldCheck className="h-6 w-6" />
-        <span className="text-sm font-bold uppercase tracking-widest">{t('superviseConsent.playingToday')}</span></div>
+      {/* SCRUM-975 — the line stays clear of the language button beside it
+          (the reconnecting line's 9rem at each side), wrapping when long
+          ("EN TRAIN DE JOUER CHEZ NOUS AUJOURD'HUI" at 600 wide). Under 520
+          the heading already starts below the button (NARROW_HEAD). */}
+      <div className={cn('mb-2 inline-flex items-center gap-2 text-primary', !mirror && PLAYING_TODAY_CLEAR)}><ShieldCheck className="h-6 w-6 shrink-0" />
+        <span className="min-w-0 text-sm font-bold uppercase tracking-widest">{t('superviseConsent.playingToday')}</span></div>
       <h2 className="text-4xl font-black">{t(prompt.slots.length === 1 ? 'superviseConsent.titleOne' : 'superviseConsent.titleMany')}</h2>
       <p className={cn('mt-1 text-lg text-foreground/60', SHORT_HIDE)}>{t('superviseConsent.subtitle')}</p>
       <div className="mt-4 flex items-center justify-center gap-2" data-testid="consent-steps">

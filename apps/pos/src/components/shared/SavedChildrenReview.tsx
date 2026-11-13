@@ -168,7 +168,7 @@ export function SavedChildrenReview<Child extends SavedChildrenReviewChoice>({
                     </Badge>
                   )
                 ) : (
-                  <Badge variant="outline" className="gap-1.5 px-3 py-1.5 text-base text-primary">
+                  <Badge variant="outline" className="gap-1.5 px-3 py-1.5 text-base text-(--cd-badge-new)">
                     <UserPlus className="h-4 w-4" /> {publicMode ? t('childReview.chooseOrAsk') : t('childReview.newWillSave')}
                   </Badge>
                 )}
@@ -277,7 +277,8 @@ export function SavedChildrenReview<Child extends SavedChildrenReviewChoice>({
                   <Button
                     variant="ghost"
                     size="lg"
-                    className="h-12 rounded-2xl px-4 text-base text-destructive hover:text-destructive"
+                    // SCRUM-975 — readable on a dark screen, the same red on a light one (`--cd-remove`).
+                    className="h-12 rounded-2xl px-4 text-base text-(--cd-remove) hover:text-(--cd-remove)"
                     disabled={!publicMode && busy}
                     onClick={() => publicMode ? onStaffHelp?.() : onRemoveSaved(slot.id, slot.savedChildId!)}
                   >

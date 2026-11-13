@@ -141,6 +141,12 @@
      the cream where amber-300 and emerald-300 did not. */
   --cd-badge-check: oklch(47.3% 0.137 46.201);
   --cd-badge-done: oklch(43.2% 0.095 166.913);
+  /* SCRUM-975 — the returning family's "new child" badge on a light screen:
+     the deeper coral of the chosen language (orange-800), where the brand
+     coral read about 3 to 1 on the cream; and "Ask the team to remove a
+     child" in the light screen's own red, as it always was. */
+  --cd-badge-new: oklch(47% 0.157 37.304);
+  --cd-remove: hsl(var(--destructive));
 
   /* Branded "cinema" backdrop for the customer display(s). Flips with the
      surface's .dark/.light wrapper, so a light display nested in a dark staff
@@ -215,6 +221,11 @@
   --cd-menu-chosen: hsl(var(--primary));
   --cd-badge-check: oklch(87.9% 0.169 91.605);
   --cd-badge-done: oklch(84.5% 0.143 164.978);
+  /* SCRUM-975 — in dark the "new child" badge is the primary it always was;
+     "Ask the team to remove a child" is rose-300, where the dark theme's
+     destructive (a deep red) read about 1.9 to 1 on the navy. */
+  --cd-badge-new: hsl(var(--primary));
+  --cd-remove: oklch(81% 0.117 11.638);
 
   /* Original sky-950 → slate-950 ramp, kept pixel-identical in dark. */
   --cd-gradient: linear-gradient(to bottom, #082f49 0%, #020617 50%, #020617 100%);
