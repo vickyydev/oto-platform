@@ -70,6 +70,8 @@ export function MobileTransactionDetail(props: SaleDetailProps) {
     return (
       <MobileRefundFlow
         maxRefund={baht(remainingSatang)}
+        retainedPartyDeposit={baht(detail?.partyDepositRetainableSatang ?? 0)}
+        allowRetainedClosure={detail?.canCloseWithRetainedDeposit ?? false}
         restorableCredit={baht(restorableCreditSatang(attempts, detail?.refunds ?? []))}
         lines={state.refundOptions.map((option) => ({
           id: option.id,
@@ -293,7 +295,7 @@ export function MobileTransactionDetail(props: SaleDetailProps) {
             <Card className="p-4 bg-card/50 space-y-3">
               <div className="text-xs uppercase font-bold text-muted-foreground">Payment</div>
               {attempts.map((attempt) => (
-                <PaymentRow key={attempt.id} attempt={attempt} sale={sale} fmt={fmt} />
+                <PaymentRow key={attempt.id} attempt={attempt} sale={sale} fmt={fmt} retainedPartyDepositSatang={detail?.refunds?.some((r) => (r.retainedPartyDepositSatang ?? 0) > 0) ? detail.refunds.reduce((n, r) => n + (r.retainedPartyDepositSatang ?? 0), 0) : undefined} />
               ))}
             </Card>
           )}
@@ -328,13 +330,15 @@ export function MobileTransactionDetail(props: SaleDetailProps) {
               {voidSentence(state.voidRecord, state.voucherHeld, fmt)}
             </p>
           )}
+          {detail?.partyDepositReviewRequired && <p role="alert" className="text-sm text-destructive">This party has an unresolved deposit refund. Review its payment records before refunding it.</p>}
           {state.justRefunded ? (
             <Card className="p-4 space-y-3" data-testid="refund-recorded">
               <div className="text-sm text-emerald-400 font-semibold flex gap-2">
                 <Check className="w-4 h-4" />
-                Refund recorded · {state.justRefunded.number} · −฿
+                Money returned · {state.justRefunded.number} · −฿
                 {satangText(state.justRefunded.amountSatang)}
               </div>
+              {(state.justRefunded.retainedPartyDepositSatang ?? 0) > 0 && <p>Deposit stays with the party: THB {satangText(state.justRefunded.retainedPartyDepositSatang!)}</p>}
               {state.justRefunded.tenderAllocation.map((slice, index) => (
                 <div
                   key={index}
@@ -389,7 +393,7 @@ export function MobileTransactionDetail(props: SaleDetailProps) {
                   <Ban className="w-4 h-4" />
                   Void unpaid sale
                 </Button>
-              ) : state.status === 'voided' ? null : closed && remainingSatang <= 0 ? (
+              ) : state.status === 'voided' ? null : closed && remainingSatang <= 0 && !detail?.canCloseWithRetainedDeposit && !detail?.partyDepositReviewRequired ? (
                 <p className="text-sm text-muted-foreground text-center py-3">
                   Fully refunded — nothing left to refund.
                 </p>
@@ -400,7 +404,7 @@ export function MobileTransactionDetail(props: SaleDetailProps) {
                   onClick={state.openRefund}
                 >
                   <Undo2 className="w-4 h-4" />
-                  {offline ? 'Refund — online only' : 'Refund'} (฿{satangText(remainingSatang)} left)
+                  {detail?.canCloseWithRetainedDeposit ? 'Close settlement; deposit stays with party' : <>{offline ? 'Refund — online only' : 'Refund'} (฿{satangText(remainingSatang)} left)</>}
                 </Button>
               )}
               {state.partPaidOpen && (

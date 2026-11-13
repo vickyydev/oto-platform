@@ -39,6 +39,7 @@ import { renderHook } from './support/hooks';
 import { ExtensionBandRecovery, ExtensionPayment, extensionBandFromScan, useSaleExtensions } from '@/components/history/SaleExtensions';
 import { paymentMethodLabel } from '@/lib/payments';
 import { PaymentTenderPanel } from '@/components/till/PaymentTenderPanel';
+import { MobileTransactionDetail } from '@/components/mobile/history/MobileTransactionDetail';
 import { MobileRefundFlow } from '@/components/mobile/history/MobileRefundFlow';
 import { MobileReprintFlow } from '@/components/mobile/history/MobileReprintFlow';
 import { useSaleDetail, DiscountLabel, refundSliceWords, tenderLabel, voucherLabelParts } from '@/components/history/SaleDetail';
@@ -918,5 +919,91 @@ describe('replacement bracelet recovery', () => {
     expect(post.mock.calls[1]).toEqual(post.mock.calls[0]);
     expect(onClose).toHaveBeenCalledTimes(1);
     hook.unmount(); post.mockRestore();
+  });
+});
+
+
+describe('SCRUM-910: phone whole closure with a retained deposit', () => {
+  const zeroProps = { maxRefund: 0, retainedPartyDeposit: 16_900, allowRetainedClosure: true,
+    restorableCredit: 0, lines: [], reasons: ['Party canceled'], operatorName: 'Som',
+    refundMode: 'manual' as const, onConfirm: vi.fn(), onCancel: vi.fn() };
+  const nextButton = (tree: unknown) => elements(tree).find((n) => typeof n.props.onClick === 'function' && words(n.props.children).startsWith('Next '))!;
+  const closeLabel = 'Close settlement; return THB 0; keep deposit';
+
+  it('advances zero only for whole retention, requires a reason, and blocks a busy repeat', () => {
+    const confirm = vi.fn();
+    const flow = renderHook(({ busy }) => MobileRefundFlow({ ...zeroProps, busy, onConfirm: confirm }), { busy: false });
+    for (const label of ['By item', 'Amount']) expect(elements(flow.result.current).find((n) => typeof n.props.onClick === 'function' && words(n.props.children) === label)?.props.disabled).toBe(true);
+    press(flow.result.current, words(nextButton(flow.result.current).props.children));
+    expect(elements(flow.result.current).find((n) => words(n.props.children) === 'Review refund' && typeof n.props.onClick === 'function')?.props.disabled).toBe(true);
+    press(flow.result.current, 'Party canceled');
+    press(flow.result.current, 'Review refund');
+    expect(words(flow.result.current)).toContain('No money is returned. Deposit stays with this party: THB 16900');
+    expect(words(flow.result.current)).not.toContain('Hand the refund back');
+    flow.rerender({ busy: true });
+    const busy = elements(flow.result.current).find((n) => typeof n.props.onClick === 'function' && words(n.props.children).startsWith('Recording'))!;
+    expect(busy.props.disabled).toBe(true);
+    (busy.props.onClick as () => void)();
+    expect(confirm).not.toHaveBeenCalled();
+    flow.rerender({ busy: false });
+    press(flow.result.current, closeLabel);
+    expect(confirm).toHaveBeenCalledOnce();
+    expect(confirm).toHaveBeenCalledWith(expect.objectContaining({ scope: 'full', mode: 'full', amountSatang: 0, amountTHB: 0, reason: 'Party canceled' }));
+    flow.unmount();
+  });
+
+  it.each([{ allowRetainedClosure: false, retainedPartyDeposit: 16_900 }, { allowRetainedClosure: true, retainedPartyDeposit: 0 }])('refuses ordinary zero when the verified retention exception is incomplete: %j', (over) => {
+    const confirm = vi.fn();
+    const flow = renderHook(() => MobileRefundFlow({ ...zeroProps, ...over, onConfirm: confirm }));
+    expect(nextButton(flow.result.current).props.disabled).toBe(true);
+    expect(confirm).not.toHaveBeenCalled();
+    flow.unmount();
+  });
+
+  it('opens the actual phone action and sends one whole closure through the shared controller with no amount or tender', async () => {
+    const txn = row('zero-party-phone', '2026-11-14T01:00:00Z', { gross: 1_690_000, note: 'Party: ZZ TEST 910 phone' });
+    const returned: ApiRefund = { id: 'refund-zero', saleId: txn.id, stationId: 'station-1', number: 'T1-R-000001', amountSatang: 0, retainedPartyDepositSatang: 1_690_000, mode: 'whole', reason: 'Party canceled', note: null, lines: [], tenderAllocation: [], approvedBy: { accountId: 'account-1', name: 'Som' }, createdBy: { accountId: 'account-1', name: 'Som' }, pending: false, createdAt: '2026-11-14T01:01:00Z' };
+    const initial: ApiSaleDetail = { sale: txn.ledger, lines: [], discounts: [], taxBreakdown: null, refunds: [], printJobs: [], bands: [], refundableSatang: 0, partyDepositRetainableSatang: 1_690_000, canCloseWithRetainedDeposit: true };
+    const closed: ApiSaleDetail = { ...initial, sale: { ...initial.sale, status: 'refunded' }, refunds: [returned], partyDepositRetainableSatang: 0, canCloseWithRetainedDeposit: false, refundStatus: 'refunded' };
+    const get = vi.spyOn(api, 'get').mockResolvedValueOnce(initial).mockResolvedValue(closed);
+    const link = vi.spyOn(stationLinkApi, 'read').mockResolvedValue({ stationId: 'station-1', boxId: null, offline: false });
+    const post = vi.spyOn(api, 'post').mockResolvedValue({ replay: false, refund: returned, sale: closed.sale, refundStatus: 'refunded', refundableSatang: 0 });
+    const page = renderHook(() => MobileTransactionDetail({ txn, onBack: vi.fn() }));
+    let disposeFlow = () => {};
+    try {
+      await settle();
+      expect(words(page.result.current)).not.toContain('Fully refunded');
+      press(page.result.current, 'Close settlement; deposit stays with party');
+      const child = elements(page.result.current).find((n) => n.type === MobileRefundFlow)!;
+      expect(child.props).toMatchObject({ maxRefund: 0, retainedPartyDeposit: 16_900, allowRetainedClosure: true });
+      const flow = renderHook(() => MobileRefundFlow(child.props as unknown as React.ComponentProps<typeof MobileRefundFlow>));
+      disposeFlow = () => flow.unmount();
+      press(flow.result.current, words(nextButton(flow.result.current).props.children));
+      const reasons = child.props.reasons as string[];
+      press(flow.result.current, reasons[0]!);
+      press(flow.result.current, 'Review refund');
+      press(flow.result.current, closeLabel);
+      await settle();
+      expect(post).toHaveBeenCalledOnce();
+      expect(post.mock.calls[0]?.[0]).toBe('/sales/zero-party-phone/refunds');
+      expect(post.mock.calls[0]?.[1]).toMatchObject({ mode: 'whole', reason: reasons[0] });
+      expect(post.mock.calls[0]?.[1]).not.toHaveProperty('amountSatang');
+      expect(post.mock.calls[0]?.[1]).not.toHaveProperty('tender');
+      expect(words(page.result.current)).toContain('Money returned');
+      expect(words(page.result.current)).toContain('Deposit stays with the party: THB 16900');
+    } finally { disposeFlow(); page.unmount(); get.mockRestore(); post.mockRestore(); link.mockRestore(); }
+  });
+
+  it('shows the exact-party review hold on phone instead of claiming fully refunded', async () => {
+    const txn = row('review-party-phone', '2026-11-14T01:00:00Z', { gross: 1_690_000 });
+    const detail: ApiSaleDetail = { sale: txn.ledger, lines: [], discounts: [], taxBreakdown: null, refunds: [], printJobs: [], refundableSatang: 0, partyDepositReviewRequired: true };
+    const get = vi.spyOn(api, 'get').mockResolvedValue(detail);
+    const link = vi.spyOn(stationLinkApi, 'read').mockResolvedValue({ stationId: 'station-1', boxId: null, offline: false });
+    const page = renderHook(() => MobileTransactionDetail({ txn, onBack: vi.fn() }));
+    try {
+      await settle();
+      expect(words(page.result.current)).toContain('This party has an unresolved deposit refund.');
+      expect(words(page.result.current)).not.toContain('Fully refunded');
+    } finally { page.unmount(); get.mockRestore(); link.mockRestore(); }
   });
 });

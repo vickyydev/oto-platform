@@ -1,0 +1,57 @@
+{
+  "atUtc": "2026-11-13T22:36:41.092612+00:00",
+  "approvedMoneyBase": "857535fd9baefced3e7118d3dd9f80f452992312",
+  "deltaBase": "99310bd8300952133d48daaeecc88080eec50812",
+  "sourceBlobs": {
+    "apps/pos/src/components/mobile/history/MobileRefundFlow.tsx": "38421064c5400a6ffae1fd3dc91c5f12a030ede3",
+    "apps/pos/src/components/mobile/history/MobileTransactionDetail.tsx": "2512bd086c5062e5546b47fa759d19fbd69b04c0",
+    "apps/pos/test/sale-detail-label.test.ts": "ea09d9631e07db0ac26d3ca9cdc7a1ff8c7711a1"
+  },
+  "logs": {
+    "910-mobile-red.log": {
+      "sha256": "8b266b9cb029dc8679ed57fb221ca302b243cbe296be3db385c4863944a81954",
+      "bytes": 25712
+    },
+    "910-mobile-green.log": {
+      "sha256": "e34879342e3f62c7b65cc82056b5005bf5d2197049adc0ac97a5792b4a3b080e",
+      "bytes": 1824
+    },
+    "910-mobile-types.log": {
+      "sha256": "5c3a6e5cc55e5c5a984f9b7b6ae94f5ef0b3f2e104c2f512b33133e796dc54ce",
+      "bytes": 386
+    },
+    "910-mobile-lint.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "910-mobile-build.log": {
+      "sha256": "46a8f6c6cfc3057af4024dbfc45029874efe0d78321cbca8cd8f4ef68e185f7d",
+      "bytes": 8366
+    },
+    "910-mobile-gates.txt": {
+      "sha256": "730ee5bd6304ce42fc783f02815641ff0d8d780c75ec1fd09d26f482a25353c8",
+      "bytes": 170
+    }
+  },
+  "observed": {
+    "controlledBaseline": {
+      "completeFile": "sale-detail-label.test.ts",
+      "failed": 3,
+      "passed": 56,
+      "noSetupFailure": true
+    },
+    "fixed": {
+      "completeFiles": 6,
+      "passed": 108
+    },
+    "posTypeConfigurations": 3,
+    "typeExit": 0,
+    "touchedLintExit": 0,
+    "productionBuildExit": 0
+  },
+  "limits": [
+    "Local hook/component flow uses mocked network; native staging proof remains required.",
+    "API and migration remain unchanged from independently approved money candidate.",
+    "No source push, staging fixture or session created; main CI43517660340 is red and844 proof incomplete."
+  ]
+}

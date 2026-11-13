@@ -12,6 +12,8 @@ type Step = 'scope' | 'reason' | 'confirm';
 
 interface MobileRefundFlowProps {
   maxRefund: number;
+  retainedPartyDeposit?: number;
+  allowRetainedClosure?: boolean;
   restorableCredit: number;
   lines: RefundLineOption[];
   reasons: string[];
@@ -26,6 +28,8 @@ interface MobileRefundFlowProps {
 
 export function MobileRefundFlow({
   maxRefund,
+  retainedPartyDeposit = 0,
+  allowRetainedClosure = false,
   restorableCredit,
   lines,
   reasons,
@@ -69,8 +73,9 @@ export function MobileRefundFlow({
   const amountTHB = resolved.amountSatang / 100;
   const scope: 'full' | 'partial' = amountTHB >= maxRefund ? 'full' : 'partial';
   const creditRestoredTHB = Math.min(amountTHB, restorableCredit);
-  const canAdvanceScope = resolved.amountSatang > 0;
-  const canConfirm = !!reason.trim() && resolved.amountSatang > 0 && !busy;
+  const retainOnly = allowRetainedClosure && mode === 'full' && resolved.amountSatang === 0 && retainedPartyDeposit > 0;
+  const canAdvanceScope = resolved.amountSatang > 0 || retainOnly;
+  const canConfirm = !!reason.trim() && canAdvanceScope && !busy;
   const handleConfirm = () => {
     if (!canConfirm) return;
     onConfirm({ scope, amountTHB, creditRestoredTHB, reason, note: note.trim() || undefined,
@@ -132,12 +137,14 @@ export function MobileRefundFlow({
             {operatorName}
           </div>
 
+          {retainedPartyDeposit > 0 && <p className="text-sm text-muted-foreground">Deposit stays with this party: THB {bahtText(retainedPartyDeposit)}</p>}
+
           {/* Mode selector */}
           <div className="grid grid-cols-3 gap-2">
             {[
               { key: 'full' as Mode, label: 'Whole sale' },
-              { key: 'item' as Mode, label: 'By item', disabled: lines.length === 0 },
-              { key: 'custom' as Mode, label: 'Amount' },
+              { key: 'item' as Mode, label: 'By item', disabled: allowRetainedClosure || lines.length === 0 },
+              { key: 'custom' as Mode, label: 'Amount', disabled: allowRetainedClosure },
             ].map(({ key, label, disabled }) => (
               <button
                 key={key}
@@ -306,7 +313,8 @@ export function MobileRefundFlow({
               </div>
             )}
 
-            {!offline && refundMode && (
+            {retainOnly && <p className="text-sm text-muted-foreground">No money is returned. Deposit stays with this party: THB {bahtText(retainedPartyDeposit)}</p>}
+            {!offline && refundMode && !retainOnly && (
               <div
                 className={`rounded-xl border px-4 py-3 flex items-start gap-3 ${
                   refundMode === 'auto'
@@ -339,7 +347,7 @@ export function MobileRefundFlow({
         {step === 'scope' && (
           <Button
             className="w-full h-14 text-base"
-            disabled={!canAdvanceScope || amountTHB === 0}
+            disabled={!canAdvanceScope}
             onClick={() => setStep('reason')}
           >
             Next — choose reason
@@ -360,7 +368,7 @@ export function MobileRefundFlow({
             disabled={!canConfirm}
             onClick={handleConfirm}
           >
-            {busy ? 'Recording…' : offline ? 'Note refund request' : `Confirm refund ฿${bahtText(amountTHB)}`}
+            {busy ? 'Recording…' : offline ? 'Note refund request' : retainOnly ? 'Close settlement; return THB 0; keep deposit' : `Confirm refund ฿${bahtText(amountTHB)}`}
           </Button>
         )}
       </div>
