@@ -1,0 +1,14 @@
+ZZ TEST 971 band printer, Virtual box 1 (Central Floresta); Console https://oto-console-staging.onrender.com; 2026-11-13T02:32:22.098Z
+
+The row before:   address 192.0.2.72:9100   model null   protocol tspl2   settings null
+The form showed:  {"address":"192.0.2.72:9100","model":"","protocol":"tspl2","sensing":"Gap between labels"}
+Typed: the address only, 192.0.2.74:9100. Pressed Save.
+
+Requests the page sent to PATCH /api/devices/<id> (captured in the browser): 1
+  PATCH /api/devices/:id
+  body: {"address":"192.0.2.74:9100"}
+Answer: {"status":200,"settings":null,"address":"192.0.2.74:9100","reading":{"reachability":"reachable","paperStatus":"ok","lastError":null,"address":"192.0.2.74:9100","notSetUp":false}}
+Form still open after Save: false
+
+Read back (GET /api/boxes/<Virtual box 1>/devices): address 192.0.2.74:9100   settings null   model null   protocol tspl2
+Reading straight after: {"reachability":"reachable","paperStatus":"ok","lastError":null,"address":"192.0.2.74:9100","notSetUp":false}

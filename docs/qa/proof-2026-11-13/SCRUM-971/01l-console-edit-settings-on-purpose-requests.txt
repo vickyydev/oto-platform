@@ -1,0 +1,15 @@
+A settings section changed on purpose through the Console Edit form (2026-11-13T02:36:28.299Z)
+
+ZZ TEST 971 receipt printer: changed Paper width 576 -> 512 dots; nothing else typed.
+  requests sent: 1
+  PATCH /api/devices/:id
+  body: {"settings":{"escpos":{"dotsPerLine":512}}}
+  answer: {"status":200,"settings":{"escpos":{"dotsPerLine":512}},"address":"192.0.2.73:9100","reading":{"reachability":"reachable","paperStatus":"ok","lastError":null,"address":"192.0.2.73:9100","notSetUp":false}}
+  read back: address 192.0.2.73:9100  model null  protocol escpos  label ZZ TEST 971 receipt printer  settings {"escpos":{"dotsPerLine":512}}
+
+ZZ TEST 971 band printer: changed Sensing "Gap between labels" -> "Black mark on the band"; nothing else typed.
+  requests sent: 1
+  PATCH /api/devices/:id
+  body: {"settings":{"label":{"sensing":"bline"}}}
+  answer: {"status":200,"settings":{"label":{"sensing":"bline"}},"address":"192.0.2.74:9100","reading":{"reachability":"reachable","paperStatus":"ok","lastError":null,"address":"192.0.2.74:9100","notSetUp":false}}
+  read back: address 192.0.2.74:9100  model null  protocol tspl2  label ZZ TEST 971 band printer  settings {"label":{"sensing":"bline"}}

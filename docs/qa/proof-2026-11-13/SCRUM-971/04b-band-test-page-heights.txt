@@ -1,0 +1,15 @@
+The ZZ TEST 971 band printer's test pages (GET /api/devices/<id>/printouts; 2026-11-13T02:40:06.553Z)
+
+With the park's band settings (PATCH settings {"label":{"labelWidthMm":25,"labelHeightMm":246,"gapMm":4,"sensing":"bline","printOffsetMm":50,"printLengthMm":80}} -> 200; box reports after it: 2026-11-13T02:37:00.789Z, 2026-11-13T02:38:00.794Z):
+  role dropoff_band  job printed on ZZ TEST 971 band printer; printout #1 200 x 591 dots, truncated false; picture 04a-band-test-page-park-stock-dropoff-role-preview.png
+  role kids_band     job printed on ZZ TEST 971 band printer; printout #2 200 x 591 dots, truncated false; picture 04c-band-test-page-park-stock-kids-role-preview.png
+  role adult_band    job printed on ZZ TEST 971 band printer; printout #3 200 x 591 dots, truncated false; picture 04d-band-test-page-park-stock-adult-role-preview.png
+  TSPL set-up the box sent: SIZE 25 mm,246 mm | BLINE 4 mm,0 mm | DIRECTION 1 | REFERENCE 0,400 | DENSITY 10 | SPEED 4 | SET TEAR ON | CLS
+  The page kept: the title, Device, Model, Address, Station, Box, Time, Transport, Dots/line, Renderer, Fonts and the seeded template list;
+  it dropped: the dot ruler, the scripts (Thai stacks), the money column and the codes (QR and barcode).
+
+With the settings removed again (PATCH settings null -> 200, read back null; box reports after it: 2026-11-13T02:39:00.792Z, 2026-11-13T02:40:00.791Z):
+  role dropoff_band  job printed on ZZ TEST 971 band printer; printout #1 400 x 1070 dots, truncated false; picture 04e-band-test-page-default-label-dropoff-role-preview.png
+  TSPL set-up the box sent: SIZE 50 mm,250 mm | GAP 3 mm,0 mm | DIRECTION 1 | REFERENCE 0,0 | DENSITY 10 | SPEED 4 | SET TEAR ON | CLS
+
+Before the change (SCRUM-952 proof, 06d): 200 x 1,108 dots on the same park settings.

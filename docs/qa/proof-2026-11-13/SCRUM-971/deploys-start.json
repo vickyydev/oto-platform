@@ -1,0 +1,45 @@
+{
+  "landedCommit": "1b9885a321ff7799ba122caa2a0adff30aa99807",
+  "oto-api-staging": {
+    "live": {
+      "id": "dep-dbr77g0874rs73fipqsg",
+      "sha": "1b9885a321ff7799ba122caa2a0adff30aa99807",
+      "createdAt": "2026-11-13T02:19:44.779376Z",
+      "finishedAt": "2026-11-13T02:29:00.34247Z"
+    },
+    "latest": {
+      "id": "dep-dbr77g0874rs73fipqsg",
+      "status": "live",
+      "sha": "1b9885a321ff7799ba122caa2a0adff30aa99807"
+    },
+    "readAt": "2026-11-13T02:29:21.655Z"
+  },
+  "oto-console-staging": {
+    "live": {
+      "id": "dep-dbr761l9fdbs73dgh67g",
+      "sha": "1b9885a321ff7799ba122caa2a0adff30aa99807",
+      "createdAt": "2026-11-13T02:16:38.717503Z",
+      "finishedAt": "2026-11-13T02:17:45.975603Z"
+    },
+    "latest": {
+      "id": "dep-dbr761l9fdbs73dgh67g",
+      "status": "live",
+      "sha": "1b9885a321ff7799ba122caa2a0adff30aa99807"
+    },
+    "readAt": "2026-11-13T02:29:21.922Z"
+  },
+  "oto-pos-web-staging": {
+    "live": {
+      "id": "dep-dbr76mm7bikc73ekorfg",
+      "sha": "0e8e2badfafc4f7fc51929b3f7aefecc2702328f",
+      "createdAt": "2026-11-13T02:18:02.724318Z",
+      "finishedAt": "2026-11-13T02:22:15.237791Z"
+    },
+    "latest": {
+      "id": "dep-dbr76mm7bikc73ekorfg",
+      "status": "live",
+      "sha": "0e8e2badfafc4f7fc51929b3f7aefecc2702328f"
+    },
+    "readAt": "2026-11-13T02:29:22.189Z"
+  }
+}

@@ -1,0 +1,17 @@
+GET /api/branches/<Central Floresta>/end-of-day?date=2026-11-13 as the admin (2026-11-13T02:44:28.823Z) -> 200
+stranded rows today: 1; the ZZ TEST row (the others are not shown):
+
+[
+  {
+    "kind": "checkin",
+    "childName": "ZZ TEST 971 child D1",
+    "bandCode": "Z97101-F4GCJM",
+    "checkedInAt": "2026-11-13T02:43:29.977Z",
+    "sale": "Z97101-000001",
+    "reason": null
+  }
+]
+
+The till's End of Day row reads: "Checked in 09:43 · Band Z97101-F4GCJM · Sale Z97101-000001"
+The sale's band (GET /api/sales/<id> bands[0].shortCode): Z97101-F4GCJM
+Other stranded rows today whose bandCode is not a short code: 0

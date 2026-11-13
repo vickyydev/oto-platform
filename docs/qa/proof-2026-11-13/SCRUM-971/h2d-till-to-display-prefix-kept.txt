@@ -1,0 +1,10 @@
+Hunt: the ZZ TEST till "ZZ TEST 971 เคาน์เตอร์ ญี่ปุ่น น้ำ" (prefix Z97102) changed into a Customer display in the Console (2026-11-13T02:48:38.103Z)
+
+Before: Code prefix field "Z97102", config v1
+Kind -> Customer display: Code prefix fields on the form 0
+Save the station: PATCH /api/stations/<id> -> 200
+  body sent: {"name":"ZZ TEST 971 เคาน์เตอร์ ญี่ปุ่น น้ำ","kind":"display","boxId":"01a0be8c-89a0-74fa-9495-fb4a4acb65bc","capabilities":[],"accessScope":"all_staff","staffAccountIds":[],"devices":[{"role":"dropoff_band","deviceId":"d45e40d7-9a8f-4ae6-a921-92f0210bddae"},{"role":"receipt","deviceId":"e3c85b2d-01a6-457d-be2b-e8392e68c637"}],"codePrefix":"Z97102","paymentRouting":null,"offlineWalletCapSatang":null,"expectedConfigVersion":1}
+  answer: {"kind":"display","codePrefix":"Z97102","devices":2,"configVersion":2}
+Read back: {"name":"ZZ TEST 971 เคาน์เตอร์ ญี่ปุ่น น้ำ","kind":"display","codePrefix":"Z97102","devices":["dropoff_band","receipt"],"configVersion":2}
+
+A new ZZ TEST till "ZZ TEST 971 till C" with prefix Z97102: POST /api/branches/<id>/stations -> 409 STATION_CODE_PREFIX_TAKEN A live station at this branch already uses that code prefix

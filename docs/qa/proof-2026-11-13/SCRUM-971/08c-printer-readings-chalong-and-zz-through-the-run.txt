@@ -1,0 +1,34 @@
+(a) READ ONLY: Oto Play Park, Robinson Chalong, Virtual box 3 (virtual, unclaimed)
+    GET /api/boxes/<VB3>/devices, Receipt Printer 1: {"label":"Receipt Printer 1","kind":"receipt_printer","transport":"simulated","address":null,"reachability":"unknown","paperStatus":"unknown","lastError":"DEVICE_NO_ADDRESS"}
+    GET /api/ops/health, VB3 devices: [{"label":"Receipt Printer 1","reachability":"unknown","paperStatus":"unknown","lastError":"DEVICE_NO_ADDRESS"}]
+    Console Health row: "Virtual box 3 Virtual never reported Waiting to be claimed last sync not recorded Receipt Printer 1 not set up Receipt printer"
+    Console VB3 drawer row: "Receipt Printer 1 Receipt printer Simulated not set up Edit escpos No address, so nothing prints on it. Edit it and enter the address the box prints to."
+
+(b) The ZZ TEST printers (both have an address the whole run). Every reading taken:
+    2026-11-13T02:29:36.712Z  setup: just made through the api                                 receipt 192.0.2.71:9100 unknown/unknown/no error | band 192.0.2.72:9100 unknown/unknown/no error   (ops/health: receipt unknown/unknown/no error, band unknown/unknown/no error)
+    2026-11-13T02:30:07.017Z  before any edit, the box has reported on them                    receipt 192.0.2.71:9100 reachable/ok/no error | band 192.0.2.72:9100 reachable/ok/no error   (ops/health: receipt reachable/ok/no error, band reachable/ok/no error)
+    2026-11-13T02:30:21.869Z  before any edit, the box has reported on them                    receipt 192.0.2.71:9100 reachable/ok/no error | band 192.0.2.72:9100 reachable/ok/no error   (ops/health: receipt reachable/ok/no error, band reachable/ok/no error)
+    2026-11-13T02:30:34.705Z  receipt printer: straight after its address was changed          receipt 192.0.2.73:9100 reachable/ok/no error | band 192.0.2.72:9100 reachable/ok/no error   (ops/health: receipt reachable/ok/no error, band reachable/ok/no error)
+    2026-11-13T02:31:34.783Z  before any edit, the box has reported on them                    receipt 192.0.2.71:9100 reachable/ok/no error | band 192.0.2.72:9100 reachable/ok/no error   (ops/health: receipt reachable/ok/no error, band reachable/ok/no error)
+    2026-11-13T02:31:47.299Z  receipt printer: straight after its address was changed          receipt 192.0.2.73:9100 reachable/ok/no error | band 192.0.2.72:9100 reachable/ok/no error   (ops/health: receipt reachable/ok/no error, band reachable/ok/no error)
+    2026-11-13T02:32:17.006Z  band printer: straight after its address was changed             receipt 192.0.2.73:9100 reachable/ok/no error | band 192.0.2.74:9100 reachable/ok/no error   (ops/health: receipt reachable/ok/no error, band reachable/ok/no error)
+    2026-11-13T02:34:03.006Z  after the box's next report since both address changes           receipt 192.0.2.73:9100 reachable/ok/no error | band 192.0.2.74:9100 reachable/ok/no error   (ops/health: receipt reachable/ok/no error, band reachable/ok/no error)
+    2026-11-13T02:45:39.120Z  point 8: at the Chalong read                                     receipt 192.0.2.73:9100 reachable/ok/no error | band 192.0.2.74:9100 reachable/ok/no error   (ops/health: receipt reachable/ok/no error, band reachable/ok/no error)
+
+    Console Health page items (receipt | band):
+      before any edit                            ZZ TEST 971 receipt printer Receipt printer | ZZ TEST 971 band printer Band printer
+      right after the receipt address change     ZZ TEST 971 receipt printer Receipt printer | ZZ TEST 971 band printer Band printer
+      right after the band address change        ZZ TEST 971 receipt printer Receipt printer | ZZ TEST 971 band printer Band printer
+      after the box's next report                ZZ TEST 971 receipt printer Receipt printer | ZZ TEST 971 band printer Band printer
+      now                                        ZZ TEST 971 receipt printer Receipt printer | ZZ TEST 971 band printer Band printer
+    Console box drawer rows (receipt | band):
+      right after the receipt save               ZZ TEST 971 receipt printer Receipt printer Simulated paper ok Edit escpos 192.0.2.73:9100 seen 45s ago | ZZ TEST 971 band printer Band printer Simulated paper ok Edit tspl2 192.0.2.72:9100 seen 45s ago
+      right after the band save                  ZZ TEST 971 receipt printer Receipt printer Simulated paper ok Edit escpos 192.0.2.73:9100 seen 15s ago | ZZ TEST 971 band printer Band printer Simulated paper ok Edit tspl2 192.0.2.74:9100 seen 15s ago
+      after the box's next report                ZZ TEST 971 receipt printer Receipt printer Simulated paper ok Edit escpos 192.0.2.73:9100 seen 24s ago | ZZ TEST 971 band printer Band printer Simulated paper ok Edit tspl2 192.0.2.74:9100 seen 24s ago
+    The till's light (GET /api/stations/<ZZ till>/printers), every role, at the same four moments:
+      before any edit                            adult_band reachable/ok/no error; dropoff_band reachable/ok/no error; kids_band reachable/ok/no error; receipt reachable/ok/no error
+      right after the receipt address change     adult_band reachable/ok/no error; dropoff_band reachable/ok/no error; kids_band reachable/ok/no error; receipt reachable/ok/no error
+      right after the band address change        adult_band reachable/ok/no error; dropoff_band reachable/ok/no error; kids_band reachable/ok/no error; receipt reachable/ok/no error
+      after the box's next report                adult_band reachable/ok/no error; dropoff_band reachable/ok/no error; kids_band reachable/ok/no error; receipt reachable/ok/no error
+
+    "not set up" (DEVICE_NO_ADDRESS) seen on a ZZ printer at any moment: api false, Console false, till light false

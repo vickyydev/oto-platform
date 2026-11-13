@@ -1,0 +1,12 @@
+Hunt: "Add a device" through the Console form on Virtual box 1; only kind, label, "Simulated", address and protocol typed (2026-11-13T02:50:20.394Z)
+
+Receipt printer "ZZ TEST 971 form receipt printer" (192.0.2.75:9100, escpos): the form showed Paper width "576 dots (most 80 mm printers)"; added (200).
+  the new row: {"label":"ZZ TEST 971 form receipt printer","kind":"receipt_printer","address":"192.0.2.75:9100","protocol":"escpos","settings":{"escpos":{"dotsPerLine":576}}}
+  audit: {"status":200,"rows":[{"action":"device.create","afterSettings":{"escpos":{"dotsPerLine":576}}}]}
+
+Band printer "ZZ TEST 971 form band printer" (192.0.2.76:9100, tspl2): the form showed {"sensing":"Gap between labels"}; POST /api/boxes/<VB1>/devices -> 200
+  body sent: {"kind":"band_printer","label":"ZZ TEST 971 form band printer","transport":"simulated","address":"192.0.2.76:9100","protocol":"tspl2","settings":{"label":{"sensing":"gap"}}}
+  the new row: {"label":"ZZ TEST 971 form band printer","kind":"band_printer","address":"192.0.2.76:9100","protocol":"tspl2","settings":{"label":{"sensing":"gap"}}}
+
+The same kinds made through the api without settings (this proof's set-up) hold settings null, and the Edit form now keeps null (point 1);
+the Add form writes the defaults it shows (apps/console/src/components/devices/BoxDrawer.tsx:880-886).

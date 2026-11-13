@@ -1,0 +1,5680 @@
+{
+  "tickets": [
+    "SCRUM-971",
+    "SCRUM-969 (point 5)"
+  ],
+  "sha": "1b9885a321ff7799ba122caa2a0adff30aa99807",
+  "startedAt": "2026-11-13T02:29:27.672Z",
+  "deploys": {
+    "landedCommit": "1b9885a321ff7799ba122caa2a0adff30aa99807",
+    "oto-api-staging": {
+      "live": {
+        "id": "dep-dbr77g0874rs73fipqsg",
+        "sha": "1b9885a321ff7799ba122caa2a0adff30aa99807",
+        "createdAt": "2026-11-13T02:19:44.779376Z",
+        "finishedAt": "2026-11-13T02:29:00.34247Z"
+      },
+      "latest": {
+        "id": "dep-dbr77g0874rs73fipqsg",
+        "status": "live",
+        "sha": "1b9885a321ff7799ba122caa2a0adff30aa99807"
+      },
+      "readAt": "2026-11-13T02:29:21.655Z"
+    },
+    "oto-console-staging": {
+      "live": {
+        "id": "dep-dbr761l9fdbs73dgh67g",
+        "sha": "1b9885a321ff7799ba122caa2a0adff30aa99807",
+        "createdAt": "2026-11-13T02:16:38.717503Z",
+        "finishedAt": "2026-11-13T02:17:45.975603Z"
+      },
+      "latest": {
+        "id": "dep-dbr761l9fdbs73dgh67g",
+        "status": "live",
+        "sha": "1b9885a321ff7799ba122caa2a0adff30aa99807"
+      },
+      "readAt": "2026-11-13T02:29:21.922Z"
+    },
+    "oto-pos-web-staging": {
+      "live": {
+        "id": "dep-dbr76mm7bikc73ekorfg",
+        "sha": "0e8e2badfafc4f7fc51929b3f7aefecc2702328f",
+        "createdAt": "2026-11-13T02:18:02.724318Z",
+        "finishedAt": "2026-11-13T02:22:15.237791Z"
+      },
+      "latest": {
+        "id": "dep-dbr76mm7bikc73ekorfg",
+        "status": "live",
+        "sha": "0e8e2badfafc4f7fc51929b3f7aefecc2702328f"
+      },
+      "readAt": "2026-11-13T02:29:22.189Z"
+    }
+  },
+  "numbers": {
+    "dropoff": "0898971010"
+  },
+  "created": [
+    {
+      "kind": "device",
+      "key": "receipt",
+      "id": "e3c85b2d-01a6-457d-be2b-e8392e68c637",
+      "label": "ZZ TEST 971 receipt printer"
+    },
+    {
+      "kind": "device",
+      "key": "band",
+      "id": "d45e40d7-9a8f-4ae6-a921-92f0210bddae",
+      "label": "ZZ TEST 971 band printer"
+    },
+    {
+      "kind": "station",
+      "id": "01a1d2bd-2fef-7ba0-b52e-aa81d81d62bd",
+      "name": "ZZ TEST 971 till",
+      "prefix": "Z97101"
+    },
+    {
+      "kind": "station",
+      "id": "01a1d2c8-bb53-77ae-855e-2f8bb8d3ae96",
+      "name": "ZZ TEST 971 display",
+      "stationKind": "display"
+    },
+    {
+      "kind": "registration",
+      "guardian": "ZZ TEST 971 guardian D",
+      "id": "01a1d2c9-dc53-77ad-80ad-0576788c421d",
+      "stays": [
+        {
+          "id": "01a1d2c9-dc53-77ad-80ad-05772dc227d1",
+          "name": "ZZ TEST 971 child D1"
+        }
+      ]
+    },
+    {
+      "kind": "dropoff-sale",
+      "id": "01a1d2c9-df15-7233-a3c6-384fa0384f4f"
+    },
+    {
+      "kind": "station",
+      "id": "01a1d2cc-60c7-766d-8704-84de68ea174c",
+      "name": "ZZ TEST 971 เคาน์เตอร์ ญี่ปุ่น น้ำ",
+      "prefix": "Z97102"
+    },
+    {
+      "kind": "device",
+      "key": "form",
+      "id": "01a1d2cf-25e6-7854-a530-64c6cb2331b6",
+      "label": "ZZ TEST 971 form receipt printer"
+    },
+    {
+      "kind": "device",
+      "key": "form",
+      "id": "01a1d2d0-244a-7b90-967c-5d2685093c52",
+      "label": "ZZ TEST 971 form band printer"
+    }
+  ],
+  "points": {
+    "1": {
+      "verdict": "PASSED",
+      "pictures": [
+        "01a-console-edit-receipt-printer-address-only-form.png",
+        "01b-console-edit-receipt-printer-address-only-request.png",
+        "01c-console-receipt-printer-row-after-address-save.png",
+        "01d-console-edit-band-printer-address-only-form.png",
+        "01e-console-edit-band-printer-address-only-request.png",
+        "01f-console-band-printer-row-after-address-save.png",
+        "01g1-console-edit-receipt-printer-untouched-form.png",
+        "01g2-console-edit-receipt-printer-untouched-saved-form-closed.png",
+        "01h1-console-edit-band-printer-untouched-form.png",
+        "01h2-console-edit-band-printer-untouched-saved-form-closed.png",
+        "01i-console-edit-untouched-no-request.png",
+        "01j1-console-edit-receipt-printer-paper-width-512-form.png",
+        "01k1-console-edit-band-printer-sensing-black-mark-form.png",
+        "01l-console-edit-settings-on-purpose-requests.png"
+      ],
+      "seen": {
+        "addressOnly": {
+          "receipt": [
+            {
+              "method": "PATCH",
+              "path": "/api/devices/:id",
+              "body": "{\"address\":\"192.0.2.73:9100\"}"
+            }
+          ],
+          "band": [
+            {
+              "method": "PATCH",
+              "path": "/api/devices/:id",
+              "body": "{\"address\":\"192.0.2.74:9100\"}"
+            }
+          ]
+        },
+        "untouched": {
+          "receipt": true,
+          "band": true
+        },
+        "onPurpose": {
+          "receipt": [
+            {
+              "method": "PATCH",
+              "path": "/api/devices/:id",
+              "body": "{\"settings\":{\"escpos\":{\"dotsPerLine\":512}}}"
+            }
+          ],
+          "band": [
+            {
+              "method": "PATCH",
+              "path": "/api/devices/:id",
+              "body": "{\"settings\":{\"label\":{\"sensing\":\"bline\"}}}"
+            }
+          ]
+        }
+      }
+    },
+    "2": {
+      "verdict": "PASSED",
+      "pictures": [
+        "02a-console-controls-picker-zz-till-four-entries.png",
+        "02b1-console-controls-chose-drop-off-band-printer-test-print-queued.png",
+        "02b2-console-printing-panel-band-printer-job-role.png",
+        "02c1-console-controls-chose-kids-band-printer-test-print-queued.png",
+        "02c2-console-printing-panel-band-printer-job-role.png",
+        "02d-console-controls-picker-entries-and-jobs.png"
+      ],
+      "seen": {
+        "options": [
+          "ZZ TEST 971 band printer · Adult band printer",
+          "ZZ TEST 971 band printer · Drop-off band printer",
+          "ZZ TEST 971 band printer · Kids' band printer",
+          "ZZ TEST 971 receipt printer"
+        ],
+        "dropoff": {
+          "sent": {
+            "kind": "test_page",
+            "role": "dropoff_band"
+          },
+          "job": {
+            "kind": "test_page",
+            "role": "dropoff_band",
+            "device": "ZZ TEST 971 band printer",
+            "status": "printed",
+            "error": null
+          },
+          "command": {
+            "kind": "test_print",
+            "state": "succeeded",
+            "payloadKind": "test_page",
+            "role": "dropoff_band"
+          }
+        },
+        "kids": {
+          "sent": {
+            "kind": "test_page",
+            "role": "kids_band"
+          },
+          "job": {
+            "kind": "test_page",
+            "role": "kids_band",
+            "device": "ZZ TEST 971 band printer",
+            "status": "printed",
+            "error": null
+          },
+          "command": {
+            "kind": "test_print",
+            "state": "succeeded",
+            "payloadKind": "test_page",
+            "role": "kids_band"
+          }
+        }
+      }
+    },
+    "3": {
+      "verdict": "PASSED",
+      "pictures": [
+        "03a-test-page-preview-zz-receipt-printer.png",
+        "03b-console-printing-panel-zz-receipt-test-page.png",
+        "03c-receipt-test-page-row-pitch-figures.png",
+        "03d-receipt-test-page-rows-before-and-now.png"
+      ],
+      "seen": {
+        "now": [
+          {
+            "from": "Device",
+            "to": "Model",
+            "dots": 25
+          },
+          {
+            "from": "Model",
+            "to": "Address",
+            "dots": 26
+          },
+          {
+            "from": "Address",
+            "to": "Station",
+            "dots": 27
+          },
+          {
+            "from": "Station",
+            "to": "Box",
+            "dots": 25
+          },
+          {
+            "from": "Box",
+            "to": "Time",
+            "dots": 27
+          },
+          {
+            "from": "Time",
+            "to": "Transport",
+            "dots": 25
+          },
+          {
+            "from": "Transport",
+            "to": "Dots/line",
+            "dots": 26
+          },
+          {
+            "from": "Dots/line",
+            "to": "Renderer",
+            "dots": 24
+          },
+          {
+            "from": "Renderer",
+            "to": "Fonts",
+            "dots": 26
+          }
+        ],
+        "before": [
+          {
+            "from": "Device",
+            "to": "Model",
+            "dots": 25
+          },
+          {
+            "from": "Model",
+            "to": "Address",
+            "dots": 26
+          },
+          {
+            "from": "Address",
+            "to": "Station",
+            "dots": 21
+          },
+          {
+            "from": "Station",
+            "to": "Box",
+            "dots": 20
+          },
+          {
+            "from": "Box",
+            "to": "Time",
+            "dots": 22
+          },
+          {
+            "from": "Time",
+            "to": "Transport",
+            "dots": 19
+          },
+          {
+            "from": "Transport",
+            "to": "Dots/line",
+            "dots": 26
+          },
+          {
+            "from": "Dots/line",
+            "to": "Renderer",
+            "dots": 24
+          },
+          {
+            "from": "Renderer",
+            "to": "Fonts",
+            "dots": 26
+          }
+        ]
+      }
+    },
+    "4": {
+      "verdict": "PASSED",
+      "pictures": [
+        "04a-band-test-page-park-stock-dropoff-role-preview.png",
+        "04b-band-test-page-heights.png",
+        "04e-band-test-page-default-label-dropoff-role-preview.png"
+      ],
+      "seen": {
+        "parkStock": {
+          "seq": 1,
+          "widthDots": 200,
+          "heightDots": 591,
+          "truncated": false,
+          "setup": [
+            "SIZE 25 mm,246 mm",
+            "BLINE 4 mm,0 mm",
+            "DIRECTION 1",
+            "REFERENCE 0,400",
+            "DENSITY 10",
+            "SPEED 4",
+            "SET TEAR ON",
+            "CLS"
+          ]
+        },
+        "defaultLabel": {
+          "seq": 1,
+          "widthDots": 400,
+          "heightDots": 1070,
+          "truncated": false,
+          "setup": [
+            "SIZE 50 mm,250 mm",
+            "GAP 3 mm,0 mm",
+            "DIRECTION 1",
+            "REFERENCE 0,0",
+            "DENSITY 10",
+            "SPEED 4",
+            "SET TEAR ON",
+            "CLS"
+          ]
+        }
+      }
+    },
+    "5": {
+      "verdict": "PASSED",
+      "pictures": [
+        "05a-console-new-station-customer-display-no-code-prefix.png",
+        "05b-console-new-station-gate-no-code-prefix.png",
+        "05c-console-new-station-till-code-prefix-back.png",
+        "05d-console-new-station-kiosk-code-prefix.png",
+        "05e-console-new-station-booth-code-prefix.png",
+        "05f-console-display-station-opened-again-no-code-prefix.png",
+        "05g-console-display-station-saved.png",
+        "05h-console-display-station-requests.png"
+      ],
+      "seen": {
+        "kinds": {
+          "display": {
+            "shownAs": "Customer display",
+            "codePrefixFields": 0,
+            "placeholder": null
+          },
+          "gate": {
+            "shownAs": "Gate",
+            "codePrefixFields": 0,
+            "placeholder": null
+          },
+          "till": {
+            "shownAs": "Till",
+            "codePrefixFields": 1,
+            "placeholder": "T1"
+          },
+          "kiosk": {
+            "shownAs": "Kiosk",
+            "codePrefixFields": 1,
+            "placeholder": "T1"
+          },
+          "booth": {
+            "shownAs": "Booth",
+            "codePrefixFields": 1,
+            "placeholder": "B2"
+          }
+        },
+        "kindAtStart": "Till",
+        "prefixAtStart": 1,
+        "create": {
+          "sent": [
+            {
+              "name": "ZZ TEST 971 display",
+              "kind": "display",
+              "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+              "capabilities": [],
+              "accessScope": "all_staff",
+              "staffAccountIds": [],
+              "devices": [],
+              "codePrefix": null,
+              "paymentRouting": null,
+              "offlineWalletCapSatang": null
+            }
+          ],
+          "status": 200,
+          "station": {
+            "id": "01a1d2c8-bb53-77ae-855e-2f8bb8d3ae96",
+            "name": "ZZ TEST 971 display",
+            "kind": "display",
+            "codePrefix": null,
+            "configVersion": 1
+          }
+        },
+        "reopened": {
+          "kind": "Customer display",
+          "codePrefixFields": 0,
+          "version": "1"
+        },
+        "save": {
+          "sent": [
+            {
+              "name": "ZZ TEST 971 display",
+              "kind": "display",
+              "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+              "capabilities": [],
+              "accessScope": "all_staff",
+              "staffAccountIds": [],
+              "devices": [],
+              "codePrefix": null,
+              "paymentRouting": null,
+              "offlineWalletCapSatang": null,
+              "expectedConfigVersion": 1
+            }
+          ],
+          "status": 200,
+          "configVersion": 1,
+          "codePrefix": null,
+          "error": null
+        },
+        "drawerOpenAfterSave": 0,
+        "failedNote": null,
+        "readBack": {
+          "name": "ZZ TEST 971 display",
+          "kind": "display",
+          "codePrefix": null,
+          "configVersion": 1,
+          "archived": false
+        }
+      }
+    },
+    "6": {
+      "verdict": "PASSED",
+      "pictures": [
+        "06-openapi-print-job-document-description.png"
+      ],
+      "seen": {
+        "status": 200,
+        "paths": 531,
+        "key": "/box/v1/print-jobs/{id}/document",
+        "description": "The document for one of this box’s print jobs — a receipt, a prep ticket, a band, an item voucher, or a test page asked for at a station (composed for the printer the job was routed to) — as the renderer’s `{ kind, data }` job. Built from the ledger when asked, so a reprint prints the sale as it stands. 404 for a job on another box, and for a job that has no platform document (a test page asked for at no station, or whose printer is gone).",
+        "anonymousStatus": 401,
+        "namesStationTestPage": true,
+        "oldWordsGone": true,
+        "sameAsRepo": true
+      }
+    },
+    "7": {
+      "verdict": "PASSED",
+      "pictures": [
+        "07a-till-dropoff-paid-check-in-now-prompt.png",
+        "07b-till-dropoff-checked-in-bracelets.png",
+        "07c-receipt-preview-bands-issued-short-code.png",
+        "07d-band-printout-dropoff-short-code.png",
+        "07e-till-end-of-day-still-counted-inside-band-short-code.png",
+        "07f-api-end-of-day-stranded-row-short-code.png",
+        "07g-till-history-sale-band-short-code.png"
+      ],
+      "seen": {
+        "endOfDay": "Checked in 09:43 · Band Z97101-F4GCJM · Sale Z97101-000001",
+        "api": [
+          {
+            "kind": "checkin",
+            "childName": "ZZ TEST 971 child D1",
+            "bandCode": "Z97101-F4GCJM",
+            "checkedInAt": "2026-11-13T02:43:29.977Z",
+            "sale": "Z97101-000001",
+            "reason": null
+          }
+        ],
+        "sale": "Z97101-F4GCJM",
+        "history": [
+          "Z97101-000001",
+          "Z97101-F4GCJM"
+        ]
+      }
+    },
+    "8": {
+      "verdict": "PASSED",
+      "pictures": [
+        "08a1-console-health-chalong-vb3-receipt-printer-1-not-set-up.png",
+        "08a2-console-chalong-vb3-drawer-receipt-printer-1-not-set-up.png",
+        "08b0-console-health-zz-printers-before-any-edit.png",
+        "08b1-console-health-zz-printers-right-after-receipt-address-change.png",
+        "08b2-console-health-zz-printers-right-after-band-address-change.png",
+        "08b3-console-health-zz-printers-after-next-box-report.png",
+        "01c-console-receipt-printer-row-after-address-save.png",
+        "01f-console-band-printer-row-after-address-save.png",
+        "08c-printer-readings-chalong-and-zz-through-the-run.png"
+      ],
+      "seen": {
+        "anyNotSetUp": false,
+        "consoleNotSetUp": false,
+        "tillNotSetUp": false,
+        "readings": 9
+      }
+    }
+  },
+  "reads": {
+    "setup": {
+      "box": "Virtual box 1",
+      "boxStatus": "online",
+      "prefix": "Z97101",
+      "numbersFree": 15,
+      "configVersion": 1,
+      "roles": {
+        "adult_band": "ZZ TEST 971 band printer",
+        "dropoff_band": "ZZ TEST 971 band printer",
+        "kids_band": "ZZ TEST 971 band printer",
+        "receipt": "ZZ TEST 971 receipt printer"
+      },
+      "printers": [
+        {
+          "label": "ZZ TEST 971 band printer",
+          "kind": "band_printer",
+          "transport": "simulated",
+          "address": "192.0.2.72:9100",
+          "model": null,
+          "protocol": "tspl2",
+          "settings": null,
+          "reachability": "unknown",
+          "paperStatus": "unknown",
+          "lastError": null
+        },
+        {
+          "label": "ZZ TEST 971 receipt printer",
+          "kind": "receipt_printer",
+          "transport": "simulated",
+          "address": "192.0.2.71:9100",
+          "model": null,
+          "protocol": "escpos",
+          "settings": null,
+          "reachability": "unknown",
+          "paperStatus": "unknown",
+          "lastError": null
+        }
+      ],
+      "boxNow": {
+        "status": "online",
+        "lastHeartbeatAt": "2026-11-13T02:29:09.987Z"
+      },
+      "readings": {
+        "moment": "setup: just made through the api",
+        "at": "2026-11-13T02:29:36.712Z",
+        "deviceList": {
+          "receipt": {
+            "reachability": "unknown",
+            "paperStatus": "unknown",
+            "lastError": null,
+            "address": "192.0.2.71:9100",
+            "notSetUp": false
+          },
+          "band": {
+            "reachability": "unknown",
+            "paperStatus": "unknown",
+            "lastError": null,
+            "address": "192.0.2.72:9100",
+            "notSetUp": false
+          }
+        },
+        "opsHealth": {
+          "receipt": {
+            "reachability": "unknown",
+            "paperStatus": "unknown",
+            "lastError": null
+          },
+          "band": {
+            "reachability": "unknown",
+            "paperStatus": "unknown",
+            "lastError": null
+          }
+        }
+      }
+    },
+    "p1a": {
+      "readyAt": "2026-11-13T02:31:34.562Z",
+      "beforeApi": {
+        "moment": "before any edit, the box has reported on them",
+        "at": "2026-11-13T02:31:34.783Z",
+        "deviceList": {
+          "receipt": {
+            "reachability": "reachable",
+            "paperStatus": "ok",
+            "lastError": null,
+            "address": "192.0.2.71:9100",
+            "notSetUp": false
+          },
+          "band": {
+            "reachability": "reachable",
+            "paperStatus": "ok",
+            "lastError": null,
+            "address": "192.0.2.72:9100",
+            "notSetUp": false
+          }
+        },
+        "opsHealth": {
+          "receipt": {
+            "reachability": "reachable",
+            "paperStatus": "ok",
+            "lastError": null
+          },
+          "band": {
+            "reachability": "reachable",
+            "paperStatus": "ok",
+            "lastError": null
+          }
+        }
+      },
+      "beforeTill": [
+        {
+          "label": "ZZ TEST 971 band printer",
+          "role": "adult_band",
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null
+        },
+        {
+          "label": "ZZ TEST 971 band printer",
+          "role": "dropoff_band",
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null
+        },
+        {
+          "label": "ZZ TEST 971 band printer",
+          "role": "kids_band",
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null
+        },
+        {
+          "label": "ZZ TEST 971 receipt printer",
+          "role": "receipt",
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null
+        }
+      ],
+      "beforeHealth": {
+        "receipt": {
+          "text": "ZZ TEST 971 receipt printer Receipt printer",
+          "notSetUp": false
+        },
+        "band": {
+          "text": "ZZ TEST 971 band printer Band printer",
+          "notSetUp": false
+        }
+      },
+      "edit": {
+        "label": "ZZ TEST 971 receipt printer",
+        "shownInForm": {
+          "address": "192.0.2.71:9100",
+          "model": "",
+          "protocol": "escpos",
+          "paperWidth": "576 dots (most 80 mm printers)"
+        },
+        "before": {
+          "address": "192.0.2.71:9100",
+          "settings": null,
+          "model": null,
+          "protocol": "escpos",
+          "label": "ZZ TEST 971 receipt printer"
+        },
+        "requests": [
+          {
+            "method": "PATCH",
+            "path": "/api/devices/:id",
+            "body": "{\"address\":\"192.0.2.73:9100\"}"
+          }
+        ],
+        "response": {
+          "status": 200,
+          "settings": null,
+          "address": "192.0.2.73:9100",
+          "reading": {
+            "reachability": "reachable",
+            "paperStatus": "ok",
+            "lastError": null,
+            "address": "192.0.2.73:9100",
+            "notSetUp": false
+          }
+        },
+        "formStillOpen": false,
+        "after": {
+          "address": "192.0.2.73:9100",
+          "settings": null,
+          "model": null,
+          "protocol": "escpos",
+          "label": "ZZ TEST 971 receipt printer",
+          "reading": {
+            "reachability": "reachable",
+            "paperStatus": "ok",
+            "lastError": null,
+            "address": "192.0.2.73:9100",
+            "notSetUp": false
+          }
+        },
+        "drawerRowsRightAfter": {
+          "receipt": {
+            "text": "ZZ TEST 971 receipt printer Receipt printer Simulated paper ok Edit escpos 192.0.2.73:9100 seen 45s ago",
+            "notSetUp": false
+          },
+          "band": {
+            "text": "ZZ TEST 971 band printer Band printer Simulated paper ok Edit tspl2 192.0.2.72:9100 seen 45s ago",
+            "notSetUp": false
+          }
+        }
+      },
+      "rightAfterApi": {
+        "moment": "receipt printer: straight after its address was changed",
+        "at": "2026-11-13T02:31:47.299Z",
+        "deviceList": {
+          "receipt": {
+            "reachability": "reachable",
+            "paperStatus": "ok",
+            "lastError": null,
+            "address": "192.0.2.73:9100",
+            "notSetUp": false
+          },
+          "band": {
+            "reachability": "reachable",
+            "paperStatus": "ok",
+            "lastError": null,
+            "address": "192.0.2.72:9100",
+            "notSetUp": false
+          }
+        },
+        "opsHealth": {
+          "receipt": {
+            "reachability": "reachable",
+            "paperStatus": "ok",
+            "lastError": null
+          },
+          "band": {
+            "reachability": "reachable",
+            "paperStatus": "ok",
+            "lastError": null
+          }
+        }
+      },
+      "rightAfterTill": [
+        {
+          "label": "ZZ TEST 971 band printer",
+          "role": "adult_band",
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null
+        },
+        {
+          "label": "ZZ TEST 971 band printer",
+          "role": "dropoff_band",
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null
+        },
+        {
+          "label": "ZZ TEST 971 band printer",
+          "role": "kids_band",
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null
+        },
+        {
+          "label": "ZZ TEST 971 receipt printer",
+          "role": "receipt",
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null
+        }
+      ],
+      "rightAfterHealth": {
+        "receipt": {
+          "text": "ZZ TEST 971 receipt printer Receipt printer",
+          "notSetUp": false
+        },
+        "band": {
+          "text": "ZZ TEST 971 band printer Band printer",
+          "notSetUp": false
+        }
+      },
+      "p1a": {
+        "exactlyAddress": true,
+        "settingsNull": true,
+        "addressSaved": true
+      }
+    },
+    "p1b": {
+      "edit": {
+        "label": "ZZ TEST 971 band printer",
+        "shownInForm": {
+          "address": "192.0.2.72:9100",
+          "model": "",
+          "protocol": "tspl2",
+          "sensing": "Gap between labels"
+        },
+        "before": {
+          "address": "192.0.2.72:9100",
+          "settings": null,
+          "model": null,
+          "protocol": "tspl2",
+          "label": "ZZ TEST 971 band printer"
+        },
+        "requests": [
+          {
+            "method": "PATCH",
+            "path": "/api/devices/:id",
+            "body": "{\"address\":\"192.0.2.74:9100\"}"
+          }
+        ],
+        "response": {
+          "status": 200,
+          "settings": null,
+          "address": "192.0.2.74:9100",
+          "reading": {
+            "reachability": "reachable",
+            "paperStatus": "ok",
+            "lastError": null,
+            "address": "192.0.2.74:9100",
+            "notSetUp": false
+          }
+        },
+        "formStillOpen": false,
+        "after": {
+          "address": "192.0.2.74:9100",
+          "settings": null,
+          "model": null,
+          "protocol": "tspl2",
+          "label": "ZZ TEST 971 band printer",
+          "reading": {
+            "reachability": "reachable",
+            "paperStatus": "ok",
+            "lastError": null,
+            "address": "192.0.2.74:9100",
+            "notSetUp": false
+          }
+        },
+        "drawerRowsRightAfter": {
+          "receipt": {
+            "text": "ZZ TEST 971 receipt printer Receipt printer Simulated paper ok Edit escpos 192.0.2.73:9100 seen 15s ago",
+            "notSetUp": false
+          },
+          "band": {
+            "text": "ZZ TEST 971 band printer Band printer Simulated paper ok Edit tspl2 192.0.2.74:9100 seen 15s ago",
+            "notSetUp": false
+          }
+        }
+      },
+      "rightAfterApi": {
+        "moment": "band printer: straight after its address was changed",
+        "at": "2026-11-13T02:32:17.006Z",
+        "deviceList": {
+          "receipt": {
+            "reachability": "reachable",
+            "paperStatus": "ok",
+            "lastError": null,
+            "address": "192.0.2.73:9100",
+            "notSetUp": false
+          },
+          "band": {
+            "reachability": "reachable",
+            "paperStatus": "ok",
+            "lastError": null,
+            "address": "192.0.2.74:9100",
+            "notSetUp": false
+          }
+        },
+        "opsHealth": {
+          "receipt": {
+            "reachability": "reachable",
+            "paperStatus": "ok",
+            "lastError": null
+          },
+          "band": {
+            "reachability": "reachable",
+            "paperStatus": "ok",
+            "lastError": null
+          }
+        }
+      },
+      "rightAfterTill": [
+        {
+          "label": "ZZ TEST 971 band printer",
+          "role": "adult_band",
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null
+        },
+        {
+          "label": "ZZ TEST 971 band printer",
+          "role": "dropoff_band",
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null
+        },
+        {
+          "label": "ZZ TEST 971 band printer",
+          "role": "kids_band",
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null
+        },
+        {
+          "label": "ZZ TEST 971 receipt printer",
+          "role": "receipt",
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null
+        }
+      ],
+      "rightAfterHealth": {
+        "receipt": {
+          "text": "ZZ TEST 971 receipt printer Receipt printer",
+          "notSetUp": false
+        },
+        "band": {
+          "text": "ZZ TEST 971 band printer Band printer",
+          "notSetUp": false
+        }
+      },
+      "p1b": {
+        "exactlyAddress": true,
+        "settingsNull": true,
+        "addressSaved": true
+      }
+    },
+    "p1c": {
+      "receipt": {
+        "label": "ZZ TEST 971 receipt printer",
+        "shownInForm": {
+          "address": "192.0.2.73:9100",
+          "model": "",
+          "protocol": "escpos",
+          "paperWidth": "576 dots (most 80 mm printers)"
+        },
+        "before": {
+          "address": "192.0.2.73:9100",
+          "settings": null,
+          "model": null,
+          "protocol": "escpos",
+          "label": "ZZ TEST 971 receipt printer"
+        },
+        "requests": [],
+        "response": null,
+        "formStillOpen": false,
+        "after": {
+          "address": "192.0.2.73:9100",
+          "settings": null,
+          "model": null,
+          "protocol": "escpos",
+          "label": "ZZ TEST 971 receipt printer",
+          "reading": {
+            "reachability": "reachable",
+            "paperStatus": "ok",
+            "lastError": null,
+            "address": "192.0.2.73:9100",
+            "notSetUp": false
+          }
+        },
+        "drawerRowsRightAfter": {
+          "receipt": {
+            "text": "ZZ TEST 971 receipt printer Receipt printer Simulated paper ok Edit escpos 192.0.2.73:9100 seen 26s ago",
+            "notSetUp": false
+          },
+          "band": {
+            "text": "ZZ TEST 971 band printer Band printer Simulated paper ok Edit tspl2 192.0.2.74:9100 seen 25s ago",
+            "notSetUp": false
+          }
+        }
+      },
+      "band": {
+        "label": "ZZ TEST 971 band printer",
+        "shownInForm": {
+          "address": "192.0.2.74:9100",
+          "model": "",
+          "protocol": "tspl2",
+          "sensing": "Gap between labels"
+        },
+        "before": {
+          "address": "192.0.2.74:9100",
+          "settings": null,
+          "model": null,
+          "protocol": "tspl2",
+          "label": "ZZ TEST 971 band printer"
+        },
+        "requests": [],
+        "response": null,
+        "formStillOpen": false,
+        "after": {
+          "address": "192.0.2.74:9100",
+          "settings": null,
+          "model": null,
+          "protocol": "tspl2",
+          "label": "ZZ TEST 971 band printer",
+          "reading": {
+            "reachability": "reachable",
+            "paperStatus": "ok",
+            "lastError": null,
+            "address": "192.0.2.74:9100",
+            "notSetUp": false
+          }
+        },
+        "drawerRowsRightAfter": {
+          "receipt": {
+            "text": "ZZ TEST 971 receipt printer Receipt printer Simulated paper ok Edit escpos 192.0.2.73:9100 seen 40s ago",
+            "notSetUp": false
+          },
+          "band": {
+            "text": "ZZ TEST 971 band printer Band printer Simulated paper ok Edit tspl2 192.0.2.74:9100 seen 41s ago",
+            "notSetUp": false
+          }
+        }
+      },
+      "p1c": {
+        "receipt": true,
+        "band": true
+      }
+    },
+    "p2": {
+      "reports": [
+        "2026-11-13T02:34:00.789Z"
+      ],
+      "afterReportApi": {
+        "moment": "after the box's next report since both address changes",
+        "at": "2026-11-13T02:34:03.006Z",
+        "deviceList": {
+          "receipt": {
+            "reachability": "reachable",
+            "paperStatus": "ok",
+            "lastError": null,
+            "address": "192.0.2.73:9100",
+            "notSetUp": false
+          },
+          "band": {
+            "reachability": "reachable",
+            "paperStatus": "ok",
+            "lastError": null,
+            "address": "192.0.2.74:9100",
+            "notSetUp": false
+          }
+        },
+        "opsHealth": {
+          "receipt": {
+            "reachability": "reachable",
+            "paperStatus": "ok",
+            "lastError": null
+          },
+          "band": {
+            "reachability": "reachable",
+            "paperStatus": "ok",
+            "lastError": null
+          }
+        }
+      },
+      "afterReportTill": [
+        {
+          "label": "ZZ TEST 971 band printer",
+          "role": "adult_band",
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null
+        },
+        {
+          "label": "ZZ TEST 971 band printer",
+          "role": "dropoff_band",
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null
+        },
+        {
+          "label": "ZZ TEST 971 band printer",
+          "role": "kids_band",
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null
+        },
+        {
+          "label": "ZZ TEST 971 receipt printer",
+          "role": "receipt",
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null
+        }
+      ],
+      "afterReportHealth": {
+        "receipt": {
+          "text": "ZZ TEST 971 receipt printer Receipt printer",
+          "notSetUp": false
+        },
+        "band": {
+          "text": "ZZ TEST 971 band printer Band printer",
+          "notSetUp": false
+        }
+      },
+      "afterReportDrawer": {
+        "receipt": "not listed",
+        "band": "not listed"
+      },
+      "options": [
+        {
+          "label": "ZZ TEST 971 band printer · Adult band printer",
+          "printer": "band",
+          "job": "adult_band"
+        },
+        {
+          "label": "ZZ TEST 971 band printer · Drop-off band printer",
+          "printer": "band",
+          "job": "dropoff_band"
+        },
+        {
+          "label": "ZZ TEST 971 band printer · Kids' band printer",
+          "printer": "band",
+          "job": "kids_band"
+        },
+        {
+          "label": "ZZ TEST 971 receipt printer",
+          "printer": "receipt",
+          "job": "receipt"
+        }
+      ],
+      "selectedAtStart": "ZZ TEST 971 receipt printer",
+      "dropoff": {
+        "chose": "ZZ TEST 971 band printer · Drop-off band printer",
+        "sent": {
+          "kind": "test_page",
+          "role": "dropoff_band"
+        },
+        "status": 200,
+        "job": {
+          "id": "01a1d2c1-63ab-74c8-8e47-bf86491253f7",
+          "kind": "test_page",
+          "role": "dropoff_band",
+          "status": "queued",
+          "device": "ZZ TEST 971 band printer"
+        },
+        "note": "Every one of these is queued rather than sent: the box takes it on its next poll and reports back, so a box that is asleep or offline collects its instructions when it wakes.",
+        "printout": {
+          "seq": 1,
+          "widthDots": 400,
+          "heightDots": 1070,
+          "truncated": false
+        },
+        "preview": 200,
+        "jobOnPlatform": {
+          "kind": "test_page",
+          "role": "dropoff_band",
+          "device": "ZZ TEST 971 band printer",
+          "status": "printed",
+          "error": null
+        },
+        "command": {
+          "kind": "test_print",
+          "state": "succeeded",
+          "payloadKind": "test_page",
+          "role": "dropoff_band"
+        },
+        "panelJobs": "printed test page ZZ TEST 971 band printer · dropoff_band 09:34:11 printed adult wristband ZZ TEST 972 band printer · adult_band 09:13:08 printed kids wristband ZZ TEST 972 band printer · kids_band 09:13:08 printed receipt ZZ TEST 972 receipt printer · receipt 09:13:08 printed adult wristband ZZ TEST 972 band printer · adult_band 08:58:02 printed kids wristband ZZ TEST 972 band printer · kids_band"
+      },
+      "kids": {
+        "chose": "ZZ TEST 971 band printer · Kids' band printer",
+        "sent": {
+          "kind": "test_page",
+          "role": "kids_band"
+        },
+        "status": 200,
+        "job": {
+          "id": "01a1d2c1-8b94-7a30-b67b-d60bc0d2f1e4",
+          "kind": "test_page",
+          "role": "kids_band",
+          "status": "queued",
+          "device": "ZZ TEST 971 band printer"
+        },
+        "note": "Every one of these is queued rather than sent: the box takes it on its next poll and reports back, so a box that is asleep or offline collects its instructions when it wakes.",
+        "printout": {
+          "seq": 2,
+          "widthDots": 400,
+          "heightDots": 1070,
+          "truncated": false
+        },
+        "preview": 200,
+        "jobOnPlatform": {
+          "kind": "test_page",
+          "role": "kids_band",
+          "device": "ZZ TEST 971 band printer",
+          "status": "printed",
+          "error": null
+        },
+        "command": {
+          "kind": "test_print",
+          "state": "succeeded",
+          "payloadKind": "test_page",
+          "role": "kids_band"
+        },
+        "panelJobs": "printed test page ZZ TEST 971 band printer · kids_band 09:34:21 printed test page ZZ TEST 971 band printer · dropoff_band 09:34:11 printed adult wristband ZZ TEST 972 band printer · adult_band 09:13:08 printed kids wristband ZZ TEST 972 band printer · kids_band 09:13:08 printed receipt ZZ TEST 972 receipt printer · receipt 09:13:08 printed adult wristband ZZ TEST 972 band printer · adult_band 08:5"
+      }
+    },
+    "p8afterReportDrawer": {
+      "receipt": {
+        "text": "ZZ TEST 971 receipt printer Receipt printer Simulated paper ok Edit escpos 192.0.2.73:9100 seen 24s ago",
+        "notSetUp": false
+      },
+      "band": {
+        "text": "ZZ TEST 971 band printer Band printer Simulated paper ok Edit tspl2 192.0.2.74:9100 seen 24s ago",
+        "notSetUp": false
+      }
+    },
+    "p3": {
+      "sent": {
+        "kind": "test_page",
+        "role": "receipt"
+      },
+      "job": {
+        "kind": "test_page",
+        "role": "receipt",
+        "status": "queued",
+        "device": "ZZ TEST 971 receipt printer"
+      },
+      "printout": {
+        "seq": 1,
+        "widthDots": 576,
+        "heightDots": 1032,
+        "truncated": false
+      },
+      "preview": 200,
+      "tiles": [
+        "#1 · 576×1032 dots · 74.393 bytes"
+      ],
+      "labels": {
+        "w": 576,
+        "h": 1032,
+        "bands": [
+          [
+            34,
+            34
+          ],
+          [
+            39,
+            51
+          ],
+          [
+            64,
+            77
+          ],
+          [
+            90,
+            103
+          ],
+          [
+            117,
+            129
+          ],
+          [
+            142,
+            154
+          ],
+          [
+            169,
+            181
+          ],
+          [
+            194,
+            210
+          ],
+          [
+            220,
+            233
+          ],
+          [
+            244,
+            257
+          ],
+          [
+            270,
+            282
+          ],
+          [
+            293,
+            293
+          ],
+          [
+            297,
+            310
+          ],
+          [
+            321,
+            338
+          ],
+          [
+            343,
+            352
+          ],
+          [
+            357,
+            357
+          ],
+          [
+            361,
+            378
+          ],
+          [
+            384,
+            400
+          ],
+          [
+            405,
+            425
+          ],
+          [
+            431,
+            450
+          ],
+          [
+            456,
+            469
+          ],
+          [
+            474,
+            506
+          ],
+          [
+            509,
+            514
+          ],
+          [
+            518,
+            518
+          ],
+          [
+            522,
+            539
+          ],
+          [
+            544,
+            560
+          ],
+          [
+            568,
+            583
+          ],
+          [
+            589,
+            609
+          ],
+          [
+            613,
+            634
+          ],
+          [
+            643,
+            643
+          ],
+          [
+            647,
+            660
+          ],
+          [
+            886,
+            886
+          ],
+          [
+            890,
+            907
+          ],
+          [
+            912,
+            925
+          ],
+          [
+            930,
+            943
+          ],
+          [
+            948,
+            961
+          ],
+          [
+            966,
+            979
+          ],
+          [
+            984,
+            997
+          ],
+          [
+            1002,
+            1015
+          ]
+        ]
+      },
+      "values": {
+        "w": 576,
+        "h": 1032,
+        "bands": [
+          [
+            8,
+            29
+          ],
+          [
+            34,
+            34
+          ],
+          [
+            38,
+            59
+          ],
+          [
+            64,
+            85
+          ],
+          [
+            90,
+            105
+          ],
+          [
+            116,
+            132
+          ],
+          [
+            142,
+            158
+          ],
+          [
+            168,
+            183
+          ],
+          [
+            194,
+            215
+          ],
+          [
+            220,
+            240
+          ],
+          [
+            244,
+            265
+          ],
+          [
+            270,
+            289
+          ],
+          [
+            293,
+            293
+          ],
+          [
+            297,
+            314
+          ],
+          [
+            319,
+            338
+          ],
+          [
+            343,
+            352
+          ],
+          [
+            357,
+            357
+          ],
+          [
+            384,
+            400
+          ],
+          [
+            477,
+            481
+          ],
+          [
+            483,
+            487
+          ],
+          [
+            490,
+            506
+          ],
+          [
+            518,
+            518
+          ],
+          [
+            522,
+            539
+          ],
+          [
+            544,
+            563
+          ],
+          [
+            567,
+            584
+          ],
+          [
+            589,
+            606
+          ],
+          [
+            613,
+            639
+          ],
+          [
+            643,
+            643
+          ],
+          [
+            665,
+            790
+          ],
+          [
+            795,
+            807
+          ],
+          [
+            812,
+            867
+          ],
+          [
+            872,
+            881
+          ],
+          [
+            886,
+            886
+          ],
+          [
+            890,
+            903
+          ],
+          [
+            912,
+            925
+          ],
+          [
+            1004,
+            1015
+          ]
+        ]
+      },
+      "full": {
+        "w": 576,
+        "h": 1032,
+        "bands": [
+          [
+            8,
+            29
+          ],
+          [
+            34,
+            34
+          ],
+          [
+            38,
+            59
+          ],
+          [
+            64,
+            85
+          ],
+          [
+            90,
+            105
+          ],
+          [
+            116,
+            132
+          ],
+          [
+            142,
+            158
+          ],
+          [
+            168,
+            183
+          ],
+          [
+            194,
+            215
+          ],
+          [
+            220,
+            240
+          ],
+          [
+            244,
+            265
+          ],
+          [
+            270,
+            289
+          ],
+          [
+            293,
+            293
+          ],
+          [
+            297,
+            314
+          ],
+          [
+            319,
+            338
+          ],
+          [
+            343,
+            352
+          ],
+          [
+            357,
+            357
+          ],
+          [
+            361,
+            378
+          ],
+          [
+            384,
+            400
+          ],
+          [
+            405,
+            425
+          ],
+          [
+            431,
+            450
+          ],
+          [
+            456,
+            469
+          ],
+          [
+            474,
+            506
+          ],
+          [
+            509,
+            514
+          ],
+          [
+            518,
+            518
+          ],
+          [
+            522,
+            539
+          ],
+          [
+            544,
+            563
+          ],
+          [
+            567,
+            584
+          ],
+          [
+            589,
+            609
+          ],
+          [
+            613,
+            639
+          ],
+          [
+            643,
+            643
+          ],
+          [
+            647,
+            660
+          ],
+          [
+            665,
+            790
+          ],
+          [
+            795,
+            807
+          ],
+          [
+            812,
+            867
+          ],
+          [
+            872,
+            881
+          ],
+          [
+            886,
+            886
+          ],
+          [
+            890,
+            907
+          ],
+          [
+            912,
+            925
+          ],
+          [
+            930,
+            943
+          ],
+          [
+            948,
+            961
+          ],
+          [
+            966,
+            979
+          ],
+          [
+            984,
+            997
+          ],
+          [
+            1002,
+            1019
+          ]
+        ]
+      },
+      "old": {
+        "labels": {
+          "w": 576,
+          "h": 1010,
+          "bands": [
+            [
+              34,
+              34
+            ],
+            [
+              39,
+              51
+            ],
+            [
+              64,
+              77
+            ],
+            [
+              90,
+              103
+            ],
+            [
+              111,
+              123
+            ],
+            [
+              131,
+              143
+            ],
+            [
+              153,
+              165
+            ],
+            [
+              172,
+              188
+            ],
+            [
+              198,
+              211
+            ],
+            [
+              222,
+              235
+            ],
+            [
+              248,
+              260
+            ],
+            [
+              271,
+              271
+            ],
+            [
+              275,
+              288
+            ],
+            [
+              299,
+              316
+            ],
+            [
+              321,
+              330
+            ],
+            [
+              335,
+              335
+            ],
+            [
+              339,
+              356
+            ],
+            [
+              362,
+              378
+            ],
+            [
+              383,
+              403
+            ],
+            [
+              409,
+              428
+            ],
+            [
+              434,
+              447
+            ],
+            [
+              452,
+              484
+            ],
+            [
+              487,
+              492
+            ],
+            [
+              496,
+              496
+            ],
+            [
+              500,
+              517
+            ],
+            [
+              522,
+              538
+            ],
+            [
+              546,
+              561
+            ],
+            [
+              567,
+              587
+            ],
+            [
+              591,
+              612
+            ],
+            [
+              621,
+              621
+            ],
+            [
+              625,
+              638
+            ],
+            [
+              864,
+              864
+            ],
+            [
+              868,
+              885
+            ],
+            [
+              890,
+              903
+            ],
+            [
+              908,
+              921
+            ],
+            [
+              926,
+              939
+            ],
+            [
+              944,
+              957
+            ],
+            [
+              962,
+              975
+            ],
+            [
+              980,
+              993
+            ]
+          ]
+        },
+        "values": {
+          "w": 576,
+          "h": 1010,
+          "bands": [
+            [
+              8,
+              29
+            ],
+            [
+              34,
+              34
+            ],
+            [
+              38,
+              59
+            ],
+            [
+              64,
+              85
+            ],
+            [
+              90,
+              105
+            ],
+            [
+              110,
+              126
+            ],
+            [
+              131,
+              147
+            ],
+            [
+              152,
+              167
+            ],
+            [
+              172,
+              193
+            ],
+            [
+              198,
+              218
+            ],
+            [
+              222,
+              243
+            ],
+            [
+              248,
+              267
+            ],
+            [
+              271,
+              271
+            ],
+            [
+              275,
+              292
+            ],
+            [
+              297,
+              316
+            ],
+            [
+              321,
+              330
+            ],
+            [
+              335,
+              335
+            ],
+            [
+              362,
+              378
+            ],
+            [
+              455,
+              459
+            ],
+            [
+              461,
+              465
+            ],
+            [
+              468,
+              484
+            ],
+            [
+              496,
+              496
+            ],
+            [
+              500,
+              517
+            ],
+            [
+              522,
+              541
+            ],
+            [
+              545,
+              562
+            ],
+            [
+              567,
+              584
+            ],
+            [
+              591,
+              617
+            ],
+            [
+              621,
+              621
+            ],
+            [
+              643,
+              768
+            ],
+            [
+              773,
+              785
+            ],
+            [
+              790,
+              845
+            ],
+            [
+              850,
+              859
+            ],
+            [
+              864,
+              864
+            ],
+            [
+              868,
+              881
+            ],
+            [
+              890,
+              903
+            ],
+            [
+              982,
+              993
+            ]
+          ]
+        },
+        "full": {
+          "w": 576,
+          "h": 1010,
+          "bands": [
+            [
+              8,
+              29
+            ],
+            [
+              34,
+              34
+            ],
+            [
+              38,
+              59
+            ],
+            [
+              64,
+              85
+            ],
+            [
+              90,
+              105
+            ],
+            [
+              110,
+              126
+            ],
+            [
+              131,
+              147
+            ],
+            [
+              152,
+              167
+            ],
+            [
+              172,
+              193
+            ],
+            [
+              198,
+              218
+            ],
+            [
+              222,
+              243
+            ],
+            [
+              248,
+              267
+            ],
+            [
+              271,
+              271
+            ],
+            [
+              275,
+              292
+            ],
+            [
+              297,
+              316
+            ],
+            [
+              321,
+              330
+            ],
+            [
+              335,
+              335
+            ],
+            [
+              339,
+              356
+            ],
+            [
+              362,
+              378
+            ],
+            [
+              383,
+              403
+            ],
+            [
+              409,
+              428
+            ],
+            [
+              434,
+              447
+            ],
+            [
+              452,
+              484
+            ],
+            [
+              487,
+              492
+            ],
+            [
+              496,
+              496
+            ],
+            [
+              500,
+              517
+            ],
+            [
+              522,
+              541
+            ],
+            [
+              545,
+              562
+            ],
+            [
+              567,
+              587
+            ],
+            [
+              591,
+              617
+            ],
+            [
+              621,
+              621
+            ],
+            [
+              625,
+              638
+            ],
+            [
+              643,
+              768
+            ],
+            [
+              773,
+              785
+            ],
+            [
+              790,
+              845
+            ],
+            [
+              850,
+              859
+            ],
+            [
+              864,
+              864
+            ],
+            [
+              868,
+              885
+            ],
+            [
+              890,
+              903
+            ],
+            [
+              908,
+              921
+            ],
+            [
+              926,
+              939
+            ],
+            [
+              944,
+              957
+            ],
+            [
+              962,
+              975
+            ],
+            [
+              980,
+              997
+            ]
+          ]
+        }
+      },
+      "pitch": {
+        "now": [
+          {
+            "from": "Device",
+            "to": "Model",
+            "dots": 25
+          },
+          {
+            "from": "Model",
+            "to": "Address",
+            "dots": 26
+          },
+          {
+            "from": "Address",
+            "to": "Station",
+            "dots": 27
+          },
+          {
+            "from": "Station",
+            "to": "Box",
+            "dots": 25
+          },
+          {
+            "from": "Box",
+            "to": "Time",
+            "dots": 27
+          },
+          {
+            "from": "Time",
+            "to": "Transport",
+            "dots": 25
+          },
+          {
+            "from": "Transport",
+            "to": "Dots/line",
+            "dots": 26
+          },
+          {
+            "from": "Dots/line",
+            "to": "Renderer",
+            "dots": 24
+          },
+          {
+            "from": "Renderer",
+            "to": "Fonts",
+            "dots": 26
+          }
+        ],
+        "before": [
+          {
+            "from": "Device",
+            "to": "Model",
+            "dots": 25
+          },
+          {
+            "from": "Model",
+            "to": "Address",
+            "dots": 26
+          },
+          {
+            "from": "Address",
+            "to": "Station",
+            "dots": 21
+          },
+          {
+            "from": "Station",
+            "to": "Box",
+            "dots": 20
+          },
+          {
+            "from": "Box",
+            "to": "Time",
+            "dots": 22
+          },
+          {
+            "from": "Time",
+            "to": "Transport",
+            "dots": 19
+          },
+          {
+            "from": "Transport",
+            "to": "Dots/line",
+            "dots": 26
+          },
+          {
+            "from": "Dots/line",
+            "to": "Renderer",
+            "dots": 24
+          },
+          {
+            "from": "Renderer",
+            "to": "Fonts",
+            "dots": 26
+          }
+        ]
+      }
+    },
+    "p1d": {
+      "receipt": {
+        "label": "ZZ TEST 971 receipt printer",
+        "shownInForm": {
+          "address": "192.0.2.73:9100",
+          "model": "",
+          "protocol": "escpos",
+          "paperWidth": "576 dots (most 80 mm printers)"
+        },
+        "before": {
+          "address": "192.0.2.73:9100",
+          "settings": null,
+          "model": null,
+          "protocol": "escpos",
+          "label": "ZZ TEST 971 receipt printer"
+        },
+        "requests": [
+          {
+            "method": "PATCH",
+            "path": "/api/devices/:id",
+            "body": "{\"settings\":{\"escpos\":{\"dotsPerLine\":512}}}"
+          }
+        ],
+        "response": {
+          "status": 200,
+          "settings": {
+            "escpos": {
+              "dotsPerLine": 512
+            }
+          },
+          "address": "192.0.2.73:9100",
+          "reading": {
+            "reachability": "reachable",
+            "paperStatus": "ok",
+            "lastError": null,
+            "address": "192.0.2.73:9100",
+            "notSetUp": false
+          }
+        },
+        "formStillOpen": false,
+        "after": {
+          "address": "192.0.2.73:9100",
+          "settings": {
+            "escpos": {
+              "dotsPerLine": 512
+            }
+          },
+          "model": null,
+          "protocol": "escpos",
+          "label": "ZZ TEST 971 receipt printer",
+          "reading": {
+            "reachability": "reachable",
+            "paperStatus": "ok",
+            "lastError": null,
+            "address": "192.0.2.73:9100",
+            "notSetUp": false
+          }
+        },
+        "drawerRowsRightAfter": {
+          "receipt": {
+            "text": "ZZ TEST 971 receipt printer Receipt printer Simulated paper ok Edit escpos 192.0.2.73:9100 seen 20s ago",
+            "notSetUp": false
+          },
+          "band": {
+            "text": "ZZ TEST 971 band printer Band printer Simulated paper ok Edit tspl2 192.0.2.74:9100 seen 20s ago",
+            "notSetUp": false
+          }
+        }
+      },
+      "band": {
+        "label": "ZZ TEST 971 band printer",
+        "shownInForm": {
+          "address": "192.0.2.74:9100",
+          "model": "",
+          "protocol": "tspl2",
+          "sensing": "Gap between labels"
+        },
+        "before": {
+          "address": "192.0.2.74:9100",
+          "settings": null,
+          "model": null,
+          "protocol": "tspl2",
+          "label": "ZZ TEST 971 band printer"
+        },
+        "requests": [
+          {
+            "method": "PATCH",
+            "path": "/api/devices/:id",
+            "body": "{\"settings\":{\"label\":{\"sensing\":\"bline\"}}}"
+          }
+        ],
+        "response": {
+          "status": 200,
+          "settings": {
+            "label": {
+              "sensing": "bline"
+            }
+          },
+          "address": "192.0.2.74:9100",
+          "reading": {
+            "reachability": "reachable",
+            "paperStatus": "ok",
+            "lastError": null,
+            "address": "192.0.2.74:9100",
+            "notSetUp": false
+          }
+        },
+        "formStillOpen": false,
+        "after": {
+          "address": "192.0.2.74:9100",
+          "settings": {
+            "label": {
+              "sensing": "bline"
+            }
+          },
+          "model": null,
+          "protocol": "tspl2",
+          "label": "ZZ TEST 971 band printer",
+          "reading": {
+            "reachability": "reachable",
+            "paperStatus": "ok",
+            "lastError": null,
+            "address": "192.0.2.74:9100",
+            "notSetUp": false
+          }
+        },
+        "drawerRowsRightAfter": {
+          "receipt": {
+            "text": "ZZ TEST 971 receipt printer Receipt printer Simulated paper ok Edit escpos 192.0.2.73:9100 seen 26s ago",
+            "notSetUp": false
+          },
+          "band": {
+            "text": "ZZ TEST 971 band printer Band printer Simulated paper ok Edit tspl2 192.0.2.74:9100 seen 26s ago",
+            "notSetUp": false
+          }
+        }
+      },
+      "p1d": {
+        "receipt": true,
+        "band": true
+      },
+      "receiptBackToNull": {
+        "status": 200,
+        "settings": null
+      }
+    },
+    "p4park": {
+      "patch": {
+        "status": 200,
+        "settings": {
+          "label": {
+            "labelWidthMm": 25,
+            "labelHeightMm": 246,
+            "gapMm": 4,
+            "sensing": "bline",
+            "printOffsetMm": 50,
+            "printLengthMm": 80
+          }
+        }
+      },
+      "reports": [
+        "2026-11-13T02:37:00.789Z",
+        "2026-11-13T02:38:00.794Z"
+      ],
+      "tests": {
+        "dropoff_band": {
+          "asked": 200,
+          "onBand": true,
+          "job": {
+            "kind": "test_page",
+            "role": "dropoff_band",
+            "device": "ZZ TEST 971 band printer",
+            "status": "printed",
+            "error": null
+          },
+          "printout": {
+            "seq": 1,
+            "widthDots": 200,
+            "heightDots": 591,
+            "truncated": false,
+            "setup": [
+              "SIZE 25 mm,246 mm",
+              "BLINE 4 mm,0 mm",
+              "DIRECTION 1",
+              "REFERENCE 0,400",
+              "DENSITY 10",
+              "SPEED 4",
+              "SET TEAR ON",
+              "CLS"
+            ]
+          },
+          "preview": 200,
+          "picture": "04a-band-test-page-park-stock-dropoff-role-preview.png"
+        },
+        "kids_band": {
+          "asked": 200,
+          "onBand": true,
+          "job": {
+            "kind": "test_page",
+            "role": "kids_band",
+            "device": "ZZ TEST 971 band printer",
+            "status": "printed",
+            "error": null
+          },
+          "printout": {
+            "seq": 2,
+            "widthDots": 200,
+            "heightDots": 591,
+            "truncated": false,
+            "setup": [
+              "SIZE 25 mm,246 mm",
+              "BLINE 4 mm,0 mm",
+              "DIRECTION 1",
+              "REFERENCE 0,400",
+              "DENSITY 10",
+              "SPEED 4",
+              "SET TEAR ON",
+              "CLS"
+            ]
+          },
+          "preview": 200,
+          "picture": "04c-band-test-page-park-stock-kids-role-preview.png"
+        },
+        "adult_band": {
+          "asked": 200,
+          "onBand": true,
+          "job": {
+            "kind": "test_page",
+            "role": "adult_band",
+            "device": "ZZ TEST 971 band printer",
+            "status": "printed",
+            "error": null
+          },
+          "printout": {
+            "seq": 3,
+            "widthDots": 200,
+            "heightDots": 591,
+            "truncated": false,
+            "setup": [
+              "SIZE 25 mm,246 mm",
+              "BLINE 4 mm,0 mm",
+              "DIRECTION 1",
+              "REFERENCE 0,400",
+              "DENSITY 10",
+              "SPEED 4",
+              "SET TEAR ON",
+              "CLS"
+            ]
+          },
+          "preview": 200,
+          "picture": "04d-band-test-page-park-stock-adult-role-preview.png"
+        }
+      }
+    },
+    "p4default": {
+      "patch": {
+        "status": 200,
+        "settings": null
+      },
+      "reports": [
+        "2026-11-13T02:39:00.792Z",
+        "2026-11-13T02:40:00.791Z"
+      ],
+      "printout": {
+        "seq": 1,
+        "widthDots": 400,
+        "heightDots": 1070,
+        "truncated": false,
+        "setup": [
+          "SIZE 50 mm,250 mm",
+          "GAP 3 mm,0 mm",
+          "DIRECTION 1",
+          "REFERENCE 0,0",
+          "DENSITY 10",
+          "SPEED 4",
+          "SET TEAR ON",
+          "CLS"
+        ]
+      },
+      "preview": 200,
+      "job": {
+        "kind": "test_page",
+        "role": "dropoff_band",
+        "device": "ZZ TEST 971 band printer",
+        "status": "printed",
+        "error": null
+      },
+      "boxUptimeSeconds": 600
+    },
+    "p5": {
+      "kinds": {
+        "display": {
+          "shownAs": "Customer display",
+          "codePrefixFields": 0,
+          "placeholder": null
+        },
+        "gate": {
+          "shownAs": "Gate",
+          "codePrefixFields": 0,
+          "placeholder": null
+        },
+        "till": {
+          "shownAs": "Till",
+          "codePrefixFields": 1,
+          "placeholder": "T1"
+        },
+        "kiosk": {
+          "shownAs": "Kiosk",
+          "codePrefixFields": 1,
+          "placeholder": "T1"
+        },
+        "booth": {
+          "shownAs": "Booth",
+          "codePrefixFields": 1,
+          "placeholder": "B2"
+        }
+      },
+      "kindAtStart": "Till",
+      "prefixAtStart": 1,
+      "create": {
+        "sent": [
+          {
+            "name": "ZZ TEST 971 display",
+            "kind": "display",
+            "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+            "capabilities": [],
+            "accessScope": "all_staff",
+            "staffAccountIds": [],
+            "devices": [],
+            "codePrefix": null,
+            "paymentRouting": null,
+            "offlineWalletCapSatang": null
+          }
+        ],
+        "status": 200,
+        "station": {
+          "id": "01a1d2c8-bb53-77ae-855e-2f8bb8d3ae96",
+          "name": "ZZ TEST 971 display",
+          "kind": "display",
+          "codePrefix": null,
+          "configVersion": 1
+        }
+      },
+      "reopened": {
+        "kind": "Customer display",
+        "codePrefixFields": 0,
+        "version": "1"
+      },
+      "save": {
+        "sent": [
+          {
+            "name": "ZZ TEST 971 display",
+            "kind": "display",
+            "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+            "capabilities": [],
+            "accessScope": "all_staff",
+            "staffAccountIds": [],
+            "devices": [],
+            "codePrefix": null,
+            "paymentRouting": null,
+            "offlineWalletCapSatang": null,
+            "expectedConfigVersion": 1
+          }
+        ],
+        "status": 200,
+        "configVersion": 1,
+        "codePrefix": null,
+        "error": null
+      },
+      "drawerOpenAfterSave": 0,
+      "failedNote": null,
+      "readBack": {
+        "name": "ZZ TEST 971 display",
+        "kind": "display",
+        "codePrefix": null,
+        "configVersion": 1,
+        "archived": false
+      }
+    },
+    "p6": {
+      "status": 200,
+      "paths": 531,
+      "key": "/box/v1/print-jobs/{id}/document",
+      "description": "The document for one of this box’s print jobs — a receipt, a prep ticket, a band, an item voucher, or a test page asked for at a station (composed for the printer the job was routed to) — as the renderer’s `{ kind, data }` job. Built from the ledger when asked, so a reprint prints the sale as it stands. 404 for a job on another box, and for a job that has no platform document (a test page asked for at no station, or whose printer is gone).",
+      "anonymousStatus": 401,
+      "namesStationTestPage": true,
+      "oldWordsGone": true,
+      "sameAsRepo": true
+    },
+    "p7sale": {
+      "checkIn": {
+        "status": 200,
+        "path": "/api/checkin/check-in-now"
+      },
+      "sale": {
+        "receipt": "Z97101-000001",
+        "status": "finalised",
+        "gross": 915,
+        "tender": []
+      },
+      "bands": [
+        {
+          "kind": "kid",
+          "status": "active",
+          "shortCode": "Z97101-F4GCJM",
+          "longCodeLength": null,
+          "longCodeStartsWith": null
+        }
+      ],
+      "printJobs": [
+        {
+          "kind": "kids_wristband",
+          "role": "dropoff_band",
+          "device": "ZZ TEST 971 band printer",
+          "status": "printed",
+          "error": null
+        },
+        {
+          "kind": "receipt",
+          "role": "receipt",
+          "device": "ZZ TEST 971 receipt printer",
+          "status": "printed",
+          "error": null
+        }
+      ],
+      "newPrintouts": {
+        "receipt": [
+          {
+            "seq": 2,
+            "h": 626
+          }
+        ],
+        "band": [
+          {
+            "seq": 2,
+            "h": 307
+          }
+        ]
+      },
+      "reg": [
+        {
+          "child": "ZZ TEST 971 child D1",
+          "status": "in_park",
+          "linked": true,
+          "bandShort": null,
+          "hasBand": false
+        }
+      ]
+    },
+    "p7eod": {
+      "receipt": {
+        "w": 576,
+        "h": 626
+      },
+      "bandRows": [
+        "6-25",
+        "30-53",
+        "57-70",
+        "79-210",
+        "214-261",
+        "266-282",
+        "287-296"
+      ],
+      "boxedBand": [
+        0,
+        77,
+        400,
+        186
+      ],
+      "band": {
+        "w": 400,
+        "h": 307
+      },
+      "eod": {
+        "heading": "Still counted inside· resolve each before Close Day",
+        "rows": 1,
+        "mineText": "ZZ TEST 971 child D1 Checked in 09:43 · Band Z97101-F4GCJM · Sale Z97101-000001 Guardian: ZZ TEST 971 guardian D · +66898971010 Left without scanning Band lost Gate fault",
+        "bandLine": "Checked in 09:43 · Band Z97101-F4GCJM · Sale Z97101-000001"
+      },
+      "api": {
+        "status": 200,
+        "date": "2026-11-13",
+        "closed": "open",
+        "strandedCount": 1,
+        "ours": [
+          {
+            "kind": "checkin",
+            "childName": "ZZ TEST 971 child D1",
+            "bandCode": "Z97101-F4GCJM",
+            "checkedInAt": "2026-11-13T02:43:29.977Z",
+            "sale": "Z97101-000001",
+            "reason": null
+          }
+        ]
+      },
+      "otherBandCodesLong": 0,
+      "match": {
+        "eodLine": "Checked in 09:43 · Band Z97101-F4GCJM · Sale Z97101-000001",
+        "apiBandCode": "Z97101-F4GCJM",
+        "saleShortCode": "Z97101-F4GCJM",
+        "shortShape": true
+      }
+    },
+    "p7history": {
+      "cardFound": 1,
+      "cardText": "Z97101-000001 · ZZ TEST 971 guardian D 13 Nov, 09:43 [staff] Paid ฿915",
+      "bandInDetail": [
+        "Z97101-000001",
+        "Z97101-F4GCJM"
+      ],
+      "noLongCode": true
+    },
+    "p8": {
+      "box": {
+        "branch": "Oto Play Park, Robinson Chalong",
+        "box": "Virtual box 3",
+        "role": "virtual",
+        "status": "unclaimed"
+      },
+      "rp1": {
+        "label": "Receipt Printer 1",
+        "kind": "receipt_printer",
+        "transport": "simulated",
+        "address": null,
+        "reachability": "unknown",
+        "paperStatus": "unknown",
+        "lastError": "DEVICE_NO_ADDRESS"
+      },
+      "health": [
+        {
+          "label": "Receipt Printer 1",
+          "reachability": "unknown",
+          "paperStatus": "unknown",
+          "lastError": "DEVICE_NO_ADDRESS"
+        }
+      ],
+      "healthRow": "Virtual box 3 Virtual never reported Waiting to be claimed last sync not recorded Receipt Printer 1 not set up Receipt printer",
+      "healthNotSetUp": true,
+      "drawerRow": "Receipt Printer 1 Receipt printer Simulated not set up Edit escpos No address, so nothing prints on it. Edit it and enter the address the box prints to.",
+      "zzNowApi": {
+        "moment": "point 8: at the Chalong read",
+        "at": "2026-11-13T02:45:39.120Z",
+        "deviceList": {
+          "receipt": {
+            "reachability": "reachable",
+            "paperStatus": "ok",
+            "lastError": null,
+            "address": "192.0.2.73:9100",
+            "notSetUp": false
+          },
+          "band": {
+            "reachability": "reachable",
+            "paperStatus": "ok",
+            "lastError": null,
+            "address": "192.0.2.74:9100",
+            "notSetUp": false
+          }
+        },
+        "opsHealth": {
+          "receipt": {
+            "reachability": "reachable",
+            "paperStatus": "ok",
+            "lastError": null
+          },
+          "band": {
+            "reachability": "reachable",
+            "paperStatus": "ok",
+            "lastError": null
+          }
+        }
+      },
+      "zzNowHealth": {
+        "receipt": {
+          "text": "ZZ TEST 971 receipt printer Receipt printer",
+          "notSetUp": false
+        },
+        "band": {
+          "text": "ZZ TEST 971 band printer Band printer",
+          "notSetUp": false
+        }
+      },
+      "summary": {
+        "anyNotSetUp": false,
+        "consoleNotSetUp": false,
+        "tillNotSetUp": false,
+        "readings": 9
+      }
+    },
+    "huntThai": {
+      "tillB": {
+        "prefix": "Z97102",
+        "configVersion": 1,
+        "roles": {
+          "dropoff_band": "ZZ TEST 971 band printer",
+          "receipt": "ZZ TEST 971 receipt printer"
+        }
+      },
+      "options": [
+        {
+          "label": "ZZ TEST 971 band printer",
+          "job": "dropoff_band"
+        },
+        {
+          "label": "ZZ TEST 971 receipt printer",
+          "job": "receipt"
+        }
+      ],
+      "testPages": {
+        "band": {
+          "sent": {
+            "kind": "test_page",
+            "role": "dropoff_band"
+          },
+          "status": 200,
+          "role": "dropoff_band",
+          "printout": {
+            "seq": 3,
+            "widthDots": 400,
+            "heightDots": 1101,
+            "truncated": false
+          },
+          "preview": 200,
+          "file": "h1b-test-page-thai-station-name-band-printer-preview.png"
+        },
+        "receipt": {
+          "sent": {
+            "kind": "test_page",
+            "role": "receipt"
+          },
+          "status": 200,
+          "role": "receipt",
+          "printout": {
+            "seq": 3,
+            "widthDots": 576,
+            "heightDots": 1036,
+            "truncated": false
+          },
+          "preview": 200,
+          "file": "h1c-test-page-thai-station-name-receipt-printer-preview.png"
+        }
+      }
+    },
+    "huntThaiMeasure": {
+      "receiptThai": {
+        "values": [
+          [
+            34,
+            34
+          ],
+          [
+            38,
+            59
+          ],
+          [
+            64,
+            85
+          ],
+          [
+            90,
+            105
+          ],
+          [
+            117,
+            120
+          ],
+          [
+            122,
+            139
+          ],
+          [
+            141,
+            162
+          ],
+          [
+            172,
+            187
+          ],
+          [
+            198,
+            219
+          ],
+          [
+            224,
+            244
+          ],
+          [
+            248,
+            269
+          ],
+          [
+            274,
+            293
+          ]
+        ],
+        "labels": [
+          [
+            34,
+            34
+          ],
+          [
+            39,
+            51
+          ],
+          [
+            64,
+            77
+          ],
+          [
+            90,
+            103
+          ],
+          [
+            117,
+            129
+          ],
+          [
+            146,
+            158
+          ],
+          [
+            173,
+            185
+          ],
+          [
+            198,
+            214
+          ],
+          [
+            224,
+            237
+          ],
+          [
+            248,
+            261
+          ],
+          [
+            274,
+            286
+          ]
+        ]
+      },
+      "receiptPlain": {
+        "values": [
+          [
+            34,
+            34
+          ],
+          [
+            38,
+            59
+          ],
+          [
+            64,
+            85
+          ],
+          [
+            90,
+            105
+          ],
+          [
+            116,
+            132
+          ],
+          [
+            142,
+            158
+          ],
+          [
+            168,
+            183
+          ],
+          [
+            194,
+            215
+          ],
+          [
+            220,
+            240
+          ],
+          [
+            244,
+            265
+          ],
+          [
+            270,
+            289
+          ]
+        ],
+        "labels": [
+          [
+            34,
+            34
+          ],
+          [
+            39,
+            51
+          ],
+          [
+            64,
+            77
+          ],
+          [
+            90,
+            103
+          ],
+          [
+            117,
+            129
+          ],
+          [
+            142,
+            154
+          ],
+          [
+            169,
+            181
+          ],
+          [
+            194,
+            210
+          ],
+          [
+            220,
+            233
+          ],
+          [
+            244,
+            257
+          ],
+          [
+            270,
+            282
+          ]
+        ]
+      },
+      "bandThai": {
+        "values": [
+          [
+            32,
+            32
+          ],
+          [
+            36,
+            52
+          ],
+          [
+            57,
+            78
+          ],
+          [
+            83,
+            104
+          ],
+          [
+            109,
+            124
+          ],
+          [
+            135,
+            138
+          ],
+          [
+            140,
+            157
+          ],
+          [
+            162,
+            165
+          ],
+          [
+            167,
+            185
+          ],
+          [
+            187,
+            208
+          ],
+          [
+            218,
+            233
+          ],
+          [
+            244,
+            265
+          ],
+          [
+            270,
+            290
+          ]
+        ],
+        "labels": [
+          [
+            32,
+            32
+          ],
+          [
+            37,
+            49
+          ],
+          [
+            83,
+            96
+          ],
+          [
+            109,
+            122
+          ],
+          [
+            136,
+            148
+          ],
+          [
+            192,
+            204
+          ],
+          [
+            219,
+            231
+          ],
+          [
+            244,
+            260
+          ],
+          [
+            270,
+            283
+          ]
+        ]
+      },
+      "bandPlain": {
+        "values": [
+          [
+            32,
+            32
+          ],
+          [
+            36,
+            52
+          ],
+          [
+            57,
+            78
+          ],
+          [
+            83,
+            104
+          ],
+          [
+            109,
+            124
+          ],
+          [
+            135,
+            151
+          ],
+          [
+            161,
+            177
+          ],
+          [
+            187,
+            202
+          ],
+          [
+            213,
+            234
+          ],
+          [
+            239,
+            259
+          ],
+          [
+            263,
+            284
+          ]
+        ],
+        "labels": [
+          [
+            32,
+            32
+          ],
+          [
+            37,
+            49
+          ],
+          [
+            83,
+            96
+          ],
+          [
+            109,
+            122
+          ],
+          [
+            136,
+            148
+          ],
+          [
+            161,
+            173
+          ],
+          [
+            188,
+            200
+          ],
+          [
+            213,
+            229
+          ],
+          [
+            239,
+            252
+          ],
+          [
+            263,
+            276
+          ]
+        ]
+      }
+    },
+    "huntTillToDisplay": {
+      "before": {
+        "prefixField": "Z97102",
+        "version": "1"
+      },
+      "afterKindChange": {
+        "prefixFields": 0,
+        "devicesText": "A customer display drives nothing of its own — it is a screen paired to a till, and the till's devices are the ones that act."
+      },
+      "save": {
+        "sent": [
+          {
+            "name": "ZZ TEST 971 เคาน์เตอร์ ญี่ปุ่น น้ำ",
+            "kind": "display",
+            "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+            "capabilities": [],
+            "accessScope": "all_staff",
+            "staffAccountIds": [],
+            "devices": [
+              {
+                "role": "dropoff_band",
+                "deviceId": "d45e40d7-9a8f-4ae6-a921-92f0210bddae"
+              },
+              {
+                "role": "receipt",
+                "deviceId": "e3c85b2d-01a6-457d-be2b-e8392e68c637"
+              }
+            ],
+            "codePrefix": "Z97102",
+            "paymentRouting": null,
+            "offlineWalletCapSatang": null,
+            "expectedConfigVersion": 1
+          }
+        ],
+        "status": 200,
+        "error": null,
+        "station": {
+          "kind": "display",
+          "codePrefix": "Z97102",
+          "devices": 2,
+          "configVersion": 2
+        }
+      },
+      "drawerOpen": 0,
+      "alert": null,
+      "readBack": {
+        "name": "ZZ TEST 971 เคาน์เตอร์ ญี่ปุ่น น้ำ",
+        "kind": "display",
+        "codePrefix": "Z97102",
+        "devices": [
+          "dropoff_band",
+          "receipt"
+        ],
+        "configVersion": 2
+      },
+      "newTillSamePrefix": {
+        "status": 409,
+        "code": "STATION_CODE_PREFIX_TAKEN",
+        "message": "A live station at this branch already uses that code prefix",
+        "id": null
+      },
+      "cards": 6
+    },
+    "huntAddDevice": {
+      "receipt": {
+        "recorded": true,
+        "readBack": {
+          "label": "ZZ TEST 971 form receipt printer",
+          "kind": "receipt_printer",
+          "address": "192.0.2.75:9100",
+          "protocol": "escpos",
+          "settings": {
+            "escpos": {
+              "dotsPerLine": 576
+            }
+          }
+        },
+        "audit": {
+          "status": 200,
+          "rows": [
+            {
+              "action": "device.create",
+              "afterSettings": {
+                "escpos": {
+                  "dotsPerLine": 576
+                }
+              }
+            }
+          ]
+        }
+      },
+      "band": {
+        "shownInForm": {
+          "sensing": "Gap between labels"
+        },
+        "sent": [
+          {
+            "kind": "band_printer",
+            "label": "ZZ TEST 971 form band printer",
+            "transport": "simulated",
+            "address": "192.0.2.76:9100",
+            "protocol": "tspl2",
+            "settings": {
+              "label": {
+                "sensing": "gap"
+              }
+            }
+          }
+        ],
+        "status": 200,
+        "readBack": {
+          "label": "ZZ TEST 971 form band printer",
+          "kind": "band_printer",
+          "address": "192.0.2.76:9100",
+          "protocol": "tspl2",
+          "settings": {
+            "label": {
+              "sensing": "gap"
+            }
+          }
+        }
+      }
+    },
+    "huntEod": {
+      "top": "1 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing ZZ TEST 971 till [staff] 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks Today Oto Play Park, Central Floresta Date Performance End of Day Held sales Held: 0 Partly paid: 0 Nothing is held or partly paid on this day. Counts outstanding Expected ฿915 Actual ฿0 Over / short ฿0 Payment settlement Refresh settlement Compare terminal and 2C2P batches with recorded payments. A closed day's cash count stays unchanged. No settlement batches for this day. Payments without a matched settlement (2) Export payments All card and QR payments SIMTID01 65703235 54355548 Download CSV Payments without a terminal ID have a blank TID in the all-payments CSV. Reconciliation by channel · each EDC terminal listed by TID Channel Expected Actual Difference Cash ฿915 from cash count — PromptPay / QR ฿0 ฿ — Card · Card terminal (simulated EDC) (SIMTID01) ฿0 ฿ — Card · EDC 1 (65703235) ฿0 ฿ — Card · EDC 3 (54355548) ฿0 ฿ — Card · NO-TERMINAL ฿0 ฿ — E-wallet ฿0 ฿ — Bank transfer ฿0 ฿ — Party prepayments ฿0 ฿ — Credit ฿0 ฿ — Cash count · whole branch drawer Counted cash ฿ Float (start of day) ฿6,000 standard opening float (no prior close) Cash income — counted − float Expected cash ฿915 from POS Difference — awaiting count Voucher counts Handed out Redeemed Notes Close out the drawer · seeds tomorrow's float Float left in drawer (for tomorrow) ฿ Cash to ",
+      "headings": [
+        "Today",
+        "Payment settlement"
+      ],
+      "buttons": [
+        "1 in park no gate",
+        "Tickets",
+        "F&B",
+        "Shop",
+        "Events",
+        "Check-in",
+        "History",
+        "7 Messages",
+        "Cash",
+        "ZZ TEST 971 till",
+        "Refresh settlement",
+        "Download CSV",
+        "Left without scanning",
+        "Band lost",
+        "Gate fault",
+        "Close Day"
+      ]
+    },
+    "huntEodSaved": {
+      "days": [
+        {
+          "date": "2026-11-12",
+          "status": "open",
+          "closed": false,
+          "overrideRows": 0,
+          "savedBandCodes": 0,
+          "savedShort": 0,
+          "savedLong": [],
+          "liveRows": 0,
+          "liveLong": 0
+        },
+        {
+          "date": "2026-11-11",
+          "status": "open",
+          "closed": false,
+          "overrideRows": 0,
+          "savedBandCodes": 0,
+          "savedShort": 0,
+          "savedLong": [],
+          "liveRows": 0,
+          "liveLong": 0
+        },
+        {
+          "date": "2026-11-10",
+          "status": "open",
+          "closed": false,
+          "overrideRows": 0,
+          "savedBandCodes": 0,
+          "savedShort": 0,
+          "savedLong": [],
+          "liveRows": 0,
+          "liveLong": 0
+        },
+        {
+          "date": "2026-11-09",
+          "status": "open",
+          "closed": false,
+          "overrideRows": 0,
+          "savedBandCodes": 0,
+          "savedShort": 0,
+          "savedLong": [],
+          "liveRows": 0,
+          "liveLong": 0
+        },
+        {
+          "date": "2026-11-08",
+          "status": "open",
+          "closed": false,
+          "overrideRows": 0,
+          "savedBandCodes": 0,
+          "savedShort": 0,
+          "savedLong": [],
+          "liveRows": 0,
+          "liveLong": 0
+        },
+        {
+          "date": "2026-11-07",
+          "status": "open",
+          "closed": false,
+          "overrideRows": 0,
+          "savedBandCodes": 0,
+          "savedShort": 0,
+          "savedLong": [],
+          "liveRows": 0,
+          "liveLong": 0
+        },
+        {
+          "date": "2026-11-06",
+          "status": "open",
+          "closed": false,
+          "overrideRows": 0,
+          "savedBandCodes": 0,
+          "savedShort": 0,
+          "savedLong": [],
+          "liveRows": 2,
+          "liveLong": 0
+        },
+        {
+          "date": "2026-11-05",
+          "status": "open",
+          "closed": false,
+          "overrideRows": 0,
+          "savedBandCodes": 0,
+          "savedShort": 0,
+          "savedLong": [],
+          "liveRows": 0,
+          "liveLong": 0
+        },
+        {
+          "date": "2026-11-04",
+          "status": "open",
+          "closed": false,
+          "overrideRows": 0,
+          "savedBandCodes": 0,
+          "savedShort": 0,
+          "savedLong": [],
+          "liveRows": 1,
+          "liveLong": 0
+        },
+        {
+          "date": "2026-11-03",
+          "status": "open",
+          "closed": false,
+          "overrideRows": 0,
+          "savedBandCodes": 0,
+          "savedShort": 0,
+          "savedLong": [],
+          "liveRows": 0,
+          "liveLong": 0
+        },
+        {
+          "date": "2026-11-02",
+          "status": "open",
+          "closed": false,
+          "overrideRows": 0,
+          "savedBandCodes": 0,
+          "savedShort": 0,
+          "savedLong": [],
+          "liveRows": 0,
+          "liveLong": 0
+        },
+        {
+          "date": "2026-11-01",
+          "status": "open",
+          "closed": false,
+          "overrideRows": 0,
+          "savedBandCodes": 0,
+          "savedShort": 0,
+          "savedLong": [],
+          "liveRows": 0,
+          "liveLong": 0
+        },
+        {
+          "date": "2026-10-31",
+          "status": "open",
+          "closed": false,
+          "overrideRows": 0,
+          "savedBandCodes": 0,
+          "savedShort": 0,
+          "savedLong": [],
+          "liveRows": 0,
+          "liveLong": 0
+        },
+        {
+          "date": "2026-10-30",
+          "status": "open",
+          "closed": false,
+          "overrideRows": 0,
+          "savedBandCodes": 0,
+          "savedShort": 0,
+          "savedLong": [],
+          "liveRows": 1,
+          "liveLong": 0
+        },
+        {
+          "date": "2026-10-29",
+          "status": "open",
+          "closed": false,
+          "overrideRows": 0,
+          "savedBandCodes": 0,
+          "savedShort": 0,
+          "savedLong": [],
+          "liveRows": 0,
+          "liveLong": 0
+        },
+        {
+          "date": "2026-10-28",
+          "status": "open",
+          "closed": false,
+          "overrideRows": 0,
+          "savedBandCodes": 0,
+          "savedShort": 0,
+          "savedLong": [],
+          "liveRows": 0,
+          "liveLong": 0
+        },
+        {
+          "date": "2026-10-27",
+          "status": "open",
+          "closed": false,
+          "overrideRows": 0,
+          "savedBandCodes": 0,
+          "savedShort": 0,
+          "savedLong": [],
+          "liveRows": 0,
+          "liveLong": 0
+        },
+        {
+          "date": "2026-10-26",
+          "status": "open",
+          "closed": false,
+          "overrideRows": 0,
+          "savedBandCodes": 0,
+          "savedShort": 0,
+          "savedLong": [],
+          "liveRows": 0,
+          "liveLong": 0
+        },
+        {
+          "date": "2026-10-25",
+          "status": "open",
+          "closed": false,
+          "overrideRows": 0,
+          "savedBandCodes": 0,
+          "savedShort": 0,
+          "savedLong": [],
+          "liveRows": 0,
+          "liveLong": 0
+        },
+        {
+          "date": "2026-10-24",
+          "status": "open",
+          "closed": false,
+          "overrideRows": 0,
+          "savedBandCodes": 0,
+          "savedShort": 0,
+          "savedLong": [],
+          "liveRows": 0,
+          "liveLong": 0
+        },
+        {
+          "date": "2026-10-23",
+          "status": "open",
+          "closed": false,
+          "overrideRows": 0,
+          "savedBandCodes": 0,
+          "savedShort": 0,
+          "savedLong": [],
+          "liveRows": 2,
+          "liveLong": 0
+        }
+      ]
+    }
+  },
+  "readings": [
+    {
+      "moment": "setup: just made through the api",
+      "at": "2026-11-13T02:29:36.712Z",
+      "deviceList": {
+        "receipt": {
+          "reachability": "unknown",
+          "paperStatus": "unknown",
+          "lastError": null,
+          "address": "192.0.2.71:9100",
+          "notSetUp": false
+        },
+        "band": {
+          "reachability": "unknown",
+          "paperStatus": "unknown",
+          "lastError": null,
+          "address": "192.0.2.72:9100",
+          "notSetUp": false
+        }
+      },
+      "opsHealth": {
+        "receipt": {
+          "reachability": "unknown",
+          "paperStatus": "unknown",
+          "lastError": null
+        },
+        "band": {
+          "reachability": "unknown",
+          "paperStatus": "unknown",
+          "lastError": null
+        }
+      }
+    },
+    {
+      "moment": "before any edit, the box has reported on them",
+      "at": "2026-11-13T02:30:07.017Z",
+      "deviceList": {
+        "receipt": {
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null,
+          "address": "192.0.2.71:9100",
+          "notSetUp": false
+        },
+        "band": {
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null,
+          "address": "192.0.2.72:9100",
+          "notSetUp": false
+        }
+      },
+      "opsHealth": {
+        "receipt": {
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null
+        },
+        "band": {
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null
+        }
+      }
+    },
+    {
+      "moment": "before any edit, the box has reported on them",
+      "at": "2026-11-13T02:30:21.869Z",
+      "deviceList": {
+        "receipt": {
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null,
+          "address": "192.0.2.71:9100",
+          "notSetUp": false
+        },
+        "band": {
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null,
+          "address": "192.0.2.72:9100",
+          "notSetUp": false
+        }
+      },
+      "opsHealth": {
+        "receipt": {
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null
+        },
+        "band": {
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null
+        }
+      }
+    },
+    {
+      "moment": "receipt printer: straight after its address was changed",
+      "at": "2026-11-13T02:30:34.705Z",
+      "deviceList": {
+        "receipt": {
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null,
+          "address": "192.0.2.73:9100",
+          "notSetUp": false
+        },
+        "band": {
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null,
+          "address": "192.0.2.72:9100",
+          "notSetUp": false
+        }
+      },
+      "opsHealth": {
+        "receipt": {
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null
+        },
+        "band": {
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null
+        }
+      }
+    },
+    {
+      "moment": "before any edit, the box has reported on them",
+      "at": "2026-11-13T02:31:34.783Z",
+      "deviceList": {
+        "receipt": {
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null,
+          "address": "192.0.2.71:9100",
+          "notSetUp": false
+        },
+        "band": {
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null,
+          "address": "192.0.2.72:9100",
+          "notSetUp": false
+        }
+      },
+      "opsHealth": {
+        "receipt": {
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null
+        },
+        "band": {
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null
+        }
+      }
+    },
+    {
+      "moment": "receipt printer: straight after its address was changed",
+      "at": "2026-11-13T02:31:47.299Z",
+      "deviceList": {
+        "receipt": {
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null,
+          "address": "192.0.2.73:9100",
+          "notSetUp": false
+        },
+        "band": {
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null,
+          "address": "192.0.2.72:9100",
+          "notSetUp": false
+        }
+      },
+      "opsHealth": {
+        "receipt": {
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null
+        },
+        "band": {
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null
+        }
+      }
+    },
+    {
+      "moment": "band printer: straight after its address was changed",
+      "at": "2026-11-13T02:32:17.006Z",
+      "deviceList": {
+        "receipt": {
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null,
+          "address": "192.0.2.73:9100",
+          "notSetUp": false
+        },
+        "band": {
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null,
+          "address": "192.0.2.74:9100",
+          "notSetUp": false
+        }
+      },
+      "opsHealth": {
+        "receipt": {
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null
+        },
+        "band": {
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null
+        }
+      }
+    },
+    {
+      "moment": "after the box's next report since both address changes",
+      "at": "2026-11-13T02:34:03.006Z",
+      "deviceList": {
+        "receipt": {
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null,
+          "address": "192.0.2.73:9100",
+          "notSetUp": false
+        },
+        "band": {
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null,
+          "address": "192.0.2.74:9100",
+          "notSetUp": false
+        }
+      },
+      "opsHealth": {
+        "receipt": {
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null
+        },
+        "band": {
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null
+        }
+      }
+    },
+    {
+      "moment": "point 8: at the Chalong read",
+      "at": "2026-11-13T02:45:39.120Z",
+      "deviceList": {
+        "receipt": {
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null,
+          "address": "192.0.2.73:9100",
+          "notSetUp": false
+        },
+        "band": {
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null,
+          "address": "192.0.2.74:9100",
+          "notSetUp": false
+        }
+      },
+      "opsHealth": {
+        "receipt": {
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null
+        },
+        "band": {
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null
+        }
+      }
+    }
+  ],
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "console",
+      "at": "1a + 8b: the Console Edit form, ZZ receipt printer, ONLY the address changed (192.0.2.71 -> 192.0.2.73); readings straight after",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "console",
+      "at": "1a + 8b: the Console Edit form, ZZ receipt printer, ONLY the address changed (192.0.2.71 -> 192.0.2.73); readings straight after",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "console",
+      "at": "3: the row pitch, figures and a side-by-side of the top of the 952 test page (01c) and this one (03a)",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+    },
+    {
+      "page": "console",
+      "at": "3: the row pitch, figures and a side-by-side of the top of the 952 test page (01c) and this one (03a)",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+    },
+    {
+      "page": "console",
+      "at": "4: the band settings removed again (null) through the api; two box reports; the drop-off test page on the default label",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+    },
+    {
+      "page": "console",
+      "at": "4: the band settings removed again (null) through the api; two box reports; the drop-off test page on the default label",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+    },
+    {
+      "page": "till",
+      "at": "7: the ZZ till as reception: a ZZ TEST drop-off for one child, cash, Check in now (the band prints at check-in on the drop-off band role)",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": "7: the ZZ till as reception: a ZZ TEST drop-off for one child, cash, Check in now (the band prints at check-in on the drop-off band role)",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "console",
+      "at": "hunt: \"Add a device\" for a printer through the Console FORM (ZZ TEST printers, simulated, documentation addresses): what settings the new row holds",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+    },
+    {
+      "page": "console",
+      "at": "hunt: \"Add a device\" for a printer through the Console FORM (ZZ TEST printers, simulated, documentation addresses): what settings the new row holds",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+    }
+  ],
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/me",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/ops/health",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 409,
+      "errorCode": "BOX_NOT_IN_PROCESS"
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 409,
+      "errorCode": "BOX_NOT_IN_PROCESS"
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 409,
+      "errorCode": "BOX_NOT_IN_PROCESS"
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 409,
+      "errorCode": "BOX_NOT_IN_PROCESS"
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/ops/health",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/:id/printers",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/ops/health",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/:id/printers",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/ops/health",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/:id/printers",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/ops/health",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/:id/printers",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/ops/health",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/:id/printers",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/ops/health",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/:id/printers",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/ops/health",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/:id/printers",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/print-jobs",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/commands",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/print-jobs",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/commands",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/:id/test-print",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/print-jobs",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/:id/test-print",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/print-jobs",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/:id/test-print",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/print-jobs",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/:id/test-print",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/print-jobs",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/ops/health",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/end-of-day",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/ops/health",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/ops/health",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 409,
+      "errorCode": "STATION_CODE_PREFIX_TAKEN"
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/end-of-day",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/end-of-day",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/end-of-day",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/end-of-day",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/end-of-day",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/end-of-day",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/end-of-day",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/end-of-day",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/end-of-day",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/end-of-day",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/end-of-day",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/end-of-day",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/end-of-day",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/end-of-day",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/end-of-day",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/end-of-day",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/end-of-day",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/end-of-day",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/end-of-day",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/end-of-day",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/end-of-day",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/end-of-day",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    }
+  ],
+  "cleanup": {
+    "salesAndFamily": {
+      "release": [
+        {
+          "child": "ZZ TEST 971 child D1",
+          "status": 200,
+          "code": null
+        }
+      ],
+      "regAfter": [
+        "ZZ TEST 971 child D1: out"
+      ],
+      "eodAfterRelease": {
+        "status": 200,
+        "oursStillInside": 0
+      },
+      "mgrSignIn": 200,
+      "refunds": [
+        {
+          "receipt": "Z97101-000001",
+          "status": 200,
+          "code": null,
+          "message": null
+        }
+      ],
+      "mgrSignOut": {
+        "status": 200,
+        "me": 401
+      },
+      "sales ZZ TEST 971 till": [
+        {
+          "receipt": "Z97101-000001",
+          "status": "refunded",
+          "gross": 915,
+          "refunded": 915
+        }
+      ],
+      "sales ZZ TEST 971 เคาน์เตอร์ ญี่ปุ่น น้ำ": [],
+      "sales ZZ TEST 971 display": [],
+      "members": [
+        {
+          "key": "dropoff",
+          "archived": 200,
+          "lookupAfter": "not found"
+        }
+      ]
+    },
+    "records": {
+      "stations": [
+        {
+          "name": "ZZ TEST 971 till",
+          "kind": "till",
+          "devicesCleared": 200,
+          "clearCode": null,
+          "retired": 200,
+          "retireCode": null
+        },
+        {
+          "name": "ZZ TEST 971 display",
+          "kind": "display",
+          "devicesCleared": 200,
+          "clearCode": null,
+          "retired": 200,
+          "retireCode": null
+        },
+        {
+          "name": "ZZ TEST 971 เคาน์เตอร์ ญี่ปุ่น น้ำ",
+          "kind": "display",
+          "devicesCleared": 200,
+          "clearCode": null,
+          "retired": 200,
+          "retireCode": null
+        }
+      ],
+      "devices": [
+        {
+          "label": "ZZ TEST 971 receipt printer",
+          "archive": 200,
+          "stillAssignedTo": 0
+        },
+        {
+          "label": "ZZ TEST 971 band printer",
+          "archive": 200,
+          "stillAssignedTo": 0
+        },
+        {
+          "label": "ZZ TEST 971 form receipt printer",
+          "archive": 200,
+          "stillAssignedTo": 0
+        },
+        {
+          "label": "ZZ TEST 971 form band printer",
+          "archive": 200,
+          "stillAssignedTo": 0
+        }
+      ],
+      "tillSession": {
+        "signOut": 200,
+        "me": 401
+      },
+      "stationsReadBack": [
+        {
+          "name": "ZZ TEST 971 till",
+          "archived": true,
+          "devices": 0,
+          "codePrefix": "Z97101"
+        },
+        {
+          "name": "ZZ TEST 971 display",
+          "archived": true,
+          "devices": 0,
+          "codePrefix": null
+        },
+        {
+          "name": "ZZ TEST 971 เคาน์เตอร์ ญี่ปุ่น น้ำ",
+          "archived": true,
+          "devices": 0,
+          "codePrefix": "Z97102"
+        }
+      ],
+      "devicesReadBack": [
+        {
+          "label": "ZZ TEST 971 band printer",
+          "archived": true
+        },
+        {
+          "label": "ZZ TEST 971 form band printer",
+          "archived": true
+        },
+        {
+          "label": "ZZ TEST 971 form receipt printer",
+          "archived": true
+        },
+        {
+          "label": "ZZ TEST 971 receipt printer",
+          "archived": true
+        }
+      ],
+      "zzLiveOnBox": [],
+      "zzLiveStations": []
+    },
+    "adminMe": 401
+  },
+  "sessions": [
+    {
+      "label": "till",
+      "signOut": 200,
+      "me": 401,
+      "at": "2026-11-13T02:52:34.142Z"
+    },
+    {
+      "label": "console",
+      "signOut": 200,
+      "me": 401,
+      "at": "2026-11-13T02:52:58.094Z"
+    }
+  ],
+  "finishedAt": "2026-11-13T02:52:58.478Z",
+  "deploysEnd": {
+    "landedCommit": "1b9885a321ff7799ba122caa2a0adff30aa99807",
+    "oto-api-staging": {
+      "live": {
+        "id": "dep-dbr77g0874rs73fipqsg",
+        "sha": "1b9885a321ff7799ba122caa2a0adff30aa99807",
+        "createdAt": "2026-11-13T02:19:44.779376Z",
+        "finishedAt": "2026-11-13T02:29:00.34247Z"
+      },
+      "latest": {
+        "id": "dep-dbr7mrpsrm7s73dmce9g",
+        "status": "build_in_progress",
+        "sha": "1b9885a321ff7799ba122caa2a0adff30aa99807"
+      },
+      "readAt": "2026-11-13T02:53:02.692Z"
+    },
+    "oto-console-staging": {
+      "live": {
+        "id": "dep-dbr761l9fdbs73dgh67g",
+        "sha": "1b9885a321ff7799ba122caa2a0adff30aa99807",
+        "createdAt": "2026-11-13T02:16:38.717503Z",
+        "finishedAt": "2026-11-13T02:17:45.975603Z"
+      },
+      "latest": {
+        "id": "dep-dbr7ms1srm7s73dmcg50",
+        "status": "build_in_progress",
+        "sha": "1b9885a321ff7799ba122caa2a0adff30aa99807"
+      },
+      "readAt": "2026-11-13T02:53:02.980Z"
+    },
+    "oto-pos-web-staging": {
+      "live": {
+        "id": "dep-dbr76mm7bikc73ekorfg",
+        "sha": "0e8e2badfafc4f7fc51929b3f7aefecc2702328f",
+        "createdAt": "2026-11-13T02:18:02.724318Z",
+        "finishedAt": "2026-11-13T02:22:15.237791Z"
+      },
+      "latest": {
+        "id": "dep-dbr7ms1srm7s73dmcffg",
+        "status": "build_in_progress",
+        "sha": "1b9885a321ff7799ba122caa2a0adff30aa99807"
+      },
+      "readAt": "2026-11-13T02:53:03.235Z"
+    }
+  },
+  "platform": {
+    "startLive": "oto-api-staging dep-dbr77g0874rs73fipqsg at 1b9885a32 live 02:29:00Z; oto-console-staging dep-dbr761l9fdbs73dgh67g at 1b9885a32 live 02:17:45Z",
+    "restart": "Virtual box 1 (in the api process) started about 02:30:06-02:30:14Z, after the 02:29:00 deploy went live; four printouts reads during the first wait of step 1a answered 409 BOX_NOT_IN_PROCESS; every proved step ran after it. Uptime 600 s at 02:40:06Z and 1440 s at 02:54:14Z: no restart through the end of the run (02:52:58Z).",
+    "end": "At 02:53Z all three services had a new automatic build in progress at 1b9885a32 (Render redeploying after the checks); the live deploys were unchanged."
+  },
+  "hunt": [
+    "A ZZ TEST till changed into a Customer display in the Console keeps its code prefix (Z97102, still shown on its card) and its two printer assignments (receipt, dropoff_band), neither of which its form shows or can clear; a new ZZ TEST till asking for Z97102 is refused 409 STATION_CODE_PREFIX_TAKEN. apps/console/src/components/devices/StationDrawer.tsx:167-170 (devices from the till assignments and filled.codePrefix sent back for a kind that uses neither). Pictures h2a-h2d.",
+    "Add a device through the Console form writes settings nobody chose: a receipt printer gets {escpos:{dotsPerLine:576}}, a band printer {label:{sensing:gap}} (the Edit form no longer does). apps/console/src/components/devices/BoxDrawer.tsx:880-886. Pictures h3a-h3c.",
+    "The closed Printer it comes out of field, half the drawer wide, cuts the chosen entry to ZZ TEST 971 band printer · Drop (the job name the fix adds is clipped; the open list shows it whole). The Paper width field takes the whole row for the same reason (BoxDrawer.tsx:680 sm:col-span-2); the printer field does not (apps/console/src/components/devices/BoxDrawer.tsx:1333-1342). Picture 02b1.",
+    "A Thai station name on the test page: the Station row ink ends 1 dot above the Box row (139 -> 141 on the receipt page, 185 -> 187 on the band page) against 9-10 dots with a Latin name; the value sits about 5 dots lower than its label. packages/print/src/layout/layout.ts:427 (with a leading, a line taller than it steps ascent+descent with no gap) with the SCRUM-971 rowDots of packages/print/src/templates/test-page.ts:82,93. Rows do not overlap. Pictures h1b, h1c.",
+    "The band page (400 dots) wraps the Thai station name inside the word ญี่ปุ่น (ญี่ / ปุ่น): the documented rule of packages/print/src/layout/wrap.ts:4-18 (no dictionary breaker by default). Picture h1b.",
+    "The Controls picker with a printer doing one job only names the printer alone (ZZ TEST 971 band printer), without its job (drop-off): by design (stationPrinters.ts printerChoices). Test print still asked for dropoff_band. Picture h1a.",
+    "Band test pages on the kids and adults roles with the park settings: 200 x 591 dots, the same page as the drop-off role. Pictures 04c, 04d.",
+    "End of Day saved list: no day in the 21 before 13 Nov is closed at Central Floresta, so no saved list exists to read; Close Day was not pressed. Picture h5.",
+    "Small: the station drawer says Saving bumps the config version but an unchanged display saved at v1 stayed v1 (picture 05f/05h); End of Day Counts outstanding shows Over/short ฿0 with Actual ฿0 while the cash card says awaiting count (picture h4a); the band printer simulator restarts its printout numbering at #1 when its label settings change (point 4 printouts #1-#3 then #1)."
+  ]
+}

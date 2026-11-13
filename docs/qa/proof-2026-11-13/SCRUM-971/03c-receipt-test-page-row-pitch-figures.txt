@@ -1,0 +1,29 @@
+Row pitch of the receipt test page, measured on the preview pictures (1 picture pixel = 1 printer dot; 576 dots wide).
+Top of each row = the first dot row with ink in the label column (x 8 to 138); pitch = top of a row minus top of the row above.
+
+SCRUM-971 (03a, ZZ TEST 971 receipt printer, printout 576x1032):
+  Device    -> Model     25 dots
+  Model     -> Address   26 dots
+  Address   -> Station   27 dots
+  Station   -> Box       25 dots
+  Box       -> Time      27 dots
+  Time      -> Transport 25 dots
+  Transport -> Dots/line 26 dots
+  Dots/line -> Renderer  24 dots
+  Renderer  -> Fonts     26 dots
+
+SCRUM-952 proof picture 01c (before the change, 576x1010):
+  Device    -> Model     25 dots
+  Model     -> Address   26 dots
+  Address   -> Station   21 dots
+  Station   -> Box       20 dots
+  Box       -> Time      22 dots
+  Time      -> Transport 19 dots
+  Transport -> Dots/line 26 dots
+  Dots/line -> Renderer  24 dots
+  Renderer  -> Fonts     26 dots
+
+Device to Time now: 25, 26, 27, 25, 27 dots (min 25, max 27).
+Device to Time in 01c: 25, 26, 21, 20, 22 dots (min 20, max 26).
+Tops now: Device 39, Model 64, Address 90, Station 117, Box 142, Time 169, Transport 194, Dots/line 220, Renderer 244, Fonts 270
+Tops in 01c: Device 39, Model 64, Address 90, Station 111, Box 131, Time 153, Transport 172, Dots/line 198, Renderer 222, Fonts 248

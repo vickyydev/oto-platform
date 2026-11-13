@@ -1,0 +1,18 @@
+Console, Devices > Stations > New station, Box = Virtual box 1, Name = "ZZ TEST 971 display" (2026-11-13T02:42:23.463Z)
+
+Kind when the form opened: Till (Code prefix fields: 1)
+  Kind Customer display  (display): "Code prefix" fields on the form = 0
+  Kind Gate              (gate): "Code prefix" fields on the form = 0
+  Kind Till              (till): "Code prefix" fields on the form = 1, placeholder T1
+  Kind Kiosk             (kiosk): "Code prefix" fields on the form = 1, placeholder T1
+  Kind Booth             (booth): "Code prefix" fields on the form = 1, placeholder B2
+
+Create the station (as Customer display): POST /api/branches/<Central Floresta>/stations -> 200
+  body sent: {"name":"ZZ TEST 971 display","kind":"display","boxId":"01a0be8c-89a0-74fa-9495-fb4a4acb65bc","capabilities":[],"accessScope":"all_staff","staffAccountIds":[],"devices":[],"codePrefix":null,"paymentRouting":null,"offlineWalletCapSatang":null}
+  answer: {"id":"01a1d2c8-bb53-77ae-855e-2f8bb8d3ae96","name":"ZZ TEST 971 display","kind":"display","codePrefix":null,"configVersion":1}
+
+Opened again: kind Customer display, "Code prefix" fields 0, config v1
+Save the station: PATCH /api/stations/<id> -> 200; config v1; codePrefix null
+  body sent: {"name":"ZZ TEST 971 display","kind":"display","boxId":"01a0be8c-89a0-74fa-9495-fb4a4acb65bc","capabilities":[],"accessScope":"all_staff","staffAccountIds":[],"devices":[],"codePrefix":null,"paymentRouting":null,"offlineWalletCapSatang":null,"expectedConfigVersion":1}
+Drawer still open after Save: 0
+Read back: {"name":"ZZ TEST 971 display","kind":"display","codePrefix":null,"configVersion":1,"archived":false}

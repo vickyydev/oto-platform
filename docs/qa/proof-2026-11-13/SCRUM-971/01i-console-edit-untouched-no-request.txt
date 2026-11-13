@@ -1,0 +1,4 @@
+Edit opened, nothing changed, Save pressed; every PATCH to /api/devices/<id> recorded for 4 s after (2026-11-13T02:32:51.992Z)
+
+ZZ TEST 971 receipt printer: requests sent 0; answer null; form still open after Save false; settings after null; address after 192.0.2.73:9100
+ZZ TEST 971 band printer: requests sent 0; answer null; form still open after Save false; settings after null; address after 192.0.2.74:9100

@@ -1,0 +1,16 @@
+Console Controls, Virtual box 1, "Station a test print goes to" = ZZ TEST 971 till (2026-11-13T02:34:29.279Z)
+
+"Printer it comes out of" lists, in order (label as shown; the job the entry names, from its value):
+  1. ZZ TEST 971 band printer · Adult band printer    -> printer band, job adult_band
+  2. ZZ TEST 971 band printer · Drop-off band printer    -> printer band, job dropoff_band
+  3. ZZ TEST 971 band printer · Kids' band printer    -> printer band, job kids_band
+  4. ZZ TEST 971 receipt printer    -> printer receipt, job receipt
+Selected at first: ZZ TEST 971 receipt printer
+
+Chose "ZZ TEST 971 band printer · Drop-off band printer", pressed Test print: POST /api/stations/<ZZ till>/test-print {"kind":"test_page","role":"dropoff_band"} -> 200; job {"id":"01a1d2c1-63ab-74c8-8e47-bf86491253f7","kind":"test_page","role":"dropoff_band","status":"queued","device":"ZZ TEST 971 band printer"}
+  on the platform: {"kind":"test_page","role":"dropoff_band","device":"ZZ TEST 971 band printer","status":"printed","error":null}; box command {"kind":"test_print","state":"succeeded","payloadKind":"test_page","role":"dropoff_band"}; printout #1 400x1070 dots
+  Printing panel (band printer, newest first): printed test page ZZ TEST 971 band printer · dropoff_band 09:34:11 printed adult wristband ZZ TEST 972 band printer · adult_band 09:13:08 printed kids wristband
+
+Chose "ZZ TEST 971 band printer · Kids' band printer", pressed Test print: POST /api/stations/<ZZ till>/test-print {"kind":"test_page","role":"kids_band"} -> 200; job {"id":"01a1d2c1-8b94-7a30-b67b-d60bc0d2f1e4","kind":"test_page","role":"kids_band","status":"queued","device":"ZZ TEST 971 band printer"}
+  on the platform: {"kind":"test_page","role":"kids_band","device":"ZZ TEST 971 band printer","status":"printed","error":null}; box command {"kind":"test_print","state":"succeeded","payloadKind":"test_page","role":"kids_band"}; printout #2 400x1070 dots
+  Printing panel (band printer, newest first): printed test page ZZ TEST 971 band printer · kids_band 09:34:21 printed test page ZZ TEST 971 band printer · dropoff_band 09:34:11 printed adult wristband ZZ TE
