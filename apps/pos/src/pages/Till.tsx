@@ -1,3 +1,4 @@
+import { useRecordedPaymentScope } from '@/lib/recordedPaymentScope';
 import { formatStoredPhone } from '@/lib/phoneUtils';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
@@ -204,6 +205,7 @@ export default function Till() {
    * reads one set of totals.
    */
   const saleWriter = useSaleWriter();
+  const recordedPayments = useRecordedPaymentScope();
   const completedPaymentRef = useRef<string | null>(null);
   const [completionRetry, setCompletionRetry] = useState<{
     sale: ApiSale;
@@ -3132,8 +3134,8 @@ export default function Till() {
       return refusal(RESUMED_ORDER_FROZEN);
     }
     if (staffLocked.current || saleEpochRef.current !== epoch || paymentScopeRef.current.scope !== scope) return refusal('This order is locked or changed before it could be saved.');
-    const existing = saleWriter.committed;
-    if (existing) return { ok: true, written: true, saleId: existing.id, sale: existing, replay: true };
+    const existing = recordedPayments.replay(saleWriter.committed, scope);
+    if (existing) return existing;
     const stockViolations = cartStockShortfalls(lines, getAddOns());
     if (stockViolations.length > 0) return refusal(`Cannot complete sale — stock too low: ${stockViolations.join(' · ')}`);
     if (!preflightSale()) return refusal('Finish the order before taking payment.');
@@ -3144,7 +3146,7 @@ export default function Till() {
     if (saleEpochRef.current !== epoch || paymentScopeRef.current.scope !== scope) {
       return refusal('This till has moved on to another order.');
     }
-    const outcome = await saleWriter.commit(input);
+    const outcome = await recordedPayments.record(scope, () => saleWriter.commit(input));
     return outcome;
   };
 
@@ -3358,7 +3360,7 @@ export default function Till() {
     totalSatang: toSatang(cart.totals.total),
     // A resumed sale: the money already taken on it is read from the platform
     // before anything more is collected, as a lost-reply retry reads it.
-    resumeSaleId: resumed?.saleId ?? saleWriter.committed?.id,
+    resumeSaleId: resumed?.saleId ?? recordedPayments.resumeSaleId(saleWriter.committed, paymentScope),
     // SCRUM-732 — a pass left behind brings its door with it: a child waits on this sale.
     prepareSale: () => preparePaymentSale(paymentEpoch, paymentScope),
     finaliseSale: saleWriter.finalise,

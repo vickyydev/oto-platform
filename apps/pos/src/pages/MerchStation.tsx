@@ -1,3 +1,4 @@
+import { useRecordedPaymentScope } from '@/lib/recordedPaymentScope';
 import { DISPLAY_HANDOVER_WAIT } from '@/lib/displaySession';
 import { paymentOrderIdentity } from '@/lib/paymentScope';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -106,6 +107,7 @@ export default function MerchStation() {
   const [newBalance, setNewBalance] = useState<number | null>(null);
   /** The same writer the till and the F&B station use — see `lib/saleWriter.ts`. */
   const saleWriter = useSaleWriter();
+  const recordedPayments = useRecordedPaymentScope();
   /** The platform's words when X or Clear could not void the sale rung up (SCRUM-866). */
   const [cancelRefusal, setCancelRefusal] = useState<string | null>(null);
   const [platformSale, setPlatformSale] = useState<ApiSale | null>(null);
@@ -584,13 +586,13 @@ export default function MerchStation() {
   const recordSaleOnPlatform = async (epoch: number): Promise<SaleWriteOutcome> => {
     if (staffLocked.current || saleEpochRef.current !== epoch || !paymentContextCurrent()) return { ok: false, saleId: '', message: 'This order is locked or changed before it could be saved.', retryable: false };
     // A rung-up order stays this sale even when the operator changes.
-    const existing = saleWriter.committed;
-    if (existing) return { ok: true, written: true, saleId: existing.id, sale: existing, replay: true };
+    const existing = recordedPayments.replay(saleWriter.committed, paymentScope);
+    if (existing) return existing;
     if (staffLocked.current) return { ok: false, saleId: saleWriter.committed?.id ?? '', message: 'Unlock this station before saving the sale.', retryable: false };
     if (saleEpochRef.current !== epoch || !paymentContextCurrent()) return { ok: false, saleId: saleWriter.committed?.id ?? '', message: 'This sale or station changed before it could be saved.', retryable: false };
     const payload = commitPayload();
     if (!payload) return { ok: false, saleId: saleWriter.committed?.id ?? '', message: unwritableReason(), retryable: false };
-    const outcome = await saleWriter.commit({ cart: payload, finalise: false });
+    const outcome = await recordedPayments.record(paymentScope, () => saleWriter.commit({ cart: payload, finalise: false }));
     if (!staffLocked.current && (saleEpochRef.current !== epoch || !paymentContextCurrent()) && outcome.ok && outcome.written) {
       // The station moved on before the answer landed. The sale IS on the
       // platform and nothing on this screen will mention it again, so it is
@@ -657,7 +659,7 @@ export default function MerchStation() {
     paymentSnapshotRef.current = { epoch: paymentEpoch, scope: paymentScope, prepare: () => recordSaleOnPlatform(paymentEpoch), complete: completeSale };
   }
   const paymentStage = usePaymentStage({
-    resumeSaleId: saleWriter.committed?.id,
+    resumeSaleId: recordedPayments.resumeSaleId(saleWriter.committed, paymentScope),
     scope: paymentScope,
     isCurrentScope: (scope) => !staffLocked.current && scope === paymentScopeRef.current.scope && paymentScopeRef.current.epoch === saleEpochRef.current,
     active: stage === 'payment',

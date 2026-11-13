@@ -1,0 +1,106 @@
+{
+  "base": "dff15bc27013edee5f9d43b58b4210460da6c331",
+  "sourceReview": "approved by root 14 November 2026 after inspecting helper, all five integrations, runtime pins and gates",
+  "filesPassed": 274,
+  "testsPassed": 3902,
+  "chunks": [
+    {
+      "log": "982-scope-full-pos-browser-0.log",
+      "filesPassed": 1,
+      "testsPassed": 11
+    },
+    {
+      "log": "982-scope-full-pos-browser-1.log",
+      "filesPassed": 1,
+      "testsPassed": 3
+    },
+    {
+      "log": "982-scope-full-pos-browser-2.log",
+      "filesPassed": 1,
+      "testsPassed": 59
+    },
+    {
+      "log": "982-scope-full-pos-browser-3.log",
+      "filesPassed": 1,
+      "testsPassed": 13
+    },
+    {
+      "log": "982-scope-full-pos-browser-4.log",
+      "filesPassed": 1,
+      "testsPassed": 27
+    },
+    {
+      "log": "982-scope-full-pos-browser-5.log",
+      "filesPassed": 1,
+      "testsPassed": 75
+    },
+    {
+      "log": "982-scope-full-pos-browser-6.log",
+      "filesPassed": 1,
+      "testsPassed": 20
+    },
+    {
+      "log": "982-scope-full-pos-unit-0.log",
+      "filesPassed": 38,
+      "testsPassed": 557
+    },
+    {
+      "log": "982-scope-full-pos-unit-114.log",
+      "filesPassed": 38,
+      "testsPassed": 482
+    },
+    {
+      "log": "982-scope-full-pos-unit-152.log",
+      "filesPassed": 38,
+      "testsPassed": 697
+    },
+    {
+      "log": "982-scope-full-pos-unit-190.log",
+      "filesPassed": 38,
+      "testsPassed": 479
+    },
+    {
+      "log": "982-scope-full-pos-unit-228.log",
+      "filesPassed": 38,
+      "testsPassed": 543
+    },
+    {
+      "log": "982-scope-full-pos-unit-266.log",
+      "filesPassed": 1,
+      "testsPassed": 23
+    },
+    {
+      "log": "982-scope-full-pos-unit-38.log",
+      "filesPassed": 38,
+      "testsPassed": 473
+    },
+    {
+      "log": "982-scope-full-pos-unit-76.log",
+      "filesPassed": 38,
+      "testsPassed": 440
+    }
+  ],
+  "posTypecheck": {
+    "exit": 0,
+    "configurations": 3
+  },
+  "apiTypecheck": {
+    "exit": 0,
+    "outputBytes": 0
+  },
+  "lintExit": 0,
+  "adversarialPins": 11,
+  "newCapturedScopeRuntimeCases": 4,
+  "productionBuildBrowser": {
+    "files": [
+      "e2e/sale-ledger.spec.ts",
+      "e2e/payment-handover.spec.ts",
+      "e2e/phone-payment.spec.ts"
+    ],
+    "passed": 7,
+    "seconds": 60,
+    "disposableDatabaseRemoved": true
+  },
+  "originalSaleLedgerAssertions": "unchanged",
+  "stagingAcceptance": "pending final-source deployment and fresh matrix"
+}

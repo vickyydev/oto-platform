@@ -1,0 +1,14 @@
+{
+  "before": {
+    "status": "In Progress",
+    "summary": "A QR payment that is waiting is forgotten when a different person continues a kept sale: the till asks for the money again and can record cash on a sale the QR already paid"
+  },
+  "posted": {
+    "status": 201,
+    "commentId": "14738"
+  },
+  "after": {
+    "status": "In Progress",
+    "summary": "A QR payment that is waiting is forgotten when a different person continues a kept sale: the till asks for the money again and can record cash on a sale the QR already paid"
+  }
+}

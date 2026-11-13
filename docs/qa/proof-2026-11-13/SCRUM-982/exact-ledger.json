@@ -33,6 +33,65 @@
       "stationId": "01a1d4fc-d6ed-72df-af7b-7d57916ccf58",
       "label": "desk",
       "phase": "Desktop ticket: A rings up one sale and shows a simulator QR"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1d522-20a9-7161-a0b9-2f5cf6e958f8",
+      "stationId": "01a1d4fc-d6ed-72df-af7b-7d57916ccf58",
+      "label": "desk",
+      "phase": "Resume native F&B proof after the test-only CI repair"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1d525-17eb-7418-bc46-f7ef87e38db4",
+      "stationId": "01a1d4fc-d6ed-72df-af7b-7d57916ccf58",
+      "label": "desk",
+      "phase": "Shop: select the actual 65-baht product, then prove QR handover"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1d526-2a77-70ff-a672-e72ca7917cbf",
+      "stationId": "01a1d4fc-de19-71bb-967b-9b069f0c6e89",
+      "label": "phone",
+      "phase": "Phone ticket: A creates a waiting QR at the fresh phone till"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1d52f-a657-763e-b86b-fd49560a4488",
+      "stationId": "01a1d4fc-de19-71bb-967b-9b069f0c6e89",
+      "label": "phone",
+      "phase": "Phone F&B: B starts QR after the family confirmed the order"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1d535-cce5-7882-9432-2538e7af493f",
+      "stationId": "01a1d4fc-d6ed-72df-af7b-7d57916ccf58",
+      "label": "desk",
+      "phase": "No-attempt lock case: ring up using the now-stable inline family view"
+    },
+    {
+      "kind": "device",
+      "id": "7c5abeba-c737-4c6b-9bff-8d97ed4bff42",
+      "label": "ZZ TEST SCRUM-982 card terminal 1794578753622",
+      "transport": "simulated",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc"
+    },
+    {
+      "kind": "station",
+      "id": "01a1d53a-ac20-73cf-b851-591d91d64f68",
+      "name": "ZZ TEST SCRUM-982 card till 1794578753922",
+      "prefix": "Z98203",
+      "paymentRouting": {
+        "card": "card_terminal",
+        "qr": "none"
+      }
+    },
+    {
+      "kind": "sale",
+      "id": "01a1d53a-ce4b-704f-b9f8-6b7c990e2394",
+      "stationId": "01a1d53a-ac20-73cf-b851-591d91d64f68",
+      "label": "card",
+      "phase": "Fresh simulated card terminal and a single waiting card sale"
     }
   ],
   "reusedStaff": [
@@ -50,6 +109,12 @@
     }
   ],
   "knownSales": [
-    "01a1d500-2c19-7232-90d4-4d18ba6d4aa3"
+    "01a1d500-2c19-7232-90d4-4d18ba6d4aa3",
+    "01a1d522-20a9-7161-a0b9-2f5cf6e958f8",
+    "01a1d525-17eb-7418-bc46-f7ef87e38db4",
+    "01a1d526-2a77-70ff-a672-e72ca7917cbf",
+    "01a1d52f-a657-763e-b86b-fd49560a4488",
+    "01a1d535-cce5-7882-9432-2538e7af493f",
+    "01a1d53a-ce4b-704f-b9f8-6b7c990e2394"
   ]
 }

@@ -1,0 +1,50 @@
+{
+  "sha": "dff15bc27013edee5f9d43b58b4210460da6c331",
+  "records": [
+    {
+      "key": "SCRUM-982",
+      "before": {
+        "status": "In Progress",
+        "summary": "A QR payment that is waiting is forgotten when a different person continues a kept sale: the till asks for the money again and can record cash on a sale the QR already paid"
+      },
+      "posted": {
+        "status": 201,
+        "commentId": "14735"
+      },
+      "after": {
+        "status": "In Progress",
+        "summary": "A QR payment that is waiting is forgotten when a different person continues a kept sale: the till asks for the money again and can record cash on a sale the QR already paid"
+      }
+    },
+    {
+      "key": "SCRUM-981",
+      "before": {
+        "status": "In Progress",
+        "summary": "After the kept-sale lane: a second person continuing a cart loses the first person's approved rate with no word, the display keeps the ended person's screen for up to a minute, and points left by the reviews"
+      },
+      "posted": {
+        "status": 201,
+        "commentId": "14736"
+      },
+      "after": {
+        "status": "In Progress",
+        "summary": "After the kept-sale lane: a second person continuing a cart loses the first person's approved rate with no word, the display keeps the ended person's screen for up to a minute, and points left by the reviews"
+      }
+    },
+    {
+      "key": "SCRUM-977",
+      "before": {
+        "status": "Deployed",
+        "summary": "A phone till turned on its side becomes the desk till, and the family's form and the sale are lost"
+      },
+      "posted": {
+        "status": 201,
+        "commentId": "14737"
+      },
+      "after": {
+        "status": "Deployed",
+        "summary": "A phone till turned on its side becomes the desk till, and the family's form and the sale are lost"
+      }
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+Source dff15bc27013edee5f9d43b58b4210460da6c331
+Run 43435242291, completed workspace job 131918511052
+
+2026-11-13T13:59:57.9835214Z   1) e2e/sale-ledger.spec.ts:209:1 › a corrected order is sold as its own sale ─────────────────────
+2026-11-13T13:59:57.9835879Z 
+2026-11-13T13:59:57.9836274Z     Error: expect(received).toHaveLength(expected)
+2026-11-13T13:59:57.9836886Z 
+2026-11-13T13:59:57.9837168Z     Expected length: 2
+2026-11-13T13:59:57.9837658Z     Received length: 1
+2026-11-13T13:59:57.9844587Z     Received array:  [{"boxId": "01a1d534-d0d6-72c5-86b0-2cf3356e2863", "branchId": "01a1d534-cf9f-7c13-b4cf-b88eaf4b8340", "businessDate": "2026-11-13", "customerTier": "tourist", "engineVersion": "2026.10.06-1", "finalisedAt": "2026-11-13T13:59:52.633Z", "hold": null, "id": "01a1d535-24a0-7d79-8af1-ae317accf607", "lineKinds": ["kids", "adults_paid"], "member": null, "memberId": null, "note": null, "occurredAt": "2026-11-13T13:59:52.224Z", "pricingMode": "weekday", "pricingModeReason": "Weekday pricing", "receiptNumber": "T1-000002", "receiptSeq": 2, "receiptSeries": "T1", "resumedFromHold": null, "revenueCategories": ["tickets"], "salesChannel": "till", "soldBy": {"accountId": "01a1d534-cfd1-7fa0-8eb5-1b872fa94987", "name": "Som (Reception)"}, "stationId": "01a1d534-d0e5-7df2-9a34-06ce34b13ddd", "stationName": "Reception Till 1", "status": "finalised", "tierClaim": null, "totals": {"discountSatang": 0, "grossSatang": 124000, "manualDiscountSatang": 0, "netSatang": 115888, "promoDiscountSatang": 0, "refundedSatang": 0, "serviceChargeSatang": 0, "subtotalSatang": 124000, "taxExclusiveSatang": 0, "taxInclusiveSatang": 8112, "unappliedDiscountSatang": 0}, "visitId": null, "voidReason": null, "voidedAt": null, "voidedByAccountId": null, "voidedByName": null}]
+2026-11-13T13:59:57.9863504Z 
+2026-11-13T13:59:57.9863893Z       237 |   const sold = added.find((s) => s.status === 'finalised');
+2026-11-13T13:59:57.9864645Z       238 |   const abandoned = added.find((s) => s.status === 'voided');
+2026-11-13T13:59:57.9865319Z     > 239 |   expect(added).toHaveLength(2);
+2026-11-13T13:59:57.9865737Z           |                 ^
+2026-11-13T13:59:57.9866305Z       240 |   // What the visitor paid is the corrected cart; the first was voided by the
+2026-11-13T13:59:57.9866837Z       241 |   // till before the corrected one was rung up ("Order changed at the till
+2026-11-13T13:59:57.9867322Z       242 |   // after Pay", SCRUM-865), so nothing is left recorded and unpaid.
+2026-11-13T13:59:57.9867820Z         at /home/runner/work/oto-platform/oto-platform/apps/pos/e2e/sale-ledger.spec.ts:239:17
+2026-11-13T13:59:57.9868178Z 
+2026-11-13T13:59:57.9868533Z     Error Context: test-results/sale-ledger-a-corrected-order-is-sold-as-its-own-sale/error-context.md
+2026-11-13T13:59:57.9868869Z 
+2026-11-13T13:59:57.9868941Z   1 failed
+2026-11-13T13:59:57.9869431Z     e2e/sale-ledger.spec.ts:209:1 › a corrected order is sold as its own sale ──────────────────────
+2026-11-13T13:59:57.9869799Z   2 passed (26.2s)
+2026-11-13T13:59:58.0309302Z [pos-e2e] Child process exited with 1
+2026-11-13T13:59:58.2274830Z [pos-e2e] disposable database removed
+2026-11-13T13:59:58.2468627Z /home/runner/work/oto-platform/oto-platform/apps/pos:
+2026-11-13T13:59:58.2469515Z  ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @oto/pos@0.1.0 e2e: `node e2e/run.mjs e2e/sale-ledger.spec.ts`
+2026-11-13T13:59:58.2469907Z Exit status 1

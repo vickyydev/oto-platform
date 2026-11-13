@@ -1,0 +1,25 @@
+{
+  "head": "dff15bc27013edee5f9d43b58b4210460da6c331",
+  "branch": "lane/codex-payment-handover-20261113",
+  "stagedProduct": "157d6cb24d1764dea4d5356615942882f2970e7c",
+  "sourceRepair": "root reviewed and approved 14 November 2026; landing authorized",
+  "validation": "cart-scope-validation.json",
+  "driver": {
+    "port": 47982,
+    "pty": 24721,
+    "browserOpen": false,
+    "secrets": "memory only"
+  },
+  "cleanup": {
+    "refundedSatang": 353500,
+    "paidSalesRefunded": 6,
+    "unpaidSalesVoided": 1,
+    "stationsArchived": 3,
+    "displayRevoked": true,
+    "browserContextsClosed401": 3,
+    "proofStaffLiveSessions": 0,
+    "retainedOwnUnassignedSimulatorTerminal": true
+  },
+  "next": "land after clean rebase, deploy both named tills, full-SHA CI and fresh final-source native matrix",
+  "stage3": "not released"
+}

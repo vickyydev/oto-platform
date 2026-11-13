@@ -205,7 +205,10 @@
   },
   "numbers": {
     "used": [
-      "0898988210"
+      "0898988210",
+      "0898988211",
+      "0898988212",
+      "0898988213"
     ]
   },
   "created": [
@@ -241,6 +244,65 @@
       "stationId": "01a1d4fc-d6ed-72df-af7b-7d57916ccf58",
       "label": "desk",
       "phase": "Desktop ticket: A rings up one sale and shows a simulator QR"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1d522-20a9-7161-a0b9-2f5cf6e958f8",
+      "stationId": "01a1d4fc-d6ed-72df-af7b-7d57916ccf58",
+      "label": "desk",
+      "phase": "Resume native F&B proof after the test-only CI repair"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1d525-17eb-7418-bc46-f7ef87e38db4",
+      "stationId": "01a1d4fc-d6ed-72df-af7b-7d57916ccf58",
+      "label": "desk",
+      "phase": "Shop: select the actual 65-baht product, then prove QR handover"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1d526-2a77-70ff-a672-e72ca7917cbf",
+      "stationId": "01a1d4fc-de19-71bb-967b-9b069f0c6e89",
+      "label": "phone",
+      "phase": "Phone ticket: A creates a waiting QR at the fresh phone till"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1d52f-a657-763e-b86b-fd49560a4488",
+      "stationId": "01a1d4fc-de19-71bb-967b-9b069f0c6e89",
+      "label": "phone",
+      "phase": "Phone F&B: B starts QR after the family confirmed the order"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1d535-cce5-7882-9432-2538e7af493f",
+      "stationId": "01a1d4fc-d6ed-72df-af7b-7d57916ccf58",
+      "label": "desk",
+      "phase": "No-attempt lock case: ring up using the now-stable inline family view"
+    },
+    {
+      "kind": "device",
+      "id": "7c5abeba-c737-4c6b-9bff-8d97ed4bff42",
+      "label": "ZZ TEST SCRUM-982 card terminal 1794578753622",
+      "transport": "simulated",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc"
+    },
+    {
+      "kind": "station",
+      "id": "01a1d53a-ac20-73cf-b851-591d91d64f68",
+      "name": "ZZ TEST SCRUM-982 card till 1794578753922",
+      "prefix": "Z98203",
+      "paymentRouting": {
+        "card": "card_terminal",
+        "qr": "none"
+      }
+    },
+    {
+      "kind": "sale",
+      "id": "01a1d53a-ce4b-704f-b9f8-6b7c990e2394",
+      "stationId": "01a1d53a-ac20-73cf-b851-591d91d64f68",
+      "label": "card",
+      "phase": "Fresh simulated card terminal and a single waiting card sale"
     }
   ],
   "points": {
@@ -274,6 +336,153 @@
             "kind": "other"
           }
         ]
+      }
+    },
+    "desktop-fnb-cancelled-qr-cash": {
+      "verdict": "PASSED",
+      "pictures": [
+        "02a-fnb-B-waiting-qr.png",
+        "02b-fnb-A-continued-qr.png",
+        "02c-fnb-A-cash-same-sale.png"
+      ],
+      "seen": {
+        "saleId": "01a1d522-20a9-7161-a0b9-2f5cf6e958f8",
+        "status": "finalised",
+        "stationSaleCount": 2,
+        "soldBy": {
+          "accountId": "01a1d2f9-710f-7e6e-bb8e-d8f17975d09f",
+          "name": "ZZ TEST 964 B"
+        },
+        "attempts": [
+          {
+            "id": "01a1d522-248d-78bb-b769-0d5e1b92025f",
+            "status": "cancelled",
+            "method": "qr",
+            "amountSatang": 17500
+          },
+          {
+            "id": "01a1d522-9cf1-7ca0-b5b1-17a45b9677cd",
+            "status": "approved",
+            "method": "cash",
+            "amountSatang": 17500
+          }
+        ],
+        "label": "Total ฿175 Cash ฿175 Thank you"
+      }
+    },
+    "desktop-shop-paid-qr": {
+      "verdict": "PASSED",
+      "pictures": [
+        "03a-shop-A-waiting-qr.png",
+        "03b-shop-B-continued-qr.png",
+        "03c-shop-B-paid-qr.png"
+      ],
+      "seen": {
+        "saleId": "01a1d525-17eb-7418-bc46-f7ef87e38db4",
+        "status": "finalised",
+        "stationSaleCount": 3,
+        "soldBy": {
+          "accountId": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+          "name": "ZZ TEST 964 A"
+        },
+        "attempts": [
+          {
+            "id": "01a1d525-1b17-7541-bad5-a34d83f1b8ef",
+            "status": "approved",
+            "method": "qr",
+            "amountSatang": 6500
+          }
+        ],
+        "writesAfterContinue": [
+          {
+            "path": "/api/sales/:id/finalise",
+            "method": "none",
+            "kind": "other"
+          }
+        ]
+      }
+    },
+    "phone-ticket-cancelled-qr-cash": {
+      "verdict": "PASSED",
+      "pictures": [
+        "04d-phone-ticket-B-continued-staff-qr.png",
+        "04f-phone-ticket-B-cash-clean.png"
+      ],
+      "seen": {
+        "saleId": "01a1d526-2a77-70ff-a672-e72ca7917cbf",
+        "status": "finalised",
+        "stationSaleCount": 1,
+        "soldBy": {
+          "accountId": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+          "name": "ZZ TEST 964 A"
+        },
+        "attempts": [
+          {
+            "id": "01a1d526-2ea9-777a-8595-76c90c95bdb2",
+            "status": "cancelled",
+            "method": "qr",
+            "amountSatang": 104000
+          },
+          {
+            "id": "01a1d52a-3b87-7403-9a69-130f9078fd4c",
+            "status": "approved",
+            "method": "cash",
+            "amountSatang": 104000
+          }
+        ],
+        "phoneFlow": "Continue retained the hand-to-family prompt; Customer is ready and Done returned to staff; Cash was selected after QR cancellation completed"
+      }
+    },
+    "phone-fnb-paid-qr": {
+      "verdict": "PASSED",
+      "pictures": [
+        "05a-phone-fnb-B-waiting-qr.png",
+        "05b-phone-fnb-A-continued-qr.png",
+        "05c-phone-fnb-A-paid-qr.png"
+      ],
+      "seen": {
+        "saleId": "01a1d52f-a657-763e-b86b-fd49560a4488",
+        "status": "finalised",
+        "stationSaleCount": 2,
+        "soldBy": {
+          "accountId": "01a1d2f9-710f-7e6e-bb8e-d8f17975d09f",
+          "name": "ZZ TEST 964 B"
+        },
+        "attempts": [
+          {
+            "id": "01a1d52f-a980-73a7-a624-3e26464873c2",
+            "status": "approved",
+            "method": "qr",
+            "amountSatang": 17500
+          }
+        ]
+      }
+    },
+    "qr-created-paid-during-lock": {
+      "verdict": "PASSED",
+      "pictures": [
+        "06-qr-created-and-paid-while-locked.png"
+      ],
+      "seen": {
+        "saleId": "01a1d535-cce5-7882-9432-2538e7af493f",
+        "status": "finalised",
+        "receiptNumber": "Z98201-000004",
+        "stationSaleCount": 4,
+        "soldBy": {
+          "accountId": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+          "name": "ZZ TEST 964 A"
+        },
+        "attempts": [
+          {
+            "id": "01a1d535-d6a4-768b-85c5-163d77f0a244",
+            "status": "approved",
+            "method": "qr",
+            "amountSatang": 104000
+          }
+        ],
+        "writesAfterContinue": [],
+        "initialAttemptsBeforeLock": 0,
+        "issuance": "receipt and credit grant present after the existing asynchronous issuance read"
       }
     }
   },
@@ -362,9 +571,245 @@
         "at": "2026-11-13T13:08:16.247Z",
         "atMs": 1794575296247
       }
-    ]
+    ],
+    "fnbBefore": {
+      "saleId": "01a1d522-20a9-7161-a0b9-2f5cf6e958f8",
+      "attemptId": "01a1d522-248d-78bb-b769-0d5e1b92025f",
+      "status": "sent_to_terminal"
+    },
+    "fnbAfter": {
+      "saleId": "01a1d522-20a9-7161-a0b9-2f5cf6e958f8",
+      "status": "finalised",
+      "stationSaleCount": 2,
+      "soldBy": {
+        "accountId": "01a1d2f9-710f-7e6e-bb8e-d8f17975d09f",
+        "name": "ZZ TEST 964 B"
+      },
+      "attempts": [
+        {
+          "id": "01a1d522-248d-78bb-b769-0d5e1b92025f",
+          "status": "cancelled",
+          "method": "qr",
+          "amountSatang": 17500
+        },
+        {
+          "id": "01a1d522-9cf1-7ca0-b5b1-17a45b9677cd",
+          "status": "approved",
+          "method": "cash",
+          "amountSatang": 17500
+        }
+      ],
+      "label": "Total ฿175 Cash ฿175 Thank you"
+    },
+    "shopBefore": {
+      "saleId": "01a1d525-17eb-7418-bc46-f7ef87e38db4",
+      "attemptId": "01a1d525-1b17-7541-bad5-a34d83f1b8ef",
+      "status": "sent_to_terminal"
+    },
+    "shopAfter": {
+      "saleId": "01a1d525-17eb-7418-bc46-f7ef87e38db4",
+      "status": "finalised",
+      "stationSaleCount": 3,
+      "soldBy": {
+        "accountId": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+        "name": "ZZ TEST 964 A"
+      },
+      "attempts": [
+        {
+          "id": "01a1d525-1b17-7541-bad5-a34d83f1b8ef",
+          "status": "approved",
+          "method": "qr",
+          "amountSatang": 6500
+        }
+      ],
+      "writesAfterContinue": [
+        {
+          "path": "/api/sales/:id/finalise",
+          "method": "none",
+          "kind": "other"
+        }
+      ]
+    },
+    "phoneTicketBefore": {
+      "saleId": "01a1d526-2a77-70ff-a672-e72ca7917cbf",
+      "attemptId": "01a1d526-2ea9-777a-8595-76c90c95bdb2",
+      "status": "sent_to_terminal",
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "touch": 1
+      }
+    },
+    "phoneTicketAfter": {
+      "saleId": "01a1d526-2a77-70ff-a672-e72ca7917cbf",
+      "status": "finalised",
+      "stationSaleCount": 1,
+      "soldBy": {
+        "accountId": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+        "name": "ZZ TEST 964 A"
+      },
+      "attempts": [
+        {
+          "id": "01a1d526-2ea9-777a-8595-76c90c95bdb2",
+          "status": "cancelled",
+          "method": "qr",
+          "amountSatang": 104000
+        },
+        {
+          "id": "01a1d52a-3b87-7403-9a69-130f9078fd4c",
+          "status": "approved",
+          "method": "cash",
+          "amountSatang": 104000
+        }
+      ],
+      "phoneFlow": "Continue retained the hand-to-family prompt; Customer is ready and Done returned to staff; Cash was selected after QR cancellation completed"
+    },
+    "phoneFnbBefore": {
+      "saleId": "01a1d52f-a657-763e-b86b-fd49560a4488",
+      "attemptId": "01a1d52f-a980-73a7-a624-3e26464873c2",
+      "status": "sent_to_terminal"
+    },
+    "phoneFnbAfter": {
+      "saleId": "01a1d52f-a657-763e-b86b-fd49560a4488",
+      "status": "finalised",
+      "stationSaleCount": 2,
+      "soldBy": {
+        "accountId": "01a1d2f9-710f-7e6e-bb8e-d8f17975d09f",
+        "name": "ZZ TEST 964 B"
+      },
+      "attempts": [
+        {
+          "id": "01a1d52f-a980-73a7-a624-3e26464873c2",
+          "status": "approved",
+          "method": "qr",
+          "amountSatang": 17500
+        }
+      ]
+    },
+    "noAttemptBeforeLock": {
+      "saleId": "01a1d535-cce5-7882-9432-2538e7af493f",
+      "status": "tendering",
+      "attempts": 0
+    },
+    "noAttemptPaidWhileLocked": {
+      "saleId": "01a1d535-cce5-7882-9432-2538e7af493f",
+      "attemptId": "01a1d535-d6a4-768b-85c5-163d77f0a244",
+      "method": "qr"
+    },
+    "noAttemptAfter": {
+      "saleId": "01a1d535-cce5-7882-9432-2538e7af493f",
+      "status": "finalised",
+      "receiptNumber": "Z98201-000004",
+      "stationSaleCount": 4,
+      "soldBy": {
+        "accountId": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+        "name": "ZZ TEST 964 A"
+      },
+      "attempts": [
+        {
+          "id": "01a1d535-d6a4-768b-85c5-163d77f0a244",
+          "status": "approved",
+          "method": "qr",
+          "amountSatang": 104000
+        }
+      ],
+      "writesAfterContinue": [],
+      "initialAttemptsBeforeLock": 0,
+      "issuance": "receipt and credit grant present after the existing asynchronous issuance read"
+    },
+    "secondCiDiagnosis": {
+      "records": [
+        {
+          "stationId": "01a1d4fc-d6ed-72df-af7b-7d57916ccf58",
+          "name": "ZZ TEST SCRUM-982 desk till 1794574701707",
+          "sales": [
+            {
+              "id": "01a1d535-cce5-7882-9432-2538e7af493f",
+              "status": "finalised",
+              "grossSatang": 104000,
+              "receiptNumber": "Z98201-000004"
+            },
+            {
+              "id": "01a1d525-17eb-7418-bc46-f7ef87e38db4",
+              "status": "finalised",
+              "grossSatang": 6500,
+              "receiptNumber": "Z98201-000003"
+            },
+            {
+              "id": "01a1d522-20a9-7161-a0b9-2f5cf6e958f8",
+              "status": "finalised",
+              "grossSatang": 17500,
+              "receiptNumber": "Z98201-000002"
+            },
+            {
+              "id": "01a1d500-2c19-7232-90d4-4d18ba6d4aa3",
+              "status": "finalised",
+              "grossSatang": 104000,
+              "receiptNumber": "Z98201-000001"
+            }
+          ]
+        },
+        {
+          "stationId": "01a1d4fc-de19-71bb-967b-9b069f0c6e89",
+          "name": "ZZ TEST SCRUM-982 phone till 1794574703544",
+          "sales": [
+            {
+              "id": "01a1d52f-a657-763e-b86b-fd49560a4488",
+              "status": "finalised",
+              "grossSatang": 17500,
+              "receiptNumber": "Z98202-000002"
+            },
+            {
+              "id": "01a1d526-2a77-70ff-a672-e72ca7917cbf",
+              "status": "finalised",
+              "grossSatang": 104000,
+              "receiptNumber": "Z98202-000001"
+            }
+          ]
+        },
+        {
+          "stationId": "01a1d53a-ac20-73cf-b851-591d91d64f68",
+          "name": "ZZ TEST SCRUM-982 card till 1794578753922",
+          "sales": [
+            {
+              "id": "01a1d53a-ce4b-704f-b9f8-6b7c990e2394",
+              "status": "tendering",
+              "grossSatang": 104000,
+              "receiptNumber": null
+            }
+          ]
+        }
+      ],
+      "revokes": [
+        {
+          "who": "A",
+          "sessionsEnded": 1,
+          "at": "2026-11-13T14:09:36.362Z",
+          "atMs": 1794578976362
+        },
+        {
+          "who": "B",
+          "sessionsEnded": 1,
+          "at": "2026-11-13T14:09:36.446Z",
+          "atMs": 1794578976446
+        }
+      ],
+      "refusals": [
+        {
+          "via": "platform admin",
+          "method": "POST",
+          "path": "/payments/terminal-simulator",
+          "status": 409,
+          "errorCode": "NO_SIMULATOR_FOR_DEVICE"
+        }
+      ]
+    }
   },
-  "odd": [],
+  "odd": [
+    {
+      "what": "the browser disconnected"
+    }
+  ],
   "hunt": [],
   "pageErrors": [
     {
@@ -502,6 +947,1794 @@
     {
       "page": "desk",
       "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "End synthetic staff sessions while the source CI selector failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Resume native F&B proof after the test-only CI repair",
+      "kind": "http",
+      "text": "GET /api/stations/:id/displays 403"
+    },
+    {
+      "page": "desk",
+      "at": "Resume native F&B proof after the test-only CI repair",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 403 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Resume native F&B proof after the test-only CI repair",
+      "kind": "http",
+      "text": "GET /api/me/station/link 409"
+    },
+    {
+      "page": "desk",
+      "at": "Resume native F&B proof after the test-only CI repair",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Resume native F&B proof after the test-only CI repair",
+      "kind": "http",
+      "text": "GET /api/stations/:id/channel 403"
+    },
+    {
+      "page": "desk",
+      "at": "Resume native F&B proof after the test-only CI repair",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 403 ()"
+    },
+    {
+      "page": "desk",
+      "at": "F&B: A continues B's waiting QR, cancels it, and records Cash on that same sale",
+      "kind": "http",
+      "text": "GET /api/stations/:id/displays 401"
+    },
+    {
+      "page": "desk",
+      "at": "F&B: A continues B's waiting QR, cancels it, and records Cash on that same sale",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "F&B: A continues B's waiting QR, cancels it, and records Cash on that same sale",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "F&B: A continues B's waiting QR, cancels it, and records Cash on that same sale",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "F&B: A continues B's waiting QR, cancels it, and records Cash on that same sale",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "desk",
+      "at": "F&B: A continues B's waiting QR, cancels it, and records Cash on that same sale",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "desk",
+      "at": "F&B: A continues B's waiting QR, cancels it, and records Cash on that same sale",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "desk",
+      "at": "F&B: A continues B's waiting QR, cancels it, and records Cash on that same sale",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "desk",
+      "at": "F&B: A continues B's waiting QR, cancels it, and records Cash on that same sale",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "desk",
+      "at": "F&B: A continues B's waiting QR, cancels it, and records Cash on that same sale",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "desk",
+      "at": "F&B: A continues B's waiting QR, cancels it, and records Cash on that same sale",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "desk",
+      "at": "F&B: A continues B's waiting QR, cancels it, and records Cash on that same sale",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "desk",
+      "at": "F&B: A continues B's waiting QR, cancels it, and records Cash on that same sale",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "desk",
+      "at": "F&B: A continues B's waiting QR, cancels it, and records Cash on that same sale",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Shop: select the actual 65-baht product, then prove QR handover",
+      "kind": "http",
+      "text": "GET /api/me/station/link 401"
+    },
+    {
+      "page": "desk",
+      "at": "Shop: select the actual 65-baht product, then prove QR handover",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Shop: select the actual 65-baht product, then prove QR handover",
+      "kind": "http",
+      "text": "GET /api/branches/:id/occupancy 401"
+    },
+    {
+      "page": "desk",
+      "at": "Shop: select the actual 65-baht product, then prove QR handover",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Shop: select the actual 65-baht product, then prove QR handover",
+      "kind": "http",
+      "text": "GET /api/stations/:id/displays 401"
+    },
+    {
+      "page": "desk",
+      "at": "Shop: select the actual 65-baht product, then prove QR handover",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Shop: select the actual 65-baht product, then prove QR handover",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "Shop: select the actual 65-baht product, then prove QR handover",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Shop: select the actual 65-baht product, then prove QR handover",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "desk",
+      "at": "Shop: select the actual 65-baht product, then prove QR handover",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Shop: select the actual 65-baht product, then prove QR handover",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "desk",
+      "at": "Shop: select the actual 65-baht product, then prove QR handover",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Shop: select the actual 65-baht product, then prove QR handover",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "desk",
+      "at": "Shop: select the actual 65-baht product, then prove QR handover",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "phone",
+      "at": "Phone ticket: A creates a waiting QR at the fresh phone till",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "phone",
+      "at": "Phone ticket: A creates a waiting QR at the fresh phone till",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "Phone ticket: B continues A's QR, cancels it and takes Cash once",
+      "kind": "http",
+      "text": "GET /api/branches/:id/occupancy 401"
+    },
+    {
+      "page": "phone",
+      "at": "Phone ticket: B continues A's QR, cancels it and takes Cash once",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "Phone ticket: B continues A's QR, cancels it and takes Cash once",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "phone",
+      "at": "Phone ticket: B continues A's QR, cancels it and takes Cash once",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "Phone F&B: B starts QR after the family confirmed the order",
+      "kind": "http",
+      "text": "GET /api/branches/:id/occupancy 401"
+    },
+    {
+      "page": "phone",
+      "at": "Phone F&B: B starts QR after the family confirmed the order",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "Phone F&B: B starts QR after the family confirmed the order",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "phone",
+      "at": "Phone F&B: B starts QR after the family confirmed the order",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Phone F&B: B starts QR after the family confirmed the order",
+      "kind": "http",
+      "text": "GET /api/stations/:id/printers 401"
+    },
+    {
+      "page": "desk",
+      "at": "Phone F&B: B starts QR after the family confirmed the order",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Phone F&B: B starts QR after the family confirmed the order",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "Phone F&B: B starts QR after the family confirmed the order",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Phone F&B: B starts QR after the family confirmed the order",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "Phone F&B: B starts QR after the family confirmed the order",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Phone F&B: B starts QR after the family confirmed the order",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "Phone F&B: B starts QR after the family confirmed the order",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Phone F&B: B starts QR after the family confirmed the order",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "Phone F&B: B starts QR after the family confirmed the order",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Ticket with no attempt: payment is introduced and paid while A is locked",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "Ticket with no attempt: payment is introduced and paid while A is locked",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Ticket with no attempt: payment is introduced and paid while A is locked",
+      "kind": "http",
+      "text": "GET /api/stations/:id/displays 403"
+    },
+    {
+      "page": "desk",
+      "at": "Ticket with no attempt: payment is introduced and paid while A is locked",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 403 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Ticket with no attempt: payment is introduced and paid while A is locked",
+      "kind": "http",
+      "text": "GET /api/me/station/link 409"
+    },
+    {
+      "page": "desk",
+      "at": "Ticket with no attempt: payment is introduced and paid while A is locked",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "desk",
+      "at": "No-attempt lock case: ring up using the now-stable inline family view",
+      "kind": "http",
+      "text": "GET /api/me/station/link 401"
+    },
+    {
+      "page": "desk",
+      "at": "No-attempt lock case: ring up using the now-stable inline family view",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "No-attempt lock case: ring up using the now-stable inline family view",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "No-attempt lock case: ring up using the now-stable inline family view",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "No-attempt lock case: ring up using the now-stable inline family view",
+      "kind": "http",
+      "text": "GET /api/branches/:id/occupancy 401"
+    },
+    {
+      "page": "desk",
+      "at": "No-attempt lock case: ring up using the now-stable inline family view",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "No-attempt lock case: ring up using the now-stable inline family view",
+      "kind": "http",
+      "text": "GET /api/branches/:id/occupancy 401"
+    },
+    {
+      "page": "phone",
+      "at": "No-attempt lock case: ring up using the now-stable inline family view",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "No-attempt lock case: ring up using the now-stable inline family view",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "No-attempt lock case: ring up using the now-stable inline family view",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "No-attempt lock case: B continues and restores the QR paid during the lock",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "phone",
+      "at": "No-attempt lock case: B continues and restores the QR paid during the lock",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "Read the paid-during-lock native result without assuming an optional receipt label",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "phone",
+      "at": "Read the paid-during-lock native result without assuming an optional receipt label",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "Read the paid-during-lock native result without assuming an optional receipt label",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "phone",
+      "at": "Read the paid-during-lock native result without assuming an optional receipt label",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "Record completed issuance for the QR introduced and paid during the lock",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "phone",
+      "at": "Record completed issuance for the QR introduced and paid during the lock",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "Record completed issuance for the QR introduced and paid during the lock",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "phone",
+      "at": "Record completed issuance for the QR introduced and paid during the lock",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "card",
+      "at": "Fresh simulated card terminal and a single waiting card sale",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "card",
+      "at": "Fresh simulated card terminal and a single waiting card sale",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "Fresh simulated card terminal and a single waiting card sale",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "phone",
+      "at": "Fresh simulated card terminal and a single waiting card sale",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "Fresh simulated card terminal and a single waiting card sale",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "phone",
+      "at": "Fresh simulated card terminal and a single waiting card sale",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "Fresh simulated card terminal and a single waiting card sale",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "phone",
+      "at": "Fresh simulated card terminal and a single waiting card sale",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "Fresh simulated card terminal and a single waiting card sale",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "phone",
+      "at": "Fresh simulated card terminal and a single waiting card sale",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "GET /api/stations/:id/displays 401"
+    },
+    {
+      "page": "desk",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "card",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "GET /api/stations/:id/displays 401"
+    },
+    {
+      "page": "card",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "card",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "card",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "phone",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "card",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "card",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "phone",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "card",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "card",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "phone",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "card",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "card",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "phone",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "card",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "card",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "phone",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "card",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "card",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "phone",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "card",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "card",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "phone",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "card",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "card",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "phone",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "card",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "card",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "phone",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "card",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "card",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "phone",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "card",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "card",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "phone",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "card",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "card",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "phone",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "card",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "card",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "phone",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "card",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "card",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "phone",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "card",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "card",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "phone",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "card",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "card",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "phone",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "card",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "card",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "phone",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "Exact fixture census while the corrected-cart CI failure is reproduced",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "card",
+      "at": "Clean only the exact old-source simulator sales before final-source proof",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "card",
+      "at": "Clean only the exact old-source simulator sales before final-source proof",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "Clean only the exact old-source simulator sales before final-source proof",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "phone",
+      "at": "Clean only the exact old-source simulator sales before final-source proof",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Clean only the exact old-source simulator sales before final-source proof",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "Clean only the exact old-source simulator sales before final-source proof",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "card",
+      "at": "Clean only the exact old-source simulator sales before final-source proof",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "card",
+      "at": "Clean only the exact old-source simulator sales before final-source proof",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "Clean only the exact old-source simulator sales before final-source proof",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "phone",
+      "at": "Clean only the exact old-source simulator sales before final-source proof",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Clean only the exact old-source simulator sales before final-source proof",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "Clean only the exact old-source simulator sales before final-source proof",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "card",
+      "at": "Clean only the exact old-source simulator sales before final-source proof",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "card",
+      "at": "Clean only the exact old-source simulator sales before final-source proof",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "Clean only the exact old-source simulator sales before final-source proof",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "phone",
+      "at": "Clean only the exact old-source simulator sales before final-source proof",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Clean only the exact old-source simulator sales before final-source proof",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "Clean only the exact old-source simulator sales before final-source proof",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "card",
+      "at": "Clean only the exact old-source simulator sales before final-source proof",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "card",
+      "at": "Clean only the exact old-source simulator sales before final-source proof",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "Clean only the exact old-source simulator sales before final-source proof",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "phone",
+      "at": "Clean only the exact old-source simulator sales before final-source proof",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Clean only the exact old-source simulator sales before final-source proof",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "Clean only the exact old-source simulator sales before final-source proof",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "card",
+      "at": "Clean only the exact old-source simulator sales before final-source proof",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "card",
+      "at": "Clean only the exact old-source simulator sales before final-source proof",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "Clean only the exact old-source simulator sales before final-source proof",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "phone",
+      "at": "Clean only the exact old-source simulator sales before final-source proof",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Clean only the exact old-source simulator sales before final-source proof",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "desk",
+      "at": "Clean only the exact old-source simulator sales before final-source proof",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "card",
+      "at": "Clean only the exact old-source simulator sales before final-source proof",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "card",
+      "at": "Clean only the exact old-source simulator sales before final-source proof",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "desk",
+      "at": "Retire old-source stations and close browser sessions after exact money cleanup",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "desk",
+      "at": "Retire old-source stations and close browser sessions after exact money cleanup",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "Retire old-source stations and close browser sessions after exact money cleanup",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "phone",
+      "at": "Retire old-source stations and close browser sessions after exact money cleanup",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "card",
+      "at": "Retire old-source stations and close browser sessions after exact money cleanup",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "card",
+      "at": "Retire old-source stations and close browser sessions after exact money cleanup",
       "kind": "console.error",
       "text": "Failed to load resource: the server responded with a status of 401 ()"
     }
@@ -789,6 +3022,379 @@
       "method": "GET",
       "path": "/sales",
       "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/accounts/:id/sessions/revoke",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/accounts/:id/sessions/revoke",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/webhooks/2c2p/simulator",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/accounts/:id/sessions/revoke",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/accounts/:id/sessions/revoke",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/webhooks/2c2p/simulator",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/credentials/:id/revoke",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/accounts/:id/sessions/revoke",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/payments/attempts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/webhooks/2c2p/simulator",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/payments/terminal-simulator",
+      "status": 409,
+      "errorCode": "NO_SIMULATOR_FOR_DEVICE"
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/accounts/:id/sessions/revoke",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/accounts/:id/sessions/revoke",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/sales/:id/void",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
     }
   ],
   "revokes": [
@@ -812,10 +3418,178 @@
       "bangkok": "20:08:16",
       "sessionsEnded": 1,
       "phase": "End synthetic staff sessions while the source CI selector failure is reproduced"
+    },
+    {
+      "who": "B",
+      "at": "2026-11-13T13:39:33.650Z",
+      "bangkok": "20:39:33",
+      "sessionsEnded": 1,
+      "phase": "F&B: A continues B's waiting QR, cancels it, and records Cash on that same sale"
+    },
+    {
+      "who": "A",
+      "at": "2026-11-13T13:42:21.157Z",
+      "bangkok": "20:42:21",
+      "sessionsEnded": 1,
+      "phase": "Shop: select the actual 65-baht product, then prove QR handover"
+    },
+    {
+      "who": "A",
+      "at": "2026-11-13T13:43:50.985Z",
+      "bangkok": "20:43:50",
+      "sessionsEnded": 1,
+      "phase": "Phone ticket: B continues A's QR, cancels it and takes Cash once"
+    },
+    {
+      "who": "B",
+      "at": "2026-11-13T13:53:52.698Z",
+      "bangkok": "20:53:52",
+      "sessionsEnded": 2,
+      "phase": "Phone F&B: B starts QR after the family confirmed the order"
+    },
+    {
+      "who": "A",
+      "at": "2026-11-13T14:00:35.610Z",
+      "bangkok": "21:00:35",
+      "sessionsEnded": 2,
+      "phase": "No-attempt lock case: ring up using the now-stable inline family view"
+    },
+    {
+      "who": "A",
+      "at": "2026-11-13T14:09:36.362Z",
+      "bangkok": "21:09:36",
+      "sessionsEnded": 1,
+      "phase": "Exact fixture census while the corrected-cart CI failure is reproduced"
+    },
+    {
+      "who": "B",
+      "at": "2026-11-13T14:09:36.446Z",
+      "bangkok": "21:09:36",
+      "sessionsEnded": 1,
+      "phase": "Exact fixture census while the corrected-cart CI failure is reproduced"
     }
   ],
   "restarts": [],
-  "cleanup": {},
+  "cleanup": {
+    "displays": [
+      {
+        "label": "desk",
+        "id": "01a1d4fd-6e09-7ff8-a64d-8c5f09837f53",
+        "revoked": true
+      }
+    ],
+    "oldSourceManager": {
+      "signOut": 200,
+      "meAfter": 401
+    },
+    "oldSourceSales": [
+      {
+        "id": "01a1d535-cce5-7882-9432-2538e7af493f",
+        "stationId": "01a1d4fc-d6ed-72df-af7b-7d57916ccf58",
+        "status": "refunded",
+        "refundStatus": "refunded",
+        "refundedSatang": 104000
+      },
+      {
+        "id": "01a1d525-17eb-7418-bc46-f7ef87e38db4",
+        "stationId": "01a1d4fc-d6ed-72df-af7b-7d57916ccf58",
+        "status": "refunded",
+        "refundStatus": "refunded",
+        "refundedSatang": 6500
+      },
+      {
+        "id": "01a1d522-20a9-7161-a0b9-2f5cf6e958f8",
+        "stationId": "01a1d4fc-d6ed-72df-af7b-7d57916ccf58",
+        "status": "refunded",
+        "refundStatus": "refunded",
+        "refundedSatang": 17500
+      },
+      {
+        "id": "01a1d500-2c19-7232-90d4-4d18ba6d4aa3",
+        "stationId": "01a1d4fc-d6ed-72df-af7b-7d57916ccf58",
+        "status": "refunded",
+        "refundStatus": "refunded",
+        "refundedSatang": 104000
+      },
+      {
+        "id": "01a1d52f-a657-763e-b86b-fd49560a4488",
+        "stationId": "01a1d4fc-de19-71bb-967b-9b069f0c6e89",
+        "status": "refunded",
+        "refundStatus": "refunded",
+        "refundedSatang": 17500
+      },
+      {
+        "id": "01a1d526-2a77-70ff-a672-e72ca7917cbf",
+        "stationId": "01a1d4fc-de19-71bb-967b-9b069f0c6e89",
+        "status": "refunded",
+        "refundStatus": "refunded",
+        "refundedSatang": 104000
+      },
+      {
+        "id": "01a1d53a-ce4b-704f-b9f8-6b7c990e2394",
+        "stationId": "01a1d53a-ac20-73cf-b851-591d91d64f68",
+        "status": "voided"
+      }
+    ],
+    "signOuts": {
+      "desk@2026-11-13T14:32:20.380Z": {
+        "signOut": 200,
+        "meAfter": 401
+      },
+      "phone@2026-11-13T14:32:20.642Z": {
+        "signOut": 200,
+        "meAfter": 401
+      },
+      "card@2026-11-13T14:32:20.831Z": {
+        "signOut": 200,
+        "meAfter": 401
+      }
+    },
+    "oldSourceFixtures": {
+      "stations": [
+        {
+          "id": "01a1d4fc-d6ed-72df-af7b-7d57916ccf58",
+          "name": "ZZ TEST SCRUM-982 desk till 1794574701707",
+          "archived": true,
+          "devices": 0
+        },
+        {
+          "id": "01a1d4fc-de19-71bb-967b-9b069f0c6e89",
+          "name": "ZZ TEST SCRUM-982 phone till 1794574703544",
+          "archived": true,
+          "devices": 0
+        },
+        {
+          "id": "01a1d53a-ac20-73cf-b851-591d91d64f68",
+          "name": "ZZ TEST SCRUM-982 card till 1794578753922",
+          "archived": true,
+          "devices": 0
+        }
+      ],
+      "sessions": [
+        {
+          "label": "desk",
+          "signOut": 200,
+          "meAfter": 401
+        },
+        {
+          "label": "phone",
+          "signOut": 200,
+          "meAfter": 401
+        },
+        {
+          "label": "card",
+          "signOut": 200,
+          "meAfter": 401
+        }
+      ]
+    },
+    "retainedForFinalSource": {
+      "deviceId": "7c5abeba-c737-4c6b-9bff-8d97ed4bff42",
+      "label": "ZZ TEST SCRUM-982 card terminal 1794578753622",
+      "reason": "Own simulated terminal retained unassigned for final-source proof; no attempt was started"
+    }
+  },
   "checks": {
     "walkInNumbersCheckedUnused": 8,
     "first": "0898988210",

@@ -11,11 +11,12 @@ describe('SCRUM-982 adversarial review: a kept charge cannot become another orde
   for (const screen of screens) {
     const source = readFileSync(resolve(root, 'apps/pos/src', screen), 'utf8');
     it(`HIGH: ${screen} supplies its existing sale to payment recovery before collection`, () => {
-      expect(source).toMatch(/resumeSaleId: (?:resumed\?\.saleId \?\? )?saleWriter\.committed\?\.id/);
-      expect(source).toContain('if (existing) return { ok: true, written: true, saleId: existing.id, sale: existing, replay: true };');
+      expect(source).toMatch(/resumeSaleId: (?:resumed\?\.saleId \?\? )?recordedPayments\.resumeSaleId\(saleWriter\.committed, paymentScope\)/);
+      expect(source).toMatch(/recordedPayments\.replay\(saleWriter\.committed, (?:scope|paymentScope)\)/);
+      expect(source).toMatch(/recordedPayments\.record\((?:scope|paymentScope), \(\) => saleWriter\.commit\(/);
     });
     it(`HIGH: ${screen} keeps late preparation behind scope and lock guards`, () => {
-      const start = source.indexOf('const existing = saleWriter.committed;');
+      const start = source.indexOf('const existing = recordedPayments.replay(');
       expect(start).toBeGreaterThan(0);
       expect(source.slice(start - 450, start)).toContain('staffLocked.current');
       expect(source.slice(start - 450, start)).toContain('epoch');

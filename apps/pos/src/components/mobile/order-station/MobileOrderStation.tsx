@@ -1,3 +1,4 @@
+import { useRecordedPaymentScope } from '@/lib/recordedPaymentScope';
 import { paymentOrderIdentity } from '@/lib/paymentScope';
 import { takeCorrectedOrder } from '@/lib/correctedOrder';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -79,6 +80,7 @@ export function MobileOrderStation() {
   const [, navigate] = useLocation();
   const { menuItems } = useCatalogStore();
   const saleWriter = useSaleWriter();
+  const recordedPayments = useRecordedPaymentScope();
   const orderEpochRef = useRef(0);
   const completedSaleRef = useRef<string | null>(null);
   const paymentSnapshotRef = useRef<{ epoch: number; scope: string; prepare: () => Promise<SaleWriteOutcome>; complete: (sale: ApiSale, settlements: readonly PaymentSettlement[]) => void } | null>(null);
@@ -377,8 +379,8 @@ export function MobileOrderStation() {
   const recordOrderOnPlatform = async (epoch: number): Promise<SaleWriteOutcome> => {
     if (staffLocked.current || orderEpochRef.current !== epoch || !paymentContextCurrent()) return { ok: false, saleId: '', message: 'This order is locked or changed before it could be saved.', retryable: false };
     // A rung-up order stays this sale even when the operator changes.
-    const existing = saleWriter.committed;
-    if (existing) return { ok: true, written: true, saleId: existing.id, sale: existing, replay: true };
+    const existing = recordedPayments.replay(saleWriter.committed, paymentScope);
+    if (existing) return existing;
     const refused = (message: string): SaleWriteOutcome => ({ ok: false, saleId: saleWriter.committed?.id ?? '', message, retryable: false });
     if (!station) {
       promptSetupStation(navigate);
@@ -392,7 +394,7 @@ export function MobileOrderStation() {
     const cartPayload = buildItemCartPayload(displayLines, manualDiscounts, orderIdentity, total, {
       mode: orderQuote.quote.pricingMode, modeReason: orderQuote.quote.pricingModeReason,
     });
-    const outcome = await saleWriter.commit({ cart: cartPayload, note: orderNote.trim() || undefined, finalise: false });
+    const outcome = await recordedPayments.record(paymentScope, () => saleWriter.commit({ cart: cartPayload, note: orderNote.trim() || undefined, finalise: false }));
     if ((orderEpochRef.current !== epoch || !paymentContextCurrent()) && outcome.ok && outcome.written) {
       toast({ title: 'An order was saved for the previous guest', description: `Order ${outcome.sale.receiptNumber ?? outcome.saleId} is recorded; nothing was printed for it. Find it in the sale list.`, variant: 'destructive' });
     }
@@ -442,7 +444,7 @@ export function MobileOrderStation() {
     paymentSnapshotRef.current = { epoch: paymentEpoch, scope: paymentScope, prepare: () => recordOrderOnPlatform(paymentEpoch), complete: handleConfirmPayment };
   }
   const paymentStage = usePaymentStage({
-    resumeSaleId: saleWriter.committed?.id,
+    resumeSaleId: recordedPayments.resumeSaleId(saleWriter.committed, paymentScope),
     scope: paymentScope, isCurrentScope: (scope) => !staffLocked.current && scope === paymentScopeRef.current.scope && paymentScopeRef.current.epoch === orderEpochRef.current,
     active: stage === 'payment', paused: locked, totalSatang: Math.round(total * 100),
     prepareSale: () => paymentSnapshotRef.current?.prepare() ?? recordOrderOnPlatform(paymentEpoch), finaliseSale: saleWriter.finalise,

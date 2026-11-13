@@ -1,3 +1,4 @@
+import { useRecordedPaymentScope } from '@/lib/recordedPaymentScope';
 import { DISPLAY_HANDOVER_WAIT } from '@/lib/displaySession';
 import { paymentOrderIdentity } from '@/lib/paymentScope';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -154,6 +155,7 @@ export default function OrderStation() {
    * that.
    */
   const saleWriter = useSaleWriter();
+  const recordedPayments = useRecordedPaymentScope();
   /** The sale the platform holds for the order on the confirmation screen. */
   const [platformSale, setPlatformSale] = useState<ApiSale | null>(null);
   /**
@@ -1199,8 +1201,8 @@ export default function OrderStation() {
   const recordOrderOnPlatform = async (epoch: number): Promise<SaleWriteOutcome> => {
     if (staffLocked.current || orderEpochRef.current !== epoch || !paymentContextCurrent()) return { ok: false, saleId: '', message: 'This order is locked or changed before it could be saved.', retryable: false };
     // A rung-up order stays this sale even when the operator changes.
-    const existing = saleWriter.committed;
-    if (existing) return { ok: true, written: true, saleId: existing.id, sale: existing, replay: true };
+    const existing = recordedPayments.replay(saleWriter.committed, paymentScope);
+    if (existing) return existing;
     const payload = commitPayload();
     const refused = (message: string): SaleWriteOutcome => ({ ok: false, saleId: saleWriter.committed?.id ?? '', message, retryable: false });
     if (staffLocked.current) return refused('Unlock this station before saving the order.');
@@ -1213,7 +1215,7 @@ export default function OrderStation() {
     if (!(await voucherReadyFor(input))) return refused('Recheck the voucher before taking payment.');
     if (staffLocked.current) return refused('Unlock this station before saving the order.');
     if (orderEpochRef.current !== epoch || !paymentContextCurrent()) return refused('This order or station changed before it could be saved.');
-    const outcome = await saleWriter.commit(input);
+    const outcome = await recordedPayments.record(paymentScope, () => saleWriter.commit(input));
     if (!staffLocked.current && (orderEpochRef.current !== epoch || !paymentContextCurrent()) && outcome.ok && outcome.written) {
       // This station moved on before the answer landed. The order IS on the
       // platform and nothing on this screen will ever mention it again, so it
@@ -1340,7 +1342,7 @@ export default function OrderStation() {
     paymentSnapshotRef.current = { epoch: paymentEpoch, scope: paymentScope, prepare: () => recordOrderOnPlatform(paymentEpoch), complete: completeOrder };
   }
   const paymentStage = usePaymentStage({
-    resumeSaleId: saleWriter.committed?.id,
+    resumeSaleId: recordedPayments.resumeSaleId(saleWriter.committed, paymentScope),
     scope: paymentScope,
     isCurrentScope: (scope) => !staffLocked.current && scope === paymentScopeRef.current.scope && paymentScopeRef.current.epoch === orderEpochRef.current,
     active: stage === 'payment',

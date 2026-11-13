@@ -462,7 +462,7 @@ describe('the counter till’s wiring', () => {
 
   it('writes nothing again for a resumed sale, reads its money, and shows the platform’s figures', () => {
     expect(till).toContain("if (locked || step !== 5 || resumed) return;");
-    expect(till).toContain('resumeSaleId: resumed?.saleId ?? saleWriter.committed?.id,');
+    expect(till).toContain('resumeSaleId: resumed?.saleId ?? recordedPayments.resumeSaleId(saleWriter.committed, paymentScope),');
     expect(till).toContain('const cart: CartQuoteState = resumed?.cart ?? liveCart;');
     expect(till).toContain('lines: resumed ? NO_LINES : lines,');
     expect(till).toMatch(/if \(resumed\) \{\s*const held = saleWriter\.committed;\s*if \(held && held\.id === resumed\.saleId\) \{\s*return \{ ok: true, written: true, sale: held, replay: true, saleId: held\.id \};/);

@@ -446,3 +446,1055 @@ S.phase='End synthetic staff sessions while the source CI selector failure is re
   "cartNotRungUp": true
  }
 }
+
+=== 2026-11-13T13:39:04.495Z Resume native F&B proof after the test-only CI repair
+S.phase='Resume native F&B proof after the test-only CI repair';
+const priorMasks=S.masks;S.masks=p=>[...priorMasks(p),p.locator('[data-testid="payment-qr"],[data-testid="payment-qr-waiting"]')];S.keepAlive(true);const p=S.till;await p.setViewportSize({width:1440,height:1100});S.assert.equal(await S.formSignIn(p,'B'),200);await S.afterSignIn(p);
+const continuation=p.getByRole('button',{name:'Continue this sale',exact:true});if(await continuation.isVisible())await continuation.click();await S.expect(p.getByRole('button',{name:/^Charge /})).toBeVisible();S.tenderWrites=[];
+await p.getByRole('button',{name:/^Charge /}).click();const pickup=p.getByRole('dialog',{name:'Pick-up Code',exact:true});await pickup.waitFor();for(const digit of '9821')await pickup.getByRole('button',{name:digit,exact:true}).click();await pickup.getByRole('button',{name:/^Continue to Payment/}).click();
+await p.getByRole('button',{name:/PromptPay/}).first().click();const started=p.waitForResponse(r=>new URL(r.url()).pathname==='/api/payments/attempts'&&r.request().method()==='POST');await p.getByRole('button',{name:'Show payment QR',exact:true}).click();const response=await started;S.assert.equal(response.status(),200);const {attempt}=await response.json();S.fnbSale=attempt.saleId;S.fnbAttempt=attempt.id;S.receipt.reads.fnbBefore={saleId:attempt.saleId,attemptId:attempt.id,status:attempt.status};S.save();await S.both('02a-fnb-B-waiting-qr.png','B has one F&B sale and its waiting QR; QR masked',p,S.d);return S.receipt.reads.fnbBefore;
+--> {
+ "ok": true,
+ "value": {
+  "saleId": "01a1d522-20a9-7161-a0b9-2f5cf6e958f8",
+  "attemptId": "01a1d522-248d-78bb-b769-0d5e1b92025f",
+  "status": "sent_to_terminal"
+ }
+}
+
+=== 2026-11-13T13:39:33.486Z F&B: A continues B's waiting QR, cancels it, and records Cash on that same sale
+S.phase='F&B: A continues B\'s waiting QR, cancels it, and records Cash on that same sale';const p=S.till;
+await S.revoke('B');await S.kick('desk');await S.waitEnded(p);S.assert.equal(await S.formSignIn(p,'A'),200);await p.getByRole('button',{name:'Continue this sale',exact:true}).click();await S.expect(p.getByRole('button',{name:'Cancel payment QR',exact:true})).toBeVisible({timeout:30000});await S.both('02b-fnb-A-continued-qr.png','A continues B\'s existing waiting QR before choosing any new collection',p,S.d);
+await p.getByRole('button',{name:'Cancel payment QR',exact:true}).click();await p.getByRole('button',{name:/^Cash /}).click();await p.getByRole('button',{name:'Record cash',exact:true}).click();await S.expect(p.getByRole('heading',{name:'Order Confirmed',exact:true})).toBeVisible({timeout:30000});
+const detail=await S.sale(S.fnbSale),sales=await S.stationSales();S.assert.equal(detail.sale.status,'finalised');S.assert.equal(sales.length,2);S.assert.equal(sales.find(x=>x.id===S.fnbSale).soldBy.accountId,S.acct.B.id);S.assert.equal(detail.attempts.filter(a=>a.status==='approved').length,1);S.assert.equal(detail.attempts.find(a=>a.status==='approved').method,'cash');S.assert.equal(detail.attempts.find(a=>a.id===S.fnbAttempt).status,'cancelled');
+const read={saleId:S.fnbSale,status:detail.sale.status,stationSaleCount:sales.length,soldBy:sales.find(x=>x.id===S.fnbSale).soldBy,attempts:detail.attempts.map(a=>({id:a.id,status:a.status,method:a.method,amountSatang:a.amountSatang})),label:(await S.bodyText(p)).match(/Total.*?(?:Cash|PromptPay).*?(?:Thank you|New Order)/)?.[0]??null};S.receipt.reads.fnbAfter=read;await S.both('02c-fnb-A-cash-same-sale.png','The QR is cancelled; one Cash payment closes the same F&B sale with B still its seller',p,S.d);S.point('desktop-fnb-cancelled-qr-cash','PASSED',['02a-fnb-B-waiting-qr.png','02b-fnb-A-continued-qr.png','02c-fnb-A-cash-same-sale.png'],read);return read;
+--> {
+ "ok": true,
+ "value": {
+  "saleId": "01a1d522-20a9-7161-a0b9-2f5cf6e958f8",
+  "status": "finalised",
+  "stationSaleCount": 2,
+  "soldBy": {
+   "accountId": "01a1d2f9-710f-7e6e-bb8e-d8f17975d09f",
+   "name": "ZZ TEST 964 B"
+  },
+  "attempts": [
+   {
+    "id": "01a1d522-248d-78bb-b769-0d5e1b92025f",
+    "status": "cancelled",
+    "method": "qr",
+    "amountSatang": 17500
+   },
+   {
+    "id": "01a1d522-9cf1-7ca0-b5b1-17a45b9677cd",
+    "status": "approved",
+    "method": "cash",
+    "amountSatang": 17500
+   }
+  ],
+  "label": "Total ฿175 Cash ฿175 Thank you"
+ }
+}
+
+=== 2026-11-13T13:40:32.942Z Shop: A starts one waiting QR, B continues it, QR closes the same sale
+S.phase='Shop: A starts one waiting QR, B continues it, QR closes the same sale';const p=S.till;S.tenderWrites=[];await p.locator('nav').getByRole('button',{name:'Shop',exact:true}).click();const guest=p.getByRole('button',{name:/continue as guest/i});if(await guest.isVisible())await guest.click();const search=p.getByPlaceholder(/Search/).first();if(await search.isVisible())await search.fill('balloon');await p.getByText(/balloon/i).first().click();const add=p.getByRole('dialog').getByRole('button',{name:/^Add/});if(await add.isVisible())await add.first().click();await p.getByRole('button',{name:/^Charge /}).click();await p.getByRole('button',{name:/PromptPay/}).first().click();const started=p.waitForResponse(r=>new URL(r.url()).pathname==='/api/payments/attempts'&&r.request().method()==='POST');await p.getByRole('button',{name:'Show payment QR',exact:true}).click();const response=await started;S.assert.equal(response.status(),200);const {attempt}=await response.json();S.shopSale=attempt.saleId;S.shopAttempt=attempt.id;S.receipt.reads.shopBefore={saleId:attempt.saleId,attemptId:attempt.id,status:attempt.status};S.save();await S.both('03a-shop-A-waiting-qr.png','A starts one Shop sale and its waiting simulator QR; QR masked',p,S.d);
+await S.revoke('A');await S.kick('desk');await S.waitEnded(p);S.assert.equal(await S.formSignIn(p,'B'),200);await p.getByRole('button',{name:'Continue this sale',exact:true}).click();await S.expect(p.getByRole('button',{name:'Cancel payment QR',exact:true})).toBeVisible({timeout:30000});await S.both('03b-shop-B-continued-qr.png','B reads A\'s existing Shop QR before any collection',p,S.d);S.tenderWrites=[];
+S.assert.equal((await S.call('POST','/webhooks/2c2p/simulator',{attemptId:S.shopAttempt,event:'paid'})).status,200);await S.expect(p.getByRole('heading',{name:'Sale Confirmed',exact:true})).toBeVisible({timeout:30000});await S.expect(p.getByText('Thai QR / PromptPay',{exact:true})).toBeVisible();const detail=await S.sale(S.shopSale),sales=await S.stationSales();S.assert.equal(sales.length,3);S.assert.equal(detail.sale.status,'finalised');S.assert.equal(sales.find(x=>x.id===S.shopSale).soldBy.accountId,S.acct.A.id);S.assert.equal(detail.attempts.filter(a=>a.status==='approved').length,1);S.assert.equal(detail.attempts.find(a=>a.status==='approved').method,'qr');S.assert.ok(S.tenderWrites.every(x=>x.method!=='cash'&&x.kind!=='cash'));
+const read={saleId:S.shopSale,status:detail.sale.status,stationSaleCount:sales.length,soldBy:sales.find(x=>x.id===S.shopSale).soldBy,attempts:detail.attempts.map(a=>({id:a.id,status:a.status,method:a.method,amountSatang:a.amountSatang})),writesAfterContinue:S.tenderWrites};S.receipt.reads.shopAfter=read;await S.both('03c-shop-B-paid-qr.png','The same Shop sale closes as Thai QR / PromptPay with A still its seller',p,S.d);S.point('desktop-shop-paid-qr','PASSED',['03a-shop-A-waiting-qr.png','03b-shop-B-continued-qr.png','03c-shop-B-paid-qr.png'],read);return read;
+--> {
+ "ok": false,
+ "error": "TimeoutError: locator.click: Timeout 30000ms exceeded. | Call log: | \u001b[2m  - waiting for getByRole('button', { name: /^Charge / })\u001b[22m | \u001b[2m    - locator resolved to <button disabled class=\"inline-flex items-center justify-center gap-2 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover-elevate active-elevate-2 bg-primary text-primary-foreground border border-primary-border min-h-10 rounded-md px-8 w-full h-16 text-xl font-bold mt-3\">Charge ฿0</button>\u001b[22m | \u001b[2m  - attempting click action\u001b[22m | \u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m | \u001b[2m      - element is not enabled\u001b[22m | \u001b[2m    - retrying click action\u001b[22m"
+}
+
+=== 2026-11-13T13:41:53.427Z Read the Shop picker before any charge was created
+S.phase='Read the Shop picker before any charge was created';const p=S.till;return {text:S.scrub(await S.bodyText(p)).slice(0,1800),dialogs:await p.getByRole('dialog').allInnerTexts(),buttons:(await p.getByRole('button').allTextContents()).map(S.flat).filter(x=>/balloon|Add|Size|Charge|Stock/i.test(x)).slice(-18),sales:(await S.stationSales()).map(x=>({id:x.id,status:x.status}))};
+--> {
+ "ok": true,
+ "value": {
+  "text": "Display connected: ZZ TEST SCRUM-982 display desk — follow the staff screen for this flow. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing ZZ TEST 964 A 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks All Tickets & passes Balloons Merchandise Workshop Helium Balloon (65) ฿65 Helium Balloon (75) ฿75 Helium Foil Balloon S ฿150 Helium Foil Balloon M ฿200 Helium Foil Balloon L ฿250 Guest sale No wristband — pay by cash or card Sale Tap shop items to add them to the sale. Apply Add manual discountCharge ฿0 English Let's shop! Staff are adding your items now…",
+  "dialogs": [],
+  "buttons": [
+   "Balloons",
+   "Helium Balloon (65)฿65",
+   "Helium Balloon (75)฿75",
+   "Helium Foil Balloon S฿150",
+   "Helium Foil Balloon M฿200",
+   "Helium Foil Balloon L฿250",
+   "Add manual discount",
+   "Charge ฿0"
+  ],
+  "sales": [
+   {
+    "id": "01a1d522-20a9-7161-a0b9-2f5cf6e958f8",
+    "status": "finalised"
+   },
+   {
+    "id": "01a1d500-2c19-7232-90d4-4d18ba6d4aa3",
+    "status": "finalised"
+   }
+  ]
+ }
+}
+
+=== 2026-11-13T13:42:20.308Z Shop: select the actual 65-baht product, then prove QR handover
+S.phase='Shop: select the actual 65-baht product, then prove QR handover';const p=S.till;await p.getByRole('button',{name:/^Helium Balloon \(65\)/}).click();await p.getByRole('button',{name:/^Charge /}).click();await p.getByRole('button',{name:/PromptPay/}).first().click();const started=p.waitForResponse(r=>new URL(r.url()).pathname==='/api/payments/attempts'&&r.request().method()==='POST');await p.getByRole('button',{name:'Show payment QR',exact:true}).click();const response=await started;S.assert.equal(response.status(),200);const {attempt}=await response.json();S.shopSale=attempt.saleId;S.shopAttempt=attempt.id;S.receipt.reads.shopBefore={saleId:attempt.saleId,attemptId:attempt.id,status:attempt.status};S.save();await S.both('03a-shop-A-waiting-qr.png','A starts one Shop sale and its waiting simulator QR; QR masked',p,S.d);
+await S.revoke('A');await S.kick('desk');await S.waitEnded(p);S.assert.equal(await S.formSignIn(p,'B'),200);await p.getByRole('button',{name:'Continue this sale',exact:true}).click();await S.expect(p.getByRole('button',{name:'Cancel payment QR',exact:true})).toBeVisible({timeout:30000});await S.both('03b-shop-B-continued-qr.png','B reads A\'s existing Shop QR before any collection',p,S.d);S.tenderWrites=[];
+S.assert.equal((await S.call('POST','/webhooks/2c2p/simulator',{attemptId:S.shopAttempt,event:'paid'})).status,200);await S.expect(p.getByRole('heading',{name:'Sale Confirmed',exact:true})).toBeVisible({timeout:30000});await S.expect(p.getByText('Thai QR / PromptPay',{exact:true})).toBeVisible();const detail=await S.sale(S.shopSale),sales=await S.stationSales();S.assert.equal(sales.length,3);S.assert.equal(detail.sale.status,'finalised');S.assert.equal(sales.find(x=>x.id===S.shopSale).soldBy.accountId,S.acct.A.id);S.assert.equal(detail.attempts.filter(a=>a.status==='approved').length,1);S.assert.equal(detail.attempts.find(a=>a.status==='approved').method,'qr');S.assert.ok(S.tenderWrites.every(x=>x.method!=='cash'&&x.kind!=='cash'));
+const read={saleId:S.shopSale,status:detail.sale.status,stationSaleCount:sales.length,soldBy:sales.find(x=>x.id===S.shopSale).soldBy,attempts:detail.attempts.map(a=>({id:a.id,status:a.status,method:a.method,amountSatang:a.amountSatang})),writesAfterContinue:S.tenderWrites};S.receipt.reads.shopAfter=read;await S.both('03c-shop-B-paid-qr.png','The same Shop sale closes as Thai QR / PromptPay with A still its seller',p,S.d);S.point('desktop-shop-paid-qr','PASSED',['03a-shop-A-waiting-qr.png','03b-shop-B-continued-qr.png','03c-shop-B-paid-qr.png'],read);return read;
+--> {
+ "ok": false,
+ "error": "Error: expect(locator).toBeVisible() failed |  | Locator: getByText('Thai QR / PromptPay', { exact: true }) | Expected: visible | Error: strict mode violation: getByText('Thai QR / PromptPay', { exact: true }) resolved to 2 elements: |     1) <span class=\"flex items-center gap-2\">…</span> aka getByText('Thai QR / PromptPay').first() |     2) <span class=\"flex items-center gap-2\">…</span> aka getByText('Thai QR / PromptPay').nth(1) | "
+}
+
+=== 2026-11-13T13:42:40.904Z Record the Shop result after qualifying the duplicated staff/display tender label
+S.phase='Record the Shop result after qualifying the duplicated staff/display tender label';const p=S.till;await S.expect(p.getByText('Thai QR / PromptPay',{exact:true}).first()).toBeVisible();const detail=await S.sale(S.shopSale),sales=await S.stationSales();S.assert.equal(sales.length,3);S.assert.equal(detail.sale.status,'finalised');S.assert.equal(sales.find(x=>x.id===S.shopSale).soldBy.accountId,S.acct.A.id);S.assert.equal(detail.attempts.filter(a=>a.status==='approved').length,1);S.assert.equal(detail.attempts.find(a=>a.status==='approved').method,'qr');S.assert.ok(S.tenderWrites.every(x=>x.method!=='cash'&&x.kind!=='cash'));const read={saleId:S.shopSale,status:detail.sale.status,stationSaleCount:sales.length,soldBy:sales.find(x=>x.id===S.shopSale).soldBy,attempts:detail.attempts.map(a=>({id:a.id,status:a.status,method:a.method,amountSatang:a.amountSatang})),writesAfterContinue:S.tenderWrites};S.receipt.reads.shopAfter=read;await S.both('03c-shop-B-paid-qr.png','The same Shop sale closes as Thai QR / PromptPay with A still its seller',p,S.d);S.point('desktop-shop-paid-qr','PASSED',['03a-shop-A-waiting-qr.png','03b-shop-B-continued-qr.png','03c-shop-B-paid-qr.png'],read);return read;
+--> {
+ "ok": true,
+ "value": {
+  "saleId": "01a1d525-17eb-7418-bc46-f7ef87e38db4",
+  "status": "finalised",
+  "stationSaleCount": 3,
+  "soldBy": {
+   "accountId": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+   "name": "ZZ TEST 964 A"
+  },
+  "attempts": [
+   {
+    "id": "01a1d525-1b17-7541-bad5-a34d83f1b8ef",
+    "status": "approved",
+    "method": "qr",
+    "amountSatang": 6500
+   }
+  ],
+  "writesAfterContinue": [
+   {
+    "path": "/api/sales/:id/finalise",
+    "method": "none",
+    "kind": "other"
+   }
+  ]
+ }
+}
+
+=== 2026-11-13T13:43:25.366Z Phone ticket: A creates a waiting QR at the fresh phone till
+S.phase='Phone ticket: A creates a waiting QR at the fresh phone till';const p=await S.openTill('phone',{width:390,height:844});S.phone=p;S.assert.equal(await S.formSignIn(p,'A'),200);await S.afterSignIn(p,S.phoneStation);await S.expect(p.getByRole('heading',{name:'Tourist',exact:true}).first()).toBeVisible();await p.getByRole('heading',{name:'Tourist',exact:true}).first().click();await p.getByText('1 Hour Play',{exact:true}).first().click();await S.quantity(p,'Kids',1);await S.quantity(p,'Adults',1);await p.getByRole('button',{name:'Continue',exact:true}).first().click();await p.getByRole('button',{name:'Customer is ready',exact:true}).click();const n=S.nextNumber();await S.keypad(p,n.slice(1));await p.getByTestId('input-done').click();const written=p.waitForResponse(r=>new URL(r.url()).pathname==='/api/sales'&&r.request().method()==='POST');await p.getByRole('button',{name:/^Pay /}).click();S.assert.equal((await written).status(),200);await p.getByRole('heading',{name:'PromptPay',exact:true}).first().click();const started=p.waitForResponse(r=>new URL(r.url()).pathname==='/api/payments/attempts'&&r.request().method()==='POST');await p.getByRole('button',{name:'Show payment QR',exact:true}).click();const response=await started;S.assert.equal(response.status(),200);const {attempt}=await response.json();S.phoneTicketSale=attempt.saleId;S.phoneTicketAttempt=attempt.id;S.receipt.reads.phoneTicketBefore={saleId:attempt.saleId,attemptId:attempt.id,status:attempt.status,viewport:await p.evaluate(()=>({width:innerWidth,height:innerHeight,touch:navigator.maxTouchPoints}))};S.save();await S.shot(p,'04a-phone-ticket-A-waiting-qr.png');return S.receipt.reads.phoneTicketBefore;
+--> {
+ "ok": true,
+ "value": {
+  "saleId": "01a1d526-2a77-70ff-a672-e72ca7917cbf",
+  "attemptId": "01a1d526-2ea9-777a-8595-76c90c95bdb2",
+  "status": "sent_to_terminal",
+  "viewport": {
+   "width": 390,
+   "height": 844,
+   "touch": 1
+  }
+ }
+}
+
+=== 2026-11-13T13:43:50.888Z Phone ticket: B continues A's QR, cancels it and takes Cash once
+S.phase='Phone ticket: B continues A\'s QR, cancels it and takes Cash once';const p=S.phone;await S.revoke('A');await S.kick('phone');await S.waitEnded(p);S.assert.equal(await S.formSignIn(p,'B'),200);await p.getByRole('button',{name:'Continue this sale',exact:true}).click();await S.expect(p.getByRole('button',{name:'Cancel payment QR',exact:true})).toBeVisible({timeout:30000});await S.shot(p,'04b-phone-ticket-B-continued-qr.png');await p.getByRole('button',{name:'Cancel payment QR',exact:true}).click();await p.getByRole('heading',{name:'Cash',exact:true}).first().click();await p.getByRole('button',{name:'Confirm Payment Received',exact:true}).click();await S.expect(p.getByText('Payment Successful',{exact:true})).toBeVisible({timeout:30000});const detail=await S.sale(S.phoneTicketSale),sales=await S.stationSales(S.phoneStation);S.assert.equal(sales.length,1);S.assert.equal(detail.sale.status,'finalised');S.assert.equal(sales[0].soldBy.accountId,S.acct.A.id);S.assert.equal(detail.attempts.find(a=>a.id===S.phoneTicketAttempt).status,'cancelled');S.assert.equal(detail.attempts.filter(a=>a.status==='approved').length,1);S.assert.equal(detail.attempts.find(a=>a.status==='approved').method,'cash');const read={saleId:S.phoneTicketSale,status:detail.sale.status,stationSaleCount:sales.length,soldBy:sales[0].soldBy,attempts:detail.attempts.map(a=>({id:a.id,status:a.status,method:a.method,amountSatang:a.amountSatang}))};S.receipt.reads.phoneTicketAfter=read;await S.shot(p,'04c-phone-ticket-B-cash-same-sale.png');S.point('phone-ticket-cancelled-qr-cash','PASSED',['04a-phone-ticket-A-waiting-qr.png','04b-phone-ticket-B-continued-qr.png','04c-phone-ticket-B-cash-same-sale.png'],read);return read;
+--> {
+ "ok": false,
+ "error": "TimeoutError: locator.click: Timeout 30000ms exceeded. | Call log: | \u001b[2m  - waiting for getByRole('button', { name: 'Cancel payment QR', exact: true })\u001b[22m | \u001b[2m    - locator resolved to <button data-testid=\"payment-cancel-qr\" class=\"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover-elevate active-elevate-2 border [border-color:var(--button-outline)] shadow-xs active:shadow-none min-h-9 px-4 py-2\">Cancel payment QR</button>\u001b[22m | \u001b[2m  - attempting click action\u001b[22m | \u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m | \u001b[2m    - element is visible, enabled and stable\u001b[22m | \u001b[2m    - scrolling into view if needed\u001b[22m"
+}
+
+=== 2026-11-13T13:45:19.064Z Read phone waiting-QR control geometry after scroll-to-click did not settle
+S.phase='Read phone waiting-QR control geometry after scroll-to-click did not settle';return await S.phone.evaluate(()=>{const b=document.querySelector('[data-testid="payment-cancel-qr"]');const panel=document.querySelector('[data-testid="payment-step"]');const r=e=>e?{tag:e.tagName,cls:String(e.className).slice(0,100),box:{x:e.getBoundingClientRect().x,y:e.getBoundingClientRect().y,width:e.getBoundingClientRect().width,height:e.getBoundingClientRect().height},height:e.clientHeight,scroll:e.scrollHeight,top:e.scrollTop,overflow:getComputedStyle(e).overflowY}:null;return {button:r(b),panel:r(panel),parents:b?[...function*(e){while(e){yield e;e=e.parentElement;}}(b)].map(r):[],viewport:{w:innerWidth,h:innerHeight},modals:[...document.querySelectorAll('[role="dialog"]')].map(x=>x.innerText.slice(0,100))};});
+--> {
+ "ok": true,
+ "value": {
+  "button": {
+   "tag": "BUTTON",
+   "cls": "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium trans",
+   "box": {
+    "x": 16,
+    "y": 732,
+    "width": 166.203125,
+    "height": 38
+   },
+   "height": 36,
+   "scroll": 36,
+   "top": 0,
+   "overflow": "visible"
+  },
+  "panel": {
+   "tag": "DIV",
+   "cls": "@container flex flex-col min-w-0 w-full h-full overflow-y-auto animate-in fade-in slide-in-from-righ",
+   "box": {
+    "x": 16,
+    "y": 125,
+    "width": 358,
+    "height": 645
+   },
+   "height": 645,
+   "scroll": 1162,
+   "top": 237,
+   "overflow": "auto"
+  },
+  "parents": [
+   {
+    "tag": "BUTTON",
+    "cls": "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium trans",
+    "box": {
+     "x": 16,
+     "y": 732,
+     "width": 166.203125,
+     "height": 38
+    },
+    "height": 36,
+    "scroll": 36,
+    "top": 0,
+    "overflow": "visible"
+   },
+   {
+    "tag": "DIV",
+    "cls": "flex flex-wrap gap-3",
+    "box": {
+     "x": 16,
+     "y": 732,
+     "width": 358,
+     "height": 38
+    },
+    "height": 38,
+    "scroll": 38,
+    "top": 0,
+    "overflow": "visible"
+   },
+   {
+    "tag": "DIV",
+    "cls": "mt-6 space-y-4",
+    "box": {
+     "x": 16,
+     "y": 324,
+     "width": 358,
+     "height": 446
+    },
+    "height": 446,
+    "scroll": 446,
+    "top": 0,
+    "overflow": "visible"
+   },
+   {
+    "tag": "DIV",
+    "cls": "@container flex flex-col min-w-0 w-full h-full overflow-y-auto animate-in fade-in slide-in-from-righ",
+    "box": {
+     "x": 16,
+     "y": 125,
+     "width": 358,
+     "height": 645
+    },
+    "height": 645,
+    "scroll": 1162,
+    "top": 237,
+    "overflow": "auto"
+   },
+   {
+    "tag": "DIV",
+    "cls": "h-full overflow-y-auto p-4",
+    "box": {
+     "x": 0,
+     "y": 109,
+     "width": 390,
+     "height": 677
+    },
+    "height": 677,
+    "scroll": 731,
+    "top": 0,
+    "overflow": "auto"
+   },
+   {
+    "tag": "DIV",
+    "cls": "flex-1 min-h-0",
+    "box": {
+     "x": 0,
+     "y": 109,
+     "width": 390,
+     "height": 677
+    },
+    "height": 677,
+    "scroll": 677,
+    "top": 0,
+    "overflow": "visible"
+   },
+   {
+    "tag": "DIV",
+    "cls": "h-full min-w-0 flex flex-col bg-background overflow-hidden",
+    "box": {
+     "x": 0,
+     "y": 56,
+     "width": 390,
+     "height": 730
+    },
+    "height": 730,
+    "scroll": 730,
+    "top": 0,
+    "overflow": "hidden"
+   },
+   {
+    "tag": "DIV",
+    "cls": "flex-1 min-h-0 overflow-hidden",
+    "box": {
+     "x": 0,
+     "y": 56,
+     "width": 390,
+     "height": 730
+    },
+    "height": 730,
+    "scroll": 730,
+    "top": 0,
+    "overflow": "hidden"
+   },
+   {
+    "tag": "DIV",
+    "cls": "h-[100dvh] flex flex-col bg-background text-foreground overflow-hidden",
+    "box": {
+     "x": 0,
+     "y": 0,
+     "width": 390,
+     "height": 844
+    },
+    "height": 844,
+    "scroll": 844,
+    "top": 0,
+    "overflow": "hidden"
+   },
+   {
+    "tag": "DIV",
+    "cls": "contents",
+    "box": {
+     "x": 0,
+     "y": 0,
+     "width": 0,
+     "height": 0
+    },
+    "height": 0,
+    "scroll": 0,
+    "top": 0,
+    "overflow": "visible"
+   },
+   {
+    "tag": "DIV",
+    "cls": "",
+    "box": {
+     "x": 0,
+     "y": 0,
+     "width": 390,
+     "height": 844
+    },
+    "height": 844,
+    "scroll": 844,
+    "top": 0,
+    "overflow": "visible"
+   },
+   {
+    "tag": "BODY",
+    "cls": "",
+    "box": {
+     "x": 0,
+     "y": 0,
+     "width": 390,
+     "height": 844
+    },
+    "height": 844,
+    "scroll": 844,
+    "top": 0,
+    "overflow": "visible"
+   },
+   {
+    "tag": "HTML",
+    "cls": "light",
+    "box": {
+     "x": 0,
+     "y": 0,
+     "width": 390,
+     "height": 844
+    },
+    "height": 844,
+    "scroll": 844,
+    "top": 0,
+    "overflow": "visible"
+   }
+  ],
+  "viewport": {
+   "w": 390,
+   "h": 844
+  },
+  "modals": []
+ }
+}
+
+=== 2026-11-13T13:45:37.432Z Read the phone hand-to-family layer's native actions
+S.phase='Read the phone hand-to-family layer\'s native actions';return await S.phone.evaluate(()=>[...document.querySelectorAll('button')].filter(b=>{const r=b.getBoundingClientRect();return r.width>0&&r.height>0&&r.top>=0&&r.bottom<=innerHeight}).map(b=>({text:b.innerText.replace(/\s+/g,' ').trim(),aria:b.getAttribute('aria-label')})).filter(x=>x.text||x.aria));
+--> {
+ "ok": true,
+ "value": [
+  {
+   "text": "0 no gate",
+   "aria": "0 people in park. No gate is reporting at this branch."
+  },
+  {
+   "text": "",
+   "aria": "Theme and station setup"
+  },
+  {
+   "text": "",
+   "aria": "Lock screen"
+  },
+  {
+   "text": "",
+   "aria": "Back"
+  },
+  {
+   "text": "Cancel payment QR",
+   "aria": null
+  },
+  {
+   "text": "Show payment QR",
+   "aria": null
+  },
+  {
+   "text": "Customer is ready",
+   "aria": null
+  },
+  {
+   "text": "Cancel",
+   "aria": null
+  },
+  {
+   "text": "Tickets",
+   "aria": null
+  },
+  {
+   "text": "F&B",
+   "aria": null
+  },
+  {
+   "text": "Shop",
+   "aria": null
+  },
+  {
+   "text": "Check-in",
+   "aria": null
+  },
+  {
+   "text": "Events",
+   "aria": null
+  },
+  {
+   "text": "History",
+   "aria": null
+  },
+  {
+   "text": "Today",
+   "aria": null
+  },
+  {
+   "text": "7 Messages",
+   "aria": null
+  }
+ ]
+}
+
+=== 2026-11-13T13:45:46.271Z Phone ticket: follow the existing hand-to-family prompt
+S.phase='Phone ticket: follow the existing hand-to-family prompt';const p=S.phone;await p.getByRole('button',{name:'Customer is ready',exact:true}).click();return {text:S.scrub(await S.bodyText(p)).slice(-1200),buttons:(await p.getByRole('button').allTextContents()).map(S.flat).filter(x=>/Staff|Back|Done|ready|Return/i.test(x))};
+--> {
+ "ok": true,
+ "value": {
+  "text": "0 no gate Oto Play Park, Central Floresta ZZ TEST 964 B Payment Tourist Amount Due ฿1040 Select Payment Method Cash Card PromptPay Payment requested simulator · ฿1040.00 ฿1040.00 · 17:46 Wait for the payment answer. An expired QR does not confirm that no money was taken. Cancel payment QR Hold sale A payment is in progress — finish or cancel it first. Back Show payment QR Show payment QR O Oto Play Park Your Order English 1 Hour Play ฿1040 Kids1 × ฿690 ฿690 Adults1 × ฿350 ฿350 VAT included ฿68.04 Total ฿1040 SCAN TO PAY Scan to Pay ฿1040 QR time remaining 17:46 Open your banking app and scan to complete the payment. Waiting for payment confirmation… Done — return phone to staff Tickets F&B Shop Check-in Events History Today 7 Messages",
+  "buttons": [
+   "Back",
+   "Done — return phone to staff"
+  ]
+ }
+}
+
+=== 2026-11-13T13:46:08.428Z Phone ticket: return from family QR view to staff, then cancel QR and record Cash
+S.phase='Phone ticket: return from family QR view to staff, then cancel QR and record Cash';const p=S.phone;await p.getByRole('button',{name:/^Done.*return phone to staff/i}).click();await S.expect(p.getByRole('button',{name:'Cancel payment QR',exact:true})).toBeVisible();await S.shot(p,'04d-phone-ticket-B-continued-staff-qr.png');await p.getByRole('button',{name:'Cancel payment QR',exact:true}).click();await p.getByRole('heading',{name:'Cash',exact:true}).first().click();await p.getByRole('button',{name:'Confirm Payment Received',exact:true}).click();await S.expect(p.getByText('Payment Successful',{exact:true})).toBeVisible({timeout:30000});const detail=await S.sale(S.phoneTicketSale),sales=await S.stationSales(S.phoneStation);S.assert.equal(sales.length,1);S.assert.equal(detail.sale.status,'finalised');S.assert.equal(sales[0].soldBy.accountId,S.acct.A.id);S.assert.equal(detail.attempts.find(a=>a.id===S.phoneTicketAttempt).status,'cancelled');S.assert.equal(detail.attempts.filter(a=>a.status==='approved').length,1);S.assert.equal(detail.attempts.find(a=>a.status==='approved').method,'cash');const read={saleId:S.phoneTicketSale,status:detail.sale.status,stationSaleCount:sales.length,soldBy:sales[0].soldBy,attempts:detail.attempts.map(a=>({id:a.id,status:a.status,method:a.method,amountSatang:a.amountSatang})),phoneFlow:'Continue retained the existing hand-to-family prompt; Customer is ready and Done returned to the staff QR controls'};S.receipt.reads.phoneTicketAfter=read;await S.shot(p,'04e-phone-ticket-B-cash-same-sale.png');S.point('phone-ticket-cancelled-qr-cash','PASSED',['04d-phone-ticket-B-continued-staff-qr.png','04e-phone-ticket-B-cash-same-sale.png'],read);return read;
+--> {
+ "ok": false,
+ "error": "TimeoutError: locator.click: Timeout 30000ms exceeded. | Call log: | \u001b[2m  - waiting for getByRole('button', { name: 'Confirm Payment Received', exact: true })\u001b[22m | \u001b[2m    - locator resolved to <button disabled class=\"inline-flex items-center justify-center gap-2 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover-elevate active-elevate-2 bg-primary text-primary-foreground border border-primary-border rounded-md min-w-0 sm:flex-1 min-h-16 h-auto py-3 px-4 @xl:px-8 whitespace-normal text-lg @xl:text-xl font-bold\">Confirm Payment Received</button>\u001b[22m | \u001b[2m  - attempting click action\u001b[22m | \u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m | \u001b[2m      - element is not enabled\u001b[22m | \u001b[2m    - retrying click action\u001b[22m"
+}
+
+=== 2026-11-13T13:47:56.382Z Phone ticket: wait for cancelled QR before selecting Cash
+S.phase='Phone ticket: wait for cancelled QR before selecting Cash';const p=S.phone;const before=await S.sale(S.phoneTicketSale);S.assert.equal(before.attempts.find(a=>a.id===S.phoneTicketAttempt).status,'cancelled');await S.expect(p.getByRole('button',{name:'Cancel payment QR',exact:true})).toHaveCount(0);await p.getByRole('heading',{name:'Cash',exact:true}).first().click();await S.expect(p.getByRole('button',{name:'Confirm Payment Received',exact:true})).toBeEnabled();await p.getByRole('button',{name:'Confirm Payment Received',exact:true}).click();await S.expect(p.getByText('Payment Successful',{exact:true})).toBeVisible({timeout:30000});const detail=await S.sale(S.phoneTicketSale),sales=await S.stationSales(S.phoneStation);S.assert.equal(sales.length,1);S.assert.equal(detail.sale.status,'finalised');S.assert.equal(sales[0].soldBy.accountId,S.acct.A.id);S.assert.equal(detail.attempts.filter(a=>a.status==='approved').length,1);S.assert.equal(detail.attempts.find(a=>a.status==='approved').method,'cash');const read={saleId:S.phoneTicketSale,status:detail.sale.status,stationSaleCount:sales.length,soldBy:sales[0].soldBy,attempts:detail.attempts.map(a=>({id:a.id,status:a.status,method:a.method,amountSatang:a.amountSatang})),phoneFlow:'Continue retained the hand-to-family prompt; Customer is ready and Done returned to staff; Cash was selected after QR cancellation completed'};S.receipt.reads.phoneTicketAfter=read;await S.shot(p,'04e-phone-ticket-B-cash-same-sale.png');S.point('phone-ticket-cancelled-qr-cash','PASSED',['04d-phone-ticket-B-continued-staff-qr.png','04e-phone-ticket-B-cash-same-sale.png'],read);return read;
+--> {
+ "ok": true,
+ "value": {
+  "saleId": "01a1d526-2a77-70ff-a672-e72ca7917cbf",
+  "status": "finalised",
+  "stationSaleCount": 1,
+  "soldBy": {
+   "accountId": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+   "name": "ZZ TEST 964 A"
+  },
+  "attempts": [
+   {
+    "id": "01a1d526-2ea9-777a-8595-76c90c95bdb2",
+    "status": "cancelled",
+    "method": "qr",
+    "amountSatang": 104000
+   },
+   {
+    "id": "01a1d52a-3b87-7403-9a69-130f9078fd4c",
+    "status": "approved",
+    "method": "cash",
+    "amountSatang": 104000
+   }
+  ],
+  "phoneFlow": "Continue retained the hand-to-family prompt; Customer is ready and Done returned to staff; Cash was selected after QR cancellation completed"
+ }
+}
+
+=== 2026-11-13T13:48:21.329Z Read phone actions after the cash confirmation
+S.phase='Read phone actions after the cash confirmation';return {buttons:(await S.phone.getByRole('button').allTextContents()).map(S.flat).filter(x=>/New|Start|Done|Staff|F&B|ready/i.test(x))};
+--> {
+ "ok": true,
+ "value": {
+  "buttons": [
+   "Start New Sale",
+   "F&B"
+  ]
+ }
+}
+
+=== 2026-11-13T13:49:25.399Z Phone F&B: B starts one waiting QR
+S.phase='Phone F&B: B starts one waiting QR';const p=S.phone;await S.shot(p,'04f-phone-ticket-B-cash-clean.png');S.receipt.points['phone-ticket-cancelled-qr-cash'].pictures=['04d-phone-ticket-B-continued-staff-qr.png','04f-phone-ticket-B-cash-clean.png'];await p.getByRole('button',{name:'F&B',exact:true}).last().click();const guest=p.getByRole('button',{name:/continue as guest/i});if(await guest.isVisible())await guest.click();const search=p.getByPlaceholder(/Search/).first();if(await search.isVisible())await search.fill('French');await p.getByText(/^French fries$/i).first().click();const add=p.getByRole('dialog').getByRole('button',{name:/^Add/});if(await add.isVisible())await add.first().click();const cart=p.getByRole('button',{name:/1 item/});if(await cart.isVisible())await cart.click();await p.getByRole('button',{name:/^Charge /}).click();const pickup=p.getByRole('dialog',{name:'Pick-up Code',exact:true});await pickup.waitFor();for(const digit of '9822')await pickup.getByRole('button',{name:digit,exact:true}).click();await pickup.getByRole('button',{name:/^Continue to Payment/}).click();await p.getByRole('button',{name:/PromptPay/}).first().click();const started=p.waitForResponse(r=>new URL(r.url()).pathname==='/api/payments/attempts'&&r.request().method()==='POST');await p.getByRole('button',{name:'Show payment QR',exact:true}).click();const response=await started;S.assert.equal(response.status(),200);const {attempt}=await response.json();S.phoneFnbSale=attempt.saleId;S.phoneFnbAttempt=attempt.id;S.receipt.reads.phoneFnbBefore={saleId:attempt.saleId,attemptId:attempt.id,status:attempt.status};S.save();await S.shot(p,'05a-phone-fnb-B-waiting-qr.png');return S.receipt.reads.phoneFnbBefore;
+--> {
+ "ok": false,
+ "error": "TimeoutError: locator.click: Timeout 30000ms exceeded. | Call log: | \u001b[2m  - waiting for getByRole('button', { name: /^Charge / })\u001b[22m | "
+}
+
+=== 2026-11-13T13:51:08.894Z Read the phone F&B cart action before charging
+S.phase='Read the phone F&B cart action before charging';return {text:S.scrub(await S.bodyText(S.phone)).slice(-1400),buttons:(await S.phone.getByRole('button').allTextContents()).map(S.flat).filter(x=>/item|Cart|Review|Charge|Add|Continue/i.test(x)),dialogs:await S.phone.getByRole('dialog').allInnerTexts(),sales:(await S.stationSales(S.phoneStation)).map(x=>({id:x.id,status:x.status}))};
+--> {
+ "ok": true,
+ "value": {
+  "text": "0 no gate Oto Play Park, Central Floresta ZZ TEST 964 B Add order note… 1 French fries ฿175 1 1 item ฿175 Tickets F&B Shop Check-in Events History Today 7 Messages",
+  "buttons": [
+   "Add order note…",
+   "11 item฿175"
+  ],
+  "dialogs": [],
+  "sales": [
+   {
+    "id": "01a1d526-2a77-70ff-a672-e72ca7917cbf",
+    "status": "finalised"
+   }
+  ]
+ }
+}
+
+=== 2026-11-13T13:51:22.027Z Open the phone F&B cart and read its payment action
+S.phase='Open the phone F&B cart and read its payment action';const p=S.phone;await p.getByRole('button',{name:/1 item/}).click();return {buttons:(await p.getByRole('button').allTextContents()).map(S.flat).filter(x=>/Charge|Pay|Continue|Review|Confirm|item/i.test(x)),dialogs:await p.getByRole('dialog').allInnerTexts()};
+--> {
+ "ok": false,
+ "error": "TimeoutError: locator.click: Timeout 30000ms exceeded. | Call log: | \u001b[2m  - waiting for getByRole('button', { name: /1 item/ })\u001b[22m | "
+}
+
+=== 2026-11-13T13:52:15.131Z Open the phone F&B cart through its native Open cart action
+S.phase='Open the phone F&B cart through its native Open cart action';const p=S.phone;await p.getByRole('button',{name:'Open cart',exact:true}).click();return {buttons:(await p.getByRole('button').allTextContents()).map(S.flat).filter(x=>/Charge|Pay|Continue|Review/i.test(x))};
+--> {
+ "ok": true,
+ "value": {
+  "buttons": []
+ }
+}
+
+=== 2026-11-13T13:52:38.779Z Phone F&B: Checkout creates B's waiting QR
+S.phase='Phone F&B: Checkout creates B\'s waiting QR';const p=S.phone;await p.getByRole('button',{name:/^Checkout/}).click();const pickup=p.getByRole('dialog',{name:'Pick-up Code',exact:true});await pickup.waitFor();for(const digit of '9822')await pickup.getByRole('button',{name:digit,exact:true}).click();await pickup.getByRole('button',{name:/^Continue to Payment/}).click();await p.getByRole('button',{name:/PromptPay/}).first().click();const started=p.waitForResponse(r=>new URL(r.url()).pathname==='/api/payments/attempts'&&r.request().method()==='POST');await p.getByRole('button',{name:'Show payment QR',exact:true}).click();const response=await started;S.assert.equal(response.status(),200);const {attempt}=await response.json();S.phoneFnbSale=attempt.saleId;S.phoneFnbAttempt=attempt.id;S.receipt.reads.phoneFnbBefore={saleId:attempt.saleId,attemptId:attempt.id,status:attempt.status};S.save();await S.shot(p,'05a-phone-fnb-B-waiting-qr.png');return S.receipt.reads.phoneFnbBefore;
+--> {
+ "ok": false,
+ "error": "TimeoutError: locator.click: Timeout 30000ms exceeded. | Call log: | \u001b[2m  - waiting for getByRole('button', { name: /PromptPay/ }).first()\u001b[22m | "
+}
+
+=== 2026-11-13T13:53:29.428Z Phone F&B: complete the native family review before payment
+S.phase='Phone F&B: complete the native family review before payment';const p=S.phone;await p.getByRole('button',{name:'Customer is ready',exact:true}).click();return {buttons:(await p.getByRole('button').allTextContents()).map(S.flat).filter(x=>/hand|Done|confirm|return|ready/i.test(x))};
+--> {
+ "ok": true,
+ "value": {
+  "buttons": [
+   "Customer confirmed — return phone to staff"
+  ]
+ }
+}
+
+=== 2026-11-13T13:53:52.121Z Phone F&B: B starts QR after the family confirmed the order
+S.phase='Phone F&B: B starts QR after the family confirmed the order';const p=S.phone;await p.getByRole('button',{name:/^Customer confirmed/}).click();await p.getByRole('button',{name:/PromptPay/}).first().click();const started=p.waitForResponse(r=>new URL(r.url()).pathname==='/api/payments/attempts'&&r.request().method()==='POST');await p.getByRole('button',{name:'Show payment QR',exact:true}).click();const response=await started;S.assert.equal(response.status(),200);const {attempt}=await response.json();S.phoneFnbSale=attempt.saleId;S.phoneFnbAttempt=attempt.id;S.receipt.reads.phoneFnbBefore={saleId:attempt.saleId,attemptId:attempt.id,status:attempt.status};S.save();await S.shot(p,'05a-phone-fnb-B-waiting-qr.png');await S.revoke('B');await S.kick('phone');await S.waitEnded(p);S.assert.equal(await S.formSignIn(p,'A'),200);await p.getByRole('button',{name:'Continue this sale',exact:true}).click();await S.expect(p.getByRole('button',{name:'Cancel payment QR',exact:true})).toBeVisible({timeout:30000});await S.shot(p,'05b-phone-fnb-A-continued-qr.png');S.assert.equal((await S.call('POST','/webhooks/2c2p/simulator',{attemptId:S.phoneFnbAttempt,event:'paid'})).status,200);await S.expect(p.getByRole('heading',{name:'Order Confirmed',exact:true})).toBeVisible({timeout:30000});await S.expect(p.getByText('Thai QR / PromptPay',{exact:true}).first()).toBeVisible();const detail=await S.sale(S.phoneFnbSale),sales=await S.stationSales(S.phoneStation);S.assert.equal(sales.length,2);S.assert.equal(detail.sale.status,'finalised');S.assert.equal(sales.find(x=>x.id===S.phoneFnbSale).soldBy.accountId,S.acct.B.id);S.assert.equal(detail.attempts.filter(a=>a.status==='approved').length,1);S.assert.equal(detail.attempts.find(a=>a.status==='approved').method,'qr');const read={saleId:S.phoneFnbSale,status:detail.sale.status,stationSaleCount:sales.length,soldBy:sales.find(x=>x.id===S.phoneFnbSale).soldBy,attempts:detail.attempts.map(a=>({id:a.id,status:a.status,method:a.method,amountSatang:a.amountSatang}))};S.receipt.reads.phoneFnbAfter=read;await S.shot(p,'05c-phone-fnb-A-paid-qr.png');S.point('phone-fnb-paid-qr','PASSED',['05a-phone-fnb-B-waiting-qr.png','05b-phone-fnb-A-continued-qr.png','05c-phone-fnb-A-paid-qr.png'],read);return read;
+--> {
+ "ok": true,
+ "value": {
+  "saleId": "01a1d52f-a657-763e-b86b-fd49560a4488",
+  "status": "finalised",
+  "stationSaleCount": 2,
+  "soldBy": {
+   "accountId": "01a1d2f9-710f-7e6e-bb8e-d8f17975d09f",
+   "name": "ZZ TEST 964 B"
+  },
+  "attempts": [
+   {
+    "id": "01a1d52f-a980-73a7-a624-3e26464873c2",
+    "status": "approved",
+    "method": "qr",
+    "amountSatang": 17500
+   }
+  ]
+ }
+}
+
+=== 2026-11-13T13:57:37.378Z Ticket with no attempt: payment is introduced and paid while A is locked
+S.phase='Ticket with no attempt: payment is introduced and paid while A is locked';const p=S.till;await S.kick('desk');await S.waitEnded(p);S.assert.equal(await S.formSignIn(p,'A'),200);await S.afterSignIn(p);const old=p.getByRole('button',{name:'Continue this sale',exact:true});if(await old.isVisible())await old.click();await p.locator('nav').getByRole('button',{name:'Tickets',exact:true}).click();await S.expect(p.getByText('Membership Check',{exact:true})).toBeVisible();const n=S.nextNumber();const surface=await S.landing(p).isVisible()?p:S.d;await S.firstScreen(surface,p,n,{tap:surface===S.d});await S.ticket(p,1,1,'1 Hour Play');const written=p.waitForResponse(r=>new URL(r.url()).pathname==='/api/sales'&&r.request().method()==='POST');await S.pressPay(p);const response=await written;S.assert.equal(response.status(),200);const sale=(await response.json()).sale;S.pausedSale=sale.id;S.knownSales.add(sale.id);const initial=await S.sale(sale.id);S.assert.equal(initial.attempts.length,0);S.receipt.reads.noAttemptBeforeLock={saleId:sale.id,status:initial.sale.status,attempts:0};S.save();await S.revoke('A');await S.kick('desk');await S.waitEnded(p);
+const started=await S.call('POST','/payments/attempts',{saleId:sale.id,actionId:S.randomUUID(),method:'qr',kind:'qr',tender:'qr',amountSatang:sale.totals.grossSatang,requestQrPayload:true,qrDirection:'show'});S.assert.equal(started.status,200);S.pausedAttempt=started.body.attempt.id;S.assert.equal((await S.call('POST','/webhooks/2c2p/simulator',{attemptId:S.pausedAttempt,event:'paid'})).status,200);S.receipt.reads.noAttemptPaidWhileLocked={saleId:sale.id,attemptId:S.pausedAttempt,method:'qr'};S.save();return {saleId:sale.id,attemptId:S.pausedAttempt,initialAttempts:0,paymentIntroducedWhileLocked:true};
+--> {
+ "ok": false,
+ "error": "TimeoutError: locator.click: Timeout 30000ms exceeded. | Call log: | \u001b[2m  - waiting for getByTestId('language-choice-en')\u001b[22m | \u001b[2m    - locator resolved to <button lang=\"en\" type=\"button\" data-testid=\"language-choice-en\" class=\"w-full flex items-center gap-4 rounded-3xl border border-foreground/10 bg-foreground/5 px-6 py-5 text-left transition-colors hover:bg-foreground/10 hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary\">…</button>\u001b[22m | \u001b[2m  - attempting click action\u001b[22m | \u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m | \u001b[2m      - element is not stable\u001b[22m | \u001b[2m    - retrying click action\u001b[22m"
+}
+
+=== 2026-11-13T13:59:45.143Z Retire the own paired display after its three completed cases and use the inline family view
+S.phase='Retire the own paired display after its three completed cases and use the inline family view';const dropped=await S.dropDisplay('desk','ZZ TEST SCRUM-982 paired-display cases complete');return {dropped,desk:S.scrub(await S.bodyText(S.till)).slice(-700),languageOnTill:await S.till.getByTestId('language-choice-en').isVisible().catch(()=>false),identifyOnTill:await S.till.getByTestId('identify-safety').isVisible().catch(()=>false)};
+--> {
+ "ok": true,
+ "value": {
+  "dropped": {
+   "label": "desk",
+   "revoked": true
+  },
+  "desk": "History Today 7 Messages Cash Weekday pricing ZZ TEST 964 A 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Membership Check The customer is entering their phone on their display to apply any verified rate. Waiting for the customer… Enter phone to look up membership A phone number is required for every visit — it is how the team reaches the family about their child’s safety. Phone — Nickname — EVENT PASSES Flat day entry — no membership needed No active events Today's camp sessions and upcoming events appear here. Redeem Booking Current Order No items added yet Apply Redeem Issue a voucher… Add manual discount Subtotal ฿0 Total ฿0 Cancel Pay ฿0",
+  "languageOnTill": false,
+  "identifyOnTill": false
+ }
+}
+
+=== 2026-11-13T13:59:55.839Z Read the inline customer-display toggle after retiring the separate display
+S.phase='Read the inline customer-display toggle after retiring the separate display';return {buttons:(await S.till.getByRole('button').allTextContents()).map(S.flat).filter(x=>/display|Display|customer|Customer/i.test(x)),head:S.scrub(await S.bodyText(S.till)).slice(0,350)};
+--> {
+ "ok": true,
+ "value": {
+  "buttons": [
+   "Hide customer display"
+  ],
+  "head": "Test harness — staff till and customer display share one live sale. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing ZZ TEST 964 A 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Membership Check The "
+ }
+}
+
+=== 2026-11-13T14:00:15.034Z Read the inline customer-display toggle after retiring the separate display
+return {frames:S.till.frames().map(f=>f.url()),language:S.till.getByTestId('language-choice').count?await S.till.getByTestId('language-choice').count():null,identify:await S.till.getByTestId('identify-safety').count(),tail:S.scrub(await S.bodyText(S.till)).slice(-250)};
+--> {
+ "ok": true,
+ "value": {
+  "frames": [
+   "https://oto-pos-web-staging.onrender.com/"
+  ],
+  "language": 1,
+  "identify": 0,
+  "tail": "฿0 Total ฿0 Cancel Pay ฿0 LANGUAGE Choose your language 请选择您的语言 · เลือกภาษาของคุณ · Выберите язык · Choisissez votre langue English Continue in English 中文 使用中文继续 ไทย ดำเนินการต่อเป็นภาษาไทย Русский Продолжить на русском Français Continuer en français"
+ }
+}
+
+=== 2026-11-13T14:00:33.249Z No-attempt lock case: ring up using the now-stable inline family view
+S.phase='No-attempt lock case: ring up using the now-stable inline family view';const p=S.till;const n=S.receipt.numbers.used.at(-1);await S.firstScreen(p,p,n);await S.ticket(p,1,1,'1 Hour Play');const written=p.waitForResponse(r=>new URL(r.url()).pathname==='/api/sales'&&r.request().method()==='POST');await S.pressPay(p);const response=await written;S.assert.equal(response.status(),200);const sale=(await response.json()).sale;S.pausedSale=sale.id;S.knownSales.add(sale.id);const initial=await S.sale(sale.id);S.assert.equal(initial.attempts.length,0);S.receipt.reads.noAttemptBeforeLock={saleId:sale.id,status:initial.sale.status,attempts:0};S.save();await S.revoke('A');await S.kick('desk');await S.waitEnded(p);
+const started=await S.call('POST','/payments/attempts',{saleId:sale.id,actionId:S.randomUUID(),method:'qr',kind:'qr',tender:'qr',amountSatang:sale.totals.grossSatang,requestQrPayload:true,qrDirection:'show'});S.assert.equal(started.status,200);S.pausedAttempt=started.body.attempt.id;S.assert.equal((await S.call('POST','/webhooks/2c2p/simulator',{attemptId:S.pausedAttempt,event:'paid'})).status,200);S.receipt.reads.noAttemptPaidWhileLocked={saleId:sale.id,attemptId:S.pausedAttempt,method:'qr'};S.save();return {saleId:sale.id,attemptId:S.pausedAttempt,initialAttempts:0,paymentIntroducedWhileLocked:true};
+--> {
+ "ok": true,
+ "value": {
+  "saleId": "01a1d535-cce5-7882-9432-2538e7af493f",
+  "attemptId": "01a1d535-d6a4-768b-85c5-163d77f0a244",
+  "initialAttempts": 0,
+  "paymentIntroducedWhileLocked": true
+ }
+}
+
+=== 2026-11-13T14:00:56.946Z No-attempt lock case: B continues and restores the QR paid during the lock
+S.phase='No-attempt lock case: B continues and restores the QR paid during the lock';const p=S.till;S.tenderWrites=[];S.assert.equal(await S.formSignIn(p,'B'),200);await p.getByRole('button',{name:'Continue this sale',exact:true}).click();await S.expect(p.getByText('Payment Successful',{exact:true})).toBeVisible({timeout:30000});S.assert.match(await S.bodyText(p),/Receipt .*PromptPay/);const detail=await S.sale(S.pausedSale),sales=await S.stationSales();S.assert.equal(detail.sale.status,'finalised');S.assert.equal(sales.length,4);S.assert.equal(sales.find(x=>x.id===S.pausedSale).soldBy.accountId,S.acct.A.id);S.assert.equal(detail.attempts.length,1);S.assert.equal(detail.attempts[0].method,'qr');S.assert.equal(detail.attempts[0].status,'approved');S.assert.ok(S.tenderWrites.every(x=>x.method!=='cash'&&x.kind!=='cash'));const read={saleId:S.pausedSale,status:detail.sale.status,stationSaleCount:sales.length,soldBy:sales.find(x=>x.id===S.pausedSale).soldBy,attempts:detail.attempts.map(a=>({id:a.id,status:a.status,method:a.method,amountSatang:a.amountSatang})),writesAfterContinue:S.tenderWrites,initialAttemptsBeforeLock:0};S.receipt.reads.noAttemptAfter=read;await S.shot(p,'06-qr-created-and-paid-while-locked.png');S.point('qr-created-paid-during-lock','PASSED',['06-qr-created-and-paid-while-locked.png'],read);return read;
+--> {
+ "ok": false,
+ "error": "AssertionError: The input did not match the regular expression /Receipt .*PromptPay/. Input: |  | \"Test harness — staff till and customer display share one live sale. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing ZZ TEST 964 B 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Oto Play Park Payment Successful ฿1040 • PromptPay VAT included ฿68.04 Thank you for visiting! · Tax ID 0105500000000 Bracelets to Print 2 TOTAL 1× Child bracelet 1 Hour • 1 Hour Play 1 HOUR 1× Adult bracelet 1 Hour • 1 Hour Play 1 HOUR Start New Sale English Thank you! Here's what you're receiving — enjoy your play! 1 Child bracelet 1 Adult bracelet\" | "
+}
+
+=== 2026-11-13T14:01:31.307Z Read the paid-during-lock native result without assuming an optional receipt label
+S.phase='Read the paid-during-lock native result without assuming an optional receipt label';const detail=await S.sale(S.pausedSale),sales=await S.stationSales();return {sale:{id:detail.sale.id,status:detail.sale.status,receiptNumber:detail.sale.receiptNumber??null,keys:Object.keys(detail.sale)},history:sales.find(x=>x.id===S.pausedSale),attempts:detail.attempts.map(a=>({id:a.id,status:a.status,method:a.method,amountSatang:a.amountSatang})),writesAfterContinue:S.tenderWrites};
+--> {
+ "ok": true,
+ "value": {
+  "sale": {
+   "id": "01a1d535-cce5-7882-9432-2538e7af493f",
+   "status": "finalised",
+   "receiptNumber": "Z98201-000004",
+   "keys": [
+    "id",
+    "branchId",
+    "stationId",
+    "boxId",
+    "memberId",
+    "visitId",
+    "businessDate",
+    "occurredAt",
+    "status",
+    "salesChannel",
+    "pricingMode",
+    "pricingModeReason",
+    "customerTier",
+    "engineVersion",
+    "receiptNumber",
+    "receiptSeries",
+    "receiptSeq",
+    "finalisedAt",
+    "note",
+    "voidedAt",
+    "voidedByAccountId",
+    "voidedByName",
+    "voidReason",
+    "totals",
+    "tierClaim"
+   ]
+  },
+  "history": {
+   "id": "01a1d535-cce5-7882-9432-2538e7af493f",
+   "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+   "stationId": "01a1d4fc-d6ed-72df-af7b-7d57916ccf58",
+   "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+   "memberId": null,
+   "visitId": null,
+   "businessDate": "2026-11-13",
+   "occurredAt": "2026-11-13T14:00:35.301Z",
+   "status": "finalised",
+   "salesChannel": "till",
+   "pricingMode": "weekday",
+   "pricingModeReason": "Weekday pricing",
+   "customerTier": "tourist",
+   "engineVersion": "2026.10.06-1",
+   "receiptNumber": "Z98201-000004",
+   "receiptSeries": "Z98201",
+   "receiptSeq": 4,
+   "finalisedAt": "2026-11-13T14:00:37.922Z",
+   "note": null,
+   "voidedAt": null,
+   "voidedByAccountId": null,
+   "voidedByName": null,
+   "voidReason": null,
+   "totals": {
+    "subtotalSatang": 104000,
+    "manualDiscountSatang": 0,
+    "promoDiscountSatang": 0,
+    "discountSatang": 0,
+    "netSatang": 97196,
+    "serviceChargeSatang": 0,
+    "taxInclusiveSatang": 6804,
+    "taxExclusiveSatang": 0,
+    "grossSatang": 104000,
+    "unappliedDiscountSatang": 0,
+    "refundedSatang": 0
+   },
+   "tierClaim": null,
+   "soldBy": {
+    "accountId": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+    "name": "ZZ TEST 964 A"
+   },
+   "stationName": "ZZ TEST SCRUM-982 desk till 1794574701707",
+   "member": null,
+   "lineKinds": [
+    "kids",
+    "adults_paid"
+   ],
+   "revenueCategories": [
+    "tickets"
+   ],
+   "hold": null,
+   "resumedFromHold": null
+  },
+  "attempts": [
+   {
+    "id": "01a1d535-d6a4-768b-85c5-163d77f0a244",
+    "status": "approved",
+    "method": "qr",
+    "amountSatang": 104000
+   }
+  ],
+  "writesAfterContinue": []
+ }
+}
+
+=== 2026-11-13T14:03:46.703Z Re-read the already-finalised success screen after its issuance read completes
+S.phase='Re-read the already-finalised success screen after its issuance read completes';return {text:S.scrub(await S.bodyText(S.till)).slice(-1200),errors:S.receipt.pageErrors.slice(-6)};
+--> {
+ "ok": true,
+ "value": {
+  "text": "Test harness — staff till and customer display share one live sale. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing ZZ TEST 964 B 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Oto Play Park Payment Successful Receipt Z98201-000004 • ฿1040 • PromptPay VAT included ฿68.04 Thank you for visiting! · Tax ID 0105500000000 Bracelets to Print 2 TOTAL 1× Child bracelet 1 Hour • 1 Hour Play Z98201-JTZJYM 1 HOUR 1× Adult bracelet 1 Hour • 1 Hour Play Z98201-H4HWBV 1 HOUR Credit Grants Issued 1 TOTAL Credit ฿350 credit #1 Start New Sale English Thank you! Here's what you're receiving — enjoy your play! 1 Child bracelet 1 Adult bracelet Credit Grants Credit ฿350",
+  "errors": [
+   {
+    "page": "phone",
+    "at": "No-attempt lock case: B continues and restores the QR paid during the lock",
+    "kind": "http",
+    "text": "POST /api/me/station/heartbeat 401"
+   },
+   {
+    "page": "phone",
+    "at": "No-attempt lock case: B continues and restores the QR paid during the lock",
+    "kind": "console.error",
+    "text": "Failed to load resource: the server responded with a status of 401 ()"
+   },
+   {
+    "page": "phone",
+    "at": "Read the paid-during-lock native result without assuming an optional receipt label",
+    "kind": "http",
+    "text": "POST /api/me/station/heartbeat 401"
+   },
+   {
+    "page": "phone",
+    "at": "Read the paid-during-lock native result without assuming an optional receipt label",
+    "kind": "console.error",
+    "text": "Failed to load resource: the server responded with a status of 401 ()"
+   },
+   {
+    "page": "phone",
+    "at": "Read the paid-during-lock native result without assuming an optional receipt label",
+    "kind": "http",
+    "text": "POST /api/me/station/heartbeat 401"
+   },
+   {
+    "page": "phone",
+    "at": "Read the paid-during-lock native result without assuming an optional receipt label",
+    "kind": "console.error",
+    "text": "Failed to load resource: the server responded with a status of 401 ()"
+   }
+  ]
+ }
+}
+
+=== 2026-11-13T14:04:18.549Z Record completed issuance for the QR introduced and paid during the lock
+S.phase='Record completed issuance for the QR introduced and paid during the lock';const p=S.till;await S.expect(p.getByText(/Receipt Z98201-000004/).first()).toBeVisible();const detail=await S.sale(S.pausedSale),sales=await S.stationSales();S.assert.equal(detail.sale.status,'finalised');S.assert.equal(sales.length,4);S.assert.equal(sales.find(x=>x.id===S.pausedSale).soldBy.accountId,S.acct.A.id);S.assert.equal(detail.attempts.length,1);S.assert.equal(detail.attempts[0].method,'qr');S.assert.equal(detail.attempts[0].status,'approved');S.assert.ok(S.tenderWrites.every(x=>x.method!=='cash'&&x.kind!=='cash'));const read={saleId:S.pausedSale,status:detail.sale.status,receiptNumber:detail.sale.receiptNumber,stationSaleCount:sales.length,soldBy:sales.find(x=>x.id===S.pausedSale).soldBy,attempts:detail.attempts.map(a=>({id:a.id,status:a.status,method:a.method,amountSatang:a.amountSatang})),writesAfterContinue:S.tenderWrites,initialAttemptsBeforeLock:0,issuance:'receipt and credit grant present after the existing asynchronous issuance read'};S.receipt.reads.noAttemptAfter=read;await S.shot(p,'06-qr-created-and-paid-while-locked.png');S.point('qr-created-paid-during-lock','PASSED',['06-qr-created-and-paid-while-locked.png'],read);return read;
+--> {
+ "ok": true,
+ "value": {
+  "saleId": "01a1d535-cce5-7882-9432-2538e7af493f",
+  "status": "finalised",
+  "receiptNumber": "Z98201-000004",
+  "stationSaleCount": 4,
+  "soldBy": {
+   "accountId": "01a1d2f9-6d13-791b-9b00-2527f502e05f",
+   "name": "ZZ TEST 964 A"
+  },
+  "attempts": [
+   {
+    "id": "01a1d535-d6a4-768b-85c5-163d77f0a244",
+    "status": "approved",
+    "method": "qr",
+    "amountSatang": 104000
+   }
+  ],
+  "writesAfterContinue": [],
+  "initialAttemptsBeforeLock": 0,
+  "issuance": "receipt and credit grant present after the existing asynchronous issuance read"
+ }
+}
+
+=== 2026-11-13T14:05:53.622Z Fresh simulated card terminal and a single waiting card sale
+S.phase='Fresh simulated card terminal and a single waiting card sale';const label='ZZ TEST SCRUM-982 card terminal '+Date.now();const device=await S.call('POST',`/boxes/${S.box.id}/devices`,{id:S.randomUUID(),kind:'terminal',label,transport:'simulated',protocol:'ghl_linkpos',model:'NEXGO N5'});S.assert.equal(device.status,200);S.cardDevice={id:device.body.device.id,label,transport:device.body.device.transport};S.assert.equal(S.cardDevice.transport,'simulated');S.receipt.created.push({kind:'device',id:S.cardDevice.id,label,transport:'simulated',boxId:S.box.id});S.save();const printers=S.devices;S.devices=[...printers,{role:'card_terminal',deviceId:S.cardDevice.id}];S.cardStation=await S.makeStation('card till',{card:'card_terminal',qr:'none'});S.devices=printers;
+const p=await S.openTill('card',{width:1440,height:1000});S.cardPage=p;S.assert.equal(await S.formSignIn(p,'A'),200);await S.afterSignIn(p,S.cardStation);const n=S.nextNumber();await S.firstScreen(p,p,n);await S.ticket(p,1,1,'1 Hour Play');const written=p.waitForResponse(r=>new URL(r.url()).pathname==='/api/sales'&&r.request().method()==='POST');await S.pressPay(p);S.assert.equal((await written).status(),200);const configured=await S.call('POST','/payments/terminal-simulator',{action:'terminal.outcome',deviceId:S.cardDevice.id,outcome:'no_response'});S.assert.equal(configured.status,200);S.assert.equal(configured.body.applied,true);await p.getByRole('heading',{name:'Card',exact:true}).first().click();const started=p.waitForResponse(r=>new URL(r.url()).pathname==='/api/payments/attempts'&&r.request().method()==='POST');await p.getByRole('button',{name:'Start card payment',exact:true}).click();const response=await started;S.assert.equal(response.status(),200);const {attempt}=await response.json();S.cardSale=attempt.saleId;S.cardAttempt=attempt.id;S.receipt.reads.cardBefore={saleId:attempt.saleId,attemptId:attempt.id,status:attempt.status,startedAt:new Date().toISOString(),deviceId:S.cardDevice.id};S.save();await S.shot(p,'07a-card-A-waiting.png');return S.receipt.reads.cardBefore;
+--> {
+ "ok": false,
+ "error": "AssertionError: Expected values to be strictly equal: |  | 409 !== 200 | "
+}
+
+=== 2026-11-13T14:09:36.027Z Exact fixture census while the corrected-cart CI failure is reproduced
+S.phase='Exact fixture census while the corrected-cart CI failure is reproduced';const records=[];for(const st of S.stations??[]){const sales=await S.stationSales(st);records.push({stationId:st.id,name:st.name,sales:sales.map(x=>({id:x.id,status:x.status,grossSatang:x.totals.grossSatang,receiptNumber:x.receiptNumber}))});}S.keepAlive(false);const revokes=[];for(const who of ['A','B'])revokes.push(await S.revoke(who));const tail=S.receipt.requests.slice(-20).filter(x=>x.status>=400);S.receipt.reads.secondCiDiagnosis={records,revokes,refusals:tail};S.save();return S.receipt.reads.secondCiDiagnosis;
+--> {
+ "ok": true,
+ "value": {
+  "records": [
+   {
+    "stationId": "01a1d4fc-d6ed-72df-af7b-7d57916ccf58",
+    "name": "ZZ TEST SCRUM-982 desk till 1794574701707",
+    "sales": [
+     {
+      "id": "01a1d535-cce5-7882-9432-2538e7af493f",
+      "status": "finalised",
+      "grossSatang": 104000,
+      "receiptNumber": "Z98201-000004"
+     },
+     {
+      "id": "01a1d525-17eb-7418-bc46-f7ef87e38db4",
+      "status": "finalised",
+      "grossSatang": 6500,
+      "receiptNumber": "Z98201-000003"
+     },
+     {
+      "id": "01a1d522-20a9-7161-a0b9-2f5cf6e958f8",
+      "status": "finalised",
+      "grossSatang": 17500,
+      "receiptNumber": "Z98201-000002"
+     },
+     {
+      "id": "01a1d500-2c19-7232-90d4-4d18ba6d4aa3",
+      "status": "finalised",
+      "grossSatang": 104000,
+      "receiptNumber": "Z98201-000001"
+     }
+    ]
+   },
+   {
+    "stationId": "01a1d4fc-de19-71bb-967b-9b069f0c6e89",
+    "name": "ZZ TEST SCRUM-982 phone till 1794574703544",
+    "sales": [
+     {
+      "id": "01a1d52f-a657-763e-b86b-fd49560a4488",
+      "status": "finalised",
+      "grossSatang": 17500,
+      "receiptNumber": "Z98202-000002"
+     },
+     {
+      "id": "01a1d526-2a77-70ff-a672-e72ca7917cbf",
+      "status": "finalised",
+      "grossSatang": 104000,
+      "receiptNumber": "Z98202-000001"
+     }
+    ]
+   },
+   {
+    "stationId": "01a1d53a-ac20-73cf-b851-591d91d64f68",
+    "name": "ZZ TEST SCRUM-982 card till 1794578753922",
+    "sales": [
+     {
+      "id": "01a1d53a-ce4b-704f-b9f8-6b7c990e2394",
+      "status": "tendering",
+      "grossSatang": 104000,
+      "receiptNumber": null
+     }
+    ]
+   }
+  ],
+  "revokes": [
+   {
+    "who": "A",
+    "sessionsEnded": 1,
+    "at": "2026-11-13T14:09:36.362Z",
+    "atMs": 1794578976362
+   },
+   {
+    "who": "B",
+    "sessionsEnded": 1,
+    "at": "2026-11-13T14:09:36.446Z",
+    "atMs": 1794578976446
+   }
+  ],
+  "refusals": [
+   {
+    "via": "platform admin",
+    "method": "POST",
+    "path": "/payments/terminal-simulator",
+    "status": 409,
+    "errorCode": "NO_SIMULATOR_FOR_DEVICE"
+   }
+  ]
+ }
+}
+
+=== 2026-11-13T14:26:50.442Z Clean only the exact old-source simulator sales before final-source proof
+S.phase='Clean only the exact old-source simulator sales before final-source proof';
+const manager=await S.pw.request.newContext({baseURL:S.pos});S.assert.equal((await manager.post('/api/auth/sign-in',{data:{phone:S.need('STAGING_MANAGER_PHONE'),password:S.need('STAGING_MANAGER_PASSWORD')}})).status(),200);const rows=[];
+try{for(const st of S.stations??[]){S.assert.ok(/^ZZ TEST SCRUM-982 /.test(st.name));const sales=await S.stationSales(st);for(const row of sales){S.assert.ok(S.knownSales.has(row.id)&&S.receipt.created.some(x=>x.kind==='sale'&&x.id===row.id&&x.stationId===st.id),'exact own sale ledger');let detail=await S.sale(row.id);S.assert.equal(detail.sale.stationId,st.id);if(detail.sale.status==='finalised'){S.assert.ok(String(detail.sale.receiptNumber).startsWith(st.codePrefix+'-'));if(detail.refundStatus!=='refunded'){const r=await manager.post(`/api/sales/${row.id}/refunds`,{headers:{'idempotency-key':S.randomUUID()},data:{mode:'whole',reason:'ZZ TEST SCRUM-982 old-source simulator proof cleanup'}});S.assert.equal(r.status(),200);}detail=await S.sale(row.id);S.assert.equal(detail.refundStatus,'refunded');rows.push({id:row.id,stationId:st.id,status:detail.sale.status,refundStatus:detail.refundStatus,refundedSatang:detail.refunds.reduce((sum,r)=>sum+r.amountSatang,0)});}else if(detail.sale.status==='tendering'){S.assert.equal(detail.attempts.length,0,'no attempt was started on the card sale');S.assert.equal((await S.call('POST',`/sales/${row.id}/void`,{reason:'ZZ TEST SCRUM-982 unpaid old-source card setup cleanup'})).status,200);detail=await S.sale(row.id);S.assert.equal(detail.sale.status,'voided');rows.push({id:row.id,stationId:st.id,status:detail.sale.status});}else throw Error('Unexpected own sale state during exact cleanup');}}}finally{const signOut=await manager.post('/api/auth/sign-out');const me=await manager.get('/api/me');S.receipt.cleanup.oldSourceManager={signOut:signOut.status(),meAfter:me.status()};S.assert.equal(me.status(),401);await manager.dispose();}
+S.receipt.cleanup.oldSourceSales=rows;S.save();return {rows,refundedTotalSatang:rows.reduce((sum,r)=>sum+(r.refundedSatang??0),0),managerSession:S.receipt.cleanup.oldSourceManager};
+--> {
+ "ok": true,
+ "value": {
+  "rows": [
+   {
+    "id": "01a1d535-cce5-7882-9432-2538e7af493f",
+    "stationId": "01a1d4fc-d6ed-72df-af7b-7d57916ccf58",
+    "status": "refunded",
+    "refundStatus": "refunded",
+    "refundedSatang": 104000
+   },
+   {
+    "id": "01a1d525-17eb-7418-bc46-f7ef87e38db4",
+    "stationId": "01a1d4fc-d6ed-72df-af7b-7d57916ccf58",
+    "status": "refunded",
+    "refundStatus": "refunded",
+    "refundedSatang": 6500
+   },
+   {
+    "id": "01a1d522-20a9-7161-a0b9-2f5cf6e958f8",
+    "stationId": "01a1d4fc-d6ed-72df-af7b-7d57916ccf58",
+    "status": "refunded",
+    "refundStatus": "refunded",
+    "refundedSatang": 17500
+   },
+   {
+    "id": "01a1d500-2c19-7232-90d4-4d18ba6d4aa3",
+    "stationId": "01a1d4fc-d6ed-72df-af7b-7d57916ccf58",
+    "status": "refunded",
+    "refundStatus": "refunded",
+    "refundedSatang": 104000
+   },
+   {
+    "id": "01a1d52f-a657-763e-b86b-fd49560a4488",
+    "stationId": "01a1d4fc-de19-71bb-967b-9b069f0c6e89",
+    "status": "refunded",
+    "refundStatus": "refunded",
+    "refundedSatang": 17500
+   },
+   {
+    "id": "01a1d526-2a77-70ff-a672-e72ca7917cbf",
+    "stationId": "01a1d4fc-de19-71bb-967b-9b069f0c6e89",
+    "status": "refunded",
+    "refundStatus": "refunded",
+    "refundedSatang": 104000
+   },
+   {
+    "id": "01a1d53a-ce4b-704f-b9f8-6b7c990e2394",
+    "stationId": "01a1d53a-ac20-73cf-b851-591d91d64f68",
+    "status": "voided"
+   }
+  ],
+  "refundedTotalSatang": 353500,
+  "managerSession": {
+   "signOut": 200,
+   "meAfter": 401
+  }
+ }
+}
+
+=== 2026-11-13T14:32:18.947Z Retire old-source stations and close browser sessions after exact money cleanup
+S.phase='Retire old-source stations and close browser sessions after exact money cleanup';const out={stations:[],sessions:[]};for(const st of S.stations??[]){S.assert.ok(/^ZZ TEST SCRUM-982 /.test(st.name));S.assert.equal((await S.call('PATCH',`/stations/${st.id}`,{devices:[]})).status,200);S.assert.equal((await S.call('DELETE',`/stations/${st.id}`)).status,200);const all=(await S.call('GET',`/branches/${S.branchId}/stations?includeArchived=true`)).body.stations;const row=all.find(x=>x.id===st.id);S.assert.ok(row.archived&&row.devices.length===0);out.stations.push({id:st.id,name:st.name,archived:row.archived,devices:row.devices.length});}for(const label of Object.keys(S.pages))out.sessions.push({label,...await S.signOutLabel(label)});S.receipt.cleanup.oldSourceFixtures=out;S.receipt.cleanup.retainedForFinalSource={deviceId:S.cardDevice.id,label:S.cardDevice.label,reason:'Own simulated terminal retained unassigned for final-source proof; no attempt was started'};S.save();await S.browser?.close();return out;
+--> {
+ "ok": true,
+ "value": {
+  "stations": [
+   {
+    "id": "01a1d4fc-d6ed-72df-af7b-7d57916ccf58",
+    "name": "ZZ TEST SCRUM-982 desk till 1794574701707",
+    "archived": true,
+    "devices": 0
+   },
+   {
+    "id": "01a1d4fc-de19-71bb-967b-9b069f0c6e89",
+    "name": "ZZ TEST SCRUM-982 phone till 1794574703544",
+    "archived": true,
+    "devices": 0
+   },
+   {
+    "id": "01a1d53a-ac20-73cf-b851-591d91d64f68",
+    "name": "ZZ TEST SCRUM-982 card till 1794578753922",
+    "archived": true,
+    "devices": 0
+   }
+  ],
+  "sessions": [
+   {
+    "label": "desk",
+    "signOut": 200,
+    "meAfter": 401
+   },
+   {
+    "label": "phone",
+    "signOut": 200,
+    "meAfter": 401
+   },
+   {
+    "label": "card",
+    "signOut": 200,
+    "meAfter": 401
+   }
+  ]
+ }
+}

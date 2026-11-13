@@ -1,3 +1,4 @@
+import { useRecordedPaymentScope } from '@/lib/recordedPaymentScope';
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { useLocation } from 'wouter';
 import {
@@ -652,6 +653,7 @@ export default function MobileTill() {
    * screen.
    */
   const saleWriter = useSaleWriter();
+  const recordedPayments = useRecordedPaymentScope();
   // SCRUM-964 — a sale rung up (a QR or card payment may be waiting) is offered Continue only, as the counter's is.
   const rungUpNow = rungUpSaleOf(saleWriter.state);
   useEffect(() => {
@@ -1817,18 +1819,18 @@ export default function MobileTill() {
       return refusal(RESUMED_ORDER_FROZEN);
     }
     if (staffLocked.current || saleEpochRef.current !== epoch || paymentScopeRef.current.scope !== scope) return refusal('This order is locked or changed before it could be saved.');
-    const existing = saleWriter.committed;
-    if (existing) return { ok: true, written: true, saleId: existing.id, sale: existing, replay: true };
+    const existing = recordedPayments.replay(saleWriter.committed, scope);
+    if (existing) return existing;
     if (!preflightSale()) return refusal('Finish the order before taking payment.');
     const payload = commitPayload();
     if (!payload) return refusal(unwritableReason());
     if (saleEpochRef.current !== epoch || paymentScopeRef.current.scope !== scope) {
       return refusal('This till has moved on to another order.');
     }
-    const outcome = await saleWriter.commit({
+    const outcome = await recordedPayments.record(scope, () => saleWriter.commit({
       cart: payload,
       finalise: false,
-    });
+    }));
     return outcome;
   };
 
@@ -2033,7 +2035,7 @@ export default function MobileTill() {
     totalSatang: toSatang(cart.totals.total),
     // SCRUM-774 — a resumed sale: what was already taken on it is read from
     // the platform before anything more is collected — the balance only.
-    resumeSaleId: resumed?.saleId ?? saleWriter.committed?.id,
+    resumeSaleId: resumed?.saleId ?? recordedPayments.resumeSaleId(saleWriter.committed, paymentScope),
     prepareSale: () => preparePaymentSale(paymentEpoch, paymentScope),
     finaliseSale: saleWriter.finalise,
     onComplete: completeSale,
