@@ -61,7 +61,7 @@ import { onStaff } from "./lib/payOnlyAccess";
 import { resolveSetMenuLines, setMenuChoicesOfKitchenPlan } from "./lib/setMenuResolve";
 import { adultsCopiesOf, adultsDifferOf, adultsSetCopiesUncoded, adultsSetLinesTillCoded, adultsSetLineWantsCode, foldDishName } from "@shared/kitchenAdults";
 import { refuseStartTime } from "@shared/eventStartTime";
-import { isCakeCount, kitchenPlanBodyRefusal, kitchenPlanPutBodySchema } from "./lib/kitchenPlanBody";
+import { cakeCountOf, kitchenPlanBodyRefusal, kitchenPlanPutBodySchema } from "./lib/kitchenPlanBody";
 
 type KitchenMenuBucket = "kids" | "adults";
 type KitchenMenuLine = { source?: string; [key: string]: unknown };
@@ -270,14 +270,15 @@ export async function lockKitchenPlanMutation(tx: any, eventId: string): Promise
  * recorded as their readers resolve them (SCRUM-829).
  */
 export function kitchenPlanDbDataOf(kp: Record<string, any>): Record<string, any> {
+  const cakes = cakeCountOf(kp.cakeQuantity);
   return {
     foodRequired: kp.foodRequired ?? true,
     cakeMode: kp.cakeMode || "NONE",
     // SCRUM-978 (SCRUM-966 point 5): how many cakes, as the editor's Save sends it (the editor held
     // and sent it, and it was never written: a count changed in the editor was back after a reload).
-    // Written only when the form names one: a writer that sends none (the till's kitchen edit) keeps
-    // the plan's own count, never resets it.
-    ...(isCakeCount(kp.cakeQuantity) ? { cakeQuantity: kp.cakeQuantity } : {}),
+    // Written only when the form names one, 1 to 99 (numeric text as its number): a writer that sends
+    // none (the till's kitchen edit) keeps the plan's own count, never resets it.
+    ...(cakes !== null ? { cakeQuantity: cakes } : {}),
     cakeNotes: kp.cakeNotes || null,
     cakeTime: kp.cakeTime || null,
     serviceSchedule: kp.serviceSchedule || [],
@@ -1402,7 +1403,8 @@ export function registerBeoRoutes(app: Express) {
         return res.status(404).json({ error: "Event not found" });
       }
       // SCRUM-978: the body is read against the plan's shape before anything is written
-      // (server/lib/kitchenPlanBody.ts); a malformed one is refused with its reason.
+      // (server/lib/kitchenPlanBody.ts): what the plan's readers read is taken as they read it (the
+      // day-of view sends every stored line back), one no reader can read is refused in staff words.
       const checked = kitchenPlanPutBodySchema.safeParse(req.body ?? {});
       if (!checked.success) return res.status(400).json({ error: kitchenPlanBodyRefusal(checked.error) });
       const body = checked.data;
