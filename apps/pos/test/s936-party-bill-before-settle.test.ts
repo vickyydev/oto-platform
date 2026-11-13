@@ -811,6 +811,58 @@ describe('SCRUM-967 — the bill and Take balance follow a manager’s kitchen e
     expect(elementOf(page.result.current, PartySettleModal)?.props).toMatchObject({ open: true, plan: EDITED });
   });
 
+  it('while the plan is read again after a kitchen Save, Take balance waits: the old figure is never on a button', async () => {
+    let plan = PLAN;
+    let saved = false;
+    // The read of the plan after the Save is held, so the moment before it answers can be seen.
+    const heldReads: (() => void)[] = [];
+    getMock.mockImplementation((async (url: string) => {
+      if (url.startsWith(`/parties/${PARTY}/kitchen-plan/choices`)) return { status: 'ok', message: null, groups: [] };
+      if (url.startsWith(`/parties/${PARTY}`)) {
+        if (saved) await new Promise<void>((resolve) => { heldReads.push(resolve); });
+        return { branchId: HKT_CENTRAL, date: T, event: viewOf(null), plan, planStatus: 'ready' };
+      }
+      return { member: null };
+    }) as unknown as typeof api.get);
+    // The platform prices Settle party from the BEO it reads itself, so it already has the new figure.
+    postMock.mockImplementation((async (url: string) => (url === `/parties/${PARTY}/settle/preview`
+      ? { quote: plan === PLAN ? QUOTE : REPRICED } : undefined)) as unknown as typeof api.post);
+    putMock.mockReset();
+    putMock.mockImplementation((async () => {
+      plan = EDITED;
+      saved = true;
+      return { branchId: HKT_CENTRAL, date: T, event: viewOf(null), plan: EDITED, planStatus: 'ready', kitchenEdit: { id: 'zz-edit', replayed: false } };
+    }) as unknown as typeof api.put);
+
+    const page = partyPage(partyOf(null));
+    await settle();
+    expect(buttonIn(page.result.current, 'Take balance ฿15900')!.props.disabled).toBe(false);
+
+    (buttonIn(page.result.current, 'Edit party')!.props.onClick as () => void)();
+    await settle();
+    const form = elementOf(page.result.current, PartyEditForm)!;
+    await (form.props.onSave as (p: unknown, c: unknown) => Promise<void>)({ ...partyOf(null) }, [{ op: 'set', lineId: 'zz967-fries', qty: 3 }]);
+    await settle();
+    expect(putMock).toHaveBeenCalledTimes(1);
+    expect(elementOf(page.result.current, PartyEditForm)).toBeNull();
+
+    // The plan read is on its way: the page knows its figure is behind the BEO, so nothing names it.
+    expect(heldReads.length > 0).toBe(true);
+    expect(buttonIn(page.result.current, 'Take balance ฿15900') === null).toBe(true);
+    const waiting = buttonIn(page.result.current, 'Take balance —');
+    expect(waiting === null).toBe(false);
+    expect(waiting!.props.disabled).toBe(true);
+    expect(flat(page.result.current).includes('Outstanding ฿15900')).toBe(false);
+
+    // The read answers: the plan is priced again, and the button names what Settle party will take.
+    for (const release of heldReads.splice(0)) release();
+    await settle();
+    expect(flat(page.result.current)).toContain('Outstanding ฿16255');
+    const take = buttonIn(page.result.current, 'Take balance ฿16255');
+    expect(take === null).toBe(false);
+    expect(take!.props.disabled).toBe(false);
+  });
+
   it('a plan changed in the OTO App is priced again at the page’s next read of it', async () => {
     let plan = PLAN;
     getMock.mockImplementation((async (url: string) => {

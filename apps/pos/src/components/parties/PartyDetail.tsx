@@ -188,6 +188,10 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
   // SCRUM-936 — the one read feeds the kitchen sections and the bill: undefined
   // until it answers, null when it answered with nothing.
   const planRead = usePartyPlanReadState(party, { paused: showSettle || editing, nonce: planNonce });
+  // SCRUM-967 — the read the BEO moved past (a kitchen write landed, or the OTO App said "read the
+  // party again"), set by `markPlanStale`: while it is still the page's read, nothing is priced on it.
+  const [planBehind, setPlanBehind] = useState<{ read: typeof planRead } | null>(null);
+  const planIsBehind = planBehind !== null && planBehind.read === planRead;
   const plan = planRead?.plan ?? null;
   // SCRUM-906 — the whole kitchen plan, with or without a package; a platform before it gives the plan's own.
   const kitchenPlan = planRead?.kitchenPlan ?? plan;
@@ -203,7 +207,10 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
   // the platform as Settle party will price it.
   // A party the platform settles on its tab (walk-ups, money taken there)
   // reads the tab's bill, and Take balance takes it there.
-  const plannedQuote = usePlannedSettleQuote(party, planRead, station?.stationId ?? null);
+  // SCRUM-967 — a plan read the BEO has moved past is priced as one still being read: the bill
+  // and Take balance wait for the newer read, so the button never names a figure Settle party
+  // (which prices the BEO it reads itself) would not take.
+  const plannedQuote = usePlannedSettleQuote(party, planIsBehind ? undefined : planRead, station?.stationId ?? null);
   const planned = plannedQuoteOf(party, plannedQuote);
   // Its package owed but not priced yet: a dash, never "Fully paid".
   const unpriced = partyBillUnpriced(party, plannedQuote);
@@ -356,6 +363,7 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
   const stalePlan = useRef<{ read: typeof planRead } | null>(null);
   const markPlanStale = () => {
     if (!stalePlan.current) stalePlan.current = { read: planRead };
+    setPlanBehind(stalePlan.current);
   };
 
   /**
