@@ -52,9 +52,8 @@ export const isCakeCount = (value: unknown): value is number => CakeCount.safePa
 
 /** A clock time as the editor's picker writes it ("14:00"; "9:30" from before), or empty. */
 const ClockOrEmpty = z
-  .union([z.literal(""), z.string().regex(/^([01]?\d|2[0-3]):[0-5]\d$/, "a time is written as HH:mm")], {
-    errorMap: () => ({ message: "a time is written as HH:mm, or left empty" }),
-  })
+  .string({ invalid_type_error: "a time is written as HH:mm, or left empty" })
+  .regex(/^$|^([01]?\d|2[0-3]):[0-5]\d$/, "a time is written as HH:mm, or left empty")
   .nullable()
   .optional();
 
