@@ -376,6 +376,11 @@ export async function readAttempt(
  * simulators and `noSerialDriver`; a host opener added later must not throw one
  * of the codes above from `write`.
  *
+ * The list holds for a VOID and an INQUIRY as well: every mode runs through
+ * the same `runCommand` (terminal/index.ts:328-423), and a void's own refusals
+ * (index.ts:380-385, ghl.ts:695-704, digio.ts:908-914) all come before its
+ * `channel.write` (ghl.ts:716, digio.ts:926).
+ *
  * Each code proved to send nothing carries the sentence the till may show.
  */
 const NOT_SENT_WORDS: Readonly<Record<string, string>> = {
@@ -459,7 +464,8 @@ export async function lockAttemptOfTerminalCommand(
  * transaction as `completeCommand`'s state change. A SALE the box proves it
  * never sent ends the attempt now, so the till is freed on its next poll and
  * not only when somebody reads the attempt; one that may have reached the
- * terminal takes the missing-result road. Never a second SALE.
+ * terminal takes the missing-result road. A VOID it never sent ends
+ * `not_sent`, and a refund's slice falls back to cash. Never a second SALE.
  */
 export async function settleFailedTerminalCommand(
   tx: Tx,
@@ -487,7 +493,9 @@ export async function settleFailedTerminalCommand(
  * for a payment that did not happen; anything else waits for a person or an
  * inquiry. Its INQUIRY: says nothing about the sale, so the attempt goes back
  * to a person, as an inquiry with no conclusive answer does
- * (`recordTerminalResult`).
+ * (`recordTerminalResult`). Its VOID: proved never sent, the void ends
+ * `not_sent` (a refund's slice falls back to cash); anything else stays
+ * pending for a person. Never a second SALE or VOID.
  */
 async function settleStalledCommand(
   tx: Tx,
@@ -499,10 +507,15 @@ async function settleStalledCommand(
   const facts = commandFacts(command);
   if (facts.answered) return;
   const inquiry = facts.mode === 'inquire';
+  const voiding = facts.mode === 'void';
   if (inquiry) {
     if (current.status !== 'inquiring') return;
     const asked = ((current.payload ?? {}) as AttemptPayload).inquiry?.actionId;
     if (!asked || asked !== command.actionId) return;
+  } else if (voiding) {
+    // Only the void this attempt is waiting on, and only once.
+    const reversal = ((current.payload ?? {}) as AttemptPayload).void;
+    if (!reversal || reversal.actionId !== command.actionId || reversal.result) return;
   } else if (facts.mode !== 'sale' || !['created', 'sent_to_terminal'].includes(current.status)) {
     return;
   }
@@ -520,6 +533,8 @@ async function settleStalledCommand(
     state = 'expired';
   }
   if (state === 'running') {
+    // A void that may be on the terminal stays pending for a person.
+    if (voiding) return;
     // A still-running exchange gets its full budget.
     if (!command.claimedAt || now - command.claimedAt.getTime() < EXCHANGE_BUDGET_MS) return;
     await tx.update(boxCommand).set({
@@ -539,6 +554,11 @@ async function settleStalledCommand(
     : state === 'failed' && terminalNotSentWords(command.errorCode)
       ? { code: command.errorCode!, words: terminalNotSentWords(command.errorCode)! }
       : null;
+  if (voiding) {
+    // A void that may have reached the terminal stays pending for a person.
+    if (notSent) await endVoidNotSent(tx, ctx, current, command, state, notSent.code);
+    return;
+  }
   if (notSent) {
     await endAttemptNotSent(tx, ctx, current, command, state, notSent);
     return;
@@ -652,9 +672,61 @@ async function returnInquiryToPerson(
   });
 }
 
+/** A refund slice's words when its void never left the box (SCRUM-972). */
+const VOID_NOT_SENT_DETAIL = 'The box could not send the void to the terminal — hand it back in cash';
+
+/**
+ * A VOID the box never sent (SCRUM-972). A void's answer never moves the
+ * attempt (`recordTerminalResult`), and neither does this: the void is stamped
+ * `not_sent`, which `isPaymentReversalPending` does not read as done, so a
+ * partial charge stays reserved until a person settles it. A refund's slice
+ * that asked for the void falls back to cash, as when the terminal refuses it.
+ */
+async function endVoidNotSent(
+  tx: Tx,
+  ctx: OpContext,
+  current: AttemptRow,
+  command: CommandRow,
+  commandState: string,
+  errorCode: string,
+): Promise<void> {
+  const payload = (current.payload ?? {}) as AttemptPayload;
+  const reversal = payload.void ?? {};
+  const at = new Date().toISOString();
+  await stampAttempt(tx, current.id, {
+    payload: {
+      ...payload,
+      void: {
+        ...reversal,
+        result: { mode: 'void', outcome: 'not_sent', errorCode, commandId: command.id, commandState, at },
+      },
+    },
+  });
+  await audit.record(tx, {
+    actorAccountId: ctx.actorAccountId ?? null, operatorId: current.operatorId, branchId: current.branchId,
+    action: 'payment.attempt.void_not_sent', entityType: 'payment_attempt', entityId: current.id,
+    actionId: current.actionId, requestId: ctx.requestId,
+    before: { status: current.status, void: { reason: reversal.reason ?? null, result: null } },
+    after: { status: current.status, reason: reversal.reason ?? null, voidActionId: command.actionId,
+      commandId: command.id, commandState, errorCode, saleId: current.saleId,
+      amountSatang: typeof reversal.amountSatang === 'number' ? reversal.amountSatang : null },
+  });
+  const refundId = reversal.refundId;
+  if (reversal.reason === 'refund' && typeof refundId === 'string' && command.actionId) {
+    await settleRefundSlice(tx, {
+      refundId,
+      match: (entry) => entry.actionId === command.actionId,
+      update: { status: 'failed', fallback: 'cash', detail: VOID_NOT_SENT_DETAIL, settledAt: at },
+      actorAccountId: null,
+      requestId: ctx.requestId,
+      action: 'refund.void_refused',
+    });
+  }
+}
+
 /**
  * The read-time net: a stopped exchange, a failed command or one that expired
- * in the queue, found when the attempt is read. Never replays SALE.
+ * in the queue, found when the attempt is read. Never replays SALE or VOID.
  */
 export async function recoverMissingTerminalResult(
   tx: Tx,
@@ -666,11 +738,19 @@ export async function recoverMissingTerminalResult(
     .where(and(eq(paymentAttempt.id, id), eq(paymentAttempt.operatorId, operatorId)))
     .for('update').limit(1);
   if (!current?.deviceId) return;
+  const facts = (current.payload ?? {}) as AttemptPayload;
   const waitingOnSale = ['created', 'sent_to_terminal'].includes(current.status);
-  const inquiryActionId = current.status === 'inquiring'
-    ? ((current.payload ?? {}) as AttemptPayload).inquiry?.actionId
-    : null;
-  if (!waitingOnSale && typeof inquiryActionId !== 'string') return;
+  const inquiryActionId = current.status === 'inquiring' ? facts.inquiry?.actionId : null;
+  // A void (a refund's, or a partial approval's rescue) still waiting on its answer.
+  const voidActionId = facts.void && !facts.void.result ? facts.void.actionId : null;
+  const waitingOn = waitingOnSale
+    ? sql`${boxCommand.payload}->>'mode' = 'sale'`
+    : typeof inquiryActionId === 'string'
+      ? and(sql`${boxCommand.payload}->>'mode' = 'inquire'`, eq(boxCommand.actionId, inquiryActionId))
+      : typeof voidActionId === 'string'
+        ? and(sql`${boxCommand.payload}->>'mode' = 'void'`, eq(boxCommand.actionId, voidActionId))
+        : null;
+  if (!waitingOn) return;
   const [terminal] = await tx.select().from(device)
     .where(and(eq(device.id, current.deviceId), eq(device.operatorId, operatorId))).limit(1);
   if (!terminal?.boxId) return;
@@ -679,9 +759,7 @@ export async function recoverMissingTerminalResult(
     inArray(boxCommand.state, ['queued', 'running', 'failed', 'expired']),
     sql`${boxCommand.payload}->>'attemptId' = ${id}`,
     sql`${boxCommand.payload}->>'deviceId' = ${current.deviceId}`,
-    waitingOnSale
-      ? sql`${boxCommand.payload}->>'mode' = 'sale'`
-      : and(sql`${boxCommand.payload}->>'mode' = 'inquire'`, eq(boxCommand.actionId, inquiryActionId as string)),
+    waitingOn,
   )).for('update').limit(1);
   if (!command) return;
   await settleStalledCommand(tx, ctx, current, command, Date.now());
