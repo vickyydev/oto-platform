@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  STATION_LEASE_TTL_S,
   DisplayCartSchema, DisplayMemberSchema, DisplayTotalsSchema, DisplayPaymentSchema,
   ChildReviewPromptSchema, ChildReviewDocumentPromptSchema, ChildReviewAnswerSchema,
   ConsentPromptSchema, ConsentDocumentPromptSchema, ConsentAnswerSchema,
@@ -12,6 +13,7 @@ import { api, ApiError } from '@/api/client';
 import { bridgeApi, hasBridgeOrigin, watchBridgeSnapshots } from '@/api/bridge';
 import { currentLane, isBoxLaneTrigger, noteLaneFailure } from './lane';
 import { customerDisplayTheme } from './displayTheme';
+import { signedInAccount } from './displayAccount';
 import type { ContactChannel, Member, Sale } from '@/types';
 import { computeLineBreakdown, isAdultRulePriced, isTierPriced, unpricedCartLines } from './pricing';
 import type { RateMode } from './pricingMode';
@@ -464,9 +466,35 @@ function holderFor(stationId: string): string {
   }
   return holder;
 }
+/**
+ * SCRUM-964 — THE LEASE THIS BROWSER LAST HELD AT EACH STATION, and for whom.
+ *
+ * The box grants a lease to the account that claimed it: only that account
+ * renews it, publishes under it or releases it (`heldBy`, `station-session.ts`).
+ * When a session ends with the screen kept under the lock and a different
+ * person carries it on, the box keeps the ended person's lease until it runs
+ * out — 60 seconds after its last renewal (`STATION_LEASE_TTL_S`) — and
+ * refuses the new person's claim meanwhile. This is how the till knows that
+ * refusal is its own old lease running out, and when it will be free, on its
+ * own clock: never another till.
+ */
+interface OwnLease { leaseId: string; account: string | null; renewedAt: number }
+const ownLeases = new Map<string, OwnLease>();
+
+/** SCRUM-964 — said while the till waits out its own lease from the session that ended. */
+export const DISPLAY_HANDOVER_WAIT = 'The display is still held under the session that ended here; it follows this till within a minute.';
+
+/** The lease named by a refusal's document, when the box sent one. */
+function refusedLeaseId(failure: ApiError): string | null {
+  const details = failure.details as { document?: { lease?: { leaseId?: unknown } | null } } | undefined;
+  const id = details?.document?.lease?.leaseId;
+  return typeof id === 'string' ? id : null;
+}
+
 /** Forget every station's holder, in memory and in both stores — the shift has ended. */
 export function forgetDisplayHolders(): void {
   holders.clear();
+  ownLeases.clear();
   for (const store of holderStores()) {
     try {
       const keys: string[] = [];
@@ -485,6 +513,8 @@ interface DisplayPublisher {
   stationId: string;
   holder: string;
   leaseId: string | null;
+  /** SCRUM-964 — the account the lease was claimed under; null before one is known. */
+  account: string | null;
   renewedAt: number;
   lastPublished: string;
   promptKey: string;
@@ -604,7 +634,7 @@ export function useStationDisplay(stationId: string | null, state: StationDispla
     setError(null);
     if (!stationId) return;
     const channel: DisplayPublisher = {
-      stationId, holder: holderFor(stationId), leaseId: null, renewedAt: 0,
+      stationId, holder: holderFor(stationId), leaseId: null, account: null, renewedAt: 0,
       lastPublished: '', promptKey: '', requestId: '', handled: new Set(),
       signingOut: false, claiming: null, processing: null,
     };
@@ -613,7 +643,10 @@ export function useStationDisplay(stationId: string | null, state: StationDispla
     return () => {
       if (publisher.current === channel) publisher.current = null;
       if (signOutPublisher === channel) signOutPublisher = null;
-      if (channel.leaseId && !channel.signingOut) void bridgeApi.release(stationId, channel.leaseId).catch(() => undefined);
+      // SCRUM-964 — a lease claimed for somebody no longer signed in is theirs
+      // alone to give up: the box refuses anybody else's release.
+      const theirs = channel.account !== null && signedInAccount.get() !== null && channel.account !== signedInAccount.get();
+      if (channel.leaseId && !channel.signingOut && !theirs) void bridgeApi.release(stationId, channel.leaseId).catch(() => undefined);
     };
   }, [stationId]);
 
@@ -689,6 +722,25 @@ export function useStationDisplay(stationId: string | null, state: StationDispla
       claimWaitUntil = Date.now() + Math.min(CLAIM_WAIT_MAX_MS, CLAIM_WAIT_FIRST_MS * 2 ** claimRefusals);
       claimRefusals += 1;
     };
+    /**
+     * SCRUM-964 — let go of the lease claimed for the person signed in before.
+     * Nothing is sent: only that person's session may release it, and it has
+     * ended. The till claims afresh for whoever is signed in now, and the
+     * publish that follows the claim puts the sale on screen as it is now.
+     */
+    let refusedHandOvers = 0;
+    const handOver = (refused = false) => {
+      channel.leaseId = null;
+      channel.account = null;
+      channel.lastPublished = '';
+      claimRefusals = 0;
+      claimWaitUntil = 0;
+      // A box that keeps refusing the lease it has just granted is asked again
+      // at the claim's own pace, never in a tight loop.
+      if (refused && (refusedHandOvers += 1) > 1) {
+        claimWaitUntil = Date.now() + Math.min(CLAIM_WAIT_MAX_MS, CLAIM_WAIT_FIRST_MS * 2 ** (refusedHandOvers - 2));
+      }
+    };
     /** The stream carries nothing a till uses until a display is there to answer it. */
     const followStream = (wanted: boolean) => {
       if (!wanted) {
@@ -738,6 +790,15 @@ export function useStationDisplay(stationId: string | null, state: StationDispla
           setError(null);
           return;
         }
+        // SCRUM-964 — the lease is the person's, not the till's. A different
+        // person carrying on the screen an ended session kept takes a lease of
+        // their own at once, rather than renewing and publishing under the old
+        // one, which the box refuses to anybody but the account that claimed it.
+        const who = signedInAccount.get();
+        if (channel.leaseId && who !== null) {
+          if (channel.account === null) channel.account = who;
+          else if (channel.account !== who) handOver();
+        }
         // The lease, the document and the publish go to the BOX through the
         // station bridge (offline plan Round 3): the same session manager on a
         // virtual box, and the one a Pi serves on the counter's LAN.
@@ -750,7 +811,9 @@ export function useStationDisplay(stationId: string | null, state: StationDispla
           claimRefusals = 0;
           claimWaitUntil = 0;
           channel.leaseId = claimed.lease.leaseId;
+          channel.account = who;
           channel.claiming = null;
+          ownLeases.set(stationId, { leaseId: claimed.lease.leaseId, account: who, renewedAt: Date.now() });
           if (paused()) return;
           channel.renewedAt = Date.now();
           document = claimed.document;
@@ -760,6 +823,8 @@ export function useStationDisplay(stationId: string | null, state: StationDispla
           if (paused()) return;
           document = renewed.document;
           channel.renewedAt = Date.now();
+          const own = ownLeases.get(stationId);
+          if (own?.leaseId === channel.leaseId) own.renewedAt = channel.renewedAt;
         } else if (documentCache && !askBox && (!refresh || streaming)) {
           document = documentCache;
         } else {
@@ -808,16 +873,43 @@ export function useStationDisplay(stationId: string | null, state: StationDispla
           adoptReply(published.document, deliveredBeforePublish);
           channel.lastPublished = signature;
         }
+        refusedHandOvers = 0;
         setError(null);
       } catch (failure) {
         channel.claiming = null;
         if (paused()) return;
+        /**
+         * SCRUM-964 — "Not signed in": the staff session is gone, which the
+         * till is about to say on its sign-in form. It is not news about the
+         * display, so what the till last knew of it stands: the form the family
+         * is filling there is still open (`useLockedFamilyFormWatch`).
+         */
+        if (failure instanceof ApiError && failure.status === 401 && failure.code === 'UNAUTHORIZED') return;
+        let said = failure instanceof Error ? failure.message : 'The display could not connect.';
         if (failure instanceof ApiError && ['STATION_STALE','STATION_NO_LEASE'].includes(failure.code)) {
           channel.leaseId = null;
           channel.lastPublished = '';
+        } else if (failure instanceof ApiError && failure.code === 'STATION_NOT_PERMITTED' && channel.leaseId) {
+          // SCRUM-964 — the box says the lease is held by another account:
+          // this till's own, claimed for the person signed in before. Never
+          // retried under it: a lease of the till's own for the person here now.
+          handOver(true);
+        }
+        const own = ownLeases.get(stationId);
+        const now = signedInAccount.get();
+        if (failure instanceof ApiError && failure.code === 'STATION_NO_LEASE' && !channel.leaseId && own
+          && own.account !== null && now !== null && own.account !== now && refusedLeaseId(failure) === own.leaseId) {
+          // SCRUM-964 — the claim was refused for this till's own lease from the
+          // session that ended, not for another till: it runs out 60 seconds
+          // after its last renewal, and the till asks again then, not before
+          // (sooner only when staff change the sale on screen).
+          const freeAt = own.renewedAt + STATION_LEASE_TTL_S * 1000 + 500;
+          const latest = Date.now() + STATION_LEASE_TTL_S * 1000 + 500;
+          if (freeAt > Date.now()) claimWaitUntil = Math.min(freeAt, latest);
+          said = DISPLAY_HANDOVER_WAIT;
         }
         setConnected([]);
-        setError(failure instanceof Error ? failure.message : 'The display could not connect.');
+        setError(said);
       } finally {
         running = false;
         if (!paused()) {
