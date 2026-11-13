@@ -635,12 +635,18 @@ export async function approveBeoAiFill(
       // "Different for adults" on to change that dish do.
       const adultsOwn = adultsSaid || adultsSetOwn.length > 0 || adultsDifferOf(menus);
       // What was written, counted as written: an adults' line folded into the kids' menu is not.
-      const adultsWritten = adultsOwn ? adultsSaidLines : [];
+      // SCRUM-978 (SCRUM-968 point 4): the same rule whether "Different for adults" was on or off
+      // before the fill (or another line of theirs makes their menu their own): adults' lines that
+      // only repeat the kids' menu are never written as charged EXTRAs. The set menu's dish is on the
+      // adults' own menu as its SET line (the copy of the kids' set menu, below), not charged; a dish
+      // ordered on top ("3 more Margherita pizzas for the adults", one the chat prices) is no repeat
+      // and stays an EXTRA, as before.
+      const adultsWritten = adultsOwn && !adultsRepeat ? adultsSaidLines : [];
       written.kitchenLines = kidsExtra.length + adultsWritten.length + adultsSetOwn.length;
       written.freeKitchenLines = [...kidsSaid, ...adultsWritten].filter((l) => !l.productCode).length;
       // SCRUM-958 (the proof read 3 for 4 coded lines): every line written with a till code, a code a
       // set menu names too among them.
-      const tillCoded = [...kidsExtra, ...(adultsOwn ? adultsExtra : [])].filter((l) => typeof l.productCode === "string").length;
+      const tillCoded = [...kidsExtra, ...(adultsOwn && !adultsRepeat ? adultsExtra : [])].filter((l) => typeof l.productCode === "string").length;
       if (tillCoded > 0) written.tillLines = tillCoded;
       if (adultsSetOwn.length > 0) written.adultsSetLines = adultsSetOwn.length;
       // SCRUM-958: and the lines the review showed folded before it (`adultsFolded`, a count).
@@ -652,7 +658,7 @@ export async function approveBeoAiFill(
       if (!adultsOwn) {
         adults = [];
       } else {
-        if (adultsExtra.length > 0) adults = [...adults.filter((l) => l.source === "set_menu"), ...adultsExtra];
+        if (adultsExtra.length > 0 && !adultsRepeat) adults = [...adults.filter((l) => l.source === "set_menu"), ...adultsExtra];
         if (body.setMenu || adultsExtra.length > 0 || adultsSetOwn.length > 0) {
           // SCRUM-958: the kids' set menu copied for the adults, but for a group the adults have a
           // dish of their own in: their SET line stands in its place (both choices stand).
