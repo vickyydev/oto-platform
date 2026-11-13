@@ -217,6 +217,55 @@ export function adultsSetCopiesUncoded<T extends KitchenLineLike>(kids: readonly
   });
 }
 
+/**
+ * SCRUM-978 (the lane's review): the till code the set menu gives a set-menu
+ * line, as the till's plan view (app migration 0050) reads it for the kids'
+ * line of that dish: the option's own code, else its group's (an item always
+ * included: its own). "" when the set menu has no item of the line's group.
+ */
+export function setMenuCodeOfLine(templateItems: unknown, line: KitchenLineLike): string {
+  const group = typeof line.groupId === "string" ? line.groupId.trim() : "";
+  if (!group || !Array.isArray(templateItems)) return "";
+  const item = templateItems.find((i) => i && typeof i === "object" && (i as { id?: unknown }).id === group) as
+    | { type?: unknown; productCode?: unknown; optionProductCodes?: unknown }
+    | undefined;
+  if (!item || (item.type !== "choice_group" && item.type !== "always_included")) return "";
+  const codes = item.type === "choice_group" && item.optionProductCodes && typeof item.optionProductCodes === "object" ? (item.optionProductCodes as Record<string, unknown>) : {};
+  const option = typeof line.itemName === "string" ? codes[line.itemName] : undefined;
+  const own = typeof option === "string" ? option.trim() : "";
+  return own || (typeof item.productCode === "string" ? item.productCode.trim() : "");
+}
+
+/**
+ * SCRUM-978 (the lane's review): the other half of `adultsSetCopiesUncoded`.
+ * "Different for adults" in the editor and the day-of view copies the kids'
+ * set-menu lines, which carry no till code (`resolveSetMenuLines` writes none:
+ * the till reads the kids' line's code from the set menu). Once staff give the
+ * adults another count (kids Chicken 12, adults Chicken 8), the till's plan view
+ * no longer folds the copy into the kids' line and reads it by its own code
+ * alone: none, so the till listed it "not on the till menu". Such a line — a
+ * SET line of a set-menu group, with no code, that is no kids' line's dish
+ * (`sameKitchenDish`) — takes the code the set menu gives it
+ * (`setMenuCodeOfLine`), the code the till reads for the kids' line, and stays
+ * a SET line, never charged. A line the view folds keeps none; a line that
+ * would fold into a kids' line once coded is left as it is; every other line
+ * is returned as it is.
+ */
+export function adultsSetLinesTillCoded<T extends KitchenLineLike>(kids: readonly KitchenLineLike[], adults: T[], templateItems: unknown): T[] {
+  return adults.map((line) => {
+    if (!adultsSetLineWantsCode(kids, line)) return line;
+    const code = setMenuCodeOfLine(templateItems, line);
+    if (!code) return line;
+    const coded = { ...line, productCode: code };
+    return kids.some((k) => sameKitchenDish(k, coded)) ? line : coded;
+  });
+}
+
+/** Whether an adults' line is one `adultsSetLinesTillCoded` codes from the set menu, the set menu aside. */
+export function adultsSetLineWantsCode(kids: readonly KitchenLineLike[], line: KitchenLineLike): boolean {
+  return line.source === "set_menu" && !codeOf(line) && typeof line.groupId === "string" && !!line.groupId.trim() && !kids.some((k) => sameKitchenDish(k, line));
+}
+
 /** The list the adults eat: their own while the switch is on, else the kids'. */
 export function adultsListOf(menus: unknown): KitchenLineLike[] {
   const m = menus && typeof menus === "object" && !Array.isArray(menus) ? (menus as Record<string, unknown>) : {};

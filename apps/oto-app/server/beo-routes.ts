@@ -59,7 +59,7 @@ import { uploadToObjectStorage } from "./file-storage";
 import { s3PresignedGet } from "./storage/s3Storage";
 import { onStaff } from "./lib/payOnlyAccess";
 import { resolveSetMenuLines, setMenuChoicesOfKitchenPlan } from "./lib/setMenuResolve";
-import { adultsCopiesOf, adultsDifferOf, adultsSetCopiesUncoded, foldDishName } from "@shared/kitchenAdults";
+import { adultsCopiesOf, adultsDifferOf, adultsSetCopiesUncoded, adultsSetLinesTillCoded, adultsSetLineWantsCode, foldDishName } from "@shared/kitchenAdults";
 import { refuseStartTime } from "@shared/eventStartTime";
 import { isCakeCount, kitchenPlanBodyRefusal, kitchenPlanPutBodySchema } from "./lib/kitchenPlanBody";
 
@@ -196,6 +196,26 @@ function withAdultsDiffer(value: unknown): KitchenMenuCollection {
 }
 
 /**
+ * SCRUM-978 (the lane's review): an adults' set-menu line the till reads as the adults' own (another
+ * count than the kids' line: "Different for adults" copies the kids' set lines, uncoded, and staff
+ * change the count) carries the till code the party's set menu gives it, as the till's plan view
+ * (app migration 0050) reads the kids' line's (adultsSetLinesTillCoded, shared/kitchenAdults.ts), so
+ * the till names it and never lists it "not on the till menu". The set menu is read only when such a
+ * line is there, from the party's own park group, and only while the set menu is on (as the view).
+ */
+async function withAdultsSetCodes(tx: any, eventId: string, setMenu: { enabled: unknown; templateId: unknown }, menus: KitchenMenuCollection): Promise<KitchenMenuCollection> {
+  const kids = asMenuItems(menus.kids);
+  const adults = asMenuItems(menus.adults);
+  const templateId = typeof setMenu.templateId === "string" ? setMenu.templateId : "";
+  if (setMenu.enabled !== true || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(templateId)) return menus;
+  if (!adults.some((line) => adultsSetLineWantsCode(kids, line))) return menus;
+  const [template] = await tx.select({ items: beoSetMenuTemplates.items }).from(beoSetMenuTemplates)
+    .innerJoin(coreEvents, and(eq(coreEvents.id, eventId), eq(coreEvents.tenantId, beoSetMenuTemplates.tenantId)))
+    .where(eq(beoSetMenuTemplates.id, templateId));
+  return template ? { ...menus, adults: adultsSetLinesTillCoded(kids, adults, template.items) } : menus;
+}
+
+/**
  * SCRUM-970: whether the BEO PDF needs the till's menu to say what an EXTRA line costs: a line
  * not on the set menu with a till code and no price entered (the till's price is charged), or an
  * item made for the party (the till's own price, whatever is typed). Otherwise nothing is asked.
@@ -301,7 +321,13 @@ export async function writeKitchenPlanRow(
     }).from(beoSetMenuSelections)
       .where(eq(beoSetMenuSelections.eventId, eventId));
     const preserveSubmittedItems = isStaleSetMenuSubmission(selection, setMenuSelectionSubmittedAt);
-    const menus = withAdultsDiffer(preserveServerSetMenuItems(kitchenDbData.menus, existingKitchen.menus, preserveSubmittedItems));
+    // SCRUM-978: and the adults' own set lines coded from the set menu (withAdultsSetCodes).
+    const menus = await withAdultsSetCodes(
+      tx,
+      eventId,
+      { enabled: kitchenDbData.setMenuEnabled, templateId: kitchenDbData.setMenuTemplateId },
+      withAdultsDiffer(preserveServerSetMenuItems(kitchenDbData.menus, existingKitchen.menus, preserveSubmittedItems)),
+    );
     const simplifiedMenus = preserveServerSetMenuItems(
       kitchenDbData.simplifiedMenus,
       existingKitchen.simplifiedMenus ?? existingKitchen.menus,
@@ -311,8 +337,14 @@ export async function writeKitchenPlanRow(
       .set({ ...kitchenDbData, menus, simplifiedMenus, updatedAt: new Date() })
       .where(eq(beoKitchenPlans.eventId, eventId));
   } else {
+    const menus = await withAdultsSetCodes(
+      tx,
+      eventId,
+      { enabled: kitchenDbData.setMenuEnabled, templateId: kitchenDbData.setMenuTemplateId },
+      withAdultsDiffer(kitchenDbData.menus),
+    );
     await tx.insert(beoKitchenPlans)
-      .values({ ...kitchenDbData, menus: withAdultsDiffer(kitchenDbData.menus), eventId });
+      .values({ ...kitchenDbData, menus, eventId });
   }
 }
 
@@ -1388,7 +1420,16 @@ export function registerBeoRoutes(app: Express) {
           }).from(beoSetMenuSelections)
             .where(eq(beoSetMenuSelections.eventId, eventId));
           const preserveSubmittedItems = isStaleSetMenuSubmission(selection, setMenuSelectionSubmittedAt);
-          const menus = withAdultsDiffer(preserveServerSetMenuItems(updates.menus ?? existing.menus, existing.menus, preserveSubmittedItems));
+          // SCRUM-978: the adults' own set lines coded from the set menu, as the BEO's Save codes them.
+          const menus = await withAdultsSetCodes(
+            tx,
+            eventId,
+            {
+              enabled: updates.setMenuEnabled !== undefined ? updates.setMenuEnabled : existing.setMenuEnabled,
+              templateId: updates.setMenuTemplateId !== undefined ? updates.setMenuTemplateId : existing.setMenuTemplateId,
+            },
+            withAdultsDiffer(preserveServerSetMenuItems(updates.menus ?? existing.menus, existing.menus, preserveSubmittedItems)),
+          );
           const simplifiedMenus = preserveServerSetMenuItems(
             updates.simplifiedMenus ?? updates.menus ?? existing.simplifiedMenus ?? existing.menus,
             existing.simplifiedMenus ?? existing.menus,
