@@ -1805,11 +1805,18 @@ export function adultsSameAsKidsFolds(
       // Another option than the kids' choice, or a group the adults have a dish of their own in: not the same.
       const kids = (d: SentenceDish) => !d.itemId || choices.some((c) => c.itemId === d.itemId && c.option === d.option);
       if (dishes.some((d) => !kids(d) || (!!d.itemId && adultsOwnGroups.has(d.itemId)))) continue;
+      // SCRUM-978 (SCRUM-976 point 2): the reason quotes the words that say the adults eat the same.
+      // "Margherita pizza for the kids, and the same for the adults." quoted the kids' clause; the
+      // dish's own clause is quoted only when it says so itself ("the Margherita pizza for them too").
+      const sameWords = [...(same ? SAME_AS_KIDS : []), ...(too ? FOR_ADULTS_TOO : [])].map((re) => re.exec(sentence)).find((m) => !!m);
+      const saysSame = (clause: string) => SAME_AS_KIDS.some((re) => re.test(clause)) || FOR_ADULTS_TOO.some((re) => re.test(clause));
       for (const d of dishes) {
         // One fold per dish: the family's words and the team's confirming them are one repeat of the kids' menu.
         const dup = [...existing, ...out].some((f) => (d.itemId ? f.itemId === d.itemId && f.option === d.option : !f.itemId && fold(f.dish) === fold(d.dish)));
         if (dup) continue;
-        out.push({ dish: d.dish, from: withQuote(from, clauseAround(sentence, d.start, d.end), text), ...(d.itemId ? { itemId: d.itemId, option: d.option } : {}) });
+        const dishClause = clauseAround(sentence, d.start, d.end);
+        const reason = saysSame(dishClause) || !sameWords ? dishClause : clauseAround(sentence, sameWords.index, sameWords.index + sameWords[0].length);
+        out.push({ dish: d.dish, from: withQuote(from, reason, text), ...(d.itemId ? { itemId: d.itemId, option: d.option } : {}) });
       }
     }
   }
@@ -1820,8 +1827,11 @@ export function adultsSameAsKidsFolds(
 /**
  * SCRUM-946: words saying a price is for one item ("450 each", "по 450", "ถาดละ 450").
  * SCRUM-970 (the lane's reviews): "ละ" never as the end of "และ" ("and").
+ * SCRUM-978 (SCRUM-976 point 6): "ต่อ" is "per" only before a count or a unit ("450 บาทต่อถาด",
+ * "ต่อคน", "ต่อ 1 ชิ้น"), never inside another word: "ติดต่อ" (contact), "ต่อไป" (next).
  */
-const PER_ITEM_WORDS = /(^|[^\p{L}])(each|per|apiece|a piece|ea)([^\p{L}]|$)|\/\s*(pc|pcs|piece|each)|(?<!แ)ละ|ต่อ|за штуку|за шт|кажд|по\s*$/iu;
+const PER_ITEM_WORDS =
+  /(^|[^\p{L}])(each|per|apiece|a piece|ea)([^\p{L}]|$)|\/\s*(pc|pcs|piece|each)|(?<!แ)ละ|(?<!ติด)ต่อ\s*(?:\d|ถาด|ชิ้น|จาน|ที่|แก้ว|กล่อง|ท่าน|คน|หัว|ชุด|อัน|ลูก|ขวด|ถ้วย|ชาม|ไม้|ก้อน|เสิร์ฟ|หน่วย|ปอนด์|กระบอก|ออเดอร์)|за штуку|за шт|кажд|по\s*$/iu;
 /** SCRUM-946: words saying a price is the total for several ("for 900", "900 in total", "всего 900"). */
 const TOTAL_WORDS = /(^|[^\p{L}])(total|in all|altogether|together|for (both|all|the two|the three|them|everything))([^\p{L}]|$)|รวม|ทั้งหมด|всего|итого|вместе|за все|за обе|за оба/iu;
 /**
@@ -1922,6 +1932,39 @@ export function chatTotalOf(
 const TOTAL_CLAUSE_BREAK = /[,.;!?\n]|(?<!\p{L})(?:and|plus|also|и|а|плюс)(?!\p{L})|และ/giu;
 /** SCRUM-970: the words that may follow a figure of money: a money word, a total, "for", "please", a stop. */
 const AFTER_MONEY = new RegExp(String.raw`^\s*(?:$|[^\p{L}\s]|${MONEY}|${TOTAL_PHRASE}|(?:for|за|please|pls|thanks?|each|per|apiece|ea)(?!\p{L})|ค่ะ|ครับ|นะ|ละ|пожалуйста)`, "iu");
+/**
+ * SCRUM-978: a month's name, as the park's chats write it: English in full or short ("December",
+ * "Dec", "Dec."), Thai in full or short ("ธันวาคม", "ธ.ค."), Russian in the form a date takes
+ * ("декабря", "дек").
+ */
+const MONTH_NAME = String.raw`(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?(?!\p{L})|มกราคม|กุมภาพันธ์|มีนาคม|เมษายน|พฤษภาคม|มิถุนายน|กรกฎาคม|สิงหาคม|กันยายน|ตุลาคม|พฤศจิกายน|ธันวาคม|(?:ม\.ค|ก\.พ|มี\.ค|เม\.ย|พ\.ค|มิ\.ย|ก\.ค|ส\.ค|ก\.ย|ต\.ค|พ\.ย|ธ\.ค)\.?|(?:январ[ьяе]|феврал[ьяе]|марта?|апрел[ьяе]|ма[йяе]|июн[ьяе]|июл[ьяе]|августа?|сентябр[ьяе]|октябр[ьяе]|ноябр[ьяе]|декабр[ьяе]|янв|фев|мар|апр|авг|сен|окт|ноя|дек)\.?(?!\p{L})`;
+const MONTH_AFTER = new RegExp(String.raw`^\s*(?:of\s+)?(?:${MONTH_NAME})`, "iu");
+const MONTH_BEFORE = new RegExp(String.raw`(?<!\p{L})(?:${MONTH_NAME})\s*$`, "iu");
+/** SCRUM-978: words of the clock after a figure: "3pm", "11 a.m.", "15h", "5 o'clock", "15 น.", "บ่าย 3 โมง", "в 15 ч". */
+const CLOCK_AFTER = /^\s*(?:a\.?m\.?|p\.?m\.?|o['’]?clock|h(?:rs?)?|น\.|นาฬิกา|โมง|ทุ่ม|ч\.?|час\p{L}*)(?!\p{L})/iu;
+/**
+ * SCRUM-978 (SCRUM-976 point 1: "2 Margherita pizzas for 25/12" gave "The chat says ฿25 for 2"): a
+ * figure that is part of a date or a clock time — another figure after a slash, a dot, a dash or a
+ * colon ("25/12", "25.12.2026", "2026-12-25", "15:00") or before it ("12/25"), a figure written with
+ * two decimals and no money word that reads as a day and month or a time ("25.12", "21.30"), the
+ * clock's words after it ("3pm", "15 น.", "в 15 ч"), a month's name beside it ("25 December", "25 ธ.ค.",
+ * "25 декабря", "December 25"). "for 900", "for 900 baht", "900 for 2" are none of these.
+ */
+function partOfDateOrTime(line: string, start: number, end: number, money: boolean): boolean {
+  const before = line.slice(Math.max(0, start - 20), start);
+  const after = line.slice(end, end + 20);
+  const figure = line.slice(start, end);
+  // Written close, as a date or a time is ("25/12", "15:00"); "x2 - 900 baht" is a count and a price.
+  // A dot only after a day or an hour ("25.12", "21.30"): "900.50 baht" is money.
+  if (/^[/\-–:]\d/.test(after) || (/^\.\d/.test(after) && Number(figure) <= 31)) return true;
+  if (/\d[/\-–:]$/.test(before) || /(?<!\d)\d{1,2}\.$/.test(before)) return true;
+  const dotted = /^(\d{1,2})[.,](\d{2})$/.exec(figure);
+  if (dotted && !money) {
+    const [whole, part] = [Number(dotted[1]), Number(dotted[2])];
+    if ((whole >= 1 && whole <= 31 && part >= 1 && part <= 12) || (whole <= 23 && part <= 59)) return true;
+  }
+  return CLOCK_AFTER.test(after) || MONTH_AFTER.test(after) || MONTH_BEFORE.test(before);
+}
 /** SCRUM-970: the total in the clause of a line holding a dish's name at [dishStart, dishEnd), or null. */
 function totalInClause(line: string, breaks: Array<{ start: number; end: number }>, dishStart: number, dishEnd: number, quantity: number) {
   const from = breaks.filter((b) => b.end <= dishStart).at(-1)?.end ?? 0;
@@ -1961,6 +2004,9 @@ function totalInClause(line: string, breaks: Array<{ start: number; end: number 
     const rest = clause.slice(at + m[1]!.length);
     const money = new RegExp(String.raw`${MONEY}\s*$`, "iu").test(lead) || new RegExp(String.raw`^\s*${MONEY}`, "iu").test(rest);
     if (/[x×]\s*$/i.test(lead) || !AFTER_MONEY.test(rest) || !(value > 0) || (value < 20 && !money)) return [];
+    // SCRUM-978 (SCRUM-976 point 1): a figure of a date or a clock time is never a total ("for 25/12").
+    // Read in the whole line: a stop ends the clause, and "25.12" or "21.30" is cut at its dot.
+    if (partOfDateOrTime(line, from + at, from + at + m[1]!.length, money)) return [];
     const perItem =
       PER_ITEM_WORDS.test(lead) ||
       // The lane's reviews: "450/each", "450 baht/ea", "450 for each one", "450 for one".
