@@ -18,7 +18,7 @@ import {
   entertainmentPackageTemplates,
 } from "@shared/schema";
 import { adultsLinesRepeatKids, CHOICE_FROM_CHAT, codedLineNameOf, foodNameFor, foodNamesFor, foodOptionNamed, setMenuOptionOf, sharedFoodLabel, tillItemOf, type BeoAiApproveBody, type BeoAiTillItem, type BeoAiSetMenuChoices, type BeoAiSetMenuItem } from "@shared/beoAiFill";
-import { adultsCopiesOf, adultsDifferOf } from "@shared/kitchenAdults";
+import { adultsCopiesOf, adultsDifferOf, foldDishName } from "@shared/kitchenAdults";
 import { depositNotApprovedWords, type DepositSaveReason } from "@shared/partyDeposit";
 import type { db as appDb } from "../db";
 import { normalizeThaiPhone, validatePhoneInput } from "../phone-utils";
@@ -642,6 +642,20 @@ export async function approveBeoAiFill(
       // ordered on top ("3 more Margherita pizzas for the adults", one the chat prices) is no repeat
       // and stays an EXTRA, as before.
       const adultsWritten = adultsOwn && !adultsRepeat ? adultsSaidLines : [];
+      // SCRUM-978 (the lane's review): that rule is the set menu's. A repeat of a kids' line that is
+      // no set-menu dish (the kids' own extra: "nuggets for the adults, the same as the kids") is on
+      // the adults' own menu as the copy of that kids' line (same name, count, code and price), so
+      // the till's plan view and the PDF read the one dish, once, as with the switch off; it is never
+      // dropped, and never said to come "from the set menu".
+      const repeatNames = adultsOwn && adultsRepeat
+        ? adultsSaidLines.map((l, i) => foldDishName(typeof adultsExtra[i]?.itemName === "string" ? adultsExtra[i]!.itemName : l.itemName))
+        : [];
+      const kidsSetDish = (name: string) => kids.some((k) => k.source === "set_menu" && foldDishName(k.itemName) === name);
+      const kidsLineRepeats = repeatNames.filter((name) => !kidsSetDish(name));
+      const kidsLineCopies = adultsCopiesOf(
+        kids.filter((k) => k.source !== "set_menu" && kidsLineRepeats.includes(foldDishName(k.itemName))
+          && !adults.some((a) => a.source !== "set_menu" && foldDishName(a.itemName) === foldDishName(k.itemName))),
+      );
       written.kitchenLines = kidsExtra.length + adultsWritten.length + adultsSetOwn.length;
       written.freeKitchenLines = [...kidsSaid, ...adultsWritten].filter((l) => !l.productCode).length;
       // SCRUM-958 (the proof read 3 for 4 coded lines): every line written with a till code, a code a
@@ -650,15 +664,21 @@ export async function approveBeoAiFill(
       if (tillCoded > 0) written.tillLines = tillCoded;
       if (adultsSetOwn.length > 0) written.adultsSetLines = adultsSetOwn.length;
       // SCRUM-958: and the lines the review showed folded before it (`adultsFolded`, a count).
-      const folded = adultsExtra.length - adultsWritten.length + (adultsSet.length - adultsSetOwn.length) + (body.adultsFolded ?? 0);
+      // SCRUM-978: a repeat of a kids' line that is no set-menu dish is said apart (`adultsKidsLinesCopied`).
+      const folded = adultsExtra.length - adultsWritten.length - kidsLineRepeats.length + (adultsSet.length - adultsSetOwn.length) + (body.adultsFolded ?? 0);
       if (folded > 0) {
         written.adultsLinesFolded = folded;
         if (adultsOwn) written.adultsMenuOwn = true;
       }
+      // Said for the lines copied; one whose dish the adults' own menu already holds changes nothing.
+      const copiedNames = new Set(kidsLineCopies.map((l) => foldDishName(l.itemName)));
+      const copiedRepeats = kidsLineRepeats.filter((name) => copiedNames.has(name)).length;
+      if (copiedRepeats > 0) written.adultsKidsLinesCopied = copiedRepeats;
       if (!adultsOwn) {
         adults = [];
       } else {
         if (adultsExtra.length > 0 && !adultsRepeat) adults = [...adults.filter((l) => l.source === "set_menu"), ...adultsExtra];
+        if (kidsLineCopies.length > 0) adults = [...adults, ...kidsLineCopies];
         if (body.setMenu || adultsExtra.length > 0 || adultsSetOwn.length > 0) {
           // SCRUM-958: the kids' set menu copied for the adults, but for a group the adults have a
           // dish of their own in: their SET line stands in its place (both choices stand).

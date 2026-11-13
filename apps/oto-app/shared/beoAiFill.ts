@@ -541,6 +541,14 @@ export const adultsFoldedOnOwnMenuWords = (n: number): string =>
   `The adults' ${n === 1 ? "line only repeats" : `${n} lines only repeat`} the kids' set menu: the adults' menu has ${n === 1 ? "it" : "them"} from the set menu, not as ${n === 1 ? "an extra" : "extras"}.`;
 
 /**
+ * SCRUM-978 (the lane's review): the same, for a repeat of a kids' line that is
+ * no set-menu dish while the adults' menu is their own: the adults' menu holds
+ * the kids' line itself (its copy), the one dish, never an extra of theirs.
+ */
+export const adultsFoldedAsKidsLineWords = (n: number): string =>
+  `The adults' ${n === 1 ? "line only repeats" : `${n} lines only repeat`} the kids' menu: the adults' menu has ${n === 1 ? "it as the kids' own line" : "them as the kids' own lines"}, not as ${n === 1 ? "an extra" : "extras"} of their own.`;
+
+/**
  * SCRUM-958: the option of a set menu's choice group a name stands for — the
  * option as listed ("Chicken"), the till code's name for it ("Fried rice
  * (Chicken)", `foodOfSetMenus`), or the option a till code belongs to

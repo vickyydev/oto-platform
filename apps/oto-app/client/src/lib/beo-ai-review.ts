@@ -1,4 +1,5 @@
 import {
+  adultsFoldedAsKidsLineWords,
   adultsFoldedOnOwnMenuWords,
   adultsFoldedWords,
   adultsLinesRepeatKids,
@@ -563,7 +564,7 @@ const WRITTEN_SECTIONS: Array<[string, (w: Record<string, number | boolean>) => 
   ["the event's details (name, counts, times)", (w) => w.event === true],
   ["the date", (w) => w.eventDate === true],
   ["the package", (w) => w.package === true],
-  ["the kitchen plan", (w) => w.setMenu === true || Number(w.kitchenLines) > 0 || w.cake === true || w.foodTimes === true],
+  ["the kitchen plan", (w) => w.setMenu === true || Number(w.kitchenLines) > 0 || Number(w.adultsKidsLinesCopied) > 0 || w.cake === true || w.foodTimes === true],
   ["the bar", (w) => Number(w.barLines) > 0 || w.barServiceTime === true],
   ["the entertainment", (w) => Number(w.entertainment) > 0],
   ["the setup plan", (w) => w.setup === true],
@@ -595,7 +596,9 @@ export function approvalResultWords(answer: ApproveAnswer): string {
   // with the adults' menu their own all the same, said so (`adultsMenuOwn`).
   const folded = Number(answer.written?.adultsLinesFolded) || 0;
   const foldWords = answer.written?.adultsMenuOwn === true ? adultsFoldedOnOwnMenuWords(folded) : adultsFoldedWords(folded);
-  return `Saved: ${saved}.${folded > 0 ? ` ${foldWords}` : ""}${steps}${deposit}`;
+  // SCRUM-978: a repeat of a kids' line that is no set-menu dish, on the adults' own menu as that line.
+  const copied = Number(answer.written?.adultsKidsLinesCopied) || 0;
+  return `Saved: ${saved}.${folded > 0 ? ` ${foldWords}` : ""}${copied > 0 ? ` ${adultsFoldedAsKidsLineWords(copied)}` : ""}${steps}${deposit}`;
 }
 
 /**
