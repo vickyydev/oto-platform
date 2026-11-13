@@ -28,7 +28,7 @@ import { ChangePasswordScreen } from "@/components/auth/ChangePasswordScreen";
 import { InactivityWarning } from "@/components/auth/InactivityWarning";
 import { ImpersonationBanner } from "@/components/auth/ImpersonationBanner";
 import { MobileShell } from "@/components/mobile/MobileShell";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useTillChoice } from "@/lib/tillChoice";
 import { staffThemeController } from "@/lib/themePref";
 import { LanguageProvider } from "@/i18n/LanguageContext";
 import { ServiceWorkerUpdater } from "@/pwa/ServiceWorkerUpdater";
@@ -66,12 +66,14 @@ function Router() {
 // Gate the entire POS behind an operator session: phone + password here, or a
 // hand-off from the suite launcher (S2-02).
 // On narrow phone viewports (< 768 px) the MobileShell is rendered in place of
-// the standard iPad Router — same provider tree, additive only.
+// the standard iPad Router — same provider tree, additive only. SCRUM-977 — a
+// phone on its side stays the phone till, and a resize or a turn never swaps
+// the till showing while something is open on it (`lib/tillChoice.ts`).
 function AuthGate() {
   const { operator, locked, sessionResolved, mustChangePassword, tillSeat } = useOperator();
   const { station, fleetAvailable, resolved: stationResolved } = useStation();
   const [location] = useLocation();
-  const isMobile = useIsMobile();
+  const isMobile = useTillChoice() === 'phone';
   const ticketTill = !isMobile && location === "/";
   const guestOrderStation = !isMobile && location === '/order-station';
   const guestMerchStation = !isMobile && location === '/merch-station';

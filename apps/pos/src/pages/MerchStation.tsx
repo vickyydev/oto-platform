@@ -58,7 +58,7 @@ import { PublicMerchCustomerDisplay } from '@/components/merch/PublicMerchCustom
 import { ManualDiscountModal } from '@/components/shared/ManualDiscountModal';
 import { useOperator } from '@/auth/OperatorContext';
 import { toast } from '@/hooks/use-toast';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useTillChoice } from '@/lib/tillChoice';
 import { announceSalePrinting } from '@/lib/printRouting';
 import { Button } from '@/components/ui/button';
 import { Monitor } from 'lucide-react';
@@ -69,7 +69,8 @@ let orderCounter = 1;
 let lineCounter = 1;
 
 export default function MerchStation() {
-  const mobile = useIsMobile();
+  // SCRUM-977 — drawn for the till that shows it: the phone shell's or the desk's (`lib/tillChoice.ts`).
+  const mobile = useTillChoice() === 'phone';
   const { operator, locked, offlineUnlock } = useOperator();
   const staffLocked = useRef(locked);
   staffLocked.current = locked;
