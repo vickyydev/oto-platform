@@ -1,0 +1,28 @@
+{
+  "at": "2026-11-13T11:32:27.307Z",
+  "before": "In Progress",
+  "after": "In Progress",
+  "attachments": [
+    {
+      "id": "13487",
+      "name": "2026-11-13-api-01-card-paid.png"
+    },
+    {
+      "id": "13488",
+      "name": "2026-11-13-api-02b-card-waiting-for-staff.png"
+    },
+    {
+      "id": "13489",
+      "name": "2026-11-13-api-03-staging-health-alert.png"
+    },
+    {
+      "id": "13490",
+      "name": "2026-11-13-api-03b-console-health-alert.png"
+    },
+    {
+      "id": "13491",
+      "name": "2026-11-13-api-04b-staging-cleanup-final.png"
+    }
+  ],
+  "commentId": "14702"
+}
