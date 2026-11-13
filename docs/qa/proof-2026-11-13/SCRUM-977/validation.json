@@ -1,0 +1,15 @@
+{
+  "source": "2acebe797c7c20e5aa4f9839a6e8296e1daacff1",
+  "base": "73e906263ddb7f0cf6f633d64ad27cbb56b21465",
+  "preservedCommits": 14,
+  "typechecks": "all three POS configurations passed; whole output read",
+  "tests": {
+    "files": 50,
+    "passed": 733,
+    "failed": 0
+  },
+  "build": "passed; existing large chunk warning",
+  "lint": "all 41 changed TS/TSX files passed",
+  "logs": "C:/oto-lanes/audit-takeover-20261113/977-*.log",
+  "staging": "not run yet"
+}

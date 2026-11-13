@@ -33,7 +33,7 @@ Every landing updates STATUS, CODEX_HANDOVER and CLOUD_HANDOVER section2, and po
 ## Audit findings that change priority
 
 - 982: ticket Cash confirmation after paid QR only called finalise and falsely labelled Cash; the proof's stored payment was QR. F&B Charge again created a second cash sale while the first QR stayed payable. Treat these as distinct regression cases.
-- 979: recoverTerminalAttempt remains unguarded in its local status route; the unique terminal-reference collision must return 200 with the attempt held and a log.
+- 979: status recovery guard landed and tested; reference collision returns 200 with attempt held. API staging proof complete; till points follow in 977/975.
 - 910: the old 'built now' description conflicts with the later hold and main's part-paid-only deposit exclusion. D1 now authorizes a fix.
 - 844: the older free-text fill does not inherit catalogue deposit approval safeguards.
 - 945: legacy repeated adults/kids lines retain money risk; do not edit applied migration 0050.
@@ -53,3 +53,5 @@ Stage 1: local preservation and reconciliation complete. All 75 open tickets hav
 Stage 2.1: API guard and six source commits pass the focused landing gates (406 integration tests). Named deployment and new-fixture staging proof are next; 979 till points remain with 977/975. See docs/qa/proof-2026-11-13/SCRUM-979/validation.json and review.md.
 
 Stage 2.1 API staging proof is complete, with exact cleanup and five inspected pictures; full-SHA CI is running. The whole 979 ticket remains In Progress for its till points. Stage 2.2 (977/975) is next. The owner deposit ruling remains unchanged.
+
+Stage 2.2: fourteen preserved till commits pass review and 733 tests / 50 files, all POS types, build and lint. Both named till deployments and native proof are next. See SCRUM-977/review.md and validation.json.
