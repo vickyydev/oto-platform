@@ -1,0 +1,12 @@
+{
+  "source": "0ea85faaf5b4e62204eaabdda5d691dd2b9a248c",
+  "key": "payments.awaiting_staff:01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+  "title": "2 card payments at this branch have been waiting more than 10 minutes for a member of staff to check the terminal and confirm them.",
+  "detail": "Card payments waiting for staff",
+  "severity": "warning",
+  "ownAttempt": "01a1d4a0-8579-7ec8-96bd-7d51f7a184d7",
+  "observedAt": "2026-11-13T11:27:45.392Z",
+  "startedAt": "2026-11-13T11:17:31.475Z",
+  "samples": 17,
+  "limit": "Health exposes branch alert summaries, not attempt IDs. Exact membership is covered by the integration regression."
+}

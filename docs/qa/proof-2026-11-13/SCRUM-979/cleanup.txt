@@ -15,7 +15,7 @@ if (current.status === 'awaiting_staff_confirmation') {
 const voided = await S.call('POST', `/sales/${S.waiting.sale}/void`, { reason: 'ZZ TEST 979 simulated waiting payment cleanup' });
 S.assert.equal(voided.status, 200);
 const waitingSale = await own(S.waiting.sale);
-S.assert.equal(waitingSale.sale.status, 'void');
+S.assert.equal(waitingSale.sale.status, 'voided');
 cleanup.sales.push({ id: S.waiting.sale, status: waitingSale.sale.status });
 const paid = await own(S.paid.sale);
 S.assert.ok(String(paid.sale.receiptNumber).startsWith('Z979'));
@@ -34,6 +34,7 @@ try {
   await manager.dispose();
 }
 await S.expect.poll(async () => (await own(S.paid.sale)).refundStatus, { timeout: 120000, intervals: [3000] }).toBe('refunded');
+await S.expect.poll(async () => (await own(S.paid.sale)).refunds.flatMap(r => r.tenderAllocation ?? []).every(t => t.status !== 'pending'), { timeout: 180000, intervals: [3000] }).toBe(true);
 const refunded = await own(S.paid.sale);
 cleanup.sales.push({ id: S.paid.sale, status: refunded.sale.status, refundStatus: refunded.refundStatus, tenderAllocation: refunded.refunds.map(x => x.tenderAllocation) });
 const station = await S.stationRow();

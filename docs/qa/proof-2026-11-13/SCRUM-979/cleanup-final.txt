@@ -1,0 +1,15 @@
+S.phase = 'Verify the simulator refund outcome after fixture retirement';
+let detail;
+await S.expect.poll(async () => {
+  detail = await S.sale(S.paid.sale);
+  return detail.refunds.flatMap(r => r.tenderAllocation ?? []).every(t => t.status !== 'pending');
+}, { timeout: 180000, intervals: [3000] }).toBe(true);
+S.assert.equal(detail.refundStatus, 'refunded');
+const commands = await S.termCommandsFor(S.paid.attempt);
+S.assert.equal(commands.filter(c => c.mode === 'sale').length, 1);
+S.assert.equal(commands.filter(c => c.mode === 'void').length, 1);
+S.receipt.cleanup.finalRefund = { id: S.paid.sale, status: detail.sale.status, refundStatus: detail.refundStatus, tenderAllocation: detail.refunds.map(r => r.tenderAllocation), commands };
+S.receipt.cleanup.records.sales[1] = { id: S.paid.sale, status: detail.sale.status, refundStatus: detail.refundStatus, tenderAllocation: detail.refunds.map(r => r.tenderAllocation) };
+S.save();
+await S.txtShot(JSON.stringify(S.receipt.cleanup, null, 2), '04b-staging-cleanup-final.png', 'SCRUM-979: final simulator refund, fixture retirement and session readbacks');
+return S.receipt.cleanup.finalRefund;

@@ -17,6 +17,8 @@ S.assert.equal(response.status(), 200);
 S.waiting.attempt = (await response.json()).attempt.id;
 S.receipt.reads.waiting = S.waiting; S.save();
 await S.expect.poll(async () => (await S.attempt(S.waiting.attempt)).body?.attempt?.status, { timeout: 180000, intervals: [5000] }).toBe('awaiting_staff_confirmation');
+await S.unlock('till');
+await S.expect(S.paymentStep(p)).toBeVisible();
 await S.shot(p, '02-card-waiting-for-staff.png');
 S.waiting.heldAt = new Date().toISOString(); S.save();
 return S.waiting;

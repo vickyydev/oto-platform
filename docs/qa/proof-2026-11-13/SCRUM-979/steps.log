@@ -1,0 +1,486 @@
+
+=== 2026-11-13T11:14:57.193Z Set up only the new ZZ TEST 979 simulated till
+S.phase = 'Set up only the new ZZ TEST 979 simulated till';
+await S.setup();
+const assigned = await S.assignTerminal();
+S.assert.equal(assigned.status, 200);
+const beats = await S.heartbeats(S.lastAssignAt, 2);
+S.till = await S.signIn('till', 'STAGING_RECEPTION_PHONE', 'STAGING_RECEPTION_PASSWORD');
+S.receipt.reads.setup.assign = assigned;
+S.receipt.reads.setup.heartbeats = beats;
+S.save();
+return { station: S.station, terminal: S.dev.card, beats };
+--> {
+ "ok": true,
+ "value": {
+  "station": {
+   "id": "01a1d49e-3196-7647-bb75-d5b5aa7754a1",
+   "name": "ZZ TEST 979 till",
+   "prefix": "Z97901"
+  },
+  "terminal": {
+   "id": "ae8b70f9-8094-4f62-b58c-a05e8c883a5e",
+   "label": "ZZ TEST 979 card terminal",
+   "kind": "terminal",
+   "transport": "simulated"
+  },
+  "beats": {
+   "beats": 2,
+   "waitedS": 117
+  }
+ }
+}
+
+=== 2026-11-13T11:17:16.639Z Normal card approval on a simulated terminal
+S.phase = 'Normal card approval on a simulated terminal';
+const p = S.till;
+S.receipt.numbers.paid = S.free[0];
+await S.walkIn(p, S.free[0]);
+await S.ticket(p, 1, 1);
+const sale = await S.saleWritten('sale-card');
+S.paid = { sale: sale.id };
+await S.expect(S.paymentStep(p)).toBeVisible();
+await p.getByRole('heading', { name: 'Card', exact: true }).first().click();
+const next = p.waitForResponse(r => r.request().method() === 'POST' && new URL(r.url()).pathname === '/api/payments/attempts');
+await p.getByRole('button', { name: 'Start card payment', exact: true }).click();
+const response = await next;
+S.assert.equal(response.status(), 200);
+S.paid.attempt = (await response.json()).attempt.id;
+await p.getByText('Payment Successful', { exact: true }).waitFor({ timeout: 120000 });
+await S.shot(p, '01-card-paid.png', [p.locator('img'), p.locator('span.font-mono')]);
+const detail = await S.sale(sale.id);
+S.assert.equal(detail.sale.status, 'finalised');
+S.assert.equal(detail.attempts.length, 1);
+S.assert.equal(detail.attempts[0].status, 'approved');
+const commands = await S.termCommandsFor(S.paid.attempt);
+S.assert.equal(commands.length, 1);
+const audit = await S.audit(S.paid.attempt);
+S.paid.commands = commands;
+S.paid.auditRecoveryCount = (audit.body.events ?? audit.body.entries ?? audit.body.rows ?? []).filter(x => x.action === 'payment.attempt.result_from_command').length;
+S.receipt.reads.paid = { ...S.paid, status: detail.sale.status, attempts: detail.attempts.map(a => ({ method: a.method, status: a.status, amountSatang: a.amountSatang })) };
+S.point('normal-card', 'PASS', ['01-card-paid.png'], S.receipt.reads.paid);
+return S.receipt.reads.paid;
+--> {
+ "ok": true,
+ "value": {
+  "sale": "01a1d4a0-55ca-7509-bc18-c24d2b006bad",
+  "attempt": "01a1d4a0-596d-7d7d-88e9-e33814bd12d5",
+  "commands": [
+   {
+    "id": "01a1d4a0-5970-7baa-b685-ed725e222044",
+    "kind": "terminal_sale",
+    "mode": "sale",
+    "state": "succeeded",
+    "createdAt": "2026-11-13T11:17:20.855Z",
+    "claimedAt": "2026-11-13T11:17:22.367Z",
+    "finishedAt": "2026-11-13T11:17:22.416Z",
+    "errorCode": null,
+    "errorMessage": null,
+    "result": {
+     "mode": "sale",
+     "role": "card_terminal",
+     "outcome": "approved",
+     "deviceId": "ae8b70f9-8094-4f62-b58c-a05e8c883a5e",
+     "protocol": "ghl_linkpos",
+     "attemptId": "01a1d4a0-596d-7d7d-88e9-e33814bd12d5",
+     "stationId": null,
+     "terminalRef": "261113540001",
+     "responseCode": "00"
+    }
+   }
+  ],
+  "auditRecoveryCount": 0,
+  "status": "finalised",
+  "attempts": [
+   {
+    "method": "card",
+    "status": "approved",
+    "amountSatang": 104000
+   }
+  ]
+ }
+}
+
+=== 2026-11-13T11:17:28.060Z Simulated card silence reaches staff confirmation
+S.phase = 'Simulated card silence reaches staff confirmation';
+const p = S.till;
+await S.unlock('till');
+S.receipt.numbers.waiting = S.free[1];
+await S.walkIn(p, S.free[1]);
+await S.ticket(p, 1, 1);
+const sale = await S.saleWritten('sale-waiting');
+S.waiting = { sale: sale.id, startedAt: new Date().toISOString() };
+const configured = await S.call('POST', '/payments/terminal-simulator', { action: 'terminal.outcome', deviceId: S.dev.card.id, outcome: 'no_response' });
+S.assert.equal(configured.status, 200);
+S.assert.equal(configured.body.applied, true);
+await p.getByRole('heading', { name: 'Card', exact: true }).first().click();
+const next = p.waitForResponse(r => r.request().method() === 'POST' && new URL(r.url()).pathname === '/api/payments/attempts');
+await p.getByRole('button', { name: 'Start card payment', exact: true }).click();
+const response = await next;
+S.assert.equal(response.status(), 200);
+S.waiting.attempt = (await response.json()).attempt.id;
+S.receipt.reads.waiting = S.waiting; S.save();
+await S.expect.poll(async () => (await S.attempt(S.waiting.attempt)).body?.attempt?.status, { timeout: 180000, intervals: [5000] }).toBe('awaiting_staff_confirmation');
+await S.shot(p, '02-card-waiting-for-staff.png');
+S.waiting.heldAt = new Date().toISOString(); S.save();
+return S.waiting;
+--> {
+ "ok": true,
+ "value": {
+  "sale": "01a1d4a0-81d5-783d-9bda-069295d356ab",
+  "startedAt": "2026-11-13T11:17:31.475Z",
+  "attempt": "01a1d4a0-8579-7ec8-96bd-7d51f7a184d7",
+  "heldAt": "2026-11-13T11:19:33.868Z"
+ }
+}
+
+=== 2026-11-13T11:19:41.890Z Observe the real ten-minute waiting-for-staff alert
+S.phase = 'Observe the real ten-minute waiting-for-staff alert';
+const samples = [];
+const deadline = Date.now() + 12 * 60000;
+let matched;
+while (Date.now() < deadline) {
+  const h = await S.call('GET', '/ops/health');
+  S.assert.equal(h.status, 200);
+  const alerts = h.body.alerts ?? [];
+  matched = alerts.find(a => a.key === `payments.awaiting_staff:${S.branchId}` && !a.resolvedAt);
+  const ownStatus = (await S.attempt(S.waiting.attempt)).body?.attempt?.status;
+  S.assert.equal(ownStatus, 'awaiting_staff_confirmation');
+  samples.push({ at: new Date().toISOString(), branchStaffAlert: Boolean(matched), ownStatus });
+  S.receipt.reads.healthSamples = samples; S.save();
+  if (matched && Date.now() - Date.parse(S.waiting.startedAt) >= 10 * 60000) {
+    break;
+  }
+  await S.sleep(30000);
+}
+S.assert.ok(matched, 'branch staff alert appears while the own attempt remains held');
+S.receipt.reads.health = { key: matched.key, title: matched.title, detail: matched.detail, severity: matched.severity, ownAttempt: S.waiting.attempt, observedAt: new Date().toISOString(), startedAt: S.waiting.startedAt, samples: samples.length, limit: 'Health exposes branch alert summaries, not attempt IDs. Exact membership is covered by the integration regression.' };
+await S.txtShot(JSON.stringify({ source: S.receipt.sha, ...S.receipt.reads.health }, null, 2), '03-staging-health-alert.png', 'SCRUM-979: staging API Health observed after the real waiting period');
+const consolePage = await S.consoleIn('console');
+await consolePage.goto('/watch/health');
+const line = consolePage.getByText(/Card payments waiting for staff|card payment.*waiting.*member of staff/i).first();
+await line.waitFor({ timeout: 30000 });
+await line.scrollIntoViewIfNeeded();
+await S.shot(consolePage, '03b-console-health-alert.png');
+S.receipt.reads.health.consoleSession = await S.close('console');
+S.assert.equal(S.receipt.reads.health.consoleSession.me, 401);
+S.point('staff-health', 'PASS', ['02-card-waiting-for-staff.png', '03-staging-health-alert.png', '03b-console-health-alert.png'], S.receipt.reads.health);
+return S.receipt.reads.health;
+--> {
+ "ok": true,
+ "value": {
+  "key": "payments.awaiting_staff:01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+  "title": "2 card payments at this branch have been waiting more than 10 minutes for a member of staff to check the terminal and confirm them.",
+  "detail": "Card payments waiting for staff",
+  "severity": "warning",
+  "ownAttempt": "01a1d4a0-8579-7ec8-96bd-7d51f7a184d7",
+  "observedAt": "2026-11-13T11:27:45.392Z",
+  "startedAt": "2026-11-13T11:17:31.475Z",
+  "samples": 17,
+  "limit": "Health exposes branch alert summaries, not attempt IDs. Exact membership is covered by the integration regression.",
+  "consoleSession": {
+   "signOut": 200,
+   "me": 401
+  }
+ }
+}
+
+=== 2026-11-13T11:28:09.436Z Recapture the actual held-payment screen after the normal idle lock
+S.phase = 'Recapture the actual held-payment screen after the normal idle lock';
+await S.unlock('till');
+await S.expect(S.paymentStep(S.till)).toBeVisible();
+S.assert.equal((await S.attempt(S.waiting.attempt)).body.attempt.status, 'awaiting_staff_confirmation');
+const commands = await S.termCommandsFor(S.waiting.attempt);
+S.assert.equal(commands.filter(c => c.mode === 'sale').length, 1);
+const detail = await S.sale(S.waiting.sale);
+S.assert.equal(detail.attempts.length, 1);
+S.assert.equal(detail.attempts[0].status, 'awaiting_staff_confirmation');
+S.assert.ok(!['paid', 'finalised'].includes(detail.sale.status));
+S.receipt.reads.waitingFinal = { saleStatus: detail.sale.status, commands, attemptStatus: detail.attempts[0].status };
+await S.shot(S.till, '02b-card-waiting-for-staff.png');
+const point = S.receipt.points['staff-health'];
+point.pictures = point.pictures.filter(x => x !== '02-card-waiting-for-staff.png').concat('02b-card-waiting-for-staff.png');
+S.receipt.reads.captureCorrection = 'The first waiting screenshot showed the normal idle lock. It is retained as an attempt record; 02b shows the unlocked staff-review screen and is the acceptance image.';
+S.save();
+return { status: 'awaiting_staff_confirmation', picture: '02b-card-waiting-for-staff.png' };
+--> {
+ "ok": true,
+ "value": {
+  "status": "awaiting_staff_confirmation",
+  "picture": "02b-card-waiting-for-staff.png"
+ }
+}
+
+=== 2026-11-13T11:28:21.220Z Close only this run’s simulated sales and retire its exact fixtures
+S.phase = 'Close only this run’s simulated sales and retire its exact fixtures';
+const cleanup = { sales: [], devices: [] };
+const own = async id => {
+  S.assert.ok(S.receipt.created.some(x => x.id === id && x.kind.startsWith('sale-')));
+  const s = await S.sale(id);
+  S.assert.equal(s.sale.stationId, S.station.id);
+  return s;
+};
+await own(S.waiting.sale);
+let current = (await S.attempt(S.waiting.attempt)).body.attempt;
+if (current.status === 'awaiting_staff_confirmation') {
+  const r = await S.call('POST', `/payments/attempts/${S.waiting.attempt}/confirm`, { took: false, note: 'ZZ TEST 979 simulator deliberately returned no response; no real payment' });
+  S.assert.equal(r.status, 200);
+}
+const voided = await S.call('POST', `/sales/${S.waiting.sale}/void`, { reason: 'ZZ TEST 979 simulated waiting payment cleanup' });
+S.assert.equal(voided.status, 200);
+const waitingSale = await own(S.waiting.sale);
+S.assert.equal(waitingSale.sale.status, 'void');
+cleanup.sales.push({ id: S.waiting.sale, status: waitingSale.sale.status });
+const paid = await own(S.paid.sale);
+S.assert.ok(String(paid.sale.receiptNumber).startsWith('Z979'));
+const outcome = await S.call('POST', '/payments/terminal-simulator', { action: 'terminal.outcome', deviceId: S.dev.card.id, outcome: 'approved' });
+S.assert.equal(outcome.status, 200);
+const manager = await S.pw.request.newContext({ baseURL: S.pos });
+try {
+  S.assert.equal((await manager.post('/api/auth/sign-in', { data: { phone: S.need('STAGING_MANAGER_PHONE'), password: S.need('STAGING_MANAGER_PASSWORD') } })).status(), 200);
+  if (paid.refundStatus !== 'refunded') {
+    const r = await manager.post(`/api/sales/${S.paid.sale}/refunds`, { headers: { 'idempotency-key': S.randomUUID() }, data: { mode: 'whole', reason: 'ZZ TEST 979 simulated card proof cleanup' } });
+    S.assert.equal(r.status(), 200);
+  }
+} finally {
+  await manager.post('/api/auth/sign-out', { headers: { 'idempotency-key': S.randomUUID() } });
+  cleanup.managerMe = (await manager.get('/api/me')).status();
+  await manager.dispose();
+}
+await S.expect.poll(async () => (await own(S.paid.sale)).refundStatus, { timeout: 120000, intervals: [3000] }).toBe('refunded');
+const refunded = await own(S.paid.sale);
+cleanup.sales.push({ id: S.paid.sale, status: refunded.sale.status, refundStatus: refunded.refundStatus, tenderAllocation: refunded.refunds.map(x => x.tenderAllocation) });
+const station = await S.stationRow();
+S.assert.equal(station.name, 'ZZ TEST 979 till');
+S.assert.equal((await S.call('PATCH', `/stations/${S.station.id}`, { devices: [], paymentRouting: { card: 'manual', qr: 'none' } })).status, 200);
+S.assert.equal((await S.call('DELETE', `/stations/${S.station.id}`)).status, 200);
+const retired = await S.stationRow();
+S.assert.ok(retired.archived);
+S.assert.equal(retired.devices.length, 0);
+cleanup.station = { id: retired.id, archived: retired.archived, devices: retired.devices.length };
+for (const d of Object.values(S.dev)) {
+  const now = (await S.devicesOnBox()).find(x => x.id === d.id);
+  S.assert.ok(now.label.startsWith('ZZ TEST 979 '));
+  if (!now.archived) S.assert.equal((await S.call('DELETE', `/devices/${d.id}`)).status, 200);
+  const after = (await S.devicesOnBox()).find(x => x.id === d.id);
+  S.assert.ok(after.archived);
+  cleanup.devices.push({ id: d.id, label: after.label, archived: after.archived });
+}
+cleanup.tillSession = await S.close('till');
+S.assert.equal(cleanup.tillSession.me, 401);
+S.assert.equal(cleanup.managerMe, 401);
+S.receipt.cleanup.records = cleanup; S.save();
+await S.txtShot(JSON.stringify(cleanup, null, 2), '04-staging-cleanup.png', 'SCRUM-979: exact simulated sales and fixture cleanup readback');
+return cleanup;
+--> {
+ "ok": false,
+ "error": "AssertionError: Expected values to be strictly equal: |  | 'voided' !== 'void' | "
+}
+
+=== 2026-11-13T11:28:29.750Z Close only this run’s simulated sales and retire its exact fixtures
+S.phase = 'Close only this run’s simulated sales and retire its exact fixtures';
+const cleanup = { sales: [], devices: [] };
+const own = async id => {
+  S.assert.ok(S.receipt.created.some(x => x.id === id && x.kind.startsWith('sale-')));
+  const s = await S.sale(id);
+  S.assert.equal(s.sale.stationId, S.station.id);
+  return s;
+};
+await own(S.waiting.sale);
+let current = (await S.attempt(S.waiting.attempt)).body.attempt;
+if (current.status === 'awaiting_staff_confirmation') {
+  const r = await S.call('POST', `/payments/attempts/${S.waiting.attempt}/confirm`, { took: false, note: 'ZZ TEST 979 simulator deliberately returned no response; no real payment' });
+  S.assert.equal(r.status, 200);
+}
+const voided = await S.call('POST', `/sales/${S.waiting.sale}/void`, { reason: 'ZZ TEST 979 simulated waiting payment cleanup' });
+S.assert.equal(voided.status, 200);
+const waitingSale = await own(S.waiting.sale);
+S.assert.equal(waitingSale.sale.status, 'voided');
+cleanup.sales.push({ id: S.waiting.sale, status: waitingSale.sale.status });
+const paid = await own(S.paid.sale);
+S.assert.ok(String(paid.sale.receiptNumber).startsWith('Z979'));
+const outcome = await S.call('POST', '/payments/terminal-simulator', { action: 'terminal.outcome', deviceId: S.dev.card.id, outcome: 'approved' });
+S.assert.equal(outcome.status, 200);
+const manager = await S.pw.request.newContext({ baseURL: S.pos });
+try {
+  S.assert.equal((await manager.post('/api/auth/sign-in', { data: { phone: S.need('STAGING_MANAGER_PHONE'), password: S.need('STAGING_MANAGER_PASSWORD') } })).status(), 200);
+  if (paid.refundStatus !== 'refunded') {
+    const r = await manager.post(`/api/sales/${S.paid.sale}/refunds`, { headers: { 'idempotency-key': S.randomUUID() }, data: { mode: 'whole', reason: 'ZZ TEST 979 simulated card proof cleanup' } });
+    S.assert.equal(r.status(), 200);
+  }
+} finally {
+  await manager.post('/api/auth/sign-out', { headers: { 'idempotency-key': S.randomUUID() } });
+  cleanup.managerMe = (await manager.get('/api/me')).status();
+  await manager.dispose();
+}
+await S.expect.poll(async () => (await own(S.paid.sale)).refundStatus, { timeout: 120000, intervals: [3000] }).toBe('refunded');
+const refunded = await own(S.paid.sale);
+cleanup.sales.push({ id: S.paid.sale, status: refunded.sale.status, refundStatus: refunded.refundStatus, tenderAllocation: refunded.refunds.map(x => x.tenderAllocation) });
+const station = await S.stationRow();
+S.assert.equal(station.name, 'ZZ TEST 979 till');
+S.assert.equal((await S.call('PATCH', `/stations/${S.station.id}`, { devices: [], paymentRouting: { card: 'manual', qr: 'none' } })).status, 200);
+S.assert.equal((await S.call('DELETE', `/stations/${S.station.id}`)).status, 200);
+const retired = await S.stationRow();
+S.assert.ok(retired.archived);
+S.assert.equal(retired.devices.length, 0);
+cleanup.station = { id: retired.id, archived: retired.archived, devices: retired.devices.length };
+for (const d of Object.values(S.dev)) {
+  const now = (await S.devicesOnBox()).find(x => x.id === d.id);
+  S.assert.ok(now.label.startsWith('ZZ TEST 979 '));
+  if (!now.archived) S.assert.equal((await S.call('DELETE', `/devices/${d.id}`)).status, 200);
+  const after = (await S.devicesOnBox()).find(x => x.id === d.id);
+  S.assert.ok(after.archived);
+  cleanup.devices.push({ id: d.id, label: after.label, archived: after.archived });
+}
+cleanup.tillSession = await S.close('till');
+S.assert.equal(cleanup.tillSession.me, 401);
+S.assert.equal(cleanup.managerMe, 401);
+S.receipt.cleanup.records = cleanup; S.save();
+await S.txtShot(JSON.stringify(cleanup, null, 2), '04-staging-cleanup.png', 'SCRUM-979: exact simulated sales and fixture cleanup readback');
+return cleanup;
+--> {
+ "ok": true,
+ "value": {
+  "sales": [
+   {
+    "id": "01a1d4a0-81d5-783d-9bda-069295d356ab",
+    "status": "voided"
+   },
+   {
+    "id": "01a1d4a0-55ca-7509-bc18-c24d2b006bad",
+    "status": "refunded",
+    "refundStatus": "refunded",
+    "tenderAllocation": [
+     [
+      {
+       "route": "terminal_void",
+       "detail": "Void sent to the terminal",
+       "method": "card",
+       "status": "pending",
+       "actionId": "01a1d4aa-92dd-78c4-b65d-a5c311c8c1a7",
+       "provider": "simulator",
+       "attemptId": "01a1d4a0-596d-7d7d-88e9-e33814bd12d5",
+       "methodCode": "card",
+       "amountSatang": 104000
+      }
+     ]
+    ]
+   }
+  ],
+  "devices": [
+   {
+    "id": "a5487be4-58fa-44f0-b63a-cc701bbca0ab",
+    "label": "ZZ TEST 979 receipt printer",
+    "archived": true
+   },
+   {
+    "id": "9823bc6f-6be6-4fed-887d-10660e0cbf4f",
+    "label": "ZZ TEST 979 band printer",
+    "archived": true
+   },
+   {
+    "id": "ae8b70f9-8094-4f62-b58c-a05e8c883a5e",
+    "label": "ZZ TEST 979 card terminal",
+    "archived": true
+   }
+  ],
+  "managerMe": 401,
+  "station": {
+   "id": "01a1d49e-3196-7647-bb75-d5b5aa7754a1",
+   "archived": true,
+   "devices": 0
+  },
+  "tillSession": {
+   "signOut": 200,
+   "me": 401
+  }
+ }
+}
+
+=== 2026-11-13T11:29:08.886Z Verify the simulator refund outcome after fixture retirement
+S.phase = 'Verify the simulator refund outcome after fixture retirement';
+let detail;
+await S.expect.poll(async () => {
+  detail = await S.sale(S.paid.sale);
+  return detail.refunds.flatMap(r => r.tenderAllocation ?? []).every(t => t.status !== 'pending');
+}, { timeout: 180000, intervals: [3000] }).toBe(true);
+S.assert.equal(detail.refundStatus, 'refunded');
+const commands = await S.termCommandsFor(S.paid.attempt);
+S.assert.equal(commands.filter(c => c.mode === 'sale').length, 1);
+S.assert.equal(commands.filter(c => c.mode === 'void').length, 1);
+S.receipt.cleanup.finalRefund = { id: S.paid.sale, status: detail.sale.status, refundStatus: detail.refundStatus, tenderAllocation: detail.refunds.map(r => r.tenderAllocation), commands };
+S.receipt.cleanup.records.sales[1] = { id: S.paid.sale, status: detail.sale.status, refundStatus: detail.refundStatus, tenderAllocation: detail.refunds.map(r => r.tenderAllocation) };
+S.save();
+await S.txtShot(JSON.stringify(S.receipt.cleanup, null, 2), '04b-staging-cleanup-final.png', 'SCRUM-979: final simulator refund, fixture retirement and session readbacks');
+return S.receipt.cleanup.finalRefund;
+--> {
+ "ok": true,
+ "value": {
+  "id": "01a1d4a0-55ca-7509-bc18-c24d2b006bad",
+  "status": "refunded",
+  "refundStatus": "refunded",
+  "tenderAllocation": [
+   [
+    {
+     "route": "terminal_void",
+     "detail": "Voided on the terminal",
+     "method": "card",
+     "status": "done",
+     "actionId": "01a1d4aa-92dd-78c4-b65d-a5c311c8c1a7",
+     "provider": "simulator",
+     "respCode": "00",
+     "attemptId": "01a1d4a0-596d-7d7d-88e9-e33814bd12d5",
+     "settledAt": "2026-11-13T11:28:32.452Z",
+     "methodCode": "card",
+     "amountSatang": 104000
+    }
+   ]
+  ],
+  "commands": [
+   {
+    "id": "01a1d4aa-92de-7e60-98fc-7ec414eca393",
+    "kind": "terminal_sale",
+    "mode": "void",
+    "state": "succeeded",
+    "createdAt": "2026-11-13T11:28:30.928Z",
+    "claimedAt": "2026-11-13T11:28:32.427Z",
+    "finishedAt": "2026-11-13T11:28:32.475Z",
+    "errorCode": null,
+    "errorMessage": null,
+    "result": {
+     "mode": "void",
+     "role": "card_terminal",
+     "outcome": "approved",
+     "deviceId": "ae8b70f9-8094-4f62-b58c-a05e8c883a5e",
+     "protocol": "ghl_linkpos",
+     "attemptId": "01a1d4a0-596d-7d7d-88e9-e33814bd12d5",
+     "stationId": null,
+     "terminalRef": "261113540003",
+     "responseCode": "00"
+    }
+   },
+   {
+    "id": "01a1d4a0-5970-7baa-b685-ed725e222044",
+    "kind": "terminal_sale",
+    "mode": "sale",
+    "state": "succeeded",
+    "createdAt": "2026-11-13T11:17:20.855Z",
+    "claimedAt": "2026-11-13T11:17:22.367Z",
+    "finishedAt": "2026-11-13T11:17:22.416Z",
+    "errorCode": null,
+    "errorMessage": null,
+    "result": {
+     "mode": "sale",
+     "role": "card_terminal",
+     "outcome": "approved",
+     "deviceId": "ae8b70f9-8094-4f62-b58c-a05e8c883a5e",
+     "protocol": "ghl_linkpos",
+     "attemptId": "01a1d4a0-596d-7d7d-88e9-e33814bd12d5",
+     "stationId": null,
+     "terminalRef": "261113540001",
+     "responseCode": "00"
+    }
+   }
+  ]
+ }
+}

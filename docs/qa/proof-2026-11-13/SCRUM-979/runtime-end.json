@@ -1,0 +1,26 @@
+{
+  "at": "2026-11-13T11:29:24.323Z",
+  "services": [
+    {
+      "service": "oto-pos-web-staging",
+      "id": "dep-dbrc022jnfac739a1d40",
+      "status": "live",
+      "sha": "26c308edc5c09c3f576d5189b9e58ad8f1cbabe7",
+      "finishedAt": "2026-11-13T07:49:07.700202Z"
+    },
+    {
+      "service": "oto-console-staging",
+      "id": "dep-dbrf8368bjmc73bo5o4g",
+      "status": "live",
+      "sha": "7f5ac6f1359df9c0627fa7cd4ffaca6f2b9b2c6c",
+      "finishedAt": "2026-11-13T11:28:44.904696Z"
+    },
+    {
+      "service": "oto-api-staging",
+      "id": "dep-dbrevcgu01pc73b1vjp0",
+      "status": "live",
+      "sha": "0ea85faaf5b4e62204eaabdda5d691dd2b9a248c",
+      "finishedAt": "2026-11-13T11:13:52.427358Z"
+    }
+  ]
+}

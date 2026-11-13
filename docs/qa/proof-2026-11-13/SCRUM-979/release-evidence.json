@@ -1,0 +1,61 @@
+{
+  "at": "2026-11-13T11:31:14.035Z",
+  "source": "0ea85faaf5b4e62204eaabdda5d691dd2b9a248c",
+  "apiDeployment": "dep-dbrevcgu01pc73b1vjp0",
+  "localTests": 406,
+  "ci": {
+    "run": 43414621425,
+    "status": "in_progress"
+  },
+  "pictures": [
+    {
+      "file": "01-card-paid.png",
+      "attachment": "2026-11-13-api-01-card-paid.png",
+      "sha256": "825537837d5d5d695983904633c96fdd83fa996bf66cfcfeb79e08acfa796ad3",
+      "inspected": true
+    },
+    {
+      "file": "02b-card-waiting-for-staff.png",
+      "attachment": "2026-11-13-api-02b-card-waiting-for-staff.png",
+      "sha256": "2ee39d225f8613d70b2ce6b42e4bb0d33c77cd07e1409767f6a723c60396620c",
+      "inspected": true
+    },
+    {
+      "file": "03-staging-health-alert.png",
+      "attachment": "2026-11-13-api-03-staging-health-alert.png",
+      "sha256": "caa3d4c100e3aaddb79a50e41959cd197533ef8b742df11e177213d594d9e247",
+      "inspected": true
+    },
+    {
+      "file": "03b-console-health-alert.png",
+      "attachment": "2026-11-13-api-03b-console-health-alert.png",
+      "sha256": "11557a9cd88d1bc3df24491c9450a0616904f10b0ab1b4ea8f407b428d24ab86",
+      "inspected": true
+    },
+    {
+      "file": "04b-staging-cleanup-final.png",
+      "attachment": "2026-11-13-api-04b-staging-cleanup-final.png",
+      "sha256": "0f9338479d5a89cae4844b5e41b9ec7ad75fc92645455fab6429a546c8c840d9",
+      "inspected": true
+    }
+  ],
+  "health": {
+    "before": 1,
+    "afterOwnThreshold": 2,
+    "afterCleanup": 1,
+    "elapsedMs": 613917
+  },
+  "cleanup": "One simulated sale refunded through a successful terminal void; one unpaid sale voided; station and three devices archived; all sessions verified signed out.",
+  "limits": [
+    "Simulator only; no physical terminal acceptance.",
+    "Lost-result and unique-reference recovery are integration-test evidence.",
+    "Health exposes branch summaries, not attempt IDs.",
+    "The till points remain with SCRUM-977/975."
+  ],
+  "attempts": [
+    "The first waiting screenshot shows the normal idle lock, retained but superseded by 02b.",
+    "The caller timed out at five minutes; the proof server completed the uninterrupted timed observation. The caller now supports the full duration.",
+    "Cleanup first expected the enum void rather than voided; its successful void was read back and the assertion corrected.",
+    "The first cleanup card had a pending terminal refund. Final readback and card 04b verify its successful completion."
+  ]
+}

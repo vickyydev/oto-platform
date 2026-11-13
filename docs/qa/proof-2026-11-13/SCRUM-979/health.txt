@@ -19,5 +19,13 @@ while (Date.now() < deadline) {
 S.assert.ok(matched, 'branch staff alert appears while the own attempt remains held');
 S.receipt.reads.health = { key: matched.key, title: matched.title, detail: matched.detail, severity: matched.severity, ownAttempt: S.waiting.attempt, observedAt: new Date().toISOString(), startedAt: S.waiting.startedAt, samples: samples.length, limit: 'Health exposes branch alert summaries, not attempt IDs. Exact membership is covered by the integration regression.' };
 await S.txtShot(JSON.stringify({ source: S.receipt.sha, ...S.receipt.reads.health }, null, 2), '03-staging-health-alert.png', 'SCRUM-979: staging API Health observed after the real waiting period');
-S.point('staff-health', 'PASS', ['02-card-waiting-for-staff.png', '03-staging-health-alert.png'], S.receipt.reads.health);
+const consolePage = await S.consoleIn('console');
+await consolePage.goto('/watch/health');
+const line = consolePage.getByText(/Card payments waiting for staff|card payment.*waiting.*member of staff/i).first();
+await line.waitFor({ timeout: 30000 });
+await line.scrollIntoViewIfNeeded();
+await S.shot(consolePage, '03b-console-health-alert.png');
+S.receipt.reads.health.consoleSession = await S.close('console');
+S.assert.equal(S.receipt.reads.health.consoleSession.me, 401);
+S.point('staff-health', 'PASS', ['02-card-waiting-for-staff.png', '03-staging-health-alert.png', '03b-console-health-alert.png'], S.receipt.reads.health);
 return S.receipt.reads.health;

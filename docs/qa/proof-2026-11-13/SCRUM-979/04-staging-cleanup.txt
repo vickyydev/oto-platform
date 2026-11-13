@@ -1,0 +1,55 @@
+{
+  "sales": [
+    {
+      "id": "01a1d4a0-81d5-783d-9bda-069295d356ab",
+      "status": "voided"
+    },
+    {
+      "id": "01a1d4a0-55ca-7509-bc18-c24d2b006bad",
+      "status": "refunded",
+      "refundStatus": "refunded",
+      "tenderAllocation": [
+        [
+          {
+            "route": "terminal_void",
+            "detail": "Void sent to the terminal",
+            "method": "card",
+            "status": "pending",
+            "actionId": "01a1d4aa-92dd-78c4-b65d-a5c311c8c1a7",
+            "provider": "simulator",
+            "attemptId": "01a1d4a0-596d-7d7d-88e9-e33814bd12d5",
+            "methodCode": "card",
+            "amountSatang": 104000
+          }
+        ]
+      ]
+    }
+  ],
+  "devices": [
+    {
+      "id": "a5487be4-58fa-44f0-b63a-cc701bbca0ab",
+      "label": "ZZ TEST 979 receipt printer",
+      "archived": true
+    },
+    {
+      "id": "9823bc6f-6be6-4fed-887d-10660e0cbf4f",
+      "label": "ZZ TEST 979 band printer",
+      "archived": true
+    },
+    {
+      "id": "ae8b70f9-8094-4f62-b58c-a05e8c883a5e",
+      "label": "ZZ TEST 979 card terminal",
+      "archived": true
+    }
+  ],
+  "managerMe": 401,
+  "station": {
+    "id": "01a1d49e-3196-7647-bb75-d5b5aa7754a1",
+    "archived": true,
+    "devices": 0
+  },
+  "tillSession": {
+    "signOut": 200,
+    "me": 401
+  }
+}

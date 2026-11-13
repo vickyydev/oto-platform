@@ -19,4 +19,4 @@ These are recorded against SCRUM-979 and the feedback plan's existing payment qu
 
 ## Evidence status
 
-The red and green regression logs are retained in the local takeover archive. The typecheck produced zero output. Broader integration gates, source landing, exact deployment identity, staging pictures and cleanup must be recorded in the release receipt before this unit is described as staging-proved. The till points remain with SCRUM-977/975.
+The red and green regression logs are retained in the local takeover archive. The typecheck produced zero output. The broader gates and bounded staging proof are now complete in release-evidence.json and README.md; exact-source CI remains in progress. The till points remain with SCRUM-977/975.

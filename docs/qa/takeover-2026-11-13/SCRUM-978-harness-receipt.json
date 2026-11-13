@@ -1,0 +1,337 @@
+[
+    {
+        "path":  "driver.mjs",
+        "sha256":  "606A9D45C0FBC7CC8DAE8D969CEB8B0EDCC3FB5D0830033425E9C658EF0FF593",
+        "verified":  true
+    },
+    {
+        "path":  "driver.out",
+        "sha256":  "6882B82A7664D89A0C54A1724F4E395FC77A0DB44EE33DAC12E2D407B2965239",
+        "verified":  true
+    },
+    {
+        "path":  "go.mjs",
+        "sha256":  "3746DFD7642185CF2FDB22A161D54536CAFD57ED204BD4914C2F664E6DD02D30",
+        "verified":  true
+    },
+    {
+        "path":  "headroom.txt",
+        "sha256":  "280E68C0C898522683ED4F796FEFEC59C1FE8C2831B23CFC30A956310FA7BC86",
+        "verified":  true
+    },
+    {
+        "path":  "pdfshot.py",
+        "sha256":  "8FF7679F998636D20B189CD9E42F09B0A92AAC62F640180D5BDD96C091B161A8",
+        "verified":  true
+    },
+    {
+        "path":  "probe.png",
+        "sha256":  "66076B855DBFBC83BC68AFBF9893A29F91D114AADA4F545337DFCCDBC0B31D55",
+        "verified":  true
+    },
+    {
+        "path":  "probe2.png",
+        "sha256":  "55BE79A830F6A6FFB2BC65744C961C06B93A075159F914C6CD97CCA69DDB3F66",
+        "verified":  true
+    },
+    {
+        "path":  "show.mjs",
+        "sha256":  "E5D3281781D5A86F1414153961F4F8334791C01A46DC230D2CF783631AAEFFF9",
+        "verified":  true
+    },
+    {
+        "path":  "steps.log",
+        "sha256":  "A375436263DAFC58CE7E26EBB9DBFE1A5FE96D317FCB17AF0A3E0FFA5B655CA4",
+        "verified":  true
+    },
+    {
+        "path":  "work.json",
+        "sha256":  "537A765A6D85BA62EF4C0AC7B365E60C7E9C203F2FF4B291381095666AD206BD",
+        "verified":  true
+    },
+    {
+        "path":  "pdf\\E1-hunt-null-p1.png",
+        "sha256":  "F4D9B9F87CB96758BDBF12789FF07DF0EC7C3008589E2E0F3B6F22347DA559C9",
+        "verified":  true
+    },
+    {
+        "path":  "pdf\\E1-hunt-null.pdf",
+        "sha256":  "3E234CC6CCE91A9F600DD91FB0C1F3084F3507AE07F9C21D43911F06302BB316",
+        "verified":  true
+    },
+    {
+        "path":  "pdf\\E1-p2-p1.png",
+        "sha256":  "6348185A05E7924FFE1305464B706581BA6A5639CF906D38D7771DF80C777634",
+        "verified":  true
+    },
+    {
+        "path":  "pdf\\E1-p2.pdf",
+        "sha256":  "077D7D2A7438B9A1DD7FE76E1D0B8F8A1FC69F024F26154A9BB3DBA861B4F13F",
+        "verified":  true
+    },
+    {
+        "path":  "run\\10-till-setup.js",
+        "sha256":  "1AB138F21DF4C952A27B4BC6FEFE36572B443A9EAEEC3D8D69A5431E6838DA70",
+        "verified":  true
+    },
+    {
+        "path":  "run\\11-till-lib.js",
+        "sha256":  "852F652ACAF69EF45ECA1645BB5E7B754744E9246A00981AE9101E24866C49AA",
+        "verified":  true
+    },
+    {
+        "path":  "run\\20-pdf.js",
+        "sha256":  "0737BFE2894AFEB6AD89CA2053D67478B9C81E7C7C39D66376F01BE494166DC3",
+        "verified":  true
+    },
+    {
+        "path":  "run\\close-popup.js",
+        "sha256":  "3C28FCE2EE9CA30692AB19AFC2E971C2F8B0D587F266C2BAD98E0F08A03046B0",
+        "verified":  true
+    },
+    {
+        "path":  "run\\ctl.js",
+        "sha256":  "0E1F86336467EC64262847605C3BA55D32B6EA8E40E0CBC14EBA0C8F858FD5ED",
+        "verified":  true
+    },
+    {
+        "path":  "run\\dayof.js",
+        "sha256":  "58C94D72884F3E65B2D00FD6733B432C0133EF71FA736D2474A2B39B355938FF",
+        "verified":  true
+    },
+    {
+        "path":  "run\\edlib.js",
+        "sha256":  "0856574F6BF3ADBF471363AB753258EA2AEF9543C632BA08A0A85D4072C1174B",
+        "verified":  true
+    },
+    {
+        "path":  "run\\h-text2.js",
+        "sha256":  "9A7385B9BE773FD4F2A327BE77D5BCB72F43A645B5136801DD52FA389BC9548F",
+        "verified":  true
+    },
+    {
+        "path":  "run\\keep.js",
+        "sha256":  "7A3079EABE252922E00EB60BA7A376C96CA177E0EE2B7CCD0BDDF9C815430D89",
+        "verified":  true
+    },
+    {
+        "path":  "run\\names-len.js",
+        "sha256":  "B8A61E9D15D056324EAFCE652FA063F318F39DA1BC145A34B9DBFC6EE5A8F6EA",
+        "verified":  true
+    },
+    {
+        "path":  "run\\numone.js",
+        "sha256":  "B0DBACF10736E39EDCBAABF8EC4B4582FEA2FE4991450E514E8D3DDB9A44A481",
+        "verified":  true
+    },
+    {
+        "path":  "run\\p-till.js",
+        "sha256":  "1FDC75AD58BA339169EC8A5602D5EEAB527AC83D15F73370309924896C457A17",
+        "verified":  true
+    },
+    {
+        "path":  "run\\p1-recent.js",
+        "sha256":  "97AB51D3C9D0D168BE5E2A1BFC0699712C6F5C4E0D7A783F79419A7466E62663",
+        "verified":  true
+    },
+    {
+        "path":  "run\\p2-lines.js",
+        "sha256":  "7C05BD7C33D614F40D0F6E81C722066C4E2793ABF38F2B73F4ED407ADB37EFBE",
+        "verified":  true
+    },
+    {
+        "path":  "run\\p2-save.js",
+        "sha256":  "643AE6C51756172737A39F32BE605DF626AC1F09B113DCED6E50A903EDC49B1E",
+        "verified":  true
+    },
+    {
+        "path":  "run\\p5-cake.js",
+        "sha256":  "ACA2EE49D4324EAD8E403277D1DB3F1BF7B370E02E89856FD0D33AA8AB8C0B57",
+        "verified":  true
+    },
+    {
+        "path":  "run\\p5-dayof.js",
+        "sha256":  "0542E6462BB1F69DF4901A255B748DE2A4D32E432D858B7EEE37C2149834DD2F",
+        "verified":  true
+    },
+    {
+        "path":  "run\\p6-door.js",
+        "sha256":  "8906FC3DBE3E9FD1D9208B3271511307D7BD3E41073B51DB52B48C5BF5DFA927",
+        "verified":  true
+    },
+    {
+        "path":  "run\\p6-facts.js",
+        "sha256":  "EF175F7104D7F8B7E71826616FD100B1E5D730F71BAE1DD2412BD62BF6ECE2BB",
+        "verified":  true
+    },
+    {
+        "path":  "run\\p7-thread.js",
+        "sha256":  "412D183F1ACDD2DF77090B45DA40D6DA83CFAE77B5249DDE81EDAC0A50F2F349",
+        "verified":  true
+    },
+    {
+        "path":  "run\\p8-adults.js",
+        "sha256":  "A702120AE18555330BF80FDCB8F16B1B3667638DCD4881BC33B99882AF109672",
+        "verified":  true
+    },
+    {
+        "path":  "run\\p89-e2.js",
+        "sha256":  "F3B59E24DC98EC3705E668704B8BE0E9DEFF4159AB90B2C8EA67072D7AA3C007",
+        "verified":  true
+    },
+    {
+        "path":  "run\\probe.js",
+        "sha256":  "6C4BA77BDD20B2AB4B70AC46031469073BC6FABC1E6EFA986B7D009F99B6CBB0",
+        "verified":  true
+    },
+    {
+        "path":  "run\\probe2.js",
+        "sha256":  "4EC978D15BC1F284747A01B614D6348D3EEB708A076BA6306E8CA10D008C3203",
+        "verified":  true
+    },
+    {
+        "path":  "run\\probe3.js",
+        "sha256":  "08AAFACCBA9BD19B459A59546ECF4EA20C827B13E495ECE44DBE7B11D753BD90",
+        "verified":  true
+    },
+    {
+        "path":  "run\\rename.js",
+        "sha256":  "9FDADF2438FBF0F97F5D65EB32AB261A5BD51EEC4C6D3BB98EFDF15E4CADAD47",
+        "verified":  true
+    },
+    {
+        "path":  "steps\\app-in.mjs",
+        "sha256":  "9572A1BAA9BE2E54B3029B2FDD0DEFD3D3251E9F619FC62DF28851832D4F43DA",
+        "verified":  true
+    },
+    {
+        "path":  "steps\\applib.mjs",
+        "sha256":  "F7009D38FDD4C349877DC0D7FDB31757A009FECCDA977AC6EED3A8759B65B74D",
+        "verified":  true
+    },
+    {
+        "path":  "steps\\approve.mjs",
+        "sha256":  "039C4B1F9B44FF575C25EA10988422E68F9039FA86BA2C68A05499BCA73A90A3",
+        "verified":  true
+    },
+    {
+        "path":  "steps\\bd-book.mjs",
+        "sha256":  "A408F1FEB03CC3CEFD12A23EC8BA9496AFC91731B68DCC388B3923E9CFAC3C8C",
+        "verified":  true
+    },
+    {
+        "path":  "steps\\bd-open.mjs",
+        "sha256":  "5800434B918A78E71AC047A371041239336C680D3A922032005F1E5C16A36163",
+        "verified":  true
+    },
+    {
+        "path":  "steps\\bd.mjs",
+        "sha256":  "3378181589E764CE34EAA2C66B685361C53A07BB6D2308D75ED9A0C700A10ACB",
+        "verified":  true
+    },
+    {
+        "path":  "steps\\beo-open.mjs",
+        "sha256":  "9DB5F3212DDE6125EA6539C6BC1D268A62C4D63E59D13EFE2B2008F168BEDB8C",
+        "verified":  true
+    },
+    {
+        "path":  "steps\\beo-save.mjs",
+        "sha256":  "1FF7F6848CBFCBDADF39A14C299D071E2E4167A98B7D9091CE91DEE4F47FAC40",
+        "verified":  true
+    },
+    {
+        "path":  "steps\\click-pic.mjs",
+        "sha256":  "1529D7F20177C76EBAA0B4C153A0FD28210FF2A0A1F836DDBAEBA292214CA449",
+        "verified":  true
+    },
+    {
+        "path":  "steps\\inbox-in.mjs",
+        "sha256":  "8F697255BAEEB3F7376493505CC2DEEC8D547EE15167521FBF21D867E5841753",
+        "verified":  true
+    },
+    {
+        "path":  "steps\\kp-api.mjs",
+        "sha256":  "B9F80070C42745E65C755CCF8302907565FC6DE4D0BC891724AED0DC346EA0D5",
+        "verified":  true
+    },
+    {
+        "path":  "steps\\kp-review.mjs",
+        "sha256":  "7969912A85422E00114D36063F5192A65A6C519E3BF5D5D434363A6E6254F89D",
+        "verified":  true
+    },
+    {
+        "path":  "steps\\look.mjs",
+        "sha256":  "151A0318C4E013F9225D2D559901482AD6D7B6A1AA584357061823A125BDFE98",
+        "verified":  true
+    },
+    {
+        "path":  "steps\\names-trim.mjs",
+        "sha256":  "1C8A8D54AE1FD74D617B0DCB85F9C2670FC67ACB592E4BB9C43313D8D18EA37C",
+        "verified":  true
+    },
+    {
+        "path":  "steps\\numcheck.mjs",
+        "sha256":  "8557C8E5BBA3668B61CCC6D7BAC008DB4C5E63D2ACBA445D3BBE6213436BF56C",
+        "verified":  true
+    },
+    {
+        "path":  "steps\\plan.mjs",
+        "sha256":  "7C9B63FF14BC97615F22DD3F81D4084D16716006888A1A32DC5B42850220417F",
+        "verified":  true
+    },
+    {
+        "path":  "steps\\price-edit.mjs",
+        "sha256":  "ECA48C6344544001C475C20D95C566B9CDE749AF6C737F7CC82312B71B43CB1F",
+        "verified":  true
+    },
+    {
+        "path":  "steps\\price-read.mjs",
+        "sha256":  "95C7F87A6F8A93F63214A0103B3FCBBE06DAD4650167A042E8AB1BC31928B17F",
+        "verified":  true
+    },
+    {
+        "path":  "steps\\r904.mjs",
+        "sha256":  "E8BAAB30C16A836E76E20D9CC74A3E655A8B26AD999E822B022B1850FCD9C6C2",
+        "verified":  true
+    },
+    {
+        "path":  "steps\\r944.mjs",
+        "sha256":  "439E38746A04591D46FF0C727A1E256FB052689046B80FF5CB298FF4B28CC9E9",
+        "verified":  true
+    },
+    {
+        "path":  "steps\\read.mjs",
+        "sha256":  "50DB5A3A4B226645BDE8CFABF844B40878C8D009BC63D45AD551473D982BC491",
+        "verified":  true
+    },
+    {
+        "path":  "steps\\reviewlib.mjs",
+        "sha256":  "4509B37A86265A768B2D0736AEBCC414E8EE3D9FB94DF72C9BC2C8A37185D0E0",
+        "verified":  true
+    },
+    {
+        "path":  "steps\\send2.mjs",
+        "sha256":  "D4DCB17D7D72135A8306EB4E1474179786F9FD6F0DF12D3D6674CE4ED71C35D4",
+        "verified":  true
+    },
+    {
+        "path":  "steps\\signout.mjs",
+        "sha256":  "4223272AB90104DEC9E8AADE1E1CF72BC3747D96A51B1F7B6CA81179B7610936",
+        "verified":  true
+    },
+    {
+        "path":  "steps\\thread.mjs",
+        "sha256":  "690660A70E54F71BE5F281327A70497B4B433658447458DE6AFA5975E1E2B4EA",
+        "verified":  true
+    },
+    {
+        "path":  "steps\\till-choose.mjs",
+        "sha256":  "DE7F5DD0001C846FB0710AE87592359772481017FF05F5981913300AA8E661B0",
+        "verified":  true
+    },
+    {
+        "path":  "steps\\wait.mjs",
+        "sha256":  "ECC960ED11B3954AE854B54BF2E22BAC9B6082F763DABCF3ABB1E593CA7C4E41",
+        "verified":  true
+    }
+]

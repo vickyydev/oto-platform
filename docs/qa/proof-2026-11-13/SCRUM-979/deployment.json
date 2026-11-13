@@ -1,0 +1,50 @@
+[
+  {
+    "at": "2026-11-13T11:09:26.962Z",
+    "service": "oto-api-staging",
+    "id": "dep-dbrevcgu01pc73b1vjp0",
+    "status": "build_in_progress",
+    "sha": "0ea85faaf5b4e62204eaabdda5d691dd2b9a248c",
+    "finishedAt": null
+  },
+  {
+    "at": "2026-11-13T11:10:27.391Z",
+    "service": "oto-api-staging",
+    "id": "dep-dbrevcgu01pc73b1vjp0",
+    "status": "build_in_progress",
+    "sha": "0ea85faaf5b4e62204eaabdda5d691dd2b9a248c",
+    "finishedAt": null
+  },
+  {
+    "at": "2026-11-13T11:11:27.805Z",
+    "service": "oto-api-staging",
+    "id": "dep-dbrevcgu01pc73b1vjp0",
+    "status": "pre_deploy_in_progress",
+    "sha": "0ea85faaf5b4e62204eaabdda5d691dd2b9a248c",
+    "finishedAt": null
+  },
+  {
+    "at": "2026-11-13T11:12:28.223Z",
+    "service": "oto-api-staging",
+    "id": "dep-dbrevcgu01pc73b1vjp0",
+    "status": "pre_deploy_in_progress",
+    "sha": "0ea85faaf5b4e62204eaabdda5d691dd2b9a248c",
+    "finishedAt": null
+  },
+  {
+    "at": "2026-11-13T11:13:28.614Z",
+    "service": "oto-api-staging",
+    "id": "dep-dbrevcgu01pc73b1vjp0",
+    "status": "update_in_progress",
+    "sha": "0ea85faaf5b4e62204eaabdda5d691dd2b9a248c",
+    "finishedAt": null
+  },
+  {
+    "at": "2026-11-13T11:14:29.021Z",
+    "service": "oto-api-staging",
+    "id": "dep-dbrevcgu01pc73b1vjp0",
+    "status": "live",
+    "sha": "0ea85faaf5b4e62204eaabdda5d691dd2b9a248c",
+    "finishedAt": "2026-11-13T11:13:52.427358Z"
+  }
+]

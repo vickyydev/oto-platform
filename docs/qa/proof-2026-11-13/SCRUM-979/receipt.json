@@ -1,0 +1,1442 @@
+{
+  "tickets": [
+    "SCRUM-979"
+  ],
+  "sha": "0ea85faaf5b4e62204eaabdda5d691dd2b9a248c",
+  "startedAt": "2026-11-13T11:14:41.485Z",
+  "deploysStart": null,
+  "numbers": {
+    "paid": "0898979010",
+    "waiting": "0898979011"
+  },
+  "created": [
+    {
+      "kind": "device",
+      "key": "receipt",
+      "id": "a5487be4-58fa-44f0-b63a-cc701bbca0ab",
+      "label": "ZZ TEST 979 receipt printer"
+    },
+    {
+      "kind": "device",
+      "key": "band",
+      "id": "9823bc6f-6be6-4fed-887d-10660e0cbf4f",
+      "label": "ZZ TEST 979 band printer"
+    },
+    {
+      "kind": "device",
+      "key": "card",
+      "id": "ae8b70f9-8094-4f62-b58c-a05e8c883a5e",
+      "label": "ZZ TEST 979 card terminal",
+      "transport": "simulated"
+    },
+    {
+      "kind": "station",
+      "id": "01a1d49e-3196-7647-bb75-d5b5aa7754a1",
+      "name": "ZZ TEST 979 till",
+      "prefix": "Z97901"
+    },
+    {
+      "kind": "sale-card",
+      "id": "01a1d4a0-55ca-7509-bc18-c24d2b006bad"
+    },
+    {
+      "kind": "sale-waiting",
+      "id": "01a1d4a0-81d5-783d-9bda-069295d356ab"
+    }
+  ],
+  "points": {
+    "normal-card": {
+      "verdict": "PASS",
+      "pictures": [
+        "01-card-paid.png"
+      ],
+      "seen": {
+        "sale": "01a1d4a0-55ca-7509-bc18-c24d2b006bad",
+        "attempt": "01a1d4a0-596d-7d7d-88e9-e33814bd12d5",
+        "commands": [
+          {
+            "id": "01a1d4a0-5970-7baa-b685-ed725e222044",
+            "kind": "terminal_sale",
+            "mode": "sale",
+            "state": "succeeded",
+            "createdAt": "2026-11-13T11:17:20.855Z",
+            "claimedAt": "2026-11-13T11:17:22.367Z",
+            "finishedAt": "2026-11-13T11:17:22.416Z",
+            "errorCode": null,
+            "errorMessage": null,
+            "result": {
+              "mode": "sale",
+              "role": "card_terminal",
+              "outcome": "approved",
+              "deviceId": "ae8b70f9-8094-4f62-b58c-a05e8c883a5e",
+              "protocol": "ghl_linkpos",
+              "attemptId": "01a1d4a0-596d-7d7d-88e9-e33814bd12d5",
+              "stationId": null,
+              "terminalRef": "261113540001",
+              "responseCode": "00"
+            }
+          }
+        ],
+        "auditRecoveryCount": 0,
+        "status": "finalised",
+        "attempts": [
+          {
+            "method": "card",
+            "status": "approved",
+            "amountSatang": 104000
+          }
+        ]
+      }
+    },
+    "staff-health": {
+      "verdict": "PASS",
+      "pictures": [
+        "03-staging-health-alert.png",
+        "03b-console-health-alert.png",
+        "02b-card-waiting-for-staff.png"
+      ],
+      "seen": {
+        "key": "payments.awaiting_staff:01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "title": "2 card payments at this branch have been waiting more than 10 minutes for a member of staff to check the terminal and confirm them.",
+        "detail": "Card payments waiting for staff",
+        "severity": "warning",
+        "ownAttempt": "01a1d4a0-8579-7ec8-96bd-7d51f7a184d7",
+        "observedAt": "2026-11-13T11:27:45.392Z",
+        "startedAt": "2026-11-13T11:17:31.475Z",
+        "samples": 17,
+        "limit": "Health exposes branch alert summaries, not attempt IDs. Exact membership is covered by the integration regression.",
+        "consoleSession": {
+          "signOut": 200,
+          "me": 401
+        }
+      }
+    }
+  },
+  "reads": {
+    "setup": {
+      "box": "Virtual box 1",
+      "boxStatus": "online",
+      "boxKeys": [
+        "id",
+        "branchId",
+        "name",
+        "slot",
+        "role",
+        "status",
+        "hostname",
+        "bridgeOrigin",
+        "bridgeWarning",
+        "agentVersion",
+        "currentEpoch",
+        "registeredAt",
+        "lastHeartbeatAt",
+        "heartbeatAgeSeconds",
+        "lastStatus",
+        "deviceCount",
+        "stationCount",
+        "claimCodeOutstanding",
+        "claimCodeExpiresAt",
+        "archived"
+      ],
+      "prefix": "Z97901",
+      "numbersFree": 20,
+      "configVersion": 1,
+      "roles": {
+        "adult_band": "ZZ TEST 979 band printer",
+        "dropoff_band": "ZZ TEST 979 band printer",
+        "kids_band": "ZZ TEST 979 band printer",
+        "receipt": "ZZ TEST 979 receipt printer"
+      },
+      "paymentRouting": {
+        "qr": "none",
+        "card": "manual"
+      },
+      "terminal": {
+        "label": "ZZ TEST 979 card terminal",
+        "transport": "simulated",
+        "protocol": "ghl_linkpos"
+      },
+      "assign": {
+        "status": 200,
+        "code": null,
+        "roles": {
+          "adult_band": "ZZ TEST 979 band printer",
+          "card_terminal": "ZZ TEST 979 card terminal",
+          "dropoff_band": "ZZ TEST 979 band printer",
+          "kids_band": "ZZ TEST 979 band printer",
+          "receipt": "ZZ TEST 979 receipt printer"
+        },
+        "paymentRouting": {
+          "qr": "none",
+          "card": "card_terminal"
+        },
+        "configVersion": 2,
+        "at": "2026-11-13T11:14:59.367Z"
+      },
+      "heartbeats": {
+        "beats": 2,
+        "waitedS": 117
+      }
+    },
+    "paid": {
+      "sale": "01a1d4a0-55ca-7509-bc18-c24d2b006bad",
+      "attempt": "01a1d4a0-596d-7d7d-88e9-e33814bd12d5",
+      "commands": [
+        {
+          "id": "01a1d4a0-5970-7baa-b685-ed725e222044",
+          "kind": "terminal_sale",
+          "mode": "sale",
+          "state": "succeeded",
+          "createdAt": "2026-11-13T11:17:20.855Z",
+          "claimedAt": "2026-11-13T11:17:22.367Z",
+          "finishedAt": "2026-11-13T11:17:22.416Z",
+          "errorCode": null,
+          "errorMessage": null,
+          "result": {
+            "mode": "sale",
+            "role": "card_terminal",
+            "outcome": "approved",
+            "deviceId": "ae8b70f9-8094-4f62-b58c-a05e8c883a5e",
+            "protocol": "ghl_linkpos",
+            "attemptId": "01a1d4a0-596d-7d7d-88e9-e33814bd12d5",
+            "stationId": null,
+            "terminalRef": "261113540001",
+            "responseCode": "00"
+          }
+        }
+      ],
+      "auditRecoveryCount": 0,
+      "status": "finalised",
+      "attempts": [
+        {
+          "method": "card",
+          "status": "approved",
+          "amountSatang": 104000
+        }
+      ]
+    },
+    "waiting": {
+      "sale": "01a1d4a0-81d5-783d-9bda-069295d356ab",
+      "startedAt": "2026-11-13T11:17:31.475Z",
+      "attempt": "01a1d4a0-8579-7ec8-96bd-7d51f7a184d7",
+      "heldAt": "2026-11-13T11:19:33.868Z"
+    },
+    "healthSamples": [
+      {
+        "at": "2026-11-13T11:19:42.124Z",
+        "branchStaffAlert": true,
+        "ownStatus": "awaiting_staff_confirmation"
+      },
+      {
+        "at": "2026-11-13T11:20:12.307Z",
+        "branchStaffAlert": true,
+        "ownStatus": "awaiting_staff_confirmation"
+      },
+      {
+        "at": "2026-11-13T11:20:42.490Z",
+        "branchStaffAlert": true,
+        "ownStatus": "awaiting_staff_confirmation"
+      },
+      {
+        "at": "2026-11-13T11:21:12.703Z",
+        "branchStaffAlert": true,
+        "ownStatus": "awaiting_staff_confirmation"
+      },
+      {
+        "at": "2026-11-13T11:21:42.926Z",
+        "branchStaffAlert": true,
+        "ownStatus": "awaiting_staff_confirmation"
+      },
+      {
+        "at": "2026-11-13T11:22:13.127Z",
+        "branchStaffAlert": true,
+        "ownStatus": "awaiting_staff_confirmation"
+      },
+      {
+        "at": "2026-11-13T11:22:43.321Z",
+        "branchStaffAlert": true,
+        "ownStatus": "awaiting_staff_confirmation"
+      },
+      {
+        "at": "2026-11-13T11:23:13.525Z",
+        "branchStaffAlert": true,
+        "ownStatus": "awaiting_staff_confirmation"
+      },
+      {
+        "at": "2026-11-13T11:23:43.729Z",
+        "branchStaffAlert": true,
+        "ownStatus": "awaiting_staff_confirmation"
+      },
+      {
+        "at": "2026-11-13T11:24:13.920Z",
+        "branchStaffAlert": true,
+        "ownStatus": "awaiting_staff_confirmation"
+      },
+      {
+        "at": "2026-11-13T11:24:44.168Z",
+        "branchStaffAlert": true,
+        "ownStatus": "awaiting_staff_confirmation"
+      },
+      {
+        "at": "2026-11-13T11:25:14.390Z",
+        "branchStaffAlert": true,
+        "ownStatus": "awaiting_staff_confirmation"
+      },
+      {
+        "at": "2026-11-13T11:25:44.583Z",
+        "branchStaffAlert": true,
+        "ownStatus": "awaiting_staff_confirmation"
+      },
+      {
+        "at": "2026-11-13T11:26:14.789Z",
+        "branchStaffAlert": true,
+        "ownStatus": "awaiting_staff_confirmation"
+      },
+      {
+        "at": "2026-11-13T11:26:45.023Z",
+        "branchStaffAlert": true,
+        "ownStatus": "awaiting_staff_confirmation"
+      },
+      {
+        "at": "2026-11-13T11:27:15.192Z",
+        "branchStaffAlert": true,
+        "ownStatus": "awaiting_staff_confirmation"
+      },
+      {
+        "at": "2026-11-13T11:27:45.392Z",
+        "branchStaffAlert": true,
+        "ownStatus": "awaiting_staff_confirmation"
+      }
+    ],
+    "health": {
+      "key": "payments.awaiting_staff:01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+      "title": "2 card payments at this branch have been waiting more than 10 minutes for a member of staff to check the terminal and confirm them.",
+      "detail": "Card payments waiting for staff",
+      "severity": "warning",
+      "ownAttempt": "01a1d4a0-8579-7ec8-96bd-7d51f7a184d7",
+      "observedAt": "2026-11-13T11:27:45.392Z",
+      "startedAt": "2026-11-13T11:17:31.475Z",
+      "samples": 17,
+      "limit": "Health exposes branch alert summaries, not attempt IDs. Exact membership is covered by the integration regression.",
+      "consoleSession": {
+        "signOut": 200,
+        "me": 401
+      }
+    },
+    "waitingFinal": {
+      "saleStatus": "tendering",
+      "commands": [
+        {
+          "id": "01a1d4a0-857d-7086-9a02-33c4ed6b96dd",
+          "kind": "terminal_sale",
+          "mode": "sale",
+          "state": "succeeded",
+          "createdAt": "2026-11-13T11:17:32.135Z",
+          "claimedAt": "2026-11-13T11:17:32.368Z",
+          "finishedAt": "2026-11-13T11:19:32.409Z",
+          "errorCode": null,
+          "errorMessage": null,
+          "result": {
+            "mode": "sale",
+            "role": "card_terminal",
+            "outcome": "no_response",
+            "deviceId": "ae8b70f9-8094-4f62-b58c-a05e8c883a5e",
+            "protocol": "ghl_linkpos",
+            "attemptId": "01a1d4a0-8579-7ec8-96bd-7d51f7a184d7",
+            "stationId": null,
+            "terminalRef": "261113540002",
+            "responseCode": null
+          }
+        }
+      ],
+      "attemptStatus": "awaiting_staff_confirmation"
+    },
+    "captureCorrection": "The first waiting screenshot showed the normal idle lock. It is retained as an attempt record; 02b shows the unlocked staff-review screen and is the acceptance image."
+  },
+  "hunt": {},
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": "Set up only the new ZZ TEST 979 simulated till",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": "Set up only the new ZZ TEST 979 simulated till",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "console",
+      "at": "Observe the real ten-minute waiting-for-staff alert",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "console",
+      "at": "Observe the real ten-minute waiting-for-staff alert",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "requests": [
+    {
+      "at": "2026-11-13T11:14:41.867Z",
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:14:57.274Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:14:57.351Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:14:57.422Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:14:57.498Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:14:57.569Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:14:57.637Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:14:57.713Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:14:57.784Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:14:57.850Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:14:57.918Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:14:57.985Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:14:58.080Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:14:58.145Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:14:58.213Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:14:58.277Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:14:58.343Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:14:58.408Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:14:58.471Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:14:58.536Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:14:58.600Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:14:58.662Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:14:58.782Z",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:14:58.859Z",
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:14:58.937Z",
+      "method": "POST",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:14:59.016Z",
+      "method": "POST",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:14:59.091Z",
+      "method": "POST",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:14:59.181Z",
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:14:59.274Z",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:14:59.367Z",
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:14:59.439Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:15:04.518Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:15:09.596Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:15:14.675Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:15:19.762Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:15:24.848Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:15:29.930Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:15:35.012Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:15:40.104Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:15:45.178Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:15:50.276Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:15:55.350Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:16:00.427Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:16:05.512Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:16:10.589Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:16:15.679Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:16:20.755Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:16:25.837Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:16:30.926Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:16:36.016Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:16:41.091Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:16:46.176Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:16:51.261Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:16:56.332Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:17:20.093Z",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:17:20.270Z",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:17:22.482Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:17:22.563Z",
+      "method": "GET",
+      "path": "/boxes/:id/commands",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:17:22.635Z",
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:17:31.297Z",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:17:31.475Z",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:17:31.550Z",
+      "method": "POST",
+      "path": "/payments/terminal-simulator",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:17:31.795Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:17:36.883Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:17:41.958Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:17:47.039Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:17:52.115Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:17:57.201Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:18:02.284Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:18:07.360Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:18:12.448Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:18:17.532Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:18:22.628Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:18:27.710Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:18:32.793Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:18:37.882Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:18:42.962Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:18:48.062Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:18:53.146Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:18:58.227Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:19:03.313Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:19:08.400Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:19:13.484Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:19:18.566Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:19:23.647Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:19:28.739Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:19:33.813Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:19:42.031Z",
+      "method": "GET",
+      "path": "/ops/health",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:19:42.124Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:20:12.238Z",
+      "method": "GET",
+      "path": "/ops/health",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:20:12.307Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:20:42.420Z",
+      "method": "GET",
+      "path": "/ops/health",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:20:42.490Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:21:12.627Z",
+      "method": "GET",
+      "path": "/ops/health",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:21:12.703Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:21:42.855Z",
+      "method": "GET",
+      "path": "/ops/health",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:21:42.926Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:22:13.051Z",
+      "method": "GET",
+      "path": "/ops/health",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:22:13.127Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:22:43.248Z",
+      "method": "GET",
+      "path": "/ops/health",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:22:43.321Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:23:13.452Z",
+      "method": "GET",
+      "path": "/ops/health",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:23:13.525Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:23:43.651Z",
+      "method": "GET",
+      "path": "/ops/health",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:23:43.729Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:24:13.843Z",
+      "method": "GET",
+      "path": "/ops/health",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:24:13.920Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:24:44.095Z",
+      "method": "GET",
+      "path": "/ops/health",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:24:44.168Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:25:14.310Z",
+      "method": "GET",
+      "path": "/ops/health",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:25:14.390Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:25:44.510Z",
+      "method": "GET",
+      "path": "/ops/health",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:25:44.583Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:26:14.714Z",
+      "method": "GET",
+      "path": "/ops/health",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:26:14.789Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:26:44.936Z",
+      "method": "GET",
+      "path": "/ops/health",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:26:45.023Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:27:15.120Z",
+      "method": "GET",
+      "path": "/ops/health",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:27:15.192Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:27:45.318Z",
+      "method": "GET",
+      "path": "/ops/health",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:27:45.392Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:28:12.560Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:28:12.643Z",
+      "method": "GET",
+      "path": "/boxes/:id/commands",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:28:12.728Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:28:21.306Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:28:21.377Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:28:21.467Z",
+      "method": "POST",
+      "path": "/payments/attempts/:id/confirm",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:28:21.560Z",
+      "method": "POST",
+      "path": "/sales/:id/void",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:28:21.645Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:28:29.835Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:28:29.903Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:28:29.977Z",
+      "method": "POST",
+      "path": "/sales/:id/void",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:28:30.092Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:28:30.175Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:28:30.247Z",
+      "method": "POST",
+      "path": "/payments/terminal-simulator",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:28:30.762Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:28:30.861Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:28:30.990Z",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:28:31.092Z",
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:28:31.172Z",
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:28:31.296Z",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:28:31.463Z",
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:28:31.540Z",
+      "method": "DELETE",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:28:31.609Z",
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:28:31.683Z",
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:28:31.758Z",
+      "method": "DELETE",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:28:31.835Z",
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:28:31.904Z",
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:28:31.979Z",
+      "method": "DELETE",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:28:32.079Z",
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:29:08.975Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T11:29:09.049Z",
+      "method": "GET",
+      "path": "/boxes/:id/commands",
+      "status": 200
+    }
+  ],
+  "cleanup": {
+    "records": {
+      "sales": [
+        {
+          "id": "01a1d4a0-81d5-783d-9bda-069295d356ab",
+          "status": "voided"
+        },
+        {
+          "id": "01a1d4a0-55ca-7509-bc18-c24d2b006bad",
+          "status": "refunded",
+          "refundStatus": "refunded",
+          "tenderAllocation": [
+            [
+              {
+                "route": "terminal_void",
+                "detail": "Voided on the terminal",
+                "method": "card",
+                "status": "done",
+                "actionId": "01a1d4aa-92dd-78c4-b65d-a5c311c8c1a7",
+                "provider": "simulator",
+                "respCode": "00",
+                "attemptId": "01a1d4a0-596d-7d7d-88e9-e33814bd12d5",
+                "settledAt": "2026-11-13T11:28:32.452Z",
+                "methodCode": "card",
+                "amountSatang": 104000
+              }
+            ]
+          ]
+        }
+      ],
+      "devices": [
+        {
+          "id": "a5487be4-58fa-44f0-b63a-cc701bbca0ab",
+          "label": "ZZ TEST 979 receipt printer",
+          "archived": true
+        },
+        {
+          "id": "9823bc6f-6be6-4fed-887d-10660e0cbf4f",
+          "label": "ZZ TEST 979 band printer",
+          "archived": true
+        },
+        {
+          "id": "ae8b70f9-8094-4f62-b58c-a05e8c883a5e",
+          "label": "ZZ TEST 979 card terminal",
+          "archived": true
+        }
+      ],
+      "managerMe": 401,
+      "station": {
+        "id": "01a1d49e-3196-7647-bb75-d5b5aa7754a1",
+        "archived": true,
+        "devices": 0
+      },
+      "tillSession": {
+        "signOut": 200,
+        "me": 401
+      }
+    },
+    "finalRefund": {
+      "id": "01a1d4a0-55ca-7509-bc18-c24d2b006bad",
+      "status": "refunded",
+      "refundStatus": "refunded",
+      "tenderAllocation": [
+        [
+          {
+            "route": "terminal_void",
+            "detail": "Voided on the terminal",
+            "method": "card",
+            "status": "done",
+            "actionId": "01a1d4aa-92dd-78c4-b65d-a5c311c8c1a7",
+            "provider": "simulator",
+            "respCode": "00",
+            "attemptId": "01a1d4a0-596d-7d7d-88e9-e33814bd12d5",
+            "settledAt": "2026-11-13T11:28:32.452Z",
+            "methodCode": "card",
+            "amountSatang": 104000
+          }
+        ]
+      ],
+      "commands": [
+        {
+          "id": "01a1d4aa-92de-7e60-98fc-7ec414eca393",
+          "kind": "terminal_sale",
+          "mode": "void",
+          "state": "succeeded",
+          "createdAt": "2026-11-13T11:28:30.928Z",
+          "claimedAt": "2026-11-13T11:28:32.427Z",
+          "finishedAt": "2026-11-13T11:28:32.475Z",
+          "errorCode": null,
+          "errorMessage": null,
+          "result": {
+            "mode": "void",
+            "role": "card_terminal",
+            "outcome": "approved",
+            "deviceId": "ae8b70f9-8094-4f62-b58c-a05e8c883a5e",
+            "protocol": "ghl_linkpos",
+            "attemptId": "01a1d4a0-596d-7d7d-88e9-e33814bd12d5",
+            "stationId": null,
+            "terminalRef": "261113540003",
+            "responseCode": "00"
+          }
+        },
+        {
+          "id": "01a1d4a0-5970-7baa-b685-ed725e222044",
+          "kind": "terminal_sale",
+          "mode": "sale",
+          "state": "succeeded",
+          "createdAt": "2026-11-13T11:17:20.855Z",
+          "claimedAt": "2026-11-13T11:17:22.367Z",
+          "finishedAt": "2026-11-13T11:17:22.416Z",
+          "errorCode": null,
+          "errorMessage": null,
+          "result": {
+            "mode": "sale",
+            "role": "card_terminal",
+            "outcome": "approved",
+            "deviceId": "ae8b70f9-8094-4f62-b58c-a05e8c883a5e",
+            "protocol": "ghl_linkpos",
+            "attemptId": "01a1d4a0-596d-7d7d-88e9-e33814bd12d5",
+            "stationId": null,
+            "terminalRef": "261113540001",
+            "responseCode": "00"
+          }
+        }
+      ]
+    },
+    "adminMe": 401
+  },
+  "restarts": [],
+  "sessions": [
+    {
+      "label": "console",
+      "signOut": 200,
+      "me": 401,
+      "at": "2026-11-13T11:27:55.765Z"
+    },
+    {
+      "label": "till",
+      "signOut": 200,
+      "me": 401,
+      "at": "2026-11-13T11:28:32.345Z"
+    }
+  ],
+  "finishedAt": "2026-11-13T11:29:24.757Z"
+}

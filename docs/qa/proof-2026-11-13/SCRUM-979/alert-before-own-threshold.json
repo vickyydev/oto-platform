@@ -1,0 +1,13 @@
+{
+  "at": "2026-11-13T11:22:15.360Z",
+  "alerts": [
+    {
+      "key": "payments.awaiting_staff:01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+      "title": "1 card payment at this branch has been waiting more than 10 minutes for a member of staff to check the terminal and confirm it.",
+      "detail": "Card payments waiting for staff",
+      "resolvedAt": null
+    }
+  ],
+  "signOut": 200,
+  "me": 401
+}

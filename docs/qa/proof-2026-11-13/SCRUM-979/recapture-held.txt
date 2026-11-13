@@ -1,0 +1,17 @@
+S.phase = 'Recapture the actual held-payment screen after the normal idle lock';
+await S.unlock('till');
+await S.expect(S.paymentStep(S.till)).toBeVisible();
+S.assert.equal((await S.attempt(S.waiting.attempt)).body.attempt.status, 'awaiting_staff_confirmation');
+const commands = await S.termCommandsFor(S.waiting.attempt);
+S.assert.equal(commands.filter(c => c.mode === 'sale').length, 1);
+const detail = await S.sale(S.waiting.sale);
+S.assert.equal(detail.attempts.length, 1);
+S.assert.equal(detail.attempts[0].status, 'awaiting_staff_confirmation');
+S.assert.ok(!['paid', 'finalised'].includes(detail.sale.status));
+S.receipt.reads.waitingFinal = { saleStatus: detail.sale.status, commands, attemptStatus: detail.attempts[0].status };
+await S.shot(S.till, '02b-card-waiting-for-staff.png');
+const point = S.receipt.points['staff-health'];
+point.pictures = point.pictures.filter(x => x !== '02-card-waiting-for-staff.png').concat('02b-card-waiting-for-staff.png');
+S.receipt.reads.captureCorrection = 'The first waiting screenshot showed the normal idle lock. It is retained as an attempt record; 02b shows the unlocked staff-review screen and is the acceptance image.';
+S.save();
+return { status: 'awaiting_staff_confirmation', picture: '02b-card-waiting-for-staff.png' };
