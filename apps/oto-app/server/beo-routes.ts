@@ -3157,6 +3157,11 @@ export function registerBeoRoutes(app: Express) {
 
       const [event] = await db.select({ title: coreEvents.title, childName: coreEvents.childName, eventDate: coreEvents.eventDate })
         .from(coreEvents).where(eq(coreEvents.id, sel.eventId));
+      // SCRUM-978 (SCRUM-976 point 7): the party's park's clock, so the link prints the day the family
+      // submitted on the park's calendar, as the BEO PDF does (pdf.ts), never the device's.
+      const [park] = await db.select({ timezone: branches.timezone })
+        .from(coreEvents).innerJoin(branches, eq(branches.id, coreEvents.branchId))
+        .where(eq(coreEvents.id, sel.eventId));
 
       // SCRUM-906 (decision 3): once submitted, the choices are the kitchen plan's, the one record
       // the BEO and the till read, so a choice staff changed since is what the parent sees.
@@ -3173,6 +3178,7 @@ export function registerBeoRoutes(app: Express) {
         selections,
         template: { id: tmpl.id, name: tmpl.name, items: tmpl.items },
         event: event || null,
+        parkTimeZone: park?.timezone || null,
       });
     } catch (error) {
       next(error);

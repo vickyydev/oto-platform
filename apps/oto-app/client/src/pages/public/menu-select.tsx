@@ -45,6 +45,25 @@ export function submittedChoicesOf(
   return groups.map((g) => ({ id: g.id, label: g.label, chosen: chosenOf(g.id) })).filter((g) => g.chosen.length > 0);
 }
 
+/**
+ * SCRUM-978 (SCRUM-976 point 7): the day a moment falls on at the party's park, in the device's own
+ * date format: "Submitted on" prints the park's day, as the BEO PDF does, never the device's (a
+ * family abroad, or a choice made after midnight at the park, read another day). With no zone, or
+ * one the device's clock does not know, the park group's own (Bangkok).
+ */
+export function parkDayOf(at: string, timeZone: string | null | undefined, locale?: string): string {
+  const when = new Date(at);
+  if (Number.isNaN(when.getTime())) return "";
+  const zoneOf = (zone: string | null | undefined) => {
+    try {
+      return zone?.trim() ? new Intl.DateTimeFormat("en-GB", { timeZone: zone.trim() }).resolvedOptions().timeZone : "Asia/Bangkok";
+    } catch {
+      return "Asia/Bangkok";
+    }
+  };
+  return when.toLocaleDateString(locale, { timeZone: zoneOf(timeZone) });
+}
+
 /** SCRUM-906 (decision 3), SCRUM-970: the choices under "Selections Received!", in the page's own list style. */
 export function SubmittedChoices({ choices }: { choices: ReadonlyArray<{ id: string; label: string; chosen: string[] }> }) {
   if (choices.length === 0) return null;
@@ -72,6 +91,8 @@ export default function MenuSelectPage() {
     selections: GroupSelection[] | null;
     template: { id: string; name: string; items: SetMenuTemplateItem[] };
     event: { title: string; childName: string | null; eventDate: string } | null;
+    /** SCRUM-978: the party's park's time zone; absent from a server before this rule. */
+    parkTimeZone?: string | null;
   }>({
     queryKey: ["/api/beo/set-menu-selections/public", token],
     queryFn: async () => {
@@ -208,7 +229,7 @@ export default function MenuSelectPage() {
               </p>
               {data.submittedAt && (
                 <p className="text-xs text-muted-foreground">
-                  Submitted on {new Date(data.submittedAt).toLocaleDateString()}
+                  Submitted on {parkDayOf(data.submittedAt, data.parkTimeZone)}
                 </p>
               )}
               {/* SCRUM-906 (decision 3): the choices as the team now has them, the same the BEO and the till show.
