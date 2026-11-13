@@ -365,3 +365,17 @@ The rule: a refusal the box's code proves sent nothing (eight refusals, listed b
 8. A partial approval whose rescue void the box could not send: should staff hand the partial charge back in cash and a manager mark it settled, or should a manager be able to send the void again once the box is fixed? Until then the sale stays held.
 9. A refund void that may have reached the terminal stays "Void sent to the terminal" with no way forward. Should a manager get a way to settle it after reading the terminal's slip?
 10. The staging virtual box has no void password for the Digio terminal, so every Digio void on staging is refused by the box. Give it a test password, or leave it?
+
+## The printers leftovers lane landed (13 November 09:16, main 1b9885a32)
+Tickets: SCRUM-971 (the points that need no answer) and point 5 of SCRUM-969 (End of Day names a stranded band by its short code). Services: the platform and the Console; no migration. The counter Pi needs the next box release for the shorter band test page (the box draws the page itself). Left and ticketed: SCRUM-980.
+
+### Questions for the owner from this lane
+1. A printer that was just given an address now shows grey "unknown" and "paper unknown" with no error until its box checks it. Do you want words like "not checked yet"?
+2. Pressing Save on a device form with nothing changed now just closes the form and sends nothing. Right?
+3. The same rule was applied to a scanner's settings: written only when its set-up was changed. All right?
+4. "Add a device" still writes the paper width or band stock it shows when a printer is created. Should creating a printer also leave its settings empty unless someone changes them?
+5. In the Controls picker each job is named in the Console's own words: "ZZ TEST 952 band printer · Kids' band printer". Keep these words?
+6. When the band test page is too long, whole parts are dropped in this order: the dot ruler, the scripts sample, the money column, the codes, the template list, then Fonts, Renderer, Dots/line and Transport; the title and Device, Model, Address, Station, Box and Time are never dropped. On the park's band it keeps the template list and the four "how it is driven" rows. Is that the order you want?
+7. A band printer with no stock settings uses the box's default 50 by 250 mm label, which has no print window, so its test page keeps everything. Should a band printer with no settings be assumed to have the park's 80 mm window?
+8. A gate or customer display station no longer shows the code prefix field; a prefix an older set-up saved on one is kept and sent back unchanged. Keep it, or clear it?
+9. Days already closed keep the long band code in their saved list; nothing old is rewritten. All right?
