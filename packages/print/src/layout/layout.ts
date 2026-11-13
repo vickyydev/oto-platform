@@ -70,6 +70,19 @@ export interface LayoutOptions extends WrapOptions {
 
 const DEFAULT_LINE_GAP = 3;
 
+/**
+ * SCRUM-971 — the height one line of `text` takes in a text block at the
+ * default gap, measured exactly as `layoutText` measures a line: its ink
+ * above the baseline (never less than the style's minimum ascent), its ink
+ * below, and the gap. A template that wants rows at one pitch asks this of a
+ * sample line and sets the result as the rows' `leading`.
+ */
+export function lineDots(text: string, style: TextStyle): number {
+  const shaped = shapeText(text, style);
+  const ascent = Math.ceil(Math.max(shaped.inkAbove, Math.round(style.sizeDots * 0.72)));
+  return ascent + Math.ceil(shaped.inkBelow) + DEFAULT_LINE_GAP;
+}
+
 export function layoutDocument(doc: PrintDocument, options: LayoutOptions = {}): LayoutModel {
   const pad = doc.paddingDots ?? 0;
   const contentWidth = doc.media.widthDots - pad * 2;
@@ -502,7 +515,7 @@ function layoutColumns(
   let maxY = y;
   cells.forEach((cell, i) => {
     const w = widths[i] ?? 0;
-    const end = layoutText(ctx, cell.runs, cell.style, cell.align, cellX, y, w);
+    const end = layoutText(ctx, cell.runs, cell.style, cell.align, cellX, y, w, cell.leading);
     if (end > maxY) maxY = end;
     cellX += w + gap;
   });

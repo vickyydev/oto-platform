@@ -45,6 +45,12 @@ export interface Cell {
   widthDots?: number;
   /** Relative share of the remaining width; defaults to 1. */
   flex?: number;
+  /**
+   * SCRUM-971 — the dots each of its lines takes, at least, as a text block's
+   * `leading`: a row of facts drawn at one pitch whatever its own ink reaches.
+   * Omit for the measured line height every printout has always used.
+   */
+  leading?: number;
 }
 
 export interface DrawerPulse {
