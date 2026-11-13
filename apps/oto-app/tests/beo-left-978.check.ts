@@ -23,10 +23,13 @@
 //      quotes the words that say the adults eat the same; "ต่อ" is "per" only
 //      before a count or a unit;
 //   6. the adults' set line in another count keeps its till code, on the row
-//      and in the till's plan view;
+//      and in the till's plan view; one copied uncoded ("Different for
+//      adults" in the editor or the day-of view) takes the set menu's code
+//      once its count is the adults' own;
 //   7. the family's link answers its park's time zone and prints the park's day;
 //   8. with "Different for adults" already on, an adults' line that only
 //      repeats the kids' set menu is no charged EXTRA; "3 more" stays one;
+//      a repeat of a kids' extra is the kids' line on the adults' menu;
 //   9. Fetch from chat compares a kids' choice with the kids' lines only.
 //
 // Every model answer here is scripted or none: no model key is used.
@@ -59,7 +62,9 @@ const { kitchenPlanPutBodySchema } = await import("../server/lib/kitchenPlanBody
 const { chatTotalOf, adultsSameAsKidsFolds, figureSaidEach, chatPriceIsTotal } = await import("../server/lib/beoCatalogueFill");
 const { beoPdfHtml } = await import("../server/pdf");
 const { BeoAiApproveBodySchema } = await import("../shared/beoAiFill");
-const { adultsSetCopiesUncoded } = await import("../shared/kitchenAdults");
+const { adultsSetCopiesUncoded, adultsSetLinesTillCoded } = await import("../shared/kitchenAdults");
+const { adultsFoldedAsKidsLineWords, adultsFoldedWords } = await import("../shared/beoAiFill");
+const { approvalResultWords } = await import("../client/src/lib/beo-ai-review");
 const { beoPrintFoldable } = await import("../shared/beoExtras");
 const { fetchCatalogueChangesOf } = await import("../client/src/lib/beo-fetch-from-chat");
 const { parkDayOf } = await import("../client/src/pages/public/menu-select");
@@ -100,7 +105,11 @@ const setMenuItems = [
   { id: RICE, type: "choice_group", label: "Fried rice", options: ["Veggie", "Chicken", "Shrimp"], allowMultiple: false, productCode: "CF-43", optionProductCodes: {} },
   { id: FRIES, type: "always_included", label: "French fries", productCode: "CF-11" },
 ];
-const ev = { cake: randomUUID(), body: randomUUID(), rice: randomUUID(), riceSame: randomUUID(), link: randomUUID(), on: randomUUID(), off: randomUUID(), more: randomUUID() };
+const ev = {
+  cake: randomUUID(), body: randomUUID(), rice: randomUUID(), riceSame: randomUUID(), link: randomUUID(), on: randomUUID(), off: randomUUID(), more: randomUUID(),
+  // The lane's review: the editor's own uncoded copy, the day-of view's, and a repeat of a kids' extra.
+  riceCopy: randomUUID(), riceDay: randomUUID(), riceTill: randomUUID(), onExtra: randomUUID(), offExtra: randomUUID(),
+};
 
 function fakeAuth(req: Request, res: Response, next: NextFunction) {
   if (req.get("x-test-as") !== "manager") return res.status(401).json({ message: "Not signed in" });
@@ -412,6 +421,63 @@ try {
       ]).map((l) => l.productCode ?? null),
       ["CF-43", null],
     );
+
+    // The lane's review: the editor's own "Different for adults" copy of the kids' set line carries no code
+    // (the kids' line carries none); staff then give the adults 8. The editor's Save codes it from the set
+    // menu, as the till reads the kids' line: the till names it, never "not on the till menu".
+    await kitchenPlan(ev.riceCopy, { kids: [], adults: [] });
+    const copy = await send("PUT", `/api/events/${ev.riceCopy}/beo`, {
+      kitchenPlan: {
+        foodRequired: true, cakeMode: "NONE", setMenuEnabled: true, setMenuTemplateId: setMenuId, setMenuSelectionSubmittedAt: null, serviceSchedule: [],
+        menus: { kids: [kidsChicken], adults: [{ ...kidsChicken, id: "menu_copy_0", quantity: 8 }], adultsDiffer: true, kidsFoodTime: "", adultsFoodTime: "" },
+      },
+    });
+    assert.equal(copy.status, 200, JSON.stringify(copy.body));
+    assert.deepEqual(await adultsOf(ev.riceCopy), [["Chicken", 8, "CF-43"]], "the editor's copy at 8: coded from the set menu");
+    const copyView = ((await viewOf(ev.riceCopy))?.lines ?? []).filter((l: Record<string, unknown>) => l.audience === "adults");
+    assert.deepEqual(copyView.map((l: Record<string, unknown>) => [l.name, l.qty, l.product_code]), [["Chicken", 8, "CF-43"]], "the till names and codes it");
+    // The same through the day-of view's door, for a copy saved uncoded at the kids' count whose count is
+    // changed later: coded once it is the adults' own.
+    await kitchenPlan(ev.riceDay, { kids: [kidsChicken], adults: [{ ...kidsChicken, id: "menu_copy_0" }], adultsDiffer: true });
+    const day = await send("PUT", `/api/events/${ev.riceDay}/beo/kitchen-plan`, {
+      menus: { kids: [kidsChicken], adults: [{ ...kidsChicken, id: "menu_copy_0", quantity: 6 }], adultsDiffer: true, kidsFoodTime: "", adultsFoodTime: "" },
+      setMenuSelectionSubmittedAt: null,
+    });
+    assert.equal(day.status, 200, JSON.stringify(day.body));
+    assert.deepEqual(await adultsOf(ev.riceDay), [["Chicken", 6, "CF-43"]], "the day-of view's copy at 6");
+    // And a plan written before this fix (the adults' Chicken 8 uncoded, the till's "not on the till
+    // menu" line): the till's own edit of that line writes it coded.
+    await kitchenPlan(ev.riceTill, { kids: [kidsChicken], adults: [{ ...kidsChicken, id: "menu_copy_0", quantity: 8 }], adultsDiffer: true });
+    const later = await applyTillKitchenEdit(appDb, tillWriters, { id: ev.riceTill, tenantId: tenant }, {
+      id: randomUUID(), editedAt: new Date().toISOString(), by: { name: "ZZ Noi", role: "Manager" },
+      changes: [{ op: "set", lineId: "menu_copy_0", qty: 9 }],
+    });
+    assert.equal(later.ok, true, JSON.stringify(later));
+    assert.deepEqual(await adultsOf(ev.riceTill), [["Chicken", 9, "CF-43"]], "the till's edit to 9: coded");
+    // Back at the kids' count: uncoded again and read once, as before.
+    assert.equal((await send("PUT", `/api/events/${ev.riceCopy}/beo`, {
+      kitchenPlan: {
+        foodRequired: true, cakeMode: "NONE", setMenuEnabled: true, setMenuTemplateId: setMenuId, setMenuSelectionSubmittedAt: null, serviceSchedule: [],
+        menus: { kids: [kidsChicken], adults: [{ ...kidsChicken, id: "menu_copy_0", quantity: 12, productCode: "CF-43" }], adultsDiffer: true, kidsFoodTime: "", adultsFoodTime: "" },
+      },
+    })).status, 200);
+    assert.deepEqual(await adultsOf(ev.riceCopy), [["Chicken", 12, null]]);
+    assert.deepEqual(((await viewOf(ev.riceCopy))?.lines ?? []).filter((l: Record<string, unknown>) => l.audience === "adults"), []);
+    // Pure: the option's own code, else its group's; an item always included, its own; the line the view
+    // folds, a line of no set-menu group or of a group the set menu lacks: as they are.
+    const kidsSet = [...kids, { itemName: "Margherita", quantity: 1, source: "set_menu", groupId: PIZZA }, { itemName: "French fries", quantity: 1, source: "set_menu", groupId: FRIES }];
+    assert.deepEqual(
+      adultsSetLinesTillCoded(kidsSet, [
+        { itemName: "Chicken", quantity: 8, source: "set_menu", groupId: RICE },
+        { itemName: "Chicken", quantity: 12, source: "set_menu", groupId: RICE },
+        { itemName: "Margherita", quantity: 8, source: "set_menu", groupId: PIZZA },
+        { itemName: "French fries", quantity: 8, source: "set_menu", groupId: FRIES },
+        { itemName: "Nuggets", quantity: 8, source: "additional" },
+        { itemName: "Chicken", quantity: 8, source: "set_menu", groupId: "item_zz978_none" },
+        { itemName: "Chicken", quantity: 8, source: "set_menu", groupId: RICE, productCode: "CF-99" },
+      ], setMenuItems).map((l) => l.productCode ?? null),
+      ["CF-43", null, "CF-24", "CF-11", null, null, "CF-99"],
+    );
   });
 
   // --- 7. The family's link: the park's day ---------------------------------------------------------
@@ -431,7 +497,7 @@ try {
   });
 
   // --- 8. The approval with "Different for adults" already on ---------------------------------------
-  await check("an adults' repeat of the kids' set dish is no charged extra, the switch on or off; 3 more stays one", async () => {
+  await check("an adults' repeat of the kids' dish is no charged extra, the switch on or off; 3 more stays one", async () => {
     const own = line("own_1", "ZZ Caesar salad", 4, { price: 180, source: "additional" });
     await kitchenPlan(ev.on, { kids: [], adults: [own], adultsDiffer: true });
     await kitchenPlan(ev.off, { kids: [], adults: [], adultsDiffer: false });
@@ -465,8 +531,42 @@ try {
     assert.ok(moreLines.includes("SET Margherita x1"), "beside the set menu's own");
     const viewed = ((await viewOf(ev.on))?.lines ?? []).filter((l: Record<string, unknown>) => l.source === "extra" && l.name === "Margherita");
     assert.deepEqual(viewed, [], "the till charges no Margherita extra on the switch-on party");
+
+    // The lane's review: a repeat of a kids' line that is NO set-menu dish (the kids' own extra, ZZ Nuggets
+    // 12 at 100) with the switch already on is never dropped and never said to come "from the set menu":
+    // the adults' own menu holds the kids' line itself, so the till and the PDF read the one dish, once,
+    // as with the switch off (where the adults eat the kids' list, the Nuggets with it).
+    const nuggets = line("k_n", "ZZ Nuggets", 12, { price: 100, source: "additional" });
+    await kitchenPlan(ev.onExtra, { kids: [nuggets], adults: [own], adultsDiffer: true });
+    await kitchenPlan(ev.offExtra, { kids: [nuggets], adults: [], adultsDiffer: false });
+    const sameAsKids = { itemName: "ZZ Nuggets", quantity: 8, productCode: null, notes: "the same as the kids" };
+    const onExtra = await approve(ev.onExtra, sameAsKids);
+    assert.equal(onExtra.ok, true, JSON.stringify(onExtra));
+    assert.deepEqual(
+      await adultsOf(ev.onExtra),
+      { differ: true, lines: ["SET Margherita x1", "SET French fries x1", "EXTRA ZZ Caesar salad x4 @180", "EXTRA ZZ Nuggets x12 @100"] },
+      "on: the kids' Nuggets line on the adults' own menu, as it is",
+    );
+    if (onExtra.ok) {
+      assert.deepEqual([onExtra.written.adultsLinesFolded, onExtra.written.adultsMenuOwn, onExtra.written.adultsKidsLinesCopied], [undefined, undefined, 1]);
+      const words = approvalResultWords({ written: onExtra.written });
+      assert.ok(words.endsWith(` ${adultsFoldedAsKidsLineWords(1)}`), words);
+      assert.equal(words.includes("from the set menu"), false, "never said to come from the set menu");
+    }
+    const nuggetsOn = ((await viewOf(ev.onExtra))?.lines ?? []).filter((l: Record<string, unknown>) => l.name === "ZZ Nuggets");
+    assert.deepEqual(nuggetsOn.map((l: Record<string, unknown>) => [l.qty, l.unit_price_satang, l.audience ?? null]), [[12, 10000, null]], "the till: one Nuggets line, 12 at 100, for everyone");
+    const onRow = (await planOf(ev.onExtra))!;
+    const onRows = rowsOf(await pdf({ required: true, setMenuEnabled: true, menus: onRow.menus }));
+    assert.deepEqual(onRows.filter((r) => r.includes("ZZ Nuggets")), ["12x ZZ Nuggets EXTRA 100฿ each"], `the PDF: one row, no mark: ${JSON.stringify(onRows)}`);
+    // Off: the adults eat the kids' menu, as before.
+    const offExtra = await approve(ev.offExtra, sameAsKids);
+    assert.equal(offExtra.ok, true, JSON.stringify(offExtra));
+    assert.deepEqual(await adultsOf(ev.offExtra), { differ: false, lines: [] });
+    if (offExtra.ok) assert.ok(approvalResultWords({ written: offExtra.written }).endsWith(` ${adultsFoldedWords(1)}`));
+    const nuggetsOff = ((await viewOf(ev.offExtra))?.lines ?? []).filter((l: Record<string, unknown>) => l.name === "ZZ Nuggets");
+    assert.deepEqual(nuggetsOff.map((l: Record<string, unknown>) => [l.qty, l.unit_price_satang, l.audience ?? null]), [[12, 10000, null]], "the same one line as with the switch on");
     // Check 4's shape takes the approval's row as it is written.
-    for (const eventId of [ev.on, ev.off, ev.more]) {
+    for (const eventId of [ev.on, ev.off, ev.more, ev.onExtra, ev.offExtra]) {
       const row = (await planOf(eventId))!;
       parsed("the AI approval", { menus: row.menus, simplifiedMenus: row.simplified_menus, setMenuEnabled: row.set_menu_enabled, setMenuTemplateId: row.set_menu_template_id, cakeMode: row.cake_mode, cakeQuantity: row.cake_quantity, cakeTime: row.cake_time, cakeNotes: row.cake_notes });
     }
