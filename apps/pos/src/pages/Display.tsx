@@ -16,6 +16,15 @@ import { ApiError } from '@/api/client';
  * total behind a paused notice. Only a document it accepts lifts that notice.
  */
 const GRACE_MS = 15_000;
+/**
+ * SCRUM-973 — nothing heard from the box for this long says "Reconnecting".
+ * The box sends a heartbeat on the stream every five seconds and a poll answers
+ * every second, so this is one heartbeat missed and a little: a line that went
+ * silent without the browser knowing (the box or the counter's network gone,
+ * the device's own still up) is said within it, not at the stream's twelve-
+ * second deadline (`watchBridgeSnapshots`).
+ */
+export const DISPLAY_SILENCE_MS = 8_000;
 /** The gap between polls when no stream is open; a stream replaces polling altogether. */
 const POLL_GAP_MS = 1_000;
 const PAIRING_POLL_GAP_MS = 2_000;
@@ -70,6 +79,8 @@ import { goesAgainByItself } from '@/lib/displaySendQueue';
 export default function Display() {
   const { lang, t } = useLanguage();
   const [connection, setConnection] = useState<'connected' | 'reconnecting' | 'paused'>('connected');
+  /** SCRUM-973 — nothing heard from the box for `DISPLAY_SILENCE_MS`: "Reconnecting" is said, the grace untouched. */
+  const [silent, setSilent] = useState(false);
   const grace = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const streaming = useRef(false);
   /** The last byte from the box on either path: a stream chunk or a poll reply. */
@@ -80,6 +91,10 @@ export default function Display() {
     grace.current = setTimeout(() => setConnection('paused'), Math.max(0, knownGoodAt + GRACE_MS - Date.now()));
   }, []);
   const recovered = useCallback(() => {
+    // SCRUM-973 — the browser's own word that the line is down outlasts an
+    // answer that was already on its way: it lifts "Reconnecting" only once
+    // the browser is online again and the box answers afresh.
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
     clearTimeout(grace.current);
     grace.current = undefined;
     setConnection('connected');
@@ -216,6 +231,18 @@ export default function Display() {
     // The browser names the moment the line went down, so nothing is estimated from the last byte.
     const offline = () => { streaming.current = false; disconnect(Date.now()); };
     window.addEventListener('offline', offline);
+    // SCRUM-973 — back online: the box is asked afresh, and its answer lifts "Reconnecting".
+    const online = () => { askBox.current = true; };
+    window.addEventListener('online', online);
+    // SCRUM-973 — a line gone silent without the browser knowing is said once
+    // nothing has been heard for `DISPLAY_SILENCE_MS`, and the box is asked
+    // afresh. Only the word: the grace still runs from the last byte, and the
+    // next byte heard takes the word away again.
+    const silence = setInterval(() => {
+      const quiet = Date.now() - lastHeard.current >= DISPLAY_SILENCE_MS;
+      if (quiet) askBox.current = true;
+      setSilent(quiet);
+    }, 1_000);
     const stop = watchBridgeSnapshots(stationId, {
       bearer: bearerRef.current,
       onState: value => {
@@ -245,7 +272,14 @@ export default function Display() {
         // dropped live stream or a failed poll starts the connection grace.
       },
     });
-    return () => { stop(); streaming.current = false; window.removeEventListener('offline', offline); };
+    return () => {
+      stop();
+      streaming.current = false;
+      clearInterval(silence);
+      setSilent(false);
+      window.removeEventListener('offline', offline);
+      window.removeEventListener('online', online);
+    };
   }, [stationId, disconnect, recovered, adopt]);
   useEffect(() => () => clearTimeout(grace.current), []);
 
@@ -433,7 +467,9 @@ export default function Display() {
   const onConsentForm = !!session && connection !== 'paused' && !!view?.consent;
   // A fill, and since SCRUM-963 a language the family chose, waits as their typing does.
   const goesByItself = goesAgainByItself(pending.current);
-  const formReconnecting = onConsentForm && (connection === 'reconnecting' || !!error && goesByItself);
+  // SCRUM-973 — the line said down, or gone silent past a missed heartbeat.
+  const reconnecting = connection === 'reconnecting' || (connection === 'connected' && silent);
+  const formReconnecting = onConsentForm && (reconnecting || !!error && goesByItself);
   /**
    * SCRUM-943 — and it does go by itself: a fill whose reply was lost while
    * the box still answers (no reconnect to send it again on, above) is sent
@@ -466,7 +502,7 @@ export default function Display() {
   const theme = useDisplayTheme(document?.theme);
 
   return <div className={`${theme} h-[100dvh] w-full min-w-0 overflow-hidden bg-background text-foreground flex flex-col`} data-testid="separate-display">
-    {session && connection === 'reconnecting' && !onConsentForm && <p role="status" className="shrink-0 px-4 py-2 text-sm">{t('display.reconnecting')}</p>}
+    {session && reconnecting && !onConsentForm && <p role="status" className="shrink-0 px-4 py-2 text-sm">{t('display.reconnecting')}</p>}
     {error && (!(session && connection !== 'connected') || pending.current) && !(onConsentForm && goesByItself) && <div role="alert" className="shrink-0 bg-amber-100 px-4 py-3 text-sm text-amber-950 flex items-center justify-between gap-3">
       <span>{session ? displayErrorText(error, lang, t) : error}</span>
       <Button size="sm" onClick={() => { if (pairingMode === 'expiry-error') { void expirePairing(); return; } const intent = pending.current; if (intent) void send(intent.type, intent.payload); else setRestart(value => value + 1); }}>{session ? t('display.retry') : 'Retry'}</Button>

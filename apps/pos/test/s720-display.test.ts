@@ -168,8 +168,13 @@ describe('SCRUM-720 the grace runs from the last byte', () => {
     listener.onActivity!();
     mock.session.mockRejectedValue(new Error('offline'));
     // The idle abort finds the silence twelve seconds after the last byte.
-    await vi.advanceTimersByTimeAsync(12_000);
+    // SCRUM-973 — the word comes before it, once a heartbeat is missed (eight
+    // seconds); it said nothing until the abort before. The grace is unchanged.
+    await vi.advanceTimersByTimeAsync(7_000);
     expect(view.text()).not.toContain('Reconnecting');
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(view.text()).toContain('Reconnecting');
+    expect(view.text()).not.toContain(PAUSED);
     listener.onState(false); listener.onFailure(new Error('silent'));
     await settle();
     expect(view.text()).toContain('Reconnecting');
@@ -221,6 +226,50 @@ describe('SCRUM-720 the grace runs from the last byte', () => {
     expect(view.text()).not.toContain(PAUSED);
     await vi.advanceTimersByTimeAsync(1);
     expect(view.text()).toContain(PAUSED);
+    view.hook.unmount();
+  });
+});
+
+describe('SCRUM-973 — the display says "Reconnecting" as soon as it knows the line is down', () => {
+  it('the browser says it is offline: an answer already on its way does not take the word away; the next answer once online does', async () => {
+    const view = await mount();
+    listener.onSnapshot(document); listener.onState(true); listener.onActivity!();
+    vi.stubGlobal('navigator', { onLine: false });
+    window.dispatchEvent(new Event('offline'));
+    await settle();
+    expect(view.text()).toContain('Reconnecting');
+    // A newer snapshot already on the wire lands after the browser said so (Chromium delivers
+    // it, and keeps a stream that was open running): the word stays while the browser is offline.
+    listener.onSnapshot({ ...document, sequence: 6 }); listener.onState(true);
+    await settle();
+    expect(view.text()).toContain('Reconnecting');
+    await vi.advanceTimersByTimeAsync(4_000);
+    expect(view.text()).toContain('Reconnecting');
+    // Back online: the box is asked afresh, and its answer takes the word away.
+    vi.stubGlobal('navigator', { onLine: true });
+    mock.session.mockResolvedValue({ ...session, document: { ...document, sequence: 6 } });
+    window.dispatchEvent(new Event('online'));
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(view.text()).not.toContain('Reconnecting');
+    view.hook.unmount();
+  });
+
+  it('a stream gone silent is said once a heartbeat is missed, not at its twelve-second abort; the next byte takes the word away', async () => {
+    const view = await mount();
+    listener.onSnapshot(document); listener.onState(true);
+    mock.session.mockRejectedValue(new Error('offline'));
+    listener.onActivity!();
+    await vi.advanceTimersByTimeAsync(7_000);
+    expect(view.text()).not.toContain('Reconnecting');
+    await vi.advanceTimersByTimeAsync(1_500);
+    expect(view.text()).toContain('Reconnecting');
+    // The box is asked afresh meanwhile, at the poll's pace.
+    expect(mock.session).toHaveBeenCalled();
+    // A heartbeat: the line works, and the word goes; nothing was hidden.
+    listener.onActivity!();
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(view.text()).not.toContain('Reconnecting');
+    expect(view.text()).not.toContain(PAUSED);
     view.hook.unmount();
   });
 });
