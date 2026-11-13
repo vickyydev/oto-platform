@@ -423,3 +423,38 @@ describe.skipIf(!browser || RECORD)('SCRUM-963 (9): the one-row categories move 
     }
   }, 120_000);
 });
+
+/**
+ * SCRUM-975 (point 10) — THE ARROWS AT THE ROW'S OWN ENDS. In its one-row
+ * state the row reaches 8 pixels past its column each side (`-mx-2 px-2`)
+ * and the arrows stood at the column's ends, so a sliver of the next tile
+ * showed outside each (the proof's 08b, 08sb2). They stand at the row's ends.
+ */
+describe.skipIf(!browser || RECORD)('SCRUM-975 (10): the category arrows sit at the row’s ends', () => {
+  const ends = () => harness.page.getByTestId('category-row').evaluate((row) => {
+    const box = row.getBoundingClientRect();
+    const holder = row.parentElement!;
+    const arrow = (name: string) => holder.querySelector(`button[aria-label="${name}"]`)?.getBoundingClientRect() ?? null;
+    const before = arrow('Earlier categories');
+    const after = arrow('More categories');
+    return {
+      row: [box.left, box.right],
+      before: before ? [before.left, before.right] : null,
+      after: after ? [after.left, after.right] : null,
+    };
+  });
+
+  for (const [screen, last] of [['fnb-menu', 'Beer'], ['merch-grid', 'Workshop']] as const) {
+    it(`${screen} at 1440x900: both arrows meet the row's ends, with no tile outside them`, async () => {
+      await harness.read(`screen=${screen}&split=1`, { width: 1440, height: 900 });
+      await settledRow(last);
+      await wheel(0, 120);
+      await settledRow(last);
+      expect(await arrows()).toEqual({ before: 1, after: 1 });
+      const seen = await ends();
+      const detail = JSON.stringify(seen);
+      expect(Math.abs(seen.before![0]! - seen.row[0]!), detail).toBeLessThanOrEqual(0.5);
+      expect(Math.abs(seen.after![1]! - seen.row[1]!), detail).toBeLessThanOrEqual(0.5);
+    }, 120_000);
+  }
+});

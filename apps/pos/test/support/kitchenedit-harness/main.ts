@@ -3,6 +3,9 @@ import { createRoot } from 'react-dom/client';
 import type { EventView, PartyKitchenPlan } from '@oto/shared';
 import { toOtoEvent } from '@/api/events';
 import { PartyEditForm } from '@/components/parties/PartyEditForm';
+import { PARTY_ACTIONS_ROW } from '@/components/parties/partyLayout';
+import { Button } from '@/components/ui/button';
+import { Ban, GlassWater, MessageCircle, Pencil, Sparkles, Wallet } from 'lucide-react';
 import { LanguageProvider } from '@/i18n/LanguageContext';
 import type { PartyBooking } from '@/types';
 import '@/fonts.css';
@@ -20,6 +23,11 @@ import '@/index.css';
  *   `who=reception`  the sections read-only, as reception sees them;
  *   `who=manager`    a manager's, the counts and notes editable;
  *   `split=1`        the frame in half the window (the split view's staff half).
+ *
+ * SCRUM-953 (point 6) — `screen=actions`: the party page's header as
+ * `PartyDetail.tsx` draws it with a settlement open, its six buttons in the
+ * row's own classes (`PARTY_ACTIONS_ROW`), in the same frame; read with
+ * `window.__readActionsRow`.
  */
 const params = new URLSearchParams(window.location.search);
 const manager = params.get('who') === 'manager';
@@ -96,6 +104,38 @@ function readKitchenLines(): KitchenLineReading[] {
   return out;
 }
 
+/** Where each of the header's buttons stands against the party page's column. */
+function readActionsRow() {
+  const column = document.querySelector('[data-testid="party-column"]')!.getBoundingClientRect();
+  return {
+    column: [column.left, column.right], pageScrolls: document.documentElement.scrollWidth > window.innerWidth,
+    buttons: [...document.querySelectorAll('[data-testid="party-actions"] button')].map((b) => {
+      const r = b.getBoundingClientRect();
+      return { text: b.textContent?.trim() ?? '', left: r.left, right: r.right, top: r.top, whole: b.scrollWidth <= b.clientWidth + 0.5 };
+    }),
+  };
+}
+
+function ActionsPage() {
+  useEffect(() => {
+    void document.fonts.ready.then(() => { document.documentElement.dataset.ready = '1'; });
+  }, []);
+  const button = (icon: typeof Pencil, label: string, primary = false) =>
+    h(Button, { key: label, variant: primary ? 'default' : 'outline', size: 'lg', className: 'gap-2 h-12' }, h(icon, { className: 'w-5 h-5' }), label);
+  // PartyDetail's header: the title block and the button row beside it (`flex items-start justify-between gap-4 flex-wrap`).
+  const header = h('div', { className: 'shrink-0 mb-4' },
+    h('div', { className: 'flex items-start justify-between gap-4 flex-wrap' },
+      h('div', { className: 'min-w-0' },
+        h('h2', { className: 'text-2xl font-black tracking-tight' }, 'ZZ TEST SCRUM-953 party'),
+        h('p', { className: 'text-muted-foreground mt-1' }, 'ZZ TEST Mali · turning 6 · 13:00–16:00 · Party room 1')),
+      h('div', { className: PARTY_ACTIONS_ROW, 'data-testid': 'party-actions' },
+        button(MessageCircle, 'Message parent'), button(Pencil, 'Edit party'), button(Sparkles, 'Resume settlement ฿18010'),
+        button(Ban, 'Cancel settlement'), button(GlassWater, 'Add F&B to party'), button(Wallet, 'Take balance ฿18010', true))));
+  return h('div', { className: 'h-[100dvh] w-full flex flex-col bg-background text-foreground overflow-hidden' },
+    h('div', { className: 'flex-1 min-h-0 p-6' },
+      h('div', { className: 'mx-auto h-full max-w-5xl flex flex-col min-h-0', 'data-testid': 'party-column' }, header)));
+}
+
 function Page() {
   useEffect(() => {
     void document.fonts.ready.then(() => { document.documentElement.dataset.ready = '1'; });
@@ -115,9 +155,11 @@ function Page() {
 declare global {
   interface Window {
     __readKitchenLines?: typeof readKitchenLines;
+    __readActionsRow?: typeof readActionsRow;
   }
 }
 
 window.__readKitchenLines = readKitchenLines;
+window.__readActionsRow = readActionsRow;
 document.documentElement.classList.add('light');
-createRoot(document.getElementById('root')!).render(h(LanguageProvider, null, h(Page)));
+createRoot(document.getElementById('root')!).render(h(LanguageProvider, null, h(params.get('screen') === 'actions' ? ActionsPage : Page)));
