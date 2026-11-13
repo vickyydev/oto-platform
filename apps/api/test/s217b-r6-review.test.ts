@@ -510,7 +510,11 @@ describe('A. fences and seams', () => {
       // SCRUM-970: an EXTRA line prints what the BEO editor's hint says for it (shared/beoExtras.ts: "120฿ each",
       // "till price 420", "not charged"), and every date the PDF prints is on the park's clock (the set menu's
       // received date, the footer's); where the BEO's documents live is unchanged.
-      'pdf.ts': '5f71e610aa8cdc0b06c431d7c00d596e11bd8ef1c1b651af1559d73e9325d58f',
+      // SCRUM-978: an adults' line folds beside the kids' row of its name only when that row's price cell holds
+      // for it too (shared/beoExtras.ts beoPrintFoldable), else it prints as its own row at its own price; the
+      // kids' list is read from menus first; Party Host and Setup Plan print only with something under them;
+      // where the BEO's documents live is unchanged.
+      'pdf.ts': '8c9f1ad1f903429cc5b0ba01caa1ab09aad98badd7396795760cb5d97971337c',
       // SCRUM-803 / SCRUM-806: Generate from BEO bills the package in baht and only the add-ons a party bought; where the BEO's documents live is unchanged.
       // SCRUM-769: the BEO's staff list leaves out a login whose employment has ended (onStaff); where documents live is unchanged.
       // SCRUM-815: the parent link's set-menu lines are resolved by server/lib/setMenuResolve.ts (moved, not changed) and the
@@ -544,7 +548,10 @@ describe('A. fences and seams', () => {
       // (writeResolvedSetMenu, withAdultsDiffer), and the BEO PDF route hands the PDF the park's time zone and
       // the party's park's till menu (readFillTillMenu, for a party and only when a line's charge needs
       // it); where the BEO's documents live is unchanged.
-      'beo-routes.ts': '38982914480db566904fb552f192ff91448a56bb6dce007f839c9d4bb0d887a1',
+      // SCRUM-978: the BEO's Save writes the cake count the form sends (kitchenPlanDbDataOf), the kitchen-plan
+      // route checks its body before writing (server/lib/kitchenPlanBody.ts), and the parent link's read
+      // answers the park's time zone; where the BEO's documents live is unchanged.
+      'beo-routes.ts': 'a7e16afed79912dd4ecfa7787604d96e799dbcd3cf49a3ef89eda3ad3168e066',
       'orgChartRoutes.ts': 'eff8d4478165e8b0157ef07d37891222104f751b49932e70f525f06366fe9d90',
     };
     for (const [file, hash] of Object.entries(main)) expect(sha256(committed(join(APP_SERVER, file))), file).toBe(hash);
