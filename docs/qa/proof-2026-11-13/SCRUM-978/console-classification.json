@@ -1,0 +1,43 @@
+{
+  "counts": {
+    "reactDevtools": 0,
+    "routerFuture": 0,
+    "resourceFailure": 0,
+    "websocket": 0,
+    "iframe": 0,
+    "performance": 0,
+    "cookie": 0,
+    "query": 0,
+    "auth": 0
+  },
+  "nameHits": [
+    {
+      "type": "log",
+      "path": "oto-app-staging.onrender.com/core/today",
+      "length": 120,
+      "matchedNameLengths": [
+        3
+      ],
+      "wholeWordHits": 0
+    },
+    {
+      "type": "log",
+      "path": "oto-app-staging.onrender.com/core/today",
+      "length": 120,
+      "matchedNameLengths": [
+        3
+      ],
+      "wholeWordHits": 0
+    },
+    {
+      "type": "log",
+      "path": "oto-app-staging.onrender.com/core/today",
+      "length": 112,
+      "matchedNameLengths": [
+        3
+      ],
+      "wholeWordHits": 0
+    }
+  ],
+  "classification": "All three lines match existing Today render-state diagnostics; short-name substring matches only, zero whole-word names, no auth diagnostics or email"
+}

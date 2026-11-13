@@ -1,0 +1,58 @@
+[
+  {
+    "key": "SCRUM-978",
+    "file": "docs/qa/jira-comments/attachments/SCRUM-978/20261113-01c-recent-updates-reopened-reads-9.png",
+    "sha256": "74227dde0659cbc0dc4c808f5e863f17378c28417bbc2b393875527aeef37a40",
+    "visuallyInspected": true,
+    "origin": "preserved"
+  },
+  {
+    "key": "SCRUM-978",
+    "file": "docs/qa/jira-comments/attachments/SCRUM-978/20261113-02c-pdf-margherita-kids-only-400-and-adults-only-450.png",
+    "sha256": "6348185a05e7924ffe1305464b706581ba6a5639cf906d38d7771df80c777634",
+    "visuallyInspected": true,
+    "origin": "preserved"
+  },
+  {
+    "key": "SCRUM-978",
+    "file": "docs/qa/jira-comments/attachments/SCRUM-978/20261113-03-console-privacy-counts.png",
+    "sha256": "8bcb4edaca73d7a5ef71e367a9e4e2e1842bd5d6afb2c27e8fa4cb579457cc52",
+    "visuallyInspected": true,
+    "origin": "fresh"
+  },
+  {
+    "key": "SCRUM-976",
+    "file": "docs/qa/jira-comments/attachments/SCRUM-976/20261113-07c3-resumed-review-different-adults.png",
+    "sha256": "1a49e36bb797033ecb9f129f96b10ed16df1be49aa88bdb5e61e271070f5ac50",
+    "visuallyInspected": true,
+    "origin": "fresh"
+  },
+  {
+    "key": "SCRUM-976",
+    "file": "docs/qa/jira-comments/attachments/SCRUM-976/20261113-07c5-resumed-adults-switch-and-extra-after-reopen.png",
+    "sha256": "099ceaaf7cc509d08cdfe87ddb2ee1ea7255a5e28645b465c414da4c929a03bd",
+    "visuallyInspected": true,
+    "origin": "fresh"
+  },
+  {
+    "key": "SCRUM-966",
+    "file": "docs/qa/jira-comments/attachments/SCRUM-966/20261113-05b-till-party-page-our-cake-3.png",
+    "sha256": "2d18afe8bb31633a16a00a2e6e20c6fb25b8c35db98e743eed6c3201e00519d9",
+    "visuallyInspected": true,
+    "origin": "preserved"
+  },
+  {
+    "key": "SCRUM-966",
+    "file": "docs/qa/jira-comments/attachments/SCRUM-966/20261113-06a-day-of-door-accepts-stored-values-refuses-in-plain-words.png",
+    "sha256": "50bdc9cace83706f12724ededbfd8ca0b6a953cd95814bee92d73f82b87561c6",
+    "visuallyInspected": true,
+    "origin": "preserved"
+  },
+  {
+    "key": "SCRUM-968",
+    "file": "docs/qa/jira-comments/attachments/SCRUM-968/20261113-08c-till-party-page-adults-chicken-8-named.png",
+    "sha256": "b1af51cfbc56d5c64f86449987a53df481c0f9e33ad4393e9965c17e126d9603",
+    "visuallyInspected": true,
+    "origin": "preserved"
+  }
+]

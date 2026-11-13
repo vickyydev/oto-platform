@@ -1,0 +1,48 @@
+{
+  "signOut": {
+    "at": "2026-11-13T12:12:24.556Z",
+    "inboxContext": {
+      "inboxSignOut": {
+        "route": "POST /api/auth/sign-out (inbox)",
+        "status": 200
+      },
+      "beoTabAppLogout": {
+        "route": "POST /api/logout (OTO App, the BEO tab)",
+        "status": 200
+      },
+      "launcherSignOut": {
+        "route": "POST /api/auth/sign-out (launcher)",
+        "status": 200
+      },
+      "readBack": {
+        "inboxMe": 401,
+        "appUser": 401,
+        "launcherMe": 401
+      }
+    },
+    "appContext": {
+      "appLogout": {
+        "route": "POST /api/logout (OTO App)",
+        "status": 200
+      },
+      "launcherSignOut": {
+        "route": "POST /api/auth/sign-out (launcher)",
+        "status": 200
+      },
+      "readBack": {
+        "appUser": 401,
+        "launcherMe": 401
+      }
+    },
+    "tillOrigin": {
+      "signOut": {
+        "route": "POST /api/auth/sign-out (till origin)",
+        "status": 200
+      },
+      "readBack": {
+        "me": 401
+      }
+    }
+  },
+  "browserClosedAt": "2026-11-13T12:12:24.856Z"
+}

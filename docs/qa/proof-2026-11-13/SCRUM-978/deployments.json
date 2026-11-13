@@ -1,0 +1,24 @@
+{
+  "at": "2026-11-13T12:16:27.853Z",
+  "service": "oto-app-staging",
+  "deployments": [
+    {
+      "id": "dep-dbrabs2vcj2c73emo4eg",
+      "status": "live",
+      "sha": "1916bfbd73ebcfcba2dbe85c7a7a9d2bf63e9152",
+      "finishedAt": "2026-11-13T05:57:01.519812Z"
+    },
+    {
+      "id": "dep-dbr9sctckfvc73dlfqeg",
+      "status": "deactivated",
+      "sha": "1916bfbd73ebcfcba2dbe85c7a7a9d2bf63e9152",
+      "finishedAt": "2026-11-13T05:23:29.442565Z"
+    },
+    {
+      "id": "dep-dbr5j961egvs73fdka4g",
+      "status": "deactivated",
+      "sha": "97600c139fca3a573bea0259126880782f5e98ac",
+      "finishedAt": "2026-11-13T00:31:19.022703Z"
+    }
+  ]
+}

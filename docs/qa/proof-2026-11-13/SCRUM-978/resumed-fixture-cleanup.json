@@ -1,0 +1,15 @@
+{
+  "at": "2026-11-13T12:12:20.052Z",
+  "event": {
+    "id": "01a1d4cd-6246-7397-857d-578784d55d90",
+    "title": "ZZ Test Zoe's 5th Birthday",
+    "archived": true
+  },
+  "conversation": {
+    "id": "01a1d4cd-109b-7abe-b3da-37ed64a566d5",
+    "name": "ZZ TEST 978 resumed adults",
+    "state": "handled"
+  },
+  "runtime": "1916bfbd73ebcfcba2dbe85c7a7a9d2bf63e9152",
+  "fillCallsTotal": 3
+}

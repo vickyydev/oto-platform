@@ -1,0 +1,32 @@
+[
+  {
+    "at": "2026-11-13T12:01:10.110Z",
+    "ctx": "app",
+    "type": "log",
+    "path": "oto-app-staging.onrender.com/core/today",
+    "firstWords": "[withheld: could hold a person's data]",
+    "flags": {
+      "nameHeld": true
+    }
+  },
+  {
+    "at": "2026-11-13T12:01:10.114Z",
+    "ctx": "app",
+    "type": "log",
+    "path": "oto-app-staging.onrender.com/core/today",
+    "firstWords": "[withheld: could hold a person's data]",
+    "flags": {
+      "nameHeld": true
+    }
+  },
+  {
+    "at": "2026-11-13T12:01:10.117Z",
+    "ctx": "app",
+    "type": "log",
+    "path": "oto-app-staging.onrender.com/core/today",
+    "firstWords": "[withheld: could hold a person's data]",
+    "flags": {
+      "nameHeld": true
+    }
+  }
+]

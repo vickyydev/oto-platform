@@ -1,0 +1,41 @@
+{
+  "privacy": {
+    "at": "2026-11-13T12:10:41.999Z",
+    "source": "1916bfbd73ebcfcba2dbe85c7a7a9d2bf63e9152",
+    "contexts": [
+      "launcher-to-app",
+      "launcher-to-inbox",
+      "BEO handoff",
+      "BEO editor reopen"
+    ],
+    "consoleLines": 3,
+    "flags": {
+      "nameHeld": 3
+    },
+    "authDiag": 0,
+    "email": 0,
+    "permsDebug": 0,
+    "rawConsoleRecorded": false,
+    "otherConsoleLines": {
+      "count": 3,
+      "kind": "Today render-state diagnostic",
+      "wholeWordNameMatches": 0
+    }
+  },
+  "point7c": {
+    "id": "01a1d4cd-6246-7397-857d-578784d55d90",
+    "adultsDiffer": true,
+    "extras": [
+      {
+        "item": "Margherita",
+        "quantity": 3,
+        "price": 400,
+        "productCode": "CF-24"
+      }
+    ],
+    "approvedOnce": 1,
+    "createCalls": 3,
+    "priorAdultsDishRetained": false,
+    "replacementDisclosed": true
+  }
+}

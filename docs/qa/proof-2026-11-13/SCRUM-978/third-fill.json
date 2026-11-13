@@ -1,0 +1,61 @@
+[
+  {
+    "at": "2026-11-13T12:06:25.822Z",
+    "mode": "book"
+  },
+  {
+    "at": "2026-11-13T12:09:07.278Z",
+    "mode": "create",
+    "dialog": {
+      "title": "AI Fill — Review, edit and approve",
+      "ariaDescribedby": true,
+      "description": "What the chat says for the party's BEO, to check, change and approve."
+    },
+    "fill": {
+      "status": 200,
+      "seconds": 20.4,
+      "menuLines": [
+        {
+          "menu": "adults",
+          "itemName": "3 more Margherita pizzas for the adults",
+          "quantity": 3,
+          "productCode": "CF-24",
+          "matchedName": "Margherita",
+          "notInMenu": false,
+          "chatPrice": null,
+          "from": {
+            "source": "family",
+            "at": "2026-11-13T12:06:24.000Z",
+            "line": 2,
+            "quote": "3 more Margherita pizzas for the adults"
+          },
+          "ownOrder": true
+        }
+      ],
+      "adultsFolded": null
+    },
+    "dialogWarningsSinceCreate": 0,
+    "reviewText": {
+      "writes": "Approve and create writes the event's name and details, the counts, the times, the date when ticked, the package, the kitchen plan, the bar, the entertainment, the setup plan, the POS box, the timeline's steps, the team you ticked and the deposit — everything above, in one go. Nothing opens after it; a field the BEO already holds keeps its value unless you take the chat's.",
+      "replaces": "This BEO already has its package, kitchen plan: approving replaces what the review fills.",
+      "undecided": null,
+      "chatSays": [
+        "The chat says “Hi, a party for ZZ Test Zoe turning 5, Sunday 20 December 10:00-12:00, 10 kids and 6 adults. (ZZ TEST)”from the family· Fri 13 Nov 19:06",
+        "The chat says “turning 5”from the family· Fri 13 Nov 19:06",
+        "The chat says “Sunday 20 December”from the family· Fri 13 Nov 19:06",
+        "The chat says “Hi, a party for ZZ Test Zoe turning 5, Sunday 20 December 10:00-12:00, 10 kids and 6 adults. (ZZ TEST)”from the family· Fri 13 Nov 19:06",
+        "The chat says “Hi, a party for ZZ Test Zoe turning 5, Sunday 20 December 10:00-12:00, 10 kids and 6 adults. (ZZ TEST)”from the family· Fri 13 Nov 19:06",
+        "The chat says “Hi, a party for ZZ Test Zoe turning 5, Sunday 20 December 10:00-12:00, 10 kids and 6 adults. (ZZ TEST)”from the family· Fri 13 Nov 19:06",
+        "The chat says “Hi, a party for ZZ Test Zoe turning 5, Sunday 20 December 10:00-12:00, 10 kids and 6 adults. (ZZ TEST)”from the family· Fri 13 Nov 19:06",
+        "The chat says “The Floresta birthday package”from the family· Fri 13 Nov 19:06",
+        "The chat says “The Floresta birthday package with the Margherita pizza for the kids”from the family· Fri 13 Nov 19:06",
+        "The chat says “the Margherita pizza for the kids”from the family· Fri 13 Nov 19:06",
+        "The chat says “3 more Margherita pizzas for the adults”from the family· Fri 13 Nov 19:06"
+      ]
+    }
+  },
+  {
+    "at": "2026-11-13T12:09:56.480Z",
+    "mode": "approve"
+  }
+]
