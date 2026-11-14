@@ -1,0 +1,39 @@
+{
+  "passed": true,
+  "method": "Authenticated staging endpoint downloads; Poppler26.09 text extraction and page rendering; both actual page PNGs opened and inspected",
+  "originalStoredInputs": {
+    "text": "2",
+    "missing": null
+  },
+  "originalPdfCounts": [
+    2,
+    1
+  ],
+  "savedPdfCounts": [
+    3,
+    1
+  ],
+  "noNullx": true,
+  "artifacts": [
+    {
+      "file": "01-stored-text-null.pdf",
+      "bytes": 68736,
+      "sha256": "b8ad0bf4b347921335a67db801358151ed1277126fa742035672d9a419777ba7"
+    },
+    {
+      "file": "02-saved-three.pdf",
+      "bytes": 70311,
+      "sha256": "7f15406fb2769426a3c60776a29ab08793a22a7c1facda031c004f9159096e4f"
+    },
+    {
+      "file": "03-pdf-text-null-page1.png",
+      "bytes": 105457,
+      "sha256": "d3590c798488b9e2edf8d0bfab12dd5a96f7edb4f2ae67240cb0cc66a36d17c4"
+    },
+    {
+      "file": "04-pdf-saved-three-page1.png",
+      "bytes": 111309,
+      "sha256": "6dc6eebed11158d4b1c7b2cb5ac408b9f30159cdd80ed703e74e74f48b90d0ee"
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+﻿await S.owned();const r=await S.call('GET','/beo/set-menu-templates');S.assert.equal(r.status,200);S.templates=r.body;return r.body.map(t=>({id:t.id,name:t.name,items:t.items?.map(x=>({id:x.id,type:x.type,label:x.label,options:x.options,tillCode:x.tillCode,productCode:x.productCode,tillCodes:x.tillCodes,optionCodes:x.optionCodes}))}));

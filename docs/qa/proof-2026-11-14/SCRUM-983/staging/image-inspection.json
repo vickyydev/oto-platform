@@ -1,0 +1,51 @@
+{
+  "inspectedAt": "2026-11-14T09:20:07.597Z",
+  "images": [
+    {
+      "file": "01-native-stored-counts.png",
+      "sha256": "44304096995f900afc6836e614827bc4be768eb625c0a36f28680220f3896cd2",
+      "result": "Opened and inspected; synthetic fixture data only; no account name, benefit QR or secret visible"
+    },
+    {
+      "file": "02-native-count-three.png",
+      "sha256": "e5aa846b3638814ee5a0418d2a82ee8122b3f3beb87e3516e0b7338ef4697fdb",
+      "result": "Opened and inspected; synthetic fixture data only; no account name, benefit QR or secret visible"
+    },
+    {
+      "file": "03-pdf-text-null-page1.png",
+      "sha256": "d3590c798488b9e2edf8d0bfab12dd5a96f7edb4f2ae67240cb0cc66a36d17c4",
+      "result": "Opened and inspected; synthetic fixture data only; no account name, benefit QR or secret visible"
+    },
+    {
+      "file": "04-pdf-saved-three-page1.png",
+      "sha256": "6dc6eebed11158d4b1c7b2cb5ac408b9f30159cdd80ed703e74e74f48b90d0ee",
+      "result": "Opened and inspected; synthetic fixture data only; no account name, benefit QR or secret visible"
+    },
+    {
+      "file": "05-native-dayof-three.png",
+      "sha256": "9f59b7635860bc73898e346df419bbd09fb7dce0ec6464233c3a0876465acf99",
+      "result": "Opened and inspected; synthetic fixture data only; no account name, benefit QR or secret visible"
+    },
+    {
+      "file": "06-parent-immediate.png",
+      "sha256": "bf245c6fac20ca9666078c111066c64906678cafe671a4f13abbea44d1c17132",
+      "result": "Opened and inspected; synthetic fixture data only; no account name, benefit QR or secret visible"
+    },
+    {
+      "file": "07-parent-reload.png",
+      "sha256": "bf245c6fac20ca9666078c111066c64906678cafe671a4f13abbea44d1c17132",
+      "result": "Opened and inspected; synthetic fixture data only; no account name, benefit QR or secret visible"
+    },
+    {
+      "file": "08-native-saved-adult-notice.png",
+      "sha256": "474912917275d5ef1a8ff19df30a2c77755e8767634270dc474684e2e8a2cdd5",
+      "result": "Opened and inspected; synthetic fixture data only; no account name, benefit QR or secret visible"
+    },
+    {
+      "file": "10-staging-run-card.png",
+      "sha256": "e45e8a8e528794f5d83b128bc9279e8dad370cbf1c758b9f603c6e667259af94",
+      "result": "Opened and inspected; synthetic fixture data only; no account name, benefit QR or secret visible"
+    }
+  ],
+  "excluded": "09 adult first-row photo was not produced or claimed; retained failure and exact own-row readback diagnosis are in receipt.json"
+}

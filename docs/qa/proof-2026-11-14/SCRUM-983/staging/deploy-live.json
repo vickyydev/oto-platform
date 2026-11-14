@@ -1,0 +1,9 @@
+{
+  "checkedAfterProofAt": "2026-11-14T09:19:34.787Z",
+  "service": "oto-app-staging",
+  "deployId": "dep-dbs280rbc2fs73acbtgg",
+  "status": "live",
+  "source": "7455bb8adf83f1466c2baab178ece6e72a840958",
+  "finishedAt": "2026-11-14T09:07:06.901331Z",
+  "runtimeBeforeAndAfter": "Exact same SHA observed by authenticated qa-reports/config; see attempt-01/receipt.json"
+}

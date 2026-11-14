@@ -1,0 +1,8 @@
+{
+  "source": "7455bb8adf83f1466c2baab178ece6e72a840958",
+  "requestedAt": "2026-11-14T09:04:03.318Z",
+  "service": "oto-app-staging",
+  "deployId": "dep-dbs280rbc2fs73acbtgg",
+  "status": "build_in_progress",
+  "ci": "background only"
+}

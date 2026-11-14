@@ -1,0 +1,28 @@
+{
+  "source": "7455bb8adf83f1466c2baab178ece6e72a840958",
+  "at": "2026-11-14T09:04:03.319Z",
+  "tickets": {
+    "SCRUM-983": {
+      "before": {
+        "status": "In Progress",
+        "summary": "BEO editor and PDF: the + button joins a count stored as text, a line with no count prints \"nullx\", and points left by the reviews of the leftovers lane"
+      },
+      "after": {
+        "status": "In Progress",
+        "summary": "BEO editor and PDF: the + button joins a count stored as text, a line with no count prints \"nullx\", and points left by the reviews of the leftovers lane"
+      },
+      "commentId": "14780"
+    },
+    "SCRUM-968": {
+      "before": {
+        "status": "In Progress",
+        "summary": "BEO extras and the fill: the holiday price in the hint, a coded line the till menu does not list, and points left by the reviews"
+      },
+      "after": {
+        "status": "In Progress",
+        "summary": "BEO extras and the fill: the holiday price in the hint, a coded line the till menu does not list, and points left by the reviews"
+      },
+      "commentId": "14781"
+    }
+  }
+}
