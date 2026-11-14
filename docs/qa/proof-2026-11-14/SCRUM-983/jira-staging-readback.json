@@ -1,0 +1,64 @@
+{
+  "source": "7455bb8adf83f1466c2baab178ece6e72a840958",
+  "evidence": "33b27a0fea7d9562c14ff1e32b2706abd150d624",
+  "testRepair": "f90384ea8fe03a3666403281b2a72bd839f3177a",
+  "at": "2026-11-14T09:27:21.120Z",
+  "tickets": {
+    "SCRUM-983": {
+      "before": {
+        "status": "In Progress",
+        "summary": "BEO editor and PDF: the + button joins a count stored as text, a line with no count prints \"nullx\", and points left by the reviews of the leftovers lane"
+      },
+      "after": "In Progress",
+      "commentId": "14782",
+      "attachments": [
+        {
+          "id": "13544",
+          "name": "2026-11-14-app-02-native-count-three.png"
+        },
+        {
+          "id": "13545",
+          "name": "2026-11-14-app-03-pdf-text-null-page1.png"
+        },
+        {
+          "id": "13546",
+          "name": "2026-11-14-app-04-pdf-saved-three-page1.png"
+        },
+        {
+          "id": "13547",
+          "name": "2026-11-14-app-06-parent-immediate.png"
+        },
+        {
+          "id": "13548",
+          "name": "2026-11-14-app-08-native-saved-adult-notice.png"
+        },
+        {
+          "id": "13549",
+          "name": "2026-11-14-app-10-staging-run-card.png"
+        }
+      ]
+    },
+    "SCRUM-968": {
+      "before": {
+        "status": "In Progress",
+        "summary": "BEO extras and the fill: the holiday price in the hint, a coded line the till menu does not list, and points left by the reviews"
+      },
+      "after": "In Progress",
+      "commentId": "14783",
+      "attachments": [
+        {
+          "id": "13550",
+          "name": "2026-11-14-app-01-native-stored-counts.png"
+        },
+        {
+          "id": "13551",
+          "name": "2026-11-14-app-03-pdf-text-null-page1.png"
+        },
+        {
+          "id": "13552",
+          "name": "2026-11-14-app-10-staging-run-card.png"
+        }
+      ]
+    }
+  }
+}
