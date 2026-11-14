@@ -1,0 +1,28 @@
+{
+  "at": "2026-11-14T09:58:33.964Z",
+  "source": "39f02c58d8e7c5c7970b0841e6f025fa58fcd034",
+  "statuses": {
+    "SCRUM-844": "Deployed",
+    "SCRUM-910": "Deployed",
+    "SCRUM-945": "In Progress",
+    "SCRUM-966": "In Progress",
+    "SCRUM-968": "In Progress",
+    "SCRUM-981": "In Progress",
+    "SCRUM-983": "In Progress",
+    "SCRUM-985": "Testing"
+  },
+  "comments": {
+    "SCRUM-983": {
+      "id": "14793",
+      "status": "In Progress"
+    },
+    "SCRUM-968": {
+      "id": "14794",
+      "status": "In Progress"
+    },
+    "SCRUM-985": {
+      "id": "14795",
+      "status": "Testing"
+    }
+  }
+}
