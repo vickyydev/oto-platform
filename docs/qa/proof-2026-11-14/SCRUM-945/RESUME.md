@@ -1,3 +1,11 @@
+# Scoped945 delivery complete
+
+Sourcee4e7bca46 isLIVE and source/native/evidence/exactcleanup/Jira readback are complete for945/981point9. Evidence855ddbf98; Jira94514788/13553-55 and98114789/13556-58, bothInProgress for heldscope. Allparty/station/virtual-box records archived, allproofsessions401, browser/driverclosed. delivery-checkpoint.json records exact runtime, cleanup, Jira and currentCIstate.
+
+No945work remains. Handover_delivery finishes the necessary narrow stalePDF/routes reviewhash test maintenance and sends its frozen packet for our direct peerreview; no productredo or newowner/CIwait. CI43580908597 remainsbackground/inprogress, notgreen at this checkpoint. Stopafterthat maintenance/stage3 forownerreview; no laterfeaturework.
+
+Earlier checkpoints below are historical.
+
 # Current publication checkpoint
 
 Source e4e7bca46 isLIVE and both bounded native view controls pass. Exact fixture/station/virtual-box cleanup and all401 session reads/browserclose are complete. README.md, staging/native-proof-summary.json and original/recovery receipts state the one cleanup lookup failure and exact resolution. Three PNGs are inspected and copied to945/981attachment folders. Publish this evidence with same-push comments, attach the named images and independently read status/comment/attachment values. Keep945/981InProgress for holds. Then record finalreceipt/checkpoint; stopafterstage3 forownerreview. SourceCI43580908597 staysbackground; narrow stalePDFhash test maintenance is withhandover_delivery and needspeerreview, no productredo.

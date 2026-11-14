@@ -1,0 +1,55 @@
+{
+  "at": "2026-11-14T09:45:34.534Z",
+  "evidenceCommit": "855ddbf9804cb517daae6c099153be6b722dc09e",
+  "sourceSha": "e4e7bca46d5cb20ba5333af17887107f23c0be78",
+  "tickets": [
+    {
+      "key": "SCRUM-945",
+      "before": "In Progress",
+      "after": "In Progress",
+      "commentId": "14788",
+      "commentReadback": true,
+      "attachments": [
+        {
+          "id": "13553",
+          "name": "2026-11-14-view-01.png",
+          "size": 30815
+        },
+        {
+          "id": "13554",
+          "name": "2026-11-14-view-02.png",
+          "size": 26861
+        },
+        {
+          "id": "13555",
+          "name": "2026-11-14-view-03.png",
+          "size": 74959
+        }
+      ]
+    },
+    {
+      "key": "SCRUM-981",
+      "before": "In Progress",
+      "after": "In Progress",
+      "commentId": "14789",
+      "commentReadback": true,
+      "attachments": [
+        {
+          "id": "13556",
+          "name": "2026-11-14-view-01.png",
+          "size": 30815
+        },
+        {
+          "id": "13557",
+          "name": "2026-11-14-view-02.png",
+          "size": 26861
+        },
+        {
+          "id": "13558",
+          "name": "2026-11-14-view-03.png",
+          "size": 74959
+        }
+      ]
+    }
+  ]
+}

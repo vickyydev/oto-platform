@@ -1,0 +1,99 @@
+{
+  "at": "2026-11-14T09:46:56.866555+00:00",
+  "scopedUnit": "SCRUM-945 / SCRUM-981 point9",
+  "state": "WORKS; scoped source/native/evidence/cleanup/Jira completed",
+  "sourceSha": "e4e7bca46d5cb20ba5333af17887107f23c0be78",
+  "evidenceCommit": "855ddbf9804cb517daae6c099153be6b722dc09e",
+  "appDeployment": "dep-dbs2kod6e07s738lfh3g",
+  "jira": [
+    {
+      "key": "SCRUM-945",
+      "before": "In Progress",
+      "after": "In Progress",
+      "commentId": "14788",
+      "commentReadback": true,
+      "attachments": [
+        {
+          "id": "13553",
+          "name": "2026-11-14-view-01.png",
+          "size": 30815
+        },
+        {
+          "id": "13554",
+          "name": "2026-11-14-view-02.png",
+          "size": 26861
+        },
+        {
+          "id": "13555",
+          "name": "2026-11-14-view-03.png",
+          "size": 74959
+        }
+      ]
+    },
+    {
+      "key": "SCRUM-981",
+      "before": "In Progress",
+      "after": "In Progress",
+      "commentId": "14789",
+      "commentReadback": true,
+      "attachments": [
+        {
+          "id": "13556",
+          "name": "2026-11-14-view-01.png",
+          "size": 30815
+        },
+        {
+          "id": "13557",
+          "name": "2026-11-14-view-02.png",
+          "size": 26861
+        },
+        {
+          "id": "13558",
+          "name": "2026-11-14-view-03.png",
+          "size": 74959
+        }
+      ]
+    }
+  ],
+  "cleanupComplete": true,
+  "noLiveFixtureSessionBrowser": true,
+  "ci": {
+    "databaseId": 43580908597,
+    "status": "in_progress",
+    "conclusion": "",
+    "headSha": "e4e7bca46d5cb20ba5333af17887107f23c0be78",
+    "jobs": [
+      {
+        "name": "api-tests (3)",
+        "status": "in_progress",
+        "conclusion": ""
+      },
+      {
+        "name": "oto-app",
+        "status": "in_progress",
+        "conclusion": ""
+      },
+      {
+        "name": "api-tests (1)",
+        "status": "in_progress",
+        "conclusion": ""
+      },
+      {
+        "name": "pos-tests",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "ci",
+        "status": "in_progress",
+        "conclusion": ""
+      },
+      {
+        "name": "api-tests (2)",
+        "status": "in_progress",
+        "conclusion": ""
+      }
+    ]
+  },
+  "remaining": "Independently reviewed narrow stale PDF/routes hash maintenance follows in separate983 test-only lane; current CI is not claimed green.945/981heldscope remains owner-held. Stopafterstage3 for owner review, no laterfeature."
+}
