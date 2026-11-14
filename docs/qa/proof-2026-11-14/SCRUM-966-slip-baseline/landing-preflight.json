@@ -1,0 +1,56 @@
+{
+  "time": "2026-11-14T08:30:43.010Z",
+  "base": "08f714668fffe003a28222f096eff370af316faf",
+  "rebasedHead": "71a6a7fbc96213d1d77d71bf6b4b4b82e3057789",
+  "commits": [
+    "71a6a7fbc96213d1d77d71bf6b4b4b82e3057789 docs(qa): record independent slip baseline approval",
+    "079c918980bfc5bbaad488204ac5e744bacf274d fix(api): keep publication changes out of party slip deltas",
+    "eb7341f28a95722eea71f5fcbcac8787612ba4ac fix(api): preserve prior party slip inputs across upgrades"
+  ],
+  "approvedCandidate": "089f71f396e403a4fa0f023c7b17a8b0fdbb407f",
+  "source": [
+    {
+      "file": "apps/api/src/services/party-plan.ts",
+      "blob": "146a8f37bfbdba7d81d190366a9f1332d6070533",
+      "approvedBlob": "146a8f37bfbdba7d81d190366a9f1332d6070533"
+    },
+    {
+      "file": "apps/api/src/services/party-slips.ts",
+      "blob": "35f56bf57fa0bc4c65c50c8e5c1e225444d96f2e",
+      "approvedBlob": "35f56bf57fa0bc4c65c50c8e5c1e225444d96f2e"
+    },
+    {
+      "file": "apps/api/test/party-slips.test.ts",
+      "blob": "b447f7eb179aa6141733a40474db5a1b50681b9b",
+      "approvedBlob": "b447f7eb179aa6141733a40474db5a1b50681b9b"
+    },
+    {
+      "file": "apps/api/test/s966-slip-review.test.ts",
+      "blob": "511c6bf81d8c8aac266f45dad1c2bd8557f8c622",
+      "approvedBlob": "511c6bf81d8c8aac266f45dad1c2bd8557f8c622"
+    }
+  ],
+  "gates": {
+    "originalCompleteFiles": 4,
+    "originalChecks": 99,
+    "mergedApiTypes": {
+      "exit": 0,
+      "bytes": 0
+    },
+    "priorHeapFailure": "3072 MB allocation limit; no TypeScript diagnostics; preserved log"
+  },
+  "logs": [
+    {
+      "file": "slip-merged-api-types.log",
+      "size": 3446,
+      "sha256": "5e83fb2f19c3940ac8d662856249d6bec3e75bf56273979f2c009c2a4ac4f004"
+    },
+    {
+      "file": "slip-merged-api-types-4096.log",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "staging": "not yet deployed or proved",
+  "ci": "background only; no release wait"
+}
