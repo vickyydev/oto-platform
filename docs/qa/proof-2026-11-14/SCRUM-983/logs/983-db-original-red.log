@@ -1,0 +1,267 @@
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-660-l8grWo ... 
+ok
+
+creating subdirectories ... 
+ok
+
+selecting dynamic shared memory implementation ... windows
+
+selecting default max_connections ... 
+100
+selecting default shared_buffers ... 
+128MB
+selecting default time zone ... 
+Asia/Bangkok
+creating configuration files ... 
+ok
+running bootstrap script ... 
+ok
+
+performing post-bootstrap initialization ... 
+ok
+syncing data to disk ... 
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-app^-reliability^-983^-20261114^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-660^-l8grWo^" -l logfile start
+
+
+2026-11-14 14:44:15.005 +07 [6876] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+2026-11-14 14:44:15.008 +07 [6876] LOG:  listening on IPv6 address "::1", port 63911
+
+2026-11-14 14:44:15.008 +07 [6876] LOG:  listening on IPv4 address "127.0.0.1", port 63911
+
+2026-11-14 14:44:15.047 +07 [107224] LOG:  database system was shut down at 2026-11-14 14:44:13 +07
+
+2026-11-14 14:44:15.064 +07 [6876] LOG:  database system is ready to accept connections
+
+
+> rest-express@1.0.0 db:migrate
+> node script/migrate.mjs
+
+migrate: relation "employee_offboarding_employee_unique" already exists, skipping
+migrate: relation "employee_offboarding_employee_unique" already exists, skipping
+migrate: applied 0000_otoapp_baseline
+migrate: applied 0001_platform_user_id
+migrate: applied 0002_core_branch_id_unique
+migrate: applied 0003_events_seam
+migrate: applied 0004_otoapp_v_views
+migrate: applied 0005_otoapp_v_employees
+migrate: applied 0006_tenant_ownership_expand
+migrate: applied 0007_tenant_ownership_contract
+migrate: applied 0008_document_tenant_ownership_expand
+migrate: applied 0009_document_finance_constraints
+migrate: applied 0010_document_tenant_ownership_contract
+migrate: applied 0011_sop_revision_history
+migrate: applied 0012_attendance_evidence
+migrate: applied 0013_presence_notification_delivery
+migrate: applied 0014_camp_family_sms
+migrate: applied 0015_employee_action_receipts
+migrate: applied 0016_qa_reports
+migrate: applied 0018_flexible_leave_types
+migrate: applied 0019_person_birthdays
+migrate: applied 0020_user_preferences
+migrate: applied 0021_payroll_config
+migrate: applied 0022_payroll_profiles
+migrate: applied 0023_payroll_month_inputs_and_rewards
+migrate: applied 0024_payroll_run_inputs_ot_bank_and_leave_valuation
+migrate: applied 0025_payroll_run_lifecycle_and_snapshots
+migrate: applied 0026_payroll_statutory_documents
+migrate: applied 0027_fix_report_urgent_notification
+migrate: applied 0028_checklist_template_assignees
+migrate: applied 0029_platform_roles_enabled
+migrate: applied 0030_department_read_seam
+migrate: applied 0031_login_lifecycle
+migrate: applied 0032_schedule_audit_view_as
+migrate: applied 0033_fix_report_delete_and_comment_media
+migrate: applied 0034_checklist_branch_added_at
+migrate: applied 0035_core_event_inbox_link
+migrate: applied 0036_schedule_audit_change_set
+migrate: applied 0037_onboard_again
+migrate: applied 0038_offboarding_one_open
+migrate: applied 0039_offboarding_again
+migrate: applied 0041_birthday_package_fields
+migrate: applied 0042_otoapp_v_event_packages
+migrate: applied 0043_users_access_mode
+migrate: applied 0044_login_lifecycle_restrict
+migrate: applied 0045_otoapp_v_event_packages_one_deposit
+migrate: applied 0046_inbox_handover_notification
+migrate: applied 0047_otoapp_v_event_packages_party_menu
+migrate: applied 0048_otoapp_v_event_packages_adults_mirror
+migrate: applied 0049_login_lifecycle_retries
+migrate: applied 0050_otoapp_v_event_packages_kitchen_plan
+migrate: otoapp now at 49 of 49 migration(s).
+MIGRATE 1 EXIT 0
+
+> rest-express@1.0.0 db:migrate
+> node script/migrate.mjs
+
+migrate: otoapp is up to date — 49 migration(s) already applied.
+MIGRATE 2 EXIT 0
+beo-983-968-ui.check: 0 checks passed, 7 failed
+CHECK tests/beo-983-968-ui.check.ts EXIT 1
+  ok  the PDF prints the adults' own extra at its own price, as the editor and the till have it
+  ok  the PDF reads the kids' list from menus, as the editor and the till do
+  ok  PARTY HOST and SETUP PLAN print only with something under them
+  ok  the editor's Save writes the cake count: the row, the BEO's read and the till's plan view
+  ok  the day-of view's door refuses a malformed body with its reason and writes nothing
+  ok  a stored party's own values are taken: the day-of view's every change is written, untouched lines as stored
+  ok  the day-of view's every body is taken, and only the plan's own fields are written
+  ok  the shape takes what the editor's Save and the till's kitchen edit write
+  ok  a date or a clock time is never the chat's total; a total stays one
+  ok  the fold's reason quotes the words that say the adults eat the same
+  ok  ต่อ is "per" only before a count or a unit
+  ok  the adults' set line in another count keeps its till code, on the row and on the till
+  ok  the family's link answers its park's time zone and prints the park's day
+  ok  an adults' repeat of the kids' dish is no charged extra, the switch on or off; 3 more stays one
+  ok  Fetch from chat compares a kids' choice with the kids' lines only
+  FAIL  HIGH 983: PDF prints published whole counts, including text and historical missing counts
+null
+  FAIL  HIGH 983: Thai per-set and per-one-tray prices are distinct from ordering more trays
+450 บาทต่อเซ็ต
+
+false !== true
+
+  FAIL  HIGH 983: public submit returns exactly the committed timestamp, including first-plan behavior
+Expected values to be strictly equal:
++ actual - expected
+
++ undefined
+- '2026-11-14T00:44:38.559Z'
+
+  FAIL  HIGH 983: parent submit preserves the existing adults own dish count and till code
+existing adults own dish/count/code stays intact
++ actual - expected
+
+  [
+    [
++     'Hawaiian',
++     1,
++     undefined
++   ],
++   [
++     'French fries',
++     1,
++     undefined
++   ],
++   [
+      'Chicken',
+      4,
++     undefined
+-     'CF-43'
+    ]
+  ]
+
+  FAIL  HIGH 983: first day-of save codes only the supplied enabled-menu adult line, without inventing switches or copies
+Expected values to be strictly deep-equal:
++ actual - expected
+
+  [
+    [
+      'Chicken',
+      4,
++     undefined
+-     'CF-43'
+    ]
+  ]
+
+beo-left-978.check: 15 checks passed, 5 failed
+CHECK tests/beo-left-978.check.ts EXIT 1
+{"level":"info","time":"2026-11-14T07:44:43.759Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":357,"answerChars":520,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"3133cb09-ca0e-4df9-bba4-765e3f01c7ba","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T07:44:43.828Z","service":"oto-app","env":"local","eventId":"3133cb09-ca0e-4df9-bba4-765e3f01c7ba","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":1,"kitchenLines":1,"freeKitchenLines":0,"adultsSetLines":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T07:44:43.882Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":308,"answerChars":321,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"6abde602-2dcc-43f8-ac51-1ab807d71cb9","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T07:44:43.904Z","service":"oto-app","env":"local","eventId":"6abde602-2dcc-43f8-ac51-1ab807d71cb9","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":0,"kitchenLines":1,"freeKitchenLines":0,"adultsSetLines":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T07:44:43.932Z","service":"oto-app","env":"local","eventId":"17a6ec44-413b-49fe-952b-2bc1dd667aea","written":{"setMenu":true,"choices":0,"kitchenLines":1,"freeKitchenLines":0,"adultsSetLines":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T07:44:43.951Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":357,"answerChars":520,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"07ee207a-37ad-42b4-8ec9-22cfec74a9ba","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T07:44:43.977Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":357,"answerChars":520,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"07ee207a-37ad-42b4-8ec9-22cfec74a9ba","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T07:44:43.991Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":381,"answerChars":656,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"feb79502-016a-43d7-b656-56d0a4224006","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T07:44:44.007Z","service":"oto-app","env":"local","eventId":"feb79502-016a-43d7-b656-56d0a4224006","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":1,"kitchenLines":2,"freeKitchenLines":0,"tillLines":2},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T07:44:44.021Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":322,"answerChars":516,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"bcb6c8a3-0d6f-4178-ba46-c25611ded1eb","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T07:44:44.033Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":322,"answerChars":516,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"d6b8d526-aff7-4649-a0a3-b3baaa65fd5e","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T07:44:44.053Z","service":"oto-app","env":"local","eventId":"d6b8d526-aff7-4649-a0a3-b3baaa65fd5e","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":1,"kitchenLines":1,"freeKitchenLines":0,"adultsSetLines":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T07:44:44.064Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":322,"answerChars":516,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"27f8d415-7a80-48f0-b04a-c88c2a71235e","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T07:44:44.080Z","service":"oto-app","env":"local","eventId":"27f8d415-7a80-48f0-b04a-c88c2a71235e","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":1,"kitchenLines":1,"freeKitchenLines":0,"tillLines":1,"adultsLinesFolded":1,"adultsMenuOwn":true},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T07:44:44.089Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":364,"answerChars":721,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"9cf384ef-f1fd-4dfc-b23c-04e5bcfdceec","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T07:44:44.118Z","service":"oto-app","env":"local","eventId":"9cf384ef-f1fd-4dfc-b23c-04e5bcfdceec","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":1,"kitchenLines":3,"freeKitchenLines":0,"tillLines":3},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{
+  "results": {
+    "threadA_aChoiceSaidForTheAdultsIsTheAdultsSetLine": true,
+    "threadA_wordsNamingNobodyOrBothStayTheSetMenusChoice": true,
+    "threadB_aSetMenuDishForTheAdultsIsNoChargedExtra": true,
+    "theFamilysLinkKeepsTheAdultsOwnSetLine": true,
+    "anAdultsSetLinesCountIsTheSetMenusOwn": true,
+    "anExtraOnlyWhenMoreIsAskedOrPricedOrCounted": true,
+    "threadG_aFoldIsSaidInTheReviewAndTheToast": false,
+    "threadG_aFoldGoesWhenTheKidsChoiceLeavesIt": true,
+    "aFoldBesideTheAdultsOwnLineIsSaidSo": true,
+    "threadI_aChatTotalIsNamedInTheReason": true,
+    "theBeoSheetsHaveATitleForScreenReaders": true
+  },
+  "failures": {
+    "threadG_aFoldIsSaidInTheReviewAndTheToast": "a saved Different switch stays on in the pre-approval notice\n+ actual - expected\n\n+ `The adults' line only repeats the kids' menu: the adults eat the kids' menu, and \"Different for adults\" stays off.`\n- \"The adults' line only repeats the kids' set menu: the adults' menu has it from the set menu, not as an extra.\"\n\n+ actual - expected\n\n+ `The adults' line only repeats the kids' menu: the adults eat the kids' menu, and \"Different for adults\" stays off.`"
+  }
+}
+CHECK tests/beo-fill-followups.check.ts EXIT 1
+2026-11-14 14:44:16.142 +07 [31952] ERROR:  relation "otoapp.__drizzle_migrations" does not exist at character 24
+2026-11-14 14:44:16.142 +07 [31952] STATEMENT:  select created_at from "otoapp"."__drizzle_migrations" order by created_at
+
+  FAIL  HIGH 983: stored text two steps to three and back; price text and line identity stay unchanged
+AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+'21' !== '3'
+
+    at <anonymous> (C:\oto-lanes\codex-app-reliability-983-20261114\apps\oto-app\tests\beo-983-968-ui.check.ts:192:10)
+    at async check (C:\oto-lanes\codex-app-reliability-983-20261114\apps\oto-app\tests\beo-983-968-ui.check.ts:173:5)
+    at async <anonymous> (C:\oto-lanes\codex-app-reliability-983-20261114\apps\oto-app\tests\beo-983-968-ui.check.ts:186:1)
+  FAIL  HIGH 983: read-only food and bar controls cannot change local state by pointer or keyboard
+AssertionError [ERR_ASSERTION]: button-qty-plus-kids-0
+
+false !== true
+
+    at <anonymous> (C:\oto-lanes\codex-app-reliability-983-20261114\apps\oto-app\tests\beo-983-968-ui.check.ts:204:61)
+    at async check (C:\oto-lanes\codex-app-reliability-983-20261114\apps\oto-app\tests\beo-983-968-ui.check.ts:173:5)
+    at async <anonymous> (C:\oto-lanes\codex-app-reliability-983-20261114\apps\oto-app\tests\beo-983-968-ui.check.ts:199:1)
+  FAIL  HIGH 968: a loaded picker missing a coded product cannot claim not charged or a complete sum
+AssertionError [ERR_ASSERTION]: no false free-price claim: text-menu-price-hint-kids-0 is on the screen
+    at absent (C:\oto-lanes\codex-app-reliability-983-20261114\apps\oto-app\tests\beo-983-968-ui.check.ts:139:66)
+    at <anonymous> (C:\oto-lanes\codex-app-reliability-983-20261114\apps\oto-app\tests\beo-983-968-ui.check.ts:218:21)
+    at async check (C:\oto-lanes\codex-app-reliability-983-20261114\apps\oto-app\tests\beo-983-968-ui.check.ts:173:5)
+    at async <anonymous> (C:\oto-lanes\codex-app-reliability-983-20261114\apps\oto-app\tests\beo-983-968-ui.check.ts:215:1)
+  FAIL  HIGH 983: public success shows the persisted server timestamp immediately and after reload on the park day
+AssertionError [ERR_ASSERTION]: immediate success uses the returned persisted stamp
+    at <anonymous> (C:\oto-lanes\codex-app-reliability-983-20261114\apps\oto-app\tests\beo-983-968-ui.check.ts:224:76)
+    at async check (C:\oto-lanes\codex-app-reliability-983-20261114\apps\oto-app\tests\beo-983-968-ui.check.ts:173:5)
+    at async <anonymous> (C:\oto-lanes\codex-app-reliability-983-20261114\apps\oto-app\tests\beo-983-968-ui.check.ts:220:1)
+  FAIL  HIGH 983: day-of text two steps to numeric three and writes that count
+AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+'21' !== '3'
+
+    at <anonymous> (C:\oto-lanes\codex-app-reliability-983-20261114\apps\oto-app\tests\beo-983-968-ui.check.ts:232:121)
+    at async check (C:\oto-lanes\codex-app-reliability-983-20261114\apps\oto-app\tests\beo-983-968-ui.check.ts:173:5)
+    at async <anonymous> (C:\oto-lanes\codex-app-reliability-983-20261114\apps\oto-app\tests\beo-983-968-ui.check.ts:229:1)
+  FAIL  MEDIUM review fix: read-only menu tabs still reveal the adults own dish while edits remain blocked
+AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+false !== true
+
+    at <anonymous> (C:\oto-lanes\codex-app-reliability-983-20261114\apps\oto-app\tests\beo-983-968-ui.check.ts:238:87)
+    at async check (C:\oto-lanes\codex-app-reliability-983-20261114\apps\oto-app\tests\beo-983-968-ui.check.ts:173:5)
+    at async <anonymous> (C:\oto-lanes\codex-app-reliability-983-20261114\apps\oto-app\tests\beo-983-968-ui.check.ts:235:1)
+  FAIL  MEDIUM review fix: mixed stored text and number counts infer the same menu in editor and day-of
+AssertionError [ERR_ASSERTION]: legacy equal published counts keep the same inferred menu
+    at <anonymous> (C:\oto-lanes\codex-app-reliability-983-20261114\apps\oto-app\tests\beo-983-968-ui.check.ts:245:66)
+    at async check (C:\oto-lanes\codex-app-reliability-983-20261114\apps\oto-app\tests\beo-983-968-ui.check.ts:173:5)
+    at async <anonymous> (C:\oto-lanes\codex-app-reliability-983-20261114\apps\oto-app\tests\beo-983-968-ui.check.ts:243:1)

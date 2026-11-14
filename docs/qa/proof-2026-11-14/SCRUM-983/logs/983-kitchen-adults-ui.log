@@ -1,0 +1,11 @@
+  ok  the adults' tab opens pre-filled with the kids' items, read-only, with no option list and nothing to add; the switch is off
+  ok  the switch on: an editable copy of the kids' list; one line changed for the adults only; Save sends the adults' own list
+  ok  the switch off again asks, then drops the adults' changes: the mirror is back and Save sends none
+  ok  a line added to the kids' list shows in the adults' mirror at once
+  ok  a BEO saved before with two different lists opens with the switch on and its adults' list as saved
+  ok  a BEO saved before whose adults' list equals the kids' opens with the switch off, and so does one with no adults' list
+  ok  AI Fill from a pasted message: an adults' list that only repeats the kids' dishes loads as the kids' menu, the switch off; their own dish loads with it on
+kitchen-adults-ui.check: 7 checks passed
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.

@@ -299,7 +299,7 @@ await check("the first line made from Nothing on the kids' menu yet is the EXTRA
   await typeInto("input-menu-name-kids-0", "Durian pizza");
   await typeInto("input-menu-price-kids-0", "250");
   const body = await saved();
-  assert.deepEqual(body.kitchenPlan.menus.kids.map((l) => [l.itemName, l.included, l.source ?? null, l.price]), [["Durian pizza", false, null, 250]]);
+  assert.deepEqual(body.kitchenPlan.menus.kids.map((l) => [l.itemName, l.included, l.source ?? null, l.price]), [["Durian pizza", false, "additional", 250]]);
 });
 
 await act(async () => { root.unmount(); });

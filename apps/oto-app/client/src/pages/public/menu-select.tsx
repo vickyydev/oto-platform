@@ -102,10 +102,12 @@ export default function MenuSelectPage() {
       }
       return res.json();
     },
-    onSuccess: (answer: { submittedAt?: string | null }) => {
+    onSuccess: async (answer: { submittedAt?: string | null }) => {
       // The receipt time comes from the committed row, never the device clock.
       queryClient.setQueryData<typeof data>(["/api/beo/set-menu-selections/public", token], (held) => held ? { ...held, isSubmitted: true, submittedAt: answer.submittedAt ?? held.submittedAt } : held);
       setSubmitted(true);
+      // Keep the cached receipt choices consistent on a later in-app visit too.
+      await queryClient.invalidateQueries({ queryKey: ["/api/beo/set-menu-selections/public", token] });
     },
     onError: (err: Error) => {
       toast({ title: "Submission failed", description: err.message, variant: "destructive" });

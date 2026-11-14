@@ -1,0 +1,67 @@
+{
+  "base": "43ec4059de4e222b1cc9d88170d0b33da0f09159",
+  "files": [
+    {
+      "file": "apps/oto-app/client/src/components/beo/beo-day-of-view.tsx",
+      "fixedSha256": "f61fbbceaecab6f608ff72763e7a915838000c0a91f411aef631f4927995b919",
+      "baseGitBlob": "2a803181b555763673e6ef3b32104637ab7bf2a8"
+    },
+    {
+      "file": "apps/oto-app/client/src/components/beo/beo-event-editor.tsx",
+      "fixedSha256": "4538d4d88d6409d6f0ac4a2380a0a0e4920038ca4614e0d13bd43a94183cca15",
+      "baseGitBlob": "9c22629cde0e947d162ff086c7c1a812493a5978"
+    },
+    {
+      "file": "apps/oto-app/client/src/components/beo/beo-extra-price.tsx",
+      "fixedSha256": "524f279700339a3bf8847df2e120f3834b069fbf3340974d31c89a5429904ecb",
+      "baseGitBlob": "fc07ef42b1a41bce694caae785a831b4dcdc27ae"
+    },
+    {
+      "file": "apps/oto-app/client/src/lib/beo-ai-review.ts",
+      "fixedSha256": "eb488bb3f3e3872655b0d2446da1c174bd7f1972737ee162b9c635accb79fc64",
+      "baseGitBlob": "add8d3971a2eb2090aa372b6448d4d144404f443"
+    },
+    {
+      "file": "apps/oto-app/client/src/pages/public/menu-select.tsx",
+      "fixedSha256": "862461e3a2c893f14ae38274a7c988b5649d9c0c581a204c7c234e622b7b116d",
+      "baseGitBlob": "2caf052d31a540a9259104551f7fcc7e2379d6ec"
+    },
+    {
+      "file": "apps/oto-app/server/ai-routes.ts",
+      "fixedSha256": "923b45ea0888535359728b4dc7129a26254b0d229073ba641bda3313992b66ed",
+      "baseGitBlob": "82a15638983c2f3287385848c0c049fe41272a97"
+    },
+    {
+      "file": "apps/oto-app/server/beo-routes.ts",
+      "fixedSha256": "376971471e2f7fe8bbda3796284a4219a44ab31244825e4b3903f7fe4f8bef96",
+      "baseGitBlob": "616054dd8e3692135a63f8dfdec33e9196e17ece"
+    },
+    {
+      "file": "apps/oto-app/server/lib/beoCatalogueFill.ts",
+      "fixedSha256": "fa7310cb520c891124119a53b40ff70e5b6ed78675de2fa4c49759e75384e88b",
+      "baseGitBlob": "3a45b2c214b1e56c55c1fe6bc72aea784ab69e6e"
+    },
+    {
+      "file": "apps/oto-app/server/pdf.ts",
+      "fixedSha256": "de7f03bad54bd700e39c7b6dae8e9e08aad946691b14a9d0dde361e68f64d799",
+      "baseGitBlob": "e9f97bc7045910d69efc955a950328a0c82e0979"
+    },
+    {
+      "file": "apps/oto-app/shared/beoAiFill.ts",
+      "fixedSha256": "f491d80a56e44a7f55d26ca47223b93e7f50864fb4cc3a2c46abe4e65bc51bfd",
+      "baseGitBlob": "76c900ab3500d695805c3b0fe0d48fcfb5819a9c"
+    },
+    {
+      "file": "apps/oto-app/shared/beoExtras.ts",
+      "fixedSha256": "67eb58ffc9c5f8fa47e5c540af35cc30df24f7688b01bc389203fc3347caef36",
+      "baseGitBlob": "f03db9a5dbc22db8bb5a67112cb308c4c95041e8"
+    },
+    {
+      "file": "apps/oto-app/shared/kitchenAdults.ts",
+      "fixedSha256": "b2f9889616229926b320003f3395d98cbc1a3bcc31df0ff182058605fd9ea278",
+      "baseGitBlob": "d105075d37d1d498c9b92de8f98810dacf8079cc"
+    }
+  ],
+  "state": "fixed product restored and verified",
+  "exit": 1
+}

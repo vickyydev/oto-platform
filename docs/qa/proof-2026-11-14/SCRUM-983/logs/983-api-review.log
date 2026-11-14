@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 C:/oto-lanes/codex-app-reliability-983-20261114/apps/api
+
+ ✓ test/s983-app-reliability-review.test.ts (23 tests) 18ms
+
+ Test Files  1 passed (1)
+      Tests  23 passed (23)
+   Start at  15:52:20
+   Duration  340ms (transform 48ms, setup 0ms, collect 60ms, tests 18ms, environment 0ms, prepare 96ms)
+

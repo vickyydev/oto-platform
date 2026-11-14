@@ -359,6 +359,7 @@ g.fetch = async (input: string | URL | Request, init?: RequestInit) => {
   }
   if (url.pathname === "/api/ai/parse-beo" && method === "POST") {
     const text = String(body.text ?? "");
+    if (text.includes("ZZ TEST LEGACY EXTRA SOURCE")) return json({ kitchenPlan: { kidsMenu: [{itemName:"ZZ TEST new extra",quantity:2},{itemName:"ZZ TEST model set",quantity:1,source:"set_menu"}], adultsMenu: [{itemName:"ZZ TEST adult extra",quantity:4}] } });
     if (text.includes("ZZ TEST LEGACY DEPOSIT")) {
       const partyDetails = text.includes("RECEIVED")
         ? { prepaymentReceived: 3000, depositReceived: true, depositWords: "We received 3,000 baht.", depositDate: "2026-11-14" }
@@ -807,7 +808,18 @@ await check("SCRUM-904: a catalogue that could not be read is said so, never cal
   assert.ok(!said.includes("catalogue is empty"), said);
 });
 
+await check("945 integration: legacy model creates explicit EXTRA rows and retains an explicit SET tag",async()=>{
+  await open(E_PLAIN);await click("button-ai-fill-beo");
+  await setValue(required("textarea-ai-fill-beo") as HTMLTextAreaElement,"ZZ TEST LEGACY EXTRA SOURCE NO-CATALOGUE");
+  await click("button-ai-parse-beo");await settle(8);await click("button-ai-fill-confirm");await settle(6);
+  asked.length=0;await click("button-save-beo");await settle(8);
+  const saved=asked.find(r=>r.method==="PUT"&&r.path===`/api/events/${E_PLAIN}/beo`);assert.ok(saved);
+  const kitchen=saved.body.kitchenPlan as {menus:{kids:Array<{itemName:string;source?:string;quantity:number}>;adults:Array<{itemName:string;source?:string;quantity:number}>;adultsDiffer:boolean}};
+  assert.deepEqual(kitchen.menus.kids.map(l=>[l.itemName,l.source,l.quantity]),[["ZZ TEST new extra","additional",2],["ZZ TEST model set","set_menu",1]]);
+  assert.deepEqual(kitchen.menus.adults.map(l=>[l.itemName,l.source,l.quantity]),[["ZZ TEST adult extra","additional",4]]);assert.equal(kitchen.menus.adultsDiffer,true);
+});
+
 await act(async () => { root.unmount(); });
 console.log(`beo-prefill-ui.check: ${checks} checks passed`);
 // SCRUM-844 adds the legacy deposit proposal/confirmation cases.
-process.exit(checks === 13 ? 0 : 1);
+process.exit(checks === 14 ? 0 : 1);

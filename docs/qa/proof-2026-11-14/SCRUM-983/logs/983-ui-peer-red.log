@@ -1,0 +1,23 @@
+  ok  HIGH 983: stored text two steps to three and back; price text and line identity stay unchanged
+  ok  HIGH 983: read-only food and bar controls cannot change local state by pointer or keyboard
+  ok  HIGH 968: a loaded picker missing a coded product cannot claim not charged or a complete sum
+  ok  HIGH 983: day-of text two steps to numeric three and writes that count
+beo-983-968-ui.check: 4 checks passed, 3 failed
+  FAIL  HIGH 983: public success shows the persisted server timestamp immediately and after reload on the park day
+AssertionError [ERR_ASSERTION]: cached receipt retains the actual server choices
+    at <anonymous> (C:\oto-lanes\codex-app-reliability-983-20261114\apps\oto-app\tests\beo-983-968-ui.check.ts:225:160)
+    at async check (C:\oto-lanes\codex-app-reliability-983-20261114\apps\oto-app\tests\beo-983-968-ui.check.ts:173:5)
+    at async <anonymous> (C:\oto-lanes\codex-app-reliability-983-20261114\apps\oto-app\tests\beo-983-968-ui.check.ts:220:1)
+  FAIL  MEDIUM review fix: read-only menu tabs still reveal the adults own dish while edits remain blocked
+AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+true !== false
+
+    at <anonymous> (C:\oto-lanes\codex-app-reliability-983-20261114\apps\oto-app\tests\beo-983-968-ui.check.ts:237:33)
+    at async check (C:\oto-lanes\codex-app-reliability-983-20261114\apps\oto-app\tests\beo-983-968-ui.check.ts:173:5)
+    at async <anonymous> (C:\oto-lanes\codex-app-reliability-983-20261114\apps\oto-app\tests\beo-983-968-ui.check.ts:235:1)
+  FAIL  MEDIUM review fix: mixed stored text and number counts infer the same menu in editor and day-of
+AssertionError [ERR_ASSERTION]: legacy equal published counts keep the same inferred menu
+    at <anonymous> (C:\oto-lanes\codex-app-reliability-983-20261114\apps\oto-app\tests\beo-983-968-ui.check.ts:245:66)
+    at async check (C:\oto-lanes\codex-app-reliability-983-20261114\apps\oto-app\tests\beo-983-968-ui.check.ts:173:5)
+    at async <anonymous> (C:\oto-lanes\codex-app-reliability-983-20261114\apps\oto-app\tests\beo-983-968-ui.check.ts:243:1)

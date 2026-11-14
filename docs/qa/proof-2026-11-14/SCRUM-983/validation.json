@@ -1,0 +1,303 @@
+{
+  "version": 1,
+  "state": "Local final source frozen for independent review; not pushed or deployed",
+  "base": "43ec4059de4e222b1cc9d88170d0b33da0f09159",
+  "capturedAt": "2026-11-14T08:54:23.959Z",
+  "source": [
+    {
+      "file": ".github/workflows/ci.yml",
+      "gitBlob": "1f7c803975aef791e9647714cc72938c9bf46d72",
+      "sha256": "c43da0aacf4e07e5adac9344c07b31c0cd8edb3684a5fc5cfcfceb42e8f43c51"
+    },
+    {
+      "file": "apps/api/test/s983-app-reliability-review.test.ts",
+      "gitBlob": "870124a8344d16ff5c47b9b153abd41caf694290",
+      "sha256": "29df38e6a68da32b8d53ec20e25f330f066b067e9df9edad0d3b6ad32cd27b83"
+    },
+    {
+      "file": "apps/oto-app/client/src/components/beo/beo-day-of-view.tsx",
+      "gitBlob": "cc54af9005fe3a1be9dbe500bfc24a62d0a7051c",
+      "sha256": "368dce765dd4351ad4909cad67781c74d20d7d256f039f75ae8ae718caa4667b"
+    },
+    {
+      "file": "apps/oto-app/client/src/components/beo/beo-event-editor.tsx",
+      "gitBlob": "fcd76a05639a180054da98162f1214b0bc305e22",
+      "sha256": "5621a28f6e05958319831edf31e2ba5754aed644567d6ab2e1ac7dcf722ec632"
+    },
+    {
+      "file": "apps/oto-app/client/src/components/beo/beo-extra-price.tsx",
+      "gitBlob": "9f393245e328e8e5d04807af1dfab22bf6ac49a7",
+      "sha256": "524f279700339a3bf8847df2e120f3834b069fbf3340974d31c89a5429904ecb"
+    },
+    {
+      "file": "apps/oto-app/client/src/lib/beo-ai-review.ts",
+      "gitBlob": "d06c707dc6ed9f4f4fb964e4849b755ee5867aee",
+      "sha256": "eb488bb3f3e3872655b0d2446da1c174bd7f1972737ee162b9c635accb79fc64"
+    },
+    {
+      "file": "apps/oto-app/client/src/pages/public/menu-select.tsx",
+      "gitBlob": "38972af21bfa60856450fabca4d683654ccfff09",
+      "sha256": "862461e3a2c893f14ae38274a7c988b5649d9c0c581a204c7c234e622b7b116d"
+    },
+    {
+      "file": "apps/oto-app/script/typecheck-baseline.json",
+      "gitBlob": "4038f1ca1fe12f04e5bb275b5a4a7bad0ea0f4dc",
+      "sha256": "292674e08361dc084fd1e288cca8047ea1bb6bb80fb3373bbe7c258d4f0ae4e5"
+    },
+    {
+      "file": "apps/oto-app/server/ai-routes.ts",
+      "gitBlob": "d00cefc71f9f8fcdb64099b4ae75bfcd51ee8518",
+      "sha256": "923b45ea0888535359728b4dc7129a26254b0d229073ba641bda3313992b66ed"
+    },
+    {
+      "file": "apps/oto-app/server/beo-routes.ts",
+      "gitBlob": "15a9d070d5cb92635b97935c4b3b08615386ba4a",
+      "sha256": "376971471e2f7fe8bbda3796284a4219a44ab31244825e4b3903f7fe4f8bef96"
+    },
+    {
+      "file": "apps/oto-app/server/lib/beoCatalogueFill.ts",
+      "gitBlob": "d4097c660ed634ec4e9c2d29e766845ba808f322",
+      "sha256": "fa7310cb520c891124119a53b40ff70e5b6ed78675de2fa4c49759e75384e88b"
+    },
+    {
+      "file": "apps/oto-app/server/pdf.ts",
+      "gitBlob": "384ea5b515450f68616bf7c66d1d7d2f478bbeed",
+      "sha256": "cb54281507ca9a832e80ee9c98fe5037a5c4d27eaf0b2e218011b221e71bcc54"
+    },
+    {
+      "file": "apps/oto-app/shared/beoAiFill.ts",
+      "gitBlob": "4cf9621356c9075326798327c5bcb6de8be902e4",
+      "sha256": "f491d80a56e44a7f55d26ca47223b93e7f50864fb4cc3a2c46abe4e65bc51bfd"
+    },
+    {
+      "file": "apps/oto-app/shared/beoDate.ts",
+      "gitBlob": "3a1b461aee0e1c6e1c264191839dbb43d87da113",
+      "sha256": "86bbbd3cc952d74b246368c879fdd8ac4a5bfc6cc305f766f2e001562f546d18"
+    },
+    {
+      "file": "apps/oto-app/shared/beoExtras.ts",
+      "gitBlob": "f40f01efbe192b03a3596901f1f59f989257e7a3",
+      "sha256": "67eb58ffc9c5f8fa47e5c540af35cc30df24f7688b01bc389203fc3347caef36"
+    },
+    {
+      "file": "apps/oto-app/shared/beoQuantity.ts",
+      "gitBlob": "0fce99106aed9b9122ff3afdd3b8e695f922e319",
+      "sha256": "fc42fc5f6de323315ccced48f6a18f9a37f414ceddc16fe46fd1a55d3af5dbd1"
+    },
+    {
+      "file": "apps/oto-app/shared/kitchenAdults.ts",
+      "gitBlob": "974dc441a852f4d23c3aa86bc5e61b93983ff9be",
+      "sha256": "b2f9889616229926b320003f3395d98cbc1a3bcc31df0ff182058605fd9ea278"
+    },
+    {
+      "file": "apps/oto-app/tests/beo-983-968-ui.check.ts",
+      "gitBlob": "c2fb1ec1c0abc98f1d942a63a6d9388d63ef70d6",
+      "sha256": "5a4b87492bd492f0e94edd3b9748c47d7dab6b2127e5292b328470237fdc0950"
+    },
+    {
+      "file": "apps/oto-app/tests/beo-extra-price-ui.check.ts",
+      "gitBlob": "13609d8c28f2401c58083c33b5a99d30c61a7834",
+      "sha256": "bc9d1992ad78de500b6935e6dc0a8a0090eb2dbee5319cdf9f3ee827022d2f66"
+    },
+    {
+      "file": "apps/oto-app/tests/beo-extra-price.check.ts",
+      "gitBlob": "974ae75e02dad55ddcfdfcd92aa8d3230b85e422",
+      "sha256": "8784235fc73d5f1fba04f49fe2ae34df2a9432af50561c5927c264bc05367663"
+    },
+    {
+      "file": "apps/oto-app/tests/beo-fill-followups.check.ts",
+      "gitBlob": "346e1016b8de66bc710e883838c322df0718cb2a",
+      "sha256": "1a5b186510daa2db27a750ad5e91a333871e717a4715ea02ad71991719d1f257"
+    },
+    {
+      "file": "apps/oto-app/tests/beo-left-978.check.ts",
+      "gitBlob": "b08ad9448d2c7b72818fd82f83b48ac1ef2603ac",
+      "sha256": "93e1f2c830142a0f2bbe5340880fc1308fd5627cefcff69972e274ccb083091a"
+    },
+    {
+      "file": "apps/oto-app/tests/beo-prefill-ui.check.ts",
+      "gitBlob": "2782867e5c890c4d0e1f5228caa2d6cc61040d57",
+      "sha256": "d2958bc50d9058f680bdf8e90a1a9213ae3ecd96e005f9ca73220d3fe4080dcf"
+    }
+  ],
+  "gates": {
+    "backend": {
+      "completeFiles": 9,
+      "passed": 135,
+      "note": "Eight original green files retained; the complete left-978 file reran after two test-oracle corrections and passed20/20"
+    },
+    "frontend": {
+      "completeFiles": 7,
+      "passed": 54,
+      "note": "New9 cases, extra-price6, left-978 UI6, pure extra-price8, adults UI7, day-of4, legacy prefill14. Complete extra-price6 reran after its intended new tag expectation was updated."
+    },
+    "adversarialReview": {
+      "completeFiles": 1,
+      "passed": 23,
+      "log": "logs/983-api-review.log"
+    },
+    "wholeApiTypes": {
+      "exit": 0,
+      "bytes": 0,
+      "log": "logs/983-api-types-final.log"
+    },
+    "appRatchet": {
+      "exit": 0,
+      "actual": 413,
+      "ceiling": 413,
+      "log": "logs/983-app-ratchet-frozen.log"
+    },
+    "appBuild": {
+      "exit": 0,
+      "log": "logs/983-app-build-frozen.log"
+    },
+    "scopedLint": {
+      "addedDiagnostics": 0,
+      "baseline": "43ec4059de4e222b1cc9d88170d0b33da0f09159",
+      "file": "scoped-lint.json"
+    }
+  },
+  "originalFailures": {
+    "firstUi": {
+      "passed": 0,
+      "failed": 5
+    },
+    "controlledOriginal": {
+      "passed": 25,
+      "failed": 13,
+      "completeFiles": 3,
+      "note": "Two new left-978 expectations were later corrected; original source then reproduced15pass/5fail in that complete20-case file"
+    },
+    "peerCorrections": {
+      "passed": 4,
+      "failed": 3,
+      "completeFiles": 1
+    },
+    "correctedOriginalLeft": {
+      "passed": 15,
+      "failed": 5
+    }
+  },
+  "oracleCorrections": [
+    "UTC-naive app timestamp must be interpreted AT TIME ZONE UTC by the raw SQL test oracle",
+    "Parent writer retains as-built Hawaii/fries copies besides the coded own adult line",
+    "An explicit false switch with a genuinely different held adult list remains inferred true, as existing kitchen-adults control requires",
+    "New EXTRA rows now save the existing additional tag; old first-line UI expectation updated while name/included/price assertions remain exact"
+  ],
+  "interruptedMisroutedReview": {
+    "intended": "one complete23-case file",
+    "actual": "pnpm test -- allowed the broader API batch to start; interrupted exact owned process tree",
+    "acceptedGate": false,
+    "logSize": 144256,
+    "logSha256": "f91ff273a39b9b6561224ceac9e20d77d1b07c9544a3fab734900afbca568476",
+    "cleanup": "Owned node/initdb processes ended; no postgres process created in the gate interval remained; older unrelated process metadata was not touched"
+  },
+  "logs": [
+    {
+      "file": "logs/983-db-original-red.log",
+      "size": 18508,
+      "sha256": "793e2ddce0751d4ac534829fef08462dcec79e86887c652ce3e0113509d7090f"
+    },
+    {
+      "file": "logs/983-ui-peer-red.log",
+      "size": 2090,
+      "sha256": "08fb704315bb864bac9aff987889ab877a2f8a8ec5825d57c138d439406a7f0c"
+    },
+    {
+      "file": "logs/983-db-green.log",
+      "size": 63947,
+      "sha256": "345c7b5b92866b26f751046fc9ca9ffd25249504c492b403d2fd5ad9fda94d56"
+    },
+    {
+      "file": "logs/983-db-oracle-original-red.log",
+      "size": 6933,
+      "sha256": "b46776be9884cdfd3bf324c1fef3934df77a826163ada6610d876b0bad5a0ef7"
+    },
+    {
+      "file": "logs/983-db-left-final.log",
+      "size": 6399,
+      "sha256": "360a873730bb4b6ec40d39dcadd668ca46daf968d64b7b1781f08516edf26d27"
+    },
+    {
+      "file": "logs/983-beo-983-968-ui.log",
+      "size": 961,
+      "sha256": "b2843ae88b1240830609a33a7b63e76c731ca6af347793522c88fe0985d4820d"
+    },
+    {
+      "file": "logs/983-extra-ui-final.log",
+      "size": 658,
+      "sha256": "d333eb904e29123774f9de8bd890093ac9a5cb6013d03115e22e18d525f1de64"
+    },
+    {
+      "file": "logs/983-beo-extra-price-ui-tag-expectation-failure.log",
+      "size": 1185,
+      "sha256": "ab38ca56d109e53b192396e8822fb5ea9b36bf5a5e8473beeff6927da08f75d4"
+    },
+    {
+      "file": "logs/983-beo-left-978-ui.log",
+      "size": 590,
+      "sha256": "ea945170afedad4c13087c51122f214e74d51a57bacc0e2704ac77f896073621"
+    },
+    {
+      "file": "logs/983-beo-extra-price.log",
+      "size": 912,
+      "sha256": "38aba194b25bbe8a71a618354d660bf440fffae8a90c3a5ec561539a241d4ceb"
+    },
+    {
+      "file": "logs/983-kitchen-adults-ui.log",
+      "size": 1124,
+      "sha256": "501f41f2a695668944ab7ad8643b632fade199fa379e93d9e139d3bf8cfb5bcb"
+    },
+    {
+      "file": "logs/983-kitchen-adults-day-of-ui.log",
+      "size": 595,
+      "sha256": "09aee01fdcb0b38f690fd5180e2647719900fe3f3569b8d5fde4674b048bd296"
+    },
+    {
+      "file": "logs/983-beo-prefill-ui.log",
+      "size": 2422,
+      "sha256": "8ad2df3795ec5173387bed6fe57a6155b37e39790030fe42ca387194f2034c33"
+    },
+    {
+      "file": "logs/983-api-types-array-failure.log",
+      "size": 452,
+      "sha256": "9455aa1cb257d3069be83fdacd9329e826a4887231389bc841b6771396eda342"
+    },
+    {
+      "file": "logs/983-api-types-final.log",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "logs/983-app-ratchet-pdf-failure.log",
+      "size": 132991,
+      "sha256": "d27fce4d670454c42dd475aaac5625c43feafd60725716befbcb971e4915b7c0"
+    },
+    {
+      "file": "logs/983-app-ratchet-frozen.log",
+      "size": 132583,
+      "sha256": "eb376384df4330c63f9e69d6cecc9a918bd3fd1fa6fe8aaca8207617c7c064a4"
+    },
+    {
+      "file": "logs/983-app-build-frozen.log",
+      "size": 33242,
+      "sha256": "fc1bbbf68f759e14f2595c46bed5cf156d22962b02f1501d6d72f4f0449e6537"
+    },
+    {
+      "file": "logs/983-api-review-as-built-false-switch-failure.log",
+      "size": 4737,
+      "sha256": "ebfea2ec5bec1dbaaf14ec6ab4b7605e2e9e13530d2907722c79eeba7bdc9475"
+    },
+    {
+      "file": "logs/983-api-review.log",
+      "size": 316,
+      "sha256": "e9eb3123a0a48ba5ea9dedb21a68bb6f44c6947777aa0b4cf854db5a3721542a"
+    }
+  ],
+  "limits": [
+    "No app staging fixture/session or source deployment yet",
+    "No holiday/catalogue access, TEXT-price normalization or new menu/pricing policy",
+    "983 point7 two till toasts already delivered separately in5bf; this app source does not claim native toast coverage",
+    "App0051 view repair remains a separate later unit"
+  ]
+}

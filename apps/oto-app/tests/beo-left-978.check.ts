@@ -115,7 +115,7 @@ const ev = {
   // The lane's review: the editor's own uncoded copy, the day-of view's, and a repeat of a kids' extra.
   riceCopy: randomUUID(), riceDay: randomUUID(), riceTill: randomUUID(), onExtra: randomUUID(), offExtra: randomUUID(),
   // The lane's last review: a stored party whose lines hold what the day-of view sends back.
-  odd: randomUUID(), submit983: randomUUID(), submitCopy983: randomUUID(),
+  odd: randomUUID(), submit983: randomUUID(), submitCopy983: randomUUID(), dayOn983: randomUUID(), dayOff983: randomUUID(), dayNo983: randomUUID(), dayEmpty983: randomUUID(),
 };
 
 function fakeAuth(req: Request, res: Response, next: NextFunction) {
@@ -732,13 +732,27 @@ try {
   await check("HIGH 983: public submit returns exactly the committed timestamp, including first-plan behavior",async()=>{
     const token="zz983"+randomUUID().replace(/-/g,"");await q("insert into beo_set_menu_selections (event_id,template_id,token,is_submitted) values ($1,$2,$3,false)",[ev.submit983,setMenuId,token]);
     const sent=await send("POST",`/api/beo/set-menu-selections/public/${token}/submit`,{selections:[{groupId:PIZZA,chosenOptions:["Hawaiian"]},{groupId:RICE,chosenOptions:["Veggie"]}]},{});assert.equal(sent.status,200,JSON.stringify(sent.body));
-    const [row]=await q("select submitted_at from beo_set_menu_selections where event_id=$1",[ev.submit983]);assert.equal(sent.body.submittedAt,row.submitted_at.toISOString());
+    // Explicit UTC avoids pg interpreting the naive stored timestamp on this host clock.
+    const [row]=await q("select submitted_at at time zone 'UTC' as submitted_at from beo_set_menu_selections where event_id=$1",[ev.submit983]);assert.equal(sent.body.submittedAt,row.submitted_at.toISOString());
     const again=await send("GET",`/api/beo/set-menu-selections/public/${token}`,undefined,{});assert.equal(again.body.submittedAt,sent.body.submittedAt);
     const made=await planOf(ev.submit983);assert.deepEqual(made.menus.adults,[]);assert.equal(made.set_menu_enabled,false,"no new first-plan switch policy");
+  });
+
+  await check("HIGH 983: parent submit preserves the existing adults own dish count and till code",async()=>{
     await kitchenPlan(ev.submitCopy983,{kids:[set("Veggie",RICE)],adults:[{...set("Chicken",RICE),quantity:4}],adultsDiffer:true});
     const copyToken="zz983"+randomUUID().replace(/-/g,"");await q("insert into beo_set_menu_selections (event_id,template_id,token,is_submitted) values ($1,$2,$3,false)",[ev.submitCopy983,setMenuId,copyToken]);
     const copied=await send("POST",`/api/beo/set-menu-selections/public/${copyToken}/submit`,{selections:[{groupId:PIZZA,chosenOptions:["Hawaiian"]},{groupId:RICE,chosenOptions:["Veggie"]}]},{});assert.equal(copied.status,200,JSON.stringify(copied.body));
-    const own=await planOf(ev.submitCopy983);assert.equal(own.menus.adultsDiffer,true);assert.deepEqual(own.menus.adults.map((l:Line)=>[l.itemName,l.quantity,l.productCode]),[["Chicken",4,"CF-43"]],"existing adults own dish/count/code stays intact");
+    const own=await planOf(ev.submitCopy983);assert.equal(own.menus.adultsDiffer,true);assert.deepEqual(own.menus.adults.map((l:Line)=>[l.itemName,l.quantity,l.productCode]),[["Hawaiian",1,undefined],["French fries",1,undefined],["Chicken",4,"CF-43"]],"existing copies and adults own dish/count/code stay intact");
+  });
+
+  await check("HIGH 983: first day-of save codes only the supplied enabled-menu adult line, without inventing switches or copies",async()=>{
+    for(const [eventId,enabled,wantCode] of [[ev.dayOn983,true,"CF-43"],[ev.dayOff983,false,undefined],[ev.dayNo983,undefined,undefined]] as const){
+      const kids=[set("Chicken",RICE)];const adults=[{...set("Chicken",RICE),quantity:4}];
+      const response=await send("PUT",`/api/events/${eventId}/beo/kitchen-plan`,{...(enabled===undefined?{}:{setMenuEnabled:enabled}),setMenuTemplateId:setMenuId,menus:{kids,adults,adultsDiffer:true}});
+      assert.equal(response.status,201,JSON.stringify(response.body));const row=await planOf(eventId);assert.equal(row.set_menu_enabled,enabled??false);assert.equal(row.set_menu_template_id,setMenuId);assert.equal(row.menus.adultsDiffer,true);
+      assert.deepEqual(row.menus.kids.map((l:Line)=>[l.itemName,l.quantity]),[["Chicken",1]]);assert.deepEqual(row.menus.adults.map((l:Line)=>[l.itemName,l.quantity,l.productCode]),[["Chicken",4,wantCode]]);
+    }
+    const empty=await send("PUT",`/api/events/${ev.dayEmpty983}/beo/kitchen-plan`,{foodRequired:true});assert.equal(empty.status,201,JSON.stringify(empty.body));const row=await planOf(ev.dayEmpty983);assert.equal(row.menus,null);assert.equal(row.set_menu_enabled,false);assert.equal(row.set_menu_template_id,null);
   });
 
   console.log(`beo-left-978.check: ${checks} checks passed${failed.length ? `, ${failed.length} failed` : ""}`);
@@ -756,4 +770,4 @@ try {
   await pool.end();
   await appDbPool.end().catch(() => undefined);
 }
-process.exit(checks === 18 && failed.length === 0 ? 0 : 1);
+process.exit(checks === 20 && failed.length === 0 ? 0 : 1);

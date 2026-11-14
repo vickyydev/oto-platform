@@ -1,0 +1,59 @@
+
+ RUN  v3.2.7 C:/oto-lanes/codex-app-reliability-983-20261114/apps/api
+
+ ❯ test/s983-app-reliability-review.test.ts (23 tests | 1 failed) 27ms
+   ✓ SCRUM-983/968: published counts and truthful price bounds > HIGH fixed: count 2 uses the immutable publication range (2) 1ms
+   ✓ SCRUM-983/968: published counts and truthful price bounds > HIGH fixed: count 2 uses the immutable publication range (2) 0ms
+   ✓ SCRUM-983/968: published counts and truthful price bounds > HIGH fixed: count null uses the immutable publication range (1) 0ms
+   ✓ SCRUM-983/968: published counts and truthful price bounds > HIGH fixed: count  uses the immutable publication range (1) 0ms
+   ✓ SCRUM-983/968: published counts and truthful price bounds > HIGH fixed: count undefined uses the immutable publication range (1) 0ms
+   ✓ SCRUM-983/968: published counts and truthful price bounds > HIGH fixed: count 0 uses the immutable publication range (1) 0ms
+   ✓ SCRUM-983/968: published counts and truthful price bounds > HIGH fixed: count 0 uses the immutable publication range (1) 0ms
+   ✓ SCRUM-983/968: published counts and truthful price bounds > HIGH fixed: count 02 uses the immutable publication range (1) 0ms
+   ✓ SCRUM-983/968: published counts and truthful price bounds > HIGH fixed: count  2  uses the immutable publication range (1) 0ms
+   ✓ SCRUM-983/968: published counts and truthful price bounds > HIGH fixed: count 2.5 uses the immutable publication range (1) 0ms
+   ✓ SCRUM-983/968: published counts and truthful price bounds > HIGH fixed: count 2.5 uses the immutable publication range (1) 0ms
+   ✓ SCRUM-983/968: published counts and truthful price bounds > HIGH fixed: count 999999 uses the immutable publication range (999999) 0ms
+   ✓ SCRUM-983/968: published counts and truthful price bounds > HIGH fixed: count 999999 uses the immutable publication range (999999) 0ms
+   ✓ SCRUM-983/968: published counts and truthful price bounds > HIGH fixed: count 1000000 uses the immutable publication range (1) 0ms
+   ✓ SCRUM-983/968: published counts and truthful price bounds > HIGH fixed: count 1000000 uses the immutable publication range (1) 0ms
+   ✓ SCRUM-983/968: published counts and truthful price bounds > HIGH fixed: count NaN uses the immutable publication range (1) 0ms
+   ✓ SCRUM-983/968: published counts and truthful price bounds > HIGH fixed: both steps read stored text numerically and stay inside the publication range 0ms
+   ✓ SCRUM-983/968: published counts and truthful price bounds > HIGH fixed: a persisted moment uses the park day, retaining the requested date format 16ms
+   × SCRUM-983/968: published counts and truthful price bounds > MEDIUM review fix: mixed count storage changes no inference and explicit saved switches still win 6ms
+     → expected true to be false // Object.is equality
+   ✓ SCRUM-983/968: published counts and truthful price bounds > HIGH fixed: an absent food picker code is unknown and prevents a complete sum 0ms
+   ✓ SCRUM-983/968: published counts and truthful price bounds > HIGH fixed: an absent bar picker code is unknown and prevents a complete sum 0ms
+   ✓ SCRUM-983/968: published counts and truthful price bounds > control: entered numeric prices, known weekday/weekend rates and typed zero-price lines keep their rules 1ms
+   ✓ SCRUM-983/968: published counts and truthful price bounds > control: no text-price normalization or new PARTY bar charge is introduced 0ms
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 22 passed (23)
+   Start at  15:49:55
+   Duration  376ms (transform 51ms, setup 0ms, collect 66ms, tests 27ms, environment 0ms, prepare 100ms)
+
+undefined
+C:\oto-lanes\codex-app-reliability-983-20261114\apps\api:
+ ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL  Command failed with exit code 1: vitest run test/s983-app-reliability-review.test.ts
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/s983-app-reliability-review.test.ts > SCRUM-983/968: published counts and truthful price bounds > MEDIUM review fix: mixed count storage changes no inference and explicit saved switches still win
+AssertionError: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ test/s983-app-reliability-review.test.ts:43:100
+     41|     expect(adultsDifferOf({ kids, adults })).toBe(false);
+     42|     expect(adultsDifferOf({ kids, adults, adultsDiffer: true })).toBe(…
+     43|     expect(adultsDifferOf({ kids, adults: [{ ...adults[0], quantity: 3…
+       |                                                                                                    ^
+     44|   });
+     45| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+

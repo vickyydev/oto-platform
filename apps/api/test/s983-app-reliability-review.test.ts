@@ -1,3 +1,4 @@
+import { adultsDifferOf, sameKitchenDish } from "../../oto-app/shared/kitchenAdults";
 import { describe, expect, it } from 'vitest';
 import { beoQuantityOf, stepBeoQuantity } from '../../oto-app/shared/beoQuantity';
 import { parkDayOf } from '../../oto-app/shared/beoDate';
@@ -31,6 +32,15 @@ describe('SCRUM-983/968: published counts and truthful price bounds', () => {
     expect(parkDayOf(at, 'not/a-zone', 'en-GB')).toBe('13/11/2099');
     expect(parkDayOf(at, undefined, 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })).toBe('13 Nov 2099');
     expect(parkDayOf('not a moment')).toBe('');
+  });
+
+  it('MEDIUM review fix: mixed count storage changes no inference; saved on and distinct held adults keep their rules', () => {
+    const kids = [{ itemName: 'ZZ TEST same dish', quantity: '2' as unknown as number, productCode: 'CF-24' }];
+    const adults = [{ itemName: 'ZZ TEST same dish', quantity: 2, productCode: 'CF-24' }];
+    expect(sameKitchenDish(kids[0]!, adults[0]!)).toBe(true);
+    expect(adultsDifferOf({ kids, adults })).toBe(false);
+    expect(adultsDifferOf({ kids, adults, adultsDiffer: true })).toBe(true);
+    expect(adultsDifferOf({ kids, adults: [{ ...adults[0], quantity: 3 }], adultsDiffer: false })).toBe(true);
   });
 
   const ctx = { partyDate: '2026-12-02', till: { known: true, byCode: new Map([['CF-24', { priceSatang: 40000, priceWeekendSatang: 45000 }]]) } };

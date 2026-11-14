@@ -1,0 +1,29 @@
+{
+  "sourceCheckpoint": "c32b5537281785d1962e151be722dff8f614aba3 plus reviewed working corrections",
+  "files": {
+    "apps/api/test/s983-app-reliability-review.test.ts": "e7b1889dfc9285cce1fe9d23c4d3babf106e4f2bfaa9cdc2f8de48f2ef269bdf",
+    "apps/oto-app/client/src/components/beo/beo-day-of-view.tsx": "f61fbbceaecab6f608ff72763e7a915838000c0a91f411aef631f4927995b919",
+    "apps/oto-app/client/src/components/beo/beo-event-editor.tsx": "4538d4d88d6409d6f0ac4a2380a0a0e4920038ca4614e0d13bd43a94183cca15",
+    "apps/oto-app/client/src/components/beo/beo-extra-price.tsx": "524f279700339a3bf8847df2e120f3834b069fbf3340974d31c89a5429904ecb",
+    "apps/oto-app/client/src/lib/beo-ai-review.ts": "eb488bb3f3e3872655b0d2446da1c174bd7f1972737ee162b9c635accb79fc64",
+    "apps/oto-app/client/src/pages/public/menu-select.tsx": "862461e3a2c893f14ae38274a7c988b5649d9c0c581a204c7c234e622b7b116d",
+    "apps/oto-app/server/ai-routes.ts": "923b45ea0888535359728b4dc7129a26254b0d229073ba641bda3313992b66ed",
+    "apps/oto-app/server/beo-routes.ts": "376971471e2f7fe8bbda3796284a4219a44ab31244825e4b3903f7fe4f8bef96",
+    "apps/oto-app/server/lib/beoCatalogueFill.ts": "fa7310cb520c891124119a53b40ff70e5b6ed78675de2fa4c49759e75384e88b",
+    "apps/oto-app/server/pdf.ts": "de7f03bad54bd700e39c7b6dae8e9e08aad946691b14a9d0dde361e68f64d799",
+    "apps/oto-app/shared/beoAiFill.ts": "f491d80a56e44a7f55d26ca47223b93e7f50864fb4cc3a2c46abe4e65bc51bfd",
+    "apps/oto-app/shared/beoDate.ts": "86bbbd3cc952d74b246368c879fdd8ac4a5bfc6cc305f766f2e001562f546d18",
+    "apps/oto-app/shared/beoExtras.ts": "67eb58ffc9c5f8fa47e5c540af35cc30df24f7688b01bc389203fc3347caef36",
+    "apps/oto-app/shared/beoQuantity.ts": "fc42fc5f6de323315ccced48f6a18f9a37f414ceddc16fe46fd1a55d3af5dbd1",
+    "apps/oto-app/shared/kitchenAdults.ts": "b2f9889616229926b320003f3395d98cbc1a3bcc31df0ff182058605fd9ea278",
+    "apps/oto-app/tests/beo-983-968-ui.check.ts": "97c3d9d7e86d5fdab1d882d0fe58a22872a6a69b5f682f604643b620b20e684a",
+    "apps/oto-app/tests/beo-extra-price.check.ts": "8784235fc73d5f1fba04f49fe2ae34df2a9432af50561c5927c264bc05367663",
+    "apps/oto-app/tests/beo-fill-followups.check.ts": "1a5b186510daa2db27a750ad5e91a333871e717a4715ea02ad71991719d1f257",
+    "apps/oto-app/tests/beo-left-978.check.ts": "2b82e9c56a38561b896bcd1c61b7f96ef1d6e6d5a79bd37e845799b7fca44b1e"
+  },
+  "gate": "983-db-green.log",
+  "passed": 133,
+  "failed": 2,
+  "classification": "new test oracle faults: naive timestamp local parse; omitted existing copied rows",
+  "productFaultObserved": false
+}

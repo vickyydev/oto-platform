@@ -1,3 +1,4 @@
+import { beoQuantityOf } from "./beoQuantity";
 /**
  * THE KIDS' MENU IS THE MAIN SELECTION; THE ADULTS MIRROR IT (SCRUM-829).
  *
@@ -65,10 +66,7 @@ export const kitchenLinesOf = (value: unknown): KitchenLineLike[] =>
 export const foldDishName = (name: unknown): string =>
   typeof name === "string" ? name.normalize("NFC").trim().toLowerCase().replace(/\s+/g, " ") : "";
 
-const qtyOf = (line: KitchenLineLike): number => {
-  const q = typeof line.quantity === "number" && Number.isFinite(line.quantity) ? Math.round(line.quantity) : 1;
-  return q > 0 ? q : 1;
-};
+const qtyOf = (line: KitchenLineLike): number => beoQuantityOf(line.quantity);
 const noteOf = (line: KitchenLineLike): string => (typeof line.notes === "string" ? line.notes.trim() : "");
 const codeOf = (line: KitchenLineLike): string => (typeof line.productCode === "string" ? line.productCode.trim() : "");
 

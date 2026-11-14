@@ -1,0 +1,22 @@
+{
+  "candidate": "c32b5537281785d1962e151be722dff8f614aba3",
+  "state": "corrected source restored and verified",
+  "files": [
+    {
+      "file": "apps/oto-app/client/src/components/beo/beo-event-editor.tsx",
+      "fixedSha256": "4538d4d88d6409d6f0ac4a2380a0a0e4920038ca4614e0d13bd43a94183cca15",
+      "candidateGitBlob": "29969c9c2512b340bcd3ba22702eec5c724362f8"
+    },
+    {
+      "file": "apps/oto-app/shared/kitchenAdults.ts",
+      "fixedSha256": "b2f9889616229926b320003f3395d98cbc1a3bcc31df0ff182058605fd9ea278",
+      "candidateGitBlob": "d105075d37d1d498c9b92de8f98810dacf8079cc"
+    },
+    {
+      "file": "apps/oto-app/client/src/pages/public/menu-select.tsx",
+      "fixedSha256": "862461e3a2c893f14ae38274a7c988b5649d9c0c581a204c7c234e622b7b116d",
+      "candidateGitBlob": "e9b291021a6a19f1f34d96b7dfce4aded3503471"
+    }
+  ],
+  "exit": 1
+}

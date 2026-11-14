@@ -1,0 +1,22 @@
+  ok  every EXTRA line shows a price box beside its count; a SET line shows none
+  ok  what the till will charge: the till's price for an empty coded box, each for an entered price, not charged with neither; the totals
+  ok  staff enter, change and clear a price; Save sends it for each item; the totals follow
+  ok  a weekend party: the till's weekend price, said so; the adults' copy of a kids' line is charged once
+  ok  a till whose menu cannot be read: nothing is said of a coded line's price, and no total
+  FAIL  the first line made from Nothing on the kids' menu yet is the EXTRA it shows, and is saved as one
+AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
++ actual - expected
+
+  [
+    [
+      'Durian pizza',
+      false,
++     'additional',
+-     null,
+      250
+    ]
+  ]
+
+    at <anonymous> (C:\oto-lanes\codex-app-reliability-983-20261114\apps\oto-app\tests\beo-extra-price-ui.check.ts:302:10)
+    at async check (C:\oto-lanes\codex-app-reliability-983-20261114\apps\oto-app\tests\beo-extra-price-ui.check.ts:202:5)
+    at async <anonymous> (C:\oto-lanes\codex-app-reliability-983-20261114\apps\oto-app\tests\beo-extra-price-ui.check.ts:292:1)

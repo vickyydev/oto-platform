@@ -1,0 +1,445 @@
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-660-TIyz0i ... ok
+creating subdirectories ... 
+ok
+
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ... 
+100
+selecting default shared_buffers ... 
+128MB
+selecting default time zone ... 
+Asia/Bangkok
+
+creating configuration files ... 
+ok
+running bootstrap script ... 
+ok
+
+performing post-bootstrap initialization ... 
+ok
+syncing data to disk ... 
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-app^-reliability^-983^-20261114^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-660^-TIyz0i^" -l logfile start
+
+
+2026-11-14 15:00:20.806 +07 [98772] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+2026-11-14 15:00:20.809 +07 [98772] LOG:  listening on IPv6 address "::1", port 57055
+2026-11-14 15:00:20.809 +07 [98772] LOG:  listening on IPv4 address "127.0.0.1", port 57055
+
+2026-11-14 15:00:20.842 +07 [46748] LOG:  database system was shut down at 2026-11-14 15:00:17 +07
+
+2026-11-14 15:00:20.887 +07 [98772] LOG:  database system is ready to accept connections
+
+
+> rest-express@1.0.0 db:migrate
+> node script/migrate.mjs
+
+migrate: relation "employee_offboarding_employee_unique" already exists, skipping
+migrate: relation "employee_offboarding_employee_unique" already exists, skipping
+migrate: applied 0000_otoapp_baseline
+migrate: applied 0001_platform_user_id
+migrate: applied 0002_core_branch_id_unique
+migrate: applied 0003_events_seam
+migrate: applied 0004_otoapp_v_views
+migrate: applied 0005_otoapp_v_employees
+migrate: applied 0006_tenant_ownership_expand
+migrate: applied 0007_tenant_ownership_contract
+migrate: applied 0008_document_tenant_ownership_expand
+migrate: applied 0009_document_finance_constraints
+migrate: applied 0010_document_tenant_ownership_contract
+migrate: applied 0011_sop_revision_history
+migrate: applied 0012_attendance_evidence
+migrate: applied 0013_presence_notification_delivery
+migrate: applied 0014_camp_family_sms
+migrate: applied 0015_employee_action_receipts
+migrate: applied 0016_qa_reports
+migrate: applied 0018_flexible_leave_types
+migrate: applied 0019_person_birthdays
+migrate: applied 0020_user_preferences
+migrate: applied 0021_payroll_config
+migrate: applied 0022_payroll_profiles
+migrate: applied 0023_payroll_month_inputs_and_rewards
+migrate: applied 0024_payroll_run_inputs_ot_bank_and_leave_valuation
+migrate: applied 0025_payroll_run_lifecycle_and_snapshots
+migrate: applied 0026_payroll_statutory_documents
+migrate: applied 0027_fix_report_urgent_notification
+migrate: applied 0028_checklist_template_assignees
+migrate: applied 0029_platform_roles_enabled
+migrate: applied 0030_department_read_seam
+migrate: applied 0031_login_lifecycle
+migrate: applied 0032_schedule_audit_view_as
+migrate: applied 0033_fix_report_delete_and_comment_media
+migrate: applied 0034_checklist_branch_added_at
+migrate: applied 0035_core_event_inbox_link
+migrate: applied 0036_schedule_audit_change_set
+migrate: applied 0037_onboard_again
+migrate: applied 0038_offboarding_one_open
+migrate: applied 0039_offboarding_again
+migrate: applied 0041_birthday_package_fields
+migrate: applied 0042_otoapp_v_event_packages
+migrate: applied 0043_users_access_mode
+migrate: applied 0044_login_lifecycle_restrict
+migrate: applied 0045_otoapp_v_event_packages_one_deposit
+migrate: applied 0046_inbox_handover_notification
+migrate: applied 0047_otoapp_v_event_packages_party_menu
+migrate: applied 0048_otoapp_v_event_packages_adults_mirror
+migrate: applied 0049_login_lifecycle_retries
+migrate: applied 0050_otoapp_v_event_packages_kitchen_plan
+migrate: otoapp now at 49 of 49 migration(s).
+MIGRATE 1 EXIT 0
+
+> rest-express@1.0.0 db:migrate
+> node script/migrate.mjs
+
+migrate: otoapp is up to date — 49 migration(s) already applied.
+MIGRATE 2 EXIT 0
+  ok  the parent's own link and the till read one record: the BEO's set-menu lines by group, a line of before by its note
+  ok  decision 3: a choice staff change after the parent submitted is the till's; the thirteen columns read as 0048 gave them
+  ok  every line arrives: a typed extra with its price, a coded extra, a template item no line answers, an open choice, a fixed item's second line
+  ok  the adults' handling is 0048's: each coded line carries the marks the set_menu column gives it
+  ok  the bar's lines with their own codes, notes and prices; the cake as the BEO says it; the bar's service time
+  ok  decision 8: a party with a kitchen plan and no package has a row whose package names nothing; one with none has no row
+  ok  the parent's own link, once submitted, shows the choice as the BEO now holds it, after a staff change
+kitchen-plan-view.check: 7 checks passed
+CHECK tests/kitchen-plan-view.check.ts EXIT 0
+  ok  the PDF prints the adults' own extra at its own price, as the editor and the till have it
+  ok  the PDF reads the kids' list from menus, as the editor and the till do
+  ok  PARTY HOST and SETUP PLAN print only with something under them
+  ok  the editor's Save writes the cake count: the row, the BEO's read and the till's plan view
+  ok  the day-of view's door refuses a malformed body with its reason and writes nothing
+  ok  a stored party's own values are taken: the day-of view's every change is written, untouched lines as stored
+  ok  the day-of view's every body is taken, and only the plan's own fields are written
+  ok  the shape takes what the editor's Save and the till's kitchen edit write
+  ok  a date or a clock time is never the chat's total; a total stays one
+  ok  the fold's reason quotes the words that say the adults eat the same
+  ok  ต่อ is "per" only before a count or a unit
+  ok  the adults' set line in another count keeps its till code, on the row and on the till
+  ok  the family's link answers its park's time zone and prints the park's day
+  ok  an adults' repeat of the kids' dish is no charged extra, the switch on or off; 3 more stays one
+  ok  Fetch from chat compares a kids' choice with the kids' lines only
+  ok  HIGH 983: PDF prints published whole counts, including text and historical missing counts
+  ok  HIGH 983: Thai per-set and per-one-tray prices are distinct from ordering more trays
+  FAIL  HIGH 983: public submit returns exactly the committed timestamp, including first-plan behavior
+Expected values to be strictly equal:
++ actual - expected
+
++ '2026-11-14T08:00:36.439Z'
+- '2026-11-14T01:00:36.439Z'
+               ^
+
+  FAIL  HIGH 983: parent submit preserves the existing adults own dish count and till code
+existing adults own dish/count/code stays intact
++ actual - expected
+
+  [
+    [
++     'Hawaiian',
++     1,
++     undefined
++   ],
++   [
++     'French fries',
++     1,
++     undefined
++   ],
++   [
+      'Chicken',
+      4,
+      'CF-43'
+    ]
+  ]
+
+  ok  HIGH 983: first day-of save codes only the supplied enabled-menu adult line, without inventing switches or copies
+beo-left-978.check: 18 checks passed, 2 failed
+CHECK tests/beo-left-978.check.ts EXIT 1
+{"level":"info","time":"2026-11-14T08:00:41.586Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":357,"answerChars":520,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"8a799a78-dd2b-46dd-8733-941907c71657","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:00:41.660Z","service":"oto-app","env":"local","eventId":"8a799a78-dd2b-46dd-8733-941907c71657","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":1,"kitchenLines":1,"freeKitchenLines":0,"adultsSetLines":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:41.729Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":308,"answerChars":321,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"395dd8c7-f559-4450-bd45-1c10a04cf35e","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:00:41.757Z","service":"oto-app","env":"local","eventId":"395dd8c7-f559-4450-bd45-1c10a04cf35e","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":0,"kitchenLines":1,"freeKitchenLines":0,"adultsSetLines":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:41.792Z","service":"oto-app","env":"local","eventId":"377c6c93-f3e1-4cdd-9d66-e16177450a59","written":{"setMenu":true,"choices":0,"kitchenLines":1,"freeKitchenLines":0,"adultsSetLines":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:41.816Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":357,"answerChars":520,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"69945cde-1060-4568-8f3b-a7c17248d5a0","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:00:41.844Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":357,"answerChars":520,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"69945cde-1060-4568-8f3b-a7c17248d5a0","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:00:41.860Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":381,"answerChars":656,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"af316a86-3590-4caa-a33e-c504555cfacc","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:00:41.881Z","service":"oto-app","env":"local","eventId":"af316a86-3590-4caa-a33e-c504555cfacc","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":1,"kitchenLines":2,"freeKitchenLines":0,"tillLines":2},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:41.896Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":322,"answerChars":516,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"0eee513d-0371-4202-a1e3-ecaaa81df8bf","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:00:41.917Z","service":"oto-app","env":"local","eventId":"0eee513d-0371-4202-a1e3-ecaaa81df8bf","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":1,"kitchenLines":0,"freeKitchenLines":0,"adultsLinesFolded":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:41.924Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":322,"answerChars":516,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"0eee513d-0371-4202-a1e3-ecaaa81df8bf","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:00:41.943Z","service":"oto-app","env":"local","eventId":"0eee513d-0371-4202-a1e3-ecaaa81df8bf","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":1,"kitchenLines":0,"freeKitchenLines":0,"adultsLinesFolded":1,"adultsMenuOwn":true},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:41.947Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":322,"answerChars":516,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"8a896eda-ac08-49f9-a089-194d0a2f2512","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:00:41.970Z","service":"oto-app","env":"local","eventId":"8a896eda-ac08-49f9-a089-194d0a2f2512","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":1,"kitchenLines":1,"freeKitchenLines":0,"adultsSetLines":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:41.981Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":322,"answerChars":516,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"35ccc5de-7678-4ed1-833d-97015c765cd8","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:00:41.997Z","service":"oto-app","env":"local","eventId":"35ccc5de-7678-4ed1-833d-97015c765cd8","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":1,"kitchenLines":1,"freeKitchenLines":0,"tillLines":1,"adultsLinesFolded":1,"adultsMenuOwn":true},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:42.004Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":364,"answerChars":721,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"8f2b25f8-70c0-4e5e-97c2-fe3107f63936","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:00:42.029Z","service":"oto-app","env":"local","eventId":"8f2b25f8-70c0-4e5e-97c2-fe3107f63936","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":1,"kitchenLines":3,"freeKitchenLines":0,"tillLines":3},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{
+  "results": {
+    "threadA_aChoiceSaidForTheAdultsIsTheAdultsSetLine": true,
+    "threadA_wordsNamingNobodyOrBothStayTheSetMenusChoice": true,
+    "threadB_aSetMenuDishForTheAdultsIsNoChargedExtra": true,
+    "theFamilysLinkKeepsTheAdultsOwnSetLine": true,
+    "anAdultsSetLinesCountIsTheSetMenusOwn": true,
+    "anExtraOnlyWhenMoreIsAskedOrPricedOrCounted": true,
+    "threadG_aFoldIsSaidInTheReviewAndTheToast": true,
+    "threadG_aFoldGoesWhenTheKidsChoiceLeavesIt": true,
+    "aFoldBesideTheAdultsOwnLineIsSaidSo": true,
+    "threadI_aChatTotalIsNamedInTheReason": true,
+    "theBeoSheetsHaveATitleForScreenReaders": true
+  },
+  "failures": {}
+}
+CHECK tests/beo-fill-followups.check.ts EXIT 0
+{"level":"info","time":"2026-11-14T08:00:49.367Z","service":"oto-app","env":"local","eventId":"98fe1daf-5399-4f7c-b797-d2159b637284","written":{"setMenu":true,"choices":1,"kitchenLines":2,"freeKitchenLines":0,"tillLines":2},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:49.407Z","service":"oto-app","env":"local","eventId":"ecc73372-adee-44e7-b2bf-0e686367ea0b","written":{"kitchenLines":2,"freeKitchenLines":2,"adultsLinesFolded":2},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:49.418Z","service":"oto-app","env":"local","eventId":"20bded77-0401-449c-87ed-8f0c41a87c94","written":{"setMenu":true,"choices":1,"kitchenLines":1,"freeKitchenLines":1,"adultsLinesFolded":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:49.432Z","service":"oto-app","env":"local","eventId":"b12af8b6-cf2a-4e91-a944-c593bcc5a52a","written":{"kitchenLines":2,"freeKitchenLines":0,"tillLines":2},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:49.444Z","service":"oto-app","env":"local","eventId":"eae10c4d-fc06-44e5-a458-318955e7efc2","written":{"kitchenLines":3,"freeKitchenLines":3},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:49.507Z","service":"oto-app","env":"local","eventId":"6e394cb9-0cad-4dad-bf3c-49f6f7efdb60","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":1,"kitchenLines":0,"freeKitchenLines":0},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:49.541Z","service":"oto-app","env":"local","eventId":"2f7914b9-8006-4e4f-854c-57f0c5495f5b","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":1,"kitchenLines":1,"freeKitchenLines":0,"tillLines":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:49.605Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":324,"answerChars":558,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"b9048a04-3360-48e9-bf6d-9da6ee062006","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:00:49.681Z","service":"oto-app","env":"local","eventId":"b9048a04-3360-48e9-bf6d-9da6ee062006","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":1,"kitchenLines":1,"freeKitchenLines":0,"tillLines":1,"cake":true},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:49.721Z","service":"oto-app","env":"local","eventId":"8475175f-a949-4cce-97ff-1b8c7be0133e","written":{"kitchenLines":1,"freeKitchenLines":0,"tillLines":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:49.738Z","service":"oto-app","env":"local","eventId":"e460ed16-3803-479a-ac95-c441e35edc45","written":{"event":true},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:49.747Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":210,"answerChars":340,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"b0d848c3-1714-4c69-981e-af3935bb93a1","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:00:49.778Z","service":"oto-app","env":"local","eventId":"b0d848c3-1714-4c69-981e-af3935bb93a1","written":{"package":true,"addOns":0,"setMenu":true,"choices":0,"kitchenLines":2,"freeKitchenLines":0,"tillLines":1,"adultsSetLines":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:49.785Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":333,"answerChars":685,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"6b1f79cf-9340-401d-abe5-23b8deac0f01","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:00:49.802Z","service":"oto-app","env":"local","eventId":"6b1f79cf-9340-401d-abe5-23b8deac0f01","written":{"event":true,"kitchenLines":0,"freeKitchenLines":0,"cake":true,"setup":true,"setupTasks":1,"timelineLines":2},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:49.811Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":184,"answerChars":288,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"298099e6-187e-41f0-9e2d-1f639874f847","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:00:49.829Z","service":"oto-app","env":"local","eventId":"298099e6-187e-41f0-9e2d-1f639874f847","written":{"event":true,"entertainment":1,"entertainmentActs":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:49.851Z","service":"oto-app","env":"local","eventId":"63f44922-d053-470c-83be-bc3186df4e29","written":{"kitchenLines":0,"freeKitchenLines":0,"cake":true},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:49.861Z","service":"oto-app","env":"local","eventId":"63f44922-d053-470c-83be-bc3186df4e29","written":{"kitchenLines":0,"freeKitchenLines":0,"cake":true},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:49.876Z","service":"oto-app","env":"local","eventId":"e1ea025c-477f-4feb-89b2-a2813153ba57","written":{"kitchenLines":0,"freeKitchenLines":0,"cake":true},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:49.890Z","service":"oto-app","env":"local","eventId":"d584d89f-1d3a-495f-bc95-baede0949077","written":{"event":true},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:49.904Z","service":"oto-app","env":"local","eventId":"d584d89f-1d3a-495f-bc95-baede0949077","written":{"event":true},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:49.917Z","service":"oto-app","env":"local","eventId":"d584d89f-1d3a-495f-bc95-baede0949077","written":{"event":true},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:49.930Z","service":"oto-app","env":"local","eventId":"d584d89f-1d3a-495f-bc95-baede0949077","written":{"event":true},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:49.949Z","service":"oto-app","env":"local","eventId":"4d39f6fe-c97d-41a5-8e20-1a5ed35885b9","written":{"setMenu":true,"choices":1,"kitchenLines":0,"freeKitchenLines":0},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:49.963Z","service":"oto-app","env":"local","eventId":"4d39f6fe-c97d-41a5-8e20-1a5ed35885b9","written":{"setMenu":true,"choices":1,"parentChoicesKept":1,"kitchenLines":0,"freeKitchenLines":0},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:49.974Z","service":"oto-app","env":"local","eventId":"4d39f6fe-c97d-41a5-8e20-1a5ed35885b9","written":{"deposit":true},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:49.998Z","service":"oto-app","env":"local","eventId":"3d5bfb7d-d8e1-437d-a2ff-f0b7126a3f2d","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":1,"kitchenLines":0,"freeKitchenLines":0,"cake":true,"timelineLines":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:50.012Z","service":"oto-app","env":"local","eventId":"3d5bfb7d-d8e1-437d-a2ff-f0b7126a3f2d","written":{"kitchenLines":0,"freeKitchenLines":0,"cake":true},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:50.026Z","service":"oto-app","env":"local","eventId":"3d5bfb7d-d8e1-437d-a2ff-f0b7126a3f2d","written":{"setup":true,"setupTasks":0,"deposit":true},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{
+  "results": {
+    "anExtraOrderForTheAdultsIsWritten": true,
+    "anAdultsLineIsTheirOwnLineByLine": true,
+    "aSetMenuDishIsNoExtraCharge": true,
+    "theChatsPriceIsWrittenOnTheLineForEachItem": true,
+    "aTotalForSeveralIsNoPriceEach": true,
+    "fetchFromChatComparesByWhatIsSaid": true,
+    "theWhatsAppNumberIsNotARequestLine": true,
+    "aChatNumberNotTakenStaysARequest": true,
+    "aCodesOptionsAreThePartysOwnSetMenus": true,
+    "theTimelineHoldsEachMomentOnce": true,
+    "aStepOfThePartyIsNotASetupTask": true,
+    "aShowIsItsActNotActivitiesText": true,
+    "theCakeIsInThePackageOnlyWhenSaid": true,
+    "anotherWhatsAppNumberIsStoredInItsInternationalForm": true,
+    "choicesFromTheChatAreNotSelectionsReceived": true,
+    "theDepositBoxSaysTheDepositTheBeoAsks": true,
+    "theToastNamesOnlyWhatWasWritten": true,
+    "aLongMessageIsQuotedByTheWordsThatMatter": true
+  },
+  "failures": {}
+}
+CHECK tests/beo-fill-corrections.check.ts EXIT 0
+{"level":"info","time":"2026-11-14T08:00:55.636Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":322,"answerChars":516,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"eb4c6fa0-be89-491d-a1a5-ad634ea04d4e","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:00:55.722Z","service":"oto-app","env":"local","eventId":"eb4c6fa0-be89-491d-a1a5-ad634ea04d4e","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":1,"kitchenLines":0,"freeKitchenLines":0,"adultsLinesFolded":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:55.736Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":322,"answerChars":510,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"e1add2a7-5643-44dc-b525-4d352fc98180","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:00:55.777Z","service":"oto-app","env":"local","eventId":"e1add2a7-5643-44dc-b525-4d352fc98180","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":1,"kitchenLines":0,"freeKitchenLines":0,"adultsLinesFolded":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:55.784Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":322,"answerChars":408,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"0dea52a0-6340-4320-837d-a0ad837882ba","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:00:55.809Z","service":"oto-app","env":"local","eventId":"0dea52a0-6340-4320-837d-a0ad837882ba","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":1,"kitchenLines":0,"freeKitchenLines":0,"adultsLinesFolded":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:55.815Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":322,"answerChars":514,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"e16ff48f-9483-4aa9-866e-cbb1a625cf22","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:00:55.841Z","service":"oto-app","env":"local","eventId":"e16ff48f-9483-4aa9-866e-cbb1a625cf22","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":1,"kitchenLines":0,"freeKitchenLines":0,"adultsLinesFolded":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:55.848Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":322,"answerChars":514,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"0c04aa9a-43a0-4f8a-a65c-17e979f0684c","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:00:55.876Z","service":"oto-app","env":"local","eventId":"0c04aa9a-43a0-4f8a-a65c-17e979f0684c","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":1,"kitchenLines":0,"freeKitchenLines":0,"adultsLinesFolded":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:55.882Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":275,"answerChars":513,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"6e437248-74dc-4cb3-bfa0-700a8057a32b","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:00:55.901Z","service":"oto-app","env":"local","eventId":"6e437248-74dc-4cb3-bfa0-700a8057a32b","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":1,"kitchenLines":0,"freeKitchenLines":0,"adultsLinesFolded":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:55.907Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":275,"answerChars":486,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"aabe3827-5bfb-40b6-b5b0-e06a8fdd8e74","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:00:55.926Z","service":"oto-app","env":"local","eventId":"aabe3827-5bfb-40b6-b5b0-e06a8fdd8e74","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":1,"kitchenLines":0,"freeKitchenLines":0,"adultsLinesFolded":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:55.932Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":275,"answerChars":400,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"1b21d54f-1056-4980-930f-c6a426a9ba11","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:00:55.951Z","service":"oto-app","env":"local","eventId":"1b21d54f-1056-4980-930f-c6a426a9ba11","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":1,"kitchenLines":0,"freeKitchenLines":0,"adultsLinesFolded":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:55.961Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":287,"answerChars":408,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"a3f5e9a5-eeb5-4464-ad79-fa63b04fd767","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:00:55.986Z","service":"oto-app","env":"local","eventId":"a3f5e9a5-eeb5-4464-ad79-fa63b04fd767","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":1,"kitchenLines":0,"freeKitchenLines":0,"adultsLinesFolded":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:55.990Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":311,"answerChars":506,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"08bb86c8-2367-4e4f-84f1-173590d80b02","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:00:56.035Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":364,"answerChars":721,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"ca99e714-c2b4-48ec-97d3-02be2e9b01ac","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:00:56.056Z","service":"oto-app","env":"local","eventId":"ca99e714-c2b4-48ec-97d3-02be2e9b01ac","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":1,"kitchenLines":3,"freeKitchenLines":0,"tillLines":3},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:56.061Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":364,"answerChars":703,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"294fb01a-9e5e-4eb1-8dee-ced01db10dbf","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:00:56.080Z","service":"oto-app","env":"local","eventId":"294fb01a-9e5e-4eb1-8dee-ced01db10dbf","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":1,"kitchenLines":3,"freeKitchenLines":0,"tillLines":3},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:56.086Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":364,"answerChars":625,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"634614dc-1ddb-4ba7-823a-cb31f550868c","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:00:56.107Z","service":"oto-app","env":"local","eventId":"634614dc-1ddb-4ba7-823a-cb31f550868c","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":1,"kitchenLines":2,"freeKitchenLines":0,"tillLines":2},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:56.111Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":289,"answerChars":488,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"5063440c-cf45-471f-9efa-6a8b44f21332","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:00:56.123Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":289,"answerChars":505,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"10f466d4-80f8-427d-8562-6f1306c99f9b","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:00:56.139Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":288,"answerChars":508,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"f4eaa22f-71d2-4ea5-b76e-1fad06ac7251","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:00:56.157Z","service":"oto-app","env":"local","eventId":"f4eaa22f-71d2-4ea5-b76e-1fad06ac7251","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":1,"kitchenLines":1,"freeKitchenLines":0,"tillLines":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:56.162Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":288,"answerChars":492,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"d199d112-6da0-40f1-be5e-f0c5032df048","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:00:56.172Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":293,"answerChars":508,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"dbe070e3-48dd-47d1-85f8-22f9ebc60e2a","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:00:56.190Z","service":"oto-app","env":"local","eventId":"dbe070e3-48dd-47d1-85f8-22f9ebc60e2a","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":1,"kitchenLines":1,"freeKitchenLines":0,"tillLines":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:56.196Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":293,"answerChars":492,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"c6e2617a-9630-40fd-8252-046bedf430c9","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:00:56.209Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":286,"answerChars":508,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"4ce3325f-3181-4df6-9a31-64cb00478d46","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:00:56.229Z","service":"oto-app","env":"local","eventId":"4ce3325f-3181-4df6-9a31-64cb00478d46","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":1,"kitchenLines":1,"freeKitchenLines":0,"tillLines":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:56.233Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":286,"answerChars":492,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"c684f26e-2932-4f0e-bcc0-34c1385a7fe0","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:00:56.242Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":296,"answerChars":508,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"eb89f20a-494f-42fe-a86d-1d3c48bae087","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:00:56.258Z","service":"oto-app","env":"local","eventId":"eb89f20a-494f-42fe-a86d-1d3c48bae087","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":1,"kitchenLines":1,"freeKitchenLines":0,"tillLines":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:56.262Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":296,"answerChars":492,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"58f8393e-ac8c-41aa-a39b-2b7dc2f14de8","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:00:56.271Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":306,"answerChars":520,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"cb2226b0-d125-4611-81bb-4e2c30b3477d","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:00:56.285Z","service":"oto-app","env":"local","eventId":"cb2226b0-d125-4611-81bb-4e2c30b3477d","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":1,"kitchenLines":1,"freeKitchenLines":0,"adultsSetLines":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:56.309Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":306,"answerChars":525,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"6b547cc1-2cb6-406c-b2a8-cfeb213c39d5","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:00:56.325Z","service":"oto-app","env":"local","eventId":"6b547cc1-2cb6-406c-b2a8-cfeb213c39d5","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":1,"kitchenLines":1,"freeKitchenLines":0,"adultsSetLines":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-14T08:00:56.336Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":292,"answerChars":321,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"d2df0c09-e2ce-4a15-8916-9ae2968fa868","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:00:56.351Z","service":"oto-app","env":"local","eventId":"d2df0c09-e2ce-4a15-8916-9ae2968fa868","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":0,"kitchenLines":1,"freeKitchenLines":0,"adultsSetLines":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{
+  "results": {
+    "threadG_adultsLine_theFoldIsSaidFromTheChatsWords": true,
+    "threadG_asChoice_theFoldIsSaidFromTheChatsWords": true,
+    "threadG_dropped_theFoldIsSaidFromTheChatsWords": true,
+    "threadG_kidsLine_theFoldIsSaidFromTheChatsWords": true,
+    "threadG_kidsLineAtCount_theFoldIsSaidFromTheChatsWords": true,
+    "threadG_oneMoreWording_andTheShapesOfIt": true,
+    "threadG_noDishNamed_isSaidOnce_andAnotherDishIsNoFold": true,
+    "threadI_priced_theChatsTotalIsNamed": true,
+    "threadI_unpriced_theChatsTotalIsNamed": true,
+    "threadI_halved_theChatsTotalIsNamed": true,
+    "threadI_oneMoreWording_thaiAndRussian": true,
+    "threadI_aPriceSaidForEach_staysThePrice_inEveryShape": true,
+    "threadsAB_theAdultsSetLineIsWrittenWithItsTillCode_andTheTillReadsIt": true,
+    "theFamilysLinkAndTheTillsEditKeepTheCode_untilTheKidsHaveTheSameDish": true,
+    "theBeoPdfSaysWhatAnExtraCostsAsTheEditorDoes": true,
+    "theBeoPdfPrintsTheParksDates": true,
+    "theFamilysLinkListsTheChoicesJustSent_andTheSheetsAreDescribed": true,
+    "theFillsActivityRowSaysTheShapeOfTheAnswerInCounts": true
+  },
+  "failures": {}
+}
+CHECK tests/beo-fill-read-shapes.check.ts EXIT 0
+{
+  "results": {
+    "builtInAdviceNamesTheThreeLanguagesAndKeepsWording": true,
+    "legacyDepositNeedsExplicitReceipt": true,
+    "defaultsWhenNoSetting": true,
+    "savedSettingWins": true,
+    "savedModelNotServedFallsBack": true,
+    "thaiEnglishRussianConfirmations": true,
+    "finalMessageToParent": true,
+    "malformedAnswerIsAPlainMessage": true,
+    "modelProblemsAreSaid": true,
+    "aRunThatMayRetryAsksOnceMore": true,
+    "logFieldsCarryNoText": true,
+    "teamProposals": true,
+    "beoPromptKnowsTheParksToday": true,
+    "eventDateReadBesideTheBookedDate": true,
+    "savedFormatStillCarriesTheFieldsTheAppReads": true,
+    "aCakeTimeWithNoOwnerLeavesTheCakeType": true,
+    "theRestOfTheBeoIsProposedWithItsSource": true,
+    "theReviewKeepsWhatIsHeldAndSendsTheRest": true,
+    "theAdultsListFoldsIntoTheKidsUnlessItIsTheirOwn": true
+  },
+  "failures": {}
+}
+CHECK tests/ai-fill.check.ts EXIT 0
+{"level":"info","time":"2026-11-14T08:01:03.543Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":125,"answerChars":219,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"d23db4cc-05e6-454d-bc85-cdb11dee90b3","team":{"named":1,"matched":1},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:01:03.598Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":152,"answerChars":272,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"0d7ef69d-dc21-431d-8d0d-802d1a0815b2","team":{"named":3,"matched":2},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:01:03.629Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":102,"answerChars":236,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"b946e60b-0b51-4f19-82a2-5ddc01f5254e","team":{"named":2,"matched":1},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:01:03.641Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":125,"answerChars":219,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"d23db4cc-05e6-454d-bc85-cdb11dee90b3","team":{"named":1,"matched":1},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:01:03.652Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":102,"answerChars":236,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"b946e60b-0b51-4f19-82a2-5ddc01f5254e","team":{"named":2,"matched":1},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:01:03.667Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":152,"answerChars":325,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"0d7ef69d-dc21-431d-8d0d-802d1a0815b2","team":{"named":3,"matched":2},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:01:03.679Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":152,"answerChars":325,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"0d7ef69d-dc21-431d-8d0d-802d1a0815b2","team":{"named":3,"matched":2},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:01:03.690Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":152,"answerChars":272,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"0d7ef69d-dc21-431d-8d0d-802d1a0815b2","team":{"named":3,"matched":2},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:01:03.701Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":125,"answerChars":219,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"d23db4cc-05e6-454d-bc85-cdb11dee90b3","team":{"named":1,"matched":1},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:01:03.718Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":102,"answerChars":236,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"b946e60b-0b51-4f19-82a2-5ddc01f5254e","team":{"named":2,"matched":1},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:01:03.747Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":110,"answerChars":195,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"2cf3f467-ce50-4087-bcae-6499d7e7aced","team":{"named":3,"matched":3},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:01:03.757Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":110,"answerChars":86,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"2cf3f467-ce50-4087-bcae-6499d7e7aced","team":{"named":2,"matched":1},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:01:03.762Z","service":"oto-app","env":"local","reason":"no_conversation","eventId":"3d29cdb1-a9ed-4c8a-bb7d-8de182be4411","msg":"ai fill from the inbox did not run"}
+{"level":"info","time":"2026-11-14T08:01:03.773Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":184,"answerChars":219,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"3d29cdb1-a9ed-4c8a-bb7d-8de182be4411","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:01:03.778Z","service":"oto-app","env":"local","reason":"not_from_inbox","eventId":"17cabafb-ad0e-4f12-bae7-338bd247ece8","msg":"ai fill from the inbox did not run"}
+{"level":"info","time":"2026-11-14T08:01:03.783Z","service":"oto-app","env":"local","reason":"event_mismatch","eventId":"dcf6c707-64f5-4b20-a011-f3f82694569d","msg":"ai fill from the inbox did not run"}
+{"level":"info","time":"2026-11-14T08:01:03.784Z","service":"oto-app","env":"local","reason":"inbox_not_visible","eventId":"1b65d785-4e17-4b7c-a95e-f12186331202","msg":"ai fill from the inbox did not run"}
+{"level":"info","time":"2026-11-14T08:01:03.789Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":152,"answerChars":33,"outcome":"unreadable","issues":["not JSON"],"source":"inbox","purpose":"fill","eventId":"6ff99ad4-9145-40fd-9791-4950199756cd","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:01:03.800Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":152,"answerChars":272,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"0d7ef69d-dc21-431d-8d0d-802d1a0815b2","team":{"named":3,"matched":2},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:01:03.883Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":102,"answerChars":236,"outcome":"filled","issues":[],"source":"pasted","purpose":"fill","eventId":"b946e60b-0b51-4f19-82a2-5ddc01f5254e","team":{"named":2,"matched":1},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:01:03.918Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":152,"answerChars":272,"outcome":"filled","issues":[],"source":"pasted","purpose":"fill","eventId":"0d7ef69d-dc21-431d-8d0d-802d1a0815b2","team":{"named":3,"matched":2},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:01:03.934Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":152,"answerChars":272,"outcome":"filled","issues":[],"source":"pasted","purpose":"fill","eventId":null,"team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:01:03.950Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"setting","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":20,"answerChars":71,"outcome":"filled","issues":[],"source":"pasted","purpose":"fill","eventId":null,"team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:01:03.956Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"setting","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":25,"answerChars":68,"outcome":"filled","issues":[],"source":"pasted","purpose":"fill","eventId":null,"team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:01:03.963Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"setting","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":25,"answerChars":102,"outcome":"filled","issues":[],"source":"pasted","purpose":"fill","eventId":null,"team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:01:03.968Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"setting","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":40,"answerChars":159,"outcome":"filled","issues":[],"source":"pasted","purpose":"fill","eventId":null,"team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:01:03.973Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"setting","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":152,"answerChars":272,"outcome":"filled","issues":[],"source":"pasted","purpose":"fill","eventId":null,"team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:01:03.977Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":152,"answerChars":272,"outcome":"filled","issues":[],"source":"pasted","purpose":"fill","eventId":null,"team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:01:03.991Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":152,"answerChars":272,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"0d7ef69d-dc21-431d-8d0d-802d1a0815b2","team":{"named":3,"matched":2},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:01:03.998Z","service":"oto-app","env":"local","reason":"inbox_not_visible","eventId":"1b65d785-4e17-4b7c-a95e-f12186331202","msg":"ai fill from the inbox did not run"}
+{"level":"info","time":"2026-11-14T08:01:04.000Z","service":"oto-app","env":"local","reason":"not_a_birthday","eventId":"3d29cdb1-a9ed-4c8a-bb7d-8de182be4411","msg":"ai fill from the inbox did not run"}
+{"level":"info","time":"2026-11-14T08:01:04.002Z","service":"oto-app","env":"local","reason":"inbox_unreachable","eventId":"6ff99ad4-9145-40fd-9791-4950199756cd","msg":"ai fill from the inbox did not run"}
+{"level":"info","time":"2026-11-14T08:01:04.003Z","service":"oto-app","env":"local","reason":"inbox_unreachable","eventId":"d23db4cc-05e6-454d-bc85-cdb11dee90b3","msg":"ai fill from the inbox did not run"}
+{"level":"info","time":"2026-11-14T08:01:04.005Z","service":"oto-app","env":"local","reason":"signed_out","eventId":"0d7ef69d-dc21-431d-8d0d-802d1a0815b2","msg":"ai fill from the inbox did not run"}
+{"level":"info","time":"2026-11-14T08:01:04.006Z","service":"oto-app","env":"local","reason":"no_platform_session","eventId":"0d7ef69d-dc21-431d-8d0d-802d1a0815b2","msg":"ai fill from the inbox did not run"}
+{"level":"info","time":"2026-11-14T08:01:04.014Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":102,"answerChars":358,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"b946e60b-0b51-4f19-82a2-5ddc01f5254e","team":{"named":2,"matched":1},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:01:04.039Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":102,"answerChars":82,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"b946e60b-0b51-4f19-82a2-5ddc01f5254e","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:01:04.046Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":102,"answerChars":236,"outcome":"filled","issues":[],"source":"pasted","purpose":"fill","eventId":null,"team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-14T08:01:04.049Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"setting","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":102,"answerChars":236,"outcome":"filled","issues":[],"source":"pasted","purpose":"fill","eventId":null,"team":{"named":0,"matched":0},"msg":"ai fill run"}
+{
+  "results": {
+    "thaiEnglishRussianFromTheInbox": true,
+    "personsFinalMessageIsKept": true,
+    "teamProposedFromTheParksPeopleOnly": true,
+    "aRoleWordOrTheBeforeTheNameIsNotTheName": true,
+    "noConfirmationFillsFromTheConversation": true,
+    "eventMustBeTheCallersAndFromTheInbox": true,
+    "malformedAnswerIsAPlainMessage": true,
+    "activityRowsCarryNoText": true,
+    "logCarriesNoText": true,
+    "pastedMessageWithTheEvent": true,
+    "legacyDepositQuotesTheTextActuallyRead": true,
+    "savedSettingWinsOnTheRoutes": true,
+    "readsThePlatformAsThePerson": true,
+    "todayAtTheParkAndTheReadDateBesideTheBooked": true,
+    "deepLinkFill": true
+  },
+  "failures": {}
+}
+CHECK tests/beo-inbox-fill.check.ts EXIT 0
+  ok  the stored shape's reading: saved on, or lines that are not the kids' list; empty or equal is off
+  ok  the adults' changes on one list: kids only, two counts, a note of their own, adults only; none with the switch off
+  ok  both prompts tell the model the adults eat the kids' menu unless the message says otherwise; every line key is still required
+  ok  a stub model's one list leaves the form with no adults' list; its adults' own dish is carried; a catalogue dish with no list is the kids'
+  ok  saved with the switch off: no adults' list and adultsDiffer false; the read gives both back
+  ok  saved with the switch on: the adults' own list and adultsDiffer true; an editor from before the switch gets the key its lists say; the day-of view's write keeps it
+  ok  the till's plan view: a party saved before the switch and never written since reads as 0047 read it; one written since reads as the editor opens it
+  ok  with the switch on: an unchanged copy reaches the till once, a line the adults do not get is marked kids, their own lines marked adults
+  ok  a coded line copied for the adults with only its note changed, or cleared, reaches the till once with the adults' note beside it
+  ok  a set-menu line the kids' list holds and the adults' drops is marked kids; one never written into the kids' list is left alone
+  ok  the set menu stays in step for the adults' own list: the parent's submit after the switch, and a Save with a stale submission
+  ok  Approve and create: an adults' line turns the switch on; kids' lines alone leave it as the BEO holds it, recorded
+  ok  AI Fill on a pasted message: the prompt carries the rule; one list when the message names no food of the adults' own, their dish when it does
+  ok  the BEO PDF prints one food list: the adults' line with the switch off; their changes marked and their own dishes after with it on
+kitchen-adults.check: 14 checks passed
+CHECK tests/kitchen-adults.check.ts EXIT 0
+  ok  only the platform's events:write key for the party's own park group; another park group's party is not found
+  ok  a count, a note, an added till item, a typed line, a bar line, a removed extra: the BEO's rows and the till's view
+  ok  the same edit id twice writes once; the same id with another change is refused
+  ok  a set-menu choice within its group, with the template's code; an option outside it, a dish removed, a gone line: refused in words
+  ok  the cake's time and note; a party with no cake is told so
+  ok  an open group chosen on the till as the parent's submit would; the choices door names the groups
+  ok  SCRUM-829: with the adults' own list, a kids' choice carries the adults' copy; the switch is kept
+  ok  SCRUM-958: a dish of the adults' own in a set-menu group stays: a kids' choice moves only its copy, an open group adds none
+  ok  adults' switch on: a kids' line's count and note carry the adults' copies the till shows with it
+  ok  adults' switch on: removing a kids' extra removes the adults' copy the till shows with it
+  ok  a BEO saved before the switch, its adults' list repeating the kids': an adults' line's change is written as theirs
+  ok  the planner alone: a legacy line keeps its group when its note changes; nothing is priced
+  ok  the BEO's own Save writes the kitchen and bar plans as before, through the same writers
+till-kitchen-edit.check: 13 checks passed
+CHECK tests/till-kitchen-edit.check.ts EXIT 0
+2026-11-14 15:00:22.060 +07 [26680] ERROR:  relation "otoapp.__drizzle_migrations" does not exist at character 24
+2026-11-14 15:00:22.060 +07 [26680] STATEMENT:  select created_at from "otoapp"."__drizzle_migrations" order by created_at
+

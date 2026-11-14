@@ -1446,6 +1446,13 @@ export function registerBeoRoutes(app: Express) {
 
         const { setMenuSelectionSubmittedAt: _submittedAt, ...fields } = body;
         const parsed = insertBeoKitchenPlanSchema.parse({ ...fields, eventId });
+        if (parsed.menus !== undefined && parsed.menus !== null) {
+          parsed.menus = await withAdultsSetCodes(
+            tx, eventId,
+            { enabled: parsed.setMenuEnabled, templateId: parsed.setMenuTemplateId },
+            asMenuCollection(parsed.menus),
+          );
+        }
         const [created] = await tx.insert(beoKitchenPlans).values(parsed).returning();
         return { status: 201, kitchenPlan: created };
       });

@@ -1832,8 +1832,8 @@ export function adultsSameAsKidsFolds(
  */
 const PER_ITEM_WORDS =
   /(^|[^\p{L}])(each|per|apiece|a piece|ea)([^\p{L}]|$)|\/\s*(pc|pcs|piece|each)|(?<!แ)ละ|(?<!ติด)ต่อ\s*(?:\d|เซ็ต|เซต|(?:หนึ่ง\s*)?ถาด|ชิ้น|จาน|ที่|แก้ว|กล่อง|ท่าน|คน|หัว|ชุด|อัน|ลูก|ขวด|ถ้วย|ชาม|ไม้|ก้อน|เสิร์ฟ|หน่วย|ปอนด์|กระบอก|ออเดอร์)|за штуку|за шт|кажд|по\s*$/iu;
-/** Thai "order more" is a continuation, not a per-item price qualifier. The original words stay intact. */
-const saysPerItem = (text: string): boolean => PER_ITEM_WORDS.test(text.replace(/สั่ง\s*ต่อ/gu, "สั่งเพิ่ม"));
+/** Thai "order more" followed by a count is a continuation, not a per-item qualifier. The original words stay intact. */
+const saysPerItem = (text: string): boolean => PER_ITEM_WORDS.test(text.replace(/สั่ง\s*ต่อ(?=\s*(?:\d|หนึ่ง))/gu, "สั่งเพิ่ม"));
 /** SCRUM-946: words saying a price is the total for several ("for 900", "900 in total", "всего 900"). */
 const TOTAL_WORDS = /(^|[^\p{L}])(total|in all|altogether|together|for (both|all|the two|the three|them|everything))([^\p{L}]|$)|รวม|ทั้งหมด|всего|итого|вместе|за все|за обе|за оба/iu;
 /**

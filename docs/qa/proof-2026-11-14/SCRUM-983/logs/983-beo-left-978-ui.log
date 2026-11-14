@@ -1,0 +1,7 @@
+  ok  Recent Updates opens Edit Event with the event's own values, and Update writes them
+  ok  no way into Edit Event sets the event being edited without filling the form
+  ok  a built app writes nothing of the person to the console; development writes its lines without them
+  ok  no console line of the app takes a person's record: the employee editor's Save, the permissions panel
+  ok  a disabled text box never opens for typing; an enabled one does
+  ok  the Parent Link and AI Fill review dialogs carry a hidden description inside their dialog
+beo-left-978-ui.check: 6 checks passed

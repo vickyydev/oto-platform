@@ -1,0 +1,9 @@
+  ok  an EXTRA line: the entered price for each item, times its count; else the till's for its code; else not charged
+  ok  the party's day: the till's weekend price on a Saturday or a Sunday, said so
+  ok  a SET line is the package's; an item made for this party is charged at the till's own price on the food lists, nothing on the bar
+  ok  the adults' copy of a kids' line is charged once; their list counts only while it is theirs
+  ok  the extras' total as the till will charge them; nothing said when the till's menu was not read
+  ok  the BEO PDF prints a drink's EXTRA price for each item, as the kitchen's (SCRUM-940 point 3)
+  ok  the BEO PDF prints a set-menu choice with single brackets: Margherita (Pizza), never ((Pizza)) (SCRUM-940 point 3)
+  ok  HIGH 968: missing known-menu codes suppress a complete sum without changing entered prices or PARTY bar policy
+beo-extra-price.check: 8 checks passed

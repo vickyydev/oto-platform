@@ -1,0 +1,5 @@
+  ok  the adults' tab mirrors the kids' lines read-only under 'Same as the kids' menu', counts them, and offers nothing to type
+  ok  the switch on writes the adults' list at once as a copy of the kids'; a line changed there is written as theirs, the switch kept on
+  ok  the switch off again asks, then writes adults: [] with adultsDiffer: false; the mirror is back
+  ok  a BEO saved before with two different lists opens with the switch on and its list as saved; one whose list equals the kids' opens off and its first write drops the duplicate
+kitchen-adults-day-of-ui.check: 4 checks passed

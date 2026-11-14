@@ -440,7 +440,7 @@ function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab, charge, 
           onClick={() => {
             changeMenu(prev => {
               const updated = [...prev];
-              updated[idx] = { ...updated[idx], source: updated[idx].source === "set_menu" ? undefined : "set_menu" };
+              updated[idx] = { ...updated[idx], source: updated[idx].source === "set_menu" ? "additional" : "set_menu" };
               return updated;
             });
           }}
@@ -510,6 +510,7 @@ function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab, charge, 
               notes: "",
               included: item.included,
               price: 0,
+              source: "additional",
             };
             changeMenu(prev => {
               const updated = [...prev];
@@ -1088,8 +1089,8 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
         if (kp.simplifiedMenus) {
           // New saves always use menus. Keep this fallback for records returned by
           // older BEO endpoints, but never let stale legacy data override it.
-          if (!Array.isArray(menus?.kids) && Array.isArray(kp.simplifiedMenus.kids)) setKidsMenu(kp.simplifiedMenus.kids.map((m: any) => ({ ...m, quantity: beoQuantityOf(m.quantity), price: m.price || 0, source: m.source, groupId: m.groupId })));
-          if (!Array.isArray(menus?.adults) && Array.isArray(kp.simplifiedMenus.adults)) setAdultsMenu(kp.simplifiedMenus.adults.map((m: any) => ({ ...m, quantity: beoQuantityOf(m.quantity), price: m.price || 0, source: m.source, groupId: m.groupId })));
+          if (!Array.isArray(menus?.kids) && Array.isArray(kp.simplifiedMenus.kids)) setKidsMenu(kp.simplifiedMenus.kids.map((m: MenuLine) => ({ ...m, quantity: beoQuantityOf(m.quantity), price: m.price || 0, source: m.source, groupId: m.groupId })));
+          if (!Array.isArray(menus?.adults) && Array.isArray(kp.simplifiedMenus.adults)) setAdultsMenu(kp.simplifiedMenus.adults.map((m: MenuLine) => ({ ...m, quantity: beoQuantityOf(m.quantity), price: m.price || 0, source: m.source, groupId: m.groupId })));
         }
         // SCRUM-829: the switch as saved; a BEO saved before it opens on only when its adults'
         // list holds lines that are not the kids' list, off when it is empty or the same.
@@ -1884,6 +1885,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
           notes: m.notes || "",
           included: m.included !== false,
           price: m.price || 0,
+          source: m.source === "set_menu" ? "set_menu" : "additional",
         })));
         if (!adultsOwn) {
           // The message's food, with nothing of the adults' own: the adults eat it too, the switch off.
@@ -1900,6 +1902,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
           notes: m.notes || "",
           included: m.included !== false,
           price: m.price || 0,
+          source: m.source === "set_menu" ? "set_menu" : "additional",
         })));
         setAdultsDiffer(true);
       }
@@ -3114,7 +3117,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                       <Label>Menus</Label>
                       <div className="flex flex-wrap items-center gap-2">
                         <div className="flex gap-1">
-                          <Button disabled={readOnly}
+                          <Button
                             variant={menuTab === "kids" ? "default" : "outline"}
                             size="sm"
                             onClick={() => setMenuTab("kids")}
@@ -3122,7 +3125,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                           >
                             Kids Menu ({kidsMenu.length})
                           </Button>
-                          <Button disabled={readOnly}
+                          <Button
                             variant={menuTab === "adults" ? "default" : "outline"}
                             size="sm"
                             onClick={() => setMenuTab("adults")}
@@ -3413,6 +3416,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                               notes: "",
                                               included: false,
                                               price: 0,
+                                              source: "additional",
                                             }]);
                                             setTimeout(() => {
                                               const el = document.querySelector(`[data-testid="input-menu-name-kids-0"]`) as HTMLElement;
@@ -3453,7 +3457,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                               notes: "",
                                               included: false,
                                               price: 0,
-                                              source: setMenuEnabled ? "additional" : undefined,
+                                              source: "additional",
                                             };
                                             setCurrentMenu(prev => [...prev, newItem]);
                                           }}
@@ -3553,7 +3557,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                         notes: "",
                                         included: false,
                                         price: 0,
-                                        source: setMenuEnabled ? "additional" : undefined,
+                                        source: "additional",
                                       }]);
                                       setTimeout(() => {
                                         const el = document.querySelector(`[data-testid="input-menu-name-adults-0"]`) as HTMLElement;
@@ -3590,7 +3594,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                         notes: "",
                                         included: false,
                                         price: 0,
-                                        source: setMenuEnabled ? "additional" : undefined,
+                                        source: "additional",
                                       }]);
                                     }}
                                     data-testid="button-add-menu-extra-adults"

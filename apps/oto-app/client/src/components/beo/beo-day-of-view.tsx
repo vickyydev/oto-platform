@@ -214,7 +214,7 @@ function KitchenMenuItemRow({ item, idx, menuItems, menuTab, onSave }: {
           type="button"
           className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer transition-colors ${item.source === "set_menu" ? "bg-blue-500/15 text-blue-600 border-blue-500/30 dark:text-blue-400" : "bg-amber-500/15 text-amber-600 border-amber-500/30 dark:text-amber-400"}`}
           onClick={() => {
-            const updated = menuItems.map((m, i) => i === idx ? { ...m, source: m.source === "set_menu" ? undefined : "set_menu" } : m);
+            const updated = menuItems.map((m, i) => i === idx ? { ...m, source: m.source === "set_menu" ? "additional" : "set_menu" } : m);
             onSave(updated);
           }}
           data-testid={`badge-menu-incl-${menuTab}-${idx}`}
@@ -1548,7 +1548,7 @@ export function BeoDayOfView({ eventId, onClose }: BeoDayOfViewProps) {
                                   <div
                                     className="text-sm text-muted-foreground text-center py-4 border border-dashed rounded-md cursor-pointer hover:bg-accent/30 hover:border-border transition-colors"
                                     onClick={() => {
-                                      const newItem: KitchenMenuLine = { id: `menu_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, itemName: "", quantity: 1, notes: "", included: true, price: 0 };
+                                      const newItem: KitchenMenuLine = { id: `menu_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, itemName: "", quantity: 1, notes: "", included: true, price: 0, source: "additional" };
                                       if (menuTab === "kids") saveKidsMenu([newItem]);
                                       else saveAdultsMenu([newItem]);
                                     }}
@@ -1575,7 +1575,7 @@ export function BeoDayOfView({ eventId, onClose }: BeoDayOfViewProps) {
                                       className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-amber-500/15 text-amber-600 border-amber-500/30 dark:text-amber-400 hover:bg-amber-500/25 transition-colors"
                                       onClick={() => {
                                         const current = menuTab === "kids" ? localKidsMenu : localAdultsMenu;
-                                        const newItem: KitchenMenuLine = { id: `menu_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, itemName: "", quantity: 1, notes: "", included: false, price: 0 };
+                                        const newItem: KitchenMenuLine = { id: `menu_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, itemName: "", quantity: 1, notes: "", included: false, price: 0, source: "additional" };
                                         const updated = [...current, newItem];
                                         if (menuTab === "kids") saveKidsMenu(updated);
                                         else saveAdultsMenu(updated);

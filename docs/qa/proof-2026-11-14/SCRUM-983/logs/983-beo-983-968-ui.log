@@ -1,0 +1,10 @@
+  ok  HIGH 983: stored text two steps to three and back; price text and line identity stay unchanged
+  ok  HIGH 983: read-only food and bar controls cannot change local state by pointer or keyboard
+  ok  HIGH 968: a loaded picker missing a coded product cannot claim not charged or a complete sum
+  ok  HIGH 983: public success shows the persisted server timestamp immediately and after reload on the park day
+  ok  HIGH 983: day-of text two steps to numeric three and writes that count
+  ok  MEDIUM review fix: read-only menu tabs still reveal the adults own dish while edits remain blocked
+  ok  MEDIUM review fix: mixed stored text and number counts infer the same menu in editor and day-of
+  ok  945 integration: explicit editor extras carry their source while a held unbadged row stays historical
+  ok  945 integration: day-of fresh EXTRA saves its tag; private SET toggle callback preserves other held rows
+beo-983-968-ui.check: 9 checks passed, 0 failed

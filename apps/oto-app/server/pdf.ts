@@ -742,7 +742,7 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
   // marked "adults only" — never a second list.
   // SCRUM-978: the kids' list the editor and the till read: `menus` (canonical, kitchenPlanDbDataOf in
   // beo-routes.ts), `simplifiedMenus` only for a plan of before that has no `menus` list.
-  const pdfKids = (Array.isArray(kp?.menus?.kids) ? kp!.menus!.kids : kp?.simplifiedMenus?.kids || []).map(item => ({ ...item, quantity: beoQuantityOf(item.quantity) }));
+  const pdfKids = (Array.isArray(kp?.menus?.kids) ? kp!.menus!.kids : kp?.simplifiedMenus?.kids || []).map(item => ({ ...item, quantity: beoQuantityOf("quantity" in item ? item.quantity : undefined) }));
   const pdfAdultLines = (kp?.menus?.adults ?? []).map(item => ({ ...item, quantity: beoQuantityOf(item.quantity) }));
   const pdfAdultsDiffer = !!kp && adultsDifferOf({ kids: pdfKids, adults: pdfAdultLines, adultsDiffer: kp.menus?.adultsDiffer });
   // SCRUM-978: an adults' line is marked beside the kids' row of its name only when that row's price

@@ -6,7 +6,8 @@
 import assert from "node:assert/strict";
 import { createRequire, Module } from "node:module";
 import { fileURLToPath } from "node:url";
-import { buildSync } from "esbuild";
+import { build } from "esbuild";
+import { readFileSync } from "node:fs";
 import { JSDOM } from "jsdom";
 
 const APP = fileURLToPath(new URL("../", import.meta.url));
@@ -35,7 +36,8 @@ g.confirm = win.confirm;
 const doc = dom.window.document;
 
 // The editor, compiled as Vite builds it, with the react-query and auth it runs on.
-const built = buildSync({
+const built = await build({
+  plugins: [{ name: "private-day-of-row-for-test", setup(b) { b.onLoad({ filter: /beo-day-of-view\.tsx$/ }, args => ({ contents: readFileSync(args.path, "utf8") + "\nexport { KitchenMenuItemRow };", loader: "tsx" })); } }],
   absWorkingDir: APP,
   bundle: true,
   platform: "node",
@@ -57,7 +59,7 @@ const built = buildSync({
       export { AuthContext } from './client/src/hooks/use-auth';
       export { Route } from 'wouter';
       export { default as MenuSelectPage, parkDayOf } from './client/src/pages/public/menu-select';
-      export { BeoDayOfView } from './client/src/components/beo/beo-day-of-view';
+      export { BeoDayOfView, KitchenMenuItemRow } from './client/src/components/beo/beo-day-of-view';
       export { BeoEventEditor } from './client/src/components/beo/beo-event-editor';
     `,
   },
@@ -67,7 +69,7 @@ const compiled = new Module(APP + "tests/beo-extra-price-ui.native.cjs") as any;
 compiled.filename = APP + "tests/beo-extra-price-ui.native.cjs";
 compiled.paths = nativeRequire.resolve.paths("react");
 compiled._compile(built.outputFiles[0].text, compiled.filename);
-const { React, act, createRoot, QueryClientProvider, queryClient, AuthContext, BeoEventEditor, BeoDayOfView, MenuSelectPage, Route, parkDayOf } = compiled.exports;
+const { React, act, createRoot, QueryClientProvider, queryClient, AuthContext, BeoEventEditor, BeoDayOfView, KitchenMenuItemRow, MenuSelectPage, Route, parkDayOf } = compiled.exports;
 
 // ─── The server, as the screen sees it ───────────────────────────────────────
 
@@ -81,7 +83,7 @@ const TILL = [
   item("CF-66-1", "Kids juice Apple", "Juice", "bar", 9_050),
 ];
 type Reading = { parks: Array<Record<string, unknown>> };
-let tillAnswer: (parkId: string | null) => Reading = (parkId) => ({
+const tillAnswer: (parkId: string | null) => Reading = (parkId) => ({
   parks: [{ parkId: parkId ?? PARK, parkName: "ZZ TEST Floresta", status: "ok", message: null, items: TILL, readAt: "2026-11-12T07:00:00.000Z" }],
 });
 
@@ -222,6 +224,7 @@ await check("HIGH 983: public success shows the persisted server timestamp immed
   const render=async()=>{await act(async()=>{root.render(React.createElement(QueryClientProvider,{client:queryClient},React.createElement(Route,{path:"/menu-select/:token"},React.createElement(MenuSelectPage))));});await settle(10);};
   await render();const option=doc.querySelector('button[role="radio"]') as HTMLButtonElement;assert.ok(option);await act(async()=>{option.click();});await settle();await click("button-submit-menu-selections");
   const words="Submitted on "+parkDayOf(persistedAt,"Asia/Bangkok");assert.ok(doc.body.textContent?.includes(words),"immediate success uses the returned persisted stamp");
+  await act(async()=>{root.render(null);});await render();assert.ok(doc.body.textContent?.includes(words),"cached in-app visit keeps the receipt date");assert.ok(doc.body.textContent?.includes("Pizza: ZZ TEST pizza"),"cached receipt retains the actual server choices");
   await act(async()=>{root.render(null);});queryClient.clear();await render();assert.ok(doc.body.textContent?.includes(words),"reload uses the same persisted stamp");
 });
 
@@ -231,6 +234,44 @@ await check("HIGH 983: day-of text two steps to numeric three and writes that co
   assert.equal(text("text-menu-qty-kids-0"),"2");const before=asked.length;await click("button-qty-plus-kids-0");assert.equal(text("text-menu-qty-kids-0"),"3");
   const put=asked.slice(before).find(x=>x.method==="PUT"&&x.path===`/api/events/${id}/beo/kitchen-plan`);assert.ok(put);assert.equal((put.body as {menus:{kids:Line[]}}).menus.kids[0].quantity,3);
 });
+await check("MEDIUM review fix: read-only menu tabs still reveal the adults own dish while edits remain blocked",async()=>{
+  const id="66666666-6666-4666-8666-666666666983";BEOS.set(id,{date:WEEKDAY,kids:[line("k1","ZZ TEST kids noodles")],adults:[line("a1","ZZ TEST adults salad",{quantity:4,price:180})],adultsDiffer:true,bar:[]});
+  await openBeo(id,true);assert.equal((required("button-menu-tab-adults") as HTMLButtonElement).disabled,false);await click("button-menu-tab-adults");
+  assert.ok(text("input-menu-name-adults-0").includes("ZZ TEST adults salad"));assert.equal((required("button-qty-plus-adults-0") as HTMLButtonElement).disabled,true);
+  await click("input-menu-name-adults-0");assert.notEqual(required("input-menu-name-adults-0").tagName,"INPUT");
+  await click("button-menu-tab-kids");assert.ok(text("input-menu-name-kids-0").includes("ZZ TEST kids noodles"));
+});
+
+await check("MEDIUM review fix: mixed stored text and number counts infer the same menu in editor and day-of",async()=>{
+  const id="77777777-7777-4777-8777-777777777983";BEOS.set(id,{date:WEEKDAY,kids:[line("k1","ZZ TEST same dish",{quantity:"2" as unknown as number,productCode:"CF-24"})],adults:[line("a1","ZZ TEST same dish",{quantity:2,productCode:"CF-24"})],bar:[]});
+  await openBeo(id);await click("button-menu-tab-adults");assert.ok(byTestId("adults-menu-mirror"),"legacy equal published counts keep the same inferred menu");
+  queryClient.clear();await act(async()=>{root.render(React.createElement(QueryClientProvider,{client:queryClient},React.createElement(AuthContext.Provider,{value:auth},React.createElement(BeoDayOfView,{eventId:id,onClose:()=>undefined}))));});await settle(10);await click("button-toggle-kitchen-plan");
+  await click("button-menu-tab-adults");assert.ok(byTestId("adults-menu-mirror"),"day-of agrees with editor and PDF counts");
+});
+await check("945 integration: explicit editor extras carry their source while a held unbadged row stays historical", async()=>{
+  const id="88888888-8888-4888-8888-888888888983";
+  BEOS.set(id,{date:WEEKDAY,kids:[line("legacy","ZZ TEST held historical"),line("chosen","ZZ TEST selected set",{source:"set_menu"})],bar:[]});
+  await openBeo(id);
+  await click("badge-menu-incl-kids-1");
+  let body=await saved();assert.equal(body.kitchenPlan.menus.kids[0].source,undefined);assert.equal(body.kitchenPlan.menus.kids[1].source,"additional");
+  await click("input-menu-name-kids-0");
+  await act(async()=>{required("input-menu-name-kids-0").dispatchEvent(new dom.window.KeyboardEvent("keydown",{key:"Enter",bubbles:true}));});await settle();
+  body=await saved();assert.equal(body.kitchenPlan.menus.kids[0].source,undefined);assert.equal(body.kitchenPlan.menus.kids[1].source,"additional","Enter creates an explicit EXTRA");
+  await click("button-add-menu-extra-kids");body=await saved();assert.equal(body.kitchenPlan.menus.kids.at(-1)?.source,"additional");
+  const empty="99999999-9999-4999-8999-999999999983";BEOS.set(empty,{date:WEEKDAY,kids:[],bar:[]});await openBeo(empty);
+  await click("button-add-first-menu-kids");body=await saved();assert.equal(body.kitchenPlan.menus.kids[0].source,"additional");
+});
+await check("945 integration: day-of fresh EXTRA saves its tag; private SET toggle callback preserves other held rows",async()=>{
+  const id="aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaa983";BEOS.set(id,{date:WEEKDAY,kids:[],bar:[]});queryClient.clear();
+  await act(async()=>{root.render(React.createElement(QueryClientProvider,{client:queryClient},React.createElement(AuthContext.Provider,{value:auth},React.createElement(BeoDayOfView,{eventId:id,onClose:()=>undefined}))));});await settle(10);await click("button-toggle-kitchen-plan");
+  const before=asked.length;await click("button-add-first-menu-kids");const put=asked.slice(before).find(x=>x.method==="PUT"&&x.path===`/api/events/${id}/beo/kitchen-plan`);assert.ok(put);assert.equal((put.body as {menus:{kids:Line[]}}).menus.kids[0].source,"additional");
+  // The full day-of page filters SET rows out of its extra editor. Mount the actual
+  // private row via a test-only export to exercise its explicit badge-off callback.
+  const held=line("held","ZZ TEST historical");const chosen=line("set","ZZ TEST set",{source:"set_menu"});let updated:Line[]|undefined;
+  await act(async()=>{root.render(React.createElement(KitchenMenuItemRow,{item:chosen,idx:1,menuItems:[held,chosen],menuTab:"kids",onSave:(rows:Line[])=>{updated=rows;}}));});await settle();await click("badge-menu-incl-kids-1");
+  assert.ok(updated);assert.equal(updated[0].source,undefined);assert.equal(updated[1].source,"additional");assert.equal(updated[1].id,"set");
+});
+
 await act(async()=>{root.unmount();});
 console.log(`beo-983-968-ui.check: ${checks} checks passed, ${failures.length} failed`);
-process.exit(checks===5&&failures.length===0?0:1);
+process.exit(checks===9&&failures.length===0?0:1);
