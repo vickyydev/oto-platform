@@ -19,3 +19,5 @@ After own gates: commit/freeze exact correction candidate, independent source re
 Tail script uses NODE_OPTIONS=--max-old-space-size=4096, matching the successful merged-API whole typecheck calibration (handover preserved its prior3072MB OOM). No heap-related failure is a source diagnostic or a skipped check.
 
 Tail-01 completed:4/4 API review, zero-byte whole API types, both new files lint0/0, pre-B app ratchet414/414. All outputs retained, tail-01/receipt.json binds logs. No active heavy command remains. After app983 lands, rebase and run actual0051 whole17 plus shared-route/adults regression files against combined source, retaining the new413 ceiling. Own independent source review remains required before landing.
+
+Combined source now passes: rebased cleanly onto landed983source7455bb8ad; whole71 view/shared-route/adult checks, two migration passes and tightened413/413 ratchet exit0. Slot released immediately for app983 native proof. No945deploy/push during its fixture window. validation.json binds six source blobs and all retained artifacts; final source verdict follows its independent receipt check.

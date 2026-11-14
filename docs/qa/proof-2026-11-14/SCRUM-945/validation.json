@@ -1,0 +1,174 @@
+{
+  "capturedAt": "2026-11-14T09:07:47.135992+00:00",
+  "sourceCandidate": "8c460fc3c3ec8635004e7f3f26bbd6fde3517a8b",
+  "base": "7455bb8adf83f1466c2baab178ece6e72a840958",
+  "source": [
+    {
+      "file": ".github/workflows/ci.yml",
+      "gitBlob": "2113e76b4dd8026a080caf068426238ed92e11f3",
+      "sha256": "a393ac5a826d2938117668df905e1f4ed71b35522e749b32225bf3eb1eee24fe"
+    },
+    {
+      "file": "apps/api/test/s945-view-review.test.ts",
+      "gitBlob": "69b32490244156e0fb4e7428d0d60a225f898200",
+      "sha256": "951cfa2e54600a1f2b1b39e3359407f7a4b32aa632e7210dc441ae9a3af6ce11"
+    },
+    {
+      "file": "apps/oto-app/migrations/0051_otoapp_set_audience_provenance.sql",
+      "gitBlob": "1be8c1a0c6272a456cebfb270d8ace5a5c86909c",
+      "sha256": "b3cf3bd3106c662307e75576931e8018f55a6d309ae8b211a38b177a17d2f806"
+    },
+    {
+      "file": "apps/oto-app/migrations/meta/0051_snapshot.json",
+      "gitBlob": "f05b00c034fd93595752b8d4965806f3881c794b",
+      "sha256": "c90f0517297cdffe10eac8ec5b3a5d4e50f70daf385d4a6caad702878028b4ff"
+    },
+    {
+      "file": "apps/oto-app/migrations/meta/_journal.json",
+      "gitBlob": "1a9d6c511b629eefd950a087ee46cd22019fc2b9",
+      "sha256": "b46b37c14a49d6b1a10a74e0894e09b777148763804740a5955f82e5eb36c90f"
+    },
+    {
+      "file": "apps/oto-app/tests/s945-kitchen-view.check.ts",
+      "gitBlob": "075057ca4367d68ed3965fd5cd2fdd424c6d4112",
+      "sha256": "bf5c0b3a69f4d871288e5f4d8957a68f031c8a65ddb9e5648012a44cfe66e0e8"
+    }
+  ],
+  "gates": {
+    "actualViewControlledOriginal": {
+      "passed": 11,
+      "failed": 6,
+      "wholeFiles": 1,
+      "attempt": "02"
+    },
+    "actualViewFixed": {
+      "passed": 17,
+      "failed": 0,
+      "attempt": "02"
+    },
+    "priorRegressionChecks": 49,
+    "combined983Source": {
+      "passed": 71,
+      "completeFiles": 5,
+      "databaseExit": 0,
+      "migrations": 2,
+      "migrationExits": [
+        0,
+        0
+      ],
+      "ratchetExit": 0,
+      "ratchetActual": 413,
+      "ratchetCeiling": 413,
+      "source": "8c460fc3c3ec8635004e7f3f26bbd6fde3517a8b"
+    },
+    "tail": {
+      "reviewPassed": 4,
+      "reviewCompleteFiles": 1,
+      "wholeApiTypeDiagnosticBytes": 0,
+      "newFilesLintDiagnostics": 0,
+      "inheritedLintAllowance": 0,
+      "pre983RatchetActual": 414,
+      "pre983RatchetCeiling": 414
+    }
+  },
+  "sqlBinding": {
+    "gitLfSha256": "b3cf3bd3106c662307e75576931e8018f55a6d309ae8b211a38b177a17d2f806",
+    "runtimeCrlfSha256": "6bbc2966727198d99a1c4a0c63b77c710ac87c4ada041765304baa362756b21e",
+    "sameSqlAfterNewlineNormalization": true,
+    "note": "Attempt02 stored the CRLF runtime bytes. Current Git LF converted to CRLF reproduces that exact hash; historical receipt retained."
+  },
+  "logs": [
+    {
+      "file": "attempt-01/applied-0050-red.log",
+      "size": 7097,
+      "sha256": "a2647dbb5e3c7b756083708b3f43ca839a39e0c81e2d2327575e73d444296099"
+    },
+    {
+      "file": "attempt-01/fixed-and-regressions.log",
+      "size": 12212,
+      "sha256": "fc7d8525156fa5493b6e60afc516d98c58c570d349fc37530dd15c636615ab8c"
+    },
+    {
+      "file": "attempt-01/receipt.json",
+      "size": 1092,
+      "sha256": "90a6ce4ca0adabc1ad2ded39466d5cedbf6ef31f0cd193440a873911c63965b0"
+    },
+    {
+      "file": "attempt-01/test-source.ts",
+      "size": 13664,
+      "sha256": "a09c47e32ab6793fde4aea6d178cc909951d704e5de89ba9c07c39dd695a05aa"
+    },
+    {
+      "file": "attempt-02/applied-0050-red.log",
+      "size": 7093,
+      "sha256": "61a913d7d27ea8b846d26318f4943a6f04bd7f5e04b6f93e755c139202ba90b8"
+    },
+    {
+      "file": "attempt-02/fixed-and-regressions.log",
+      "size": 6103,
+      "sha256": "4cccd6bf9c0a9011dc5d9d23cc3f4eaa2a6964816973d87df3b52854c615996f"
+    },
+    {
+      "file": "attempt-02/receipt.json",
+      "size": 619,
+      "sha256": "4db532d4caaa3f76c441c20b976b7343f8965c6d05ba9ce02f215f5eb27fbf11"
+    },
+    {
+      "file": "attempt-02/test-source.ts",
+      "size": 13719,
+      "sha256": "bf5c0b3a69f4d871288e5f4d8957a68f031c8a65ddb9e5648012a44cfe66e0e8"
+    },
+    {
+      "file": "tail-01/api-types.log",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tail-01/app-ratchet.log",
+      "size": 132757,
+      "sha256": "7980b66f6cdea4e2fc704417255e1d4aeaac207181d3de5a56a7bf2163f8247e"
+    },
+    {
+      "file": "tail-01/receipt.json",
+      "size": 1534,
+      "sha256": "6335dc3704b674a155e1de4b755cb353783867931a7d57b3febc15d43cf32c91"
+    },
+    {
+      "file": "tail-01/review.log",
+      "size": 435,
+      "sha256": "673402af6db7f9909bf01331bc3edd51702354eb095acdf41506b1dea8018530"
+    },
+    {
+      "file": "tail-01/scoped-lint.json",
+      "size": 475,
+      "sha256": "a846551610eeb4c47bcdd16708236e6723f339d9d79faba91fd818cd346c2616"
+    },
+    {
+      "file": "tail-01/scoped-lint.log",
+      "size": 242,
+      "sha256": "fc3fbfaec2ca386486c8633516097410ea446eb59f7abb60ffc7bc017968b481"
+    },
+    {
+      "file": "combined-983-01/app-ratchet.log",
+      "size": 131932,
+      "sha256": "4efb246789a270cdf01057a8544fff640f65820dd8cf41eba8b4a14e84d628eb"
+    },
+    {
+      "file": "combined-983-01/combined-view-regressions.log",
+      "size": 12274,
+      "sha256": "c04e2a531a2294859c9bb1236cea8772cf6eb94b1c94fecb989b062fc99fa0bf"
+    },
+    {
+      "file": "combined-983-01/process-receipt.json",
+      "size": 200,
+      "sha256": "7c9e66e75468b9520842bd456127db5f9ef203a535b630a7b0609d0a011608ab"
+    }
+  ],
+  "limits": [
+    "Source review completed structurally, final bound receipt verdict pending",
+    "No945sourcepush/deploy/stagingfixture/sessionyet",
+    "Combined71 includes983 shared route/adult code changes against actual migrated0051",
+    "No new whole app build claimed for the SQL-only unit; app983 final build remains separate",
+    "Historical Q17/Q18, pricing/copy/holiday/access and kitchen timing choices remain held"
+  ]
+}
