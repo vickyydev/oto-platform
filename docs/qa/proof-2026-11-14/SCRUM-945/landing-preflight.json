@@ -1,0 +1,52 @@
+{
+  "capturedAt": "2026-11-14T09:30:31.997852+00:00",
+  "approvedCandidate": "2d017eb75290ee179fa3045689688c3c145aebfe",
+  "candidate": "6d6607f40507f85469b828c6731e97e5f13e67ec",
+  "mainBase": "a684d838b6af604cd82bb75fc97bf34d55563603",
+  "ownCommits": [
+    "6d6607f40507f85469b828c6731e97e5f13e67ec docs(qa): record independent BEO view approval",
+    "79d7a3a3ca1fd0b694860a37b21e61fdadd51cb2 docs(qa): bind combined app source and view checks",
+    "140537f2fbbab82663699d0c7fe67640c76f7458 docs(qa): bind completed BEO view tail validation",
+    "c81253e78e01160ce94d60b5b0ed4fe0a603ff6d fix(oto-app): bind SET audience to its template item"
+  ],
+  "sourceMatches": [
+    {
+      "file": ".github/workflows/ci.yml",
+      "gitBlob": "2113e76b4dd8026a080caf068426238ed92e11f3",
+      "sha256": "a393ac5a826d2938117668df905e1f4ed71b35522e749b32225bf3eb1eee24fe"
+    },
+    {
+      "file": "apps/api/test/s945-view-review.test.ts",
+      "gitBlob": "69b32490244156e0fb4e7428d0d60a225f898200",
+      "sha256": "951cfa2e54600a1f2b1b39e3359407f7a4b32aa632e7210dc441ae9a3af6ce11"
+    },
+    {
+      "file": "apps/oto-app/migrations/0051_otoapp_set_audience_provenance.sql",
+      "gitBlob": "1be8c1a0c6272a456cebfb270d8ace5a5c86909c",
+      "sha256": "b3cf3bd3106c662307e75576931e8018f55a6d309ae8b211a38b177a17d2f806"
+    },
+    {
+      "file": "apps/oto-app/migrations/meta/0051_snapshot.json",
+      "gitBlob": "f05b00c034fd93595752b8d4965806f3881c794b",
+      "sha256": "c90f0517297cdffe10eac8ec5b3a5d4e50f70daf385d4a6caad702878028b4ff"
+    },
+    {
+      "file": "apps/oto-app/migrations/meta/_journal.json",
+      "gitBlob": "1a9d6c511b629eefd950a087ee46cd22019fc2b9",
+      "sha256": "b46b37c14a49d6b1a10a74e0894e09b777148763804740a5955f82e5eb36c90f"
+    },
+    {
+      "file": "apps/oto-app/tests/s945-kitchen-view.check.ts",
+      "gitBlob": "075057ca4367d68ed3965fd5cd2fdd424c6d4112",
+      "sha256": "bf5c0b3a69f4d871288e5f4d8957a68f031c8a65ddb9e5648012a44cfe66e0e8"
+    }
+  ],
+  "journal": {
+    "priorLastIdx": 50,
+    "newIdx": 51,
+    "priorEntriesIdentical": true,
+    "snapshotDefinitionsIdentical": true
+  },
+  "runtimeSqlLfSha256": "b3cf3bd3106c662307e75576931e8018f55a6d309ae8b211a38b177a17d2f806",
+  "limits": "No staging acceptance inferred. Owner CI override applies; normal push and immediate named app deploy follow shared runtime release."
+}
