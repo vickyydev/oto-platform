@@ -1,0 +1,51 @@
+{
+  "source": "41158d2310ba4776dc2e1d03e435a8716d76556c",
+  "evidence": "1eed9150f6b14f48cb378b23160f272b0cdd41fb",
+  "at": "2026-11-14T08:56:59.061Z",
+  "tickets": {
+    "SCRUM-945": {
+      "before": {
+        "status": "In Progress",
+        "summary": "Kitchen plan to the till: points left by the reviews of SCRUM-906"
+      },
+      "after": "In Progress",
+      "commentId": "14776",
+      "attachments": [
+        {
+          "id": "13538",
+          "name": "2026-11-14-slip-01-native-before.png"
+        },
+        {
+          "id": "13539",
+          "name": "2026-11-14-slip-02-native-after.png"
+        },
+        {
+          "id": "13540",
+          "name": "2026-11-14-slip-03-staging-run-card.png"
+        }
+      ]
+    },
+    "SCRUM-966": {
+      "before": {
+        "status": "In Progress",
+        "summary": "Kitchen plan on the till: the BEO's \"kitchen required\" switch, the extras' amounts with a service charge, and points left by the reviews"
+      },
+      "after": "In Progress",
+      "commentId": "14777",
+      "attachments": [
+        {
+          "id": "13541",
+          "name": "2026-11-14-slip-01-native-before.png"
+        },
+        {
+          "id": "13542",
+          "name": "2026-11-14-slip-02-native-after.png"
+        },
+        {
+          "id": "13543",
+          "name": "2026-11-14-slip-03-staging-run-card.png"
+        }
+      ]
+    }
+  }
+}
