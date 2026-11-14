@@ -5,8 +5,16 @@
     "reviewedCommit": "d4c873ff4d2be64daf0baa831d88dd5e698ae629",
     "blockingFindings": 0
   },
-  "landing": "not pushed",
-  "staging": "not deployed or tested",
+  "landing": {
+    "sha": "c3186fee7ab0ea034a8adefc8da90e6c23a2eced",
+    "pushedAtBangkok": "2026-11-14 05:14",
+    "jira": "In Progress, source comment201"
+  },
+  "staging": {
+    "deployment": "dep-dbronrs9v7es73ch6s30",
+    "runtimeSha": "c3186fee7ab0ea034a8adefc8da90e6c23a2eced",
+    "nativeProof": "interrupted before first Save; exact fixture archived, both sessions401, browserclosed"
+  },
   "checks": {
     "aiFill": {
       "passed": 19,
@@ -114,5 +122,24 @@
     "jobs": 6,
     "appStepsPathSkipped": 113,
     "note": "Documentation-only main head has no run; prior actual product source is six-job green, not fresh app coverage"
+  },
+  "ci": {
+    "run": 43517660340,
+    "overall": "failure",
+    "pos": "failure",
+    "posJob": 132203640359,
+    "failed": 6,
+    "passed": 3896,
+    "localExactReproduction": {
+      "failed": 6,
+      "passed": 80,
+      "files": 3
+    },
+    "blindRetry": false,
+    "app": {
+      "status": "success",
+      "steps": 122,
+      "skipped": 0
+    }
   }
 }

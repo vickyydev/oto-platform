@@ -1,0 +1,50 @@
+{
+  "unit": "SCRUM-844",
+  "startedAt": "2026-11-13T22:19:05.283Z",
+  "expectedSha": "c3186fee7ab0ea034a8adefc8da90e6c23a2eced",
+  "phase": "clean interrupted proof for CI reproduction",
+  "fixtures": [
+    {
+      "id": "8b32ea55-5730-4546-b74c-665efc148dcc",
+      "title": "ZZ TEST 844 Legacy deposit 20261113221905",
+      "branchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+      "eventDate": "2099-12-01",
+      "createdAt": "2026-11-13T22:20:11.439Z",
+      "archived": true,
+      "archivedAt": "2026-11-13T22:23:24.302Z"
+    }
+  ],
+  "results": [],
+  "images": [],
+  "failures": [
+    {
+      "name": "TimeoutError",
+      "message": "locator.innerText: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.rdp-caption_label')\u001b[22m\n",
+      "phase": "save baseline native deposit",
+      "at": "2026-11-13T22:21:55.740Z"
+    }
+  ],
+  "role": "global_admin",
+  "branch": {
+    "id": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+    "name": "Oto Play Park, Central Floresta "
+  },
+  "runtimeAtAuth": "c3186fee7ab0ea034a8adefc8da90e6c23a2eced",
+  "browser": "157.0.4341.46",
+  "interruptedCleanup": {
+    "at": "2026-11-13T22:23:24.302Z",
+    "id": "8b32ea55-5730-4546-b74c-665efc148dcc",
+    "title": "ZZ TEST 844 Legacy deposit 20261113221905",
+    "archived": true,
+    "storedReceived": null,
+    "reason": "POS CI red; proof stopped before first Save for exact-SHA local reproduction"
+  },
+  "signout": {
+    "app": 200,
+    "launcher": 200,
+    "appReadback": 401,
+    "launcherReadback": 401,
+    "at": "2026-11-13T22:23:25.793Z"
+  },
+  "browserClosedAt": "2026-11-13T22:23:26.039Z"
+}

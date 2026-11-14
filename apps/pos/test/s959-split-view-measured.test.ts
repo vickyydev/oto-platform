@@ -74,7 +74,12 @@ if (browser && fixture && !EXACT) {
 
 let harness: SplitFixHarness;
 beforeAll(async () => {
-  if (browser) harness = await startSplitFixHarness(browser);
+  if (browser) {
+    harness = await startSplitFixHarness(browser);
+    // The recorded receipt is a weekday cart. Pin Date before its first navigation,
+    // clear of the branch's 05:00 rollover, without freezing rendering/timeout timers.
+    await harness.page.clock.setFixedTime(new Date('2026-11-12T05:00:00Z'));
+  }
 }, 180_000);
 afterAll(async () => {
   if (RECORD) writeFileSync(FIXTURE, `${JSON.stringify(recorded, null, 1)}\n`);

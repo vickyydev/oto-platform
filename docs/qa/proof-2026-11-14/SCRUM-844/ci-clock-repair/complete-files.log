@@ -1,0 +1,50 @@
+
+> @oto/pos@0.1.0 test C:\oto-lanes\codex-beo-money-stage3-20261114\apps\pos
+> vitest run "test/s768-free-socks-counter.test.ts" "test/s768-ticket-free-items.test.ts" "test/s959-split-view-measured.test.ts"
+
+
+ RUN  v3.2.7 C:/oto-lanes/codex-beo-money-stage3-20261114/apps/pos
+
+ ✓ test/s768-free-socks-counter.test.ts (6 tests) 31ms
+ ✓ test/s768-ticket-free-items.test.ts (12 tests) 64ms
+ ✓ test/s959-split-view-measured.test.ts (68 tests) 47568ms
+   ✓ SCRUM-959 in the split view: every label whole, inside its box, and on screen > (1) a two-line member name leaves all three rate cards whole on screen, 1440x900  2389ms
+   ✓ SCRUM-959 in the split view: every label whole, inside its box, and on screen > (3) the Membership Check's Phone and Nickname inside their cards, 1440x900  641ms
+   ✓ SCRUM-959 in the split view: every label whole, inside its box, and on screen > (5) Payment Successful: the captions whole, each heading clear of its count, 1440x900  809ms
+   ✓ SCRUM-959 in the split view: every label whole, inside its box, and on screen > (6) F&B: one row of categories, dishes on screen, every name clear of its badge and price of its plus, 1440x900  399ms
+   ✓ SCRUM-959 in the split view: every label whole, inside its box, and on screen > (6) F&B search results: every name clear of its badge and price of its plus, 1440x900  415ms
+   ✓ SCRUM-959 in the split view: every label whole, inside its box, and on screen > (7) the Shop's customer half: "Your Sale" clear of the language button, 1440x900  539ms
+   ✓ SCRUM-959 in the split view: every label whole, inside its box, and on screen > (1) a two-line member name leaves all three rate cards whole on screen, 1680x1050  725ms
+   ✓ SCRUM-959 in the split view: every label whole, inside its box, and on screen > (3) the Membership Check's Phone and Nickname inside their cards, 1680x1050  583ms
+   ✓ SCRUM-959 in the split view: every label whole, inside its box, and on screen > (5) Payment Successful: the captions whole, each heading clear of its count, 1680x1050  906ms
+   ✓ SCRUM-959 in the split view: every label whole, inside its box, and on screen > (6) F&B search results: every name clear of its badge and price of its plus, 1680x1050  391ms
+   ✓ SCRUM-959 in the split view: every label whole, inside its box, and on screen > (7) the Shop's customer half: "Your Sale" clear of the language button, 1680x1050  523ms
+   ✓ full width (a separate customer display): the layout is exactly as before > tiers-two-line@1024x768  767ms
+   ✓ full width (a separate customer display): the layout is exactly as before > identify@1024x768  529ms
+   ✓ full width (a separate customer display): the layout is exactly as before > confirm@1024x768  844ms
+   ✓ full width (a separate customer display): the layout is exactly as before > fnb-search@1024x768  371ms
+   ✓ full width (a separate customer display): the layout is exactly as before > tiers-two-line@1280x800  725ms
+   ✓ full width (a separate customer display): the layout is exactly as before > identify@1280x800  595ms
+   ✓ full width (a separate customer display): the layout is exactly as before > confirm@1280x800  757ms
+   ✓ full width (a separate customer display): the layout is exactly as before > fnb-search@1280x800  383ms
+   ✓ full width (a separate customer display): the layout is exactly as before > tiers-two-line@1440x900  762ms
+   ✓ full width (a separate customer display): the layout is exactly as before > identify@1440x900  547ms
+   ✓ full width (a separate customer display): the layout is exactly as before > confirm@1440x900  749ms
+   ✓ full width (a separate customer display): the layout is exactly as before > fnb-search@1440x900  407ms
+   ✓ full width (a separate customer display): the layout is exactly as before > tiers-two-line@1680x1050  722ms
+   ✓ full width (a separate customer display): the layout is exactly as before > identify@1680x1050  526ms
+   ✓ full width (a separate customer display): the layout is exactly as before > confirm@1680x1050  825ms
+   ✓ full width (a separate customer display): the layout is exactly as before > fnb-search@1680x1050  401ms
+   ✓ SCRUM-963 (9): the one-row categories move with a mouse in the split view > fnb-menu at 1440x900: the wheel moves the row and gives the page back at its ends  3316ms
+   ✓ SCRUM-963 (9): the one-row categories move with a mouse in the split view > fnb-menu at 1440x900: the arrows move it about a row's width, show and hide, and reach the last category  8569ms
+   ✓ SCRUM-963 (9): the one-row categories move with a mouse in the split view > merch-grid at 1440x900: the wheel moves the row and gives the page back at its ends  1615ms
+   ✓ SCRUM-963 (9): the one-row categories move with a mouse in the split view > merch-grid at 1440x900: the arrows move it about a row's width, show and hide, and reach the last category  2109ms
+   ✓ SCRUM-963 (9): the one-row categories move with a mouse in the split view > fnb-menu at 1440x900: the chosen category comes back into view when the row returns after a search  6047ms
+   ✓ SCRUM-963 (9): the one-row categories move with a mouse in the split view > full width at 1440x900: the categories wrap as before, with no arrows, and the wheel is the page’s  1212ms
+   ✓ SCRUM-975 (10): the category arrows sit at the row’s ends > fnb-menu at 1440x900: both arrows meet the row's ends, with no tile outside them  698ms
+   ✓ SCRUM-975 (10): the category arrows sit at the row’s ends > merch-grid at 1440x900: both arrows meet the row's ends, with no tile outside them  691ms
+
+ Test Files  3 passed (3)
+      Tests  86 passed (86)
+   Start at  12:33:39
+   Duration  49.91s (transform 1.84s, setup 0ms, collect 6.57s, tests 47.66s, environment 0ms, prepare 857ms)

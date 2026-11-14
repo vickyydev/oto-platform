@@ -1,0 +1,36 @@
+{
+  "baseSha": "c3186fee7ab0ea034a8adefc8da90e6c23a2eced",
+  "scope": "Three test files only; product/configuration/geometry unchanged",
+  "fixedInstant": "2026-11-12T05:00:00Z",
+  "bangkok": "Thursday noon",
+  "businessDayCutoff": "05:00",
+  "timers": "Only Date is fixed; rendering/timeouts stay real",
+  "red": {
+    "ciRun": 43517660340,
+    "ciFailed": 6,
+    "ciPassed": 3896,
+    "localFailed": 6,
+    "localPassed": 80,
+    "files": 3,
+    "repeated": false
+  },
+  "green": {
+    "passed": 86,
+    "files": 3,
+    "typesConfigurations": 3,
+    "typeDiagnostics": 0,
+    "lintExit": 0
+  },
+  "assertionLinesUnchanged": {
+    "s768Socks": 22,
+    "s768FreeItems": 33,
+    "s959Measured": 73
+  },
+  "snapshotsRerecorded": false,
+  "peerReview": "pending assigned reviewer",
+  "testSha256": {
+    "apps/pos/test/s768-free-socks-counter.test.ts": "5073017e66521e45c5363840e99f72f20ca12a9c81db00146a503a44768e74c5",
+    "apps/pos/test/s768-ticket-free-items.test.ts": "0c248ae1894b163e36b2671ce677828534f51e94efd5e61730469ca1828b08c1",
+    "apps/pos/test/s959-split-view-measured.test.ts": "4dbde571cd7c256d035caa46ba59015eef7f929754121fba6c2b7136406736d7"
+  }
+}

@@ -1,0 +1,290 @@
+
+> @oto/pos@0.1.0 test C:\oto-lanes\codex-beo-money-stage3-20261114\apps\pos
+> vitest run "test/s768-free-socks-counter.test.ts" "test/s768-ticket-free-items.test.ts" "test/s959-split-view-measured.test.ts"
+
+
+ RUN  v3.2.7 C:/oto-lanes/codex-beo-money-stage3-20261114/apps/pos
+
+ ❯ test/s768-free-socks-counter.test.ts (6 tests | 1 failed) 32ms
+   ✓ s768 — the socks counter on a live catalogue with Regular Socks > charges the socks product’s price, and ฿0 only for the unit the ticket bundles free 3ms
+   ✓ s768 — the socks counter on a live catalogue with Regular Socks > says so on the order panel: ฿50 each, one free 20ms
+   ✓ s768 — the socks counter on a live catalogue with Regular Socks > charges every sock at a tier the free socks were not set for 0ms
+   × s768 — the socks counter on a live catalogue with Regular Socks > sends the counter socks at the socks price, and its line total is the platform engine’s 7ms
+     → Cart lines were not priced under this pricing context (weekend): line-socks-768. Re-price with repriceCartLines, or pass staleLines: 'trust_stored' to re-derive a historical sale as recorded.
+   ✓ s768 — the socks counter on a live catalogue with Regular Socks > prices a sale with no socks exactly as before 0ms
+   ✓ s768 — the socks counter at a branch that sells no socks > charges ฿0 for counter socks and frees none, as before 0ms
+ ❯ test/s768-ticket-free-items.test.ts (12 tests | 1 failed) 63ms
+   ✓ s768 — the sale line > shows a free adult at ฿0 beside the adults charged, weekday and weekend 3ms
+   ✓ s768 — the sale line > shows a free child at ฿0 for the tier it was set for 1ms
+   ✓ s768 — the sale line > shows a free add-on at ฿0 under its own row, one row each on screen 1ms
+   ✓ s768 — the sale line > charges a ticket with no free items exactly as before 0ms
+   ✓ s768 — the figure the till sends is the platform engine’s > tourist, free adult 0ms
+   ✓ s768 — the figure the till sends is the platform engine’s > thai, free child 0ms
+   ✓ s768 — the figure the till sends is the platform engine’s > thai, free add-on 0ms
+   × s768 — the order panel > says how many kids, adults and add-ons are free, and charges the add-on less the free one 38ms
+     → expected '<div class="h-full flex flex-col"><di…' to contain '฿500 each · 1 free'
+   ✓ s768 — the order panel > says nothing is free on a ticket with no free items 5ms
+   ✓ s768 — a drop-off or nanny child’s own panel > charges the add-on less its free unit, as the order panel does 11ms
+   ✓ s768 — a held sale resumed after a reload > puts a free add-on’s two rows back as one add-on, and shows the same rows as the fresh sale 1ms
+   ✓ s768 — a held sale resumed after a reload > puts a sized free add-on’s sizes back in the order staff added them 1ms
+ ❯ test/s959-split-view-measured.test.ts (68 tests | 4 failed) 82647ms
+   ✓ SCRUM-959 in the split view: every label whole, inside its box, and on screen > (1) a two-line member name leaves all three rate cards whole on screen, 1440x900  39518ms
+   ✓ SCRUM-959 in the split view: every label whole, inside its box, and on screen > (3) the Membership Check's Phone and Nickname inside their cards, 1440x900  575ms
+   ✓ SCRUM-959 in the split view: every label whole, inside its box, and on screen > (5) Payment Successful: the captions whole, each heading clear of its count, 1440x900  749ms
+   ✓ SCRUM-959 in the split view: every label whole, inside its box, and on screen > (6) F&B: one row of categories, dishes on screen, every name clear of its badge and price of its plus, 1440x900 299ms
+   ✓ SCRUM-959 in the split view: every label whole, inside its box, and on screen > (6) F&B search results: every name clear of its badge and price of its plus, 1440x900  423ms
+   ✓ SCRUM-959 in the split view: every label whole, inside its box, and on screen > (7) the Shop: one row of categories, every name whole, the plus inside its tile, 1440x900 252ms
+   ✓ SCRUM-959 in the split view: every label whole, inside its box, and on screen > (7) the Shop's customer half: "Your Sale" clear of the language button, 1440x900  601ms
+   ✓ SCRUM-959 in the split view: every label whole, inside its box, and on screen > (1) a two-line member name leaves all three rate cards whole on screen, 1680x1050  715ms
+   ✓ SCRUM-959 in the split view: every label whole, inside its box, and on screen > (3) the Membership Check's Phone and Nickname inside their cards, 1680x1050  518ms
+   ✓ SCRUM-959 in the split view: every label whole, inside its box, and on screen > (5) Payment Successful: the captions whole, each heading clear of its count, 1680x1050  787ms
+   ✓ SCRUM-959 in the split view: every label whole, inside its box, and on screen > (6) F&B: one row of categories, dishes on screen, every name clear of its badge and price of its plus, 1680x1050 252ms
+   ✓ SCRUM-959 in the split view: every label whole, inside its box, and on screen > (6) F&B search results: every name clear of its badge and price of its plus, 1680x1050  382ms
+   ✓ SCRUM-959 in the split view: every label whole, inside its box, and on screen > (7) the Shop: one row of categories, every name whole, the plus inside its tile, 1680x1050 253ms
+   ✓ SCRUM-959 in the split view: every label whole, inside its box, and on screen > (7) the Shop's customer half: "Your Sale" clear of the language button, 1680x1050  509ms
+   ✓ SCRUM-959 in the split view: every label whole, inside its box, and on screen > (8) History's placeholder reads whole, 1024x768 231ms
+   ✓ SCRUM-959 in the split view: every label whole, inside its box, and on screen > (8) History's placeholder reads whole, 1280x800 215ms
+   ✓ SCRUM-959 in the split view: every label whole, inside its box, and on screen > (8) History's placeholder reads whole, 1440x900 232ms
+   ✓ SCRUM-959 in the split view: every label whole, inside its box, and on screen > (8) History's placeholder reads whole, 1680x1050 218ms
+   ✓ SCRUM-959 in the split view: every label whole, inside its box, and on screen > SCRUM-960 (3) the phone's End of Day stays the phone's width with a long band code, 390x844 233ms
+   ✓ SCRUM-959 in the split view: every label whole, inside its box, and on screen > SCRUM-960 (3) the phone's End of Day stays the phone's width with a long band code, 360x740 234ms
+   ✓ full width (a separate customer display): the layout is exactly as before > tiers-two-line@1024x768  711ms
+   ✓ full width (a separate customer display): the layout is exactly as before > identify@1024x768  528ms
+   × full width (a separate customer display): the layout is exactly as before > confirm@1024x768 814ms
+     → expected [ 'p|Oto Play Park|1', …(19) ] to deeply equal [ 'p|Oto Play Park|1', …(19) ]
+   ✓ full width (a separate customer display): the layout is exactly as before > fnb-menu@1024x768 265ms
+   ✓ full width (a separate customer display): the layout is exactly as before > fnb-search@1024x768  392ms
+   ✓ full width (a separate customer display): the layout is exactly as before > merch-grid@1024x768 274ms
+   ✓ full width (a separate customer display): the layout is exactly as before > tiers-two-line@1280x800  728ms
+   ✓ full width (a separate customer display): the layout is exactly as before > identify@1280x800  542ms
+   × full width (a separate customer display): the layout is exactly as before > confirm@1280x800 813ms
+     → expected [ 'p|Oto Play Park|1', …(19) ] to deeply equal [ 'p|Oto Play Park|1', …(19) ]
+   ✓ full width (a separate customer display): the layout is exactly as before > fnb-menu@1280x800 266ms
+   ✓ full width (a separate customer display): the layout is exactly as before > fnb-search@1280x800  367ms
+   ✓ full width (a separate customer display): the layout is exactly as before > merch-grid@1280x800 238ms
+   ✓ full width (a separate customer display): the layout is exactly as before > tiers-two-line@1440x900  713ms
+   ✓ full width (a separate customer display): the layout is exactly as before > identify@1440x900  590ms
+   × full width (a separate customer display): the layout is exactly as before > confirm@1440x900 822ms
+     → expected [ 'p|Oto Play Park|1', …(19) ] to deeply equal [ 'p|Oto Play Park|1', …(19) ]
+   ✓ full width (a separate customer display): the layout is exactly as before > fnb-menu@1440x900 252ms
+   ✓ full width (a separate customer display): the layout is exactly as before > fnb-search@1440x900  368ms
+   ✓ full width (a separate customer display): the layout is exactly as before > merch-grid@1440x900 236ms
+   ✓ full width (a separate customer display): the layout is exactly as before > tiers-two-line@1680x1050  711ms
+   ✓ full width (a separate customer display): the layout is exactly as before > identify@1680x1050  510ms
+   × full width (a separate customer display): the layout is exactly as before > confirm@1680x1050 797ms
+     → expected [ 'p|Oto Play Park|1', …(19) ] to deeply equal [ 'p|Oto Play Park|1', …(19) ]
+   ✓ full width (a separate customer display): the layout is exactly as before > fnb-menu@1680x1050 251ms
+   ✓ full width (a separate customer display): the layout is exactly as before > fnb-search@1680x1050  350ms
+   ✓ full width (a separate customer display): the layout is exactly as before > merch-grid@1680x1050 237ms
+   ✓ the harness draws each page's own frame > pages/Till.tsx: flex-1 overflow-hidden relative p-6 2ms
+   ✓ the harness draws each page's own frame > pages/Till.tsx: w-[360px] min-w-0 bg-sidebar flex flex-col p-6 overflow-y-auto 1ms
+   ✓ the harness draws each page's own frame > pages/Till.tsx: flex h-full min-h-0 flex-col 1ms
+   ✓ the harness draws each page's own frame > pages/Till.tsx: 'w-1/2 border-r border-foreground/10' : 'w-full'} h-full min-w-0 1ms
+   ✓ the harness draws each page's own frame > pages/OrderStation.tsx: flex-1 min-w-0 flex flex-col p-6 border-r bg-card/20 1ms
+   ✓ the harness draws each page's own frame > pages/OrderStation.tsx: w-[380px] shrink-0 bg-sidebar p-6 overflow-y-auto 1ms
+   ✓ the harness draws each page's own frame > pages/OrderStation.tsx: h-full w-full flex flex-col bg-background text-foreground overflow-hidden 1ms
+   ✓ the harness draws each page's own frame > pages/MerchStation.tsx: min-w-0 flex flex-col bg-card/20 1ms
+   ✓ the harness draws each page's own frame > pages/MerchStation.tsx: 'flex-1 p-6 border-r' 1ms
+   ✓ the harness draws each page's own frame > pages/MerchStation.tsx: 'w-[380px] p-6 overflow-y-auto' 1ms
+   ✓ the harness draws each page's own frame > pages/History.tsx: mx-auto h-full max-w-5xl flex flex-col min-h-0 1ms
+   ✓ the harness draws each page's own frame > pages/History.tsx: shrink-0 mb-4 flex items-center gap-3 1ms
+   ✓ the harness draws each page's own frame > pages/History.tsx: w-full h-12 pl-12 pr-12 placeholder-shown:pr-4 rounded-xl bg-muted/50 border border-border text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 1ms
+   ✓ the harness draws each page's own frame > pages/History.tsx: h-12 pl-9 pr-3 rounded-xl bg-muted/50 border border-border text-base text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 1ms
+   ✓ the harness draws each page's own frame > MobileTodayPage: flex-1 min-h-0 1ms
+   ✓ the harness draws each page's own frame > MobileEndOfDayTab: space-y-3 pb-4 1ms
+   ✓ SCRUM-963 (9): the one-row categories move with a mouse in the split view > fnb-menu at 1440x900: the wheel moves the row and gives the page back at its ends  3242ms
+   ✓ SCRUM-963 (9): the one-row categories move with a mouse in the split view > fnb-menu at 1440x900: the arrows move it about a row's width, show and hide, and reach the last category  7817ms
+   ✓ SCRUM-963 (9): the one-row categories move with a mouse in the split view > merch-grid at 1440x900: the wheel moves the row and gives the page back at its ends  1542ms
+   ✓ SCRUM-963 (9): the one-row categories move with a mouse in the split view > merch-grid at 1440x900: the arrows move it about a row's width, show and hide, and reach the last category  2041ms
+   ✓ SCRUM-963 (9): the one-row categories move with a mouse in the split view > fnb-menu at 1440x900: the chosen category comes back into view when the row returns after a search  5897ms
+   ✓ SCRUM-963 (9): the one-row categories move with a mouse in the split view > full width at 1440x900: the categories wrap as before, with no arrows, and the wheel is the page’s  1120ms
+   ✓ SCRUM-975 (10): the category arrows sit at the row’s ends > fnb-menu at 1440x900: both arrows meet the row's ends, with no tile outside them  683ms
+   ✓ SCRUM-975 (10): the category arrows sit at the row’s ends > merch-grid at 1440x900: both arrows meet the row's ends, with no tile outside them  653ms
+node.exe :
+At C:\Users\waqar\AppData\Roaming\npm\pnpm.ps1:24 char:5
++     & "node$exe"  "$basedir/node_modules/pnpm/bin/pnpm.cjs" $args
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 6 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/s768-free-socks-counter.test.ts > s768 — the socks counter on a live catalogue with Regular Socks > sends
+the counter socks at the socks price, and its line total is the platform engine’s
+Error: Cart lines were not priced under this pricing context (weekend): line-socks-768. Re-price with
+repriceCartLines, or pass staleLines: 'trust_stored' to re-derive a historical sale as recorded.
+ ❯ computeTicketCartTotals ../../packages/shared/src/cart-totals.ts:649:13
+    647|     const stale = findStaleLines(lines, ctx);
+    648|     if (stale.length > 0) {
+    649|       throw new Error(
+       |             ^
+    650|         `Cart lines were not priced under this pricing context (${ctx.…
+    651|           `${stale.join(', ')}. Re-price with repriceCartLines, or pas…
+ ❯ Module.localQuote src/api/sales.ts:1479:18
+ ❯ test/s768-free-socks-counter.test.ts:184:64
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/6]⎯
+
+ FAIL  test/s768-ticket-free-items.test.ts > s768 — the order panel > says how many kids, adults and add-ons are free,
+and charges the add-on less the free one
+AssertionError: expected '<div class="h-full flex flex-col"><di…' to contain '฿500 each · 1 free'
+
+Expected: "฿500 each · 1 free"
+Received: "<div class="h-full flex flex-col"><div class="flex items-center justify-between mb-2"><h2 class="text-2xl
+font-bold">Current Order</h2><span class="px-3 py-1 rounded-full bg-primary/20 text-primary text-sm font-bold
+uppercase tracking-wider">tourist</span></div><div dir="ltr" class="relative overflow-hidden flex-1 min-h-28 -mx-6
+px-6" style="position:relative;--radix-scroll-area-corner-width:0px;--radix-scroll-area-corner-height:0px"><style>[data
+-radix-scroll-area-viewport]{scrollbar-width:none;-ms-overflow-style:none;-webkit-overflow-scrolling:touch;}[data-radix
+-scroll-area-viewport]::-webkit-scrollbar{display:none}</style><div data-radix-scroll-area-viewport="" class="h-full
+w-full rounded-[inherit]" style="overflow-x:hidden;overflow-y:hidden"><div style="min-width:100%;display:table"><div
+class="space-y-2.5"><div class="p-3 rounded-xl bg-card border group relative transition-all "><div class="flex
+justify-between items-start mb-1.5 gap-2"><div class="font-bold text-base flex items-center gap-2 min-w-0"><span
+class="truncate">ZZ TEST Two hours</span></div><div class="font-bold text-base shrink-0">฿1090</div></div><div
+class="space-y-1.5 mt-2"><div class="flex items-center justify-between gap-2"><span class="flex items-center gap-2
+text-sm text-foreground min-w-0"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide
+lucide-baby w-4 h-4 text-muted-foreground shrink-0" aria-hidden="true"><path d="M10 16c.5.3 1.2.5 2 .5s1.5-.2
+2-.5"></path><path d="M15 12h.01"></path><path d="M19.38 6.813A9 9 0 0 1 20.8 10.2a2 2 0 0 1 0 3.6 9 9 0 0 1-17.6 0 2
+2 0 0 1 0-3.6A9 9 0 0 1 12 3c2 0 3.5 1.1 3.5 2.5s-.9 2.5-2 2.5c-.8 0-1.5-.4-1.5-1"></path><path d="M9
+12h.01"></path></svg><span class="truncate">Kids</span><span class="text-xs text-muted-foreground tabular-nums
+shrink-0">฿600 each</span></span><div class="flex items-center gap-1.5 shrink-0"><button type="button"
+aria-label="Remove one Kids" class="w-8 h-8 rounded-md border bg-background flex items-center justify-center
+transition-transform hover:bg-muted active:scale-90 disabled:opacity-30 disabled:pointer-events-none"><svg
+xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-minus w-4 h-4"
+aria-hidden="true"><path d="M5 12h14"></path></svg></button><span class="w-7 text-center font-bold
+tabular-nums">1</span><button type="button" aria-label="Add one Kids" class="w-8 h-8 rounded-md bg-primary
+text-primary-foreground flex items-center justify-center transition-transform hover:bg-primary/90
+active:scale-90"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus w-4
+h-4" aria-hidden="true"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg></button></div></div><div
+class="flex items-center justify-between gap-2"><span class="flex items-center gap-2 text-sm text-foreground
+min-w-0"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user w-4
+h-4 text-muted-foreground shrink-0" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4
+4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span class="truncate">Adults</span><span class="text-xs
+text-muted-foreground tabular-nums shrink-0">฿600 each · 1 free</span></span><div class="flex items-center gap-1.5
+shrink-0"><button type="button" aria-label="Remove one Adults" class="w-8 h-8 rounded-md border bg-background flex
+items-center justify-center transition-transform hover:bg-muted active:scale-90 disabled:opacity-30
+disabled:pointer-events-none"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide
+lucide-minus w-4 h-4" aria-hidden="true"><path d="M5 12h14"></path></svg></button><span class="w-7 text-center
+font-bold tabular-nums">2</span><button type="button" aria-label="Add one Adults" class="w-8 h-8 rounded-md bg-primary
+text-primary-foreground flex items-center justify-center transition-transform hover:bg-primary/90
+active:scale-90"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus w-4
+h-4" aria-hidden="true"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg></button></div></div><div
+class="flex items-center justify-between gap-2"><span class="flex items-center gap-2 text-sm text-foreground
+min-w-0"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-footprints
+w-4 h-4 text-muted-foreground shrink-0" aria-hidden="true"><path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6
+4.5-6C9.37 2 10 3.8 10 5.5c0 3.11-2 5.66-2 8.68V16a2 2 0 1 1-4 0Z"></path><path d="M20 20v-2.38c0-2.12 1.03-3.12
+1-5.62-.03-2.72-1.49-6-4.5-6C14.63 6 14 7.8 14 9.5c0 3.11 2 5.66 2 8.68V20a2 2 0 1 0 4 0Z"></path><path d="M16
+17h4"></path><path d="M4 13h4"></path></svg><span class="truncate">Regular Socks</span><span class="text-xs
+text-muted-foreground tabular-nums shrink-0">฿50 each</span></span><div class="flex items-center gap-1.5
+shrink-0"><button type="button" aria-label="Remove one Regular Socks" disabled="" class="w-8 h-8 rounded-md border
+bg-background flex items-center justify-center transition-transform hover:bg-muted active:scale-90 disabled:opacity-30
+disabled:pointer-events-none"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide
+lucide-minus w-4 h-4" aria-hidden="true"><path d="M5 12h14"></path></svg></button><span class="w-7 text-center
+font-bold tabular-nums">0</span><button type="button" aria-label="Add one Regular Socks" class="w-8 h-8 rounded-md
+bg-primary text-primary-foreground flex items-center justify-center transition-transform hover:bg-primary/90
+active:scale-90"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus w-4
+h-4" aria-hidden="true"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg></button></div></div><div
+class="pt-1 space-y-1 text-sm text-muted-foreground"><div><div class="flex items-center justify-between gap-2"><span
+class="flex items-center gap-2 min-w-0"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24
+24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide
+lucide-shopping-bag w-4 h-4 shrink-0" aria-hidden="true"><path d="M16 10a4 4 0 0 1-8 0"></path><path d="M3.103
+6.034h17.794"></path><path d="M3.4 5.467a2 2 0 0 0-.4 1.2V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.667a2 2 0 0
+0-.4-1.2l-2-2.667A2 2 0 0 0 17 2H7a2 2 0 0 0-1.6.8z"></path></svg><span class="truncate">Grip Socks × 2 · 1
+free</span></span><span class="tabular-nums shrink-0">฿90</span></div></div></div></div><button class="inline-flex
+items-center justify-center gap-2 whitespace-nowrap text-sm font-medium focus-visible:outline-none
+focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50
+[&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 hover-elevate active-elevate-2 border
+border-transparent absolute -top-2 -right-2 h-8 w-8 rounded-full bg-destructive text-destructive-foreground opacity-0
+group-hover:opacity-100 transition-opacity"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0
+0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+class="lucide lucide-trash2 lucide-trash-2 w-4 h-4" aria-hidden="true"><path d="M10 11v6"></path><path d="M14
+11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0
+0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button></div></div></div></div></div><div class="mt-4 space-y-3 pt-4
+border-t"><button class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium
+transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none
+disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 hover-elevate
+active-elevate-2 border [border-color:var(--button-outline)] shadow-xs active:shadow-none min-h-9 px-4 py-2 w-full
+gap-2 border-dashed"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide
+lucide-badge-percent w-4 h-4" aria-hidden="true"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1
+4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"></path><path
+d="m15 9-6 6"></path><path d="M9 9h.01"></path><path d="M15 15h.01"></path></svg>Add manual discount</button><div
+class="space-y-2 text-lg"><div class="flex justify-between
+text-muted-foreground"><span>Subtotal</span><span>฿1090</span></div><div class="flex justify-between
+text-muted-foreground text-sm"><span>VAT included</span><span class="tabular-nums">฿84.39</span></div><div
+data-orientation="horizontal" role="none" class="shrink-0 bg-border h-[1px] w-full"></div><div class="flex
+justify-between font-bold text-2xl pt-2"><span>Total</span><span class="text-primary">฿1290</span></div></div><div
+class="grid grid-cols-3 gap-3 pt-2"><button class="inline-flex items-center justify-center gap-2 whitespace-nowrap
+text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring
+disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4
+[&amp;_svg]:shrink-0 hover-elevate active-elevate-2 border [border-color:var(--button-outline)] shadow-xs
+active:shadow-none min-h-10 rounded-md px-8 col-span-1">Cancel</button><button class="inline-flex items-center
+justify-center gap-2 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-1
+focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none
+[&amp;_svg]:size-4 [&amp;_svg]:shrink-0 hover-elevate active-elevate-2 bg-primary text-primary-foreground border
+border-primary-border min-h-10 rounded-md px-8 col-span-2 text-xl font-bold h-14">Pay ฿1290</button></div></div></div>"
+
+ ❯ test/s768-ticket-free-items.test.ts:138:18
+    136|     expect(lineFreeNotes(tourist)).toEqual({ adults: '1 free', addOns:…
+    137|     const html = panel(tourist);
+    138|     expect(html).toContain('฿500 each · 1 free');
+       |                  ^
+    139|     expect(html).toContain('Grip Socks × 2 · 1 free');
+    140|     expect(html).toContain('฿90</span>');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/6]⎯
+
+ FAIL  test/s959-split-view-measured.test.ts > full width (a separate customer display): the layout is exactly as
+before > confirm@1024x768
+ FAIL  test/s959-split-view-measured.test.ts > full width (a separate customer display): the layout is exactly as
+before > confirm@1280x800
+ FAIL  test/s959-split-view-measured.test.ts > full width (a separate customer display): the layout is exactly as
+before > confirm@1440x900
+ FAIL  test/s959-split-view-measured.test.ts > full width (a separate customer display): the layout is exactly as
+before > confirm@1680x1050
+AssertionError: expected [ 'p|Oto Play Park|1', …(19) ] to deeply equal [ 'p|Oto Play Park|1', …(19) ]
+
+- Expected
++ Received
+
+@@ -1,10 +1,10 @@
+  [
+    "p|Oto Play Park|1",
+    "h2|Payment Successful|1",
+    "p|Receipt Z88401-000001 • ฿1040 • Cash|1",
+-   "p|VAT included ฿68.04|1",
++   "p|VAT included ฿77.85|1",
+    "p|Thank you for visiting! · Tax ID 0105500000000|1",
+    "h3|Bracelets to Print|1",
+    "span|2 total|1",
+    "div|1 × Child bracelet|1",
+    "div|1 Hour • 1 Hour Play|1",
+
+ ❯ pinLayout test/s959-split-view-measured.test.ts:118:44
+    116|   const before = fixture?.layouts[id];
+    117|   expect(before, `a recorded layout for ${id}`).toBeDefined();
+    118|   expect(reading.layout.map((l) => l.key)).toEqual(before!.map((l) => …
+       |                                            ^
+    119|   expect(reading.textLines).toEqual(fixture!.lines[id]);
+    120|   if (!EXACT) return;
+ ❯ test/s959-split-view-measured.test.ts:253:9
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/6]⎯
+
+
+ Test Files  3 failed (3)
+      Tests  6 failed | 80 passed (86)
+   Start at  05:24:39
+   Duration  84.68s (transform 1.51s, setup 0ms, collect 6.27s, tests 82.74s, environment 0ms, prepare 975ms)
+
+C:\oto-lanes\codex-beo-money-stage3-20261114\apps\pos:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @oto/pos@0.1.0 test: `vitest run "test/s768-free-socks-counter.test.ts" "test/s768-ticket-free-items.test.ts" "test/s959-split-view-measured.test.ts"`
+Exit status 1

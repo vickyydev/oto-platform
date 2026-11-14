@@ -1,6 +1,6 @@
 import React, { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { priceCartLine } from '@oto/shared';
 import type { ApiSaleDetail, ApiSaleLine } from '@/api/history';
 import { DropOffLineConfig } from '@/components/till/DropOffLineConfig';
@@ -30,6 +30,16 @@ vi.mock('@/components/till/AddOnsGrid', () => ({ AddOnsGrid: () => null }));
 
 // The panel is compiled with the classic JSX runtime, as the unit runner has no React plugin.
 Object.assign(globalThis, { React });
+
+beforeEach(() => {
+  // Weekday fixture carts must not follow the live branch's 05:00 trading-day rollover.
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date('2026-11-12T05:00:00Z')); // Thursday noon in Bangkok; leave timers real.
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 const GRIP = '0190a0a0-0000-7000-8000-000000000768';
 
