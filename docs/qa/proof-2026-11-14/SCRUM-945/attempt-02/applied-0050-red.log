@@ -1,0 +1,171 @@
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-660-8p2M0q ... ok
+creating subdirectories ...
+ok
+
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ...
+100
+selecting default shared_buffers ...
+128MB
+selecting default time zone ...
+UTC
+
+creating configuration files ...
+ok
+running bootstrap script ...
+ok
+
+performing post-bootstrap initialization ...
+ok
+syncing data to disk ...
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-beo^-money^-stage3^-20261114^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-660^-8p2M0q^" -l logfile start
+
+
+2026-11-14 07:41:37.364 UTC [31108] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+2026-11-14 07:41:37.366 UTC [31108] LOG:  listening on IPv6 address "::1", port 56758
+
+2026-11-14 07:41:37.366 UTC [31108] LOG:  listening on IPv4 address "127.0.0.1", port 56758
+
+2026-11-14 07:41:37.401 UTC [86112] LOG:  database system was shut down at 2026-11-14 07:41:35 UTC
+
+2026-11-14 07:41:37.420 UTC [31108] LOG:  database system is ready to accept connections
+
+
+> rest-express@1.0.0 db:migrate
+> node script/migrate.mjs
+
+migrate: relation "employee_offboarding_employee_unique" already exists, skipping
+migrate: relation "employee_offboarding_employee_unique" already exists, skipping
+migrate: applied 0000_otoapp_baseline
+migrate: applied 0001_platform_user_id
+migrate: applied 0002_core_branch_id_unique
+migrate: applied 0003_events_seam
+migrate: applied 0004_otoapp_v_views
+migrate: applied 0005_otoapp_v_employees
+migrate: applied 0006_tenant_ownership_expand
+migrate: applied 0007_tenant_ownership_contract
+migrate: applied 0008_document_tenant_ownership_expand
+migrate: applied 0009_document_finance_constraints
+migrate: applied 0010_document_tenant_ownership_contract
+migrate: applied 0011_sop_revision_history
+migrate: applied 0012_attendance_evidence
+migrate: applied 0013_presence_notification_delivery
+migrate: applied 0014_camp_family_sms
+migrate: applied 0015_employee_action_receipts
+migrate: applied 0016_qa_reports
+migrate: applied 0018_flexible_leave_types
+migrate: applied 0019_person_birthdays
+migrate: applied 0020_user_preferences
+migrate: applied 0021_payroll_config
+migrate: applied 0022_payroll_profiles
+migrate: applied 0023_payroll_month_inputs_and_rewards
+migrate: applied 0024_payroll_run_inputs_ot_bank_and_leave_valuation
+migrate: applied 0025_payroll_run_lifecycle_and_snapshots
+migrate: applied 0026_payroll_statutory_documents
+migrate: applied 0027_fix_report_urgent_notification
+migrate: applied 0028_checklist_template_assignees
+migrate: applied 0029_platform_roles_enabled
+migrate: applied 0030_department_read_seam
+migrate: applied 0031_login_lifecycle
+migrate: applied 0032_schedule_audit_view_as
+migrate: applied 0033_fix_report_delete_and_comment_media
+migrate: applied 0034_checklist_branch_added_at
+migrate: applied 0035_core_event_inbox_link
+migrate: applied 0036_schedule_audit_change_set
+migrate: applied 0037_onboard_again
+migrate: applied 0038_offboarding_one_open
+migrate: applied 0039_offboarding_again
+migrate: applied 0041_birthday_package_fields
+migrate: applied 0042_otoapp_v_event_packages
+migrate: applied 0043_users_access_mode
+migrate: applied 0044_login_lifecycle_restrict
+migrate: applied 0045_otoapp_v_event_packages_one_deposit
+migrate: applied 0046_inbox_handover_notification
+migrate: applied 0047_otoapp_v_event_packages_party_menu
+migrate: applied 0048_otoapp_v_event_packages_adults_mirror
+migrate: applied 0049_login_lifecycle_retries
+migrate: applied 0050_otoapp_v_event_packages_kitchen_plan
+migrate: applied 0051_otoapp_set_audience_provenance
+migrate: otoapp now at 50 of 50 migration(s).
+MIGRATE 1 EXIT 0
+
+> rest-express@1.0.0 db:migrate
+> node script/migrate.mjs
+
+migrate: otoapp is up to date — 50 migration(s) already applied.
+MIGRATE 2 EXIT 0
+node.exe :   FAIL HIGH fixed: a kids EXTRA does not make the same-name fallback base SET kids-only: AssertionError
+[ERR_ASSERTION]: extra
+At C:\oto-lanes\audit-takeover-20261113\gates-945.ps1:20 char:3
++   & node $wrapper $lane tests/s945-kitchen-view.check.ts *> (Join-Pat ...
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (  FAIL HIGH fix...SERTION]: extra:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
++ actual - expected
+
++ 'kids'
+- undefined
+
+  ok CONTROL: an actual kids-only SET keeps its audience
+  FAIL HIGH fixed: an adults EXTRA cannot hide a real kids-only SET or lend it a note: AssertionError [ERR_ASSERTION]:
+extra
++ actual - expected
+
++ undefined
+- 'kids'
+
+  ok LEGACY control: an unbadged adult row keeps its existing shared mark and note
+  ok LEGACY control: an unbadged kids row retains 0050's mark without inferred intent
+  ok CONTROL: same-group shared SET and real adults note remain
+  FAIL HIGH fixed: the same dish in another choice group does not make this SET shared: AssertionError
+[ERR_ASSERTION]: Expected values to be strictly equal:
++ actual - expected
+
++ undefined
+- 'kids'
+
+  FAIL HIGH fixed: another group's matching dishes cannot lend an adults note: AssertionError [ERR_ASSERTION]:
+Expected values to be strictly equal:
+
+'A note' !== 'B note'
+
+  FAIL HIGH fixed: a SET with an unrelated groupId is not the base item's member: AssertionError [ERR_ASSERTION]:
+Expected values to be strictly equal:
++ actual - expected
+
++ 'kids'
+- undefined
+
+  ok CONTROL: old fixed SET lines without groupId still match by name and empty note
+  FAIL HIGH fixed: old choice SET lines match their own group note, not another group: AssertionError [ERR_ASSERTION]:
+Expected values to be strictly equal:
++ actual - expected
+
++ undefined
+- 'kids'
+
+  ok CONTROL: multiple choice options retain their separate audiences and unset shared count
+  ok CONTROL: adult own dish keeps its code, count, price and adults-only audience
+  ok HELD Q17 control: adultsDiffer off historical repeated coded lists are not rewritten or deduplicated
+  ok CONTROL: foreign-tenant template is not exposed and branch identity is unchanged
+  ok CONTROL: every first-thirteen legacy value remains identical to applied 0050
+  ok CONTROL: CREATE OR REPLACE retains view OID, owner, grants and all fourteen column names/types
+s945-kitchen-view.check: 11 passed, 6 failed; applied0050=true
+CHECK tests/s945-kitchen-view.check.ts EXIT 1
+2026-11-14 07:41:38.474 UTC [4604] ERROR:  relation "otoapp.__drizzle_migrations" does not exist at character 24
+2026-11-14 07:41:38.474 UTC [4604] STATEMENT:  select created_at from "otoapp"."__drizzle_migrations" order by created_at

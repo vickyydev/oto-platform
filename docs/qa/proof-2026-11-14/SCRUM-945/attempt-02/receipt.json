@@ -1,0 +1,19 @@
+{
+  "attempt": "02",
+  "original0050": {
+    "passed": 11,
+    "failed": 6,
+    "setupFailure": false
+  },
+  "fixed0051": {
+    "passed": 17,
+    "failed": 0
+  },
+  "migrationsPerDatabase": 2,
+  "allMigrationExits": 0,
+  "testSha256": "0879ac68c4702c649b07d4a28d61782c57f149cf2db038ac494ccbf2af5ee6ae",
+  "migrationSha256": "6bbc2966727198d99a1c4a0c63b77c710ac87c4ada041765304baa362756b21e",
+  "prior49RegressionChecks": "passed in attempt01 against identical migration SQL",
+  "typeLintRatchetRun": false,
+  "logNormalization": "UTF-8 LF/trailing whitespace only; diagnostic content retained; no database URL found"
+}

@@ -1,0 +1,196 @@
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-660-5FotsI ... ok
+
+creating subdirectories ...
+ok
+
+selecting dynamic shared memory implementation ... windows
+
+selecting default max_connections ...
+100
+selecting default shared_buffers ...
+128MB
+selecting default time zone ...
+UTC
+creating configuration files ...
+ok
+running bootstrap script ...
+ok
+
+performing post-bootstrap initialization ...
+ok
+syncing data to disk ...
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-beo^-money^-stage3^-20261114^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-660^-5FotsI^" -l logfile start
+
+
+2026-11-14 07:19:31.161 UTC [104788] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+2026-11-14 07:19:31.164 UTC [104788] LOG:  listening on IPv6 address "::1", port 49429
+
+2026-11-14 07:19:31.164 UTC [104788] LOG:  listening on IPv4 address "127.0.0.1", port 49429
+
+2026-11-14 07:19:31.201 UTC [110476] LOG:  database system was shut down at 2026-11-14 07:19:29 UTC
+
+2026-11-14 07:19:31.221 UTC [104788] LOG:  database system is ready to accept connections
+
+
+> rest-express@1.0.0 db:migrate
+> node script/migrate.mjs
+
+migrate: relation "employee_offboarding_employee_unique" already exists, skipping
+migrate: relation "employee_offboarding_employee_unique" already exists, skipping
+migrate: applied 0000_otoapp_baseline
+migrate: applied 0001_platform_user_id
+migrate: applied 0002_core_branch_id_unique
+migrate: applied 0003_events_seam
+migrate: applied 0004_otoapp_v_views
+migrate: applied 0005_otoapp_v_employees
+migrate: applied 0006_tenant_ownership_expand
+migrate: applied 0007_tenant_ownership_contract
+migrate: applied 0008_document_tenant_ownership_expand
+migrate: applied 0009_document_finance_constraints
+migrate: applied 0010_document_tenant_ownership_contract
+migrate: applied 0011_sop_revision_history
+migrate: applied 0012_attendance_evidence
+migrate: applied 0013_presence_notification_delivery
+migrate: applied 0014_camp_family_sms
+migrate: applied 0015_employee_action_receipts
+migrate: applied 0016_qa_reports
+migrate: applied 0018_flexible_leave_types
+migrate: applied 0019_person_birthdays
+migrate: applied 0020_user_preferences
+migrate: applied 0021_payroll_config
+migrate: applied 0022_payroll_profiles
+migrate: applied 0023_payroll_month_inputs_and_rewards
+migrate: applied 0024_payroll_run_inputs_ot_bank_and_leave_valuation
+migrate: applied 0025_payroll_run_lifecycle_and_snapshots
+migrate: applied 0026_payroll_statutory_documents
+migrate: applied 0027_fix_report_urgent_notification
+migrate: applied 0028_checklist_template_assignees
+migrate: applied 0029_platform_roles_enabled
+migrate: applied 0030_department_read_seam
+migrate: applied 0031_login_lifecycle
+migrate: applied 0032_schedule_audit_view_as
+migrate: applied 0033_fix_report_delete_and_comment_media
+migrate: applied 0034_checklist_branch_added_at
+migrate: applied 0035_core_event_inbox_link
+migrate: applied 0036_schedule_audit_change_set
+migrate: applied 0037_onboard_again
+migrate: applied 0038_offboarding_one_open
+migrate: applied 0039_offboarding_again
+migrate: applied 0041_birthday_package_fields
+migrate: applied 0042_otoapp_v_event_packages
+migrate: applied 0043_users_access_mode
+migrate: applied 0044_login_lifecycle_restrict
+migrate: applied 0045_otoapp_v_event_packages_one_deposit
+migrate: applied 0046_inbox_handover_notification
+migrate: applied 0047_otoapp_v_event_packages_party_menu
+migrate: applied 0048_otoapp_v_event_packages_adults_mirror
+migrate: applied 0049_login_lifecycle_retries
+migrate: applied 0050_otoapp_v_event_packages_kitchen_plan
+migrate: applied 0051_otoapp_set_audience_provenance
+migrate: otoapp now at 50 of 50 migration(s).
+MIGRATE 1 EXIT 0
+
+> rest-express@1.0.0 db:migrate
+> node script/migrate.mjs
+
+migrate: otoapp is up to date — 50 migration(s) already applied.
+MIGRATE 2 EXIT 0
+  ok HIGH fixed: a kids EXTRA does not make the same-name fallback base SET kids-only
+  ok CONTROL: an actual kids-only SET keeps its audience
+  ok HIGH fixed: an adults EXTRA cannot hide a real kids-only SET or lend it a note
+  ok LEGACY control: an unbadged adult row keeps its existing shared mark and note
+  ok LEGACY control: an unbadged kids row retains 0050's mark without inferred intent
+  ok CONTROL: same-group shared SET and real adults note remain
+node.exe :   FAIL HIGH fixed: the same dish in another choice group does not make this SET shared: AssertionError
+[ERR_ASSERTION]: false == true
+At C:\oto-lanes\audit-takeover-20261113\gates-945.ps1:25 char:1
++ & node $wrapper $lane tests/s945-kitchen-view.check.ts tests/kitchen- ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (  FAIL HIGH fix...: false == true:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+  ok HIGH fixed: another group's matching dishes cannot lend an adults note
+  ok HIGH fixed: a SET with an unrelated groupId is not the base item's member
+  ok CONTROL: old fixed SET lines without groupId still match by name and empty note
+  ok HIGH fixed: old choice SET lines match their own group note, not another group
+  ok CONTROL: multiple choice options retain their separate audiences and unset shared count
+  ok CONTROL: adult own dish keeps its code, count, price and adults-only audience
+  ok HELD Q17 control: adultsDiffer off historical repeated coded lists are not rewritten or deduplicated
+  ok CONTROL: foreign-tenant template is not exposed and branch identity is unchanged
+  ok CONTROL: every first-thirteen legacy value remains identical to applied 0050
+  ok CONTROL: CREATE OR REPLACE retains view OID, owner, grants and all fourteen column names/types
+s945-kitchen-view.check: 16 passed, 1 failed; applied0050=false
+CHECK tests/s945-kitchen-view.check.ts EXIT 1
+  ok  the parent's own link and the till read one record: the BEO's set-menu lines by group, a line of before by its note
+  ok  decision 3: a choice staff change after the parent submitted is the till's; the thirteen columns read as 0048 gave them
+  ok  every line arrives: a typed extra with its price, a coded extra, a template item no line answers, an open choice, a fixed item's second line
+  ok  the adults' handling is 0048's: each coded line carries the marks the set_menu column gives it
+  ok  the bar's lines with their own codes, notes and prices; the cake as the BEO says it; the bar's service time
+  ok  decision 8: a party with a kitchen plan and no package has a row whose package names nothing; one with none has no row
+  ok  the parent's own link, once submitted, shows the choice as the BEO now holds it, after a staff change
+kitchen-plan-view.check: 7 checks passed
+CHECK tests/kitchen-plan-view.check.ts EXIT 0
+  ok  only the platform's events:write key for the party's own park group; another park group's party is not found
+  ok  a count, a note, an added till item, a typed line, a bar line, a removed extra: the BEO's rows and the till's view
+  ok  the same edit id twice writes once; the same id with another change is refused
+  ok  a set-menu choice within its group, with the template's code; an option outside it, a dish removed, a gone line: refused in words
+  ok  the cake's time and note; a party with no cake is told so
+  ok  an open group chosen on the till as the parent's submit would; the choices door names the groups
+  ok  SCRUM-829: with the adults' own list, a kids' choice carries the adults' copy; the switch is kept
+  ok  SCRUM-958: a dish of the adults' own in a set-menu group stays: a kids' choice moves only its copy, an open group adds none
+  ok  adults' switch on: a kids' line's count and note carry the adults' copies the till shows with it
+  ok  adults' switch on: removing a kids' extra removes the adults' copy the till shows with it
+  ok  a BEO saved before the switch, its adults' list repeating the kids': an adults' line's change is written as theirs
+  ok  the planner alone: a legacy line keeps its group when its note changes; nothing is priced
+  ok  the BEO's own Save writes the kitchen and bar plans as before, through the same writers
+till-kitchen-edit.check: 13 checks passed
+CHECK tests/till-kitchen-edit.check.ts EXIT 0
+  ok  the stored shape's reading: saved on, or lines that are not the kids' list; empty or equal is off
+  ok  the adults' changes on one list: kids only, two counts, a note of their own, adults only; none with the switch off
+  ok  both prompts tell the model the adults eat the kids' menu unless the message says otherwise; every line key is still required
+  ok  a stub model's one list leaves the form with no adults' list; its adults' own dish is carried; a catalogue dish with no list is the kids'
+  ok  saved with the switch off: no adults' list and adultsDiffer false; the read gives both back
+  ok  saved with the switch on: the adults' own list and adultsDiffer true; an editor from before the switch gets the key its lists say; the day-of view's write keeps it
+  ok  the till's plan view: a party saved before the switch and never written since reads as 0047 read it; one written since reads as the editor opens it
+  ok  with the switch on: an unchanged copy reaches the till once, a line the adults do not get is marked kids, their own lines marked adults
+  ok  a coded line copied for the adults with only its note changed, or cleared, reaches the till once with the adults' note beside it
+  ok  a set-menu line the kids' list holds and the adults' drops is marked kids; one never written into the kids' list is left alone
+  ok  the set menu stays in step for the adults' own list: the parent's submit after the switch, and a Save with a stale submission
+  ok  Approve and create: an adults' line turns the switch on; kids' lines alone leave it as the BEO holds it, recorded
+  ok  AI Fill on a pasted message: the prompt carries the rule; one list when the message names no food of the adults' own, their dish when it does
+  ok  the BEO PDF prints one food list: the adults' line with the switch off; their changes marked and their own dishes after with it on
+kitchen-adults.check: 14 checks passed
+CHECK tests/kitchen-adults.check.ts EXIT 0
+  ok  the PDF prints the adults' own extra at its own price, as the editor and the till have it
+  ok  the PDF reads the kids' list from menus, as the editor and the till do
+  ok  PARTY HOST and SETUP PLAN print only with something under them
+  ok  the editor's Save writes the cake count: the row, the BEO's read and the till's plan view
+  ok  the day-of view's door refuses a malformed body with its reason and writes nothing
+  ok  a stored party's own values are taken: the day-of view's every change is written, untouched lines as stored
+  ok  the day-of view's every body is taken, and only the plan's own fields are written
+  ok  the shape takes what the editor's Save and the till's kitchen edit write
+  ok  a date or a clock time is never the chat's total; a total stays one
+  ok  the fold's reason quotes the words that say the adults eat the same
+  ok  ต่อ is "per" only before a count or a unit
+  ok  the adults' set line in another count keeps its till code, on the row and on the till
+  ok  the family's link answers its park's time zone and prints the park's day
+  ok  an adults' repeat of the kids' dish is no charged extra, the switch on or off; 3 more stays one
+  ok  Fetch from chat compares a kids' choice with the kids' lines only
+beo-left-978.check: 15 checks passed
+CHECK tests/beo-left-978.check.ts EXIT 0
+2026-11-14 07:19:32.181 UTC [109116] ERROR:  relation "otoapp.__drizzle_migrations" does not exist at character 24
+2026-11-14 07:19:32.181 UTC [109116] STATEMENT:  select created_at from "otoapp"."__drizzle_migrations" order by created_at

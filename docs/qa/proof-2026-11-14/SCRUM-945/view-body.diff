@@ -1,0 +1,104 @@
+--- applied0050
++++ forward0051
+@@ -290,18 +290,18 @@
+     'lines', COALESCE((
+       SELECT jsonb_agg(
+         line.item || CASE
+-          -- The set menu's own lines: marked as 0048 marks them, by the dish's name.
++          -- Known SET marks use this item's members; unbadged legacy keeps its old rule.
+           WHEN line.part = 0 THEN CASE
+             WHEN an0.note IS NOT NULL THEN jsonb_build_object('adults_note', an0.note)
+             WHEN ad.differ
+               AND EXISTS (
+-                SELECT 1 FROM jsonb_array_elements(ad.kids) AS kk(item)
++                SELECT 1 FROM jsonb_array_elements(sa.kids) AS kk(item)
+                 WHERE jsonb_typeof(kk.item) = 'object'
+                   AND lower(regexp_replace(btrim(COALESCE(kk.item ->> 'itemName', '')), '\s+', ' ', 'g'))
+                     = lower(regexp_replace(btrim(COALESCE(line.dish, '')), '\s+', ' ', 'g'))
+               )
+               AND NOT EXISTS (
+-                SELECT 1 FROM jsonb_array_elements(ad.adults) AS aa(item)
++                SELECT 1 FROM jsonb_array_elements(sa.adults) AS aa(item)
+                 WHERE jsonb_typeof(aa.item) = 'object'
+                   AND lower(regexp_replace(btrim(COALESCE(aa.item ->> 'itemName', '')), '\s+', ' ', 'g'))
+                     = lower(regexp_replace(btrim(COALESCE(line.dish, '')), '\s+', ' ', 'g'))
+@@ -335,6 +335,7 @@
+           CASE WHEN it.item ->> 'type' = 'choice_group' THEN ml.item ->> 'itemName'
+                ELSE COALESCE(NULLIF(btrim(ml.item ->> 'itemName'), ''), it.item ->> 'label') END AS dish,
+           NULL::jsonb AS kl,
++          it.item AS set_item,
+           jsonb_build_object(
+             'line_id', NULLIF(btrim(COALESCE(ml.item ->> 'id', '')), ''),
+             'source', 'set_menu',
+@@ -413,6 +414,7 @@
+           1::bigint AS sub,
+           it.item ->> 'label' AS dish,
+           NULL::jsonb AS kl,
++          it.item AS set_item,
+           jsonb_build_object(
+             'line_id', NULL::text,
+             'source', 'set_menu',
+@@ -454,6 +456,7 @@
+           1::bigint AS sub,
+           li.item ->> 'itemName' AS dish,
+           li.item AS kl,
++          NULL::jsonb AS set_item,
+           jsonb_build_object(
+             'line_id', NULLIF(btrim(COALESCE(li.item ->> 'id', '')), ''),
+             'source', CASE WHEN li.item ->> 'source' = 'set_menu' THEN 'set_menu' ELSE 'extra' END,
+@@ -533,12 +536,53 @@
+             )
+           )
+       ) line
++      -- SCRUM-945 / SCRUM-981 point 9: the same template item's SET members.
++      -- Match groupId first, with the editor's existing legacy-name/note fallback.
++      -- Unbadged historical rows retain their old name-based marks; no list is deduplicated.
++      CROSS JOIN LATERAL (
++        SELECT
++          COALESCE(jsonb_agg(member.item ORDER BY member.ord) FILTER (WHERE member.list = 'kids'), '[]'::jsonb) AS kids,
++          COALESCE(jsonb_agg(member.item ORDER BY member.ord) FILTER (WHERE member.list = 'adults'), '[]'::jsonb) AS adults
++        FROM (
++          SELECT li.*
++          FROM (
++            SELECT 'kids' AS list, k.item, k.ord FROM jsonb_array_elements(ad.kids) WITH ORDINALITY AS k(item, ord)
++            UNION ALL
++            SELECT 'adults', a.item, a.ord FROM jsonb_array_elements(ad.adults) WITH ORDINALITY AS a(item, ord)
++          ) li
++          WHERE line.part = 0
++            AND jsonb_typeof(li.item) = 'object'
++            AND (
++              (li.item ->> 'source' = 'set_menu' AND (
++                  NULLIF(btrim(COALESCE(li.item ->> 'groupId', '')), '') = line.set_item ->> 'id'
++                  OR (
++                    NULLIF(btrim(COALESCE(li.item ->> 'groupId', '')), '') IS NULL
++                    AND (
++                      (line.set_item ->> 'type' = 'always_included'
++                        AND li.item ->> 'itemName' = line.set_item ->> 'label'
++                        AND btrim(COALESCE(li.item ->> 'notes', '')) = '')
++                      OR (line.set_item ->> 'type' = 'choice_group'
++                        AND btrim(COALESCE(li.item ->> 'notes', '')) = '(' || COALESCE(line.set_item ->> 'label', '') || ')')
++                    )
++                  )
++              ))
++              -- Unbadged rows cannot establish historical SET/EXTRA intent.
++              -- Preserve 0050's name-based marks for that ambiguous legacy shape.
++              OR (
++                NULLIF(btrim(COALESCE(li.item ->> 'source', '')), '') IS NULL
++                AND NULLIF(btrim(COALESCE(li.item ->> 'groupId', '')), '') IS NULL
++                AND lower(regexp_replace(btrim(COALESCE(li.item ->> 'itemName', '')), '\s+', ' ', 'g'))
++                  = lower(regexp_replace(btrim(COALESCE(line.dish, '')), '\s+', ' ', 'g'))
++              )
++            )
++        ) member
++      ) sa
+       -- 0048's adults' note on a set-menu dish: the first adults' line that is the same dish
+       -- as a kids' line of the dish's name, with another note.
+       LEFT JOIN LATERAL (
+         SELECT btrim(COALESCE(aa.item ->> 'notes', '')) AS note
+-        FROM jsonb_array_elements(ad.kids) AS kk(item)
+-        JOIN jsonb_array_elements(ad.adults) AS aa(item)
++        FROM jsonb_array_elements(sa.kids) AS kk(item)
++        JOIN jsonb_array_elements(sa.adults) AS aa(item)
+           ON jsonb_typeof(aa.item) = 'object'
+           AND lower(regexp_replace(btrim(COALESCE(aa.item ->> 'itemName', '')), '\s+', ' ', 'g'))
+             = lower(regexp_replace(btrim(COALESCE(kk.item ->> 'itemName', '')), '\s+', ' ', 'g'))

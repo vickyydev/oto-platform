@@ -1,0 +1,26 @@
+{
+  "attempt": "01",
+  "migrationRunsPerDatabase": 2,
+  "migrationsExit": 0,
+  "original0050": {
+    "passed": 11,
+    "failed": 6,
+    "setupFailure": false
+  },
+  "fixed0051": {
+    "passed": 16,
+    "failed": 1,
+    "existingRegressions": {
+      "kitchenPlanView": 7,
+      "tillKitchenEdit": 13,
+      "kitchenAdults": 14,
+      "beoLeft978": 15
+    }
+  },
+  "failure": "New cross-group fixture omitted both codes, so the existing name/count/code dedup correctly omitted the adult line. Keep dedup behavior; fixture now uses its actual distinct CF-50/CF-60 codes. Complete red/green rerun remains required.",
+  "testSourceSha256": "a09c47e32ab6793fde4aea6d178cc909951d704e5de89ba9c07c39dd695a05aa",
+  "runtimeMigrationSha256": "6bbc2966727198d99a1c4a0c63b77c710ac87c4ada041765304baa362756b21e",
+  "preGateCorrection": "Draft SQL extraction initially started inside a historical comment. Corrected to the full CREATE OR REPLACE VIEW target marker before the first migrator invocation; local draft7b is not the final candidate.",
+  "typeLintRatchetRun": false,
+  "stagingActions": false
+}

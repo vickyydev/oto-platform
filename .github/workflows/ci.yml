@@ -1187,6 +1187,13 @@ jobs:
       - name: The app's whole kitchen plan view checks
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/kitchen-plan-view.check.ts
+      # SCRUM-945 / SCRUM-981 point 9: SET audience comes only from the
+      # matching template item's SET members; extras and other groups stay separate.
+      - name: The app's SET audience provenance view checks
+        if: steps.changes.outputs.app == 'true'
+        env:
+          DB_SCHEMA: otoapp
+        run: npx tsx tests/s945-kitchen-view.check.ts
       # SCRUM-907: the till's door into a party's kitchen plan — only the
       # platform's events:write key, fenced to the park group; a count, a
       # note, an extra added or removed, a set-menu choice, the cake's time
