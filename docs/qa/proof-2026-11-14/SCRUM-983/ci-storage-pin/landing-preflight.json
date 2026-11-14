@@ -1,0 +1,38 @@
+{
+  "at": "2026-11-14T09:57:54.816Z",
+  "base": "a24b5744f7aa74280a3a30e555f78cdf7474f650",
+  "rebasedReviewedCommit": "8450beef8a023375a76b26ba3a572d7aec7afedb",
+  "ownCommits": [
+    "8450beef8a023375a76b26ba3a572d7aec7afedb test(api): pin the approved BEO document sources"
+  ],
+  "approvedCandidate": "74da9d2da51812f4c7df875ac0a538ce2365b015",
+  "sourceBlobUnchanged": "74877b98d44666598fdc715e33dd63c551993c5e",
+  "appJournalLast": 51,
+  "mergedGate": {
+    "wholeFiles": 1,
+    "passed": 65,
+    "failed": 0,
+    "skipped": 0,
+    "exit": 0,
+    "note": "Meaningful merged replay after0051 joined the current app migration chain; no -t"
+  },
+  "log": {
+    "file": "983-storage-pin-merged-view-green.log",
+    "bytes": 36778,
+    "sha256": "a9f0ec50fd965f295879d1d78a743598091bde7c2fedaceb71cf469c51546b36"
+  },
+  "lint": {
+    "previousExit": 0,
+    "sourceBlobUnchanged": true
+  },
+  "cleanup": {
+    "postgresProcessesCreatedTodayStillAlive": 0
+  },
+  "reviewOriginal": {
+    "file": "983-storage-pin-independent-review.md in audit scratch",
+    "sha256": "e85bf6a747e4e775ede2e920e759b577a77a9aef9d800983e8a4ce9b5408b75f",
+    "note": "Only whitespace made readable in committed copy; verdict and scope unchanged"
+  },
+  "noProductChange": true,
+  "deploy": "No product deployment or native repeat needed; live app remains e4 and API/till product remains411"
+}
