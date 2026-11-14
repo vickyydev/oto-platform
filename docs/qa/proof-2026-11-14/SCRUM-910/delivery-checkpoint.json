@@ -1,0 +1,55 @@
+{
+  "atUtc": "2026-11-14T08:00:31.518455+00:00",
+  "status": "SCRUM-910 Deployed; scoped966point2 complete;983p7 wording complete; all owned cleanup done",
+  "worktree": "C:\\oto-lanes\\codex-deposit-910-20261114",
+  "evidenceSha": "0038a80663cee8114b194d5836a0075f06c5d556",
+  "financialSource": "d37ea80c25448a9d796a4632f7f04674e27be3f9",
+  "phoneSource": "5bf409ee4198fa72d0d55a2b400aff5b29a69ca5",
+  "jira": {
+    "910": {
+      "status": "Deployed",
+      "comment": "14768",
+      "attachments": [
+        "13530",
+        "13531",
+        "13532",
+        "13533",
+        "13534"
+      ]
+    },
+    "966": {
+      "status": "In Progress",
+      "comment": "14770",
+      "scope": "point2 only"
+    },
+    "983": {
+      "statusAtOwnComment": "To Do",
+      "comment": "14765",
+      "scope": "point7 two appended toast sentences only"
+    }
+  },
+  "cleanup": {
+    "eventsArchived": 3,
+    "ownVirtualStationBoxSetsArchived": 2,
+    "activeOwnUpcoming": 0,
+    "financialHistoryPreserved": true,
+    "oldExactSessionsEnded": 4,
+    "oldLiveOfflineTokens": 0,
+    "oldCookie401Observed": false,
+    "freshPOSAppLauncher401": true,
+    "allBrowsersClosed": true
+  },
+  "ci": {
+    "money": {
+      "run": 43566476024,
+      "result": "success"
+    },
+    "phone": {
+      "run": 43572714100,
+      "result": "background in_progress at final checkpoint",
+      "watcherPty": 80147,
+      "log": "C:/oto-lanes/audit-takeover-20261113/910-polish-ci-watch.log"
+    }
+  },
+  "handoff": "Release approved slip/API delivery to handover immediately after final checkpoint; no approval or CI gate. Stop afterstage3 for ownerreview."
+}

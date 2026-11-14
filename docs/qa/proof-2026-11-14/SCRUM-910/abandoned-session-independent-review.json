@@ -1,0 +1,17 @@
+{
+  "verdict": "APPROVED exact four-ID allowlist for guarded per-session signOut; no broad account revocation",
+  "sourceReceipt": "C:\\oto-lanes\\codex-deposit-910-20261114\\docs\\qa\\proof-2026-11-14\\SCRUM-910\\staging\\attempt-02\\abandoned-session-candidates.json",
+  "sha256": "d14c1ccd0d3bed1f9ffc0f21437ef545f0069e8a81852c7b527b6964a0a53216",
+  "count": 4,
+  "safeChecks": [
+    "exact account/branch/station binding",
+    "creation window and lastSeen before recovery",
+    "fresh IDs excluded",
+    "current false; active or locked; no ended row"
+  ],
+  "limits": [
+    "Original browser cookies are lost; old-cookie HTTP401 remains unobserved.",
+    "Application session-store SID cannot be time-correlated; preserve unmatched rows."
+  ],
+  "executedWrites": false
+}

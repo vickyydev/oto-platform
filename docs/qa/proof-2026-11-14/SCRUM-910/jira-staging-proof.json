@@ -1,0 +1,58 @@
+{
+  "at": "2026-11-14T07:59:02.486Z",
+  "evidenceSha": "0038a80663cee8114b194d5836a0075f06c5d556",
+  "tickets": [
+    {
+      "key": "SCRUM-910",
+      "before": "In Progress",
+      "after": "Deployed",
+      "commentId": "14768",
+      "readback": true,
+      "bodySha256": "1b083e2ecc9cc8900d38c43f469c21c967cd7a134fba653bed4464a258cf0e7b",
+      "attachments": [
+        {
+          "name": "20261114-910-partial-remainder.png",
+          "id": "13530"
+        },
+        {
+          "name": "20261114-910-phone-confirm.png",
+          "id": "13531"
+        },
+        {
+          "name": "20261114-910-phone-reloaded.png",
+          "id": "13532"
+        },
+        {
+          "name": "20261114-910-reconciliation.png",
+          "id": "13533"
+        },
+        {
+          "name": "20261114-910-whole-confirm.png",
+          "id": "13534"
+        }
+      ]
+    },
+    {
+      "key": "SCRUM-966",
+      "before": "In Progress",
+      "after": "In Progress",
+      "commentId": "14770",
+      "readback": true,
+      "bodySha256": "d049a1c8049aa39223fa6c01271a6f889b5079a74b8cd2e4bfaa38ff279b15bf",
+      "attachments": [
+        {
+          "name": "20261114-910-named-extra-committed.png",
+          "id": "13535"
+        },
+        {
+          "name": "20261114-910-named-extra-preview.png",
+          "id": "13536"
+        },
+        {
+          "name": "20261114-910-scoped966-proof.png",
+          "id": "13537"
+        }
+      ]
+    }
+  ]
+}
