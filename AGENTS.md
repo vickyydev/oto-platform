@@ -54,10 +54,16 @@ not a generator.
   committed under `docs/qa/jira-comments/attachments/<KEY>/` and looked at before
   attaching. Work significant on its own gets its own ticket in the current sprint; small
   follow-ups are progress comments under the ticket they belong to.
-- **CI is watched by FULL commit SHA** — `bash scripts/agent/watch-ci.sh <full-sha> 110` —
-  never by grepping run titles. No feature pushes and no staging deploys while main is
-  red; report a red run before anything else; reproduce locally on the exact SHA and
-  re-run once if local is green (the known setup-flake class is SCRUM-510).
+- **Owner workflow override, 14 November 2026:** after the approved meaningful local
+  checks and assigned source review, fetch/rebase, inspect the exact commit list and
+  push normally. Immediately trigger the explicitly named Render staging services at
+  that full SHA; once LIVE, run native proof, publish inspected evidence and clean up.
+  CI is watched by FULL commit SHA (`bash scripts/agent/watch-ci.sh <full-sha> 110`)
+  in the background, never by grepping run titles. Pending or red CI does not block a
+  source push, staging deployment, proof or the next approved unit. Report CI honestly
+  and investigate/repair failures; never claim a pending/skipped/failed check passed.
+  This supersedes older main-red/CI waiting blocks. "Force push Render" means trigger
+  a deployment, NEVER force Git history. All other safeguards and local gates remain.
 - **Typecheck output is read whole:** the api must print zero lines; the OTO App's ratchet
   (`npm run check:ratchet`) holds at its committed baseline (currently 414 diagnostics) and that count may never rise. Eslint every
   touched file. Never use `vitest -t` on serial suites.
@@ -76,11 +82,14 @@ write the adversarial review for it in the house style — a review test file
 stating severity and a prescribed fix — and attack your own work with it before landing.
 Prescribed fixes are applied and their pins flipped; a finding that correctly stands (an
 owner question, a later round's item) stays `it.fails` with its record named in the plan.
-Then: full battery green, typechecks whole, rebase onto `origin/main` (ground-truth the
-commit list after every rebase — never chain `--continue` with `--skip`), push
-`HEAD:main`, watch CI by full SHA. Render auto-deploys every service on a green build
-(trigger: checks pass) — an ordered rollout can be raced by it; the known remedy for a
-raced cross-service call is Retry on the Failures page.
+Then: approved local battery green, typechecks whole, assigned source review complete,
+rebase onto `origin/main` (ground-truth the commit list after every rebase; never chain
+`--continue` with `--skip`) and push `HEAD:main`. Immediately trigger each explicitly
+named Render staging service at the full landed SHA; once LIVE, complete bounded native
+proof, inspected evidence and cleanup. Watch CI by full SHA in the background without
+waiting for it; pending/red CI is reported and repaired, not a delivery gate (owner
+ruling, 14 November 2026). Render's automatic deployment may still race an ordered rollout;
+the known remedy for a raced cross-service call is Retry on the Failures page.
 
 ## Environment and tools (this PC)
 
