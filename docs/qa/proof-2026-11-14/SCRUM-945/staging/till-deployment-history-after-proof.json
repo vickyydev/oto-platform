@@ -1,0 +1,63 @@
+{
+  "at": "2026-11-14T09:42:33.543Z",
+  "service": "oto-pos-web-staging",
+  "history": [
+    {
+      "id": "dep-dbs28he417fc73f13pc0",
+      "status": "live",
+      "sourceSha": "41158d2310ba4776dc2e1d03e435a8716d76556c",
+      "createdAt": "2026-11-14T09:05:09.283681Z",
+      "finishedAt": "2026-11-14T09:09:26.157865Z"
+    },
+    {
+      "id": "dep-dbs1kauq1p3s73ea0b60",
+      "status": "update_failed",
+      "sourceSha": "5bf409ee4198fa72d0d55a2b400aff5b29a69ca5",
+      "createdAt": "2026-11-14T08:22:03.979489Z",
+      "finishedAt": "2026-11-14T08:26:38.499524Z"
+    },
+    {
+      "id": "dep-dbs141rrjlhs73cser0g",
+      "status": "deactivated",
+      "sourceSha": "5bf409ee4198fa72d0d55a2b400aff5b29a69ca5",
+      "createdAt": "2026-11-14T07:47:19.979707Z",
+      "finishedAt": "2026-11-14T07:50:56.786171Z"
+    },
+    {
+      "id": "dep-dbs0rfff3r2c73ds17c0",
+      "status": "deactivated",
+      "sourceSha": "d37ea80c25448a9d796a4632f7f04674e27be3f9",
+      "createdAt": "2026-11-14T07:29:01.684689Z",
+      "finishedAt": "2026-11-14T07:32:42.952798Z"
+    },
+    {
+      "id": "dep-dbrvuvon74is738fje9g",
+      "status": "deactivated",
+      "sourceSha": "d37ea80c25448a9d796a4632f7f04674e27be3f9",
+      "createdAt": "2026-11-14T06:28:15.726092Z",
+      "finishedAt": "2026-11-14T06:32:05.918503Z"
+    },
+    {
+      "id": "dep-dbrvp4k9v7es73bbfa2g",
+      "status": "deactivated",
+      "sourceSha": "43ec4059de4e222b1cc9d88170d0b33da0f09159",
+      "createdAt": "2026-11-14T06:15:46.224274Z",
+      "finishedAt": "2026-11-14T06:19:33.57864Z"
+    },
+    {
+      "id": "dep-dbrmfqm8bjmc73f9mbf0",
+      "status": "deactivated",
+      "sourceSha": "3e29803bf0d2c935a9a0c23f76c60c4182bcc104",
+      "createdAt": "2026-11-13T19:41:30.250203Z",
+      "finishedAt": "2026-11-13T19:45:10.050724Z"
+    },
+    {
+      "id": "dep-dbrm1nmtlv9c73b1ura0",
+      "status": "deactivated",
+      "sourceSha": "3e29803bf0d2c935a9a0c23f76c60c4182bcc104",
+      "createdAt": "2026-11-13T19:11:26.148162Z",
+      "finishedAt": "2026-11-13T19:14:56.034866Z"
+    }
+  ],
+  "binding": "Deployment history captured after proof; native fresh context ran09:35-09:38UTC. Current live deployment predates that interval; no newer deployment is present."
+}

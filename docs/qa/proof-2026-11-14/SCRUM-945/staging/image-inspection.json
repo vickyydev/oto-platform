@@ -1,0 +1,23 @@
+[
+  {
+    "file": "01-native-extra-does-not-mark-base.png",
+    "sha256": "c0ad46c48777d639da40528f8ce5b6e5afd655de708cd15f14729f7ece8fa188",
+    "inspectedAt": "2026-11-14T09:43:48.622856+00:00",
+    "result": "opened and visually inspected",
+    "note": "Native kitchen card: plain base French fries and distinct kids-only EXTRA label are clear. The extra quantity is partly outside this narrow card crop; its2 is independently asserted in actual API rows. Adult3 is visible."
+  },
+  {
+    "file": "02-native-valid-kids-set.png",
+    "sha256": "06ec25d1d766ade563344596f08a9bba931396f3df6995d6838aa2ce5dda992c",
+    "inspectedAt": "2026-11-14T09:43:48.622856+00:00",
+    "result": "opened and visually inspected",
+    "note": "Native kitchen card: actual SET French fries kids-only and1, adultown3 clear."
+  },
+  {
+    "file": "03-staging-view-run-card.png",
+    "sha256": "63d4799ec5533978b929e925187a0d52c9d68bc99cb578dff7dce7a4f252aae2",
+    "inspectedAt": "2026-11-14T09:43:48.622856+00:00",
+    "result": "opened and visually inspected",
+    "note": "Clearly labelled actual-result card; distinguishes native/API proof from local SQL contracts and physical-printer limits."
+  }
+]

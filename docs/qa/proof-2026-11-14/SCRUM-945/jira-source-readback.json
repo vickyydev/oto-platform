@@ -1,0 +1,18 @@
+{
+  "at": "2026-11-14T09:31:51.265Z",
+  "sourceSha": "e4e7bca46d5cb20ba5333af17887107f23c0be78",
+  "tickets": [
+    {
+      "key": "SCRUM-945",
+      "status": "In Progress",
+      "commentId": "14786",
+      "matchedSource": true
+    },
+    {
+      "key": "SCRUM-981",
+      "status": "In Progress",
+      "commentId": "14787",
+      "matchedSource": true
+    }
+  ]
+}

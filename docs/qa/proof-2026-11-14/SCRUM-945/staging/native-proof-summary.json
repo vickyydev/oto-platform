@@ -1,0 +1,54 @@
+{
+  "at": "2026-11-14T09:43:48.622856+00:00",
+  "state": "Scoped view behavior WORKS; evidence/Jira publication next",
+  "sourceSha": "e4e7bca46d5cb20ba5333af17887107f23c0be78",
+  "appRuntimeBefore": "e4e7bca46d5cb20ba5333af17887107f23c0be78",
+  "appRuntimeAfter": "e4e7bca46d5cb20ba5333af17887107f23c0be78",
+  "apiSource": "41158d2310ba4776dc2e1d03e435a8716d76556c",
+  "tillSource": "41158d2310ba4776dc2e1d03e435a8716d76556c",
+  "nativeCases": [
+    "EXTRA does not mark same-name base SET kids-only",
+    "genuine kids-only SET retains mark/count; adultown3CF24 preserved"
+  ],
+  "actualApiAndUiResults": 4,
+  "cleanup": {
+    "event": {
+      "fixtureId": "30df175e-f4c2-489a-a3b1-068186e14128",
+      "archivedAt": "2026-11-14T09:38:01.954Z",
+      "activeExactOwn": 0,
+      "runtimeAfter": "e4e7bca46d5cb20ba5333af17887107f23c0be78",
+      "at": "2026-11-14T09:38:02.040Z"
+    },
+    "station": {
+      "id": "21f91a8e-43d2-4f4f-9f45-2f892e58a46a",
+      "name": "ZZ TEST 945 view 21f91a8e",
+      "archived": true
+    },
+    "box": {
+      "id": "85473c50-d282-44e9-8b02-efb217fcf7b9",
+      "name": "ZZ TEST 945 virtual view 85473c50",
+      "role": "virtual",
+      "archived": true
+    },
+    "activeOwnStationAndBox": 0,
+    "originalSessionReadback": {
+      "pos": 200,
+      "posReadback": 401,
+      "app": 200,
+      "launcher": 200,
+      "appReadback": 401,
+      "launcherReadback": 401,
+      "at": "2026-11-14T09:38:22.601Z"
+    },
+    "recoverySessionReadback": 401,
+    "browserClosedAt": "2026-11-14T09:38:22.877Z"
+  },
+  "preservedFailure": "First retire step archived station, then box-by-id GET returned404; independent fresh POS branch-list recovery confirmed station archived and safely archived only the exact own virtual box. No product failure was observed.",
+  "limits": [
+    "Only this945/981point9view repair is accepted;Q17/Q18 and other owner holds remain",
+    "ViewOID/grants/first13legacyfields and groupcollision edgecases are local actualSQL coverage",
+    "Image01extraqty partly outside card crop; actual API row qty2 retained",
+    "No physicalprinter/payment/realmessage/production acceptance",
+    "SourceCI43580908597 is background; known obsolete PDFhash maintenance is separate, no greenclaim"
+  ]
+}

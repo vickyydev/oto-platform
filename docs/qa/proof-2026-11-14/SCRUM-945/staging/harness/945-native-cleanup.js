@@ -1,0 +1,5 @@
+const event=await S.owned();S.assert.equal(await S.runtime(),S.SHA);S.st.phase='cleanup';S.save();
+const archived=await S.call('POST','/admin/events/'+event.id+'/archive',{archived:true});S.assert.equal(archived.status,200);
+const read=await S.call('GET','/admin/events/'+event.id);S.assert.equal(read.status,200);S.assert.equal(read.body.title,S.st.fixtures[0].title);S.assert.equal(read.body.branchId,S.branch.id);S.assert.ok(read.body.archivedAt);
+const all=await S.call('GET','/admin/events?range=all&branchId='+S.branch.id);S.assert.equal(all.status,200);const list=Array.isArray(all.body)?all.body:all.body.events;S.assert.ok(Array.isArray(list));const active=list.filter(x=>x.branchId===S.branch.id&&String(x.title).startsWith('ZZ TEST 945 SET audience')&&!x.archivedAt);S.assert.equal(active.length,0);
+S.st.cleanup={fixtureId:event.id,archivedAt:read.body.archivedAt,activeExactOwn:active.length,runtimeAfter:await S.runtime(),at:new Date().toISOString()};S.st.phase='fixture-cleaned';S.save();return S.st.cleanup;

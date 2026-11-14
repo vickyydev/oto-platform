@@ -1,0 +1,21 @@
+{
+  "at": "2026-11-14T09:40:47.060Z",
+  "services": [
+    {
+      "name": "oto-app-staging",
+      "deployId": "dep-dbs2kod6e07s738lfh3g",
+      "status": "live",
+      "sourceSha": "e4e7bca46d5cb20ba5333af17887107f23c0be78",
+      "createdAt": "2026-11-14T09:31:13.840024Z",
+      "finishedAt": "2026-11-14T09:34:27.687893Z"
+    },
+    {
+      "name": "oto-api-staging",
+      "deployId": "dep-dbs28h6417fc73f13nk0",
+      "status": "live",
+      "sourceSha": "41158d2310ba4776dc2e1d03e435a8716d76556c",
+      "createdAt": "2026-11-14T09:05:08.479219Z",
+      "finishedAt": "2026-11-14T09:10:36.321999Z"
+    }
+  ]
+}

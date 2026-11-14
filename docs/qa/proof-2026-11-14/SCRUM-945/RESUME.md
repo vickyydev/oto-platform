@@ -1,3 +1,9 @@
+# Current publication checkpoint
+
+Source e4e7bca46 isLIVE and both bounded native view controls pass. Exact fixture/station/virtual-box cleanup and all401 session reads/browserclose are complete. README.md, staging/native-proof-summary.json and original/recovery receipts state the one cleanup lookup failure and exact resolution. Three PNGs are inspected and copied to945/981attachment folders. Publish this evidence with same-push comments, attach the named images and independently read status/comment/attachment values. Keep945/981InProgress for holds. Then record finalreceipt/checkpoint; stopafterstage3 forownerreview. SourceCI43580908597 staysbackground; narrow stalePDFhash test maintenance is withhandover_delivery and needspeerreview, no productredo.
+
+Earlier checkpoints below remain historical.
+
 # Current release checkpoint
 
 Exact frozen2d017eb75290ee179fa3045689688c3c145aebfe is independently APPROVED. All six source Git blobs and17 retained artifact bytes/hashes match; combined actual0051+983 source71 whole checks and413ratchet pass. No product change followed review. Current local branch contains only own forward-view source and evidence; no push/deploy/945session/fixture exists yet.

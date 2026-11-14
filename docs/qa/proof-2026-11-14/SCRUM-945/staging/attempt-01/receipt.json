@@ -1,0 +1,284 @@
+{
+  "unit": "SCRUM-945",
+  "startedAt": "2026-11-14T09:34:57.546Z",
+  "expectedSha": "e4e7bca46d5cb20ba5333af17887107f23c0be78",
+  "phase": "fixture-cleaned",
+  "fixtures": [
+    {
+      "id": "30df175e-f4c2-489a-a3b1-068186e14128",
+      "title": "ZZ TEST 945 SET audience 20261114093516841",
+      "branchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+      "eventDate": "2026-11-15",
+      "createdAt": "2026-11-14T09:35:16.925Z"
+    }
+  ],
+  "results": [
+    {
+      "case": "extra-does-not-mark-base",
+      "appRuntime": "e4e7bca46d5cb20ba5333af17887107f23c0be78",
+      "eventId": "30df175e-f4c2-489a-a3b1-068186e14128",
+      "kitchenPlanRows": [
+        {
+          "origin": "set_menu",
+          "name": "Pizza",
+          "qty": null,
+          "productCode": null
+        },
+        {
+          "origin": "set_menu",
+          "name": "Hot dish",
+          "qty": null,
+          "productCode": null
+        },
+        {
+          "origin": "set_menu",
+          "name": "French fries",
+          "qty": null,
+          "productCode": "CF-11"
+        },
+        {
+          "origin": "set_menu",
+          "name": "Waffles or pancakes",
+          "qty": null,
+          "productCode": null
+        },
+        {
+          "origin": "set_menu",
+          "name": "Fried rice",
+          "qty": null,
+          "productCode": "CF-43"
+        },
+        {
+          "origin": "set_menu",
+          "name": "Veggie sticks",
+          "qty": null,
+          "productCode": "CF-53"
+        },
+        {
+          "origin": "set_menu",
+          "name": "Fruit skewers",
+          "qty": null,
+          "productCode": null
+        },
+        {
+          "origin": "set_menu",
+          "name": "Drinks pitcher",
+          "qty": null,
+          "productCode": null
+        },
+        {
+          "lineId": "zz945-kids-extra",
+          "origin": "extra",
+          "name": "French fries",
+          "qty": 2,
+          "productCode": null,
+          "audience": "kids"
+        },
+        {
+          "lineId": "zz945-own-adult",
+          "origin": "extra",
+          "name": "Margherita",
+          "qty": 3,
+          "productCode": "CF-24",
+          "audience": "adults"
+        }
+      ],
+      "at": "2026-11-14T09:35:18.083Z"
+    },
+    {
+      "case": "native-extra-ui",
+      "words": "Kitchen plan\nReady\n20 min before\nSlips print\n11:00\nPizza\nHot dish\nFrench fries\nWaffles or pancakes\nFried rice\nVeggie sticks\nFruit skewers · not on the till menu\nDrinks pitcher\nFrench fries · ZZ TEST 945 extra only · kids only · not on the till menu\n×2\nMargherita · ZZ TEST 945 own dish · adults\n×3",
+      "at": "2026-11-14T09:36:58.373Z"
+    },
+    {
+      "case": "actual-kids-only-set",
+      "appRuntime": "e4e7bca46d5cb20ba5333af17887107f23c0be78",
+      "eventId": "30df175e-f4c2-489a-a3b1-068186e14128",
+      "kitchenPlanRows": [
+        {
+          "origin": "set_menu",
+          "name": "Pizza",
+          "qty": null,
+          "productCode": null
+        },
+        {
+          "origin": "set_menu",
+          "name": "Hot dish",
+          "qty": null,
+          "productCode": null
+        },
+        {
+          "lineId": "zz945-kids-set",
+          "origin": "set_menu",
+          "name": "French fries",
+          "qty": 1,
+          "productCode": "CF-11",
+          "audience": "kids"
+        },
+        {
+          "origin": "set_menu",
+          "name": "Waffles or pancakes",
+          "qty": null,
+          "productCode": null
+        },
+        {
+          "origin": "set_menu",
+          "name": "Fried rice",
+          "qty": null,
+          "productCode": "CF-43"
+        },
+        {
+          "origin": "set_menu",
+          "name": "Veggie sticks",
+          "qty": null,
+          "productCode": "CF-53"
+        },
+        {
+          "origin": "set_menu",
+          "name": "Fruit skewers",
+          "qty": null,
+          "productCode": null
+        },
+        {
+          "origin": "set_menu",
+          "name": "Drinks pitcher",
+          "qty": null,
+          "productCode": null
+        },
+        {
+          "lineId": "zz945-own-adult",
+          "origin": "extra",
+          "name": "Margherita",
+          "qty": 3,
+          "productCode": "CF-24",
+          "audience": "adults"
+        }
+      ],
+      "at": "2026-11-14T09:36:59.708Z"
+    },
+    {
+      "case": "native-valid-kids-set-ui",
+      "words": "Kitchen plan\nReady\n20 min before\nSlips print\n11:00\nPizza\nHot dish\nFrench fries · kids only\n×1\nWaffles or pancakes\nFried rice\nVeggie sticks\nFruit skewers · not on the till menu\nDrinks pitcher\nMargherita · ZZ TEST 945 own dish · adults\n×3",
+      "at": "2026-11-14T09:37:16.612Z"
+    }
+  ],
+  "images": [
+    {
+      "name": "01-native-extra-does-not-mark-base.png",
+      "surface": "pos",
+      "at": "2026-11-14T09:36:58.417Z",
+      "masked": "visible signed-in account names only"
+    },
+    {
+      "name": "02-native-valid-kids-set.png",
+      "surface": "pos",
+      "at": "2026-11-14T09:37:16.650Z",
+      "masked": "visible signed-in account names only"
+    },
+    {
+      "name": "03-staging-view-run-card.png",
+      "surface": "labelled actual-result card",
+      "at": "2026-11-14T09:38:01.281Z"
+    }
+  ],
+  "failures": [
+    {
+      "name": "AssertionError",
+      "message": "Expected values to be strictly equal:\n\n404 !== 200\n",
+      "phase": "fixture-cleaned",
+      "at": "2026-11-14T09:38:21.238Z"
+    }
+  ],
+  "role": "global_admin",
+  "branch": {
+    "id": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+    "name": "Oto Play Park, Central Floresta "
+  },
+  "runtimeAtAuth": "e4e7bca46d5cb20ba5333af17887107f23c0be78",
+  "browser": "157.0.4341.46",
+  "template": {
+    "id": "0b1db99d-296a-4418-abb8-9d6071a367c4",
+    "name": "Birthday set menu, Central Floresta",
+    "fixed": {
+      "id": "item_cf_bday_fries",
+      "label": "French fries",
+      "productCode": "CF-11",
+      "qty": null
+    }
+  },
+  "firstPlan": {
+    "status": 201,
+    "kids": {
+      "id": "zz945-kids-extra",
+      "itemName": "French fries",
+      "quantity": 2,
+      "notes": "ZZ TEST 945 extra only",
+      "price": 175,
+      "included": false,
+      "source": "additional"
+    },
+    "adult": {
+      "id": "zz945-own-adult",
+      "itemName": "Margherita",
+      "productCode": "CF-24",
+      "quantity": 3,
+      "notes": "ZZ TEST 945 own dish",
+      "price": 180,
+      "included": false,
+      "source": "additional"
+    }
+  },
+  "box": {
+    "id": "85473c50-d282-44e9-8b02-efb217fcf7b9",
+    "name": "ZZ TEST 945 virtual view 85473c50",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "role": "virtual"
+  },
+  "station": {
+    "id": "21f91a8e-43d2-4f4f-9f45-2f892e58a46a",
+    "name": "ZZ TEST 945 view 21f91a8e",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "boxId": "85473c50-d282-44e9-8b02-efb217fcf7b9"
+  },
+  "secondPlan": {
+    "status": 200,
+    "kids": {
+      "id": "zz945-kids-set",
+      "itemName": "French fries",
+      "quantity": 1,
+      "notes": "",
+      "source": "set_menu",
+      "groupId": "item_cf_bday_fries",
+      "included": true,
+      "price": 0,
+      "productCode": "CF-11"
+    },
+    "adult": {
+      "id": "zz945-own-adult",
+      "itemName": "Margherita",
+      "productCode": "CF-24",
+      "quantity": 3,
+      "notes": "ZZ TEST 945 own dish",
+      "price": 180,
+      "included": false,
+      "source": "additional"
+    }
+  },
+  "cleanup": {
+    "fixtureId": "30df175e-f4c2-489a-a3b1-068186e14128",
+    "archivedAt": "2026-11-14T09:38:01.954Z",
+    "activeExactOwn": 0,
+    "runtimeAfter": "e4e7bca46d5cb20ba5333af17887107f23c0be78",
+    "at": "2026-11-14T09:38:02.040Z"
+  },
+  "signout": {
+    "pos": 200,
+    "posReadback": 401,
+    "app": 200,
+    "launcher": 200,
+    "appReadback": 401,
+    "launcherReadback": 401,
+    "at": "2026-11-14T09:38:22.601Z"
+  },
+  "browserClosedAt": "2026-11-14T09:38:22.877Z"
+}

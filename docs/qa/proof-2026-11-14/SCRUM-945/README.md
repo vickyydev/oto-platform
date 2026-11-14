@@ -1,0 +1,15 @@
+# SCRUM-945 / SCRUM-981 point 9: SET audience provenance
+
+Scoped behavior: **WORKS** on named staging app `e4e7bca46d5cb20ba5333af17887107f23c0be78`, deployment `dep-dbs2kod6e07s738lfh3g`. The app reports that same source before/after fresh proof. API and current till Render history bind `41158d2310ba4776dc2e1d03e435a8716d76556c`; the till history was captured after proof and shows no deployment change across the interval.
+
+The actual till kitchen card and actual platform rows show two controls: a kids EXTRA French fries cannot mark the template fallback fries base kids-only; a genuine kids-only SET keeps its label, CF-11 and one portion. The distinct adults dish retains three portions and CF-24. Existing permitted catalogue/template data was read only; own BEO data was written through its normal endpoint. No real message, payment or hardware action occurred.
+
+The one exact future party30df175e is archived, with no active own upcoming record. The own station21f91a8e and virtual box85473c50 are independently verified archived. Original POS/app/launcher and the fresh cleanup POS session all read401 after sign-out; the browser/driver are closed. The initial station-retire step succeeded, then a box-by-id read returned404. That failure remains in the original receipt; cleanup-recovery-01.json uses exact branch-list identity checks and records completed cleanup, without changing product code.
+
+Three selected PNGs were opened and inspected.01/02 are actual native kitchen cards;03 is a clearly labelled actual-result card.01's long extra label leaves its quantity partly outside the narrow crop: actual API qty2 is asserted, while the base/EXTRA marks remain clear. The second native image shows validkids-only1 and adult3 fully. Same-group collisions, historical unbadged fallback, viewOID/grants and first-thirteen legacy fields remain actual migrated local SQL coverage, not a fabricated native/printer claim.
+
+Local evidence: original0050red6 with11controls; actual0051fixed17, combined983-source71 across5wholefiles, release-review4, wholeAPItypes zero output, bothnewfileslint0 and app413/413. Independent exact2d017eb approval and all source/log hashes are retained. Applied0050 was never edited;0051 is forward-only. No history row or held menu/pricing rule was rewritten.
+
+CI stays explicit and background: original7455run43578727809 has the preserved response-assertion red and stale PDFhash-pin red. The response-only repair passed8/8 locally and peer review; remote43580585995 was cancelled/superseded before jobs, not green. Current full-source43580908597 was in progress at proof publication; a separate narrow obsolete PDFhash pin repair is underway. No full-green claim is made. The owner14November rule allows delivery while CI is pending/red; actual failures remain reported/repaired.
+
+Jira945/981 remain InProgress for unrelated held scope (including945Q17/Q18), neverDone. Only the delivered view point is claimed. Native/Jira readback follows the evidence push. This completes the last approved stage3 implementation unit; stop for owner review after publication/necessary test maintenance, no later-stage work.

@@ -1,0 +1,7 @@
+S.assert.equal(await S.runtime(),S.SHA);S.assert.ok(!S.st.station&&!S.st.box);const branchId='01a0bbdc-8c42-7753-b7e3-5ae19fb66d33';
+const boxId=S.randomUUID();const boxName='ZZ TEST 945 virtual view '+boxId.slice(0,8);
+const br=await S.pos('POST','/branches/'+branchId+'/boxes',{id:boxId,name:boxName,slot:'zz-test-945-'+boxId,role:'virtual',bridgeOrigin:null});S.assert.equal(br.status,200);S.assert.equal(br.body.box.id,boxId);S.assert.equal(br.body.box.role,'virtual');S.st.box={id:boxId,name:boxName,branchId,role:'virtual'};S.save();
+const stationId=S.randomUUID();const name='ZZ TEST 945 view '+stationId.slice(0,8);
+const sr=await S.pos('POST','/branches/'+branchId+'/stations',{id:stationId,name,kind:'till',boxId,codePrefix:('Z5'+S.randomUUID().replaceAll('-','').slice(0,4)).toUpperCase(),capabilities:['tickets','parties'],accessScope:'all_staff',staffAccountIds:[],devices:[],paymentRouting:{card:'manual',qr:'none',cash:'none'}});S.assert.equal(sr.status,200);S.assert.equal(sr.body.station.id,stationId);S.st.station={id:stationId,name,branchId,boxId};S.save();
+S.assert.equal((await S.pos('PUT','/me/session/station',{stationId})).status,200);await S.posPage.reload({waitUntil:'domcontentloaded'});await S.sleep(2000);
+return {station:S.st.station,box:S.st.box,headings:await S.posPage.getByRole('heading').allTextContents(),buttons:await S.posPage.getByRole('button').allTextContents()};
