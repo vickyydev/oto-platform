@@ -652,6 +652,8 @@ export interface BeoAiReview {
    * on that same set menu keeps its choice when approved.
    */
   parentSelection: BeoAiSetMenuChoices | null;
+  /** The saved adults switch that approval preserves; absent on an older server. */
+  adultsDiffer?: boolean;
   /**
    * SCRUM-843: the party's one deposit (SCRUM-813) as it stood when this
    * review was read. "Approve and create" sends it back (`expectedDeposit`),

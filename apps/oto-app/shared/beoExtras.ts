@@ -1,3 +1,4 @@
+import { beoQuantityOf } from "./beoQuantity";
 import { sameKitchenDish } from "./kitchenAdults";
 
 /**
@@ -20,8 +21,9 @@ import { sameKitchenDish } from "./kitchenAdults";
  *     carries is charged at the till's price for the party's day (the
  *     weekend price on a Saturday or a Sunday; the till's branch holidays
  *     are not known here), times its count;
- *   - a line with neither (typed by hand, or a code the till no longer has)
- *     is not charged: it prints for the kitchen, no price is invented;
+ *   - a line with neither an entered price nor a code is not charged: it
+ *     prints for the kitchen, no price is invented; a code absent from the
+ *     picker is unknown because that picker does not establish chargeability;
  *   - an item made from the BEO for this party (a PARTY- code) on the food
  *     lists is charged at the till's own price for it, whatever the line
  *     shows; on the bar plan the settlement charges it nowhere;
@@ -30,7 +32,7 @@ import { sameKitchenDish } from "./kitchenAdults";
  *     code) is charged once, on the kids' line;
  *   - a line with no name never reaches the till.
  *
- * With the till's menu not read, a coded line with no price entered cannot
+ * When the picker cannot establish a code, a coded line with no price entered cannot
  * be priced here: it is "unknown", and the total is not shown (nothing
  * rather than a wrong figure). Money is satang; a BEO line holds baht.
  */
@@ -79,7 +81,7 @@ export function isWeekendDate(date: string | null | undefined): boolean {
 }
 
 /** The line's count as the till reads it: a whole number from 1, else 1. */
-const countOf = (q: unknown): number => (typeof q === "number" && Number.isFinite(q) && Math.round(q) >= 1 && Math.round(q) <= 999_999 ? Math.round(q) : 1);
+const countOf = beoQuantityOf;
 /** The price entered on the line, in satang; null for none (0 is none). */
 const enteredOf = (p: unknown): number | null => (typeof p === "number" && Number.isFinite(p) && p > 0 ? Math.round(p * 100) : null);
 
@@ -95,7 +97,7 @@ export function beoExtraChargeOf(line: BeoExtraLine, area: "food" | "bar", ctx: 
     // The food lists' party item: the till's own price for it, whatever the badge or the line shows.
     if (!ctx.till.known) return { kind: "unknown" };
     const item = ctx.till.byCode.get(code);
-    if (!item) return { kind: "not_charged", why: "not_on_till" };
+    if (!item) return { kind: "unknown" };
     const unit = tillPrice(item);
     return { kind: "charged", unitSatang: unit, quantity, totalSatang: unit * quantity, from: "party_item", weekend };
   }
@@ -105,7 +107,7 @@ export function beoExtraChargeOf(line: BeoExtraLine, area: "food" | "bar", ctx: 
   if (!code) return { kind: "not_charged", why: "no_price" };
   if (!ctx.till.known) return { kind: "unknown" };
   const item = ctx.till.byCode.get(code);
-  if (!item) return { kind: "not_charged", why: "not_on_till" };
+  if (!item) return { kind: "unknown" };
   const unit = tillPrice(item);
   return { kind: "charged", unitSatang: unit, quantity, totalSatang: unit * quantity, from: "till", weekend };
 }

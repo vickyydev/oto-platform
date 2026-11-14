@@ -617,6 +617,7 @@ try {
     assert.deepEqual(review.proposal.adultsFolded?.map((f) => [f.dish, f.from.source, f.from.line, f.from.quote]), [["Margherita", "family", 2, "the Margherita pizza for them too"]]);
     const state = initialReviewState(review, { fill: res.body.fill });
     assert.equal(adultsFoldNoticeOf(review, state), adultsFoldedWords(1));
+    assert.equal(adultsFoldNoticeOf({ ...review, adultsDiffer: true }, state), adultsFoldedOnOwnMenuWords(1), "a saved Different switch stays on in the pre-approval notice");
     const page = html(review, state);
     const note = page.slice(page.indexOf('data-testid="text-ai-review-adults-folded"'));
     assert.ok(note.startsWith(`data-testid="text-ai-review-adults-folded">${esc(adultsFoldedWords(1))}`), "the note under the Kitchen Plan");
@@ -633,6 +634,12 @@ try {
     const another = { ...state, setMenuId: { ...state.setMenuId, value: null, changed: true } };
     assert.equal(adultsFoldNoticeOf(review, another), null);
     assert.equal(approveBodyOf(review, another, ids).adultsFolded, undefined);
+    await q("update beo_kitchen_plans set menus=jsonb_set(menus,'{adultsDiffer}','true'::jsonb) where event_id=$1",[ev.G]);
+    const onRead=await fill(ev.G);assert.equal(onRead.status,200,JSON.stringify(onRead.body));const onReview:BeoAiReview=onRead.body.review;
+    assert.equal(onReview.adultsDiffer,true,"the route supplies the saved effective switch");
+    const onState=initialReviewState(onReview,{});assert.equal(adultsFoldNoticeOf(onReview,onState),adultsFoldedOnOwnMenuWords(1));
+    const onApproved=await approve(ev.G,approveBodyOf(onReview,onState,ids));assert.equal(onApproved.status,200,JSON.stringify(onApproved.body));
+    assert.equal((await kitchenOf(ev.G)).menus.adultsDiffer,true,"approval preserves the switch described before the press");
   });
 
   await check("threadG_aFoldGoesWhenTheKidsChoiceLeavesIt", async () => {

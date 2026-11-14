@@ -1,8 +1,9 @@
+import { adultsDifferOf } from "@shared/kitchenAdults";
 import { Express, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { legacyDepositFieldsOf } from "@shared/beoLegacyDeposit";
 import { db } from "./db";
-import { branches, coreEvents } from "../shared/schema";
+import { branches, coreEvents, beoKitchenPlans } from "../shared/schema";
 import { and, eq } from "drizzle-orm";
 import { storage, type ActivityLogInput } from "./storage";
 import { canUserAccessBranch, requireManager } from "./auth-middleware";
@@ -539,6 +540,12 @@ export async function runBeoFill(
   return { run, proposals, proposal };
 }
 
+/** The approval preserves this saved switch; the review must describe that same state. */
+async function savedAdultsDifferOf(eventId: string): Promise<boolean> {
+  const [plan] = await db.select({ menus: beoKitchenPlans.menus }).from(beoKitchenPlans).where(eq(beoKitchenPlans.eventId, eventId));
+  return adultsDifferOf(plan?.menus);
+}
+
 export function registerAIRoutes(app: Express, requireAuth: any, overrides: Partial<AiRouteDeps> = {}) {
   const deps: AiRouteDeps = { ...defaultAiRouteDeps, ...overrides };
 
@@ -717,6 +724,7 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
               transcript: { lines: 1, cut: false },
               replaces: await sectionsHeld(db, event.id),
               parentSelection: await parentSelectionOf(db, event.id),
+              adultsDiffer: await savedAdultsDifferOf(event.id),
               // SCRUM-843: the deposit this review was read with; the approval sends it back.
               oneDeposit: oneDepositOf(await depositHeld(db, event.id)),
             }
@@ -848,6 +856,7 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
             transcript: { lines: conversation?.refs.length ?? 1, cut: conversation?.cut ?? false },
             replaces: await sectionsHeld(db, event.id),
             parentSelection: await parentSelectionOf(db, event.id),
+            adultsDiffer: await savedAdultsDifferOf(event.id),
             // SCRUM-843: the deposit this review was read with; the approval sends it back.
             oneDeposit: oneDepositOf(await depositHeld(db, event.id)),
           }

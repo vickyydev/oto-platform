@@ -1,3 +1,5 @@
+import { parkDayOf } from "@shared/beoDate";
+export { parkDayOf } from "@shared/beoDate";
 import { useState } from "react";
 import { useParams } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -8,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { LoadingScreen } from "@/components/ui/loading-spinner";
 import {
   UtensilsCrossed,
@@ -43,25 +45,6 @@ export function submittedChoicesOf(
   const chosenOf = (id: string) =>
     held.isSubmitted ? held.selections?.find((s) => s.groupId === id)?.chosenOptions ?? [] : sent?.[id] ?? [];
   return groups.map((g) => ({ id: g.id, label: g.label, chosen: chosenOf(g.id) })).filter((g) => g.chosen.length > 0);
-}
-
-/**
- * SCRUM-978 (SCRUM-976 point 7): the day a moment falls on at the party's park, in the device's own
- * date format: "Submitted on" prints the park's day, as the BEO PDF does, never the device's (a
- * family abroad, or a choice made after midnight at the park, read another day). With no zone, or
- * one the device's clock does not know, the park group's own (Bangkok).
- */
-export function parkDayOf(at: string, timeZone: string | null | undefined, locale?: string): string {
-  const when = new Date(at);
-  if (Number.isNaN(when.getTime())) return "";
-  const zoneOf = (zone: string | null | undefined) => {
-    try {
-      return zone?.trim() ? new Intl.DateTimeFormat("en-GB", { timeZone: zone.trim() }).resolvedOptions().timeZone : "Asia/Bangkok";
-    } catch {
-      return "Asia/Bangkok";
-    }
-  };
-  return when.toLocaleDateString(locale, { timeZone: zoneOf(timeZone) });
 }
 
 /** SCRUM-906 (decision 3), SCRUM-970: the choices under "Selections Received!", in the page's own list style. */
@@ -119,7 +102,9 @@ export default function MenuSelectPage() {
       }
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (answer: { submittedAt?: string | null }) => {
+      // The receipt time comes from the committed row, never the device clock.
+      queryClient.setQueryData<typeof data>(["/api/beo/set-menu-selections/public", token], (held) => held ? { ...held, isSubmitted: true, submittedAt: answer.submittedAt ?? held.submittedAt } : held);
       setSubmitted(true);
     },
     onError: (err: Error) => {

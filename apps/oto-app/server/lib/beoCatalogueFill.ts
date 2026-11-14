@@ -1831,7 +1831,9 @@ export function adultsSameAsKidsFolds(
  * "ต่อคน", "ต่อ 1 ชิ้น"), never inside another word: "ติดต่อ" (contact), "ต่อไป" (next).
  */
 const PER_ITEM_WORDS =
-  /(^|[^\p{L}])(each|per|apiece|a piece|ea)([^\p{L}]|$)|\/\s*(pc|pcs|piece|each)|(?<!แ)ละ|(?<!ติด)ต่อ\s*(?:\d|ถาด|ชิ้น|จาน|ที่|แก้ว|กล่อง|ท่าน|คน|หัว|ชุด|อัน|ลูก|ขวด|ถ้วย|ชาม|ไม้|ก้อน|เสิร์ฟ|หน่วย|ปอนด์|กระบอก|ออเดอร์)|за штуку|за шт|кажд|по\s*$/iu;
+  /(^|[^\p{L}])(each|per|apiece|a piece|ea)([^\p{L}]|$)|\/\s*(pc|pcs|piece|each)|(?<!แ)ละ|(?<!ติด)ต่อ\s*(?:\d|เซ็ต|เซต|(?:หนึ่ง\s*)?ถาด|ชิ้น|จาน|ที่|แก้ว|กล่อง|ท่าน|คน|หัว|ชุด|อัน|ลูก|ขวด|ถ้วย|ชาม|ไม้|ก้อน|เสิร์ฟ|หน่วย|ปอนด์|กระบอก|ออเดอร์)|за штуку|за шт|кажд|по\s*$/iu;
+/** Thai "order more" is a continuation, not a per-item price qualifier. The original words stay intact. */
+const saysPerItem = (text: string): boolean => PER_ITEM_WORDS.test(text.replace(/สั่ง\s*ต่อ/gu, "สั่งเพิ่ม"));
 /** SCRUM-946: words saying a price is the total for several ("for 900", "900 in total", "всего 900"). */
 const TOTAL_WORDS = /(^|[^\p{L}])(total|in all|altogether|together|for (both|all|the two|the three|them|everything))([^\p{L}]|$)|รวม|ทั้งหมด|всего|итого|вместе|за все|за обе|за оба/iu;
 /**
@@ -1847,7 +1849,7 @@ export function chatPriceIsTotal(text: string | null, price: number, quantity: n
   // "for 900" is a total only after the count itself ("2 pizzas for 900"), never after one item.
   const count = new RegExp(`(^|[^0-9])${quantity}(?![0-9])|(^|[^\\p{L}])(${COUNT_WORDS[quantity] ?? "(?!)"})([^\\p{L}]|$)`, "iu");
   for (const { before, after } of figureSidesOf(text, price)) {
-    if (PER_ITEM_WORDS.test(before) || PER_ITEM_WORDS.test(after)) continue;
+    if (saysPerItem(before) || saysPerItem(after)) continue;
     if ((/(^|[^\p{L}])(for|за)\s*(฿|thb|baht|бат\p{L}*)?\s*$/iu.test(before) && count.test(before)) || TOTAL_WORDS.test(before) || TOTAL_WORDS.test(after)) return true;
   }
   return false;
@@ -1874,7 +1876,7 @@ function figureSidesOf(text: string, price: number): Array<{ before: string; aft
  */
 export function figureSaidEach(text: string | null, price: number): boolean {
   if (!text || !(price > 0)) return false;
-  return figureSidesOf(text, price).some(({ before, after }) => PER_ITEM_WORDS.test(before) || PER_ITEM_WORDS.test(after));
+  return figureSidesOf(text, price).some(({ before, after }) => saysPerItem(before) || saysPerItem(after));
 }
 /** SCRUM-970: an amount's money word, before or after it: baht as the park's chats write it. */
 const MONEY = String.raw`(?:฿|thb\.?|baht|บาท|бат\p{L}*|руб\p{L}*)`;

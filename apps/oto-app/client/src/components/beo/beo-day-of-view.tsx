@@ -1,3 +1,5 @@
+import { beoQuantityOf, stepBeoQuantity } from "@shared/beoQuantity";
+import { parkDayOf } from "@shared/beoDate";
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
@@ -221,17 +223,17 @@ function KitchenMenuItemRow({ item, idx, menuItems, menuTab, onSave }: {
         </button>
         <Button variant="outline" size="icon" className="h-7 w-7 shrink-0"
           onClick={() => {
-            const updated = menuItems.map((m, i) => i === idx ? { ...m, quantity: Math.max(1, m.quantity - 1) } : m);
+            const updated = menuItems.map((m, i) => i === idx ? { ...m, quantity: stepBeoQuantity(m.quantity, -1) } : m);
             onSave(updated);
           }}
           data-testid={`button-qty-minus-${menuTab}-${idx}`}
         >
           <Minus className="h-3 w-3" />
         </Button>
-        <span className="w-6 text-center text-xs font-medium shrink-0" data-testid={`text-menu-qty-${menuTab}-${idx}`}>{item.quantity}</span>
+        <span className="w-6 text-center text-xs font-medium shrink-0" data-testid={`text-menu-qty-${menuTab}-${idx}`}>{beoQuantityOf(item.quantity)}</span>
         <Button variant="outline" size="icon" className="h-7 w-7 shrink-0"
           onClick={() => {
-            const updated = menuItems.map((m, i) => i === idx ? { ...m, quantity: m.quantity + 1 } : m);
+            const updated = menuItems.map((m, i) => i === idx ? { ...m, quantity: stepBeoQuantity(m.quantity, 1) } : m);
             onSave(updated);
           }}
           data-testid={`button-qty-plus-${menuTab}-${idx}`}
@@ -429,8 +431,8 @@ export function BeoDayOfView({ eventId, onClose }: BeoDayOfViewProps) {
     // SCRUM-829: the switch as saved; a BEO saved before it is on only when its adults' list
     // holds lines that are not the kids' (shared/kitchenAdults.ts).
     const differ = adultsDifferOf(menus);
-    setLocalKidsMenu(menus?.kids || []);
-    setLocalAdultsMenu(differ ? menus?.adults || [] : []);
+    setLocalKidsMenu((menus?.kids || []).map((m: KitchenMenuLine) => ({ ...m, quantity: beoQuantityOf(m.quantity) })));
+    setLocalAdultsMenu(differ ? (menus?.adults || []).map((m: KitchenMenuLine) => ({ ...m, quantity: beoQuantityOf(m.quantity) })) : []);
     setLocalAdultsDiffer(differ);
     setLocalKidsFoodTime(menus?.kidsFoodTime || "");
     setLocalAdultsFoodTime(menus?.adultsFoodTime || "");
@@ -1438,7 +1440,7 @@ export function BeoDayOfView({ eventId, onClose }: BeoDayOfViewProps) {
                                     )}
                                     {setMenuSelection?.isSubmitted && setMenuSelection.submittedAt && (
                                       <span className="text-xs text-muted-foreground">
-                                        Received {new Date(setMenuSelection.submittedAt).toLocaleDateString()}
+                                        Received {parkDayOf(setMenuSelection.submittedAt)}
                                       </span>
                                     )}
                                   </div>
@@ -1531,7 +1533,7 @@ export function BeoDayOfView({ eventId, onClose }: BeoDayOfViewProps) {
                                   <ul className="space-y-0.5">
                                     {localKidsMenu.filter((item) => item.source !== "set_menu").map((item, idx) => (
                                       <li key={item.id} className="text-sm flex items-center gap-2" data-testid={`adults-mirror-item-${idx}`}>
-                                        <span className="w-6 text-center text-xs font-medium shrink-0">{item.quantity}</span>
+                                        <span className="w-6 text-center text-xs font-medium shrink-0">{beoQuantityOf(item.quantity)}</span>
                                         <span>{item.itemName}</span>
                                         <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-amber-500/10 text-amber-600 border-amber-500/30">EXTRA</Badge>
                                         {item.notes && <span className="text-xs text-muted-foreground">({item.notes})</span>}
@@ -1693,7 +1695,7 @@ export function BeoDayOfView({ eventId, onClose }: BeoDayOfViewProps) {
                                 <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border shrink-0 ${item.source === "set_menu" ? "bg-blue-500/15 text-blue-600 border-blue-500/30 dark:text-blue-400" : "bg-amber-500/15 text-amber-600 border-amber-500/30 dark:text-amber-400"}`}>
                                   {item.source === "set_menu" ? "SET" : "EXTRA"}
                                 </span>
-                                <span className="font-mono text-muted-foreground shrink-0">{item.quantity || 1}x</span>
+                                <span className="font-mono text-muted-foreground shrink-0">{beoQuantityOf(item.quantity)}x</span>
                                 <span>{item.itemName}</span>
                               </div>
                               {item.notes && <p className="text-xs text-muted-foreground ml-16">{item.notes}</p>}
@@ -1855,7 +1857,7 @@ export function BeoDayOfView({ eventId, onClose }: BeoDayOfViewProps) {
                   <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">Selections received!</p>
                   {setMenuSelection.submittedAt && (
                     <p className="text-xs text-muted-foreground">
-                      Submitted on {new Date(setMenuSelection.submittedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                      Submitted on {parkDayOf(setMenuSelection.submittedAt, undefined, "en-GB", { day: "numeric", month: "short", year: "numeric" })}
                     </p>
                   )}
                 </div>

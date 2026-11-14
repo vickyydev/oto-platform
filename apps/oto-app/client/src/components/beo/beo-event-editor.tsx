@@ -1,3 +1,5 @@
+import { beoQuantityOf, stepBeoQuantity } from "@shared/beoQuantity";
+import { parkDayOf } from "@shared/beoDate";
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
@@ -417,16 +419,18 @@ function PackageLineItemRow({ item, idx, packageItems, setPackageItems }: {
   );
 }
 
-function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab, charge }: {
+function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab, charge, disabled = false }: {
   item: MenuLine; idx: number; menuItems: MenuLine[]; setMenuItems: React.Dispatch<React.SetStateAction<MenuLine[]>>; menuTab: string;
   /** SCRUM-949: the line's charge as its list decides it (the adults' copy of a kids' line). */
   charge?: BeoExtraCharge;
+  disabled?: boolean;
 }) {
   const tillMenu = useTillMenuIndex();
+  const changeMenu: typeof setMenuItems = (next) => { if (!disabled) setMenuItems(next); };
   return (
     <div className="space-y-0.5" data-testid={`menu-item-${menuTab}-${idx}`}>
       <div className="flex items-center gap-1">
-        <button
+        <button disabled={disabled}
           type="button"
           className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-colors ${
             item.source === "set_menu"
@@ -434,7 +438,7 @@ function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab, charge }
               : "bg-amber-500/15 text-amber-600 border-amber-500/30 dark:text-amber-400 cursor-pointer"
           }`}
           onClick={() => {
-            setMenuItems(prev => {
+            changeMenu(prev => {
               const updated = [...prev];
               updated[idx] = { ...updated[idx], source: updated[idx].source === "set_menu" ? undefined : "set_menu" };
               return updated;
@@ -444,14 +448,14 @@ function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab, charge }
         >
           {item.source === "set_menu" ? "SET" : "EXTRA"}
         </button>
-        <Button
+        <Button disabled={disabled}
           variant="outline"
           size="icon"
           className="h-7 w-7 shrink-0"
           onClick={() => {
-            setMenuItems(prev => {
+            changeMenu(prev => {
               const updated = [...prev];
-              updated[idx] = { ...updated[idx], quantity: Math.max(1, updated[idx].quantity - 1) };
+              updated[idx] = { ...updated[idx], quantity: stepBeoQuantity(updated[idx].quantity, -1) };
               return updated;
             });
           }}
@@ -460,16 +464,16 @@ function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab, charge }
           <Minus className="h-3 w-3" />
         </Button>
         <span className="w-6 text-center text-xs font-medium shrink-0" data-testid={`text-menu-qty-${menuTab}-${idx}`}>
-          {item.quantity}
+          {beoQuantityOf(item.quantity)}
         </span>
-        <Button
+        <Button disabled={disabled}
           variant="outline"
           size="icon"
           className="h-7 w-7 shrink-0"
           onClick={() => {
-            setMenuItems(prev => {
+            changeMenu(prev => {
               const updated = [...prev];
-              updated[idx] = { ...updated[idx], quantity: updated[idx].quantity + 1 };
+              updated[idx] = { ...updated[idx], quantity: stepBeoQuantity(updated[idx].quantity, 1) };
               return updated;
             });
           }}
@@ -479,20 +483,20 @@ function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab, charge }
         </Button>
         {/* SCRUM-949: an EXTRA line's price for each item, beside its count; never on a SET line. */}
         {item.source !== "set_menu" && (
-          <ExtraPriceBox
+          <ExtraPriceBox disabled={disabled}
             line={item}
             area="food"
             charge={charge}
-            onPrice={(price) => setMenuItems(prev => prev.map((line, i) => (i === idx ? { ...line, price } : line)))}
+            onPrice={(price) => changeMenu(prev => prev.map((line, i) => (i === idx ? { ...line, price } : line)))}
             testId={`${menuTab}-${idx}`}
           />
         )}
         <div className="flex-1 flex items-center gap-1 min-w-0">
-        <EditableText
+        <EditableText disabled={disabled}
           className="text-xs min-w-0"
           value={item.itemName}
           onChange={(v) => {
-            setMenuItems(prev => {
+            changeMenu(prev => {
               const updated = [...prev];
               updated[idx] = { ...updated[idx], itemName: v };
               return updated;
@@ -507,7 +511,7 @@ function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab, charge }
               included: item.included,
               price: 0,
             };
-            setMenuItems(prev => {
+            changeMenu(prev => {
               const updated = [...prev];
               updated.splice(idx + 1, 0, newItem);
               return updated;
@@ -525,8 +529,8 @@ function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab, charge }
         {!isTemplateSetMenuLine(item) && (
           <TillMenuPick
             code={item.productCode}
-            onPick={(picked) => setMenuItems(prev => prev.map((line, i) => (i === idx ? lineWithTillItem(line, picked) : line)))}
-            onClear={() => setMenuItems(prev => prev.map((line, i) => (i === idx ? lineWithoutTillItem(line) : line)))}
+            onPick={(picked) => changeMenu(prev => prev.map((line, i) => (i === idx ? lineWithTillItem(line, picked) : line)))}
+            onClear={() => changeMenu(prev => prev.map((line, i) => (i === idx ? lineWithoutTillItem(line) : line)))}
             testId={`button-till-menu-${menuTab}-${idx}`}
           />
         )}
@@ -545,10 +549,10 @@ function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab, charge }
         <TillCodeMark code={item.productCode} testId={`text-menu-code-dead-${menuTab}-${idx}`} />
         </div>
         {!item.notes && (
-          <button
+          <button disabled={disabled}
             className="h-7 w-7 shrink-0 flex items-center justify-center text-muted-foreground hover:text-foreground rounded-md hover:bg-accent"
             onClick={() => {
-              setMenuItems(prev => {
+              changeMenu(prev => {
                 const updated = [...prev];
                 updated[idx] = { ...updated[idx], notes: " " };
                 return updated;
@@ -564,11 +568,11 @@ function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab, charge }
             <MessageSquare className="h-3 w-3" />
           </button>
         )}
-        <Button
+        <Button disabled={disabled}
           variant="ghost"
           size="icon"
           className="h-7 w-7 shrink-0 text-destructive hover:text-destructive"
-          onClick={() => setMenuItems(menuItems.filter((_, i) => i !== idx))}
+          onClick={() => changeMenu(menuItems.filter((_, i) => i !== idx))}
           data-testid={`button-remove-menu-item-${menuTab}-${idx}`}
         >
           <Trash2 className="h-3 w-3" />
@@ -576,11 +580,11 @@ function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab, charge }
       </div>
       {item.notes && item.source !== "set_menu" && (
         <div className="flex items-center gap-1 pl-[3.25rem]">
-          <EditableText
+          <EditableText disabled={disabled}
             className="flex-1 text-xs"
             value={item.notes}
             onChange={(v) => {
-              setMenuItems(prev => {
+              changeMenu(prev => {
                 const updated = [...prev];
                 updated[idx] = { ...updated[idx], notes: v };
                 return updated;
@@ -589,12 +593,12 @@ function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab, charge }
             placeholder="Notes..."
             data-testid={`input-menu-notes-${menuTab}-${idx}`}
           />
-          <Button
+          <Button disabled={disabled}
             variant="ghost"
             size="icon"
             className="h-6 w-6 shrink-0 text-muted-foreground"
             onClick={() => {
-              setMenuItems(prev => {
+              changeMenu(prev => {
                 const updated = [...prev];
                 updated[idx] = { ...updated[idx], notes: "" };
                 return updated;
@@ -1067,7 +1071,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
           const mapMenu = (m: any) => ({
             id: m.id,
             itemName: m.itemName || "",
-            quantity: m.quantity || 1,
+            quantity: beoQuantityOf(m.quantity),
             notes: m.notes || "",
             included: m.includedInPackage ?? m.included ?? true,
             price: m.price || 0,
@@ -1084,8 +1088,8 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
         if (kp.simplifiedMenus) {
           // New saves always use menus. Keep this fallback for records returned by
           // older BEO endpoints, but never let stale legacy data override it.
-          if (!Array.isArray(menus?.kids) && Array.isArray(kp.simplifiedMenus.kids)) setKidsMenu(kp.simplifiedMenus.kids.map((m: any) => ({ ...m, price: m.price || 0, source: m.source, groupId: m.groupId })));
-          if (!Array.isArray(menus?.adults) && Array.isArray(kp.simplifiedMenus.adults)) setAdultsMenu(kp.simplifiedMenus.adults.map((m: any) => ({ ...m, price: m.price || 0, source: m.source, groupId: m.groupId })));
+          if (!Array.isArray(menus?.kids) && Array.isArray(kp.simplifiedMenus.kids)) setKidsMenu(kp.simplifiedMenus.kids.map((m: any) => ({ ...m, quantity: beoQuantityOf(m.quantity), price: m.price || 0, source: m.source, groupId: m.groupId })));
+          if (!Array.isArray(menus?.adults) && Array.isArray(kp.simplifiedMenus.adults)) setAdultsMenu(kp.simplifiedMenus.adults.map((m: any) => ({ ...m, quantity: beoQuantityOf(m.quantity), price: m.price || 0, source: m.source, groupId: m.groupId })));
         }
         // SCRUM-829: the switch as saved; a BEO saved before it opens on only when its adults'
         // list holds lines that are not the kids' list, off when it is empty or the same.
@@ -1102,7 +1106,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
         const mapBarItem = (m: any) => ({
           id: m.id || `bar_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           itemName: m.itemName || "",
-          quantity: m.quantity || 1,
+          quantity: beoQuantityOf(m.quantity),
           notes: m.notes || "",
           included: false,
           price: m.price || 0,
@@ -1876,7 +1880,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
         setKidsMenu(kp.kidsMenu.map((m: any) => ({
           id: `menu_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           itemName: m.itemName || "",
-          quantity: m.quantity || 1,
+          quantity: beoQuantityOf(m.quantity),
           notes: m.notes || "",
           included: m.included !== false,
           price: m.price || 0,
@@ -1892,7 +1896,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
         setAdultsMenu(kp.adultsMenu.map((m: any) => ({
           id: `menu_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           itemName: m.itemName || "",
-          quantity: m.quantity || 1,
+          quantity: beoQuantityOf(m.quantity),
           notes: m.notes || "",
           included: m.included !== false,
           price: m.price || 0,
@@ -3086,7 +3090,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
             <AccordionContent className={`px-4 pb-4 ${readOnly ? "opacity-75 cursor-not-allowed" : ""}`}>
               <div className="grid gap-4">
                 <div className="flex flex-wrap items-center gap-2">
-                  <Button
+                  <Button disabled={readOnly}
                     variant={!kitchenRequired ? "default" : "outline"}
                     size="sm"
                     onClick={() => setKitchenRequired(false)}
@@ -3094,7 +3098,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                   >
                     Not Needed
                   </Button>
-                  <Button
+                  <Button disabled={readOnly}
                     variant={kitchenRequired ? "default" : "outline"}
                     size="sm"
                     onClick={() => setKitchenRequired(true)}
@@ -3110,7 +3114,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                       <Label>Menus</Label>
                       <div className="flex flex-wrap items-center gap-2">
                         <div className="flex gap-1">
-                          <Button
+                          <Button disabled={readOnly}
                             variant={menuTab === "kids" ? "default" : "outline"}
                             size="sm"
                             onClick={() => setMenuTab("kids")}
@@ -3118,7 +3122,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                           >
                             Kids Menu ({kidsMenu.length})
                           </Button>
-                          <Button
+                          <Button disabled={readOnly}
                             variant={menuTab === "adults" ? "default" : "outline"}
                             size="sm"
                             onClick={() => setMenuTab("adults")}
@@ -3132,7 +3136,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                           {(menuTab === "kids" ? kidsFoodTime : adultsFoodTime) ? (
                             <div className="flex items-center gap-1">
                               <span className="text-sm font-mono bg-muted px-2 py-1 rounded">{menuTab === "kids" ? kidsFoodTime : adultsFoodTime}</span>
-                              <Button
+                              <Button disabled={readOnly}
                                 type="button"
                                 variant="ghost"
                                 size="icon"
@@ -3142,7 +3146,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                               >
                                 <Settings className="h-3.5 w-3.5" />
                               </Button>
-                              <Button
+                              <Button disabled={readOnly}
                                 type="button"
                                 variant="ghost"
                                 size="icon"
@@ -3154,7 +3158,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                               </Button>
                             </div>
                           ) : (
-                            <Button
+                            <Button disabled={readOnly}
                               type="button"
                               variant="outline"
                               size="sm"
@@ -3178,8 +3182,8 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                             onChange={(e) => setTempFoodTime(e.target.value)}
                             data-testid="input-food-time"
                           />
-                          <Button type="button" size="sm" className="h-7 text-xs" onClick={() => { if (foodTimeTarget === "kids") setKidsFoodTime(tempFoodTime); else setAdultsFoodTime(tempFoodTime); setShowFoodTimePicker(false); }} data-testid="button-confirm-food-time">Confirm</Button>
-                          <Button type="button" size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowFoodTimePicker(false)}>Cancel</Button>
+                          <Button disabled={readOnly} type="button" size="sm" className="h-7 text-xs" onClick={() => { if (foodTimeTarget === "kids") setKidsFoodTime(tempFoodTime); else setAdultsFoodTime(tempFoodTime); setShowFoodTimePicker(false); }} data-testid="button-confirm-food-time">Confirm</Button>
+                          <Button disabled={readOnly} type="button" size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowFoodTimePicker(false)}>Cancel</Button>
                         </div>
                       )}
 
@@ -3196,7 +3200,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                             <div className="space-y-3">
                               {/* Set Menu Toggle */}
                               <div className="flex items-center gap-3 p-3 border rounded-md bg-muted/30">
-                                <Switch
+                                <Switch disabled={readOnly}
                                   checked={setMenuEnabled}
                                   onCheckedChange={(v) => {
                                     if (!v) {
@@ -3221,8 +3225,8 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                   {/* Template Picker */}
                                   <div className="space-y-1">
                                     <Label className="text-xs text-muted-foreground">Set Menu Template</Label>
-                                    <Select value={setMenuTemplateId} onValueChange={setSetMenuTemplateId}>
-                                      <SelectTrigger className="text-sm" data-testid="select-set-menu-template">
+                                    <Select disabled={readOnly} value={setMenuTemplateId} onValueChange={setSetMenuTemplateId}>
+                                      <SelectTrigger disabled={readOnly} className="text-sm" data-testid="select-set-menu-template">
                                         <SelectValue placeholder="Pick a template..." />
                                       </SelectTrigger>
                                       <SelectContent>
@@ -3283,7 +3287,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                                   {resolvedSetMenuItems.map((item, idx) => {
                                                     const absIdx = resolvedMenu.findIndex(m => m === item);
                                                     return (
-                                                      <MenuLineItemRow
+                                                      <MenuLineItemRow disabled={readOnly}
                                                         key={item.id}
                                                         item={item}
                                                         idx={absIdx >= 0 ? absIdx : idx}
@@ -3297,7 +3301,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                               ) : (
                                                 <p className="text-xs text-muted-foreground italic">Parent selections appear here after submission. You can also add items manually below.</p>
                                               )}
-                                              <button
+                                              <button disabled={readOnly}
                                                 className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-emerald-500/15 text-emerald-600 border-emerald-500/30 dark:text-emerald-400 hover:bg-emerald-500/25 transition-colors"
                                                 onClick={() => {
                                                   const newItem: MenuLine = {
@@ -3362,7 +3366,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                         )}
                                         {setMenuSelection?.isSubmitted && setMenuSelection.submittedAt && (
                                           <span className="text-xs text-muted-foreground" data-testid="text-set-menu-selection-date">
-                                            {choicesFromChatOnly(setMenuSelection.selections) ? "Chosen from the chat" : "Received"} {new Date(setMenuSelection.submittedAt).toLocaleDateString()}
+                                            {choicesFromChatOnly(setMenuSelection.selections) ? "Chosen from the chat" : "Received"} {parkDayOf(setMenuSelection.submittedAt)}
                                           </span>
                                         )}
                                       </div>
@@ -3400,6 +3404,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                         <div
                                           className="text-sm text-muted-foreground text-center py-4 border border-dashed rounded-md cursor-pointer hover:bg-accent/30 hover:border-border transition-colors"
                                           onClick={() => {
+                                            if (readOnly) return;
                                             // SCRUM-958 (SCRUM-940 point 2): the first line shows the EXTRA badge, so it is saved as one.
                                             setCurrentMenu([{
                                               id: `menu_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
@@ -3425,7 +3430,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                               ? currentMenu.findIndex(m => m === item)
                                               : idx;
                                             return (
-                                              <MenuLineItemRow
+                                              <MenuLineItemRow disabled={readOnly}
                                                 key={item.id}
                                                 item={item}
                                                 idx={absIdx >= 0 ? absIdx : idx}
@@ -3438,7 +3443,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                         </>
                                       )}
                                       <div className={`flex gap-2 pt-1 ${additionalItems.length === 0 && !setMenuEnabled ? "hidden" : ""}`}>
-                                        <button
+                                        <button disabled={readOnly}
                                           className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-amber-500/15 text-amber-600 border-amber-500/30 dark:text-amber-400 hover:bg-amber-500/25 transition-colors"
                                           onClick={() => {
                                             const newItem: MenuLine = {
@@ -3459,7 +3464,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                       </div>
                                       {!readOnly && (
                                         <div className="flex gap-2 pt-1">
-                                          <button
+                                          <button disabled={readOnly}
                                             type="button"
                                             className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-violet-500/15 text-violet-600 border-violet-500/30 dark:text-violet-400 hover:bg-violet-500/25 transition-colors"
                                             onClick={() => setNewItemMenu("kids")}
@@ -3522,7 +3527,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                 ) : (
                                   kidsMenu.map((item, index) => (
                                     <div key={item.id} className="flex items-center gap-2 text-sm py-0.5" data-testid={`adults-mirror-item-${index}`}>
-                                      <span className="w-6 text-center text-xs font-medium shrink-0">{item.quantity}</span>
+                                      <span className="w-6 text-center text-xs font-medium shrink-0">{beoQuantityOf(item.quantity)}</span>
                                       <span className="text-xs">{item.itemName}</span>
                                       {item.notes?.trim() && <span className="text-xs text-muted-foreground shrink-0">{item.notes.trim()}</span>}
                                       {item.productCode && (
@@ -3539,6 +3544,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                   <div
                                     className="text-sm text-muted-foreground text-center py-4 border border-dashed rounded-md cursor-pointer hover:bg-accent/30 hover:border-border transition-colors"
                                     onClick={() => {
+                                            if (readOnly) return;
                                       // SCRUM-958 (SCRUM-940 point 2): the first line shows the EXTRA badge, so it is saved as one.
                                       setCurrentMenu([{
                                         id: `menu_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
@@ -3561,7 +3567,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                 ) : (
                                   <>
                                     {currentMenu.map((item, index) => (
-                                      <MenuLineItemRow
+                                      <MenuLineItemRow disabled={readOnly}
                                         key={item.id}
                                         item={item}
                                         idx={index}
@@ -3574,7 +3580,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                   </>
                                 )}
                                 <div className={`flex gap-2 pt-1 ${currentMenu.length === 0 ? "hidden" : ""}`}>
-                                  <button
+                                  <button disabled={readOnly}
                                     className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-amber-500/15 text-amber-600 border-amber-500/30 dark:text-amber-400 hover:bg-amber-500/25 transition-colors"
                                     onClick={() => {
                                       setCurrentMenu([...currentMenu, {
@@ -3594,7 +3600,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                 </div>
                                 {!readOnly && (
                                   <div className="flex gap-2 pt-1">
-                                    <button
+                                    <button disabled={readOnly}
                                       type="button"
                                       className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-violet-500/15 text-violet-600 border-violet-500/30 dark:text-violet-400 hover:bg-violet-500/25 transition-colors"
                                       onClick={() => setNewItemMenu("adults")}
@@ -3620,7 +3626,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                       <Label className="flex items-center gap-1">Cake{aiMark("cake")}</Label>
                       <div className="flex gap-2 flex-wrap">
                         {["NONE", "INTERNAL", "EXTERNAL"].map((mode) => (
-                          <Button
+                          <Button disabled={readOnly}
                             key={mode}
                             variant={cakeMode === mode ? "default" : "outline"}
                             size="sm"
@@ -3646,7 +3652,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                               <Label className="text-xs text-muted-foreground whitespace-nowrap">Qty</Label>
                               <div className="flex items-center border rounded-md overflow-hidden">
                                 {[1, 2, 3].map((q) => (
-                                  <button
+                                  <button disabled={readOnly}
                                     key={q}
                                     type="button"
                                     onClick={() => setCakeQuantity(q)}
@@ -3658,7 +3664,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                 ))}
                               </div>
                             </div>
-                            <button
+                            <button disabled={readOnly}
                               type="button"
                               className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer transition-colors ${
                                 cakeIncluded
@@ -3675,7 +3681,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                               {cakeTime ? (
                                 <div className="flex items-center gap-1">
                                   <span className="text-sm font-mono bg-muted px-2 py-1 rounded">{cakeTime}</span>
-                                  <Button
+                                  <Button disabled={readOnly}
                                     type="button"
                                     variant="ghost"
                                     size="icon"
@@ -3685,7 +3691,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                   >
                                     <Settings className="h-3 w-3" />
                                   </Button>
-                                  <Button
+                                  <Button disabled={readOnly}
                                     type="button"
                                     variant="ghost"
                                     size="icon"
@@ -3697,7 +3703,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                   </Button>
                                 </div>
                               ) : (
-                                <Button
+                                <Button disabled={readOnly}
                                   type="button"
                                   variant="outline"
                                   size="sm"
@@ -3711,7 +3717,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                               )}
                             </div>
                             {!cakeIncluded && (
-                              <EditableText
+                              <EditableText disabled={readOnly}
                                 type="number"
                                 className="w-24 text-xs font-mono"
                                 value={String(cakePrice || "")}
@@ -3730,11 +3736,11 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                 onChange={(e) => setTempCakeTime(e.target.value)}
                                 data-testid="input-cake-time-picker"
                               />
-                              <Button type="button" size="sm" className="h-7 text-xs" onClick={() => { setCakeTime(tempCakeTime); setShowCakeTimePicker(false); aiTouched("cake"); }} data-testid="button-confirm-cake-time">Confirm</Button>
-                              <Button type="button" size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowCakeTimePicker(false)}>Cancel</Button>
+                              <Button disabled={readOnly} type="button" size="sm" className="h-7 text-xs" onClick={() => { setCakeTime(tempCakeTime); setShowCakeTimePicker(false); aiTouched("cake"); }} data-testid="button-confirm-cake-time">Confirm</Button>
+                              <Button disabled={readOnly} type="button" size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowCakeTimePicker(false)}>Cancel</Button>
                             </div>
                           )}
-                          <EditableText
+                          <EditableText disabled={readOnly}
                             className="flex-1 min-w-[150px] text-sm"
                             value={cakeNotes}
                             onChange={(v) => { setCakeNotes(v); aiTouched("cake"); }}
@@ -3892,7 +3898,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                         />
                         {/* SCRUM-949: an EXTRA drink's price for each item, beside its count; never on a SET line. */}
                         {item.source !== "set_menu" && (
-                          <ExtraPriceBox
+                          <ExtraPriceBox disabled={readOnly}
                             line={item}
                             area="bar"
                             charge={extraCharges.bar[idx]}
@@ -4415,7 +4421,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                   </p>
                   {setMenuSelection.submittedAt && (
                     <p className="text-xs text-muted-foreground">
-                      {choicesFromChatOnly(setMenuSelection.selections) ? "Recorded on" : "Submitted on"} {new Date(setMenuSelection.submittedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                      {choicesFromChatOnly(setMenuSelection.selections) ? "Recorded on" : "Submitted on"} {parkDayOf(setMenuSelection.submittedAt, undefined, "en-GB", { day: "numeric", month: "short", year: "numeric" })}
                     </p>
                   )}
                 </div>

@@ -1,3 +1,4 @@
+import { beoQuantityOf } from "@shared/beoQuantity";
 import puppeteer from "puppeteer";
 import path from "path";
 import fs from "fs";
@@ -727,7 +728,7 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
       ? '<span class="incl-badge" style="background:#dbeafe;color:#1e40af;border-color:#93c5fd;">SET</span>'
       : extraBadge(item, 'food');
     return `<tr>
-      <td class="qty">${item.quantity}x</td>
+      <td class="qty">${beoQuantityOf(item.quantity)}x</td>
       <td>${s(item.itemName)}${item.notes ? ` <span class="item-note">${s(noteInBrackets(item.notes))}</span>` : ''}${adultsMarkHtml(mark)}</td>
       <td class="price-col">${badge}</td>
     </tr>`;
@@ -741,13 +742,14 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
   // marked "adults only" — never a second list.
   // SCRUM-978: the kids' list the editor and the till read: `menus` (canonical, kitchenPlanDbDataOf in
   // beo-routes.ts), `simplifiedMenus` only for a plan of before that has no `menus` list.
-  const pdfKids = Array.isArray(kp?.menus?.kids) ? kp!.menus!.kids : kp?.simplifiedMenus?.kids || [];
-  const pdfAdultsDiffer = !!kp && adultsDifferOf({ kids: pdfKids, adults: kp.menus?.adults, adultsDiffer: kp.menus?.adultsDiffer });
+  const pdfKids = (Array.isArray(kp?.menus?.kids) ? kp!.menus!.kids : kp?.simplifiedMenus?.kids || []).map(item => ({ ...item, quantity: beoQuantityOf(item.quantity) }));
+  const pdfAdultLines = (kp?.menus?.adults ?? []).map(item => ({ ...item, quantity: beoQuantityOf(item.quantity) }));
+  const pdfAdultsDiffer = !!kp && adultsDifferOf({ kids: pdfKids, adults: pdfAdultLines, adultsDiffer: kp.menus?.adultsDiffer });
   // SCRUM-978: an adults' line is marked beside the kids' row of its name only when that row's price
   // cell holds for it too (the same kind of line at the same price each, or the one dish the till
   // charges once); else it prints as its own row, with its own count and price, as the editor shows
   // it and the till charges it.
-  const pdfAdults = kitchenAdultsMarks(pdfKids, kp?.menus?.adults ?? [], pdfAdultsDiffer, beoPrintFoldable(extrasCtx));
+  const pdfAdults = kitchenAdultsMarks(pdfKids, pdfAdultLines, pdfAdultsDiffer, beoPrintFoldable(extrasCtx));
   const adultsMarkOf = (item: unknown) => {
     const at = (pdfKids as unknown[]).indexOf(item);
     return at >= 0 ? pdfAdults.marks[at] ?? null : null;
@@ -810,7 +812,7 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
                  ? '<span class="incl-badge" style="background:#dbeafe;color:#1e40af;border-color:#93c5fd;">SET</span>'
                  : extraBadge(item, 'food');
                return `<tr>
-                 <td class="qty">${item.quantity}x</td>
+                 <td class="qty">${beoQuantityOf(item.quantity)}x</td>
                  <td>${s(item.itemName)}${item.notes ? ` <span class="item-note">${s(noteInBrackets(item.notes))}</span>` : ''}${adultsMarkHtml(adultsMarkOf(item))}</td>
                  <td class="price-col">${badge}</td>
                </tr>`;
@@ -869,7 +871,7 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
       ${data.barPlan.serviceTime ? `<div class="info-item" style="margin-bottom:6px;"><span class="info-label">Service Time:</span><span class="info-value">${s(data.barPlan.serviceTime)}</span></div>` : ''}
       <table class="menu-table">
         ${data.barPlan.items.map(item => `<tr>
-          <td class="qty">${item.quantity}x</td>
+          <td class="qty">${beoQuantityOf(item.quantity)}x</td>
           <td>${s(item.itemName)}${item.notes ? ` <span class="item-note">${s(noteInBrackets(item.notes))}</span>` : ''}</td>
           <td class="price-col">${item.source === 'set_menu' ? '<span class="incl-badge" style="background:#dbeafe;color:#1e40af;border-color:#93c5fd;">SET</span>' : extraBadge(item, 'bar')}</td>
         </tr>`).join('')}

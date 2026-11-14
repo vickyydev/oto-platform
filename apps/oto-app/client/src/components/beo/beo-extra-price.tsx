@@ -32,13 +32,14 @@ export const BeoPartyDateContext = createContext<string | null>(null);
  * The price box beside an EXTRA line's count: staff enter, change or clear the
  * price for each item (cleared is none); beside it what the till charges.
  */
-export function ExtraPriceBox({ line, area, charge, onPrice, testId }: {
+export function ExtraPriceBox({ line, area, charge, onPrice, testId, disabled = false }: {
   line: BeoExtraLine;
   area: "food" | "bar";
   /** The line's charge where its list decides it (an adults' copy of a kids' line); else the line's own. */
   charge?: BeoExtraCharge;
   onPrice: (price: number) => void;
   testId: string;
+  disabled?: boolean;
 }) {
   const till = useTillMenuIndex();
   const partyDate = useContext(BeoPartyDateContext);
@@ -46,10 +47,11 @@ export function ExtraPriceBox({ line, area, charge, onPrice, testId }: {
   return (
     <>
       <EditableText
+        disabled={disabled}
         type="number"
         className="w-16 text-xs font-mono shrink-0"
         value={String(line.price || "")}
-        onChange={(v) => onPrice(Math.max(0, Number(v) || 0))}
+        onChange={(v) => { if (!disabled) onPrice(Math.max(0, Number(v) || 0)); }}
         placeholder="Price ฿"
         data-testid={`input-menu-price-${testId}`}
       />

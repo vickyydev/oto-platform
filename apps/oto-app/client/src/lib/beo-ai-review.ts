@@ -610,7 +610,7 @@ export function approvalResultWords(answer: ApproveAnswer): string {
  * names neither a set menu nor a kids' dish): the server decides, and its
  * toast says so.
  */
-export function adultsFoldNoticeOf(review: Pick<BeoAiReview, "catalogue"> & Partial<Pick<BeoAiReview, "proposal" | "parentSelection">>, state: BeoAiReviewState): string | null {
+export function adultsFoldNoticeOf(review: Pick<BeoAiReview, "catalogue"> & Partial<Pick<BeoAiReview, "proposal" | "parentSelection" | "adultsDiffer">>, state: BeoAiReviewState): string | null {
   // SCRUM-958 (SCRUM-946's open point): the adults' lines the read folded before the review, said
   // while the review keeps the set menu they were folded against.
   const before = foldedBeforeReviewOf(review, state).length;
@@ -623,7 +623,7 @@ export function adultsFoldNoticeOf(review: Pick<BeoAiReview, "catalogue"> & Part
   const own = setLines.length > 0 || (adults.length > 0 && repeat === false);
   const n = before + (repeat === true ? adults.length : 0);
   if (n === 0) return null;
-  return own ? adultsFoldedOnOwnMenuWords(n) : adultsFoldedWords(n);
+  return own || review.adultsDiffer === true ? adultsFoldedOnOwnMenuWords(n) : adultsFoldedWords(n);
 }
 
 /**

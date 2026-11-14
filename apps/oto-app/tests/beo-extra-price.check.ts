@@ -76,7 +76,7 @@ await check("an EXTRA line: the entered price for each item, times its count; el
   assert.deepEqual(typed, { kind: "not_charged", why: "no_price" });
   assert.equal(beoExtraHintOf(typed), "not charged", "an empty box on a line with no code: not charged");
   assert.equal(beoExtraChargeOf(line("Durian pizza", { price: 300 }), "food", read).kind, "charged", "a hand-typed line with a price is charged at it");
-  assert.deepEqual(beoExtraChargeOf(line("Old soda", { productCode: "CF-77" }), "bar", read), { kind: "not_charged", why: "not_on_till" }, "a code the till no longer has");
+  assert.deepEqual(beoExtraChargeOf(line("Old soda", { productCode: "CF-77" }), "bar", read), { kind: "unknown" }, "a picker missing the code cannot prove that settlement charges nothing");
   // A count the till cannot read is one, as the plan view reads it.
   assert.equal((beoExtraChargeOf(line("Fries", { quantity: 0, productCode: "CF-11" }), "food", read) as { quantity: number }).quantity, 1);
   // A line with no name never reaches the till.
@@ -174,6 +174,13 @@ await check("the BEO PDF prints a set-menu choice with single brackets: Margheri
   assert.ok(html.includes("Juice <span class=\"item-note\">(Drinks pitcher)</span>"), "the bar too");
   assert.ok(html.includes("<span class=\"item-note\">(cut small)</span>"), "a plain note in brackets, as before");
   assert.equal(html.includes("(("), false, "never double brackets");
+});
+
+await check("HIGH 968: missing known-menu codes suppress a complete sum without changing entered prices or PARTY bar policy",()=>{
+  const missing=beoExtraChargeOf(line("ZZ TEST absent picker item",{productCode:"CF-MISSING"}),"food",read);
+  assert.deepEqual(missing,{kind:"unknown"});assert.equal(beoExtrasTotalOf([missing,beoExtraChargeOf(line("ZZ TEST entered",{price:100}),"food",read)]),null);
+  assert.deepEqual(beoExtraChargeOf(line("ZZ TEST own-party item",{productCode:"PARTY-12345678",price:999}),"food",read),{kind:"unknown"});
+  assert.deepEqual(beoExtraChargeOf(line("ZZ TEST own-party item",{productCode:"PARTY-12345678",price:999}),"bar",read),{kind:"not_charged",why:"party_item_on_bar"});
 });
 
 console.log(`beo-extra-price.check: ${checks} checks passed`);

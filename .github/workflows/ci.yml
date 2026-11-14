@@ -1039,6 +1039,11 @@ jobs:
         env:
           TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
         run: npx tsx tests/beo-left-978-ui.check.ts
+      - name: The app's BEO reliability and unknown-price screens check
+        if: steps.changes.outputs.app == 'true'
+        env:
+          TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
+        run: npx tsx tests/beo-983-968-ui.check.ts
       # SCRUM-827: the BEO pre-filled in one pass, the form under jsdom: Create
       # BEO's review opens with every section proposed and marked (the chat's
       # lines, the park's default for the title), a value the form holds kept

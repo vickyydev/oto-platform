@@ -3306,7 +3306,7 @@ export function registerBeoRoutes(app: Express) {
         const [atomicUpdate] = await tx.update(beoSetMenuSelections)
           .set({ isSubmitted: true, submittedAt: new Date(), selections, updatedAt: new Date() })
           .where(and(eq(beoSetMenuSelections.token, token), eq(beoSetMenuSelections.isSubmitted, false)))
-          .returning({ id: beoSetMenuSelections.id });
+          .returning({ id: beoSetMenuSelections.id, submittedAt: beoSetMenuSelections.submittedAt });
         if (!atomicUpdate) return { alreadySubmitted: true };
 
         const [kitchenPlan] = await tx.select().from(beoKitchenPlans)
@@ -3316,13 +3316,17 @@ export function registerBeoRoutes(app: Express) {
           const bucket = resolveSetMenuBucket(kitchenPlan.menus);
           // SCRUM-829: the adults' own list (the switch on) takes copies of the same lines.
           const adultsOwn = adultsDifferOf(kitchenPlan.menus);
-          const menus = { ...writeResolvedSetMenu(kitchenPlan.menus, bucket, resolvedItems, adultsOwn), adultsDiffer: adultsOwn };
-          const simplifiedMenus = writeResolvedSetMenu(
+          const setMenu = { enabled: kitchenPlan.setMenuEnabled, templateId: kitchenPlan.setMenuTemplateId };
+          const menus = await withAdultsSetCodes(tx, sel.eventId, setMenu, {
+            ...writeResolvedSetMenu(kitchenPlan.menus, bucket, resolvedItems, adultsOwn),
+            adultsDiffer: adultsOwn,
+          });
+          const simplifiedMenus = await withAdultsSetCodes(tx, sel.eventId, setMenu, writeResolvedSetMenu(
             kitchenPlan.simplifiedMenus ?? kitchenPlan.menus,
             bucket,
             resolvedItems,
             adultsOwn,
-          );
+          ));
           const [updatedKitchenPlan] = await tx.update(beoKitchenPlans)
             .set({ menus, simplifiedMenus, updatedAt: new Date() })
             .where(eq(beoKitchenPlans.eventId, sel.eventId))
@@ -3343,13 +3347,13 @@ export function registerBeoRoutes(app: Express) {
           }
         }
 
-        return { alreadySubmitted: false };
+        return { alreadySubmitted: false, submittedAt: atomicUpdate.submittedAt };
       });
       if (submission.alreadySubmitted) {
         return res.status(409).json({ error: "Selections already submitted" });
       }
 
-      res.json({ success: true });
+      res.json({ success: true, submittedAt: submission.submittedAt });
     } catch (error) {
       next(error);
     }

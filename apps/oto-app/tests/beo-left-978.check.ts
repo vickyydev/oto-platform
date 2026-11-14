@@ -115,7 +115,7 @@ const ev = {
   // The lane's review: the editor's own uncoded copy, the day-of view's, and a repeat of a kids' extra.
   riceCopy: randomUUID(), riceDay: randomUUID(), riceTill: randomUUID(), onExtra: randomUUID(), offExtra: randomUUID(),
   // The lane's last review: a stored party whose lines hold what the day-of view sends back.
-  odd: randomUUID(),
+  odd: randomUUID(), submit983: randomUUID(), submitCopy983: randomUUID(),
 };
 
 function fakeAuth(req: Request, res: Response, next: NextFunction) {
@@ -713,6 +713,34 @@ try {
     assert.deepEqual(legacy.map((c) => c.now), ["Veggie"], "a line with no list is read as the kids', as before");
   });
 
+  await check("HIGH 983: PDF prints published whole counts, including text and historical missing counts", async()=>{
+    const cases: Array<[unknown,number]>=[[2,2],["2",2],[null,1],["",1],[undefined,1],[0,1],["0",1],["0002",1],[999999,999999],["999999",999999],[1000000,1],["1000000",1],[2.5,1],["2.5",1]];
+    for(const [quantity,want] of cases){
+      const item={itemName:"ZZ TEST983 dish",quantity,price:120,source:"additional"} as never;
+      const html=await pdf({required:true,setMenuEnabled:false,menus:{kids:[item]}},{barPlan:{items:[{...item as object,itemName:"ZZ TEST983 drink"} as never]}});
+      assert.ok(rowsOf(html).some(row=>row.startsWith(`${want}x ZZ TEST983 dish `)),String(quantity));
+      assert.ok(rowsOf(html).some(row=>row.startsWith(`${want}x ZZ TEST983 drink `)),"bar "+String(quantity));
+      assert.equal(/nullx|undefinedx/.test(html),false);
+    }
+  });
+
+  await check("HIGH 983: Thai per-set and per-one-tray prices are distinct from ordering more trays",()=>{
+    for(const text of ["450 \u0e1a\u0e32\u0e17\u0e15\u0e48\u0e2d\u0e40\u0e0b\u0e47\u0e15","450 \u0e1a\u0e32\u0e17\u0e15\u0e48\u0e2d\u0e40\u0e0b\u0e15","450 \u0e1a\u0e32\u0e17\u0e15\u0e48\u0e2d\u0e2b\u0e19\u0e36\u0e48\u0e07\u0e16\u0e32\u0e14"]){assert.equal(figureSaidEach(text,450),true,text);assert.equal(chatPriceIsTotal(text,450,2),false);}
+    for(const text of ["\u0e2a\u0e31\u0e48\u0e07\u0e15\u0e48\u0e2d 2 \u0e16\u0e32\u0e14 \u0e23\u0e27\u0e21 900 \u0e1a\u0e32\u0e17","\u0e2a\u0e31\u0e48\u0e07 \u0e15\u0e48\u0e2d 2 \u0e16\u0e32\u0e14 \u0e23\u0e27\u0e21 900 \u0e1a\u0e32\u0e17"]){assert.equal(figureSaidEach(text,900),false,text);assert.equal(chatPriceIsTotal(text,900,2),true,text);}
+  });
+
+  await check("HIGH 983: public submit returns exactly the committed timestamp, including first-plan behavior",async()=>{
+    const token="zz983"+randomUUID().replace(/-/g,"");await q("insert into beo_set_menu_selections (event_id,template_id,token,is_submitted) values ($1,$2,$3,false)",[ev.submit983,setMenuId,token]);
+    const sent=await send("POST",`/api/beo/set-menu-selections/public/${token}/submit`,{selections:[{groupId:PIZZA,chosenOptions:["Hawaiian"]},{groupId:RICE,chosenOptions:["Veggie"]}]},{});assert.equal(sent.status,200,JSON.stringify(sent.body));
+    const [row]=await q("select submitted_at from beo_set_menu_selections where event_id=$1",[ev.submit983]);assert.equal(sent.body.submittedAt,row.submitted_at.toISOString());
+    const again=await send("GET",`/api/beo/set-menu-selections/public/${token}`,undefined,{});assert.equal(again.body.submittedAt,sent.body.submittedAt);
+    const made=await planOf(ev.submit983);assert.deepEqual(made.menus.adults,[]);assert.equal(made.set_menu_enabled,false,"no new first-plan switch policy");
+    await kitchenPlan(ev.submitCopy983,{kids:[set("Veggie",RICE)],adults:[{...set("Chicken",RICE),quantity:4}],adultsDiffer:true});
+    const copyToken="zz983"+randomUUID().replace(/-/g,"");await q("insert into beo_set_menu_selections (event_id,template_id,token,is_submitted) values ($1,$2,$3,false)",[ev.submitCopy983,setMenuId,copyToken]);
+    const copied=await send("POST",`/api/beo/set-menu-selections/public/${copyToken}/submit`,{selections:[{groupId:PIZZA,chosenOptions:["Hawaiian"]},{groupId:RICE,chosenOptions:["Veggie"]}]},{});assert.equal(copied.status,200,JSON.stringify(copied.body));
+    const own=await planOf(ev.submitCopy983);assert.equal(own.menus.adultsDiffer,true);assert.deepEqual(own.menus.adults.map((l:Line)=>[l.itemName,l.quantity,l.productCode]),[["Chicken",4,"CF-43"]],"existing adults own dish/count/code stays intact");
+  });
+
   console.log(`beo-left-978.check: ${checks} checks passed${failed.length ? `, ${failed.length} failed` : ""}`);
 } finally {
   await Promise.all(servers.map((s) => new Promise<void>((resolve) => s.close(() => resolve()))));
@@ -728,4 +756,4 @@ try {
   await pool.end();
   await appDbPool.end().catch(() => undefined);
 }
-process.exit(checks === 15 && failed.length === 0 ? 0 : 1);
+process.exit(checks === 18 && failed.length === 0 ? 0 : 1);
