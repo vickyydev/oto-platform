@@ -1,0 +1,408 @@
+
+ RUN  v3.2.7 C:/oto-lanes/codex-app-reliability-983-20261114/apps/api
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-F8ReQW ... ok
+creating subdirectories ... 
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+ok
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ... 
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+100
+selecting default shared_buffers ... 
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+128MB
+selecting default time zone ... 
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+Asia/Bangkok
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+creating configuration files ... 
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+ok
+running bootstrap script ... 
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+ok
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+performing post-bootstrap initialization ... 
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+ok
+syncing data to disk ... 
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-app^-reliability^-983^-20261114^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-F8ReQW^" -l logfile start
+
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+2026-11-14 16:45:25.944 +07 [87300] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+2026-11-14 16:45:25.947 +07 [87300] LOG:  listening on IPv6 address "::1", port 49534
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+2026-11-14 16:45:25.947 +07 [87300] LOG:  listening on IPv4 address "127.0.0.1", port 49534
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+2026-11-14 16:45:26.010 +07 [69756] LOG:  database system was shut down at 2026-11-14 16:45:23 +07
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+2026-11-14 16:45:26.057 +07 [87300] LOG:  database system is ready to accept connections
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+2026-11-14 16:45:32.316 +07 [87028] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+2026-11-14 16:45:36.778 +07 [13052] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+2026-11-14 16:45:36.791 +07 [13052] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.003 s, sync=0.004 s, total=0.014 s; sync files=7, longest=0.001 s, average=0.001 s; distance=26921 kB, estimate=26921 kB; lsn=0/2FC26B8, redo lsn=0/2FC2680
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > onto a 0007 database with real-shaped rows in two park groups and the default
+2026-11-14 16:45:40.425 +07 [84044] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > onto a 0007 database with real-shaped rows in two park groups and the default
+2026-11-14 16:45:43.164 +07 [13052] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > onto a 0007 database with real-shaped rows in two park groups and the default
+2026-11-14 16:45:43.178 +07 [13052] LOG:  checkpoint complete: wrote 7 buffers (0.0%); 0 WAL file(s) added, 0 removed, 2 recycled; write=0.004 s, sync=0.003 s, total=0.015 s; sync files=6, longest=0.001 s, average=0.001 s; distance=26993 kB, estimate=26993 kB; lsn=0/4A1EB40, redo lsn=0/4A1EB08
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > the census raced: a duplicate held open in a transaction while 0008 waits on its lock > committed while 0008 waits: the census sees the duplicate, the index is not made, the deploy goes on and says so
+2026-11-14 16:45:46.697 +07 [95596] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > the census raced: a duplicate held open in a transaction while 0008 waits on its lock > committed while 0008 waits: the census sees the duplicate, the index is not made, the deploy goes on and says so
+2026-11-14 16:45:49.436 +07 [13052] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > the census raced: a duplicate held open in a transaction while 0008 waits on its lock > committed while 0008 waits: the census sees the duplicate, the index is not made, the deploy goes on and says so
+2026-11-14 16:45:49.454 +07 [13052] LOG:  checkpoint complete: wrote 7 buffers (0.0%); 0 WAL file(s) added, 0 removed, 2 recycled; write=0.005 s, sync=0.003 s, total=0.019 s; sync files=6, longest=0.001 s, average=0.001 s; distance=26932 kB, estimate=26987 kB; lsn=0/646BC28, redo lsn=0/646BBF0
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > the census raced: a duplicate held open in a transaction while 0008 waits on its lock > rolled back while 0008 waits: nothing stood in the way, the census is clean and the backstop stands (0038’s one-open index; 0039 retired 0008’s)
+2026-11-14 16:45:53.948 +07 [110476] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > the census raced: a duplicate held open in a transaction while 0008 waits on its lock > rolled back while 0008 waits: nothing stood in the way, the census is clean and the backstop stands (0038’s one-open index; 0039 retired 0008’s)
+2026-11-14 16:45:56.964 +07 [13052] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > the census raced: a duplicate held open in a transaction while 0008 waits on its lock > rolled back while 0008 waits: nothing stood in the way, the census is clean and the backstop stands (0038’s one-open index; 0039 retired 0008’s)
+2026-11-14 16:45:56.983 +07 [13052] LOG:  checkpoint complete: wrote 7 buffers (0.0%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.006 s, sync=0.003 s, total=0.019 s; sync files=6, longest=0.001 s, average=0.001 s; distance=26941 kB, estimate=26982 kB; lsn=0/7EBB198, redo lsn=0/7EBB160
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes
+2026-11-14 16:46:00.850 +07 [95952] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes > C. H16 create: a failure injected at the offboarding row itself (the first write) leaves nothing behind — and the same request then does all of it, in the app's order
+2026-11-14 16:46:19.721 +07 [54848] ERROR:  zz injected failure (round 6 review, H16)
+2026-11-14 16:46:19.721 +07 [54848] CONTEXT:  PL/pgSQL function zz_r6rv_inject_661af9() line 1 at RAISE
+2026-11-14 16:46:19.721 +07 [54848] STATEMENT:  insert into "employee_offboarding" ("id", "employee_id", "branch_id", "offboarding_type", "reason_code", "reason_text", "notice_date", "last_working_day", "leave_public_holidays_days", "leave_annual_days", "leave_other_days", "leave_other_label", "notes", "created_by", "created_at", "updated_at", "reonboarded_at") values (default, $1, $2, $3, $4, default, $5, $6, default, default, default, default, default, $7, default, default, default) returning "id", "employee_id", "branch_id", "offboarding_type", "reason_code", "reason_text", "notice_date", "last_working_day", "leave_public_holidays_days", "leave_annual_days", "leave_other_days", "leave_other_label", "notes", "created_by", "created_at", "updated_at", "reonboarded_at"
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes > C. H16 create: a failure injected at the employee (before the login flip) leaves nothing behind — and the same request then does all of it, in the app's order
+2026-11-14 16:46:19.919 +07 [54848] ERROR:  zz injected failure (round 6 review, H16)
+2026-11-14 16:46:19.919 +07 [54848] CONTEXT:  PL/pgSQL function zz_r6rv_inject_661af9() line 1 at RAISE
+2026-11-14 16:46:19.919 +07 [54848] STATEMENT:  update "employees" set "status" = $1, "employment_state" = $2, "offboarding_type" = $3, "notice_date" = $4, "end_reason" = $5, "last_working_day" = $6 where "employees"."id" = $7 returning "id", "tenant_id", "person_id", "full_name", "thai_name", "nickname", "birthday_month", "birthday_day", "birthday_year", "email", "phone", "address", "branch_id", "status", "employment_state", "offboarding_type", "notice_date", "default_merge_data", "incentive_clause_text", "food_allowance_per_day", "employment_basis", "daily_rate", "created_at", "start_date", "probation_days", "probation_end_date", "probation_review_completed_at", "end_reason", "last_working_day", "resignation_form_path", "termination_letter_path", "nationality", "is_foreign_staff", "visa_expiry_date", "work_permit_expiry_date", "sso_number", "tax_id_number", "visa_wp_company_handles", "visa_wp_company_pays", "visa_wp_cost_thb", "visa_wp_repayment_if_fail_probation", "visa_wp_repayment_if_leave_before_1y", "visa_wp_repayment_terms_text", "visa_wp_notes", "job_description", "phone_e164", "face_enrollment_status", "face_id", "face_enrolled_at", "timeclock_pin_hash", "timeclock_pin_set_at", "timeclock_pin_required", "phone_fallback_count_30day", "phone_fallback_count_reset_at", "pin_usage_count_30day", "pin_usage_count_reset_at", "profile_photo_path", "profile_photo_captured_at", "profile_photo_source", "profile_photo_updated_by", "primary_department_id", "display_order", "weekly_off_days", "user_id", "version", "updated_at", "updated_by"
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes > C. H16 create: a failure injected at the login flip itself leaves nothing behind — and the same request then does all of it, in the app's order
+2026-11-14 16:46:20.024 +07 [54848] ERROR:  zz injected failure (round 6 review, H16)
+2026-11-14 16:46:20.024 +07 [54848] CONTEXT:  PL/pgSQL function zz_r6rv_inject_661af9() line 1 at RAISE
+2026-11-14 16:46:20.024 +07 [54848] STATEMENT:  update "users" set "access_mode" = $1, "updated_at" = $2 where ("users"."id" = $3 and "users"."access_mode" = $4 and not exists (select 1 from employee_engagements g where g.employee_id = $5 and g.status = 'planned')) returning "id"
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes > C. H16 create: a failure injected at the coverage alert, right after the flip leaves nothing behind — and the same request then does all of it, in the app's order
+2026-11-14 16:46:20.124 +07 [54848] ERROR:  zz injected failure (round 6 review, H16)
+2026-11-14 16:46:20.124 +07 [54848] CONTEXT:  PL/pgSQL function zz_r6rv_inject_661af9() line 1 at RAISE
+2026-11-14 16:46:20.124 +07 [54848] STATEMENT:  insert into "attention_items" ("id", "branch_id", "employee_id", "contract_instance_id", "type", "severity", "title", "description", "due_date", "status", "rule_key", "entity_key", "fingerprint", "suppress_until", "created_at", "updated_at", "resolved_at", "resolved_by", "tenant_id") values (default, $1, $2, default, $3, $4, $5, $6, default, default, default, default, default, default, default, default, default, default, $7) returning "id", "branch_id", "employee_id", "contract_instance_id", "type", "severity", "title", "description", "due_date", "status", "rule_key", "entity_key", "fingerprint", "suppress_until", "created_at", "updated_at", "resolved_at", "resolved_by", "tenant_id"
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes > C. H16 create: a failure injected at the assets’ return dates leaves nothing behind — and the same request then does all of it, in the app's order
+2026-11-14 16:46:20.239 +07 [54848] ERROR:  zz injected failure (round 6 review, H16)
+2026-11-14 16:46:20.239 +07 [54848] CONTEXT:  PL/pgSQL function zz_r6rv_inject_661af9() line 1 at RAISE
+2026-11-14 16:46:20.239 +07 [54848] STATEMENT:  update "employee_assets" set "expected_return_by" = $1, "updated_at" = $2 where ("employee_assets"."employee_id" = $3 and "employee_assets"."return_required" = $4 and "employee_assets"."returned_at" IS NULL)
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes > C. H16 create: a failure injected at the change record leaves nothing behind — and the same request then does all of it, in the app's order
+2026-11-14 16:46:20.330 +07 [54848] ERROR:  zz injected failure (round 6 review, H16)
+2026-11-14 16:46:20.330 +07 [54848] CONTEXT:  PL/pgSQL function zz_r6rv_inject_661af9() line 1 at RAISE
+2026-11-14 16:46:20.330 +07 [54848] STATEMENT:  insert into "employee_changes" ("id", "employee_id", "change_type", "effective_date", "old_title", "old_salary", "old_incentive_clause", "old_branch_id", "old_department_id", "new_title", "new_salary", "new_incentive_clause", "new_branch_id", "new_department_id", "note", "contract_generated", "contract_instance_id", "created_by", "created_at") values (default, $1, $2, $3, default, default, default, default, default, default, default, default, default, default, $4, default, default, $5, default) returning "id", "employee_id", "change_type", "effective_date", "old_title", "old_salary", "old_incentive_clause", "old_branch_id", "old_department_id", "new_title", "new_salary", "new_incentive_clause", "new_branch_id", "new_department_id", "note", "contract_generated", "contract_instance_id", "created_by", "created_at"
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes > C. H16 create: a failure injected at the first activity row leaves nothing behind — and the same request then does all of it, in the app's order
+2026-11-14 16:46:20.427 +07 [54848] ERROR:  zz injected failure (round 6 review, H16)
+2026-11-14 16:46:20.427 +07 [54848] CONTEXT:  PL/pgSQL function zz_r6rv_inject_661af9() line 1 at RAISE
+2026-11-14 16:46:20.427 +07 [54848] STATEMENT:  insert into "activity_log" ("id", "branch_id", "employee_id", "contract_instance_id", "attention_item_id", "template_id", "activity_type", "summary_text", "metadata_json", "created_by", "created_at", "tenant_id") values (default, $1, $2, default, default, default, $3, $4, default, $5, default, coalesce(
+	                                (select tenant_id from branches where id = $6),
+	                                (select tenant_id from employees where id = $7),
+	                                (select e.tenant_id from contract_instances c join employees e on e.id = c.employee_id
+	                                  where c.id = $8),
+	                                $9::uuid,
+	                                (select p.tenant_id from (
+	                                        select min(x.tenant_id::text)::uuid as tenant_id
+	                                          from user_branch_access x
+	                                          left join branches b on b.id = x.branch_id
+	                                         where x.user_id = $10
+	                                        having count(distinct x.tenant_id) = 1
+	                                           and bool_and(x.branch_id is null or b.tenant_id is not distinct from x.tenant_id)
+	                                 ) p
+	                                 left join users u on u.id = $11
+	                                 where u.role is distinct from 'operator_admin' or u.operator_id is null
+	                                    or exists (select 1 from operators o
+	                                                where o.id = u.operator_id and o.tenant_id = p.tenant_id)),
+	                                (select id from tenants where slug = $12),
+	                                (select min(id::text)::uuid from tenants having count(*) = 1)
+	                        )) returning "id", "branch_id", "employee_id", "contract_instance_id", "attention_item_id", "template_id", "activity_type", "summary_text", "metadata_json", "created_by", "created_at", "tenant_id"
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes > C. H16 create: a failure injected at the second activity row leaves nothing behind — and the same request then does all of it, in the app's order
+2026-11-14 16:46:20.528 +07 [54848] ERROR:  zz injected failure (round 6 review, H16)
+2026-11-14 16:46:20.528 +07 [54848] CONTEXT:  PL/pgSQL function zz_r6rv_inject_661af9() line 1 at RAISE
+2026-11-14 16:46:20.528 +07 [54848] STATEMENT:  insert into "activity_log" ("id", "branch_id", "employee_id", "contract_instance_id", "attention_item_id", "template_id", "activity_type", "summary_text", "metadata_json", "created_by", "created_at", "tenant_id") values (default, $1, $2, default, default, default, $3, $4, default, $5, default, coalesce(
+	                                (select tenant_id from branches where id = $6),
+	                                (select tenant_id from employees where id = $7),
+	                                (select e.tenant_id from contract_instances c join employees e on e.id = c.employee_id
+	                                  where c.id = $8),
+	                                $9::uuid,
+	                                (select p.tenant_id from (
+	                                        select min(x.tenant_id::text)::uuid as tenant_id
+	                                          from user_branch_access x
+	                                          left join branches b on b.id = x.branch_id
+	                                         where x.user_id = $10
+	                                        having count(distinct x.tenant_id) = 1
+	                                           and bool_and(x.branch_id is null or b.tenant_id is not distinct from x.tenant_id)
+	                                 ) p
+	                                 left join users u on u.id = $11
+	                                 where u.role is distinct from 'operator_admin' or u.operator_id is null
+	                                    or exists (select 1 from operators o
+	                                                where o.id = u.operator_id and o.tenant_id = p.tenant_id)),
+	                                (select id from tenants where slug = $12),
+	                                (select min(id::text)::uuid from tenants having count(*) = 1)
+	                        )) returning "id", "branch_id", "employee_id", "contract_instance_id", "attention_item_id", "template_id", "activity_type", "summary_text", "metadata_json", "created_by", "created_at", "tenant_id"
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes > C. H16 create: a failure injected at the first checklist item leaves nothing behind — and the same request then does all of it, in the app's order
+2026-11-14 16:46:20.640 +07 [54848] ERROR:  zz injected failure (round 6 review, H16)
+2026-11-14 16:46:20.640 +07 [54848] CONTEXT:  PL/pgSQL function zz_r6rv_inject_661af9() line 1 at RAISE
+2026-11-14 16:46:20.640 +07 [54848] STATEMENT:  insert into "offboarding_checklist" ("id", "offboarding_id", "employee_id", "branch_id", "checklist_type", "title", "description", "is_completed", "completed_at", "completed_by", "due_date", "sort_order", "created_at") values (default, $1, $2, $3, $4, $5, $6, $7, default, default, default, $8, default) returning "id", "offboarding_id", "employee_id", "branch_id", "checklist_type", "title", "description", "is_completed", "completed_at", "completed_by", "due_date", "sort_order", "created_at"
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes > C. H16 create: a failure injected at the last checklist item leaves nothing behind — and the same request then does all of it, in the app's order
+2026-11-14 16:46:20.732 +07 [54848] ERROR:  zz injected failure (round 6 review, H16)
+2026-11-14 16:46:20.732 +07 [54848] CONTEXT:  PL/pgSQL function zz_r6rv_inject_661af9() line 1 at RAISE
+2026-11-14 16:46:20.732 +07 [54848] STATEMENT:  insert into "offboarding_checklist" ("id", "offboarding_id", "employee_id", "branch_id", "checklist_type", "title", "description", "is_completed", "completed_at", "completed_by", "due_date", "sort_order", "created_at") values (default, $1, $2, $3, $4, $5, $6, $7, default, default, $8, $9, default) returning "id", "offboarding_id", "employee_id", "branch_id", "checklist_type", "title", "description", "is_completed", "completed_at", "completed_by", "due_date", "sort_order", "created_at"
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes > C. H16 update: a failure injected at the offboarding row leaves the offboarding as it was
+2026-11-14 16:46:20.955 +07 [54848] ERROR:  zz injected failure (round 6 review, H16)
+2026-11-14 16:46:20.955 +07 [54848] CONTEXT:  PL/pgSQL function zz_r6rv_inject_661af9() line 1 at RAISE
+2026-11-14 16:46:20.955 +07 [54848] STATEMENT:  update "employee_offboarding" set "last_working_day" = $1, "updated_at" = $2 where "employee_offboarding"."id" = $3 returning "id", "employee_id", "branch_id", "offboarding_type", "reason_code", "reason_text", "notice_date", "last_working_day", "leave_public_holidays_days", "leave_annual_days", "leave_other_days", "leave_other_label", "notes", "created_by", "created_at", "updated_at", "reonboarded_at"
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes > C. H16 update: a failure injected at the employee leaves the offboarding as it was
+2026-11-14 16:46:21.056 +07 [54848] ERROR:  zz injected failure (round 6 review, H16)
+2026-11-14 16:46:21.056 +07 [54848] CONTEXT:  PL/pgSQL function zz_r6rv_inject_661af9() line 1 at RAISE
+2026-11-14 16:46:21.056 +07 [54848] STATEMENT:  update "employees" set "employment_state" = $1, "last_working_day" = $2 where "employees"."id" = $3 returning "id", "tenant_id", "person_id", "full_name", "thai_name", "nickname", "birthday_month", "birthday_day", "birthday_year", "email", "phone", "address", "branch_id", "status", "employment_state", "offboarding_type", "notice_date", "default_merge_data", "incentive_clause_text", "food_allowance_per_day", "employment_basis", "daily_rate", "created_at", "start_date", "probation_days", "probation_end_date", "probation_review_completed_at", "end_reason", "last_working_day", "resignation_form_path", "termination_letter_path", "nationality", "is_foreign_staff", "visa_expiry_date", "work_permit_expiry_date", "sso_number", "tax_id_number", "visa_wp_company_handles", "visa_wp_company_pays", "visa_wp_cost_thb", "visa_wp_repayment_if_fail_probation", "visa_wp_repayment_if_leave_before_1y", "visa_wp_repayment_terms_text", "visa_wp_notes", "job_description", "phone_e164", "face_enrollment_status", "face_id", "face_enrolled_at", "timeclock_pin_hash", "timeclock_pin_set_at", "timeclock_pin_required", "phone_fallback_count_30day", "phone_fallback_count_reset_at", "pin_usage_count_30day", "pin_usage_count_reset_at", "profile_photo_path", "profile_photo_captured_at", "profile_photo_source", "profile_photo_updated_by", "primary_department_id", "display_order", "weekly_off_days", "user_id", "version", "updated_at", "updated_by"
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes > C. H16 update: a failure injected at the assets’ return dates leaves the offboarding as it was
+2026-11-14 16:46:21.162 +07 [54848] ERROR:  zz injected failure (round 6 review, H16)
+2026-11-14 16:46:21.162 +07 [54848] CONTEXT:  PL/pgSQL function zz_r6rv_inject_661af9() line 1 at RAISE
+2026-11-14 16:46:21.162 +07 [54848] STATEMENT:  update "employee_assets" set "expected_return_by" = $1, "updated_at" = $2 where ("employee_assets"."employee_id" = $3 and "employee_assets"."return_required" = $4 and "employee_assets"."returned_at" IS NULL)
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes > C. H16 update: a failure injected at the shifts removed after the new last day leaves the offboarding as it was
+2026-11-14 16:46:21.265 +07 [54848] ERROR:  zz injected failure (round 6 review, H16)
+2026-11-14 16:46:21.265 +07 [54848] CONTEXT:  PL/pgSQL function zz_r6rv_inject_661af9() line 1 at RAISE
+2026-11-14 16:46:21.265 +07 [54848] STATEMENT:  delete from "schedule_assignments" where ("schedule_assignments"."employee_id" = $1 and "schedule_assignments"."shift_date" >= $2 and "schedule_assignments"."shift_date" <= $3)
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes > C. H16 update: a failure injected at the shifts-removed activity row leaves the offboarding as it was
+2026-11-14 16:46:21.379 +07 [54848] ERROR:  zz injected failure (round 6 review, H16)
+2026-11-14 16:46:21.379 +07 [54848] CONTEXT:  PL/pgSQL function zz_r6rv_inject_661af9() line 1 at RAISE
+2026-11-14 16:46:21.379 +07 [54848] STATEMENT:  insert into "activity_log" ("id", "branch_id", "employee_id", "contract_instance_id", "attention_item_id", "template_id", "activity_type", "summary_text", "metadata_json", "created_by", "created_at", "tenant_id") values (default, $1, $2, default, default, default, $3, $4, default, $5, default, coalesce(
+	                                (select tenant_id from branches where id = $6),
+	                                (select tenant_id from employees where id = $7),
+	                                (select e.tenant_id from contract_instances c join employees e on e.id = c.employee_id
+	                                  where c.id = $8),
+	                                $9::uuid,
+	                                (select p.tenant_id from (
+	                                        select min(x.tenant_id::text)::uuid as tenant_id
+	                                          from user_branch_access x
+	                                          left join branches b on b.id = x.branch_id
+	                                         where x.user_id = $10
+	                                        having count(distinct x.tenant_id) = 1
+	                                           and bool_and(x.branch_id is null or b.tenant_id is not distinct from x.tenant_id)
+	                                 ) p
+	                                 left join users u on u.id = $11
+	                                 where u.role is distinct from 'operator_admin' or u.operator_id is null
+	                                    or exists (select 1 from operators o
+	                                                where o.id = u.operator_id and o.tenant_id = p.tenant_id)),
+	                                (select id from tenants where slug = $12),
+	                                (select min(id::text)::uuid from tenants having count(*) = 1)
+	                        )) returning "id", "branch_id", "employee_id", "contract_instance_id", "attention_item_id", "template_id", "activity_type", "summary_text", "metadata_json", "created_by", "created_at", "tenant_id"
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes
+2026-11-14 16:46:34.585 +07 [101132] FATAL:  terminating connection due to administrator command
+2026-11-14 16:46:34.585 +07 [66152] FATAL:  terminating connection due to administrator command
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes
+2026-11-14 16:46:34.585 +07 [107664] FATAL:  terminating connection due to administrator command
+2026-11-14 16:46:34.585 +07 [101416] FATAL:  terminating connection due to administrator command
+2026-11-14 16:46:34.585 +07 [83072] FATAL:  terminating connection due to administrator command
+2026-11-14 16:46:34.585 +07 [54204] FATAL:  terminating connection due to administrator command
+2026-11-14 16:46:34.585 +07 [110176] FATAL:  terminating connection due to administrator command
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes
+2026-11-14 16:46:34.700 +07 [13052] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes
+2026-11-14 16:46:34.716 +07 [13052] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 2 recycled; write=0.005 s, sync=0.004 s, total=0.017 s; sync files=8, longest=0.001 s, average=0.001 s; distance=27682 kB, estimate=27682 kB; lsn=0/99C3D18, redo lsn=0/99C3CE0
+
+
+ ❯ test/s217b-r6-review.test.ts (65 tests | 1 failed) 74616ms
+   ✓ A. fences and seams > 0006 and 0007 and their snapshots are byte for byte what staging applied; the round-6 app prefix ends at 0008; the platform journal through 0075 is unchanged 10ms
+   ✓ A. fences and seams > 0008 is EXPAND ONLY: added columns, keys and indexes; no NOT NULL, no drop, rename or retype; no unique dropped; nothing of round 7 3ms
+   ✓ A. fences and seams > the census index lives in SQL only; the round 6 snapshot preserves the four nullable tenant fields 8ms
+   × A. fences and seams > the gate did not move WHERE documents are kept: the PDF, file and bucket modules and the BEO and org chart routes are byte for byte main’s 11ms
+     → pdf.ts: expected 'cb54281507ca9a832e80ee9c98fe5037a5c4d…' to be '8c9f1ad1f903429cc5b0ba01caa1ab09aad98…' // Object.is equality
+   ✓ A. fences and seams > the booth, POS, console, launcher, packages and services name nothing of round 6  1297ms
+   ✓ A. fences and seams > nothing of round 7 in the app: Data Admin’s Attention 503 stands and its four document models are untouched by the round 2ms
+   ✓ A. fences and seams > FINDING 5 (low, fixed): Q31 names where the `people` routes went, matching section 4 (they left round 6) 2ms
+   ✓ A. fences and seams > the arrangement of finding 5, as fixed: Q31 carries `people` in round 7, the owner free to pull it earlier; section 4 and section 8’s round 7 row say the same 3ms
+   ✓ B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made  15313ms
+   ✓ B. the migration attacked > onto a 0007 database with real-shaped rows in two park groups and the default > the deploy applies 0008 alone, and the census is clean (no notice) 0ms
+   ✓ B. the migration attacked > onto a 0007 database with real-shaped rows in two park groups and the default > every row lands where the declared rules put it — none mis-tenanted, none null 41ms
+   ✓ B. the migration attacked > onto a 0007 database with real-shaped rows in two park groups and the default > counts unchanged in every table it reads or writes, no park group made, every key valid, the census backstop made (0038’s one-open index; 0039 retired 0008’s) 57ms
+   ✓ B. the migration attacked > the census raced: a duplicate held open in a transaction while 0008 waits on its lock > committed while 0008 waits: the census sees the duplicate, the index is not made, the deploy goes on and says so  6328ms
+   ✓ B. the migration attacked > the census raced: a duplicate held open in a transaction while 0008 waits on its lock > rolled back while 0008 waits: nothing stood in the way, the census is clean and the backstop stands (0038’s one-open index; 0039 retired 0008’s)  7506ms
+   ✓ C to F. over HTTP against the app’s routes > C. H16 create: a failure injected at the offboarding row itself (the first write) leaves nothing behind — and the same request then does all of it, in the app's order  311ms
+   ✓ C to F. over HTTP against the app’s routes > C. H16 create: a failure injected at the employee (before the login flip) leaves nothing behind — and the same request then does all of it, in the app's order 112ms
+   ✓ C to F. over HTTP against the app’s routes > C. H16 create: a failure injected at the login flip itself leaves nothing behind — and the same request then does all of it, in the app's order 92ms
+   ✓ C to F. over HTTP against the app’s routes > C. H16 create: a failure injected at the coverage alert, right after the flip leaves nothing behind — and the same request then does all of it, in the app's order 114ms
+   ✓ C to F. over HTTP against the app’s routes > C. H16 create: a failure injected at the assets’ return dates leaves nothing behind — and the same request then does all of it, in the app's order 101ms
+   ✓ C to F. over HTTP against the app’s routes > C. H16 create: a failure injected at the change record leaves nothing behind — and the same request then does all of it, in the app's order 90ms
+   ✓ C to F. over HTTP against the app’s routes > C. H16 create: a failure injected at the first activity row leaves nothing behind — and the same request then does all of it, in the app's order 96ms
+   ✓ C to F. over HTTP against the app’s routes > C. H16 create: a failure injected at the second activity row leaves nothing behind — and the same request then does all of it, in the app's order 102ms
+   ✓ C to F. over HTTP against the app’s routes > C. H16 create: a failure injected at the first checklist item leaves nothing behind — and the same request then does all of it, in the app's order 109ms
+   ✓ C to F. over HTTP against the app’s routes > C. H16 create: a failure injected at the last checklist item leaves nothing behind — and the same request then does all of it, in the app's order 86ms
+   ✓ C to F. over HTTP against the app’s routes > C. H16 create, the login as the app does it: a last day still to come leaves it on and writes no flip; another park group’s admin writes nothing at all 133ms
+   ✓ C to F. over HTTP against the app’s routes > C. H16 update: a failure injected at the offboarding row leaves the offboarding as it was 94ms
+   ✓ C to F. over HTTP against the app’s routes > C. H16 update: a failure injected at the employee leaves the offboarding as it was 96ms
+   ✓ C to F. over HTTP against the app’s routes > C. H16 update: a failure injected at the assets’ return dates leaves the offboarding as it was 112ms
+   ✓ C to F. over HTTP against the app’s routes > C. H16 update: a failure injected at the shifts removed after the new last day leaves the offboarding as it was 101ms
+   ✓ C to F. over HTTP against the app’s routes > C. H16 update: a failure injected at the shifts-removed activity row leaves the offboarding as it was 118ms
+   ✓ C to F. over HTTP against the app’s routes > C. H16 update into the past: the state turns LEFT and the login stays on — the app switches it off only at the create 80ms
+   ✓ C to F. over HTTP against the app’s routes > D. arrangement: A’s template, a signed contract on branch X and one on branch Y, a signed letter and an event — their PDFs where the app keeps them 21ms
+   ✓ C to F. over HTTP against the app’s routes > D. the owner’s doors open: A’s admin reads the contract’s two PDFs and the letter; the signer’s own link opens with a good, unexpired token 48ms
+   ✓ C to F. over HTTP against the app’s routes > D. every unauthorised read is refused with no byte and no URL: signed out, another park group, another branch 61ms
+   ✓ C to F. over HTTP against the app’s routes > D. the signer’s link: an expired token with a GOOD signature, a good token for another contract, and a forged one are each 401 with no byte 4ms
+   ✓ C to F. over HTTP against the app’s routes > D. guessed object keys and the raw storage path, through every file door the app has, signed out and signed in as another park group: nothing 104ms
+   ✓ C to F. over HTTP against the app’s routes > E. templates, policies, the catalogue and leave policies: B’s admin reaches none of A’s, at any door 174ms
+   ✓ C to F. over HTTP against the app’s routes > E. contracts, letters, employee documents, assets and offboarding checklists: B’s admin reaches none of A’s, and nothing changes 259ms
+   ✓ C to F. over HTTP against the app’s routes > E. the leave reads round 6 fenced keep to the park group, and the branch-wide balances still answer the branch’s own park group (the arrangement of finding 3, as fixed) 229ms
+   ✓ C to F. over HTTP against the app’s routes > E. FINDING 3 (medium, fixed): `/api/all-leave-balances` keeps to the caller’s park group — another park group’s branch is the app’s 404, and none of its people are listed 8ms
+   ✓ C to F. over HTTP against the app’s routes > E. the HR employee doors as the app has them within the park group: A’s admin reads A’s employee, edits them, and switches their login off and on; a park group named in the edit is dropped (the arrangement of finding 1, as fixed) 103ms
+   ✓ C to F. over HTTP against the app’s routes > E. FINDING 1 (high, fixed): the HR employee doors keep to the caller’s park group — another park group’s employee is the app’s 404 to read, edit, move or switch off 59ms
+   ✓ C to F. over HTTP against the app’s routes > E. the wizard’s six personal fields still land for B’s own employee, a login, branch or park group in its edits is dropped; and a link made before the fix is never switched off by B’s offboarding (the arrangement of finding 2, as fixed)  2874ms
+   ✓ C to F. over HTTP against the app’s routes > E. FINDING 2 (medium, fixed): the wizard’s employee edits cannot link another park group’s login, and B’s offboarding never switches off A’s person’s login  2833ms
+   ✓ C to F. over HTTP against the app’s routes > E. the default park group’s company-wide policy is read where a park group has none — the app’s rule while there was one set (the builder’s Q49 default), read once into its Days Off type (SCRUM-560) 176ms
+   ✓ C to F. over HTTP against the app’s routes > E. a park group with a company-wide policy of its own weighs its own and never the default park group’s newer one; its branch’s own, the newest of its own, wins (the arrangement of finding 4, as fixed: Q28’s rule on the company-wide slot) 155ms
+   ✓ C to F. over HTTP against the app’s routes > E. FINDING 4 (low), as SCRUM-560 has it: with a branch policy of its own and no company-wide one, the branch’s own policy is the rule, however new the default park group’s company-wide one — whose numbers the park group’s Days Off type took 150ms
+   ✓ C to F. over HTTP against the app’s routes > F. the org chart’s GET writes only its own park group’s missing nodes: B’s read mints nothing for A, and A’s branch scope is refused with nothing written 81ms
+   ✓ C to F. over HTTP against the app’s routes > G. F1 held, re-driven: the census is exactly the registered `/api/employees/:id*` doors, and as B’s all-branch MANAGER (the builder drove the admin) none of the 45 answers A’s employee or writes anything of theirs  668ms
+   ✓ C to F. over HTTP against the app’s routes > G. F2 held, re-driven: the wizard takes the six personal fields of the app’s own client and no other column — status, state, person, department, login, authors, face and PIN sent in its edits all drop  2739ms
+   ✓ C to F. over HTTP against the app’s routes > G. F4 held, against the app’s pre-lift code, as SCRUM-560 freezes it: on the first fixture the opening is the pre-lift query’s pick and arithmetic, with and without a branch; on the next two (the company-wide newer; no policy of its own) the balance carries that opening and names the branch’s own policy, else the Days Off type 277ms
+   ✓ C to F. over HTTP against the app’s routes > G. the employee list, the Excel import and the reorder as the app has them within the park group: A lists A’s employee; A’s import matches them by email with their current pay, places by A’s branch name and applies; A’s reorder writes A’s order (the arrangement of finding 6, as fixed) 186ms
+   ✓ C to F. over HTTP against the app’s routes > G. FINDING 6 (high, fixed): the list, the Excel import and the reorder keep to the caller’s park group — B lists none of A’s people, its import neither matches, shows nor writes A’s employee nor places anyone on A’s branch, and its reorder writes none of A’s 65ms
+   ✓ C to F. over HTTP against the app’s routes > G. timekeeping and the role holders as the app has them within the park group: A’s admin overrides A’s employee’s clock, reads their timekeeping, and sets a shared role’s holders (the arrangement of finding 7, as fixed) 85ms
+   ✓ C to F. over HTTP against the app’s routes > G. FINDING 7 (medium, fixed): the employee-id doors outside `/api/employees*` keep to the caller’s park group — B’s admin writes no clock event on A’s employee and reads none of their timekeeping, and B’s role-holder write neither strips nor lists A’s holders 42ms
+   ✓ C to F. over HTTP against the app’s routes > G. the employee create as the app has it: B creates its employee with B’s own department (the arrangement of finding 8, as fixed) 64ms
+   ✓ C to F. over HTTP against the app’s routes > G. FINDING 8 (low, fixed): the employee create, like the edit, takes no other park group’s department or user ids 29ms
+   ✓ C to F. over HTTP against the app’s routes > H. every door the second fix round touched, as B’s admin AND as B’s all-branch manager, against A’s rows: none answers anything of A’s, and on every refusal nothing is written anywhere in the database  1204ms
+   ✓ C to F. over HTTP against the app’s routes > H. the same doors within the park group, as B’s admin and B’s all-branch manager: the import matches, places and applies B’s own people, the reorder writes B’s order, a shared role takes B’s holders beside A’s, the override and the create write B’s rows 151ms
+   ✓ C to F. over HTTP against the app’s routes > H. arrangement of finding 9: A’s admin lists and reads A’s own face kiosk and deletes A’s own clock event, as the app does; the reception tablets’ doors (round 5’s review) already keep to the park group 30ms
+   ✓ C to F. over HTTP against the app’s routes > H. FINDING 9 (high): the face kiosks’ admin doors and the clock event delete keep to the caller’s park group — B’s admin neither lists, reads, places on A’s branch, renames, switches off or deletes A’s kiosks, nor deletes A’s clock event 42ms
+   ✓ C to F. over HTTP against the app’s routes > H. arrangement of finding 10: a shared role’s branches as the app keeps them — A’s roles screen saves it to A’s branch and lists it there, and the app’s employee editor offers a role at a branch only when its list names that branch or is empty 15ms
+   ✓ C to F. over HTTP against the app’s routes > H. FINDING 10 (low, delivered in round 7): a shared role’s branch list is each park group’s own — B’s save neither strips A’s branch from it nor names A’s branch, and B’s role list shows none of A’s branches 109ms
+   ✓ C to F. over HTTP against the app’s routes > H. arrangement of finding 11: the baseline keeps `employee_roles.role_id` as a plain key — ON DELETE no action — and Data Admin deletes a row by its id alone; the census places the permission reads “as the builder’s round 6 report left them”; the plan names the standing link 11ms
+   ✓ C to F. over HTTP against the app’s routes > H. FINDING 11 (low, fixed at landing): the records say what the code does — Data Admin’s role delete is refused while the role has holders (it does not cascade to them); the `/api/permissions/*` reads the census places “elsewhere” are placed in the plan; and the plan’s standing cross-park-group login link names the two doors that still reach it 2ms
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 64 passed (65)
+   Start at  16:45:19
+   Duration  75.39s (transform 119ms, setup 0ms, collect 472ms, tests 74.62s, environment 0ms, prepare 95ms)
+
+undefined
+C:\oto-lanes\codex-app-reliability-983-20261114\apps\api:
+ ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL  Command failed with exit code 1: vitest run --pool=forks test/s217b-r6-review.test.ts
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/s217b-r6-review.test.ts > A. fences and seams > the gate did not move WHERE documents are kept: the PDF, file and bucket modules and the BEO and org chart routes are byte for byte main’s
+AssertionError: pdf.ts: expected 'cb54281507ca9a832e80ee9c98fe5037a5c4d…' to be '8c9f1ad1f903429cc5b0ba01caa1ab09aad98…' // Object.is equality
+
+Expected: "8c9f1ad1f903429cc5b0ba01caa1ab09aad98badd7396795760cb5d97971337c"
+Received: "cb54281507ca9a832e80ee9c98fe5037a5c4d27eaf0b2e218011b221e71bcc54"
+
+ ❯ test/s217b-r6-review.test.ts:563:110
+    561|       'orgChartRoutes.ts': 'eff8d4478165e8b0157ef07d37891222104f751b49…
+    562|     };
+    563|     for (const [file, hash] of Object.entries(main)) expect(sha256(com…
+       |                                                                                                              ^
+    564|     const routes = code(readFileSync(join(APP_SERVER, 'routes.ts'), 'u…
+    565|     expect(routes).toMatch(/const publicFileFolders = \["branch-logos"…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+

@@ -1,0 +1,341 @@
+
+ RUN  v3.2.7 C:/oto-lanes/codex-app-reliability-983-20261114/apps/api
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-FoFo6v ... ok
+creating subdirectories ... 
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+ok
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ... 
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+100
+selecting default shared_buffers ... 
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+128MB
+selecting default time zone ... 
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+Asia/Bangkok
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+creating configuration files ... 
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+ok
+running bootstrap script ... 
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+ok
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+performing post-bootstrap initialization ... 
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+ok
+syncing data to disk ... 
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-app^-reliability^-983^-20261114^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-FoFo6v^" -l logfile start
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+2026-11-14 16:47:45.760 +07 [96936] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+2026-11-14 16:47:45.763 +07 [96936] LOG:  listening on IPv6 address "::1", port 55824
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+2026-11-14 16:47:45.763 +07 [96936] LOG:  listening on IPv4 address "127.0.0.1", port 55824
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+2026-11-14 16:47:45.798 +07 [108328] LOG:  database system was shut down at 2026-11-14 16:47:43 +07
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+2026-11-14 16:47:45.818 +07 [96936] LOG:  database system is ready to accept connections
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+2026-11-14 16:47:49.242 +07 [99536] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+2026-11-14 16:47:51.936 +07 [71140] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+2026-11-14 16:47:51.950 +07 [71140] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.004 s, sync=0.003 s, total=0.014 s; sync files=7, longest=0.001 s, average=0.001 s; distance=26921 kB, estimate=26921 kB; lsn=0/2FC26B8, redo lsn=0/2FC2680
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > onto a 0007 database with real-shaped rows in two park groups and the default
+2026-11-14 16:47:55.597 +07 [59136] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > onto a 0007 database with real-shaped rows in two park groups and the default
+2026-11-14 16:47:58.887 +07 [71140] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > onto a 0007 database with real-shaped rows in two park groups and the default
+2026-11-14 16:47:58.908 +07 [71140] LOG:  checkpoint complete: wrote 7 buffers (0.0%); 0 WAL file(s) added, 0 removed, 2 recycled; write=0.004 s, sync=0.004 s, total=0.022 s; sync files=6, longest=0.001 s, average=0.001 s; distance=26984 kB, estimate=26984 kB; lsn=0/4A1C7E8, redo lsn=0/4A1C7B0
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > the census raced: a duplicate held open in a transaction while 0008 waits on its lock > committed while 0008 waits: the census sees the duplicate, the index is not made, the deploy goes on and says so
+2026-11-14 16:48:05.111 +07 [75176] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > the census raced: a duplicate held open in a transaction while 0008 waits on its lock > committed while 0008 waits: the census sees the duplicate, the index is not made, the deploy goes on and says so
+2026-11-14 16:48:08.499 +07 [71140] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > the census raced: a duplicate held open in a transaction while 0008 waits on its lock > committed while 0008 waits: the census sees the duplicate, the index is not made, the deploy goes on and says so
+2026-11-14 16:48:08.514 +07 [71140] LOG:  checkpoint complete: wrote 7 buffers (0.0%); 0 WAL file(s) added, 0 removed, 2 recycled; write=0.005 s, sync=0.003 s, total=0.016 s; sync files=6, longest=0.001 s, average=0.001 s; distance=26935 kB, estimate=26979 kB; lsn=0/646A770, redo lsn=0/646A738
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > the census raced: a duplicate held open in a transaction while 0008 waits on its lock > rolled back while 0008 waits: nothing stood in the way, the census is clean and the backstop stands (0038’s one-open index; 0039 retired 0008’s)
+2026-11-14 16:48:12.092 +07 [38796] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > the census raced: a duplicate held open in a transaction while 0008 waits on its lock > rolled back while 0008 waits: nothing stood in the way, the census is clean and the backstop stands (0038’s one-open index; 0039 retired 0008’s)
+2026-11-14 16:48:14.919 +07 [71140] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > the census raced: a duplicate held open in a transaction while 0008 waits on its lock > rolled back while 0008 waits: nothing stood in the way, the census is clean and the backstop stands (0038’s one-open index; 0039 retired 0008’s)
+2026-11-14 16:48:14.933 +07 [71140] LOG:  checkpoint complete: wrote 7 buffers (0.0%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.004 s, sync=0.004 s, total=0.014 s; sync files=6, longest=0.001 s, average=0.001 s; distance=26941 kB, estimate=26975 kB; lsn=0/7EB9BC8, redo lsn=0/7EB9B90
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes
+2026-11-14 16:48:18.581 +07 [77308] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes > C. H16 create: a failure injected at the offboarding row itself (the first write) leaves nothing behind — and the same request then does all of it, in the app's order
+2026-11-14 16:48:28.537 +07 [27592] ERROR:  zz injected failure (round 6 review, H16)
+2026-11-14 16:48:28.537 +07 [27592] CONTEXT:  PL/pgSQL function zz_r6rv_inject_919340() line 1 at RAISE
+2026-11-14 16:48:28.537 +07 [27592] STATEMENT:  insert into "employee_offboarding" ("id", "employee_id", "branch_id", "offboarding_type", "reason_code", "reason_text", "notice_date", "last_working_day", "leave_public_holidays_days", "leave_annual_days", "leave_other_days", "leave_other_label", "notes", "created_by", "created_at", "updated_at", "reonboarded_at") values (default, $1, $2, $3, $4, default, $5, $6, default, default, default, default, default, $7, default, default, default) returning "id", "employee_id", "branch_id", "offboarding_type", "reason_code", "reason_text", "notice_date", "last_working_day", "leave_public_holidays_days", "leave_annual_days", "leave_other_days", "leave_other_label", "notes", "created_by", "created_at", "updated_at", "reonboarded_at"
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes > C. H16 create: a failure injected at the employee (before the login flip) leaves nothing behind — and the same request then does all of it, in the app's order
+2026-11-14 16:48:28.684 +07 [27592] ERROR:  zz injected failure (round 6 review, H16)
+2026-11-14 16:48:28.684 +07 [27592] CONTEXT:  PL/pgSQL function zz_r6rv_inject_919340() line 1 at RAISE
+2026-11-14 16:48:28.684 +07 [27592] STATEMENT:  update "employees" set "status" = $1, "employment_state" = $2, "offboarding_type" = $3, "notice_date" = $4, "end_reason" = $5, "last_working_day" = $6 where "employees"."id" = $7 returning "id", "tenant_id", "person_id", "full_name", "thai_name", "nickname", "birthday_month", "birthday_day", "birthday_year", "email", "phone", "address", "branch_id", "status", "employment_state", "offboarding_type", "notice_date", "default_merge_data", "incentive_clause_text", "food_allowance_per_day", "employment_basis", "daily_rate", "created_at", "start_date", "probation_days", "probation_end_date", "probation_review_completed_at", "end_reason", "last_working_day", "resignation_form_path", "termination_letter_path", "nationality", "is_foreign_staff", "visa_expiry_date", "work_permit_expiry_date", "sso_number", "tax_id_number", "visa_wp_company_handles", "visa_wp_company_pays", "visa_wp_cost_thb", "visa_wp_repayment_if_fail_probation", "visa_wp_repayment_if_leave_before_1y", "visa_wp_repayment_terms_text", "visa_wp_notes", "job_description", "phone_e164", "face_enrollment_status", "face_id", "face_enrolled_at", "timeclock_pin_hash", "timeclock_pin_set_at", "timeclock_pin_required", "phone_fallback_count_30day", "phone_fallback_count_reset_at", "pin_usage_count_30day", "pin_usage_count_reset_at", "profile_photo_path", "profile_photo_captured_at", "profile_photo_source", "profile_photo_updated_by", "primary_department_id", "display_order", "weekly_off_days", "user_id", "version", "updated_at", "updated_by"
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes > C. H16 create: a failure injected at the login flip itself leaves nothing behind — and the same request then does all of it, in the app's order
+2026-11-14 16:48:28.786 +07 [27592] ERROR:  zz injected failure (round 6 review, H16)
+2026-11-14 16:48:28.786 +07 [27592] CONTEXT:  PL/pgSQL function zz_r6rv_inject_919340() line 1 at RAISE
+2026-11-14 16:48:28.786 +07 [27592] STATEMENT:  update "users" set "access_mode" = $1, "updated_at" = $2 where ("users"."id" = $3 and "users"."access_mode" = $4 and not exists (select 1 from employee_engagements g where g.employee_id = $5 and g.status = 'planned')) returning "id"
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes > C. H16 create: a failure injected at the coverage alert, right after the flip leaves nothing behind — and the same request then does all of it, in the app's order
+2026-11-14 16:48:28.873 +07 [27592] ERROR:  zz injected failure (round 6 review, H16)
+2026-11-14 16:48:28.873 +07 [27592] CONTEXT:  PL/pgSQL function zz_r6rv_inject_919340() line 1 at RAISE
+2026-11-14 16:48:28.873 +07 [27592] STATEMENT:  insert into "attention_items" ("id", "branch_id", "employee_id", "contract_instance_id", "type", "severity", "title", "description", "due_date", "status", "rule_key", "entity_key", "fingerprint", "suppress_until", "created_at", "updated_at", "resolved_at", "resolved_by", "tenant_id") values (default, $1, $2, default, $3, $4, $5, $6, default, default, default, default, default, default, default, default, default, default, $7) returning "id", "branch_id", "employee_id", "contract_instance_id", "type", "severity", "title", "description", "due_date", "status", "rule_key", "entity_key", "fingerprint", "suppress_until", "created_at", "updated_at", "resolved_at", "resolved_by", "tenant_id"
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes > C. H16 create: a failure injected at the assets’ return dates leaves nothing behind — and the same request then does all of it, in the app's order
+2026-11-14 16:48:28.962 +07 [27592] ERROR:  zz injected failure (round 6 review, H16)
+2026-11-14 16:48:28.962 +07 [27592] CONTEXT:  PL/pgSQL function zz_r6rv_inject_919340() line 1 at RAISE
+2026-11-14 16:48:28.962 +07 [27592] STATEMENT:  update "employee_assets" set "expected_return_by" = $1, "updated_at" = $2 where ("employee_assets"."employee_id" = $3 and "employee_assets"."return_required" = $4 and "employee_assets"."returned_at" IS NULL)
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes > C. H16 create: a failure injected at the change record leaves nothing behind — and the same request then does all of it, in the app's order
+2026-11-14 16:48:29.048 +07 [27592] ERROR:  zz injected failure (round 6 review, H16)
+2026-11-14 16:48:29.048 +07 [27592] CONTEXT:  PL/pgSQL function zz_r6rv_inject_919340() line 1 at RAISE
+2026-11-14 16:48:29.048 +07 [27592] STATEMENT:  insert into "employee_changes" ("id", "employee_id", "change_type", "effective_date", "old_title", "old_salary", "old_incentive_clause", "old_branch_id", "old_department_id", "new_title", "new_salary", "new_incentive_clause", "new_branch_id", "new_department_id", "note", "contract_generated", "contract_instance_id", "created_by", "created_at") values (default, $1, $2, $3, default, default, default, default, default, default, default, default, default, default, $4, default, default, $5, default) returning "id", "employee_id", "change_type", "effective_date", "old_title", "old_salary", "old_incentive_clause", "old_branch_id", "old_department_id", "new_title", "new_salary", "new_incentive_clause", "new_branch_id", "new_department_id", "note", "contract_generated", "contract_instance_id", "created_by", "created_at"
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes > C. H16 create: a failure injected at the first activity row leaves nothing behind — and the same request then does all of it, in the app's order
+2026-11-14 16:48:29.131 +07 [27592] ERROR:  zz injected failure (round 6 review, H16)
+2026-11-14 16:48:29.131 +07 [27592] CONTEXT:  PL/pgSQL function zz_r6rv_inject_919340() line 1 at RAISE
+2026-11-14 16:48:29.131 +07 [27592] STATEMENT:  insert into "activity_log" ("id", "branch_id", "employee_id", "contract_instance_id", "attention_item_id", "template_id", "activity_type", "summary_text", "metadata_json", "created_by", "created_at", "tenant_id") values (default, $1, $2, default, default, default, $3, $4, default, $5, default, coalesce(
+	                                (select tenant_id from branches where id = $6),
+	                                (select tenant_id from employees where id = $7),
+	                                (select e.tenant_id from contract_instances c join employees e on e.id = c.employee_id
+	                                  where c.id = $8),
+	                                $9::uuid,
+	                                (select p.tenant_id from (
+	                                        select min(x.tenant_id::text)::uuid as tenant_id
+	                                          from user_branch_access x
+	                                          left join branches b on b.id = x.branch_id
+	                                         where x.user_id = $10
+	                                        having count(distinct x.tenant_id) = 1
+	                                           and bool_and(x.branch_id is null or b.tenant_id is not distinct from x.tenant_id)
+	                                 ) p
+	                                 left join users u on u.id = $11
+	                                 where u.role is distinct from 'operator_admin' or u.operator_id is null
+	                                    or exists (select 1 from operators o
+	                                                where o.id = u.operator_id and o.tenant_id = p.tenant_id)),
+	                                (select id from tenants where slug = $12),
+	                                (select min(id::text)::uuid from tenants having count(*) = 1)
+	                        )) returning "id", "branch_id", "employee_id", "contract_instance_id", "attention_item_id", "template_id", "activity_type", "summary_text", "metadata_json", "created_by", "created_at", "tenant_id"
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes > C. H16 create: a failure injected at the second activity row leaves nothing behind — and the same request then does all of it, in the app's order
+2026-11-14 16:48:29.226 +07 [27592] ERROR:  zz injected failure (round 6 review, H16)
+2026-11-14 16:48:29.226 +07 [27592] CONTEXT:  PL/pgSQL function zz_r6rv_inject_919340() line 1 at RAISE
+2026-11-14 16:48:29.226 +07 [27592] STATEMENT:  insert into "activity_log" ("id", "branch_id", "employee_id", "contract_instance_id", "attention_item_id", "template_id", "activity_type", "summary_text", "metadata_json", "created_by", "created_at", "tenant_id") values (default, $1, $2, default, default, default, $3, $4, default, $5, default, coalesce(
+	                                (select tenant_id from branches where id = $6),
+	                                (select tenant_id from employees where id = $7),
+	                                (select e.tenant_id from contract_instances c join employees e on e.id = c.employee_id
+	                                  where c.id = $8),
+	                                $9::uuid,
+	                                (select p.tenant_id from (
+	                                        select min(x.tenant_id::text)::uuid as tenant_id
+	                                          from user_branch_access x
+	                                          left join branches b on b.id = x.branch_id
+	                                         where x.user_id = $10
+	                                        having count(distinct x.tenant_id) = 1
+	                                           and bool_and(x.branch_id is null or b.tenant_id is not distinct from x.tenant_id)
+	                                 ) p
+	                                 left join users u on u.id = $11
+	                                 where u.role is distinct from 'operator_admin' or u.operator_id is null
+	                                    or exists (select 1 from operators o
+	                                                where o.id = u.operator_id and o.tenant_id = p.tenant_id)),
+	                                (select id from tenants where slug = $12),
+	                                (select min(id::text)::uuid from tenants having count(*) = 1)
+	                        )) returning "id", "branch_id", "employee_id", "contract_instance_id", "attention_item_id", "template_id", "activity_type", "summary_text", "metadata_json", "created_by", "created_at", "tenant_id"
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes > C. H16 create: a failure injected at the first checklist item leaves nothing behind — and the same request then does all of it, in the app's order
+2026-11-14 16:48:29.311 +07 [27592] ERROR:  zz injected failure (round 6 review, H16)
+2026-11-14 16:48:29.311 +07 [27592] CONTEXT:  PL/pgSQL function zz_r6rv_inject_919340() line 1 at RAISE
+2026-11-14 16:48:29.311 +07 [27592] STATEMENT:  insert into "offboarding_checklist" ("id", "offboarding_id", "employee_id", "branch_id", "checklist_type", "title", "description", "is_completed", "completed_at", "completed_by", "due_date", "sort_order", "created_at") values (default, $1, $2, $3, $4, $5, $6, $7, default, default, default, $8, default) returning "id", "offboarding_id", "employee_id", "branch_id", "checklist_type", "title", "description", "is_completed", "completed_at", "completed_by", "due_date", "sort_order", "created_at"
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes > C. H16 create: a failure injected at the last checklist item leaves nothing behind — and the same request then does all of it, in the app's order
+2026-11-14 16:48:29.393 +07 [27592] ERROR:  zz injected failure (round 6 review, H16)
+2026-11-14 16:48:29.393 +07 [27592] CONTEXT:  PL/pgSQL function zz_r6rv_inject_919340() line 1 at RAISE
+2026-11-14 16:48:29.393 +07 [27592] STATEMENT:  insert into "offboarding_checklist" ("id", "offboarding_id", "employee_id", "branch_id", "checklist_type", "title", "description", "is_completed", "completed_at", "completed_by", "due_date", "sort_order", "created_at") values (default, $1, $2, $3, $4, $5, $6, $7, default, default, $8, $9, default) returning "id", "offboarding_id", "employee_id", "branch_id", "checklist_type", "title", "description", "is_completed", "completed_at", "completed_by", "due_date", "sort_order", "created_at"
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes > C. H16 update: a failure injected at the offboarding row leaves the offboarding as it was
+2026-11-14 16:48:29.610 +07 [27592] ERROR:  zz injected failure (round 6 review, H16)
+2026-11-14 16:48:29.610 +07 [27592] CONTEXT:  PL/pgSQL function zz_r6rv_inject_919340() line 1 at RAISE
+2026-11-14 16:48:29.610 +07 [27592] STATEMENT:  update "employee_offboarding" set "last_working_day" = $1, "updated_at" = $2 where "employee_offboarding"."id" = $3 returning "id", "employee_id", "branch_id", "offboarding_type", "reason_code", "reason_text", "notice_date", "last_working_day", "leave_public_holidays_days", "leave_annual_days", "leave_other_days", "leave_other_label", "notes", "created_by", "created_at", "updated_at", "reonboarded_at"
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes > C. H16 update: a failure injected at the employee leaves the offboarding as it was
+2026-11-14 16:48:29.710 +07 [27592] ERROR:  zz injected failure (round 6 review, H16)
+2026-11-14 16:48:29.710 +07 [27592] CONTEXT:  PL/pgSQL function zz_r6rv_inject_919340() line 1 at RAISE
+2026-11-14 16:48:29.710 +07 [27592] STATEMENT:  update "employees" set "employment_state" = $1, "last_working_day" = $2 where "employees"."id" = $3 returning "id", "tenant_id", "person_id", "full_name", "thai_name", "nickname", "birthday_month", "birthday_day", "birthday_year", "email", "phone", "address", "branch_id", "status", "employment_state", "offboarding_type", "notice_date", "default_merge_data", "incentive_clause_text", "food_allowance_per_day", "employment_basis", "daily_rate", "created_at", "start_date", "probation_days", "probation_end_date", "probation_review_completed_at", "end_reason", "last_working_day", "resignation_form_path", "termination_letter_path", "nationality", "is_foreign_staff", "visa_expiry_date", "work_permit_expiry_date", "sso_number", "tax_id_number", "visa_wp_company_handles", "visa_wp_company_pays", "visa_wp_cost_thb", "visa_wp_repayment_if_fail_probation", "visa_wp_repayment_if_leave_before_1y", "visa_wp_repayment_terms_text", "visa_wp_notes", "job_description", "phone_e164", "face_enrollment_status", "face_id", "face_enrolled_at", "timeclock_pin_hash", "timeclock_pin_set_at", "timeclock_pin_required", "phone_fallback_count_30day", "phone_fallback_count_reset_at", "pin_usage_count_30day", "pin_usage_count_reset_at", "profile_photo_path", "profile_photo_captured_at", "profile_photo_source", "profile_photo_updated_by", "primary_department_id", "display_order", "weekly_off_days", "user_id", "version", "updated_at", "updated_by"
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes > C. H16 update: a failure injected at the assets’ return dates leaves the offboarding as it was
+2026-11-14 16:48:29.798 +07 [27592] ERROR:  zz injected failure (round 6 review, H16)
+2026-11-14 16:48:29.798 +07 [27592] CONTEXT:  PL/pgSQL function zz_r6rv_inject_919340() line 1 at RAISE
+2026-11-14 16:48:29.798 +07 [27592] STATEMENT:  update "employee_assets" set "expected_return_by" = $1, "updated_at" = $2 where ("employee_assets"."employee_id" = $3 and "employee_assets"."return_required" = $4 and "employee_assets"."returned_at" IS NULL)
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes > C. H16 update: a failure injected at the shifts removed after the new last day leaves the offboarding as it was
+2026-11-14 16:48:29.883 +07 [27592] ERROR:  zz injected failure (round 6 review, H16)
+2026-11-14 16:48:29.883 +07 [27592] CONTEXT:  PL/pgSQL function zz_r6rv_inject_919340() line 1 at RAISE
+2026-11-14 16:48:29.883 +07 [27592] STATEMENT:  delete from "schedule_assignments" where ("schedule_assignments"."employee_id" = $1 and "schedule_assignments"."shift_date" >= $2 and "schedule_assignments"."shift_date" <= $3)
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes > C. H16 update: a failure injected at the shifts-removed activity row leaves the offboarding as it was
+2026-11-14 16:48:29.971 +07 [27592] ERROR:  zz injected failure (round 6 review, H16)
+2026-11-14 16:48:29.971 +07 [27592] CONTEXT:  PL/pgSQL function zz_r6rv_inject_919340() line 1 at RAISE
+2026-11-14 16:48:29.971 +07 [27592] STATEMENT:  insert into "activity_log" ("id", "branch_id", "employee_id", "contract_instance_id", "attention_item_id", "template_id", "activity_type", "summary_text", "metadata_json", "created_by", "created_at", "tenant_id") values (default, $1, $2, default, default, default, $3, $4, default, $5, default, coalesce(
+	                                (select tenant_id from branches where id = $6),
+	                                (select tenant_id from employees where id = $7),
+	                                (select e.tenant_id from contract_instances c join employees e on e.id = c.employee_id
+	                                  where c.id = $8),
+	                                $9::uuid,
+	                                (select p.tenant_id from (
+	                                        select min(x.tenant_id::text)::uuid as tenant_id
+	                                          from user_branch_access x
+	                                          left join branches b on b.id = x.branch_id
+	                                         where x.user_id = $10
+	                                        having count(distinct x.tenant_id) = 1
+	                                           and bool_and(x.branch_id is null or b.tenant_id is not distinct from x.tenant_id)
+	                                 ) p
+	                                 left join users u on u.id = $11
+	                                 where u.role is distinct from 'operator_admin' or u.operator_id is null
+	                                    or exists (select 1 from operators o
+	                                                where o.id = u.operator_id and o.tenant_id = p.tenant_id)),
+	                                (select id from tenants where slug = $12),
+	                                (select min(id::text)::uuid from tenants having count(*) = 1)
+	                        )) returning "id", "branch_id", "employee_id", "contract_instance_id", "attention_item_id", "template_id", "activity_type", "summary_text", "metadata_json", "created_by", "created_at", "tenant_id"
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes
+2026-11-14 16:48:42.315 +07 [109108] FATAL:  terminating connection due to administrator command
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes
+2026-11-14 16:48:42.316 +07 [58464] FATAL:  terminating connection due to administrator command
+2026-11-14 16:48:42.316 +07 [66988] FATAL:  terminating connection due to administrator command
+2026-11-14 16:48:42.316 +07 [108020] FATAL:  terminating connection due to administrator command
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes
+2026-11-14 16:48:42.317 +07 [105416] FATAL:  terminating connection due to administrator command
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes
+2026-11-14 16:48:42.317 +07 [74568] FATAL:  terminating connection due to administrator command
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes
+2026-11-14 16:48:42.317 +07 [81616] FATAL:  terminating connection due to administrator command
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes
+2026-11-14 16:48:42.425 +07 [71140] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes
+2026-11-14 16:48:42.444 +07 [71140] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 2 recycled; write=0.005 s, sync=0.004 s, total=0.020 s; sync files=8, longest=0.002 s, average=0.001 s; distance=27683 kB, estimate=27683 kB; lsn=0/99C2918, redo lsn=0/99C28E0
+
+
+ ✓ test/s217b-r6-review.test.ts (65 tests) 62209ms
+   ✓ A. fences and seams > the booth, POS, console, launcher, packages and services name nothing of round 6  1377ms
+   ✓ B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made  10258ms
+   ✓ B. the migration attacked > the census raced: a duplicate held open in a transaction while 0008 waits on its lock > committed while 0008 waits: the census sees the duplicate, the index is not made, the deploy goes on and says so  9601ms
+   ✓ B. the migration attacked > the census raced: a duplicate held open in a transaction while 0008 waits on its lock > rolled back while 0008 waits: nothing stood in the way, the census is clean and the backstop stands (0038’s one-open index; 0039 retired 0008’s)  6408ms
+   ✓ C to F. over HTTP against the app’s routes > E. the wizard’s six personal fields still land for B’s own employee, a login, branch or park group in its edits is dropped; and a link made before the fix is never switched off by B’s offboarding (the arrangement of finding 2, as fixed)  2853ms
+   ✓ C to F. over HTTP against the app’s routes > E. FINDING 2 (medium, fixed): the wizard’s employee edits cannot link another park group’s login, and B’s offboarding never switches off A’s person’s login  2739ms
+   ✓ C to F. over HTTP against the app’s routes > G. F1 held, re-driven: the census is exactly the registered `/api/employees/:id*` doors, and as B’s all-branch MANAGER (the builder drove the admin) none of the 45 answers A’s employee or writes anything of theirs  513ms
+   ✓ C to F. over HTTP against the app’s routes > G. F2 held, re-driven: the wizard takes the six personal fields of the app’s own client and no other column — status, state, person, department, login, authors, face and PIN sent in its edits all drop  2705ms
+   ✓ C to F. over HTTP against the app’s routes > H. every door the second fix round touched, as B’s admin AND as B’s all-branch manager, against A’s rows: none answers anything of A’s, and on every refusal nothing is written anywhere in the database  1002ms
+
+ Test Files  1 passed (1)
+      Tests  65 passed (65)
+   Start at  16:47:39
+   Duration  63.04s (transform 128ms, setup 0ms, collect 517ms, tests 62.21s, environment 0ms, prepare 114ms)
+

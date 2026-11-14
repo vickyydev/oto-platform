@@ -1,2 +1,3 @@
 logs/*.log -text
 ci-repair/*.log -text
+ci-storage-pin/*.log -text

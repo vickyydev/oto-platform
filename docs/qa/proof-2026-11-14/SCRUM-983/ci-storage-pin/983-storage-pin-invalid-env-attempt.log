@@ -1,0 +1,674 @@
+
+ RUN  v3.2.7 C:/oto-lanes/codex-app-reliability-983-20261114/apps/api
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-CnJI9f ... ok
+creating subdirectories ... 
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+ok
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+selecting dynamic shared memory implementation ... windows
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+selecting default max_connections ... 
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+100
+selecting default shared_buffers ... 
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+128MB
+selecting default time zone ... 
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+Asia/Bangkok
+creating configuration files ... 
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+ok
+running bootstrap script ... 
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+ok
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+performing post-bootstrap initialization ... 
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+ok
+syncing data to disk ... 
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-app^-reliability^-983^-20261114^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-CnJI9f^" -l logfile start
+
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+2026-11-14 16:43:22.292 +07 [89956] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+2026-11-14 16:43:22.295 +07 [89956] LOG:  listening on IPv6 address "::1", port 54194
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+2026-11-14 16:43:22.295 +07 [89956] LOG:  listening on IPv4 address "127.0.0.1", port 54194
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+2026-11-14 16:43:22.329 +07 [64464] LOG:  database system was shut down at 2026-11-14 16:43:20 +07
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+2026-11-14 16:43:22.347 +07 [89956] LOG:  database system is ready to accept connections
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+2026-11-14 16:43:22.809 +07 [84940] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+2026-11-14 16:43:22.817 +07 [84940] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.003 s, sync=0.003 s, total=0.009 s; sync files=7, longest=0.001 s, average=0.001 s; distance=4560 kB, estimate=4560 kB; lsn=0/19EC130, redo lsn=0/19EC0F8
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+2026-11-14 16:43:23.241 +07 [84940] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+2026-11-14 16:43:23.280 +07 [84940] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 1 WAL file(s) added, 0 removed, 0 recycled; write=0.003 s, sync=0.002 s, total=0.039 s; sync files=6, longest=0.001 s, average=0.001 s; distance=4560 kB, estimate=4560 kB; lsn=0/1E603A8, redo lsn=0/1E60370
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+2026-11-14 16:43:23.721 +07 [84940] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+2026-11-14 16:43:23.730 +07 [84940] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.003 s, sync=0.002 s, total=0.010 s; sync files=6, longest=0.001 s, average=0.001 s; distance=4560 kB, estimate=4560 kB; lsn=0/22D4760, redo lsn=0/22D4728
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > onto a 0007 database with real-shaped rows in two park groups and the default
+2026-11-14 16:43:24.153 +07 [84940] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > onto a 0007 database with real-shaped rows in two park groups and the default
+2026-11-14 16:43:24.161 +07 [84940] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.003 s, sync=0.002 s, total=0.009 s; sync files=6, longest=0.001 s, average=0.001 s; distance=4561 kB, estimate=4561 kB; lsn=0/2748C40, redo lsn=0/2748C08
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > onto a 0007 database with real-shaped rows in two park groups and the default
+2026-11-14 16:43:24.591 +07 [84940] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > onto a 0007 database with real-shaped rows in two park groups and the default
+2026-11-14 16:43:24.599 +07 [84940] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.003 s, sync=0.002 s, total=0.008 s; sync files=6, longest=0.001 s, average=0.001 s; distance=4561 kB, estimate=4561 kB; lsn=0/2BBD250, redo lsn=0/2BBD218
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > onto a 0007 database with real-shaped rows in two park groups and the default
+2026-11-14 16:43:25.030 +07 [84940] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > onto a 0007 database with real-shaped rows in two park groups and the default
+2026-11-14 16:43:25.040 +07 [84940] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.003 s, sync=0.002 s, total=0.010 s; sync files=6, longest=0.001 s, average=0.001 s; distance=4561 kB, estimate=4561 kB; lsn=0/30319A8, redo lsn=0/3031970
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > the census raced: a duplicate held open in a transaction while 0008 waits on its lock > committed while 0008 waits: the census sees the duplicate, the index is not made, the deploy goes on and says so
+2026-11-14 16:43:25.485 +07 [84940] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > the census raced: a duplicate held open in a transaction while 0008 waits on its lock > committed while 0008 waits: the census sees the duplicate, the index is not made, the deploy goes on and says so
+2026-11-14 16:43:25.494 +07 [84940] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.004 s, sync=0.002 s, total=0.010 s; sync files=6, longest=0.001 s, average=0.001 s; distance=4562 kB, estimate=4562 kB; lsn=0/34A6238, redo lsn=0/34A6200
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > the census raced: a duplicate held open in a transaction while 0008 waits on its lock > committed while 0008 waits: the census sees the duplicate, the index is not made, the deploy goes on and says so
+2026-11-14 16:43:25.904 +07 [84940] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > the census raced: a duplicate held open in a transaction while 0008 waits on its lock > committed while 0008 waits: the census sees the duplicate, the index is not made, the deploy goes on and says so
+2026-11-14 16:43:25.911 +07 [84940] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.003 s, sync=0.002 s, total=0.008 s; sync files=6, longest=0.001 s, average=0.001 s; distance=4562 kB, estimate=4562 kB; lsn=0/391ABE8, redo lsn=0/391ABB0
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > the census raced: a duplicate held open in a transaction while 0008 waits on its lock > committed while 0008 waits: the census sees the duplicate, the index is not made, the deploy goes on and says so
+2026-11-14 16:43:26.339 +07 [84940] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > the census raced: a duplicate held open in a transaction while 0008 waits on its lock > committed while 0008 waits: the census sees the duplicate, the index is not made, the deploy goes on and says so
+2026-11-14 16:43:26.346 +07 [84940] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.003 s, sync=0.002 s, total=0.008 s; sync files=6, longest=0.001 s, average=0.001 s; distance=4562 kB, estimate=4562 kB; lsn=0/3D8F6C8, redo lsn=0/3D8F690
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > the census raced: a duplicate held open in a transaction while 0008 waits on its lock > rolled back while 0008 waits: nothing stood in the way, the census is clean and the backstop stands (0038’s one-open index; 0039 retired 0008’s)
+2026-11-14 16:43:26.789 +07 [84940] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > the census raced: a duplicate held open in a transaction while 0008 waits on its lock > rolled back while 0008 waits: nothing stood in the way, the census is clean and the backstop stands (0038’s one-open index; 0039 retired 0008’s)
+2026-11-14 16:43:26.805 +07 [84940] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.005 s, sync=0.003 s, total=0.016 s; sync files=6, longest=0.001 s, average=0.001 s; distance=4563 kB, estimate=4563 kB; lsn=0/4204308, redo lsn=0/42042D0
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > the census raced: a duplicate held open in a transaction while 0008 waits on its lock > rolled back while 0008 waits: nothing stood in the way, the census is clean and the backstop stands (0038’s one-open index; 0039 retired 0008’s)
+2026-11-14 16:43:27.347 +07 [84940] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > the census raced: a duplicate held open in a transaction while 0008 waits on its lock > rolled back while 0008 waits: nothing stood in the way, the census is clean and the backstop stands (0038’s one-open index; 0039 retired 0008’s)
+2026-11-14 16:43:27.356 +07 [84940] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.003 s, sync=0.002 s, total=0.009 s; sync files=6, longest=0.001 s, average=0.001 s; distance=4563 kB, estimate=4563 kB; lsn=0/4679050, redo lsn=0/4679018
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > the census raced: a duplicate held open in a transaction while 0008 waits on its lock > rolled back while 0008 waits: nothing stood in the way, the census is clean and the backstop stands (0038’s one-open index; 0039 retired 0008’s)
+2026-11-14 16:43:27.799 +07 [84940] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > the census raced: a duplicate held open in a transaction while 0008 waits on its lock > rolled back while 0008 waits: nothing stood in the way, the census is clean and the backstop stands (0038’s one-open index; 0039 retired 0008’s)
+2026-11-14 16:43:27.811 +07 [84940] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.004 s, sync=0.003 s, total=0.013 s; sync files=6, longest=0.001 s, average=0.001 s; distance=4563 kB, estimate=4563 kB; lsn=0/4AEDED0, redo lsn=0/4AEDE98
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes
+2026-11-14 16:43:28.351 +07 [84940] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes
+2026-11-14 16:43:28.363 +07 [84940] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.003 s, sync=0.004 s, total=0.013 s; sync files=6, longest=0.001 s, average=0.001 s; distance=4563 kB, estimate=4563 kB; lsn=0/4F62E98, redo lsn=0/4F62E60
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes
+2026-11-14 16:43:28.803 +07 [84940] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes
+2026-11-14 16:43:28.816 +07 [84940] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.004 s, sync=0.002 s, total=0.014 s; sync files=6, longest=0.001 s, average=0.001 s; distance=4564 kB, estimate=4564 kB; lsn=0/53D7F90, redo lsn=0/53D7F58
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes
+2026-11-14 16:43:29.266 +07 [84940] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes
+2026-11-14 16:43:29.274 +07 [84940] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.003 s, sync=0.002 s, total=0.008 s; sync files=6, longest=0.001 s, average=0.001 s; distance=4564 kB, estimate=4564 kB; lsn=0/584D1C0, redo lsn=0/584D188
+
+
+ ❯ test/s217b-r6-review.test.ts (65 tests | 4 failed | 54 skipped) 13291ms
+   ✓ A. fences and seams > 0006 and 0007 and their snapshots are byte for byte what staging applied; the round-6 app prefix ends at 0008; the platform journal through 0075 is unchanged 14ms
+   ✓ A. fences and seams > 0008 is EXPAND ONLY: added columns, keys and indexes; no NOT NULL, no drop, rename or retype; no unique dropped; nothing of round 7 3ms
+   ✓ A. fences and seams > the census index lives in SQL only; the round 6 snapshot preserves the four nullable tenant fields 10ms
+   × A. fences and seams > the gate did not move WHERE documents are kept: the PDF, file and bucket modules and the BEO and org chart routes are byte for byte main’s 14ms
+     → pdf.ts: expected 'cb54281507ca9a832e80ee9c98fe5037a5c4d…' to be '8c9f1ad1f903429cc5b0ba01caa1ab09aad98…' // Object.is equality
+   ✓ A. fences and seams > the booth, POS, console, launcher, packages and services name nothing of round 6  1922ms
+   ✓ A. fences and seams > nothing of round 7 in the app: Data Admin’s Attention 503 stands and its four document models are untouched by the round 4ms
+   ✓ A. fences and seams > FINDING 5 (low, fixed): Q31 names where the `people` routes went, matching section 4 (they left round 6) 4ms
+   ✓ A. fences and seams > the arrangement of finding 5, as fixed: Q31 carries `people` in round 7, the owner free to pull it earlier; section 4 and section 8’s round 7 row say the same 3ms
+   × B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made 5771ms
+     → test harness step "create a migrated test database" failed: Error: all 3 tries failed:
+attempt 1: step "apply migrations to oto_test_1794649402347_58256_qtnn_0 (drizzle-kit migrate)": Error: Command failed: node C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\node_modules\drizzle-kit\bin.cjs migrate
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json [status=1]
+stderr:
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json
+stdout:
+No config path provided, using default 'drizzle.config.ts'
+Reading config file 'C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\drizzle.config.ts'
+attempt 2: step "apply migrations to oto_test_1794649402842_58256_rdls_1 (drizzle-kit migrate)": Error: Command failed: node C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\node_modules\drizzle-kit\bin.cjs migrate
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json [status=1]
+stderr:
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json
+stdout:
+No config path provided, using default 'drizzle.config.ts'
+Reading config file 'C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\drizzle.config.ts'
+attempt 3: step "apply migrations to oto_test_1794649403307_58256_uf6v_2 (drizzle-kit migrate)": Error: Command failed: node C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\node_modules\drizzle-kit\bin.cjs migrate
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json [status=1]
+stderr:
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json
+stdout:
+No config path provided, using default 'drizzle.config.ts'
+Reading config file 'C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\drizzle.config.ts'
+   ↓ B. the migration attacked > onto a 0007 database with real-shaped rows in two park groups and the default > the deploy applies 0008 alone, and the census is clean (no notice)
+   ↓ B. the migration attacked > onto a 0007 database with real-shaped rows in two park groups and the default > every row lands where the declared rules put it — none mis-tenanted, none null
+   ↓ B. the migration attacked > onto a 0007 database with real-shaped rows in two park groups and the default > counts unchanged in every table it reads or writes, no park group made, every key valid, the census backstop made (0038’s one-open index; 0039 retired 0008’s)
+   × B. the migration attacked > the census raced: a duplicate held open in a transaction while 0008 waits on its lock > committed while 0008 waits: the census sees the duplicate, the index is not made, the deploy goes on and says so 1307ms
+     → test harness step "create a migrated test database" failed: Error: all 3 tries failed:
+attempt 1: step "apply migrations to oto_test_1794649405065_58256_n09o_6 (drizzle-kit migrate)": Error: Command failed: node C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\node_modules\drizzle-kit\bin.cjs migrate
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json [status=1]
+stderr:
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json
+stdout:
+No config path provided, using default 'drizzle.config.ts'
+Reading config file 'C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\drizzle.config.ts'
+attempt 2: step "apply migrations to oto_test_1794649405520_58256_yd3t_7 (drizzle-kit migrate)": Error: Command failed: node C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\node_modules\drizzle-kit\bin.cjs migrate
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json [status=1]
+stderr:
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json
+stdout:
+No config path provided, using default 'drizzle.config.ts'
+Reading config file 'C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\drizzle.config.ts'
+attempt 3: step "apply migrations to oto_test_1794649405937_58256_l5un_8 (drizzle-kit migrate)": Error: Command failed: node C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\node_modules\drizzle-kit\bin.cjs migrate
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json [status=1]
+stderr:
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json
+stdout:
+No config path provided, using default 'drizzle.config.ts'
+Reading config file 'C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\drizzle.config.ts'
+   × B. the migration attacked > the census raced: a duplicate held open in a transaction while 0008 waits on its lock > rolled back while 0008 waits: nothing stood in the way, the census is clean and the backstop stands (0038’s one-open index; 0039 retired 0008’s) 1467ms
+     → test harness step "create a migrated test database" failed: Error: all 3 tries failed:
+attempt 1: step "apply migrations to oto_test_1794649406372_58256_4pcc_9 (drizzle-kit migrate)": Error: Command failed: node C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\node_modules\drizzle-kit\bin.cjs migrate
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json [status=1]
+stderr:
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json
+stdout:
+No config path provided, using default 'drizzle.config.ts'
+Reading config file 'C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\drizzle.config.ts'
+attempt 2: step "apply migrations to oto_test_1794649406833_58256_by8p_10 (drizzle-kit migrate)": Error: Command failed: node C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\node_modules\drizzle-kit\bin.cjs migrate
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json [status=1]
+stderr:
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json
+stdout:
+No config path provided, using default 'drizzle.config.ts'
+Reading config file 'C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\drizzle.config.ts'
+attempt 3: step "apply migrations to oto_test_1794649407380_58256_tyi6_11 (drizzle-kit migrate)": Error: Command failed: node C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\node_modules\drizzle-kit\bin.cjs migrate
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json [status=1]
+stderr:
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json
+stdout:
+No config path provided, using default 'drizzle.config.ts'
+Reading config file 'C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\drizzle.config.ts'
+   ↓ C to F. over HTTP against the app’s routes > C. H16 create: a failure injected at the offboarding row itself (the first write) leaves nothing behind — and the same request then does all of it, in the app's order
+   ↓ C to F. over HTTP against the app’s routes > C. H16 create: a failure injected at the employee (before the login flip) leaves nothing behind — and the same request then does all of it, in the app's order
+   ↓ C to F. over HTTP against the app’s routes > C. H16 create: a failure injected at the login flip itself leaves nothing behind — and the same request then does all of it, in the app's order
+   ↓ C to F. over HTTP against the app’s routes > C. H16 create: a failure injected at the coverage alert, right after the flip leaves nothing behind — and the same request then does all of it, in the app's order
+   ↓ C to F. over HTTP against the app’s routes > C. H16 create: a failure injected at the assets’ return dates leaves nothing behind — and the same request then does all of it, in the app's order
+   ↓ C to F. over HTTP against the app’s routes > C. H16 create: a failure injected at the change record leaves nothing behind — and the same request then does all of it, in the app's order
+   ↓ C to F. over HTTP against the app’s routes > C. H16 create: a failure injected at the first activity row leaves nothing behind — and the same request then does all of it, in the app's order
+   ↓ C to F. over HTTP against the app’s routes > C. H16 create: a failure injected at the second activity row leaves nothing behind — and the same request then does all of it, in the app's order
+   ↓ C to F. over HTTP against the app’s routes > C. H16 create: a failure injected at the first checklist item leaves nothing behind — and the same request then does all of it, in the app's order
+   ↓ C to F. over HTTP against the app’s routes > C. H16 create: a failure injected at the last checklist item leaves nothing behind — and the same request then does all of it, in the app's order
+   ↓ C to F. over HTTP against the app’s routes > C. H16 create, the login as the app does it: a last day still to come leaves it on and writes no flip; another park group’s admin writes nothing at all
+   ↓ C to F. over HTTP against the app’s routes > C. H16 update: a failure injected at the offboarding row leaves the offboarding as it was
+   ↓ C to F. over HTTP against the app’s routes > C. H16 update: a failure injected at the employee leaves the offboarding as it was
+   ↓ C to F. over HTTP against the app’s routes > C. H16 update: a failure injected at the assets’ return dates leaves the offboarding as it was
+   ↓ C to F. over HTTP against the app’s routes > C. H16 update: a failure injected at the shifts removed after the new last day leaves the offboarding as it was
+   ↓ C to F. over HTTP against the app’s routes > C. H16 update: a failure injected at the shifts-removed activity row leaves the offboarding as it was
+   ↓ C to F. over HTTP against the app’s routes > C. H16 update into the past: the state turns LEFT and the login stays on — the app switches it off only at the create
+   ↓ C to F. over HTTP against the app’s routes > D. arrangement: A’s template, a signed contract on branch X and one on branch Y, a signed letter and an event — their PDFs where the app keeps them
+   ↓ C to F. over HTTP against the app’s routes > D. the owner’s doors open: A’s admin reads the contract’s two PDFs and the letter; the signer’s own link opens with a good, unexpired token
+   ↓ C to F. over HTTP against the app’s routes > D. every unauthorised read is refused with no byte and no URL: signed out, another park group, another branch
+   ↓ C to F. over HTTP against the app’s routes > D. the signer’s link: an expired token with a GOOD signature, a good token for another contract, and a forged one are each 401 with no byte
+   ↓ C to F. over HTTP against the app’s routes > D. guessed object keys and the raw storage path, through every file door the app has, signed out and signed in as another park group: nothing
+   ↓ C to F. over HTTP against the app’s routes > E. templates, policies, the catalogue and leave policies: B’s admin reaches none of A’s, at any door
+   ↓ C to F. over HTTP against the app’s routes > E. contracts, letters, employee documents, assets and offboarding checklists: B’s admin reaches none of A’s, and nothing changes
+   ↓ C to F. over HTTP against the app’s routes > E. the leave reads round 6 fenced keep to the park group, and the branch-wide balances still answer the branch’s own park group (the arrangement of finding 3, as fixed)
+   ↓ C to F. over HTTP against the app’s routes > E. FINDING 3 (medium, fixed): `/api/all-leave-balances` keeps to the caller’s park group — another park group’s branch is the app’s 404, and none of its people are listed
+   ↓ C to F. over HTTP against the app’s routes > E. the HR employee doors as the app has them within the park group: A’s admin reads A’s employee, edits them, and switches their login off and on; a park group named in the edit is dropped (the arrangement of finding 1, as fixed)
+   ↓ C to F. over HTTP against the app’s routes > E. FINDING 1 (high, fixed): the HR employee doors keep to the caller’s park group — another park group’s employee is the app’s 404 to read, edit, move or switch off
+   ↓ C to F. over HTTP against the app’s routes > E. the wizard’s six personal fields still land for B’s own employee, a login, branch or park group in its edits is dropped; and a link made before the fix is never switched off by B’s offboarding (the arrangement of finding 2, as fixed)
+   ↓ C to F. over HTTP against the app’s routes > E. FINDING 2 (medium, fixed): the wizard’s employee edits cannot link another park group’s login, and B’s offboarding never switches off A’s person’s login
+   ↓ C to F. over HTTP against the app’s routes > E. the default park group’s company-wide policy is read where a park group has none — the app’s rule while there was one set (the builder’s Q49 default), read once into its Days Off type (SCRUM-560)
+   ↓ C to F. over HTTP against the app’s routes > E. a park group with a company-wide policy of its own weighs its own and never the default park group’s newer one; its branch’s own, the newest of its own, wins (the arrangement of finding 4, as fixed: Q28’s rule on the company-wide slot)
+   ↓ C to F. over HTTP against the app’s routes > E. FINDING 4 (low), as SCRUM-560 has it: with a branch policy of its own and no company-wide one, the branch’s own policy is the rule, however new the default park group’s company-wide one — whose numbers the park group’s Days Off type took
+   ↓ C to F. over HTTP against the app’s routes > F. the org chart’s GET writes only its own park group’s missing nodes: B’s read mints nothing for A, and A’s branch scope is refused with nothing written
+   ↓ C to F. over HTTP against the app’s routes > G. F1 held, re-driven: the census is exactly the registered `/api/employees/:id*` doors, and as B’s all-branch MANAGER (the builder drove the admin) none of the 45 answers A’s employee or writes anything of theirs
+   ↓ C to F. over HTTP against the app’s routes > G. F2 held, re-driven: the wizard takes the six personal fields of the app’s own client and no other column — status, state, person, department, login, authors, face and PIN sent in its edits all drop
+   ↓ C to F. over HTTP against the app’s routes > G. F4 held, against the app’s pre-lift code, as SCRUM-560 freezes it: on the first fixture the opening is the pre-lift query’s pick and arithmetic, with and without a branch; on the next two (the company-wide newer; no policy of its own) the balance carries that opening and names the branch’s own policy, else the Days Off type
+   ↓ C to F. over HTTP against the app’s routes > G. the employee list, the Excel import and the reorder as the app has them within the park group: A lists A’s employee; A’s import matches them by email with their current pay, places by A’s branch name and applies; A’s reorder writes A’s order (the arrangement of finding 6, as fixed)
+   ↓ C to F. over HTTP against the app’s routes > G. FINDING 6 (high, fixed): the list, the Excel import and the reorder keep to the caller’s park group — B lists none of A’s people, its import neither matches, shows nor writes A’s employee nor places anyone on A’s branch, and its reorder writes none of A’s
+   ↓ C to F. over HTTP against the app’s routes > G. timekeeping and the role holders as the app has them within the park group: A’s admin overrides A’s employee’s clock, reads their timekeeping, and sets a shared role’s holders (the arrangement of finding 7, as fixed)
+   ↓ C to F. over HTTP against the app’s routes > G. FINDING 7 (medium, fixed): the employee-id doors outside `/api/employees*` keep to the caller’s park group — B’s admin writes no clock event on A’s employee and reads none of their timekeeping, and B’s role-holder write neither strips nor lists A’s holders
+   ↓ C to F. over HTTP against the app’s routes > G. the employee create as the app has it: B creates its employee with B’s own department (the arrangement of finding 8, as fixed)
+   ↓ C to F. over HTTP against the app’s routes > G. FINDING 8 (low, fixed): the employee create, like the edit, takes no other park group’s department or user ids
+   ↓ C to F. over HTTP against the app’s routes > H. every door the second fix round touched, as B’s admin AND as B’s all-branch manager, against A’s rows: none answers anything of A’s, and on every refusal nothing is written anywhere in the database
+   ↓ C to F. over HTTP against the app’s routes > H. the same doors within the park group, as B’s admin and B’s all-branch manager: the import matches, places and applies B’s own people, the reorder writes B’s order, a shared role takes B’s holders beside A’s, the override and the create write B’s rows
+   ↓ C to F. over HTTP against the app’s routes > H. arrangement of finding 9: A’s admin lists and reads A’s own face kiosk and deletes A’s own clock event, as the app does; the reception tablets’ doors (round 5’s review) already keep to the park group
+   ↓ C to F. over HTTP against the app’s routes > H. FINDING 9 (high): the face kiosks’ admin doors and the clock event delete keep to the caller’s park group — B’s admin neither lists, reads, places on A’s branch, renames, switches off or deletes A’s kiosks, nor deletes A’s clock event
+   ↓ C to F. over HTTP against the app’s routes > H. arrangement of finding 10: a shared role’s branches as the app keeps them — A’s roles screen saves it to A’s branch and lists it there, and the app’s employee editor offers a role at a branch only when its list names that branch or is empty
+   ↓ C to F. over HTTP against the app’s routes > H. FINDING 10 (low, delivered in round 7): a shared role’s branch list is each park group’s own — B’s save neither strips A’s branch from it nor names A’s branch, and B’s role list shows none of A’s branches
+   ↓ C to F. over HTTP against the app’s routes > H. arrangement of finding 11: the baseline keeps `employee_roles.role_id` as a plain key — ON DELETE no action — and Data Admin deletes a row by its id alone; the census places the permission reads “as the builder’s round 6 report left them”; the plan names the standing link
+   ↓ C to F. over HTTP against the app’s routes > H. FINDING 11 (low, fixed at landing): the records say what the code does — Data Admin’s role delete is refused while the role has holders (it does not cascade to them); the `/api/permissions/*` reads the census places “elsewhere” are placed in the plan; and the plan’s standing cross-park-group login link names the two doors that still reach it
+
+ Test Files  1 failed (1)
+      Tests  4 failed | 7 passed | 54 skipped (65)
+   Start at  16:43:15
+   Duration  14.23s (transform 149ms, setup 0ms, collect 586ms, tests 13.29s, environment 0ms, prepare 171ms)
+
+undefined
+C:\oto-lanes\codex-app-reliability-983-20261114\apps\api:
+ ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL  Command failed with exit code 1: vitest run --pool=forks test/s217b-r6-review.test.ts
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/s217b-r6-review.test.ts > B. the migration attacked > onto a 0007 database with real-shaped rows in two park groups and the default
+TestSetupError: test harness step "create a migrated test database" failed: Error: all 3 tries failed:
+attempt 1: step "apply migrations to oto_test_1794649403757_58256_om29_3 (drizzle-kit migrate)": Error: Command failed: node C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\node_modules\drizzle-kit\bin.cjs migrate
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json [status=1]
+stderr:
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json
+stdout:
+No config path provided, using default 'drizzle.config.ts'
+Reading config file 'C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\drizzle.config.ts'
+attempt 2: step "apply migrations to oto_test_1794649404187_58256_ggxv_4 (drizzle-kit migrate)": Error: Command failed: node C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\node_modules\drizzle-kit\bin.cjs migrate
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json [status=1]
+stderr:
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json
+stdout:
+No config path provided, using default 'drizzle.config.ts'
+Reading config file 'C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\drizzle.config.ts'
+attempt 3: step "apply migrations to oto_test_1794649404627_58256_7jmp_5 (drizzle-kit migrate)": Error: Command failed: node C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\node_modules\drizzle-kit\bin.cjs migrate
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json [status=1]
+stderr:
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json
+stdout:
+No config path provided, using default 'drizzle.config.ts'
+Reading config file 'C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\drizzle.config.ts'
+ ❯ createTestDatabase ../../packages/db/src/testing.ts:266:15
+    264|       if (attempt >= 3) {
+    265|         // Each attempt's cause chain is already written out in `failu…
+    266|         throw new TestSetupError(
+       |               ^
+    267|           'create a migrated test database',
+    268|           new Error(`all ${attempt} tries failed:\n${failures.join('\n…
+ ❯ databaseAt test/s217b-r6-review.test.ts:646:25
+ ❯ test/s217b-r6-review.test.ts:724:24
+
+Caused by: Error: all 3 tries failed:
+attempt 1: step "apply migrations to oto_test_1794649403757_58256_om29_3 (drizzle-kit migrate)": Error: Command failed: node C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\node_modules\drizzle-kit\bin.cjs migrate
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json [status=1]
+stderr:
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json
+stdout:
+No config path provided, using default 'drizzle.config.ts'
+Reading config file 'C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\drizzle.config.ts'
+attempt 2: step "apply migrations to oto_test_1794649404187_58256_ggxv_4 (drizzle-kit migrate)": Error: Command failed: node C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\node_modules\drizzle-kit\bin.cjs migrate
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json [status=1]
+stderr:
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json
+stdout:
+No config path provided, using default 'drizzle.config.ts'
+Reading config file 'C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\drizzle.config.ts'
+attempt 3: step "apply migrations to oto_test_1794649404627_58256_7jmp_5 (drizzle-kit migrate)": Error: Command failed: node C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\node_modules\drizzle-kit\bin.cjs migrate
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json [status=1]
+stderr:
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json
+stdout:
+No config path provided, using default 'drizzle.config.ts'
+Reading config file 'C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\drizzle.config.ts'
+ ❯ createTestDatabase ../../packages/db/src/testing.ts:268:11
+ ❯ databaseAt test/s217b-r6-review.test.ts:646:25
+ ❯ test/s217b-r6-review.test.ts:724:24
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/6]⎯
+
+ FAIL  test/s217b-r6-review.test.ts > C to F. over HTTP against the app’s routes
+TestSetupError: test harness step "create a migrated test database" failed: Error: all 3 tries failed:
+attempt 1: step "apply migrations to oto_test_1794649407839_58256_k04f_12 (drizzle-kit migrate)": Error: Command failed: node C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\node_modules\drizzle-kit\bin.cjs migrate
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json [status=1]
+stderr:
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json
+stdout:
+No config path provided, using default 'drizzle.config.ts'
+Reading config file 'C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\drizzle.config.ts'
+attempt 2: step "apply migrations to oto_test_1794649408394_58256_vskg_13 (drizzle-kit migrate)": Error: Command failed: node C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\node_modules\drizzle-kit\bin.cjs migrate
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json [status=1]
+stderr:
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json
+stdout:
+No config path provided, using default 'drizzle.config.ts'
+Reading config file 'C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\drizzle.config.ts'
+attempt 3: step "apply migrations to oto_test_1794649408841_58256_veq0_14 (drizzle-kit migrate)": Error: Command failed: node C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\node_modules\drizzle-kit\bin.cjs migrate
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json [status=1]
+stderr:
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json
+stdout:
+No config path provided, using default 'drizzle.config.ts'
+Reading config file 'C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\drizzle.config.ts'
+ ❯ createTestDatabase ../../packages/db/src/testing.ts:266:15
+    264|       if (attempt >= 3) {
+    265|         // Each attempt's cause chain is already written out in `failu…
+    266|         throw new TestSetupError(
+       |               ^
+    267|           'create a migrated test database',
+    268|           new Error(`all ${attempt} tries failed:\n${failures.join('\n…
+ ❯ test/s217b-r6-review.test.ts:1216:22
+
+Caused by: Error: all 3 tries failed:
+attempt 1: step "apply migrations to oto_test_1794649407839_58256_k04f_12 (drizzle-kit migrate)": Error: Command failed: node C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\node_modules\drizzle-kit\bin.cjs migrate
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json [status=1]
+stderr:
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json
+stdout:
+No config path provided, using default 'drizzle.config.ts'
+Reading config file 'C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\drizzle.config.ts'
+attempt 2: step "apply migrations to oto_test_1794649408394_58256_vskg_13 (drizzle-kit migrate)": Error: Command failed: node C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\node_modules\drizzle-kit\bin.cjs migrate
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json [status=1]
+stderr:
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json
+stdout:
+No config path provided, using default 'drizzle.config.ts'
+Reading config file 'C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\drizzle.config.ts'
+attempt 3: step "apply migrations to oto_test_1794649408841_58256_veq0_14 (drizzle-kit migrate)": Error: Command failed: node C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\node_modules\drizzle-kit\bin.cjs migrate
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json [status=1]
+stderr:
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json
+stdout:
+No config path provided, using default 'drizzle.config.ts'
+Reading config file 'C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\drizzle.config.ts'
+ ❯ createTestDatabase ../../packages/db/src/testing.ts:268:11
+ ❯ test/s217b-r6-review.test.ts:1216:22
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/6]⎯
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/s217b-r6-review.test.ts > A. fences and seams > the gate did not move WHERE documents are kept: the PDF, file and bucket modules and the BEO and org chart routes are byte for byte main’s
+AssertionError: pdf.ts: expected 'cb54281507ca9a832e80ee9c98fe5037a5c4d…' to be '8c9f1ad1f903429cc5b0ba01caa1ab09aad98…' // Object.is equality
+
+Expected: "8c9f1ad1f903429cc5b0ba01caa1ab09aad98badd7396795760cb5d97971337c"
+Received: "cb54281507ca9a832e80ee9c98fe5037a5c4d27eaf0b2e218011b221e71bcc54"
+
+ ❯ test/s217b-r6-review.test.ts:563:110
+    561|       'orgChartRoutes.ts': 'eff8d4478165e8b0157ef07d37891222104f751b49…
+    562|     };
+    563|     for (const [file, hash] of Object.entries(main)) expect(sha256(com…
+       |                                                                                                              ^
+    564|     const routes = code(readFileSync(join(APP_SERVER, 'routes.ts'), 'u…
+    565|     expect(routes).toMatch(/const publicFileFolders = \["branch-logos"…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/6]⎯
+
+ FAIL  test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+TestSetupError: test harness step "create a migrated test database" failed: Error: all 3 tries failed:
+attempt 1: step "apply migrations to oto_test_1794649402347_58256_qtnn_0 (drizzle-kit migrate)": Error: Command failed: node C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\node_modules\drizzle-kit\bin.cjs migrate
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json [status=1]
+stderr:
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json
+stdout:
+No config path provided, using default 'drizzle.config.ts'
+Reading config file 'C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\drizzle.config.ts'
+attempt 2: step "apply migrations to oto_test_1794649402842_58256_rdls_1 (drizzle-kit migrate)": Error: Command failed: node C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\node_modules\drizzle-kit\bin.cjs migrate
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json [status=1]
+stderr:
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json
+stdout:
+No config path provided, using default 'drizzle.config.ts'
+Reading config file 'C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\drizzle.config.ts'
+attempt 3: step "apply migrations to oto_test_1794649403307_58256_uf6v_2 (drizzle-kit migrate)": Error: Command failed: node C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\node_modules\drizzle-kit\bin.cjs migrate
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json [status=1]
+stderr:
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json
+stdout:
+No config path provided, using default 'drizzle.config.ts'
+Reading config file 'C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\drizzle.config.ts'
+ ❯ createTestDatabase ../../packages/db/src/testing.ts:266:15
+    264|       if (attempt >= 3) {
+    265|         // Each attempt's cause chain is already written out in `failu…
+    266|         throw new TestSetupError(
+       |               ^
+    267|           'create a migrated test database',
+    268|           new Error(`all ${attempt} tries failed:\n${failures.join('\n…
+ ❯ test/s217b-r6-review.test.ts:683:27
+
+Caused by: Error: all 3 tries failed:
+attempt 1: step "apply migrations to oto_test_1794649402347_58256_qtnn_0 (drizzle-kit migrate)": Error: Command failed: node C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\node_modules\drizzle-kit\bin.cjs migrate
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json [status=1]
+stderr:
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json
+stdout:
+No config path provided, using default 'drizzle.config.ts'
+Reading config file 'C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\drizzle.config.ts'
+attempt 2: step "apply migrations to oto_test_1794649402842_58256_rdls_1 (drizzle-kit migrate)": Error: Command failed: node C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\node_modules\drizzle-kit\bin.cjs migrate
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json [status=1]
+stderr:
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json
+stdout:
+No config path provided, using default 'drizzle.config.ts'
+Reading config file 'C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\drizzle.config.ts'
+attempt 3: step "apply migrations to oto_test_1794649403307_58256_uf6v_2 (drizzle-kit migrate)": Error: Command failed: node C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\node_modules\drizzle-kit\bin.cjs migrate
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json [status=1]
+stderr:
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json
+stdout:
+No config path provided, using default 'drizzle.config.ts'
+Reading config file 'C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\drizzle.config.ts'
+ ❯ createTestDatabase ../../packages/db/src/testing.ts:268:11
+ ❯ test/s217b-r6-review.test.ts:683:27
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/6]⎯
+
+ FAIL  test/s217b-r6-review.test.ts > B. the migration attacked > the census raced: a duplicate held open in a transaction while 0008 waits on its lock > committed while 0008 waits: the census sees the duplicate, the index is not made, the deploy goes on and says so
+TestSetupError: test harness step "create a migrated test database" failed: Error: all 3 tries failed:
+attempt 1: step "apply migrations to oto_test_1794649405065_58256_n09o_6 (drizzle-kit migrate)": Error: Command failed: node C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\node_modules\drizzle-kit\bin.cjs migrate
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json [status=1]
+stderr:
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json
+stdout:
+No config path provided, using default 'drizzle.config.ts'
+Reading config file 'C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\drizzle.config.ts'
+attempt 2: step "apply migrations to oto_test_1794649405520_58256_yd3t_7 (drizzle-kit migrate)": Error: Command failed: node C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\node_modules\drizzle-kit\bin.cjs migrate
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json [status=1]
+stderr:
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json
+stdout:
+No config path provided, using default 'drizzle.config.ts'
+Reading config file 'C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\drizzle.config.ts'
+attempt 3: step "apply migrations to oto_test_1794649405937_58256_l5un_8 (drizzle-kit migrate)": Error: Command failed: node C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\node_modules\drizzle-kit\bin.cjs migrate
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json [status=1]
+stderr:
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json
+stdout:
+No config path provided, using default 'drizzle.config.ts'
+Reading config file 'C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\drizzle.config.ts'
+ ❯ createTestDatabase ../../packages/db/src/testing.ts:266:15
+    264|       if (attempt >= 3) {
+    265|         // Each attempt's cause chain is already written out in `failu…
+    266|         throw new TestSetupError(
+       |               ^
+    267|           'create a migrated test database',
+    268|           new Error(`all ${attempt} tries failed:\n${failures.join('\n…
+ ❯ databaseAt test/s217b-r6-review.test.ts:646:25
+ ❯ raced test/s217b-r6-review.test.ts:923:29
+ ❯ test/s217b-r6-review.test.ts:992:17
+
+Caused by: Error: all 3 tries failed:
+attempt 1: step "apply migrations to oto_test_1794649405065_58256_n09o_6 (drizzle-kit migrate)": Error: Command failed: node C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\node_modules\drizzle-kit\bin.cjs migrate
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json [status=1]
+stderr:
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json
+stdout:
+No config path provided, using default 'drizzle.config.ts'
+Reading config file 'C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\drizzle.config.ts'
+attempt 2: step "apply migrations to oto_test_1794649405520_58256_yd3t_7 (drizzle-kit migrate)": Error: Command failed: node C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\node_modules\drizzle-kit\bin.cjs migrate
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json [status=1]
+stderr:
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json
+stdout:
+No config path provided, using default 'drizzle.config.ts'
+Reading config file 'C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\drizzle.config.ts'
+attempt 3: step "apply migrations to oto_test_1794649405937_58256_l5un_8 (drizzle-kit migrate)": Error: Command failed: node C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\node_modules\drizzle-kit\bin.cjs migrate
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json [status=1]
+stderr:
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json
+stdout:
+No config path provided, using default 'drizzle.config.ts'
+Reading config file 'C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\drizzle.config.ts'
+ ❯ createTestDatabase ../../packages/db/src/testing.ts:268:11
+ ❯ databaseAt test/s217b-r6-review.test.ts:646:25
+ ❯ raced test/s217b-r6-review.test.ts:923:29
+ ❯ test/s217b-r6-review.test.ts:992:17
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/6]⎯
+
+ FAIL  test/s217b-r6-review.test.ts > B. the migration attacked > the census raced: a duplicate held open in a transaction while 0008 waits on its lock > rolled back while 0008 waits: nothing stood in the way, the census is clean and the backstop stands (0038’s one-open index; 0039 retired 0008’s)
+TestSetupError: test harness step "create a migrated test database" failed: Error: all 3 tries failed:
+attempt 1: step "apply migrations to oto_test_1794649406372_58256_4pcc_9 (drizzle-kit migrate)": Error: Command failed: node C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\node_modules\drizzle-kit\bin.cjs migrate
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json [status=1]
+stderr:
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json
+stdout:
+No config path provided, using default 'drizzle.config.ts'
+Reading config file 'C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\drizzle.config.ts'
+attempt 2: step "apply migrations to oto_test_1794649406833_58256_by8p_10 (drizzle-kit migrate)": Error: Command failed: node C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\node_modules\drizzle-kit\bin.cjs migrate
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json [status=1]
+stderr:
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json
+stdout:
+No config path provided, using default 'drizzle.config.ts'
+Reading config file 'C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\drizzle.config.ts'
+attempt 3: step "apply migrations to oto_test_1794649407380_58256_tyi6_11 (drizzle-kit migrate)": Error: Command failed: node C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\node_modules\drizzle-kit\bin.cjs migrate
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json [status=1]
+stderr:
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json
+stdout:
+No config path provided, using default 'drizzle.config.ts'
+Reading config file 'C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\drizzle.config.ts'
+ ❯ createTestDatabase ../../packages/db/src/testing.ts:266:15
+    264|       if (attempt >= 3) {
+    265|         // Each attempt's cause chain is already written out in `failu…
+    266|         throw new TestSetupError(
+       |               ^
+    267|           'create a migrated test database',
+    268|           new Error(`all ${attempt} tries failed:\n${failures.join('\n…
+ ❯ databaseAt test/s217b-r6-review.test.ts:646:25
+ ❯ raced test/s217b-r6-review.test.ts:923:29
+ ❯ test/s217b-r6-review.test.ts:1002:17
+
+Caused by: Error: all 3 tries failed:
+attempt 1: step "apply migrations to oto_test_1794649406372_58256_4pcc_9 (drizzle-kit migrate)": Error: Command failed: node C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\node_modules\drizzle-kit\bin.cjs migrate
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json [status=1]
+stderr:
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json
+stdout:
+No config path provided, using default 'drizzle.config.ts'
+Reading config file 'C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\drizzle.config.ts'
+attempt 2: step "apply migrations to oto_test_1794649406833_58256_by8p_10 (drizzle-kit migrate)": Error: Command failed: node C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\node_modules\drizzle-kit\bin.cjs migrate
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json [status=1]
+stderr:
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json
+stdout:
+No config path provided, using default 'drizzle.config.ts'
+Reading config file 'C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\drizzle.config.ts'
+attempt 3: step "apply migrations to oto_test_1794649407380_58256_tyi6_11 (drizzle-kit migrate)": Error: Command failed: node C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\node_modules\drizzle-kit\bin.cjs migrate
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json [status=1]
+stderr:
+Cannot resolve tsconfig at path: C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\tests\tsconfig.jsx.json
+stdout:
+No config path provided, using default 'drizzle.config.ts'
+Reading config file 'C:\oto-lanes\codex-app-reliability-983-20261114\packages\db\drizzle.config.ts'
+ ❯ createTestDatabase ../../packages/db/src/testing.ts:268:11
+ ❯ databaseAt test/s217b-r6-review.test.ts:646:25
+ ❯ raced test/s217b-r6-review.test.ts:923:29
+ ❯ test/s217b-r6-review.test.ts:1002:17
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/6]⎯
+

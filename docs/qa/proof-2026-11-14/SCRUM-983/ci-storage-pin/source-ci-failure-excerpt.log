@@ -1,0 +1,35 @@
+2026-11-14T09:34:32.3990080Z  FAIL  test/s217b-r6-review.test.ts > A. fences and seams > the gate did not move WHERE documents are kept: the PDF, file and bucket modules and the BEO and org chart routes are byte for byte main’s
+2026-11-14T09:34:32.4012520Z AssertionError: pdf.ts: expected 'cb54281507ca9a832e80ee9c98fe5037a5c4d…' to be '8c9f1ad1f903429cc5b0ba01caa1ab09aad98…' // Object.is equality
+2026-11-14T09:34:32.4013820Z 
+2026-11-14T09:34:32.4014815Z Expected: "8c9f1ad1f903429cc5b0ba01caa1ab09aad98badd7396795760cb5d97971337c"
+2026-11-14T09:34:32.4016209Z Received: "cb54281507ca9a832e80ee9c98fe5037a5c4d27eaf0b2e218011b221e71bcc54"
+2026-11-14T09:34:32.4016949Z 
+2026-11-14T09:34:32.4017794Z  ❯ test/s217b-r6-review.test.ts:563:110
+2026-11-14T09:34:32.4054234Z     561|       'orgChartRoutes.ts': 'eff8d4478165e8b0157ef07d37891222104f751b49…
+2026-11-14T09:34:32.4055024Z     562|     };
+2026-11-14T09:34:32.4055927Z     563|     for (const [file, hash] of Object.entries(main)) expect(sha256(com…
+2026-11-14T09:34:32.4057011Z        |                                                                                                              ^
+2026-11-14T09:34:32.4058096Z     564|     const routes = code(readFileSync(join(APP_SERVER, 'routes.ts'), 'u…
+2026-11-14T09:34:32.4059216Z     565|     expect(routes).toMatch(/const publicFileFolders = \["branch-logos"…
+2026-11-14T09:34:32.4059893Z 
+2026-11-14T09:34:32.4060333Z ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+2026-11-14T09:34:32.4060578Z 
+2026-11-14T09:34:32.4061567Z 
+2026-11-14T09:34:32.4094087Z  Test Files  1 failed | 174 passed | 4 skipped (179)
+2026-11-14T09:34:32.4109106Z       Tests  1 failed | 2437 passed | 172 skipped | 3 todo (2613)
+2026-11-14T09:34:32.4110593Z    Start at  09:06:20
+2026-11-14T09:34:32.4117467Z    Duration  1692.00s (transform 10.08s, setup 0ms, collect 336.23s, tests 1310.80s, environment 42ms, prepare 14.40s)
+2026-11-14T09:34:32.4118464Z 
+2026-11-14T09:34:32.4167506Z 
+2026-11-14T09:34:32.4197760Z ##[error]AssertionError: pdf.ts: expected 'cb54281507ca9a832e80ee9c98fe5037a5c4d…' to be '8c9f1ad1f903429cc5b0ba01caa1ab09aad98…' // Object.is equality
+
+Expected: "8c9f1ad1f903429cc5b0ba01caa1ab09aad98badd7396795760cb5d97971337c"
+Received: "cb54281507ca9a832e80ee9c98fe5037a5c4d27eaf0b2e218011b221e71bcc54"
+
+ ❯ test/s217b-r6-review.test.ts:563:110
+
+
+2026-11-14T09:34:32.5847816Z undefined
+2026-11-14T09:34:32.5857459Z /home/runner/work/oto-platform/oto-platform/apps/api:
+2026-11-14T09:34:32.5859028Z  ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL  Command failed with exit code 1: vitest run --pool=forks --shard=2/3
+2026-11-14T09:34:32.6268039Z ##[error]Process completed with exit code 1.

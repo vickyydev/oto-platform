@@ -1,0 +1,111 @@
+{
+  "at": "2026-11-14T09:51:38.436Z",
+  "failedSource": "7455bb8adf83f1466c2baab178ece6e72a840958",
+  "ci": {
+    "run": 43578727809,
+    "job": 132398995446,
+    "shard": 2,
+    "affectedFile": {
+      "passed": 13,
+      "failed": 1,
+      "skipped": 51,
+      "total": 65
+    },
+    "shardOtherFiles": {
+      "passed": 174,
+      "skipped": 4
+    },
+    "issue": "Historical whole-source fingerprints predate approved983PDF count and BEO receipt/adult-code changes"
+  },
+  "local": {
+    "sourceEquivalent": "App product/storage modules and review test identical to7455; later own commits were test-only/docs",
+    "original": {
+      "passed": 64,
+      "failed": 1,
+      "skipped": 0,
+      "total": 65,
+      "wholeFiles": 1,
+      "exit": 1
+    },
+    "fixed": {
+      "passed": 65,
+      "failed": 0,
+      "skipped": 0,
+      "total": 65,
+      "wholeFiles": 1,
+      "exit": 0
+    },
+    "invalidInitialAttempt": {
+      "accepted": false,
+      "reason": "App-relative TSX_TSCONFIG_PATH leaked into API Drizzle child; setup failure preserved; corrected runner unsets it"
+    },
+    "lint": {
+      "exit": 0,
+      "diagnosticBytes": 0
+    },
+    "cleanup": {
+      "postgresProcessesCreatedTodayStillAlive": 0,
+      "observedAfterGate": true
+    }
+  },
+  "source": {
+    "file": "apps/api/test/s217b-r6-review.test.ts",
+    "originalGitBlob": "c5de5e9f30cbdb4c07c47aeccce14b6af0b89785",
+    "fixedGitBlob": "74877b98d44666598fdc715e33dd63c551993c5e"
+  },
+  "fingerprints": {
+    "pdf": {
+      "previous": "8c9f1ad1f903429cc5b0ba01caa1ab09aad98badd7396795760cb5d97971337c",
+      "approved983": "cb54281507ca9a832e80ee9c98fe5037a5c4d27eaf0b2e218011b221e71bcc54"
+    },
+    "beoRoutes": {
+      "previous": "0a4958487694adfc7cb97c35355c0609bd53571f973f788bcb0035569583994f",
+      "approved983": "376971471e2f7fe8bbda3796284a4219a44ab31244825e4b3903f7fe4f8bef96"
+    }
+  },
+  "boundaries": {
+    "unchangedModules": [
+      "pdf-storage.ts",
+      "file-storage.ts",
+      "storage/s3Client.ts",
+      "orgChartRoutes.ts"
+    ],
+    "pdfGenerationAndStorageTailByteIdentical": true,
+    "beoPdfAndStorageRouteBlockByteIdentical": true,
+    "publicFolderExpiryAndOtherAssertionsUnchanged": true,
+    "productCodeChanges": 0
+  },
+  "logs": [
+    {
+      "file": "983-storage-pin-original-red.log",
+      "size": 50878,
+      "sha256": "54d5c5e5110f0e2468506d152626512ffe4f80ca43165608abb84cd717fd25a3"
+    },
+    {
+      "file": "983-storage-pin-fixed-green.log",
+      "size": 37011,
+      "sha256": "35df1daa363eb37622e7b35d3e5ba22775aead5eb16475bac4619357e6e1390b"
+    },
+    {
+      "file": "983-storage-pin-invalid-env-attempt.log",
+      "size": 66534,
+      "sha256": "c3607a66080c81da85798dc5e742b0540ca0b6d18483381e9394735bf99ac867"
+    },
+    {
+      "file": "983-storage-pin-lint.log",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "source-ci-failure-excerpt.log",
+      "size": 2747,
+      "sha256": "620c36f352fc55aec1e867f4eb5298acb4166941ac2e553c981e99a85c689d6f"
+    }
+  ],
+  "fullCiLog": {
+    "scratch": "983-ci-api2-failed-job.log",
+    "bytes": 524226,
+    "sha256": "31ac13aa9a0fc75800b8b76c0b4a9c9fda37f11ee5ab2e810082dd26ba30d08a"
+  },
+  "validationLimit": "Full CI remains separately pending/red; the legitimate fingerprint failure is fixed by exact reviewed baselines, not a test skip or removed check"
+}

@@ -514,7 +514,8 @@ describe('A. fences and seams', () => {
       // for it too (shared/beoExtras.ts beoPrintFoldable), else it prints as its own row at its own price; the
       // kids' list is read from menus first; Party Host and Setup Plan print only with something under them;
       // where the BEO's documents live is unchanged.
-      'pdf.ts': '8c9f1ad1f903429cc5b0ba01caa1ab09aad98badd7396795760cb5d97971337c',
+      // SCRUM-983: stored counts use the publication reader in the HTML; PDF generation/storage is unchanged.
+      'pdf.ts': 'cb54281507ca9a832e80ee9c98fe5037a5c4d27eaf0b2e218011b221e71bcc54',
       // SCRUM-803 / SCRUM-806: Generate from BEO bills the package in baht and only the add-ons a party bought; where the BEO's documents live is unchanged.
       // SCRUM-769: the BEO's staff list leaves out a login whose employment has ended (onStaff); where documents live is unchanged.
       // SCRUM-815: the parent link's set-menu lines are resolved by server/lib/setMenuResolve.ts (moved, not changed) and the
@@ -557,7 +558,8 @@ describe('A. fences and seams', () => {
       // SCRUM-978 (the lane's last review): the BEO's Save writes a cake count sent as numeric text as its
       // number (cakeCountOf), and the kitchen-plan route's note says its check takes what the plan's
       // readers read; where the BEO's documents live is unchanged.
-      'beo-routes.ts': '0a4958487694adfc7cb97c35355c0609bd53571f973f788bcb0035569583994f',
+      // SCRUM-983: parent receipts return the saved instant and adult-code writers reuse their helper; the PDF/storage route is unchanged.
+      'beo-routes.ts': '376971471e2f7fe8bbda3796284a4219a44ab31244825e4b3903f7fe4f8bef96',
       'orgChartRoutes.ts': 'eff8d4478165e8b0157ef07d37891222104f751b49932e70f525f06366fe9d90',
     };
     for (const [file, hash] of Object.entries(main)) expect(sha256(committed(join(APP_SERVER, file))), file).toBe(hash);
