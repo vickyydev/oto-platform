@@ -1,0 +1,58 @@
+{
+  "at": "2026-11-14T09:03:23.401Z",
+  "base": "977d83a866a31901301613ff03986618b28681dc",
+  "rebasedHead": "b99201fc761112409f318d790216f22babf3ccde",
+  "approvedCandidate": "4c1500980ae5c227d52e801da1c5417871128dfc",
+  "commits": [
+    "b99201fc761112409f318d790216f22babf3ccde docs(qa): retain original compiler and database log bytes",
+    "fac252c5a12c4ef65017f0fa95091e8c1bb20de5 docs(qa): preserve exact app gate log bytes",
+    "7b7cc45b7f5e5c9e6c1956a88d50599222f01614 fix(oto-app): complete BEO reliability review corrections",
+    "478609dbe656a7311583e15a97d3f0be97f0689f fix(app): repair BEO counts and pricing claims"
+  ],
+  "sourceBlobsMatched": 23,
+  "sourceConflicts": 0,
+  "progressNoteConflicts": [
+    "docs/progress/STATUS.md",
+    "docs/handover/CODEX_HANDOVER.md"
+  ],
+  "resolution": "Preserved current main and incoming dated note; no skip or source edits",
+  "retainedGates": {
+    "backend": {
+      "completeFiles": 9,
+      "passed": 135,
+      "note": "Eight original green files retained; the complete left-978 file reran after two test-oracle corrections and passed20/20"
+    },
+    "frontend": {
+      "completeFiles": 7,
+      "passed": 54,
+      "note": "New9 cases, extra-price6, left-978 UI6, pure extra-price8, adults UI7, day-of4, legacy prefill14. Complete extra-price6 reran after its intended new tag expectation was updated."
+    },
+    "adversarialReview": {
+      "completeFiles": 1,
+      "passed": 23,
+      "log": "logs/983-api-review.log"
+    },
+    "wholeApiTypes": {
+      "exit": 0,
+      "bytes": 0,
+      "log": "logs/983-api-types-final.log"
+    },
+    "appRatchet": {
+      "exit": 0,
+      "actual": 413,
+      "ceiling": 413,
+      "log": "logs/983-app-ratchet-frozen.log"
+    },
+    "appBuild": {
+      "exit": 0,
+      "log": "logs/983-app-build-frozen.log"
+    },
+    "scopedLint": {
+      "addedDiagnostics": 0,
+      "baseline": "43ec4059de4e222b1cc9d88170d0b33da0f09159",
+      "file": "scoped-lint.json"
+    }
+  },
+  "extraGates": "No relevant app source, dependency or contract drift on rebase; independently approved source and accepted logs unchanged",
+  "deployment": "Immediately request only oto-app-staging at the pushed full SHA; CI is background"
+}
