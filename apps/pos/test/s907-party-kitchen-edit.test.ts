@@ -636,7 +636,7 @@ describe('the party page saves the kitchen plan to the BEO', () => {
     expect(elementOf(host.result.current, PartyEditForm)).toBeNull();
     expect(toastMock).toHaveBeenCalledWith({
       title: 'Kitchen plan saved',
-      description: 'The BEO in the OTO App now has the change. date of birth is kept in the OTO App — change it there.',
+      description: 'The BEO in the OTO App now has the change. Date of birth is kept in the OTO App — change it there.',
     });
   });
 

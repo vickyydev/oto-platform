@@ -364,7 +364,7 @@ export function MobileRefundFlow({
         )}
         {step === 'confirm' && (
           <Button
-            className="w-full h-14 text-lg bg-rose-500 hover:bg-rose-600 text-white"
+            className={`w-full h-14 ${retainOnly ? 'text-sm whitespace-normal leading-tight px-3' : 'text-lg'} bg-rose-500 hover:bg-rose-600 text-white`}
             disabled={!canConfirm}
             onClick={handleConfirm}
           >

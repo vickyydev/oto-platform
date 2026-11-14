@@ -406,6 +406,7 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
     const kept = keptInOtoApp.length > 0
       ? `${listOf(keptInOtoApp)} ${keptInOtoApp.length === 1 ? 'is' : 'are'} kept in the OTO App — change ${keptInOtoApp.length === 1 ? 'it' : 'them'} there.`
       : null;
+    const keptSentence = kept ? kept.charAt(0).toUpperCase() + kept.slice(1) : null;
     if (Object.keys(fields).length === 0 && kitchenChanges.length === 0) {
       if (kept) toast({ title: 'Not saved here', description: kept });
       else setEditing(false);
@@ -456,7 +457,7 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
         if (Object.keys(fields).length === 0) {
           ids.current.kitchen = undefined;
           closeEdit();
-          toast({ title: 'Kitchen plan saved', description: `The BEO in the OTO App now has the change.${kept ? ` ${kept}` : ''}` });
+          toast({ title: 'Kitchen plan saved', description: `The BEO in the OTO App now has the change.${keptSentence ? ` ${keptSentence}` : ''}` });
           return;
         }
       }
@@ -475,7 +476,7 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
       } else if (sync?.syncState === 'pending') {
         toast({
           title: 'Saved — not in the OTO App yet',
-          description: `The OTO App has not confirmed this edit; it is retried from Failures.${kept ? ` ${kept}` : ''}`,
+          description: `The OTO App has not confirmed this edit; it is retried from Failures.${keptSentence ? ` ${keptSentence}` : ''}`,
         });
       } else if (kept) {
         toast({ title: 'Saved', description: kept });

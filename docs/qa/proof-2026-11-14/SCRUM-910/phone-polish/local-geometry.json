@@ -1,0 +1,25 @@
+{
+  "kind": "actual component with actual Tailwind CSS; local layout only; no API or submission",
+  "results": [
+    {
+      "viewportWidth": 320,
+      "width": 286,
+      "scrollWidth": 286,
+      "height": 54,
+      "scrollHeight": 54,
+      "whiteSpace": "normal",
+      "fontSize": "14px",
+      "enabled": true
+    },
+    {
+      "viewportWidth": 390,
+      "width": 356,
+      "scrollWidth": 356,
+      "height": 54,
+      "scrollHeight": 54,
+      "whiteSpace": "normal",
+      "fontSize": "14px",
+      "enabled": true
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "base": "d37ea80c25448a9d796a4632f7f04674e27be3f9",
+  "at": "2026-11-14T07:43:33.315Z",
+  "scope": "Retain-only phone confirmation wraps at narrow widths; only two appended PartyDetail toast sentences start uppercase (983p7). No financial API/migration/controller/eligibility/request changes.",
+  "tests": "88 passed across2 complete files",
+  "lint": "zero output",
+  "geometry": {
+    "kind": "actual component with actual Tailwind CSS; local layout only; no API or submission",
+    "results": [
+      {
+        "viewportWidth": 320,
+        "width": 286,
+        "scrollWidth": 286,
+        "height": 54,
+        "scrollHeight": 54,
+        "whiteSpace": "normal",
+        "fontSize": "14px",
+        "enabled": true
+      },
+      {
+        "viewportWidth": 390,
+        "width": 356,
+        "scrollWidth": 356,
+        "height": 54,
+        "scrollHeight": 54,
+        "whiteSpace": "normal",
+        "fontSize": "14px",
+        "enabled": true
+      }
+    ]
+  },
+  "logs": {
+    "tests": {
+      "bytes": 4250,
+      "sha256": "4f592e48aceca73ea9b57418dbf3d78264791e600704fc7bbd9f4f703a958959"
+    },
+    "lint": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "layout": {
+      "bytes": 556,
+      "sha256": "2210d6950fb062b97167251b0e7dab2deb88220ed28c0bcafaf9acad89829a54"
+    }
+  },
+  "sourceBlobs": [
+    {
+      "file": "apps/pos/src/components/mobile/history/MobileRefundFlow.tsx",
+      "blob": "c5e317cd21ed967d43732a6c301dcbc185e5e539"
+    },
+    {
+      "file": "apps/pos/src/components/parties/PartyDetail.tsx",
+      "blob": "5b55f4a63337b451562da84e74e336fc4eac8759"
+    },
+    {
+      "file": "apps/pos/test/s907-party-kitchen-edit.test.ts",
+      "blob": "23866357693e1d4f4b3146c1f4b7abd06de58a41"
+    }
+  ]
+}
