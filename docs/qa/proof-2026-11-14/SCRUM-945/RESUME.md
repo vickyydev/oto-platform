@@ -1,3 +1,11 @@
+# Current release checkpoint
+
+Exact frozen2d017eb75290ee179fa3045689688c3c145aebfe is independently APPROVED. All six source Git blobs and17 retained artifact bytes/hashes match; combined actual0051+983 source71 whole checks and413ratchet pass. No product change followed review. Current local branch contains only own forward-view source and evidence; no push/deploy/945session/fixture exists yet.
+
+Next is the authorized delivery, immediately after handover_delivery releases its current983 native runtime with exact cleanup. Fresh main/rebase/commit-list, journal index and approved source-blob checks; preserve all current progress history. Normally push with same-turn945/981 Jira progress, explicitly deploy only oto-app-staging at the full SHA, then run staging-plan.md once LIVE. CI stays background only even pending/red; no extra approval wait. Inspect selected images, archive exact own event, verify401 sessions/browserclosed and publish/readback evidence.945/981 remain In Progress for held work; stop afterstage3 for owner review.
+
+Earlier measured checkpoints follow and remain historical, not current holds.
+
 # SCRUM-945 current local checkpoint
 
 Local lane `lane/codex-beo-view-945-20261114`, worktree `C:/oto-lanes/codex-beo-money-stage3-20261114`. Current source candidate ca237d5d51f7e92943167432343daa043c1cf6ea is unpushed on main41158d231. The old draft7b797e1c5 remains on its checkpoint branch only. No945 staging deployment or fixture exists. Deposit and slip native proof/cleanup are complete. App983 final exact4c150098 source is independently approved and released; wait only for its normal source landing and coordinated app proof window, not CI or another owner approval.
