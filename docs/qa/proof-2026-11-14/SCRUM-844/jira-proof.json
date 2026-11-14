@@ -1,0 +1,35 @@
+{
+  "at": "2026-11-14T06:22:02.374Z",
+  "key": "SCRUM-844",
+  "statusBefore": "In Progress",
+  "statusAfter": "Deployed",
+  "commentId": "14757",
+  "commentReadback": true,
+  "attachments": [
+    {
+      "id": "13525",
+      "name": "844-02-requested-preview-no-receipt.png"
+    },
+    {
+      "id": "13526",
+      "name": "844-04-received-preview-unticked.png"
+    },
+    {
+      "id": "13527",
+      "name": "844-05-received-preview-confirmed.png"
+    },
+    {
+      "id": "13528",
+      "name": "844-07-confirmed-saved-deposit-detail.png"
+    },
+    {
+      "id": "13529",
+      "name": "844-08-api-and-readback-card.png"
+    }
+  ],
+  "source": "c3186fee7ab0ea034a8adefc8da90e6c23a2eced",
+  "ciSha": "43ec4059de4e222b1cc9d88170d0b33da0f09159",
+  "ciRun": 43563010484,
+  "evidenceCommit": "6a58da7ef748c28409f518395eef2b06b8ef9fd7",
+  "publicationRetry": "Comment POST201 and five attachments succeeded; response body was truncated by helper, so ID was independently read rather than reposted."
+}
