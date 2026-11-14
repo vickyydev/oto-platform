@@ -1,3 +1,5 @@
+14 November13:27 source release update: original money and phone candidates independently approved; normal six-commit rebase and all41 source blob identities verified in landing-preflight.json. The source is landing under the owner's immediate named Render deployment workflow; CI is background only. Native staging/census/evidence/cleanup are still owed and no Deployed claim is made here. Original local checkpoint below is retained as history.
+
 # SCRUM-910 and scoped SCRUM-966: local candidate
 
 14 November 2026, 04:13 Bangkok. Lane `lane/codex-deposit-910-20261114`, worktree `C:/oto-lanes/codex-deposit-910-20261114`, based on `f7df3150f9405dd6aa3480d11c6ab166abf345b2`.

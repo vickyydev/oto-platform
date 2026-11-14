@@ -1,0 +1,24 @@
+{
+  "atUtc": "2026-11-14T06:27:10.382404+00:00",
+  "upstreamMain": "762a8d66e77c27947a84caed12d7ce8cbf5834cc",
+  "rebasedProductTreeAt": "86fa7203c04a6ffe903350d96eda093e3cc79a4e",
+  "ownCommitList": [
+    "3ad6aa76e5b8a256a9efa9b1c5fd20ac5966e214 fix(payments): retain party deposits across settlement refunds",
+    "d8fcbec6191393b624f6836570248955bdf296d3 docs(progress): record local deposit candidate review checkpoint",
+    "6e43f5cd02d90aefef0a6fc77be16c950a39ba5c docs(qa): preserve independent deposit source review",
+    "65c0956264a3426b677677a9ec6e70b40ba6de2c fix(pos): allow retained party closure from phone history",
+    "2ec633cb58d2168e606f3772d859acd5daeaf1f5 docs(progress): checkpoint phone parity and held money release",
+    "86fa7203c04a6ffe903350d96eda093e3cc79a4e docs(qa): preserve phone follow-up release verdict"
+  ],
+  "reviewedSourcePaths": 41,
+  "sourceBlobMismatches": [],
+  "migration": {
+    "number": 125,
+    "predecessor": 124,
+    "sqlSha256": "4f449f6afe613fa876e78b5bca0b2e3c3ac78adf0d33d9c7e62bfaa43697bcd9",
+    "nonRefundSnapshotDifferences": 0
+  },
+  "conflicts": "Only progress-note prepends; preserved upstream owner workflow override and own historical receipts. No product source conflict.",
+  "gateDecision": "No dependency, lockfile, schema predecessor or overlapping product source drift; exact reviewed source blobs preserved. Existing completed local gates remain applicable; CI is background per explicit owner ruling.",
+  "next": "Normal push then immediate named API/both tills/Console deploy at full SHA; native proof once live, CI background only."
+}
