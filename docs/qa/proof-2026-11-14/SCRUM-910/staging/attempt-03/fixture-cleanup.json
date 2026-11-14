@@ -1,0 +1,25 @@
+{
+  "at": "2026-11-14T07:56:09.542Z",
+  "events": [
+    {
+      "id": "153dd506-9393-4fb0-873d-19a06c5da564",
+      "title": "ZZ TEST 910 deposit-only phone 2026-11-14T07:54:14.221Z",
+      "archivedAt": "2026-11-14T07:56:07.914Z"
+    }
+  ],
+  "station": {
+    "id": "c4f00a3b-62d7-4e68-bdc0-227204ac9f44",
+    "name": "ZZ TEST 910 retained deposit 2026-11-14T07:54:13.979Z",
+    "archived": true,
+    "assignedDevices": 0
+  },
+  "box": {
+    "id": "f96d838b-d2de-4ecf-9b32-9a265d365557",
+    "name": "ZZ TEST 910 virtual box f96d838b",
+    "role": "virtual",
+    "archived": true,
+    "status": "unclaimed"
+  },
+  "financialHistoryPreserved": true,
+  "activeOwnUpcoming": 0
+}

@@ -1,0 +1,16 @@
+{
+  "financialApiSource": "d37ea80c25448a9d796a4632f7f04674e27be3f9",
+  "phoneDisplaySource": "5bf409ee4198fa72d0d55a2b400aff5b29a69ca5",
+  "apiAndPackagesDiffEmpty": true,
+  "changedProductOrTestFiles": [
+    "apps/pos/src/components/mobile/history/MobileRefundFlow.tsx",
+    "apps/pos/src/components/parties/PartyDetail.tsx",
+    "apps/pos/test/s907-party-kitchen-edit.test.ts"
+  ],
+  "commit": "Independentreviewmatches5bf; no rebasechange; exact namedTilldeploys immediate afterpush",
+  "financialCi": {
+    "sha": "d37ea80c25448a9d796a4632f7f04674e27be3f9",
+    "run": 43566476024,
+    "result": "success"
+  }
+}

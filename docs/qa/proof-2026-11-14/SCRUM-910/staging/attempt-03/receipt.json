@@ -1,0 +1,212 @@
+{
+  "unit": "SCRUM-910",
+  "sourceSha": "5bf409ee4198fa72d0d55a2b400aff5b29a69ca5",
+  "startedAt": "2026-11-14T07:53:52.085Z",
+  "phase": "ready",
+  "fixtures": [
+    {
+      "kind": "zero",
+      "id": "153dd506-9393-4fb0-873d-19a06c5da564",
+      "title": "ZZ TEST 910 deposit-only phone 2026-11-14T07:54:14.221Z",
+      "appBranchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+      "saleIds": [
+        "e407a0f5-aff8-46df-94e2-b056b87c295a"
+      ],
+      "refundIds": [
+        "01a1d90d-e41a-7639-b9be-1136a6b3a760"
+      ]
+    }
+  ],
+  "results": [
+    {
+      "case": "deposit-only-verified-eligibility",
+      "eventId": "153dd506-9393-4fb0-873d-19a06c5da564",
+      "saleId": "e407a0f5-aff8-46df-94e2-b056b87c295a",
+      "receipt": "Z971BB-000001",
+      "refundableSatang": 0,
+      "retainedPartyDepositSatang": 1690000,
+      "canCloseWithRetainedDeposit": true
+    },
+    {
+      "case": "native-phone-zero-whole",
+      "eventId": "153dd506-9393-4fb0-873d-19a06c5da564",
+      "saleId": "e407a0f5-aff8-46df-94e2-b056b87c295a",
+      "refundId": "01a1d90d-e41a-7639-b9be-1136a6b3a760",
+      "amountSatang": 0,
+      "retainedPartyDepositSatang": 1690000,
+      "tenderAllocation": [],
+      "status": "refunded",
+      "ordinaryModesDisabled": true,
+      "reasonRequired": true,
+      "request": {
+        "mode": "whole",
+        "hasAmount": false,
+        "hasTender": false
+      },
+      "refundCount": 1
+    },
+    {
+      "case": "fresh-phone-reload",
+      "saleId": "e407a0f5-aff8-46df-94e2-b056b87c295a",
+      "status": "refunded",
+      "refundCount": 1,
+      "amountSatang": 0,
+      "retainedPartyDepositSatang": 1690000,
+      "headerRefreshed": true
+    }
+  ],
+  "images": [
+    {
+      "name": "08-phone-zero-eligible.png",
+      "at": "2026-11-14T07:55:28.186Z",
+      "masked": "signed-in account names only"
+    },
+    {
+      "name": "09-phone-zero-whole-only.png",
+      "at": "2026-11-14T07:55:28.238Z",
+      "masked": "signed-in account names only"
+    },
+    {
+      "name": "10-phone-zero-confirm.png",
+      "at": "2026-11-14T07:55:28.351Z",
+      "masked": "signed-in account names only"
+    },
+    {
+      "name": "11-phone-zero-recorded.png",
+      "at": "2026-11-14T07:55:29.208Z",
+      "masked": "signed-in account names only"
+    },
+    {
+      "name": "17-phone-refunded-reloaded.png",
+      "at": "2026-11-14T07:56:36.599Z",
+      "masked": "signed-in account names only"
+    },
+    {
+      "name": "18-phone-zero-recorded-card.png",
+      "at": "2026-11-14T07:56:36.637Z",
+      "masked": "signed-in account names only"
+    },
+    {
+      "name": "19-staging-proof-card.png",
+      "kind": "labelled test-run card with actual staged captures"
+    }
+  ],
+  "failures": [
+    {
+      "at": "2026-11-14T07:54:56.965Z",
+      "name": "Error",
+      "message": "expect(locator).toBeVisible() failed\n\nLocator: getByLabel('Search transactions')\nExpected: visible\nTimeout: 30000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByLabel('Search transactions') with timeout 30000ms\n  - waiting for getByLabel('Search transactions')\n"
+    },
+    {
+      "at": "2026-11-14T07:56:07.314Z",
+      "name": "TimeoutError",
+      "message": "locator.scrollIntoViewIfNeeded: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByTestId('refund-recorded')\u001b[22m\n"
+    },
+    {
+      "at": "2026-11-14T07:56:11.992Z",
+      "name": "Error",
+      "message": "ENOENT: no such file or directory, open 'C:\\oto-lanes\\codex-deposit-910-20261114\\docs\\qa\\proof-2026-11-14\\SCRUM-910\\staging\\attempt-03\\18-phone-zero-recorded-card.png'"
+    }
+  ],
+  "sessions": [
+    {
+      "label": "admin",
+      "kind": "POS",
+      "signout": 200,
+      "readback": 401
+    },
+    {
+      "label": "phone",
+      "kind": "POS",
+      "signout": 200,
+      "readback": 401
+    },
+    {
+      "label": "admin",
+      "kind": "app/launcher",
+      "appSignout": 200,
+      "launcherSignout": 200,
+      "appReadback": 401,
+      "launcherReadback": 401
+    }
+  ],
+  "sessionProofTag": "ZZ_TEST_910_attempt-03",
+  "sessionsCreated": [
+    {
+      "kind": "POS",
+      "label": "admin",
+      "sessionId": "01a1d90c-6e49-7035-a3cb-d982dbeb4127",
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d"
+    },
+    {
+      "kind": "launcher",
+      "label": "admin",
+      "sessionId": "01a1d90c-7044-79f3-b7db-e186250847dd",
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d"
+    },
+    {
+      "kind": "POS",
+      "label": "phone",
+      "sessionId": "01a1d90c-f005-725d-b72d-22afab8496d4",
+      "accountId": "01a0c9ae-5377-7b34-a9ab-22bf8086f5f7"
+    }
+  ],
+  "previousAttempt": null,
+  "appVersionAtAuth": "c3186fee7ab0ea034a8adefc8da90e6c23a2eced",
+  "browser": "157.0.4341.46",
+  "coreBranch": {
+    "id": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "name": "Oto Play Park, Central Floresta"
+  },
+  "appBranch": {
+    "id": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+    "name": "Oto Play Park, Central Floresta "
+  },
+  "box": {
+    "id": "f96d838b-d2de-4ecf-9b32-9a265d365557",
+    "name": "ZZ TEST 910 virtual box f96d838b",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "role": "virtual"
+  },
+  "station": {
+    "id": "c4f00a3b-62d7-4e68-bdc0-227204ac9f44",
+    "name": "ZZ TEST 910 retained deposit 2026-11-14T07:54:13.979Z",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "boxId": "f96d838b-d2de-4ecf-9b32-9a265d365557",
+    "codePrefix": "Z971BB"
+  },
+  "geometry": {
+    "w": 356,
+    "sw": 356,
+    "h": 54,
+    "sh": 54,
+    "whiteSpace": "normal"
+  },
+  "cleanup": {
+    "at": "2026-11-14T07:56:09.542Z",
+    "events": [
+      {
+        "id": "153dd506-9393-4fb0-873d-19a06c5da564",
+        "title": "ZZ TEST 910 deposit-only phone 2026-11-14T07:54:14.221Z",
+        "archivedAt": "2026-11-14T07:56:07.914Z"
+      }
+    ],
+    "station": {
+      "id": "c4f00a3b-62d7-4e68-bdc0-227204ac9f44",
+      "name": "ZZ TEST 910 retained deposit 2026-11-14T07:54:13.979Z",
+      "archived": true,
+      "assignedDevices": 0
+    },
+    "box": {
+      "id": "f96d838b-d2de-4ecf-9b32-9a265d365557",
+      "name": "ZZ TEST 910 virtual box f96d838b",
+      "role": "virtual",
+      "archived": true,
+      "status": "unclaimed"
+    },
+    "financialHistoryPreserved": true,
+    "activeOwnUpcoming": 0
+  },
+  "appVersionAtProofEnd": "c3186fee7ab0ea034a8adefc8da90e6c23a2eced",
+  "browserClosedAt": "2026-11-14T07:56:47.026Z"
+}

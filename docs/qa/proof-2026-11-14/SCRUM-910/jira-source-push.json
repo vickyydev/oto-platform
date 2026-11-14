@@ -1,0 +1,27 @@
+{
+  "at": "2026-11-14T06:29:05.123Z",
+  "candidate": "d37ea80c25448a9d796a4632f7f04674e27be3f9",
+  "sourcePublished": true,
+  "stagingDeploymentsRequested": true,
+  "stagingAcceptance": false,
+  "tickets": [
+    {
+      "key": "SCRUM-910",
+      "beforeStatus": "In Progress",
+      "afterStatus": "In Progress",
+      "commentId": "14762",
+      "posted": true,
+      "bodySha256": "2d8ae92f78881746a1e22d1c81c288689ae3b4e9f04a7dd5a0fef39d532c495c",
+      "readbackVerified": true
+    },
+    {
+      "key": "SCRUM-966",
+      "beforeStatus": "In Progress",
+      "afterStatus": "In Progress",
+      "commentId": "14763",
+      "posted": true,
+      "bodySha256": "9f0b4eed0ebdb7bb1d5abdc3ddf626956f565533070801754f7b8f84b4c058ca",
+      "readbackVerified": true
+    }
+  ]
+}

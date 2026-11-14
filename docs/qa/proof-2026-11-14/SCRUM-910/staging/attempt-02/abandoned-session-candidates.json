@@ -1,0 +1,64 @@
+{
+  "window": {
+    "from": "2026-11-14T06:33:48.537Z",
+    "before": "2026-11-14T07:06:30.327Z"
+  },
+  "excludedFresh": [
+    "01a1d8e1-115c-71c8-97ba-acc34c109276",
+    "01a1d8e1-134e-73c3-859d-499aa15e698f"
+  ],
+  "candidates": [
+    {
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "id": "01a1d8c3-23c6-7afd-a084-373baa5564f9",
+      "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+      "stationId": null,
+      "createdAt": "2026-11-14T06:33:49.767Z",
+      "lastSeenAt": "2026-11-14T07:01:29.445Z",
+      "lockedAt": null,
+      "expiresAt": "2026-11-14T18:33:49.767Z",
+      "status": "active",
+      "endedAt": null,
+      "current": false
+    },
+    {
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "id": "01a1d8c3-21b3-7412-a504-908b5e2f2e64",
+      "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+      "stationId": "b0a194a9-c530-4866-a9c2-f316be70c97a",
+      "createdAt": "2026-11-14T06:33:49.236Z",
+      "lastSeenAt": "2026-11-14T06:56:15.681Z",
+      "lockedAt": null,
+      "expiresAt": "2026-11-14T18:33:49.236Z",
+      "status": "active",
+      "endedAt": null,
+      "current": false
+    },
+    {
+      "accountId": "01a0c9ae-5377-7b34-a9ab-22bf8086f5f7",
+      "id": "01a1d8d2-b56d-7027-a726-ad0f610fa08a",
+      "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+      "stationId": "b0a194a9-c530-4866-a9c2-f316be70c97a",
+      "createdAt": "2026-11-14T06:50:50.093Z",
+      "lastSeenAt": "2026-11-14T06:54:15.953Z",
+      "lockedAt": "2026-11-14T06:54:15.965Z",
+      "expiresAt": "2026-11-14T18:50:50.093Z",
+      "status": "locked",
+      "endedAt": null,
+      "current": false
+    },
+    {
+      "accountId": "01a0c9ae-5377-7b34-a9ab-22bf8086f5f7",
+      "id": "01a1d8ca-9533-7455-9ad7-66cabb9a5ff0",
+      "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+      "stationId": "b0a194a9-c530-4866-a9c2-f316be70c97a",
+      "createdAt": "2026-11-14T06:41:57.555Z",
+      "lastSeenAt": "2026-11-14T07:00:37.830Z",
+      "lockedAt": "2026-11-14T07:00:41.107Z",
+      "expiresAt": "2026-11-14T18:41:57.555Z",
+      "status": "locked",
+      "endedAt": null,
+      "current": false
+    }
+  ]
+}

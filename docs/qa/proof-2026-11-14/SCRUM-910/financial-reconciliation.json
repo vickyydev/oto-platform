@@ -1,0 +1,150 @@
+{
+  "expectedSha": "d37ea80c25448a9d796a4632f7f04674e27be3f9",
+  "apiDeployId": "dep-dbrvuv3bc2fs73a6i0h0",
+  "jobId": "job-dbs0m8d6e07s738getjg",
+  "startedAt": "2026-11-14T07:17:53.596Z",
+  "readOnly": true,
+  "status": "succeeded",
+  "finishedAt": "2026-11-14T07:18:57.416Z",
+  "census": {
+    "readOnly": true,
+    "ownedSales": [
+      {
+        "id": "01a1d8e3-beb4-7347-8a74-16dc606ded80",
+        "status": "voided",
+        "grossSatang": 1730000
+      },
+      {
+        "id": "5b84cf48-36cd-485f-9b73-4fd6b3cdeb42",
+        "status": "refunded",
+        "grossSatang": 1690000
+      },
+      {
+        "id": "6cee3ea0-06db-4f71-a43f-93976ecde527",
+        "status": "refunded",
+        "grossSatang": 1690000
+      },
+      {
+        "id": "83d8f6e6-e256-4af5-ab02-bfff85939e22",
+        "status": "refunded",
+        "grossSatang": 1690000
+      },
+      {
+        "id": "b49c4c50-c230-4539-ab18-1f0d9ba09ac3",
+        "status": "refunded",
+        "grossSatang": 1690000
+      }
+    ],
+    "cashPaidSatang": 2980000,
+    "actualReturnedSatang": 2980000,
+    "retainedAllocationReleasesSatang": 3780000,
+    "netCashSatang": 0,
+    "refundDocumentCount": 5,
+    "depositAllocationsAllCancelled": true,
+    "originalReceiptCopies": [
+      {
+        "saleId": "5b84cf48-36cd-485f-9b73-4fd6b3cdeb42",
+        "grossSatang": 1690000,
+        "originalTenderCoverageSatang": 1690000,
+        "tenders": [
+          {
+            "method": "deposit_paid_in_advance",
+            "amountSatang": 1690000
+          }
+        ]
+      },
+      {
+        "saleId": "6cee3ea0-06db-4f71-a43f-93976ecde527",
+        "grossSatang": 1690000,
+        "originalTenderCoverageSatang": 1690000,
+        "tenders": [
+          {
+            "method": "deposit_paid_in_advance",
+            "amountSatang": 1690000
+          }
+        ]
+      },
+      {
+        "saleId": "83d8f6e6-e256-4af5-ab02-bfff85939e22",
+        "grossSatang": 1690000,
+        "originalTenderCoverageSatang": 1690000,
+        "tenders": [
+          {
+            "method": "deposit_paid_in_advance",
+            "amountSatang": 200000
+          },
+          {
+            "method": "cash",
+            "amountSatang": 1490000
+          }
+        ]
+      },
+      {
+        "saleId": "b49c4c50-c230-4539-ab18-1f0d9ba09ac3",
+        "grossSatang": 1690000,
+        "originalTenderCoverageSatang": 1690000,
+        "tenders": [
+          {
+            "method": "deposit_paid_in_advance",
+            "amountSatang": 200000
+          },
+          {
+            "method": "cash",
+            "amountSatang": 1490000
+          }
+        ]
+      }
+    ],
+    "revenue": [
+      {
+        "saleId": "5b84cf48-36cd-485f-9b73-4fd6b3cdeb42",
+        "kind": "ticket",
+        "grossSatang": 1690000,
+        "actualRefundSatang": 0,
+        "retainedPartyDepositSatang": 1690000,
+        "netRevenueSatang": 0
+      },
+      {
+        "saleId": "6cee3ea0-06db-4f71-a43f-93976ecde527",
+        "kind": "ticket",
+        "grossSatang": 1690000,
+        "actualRefundSatang": 0,
+        "retainedPartyDepositSatang": 1690000,
+        "netRevenueSatang": 0
+      },
+      {
+        "saleId": "83d8f6e6-e256-4af5-ab02-bfff85939e22",
+        "kind": "ticket",
+        "grossSatang": 1690000,
+        "actualRefundSatang": 1490000,
+        "retainedPartyDepositSatang": 200000,
+        "netRevenueSatang": 0
+      },
+      {
+        "saleId": "b49c4c50-c230-4539-ab18-1f0d9ba09ac3",
+        "kind": "ticket",
+        "grossSatang": 1690000,
+        "actualRefundSatang": 1490000,
+        "retainedPartyDepositSatang": 200000,
+        "netRevenueSatang": 0
+      }
+    ],
+    "netRevenueSatang": 0,
+    "pendingEventPassHolds": 0,
+    "activeIssuedSaleVouchers": 0,
+    "availableDeposit": [
+      {
+        "eventId": "87c55cfb-d96c-4064-9d42-7f636c234d22",
+        "recordedReceivedSatang": 200000,
+        "availableSatang": 200000
+      },
+      {
+        "eventId": "b0138007-31f9-4bc0-9bd4-95461f859510",
+        "recordedReceivedSatang": 1690000,
+        "availableSatang": 1690000
+      }
+    ],
+    "financialHistoryPreserved": true
+  },
+  "errors": []
+}

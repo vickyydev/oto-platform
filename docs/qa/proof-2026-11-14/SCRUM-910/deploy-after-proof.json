@@ -1,0 +1,34 @@
+{
+  "checkedAt": "2026-11-14T07:30:14.983Z",
+  "expectedSha": "d37ea80c25448a9d796a4632f7f04674e27be3f9",
+  "services": [
+    {
+      "name": "oto-api-staging",
+      "deployId": "dep-dbrvuv3bc2fs73a6i0h0",
+      "status": "live",
+      "sha": "d37ea80c25448a9d796a4632f7f04674e27be3f9",
+      "finishedAt": "2026-11-14T06:33:02.280576Z"
+    },
+    {
+      "name": "oto-pos-staging",
+      "deployId": "dep-dbs0rfff3r2c73ds17kg",
+      "status": "live",
+      "sha": "d37ea80c25448a9d796a4632f7f04674e27be3f9",
+      "finishedAt": "2026-11-14T07:30:12.625741Z"
+    },
+    {
+      "name": "oto-pos-web-staging",
+      "deployId": "dep-dbrvuvon74is738fje9g",
+      "status": "live",
+      "sha": "d37ea80c25448a9d796a4632f7f04674e27be3f9",
+      "finishedAt": "2026-11-14T06:32:05.918503Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "deployId": "dep-dbs0rfff3r2c73ds17rg",
+      "status": "live",
+      "sha": "d37ea80c25448a9d796a4632f7f04674e27be3f9",
+      "finishedAt": "2026-11-14T07:30:09.554809Z"
+    }
+  ]
+}

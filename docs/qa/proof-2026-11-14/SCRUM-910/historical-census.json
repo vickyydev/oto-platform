@@ -1,0 +1,45 @@
+{
+  "expectedSha": "d37ea80c25448a9d796a4632f7f04674e27be3f9",
+  "apiDeployId": "dep-dbrvuv3bc2fs73a6i0h0",
+  "jobId": "job-dbs03rbl550s73f2uhrg",
+  "startedAt": "2026-11-14T06:38:37.307Z",
+  "readOnly": true,
+  "status": "succeeded",
+  "finishedAt": "2026-11-14T06:39:41.374Z",
+  "census": {
+    "version": 1,
+    "readOnly": true,
+    "counts": {
+      "settlements": 13,
+      "parties": 13,
+      "depositAllocations": 10,
+      "refundDocuments": 5,
+      "completedDepositHandbackParties": 1,
+      "reviewFlagParties": 0,
+      "possibleAdjustedReceivedParties": 0,
+      "missingAppRowWithReturnedMoney": 1,
+      "archivedReturnedParties": 0,
+      "missingCoreEventWithReturnedMoney": 1,
+      "branchReadFenceConfirmed": 1
+    },
+    "depositSliceStatuses": {
+      "done": 1,
+      "pending": 0,
+      "failed": 0,
+      "other": 0
+    },
+    "exactQaIds": {
+      "completedDepositHandback": [],
+      "reviewRequired": [],
+      "possibleAdjustedReceived": [],
+      "missingFromActiveApp": [],
+      "archivedReturned": []
+    },
+    "limits": [
+      "Changed received amount is a reconciliation candidate, not proof of a manually netted field.",
+      "No financial row or app received amount was changed.",
+      "Unresolved history stays fenced by the application for its exact party; ambiguous adjusted received records require exact reconciliation before affected writes."
+    ]
+  },
+  "errors": []
+}

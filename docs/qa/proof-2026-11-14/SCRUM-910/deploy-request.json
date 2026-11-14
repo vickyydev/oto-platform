@@ -1,0 +1,63 @@
+{
+  "sourceSha": "d37ea80c25448a9d796a4632f7f04674e27be3f9",
+  "requestedAt": "2026-11-14T06:28:11.098Z",
+  "workflow": "owner override: deploy immediately after reviewed local gates; CI background",
+  "services": [
+    {
+      "name": "oto-api-staging",
+      "serviceId": "srv-danh2ljtqb8s73bt9en0",
+      "beforeLive": {
+        "id": "dep-dbrvp4c9v7es73bbf90g",
+        "sha": "43ec4059de4e222b1cc9d88170d0b33da0f09159",
+        "status": "live"
+      },
+      "requested": {
+        "id": "dep-dbrvuv3bc2fs73a6i0h0",
+        "status": "build_in_progress",
+        "sha": "d37ea80c25448a9d796a4632f7f04674e27be3f9"
+      }
+    },
+    {
+      "name": "oto-pos-staging",
+      "serviceId": "srv-danh2mf40ujc73bu80j0",
+      "beforeLive": {
+        "id": "dep-dbrvp4k9v7es73bbfai0",
+        "sha": "43ec4059de4e222b1cc9d88170d0b33da0f09159",
+        "status": "live"
+      },
+      "requested": {
+        "id": "dep-dbrvuvmi0phs73bo1nq0",
+        "status": "build_in_progress",
+        "sha": "d37ea80c25448a9d796a4632f7f04674e27be3f9"
+      }
+    },
+    {
+      "name": "oto-pos-web-staging",
+      "serviceId": "srv-dbk7qu8n74is73bm894g",
+      "beforeLive": {
+        "id": "dep-dbrvp4k9v7es73bbfa2g",
+        "sha": "43ec4059de4e222b1cc9d88170d0b33da0f09159",
+        "status": "live"
+      },
+      "requested": {
+        "id": "dep-dbrvuvon74is738fje9g",
+        "status": "build_in_progress",
+        "sha": "d37ea80c25448a9d796a4632f7f04674e27be3f9"
+      }
+    },
+    {
+      "name": "oto-console-staging",
+      "serviceId": "srv-danng2p42hec73f38e3g",
+      "beforeLive": {
+        "id": "dep-dbrvp4k9v7es73bbfal0",
+        "sha": "43ec4059de4e222b1cc9d88170d0b33da0f09159",
+        "status": "live"
+      },
+      "requested": {
+        "id": "dep-dbrvv0d6e07s738ebes0",
+        "status": "build_in_progress",
+        "sha": "d37ea80c25448a9d796a4632f7f04674e27be3f9"
+      }
+    }
+  ]
+}

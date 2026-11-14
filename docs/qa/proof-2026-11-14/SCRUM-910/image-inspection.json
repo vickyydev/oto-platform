@@ -1,0 +1,67 @@
+{
+  "atUtc": "2026-11-14T07:58:28.157707+00:00",
+  "selected": [
+    {
+      "ticket": "SCRUM-910",
+      "source": "staging/attempt-01/02-positive-whole-confirm.png",
+      "attachment": "docs/qa/jira-comments/attachments/SCRUM-910/20261114-910-whole-confirm.png",
+      "sha256": "c567a97a372d36d25ab099b2c19ebc95cdf91b3e4fbd65c7af4a4bb8856d07e3",
+      "inspected": true
+    },
+    {
+      "ticket": "SCRUM-910",
+      "source": "staging/attempt-01/06-partial-then-whole-confirm.png",
+      "attachment": "docs/qa/jira-comments/attachments/SCRUM-910/20261114-910-partial-remainder.png",
+      "sha256": "e1826b2828bad5a93d1ebc847341311eb0231c016e4ffbf4055fc0f857614a0e",
+      "inspected": true
+    },
+    {
+      "ticket": "SCRUM-910",
+      "source": "staging/attempt-03/10-phone-zero-confirm.png",
+      "attachment": "docs/qa/jira-comments/attachments/SCRUM-910/20261114-910-phone-confirm.png",
+      "sha256": "dd8d6ceafc641d11db169f4e0fbbc044e429a30f56e5a5285099278f1d7a3bb0",
+      "inspected": true
+    },
+    {
+      "ticket": "SCRUM-910",
+      "source": "staging/attempt-03/17-phone-refunded-reloaded.png",
+      "attachment": "docs/qa/jira-comments/attachments/SCRUM-910/20261114-910-phone-reloaded.png",
+      "sha256": "84fa948530aebc217269bb0c651597ef8303bec6ebb6ddf4639a09d88fd2a39c",
+      "inspected": true
+    },
+    {
+      "ticket": "SCRUM-910",
+      "source": "staging/attempt-03/19-staging-proof-card.png",
+      "attachment": "docs/qa/jira-comments/attachments/SCRUM-910/20261114-910-reconciliation.png",
+      "sha256": "8d1560d09b6629ba5082f68b19b6bef88ffe29930aa61d271b20e7ee49167ec4",
+      "inspected": true
+    },
+    {
+      "ticket": "SCRUM-966",
+      "source": "staging/attempt-02/12-native-named-extra-preview.png",
+      "attachment": "docs/qa/jira-comments/attachments/SCRUM-966/20261114-910-named-extra-preview.png",
+      "sha256": "2fe56abc6f8237dbb7bca3ea4a3f0bdba344568c3fa6a2e47e3fc147d606401b",
+      "inspected": true
+    },
+    {
+      "ticket": "SCRUM-966",
+      "source": "staging/attempt-02/13-named-extra-committed-balance.png",
+      "attachment": "docs/qa/jira-comments/attachments/SCRUM-966/20261114-910-named-extra-committed.png",
+      "sha256": "e63a11b71e1a7e131b8e6b60ab5b038ccded7fd1b7cd82f21bff3a8ba856bb9f",
+      "inspected": true
+    },
+    {
+      "ticket": "SCRUM-966",
+      "source": "staging/attempt-03/19-staging-proof-card.png",
+      "attachment": "docs/qa/jira-comments/attachments/SCRUM-966/20261114-910-scoped966-proof.png",
+      "sha256": "8d1560d09b6629ba5082f68b19b6bef88ffe29930aa61d271b20e7ee49167ec4",
+      "inspected": true
+    }
+  ],
+  "privacy": "Only owned ZZ TEST records and seeded staff; no benefit QR or guest contact details in selected images.",
+  "limits": [
+    "Original03/05/07 contain modal transition ghosts and original11 lacks the bottom completed card; preserved as attempts, not published as clear completion proof.",
+    "Original15 card is superseded by attempt03/19; its names-masked caption was too broad. Seeded staff identities are explicitly described in the replacement.",
+    "Named-extra preview retains the genuine stock-refusal context; committed balance and exact deployed reader are separate confirmation."
+  ]
+}

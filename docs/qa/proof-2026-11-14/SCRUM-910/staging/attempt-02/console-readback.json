@@ -1,0 +1,87 @@
+{
+  "checkedAt": "2026-11-14T07:20:46.408Z",
+  "sourceSha": "d37ea80c25448a9d796a4632f7f04674e27be3f9",
+  "authenticatedApi": true,
+  "ownRefunds": [
+    {
+      "refundId": "01a1d8d5-525d-7efa-9c60-39145467f124",
+      "saleId": "6cee3ea0-06db-4f71-a43f-93976ecde527",
+      "number": "Z970B0-R-000005",
+      "amountSatang": 0,
+      "retainedPartyDepositSatang": 1690000,
+      "pending": false
+    },
+    {
+      "refundId": "01a1d8d4-04f3-7160-a689-f15678917934",
+      "saleId": "5b84cf48-36cd-485f-9b73-4fd6b3cdeb42",
+      "number": "Z970B0-R-000004",
+      "amountSatang": 0,
+      "retainedPartyDepositSatang": 1690000,
+      "pending": false
+    },
+    {
+      "refundId": "01a1d8d1-636d-7977-8812-538978895f41",
+      "saleId": "b49c4c50-c230-4539-ab18-1f0d9ba09ac3",
+      "number": "Z970B0-R-000003",
+      "amountSatang": 1390000,
+      "retainedPartyDepositSatang": 200000,
+      "pending": false
+    },
+    {
+      "refundId": "01a1d8d1-5b6d-76f2-a4b1-c5048f472803",
+      "saleId": "b49c4c50-c230-4539-ab18-1f0d9ba09ac3",
+      "number": "Z970B0-R-000002",
+      "amountSatang": 100000,
+      "retainedPartyDepositSatang": 0,
+      "pending": false
+    },
+    {
+      "refundId": "01a1d8ce-2f7a-79d8-ac8a-766667b3248a",
+      "saleId": "83d8f6e6-e256-4af5-ab02-bfff85939e22",
+      "number": "Z970B0-R-000001",
+      "amountSatang": 1490000,
+      "retainedPartyDepositSatang": 200000,
+      "pending": false
+    }
+  ],
+  "ownVoids": [
+    {
+      "saleId": "01a1d8e3-beb4-7347-8a74-16dc606ded80",
+      "grossSatang": 1730000
+    }
+  ],
+  "integrityOwnFlags": 0,
+  "checks": [
+    {
+      "key": "receipt_gaps",
+      "ownRows": 0,
+      "truncated": false
+    },
+    {
+      "key": "sales_without_payment",
+      "ownRows": 0,
+      "truncated": false
+    },
+    {
+      "key": "payments_without_sale",
+      "ownRows": 0,
+      "truncated": false
+    },
+    {
+      "key": "stuck_attempts",
+      "ownRows": 0,
+      "truncated": false
+    },
+    {
+      "key": "refunds_exceed_sale",
+      "ownRows": 0,
+      "truncated": false
+    },
+    {
+      "key": "wallet_ledger_mismatch",
+      "ownRows": 0,
+      "truncated": false
+    }
+  ],
+  "scope": "Exact five own sales and own station only; no blanket assertion for other park records"
+}

@@ -1,0 +1,22 @@
+{
+  "sourceSha": "5bf409ee4198fa72d0d55a2b400aff5b29a69ca5",
+  "at": "2026-11-14T07:47:19.938Z",
+  "tickets": [
+    {
+      "key": "SCRUM-910",
+      "before": "In Progress",
+      "after": "In Progress",
+      "commentId": "14764",
+      "readback": true,
+      "bodySha256": "53d535577e14f4b8916399f52cd0f495701002908b626698937d80772300bd37"
+    },
+    {
+      "key": "SCRUM-983",
+      "before": "To Do",
+      "after": "To Do",
+      "commentId": "14765",
+      "readback": true,
+      "bodySha256": "312a0d4bff6ed9d785f3e97202fe4bdd3b4280743b77bce7e96e4bf445e37767"
+    }
+  ]
+}

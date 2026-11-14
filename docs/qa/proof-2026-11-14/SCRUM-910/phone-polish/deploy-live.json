@@ -1,0 +1,26 @@
+{
+  "at": "2026-11-14T07:51:00.580Z",
+  "services": [
+    {
+      "name": "oto-pos-staging",
+      "serviceId": "srv-danh2mf40ujc73bu80j0",
+      "deployId": "dep-dbs141jrjlhs73csepp0",
+      "sha": "5bf409ee4198fa72d0d55a2b400aff5b29a69ca5",
+      "status": "live"
+    },
+    {
+      "name": "oto-pos-web-staging",
+      "serviceId": "srv-dbk7qu8n74is73bm894g",
+      "deployId": "dep-dbs141rrjlhs73cser0g",
+      "sha": "5bf409ee4198fa72d0d55a2b400aff5b29a69ca5",
+      "status": "live"
+    },
+    {
+      "name": "oto-api-staging",
+      "serviceId": "srv-danh2ljtqb8s73bt9en0",
+      "deployId": "dep-dbs0rfff3r2c73ds169g",
+      "sha": "d37ea80c25448a9d796a4632f7f04674e27be3f9",
+      "status": "live"
+    }
+  ]
+}

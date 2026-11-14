@@ -1,0 +1,522 @@
+{
+  "unit": "SCRUM-910",
+  "sourceSha": "d37ea80c25448a9d796a4632f7f04674e27be3f9",
+  "startedAt": "2026-11-14T07:06:30.327Z",
+  "phase": "proof-complete-cleanup-signout-next",
+  "fixtures": [
+    {
+      "kind": "positive",
+      "id": "87c55cfb-d96c-4064-9d42-7f636c234d22",
+      "title": "ZZ TEST 910 retained positive 2026-11-14T06:40:16.849Z",
+      "appBranchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+      "saleIds": [
+        "83d8f6e6-e256-4af5-ab02-bfff85939e22",
+        "b49c4c50-c230-4539-ab18-1f0d9ba09ac3",
+        "01a1d8e3-beb4-7347-8a74-16dc606ded80"
+      ],
+      "refundIds": [
+        "01a1d8ce-2f7a-79d8-ac8a-766667b3248a",
+        "01a1d8d1-5b6d-76f2-a4b1-c5048f472803",
+        "01a1d8d1-636d-7977-8812-538978895f41"
+      ]
+    },
+    {
+      "kind": "zero",
+      "id": "b0138007-31f9-4bc0-9bd4-95461f859510",
+      "title": "ZZ TEST 910 deposit-only phone 2026-11-14T06:49:52.631Z",
+      "appBranchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+      "saleIds": [
+        "5b84cf48-36cd-485f-9b73-4fd6b3cdeb42",
+        "6cee3ea0-06db-4f71-a43f-93976ecde527"
+      ],
+      "refundIds": [
+        "01a1d8d4-04f3-7160-a689-f15678917934",
+        "01a1d8d5-525d-7efa-9c60-39145467f124"
+      ]
+    }
+  ],
+  "results": [
+    {
+      "case": "fresh-positive-setup",
+      "eventId": "87c55cfb-d96c-4064-9d42-7f636c234d22",
+      "stationId": "b0a194a9-c530-4866-a9c2-f316be70c97a",
+      "quote": {
+        "partyDate": "2026-11-16",
+        "rateMode": "weekday",
+        "packageName": "Birthday package, Central Floresta",
+        "lines": [
+          {
+            "role": "package",
+            "label": "Birthday package, Central Floresta",
+            "quantity": 1,
+            "unitSatang": 1690000,
+            "totalSatang": 1690000
+          },
+          {
+            "role": "included",
+            "label": "Kids' table reserved for 3 hours",
+            "quantity": 1,
+            "unitSatang": 0,
+            "totalSatang": 0
+          },
+          {
+            "role": "included",
+            "label": "Special birthday set menu",
+            "quantity": 1,
+            "unitSatang": 0,
+            "totalSatang": 0
+          },
+          {
+            "role": "included",
+            "label": "Interactive birthday animation program, 30 minutes",
+            "quantity": 1,
+            "unitSatang": 0,
+            "totalSatang": 0
+          },
+          {
+            "role": "included",
+            "label": "Ice-cream cake with candles and birthday song",
+            "quantity": 1,
+            "unitSatang": 0,
+            "totalSatang": 0
+          },
+          {
+            "role": "included",
+            "label": "Entry for 4 accompanying adults",
+            "quantity": 1,
+            "unitSatang": 0,
+            "totalSatang": 0
+          },
+          {
+            "role": "included",
+            "label": "Socks for all children",
+            "quantity": 1,
+            "unitSatang": 0,
+            "totalSatang": 0
+          },
+          {
+            "role": "guests",
+            "label": "Children (in the package)",
+            "quantity": 10,
+            "unitSatang": 0,
+            "totalSatang": 0
+          },
+          {
+            "role": "guests",
+            "label": "Adults (in the package)",
+            "quantity": 4,
+            "unitSatang": 0,
+            "totalSatang": 0
+          }
+        ],
+        "packageSatang": 1690000,
+        "extraChildren": 0,
+        "extraChildrenSatang": 0,
+        "extraAdults": 0,
+        "extraAdultsSatang": 0,
+        "freeSocks": 0,
+        "paidSocks": 0,
+        "socksSatang": 0,
+        "addOnsSatang": 0,
+        "entertainmentSatang": 0,
+        "totalSatang": 1690000,
+        "creditSatang": 0,
+        "depositSatang": 200000,
+        "balanceSatang": 1490000,
+        "walkUps": 0,
+        "walkUpsSatang": 0
+      }
+    },
+    {
+      "case": "positive-finalised",
+      "eventId": "87c55cfb-d96c-4064-9d42-7f636c234d22",
+      "saleId": "83d8f6e6-e256-4af5-ab02-bfff85939e22",
+      "receipt": "Z970B0-000001",
+      "grossSatang": 1690000,
+      "refundableSatang": 1490000,
+      "retainedAvailableSatang": 200000,
+      "setupTender": "synthetic_cash_no_external_movement"
+    },
+    {
+      "case": "native-manager-whole",
+      "saleId": "83d8f6e6-e256-4af5-ab02-bfff85939e22",
+      "refundId": "01a1d8ce-2f7a-79d8-ac8a-766667b3248a",
+      "refundNumber": "Z970B0-R-000001",
+      "amountSatang": 1490000,
+      "retainedPartyDepositSatang": 200000,
+      "allocations": [
+        {
+          "route": "cash",
+          "method": "cash",
+          "status": "done",
+          "provider": "manual",
+          "attemptId": "01a1d8ca-4ae0-74d8-a33e-a58aa388ad3e",
+          "methodCode": "cash",
+          "amountSatang": 1490000
+        }
+      ],
+      "readStatus": "refunded",
+      "remainingSatang": 0,
+      "request": {
+        "mode": "whole",
+        "actionId": "c64c97c5-ad58-4e50-a241-d936ab9883b5"
+      }
+    },
+    {
+      "case": "replacement-deposit-once",
+      "saleId": "b49c4c50-c230-4539-ab18-1f0d9ba09ac3",
+      "receipt": "Z970B0-000002",
+      "depositSatang": 200000,
+      "balanceSatang": 1490000,
+      "grossSatang": 1690000
+    },
+    {
+      "case": "native-partial-return",
+      "saleId": "b49c4c50-c230-4539-ab18-1f0d9ba09ac3",
+      "refundId": "01a1d8d1-5b6d-76f2-a4b1-c5048f472803",
+      "amountSatang": 100000,
+      "retainedPartyDepositSatang": 0,
+      "status": "partially_refunded",
+      "allocations": [
+        {
+          "route": "cash",
+          "method": "cash",
+          "status": "done",
+          "provider": "manual",
+          "attemptId": "01a1d8cf-96b0-7145-87e9-df135ac6f7d1",
+          "methodCode": "cash",
+          "amountSatang": 100000
+        }
+      ]
+    },
+    {
+      "case": "native-partial-then-whole",
+      "saleId": "b49c4c50-c230-4539-ab18-1f0d9ba09ac3",
+      "refundId": "01a1d8d1-636d-7977-8812-538978895f41",
+      "amountSatang": 1390000,
+      "retainedPartyDepositSatang": 200000,
+      "status": "refunded",
+      "allocations": [
+        {
+          "route": "cash",
+          "method": "cash",
+          "status": "done",
+          "provider": "manual",
+          "attemptId": "01a1d8cf-96b0-7145-87e9-df135ac6f7d1",
+          "methodCode": "cash",
+          "amountSatang": 1390000
+        }
+      ]
+    },
+    {
+      "case": "deposit-only-verified-eligibility",
+      "eventId": "b0138007-31f9-4bc0-9bd4-95461f859510",
+      "saleId": "5b84cf48-36cd-485f-9b73-4fd6b3cdeb42",
+      "receipt": "Z970B0-000003",
+      "refundableSatang": 0,
+      "retainedPartyDepositSatang": 1690000,
+      "canCloseWithRetainedDeposit": true
+    },
+    {
+      "case": "native-phone-zero-whole",
+      "eventId": "b0138007-31f9-4bc0-9bd4-95461f859510",
+      "saleId": "5b84cf48-36cd-485f-9b73-4fd6b3cdeb42",
+      "refundId": "01a1d8d4-04f3-7160-a689-f15678917934",
+      "amountSatang": 0,
+      "retainedPartyDepositSatang": 1690000,
+      "tenderAllocation": [],
+      "status": "refunded",
+      "ordinaryModesDisabled": true,
+      "reasonRequired": true,
+      "request": {
+        "mode": "whole",
+        "hasAmount": false,
+        "hasTender": false
+      },
+      "refundCount": 1
+    },
+    {
+      "case": "native-phone-closure-replay",
+      "saleId": "5b84cf48-36cd-485f-9b73-4fd6b3cdeb42",
+      "refundId": "01a1d8d4-04f3-7160-a689-f15678917934",
+      "sameDocument": true,
+      "refundCount": 1
+    },
+    {
+      "case": "deposit-only-replacement-once",
+      "saleId": "6cee3ea0-06db-4f71-a43f-93976ecde527",
+      "depositSatang": 1690000,
+      "balanceSatang": 0,
+      "attempts": [
+        {
+          "id": "01a1d8d5-5077-7b2f-a99c-4a142e1888d1",
+          "method": "other",
+          "status": "approved",
+          "amountSatang": 1690000
+        }
+      ]
+    },
+    {
+      "case": "zero-replacement-cleanup",
+      "saleId": "6cee3ea0-06db-4f71-a43f-93976ecde527",
+      "refundId": "01a1d8d5-525d-7efa-9c60-39145467f124",
+      "amountSatang": 0,
+      "retainedPartyDepositSatang": 1690000
+    },
+    {
+      "case": "native-named-extra-stock-guard",
+      "status": 409,
+      "refusal": "Regular Socks is out of stock. Nothing was saved.",
+      "settlementRemained": "b49c4c50-c230-4539-ab18-1f0d9ba09ac3",
+      "financialWriteSaved": false
+    },
+    {
+      "case": "native-966-committed-extra",
+      "eventId": "87c55cfb-d96c-4064-9d42-7f636c234d22",
+      "saleId": "01a1d8e3-beb4-7347-8a74-16dc606ded80",
+      "socksGiven": 0,
+      "unitSatang": 20000,
+      "quantity": 2,
+      "shownContributionSatang": 40000,
+      "exactPricedComponents": [
+        {
+          "id": "01a1d8e3-beb4-7609-8cad-9c524f707705",
+          "cartLineId": "01a1d8e3-beb4-70b6-bc51-d86504b5708d",
+          "componentKey": "party_extra_line:fnb:27c7dd7a-1b79-44a2-85d7-25c952cb8c1f",
+          "quantity": 2,
+          "unitSatang": 20000,
+          "grossSatang": 40000
+        }
+      ],
+      "grossSatang": 1730000,
+      "depositSatang": 200000,
+      "balanceSatang": 1530000
+    },
+    {
+      "case": "native-unpaid-extra-settlement-cancelled",
+      "saleId": "01a1d8e3-beb4-7347-8a74-16dc606ded80",
+      "status": "voided",
+      "refundCount": 0,
+      "attempts": [
+        {
+          "id": "01a1d8e3-c664-7fbf-a66a-8626de3c8f53",
+          "status": "cancelled",
+          "amountSatang": 200000,
+          "method": "other"
+        }
+      ]
+    },
+    {
+      "case": "authenticated-console-money-readback",
+      "ownRefundDocuments": 5,
+      "actualRefundSatang": 2980000,
+      "retainedAllocationReleaseSatang": 3780000,
+      "ownVoids": 1,
+      "ownIntegrityFlags": 0
+    }
+  ],
+  "images": [
+    {
+      "name": "12-native-named-extra-preview.png",
+      "at": "2026-11-14T07:08:12.841Z",
+      "masked": "signed-in account names only"
+    },
+    {
+      "name": "12-native-named-extra-preview.png",
+      "at": "2026-11-14T07:09:26.569Z",
+      "masked": "signed-in account names only"
+    },
+    {
+      "name": "13-named-extra-committed-balance.png",
+      "at": "2026-11-14T07:09:28.643Z",
+      "masked": "signed-in account names only"
+    },
+    {
+      "name": "14-cancel-own-unpaid-settlement.png",
+      "at": "2026-11-14T07:10:02.214Z",
+      "masked": "signed-in account names only"
+    },
+    {
+      "name": "15-live-reconciliation-card.png",
+      "at": "2026-11-14T07:27:54.760Z",
+      "kind": "labelled live-reader test-run card"
+    }
+  ],
+  "failures": [
+    {
+      "at": "2026-11-14T07:08:13.585Z",
+      "name": "AssertionError",
+      "message": "Expected values to be strictly equal:\n\n409 !== 200\n"
+    },
+    {
+      "at": "2026-11-14T07:24:04.300Z",
+      "name": "AssertionError",
+      "message": "Expected values to be strictly equal:\n\n404 !== 200\n"
+    },
+    {
+      "at": "2026-11-14T07:24:41.554Z",
+      "name": "AssertionError",
+      "message": "Expected values to be strictly equal:\n\n409 !== 200\n"
+    },
+    {
+      "at": "2026-11-14T07:27:18.332Z",
+      "name": "Error",
+      "message": "Requiring @playwright/test second time, \nFirst:\nError\n    at Object.<anonymous> (C:\\oto-lanes\\codex-deposit-910-20261114\\node_modules\\.pnpm\\playwright@1.63.0\\node_modules\\playwright\\lib\\index.js:67:33)\n    at Module._compile (node:internal/modules/cjs/loader:1730:14)\n    at Object..js (node:internal/modules/cjs/loader:1895:10)\n    at Module.load (node:internal/modules/cjs/loader:1465:32)\n    at Function._load (node:internal/modules/cjs/loader:1282:12)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)\n    at Module."
+    }
+  ],
+  "sessions": [
+    {
+      "label": "admin",
+      "kind": "POS",
+      "signout": 200,
+      "readback": 401
+    },
+    {
+      "label": "admin",
+      "kind": "app/launcher",
+      "appSignout": 200,
+      "launcherSignout": 200,
+      "appReadback": 401,
+      "launcherReadback": 401
+    }
+  ],
+  "sessionProofTag": "ZZ_TEST_910_attempt-02",
+  "sessionsCreated": [
+    {
+      "kind": "POS",
+      "label": "admin",
+      "sessionId": "01a1d8e1-115c-71c8-97ba-acc34c109276",
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d"
+    },
+    {
+      "kind": "launcher",
+      "label": "admin",
+      "sessionId": "01a1d8e1-134e-73c3-859d-499aa15e698f",
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d"
+    }
+  ],
+  "previousAttempt": "attempt-01",
+  "coreBranch": {
+    "id": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "name": "Oto Play Park, Central Floresta"
+  },
+  "appBranch": {
+    "id": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+    "name": "Oto Play Park, Central Floresta "
+  },
+  "station": {
+    "id": "b0a194a9-c530-4866-a9c2-f316be70c97a",
+    "name": "ZZ TEST 910 retained deposit 2026-11-14T06:40:16.641Z",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "boxId": "6babbad8-3a21-49af-92c8-09e81d53a4d7",
+    "codePrefix": "Z970B0"
+  },
+  "box": {
+    "id": "6babbad8-3a21-49af-92c8-09e81d53a4d7",
+    "name": "ZZ TEST 910 virtual box 6babbad8",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "role": "virtual"
+  },
+  "appVersionAtAuth": "c3186fee7ab0ea034a8adefc8da90e6c23a2eced",
+  "browser": "157.0.4341.46",
+  "appActorId": "01a1bea3-1105-7bfd-92b8-301d34f03f18",
+  "abandonedSessionCandidates": [
+    {
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "id": "01a1d8c3-23c6-7afd-a084-373baa5564f9",
+      "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+      "stationId": null,
+      "createdAt": "2026-11-14T06:33:49.767Z",
+      "lastSeenAt": "2026-11-14T07:01:29.445Z",
+      "lockedAt": null,
+      "expiresAt": "2026-11-14T18:33:49.767Z",
+      "status": "active",
+      "endedAt": null,
+      "current": false
+    },
+    {
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "id": "01a1d8c3-21b3-7412-a504-908b5e2f2e64",
+      "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+      "stationId": "b0a194a9-c530-4866-a9c2-f316be70c97a",
+      "createdAt": "2026-11-14T06:33:49.236Z",
+      "lastSeenAt": "2026-11-14T06:56:15.681Z",
+      "lockedAt": null,
+      "expiresAt": "2026-11-14T18:33:49.236Z",
+      "status": "active",
+      "endedAt": null,
+      "current": false
+    },
+    {
+      "accountId": "01a0c9ae-5377-7b34-a9ab-22bf8086f5f7",
+      "id": "01a1d8d2-b56d-7027-a726-ad0f610fa08a",
+      "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+      "stationId": "b0a194a9-c530-4866-a9c2-f316be70c97a",
+      "createdAt": "2026-11-14T06:50:50.093Z",
+      "lastSeenAt": "2026-11-14T06:54:15.953Z",
+      "lockedAt": "2026-11-14T06:54:15.965Z",
+      "expiresAt": "2026-11-14T18:50:50.093Z",
+      "status": "locked",
+      "endedAt": null,
+      "current": false
+    },
+    {
+      "accountId": "01a0c9ae-5377-7b34-a9ab-22bf8086f5f7",
+      "id": "01a1d8ca-9533-7455-9ad7-66cabb9a5ff0",
+      "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+      "stationId": "b0a194a9-c530-4866-a9c2-f316be70c97a",
+      "createdAt": "2026-11-14T06:41:57.555Z",
+      "lastSeenAt": "2026-11-14T07:00:37.830Z",
+      "lockedAt": "2026-11-14T07:00:41.107Z",
+      "expiresAt": "2026-11-14T18:41:57.555Z",
+      "status": "locked",
+      "endedAt": null,
+      "current": false
+    }
+  ],
+  "cleanup": {
+    "at": "2026-11-14T07:25:47.804Z",
+    "events": [
+      {
+        "id": "87c55cfb-d96c-4064-9d42-7f636c234d22",
+        "title": "ZZ TEST 910 retained positive 2026-11-14T06:40:16.849Z",
+        "archivedAt": "2026-11-14T07:24:01.477Z"
+      },
+      {
+        "id": "b0138007-31f9-4bc0-9bd4-95461f859510",
+        "title": "ZZ TEST 910 deposit-only phone 2026-11-14T06:49:52.631Z",
+        "archivedAt": "2026-11-14T07:24:01.699Z"
+      }
+    ],
+    "station": {
+      "id": "b0a194a9-c530-4866-a9c2-f316be70c97a",
+      "name": "ZZ TEST 910 retained deposit 2026-11-14T06:40:16.641Z",
+      "archived": true,
+      "assignedDevices": 0
+    },
+    "box": {
+      "id": "6babbad8-3a21-49af-92c8-09e81d53a4d7",
+      "name": "ZZ TEST 910 virtual box 6babbad8",
+      "role": "virtual",
+      "archived": true,
+      "status": "unclaimed"
+    },
+    "financialHistoryPreserved": true,
+    "activeOwnUpcoming": 0
+  },
+  "financialReconciliation": {
+    "jobId": "job-dbs0m8d6e07s738getjg",
+    "netCashSatang": 0,
+    "netRevenueSatang": 0,
+    "receiptCopies": 4,
+    "pendingHolds": 0
+  },
+  "abandonedSessionCleanup": {
+    "jobId": "job-dbs0o6afngtc73bdg64g",
+    "ended": 4,
+    "liveOldOfflineTokens": 0,
+    "oldCookie401Observed": false
+  },
+  "appVersionAtProofEnd": "c3186fee7ab0ea034a8adefc8da90e6c23a2eced",
+  "browserClosedAt": "2026-11-14T07:29:41.106Z"
+}
