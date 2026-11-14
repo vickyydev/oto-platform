@@ -1,0 +1,43 @@
+{
+  "unit": "SCRUM-844",
+  "startedAt": "2026-11-14T06:17:53.869Z",
+  "expectedSha": "c3186fee7ab0ea034a8adefc8da90e6c23a2eced",
+  "phase": "read-only-cleanup-verified",
+  "fixtures": [
+    {
+      "id": "faf22df4-bd73-439a-b4ac-a481f4ad914a",
+      "title": "ZZ TEST 844 Legacy deposit 20261114061347617",
+      "branchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+      "eventDate": "2099-12-01"
+    }
+  ],
+  "results": [],
+  "images": [],
+  "failures": [],
+  "role": "global_admin",
+  "branch": {
+    "id": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+    "name": "Oto Play Park, Central Floresta "
+  },
+  "runtimeAtAuth": "c3186fee7ab0ea034a8adefc8da90e6c23a2eced",
+  "browser": "157.0.4341.46",
+  "cleanup": {
+    "id": "faf22df4-bd73-439a-b4ac-a481f4ad914a",
+    "title": "ZZ TEST 844 Legacy deposit 20261114061347617",
+    "branchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+    "archivedAt": "2026-11-14T06:17:36.639Z",
+    "at": "2026-11-14T06:18:13.019Z",
+    "readOnlyVerification": true,
+    "activeOwnUpcoming": 0,
+    "attempt01ArchivedAt": "2026-11-13T22:23:25.224Z"
+  },
+  "runtimeAtEnd": "c3186fee7ab0ea034a8adefc8da90e6c23a2eced",
+  "signout": {
+    "app": 200,
+    "launcher": 200,
+    "appReadback": 401,
+    "launcherReadback": 401,
+    "at": "2026-11-14T06:18:29.382Z"
+  },
+  "browserClosedAt": "2026-11-14T06:18:29.600Z"
+}

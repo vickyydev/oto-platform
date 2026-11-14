@@ -1,0 +1,211 @@
+{
+  "unit": "SCRUM-844",
+  "startedAt": "2026-11-14T06:13:31.672Z",
+  "expectedSha": "c3186fee7ab0ea034a8adefc8da90e6c23a2eced",
+  "phase": "cleanup",
+  "fixtures": [
+    {
+      "id": "faf22df4-bd73-439a-b4ac-a481f4ad914a",
+      "title": "ZZ TEST 844 Legacy deposit 20261114061347617",
+      "branchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+      "eventDate": "2099-12-01",
+      "createdAt": "2026-11-14T06:13:47.694Z"
+    }
+  ],
+  "results": [
+    {
+      "name": "existing-received-baseline",
+      "amount": 2000,
+      "date": "2026-11-14",
+      "at": "2026-11-14T06:13:58.181Z"
+    },
+    {
+      "name": "requested-native-load-editor",
+      "partyDetails": {
+        "packageBasePrice": 0,
+        "depositRequested": 3000,
+        "depositReceived": false,
+        "notes": "Deposit of 3,000 baht requested, to be transferred tomorrow; no deposit has been received.",
+        "items": []
+      },
+      "hasCatalogueReview": true,
+      "amount": 2000,
+      "date": "2026-11-14",
+      "at": "2026-11-14T06:14:27.722Z"
+    },
+    {
+      "name": "received-native-unticked-preserves-existing",
+      "partyDetails": {
+        "packageBasePrice": 0,
+        "prepaymentReceived": 3000,
+        "depositReceived": true,
+        "depositWords": "We received 3,000 baht as the deposit on 14 November 2026.",
+        "depositDate": "2026-11-14",
+        "notes": "Deposit of 3,000 baht received on 14 November 2026.",
+        "items": []
+      },
+      "hasCatalogueReview": true,
+      "amount": 2000,
+      "date": "2026-11-14",
+      "at": "2026-11-14T06:15:05.466Z"
+    },
+    {
+      "name": "received-native-confirmed-saved",
+      "partyDetails": {
+        "packageBasePrice": 0,
+        "prepaymentReceived": 3000,
+        "depositReceived": true,
+        "depositWords": "We received 3,000 baht as the deposit on 14 November 2026.",
+        "depositDate": "2026-11-14",
+        "notes": "Deposit of 3,000 baht received on 14 November 2026.",
+        "items": []
+      },
+      "hasCatalogueReview": true,
+      "amount": 3000,
+      "date": "2026-11-14",
+      "at": "2026-11-14T06:15:39.188Z"
+    },
+    {
+      "name": "requested",
+      "status": 200,
+      "hasCatalogueReview": false,
+      "partyDetails": {
+        "depositRequested": 3000,
+        "prepaymentReceived": null,
+        "depositReceived": false,
+        "depositDate": null,
+        "depositWords": null
+      },
+      "at": "2026-11-14T06:15:54.868Z"
+    },
+    {
+      "name": "ambiguous-amount",
+      "status": 200,
+      "hasCatalogueReview": false,
+      "partyDetails": {
+        "depositRequested": 3000,
+        "prepaymentReceived": null,
+        "depositReceived": false,
+        "depositDate": null,
+        "depositWords": null
+      },
+      "at": "2026-11-14T06:16:00.574Z"
+    },
+    {
+      "name": "future-transfer",
+      "status": 200,
+      "hasCatalogueReview": false,
+      "partyDetails": {
+        "depositRequested": 3000,
+        "prepaymentReceived": null,
+        "depositReceived": false,
+        "depositDate": null,
+        "depositWords": null
+      },
+      "at": "2026-11-14T06:16:04.977Z"
+    },
+    {
+      "name": "explicit-receipt",
+      "status": 200,
+      "hasCatalogueReview": false,
+      "partyDetails": {
+        "depositRequested": null,
+        "prepaymentReceived": 3000,
+        "depositReceived": true,
+        "depositDate": "2026-11-14",
+        "depositWords": "We received 3,000 baht as the deposit on 14 November 2026."
+      },
+      "at": "2026-11-14T06:16:11.042Z"
+    },
+    {
+      "name": "mixed",
+      "status": 200,
+      "hasCatalogueReview": false,
+      "partyDetails": {
+        "depositRequested": 3000,
+        "prepaymentReceived": 1000,
+        "depositReceived": true,
+        "depositDate": "2026-11-14",
+        "depositWords": "We received 1,000 baht as the deposit on 14 November 2026"
+      },
+      "at": "2026-11-14T06:16:16.127Z"
+    }
+  ],
+  "images": [
+    {
+      "name": "01-existing-received-2000.png",
+      "at": "2026-11-14T06:14:00.243Z",
+      "masked": "signed-in account names only"
+    },
+    {
+      "name": "02-requested-preview-no-receipt.png",
+      "at": "2026-11-14T06:14:18.880Z",
+      "masked": "signed-in account names only"
+    },
+    {
+      "name": "03-requested-preserved-2000.png",
+      "at": "2026-11-14T06:14:27.722Z",
+      "masked": "signed-in account names only"
+    },
+    {
+      "name": "04-received-preview-unticked.png",
+      "at": "2026-11-14T06:14:57.585Z",
+      "masked": "signed-in account names only"
+    },
+    {
+      "name": "05-received-preview-confirmed.png",
+      "at": "2026-11-14T06:15:30.739Z",
+      "masked": "signed-in account names only"
+    },
+    {
+      "name": "06-confirmed-saved-3000.png",
+      "at": "2026-11-14T06:15:39.187Z",
+      "masked": "signed-in account names only"
+    },
+    {
+      "name": "07-confirmed-saved-deposit-detail.png",
+      "at": "2026-11-14T06:17:36.054Z",
+      "masked": "none; isolated synthetic POS section, visible text inspected"
+    },
+    {
+      "name": "08-api-and-readback-card.png",
+      "at": "2026-11-14T06:17:36.198Z",
+      "kind": "labelled test-run card from recorded actual results"
+    }
+  ],
+  "failures": [
+    {
+      "name": "AssertionError",
+      "message": "Expected values to be strictly equal:\n+ actual - expected\n\n+ undefined\n- true\n",
+      "phase": "cleanup",
+      "at": "2026-11-14T06:17:36.589Z"
+    }
+  ],
+  "role": "global_admin",
+  "branch": {
+    "id": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+    "name": "Oto Play Park, Central Floresta "
+  },
+  "runtimeAtAuth": "c3186fee7ab0ea034a8adefc8da90e6c23a2eced",
+  "browser": "157.0.4341.46",
+  "lastParsed": {
+    "hasCatalogueReview": true,
+    "partyDetails": {
+      "packageBasePrice": 0,
+      "prepaymentReceived": 3000,
+      "depositReceived": true,
+      "depositWords": "We received 3,000 baht as the deposit on 14 November 2026.",
+      "depositDate": "2026-11-14",
+      "notes": "Deposit of 3,000 baht received on 14 November 2026.",
+      "items": []
+    }
+  },
+  "signout": {
+    "app": 200,
+    "launcher": 200,
+    "appReadback": 401,
+    "launcherReadback": 401,
+    "at": "2026-11-14T06:17:37.797Z"
+  },
+  "browserClosedAt": "2026-11-14T06:17:38.061Z"
+}

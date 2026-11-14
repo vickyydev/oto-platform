@@ -1,0 +1,52 @@
+{
+    "sha":  "43ec4059de4e222b1cc9d88170d0b33da0f09159",
+    "conclusion":  "success",
+    "status":  "completed",
+    "url":  "https://github.com/vickyydev/oto-platform/actions/runs/43563010484",
+    "createdAt":  "2026-11-14T05:44:56Z",
+    "updatedAt":  "2026-11-14T06:15:42Z",
+    "jobs":  [
+                 {
+                     "name":  "ci",
+                     "conclusion":  "success",
+                     "passed":  27,
+                     "skipped":  5,
+                     "totalSteps":  32
+                 },
+                 {
+                     "name":  "pos-tests",
+                     "conclusion":  "success",
+                     "passed":  12,
+                     "skipped":  0,
+                     "totalSteps":  12
+                 },
+                 {
+                     "name":  "api-tests (3)",
+                     "conclusion":  "success",
+                     "passed":  14,
+                     "skipped":  0,
+                     "totalSteps":  14
+                 },
+                 {
+                     "name":  "oto-app",
+                     "conclusion":  "success",
+                     "passed":  7,
+                     "skipped":  113,
+                     "totalSteps":  120
+                 },
+                 {
+                     "name":  "api-tests (2)",
+                     "conclusion":  "success",
+                     "passed":  14,
+                     "skipped":  0,
+                     "totalSteps":  14
+                 },
+                 {
+                     "name":  "api-tests (1)",
+                     "conclusion":  "success",
+                     "passed":  14,
+                     "skipped":  0,
+                     "totalSteps":  14
+                 }
+             ]
+}

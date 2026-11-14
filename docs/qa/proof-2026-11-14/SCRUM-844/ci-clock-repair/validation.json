@@ -27,10 +27,24 @@
     "s959Measured": 73
   },
   "snapshotsRerecorded": false,
-  "peerReview": "pending assigned reviewer",
+  "peerReview": {
+    "verdict": "approved",
+    "candidate": "36f910d897d5dafa2b83b4e5bfde86803e5533a5",
+    "record": "independent-review.md"
+  },
   "testSha256": {
     "apps/pos/test/s768-free-socks-counter.test.ts": "5073017e66521e45c5363840e99f72f20ca12a9c81db00146a503a44768e74c5",
     "apps/pos/test/s768-ticket-free-items.test.ts": "0c248ae1894b163e36b2671ce677828534f51e94efd5e61730469ca1828b08c1",
     "apps/pos/test/s959-split-view-measured.test.ts": "4dbde571cd7c256d035caa46ba59015eef7f929754121fba6c2b7136406736d7"
+  },
+  "landedSha": "43ec4059de4e222b1cc9d88170d0b33da0f09159",
+  "ci": {
+    "run": 43563010484,
+    "conclusion": "success",
+    "jobsPassed": 6,
+    "posTestsPassed": 3902,
+    "posFilesPassed": 274,
+    "appStepsPassed": 7,
+    "appStepsPathSkipped": 113
   }
 }

@@ -1,0 +1,10 @@
+{
+  "checkedAt": "2026-11-14T06:19:27.476Z",
+  "service": "oto-app-staging",
+  "serviceId": "srv-danppvjtqb8s73cnvua0",
+  "deployId": "dep-dbronrs9v7es73ch6s30",
+  "status": "live",
+  "commit": "c3186fee7ab0ea034a8adefc8da90e6c23a2eced",
+  "finishedAt": "2026-11-13T22:18:32.08429Z",
+  "createdAt": "2026-11-13T22:15:11.247328Z"
+}

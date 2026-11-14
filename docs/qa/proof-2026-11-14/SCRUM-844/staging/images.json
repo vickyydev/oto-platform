@@ -1,0 +1,31 @@
+{
+  "allEightAttempt02ImagesInspected": true,
+  "selected": [
+    {
+      "name": "844-02-requested-preview-no-receipt.png",
+      "sha256": "cd5f509d3a04d96288805accc648a0d6eacfc7e21953e7dad0e988942cb42c66",
+      "inspected": true
+    },
+    {
+      "name": "844-04-received-preview-unticked.png",
+      "sha256": "9acc374b9a7edf31c5fbaae598dbd0c3c8bcfbd9985a1633a4809195ac9016f7",
+      "inspected": true
+    },
+    {
+      "name": "844-05-received-preview-confirmed.png",
+      "sha256": "cdc73fc201b0368cfcbe8f9a9a0009027d0029ca0c7fddf1c77a4b1668d4e692",
+      "inspected": true
+    },
+    {
+      "name": "844-07-confirmed-saved-deposit-detail.png",
+      "sha256": "3d6b5b03da2867d2d9b1ca514aaeb9bea258794f05a3db57dc48bcc21fafb8b7",
+      "inspected": true
+    },
+    {
+      "name": "844-08-api-and-readback-card.png",
+      "sha256": "9035758f6e125bef10e0c74b527d097025d8686664413be173d78b392797cdc5",
+      "inspected": true
+    }
+  ],
+  "excluded": "01,03,06 have broad viewport crops/overzealous masks; retained as attempts, not attached"
+}
