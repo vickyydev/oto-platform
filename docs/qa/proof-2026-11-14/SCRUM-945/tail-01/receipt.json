@@ -1,0 +1,50 @@
+{
+  "capturedAt": "2026-11-14T09:02:09.345405+00:00",
+  "sourceBase": "41158d231",
+  "sourceCandidate": "ca237d5d51f7e92943167432343daa043c1cf6ea",
+  "apiReview": {
+    "passed": 4,
+    "completeFiles": 1
+  },
+  "apiTypes": {
+    "diagnosticBytes": 0
+  },
+  "scopedLint": {
+    "newFiles": 2,
+    "diagnostics": 0,
+    "inheritedAllowance": 0
+  },
+  "appRatchet": {
+    "actual": 414,
+    "ceiling": 414,
+    "note": "Pre-983 source; app983 independently tightens to413. Combined-source ratchet must retain that ceiling."
+  },
+  "logs": [
+    {
+      "file": "tail-01/api-types.log",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tail-01/app-ratchet.log",
+      "size": 132757,
+      "sha256": "7980b66f6cdea4e2fc704417255e1d4aeaac207181d3de5a56a7bf2163f8247e"
+    },
+    {
+      "file": "tail-01/review.log",
+      "size": 435,
+      "sha256": "673402af6db7f9909bf01331bc3edd51702354eb095acdf41506b1dea8018530"
+    },
+    {
+      "file": "tail-01/scoped-lint.json",
+      "size": 475,
+      "sha256": "a846551610eeb4c47bcdd16708236e6723f339d9d79faba91fd818cd346c2616"
+    },
+    {
+      "file": "tail-01/scoped-lint.log",
+      "size": 242,
+      "sha256": "fc3fbfaec2ca386486c8633516097410ea446eb59f7abb60ffc7bc017968b481"
+    }
+  ],
+  "normalization": "UTF-8 LF/trailing whitespace only, no diagnostic omission. Individual accepted summaries inspected; outer PTY completion was lost during context compaction, so no invented aggregate exit code."
+}

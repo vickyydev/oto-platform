@@ -1,0 +1,19 @@
+{
+  "note": "Root app ignore removed in scratch config only; inherited diagnostics matched by rule/message/source line, no root config changed",
+  "rows": [
+    {
+      "file": "apps/oto-app/tests/s945-kitchen-view.check.ts",
+      "baseline": 0,
+      "current": 0,
+      "added": [],
+      "diagnostics": []
+    },
+    {
+      "file": "apps/api/test/s945-view-review.test.ts",
+      "baseline": 0,
+      "current": 0,
+      "added": [],
+      "diagnostics": []
+    }
+  ]
+}
