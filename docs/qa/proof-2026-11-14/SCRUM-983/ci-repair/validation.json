@@ -1,0 +1,61 @@
+{
+  "at": "2026-11-14T09:24:44.203Z",
+  "failedSource": "7455bb8adf83f1466c2baab178ece6e72a840958",
+  "ci": {
+    "run": 43578727809,
+    "job": 132398995551,
+    "step": 98,
+    "name": "The app's party deposit checks",
+    "failure": "Old exact response omitted the newly returned persisted submittedAt"
+  },
+  "source": {
+    "file": "apps/oto-app/tests/party-deposit.check.ts",
+    "originalGitBlob": "ce8225b52fb60f0666ff1191f3c6cee6cefe7fdf",
+    "fixedGitBlob": "03d9e7ba101fc834536a16e51c2f01f2f3225153"
+  },
+  "gates": {
+    "original": {
+      "wholeFiles": 1,
+      "passed": 7,
+      "failed": 1,
+      "exit": 1
+    },
+    "fixed": {
+      "wholeFiles": 1,
+      "passed": 8,
+      "failed": 0,
+      "exit": 0
+    },
+    "lint": {
+      "addedDiagnostics": 0,
+      "baseline": "43ec4059de4e222b1cc9d88170d0b33da0f09159",
+      "note": "Newly touched party-deposit file has zero diagnostics; full scoped comparison remains zero added"
+    }
+  },
+  "assertion": "Exact response equals success:true and the real persisted submittedAt interpreted as UTC; original once-only notification, idempotency header/body, kitchen result and replay409 checks unchanged",
+  "productChanges": 0,
+  "logs": [
+    {
+      "file": "983-party-deposit-ci-original-red.log",
+      "size": 8287,
+      "sha256": "d9849ab34d27fc1fdafa5f84d3372ff32595db23fdcab818ce38b287c9209fea"
+    },
+    {
+      "file": "983-party-deposit-ci-fixed-green.log",
+      "size": 7572,
+      "sha256": "612cff7e459bc630a82a004cc742b8bed5233c91a0bc8342ea0c007bdc825edc"
+    },
+    {
+      "file": "source-ci-failed-step.log",
+      "size": 4923,
+      "sha256": "9cb65c020b7b30ca58f65dae43cae994fb85c446dd077b046bc7cd879a522160"
+    }
+  ],
+  "fullFailedJobLog": {
+    "scratch": "983-ci-failed-job.log",
+    "size": 916138,
+    "sha256": "e7ac88baf67284581fde128f8aebaece26613a37b0028a242ce1c0e7a7981840"
+  },
+  "typesBuild": "No production code or type shape changed; test reuses the existing typed Date oracle, so prior whole types and build remain valid",
+  "native": "Previously completed exact7455 staging proof/cleanup remains valid; test-only repair requires no product redeploy or browser repeat"
+}

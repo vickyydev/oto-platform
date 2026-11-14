@@ -3,7 +3,140 @@
   "note": "App ignore removed only in scratch lint configuration; inherited debt matched by rule/message/source line; no root lint policy change",
   "rows": [
     {
+      "file": "apps/api/src/routes/console-money.ts",
+      "baseline": 0,
+      "current": 0,
+      "added": [],
+      "diagnostics": []
+    },
+    {
+      "file": "apps/api/src/services/analytics-rollup.ts",
+      "baseline": 0,
+      "current": 0,
+      "added": [],
+      "diagnostics": []
+    },
+    {
+      "file": "apps/api/src/services/console-money.ts",
+      "baseline": 0,
+      "current": 0,
+      "added": [],
+      "diagnostics": []
+    },
+    {
+      "file": "apps/api/src/services/parties.ts",
+      "baseline": 0,
+      "current": 0,
+      "added": [],
+      "diagnostics": []
+    },
+    {
+      "file": "apps/api/src/services/party-deposit-balance.ts",
+      "baseline": 0,
+      "current": 0,
+      "added": [],
+      "diagnostics": []
+    },
+    {
+      "file": "apps/api/src/services/party-plan.ts",
+      "baseline": 0,
+      "current": 0,
+      "added": [],
+      "diagnostics": []
+    },
+    {
+      "file": "apps/api/src/services/party-settlement.ts",
+      "baseline": 0,
+      "current": 0,
+      "added": [],
+      "diagnostics": []
+    },
+    {
+      "file": "apps/api/src/services/party-slips.ts",
+      "baseline": 0,
+      "current": 0,
+      "added": [],
+      "diagnostics": []
+    },
+    {
+      "file": "apps/api/src/services/party-tab.ts",
+      "baseline": 0,
+      "current": 0,
+      "added": [],
+      "diagnostics": []
+    },
+    {
+      "file": "apps/api/src/services/refund-slices.ts",
+      "baseline": 0,
+      "current": 0,
+      "added": [],
+      "diagnostics": []
+    },
+    {
+      "file": "apps/api/src/services/refunds.ts",
+      "baseline": 0,
+      "current": 0,
+      "added": [],
+      "diagnostics": []
+    },
+    {
+      "file": "apps/api/src/services/sale-printing.ts",
+      "baseline": 0,
+      "current": 0,
+      "added": [],
+      "diagnostics": []
+    },
+    {
+      "file": "apps/api/src/services/sale.ts",
+      "baseline": 0,
+      "current": 0,
+      "added": [],
+      "diagnostics": []
+    },
+    {
+      "file": "apps/api/test/party-settlement.test.ts",
+      "baseline": 0,
+      "current": 0,
+      "added": [],
+      "diagnostics": []
+    },
+    {
+      "file": "apps/api/test/party-slips.test.ts",
+      "baseline": 0,
+      "current": 0,
+      "added": [],
+      "diagnostics": []
+    },
+    {
+      "file": "apps/api/test/s910-review.test.ts",
+      "baseline": 0,
+      "current": 0,
+      "added": [],
+      "diagnostics": []
+    },
+    {
+      "file": "apps/api/test/s966-slip-review.test.ts",
+      "baseline": 0,
+      "current": 0,
+      "added": [],
+      "diagnostics": []
+    },
+    {
       "file": "apps/api/test/s983-app-reliability-review.test.ts",
+      "baseline": 0,
+      "current": 0,
+      "added": [],
+      "diagnostics": []
+    },
+    {
+      "file": "apps/console/src/pages/MoneyOversight.tsx",
+      "baseline": 0,
+      "current": 0,
+      "added": [],
+      "diagnostics": []
+    },
+    {
+      "file": "apps/console/test/money-oversight-markup.test.ts",
       "baseline": 0,
       "current": 0,
       "added": [],
@@ -6004,6 +6137,182 @@
     },
     {
       "file": "apps/oto-app/tests/beo-prefill-ui.check.ts",
+      "baseline": 0,
+      "current": 0,
+      "added": [],
+      "diagnostics": []
+    },
+    {
+      "file": "apps/oto-app/tests/party-deposit.check.ts",
+      "baseline": 0,
+      "current": 0,
+      "added": [],
+      "diagnostics": []
+    },
+    {
+      "file": "apps/pos/src/api/events.ts",
+      "baseline": 0,
+      "current": 0,
+      "added": [],
+      "diagnostics": []
+    },
+    {
+      "file": "apps/pos/src/api/history.ts",
+      "baseline": 0,
+      "current": 0,
+      "added": [],
+      "diagnostics": []
+    },
+    {
+      "file": "apps/pos/src/components/history/RefundModal.tsx",
+      "baseline": 0,
+      "current": 0,
+      "added": [],
+      "diagnostics": []
+    },
+    {
+      "file": "apps/pos/src/components/history/SaleDetail.tsx",
+      "baseline": 0,
+      "current": 0,
+      "added": [],
+      "diagnostics": []
+    },
+    {
+      "file": "apps/pos/src/components/mobile/history/MobileRefundFlow.tsx",
+      "baseline": 0,
+      "current": 0,
+      "added": [],
+      "diagnostics": []
+    },
+    {
+      "file": "apps/pos/src/components/mobile/history/MobileTransactionDetail.tsx",
+      "baseline": 0,
+      "current": 0,
+      "added": [],
+      "diagnostics": []
+    },
+    {
+      "file": "apps/pos/src/components/mobile/parties/MobilePartyPayment.tsx",
+      "baseline": 0,
+      "current": 0,
+      "added": [],
+      "diagnostics": []
+    },
+    {
+      "file": "apps/pos/src/components/parties/PartyBalanceModal.tsx",
+      "baseline": 0,
+      "current": 0,
+      "added": [],
+      "diagnostics": []
+    },
+    {
+      "file": "apps/pos/src/components/parties/PartyDetail.tsx",
+      "baseline": 0,
+      "current": 0,
+      "added": [],
+      "diagnostics": []
+    },
+    {
+      "file": "apps/pos/src/components/parties/PartySettlementCustomerScreen.tsx",
+      "baseline": 0,
+      "current": 0,
+      "added": [],
+      "diagnostics": []
+    },
+    {
+      "file": "apps/pos/src/lib/party.ts",
+      "baseline": 0,
+      "current": 0,
+      "added": [],
+      "diagnostics": []
+    },
+    {
+      "file": "apps/pos/src/lib/partySettlementBill.ts",
+      "baseline": 0,
+      "current": 0,
+      "added": [],
+      "diagnostics": []
+    },
+    {
+      "file": "apps/pos/src/types.ts",
+      "baseline": 0,
+      "current": 0,
+      "added": [],
+      "diagnostics": []
+    },
+    {
+      "file": "apps/pos/test/s876-history-actions.test.ts",
+      "baseline": 0,
+      "current": 0,
+      "added": [],
+      "diagnostics": []
+    },
+    {
+      "file": "apps/pos/test/s907-party-kitchen-edit.test.ts",
+      "baseline": 0,
+      "current": 0,
+      "added": [],
+      "diagnostics": []
+    },
+    {
+      "file": "apps/pos/test/s936-party-bill-before-settle.test.ts",
+      "baseline": 0,
+      "current": 0,
+      "added": [],
+      "diagnostics": []
+    },
+    {
+      "file": "apps/pos/test/s954-small-points.test.ts",
+      "baseline": 0,
+      "current": 0,
+      "added": [],
+      "diagnostics": []
+    },
+    {
+      "file": "apps/pos/test/sale-detail-label.test.ts",
+      "baseline": 0,
+      "current": 0,
+      "added": [],
+      "diagnostics": []
+    },
+    {
+      "file": "packages/api-types/src/openapi.ts",
+      "baseline": 1,
+      "current": 1,
+      "added": [],
+      "diagnostics": [
+        {
+          "ruleId": null,
+          "fatal": false,
+          "severity": 1,
+          "message": "File ignored because of a matching ignore pattern. Use \"--no-ignore\" to disable file ignore settings or use \"--no-warn-ignored\" to suppress this warning.",
+          "nodeType": null
+        }
+      ]
+    },
+    {
+      "file": "packages/db/src/schema/sales.ts",
+      "baseline": 0,
+      "current": 0,
+      "added": [],
+      "diagnostics": []
+    },
+    {
+      "file": "packages/shared/src/analytics.ts",
+      "baseline": 0,
+      "current": 0,
+      "added": [],
+      "diagnostics": []
+    },
+    {
+      "file": "packages/shared/src/events.ts",
+      "baseline": 0,
+      "current": 0,
+      "added": [],
+      "diagnostics": []
+    },
+    {
+      "file": "packages/shared/src/refund.ts",
       "baseline": 0,
       "current": 0,
       "added": [],

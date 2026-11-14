@@ -1,0 +1,46 @@
+##[group]Run npx tsx tests/party-deposit.check.ts
+2026-11-14T09:19:59.5669453Z [36;1mnpx tsx tests/party-deposit.check.ts[0m
+2026-11-14T09:19:59.5686922Z shell: /usr/bin/bash -e {0}
+2026-11-14T09:19:59.5687141Z env:
+2026-11-14T09:19:59.5687444Z   DATABASE_URL: ***localhost:5433/otoapp_ci
+2026-11-14T09:19:59.5687716Z   QA_FFMPEG_PATH: /usr/bin/ffmpeg
+2026-11-14T09:19:59.5687927Z ##[endgroup]
+2026-11-14T09:20:00.0694450Z   ok  the amount rule: whole baht from ฿1 to ฿1,000,000; the field read; satang both ways; the words for each state
+2026-11-14T09:20:00.1055484Z {"level":"warn","time":"2026-11-14T09:20:00.104Z","service":"oto-app","env":"local","status":409,"code":"DEPOSIT_REQUEST_OPEN","path":"/otoapp/parties/0188abce-fa88-41a1-abe7-281f5cbc9ae3/deposit-request","msg":"the platform refused a party deposit call"}
+2026-11-14T09:20:00.1067431Z {"level":"warn","time":"2026-11-14T09:20:00.106Z","service":"oto-app","env":"local","status":401,"code":"OTOAPP_PROVISION_UNAUTHORIZED","path":"/otoapp/parties/0188abce-fa88-41a1-abe7-281f5cbc9ae3/deposit-request","msg":"the platform refused a party deposit call"}
+2026-11-14T09:20:00.1088289Z {"level":"warn","time":"2026-11-14T09:20:00.108Z","service":"oto-app","env":"local","status":404,"code":"NOT_FOUND","path":"/otoapp/parties/0188abce-fa88-41a1-abe7-281f5cbc9ae3/deposit-request","msg":"the platform refused a party deposit call"}
+2026-11-14T09:20:00.1109769Z {"level":"warn","time":"2026-11-14T09:20:00.110Z","service":"oto-app","env":"local","eventId":"0188abce-fa88-41a1-abe7-281f5cbc9ae3","issues":[{"code":"invalid_type","expected":"boolean","received":"undefined","path":["hasConversation"],"message":"Required"},{"code":"invalid_type","expected":"object","received":"undefined","path":["current"],"message":"Required"},{"code":"invalid_type","expected":"array","received":"undefined","path":["history"],"message":"Required"}],"msg":"the platform's answer for a party's deposit could not be read"}
+2026-11-14T09:20:00.1139612Z {"level":"warn","time":"2026-11-14T09:20:00.113Z","service":"oto-app","env":"local","err":"fetch failed","path":"/otoapp/parties/0188abce-fa88-41a1-abe7-281f5cbc9ae3/deposit-request","msg":"could not reach the platform for a party's deposit"}
+2026-11-14T09:20:00.1141698Z   ok  the client: the key as a *** the press as the Idempotency-Key, no session; every door's path; the answers and refusals read
+2026-11-14T09:20:06.8016015Z   ok  the read answers the platform's state for a linked party, and says why not otherwise — never a state of its own
+2026-11-14T09:20:06.8319680Z   ok  Request deposit: a manager's press goes to the platform as satang, who pressed and the party's chat, the press as the Idempotency-Key
+2026-11-14T09:20:07.0353334Z   ok  refused before the platform is asked: staff, another park group's party, no chat, a camp, a park not linked, no key here, a bad amount
+2026-11-14T09:20:07.0821157Z   ok  the platform's refusal is answered in its words with its status; Resend and Cancel request forward the press
+2026-11-14T09:20:07.1243639Z   ok  Send the menu choice link: refused by name without a parent link; with one, the link built from this deployment's address and the token
+2026-11-14T09:20:07.1376945Z node:internal/modules/run_main:123
+2026-11-14T09:20:07.1377629Z     triggerUncaughtException(
+2026-11-14T09:20:07.1378187Z     ^
+2026-11-14T09:20:07.1378349Z 
+2026-11-14T09:20:07.1378750Z AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+2026-11-14T09:20:07.1379298Z + actual - expected
+2026-11-14T09:20:07.1379473Z 
+2026-11-14T09:20:07.1379582Z   {
+2026-11-14T09:20:07.1379910Z +   submittedAt: '2026-11-14T09:20:07.127Z',
+2026-11-14T09:20:07.1380286Z     success: true
+2026-11-14T09:20:07.1380535Z   }
+2026-11-14T09:20:07.1380838Z 
+2026-11-14T09:20:07.1381397Z     at <anonymous> (/home/runner/work/oto-platform/oto-platform/apps/oto-app/tests/party-deposit.check.ts:493:12)
+2026-11-14T09:20:07.1382434Z     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+2026-11-14T09:20:07.1383841Z     at async check (/home/runner/work/oto-platform/oto-platform/apps/oto-app/tests/party-deposit.check.ts:60:3)
+2026-11-14T09:20:07.1384962Z     at async <anonymous> (/home/runner/work/oto-platform/oto-platform/apps/oto-app/tests/party-deposit.check.ts:488:3) {
+2026-11-14T09:20:07.1385747Z   generatedMessage: true,
+2026-11-14T09:20:07.1386080Z   code: 'ERR_ASSERTION',
+2026-11-14T09:20:07.1386604Z   actual: { success: true, submittedAt: '2026-11-14T09:20:07.127Z' },
+2026-11-14T09:20:07.1387080Z   expected: { success: true },
+2026-11-14T09:20:07.1387442Z   operator: 'deepStrictEqual',
+2026-11-14T09:20:07.1387758Z   diff: 'simple'
+2026-11-14T09:20:07.1388050Z }
+2026-11-14T09:20:07.1388192Z 
+2026-11-14T09:20:07.1388336Z Node.js v22.23.4
+2026-11-14T09:20:07.1647546Z ##[error]Process completed with exit code 1.
+2026-11-14T09:20:07.1921931Z 

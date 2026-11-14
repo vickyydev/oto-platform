@@ -490,14 +490,15 @@ try {
     const submit = () => call(keyed, "POST", `/api/beo/set-menu-selections/public/${token}/submit`, "", { selections: [{ groupId: "main", chosenOptions: ["Pizza"] }] });
     const first = await submit();
     assert.equal(first.status, 200, JSON.stringify(first.body));
-    assert.deepEqual(first.body, { success: true });
+    // App timestamps are UTC-naive; read the persisted instant explicitly on every host.
+    const [row] = await q<{ submitted_at: Date }>("select submitted_at at time zone 'UTC' as submitted_at from beo_set_menu_selections where id = $1", [selectionId]);
+    const submittedAt = new Date(row!.submitted_at).toISOString();
+    assert.deepEqual(first.body, { success: true, submittedAt });
     await soon();
     assert.equal(asked.length, before + 1, "the platform was told once");
     const told = asked.at(-1)!;
     assert.equal(told.url, `/otoapp/parties/${partyA.id}/menu-received`);
     assert.equal(told.headers.authorization, "Bearer zz-825-key");
-    const [row] = await q<{ submitted_at: Date }>("select submitted_at from beo_set_menu_selections where id = $1", [selectionId]);
-    const submittedAt = new Date(row!.submitted_at).toISOString();
     assert.equal(told.headers["idempotency-key"], `menu-received:${selectionId}:${submittedAt}`);
     assert.deepEqual(told.body, { submittedAt });
     const kitchen = await q<{ menus: { kids: Array<{ itemName: string }> } }>("select menus from beo_kitchen_plans where event_id = $1", [partyA.id]);
