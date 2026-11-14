@@ -1,0 +1,9 @@
+{
+  "at": "2026-11-14T08:52:28.282Z",
+  "service": "oto-api-staging",
+  "deployId": "dep-dbs1osek1f9s7381tvmg",
+  "source": "41158d2310ba4776dc2e1d03e435a8716d76556c",
+  "status": "live",
+  "finishedAt": "2026-11-14T08:36:36.310092Z",
+  "updatedAt": "2026-11-14T08:37:03.608934Z"
+}

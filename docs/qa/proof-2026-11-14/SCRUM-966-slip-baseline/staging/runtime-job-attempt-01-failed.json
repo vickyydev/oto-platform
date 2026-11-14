@@ -1,0 +1,27 @@
+{
+  "unit": "SCRUM-966-slip-baseline",
+  "expectedSha": "41158d2310ba4776dc2e1d03e435a8716d76556c",
+  "eventId": "2dcbad8f-eda8-4285-9ea4-0fed7df81f9d",
+  "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+  "deployId": "dep-dbs1osek1f9s7381tvmg",
+  "jobId": "job-dbs1sgm1egvs73ck1j40",
+  "workerSha256": "98553f48cdd650dafcf2a572db9bf124372835185f0dbb786e6f0d6436bcd3eb",
+  "startedAt": "2026-11-14T08:39:30.544Z",
+  "status": "failed",
+  "markers": [
+    {
+      "eventId": "2dcbad8f-eda8-4285-9ea4-0fed7df81f9d",
+      "phase": "edit-own-line-2-to-3"
+    }
+  ],
+  "results": [],
+  "errors": [
+    {
+      "name": "AssertionError",
+      "code": "ERR_ASSERTION",
+      "phase": "native-edit",
+      "eventId": "2dcbad8f-eda8-4285-9ea4-0fed7df81f9d"
+    }
+  ],
+  "checkedAt": "2026-11-14T08:41:19.002Z"
+}

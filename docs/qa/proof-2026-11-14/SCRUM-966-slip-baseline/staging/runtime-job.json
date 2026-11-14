@@ -1,0 +1,118 @@
+{
+  "unit": "SCRUM-966-slip-baseline",
+  "expectedSha": "41158d2310ba4776dc2e1d03e435a8716d76556c",
+  "eventId": "2dcbad8f-eda8-4285-9ea4-0fed7df81f9d",
+  "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+  "deployId": "dep-dbs1osek1f9s7381tvmg",
+  "jobId": "job-dbs1v1ifngtc73bggfe0",
+  "workerSha256": "00f0ad7b9f5c4d94b23720c09bd4df28f73e14aab7b931f214113bf3cec8a294",
+  "startedAt": "2026-11-14T08:44:54.829Z",
+  "status": "succeeded",
+  "markers": [
+    {
+      "eventId": "2dcbad8f-eda8-4285-9ea4-0fed7df81f9d",
+      "phase": "edit-own-line-2-to-3"
+    },
+    {
+      "eventId": "2dcbad8f-eda8-4285-9ea4-0fed7df81f9d",
+      "phase": "archive-own-event"
+    }
+  ],
+  "results": [
+    {
+      "version": 1,
+      "expectedSha": "41158d2310ba4776dc2e1d03e435a8716d76556c",
+      "eventId": "2dcbad8f-eda8-4285-9ea4-0fed7df81f9d",
+      "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+      "simulation": "Older composer mark only; native event edits are real; platform transaction always rolls back",
+      "cases": [
+        {
+          "name": "unchanged older composer",
+          "passed": true
+        },
+        {
+          "name": "historical snapshot fallback",
+          "passed": true,
+          "auditReason": "historical_without_snapshot"
+        },
+        {
+          "name": "native edit before upgraded tick",
+          "passed": true,
+          "result": {
+            "outcome": "printed",
+            "slips": [
+              {
+                "station": "kitchen",
+                "variant": "updated",
+                "lines": [
+                  {
+                    "qty": 3,
+                    "name": "ZZ TEST966 hand typed noodles",
+                    "note": "not on the till menu"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "native archival voids actual lines",
+          "passed": true,
+          "result": {
+            "outcome": "printed",
+            "slips": [
+              {
+                "station": "kitchen",
+                "variant": "void",
+                "lines": [
+                  {
+                    "qty": 3,
+                    "name": "ZZ TEST966 hand typed noodles",
+                    "note": "not on the till menu"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "printJobIds": [],
+      "limits": [
+        "No physical printer acceptance",
+        "Publication-format and missing-row boundaries are local actual-view test evidence"
+      ],
+      "initialGivenLines": [
+        {
+          "qty": 2,
+          "name": "ZZ TEST966 hand typed noodles",
+          "note": "not on the till menu"
+        }
+      ],
+      "observedEdit": {
+        "outcome": "printed",
+        "slips": [
+          {
+            "station": "kitchen",
+            "variant": "updated",
+            "lines": [
+              {
+                "qty": 3,
+                "name": "ZZ TEST966 hand typed noodles",
+                "note": "not on the till menu"
+              }
+            ]
+          }
+        ]
+      },
+      "rollbackVerified": {
+        "baseline": 0,
+        "print": 0,
+        "prep": 0,
+        "printJobs": 0
+      },
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "checkedAt": "2026-11-14T08:46:25.870Z"
+}

@@ -1,0 +1,20 @@
+{
+  "inspectedAt": "2026-11-14T08:51:57.085Z",
+  "images": [
+    {
+      "file": "01-native-before.png",
+      "sha256": "a594084f9e0905dc3cba9ddc09084bbf4850437ccf9be7217f29374015024ad5",
+      "result": "Opened and inspected; synthetic event only; no account name, benefit QR or secret visible"
+    },
+    {
+      "file": "02-native-after.png",
+      "sha256": "81b48b204432f962fa8ed71f8cfb9a1d58566f57b75c2b7f15c657aa3faa453e",
+      "result": "Opened and inspected; synthetic event only; no account name, benefit QR or secret visible"
+    },
+    {
+      "file": "03-staging-run-card.png",
+      "sha256": "dadc5dad11a647ba03b7321bb9c0ec0621e21db25b0e1cbd1642a967fb177491",
+      "result": "Opened and inspected; synthetic event only; no account name, benefit QR or secret visible"
+    }
+  ]
+}

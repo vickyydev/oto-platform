@@ -1,0 +1,28 @@
+{
+  "time": "2026-11-14T08:32:22.461Z",
+  "source": "41158d2310ba4776dc2e1d03e435a8716d76556c",
+  "tickets": {
+    "SCRUM-945": {
+      "before": {
+        "status": "In Progress",
+        "summary": "Kitchen plan to the till: points left by the reviews of SCRUM-906"
+      },
+      "after": {
+        "status": "In Progress",
+        "summary": "Kitchen plan to the till: points left by the reviews of SCRUM-906"
+      },
+      "commentId": "14774"
+    },
+    "SCRUM-966": {
+      "before": {
+        "status": "In Progress",
+        "summary": "Kitchen plan on the till: the BEO's \"kitchen required\" switch, the extras' amounts with a service charge, and points left by the reviews"
+      },
+      "after": {
+        "status": "In Progress",
+        "summary": "Kitchen plan on the till: the BEO's \"kitchen required\" switch, the extras' amounts with a service charge, and points left by the reviews"
+      },
+      "commentId": "14775"
+    }
+  }
+}

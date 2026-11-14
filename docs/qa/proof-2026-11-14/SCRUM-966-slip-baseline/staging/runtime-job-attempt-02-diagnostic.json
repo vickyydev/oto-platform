@@ -1,0 +1,44 @@
+{
+  "unit": "SCRUM-966-slip-baseline",
+  "expectedSha": "41158d2310ba4776dc2e1d03e435a8716d76556c",
+  "eventId": "2dcbad8f-eda8-4285-9ea4-0fed7df81f9d",
+  "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+  "deployId": "dep-dbs1osek1f9s7381tvmg",
+  "jobId": "job-dbs1tutg1s2s73dv6c0g",
+  "workerSha256": "ef40d6d659545001c893770dfc839bf835953a82cccf39ea40f64a55f97b33fa",
+  "startedAt": "2026-11-14T08:42:35.630Z",
+  "status": "failed",
+  "markers": [
+    {
+      "eventId": "2dcbad8f-eda8-4285-9ea4-0fed7df81f9d",
+      "phase": "edit-own-line-2-to-3"
+    }
+  ],
+  "results": [],
+  "errors": [
+    {
+      "name": "AssertionError",
+      "code": "ERR_ASSERTION",
+      "phase": "native-edit",
+      "eventId": "2dcbad8f-eda8-4285-9ea4-0fed7df81f9d",
+      "assertion": "Expected values to be strictly deep-equal:\n+ actual - expected\n\n  [\n-   'void',\n    'updated'\n  ]\n",
+      "observedEdit": {
+        "outcome": "printed",
+        "slips": [
+          {
+            "station": "kitchen",
+            "variant": "updated",
+            "lines": [
+              {
+                "qty": 3,
+                "name": "ZZ TEST966 hand typed noodles",
+                "note": "not on the till menu"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "checkedAt": "2026-11-14T08:44:34.411Z"
+}

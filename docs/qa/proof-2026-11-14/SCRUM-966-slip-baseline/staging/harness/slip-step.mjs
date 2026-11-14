@@ -1,0 +1,1 @@
+﻿import fs from 'node:fs';const file=process.argv[2];const r=await fetch('http://127.0.0.1:47986/run',{method:'POST',body:fs.readFileSync(file,'utf8')});const b=await r.text();console.log(b);if(!r.ok)process.exitCode=1;

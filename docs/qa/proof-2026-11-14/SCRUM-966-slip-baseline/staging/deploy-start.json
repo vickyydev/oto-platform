@@ -1,0 +1,8 @@
+{
+  "source": "41158d2310ba4776dc2e1d03e435a8716d76556c",
+  "requestedAt": "2026-11-14T08:31:45.416Z",
+  "service": "oto-api-staging",
+  "deployId": "dep-dbs1osek1f9s7381tvmg",
+  "status": "build_in_progress",
+  "ci": "background, not a release gate"
+}

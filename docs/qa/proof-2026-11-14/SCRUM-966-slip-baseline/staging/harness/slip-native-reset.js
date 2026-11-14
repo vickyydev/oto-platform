@@ -1,0 +1,1 @@
+﻿await S.owned();await S.page.getByTestId('button-qty-minus-kids-0').click();const lines=await S.saveBeo();S.assert.equal(lines.find(x=>x.itemName===S.st.expectedLine)?.quantity,2);S.st.results.push({case:'attempt01failed-retained-for-diagnosis',platformJob:'job-dbs1sgm1egvs73ck1j40',at:new Date().toISOString()});S.save();return {reset:lines};
