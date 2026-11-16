@@ -334,7 +334,7 @@ describe("the party screens keep the prototype's words and write to the platform
     // The thank-you follows a payment the platform recorded, never a refused one,
     // and thanks the guest for what it recorded; a definite no is back on the bill.
     expect(balance).toMatch(
-      /await onConfirm\(collectAmount, collectMethod, collectOutstanding\);\s*if \(result && !result\.recorded\) \{\s*if \(!result\.retry\) setStage\('review'\);\s*return;\s*\}\s*if \(result\) setCollectAmount\(result\.amount\);\s*setStage\('done'\)/,
+      /await onConfirm\(collectAmount, collectMethod, collectOutstanding, undefined, collectBillId\);\s*if \(result && !result\.recorded\) \{\s*if \(!result\.retry\) setStage\('review'\);\s*return;\s*\}\s*if \(result\) setCollectAmount\(result\.amount\);\s*setStage\('done'\)/,
     );
     const settlement = source('components/parties/PartySettlementCustomerScreen.tsx');
     for (const key of ['party.review.yourBill', 'party.review.lessDeposit', 'party.review.outstandingDue', 'party.payment.pleasePay', 'party.thankyou.allSettled', 'party.thankyou.paymentReceived']) {
@@ -352,7 +352,7 @@ describe("the party screens keep the prototype's words and write to the platform
       expect(payment).toContain(words);
     }
     expect(payment).toMatch(
-      /await onConfirm\(collectAmount, collectMethod, collectOutstanding\);\s*if \(result && !result\.recorded\) \{\s*if \(!result\.retry\) setStep\('pick'\);\s*return;\s*\}\s*if \(result\) setCollectAmount\(result\.amount\);\s*setStep\('done'\)/,
+      /await onConfirm\(collectAmount, collectMethod, collectOutstanding, undefined, collectBillId\);\s*if \(result && !result\.recorded\) \{\s*if \(!result\.retry\) setStep\('pick'\);\s*return;\s*\}\s*if \(result\) setCollectAmount\(result\.amount\);\s*setStep\('done'\)/,
     );
     const detail = source('components/mobile/parties/MobilePartyDetail.tsx');
     for (const words of ['All parties', 'Party bill', 'Deposit paid', 'Outstanding', 'Fully paid']) {

@@ -124,6 +124,8 @@ export function PartyBalanceModal({
 
   useEffect(() => {
     if (open) {
+      setSelectedBillId(party.additionalBills?.find((bill) => bill.state === 'open')?.id ?? '');
+      setCollectBillId(undefined);
       setStage('review');
       setMode('full');
       setPartialText('');
@@ -134,6 +136,11 @@ export function PartyBalanceModal({
       setRecording(false);
     }
   }, [open]);
+
+  useEffect(() => {
+    if (!open || stage !== 'review') return;
+    setSelectedBillId((selected) => party.additionalBills?.some((bill) => bill.id === selected && bill.state === 'open') ? selected : party.additionalBills?.find((bill) => bill.state === 'open')?.id ?? '');
+  }, [open, party.id, party.additionalBills, stage]);
 
   const amount = useMemo(() => {
     if (mode === 'full') return outstanding;
@@ -331,8 +338,9 @@ export function PartyBalanceModal({
                           {mode === 'partial' && (
                             <Input
                               type="number"
-                              inputMode="numeric"
-                              min={1}
+                              inputMode={selectedBill ? "decimal" : "numeric"}
+                              min={selectedBill ? 0.01 : 1}
+                              step={selectedBill ? 0.01 : 1}
                               max={outstanding}
                               autoFocus
                               placeholder={`Up to ฿${bahtText(outstanding)}`}
