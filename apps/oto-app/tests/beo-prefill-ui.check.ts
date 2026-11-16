@@ -359,7 +359,7 @@ g.fetch = async (input: string | URL | Request, init?: RequestInit) => {
   }
   if (url.pathname === "/api/ai/parse-beo" && method === "POST") {
     const text = String(body.text ?? "");
-    if (text.includes("ZZ TEST LEGACY EXTRA SOURCE")) return json({ kitchenPlan: { kidsMenu: [{itemName:"ZZ TEST new extra",quantity:2},{itemName:"ZZ TEST model set",quantity:1,source:"set_menu"}], adultsMenu: [{itemName:"ZZ TEST adult extra",quantity:4}] } });
+    if (text.includes("ZZ TEST LEGACY EXTRA SOURCE")) return json({ kitchenPlan: { kidsMenu: [{itemName:"ZZ TEST new extra",quantity:2},{itemName:"ZZ TEST model set",quantity:1,source:"set_menu"},{itemName:"ZZ TEST explicit free",quantity:1,included:true,price:0},{itemName:"ZZ TEST priced extra",quantity:1,price:12.34}], adultsMenu: [{itemName:"ZZ TEST adult extra",quantity:4}] } });
     if (text.includes("ZZ TEST LEGACY DEPOSIT")) {
       const partyDetails = text.includes("RECEIVED")
         ? { prepaymentReceived: 3000, depositReceived: true, depositWords: "We received 3,000 baht.", depositDate: "2026-11-14" }
@@ -566,7 +566,7 @@ await check("the form reads the BEO back: the chat's sections open and marked, e
   assert.equal(labelMark("input-num-children"), "from the team");
   assert.equal(labelMark("input-location-text"), "from the team");
   assert.equal(labelMark("input-package-name"), "from the team");
-  assert.equal(labelMark("input-prepayment"), "from the team");
+  assert.equal(labelMark("input-prepayment"), null, "an informational claim never marks the receipt as written");
   // An edit: the mark says changed here.
   await typeInto("input-event-activities", "Games and a show");
   assert.equal(labelMark("input-event-activities"), "changed here");
@@ -642,8 +642,8 @@ await check("a pasted message opens the same review and approves the same way; w
   assert.equal(text("input-child-name"), "Emma");
 });
 
-await check("SCRUM-844: requests and old answers keep the stored deposit; received money needs confirmation in both free-text paths", async () => {
-  for (const variant of ["OLD-ANSWER", "REQUEST", "RECEIVED-UNTICKED", "RECEIVED-TICKED", "CATALOGUE-RECEIVED-TICKED"] as const) {
+await check("D1: paid claims preserve stored2000 receipt through legacy and structured fallback Load into Editor", async () => {
+  for (const variant of ["OLD-ANSWER", "REQUEST", "RECEIVED", "CATALOGUE-RECEIVED"] as const) {
     beos.get(E_PLAIN)!.partyDetails = { prepaymentReceived: 2000, depositDate: "2026-11-01", items: [] };
     await open(E_PLAIN);
     await click("button-ai-fill-beo");
@@ -655,19 +655,16 @@ await check("SCRUM-844: requests and old answers keep the stored deposit; receiv
       await click("button-ai-review-fallback");
       await settle(6);
     }
+    assert.equal(byTestId("checkbox-ai-fill-deposit-received"), null, `${variant}: no AI receipt confirmation control`);
     if (variant.includes("RECEIVED")) {
-      const received = required("checkbox-ai-fill-deposit-received");
-      assert.equal(received.getAttribute("aria-checked"), "false", `${variant}: no automatic receipt confirmation`);
-      if (variant.endsWith("TICKED") && !variant.endsWith("UNTICKED")) await click("checkbox-ai-fill-deposit-received");
-    } else {
-      assert.equal(byTestId("checkbox-ai-fill-deposit-received"), null);
+      assert.ok(doc.body.textContent?.includes("Payment claimed in chat"));
+      assert.ok(text("text-ai-fill-deposit-claim").includes("do not record received money"));
     }
     const sawUnconfirmed = doc.body.textContent?.includes("Deposit requested / not confirmed received");
     await click("button-ai-fill-confirm");
     await settle(6);
     if (!byTestId("input-prepayment")) await click("accordion-party-details");
-    const confirmed = variant.endsWith("TICKED") && !variant.endsWith("UNTICKED");
-    assert.equal(text("input-prepayment")?.replace(/[.,\s]/g, ""), String(confirmed ? 3000 : 2000), `${variant}: the actual Deposit field`);
+    assert.equal(text("input-prepayment")?.replace(/[.,\s]/g, ""), "2000", `${variant}: the actual Deposit field`);
     if (!variant.includes("RECEIVED")) assert.ok(sawUnconfirmed, `${variant}: the amount is visible as unconfirmed`);
     asked.length = 0;
     await click("button-save-beo");
@@ -675,8 +672,8 @@ await check("SCRUM-844: requests and old answers keep the stored deposit; receiv
     const saved = asked.find((request) => request.method === "PUT" && request.path === `/api/events/${E_PLAIN}/beo`);
     assert.ok(saved, `${variant}: the editor's real Save ran`);
     const details = saved.body.partyDetails as { prepaymentReceived: number; depositDate: string };
-    assert.equal(details.prepaymentReceived, confirmed ? 3000 : 2000, `${variant}: Save carries only confirmed received money`);
-    assert.equal(details.depositDate, confirmed ? "2026-11-14" : "2026-11-01", `${variant}: a requested date cannot replace the receipt date`);
+    assert.equal(details.prepaymentReceived, 2000, `${variant}: Save carries only confirmed received money`);
+    assert.equal(details.depositDate, "2026-11-01", `${variant}: a requested date cannot replace the receipt date`);
     // Force a fresh editor for the next proposal; review confirmation never leaks into another read.
     await open(E_TYPED);
   }
@@ -825,8 +822,18 @@ await check("945 integration: legacy model creates explicit EXTRA rows and retai
   asked.length=0;await click("button-save-beo");await settle(8);
   const saved=asked.find(r=>r.method==="PUT"&&r.path===`/api/events/${E_PLAIN}/beo`);assert.ok(saved);
   const kitchen=saved.body.kitchenPlan as {menus:{kids:Array<{itemName:string;source?:string;quantity:number}>;adults:Array<{itemName:string;source?:string;quantity:number}>;adultsDiffer:boolean}};
-  assert.deepEqual(kitchen.menus.kids.map(l=>[l.itemName,l.source,l.quantity]),[["ZZ TEST new extra","additional",2],["ZZ TEST model set","set_menu",1]]);
+  assert.deepEqual(kitchen.menus.kids.map(l=>[l.itemName,l.source,l.quantity]),[["ZZ TEST new extra","additional",2],["ZZ TEST model set","set_menu",1],["ZZ TEST explicit free","additional",1],["ZZ TEST priced extra","additional",1]]);
   assert.deepEqual(kitchen.menus.adults.map(l=>[l.itemName,l.source,l.quantity]),[["ZZ TEST adult extra","additional",4]]);assert.equal(kitchen.menus.adultsDiffer,true);
+  const savedLines = [...kitchen.menus.kids, ...kitchen.menus.adults] as Array<{itemName:string;source?:string;included:boolean;price:number;chargeApproved?:boolean}>;
+  for (const line of savedLines.filter(l=>["ZZ TEST new extra","ZZ TEST adult extra"].includes(l.itemName))) {
+    assert.equal(line.included, false, "unknown legacy extra is not silently included/free");
+    assert.equal(line.price, 0, "zero represents unresolved price, not an agreed free item");
+    assert.notEqual(line.chargeApproved, true);
+  }
+  assert.equal(savedLines.find(l=>l.source === "set_menu")?.included, true, "known set-menu line stays included");
+  assert.equal(savedLines.find(l=>l.itemName === "ZZ TEST explicit free")?.included, true, "explicit included/free stays explicit");
+  assert.equal(savedLines.find(l=>l.itemName === "ZZ TEST priced extra")?.price, 12.34);
+  assert.equal(savedLines.find(l=>l.itemName === "ZZ TEST priced extra")?.included, false);
 });
 
 await act(async () => { root.unmount(); });

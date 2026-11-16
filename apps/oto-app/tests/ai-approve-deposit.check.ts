@@ -31,7 +31,7 @@ if (!DATABASE_URL) {
 // ─── The stand-in platform: what the family paid through the chat ─────────────
 
 const paidThroughChat = new Map<string, PartyDepositRequest[]>();
-let platformDown = false;
+const platformDown = false;
 const askedOf: string[] = [];
 const platform = createServer((req: IncomingMessage, res: ServerResponse) => {
   const eventId = /\/otoapp\/parties\/([^/]+)\/deposit-request$/.exec(req.url ?? "")?.[1] ?? "";

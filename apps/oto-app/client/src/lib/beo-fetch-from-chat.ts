@@ -1,7 +1,7 @@
 import { asksForMore, beoAiMatchLabel, foodNamesFor, laterLineWins, setMenuOptionOf, type BeoAiFrom, type BeoAiMenu, type BeoAiRequestKind, type BeoAiReview, type BeoAiSetMenuItem, type BeoAiSourced } from "@shared/beoAiFill";
 import { aiFillDateLine, dayLabel } from "./beo-ai-date";
 import { AI_FILL_CAKE_TYPE } from "./beo-ai-preview";
-import { depositOpensPaid, namesPhone, requestLineText, requestsOfField, reviewDateLine, samePhone, thb, tillMatchOf, type ApprovedMarks } from "./beo-ai-review";
+import { namesPhone, requestLineText, requestsOfField, reviewDateLine, samePhone, thb, tillMatchOf, type ApprovedMarks } from "./beo-ai-review";
 
 /**
  * "FETCH FROM CHAT" ON THE BEO FORM (SCRUM-826) — the diff and the memory.
@@ -190,7 +190,6 @@ export const FETCH_LABELS: Record<FetchField, string> = {
 const FIELD_ORDER = Object.keys(FETCH_LABELS) as FetchField[];
 
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
-const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const NONE = "—";
 
 const asRecord = (v: unknown): Record<string, unknown> =>
@@ -204,10 +203,6 @@ const num = (v: unknown): number | null => {
 const time = (v: unknown): string | null => {
   const t = str(v)?.replace(".", ":") ?? null;
   return t && TIME.test(t) ? t : null;
-};
-const day = (v: unknown): string | null => {
-  const d = str(v);
-  return d && DAY.test(d) ? d : null;
 };
 const sameText = (a: string, b: string) => a.normalize("NFC").trim() === b.normalize("NFC").trim();
 /** SCRUM-904: whether typed text already holds a line, case and spacing aside (an allergy's line with or without its "Allergy: "). */
@@ -409,28 +404,13 @@ export function fetchChangesOf(answer: Pick<FetchAnswer, "fill" | "review">, for
     if (read && value && value !== (form[field] ?? "")) offer(field, shownText(form[field] ?? ""), value, value, read.from);
   }
 
-  // Party Details: the POS package's name, the deposit and its day, the notes.
+  // Party Details: the POS package's name and notes. Payment claims stay informational.
   const packageName = detail(proposal?.details.pos.name, party.packageName);
   if (packageName.value && !sameText(form.packageName, packageName.value)) {
     offer("packageName", shownText(form.packageName), packageName.value, packageName.value, packageName.from);
   }
-  // The deposit the form holds is the one RECEIVED. The whole chat's reading
-  // says whether it was: a deposit only asked for ("please transfer 5,000")
-  // is billing's deposit required, which this fetch does not cover, so it
-  // offers nothing — never the asked-for amount as received.
-  // SCRUM-904: with no team confirmation, a deposit only the family says was paid is read as
-  // asked (the review's rule, SCRUM-903): never offered as received.
-  const deposit = proposal?.deposit
-    ? proposal.deposit.paid && depositOpensPaid(answer.review!)
-      ? { amount: proposal.deposit.amount, date: day(proposal.deposit.date), from: proposal.deposit.from }
-      : { amount: null, date: null, from: proposal.deposit.from }
-    : { amount: num(party.prepaymentReceived), date: day(party.depositDate), from: ruling };
-  if (deposit.amount !== null && deposit.amount > 0 && deposit.amount !== form.prepaymentReceived) {
-    offer("prepaymentReceived", form.prepaymentReceived > 0 ? thb(form.prepaymentReceived) : NONE, thb(deposit.amount), deposit.amount, deposit.from);
-  }
-  if (deposit.date && deposit.date !== form.depositDate) {
-    offer("depositDate", form.depositDate ? dayLabel(form.depositDate) : NONE, dayLabel(deposit.date), deposit.date, deposit.from);
-  }
+  // D1: chat payment claims are informational; fetched changes never propose
+  // received money or its receipt date as editable form values.
   // SCRUM-904: the conversation's notes on the bill (it never sees the form) go BESIDE what is
   // typed, never in its place; the ruling message's own read, with the form as its baseline, is
   // offered as before only where the proposal holds none.
@@ -667,6 +647,7 @@ export function applyFetchChanges(accepted: FetchChange[]): Partial<FetchFormVal
   const lines = new Map<FetchField, { base: string; lines: string[] }>();
   const takenPhone = accepted.find((c) => c.field === "whatsappPhoneRaw")?.value;
   for (const c of accepted) {
+    if (c.field === "prepaymentReceived" || c.field === "depositDate") continue;
     if (c.line !== undefined && c.field === "specialRequests" && typeof takenPhone === "string" && namesPhone(c.line, [takenPhone])) continue;
     if (c.line === undefined) {
       patch[c.field] = c.value;
@@ -726,7 +707,10 @@ export const FETCH_MARK_KEYS: Record<FetchField, string> = {
  */
 export function fetchedMarksOf(accepted: FetchChange[]): ApprovedMarks {
   const marks: ApprovedMarks = {};
-  for (const c of accepted) marks[FETCH_MARK_KEYS[c.field]] = c.from?.source ?? "staff";
+  for (const c of accepted) {
+    if (c.field === "prepaymentReceived" || c.field === "depositDate") continue;
+    marks[FETCH_MARK_KEYS[c.field]] = c.from?.source ?? "staff";
+  }
   return marks;
 }
 

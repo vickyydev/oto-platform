@@ -14,8 +14,8 @@ const foldWords = (value: string): string => value.normalize("NFKC").replace(/\s
 /**
  * SCRUM-844: an old amount-only answer is unconfirmed, not received. The
  * received flag must have the message's own words beside it; the route also
- * checks those words against the text it actually read. Staff confirm the
- * received proposal in the preview before it can enter the Deposit box.
+ * checks those words against the text it actually read. These fields display
+ * a chat claim only; the preview never applies it to the received Deposit box.
  */
 export function legacyDepositFieldsOf(fields: LegacyDepositFields, sourceText?: string): LegacyDepositFields {
   const amount = positive(fields.prepaymentReceived);
@@ -39,4 +39,4 @@ Deposit amounts are not evidence that money was received. For partyDetails:
 - "the deposit is 3,000", "please pay 3,000" and "we will transfer 3,000 tomorrow" are NOT received: give depositRequested: 3000, depositReceived: false, and no prepaymentReceived or depositDate.
 - A received date is only the date the text gives for that receipt. Never use a requested payment date or the party date.
 - Do not carry a deposit forward from existing event data. When the new text says nothing about a deposit, leave all these deposit fields out. The editor keeps its existing deposit.
-The reviewer must confirm a received deposit before the form applies it. Never invent a payment.`;
+Payment claims are informational. They never authorize the editor to record received money. Never invent a payment.`;

@@ -67,6 +67,7 @@ const { pool: appDbPool } = await import("../server/db");
 const { resolveCatalogueAnswer } = await import("../server/lib/beoCatalogueFill");
 const {
   applyFetchChanges,
+  fetchedMarksOf,
   catalogueChangesCount,
   changeKey,
   changesCount,
@@ -512,8 +513,6 @@ try {
         ["cakeMode", "The family's own cake", "The park's cake", "INTERNAL", null, "team"],
         ["cakeNotes", "—", "ice-cream cake", "ice-cream cake", null, "team"],
         ["packageName", "—", "Floresta", "Floresta", null, "team"],
-        ["prepaymentReceived", "฿5,000", "฿6,000", 6000, null, "team"],
-        ["depositDate", "Mon 2 Nov 2026", "Thu 5 Nov 2026", "2026-11-05", null, "team"],
         ["packageNotes", "—", "pay the rest on the day", "pay the rest on the day", null, "team"],
       ],
     );
@@ -560,22 +559,19 @@ try {
     assert.deepEqual(over.map((c) => [c.field, c.was, c.now]), [["cakeMode", "The family's own cake", "The park's cake"]], "said as the park's: offered over the family's own, never applied");
   });
 
-  await check("a deposit the chat only asks for is never offered as received: paid false offers no deposit row, not even its date; paid true does", () => {
+  await check("D1: paid/requested chat claims never offer, apply or mark received receipt fields", () => {
     const review = (paid: boolean) => ({ ...fetched.review, proposal: { ...fetched.review.proposal, deposit: { amount: 5000, paid, date: "2026-11-05", from: { source: "team", at: null, line: 2 } } } });
-    const form = { ...FORM, numAdults: 6, cakeTime: "16:00", prepaymentReceived: 0, depositDate: "" };
-    const asked = fetchChangesOf({ fill: { partyDetails: { prepaymentReceived: 5000, depositDate: "2026-11-05" } }, review: review(false) }, form);
-    assert.deepEqual(asked, [], "asked for, not received: nothing from the whole chat's read, nor from the fill's");
-    const received = fetchChangesOf({ fill: {}, review: review(true) }, form);
-    assert.deepEqual(
-      received.map((c) => [c.field, c.was, c.now, c.value]),
-      [
-        ["prepaymentReceived", "—", "฿5,000", 5000],
-        ["depositDate", "—", "Thu 5 Nov 2026", "2026-11-05"],
-      ],
-    );
-    // A chat that names no deposit at all: the fill's prepayment (received by name) still counts.
-    const fillOnly = fetchChangesOf({ fill: { partyDetails: { prepaymentReceived: 5000 } }, review: { ...fetched.review, proposal: { ...fetched.review.proposal, deposit: null } } }, form);
-    assert.deepEqual(fillOnly.map((c) => c.field), ["prepaymentReceived"]);
+    const form = { ...FORM, numAdults: 6, cakeTime: "16:00", prepaymentReceived: 2000, depositDate: "2026-11-01" };
+    for (const paid of [false, true]) {
+      assert.deepEqual(fetchChangesOf({ fill: { partyDetails: { prepaymentReceived: 5000, depositDate: "2026-11-05" } }, review: review(paid) }, form), []);
+    }
+    assert.deepEqual(fetchChangesOf({ fill: { partyDetails: { prepaymentReceived: 5000, depositDate: "2026-11-05" } }, review: { ...fetched.review, proposal: { ...fetched.review.proposal, deposit: null } } }, form), []);
+    const legacy = [
+      { field: "prepaymentReceived" as const, label: "Deposit", was: "2000", now: "5000", value: 5000, said: null, from: { source: "team" as const, at: null, line: 2 } },
+      { field: "depositDate" as const, label: "Deposit date", was: "2026-11-01", now: "2026-11-05", value: "2026-11-05", said: null, from: { source: "team" as const, at: null, line: 2 } },
+    ];
+    assert.deepEqual(applyFetchChanges(legacy), {}, "legacy/crafted accepted fields cannot form a receipt patch");
+    assert.deepEqual(fetchedMarksOf(legacy), {}, "no receipt marks imply an AI claim was saved");
   });
 
   await check("the catalogue section: a package, add-on, set menu, choice, food line, entertainment and free line the chat names that the BEO lacks are listed, never swallowed; what it holds is not", () => {

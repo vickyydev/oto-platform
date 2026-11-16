@@ -82,7 +82,6 @@ import { BeoFetchFromChatDialog } from "./beo-fetch-from-chat";
 import { NO_DECLINED, fetchedMarksOf, type DeclinedChanges, type FetchAnswer, type FetchChange, type FetchFormValues, type FetchHeldCatalogue } from "@/lib/beo-fetch-from-chat";
 import { aiFillCakeApply, aiFillCakeLine, aiFillCakeNotSaidNote, aiFillPartyDetailsShown } from "@/lib/beo-ai-preview";
 import { legacyDepositFieldsOf } from "@shared/beoLegacyDeposit";
-import { Checkbox } from "@/components/ui/checkbox";
 import { CakeUnderNoCake } from "./beo-cake-under-no-cake";
 import {
   REVIEW_TEAM_FIELDS,
@@ -690,7 +689,6 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
   const [aiFillAccepted, setAiFillAccepted] = useState<Set<AiTeamField>>(new Set());
   // SCRUM-814: the date the message names replaces the booked one only where a person ticks it.
   const [aiFillUseDate, setAiFillUseDate] = useState(false);
-  const [aiFillDepositConfirmed, setAiFillDepositConfirmed] = useState(false);
   // SCRUM-660: Create BEO's AI Fill — the inbox message it read, and why it did not run.
   const [aiFillSource, setAiFillSource] = useState<AiFillInboxSource | null>(null);
   const [aiFillNotice, setAiFillNotice] = useState<string | null>(null);
@@ -1601,7 +1599,6 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
     setAiFillParsed(fill);
     setAiFillAccepted(new Set());
     setAiFillUseDate(false);
-    setAiFillDepositConfirmed(false);
     setAiFillSource(source);
     if (source) setAiFillText(source.body);
     setAiFillError(null);
@@ -1727,8 +1724,9 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
     if (mode !== undefined) setCakeMode(mode);
     if (notes !== undefined) setCakeNotes(notes);
     if (at !== undefined) setCakeTime(at);
-    if (paid !== undefined) setPrepaymentReceived(paid);
-    if (on !== undefined) setDepositDate(on);
+    // D1: discard legacy/crafted fetched receipt fields before applying other fields.
+    void paid;
+    void on;
     if (pkg !== undefined) setPackageName(pkg);
     if (posNotes !== undefined) setPackageNotes(posNotes);
     if (accepted.length > 0) {
@@ -1892,7 +1890,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
           itemName: m.itemName || "",
           quantity: beoQuantityOf(m.quantity),
           notes: m.notes || "",
-          included: m.included !== false,
+          included: m.included === true || m.source === "set_menu",
           price: m.price || 0,
           source: m.source === "set_menu" ? "set_menu" : "additional",
         })));
@@ -1909,7 +1907,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
           itemName: m.itemName || "",
           quantity: beoQuantityOf(m.quantity),
           notes: m.notes || "",
-          included: m.included !== false,
+          included: m.included === true || m.source === "set_menu",
           price: m.price || 0,
           source: m.source === "set_menu" ? "set_menu" : "additional",
         })));
@@ -1930,11 +1928,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
       const pd = p.partyDetails;
       if (pd.packageName) setPackageName(pd.packageName);
       if (pd.packageBasePrice) setPackageBasePrice(pd.packageBasePrice);
-      const deposit = legacyDepositFieldsOf(pd, aiFillText);
-      if (aiFillDepositConfirmed && deposit.prepaymentReceived) {
-        setPrepaymentReceived(deposit.prepaymentReceived);
-        if (deposit.depositDate) setDepositDate(deposit.depositDate);
-      }
+      // D1: AI claims never populate received money or its receipt date.
       if (pd.notes) setPackageNotes(pd.notes);
       if (pd.items?.length > 0) {
         setPackageItems(pd.items.map((item: any) => ({
@@ -4286,12 +4280,10 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                     <AiFillRow label="Deposit requested / not confirmed received" value={aiFillDeposit.depositRequested ? `${aiFillDeposit.depositRequested.toLocaleString()}฿` : null} />
                     {aiFillDeposit.prepaymentReceived && (
                       <div className="space-y-1" data-testid="ai-fill-deposit-review">
-                        <AiFillRow label="Deposit received" value={`${aiFillParsed.partyDetails.prepaymentReceived.toLocaleString()}฿`} />
+                        <AiFillRow label="Payment claimed in chat" value={`${aiFillDeposit.prepaymentReceived.toLocaleString()}฿`} />
                         <p className="text-xs text-muted-foreground" data-testid="ai-fill-deposit-words">{aiFillParsed.partyDetails.depositWords}</p>
-                        <label className="flex items-center gap-2 text-sm">
-                          <Checkbox checked={aiFillDepositConfirmed} onCheckedChange={(checked) => setAiFillDepositConfirmed(checked === true)} data-testid="checkbox-ai-fill-deposit-received" />
-                          I confirm this deposit was received. Apply it to the Deposit field.
-                        </label>
+                        <AiFillRow label="Claimed payment date" value={aiFillDeposit.depositDate} />
+                        <p className="text-xs text-muted-foreground" data-testid="text-ai-fill-deposit-claim">Chat payment claims do not record received money. Confirm payment through the gateway.</p>
                       </div>
                     )}
                     <AiFillRow label="Notes" value={aiFillParsed.partyDetails.notes} />
