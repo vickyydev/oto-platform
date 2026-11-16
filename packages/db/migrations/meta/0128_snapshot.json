@@ -1,6 +1,6 @@
 {
-  "id": "2bc1e459-8526-4577-973c-b99f162f0be9",
-  "prevId": "243cb253-8fdf-45a0-a24d-161af7ab3137",
+  "id": "b08208d6-ff0f-416b-8f5d-5a374d6b4e8b",
+  "prevId": "2e4b8ea1-48c1-4585-9d08-ce790547c5e3",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -41087,6 +41087,134 @@
       },
       "isRLSEnabled": false
     },
+    "pos.party_additional_bill": {
+      "name": "party_additional_bill",
+      "schema": "pos",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "operator_id": {
+          "name": "operator_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "branch_id": {
+          "name": "branch_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "otoapp_event_id": {
+          "name": "otoapp_event_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "main_settlement_id": {
+          "name": "main_settlement_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "party_additional_bill_event_idx": {
+          "name": "party_additional_bill_event_idx",
+          "columns": [
+            {
+              "expression": "branch_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "otoapp_event_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "party_additional_bill_operator_id_operator_id_fk": {
+          "name": "party_additional_bill_operator_id_operator_id_fk",
+          "tableFrom": "party_additional_bill",
+          "tableTo": "operator",
+          "schemaTo": "core",
+          "columnsFrom": [
+            "operator_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "party_additional_bill_branch_id_branch_id_fk": {
+          "name": "party_additional_bill_branch_id_branch_id_fk",
+          "tableFrom": "party_additional_bill",
+          "tableTo": "branch",
+          "schemaTo": "core",
+          "columnsFrom": [
+            "branch_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "party_additional_bill_main_settlement_id_party_settlement_id_fk": {
+          "name": "party_additional_bill_main_settlement_id_party_settlement_id_fk",
+          "tableFrom": "party_additional_bill",
+          "tableTo": "party_settlement",
+          "schemaTo": "pos",
+          "columnsFrom": [
+            "main_settlement_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "pos.party_charge": {
       "name": "party_charge",
       "schema": "pos",
@@ -41114,6 +41242,12 @@
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
+        },
+        "additional_bill_id": {
+          "name": "additional_bill_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
         },
         "kind": {
           "name": "kind",
@@ -41304,6 +41438,20 @@
           "schemaTo": "core",
           "columnsFrom": [
             "branch_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "party_charge_additional_bill_id_party_additional_bill_id_fk": {
+          "name": "party_charge_additional_bill_id_party_additional_bill_id_fk",
+          "tableFrom": "party_charge",
+          "tableTo": "party_additional_bill",
+          "schemaTo": "pos",
+          "columnsFrom": [
+            "additional_bill_id"
           ],
           "columnsTo": [
             "id"
@@ -42156,6 +42304,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "additional_bill_id": {
+          "name": "additional_bill_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
         "payment_attempt_id": {
           "name": "payment_attempt_id",
           "type": "uuid",
@@ -42342,6 +42496,20 @@
           "schemaTo": "core",
           "columnsFrom": [
             "branch_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "party_payment_additional_bill_id_party_additional_bill_id_fk": {
+          "name": "party_payment_additional_bill_id_party_additional_bill_id_fk",
+          "tableFrom": "party_payment",
+          "tableTo": "party_additional_bill",
+          "schemaTo": "pos",
+          "columnsFrom": [
+            "additional_bill_id"
           ],
           "columnsTo": [
             "id"
@@ -50493,6 +50661,290 @@
         "prep_slip_print_printed_check": {
           "name": "prep_slip_print_printed_check",
           "value": "(\"pos\".\"prep_slip_print\".\"status\" = 'printed') = (\"pos\".\"prep_slip_print\".\"print_job_id\" is not null and \"pos\".\"prep_slip_print\".\"printed_at\" is not null)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "pos.prebooking_deposit_request": {
+      "name": "prebooking_deposit_request",
+      "schema": "pos",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "draft_id": {
+          "name": "draft_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "payment_attempt_id": {
+          "name": "payment_attempt_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "prebooking_deposit_attempt_unique": {
+          "name": "prebooking_deposit_attempt_unique",
+          "columns": [
+            {
+              "expression": "payment_attempt_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "prebooking_deposit_draft_idx": {
+          "name": "prebooking_deposit_draft_idx",
+          "columns": [
+            {
+              "expression": "draft_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "prebooking_deposit_request_draft_id_prebooking_draft_id_fk": {
+          "name": "prebooking_deposit_request_draft_id_prebooking_draft_id_fk",
+          "tableFrom": "prebooking_deposit_request",
+          "tableTo": "prebooking_draft",
+          "schemaTo": "pos",
+          "columnsFrom": [
+            "draft_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "prebooking_deposit_attempt_fk": {
+          "name": "prebooking_deposit_attempt_fk",
+          "tableFrom": "prebooking_deposit_request",
+          "tableTo": "payment_attempt",
+          "schemaTo": "pos",
+          "columnsFrom": [
+            "payment_attempt_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "pos.prebooking_draft": {
+      "name": "prebooking_draft",
+      "schema": "pos",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "operator_id": {
+          "name": "operator_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "branch_id": {
+          "name": "branch_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "conversation_id": {
+          "name": "conversation_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "account_id": {
+          "name": "account_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount_satang": {
+          "name": "amount_satang",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "currency": {
+          "name": "currency",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "booking": {
+          "name": "booking",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "booking_claim": {
+          "name": "booking_claim",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "booked_at": {
+          "name": "booked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "prebooking_draft_open_conversation_unique": {
+          "name": "prebooking_draft_open_conversation_unique",
+          "columns": [
+            {
+              "expression": "conversation_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"pos\".\"prebooking_draft\".\"booked_at\" is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "prebooking_draft_operator_idx": {
+          "name": "prebooking_draft_operator_idx",
+          "columns": [
+            {
+              "expression": "operator_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "conversation_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "prebooking_draft_operator_id_operator_id_fk": {
+          "name": "prebooking_draft_operator_id_operator_id_fk",
+          "tableFrom": "prebooking_draft",
+          "tableTo": "operator",
+          "schemaTo": "core",
+          "columnsFrom": [
+            "operator_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "prebooking_draft_branch_id_branch_id_fk": {
+          "name": "prebooking_draft_branch_id_branch_id_fk",
+          "tableFrom": "prebooking_draft",
+          "tableTo": "branch",
+          "schemaTo": "core",
+          "columnsFrom": [
+            "branch_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "prebooking_draft_account_id_account_id_fk": {
+          "name": "prebooking_draft_account_id_account_id_fk",
+          "tableFrom": "prebooking_draft",
+          "tableTo": "account",
+          "schemaTo": "core",
+          "columnsFrom": [
+            "account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "prebooking_draft_amount_check": {
+          "name": "prebooking_draft_amount_check",
+          "value": "\"pos\".\"prebooking_draft\".\"amount_satang\" > 0 and \"pos\".\"prebooking_draft\".\"amount_satang\" % 100 = 0"
         }
       },
       "isRLSEnabled": false

@@ -101,6 +101,29 @@ describe('Suite controls registration (SCRUM-643)', () => {
   });
 });
 
+describe('Inbox access limits registration (SCRUM-993)', () => {
+  it('keeps preview read-only and saves through current authorization, version-CAS and an audited transaction', () => {
+    const keys = ['GET /accounts/:id/inbox-access', 'POST /accounts/:id/inbox-access/preview', 'PUT /accounts/:id/inbox-access'];
+    expect(routes.filter(route => route.file === 'routes/account-inbox-access.ts').map(route => `${route.method} ${route.path}`).sort())
+      .toEqual([...keys].sort());
+    for (const key of keys) {
+      const config = configs.get(key);
+      expect(config, key).toBeDefined(); expect(config?.public, key).not.toBe(true);
+      expect(config?.credential, key).toBeUndefined(); expect(config?.secretResponse, key).not.toBe(true);
+      expect(config?.permission, key).toBe(key.startsWith('GET') ? 'admin:role:read' : 'admin:role:assign');
+      if (!key.startsWith('GET')) { expect(config?.target, key).toEqual({ operator: true }); expect(config?.replaysByOwnId, key).toBe(true); }
+    }
+    const preview = routes.find(route => `${route.method} ${route.path}` === keys[1])!;
+    const save = routes.find(route => `${route.method} ${route.path}` === keys[2])!;
+    expect(writesToTheDatabase(preview)).toBe(false);
+    expect(reachesText(preview.handlerText, text => /current\.version !== input\.expectedVersion/.test(text), functions)).toBe(true);
+    expect(save.handlerText.indexOf('authorizeInboxAccess(')).toBeLessThan(save.handlerText.indexOf('withTx('));
+    expect(reachesText(save.handlerText, text => /\bwithTx\s*\(/.test(text), functions)).toBe(true);
+    expect(reachesText(save.handlerText, text => /\baudit\.record\s*\(\s*tx\b/.test(text), functions)).toBe(true);
+    expect(reachesText(save.handlerText, text => /current\.version !== input\.expectedVersion/.test(text), functions)).toBe(true);
+  });
+});
+
 const SUPPORT_WRITES = [
   'POST /console/support/impersonations',
   'POST /console/support/impersonations/approvals',
@@ -463,6 +486,9 @@ describe('the audit row commits with the change (SCRUM-291)', () => {
  *     transactional; it says the route does not write here.
  */
 const NO_DIRECT_WRITE = [
+  // SCRUM-993: a fresh current-policy/version preview writes no policy,
+  // grant, audit or replay payload. The actual save owns version-CAS.
+  'POST /accounts/:id/inbox-access/preview',
   'POST /auth/badge',
   'POST /booth/print',
   'POST /booth/reprint',
@@ -716,7 +742,15 @@ describe('one operation, one transaction (SCRUM-291)', () => {
  * line in a diff.
  */
 const OUTSIDE_THE_REPLAY_STORE = [
+  // SCRUM-993: preview is always a fresh read; save serializes on the target
+  // account and its expectedVersion. Both reauthorize the actor/target on
+  // every retry; the whole HTTP review pins stale/concurrent/revoked cases.
+  'POST /accounts/:id/inbox-access/preview [replaysByOwnId]',
+  'PUT /accounts/:id/inbox-access [replaysByOwnId]',
   'POST /accounts/:id/temp-password [secretResponse]',
+  // SCRUM-990: the existing app-provision credential guards the linked-bill
+  // service door; its payload's durable bill id owns retries.
+  'POST /otoapp/parties/:eventId/beo-additions [credential:otoapp-provision]',
   // SCRUM-633: the app-owned event is settled with account eviction and audit
   // in one transaction. Concurrent delivery and late replay use that durable row.
   'POST /admin/apps/oto_app/lifecycle-deactivations [credential:otoapp-provision]',
