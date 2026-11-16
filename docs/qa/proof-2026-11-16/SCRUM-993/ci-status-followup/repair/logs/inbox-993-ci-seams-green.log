@@ -1,0 +1,14 @@
+
+> @oto/api-types@0.1.0 test C:\oto-lanes\codex-inbox-feedback-20261116\packages\api-types
+> vitest run "--no-file-parallelism"
+
+
+ RUN  v3.2.7 C:/oto-lanes/codex-inbox-feedback-20261116/packages/api-types
+
+ ✓ test/seam-walker.test.ts (10 tests) 28ms
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  01:07:04
+   Duration  3.43s (transform 525ms, setup 0ms, collect 3.16s, tests 28ms, environment 0ms, prepare 102ms)
+

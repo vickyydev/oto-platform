@@ -1,0 +1,148 @@
+
+ RUN  v3.2.7 C:/oto-lanes/codex-inbox-feedback-20261116/apps/api
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-HtT34r ... ok
+creating subdirectories ... 
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+ok
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+selecting dynamic shared memory implementation ... windows
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+selecting default max_connections ... 
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+100
+selecting default shared_buffers ... 
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+128MB
+selecting default time zone ... 
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+Asia/Bangkok
+creating configuration files ... 
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+ok
+running bootstrap script ... 
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+ok
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+performing post-bootstrap initialization ... 
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+ok
+syncing data to disk ... 
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-inbox^-feedback^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-HtT34r^" -l logfile start
+
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+2026-11-17 01:08:20.091 +07 [121676] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+2026-11-17 01:08:20.094 +07 [121676] LOG:  listening on IPv6 address "::1", port 61261
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+2026-11-17 01:08:20.094 +07 [121676] LOG:  listening on IPv4 address "127.0.0.1", port 61261
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+2026-11-17 01:08:20.127 +07 [26420] LOG:  database system was shut down at 2026-11-17 01:08:18 +07
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+2026-11-17 01:08:20.146 +07 [121676] LOG:  database system is ready to accept connections
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+2026-11-17 01:08:23.558 +07 [15632] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+2026-11-17 01:08:26.164 +07 [125816] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made
+2026-11-17 01:08:26.177 +07 [125816] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 2 recycled; write=0.003 s, sync=0.003 s, total=0.013 s; sync files=7, longest=0.001 s, average=0.001 s; distance=27376 kB, estimate=27376 kB; lsn=0/30343D8, redo lsn=0/30343A0
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > onto a 0007 database with real-shaped rows in two park groups and the default
+2026-11-17 01:08:30.076 +07 [111396] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > onto a 0007 database with real-shaped rows in two park groups and the default
+2026-11-17 01:08:32.727 +07 [125816] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > onto a 0007 database with real-shaped rows in two park groups and the default
+2026-11-17 01:08:32.737 +07 [125816] LOG:  checkpoint complete: wrote 7 buffers (0.0%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.004 s, sync=0.002 s, total=0.011 s; sync files=6, longest=0.001 s, average=0.001 s; distance=27444 kB, estimate=27444 kB; lsn=0/4B016E8, redo lsn=0/4B016B0
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > the census raced: a duplicate held open in a transaction while 0008 waits on its lock > committed while 0008 waits: the census sees the duplicate, the index is not made, the deploy goes on and says so
+2026-11-17 01:08:36.797 +07 [124736] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > the census raced: a duplicate held open in a transaction while 0008 waits on its lock > committed while 0008 waits: the census sees the duplicate, the index is not made, the deploy goes on and says so
+2026-11-17 01:08:39.430 +07 [125816] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > the census raced: a duplicate held open in a transaction while 0008 waits on its lock > committed while 0008 waits: the census sees the duplicate, the index is not made, the deploy goes on and says so
+2026-11-17 01:08:39.442 +07 [125816] LOG:  checkpoint complete: wrote 7 buffers (0.0%); 0 WAL file(s) added, 0 removed, 2 recycled; write=0.004 s, sync=0.002 s, total=0.013 s; sync files=6, longest=0.001 s, average=0.001 s; distance=27402 kB, estimate=27440 kB; lsn=0/65C4238, redo lsn=0/65C4200
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > the census raced: a duplicate held open in a transaction while 0008 waits on its lock > rolled back while 0008 waits: nothing stood in the way, the census is clean and the backstop stands (0038’s one-open index; 0039 retired 0008’s)
+2026-11-17 01:08:42.962 +07 [121100] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > the census raced: a duplicate held open in a transaction while 0008 waits on its lock > rolled back while 0008 waits: nothing stood in the way, the census is clean and the backstop stands (0038’s one-open index; 0039 retired 0008’s)
+2026-11-17 01:08:45.197 +07 [125816] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/s217b-r6-review.test.ts > B. the migration attacked > the census raced: a duplicate held open in a transaction while 0008 waits on its lock > rolled back while 0008 waits: nothing stood in the way, the census is clean and the backstop stands (0038’s one-open index; 0039 retired 0008’s)
+2026-11-17 01:08:45.212 +07 [125816] LOG:  checkpoint complete: wrote 7 buffers (0.0%); 0 WAL file(s) added, 0 removed, 2 recycled; write=0.005 s, sync=0.003 s, total=0.015 s; sync files=6, longest=0.001 s, average=0.001 s; distance=27397 kB, estimate=27436 kB; lsn=0/8085A28, redo lsn=0/80859F0
+
+
+ ✓ test/s217b-r6-review.test.ts (65 tests | 51 skipped) 30506ms
+   ✓ A. fences and seams > the booth, POS, console, launcher, packages and services name nothing of round 6  1369ms
+   ✓ B. the migration attacked > current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made  10029ms
+   ✓ B. the migration attacked > the census raced: a duplicate held open in a transaction while 0008 waits on its lock > committed while 0008 waits: the census sees the duplicate, the index is not made, the deploy goes on and says so  6582ms
+   ✓ B. the migration attacked > the census raced: a duplicate held open in a transaction while 0008 waits on its lock > rolled back while 0008 waits: nothing stood in the way, the census is clean and the backstop stands (0038’s one-open index; 0039 retired 0008’s)  5798ms
+
+ Test Files  1 passed (1)
+      Tests  14 passed | 51 skipped (65)
+   Start at  01:08:14
+   Duration  31.20s (transform 116ms, setup 0ms, collect 466ms, tests 30.51s, environment 0ms, prepare 92ms)
+

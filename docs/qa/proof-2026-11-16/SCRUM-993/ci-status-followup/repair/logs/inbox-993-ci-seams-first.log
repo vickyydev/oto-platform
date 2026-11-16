@@ -1,0 +1,59 @@
+
+> @oto/api-types@0.1.0 test C:\oto-lanes\codex-inbox-feedback-20261116\packages\api-types
+> vitest run "--no-file-parallelism"
+
+
+ RUN  v3.2.7 C:/oto-lanes/codex-inbox-feedback-20261116/packages/api-types
+
+ ❯ test/seam-walker.test.ts (10 tests | 1 failed) 29ms
+   ✓ every front-end call reaches a route the api describes (SCRUM-293) > finds what it is meant to check 1ms
+   ✓ every front-end call reaches a route the api describes (SCRUM-293) > reads every call path, or names it in DYNAMIC 1ms
+   ✓ every front-end call reaches a route the api describes (SCRUM-293) > reads lifted DELETE bodies, file downloads and native download addresses 0ms
+   ✓ every front-end call reaches a route the api describes (SCRUM-293) > keeps the typed POS forwarding adapter to its declared transport methods 0ms
+   ✓ every front-end call reaches a route the api describes (SCRUM-293) > reaches a route that answers the call’s method 6ms
+   ✓ every front-end call reaches a route the api describes (SCRUM-293) > writes only query parameters the route reads 4ms
+   ✓ every front-end call reaches a route the api describes (SCRUM-293) > sends only body fields the route reads 1ms
+   ✓ every front-end call reaches a route the api describes (SCRUM-293) > names, in a generated type, the route the call reaches 2ms
+   ✓ every front-end call reaches a route the api describes (SCRUM-293) > leaves no route without a caller, a machine caller or a NOT_YET_CALLED reason 5ms
+   × every front-end call reaches a route the api describes (SCRUM-293) > does not let hand-typed response types regrow (migration-list.ts) 7ms
+     → expected [ Array(1) ] to deeply equal []
+node.exe : 
+At C:\Users\waqar\AppData\Roaming\npm\pnpm.ps1:24 char:5
++     & "node$exe"  "$basedir/node_modules/pnpm/bin/pnpm.cjs" $args
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/seam-walker.test.ts > every front-end call reaches a route the api describes (SCRUM-293) > does not let 
+hand-typed response types regrow (migration-list.ts)
+AssertionError: expected [ Array(1) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "packages/admin-screens/src/api/roles.ts: 3 hand-typed, 0 allowed — type the new call from @oto/api-types",
++ ]
+
+ ❯ test/seam-walker.test.ts:392:19
+    390|           : `${file}: ${now} hand-typed, list says ${listed} — lower i…
+    391|       });
+    392|     expect(moved).toEqual([]);
+       |                   ^
+    393|   });
+    394| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 9 passed (10)
+   Start at  01:06:42
+   Duration  3.66s (transform 550ms, setup 0ms, collect 3.38s, tests 29ms, environment 0ms, prepare 106ms)
+
+C:\oto-lanes\codex-inbox-feedback-20261116\packages\api-types:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @oto/api-types@0.1.0 test: `vitest run "--no-file-parallelism"`
+Exit status 1

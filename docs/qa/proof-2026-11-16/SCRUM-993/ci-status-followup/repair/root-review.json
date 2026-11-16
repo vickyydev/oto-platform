@@ -1,0 +1,133 @@
+{
+  "at": "2026-11-16T18:20:02.604Z",
+  "sourceSha": "f5cb00e30fa0aa4b87a6aabc1cc547ad768e230c",
+  "review": "Independent source and evidence review passed; no remaining finding in this delta",
+  "inputs": [
+    {
+      "path": "apps/api/test/s217b-r6-review.test.ts",
+      "gitBlob": "193d5ca557e0598a25382feb055c739610f6e698",
+      "canonicalSha256": "b8778ecfd3ad6079b591aba05fd89d51303123b08bd18f1233f79f2458651be1"
+    },
+    {
+      "path": "apps/inbox/src/api/inbox.ts",
+      "gitBlob": "b392381528dfe425a7267a093f11e29b903b0e60",
+      "canonicalSha256": "710425c9508976596828083ba8d1bf998f1cec922c00051ca08122c0e39fcb69"
+    },
+    {
+      "path": "packages/admin-screens/src/api/roles.ts",
+      "gitBlob": "90679e5a0eedde5c47bfeafec069b5b74efad105",
+      "canonicalSha256": "fb430450ea5ac1b2b611fcd66c249dc03cbb69ab3d4403eb01ef26cf5ec649c9"
+    },
+    {
+      "path": "packages/api-types/test/seam-walker.test.ts",
+      "gitBlob": "d29ba6027792ceb5a983b454ec016d02e8567e78",
+      "canonicalSha256": "a988fd2c8eb2c7741ec817015e7df884a2f003154277f004b78b04ac3171aef2"
+    },
+    {
+      "path": "packages/db/migrations/0129_party_bill_fk_indexes.sql",
+      "gitBlob": "fe24698fe654f7a1c0c16f46893cb28949259f8a",
+      "canonicalSha256": "cf37081e4be4b3851ffc1df872e29ef371bc92c814b967ceb6cbfb0e5d97967b"
+    },
+    {
+      "path": "packages/db/migrations/meta/0129_snapshot.json",
+      "gitBlob": "d61643042127962059abe0907a85e89c83d314a3",
+      "canonicalSha256": "0fb7b8cf0b6d2964f21d934dd56f832175e93d97c4d4fcdacc94812372aaf245"
+    },
+    {
+      "path": "packages/db/migrations/meta/_journal.json",
+      "gitBlob": "7cac249f5d83b978d126907e01dcb3d7f6ab35a6",
+      "canonicalSha256": "aece41fc8c813870dd4ada8ebda3c26260c947bfd3d5ff0bd3adf6dfe1da3779"
+    },
+    {
+      "path": "packages/db/src/schema/parties.ts",
+      "gitBlob": "f4c1ad68b8ca09414f3be16d43753c76e747f3a9",
+      "canonicalSha256": "259aa33cc8c257a389080f957b5052dabcac216795d510f8f4acdd31721064b5"
+    },
+    {
+      "path": "packages/db/test/events-e4-migration.test.ts",
+      "gitBlob": "bd87cdb2a7732f656a8dce84652b123a10ef41b4",
+      "canonicalSha256": "d5687c30f0e08c7d69d26d8c0825378e5a6ad6badb08c6170017c00db4ae68af"
+    }
+  ],
+  "logs": [
+    {
+      "path": "logs/inbox-993-ci-0129-generate.log",
+      "rawSha256": "712bf3c7ec2583cda7dadcb15e0619dacb5209656275fe0146d00235224c1dc2",
+      "canonicalSha256": "e2fb7d7af9a2fbefe3a5e83c0c8204250d9e956c2cf59f6e059e873496af64f6"
+    },
+    {
+      "path": "logs/inbox-993-ci-0129-live-schema.log",
+      "rawSha256": "db3f2b472c00e430921d58397e99d285b0a00c91cc46eb2ac4cf3e53f598e96f",
+      "canonicalSha256": "1b0ad12c551392c66a805c4ee6f1251af326dea595f9b3eddac55ef195709ebd"
+    },
+    {
+      "path": "logs/inbox-993-ci-party-db-green.log",
+      "rawSha256": "dcb57fe3f33aaf2724fb1aa46141d3bab251a36c34c8c7534977328d96812b34",
+      "canonicalSha256": "7bdcc8edd43b718a806f3d1895d06a14ae98cb8772861ce53b6a7785db0577ca"
+    },
+    {
+      "path": "logs/inbox-993-ci-r6-review.log",
+      "rawSha256": "8035449eee19c1998a941f2c6056d487fffab02fc21ba801ec75f5c552f3625d",
+      "canonicalSha256": "0e9d46222050f917332bb2ff1d21ab8cf8ff8c1686ad68e4cedb419ce7a37c32"
+    },
+    {
+      "path": "logs/inbox-993-ci-repair-lint-final.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "logs/inbox-993-ci-repair-lint-first.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "logs/inbox-993-ci-seams-first.log",
+      "rawSha256": "d6d8456853d18f39d576f8159864002c2bcf7ee45af1579bc6e858f658537ca9",
+      "canonicalSha256": "4d761b12af6ec535c60839b2d06a243052c2d5f09352f60b3d71bdffd3ffa519"
+    },
+    {
+      "path": "logs/inbox-993-ci-seams-green.log",
+      "rawSha256": "94a40090367e469fd21444c5b6fd347ba4af4b11879a860727d0e4b396ec5531",
+      "canonicalSha256": "f2678cce63e1a49fdbdeeaac7e9823e50774187073639fde08a6fe9fb2531d76"
+    },
+    {
+      "path": "logs/inbox-993-ci-types-admin.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "logs/inbox-993-ci-types-api-types.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "logs/inbox-993-ci-types-api.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "logs/inbox-993-ci-types-db.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "logs/inbox-993-ci-types-inbox-test.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "logs/inbox-993-ci-types-inbox.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "priorSqlUnchanged": 129,
+  "migrationOrder": true,
+  "snapshotLineage": true,
+  "limits": [
+    "The original99346input/68log record is historical and unchanged; this9input delta explicitly replaces its roles/journal bindings and adds7other inputs.",
+    "No app product source changed in this lane. App mirror/catalogue fixes and their gates belong to the BEO agent.",
+    "No UI production build or broad unchanged suite is repeated for generated-type-argument naming and index-only schema changes.",
+    "Root holds main publication and API/runtime deployment until the shared proof slot releases."
+  ]
+}

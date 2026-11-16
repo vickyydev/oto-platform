@@ -1,0 +1,264 @@
+
+ RUN  v3.2.7 C:/oto-lanes/codex-inbox-feedback-20261116/packages/db
+
+stdout | test/events-e4-migration.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/events-e4-migration.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+
+stdout | test/events-e4-migration.test.ts
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-l23nbr ... 
+
+stdout | test/events-e4-migration.test.ts
+ok
+
+
+stdout | test/events-e4-migration.test.ts
+creating subdirectories ... 
+
+stdout | test/events-e4-migration.test.ts
+ok
+
+
+stdout | test/events-e4-migration.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ... 
+
+stdout | test/events-e4-migration.test.ts
+100
+selecting default shared_buffers ... 
+
+stdout | test/events-e4-migration.test.ts
+128MB
+selecting default time zone ... 
+
+stdout | test/events-e4-migration.test.ts
+Asia/Bangkok
+creating configuration files ... 
+
+stdout | test/events-e4-migration.test.ts
+ok
+running bootstrap script ... 
+
+stdout | test/events-e4-migration.test.ts
+ok
+
+
+stdout | test/events-e4-migration.test.ts
+performing post-bootstrap initialization ... 
+
+stdout | test/events-e4-migration.test.ts
+ok
+syncing data to disk ... 
+
+stdout | test/events-e4-migration.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-inbox^-feedback^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-l23nbr^" -l logfile start
+
+
+
+stdout | test/events-e4-migration.test.ts
+2026-11-17 01:07:13.456 +07 [104316] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/events-e4-migration.test.ts
+2026-11-17 01:07:13.459 +07 [104316] LOG:  listening on IPv6 address "::1", port 49864
+
+
+stdout | test/events-e4-migration.test.ts
+2026-11-17 01:07:13.459 +07 [104316] LOG:  listening on IPv4 address "127.0.0.1", port 49864
+
+
+stdout | test/events-e4-migration.test.ts
+2026-11-17 01:07:13.495 +07 [16120] LOG:  database system was shut down at 2026-11-17 01:07:11 +07
+
+
+stdout | test/events-e4-migration.test.ts
+2026-11-17 01:07:13.515 +07 [104316] LOG:  database system is ready to accept connections
+
+
+stdout | test/events-e4-migration.test.ts
+2026-11-17 01:07:16.849 +07 [127164] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/events-e4-migration.test.ts > the party tab migration — charges, payments and edits > holds a charge, a payment and an edit to what the writes promise
+2026-11-17 01:07:16.928 +07 [109768] ERROR:  new row for relation "party_charge" violates check constraint "party_charge_kind_check"
+2026-11-17 01:07:16.928 +07 [109768] DETAIL:  Failing row contains (2c06eedb-16fa-49b9-9ba3-471b98230fce, 25353a6d-784a-436d-a654-62bc74df8525, 3a638682-9e29-47dc-838f-81aff3031a6e, 0190a0a0-0000-7000-8000-00000000e401, bar, [], 0, null, null, null, null, 2026-11-17 01:07:16.927+07, 2026-11-17 01:07:16.92787+07, 2026-11-17 01:07:16.92787+07, null).
+2026-11-17 01:07:16.928 +07 [109768] STATEMENT:  insert into pos.party_charge (id, operator_id, branch_id, otoapp_event_id, kind, items, total_satang, charged_at) values (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7)
+
+
+stdout | test/events-e4-migration.test.ts > the party tab migration — charges, payments and edits > holds a charge, a payment and an edit to what the writes promise
+2026-11-17 01:07:16.929 +07 [109768] ERROR:  new row for relation "party_charge" violates check constraint "party_charge_total_check"
+2026-11-17 01:07:16.929 +07 [109768] DETAIL:  Failing row contains (31ca96be-53b1-4c19-9d35-c9064fe8bd25, 25353a6d-784a-436d-a654-62bc74df8525, 3a638682-9e29-47dc-838f-81aff3031a6e, 0190a0a0-0000-7000-8000-00000000e401, fnb, [], -1, null, null, null, null, 2026-11-17 01:07:16.928+07, 2026-11-17 01:07:16.92904+07, 2026-11-17 01:07:16.92904+07, null).
+2026-11-17 01:07:16.929 +07 [109768] STATEMENT:  insert into pos.party_charge (id, operator_id, branch_id, otoapp_event_id, kind, items, total_satang, charged_at) values (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7)
+
+
+stdout | test/events-e4-migration.test.ts > the party tab migration — charges, payments and edits > holds a charge, a payment and an edit to what the writes promise
+2026-11-17 01:07:16.929 +07 [109768] ERROR:  new row for relation "party_charge" violates check constraint "party_charge_items_check"
+2026-11-17 01:07:16.929 +07 [109768] DETAIL:  Failing row contains (ccbff83c-fce2-4570-aae7-64f686badefb, 25353a6d-784a-436d-a654-62bc74df8525, 3a638682-9e29-47dc-838f-81aff3031a6e, 0190a0a0-0000-7000-8000-00000000e401, fnb, {}, 0, null, null, null, null, 2026-11-17 01:07:16.929+07, 2026-11-17 01:07:16.929528+07, 2026-11-17 01:07:16.929528+07, null).
+2026-11-17 01:07:16.929 +07 [109768] STATEMENT:  insert into pos.party_charge (id, operator_id, branch_id, otoapp_event_id, kind, items, total_satang, charged_at) values (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7)
+
+
+stdout | test/events-e4-migration.test.ts > the party tab migration — charges, payments and edits > holds a charge, a payment and an edit to what the writes promise
+2026-11-17 01:07:16.944 +07 [109768] ERROR:  duplicate key value violates unique constraint "party_payment_attempt_unique"
+2026-11-17 01:07:16.944 +07 [109768] DETAIL:  Key (payment_attempt_id)=(ab3c45f8-32f1-449b-bf26-f1c931367505) already exists.
+2026-11-17 01:07:16.944 +07 [109768] STATEMENT:  insert into pos.party_payment (id, operator_id, branch_id, otoapp_event_id, payment_attempt_id, party_date) values (gen_random_uuid(), $1, $2, $3, $4, $5)
+
+
+stdout | test/events-e4-migration.test.ts > the party tab migration — charges, payments and edits > holds a charge, a payment and an edit to what the writes promise
+2026-11-17 01:07:16.945 +07 [109768] ERROR:  null value in column "payment_attempt_id" of relation "party_payment" violates not-null constraint
+2026-11-17 01:07:16.945 +07 [109768] DETAIL:  Failing row contains (db40ceeb-8532-4ac9-baeb-d6f47ca42372, 25353a6d-784a-436d-a654-62bc74df8525, 3a638682-9e29-47dc-838f-81aff3031a6e, 0190a0a0-0000-7000-8000-00000000e401, null, 2026-10-07, null, null, null, null, 2026-11-17 01:07:16.945067+07, 2026-11-17 01:07:16.945067+07, null).
+2026-11-17 01:07:16.945 +07 [109768] STATEMENT:  insert into pos.party_payment (id, operator_id, branch_id, otoapp_event_id, party_date) values (gen_random_uuid(), $1, $2, $3, $4)
+
+
+stdout | test/events-e4-migration.test.ts > the party tab migration — charges, payments and edits > holds a charge, a payment and an edit to what the writes promise
+2026-11-17 01:07:16.957 +07 [109768] ERROR:  update or delete on table "payment_attempt" violates foreign key constraint "party_payment_payment_attempt_id_payment_attempt_id_fk" on table "party_payment"
+2026-11-17 01:07:16.957 +07 [109768] DETAIL:  Key (id)=(ab3c45f8-32f1-449b-bf26-f1c931367505) is still referenced from table "party_payment".
+2026-11-17 01:07:16.957 +07 [109768] STATEMENT:  delete from pos.payment_attempt where id = $1
+
+
+stdout | test/events-e4-migration.test.ts > the party tab migration — charges, payments and edits > holds a charge, a payment and an edit to what the writes promise
+2026-11-17 01:07:16.961 +07 [109768] ERROR:  new row for relation "party_edit" violates check constraint "party_edit_fields_check"
+2026-11-17 01:07:16.961 +07 [109768] DETAIL:  Failing row contains (f5d2758a-6468-4c15-9d59-2a5f7f7ece61, 25353a6d-784a-436d-a654-62bc74df8525, 3a638682-9e29-47dc-838f-81aff3031a6e, 0190a0a0-0000-7000-8000-00000000e401, [], pending, 0, null, null, null, null, null, null, null, 2026-11-17 01:07:16.961611+07, 2026-11-17 01:07:16.961611+07).
+2026-11-17 01:07:16.961 +07 [109768] STATEMENT:  insert into pos.party_edit (id, operator_id, branch_id, otoapp_event_id, fields) values (gen_random_uuid(), $1, $2, $3, $4)
+
+
+stdout | test/events-e4-migration.test.ts > the party tab migration — charges, payments and edits > holds a charge, a payment and an edit to what the writes promise
+2026-11-17 01:07:16.962 +07 [109768] ERROR:  new row for relation "party_edit" violates check constraint "party_edit_sync_check"
+2026-11-17 01:07:16.962 +07 [109768] DETAIL:  Failing row contains (e3a19ad3-e693-486b-854b-5fa8b052a904, 25353a6d-784a-436d-a654-62bc74df8525, 3a638682-9e29-47dc-838f-81aff3031a6e, 0190a0a0-0000-7000-8000-00000000e401, {}, maybe, 0, null, null, null, null, null, null, null, 2026-11-17 01:07:16.962013+07, 2026-11-17 01:07:16.962013+07).
+2026-11-17 01:07:16.962 +07 [109768] STATEMENT:  insert into pos.party_edit (id, operator_id, branch_id, otoapp_event_id, fields, sync_state) values (gen_random_uuid(), $1, $2, $3, $4, $5)
+
+
+stdout | test/events-e4-migration.test.ts > the party tab migration — charges, payments and edits > holds a charge, a payment and an edit to what the writes promise
+2026-11-17 01:07:16.962 +07 [109768] ERROR:  new row for relation "party_edit" violates check constraint "party_edit_synced_check"
+2026-11-17 01:07:16.962 +07 [109768] DETAIL:  Failing row contains (fbe077da-e2fb-4f64-98a2-b915081d0b49, 25353a6d-784a-436d-a654-62bc74df8525, 3a638682-9e29-47dc-838f-81aff3031a6e, 0190a0a0-0000-7000-8000-00000000e401, {}, synced, 0, null, null, null, null, null, null, null, 2026-11-17 01:07:16.962361+07, 2026-11-17 01:07:16.962361+07).
+2026-11-17 01:07:16.962 +07 [109768] STATEMENT:  insert into pos.party_edit (id, operator_id, branch_id, otoapp_event_id, fields, sync_state) values (gen_random_uuid(), $1, $2, $3, $4, $5)
+
+
+stdout | test/events-e4-migration.test.ts
+2026-11-17 01:07:16.995 +07 [103832] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/events-e4-migration.test.ts
+2026-11-17 01:07:17.005 +07 [103832] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.003 s, sync=0.003 s, total=0.011 s; sync files=7, longest=0.001 s, average=0.001 s; distance=16582 kB, estimate=16582 kB; lsn=0/25A9BC8, redo lsn=0/25A9B90
+
+
+ ✓ test/events-e4-migration.test.ts (3 tests) 8292ms
+stdout | test/s220-e4-review-migration.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/s220-e4-review-migration.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-4z26Tt ... ok
+creating subdirectories ... 
+
+stdout | test/s220-e4-review-migration.test.ts
+ok
+
+
+stdout | test/s220-e4-review-migration.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ... 
+
+stdout | test/s220-e4-review-migration.test.ts
+100
+selecting default shared_buffers ... 
+
+stdout | test/s220-e4-review-migration.test.ts
+128MB
+selecting default time zone ... 
+
+stdout | test/s220-e4-review-migration.test.ts
+Asia/Bangkok
+creating configuration files ... 
+
+stdout | test/s220-e4-review-migration.test.ts
+ok
+running bootstrap script ... 
+
+stdout | test/s220-e4-review-migration.test.ts
+ok
+
+
+stdout | test/s220-e4-review-migration.test.ts
+performing post-bootstrap initialization ... 
+
+stdout | test/s220-e4-review-migration.test.ts
+ok
+syncing data to disk ... 
+
+stdout | test/s220-e4-review-migration.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-inbox^-feedback^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-4z26Tt^" -l logfile start
+
+
+
+stdout | test/s220-e4-review-migration.test.ts
+2026-11-17 01:07:22.122 +07 [119984] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/s220-e4-review-migration.test.ts
+2026-11-17 01:07:22.125 +07 [119984] LOG:  listening on IPv6 address "::1", port 49876
+
+
+stdout | test/s220-e4-review-migration.test.ts
+2026-11-17 01:07:22.126 +07 [119984] LOG:  listening on IPv4 address "127.0.0.1", port 49876
+
+
+stdout | test/s220-e4-review-migration.test.ts
+2026-11-17 01:07:22.160 +07 [131076] LOG:  database system was shut down at 2026-11-17 01:07:20 +07
+
+
+stdout | test/s220-e4-review-migration.test.ts
+2026-11-17 01:07:22.182 +07 [119984] LOG:  database system is ready to accept connections
+
+
+stdout | test/s220-e4-review-migration.test.ts
+2026-11-17 01:07:25.883 +07 [119136] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/s220-e4-review-migration.test.ts > review — the party tab migration > is twice-clean: a database at head migrates again with nothing applied
+2026-11-17 01:07:26.639 +07 [68192] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/s220-e4-review-migration.test.ts
+2026-11-17 01:07:26.700 +07 [86020] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/s220-e4-review-migration.test.ts
+2026-11-17 01:07:26.714 +07 [86020] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.003 s, sync=0.003 s, total=0.014 s; sync files=7, longest=0.001 s, average=0.001 s; distance=16563 kB, estimate=16563 kB; lsn=0/25A50A0, redo lsn=0/25A5068
+
+
+ ✓ test/s220-e4-review-migration.test.ts (4 tests) 8949ms
+   ✓ review — the party tab migration > is twice-clean: a database at head migrates again with nothing applied  717ms
+
+ Test Files  2 passed (2)
+      Tests  7 passed (7)
+   Start at  01:07:08
+   Duration  18.51s (transform 82ms, setup 0ms, collect 809ms, tests 17.24s, environment 0ms, prepare 201ms)
+
