@@ -21,7 +21,7 @@ export async function syncApprovedBeoAdditions(eventId: string, userId: string):
   const finish = async (result: AdditionalBillingResult): Promise<AdditionalBillingResult> => {
     const held = JSON.stringify(result);
     await db.insert(beoEventBilling).values({ eventId, addOns: { additionalBilling: result } }).onConflictDoUpdate({ target: beoEventBilling.eventId,
-      set: { addOns: sql`jsonb_set(COALESCE(${beoEventBilling.addOns}, '{}'::jsonb), '{additionalBilling}', ${held}::jsonb)` } });
+      set: { addOns: sql`jsonb_set(CASE WHEN jsonb_typeof(${beoEventBilling.addOns}) = 'object' THEN ${beoEventBilling.addOns} WHEN ${beoEventBilling.addOns} IS NULL THEN '{}'::jsonb ELSE jsonb_build_object('legacyAddOns', ${beoEventBilling.addOns}) END, '{additionalBilling}', ${held}::jsonb)` } });
     return result;
   };
   if (initial.lines.length === 0) {
@@ -52,7 +52,7 @@ export async function syncApprovedBeoAdditions(eventId: string, userId: string):
       const final = same ? result : { status: "pending" as const, message: "The plan changed while the till processed earlier saved items. Review the bill and save the current plan again." };
       const held = JSON.stringify(final);
       await tx.insert(beoEventBilling).values({ eventId, addOns: { additionalBilling: final } }).onConflictDoUpdate({ target: beoEventBilling.eventId,
-        set: { addOns: sql`jsonb_set(COALESCE(${beoEventBilling.addOns}, '{}'::jsonb), '{additionalBilling}', ${held}::jsonb)` } });
+        set: { addOns: sql`jsonb_set(CASE WHEN jsonb_typeof(${beoEventBilling.addOns}) = 'object' THEN ${beoEventBilling.addOns} WHEN ${beoEventBilling.addOns} IS NULL THEN '{}'::jsonb ELSE jsonb_build_object('legacyAddOns', ${beoEventBilling.addOns}) END, '{additionalBilling}', ${held}::jsonb)` } });
     }
     return same;
   });

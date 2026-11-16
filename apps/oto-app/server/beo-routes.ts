@@ -1981,7 +1981,7 @@ export function registerBeoRoutes(app: Express) {
           // A deposit that is not written is not written through the billing's own columns either.
           if (!decision.write) for (const k of DEPOSIT_KEYS) delete billingData[k];
           if (partyDetails !== undefined) {
-            billingData.addOns = { partyDetails: partyDetails === null ? null : partyDetailsWithDeposit(partyDetails, stands) };
+            billingData.addOns = { ...asMenuCollection(existingBilling?.addOns), partyDetails: partyDetails === null ? null : partyDetailsWithDeposit(partyDetails, stands) };
           }
           if (existingBilling) {
             await tx.update(beoEventBilling)

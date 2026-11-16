@@ -94,7 +94,7 @@ async function check(name: string, fn: () => Promise<void> | void) {
     failures[name] = error instanceof Error ? `${error.message}\n${error.stack?.split("\n").slice(1, 4).join("\n")}` : String(error);
   }
 }
-const CHECKS = 13;
+const CHECKS = 14;
 
 const run = randomUUID().slice(0, 8);
 const tenant = randomUUID();
@@ -546,6 +546,17 @@ try {
     assert.deepEqual(manual, { area: "Kids kitchen", name: "ZZ TEST manually agreed food", quantity: 2, included: false, unitSatang: 32100 });
     assert.ok(!JSON.stringify(answer.plannedItems).includes("internalCost"));
     assert.ok(answer.template.items.every((item: any) => Object.keys(item).every((key) => ["id", "type", "label", "options", "allowMultiple", "qty", "note", "productCode", "optionProductCodes"].includes(key))));
+  });
+
+  await check("pendingBillingStaysDurableWhenItsSourceIsRemoved", async () => {
+    const { syncApprovedBeoAdditions } = await import("../server/lib/beoAdditionalBilling");
+    const before = (await beoRows(ev.guards)).billing.add_ons.additionalBilling;
+    assert.equal(before.status, "pending");
+    await q("delete from beo_kitchen_plans where event_id=$1", [ev.guards]);
+    await q("delete from beo_bar_plans where event_id=$1", [ev.guards]);
+    const result = await syncApprovedBeoAdditions(ev.guards, manager);
+    assert.equal(result.status, "pending");
+    assert.deepEqual((await beoRows(ev.guards)).billing.add_ons.additionalBilling, before);
   });
 
 } finally {
