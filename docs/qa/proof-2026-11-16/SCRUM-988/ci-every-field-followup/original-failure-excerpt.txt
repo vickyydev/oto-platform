@@ -1,0 +1,19 @@
+2026-11-16T18:41:23.9367730Z {
+2026-11-16T18:41:23.9405900Z   "results": {
+2026-11-16T18:41:23.9429918Z     "theConversationBlockAsksTheWholeForm": true,
+2026-11-16T18:41:23.9449512Z     "everyFieldFromTheChatWithItsWords": true,
+2026-11-16T18:41:23.9450272Z     "theReviewProposesItWithTheGuards": false,
+2026-11-16T18:41:23.9469556Z     "approvalWritesEveryFieldAndTheActsOnce": false,
+2026-11-16T18:41:23.9489589Z     "nothingInventedAndOneLinePerDish": true,
+2026-11-16T18:41:23.9500877Z     "longLinesAreQuotedAroundTheValue": true,
+2026-11-16T18:41:23.9539585Z     "aCatalogueThatCouldNotBeReadIsSaidSo": true,
+2026-11-16T18:41:23.9550270Z     "fetchFromChatOffersEveryFieldBesideTypedText": true,
+2026-11-16T18:41:23.9551042Z     "anOptionNobodyNamedWaitsForStaff": true,
+2026-11-16T18:41:23.9551771Z     "aShowAndTheDrinksAreOnTheTimelineOnce": true
+2026-11-16T18:41:23.9552346Z   },
+2026-11-16T18:41:23.9552743Z   "failures": {
+2026-11-16T18:41:23.9554020Z     "theReviewProposesItWithTheGuards": "the family's claim is sent as asked\n+ actual - expected\n\n  {\n    amount: 3000,\n    date: null,\n+   paid: true\n-   paid: false\n  }\n\n+ actual - expected\n\n  {",
+2026-11-16T18:41:23.9578448Z     "approvalWritesEveryFieldAndTheActsOnce": "Expected values to be strictly equal:\n\nnull !== 3000\n\n\nnull !== 3000\n"
+2026-11-16T18:41:23.9600081Z   }
+2026-11-16T18:41:23.9619443Z }
+2026-11-16T18:41:23.9929281Z ##[error]Process completed with exit code 1.

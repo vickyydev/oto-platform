@@ -1,0 +1,81 @@
+{
+  "recordedAt": "2026-11-16T18:50:04.163978+00:00",
+  "baseSha": "0bc4be94abdbf982c3a06146062e96f0bb7b28fb",
+  "sourceSha": "4af191b6a803bb52bf87d30c717027132729eea5",
+  "scope": "One test fixture only; all app runtime/product/migrations remain byte-identical to exact release source.",
+  "changedInputs": {
+    "apps/oto-app/tests/beo-fill-phase-b.check.ts": {
+      "beforeCanonicalSha256": "6e70a77453e59861a84d33018e7781fbded00e3b13750563a40fb3fdafdc9c45",
+      "afterCanonicalSha256": "de983bbf2d92181f1669c6816a48dd5bf8794452d43e497db241ee44035d575d",
+      "afterRawSha256": "de983bbf2d92181f1669c6816a48dd5bf8794452d43e497db241ee44035d575d"
+    }
+  },
+  "gates": {
+    "wholeCiFile": {
+      "command": "TSX_TSCONFIG_PATH=tests/tsconfig.jsx.json npx tsx tests/beo-fill-phase-b.check.ts",
+      "harness": "C:/oto-lanes/inbox-993-ci-every-field-run.mts",
+      "harnessSha256": "6d654fbf70f5364970b912f656fcbc7080c1dada79cafedddc46d469031f1cc7",
+      "database": "fresh embedded PostgreSQL; app migrations applied; dropped and stopped in finally",
+      "firstLocal": {
+        "passed": 9,
+        "failed": 1,
+        "finding": "D1 assertions passed; stale second approval received409 after firstsave. OriginalCI had stopped earlier in samecase."
+      },
+      "final": {
+        "passed": 10,
+        "failed": 0
+      }
+    },
+    "forcedTouchedLint": {
+      "baselineErrors": 0,
+      "currentErrors": 0,
+      "baselineWarnings": 17,
+      "currentWarnings": 17,
+      "introduced": []
+    },
+    "typecheck": "No product source changed. App compiler excludes test files; no unchanged413-error app ratchet rerun claimed. Actual failed CI tsx step executed whole."
+  },
+  "logs": {
+    "inbox-993-ci-every-field-first-red.log": {
+      "rawBytes": 13182,
+      "rawSha256": "34a18076d9a108c0e9114506957f5039d69d53aaeae8e5f350f4f5567b01c1fb",
+      "retainedCanonicalBytes": 6500,
+      "retainedCanonicalSha256": "1631dcf1d718206fd4e73056cdf746d24e1930408b0dcc7763eec0be79770d58",
+      "sourcePath": "C:/oto-lanes/inbox-993-ci-every-field-first-red.log",
+      "encoding": "utf-16"
+    },
+    "inbox-993-ci-every-field-green.log": {
+      "rawBytes": 14606,
+      "rawSha256": "e48ebcd2645d71a7360cdad8895a2cc378927c19d441b179b77a0fec7d33eda7",
+      "retainedCanonicalBytes": 7211,
+      "retainedCanonicalSha256": "0d9a73eae276315956e6cc3a3b61fcefe11d434ce89808fd002f3ea6054ab633",
+      "sourcePath": "C:/oto-lanes/inbox-993-ci-every-field-green.log",
+      "encoding": "utf-16"
+    },
+    "inbox-993-ci-every-field-lint.json": {
+      "rawBytes": 147170,
+      "rawSha256": "e6717697de153c04700ef1ffd3020ae39b8dcaba7509979bfe41aa29d444ed9f",
+      "retainedCanonicalBytes": 73891,
+      "retainedCanonicalSha256": "f524919f282cd56e7aa2f89f8681b55ca1e231a15673f91b2b3eb7671cf93524",
+      "sourcePath": "C:/oto-lanes/inbox-993-ci-every-field-lint.json",
+      "encoding": "utf-16"
+    },
+    "inbox-993-ci-every-field-lint-accounting.json": {
+      "rawBytes": 33916,
+      "rawSha256": "65ec868d50d30156583255ba93c2186506384904a120642dc4148fb7c91cae76",
+      "retainedCanonicalBytes": 33916,
+      "retainedCanonicalSha256": "65ec868d50d30156583255ba93c2186506384904a120642dc4148fb7c91cae76",
+      "sourcePath": "C:/oto-lanes/inbox-993-ci-every-field-lint-accounting.json",
+      "encoding": "utf-8"
+    }
+  },
+  "registeredCensus": {
+    "files": 99,
+    "matchingAssertions": 98,
+    "additionalConcreteFailures": 0
+  },
+  "ciRerunsIssued": 0,
+  "sourcePushes": 0,
+  "deployments": 0,
+  "activeOwnedHeavyProcesses": 0
+}

@@ -1,0 +1,9 @@
+The app every-field CI fixture is aligned with approved informational payment claims. Product source is unchanged from release 0bc4be94abdbf982c3a06146062e96f0bb7b28fb. Test-only source: 4af191b6a803bb52bf87d30c717027132729eea5.
+
+The original app job133516506273 in run43929126898 failed step70 on two old expectations: serialize the family paid claim as an asked deposit, then save asked amount3000. The current serializer preserves paid:true so the server returns notWritten.deposit.reason=chat_claim and writes neither requested nor received money. The bounded original excerpt and full remote-log fingerprint are retained; no raw remote log or credentials were saved.
+
+The first local complete file reached9/10, revealing a later reuse of the first review after its approval. The expected-state guard correctly refused it409. The fixture now asserts409 and deep-equal unchanged BEO/receipt/act/activity rows, re-reads through the real fill endpoint, then verifies the second approved date/host and unchanged act deduplication. The existing other-field assertions remain. Both approvals pin chat_claim and null asked/received amounts and receipt date.
+
+The final whole CI file passes10/10 using a fresh migrated embedded app database, then drops/stops it. Forced touched-file lint has zero errors and17 inherited warnings before and after; introduced diagnostics are empty. The app compiler excludes tests; no unchanged app ratchet/build repeat is claimed. A read-only census of99registered app check files found98matching deposit assertions; extraction-only, manual edit and gateway/hydration assertions remain valid. This census is not full suite execution and found no additional concrete failure.
+
+No CI rerun, push, runtime change, deployment or production action was performed. Root owns review and test-only landing. The publication helper remains disabled while final staging proof and cleanup are pending.

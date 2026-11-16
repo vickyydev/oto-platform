@@ -1,0 +1,26 @@
+{
+  "observedAt": "2026-11-16T18:45:26.934574+00:00",
+  "sourceSha": "0bc4be94abdbf982c3a06146062e96f0bb7b28fb",
+  "runId": 43929126898,
+  "jobId": 133516506273,
+  "job": "oto-app",
+  "failedStep": {
+    "number": 70,
+    "name": "The app's AI fill every-field checks",
+    "command": "npx tsx tests/beo-fill-phase-b.check.ts"
+  },
+  "jobLogFingerprintOnly": {
+    "bytes": 749208,
+    "sha256": "74a4e06a0a0f9e02502a2a575a223a1bd614bf7950bfb6de8ee9afde0fe242ea"
+  },
+  "excerptSha256": "ca0e21cb93efce34d1ee3ff7b23ef7f8408962f038451ac15e2b89081988db05",
+  "testBeforeCanonicalSha256": "6e70a77453e59861a84d33018e7781fbded00e3b13750563a40fb3fdafdc9c45",
+  "failedChecks": [
+    "theReviewProposesItWithTheGuards",
+    "approvalWritesEveryFieldAndTheActsOnce"
+  ],
+  "classification": "STALE_D1_FIXTURE_EXPECTATIONS",
+  "localFinalManifest": "docs/qa/proof-2026-11-16/SCRUM-988/followup/source-review.json",
+  "localCoverageLimit": "Final selected local suites did not include the separate beo-fill-phase-b.check.ts every-field suite. Prior passing gates remain valid for their named files.",
+  "rerunsIssued": 0
+}

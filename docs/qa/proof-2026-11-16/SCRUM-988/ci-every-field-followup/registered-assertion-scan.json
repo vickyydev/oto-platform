@@ -1,0 +1,512 @@
+{
+  "registeredCheckFiles": 99,
+  "matchingAssertions": [
+    {
+      "file": "tests/ai-approve-deposit.check.ts",
+      "line": 319,
+      "assertion": "assert.equal(body.deposit, null, \"a chat that names no deposit sends none\");"
+    },
+    {
+      "file": "tests/ai-approve-deposit.check.ts",
+      "line": 391,
+      "assertion": "assert.deepEqual(body.deposit, { amount: 3000, paid: false, date: null });"
+    },
+    {
+      "file": "tests/ai-fill.check.ts",
+      "line": 266,
+      "assertion": "assert.equal(parsed.prepaymentReceived, undefined);"
+    },
+    {
+      "file": "tests/ai-fill.check.ts",
+      "line": 271,
+      "assertion": "assert.equal(received.prepaymentReceived, 1000);"
+    },
+    {
+      "file": "tests/ai-fill.check.ts",
+      "line": 276,
+      "assertion": "if (run.ok) assert.equal(run.value.partyDetails?.prepaymentReceived, undefined);"
+    },
+    {
+      "file": "tests/ai-fill.check.ts",
+      "line": 843,
+      "assertion": "assert.equal(aiFillPartyDetailsShown({ prepaymentReceived: 0, items: [], notes: \" \" }), false);"
+    },
+    {
+      "file": "tests/ai-fill.check.ts",
+      "line": 846,
+      "assertion": "assert.equal(aiFillPartyDetailsShown({ prepaymentReceived: 5000 }), true);"
+    },
+    {
+      "file": "tests/beo-catalogue-fill.check.ts",
+      "line": 815,
+      "assertion": "assert.ok(!(Number(rows.billing?.deposit_paid_amount ?? 0) > 0));"
+    },
+    {
+      "file": "tests/beo-catalogue-fill.check.ts",
+      "line": 820,
+      "assertion": "assert.ok(!(Number(beo.body.partyDetails?.prepaymentReceived ?? 0) > 0), \"chat claims create no received deposit\");"
+    },
+    {
+      "file": "tests/beo-catalogue-fill.check.ts",
+      "line": 906,
+      "assertion": "assert.ok(!(Number(partyDetails.prepaymentReceived ?? 0) > 0), \"the editor save does not create a receipt from a claim\");"
+    },
+    {
+      "file": "tests/beo-catalogue-fill.check.ts",
+      "line": 1496,
+      "assertion": "assert.deepEqual(body.deposit, { amount: 5000, paid: true, date: null }, \"the original paid claim stays informational, not a requested amount\");"
+    },
+    {
+      "file": "tests/beo-catalogue-fill.check.ts",
+      "line": 1511,
+      "assertion": "assert.ok(!(Number(after.billing?.deposit_paid_amount ?? 0) > 0));"
+    },
+    {
+      "file": "tests/beo-catalogue-fill.check.ts",
+      "line": 1516,
+      "assertion": "assert.ok(!(Number(shown.body.partyDetails?.prepaymentReceived) > 0), \"Party Details shows no prepayment received\");"
+    },
+    {
+      "file": "tests/beo-fill-phase-b.check.ts",
+      "line": 452,
+      "assertion": "assert.deepEqual(body.deposit, { amount: 3000, paid: true, date: null }, \"the family's paid claim stays informational\");"
+    },
+    {
+      "file": "tests/beo-fill-phase-b.check.ts",
+      "line": 533,
+      "assertion": "assert.equal(rows.billing.deposit_amount, null);"
+    },
+    {
+      "file": "tests/beo-fill-phase-b.check.ts",
+      "line": 534,
+      "assertion": "assert.equal(rows.billing.deposit_paid_amount, null);"
+    },
+    {
+      "file": "tests/beo-fill-phase-b.check.ts",
+      "line": 543,
+      "assertion": "assert.equal(rows.billing.deposit_amount, null, \"repeated approval never turns a paid claim into an asked amount\");"
+    },
+    {
+      "file": "tests/beo-fill-phase-b.check.ts",
+      "line": 545,
+      "assertion": "assert.equal(rows.billing.deposit_paid_amount, null);"
+    },
+    {
+      "file": "tests/beo-fill-phase-b.check.ts",
+      "line": 555,
+      "assertion": "assert.ok(!(Number(beo.partyDetails?.prepaymentReceived) > 0), \"no prepayment received\");"
+    },
+    {
+      "file": "tests/beo-fill-phase-b.check.ts",
+      "line": 689,
+      "assertion": "assert.equal(by.prepaymentReceived, undefined, \"the family's claim is never offered as received\");"
+    },
+    {
+      "file": "tests/beo-fill-till-menu.check.ts",
+      "line": 470,
+      "assertion": "assert.deepEqual(body.deposit, { amount: 3000, paid: true, date: null }, \"the paid claim remains informational for backend enforcement\");"
+    },
+    {
+      "file": "tests/beo-fill-till-menu.check.ts",
+      "line": 475,
+      "assertion": "assert.ok(!rows.billing?.deposit_paid && !(Number(rows.billing?.deposit_paid_amount ?? 0) > 0), \"no money received\");"
+    },
+    {
+      "file": "tests/beo-inbox-fill.check.ts",
+      "line": 616,
+      "assertion": "assert.equal(response.body.partyDetails.prepaymentReceived, expected, text);"
+    },
+    {
+      "file": "tests/beo-prefill-ui.check.ts",
+      "line": 675,
+      "assertion": "assert.equal(details.prepaymentReceived, 2000, `${variant}: Save carries only confirmed received money`);"
+    },
+    {
+      "file": "tests/beo-prefill-ui.check.ts",
+      "line": 805,
+      "assertion": "assert.deepEqual(body.deposit, { amount: 5000, paid: true, date: null }, \"the original informational claim is identified for the backend to keep out of receipts\");"
+    },
+    {
+      "file": "tests/billing-deposit-ui.check.ts",
+      "line": 223,
+      "assertion": "assert.deepEqual(puts(), [{ depositPaidAmount: 3000, depositPaid: true }]);"
+    },
+    {
+      "file": "tests/billing-deposit-ui.check.ts",
+      "line": 235,
+      "assertion": "assert.deepEqual(puts(), [{ depositPaidAmount: 5000, depositPaid: true }]);"
+    },
+    {
+      "file": "tests/billing-deposit-ui.check.ts",
+      "line": 236,
+      "assertion": "assert.deepEqual(row, { eventId: EVENT, depositPaid: true, depositPaidAmount: 5000, depositPaidAt: \"2026-11-01T00:00:00.000Z\" });"
+    },
+    {
+      "file": "tests/billing-deposit-ui.check.ts",
+      "line": 252,
+      "assertion": "assert.deepEqual(puts(), [{ depositPaidAmount: 2500, depositPaid: true }]);"
+    },
+    {
+      "file": "tests/billing-deposit-ui.check.ts",
+      "line": 276,
+      "assertion": "assert.deepEqual(puts(), [{ depositPaidAmount: 4000, depositPaid: true }], \"another figure goes as one write\");"
+    },
+    {
+      "file": "tests/billing-deposit-ui.check.ts",
+      "line": 305,
+      "assertion": "assert.deepEqual(summaryBillingOf(null, { amountThb: 3000, date: null }), { depositPaid: true, depositPaidAmount: 3000, depositPaidAt: null });"
+    },
+    {
+      "file": "tests/billing-deposit-ui.check.ts",
+      "line": 354,
+      "assertion": "assert.deepEqual(patchOverEventDeposit(day, null, event), { depositPaidAmount: 3000, depositPaid: true, ...day });"
+    },
+    {
+      "file": "tests/billing-deposit-ui.check.ts",
+      "line": 357,
+      "assertion": "assert.deepEqual(patchOverEventDeposit({ depositPaidAmount: 0, depositPaid: false }, null, event), { depositPaidAmount: 0, depositPaid: false });"
+    },
+    {
+      "file": "tests/birthday-packages.check.ts",
+      "line": 898,
+      "assertion": "assert.equal(read.partyDetails?.prepaymentReceived, 2500, \"the BEO shows the event's prepayment\");"
+    },
+    {
+      "file": "tests/deposit-save-ui.check.ts",
+      "line": 271,
+      "assertion": "assert.equal(sent.body.depositChanged, false, \"nobody typed in the Deposit field: the Save says the deposit was not changed\");"
+    },
+    {
+      "file": "tests/deposit-save-ui.check.ts",
+      "line": 288,
+      "assertion": "assert.equal(sent.body.depositChanged, true);"
+    },
+    {
+      "file": "tests/deposit-save-ui.check.ts",
+      "line": 289,
+      "assertion": "assert.equal(partyDetailsOf(sent).prepaymentReceived, 4000);"
+    },
+    {
+      "file": "tests/deposit-save-ui.check.ts",
+      "line": 299,
+      "assertion": "assert.equal(again.body.depositChanged, false);"
+    },
+    {
+      "file": "tests/deposit-save-ui.check.ts",
+      "line": 311,
+      "assertion": "assert.equal(sent.body.depositChanged, true);"
+    },
+    {
+      "file": "tests/deposit-save-ui.check.ts",
+      "line": 312,
+      "assertion": "assert.equal(partyDetailsOf(sent).prepaymentReceived, 500, \"the typed figure travels: the server decides\");"
+    },
+    {
+      "file": "tests/deposit-save-ui.check.ts",
+      "line": 337,
+      "assertion": "assert.equal(sent.body.depositChanged, false, \"the field holds the stored deposit: the Save changes none\");"
+    },
+    {
+      "file": "tests/deposit-save-ui.check.ts",
+      "line": 365,
+      "assertion": "assert.equal(saves(id)[0]!.body.depositChanged, true);"
+    },
+    {
+      "file": "tests/deposit-save-ui.check.ts",
+      "line": 366,
+      "assertion": "assert.equal(partyDetailsOf(saves(id)[0]!).prepaymentReceived, 3500);"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 155,
+      "assertion": "assert.deepEqual(depositNamedBy({ prepaymentReceived: 0, depositDate: \"\" }, paid), none);"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 157,
+      "assertion": "assert.deepEqual(partyDetailsWithDeposit({ packageName: \"x\", prepaymentReceived: 0, depositDate: \"\" }, paid), { packageName: \"x\", prepaymentReceived: 3000, depositDate: DAY });"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 158,
+      "assertion": "assert.deepEqual(partyDetailsWithDeposit({ notes: \"n\", depositDate: \"2099-01-01\" }, none), { notes: \"n\", prepaymentReceived: 0 });"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 161,
+      "assertion": "assert.deepEqual(loadedDepositOf({ oneDeposit: { amountThb: 3000, date: DAY }, partyDetails: { prepaymentReceived: 1 } }), paid);"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 162,
+      "assertion": "assert.deepEqual(loadedDepositOf({ partyDetails: { prepaymentReceived: 3000, depositDate: DAY } }), paid, \"a server from before the rule: Party Details' own\");"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 164,
+      "assertion": "assert.equal(depositChangedIn({ prepaymentReceived: 3000, depositDate: DAY }, paid), false);"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 165,
+      "assertion": "assert.equal(depositChangedIn({ prepaymentReceived: 0, depositDate: \"\" }, none), false);"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 166,
+      "assertion": "assert.equal(depositChangedIn({ prepaymentReceived: 0, depositDate: \"2099-01-01\" }, none), false, \"a day beside no deposit is no deposit\");"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 167,
+      "assertion": "assert.equal(depositChangedIn({ prepaymentReceived: 0, depositDate: \"\" }, paid), true);"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 168,
+      "assertion": "assert.equal(depositChangedIn({ prepaymentReceived: 3000, depositDate: \"2099-03-09\" }, paid), true);"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 383,
+      "assertion": "assert.deepEqual(saved.body.depositSave, { kept: true, reason: \"moved\", amountThb: 3000, date: DAY, message: MOVED_3000 });"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 401,
+      "assertion": "assert.equal(cleared.body.depositSave?.reason, \"moved\");"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 402,
+      "assertion": "assert.equal(cleared.body.depositSave?.message, MOVED_3000);"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 416,
+      "assertion": "assert.deepEqual(both.body.depositSave, { kept: true, reason: \"moved\", amountThb: 3000, date: DAY, message: MOVED_3000 });"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 422,
+      "assertion": "assert.equal(added.body.depositSave, undefined);"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 435,
+      "assertion": "assert.equal(first.body.depositSave?.reason, \"moved\");"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 443,
+      "assertion": "assert.equal(oldSave.body.depositSave?.reason, \"unconfirmed\");"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 444,
+      "assertion": "assert.match(oldSave.body.depositSave.message, /was not lowered \\(it stays \u0e3f3,000\\): this page is out of date/);"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 449,
+      "assertion": "assert.equal(oldRaise.body.depositSave, undefined, show(oldRaise));"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 458,
+      "assertion": "assert.equal(quiet.body.depositSave, undefined, \"nothing was carried, so nothing is said\");"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 504,
+      "assertion": "assert.equal(raised.body.depositSave, undefined);"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 514,
+      "assertion": "assert.equal(lowered.body.depositSave, undefined);"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 528,
+      "assertion": "assert.equal(below.body.depositSave?.reason, \"gateway\");"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 547,
+      "assertion": "assert.equal(unchecked.body.depositSave?.reason, \"unchecked\");"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 548,
+      "assertion": "assert.match(unchecked.body.depositSave.message, /was not lowered \\(it stays \u0e3f3,500\\): the till could not be asked/);"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 554,
+      "assertion": "assert.equal((await saveBeo(cash, { partyDetails: { ...form.partyDetails, prepaymentReceived: 2500, depositDate: \"2099-03-01\" }, expectedDeposit: form.oneDeposit })).status, 200);"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 558,
+      "assertion": "assert.equal(less.body.depositSave, undefined, show(less));"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 562,
+      "assertion": "assert.equal(none.body.depositSave, undefined, show(none));"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 571,
+      "assertion": "assert.equal((await saveBeo(away, { partyDetails: { packageName: \"ZZ TEST\", prepaymentReceived: 2000, depositDate: DAY, notes: \"\" }, expectedDeposit: awayForm.oneDeposit }, cookieU)).status, 200);"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 574,
+      "assertion": "assert.equal(awayLess.body.depositSave, undefined, show(awayLess));"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 587,
+      "assertion": "assert.deepEqual(stale.body.depositSave, { kept: true, reason: \"moved\", amountThb: 3000, date: DAY, message: MOVED_3000 });"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 589,
+      "assertion": "assert.equal(stale.body.depositAmount, 5000, \"the write's other fields are saved\");"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 590,
+      "assertion": "assert.equal(stale.body.depositPaidAmount, 3000);"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 595,
+      "assertion": "assert.equal(only.body.depositSave?.reason, \"moved\");"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 600,
+      "assertion": "assert.equal(typed.body.depositSave, undefined);"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 617,
+      "assertion": "assert.equal(none.body.depositSave?.reason, \"moved\");"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 624,
+      "assertion": "assert.equal(withField.body.depositSave?.reason, \"moved\");"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 625,
+      "assertion": "assert.equal(withField.body.depositAmount, 5000);"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 626,
+      "assertion": "assert.equal(withField.body.depositPaidAmount, 3000);"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 645,
+      "assertion": "assert.deepEqual(stale.body.depositSave, {"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 654,
+      "assertion": "assert.equal(old.body.depositSave?.reason, \"unconfirmed\", show(old));"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 661,
+      "assertion": "assert.equal(raised.body.depositSave, undefined);"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 671,
+      "assertion": "assert.equal(below.body.depositSave?.reason, \"gateway\", show(below));"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 675,
+      "assertion": "assert.equal(toFloor.body.depositSave, undefined, show(toFloor));"
+    },
+    {
+      "file": "tests/deposit-save.check.ts",
+      "line": 680,
+      "assertion": "assert.equal(notes.body.depositSave, undefined);"
+    },
+    {
+      "file": "tests/directory-inbox-event.check.ts",
+      "line": 195,
+      "assertion": "assert.equal(billing.rows[0].deposit_paid_amount, 3000);"
+    },
+    {
+      "file": "tests/fetch-from-chat.check.ts",
+      "line": 566,
+      "assertion": "assert.deepEqual(fetchChangesOf({ fill: { partyDetails: { prepaymentReceived: 5000, depositDate: \"2026-11-05\" } }, review: review(paid) }, form), []);"
+    },
+    {
+      "file": "tests/fetch-from-chat.check.ts",
+      "line": 568,
+      "assertion": "assert.deepEqual(fetchChangesOf({ fill: { partyDetails: { prepaymentReceived: 5000, depositDate: \"2026-11-05\" } }, review: { ...fetched.review, proposal: { ...fetched.review.proposal, deposit: null } } }, form), []);"
+    },
+    {
+      "file": "tests/till-billing-ui.check.ts",
+      "line": 302,
+      "assertion": "assert.deepEqual(t.sent, [{ depositPaidAmount: 3000, depositPaid: true }]);"
+    },
+    {
+      "file": "tests/till-billing-ui.check.ts",
+      "line": 314,
+      "assertion": "assert.deepEqual(t.sent, [{ depositPaidAmount: 5000, depositPaid: true }], \"one write, no depositPaidAt named: the server keeps the day\");"
+    },
+    {
+      "file": "tests/till-billing-ui.check.ts",
+      "line": 315,
+      "assertion": "assert.ok(!t.sent.some((p) => p.depositPaidAmount === 0), \"no 0 ever sent\");"
+    },
+    {
+      "file": "tests/till-billing-ui.check.ts",
+      "line": 330,
+      "assertion": "assert.deepEqual(t.sent, [{ depositPaidAmount: 0, depositPaid: false }], \"a typed 0 clears the deposit\");"
+    },
+    {
+      "file": "tests/till-billing-ui.check.ts",
+      "line": 338,
+      "assertion": "assert.deepEqual(enter.sent, [{ depositPaidAmount: 300, depositPaid: true }]);"
+    },
+    {
+      "file": "tests/till-billing-ui.check.ts",
+      "line": 351,
+      "assertion": "assert.deepEqual(day.sent, [{ depositPaidAmount: 2000, depositPaid: true, depositPaidAt: \"2026-11-01T00:00:00.000Z\" }], \"one write\");"
+    },
+    {
+      "file": "tests/till-billing-ui.check.ts",
+      "line": 358,
+      "assertion": "assert.deepEqual(gone.sent, [{ depositPaidAmount: 150, depositPaid: true }]);"
+    }
+  ],
+  "scope": "Read-only lightweight census; matches require surrounding-context assessment, not new failures.",
+  "assessment": {
+    "additionalConcreteFailures": 0,
+    "extractionOnly": [
+      "tests/ai-fill.check.ts",
+      "tests/beo-inbox-fill.check.ts"
+    ],
+    "preservedExistingBehavior": "Other positive receipt assertions are saved-data hydration, manual Billing/Deposit edits or gateway projection. These are outside the D1 AI-write prohibition and remain unchanged.",
+    "currentD1Pins": [
+      "tests/ai-approve-deposit.check.ts",
+      "tests/beo-catalogue-fill.check.ts",
+      "tests/beo-fill-till-menu.check.ts",
+      "tests/fetch-from-chat.check.ts",
+      "tests/beo-prefill-ui.check.ts"
+    ],
+    "limit": "Read-only assertion census, not execution of all99registered files; no new whole-suite claim."
+  }
+}
