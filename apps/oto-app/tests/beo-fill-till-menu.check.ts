@@ -536,8 +536,9 @@ try {
   });
 
   await check("parentMenuShowsSavedCustomItemPricesWithoutInternalCostsOrCatalogueReplacement", async () => {
-    const token = randomUUID();
-    await q("insert into beo_set_menu_selections (event_id, template_id, token) values ($1,$2,$3)", [ev.guards, cat.setMenu, token]);
+    const [heldSelection] = await q("select token from beo_set_menu_selections where event_id=$1", [ev.guards]);
+    const token = heldSelection?.token ?? randomUUID();
+    if (!heldSelection) await q("insert into beo_set_menu_selections (event_id, template_id, token) values ($1,$2,$3)", [ev.guards, cat.setMenu, token]);
     const response = await fetch(`${base}/api/beo/set-menu-selections/public/${token}`);
     assert.equal(response.status, 200);
     const answer = await response.json() as any;
