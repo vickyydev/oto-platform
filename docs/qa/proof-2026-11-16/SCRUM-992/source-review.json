@@ -1,0 +1,55 @@
+{
+  "reviewedAt": "2026-11-16T15:55:01.365Z",
+  "candidate": "84713672789bd40510588b4aff1a24981d49c2da",
+  "allCandidateBlobsMatch": true,
+  "review": {
+    "outcome": "No remaining finding",
+    "scope": [
+      "bounded existing-visible-row SQL facts",
+      "per-viewer unread unchanged",
+      "pause and staff takeover precedence",
+      "delivery states and shadow preview truth",
+      "optional contract for staged rollout",
+      "theme contrast and selection",
+      "whole regression evidence"
+    ],
+    "staging": "Not deployed yet"
+  },
+  "logs": [
+    {
+      "name": "all-tests-final",
+      "bytes": 3334,
+      "sha256": "f90a793ba40846f35645944cdb8b96035e981d5348d6b3a9d0e64bba10a2199e"
+    },
+    {
+      "name": "api-review",
+      "bytes": 10634,
+      "sha256": "5156fe033cc2c1913c3175fb4ca66bcf03a00828bf607ec357443995190745e7"
+    },
+    {
+      "name": "api-types-final",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "shared-types",
+      "bytes": 238,
+      "sha256": "a2762bbf5073bcd15ae75462ca450dcebf254b9d475d7e52cd063ecb0a1a3fb8"
+    },
+    {
+      "name": "inbox-types",
+      "bytes": 320,
+      "sha256": "835f42a563b5e49a7a466193a879627f1738a1324ea21a1aee02d5221043afb9"
+    },
+    {
+      "name": "build",
+      "bytes": 1252,
+      "sha256": "4360b3733586632c13a0163df4f5792fc478101c019d1d8343739430f638926a"
+    },
+    {
+      "name": "lint-final",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ]
+}

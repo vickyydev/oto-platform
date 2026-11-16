@@ -1,0 +1,48 @@
+{
+  "observedAt": "2026-11-16T15:42:01.745Z",
+  "receipts": [
+    {
+      "key": "SCRUM-986",
+      "status": "Deployed",
+      "attachmentId": "13560",
+      "filename": "scrum-986-staging-code-and-native-test.png",
+      "commentId": "14815",
+      "commentReadbackMatches": true
+    },
+    {
+      "key": "SCRUM-987",
+      "status": "In Progress",
+      "commentId": "14817"
+    },
+    {
+      "key": "SCRUM-988",
+      "status": "In Progress",
+      "commentId": "14818"
+    },
+    {
+      "key": "SCRUM-989",
+      "status": "In Progress",
+      "commentId": "14819"
+    },
+    {
+      "key": "SCRUM-990",
+      "status": "In Progress",
+      "commentId": "14820"
+    },
+    {
+      "key": "SCRUM-991",
+      "status": "In Progress",
+      "commentId": "14821"
+    },
+    {
+      "key": "SCRUM-992",
+      "status": "In Progress",
+      "commentId": "14822"
+    },
+    {
+      "key": "SCRUM-993",
+      "status": "In Progress",
+      "commentId": "14823"
+    }
+  ]
+}
