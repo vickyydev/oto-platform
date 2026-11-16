@@ -367,6 +367,36 @@ describe('the Edit form', () => {
     return { onSave, host: renderHook((p: typeof props) => PartyEditForm(p), props) };
   }
 
+  it('a settled party confirms priced additions on Save, retains cancellation and retry ids, and names unresolved prices', () => {
+    const confirm = vi.fn().mockReturnValue(false);
+    vi.stubGlobal('window', { confirm });
+    const onSave = vi.fn();
+    const props = { party: { ...partyOf(), settlement: { state: 'settled' } as NonNullable<PartyBooking['settlement']> }, onSave, onCancel: vi.fn(), kitchenPlan: KITCHEN, mayEditKitchen: true, kitchenChoices: null };
+    const host = renderHook((p: typeof props) => PartyEditForm(p), props);
+    try {
+      const section = elementOf(host.result.current, PartyKitchenPlanSection)!;
+      const draft = section.props.draft as KitchenDraft;
+      const priced = { ...addedKitchenLine('food', { name: 'ZZ TEST agreed dish', code: 'PARTY-00112233' }), unitPriceSatang: 12500, qty: 2 };
+      const unknown = { ...addedKitchenLine('food'), name: 'ZZ TEST unpriced request' };
+      (section.props.onChange as (draft: KitchenDraft) => void)({ ...draft, lines: [...draft.lines, priced, unknown] });
+      const save = () => (buttonIn(host.result.current, 'Save and charge new items')!.props.onClick as () => void)();
+      save();
+      expect(onSave).not.toHaveBeenCalled();
+      expect(confirm.mock.calls[0]?.[0]).toMatch(/Known selling-price subtotal: THB 250 before tax and service/);
+      expect(confirm.mock.calls[0]?.[0]).toMatch(/selling price unresolved/);
+      expect(confirm.mock.calls[0]?.[0]).toMatch(/original receipt stays unchanged/);
+      confirm.mockReturnValue(true);
+      save();
+      save();
+      expect(onSave).toHaveBeenCalledTimes(2);
+      expect(onSave.mock.calls[0]?.[1]).toEqual(onSave.mock.calls[1]?.[1]);
+      expect(onSave.mock.calls[0]?.[1]).toContainEqual(expect.objectContaining({ id: priced.added, unitPriceSatang: 12500, qty: 2 }));
+    } finally {
+      host.unmount();
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("a manager's form fills the kitchen and bar sections from the plan and Save hands over what changed", () => {
     const { onSave, host } = form(true);
     const tree = host.result.current;

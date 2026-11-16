@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/select';
 import { PartyBooking, PartyLineItem, PartyStatus } from '@/types';
 import { PARTY_STATUS_LABELS } from '@/lib/party';
+import { bahtText } from '@/lib/bahtText';
 import { getMenuItems } from '@/mockApi';
 import { kitchenChangesOf, kitchenDraftOf, type KitchenDraft } from '@/lib/partyKitchenEdit';
 import { Field, Grid2, Section } from './partyEditParts';
@@ -224,7 +225,17 @@ export function PartyEditForm({ party, onSave, onCancel, kitchenPlan: planRead =
     setTimeline(next);
   };
 
+  const kitchenChanges = kitchenPlan && kitchenDraft && mayEditKitchen ? kitchenChangesOf(kitchenPlan, kitchenDraft) : [];
+  const additions = kitchenChanges.filter((change): change is Extract<PartyKitchenChange, { op: 'add' }> => change.op === 'add' && change.unitPriceSatang !== 0);
+  const confirmAdditions = party.settlement?.state === 'settled' && additions.length > 0;
+  const knownSubtotal = additions.reduce((sum, line) => sum + (line.unitPriceSatang ?? 0) * line.qty, 0);
+  const hasUnresolved = additions.some((line) => line.unitPriceSatang === undefined);
+  const saveLabel = confirmAdditions ? knownSubtotal > 0 ? 'Save and charge new items' : 'Save with unresolved additions' : 'Save changes';
   const handleSave = () => {
+    if (confirmAdditions) {
+      const lines = additions.map((line) => `${line.name} x ${line.qty}: ${line.unitPriceSatang === undefined ? 'selling price unresolved' : `THB ${bahtText(line.unitPriceSatang * line.qty / 100)}`}`).join('\n');
+      if (!window.confirm(`Save these staff-agreed additions on this same party?\n${lines}\nKnown selling-price subtotal: THB ${bahtText(knownSubtotal / 100)} before tax and service. The till will price a linked additional bill; the original receipt stays unchanged.${hasUnresolved ? '\nMissing prices need resolution; they are not free.' : ''}`)) return;
+    }
     const {
       id: _id,
       branchId: _branchId,
@@ -235,7 +246,7 @@ export function PartyEditForm({ party, onSave, onCancel, kitchenPlan: planRead =
       lastEditedAt: _lea,
       ...patch
     } = draft;
-    onSave(patch, kitchenPlan && kitchenDraft && mayEditKitchen ? kitchenChangesOf(kitchenPlan, kitchenDraft) : []);
+    onSave(patch, kitchenChanges);
   };
 
   return (
@@ -255,7 +266,7 @@ export function PartyEditForm({ party, onSave, onCancel, kitchenPlan: planRead =
           </Button>
           <Button size="lg" className="gap-2 h-12" onClick={handleSave}>
             <Save className="w-5 h-5" />
-            Save changes
+            {saveLabel}
           </Button>
         </div>
       </div>
