@@ -1,0 +1,12 @@
++   "POST /otoapp/parties/{eventId}/beo-additions",
+Test Files  1 failed (1)
+Tests  2 failed | 8 passed (10)
+FAIL  test/seam-walker.test.ts > every front-end call reaches a route the api describes (SCRUM-293) > does not let hand-typed response types regrow (migration-list.ts)
++   "apps/inbox/src/api/inbox.ts: 1 hand-typed, 0 allowed — type the new call from @oto/api-types",
+FAIL  test/events-e4-migration.test.ts > the party tab migration — charges, payments and edits > adds the three tables, every foreign key indexed
++   "additional_bill_id",
+FAIL  test/s220-e4-review-migration.test.ts > review — the party tab migration > leads every foreign key of the three tables with an index
++     "fk": "party_charge.additional_bill_id",
++     "fk": "party_payment.additional_bill_id",
+Test Files  2 failed | 68 passed (70)
+Tests  2 failed | 463 passed (465)

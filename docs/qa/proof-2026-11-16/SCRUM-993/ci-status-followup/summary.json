@@ -1,0 +1,171 @@
+{
+  "observedSnapshots": [
+    {
+      "databaseId": 43917414387,
+      "headSha": "9018e03065b452115117ca363337873ae27b5dd7",
+      "status": "pending",
+      "conclusion": "",
+      "observedAtUtc": "2026-11-16T17:48:43.676311+00:00",
+      "url": "https://github.com/vickyydev/oto-platform/actions/runs/43917414387"
+    },
+    {
+      "databaseId": 43915633429,
+      "headSha": "20c34493fb0aa2d0c33d98df9f6b6053cfc56d94",
+      "status": "in_progress",
+      "conclusion": "",
+      "observedAtUtc": "2026-11-16T17:48:43.837227+00:00",
+      "url": "https://github.com/vickyydev/oto-platform/actions/runs/43915633429"
+    },
+    {
+      "databaseId": 43908721219,
+      "headSha": "caa85d054536b04bbb6afb02c776485195e28424",
+      "status": "completed",
+      "conclusion": "failure",
+      "observedAtUtc": "2026-11-16T17:48:44.333646+00:00",
+      "url": "https://github.com/vickyydev/oto-platform/actions/runs/43908721219"
+    }
+  ],
+  "findings": [
+    {
+      "id": "old-prebooking-parent-registry",
+      "runId": 43908721219,
+      "jobId": 133450689135,
+      "classification": "already-fixed-on-main",
+      "evidence": "schema-shape: pos.prebooking_deposit_request missing scoped-parent registry",
+      "sourceStatus": "Current main contains its actual draft_id -> pos.prebooking_draft registry; later product DB run no longer fails this check."
+    },
+    {
+      "id": "prebooking-generated-alias-seam",
+      "runIds": [
+        43908721219,
+        43915633429
+      ],
+      "classification": "newly-observed-static-checker-compatibility",
+      "evidence": "seam-walker classifies one Inbox call as hand-typed",
+      "sourceStatus": "apps/inbox/src/api/inbox.ts142 uses api.get<Prebooking>; line41 defines Prebooking from generated ApiResponse. Inline generated generic preserves behavior and satisfies the existing scanner."
+    },
+    {
+      "id": "beo-machine-caller-registry",
+      "runId": 43915633429,
+      "jobId": 133472062810,
+      "classification": "newly-observed-static-inventory",
+      "evidence": "orphan POST /otoapp/parties/{eventId}/beo-additions",
+      "sourceStatus": "Real caller is apps/oto-app/server/lib/beoAdditionalBilling.ts66; MACHINE_CALLERS does not name it."
+    },
+    {
+      "id": "beo-route-guard-registry",
+      "runId": 43915633429,
+      "jobId": 133472062857,
+      "classification": "already-fixed-on-main9018",
+      "evidence": "routes-guarded expects six party doors, actual seven",
+      "sourceStatus": "Exact BEO additions endpoint was registered in test-only27ad363a and landed by9018; complete file32/32 locally."
+    },
+    {
+      "id": "beo-replay-census",
+      "runId": 43915633429,
+      "jobId": 133472062931,
+      "classification": "already-fixed-in-local993-not-main9018",
+      "evidence": "route-write-conformance misses BEO credential route in outside-replay census",
+      "sourceStatus": "Local993 c569f8819 includes exact credential route; complete conformance32/32. Root integrated locally, main held."
+    },
+    {
+      "id": "beo-source-fingerprint",
+      "runId": 43915633429,
+      "jobId": 133472062931,
+      "classification": "expected-approved-source-hash-drift-needs-reviewed-refresh",
+      "evidence": "s217b-r6-review expected old beo-routes hash376971..., actual62eacd...",
+      "sourceStatus": "Approved BEO work changed the route. Refresh only after inspecting the semantic diff and retain PDF/storage/public-folder assertions."
+    },
+    {
+      "id": "party-column-census",
+      "runId": 43915633429,
+      "jobId": 133472062810,
+      "classification": "newly-observed-static-schema-census",
+      "evidence": "events-e4-migration party_charge column list lacks additional_bill_id",
+      "sourceStatus": "0127 intentionally added nullable additional_bill_id on charge and payment; exact census must include both."
+    },
+    {
+      "id": "party-bill-fk-indexes",
+      "runId": 43915633429,
+      "jobId": 133472062810,
+      "classification": "new-confirmed-schema-reliability-defect",
+      "evidence": "s220-e4-review-migration finds unindexed party_charge.additional_bill_id and party_payment.additional_bill_id",
+      "sourceStatus": "Schema confirms no covering indexes.0127 is applied/immutable; root assigned NEW0129 forward index migration, matching schema/snapshot."
+    },
+    {
+      "id": "app-billing-mirror-drift",
+      "runId": 43915633429,
+      "jobId": 133472062862,
+      "classification": "new-confirmed-stored-mirror-divergence",
+      "evidence": "approvalWritesTheBeo compares simplified_menus.kids against menus.kids; billingSync differs",
+      "sourceStatus": "beoAdditionalBilling mark() updates menus only, not simplified_menus. Root assigned app repair to BEO agent."
+    },
+    {
+      "id": "app-stale-approval-fixtures",
+      "runId": 43915633429,
+      "jobId": 133472062862,
+      "classification": "newly-observed-test-contract-mismatch-needs-BEO-validation",
+      "evidence": "theRestIsWrittenInTheSamePass and theParentLinksChoicesAreKeptOrReset receive409",
+      "sourceStatus": "Tests reuse an old review body or setMenuOnly without expectedState; new existing-lines freshness guard rejects them. Preserve guard; root assigned BEO fixture assessment."
+    },
+    {
+      "id": "app-unmatched-entertainment-expectation",
+      "runId": 43915633429,
+      "jobId": 133472062862,
+      "classification": "changed-approved-policy-expectation-needs-BEO-validation",
+      "evidence": "emptyCatalogueReadsTheConversationNoTranscriptAsBefore expects two free unmatched entertainment rows, actual none",
+      "sourceStatus": "Compare with approved catalogue-template selection behavior; do not restore zero-price unmatched acts blindly. Root assigned app assessment."
+    }
+  ],
+  "actions": {
+    "reruns": 0,
+    "waits": 0,
+    "sourceEditsDuringSnapshot": 0,
+    "deployments": 0,
+    "nextAssignment": "Root subsequently authorized narrow non-app repairs in this lane and delegated app repairs to BEO agent."
+  },
+  "limits": [
+    "These are time-bound snapshots, not continuing monitoring.",
+    "Product20c was still running with API shard3 in progress; its final overall conclusion was not claimed.",
+    "Latest9018 had no jobs yet; no green claim.",
+    "Only bounded failure excerpts and raw-log fingerprints are retained; setup/env/container logs are omitted."
+  ],
+  "files": {
+    "failure-log-fingerprints.json": {
+      "bytes": 1055,
+      "sha256": "7a7b5bfdb6616c3ab03b1477492e3012cd1b0953849f94bd9c630dde6afaae41"
+    },
+    "job-133450689135-failure-excerpt.txt": {
+      "bytes": 1007,
+      "sha256": "d7967d0a845a16fc81ec39de668ea17facb9eef6b6aad81fff006ae24fd401f8"
+    },
+    "job-133472062810-failure-excerpt.txt": {
+      "bytes": 862,
+      "sha256": "2d49c965858dea6ad27b9895d1720be09e078e2f897eec3462890c463d70b8dd"
+    },
+    "job-133472062857-failure-excerpt.txt": {
+      "bytes": 342,
+      "sha256": "48413d323540e9e0538da46ab4510e0d410fed13e9a9ca73c1d44e6b08516fb5"
+    },
+    "job-133472062862-failure-excerpt.txt": {
+      "bytes": 1545,
+      "sha256": "dd768d93c8a4ae30403bcb4aa0f7b084aab12b27c91a251ee45ca1acb8b5393d"
+    },
+    "job-133472062931-failure-excerpt.txt": {
+      "bytes": 762,
+      "sha256": "d434705491d9a5c6e606bdb59200408701b81ba43fadbdd2724a7623f7d91a1e"
+    },
+    "run-43908721219.json": {
+      "bytes": 3485,
+      "sha256": "45109b4d70bf25746f4ef7189dc92f7d09fa9f2961190c4da0a9dc993ff55529"
+    },
+    "run-43915633429.json": {
+      "bytes": 4104,
+      "sha256": "3edd361aa319d568b40009fd362972de38fdd1242604c86bbe302c42ad719388"
+    },
+    "run-43917414387.json": {
+      "bytes": 374,
+      "sha256": "714c44a6a3e96340a1ba2ed61e26ec8cfc6868aa43cbb800b502a4b8a93ea70a"
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "databaseId": 43917414387,
+  "headSha": "9018e03065b452115117ca363337873ae27b5dd7",
+  "status": "pending",
+  "conclusion": "",
+  "url": "https://github.com/vickyydev/oto-platform/actions/runs/43917414387",
+  "attempt": 1,
+  "createdAt": "2026-11-16T17:20:54Z",
+  "updatedAt": "2026-11-16T17:20:55Z",
+  "observedAtUtc": "2026-11-16T17:48:43.676311+00:00",
+  "jobs": []
+}

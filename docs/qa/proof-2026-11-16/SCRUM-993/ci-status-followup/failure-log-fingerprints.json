@@ -1,0 +1,32 @@
+[
+  {
+    "jobId": 133472062810,
+    "rawLogBytes": 1645386,
+    "rawLogSha256": "488d23dbd0a1f95ad1ca9d2c9d083e4112bcd776f1c7c5929415eb1a1a54b2cd",
+    "savedExcerpt": "job-133472062810-failure-excerpt.txt"
+  },
+  {
+    "jobId": 133472062857,
+    "rawLogBytes": 484046,
+    "rawLogSha256": "12a7a0d6217287abdfa2cc80cec6f8c8859f2c0f9d812d2cda1cf242e0109d41",
+    "savedExcerpt": "job-133472062857-failure-excerpt.txt"
+  },
+  {
+    "jobId": 133472062862,
+    "rawLogBytes": 778112,
+    "rawLogSha256": "f3769bc09268da822b01c2d085e07ac6c31498720d3657607e1678434fc52f1d",
+    "savedExcerpt": "job-133472062862-failure-excerpt.txt"
+  },
+  {
+    "jobId": 133472062931,
+    "rawLogBytes": 531769,
+    "rawLogSha256": "4a0afa12a92c2eef5d9e648aebd4c3cc6b250098d622d0f851e2fe5942c0ae52",
+    "savedExcerpt": "job-133472062931-failure-excerpt.txt"
+  },
+  {
+    "jobId": 133450689135,
+    "rawLogBytes": 1627799,
+    "rawLogSha256": "4bf56ef2ee1c1b50b566c6839d12e961b167797c8b692a2dda4ddfd210bcf94f",
+    "savedExcerpt": "job-133450689135-failure-excerpt.txt"
+  }
+]

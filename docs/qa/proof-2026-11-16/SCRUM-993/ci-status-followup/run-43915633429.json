@@ -1,0 +1,149 @@
+{
+  "databaseId": 43915633429,
+  "headSha": "20c34493fb0aa2d0c33d98df9f6b6053cfc56d94",
+  "status": "in_progress",
+  "conclusion": "",
+  "url": "https://github.com/vickyydev/oto-platform/actions/runs/43915633429",
+  "attempt": 1,
+  "createdAt": "2026-11-16T17:10:55Z",
+  "updatedAt": "2026-11-16T17:16:08Z",
+  "observedAtUtc": "2026-11-16T17:48:43.837227+00:00",
+  "jobs": [
+    {
+      "databaseId": 133472062198,
+      "name": "api-tests (3)",
+      "status": "in_progress",
+      "conclusion": "",
+      "url": "https://github.com/vickyydev/oto-platform/actions/runs/43915633429/job/133472062198",
+      "startedAt": "2026-11-16T17:15:58Z",
+      "completedAt": "0001-01-01T00:00:00Z",
+      "failedSteps": [],
+      "activeSteps": [
+        {
+          "number": 9,
+          "name": "Api tests (shard 3 of 3)",
+          "status": "in_progress"
+        }
+      ],
+      "stepCounts": {
+        "success": 8,
+        "skipped": 0,
+        "failure": 0,
+        "cancelled": 0
+      }
+    },
+    {
+      "databaseId": 133472062810,
+      "name": "ci",
+      "status": "completed",
+      "conclusion": "failure",
+      "url": "https://github.com/vickyydev/oto-platform/actions/runs/43915633429/job/133472062810",
+      "startedAt": "2026-11-16T17:15:57Z",
+      "completedAt": "2026-11-16T17:36:04Z",
+      "failedSteps": [
+        {
+          "number": 18,
+          "name": "Test",
+          "status": "completed",
+          "conclusion": "failure"
+        }
+      ],
+      "activeSteps": [],
+      "stepCounts": {
+        "success": 22,
+        "skipped": 9,
+        "failure": 1,
+        "cancelled": 0
+      }
+    },
+    {
+      "databaseId": 133472062857,
+      "name": "api-tests (1)",
+      "status": "completed",
+      "conclusion": "failure",
+      "url": "https://github.com/vickyydev/oto-platform/actions/runs/43915633429/job/133472062857",
+      "startedAt": "2026-11-16T17:15:57Z",
+      "completedAt": "2026-11-16T17:42:57Z",
+      "failedSteps": [
+        {
+          "number": 9,
+          "name": "Api tests (shard 1 of 3)",
+          "status": "completed",
+          "conclusion": "failure"
+        }
+      ],
+      "activeSteps": [],
+      "stepCounts": {
+        "success": 12,
+        "skipped": 1,
+        "failure": 1,
+        "cancelled": 0
+      }
+    },
+    {
+      "databaseId": 133472062862,
+      "name": "oto-app",
+      "status": "completed",
+      "conclusion": "failure",
+      "url": "https://github.com/vickyydev/oto-platform/actions/runs/43915633429/job/133472062862",
+      "startedAt": "2026-11-16T17:15:57Z",
+      "completedAt": "2026-11-16T17:30:40Z",
+      "failedSteps": [
+        {
+          "number": 69,
+          "name": "The app's AI fill catalogue checks",
+          "status": "completed",
+          "conclusion": "failure"
+        }
+      ],
+      "activeSteps": [],
+      "stepCounts": {
+        "success": 71,
+        "skipped": 51,
+        "failure": 1,
+        "cancelled": 0
+      }
+    },
+    {
+      "databaseId": 133472062931,
+      "name": "api-tests (2)",
+      "status": "completed",
+      "conclusion": "failure",
+      "url": "https://github.com/vickyydev/oto-platform/actions/runs/43915633429/job/133472062931",
+      "startedAt": "2026-11-16T17:15:57Z",
+      "completedAt": "2026-11-16T17:40:40Z",
+      "failedSteps": [
+        {
+          "number": 9,
+          "name": "Api tests (shard 2 of 3)",
+          "status": "completed",
+          "conclusion": "failure"
+        }
+      ],
+      "activeSteps": [],
+      "stepCounts": {
+        "success": 12,
+        "skipped": 1,
+        "failure": 1,
+        "cancelled": 0
+      }
+    },
+    {
+      "databaseId": 133472062942,
+      "name": "pos-tests",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/vickyydev/oto-platform/actions/runs/43915633429/job/133472062942",
+      "startedAt": "2026-11-16T17:15:57Z",
+      "completedAt": "2026-11-16T17:28:13Z",
+      "failedSteps": [],
+      "activeSteps": [],
+      "stepCounts": {
+        "success": 12,
+        "skipped": 0,
+        "failure": 0,
+        "cancelled": 0
+      }
+    }
+  ]
+}

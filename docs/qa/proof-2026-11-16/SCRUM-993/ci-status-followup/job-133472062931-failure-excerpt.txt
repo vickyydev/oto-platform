@@ -1,0 +1,7 @@
+FAIL  test/route-write-conformance.test.ts > the idempotency key (SCRUM-291) > only these mutating routes are outside the replay store
++   "POST /otoapp/parties/:eventId/beo-additions [credential:otoapp-provision]",
+FAIL  test/route-write-conformance.test.ts > the idempotency key (SCRUM-291) > every other mutating route that has a session is therefore covered
+FAIL  test/s217b-r6-review.test.ts > A. fences and seams > the gate did not move WHERE documents are kept: the PDF, file and bucket modules and the BEO and org chart routes are byte for byte main’s
+Expected: "376971471e2f7fe8bbda3796284a4219a44ab31244825e4b3903f7fe4f8bef96"
+Received: "62eacd914f65f7a222e9ac6ce89aa7a7ea02d81d63eff87aa064c8b539c35e90"
++   "/otoapp/parties/:eventId/beo-additions",

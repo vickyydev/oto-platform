@@ -1,0 +1,10 @@
+FAIL  test/seam-walker.test.ts > every front-end call reaches a route the api describes (SCRUM-293) > does not let hand-typed response types regrow (migration-list.ts)
++   "apps/inbox/src/api/inbox.ts: 1 hand-typed, 0 allowed — type the new call from @oto/api-types",
+Test Files  1 failed (1)
+Tests  1 failed | 9 passed (10)
+FAIL  test/schema-shape.test.ts > tenancy columns (SCRUM-292) > every table declares operator_id, names its scoped parent, or is a listed exception
+AssertionError: NEW table with no tenancy column and no named parent. Fix it, or add it to the list in this file with the ticket that will.: expected [ 'pos.prebooking_deposit_request' ] to deeply equal []
++   "pos.prebooking_deposit_request",
+Test Files  1 failed | 69 passed (70)
+Tests  1 failed | 464 passed (465)
+##[error]AssertionError: NEW table with no tenancy column and no named parent. Fix it, or add it to the list in this file with the ticket that will.: expected [ 'pos.prebooking_deposit_request' ] to deeply equal []

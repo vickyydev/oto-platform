@@ -1,0 +1,10 @@
+##[group]Run npx tsx tests/beo-catalogue-fill.check.ts
+npx tsx tests/beo-catalogue-fill.check.ts
+"approvalWritesTheBeo": false,
+"theRestIsWrittenInTheSamePass": false,
+"emptyCatalogueReadsTheConversationNoTranscriptAsBefore": false,
+"theParentLinksChoicesAreKeptOrReset": false,
+"approvalWritesTheBeo": "Expected values to be strictly deep-equal:\n+ actual - expected\n... Skipped lines\n\n  [\n    {\n      groupId: 'item_cf_bday_pizza',\n      id: 'set_item_cf_bday_pizza_Margherita',\n      included: true,\n...\n    {\n-     billingSync: 'pending',\n      chargeApproved: true,\n      id: 'ai_d1f31a96-6ffb-46f0-b87c-12d046939c38',\n      included: false,\n      itemName: 'French fries',\n      notes: '',\n...\n    {\n-     billingSync: 'pending',\n      chargeApproved: true,\n      id: 'ai_852c5cea-b0df-47b3-a848-58907b218ca6',\n      included: false,\n      itemName: 'суши',\n      notes: 'Not in the menu',\n\n+ actua
+"theRestIsWrittenInTheSamePass": "{\"message\":\"This BEO changed after the review opened. Read the chat again to compare the latest saved plan. Nothing was written.\"}\n\n409 !== 200\n\n\n409 !== 200\n",
+"emptyCatalogueReadsTheConversationNoTranscriptAsBefore": "Expected values to be strictly deep-equal:\n+ actual - expected\n\n+ []\n- [\n-   [\n-     null,\n-     'bubble show',\n-     0\n-   ],\n-   [\n-     null,\n-     'face painting',\n-     0\n-   ]\n- ]\n\n+ actual - expected\n\n+ []",
+"theParentLinksChoicesAreKeptOrReset": "Expected values to be strictly equal:\n\n409 !== 200\n\n\n409 !== 200\n"

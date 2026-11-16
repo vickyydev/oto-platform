@@ -1,0 +1,122 @@
+{
+  "databaseId": 43908721219,
+  "headSha": "caa85d054536b04bbb6afb02c776485195e28424",
+  "status": "completed",
+  "conclusion": "failure",
+  "url": "https://github.com/vickyydev/oto-platform/actions/runs/43908721219",
+  "attempt": 1,
+  "createdAt": "2026-11-16T16:33:03Z",
+  "updatedAt": "2026-11-16T17:15:55Z",
+  "observedAtUtc": "2026-11-16T17:48:44.333646+00:00",
+  "jobs": [
+    {
+      "databaseId": 133450688460,
+      "name": "pos-tests",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/vickyydev/oto-platform/actions/runs/43908721219/job/133450688460",
+      "startedAt": "2026-11-16T16:42:36Z",
+      "completedAt": "2026-11-16T16:53:46Z",
+      "failedSteps": [],
+      "activeSteps": [],
+      "stepCounts": {
+        "success": 12,
+        "skipped": 0,
+        "failure": 0,
+        "cancelled": 0
+      }
+    },
+    {
+      "databaseId": 133450688904,
+      "name": "api-tests (3)",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/vickyydev/oto-platform/actions/runs/43908721219/job/133450688904",
+      "startedAt": "2026-11-16T16:42:36Z",
+      "completedAt": "2026-11-16T17:15:55Z",
+      "failedSteps": [],
+      "activeSteps": [],
+      "stepCounts": {
+        "success": 14,
+        "skipped": 0,
+        "failure": 0,
+        "cancelled": 0
+      }
+    },
+    {
+      "databaseId": 133450688980,
+      "name": "oto-app",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/vickyydev/oto-platform/actions/runs/43908721219/job/133450688980",
+      "startedAt": "2026-11-16T16:42:37Z",
+      "completedAt": "2026-11-16T17:07:35Z",
+      "failedSteps": [],
+      "activeSteps": [],
+      "stepCounts": {
+        "success": 124,
+        "skipped": 0,
+        "failure": 0,
+        "cancelled": 0
+      }
+    },
+    {
+      "databaseId": 133450688985,
+      "name": "api-tests (1)",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/vickyydev/oto-platform/actions/runs/43908721219/job/133450688985",
+      "startedAt": "2026-11-16T16:42:36Z",
+      "completedAt": "2026-11-16T17:05:25Z",
+      "failedSteps": [],
+      "activeSteps": [],
+      "stepCounts": {
+        "success": 14,
+        "skipped": 0,
+        "failure": 0,
+        "cancelled": 0
+      }
+    },
+    {
+      "databaseId": 133450689011,
+      "name": "api-tests (2)",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/vickyydev/oto-platform/actions/runs/43908721219/job/133450689011",
+      "startedAt": "2026-11-16T16:42:36Z",
+      "completedAt": "2026-11-16T17:14:07Z",
+      "failedSteps": [],
+      "activeSteps": [],
+      "stepCounts": {
+        "success": 14,
+        "skipped": 0,
+        "failure": 0,
+        "cancelled": 0
+      }
+    },
+    {
+      "databaseId": 133450689135,
+      "name": "ci",
+      "status": "completed",
+      "conclusion": "failure",
+      "url": "https://github.com/vickyydev/oto-platform/actions/runs/43908721219/job/133450689135",
+      "startedAt": "2026-11-16T16:42:36Z",
+      "completedAt": "2026-11-16T16:57:19Z",
+      "failedSteps": [
+        {
+          "number": 18,
+          "name": "Test",
+          "status": "completed",
+          "conclusion": "failure"
+        }
+      ],
+      "activeSteps": [],
+      "stepCounts": {
+        "success": 22,
+        "skipped": 9,
+        "failure": 1,
+        "cancelled": 0
+      }
+    }
+  ]
+}

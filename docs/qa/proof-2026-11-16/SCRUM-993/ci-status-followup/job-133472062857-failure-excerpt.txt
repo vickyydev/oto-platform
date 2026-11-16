@@ -1,0 +1,4 @@
+FAIL  test/routes-guarded.test.ts > route guards (S2-01b) > binds the OTO App’s party deposit and menu doors to its operator credential, and the deposit return to no session (SCRUM-825)
++   "POST /otoapp/parties/:eventId/beo-additions",
+Test Files  1 failed | 178 passed | 2 skipped (181)
+Tests  1 failed | 2520 passed | 106 skipped (2627)
