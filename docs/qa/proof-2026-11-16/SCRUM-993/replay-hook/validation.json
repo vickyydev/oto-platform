@@ -1,0 +1,14 @@
+{
+    "testsLog":  "C:/oto-lanes/inbox-993-replay-hook-tests.log",
+    "passed":  63,
+    "files":  4,
+    "typesBytes":  0,
+    "lintBytes":  0,
+    "sourceFiles":  [
+                        "apps/api/src/plugins/idempotency.ts",
+                        "apps/api/src/plugins/permission.ts"
+                    ],
+    "testFile":  "apps/api/test/idempotency-replay-authorization-review.test.ts",
+    "baseSha":  "e163113b326b79a862af4fba7b5fbf10b2622cbc",
+    "candidateSha":  "cbd9e66bf0ca4ad719bdd2dc70e22ddcd26c4175"
+}
