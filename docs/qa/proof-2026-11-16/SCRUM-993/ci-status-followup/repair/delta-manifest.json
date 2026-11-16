@@ -1,0 +1,148 @@
+{
+  "schemaVersion": 1,
+  "reference993Source": "d79c0bc3915b172770588717ae0cc68b3a66e49c",
+  "sourceSha": "f5cb00e30fa0aa4b87a6aabc1cc547ad768e230c",
+  "reference993ManifestSha256": "e694cba51ca113884454d5c5830aa1f978f79577013cb44b910fccd6b075682e",
+  "original46InputAnd68LogRecordsUnchanged": true,
+  "deltaInputCount": 9,
+  "changedOriginal46Inputs": [
+    "packages/admin-screens/src/api/roles.ts",
+    "packages/db/migrations/meta/_journal.json"
+  ],
+  "additionalInputsBeyondOriginal46": [
+    "apps/api/test/s217b-r6-review.test.ts",
+    "apps/inbox/src/api/inbox.ts",
+    "packages/api-types/test/seam-walker.test.ts",
+    "packages/db/migrations/0129_party_bill_fk_indexes.sql",
+    "packages/db/migrations/meta/0129_snapshot.json",
+    "packages/db/src/schema/parties.ts",
+    "packages/db/test/events-e4-migration.test.ts"
+  ],
+  "inputs": {
+    "apps/api/test/s217b-r6-review.test.ts": {
+      "before": {
+        "canonicalSha256": "cac9e35021ea032ee4c74302d28ed417aded9556622e68339eb07e337e0af991",
+        "gitBlob": "74877b98d44666598fdc715e33dd63c551993c5e"
+      },
+      "after": {
+        "canonicalSha256": "b8778ecfd3ad6079b591aba05fd89d51303123b08bd18f1233f79f2458651be1",
+        "rawSha256": "b8778ecfd3ad6079b591aba05fd89d51303123b08bd18f1233f79f2458651be1",
+        "gitBlob": "193d5ca557e0598a25382feb055c739610f6e698",
+        "canonicalBytes": 175306,
+        "rawBytes": 175306
+      }
+    },
+    "apps/inbox/src/api/inbox.ts": {
+      "before": {
+        "canonicalSha256": "9be22e0f6362a18c935484d0727066942d517accfafd7eb2325b8e8c66e3181f",
+        "gitBlob": "8c54c6c4e112cfc7202d14e4fb66af3038040a9f"
+      },
+      "after": {
+        "canonicalSha256": "710425c9508976596828083ba8d1bf998f1cec922c00051ca08122c0e39fcb69",
+        "rawSha256": "710425c9508976596828083ba8d1bf998f1cec922c00051ca08122c0e39fcb69",
+        "gitBlob": "b392381528dfe425a7267a093f11e29b903b0e60",
+        "canonicalBytes": 14715,
+        "rawBytes": 14715
+      }
+    },
+    "packages/admin-screens/src/api/roles.ts": {
+      "before": {
+        "canonicalSha256": "c27bc3f4d2670476e64ca49f6a4805b8bd4c5d7e2d1c9fd917155743c51c87a7",
+        "gitBlob": "70c394670178396551a24b5163650a0100a78030"
+      },
+      "after": {
+        "canonicalSha256": "fb430450ea5ac1b2b611fcd66c249dc03cbb69ab3d4403eb01ef26cf5ec649c9",
+        "rawSha256": "fb430450ea5ac1b2b611fcd66c249dc03cbb69ab3d4403eb01ef26cf5ec649c9",
+        "gitBlob": "90679e5a0eedde5c47bfeafec069b5b74efad105",
+        "canonicalBytes": 2720,
+        "rawBytes": 2720
+      }
+    },
+    "packages/api-types/test/seam-walker.test.ts": {
+      "before": {
+        "canonicalSha256": "a6dc01953d69328088bea00936f8bb943bb6e8cff5ba0a77f701f85584adf25f",
+        "gitBlob": "e0c607af27c95e7081a7656138e5e5c8eb0deb45"
+      },
+      "after": {
+        "canonicalSha256": "a988fd2c8eb2c7741ec817015e7df884a2f003154277f004b78b04ac3171aef2",
+        "rawSha256": "a988fd2c8eb2c7741ec817015e7df884a2f003154277f004b78b04ac3171aef2",
+        "gitBlob": "d29ba6027792ceb5a983b454ec016d02e8567e78",
+        "canonicalBytes": 19726,
+        "rawBytes": 19726
+      }
+    },
+    "packages/db/migrations/0129_party_bill_fk_indexes.sql": {
+      "before": null,
+      "after": {
+        "canonicalSha256": "cf37081e4be4b3851ffc1df872e29ef371bc92c814b967ceb6cbfb0e5d97967b",
+        "rawSha256": "cf37081e4be4b3851ffc1df872e29ef371bc92c814b967ceb6cbfb0e5d97967b",
+        "gitBlob": "fe24698fe654f7a1c0c16f46893cb28949259f8a",
+        "canonicalBytes": 241,
+        "rawBytes": 241
+      }
+    },
+    "packages/db/migrations/meta/0129_snapshot.json": {
+      "before": null,
+      "after": {
+        "canonicalSha256": "0fb7b8cf0b6d2964f21d934dd56f832175e93d97c4d4fcdacc94812372aaf245",
+        "rawSha256": "0fb7b8cf0b6d2964f21d934dd56f832175e93d97c4d4fcdacc94812372aaf245",
+        "gitBlob": "d61643042127962059abe0907a85e89c83d314a3",
+        "canonicalBytes": 1466538,
+        "rawBytes": 1466538
+      }
+    },
+    "packages/db/migrations/meta/_journal.json": {
+      "before": {
+        "canonicalSha256": "3e796609740b02781099600cfb1d529d091b9cc01cded4dc4f620c5963482f0a",
+        "gitBlob": "ffd4fb02ec08ef4c66619aae9dfff1454f85bc11"
+      },
+      "after": {
+        "canonicalSha256": "aece41fc8c813870dd4ada8ebda3c26260c947bfd3d5ff0bd3adf6dfe1da3779",
+        "rawSha256": "aece41fc8c813870dd4ada8ebda3c26260c947bfd3d5ff0bd3adf6dfe1da3779",
+        "gitBlob": "7cac249f5d83b978d126907e01dcb3d7f6ab35a6",
+        "canonicalBytes": 19173,
+        "rawBytes": 19173
+      }
+    },
+    "packages/db/src/schema/parties.ts": {
+      "before": {
+        "canonicalSha256": "ea12f1701ba97f01bc186d7394c290789d4efdb7b9dd197b6010d3c8616fe936",
+        "gitBlob": "ab2da27ab6ad29e96f20424fce4a16f6acb297d3"
+      },
+      "after": {
+        "canonicalSha256": "259aa33cc8c257a389080f957b5052dabcac216795d510f8f4acdd31721064b5",
+        "rawSha256": "259aa33cc8c257a389080f957b5052dabcac216795d510f8f4acdd31721064b5",
+        "gitBlob": "f4c1ad68b8ca09414f3be16d43753c76e747f3a9",
+        "canonicalBytes": 21554,
+        "rawBytes": 21554
+      }
+    },
+    "packages/db/test/events-e4-migration.test.ts": {
+      "before": {
+        "canonicalSha256": "34ed2d1e593d831b93857ec179913deb6ff161a4c45fd1dc39769487ac9ddb0c",
+        "gitBlob": "5db28c7babdbb0daf18ddcd47a4681a333bbd9f9"
+      },
+      "after": {
+        "canonicalSha256": "d5687c30f0e08c7d69d26d8c0825378e5a6ad6badb08c6170017c00db4ae68af",
+        "rawSha256": "d5687c30f0e08c7d69d26d8c0825378e5a6ad6badb08c6170017c00db4ae68af",
+        "gitBlob": "bd87cdb2a7732f656a8dce84652b123a10ef41b4",
+        "canonicalBytes": 7959,
+        "rawBytes": 7959
+      }
+    }
+  },
+  "migration": {
+    "number": "0129",
+    "sqlSha256": "cf37081e4be4b3851ffc1df872e29ef371bc92c814b967ceb6cbfb0e5d97967b",
+    "statements": 2,
+    "operations": "CREATE INDEX only",
+    "snapshotPreviousId": "d3157be6-d279-455b-b3bd-c2589df59249",
+    "snapshot0128Id": "d3157be6-d279-455b-b3bd-c2589df59249",
+    "snapshot0128ByteIdentical": true,
+    "priorSqlFilesByteIdentical": 129,
+    "priorJournalPrefixIdentical": true,
+    "timestampAfter0128": true
+  },
+  "appSourceEdits": [],
+  "dependency": "Integrate after original993 including0128; root owns publication/deployment after sharedAPI QA hold."
+}

@@ -1,0 +1,213 @@
+{
+  "schemaVersion": 1,
+  "sourceSha": "f5cb00e30fa0aa4b87a6aabc1cc547ad768e230c",
+  "reference993Source": "d79c0bc3915b172770588717ae0cc68b3a66e49c",
+  "recordedAtUtc": "2026-11-16T18:15:16.323322+00:00",
+  "deltaManifest": "delta-manifest.json",
+  "deltaManifestSha256": "7b08eea1d68bfa211e8cafa209a6f9a3fc8a1ba8882e9b8354d093c563ccbe58",
+  "status": "LOCAL_NARROW_GATES_PASSED_ROOT_INTEGRATION_PENDING",
+  "gates": {
+    "seamsFirst": {
+      "passed": 9,
+      "failed": 1,
+      "total": 10,
+      "log": "inbox-993-ci-seams-first.log",
+      "finding": "Three generated aliases in the new account wrappers also need inline generated helper names."
+    },
+    "seamsRepaired": {
+      "passed": 10,
+      "failed": 0,
+      "command": "pnpm --filter @oto/api-types test --no-file-parallelism",
+      "log": "inbox-993-ci-seams-green.log"
+    },
+    "partyMigrationFiles": {
+      "files": 2,
+      "passed": 7,
+      "failed": 0,
+      "command": "pnpm --filter @oto/db exec vitest run test/events-e4-migration.test.ts test/s220-e4-review-migration.test.ts --no-file-parallelism",
+      "log": "inbox-993-ci-party-db-green.log"
+    },
+    "liveCatalogue": {
+      "status": "passed",
+      "command": "pnpm --filter @oto/db verify-schema",
+      "log": "inbox-993-ci-0129-live-schema.log"
+    },
+    "r6WholeFile": {
+      "passed": 14,
+      "skipped": 51,
+      "failed": 0,
+      "total": 65,
+      "command": "pnpm --filter @oto/api exec vitest run test/s217b-r6-review.test.ts --no-file-parallelism",
+      "log": "inbox-993-ci-r6-review.log",
+      "limit": "Static and migration sections pass; existing HAS_APP_RUNTIME condition skips app HTTP sections in this lane. No skip was added or changed, and no51case pass claim is made."
+    },
+    "compilers": [
+      {
+        "config": "apps/api/tsconfig.json",
+        "command": "pnpm exec tsc -p apps/api/tsconfig.json --noEmit",
+        "exitCode": 0,
+        "diagnosticBytes": 0,
+        "log": "inbox-993-ci-types-api.log"
+      },
+      {
+        "config": "packages/db/tsconfig.json",
+        "command": "pnpm exec tsc -p packages/db/tsconfig.json --noEmit",
+        "exitCode": 0,
+        "diagnosticBytes": 0,
+        "log": "inbox-993-ci-types-db.log"
+      },
+      {
+        "config": "packages/api-types/tsconfig.json",
+        "command": "pnpm exec tsc -p packages/api-types/tsconfig.json --noEmit",
+        "exitCode": 0,
+        "diagnosticBytes": 0,
+        "log": "inbox-993-ci-types-api-types.log"
+      },
+      {
+        "config": "packages/admin-screens/tsconfig.json",
+        "command": "pnpm exec tsc -p packages/admin-screens/tsconfig.json --noEmit",
+        "exitCode": 0,
+        "diagnosticBytes": 0,
+        "log": "inbox-993-ci-types-admin.log"
+      },
+      {
+        "config": "apps/inbox/tsconfig.json",
+        "command": "pnpm exec tsc -p apps/inbox/tsconfig.json --noEmit",
+        "exitCode": 0,
+        "diagnosticBytes": 0,
+        "log": "inbox-993-ci-types-inbox.log"
+      },
+      {
+        "config": "apps/inbox/tsconfig.test.json",
+        "command": "pnpm exec tsc -p apps/inbox/tsconfig.test.json --noEmit",
+        "exitCode": 0,
+        "diagnosticBytes": 0,
+        "log": "inbox-993-ci-types-inbox-test.log"
+      }
+    ],
+    "lint": {
+      "exitCode": 0,
+      "diagnosticBytes": 0,
+      "log": "inbox-993-ci-repair-lint-final.log",
+      "files": [
+        "apps/api/test/s217b-r6-review.test.ts",
+        "apps/inbox/src/api/inbox.ts",
+        "packages/admin-screens/src/api/roles.ts",
+        "packages/api-types/test/seam-walker.test.ts",
+        "packages/db/src/schema/parties.ts",
+        "packages/db/test/events-e4-migration.test.ts"
+      ]
+    }
+  },
+  "logs": {
+    "inbox-993-ci-0129-generate.log": {
+      "path": "C:/oto-lanes/inbox-993-ci-0129-generate.log",
+      "bytes": 17718,
+      "rawSha256": "712bf3c7ec2583cda7dadcb15e0619dacb5209656275fe0146d00235224c1dc2",
+      "canonicalUtf8LfSha256": "e2fb7d7af9a2fbefe3a5e83c0c8204250d9e956c2cf59f6e059e873496af64f6",
+      "encoding": "utf-16"
+    },
+    "inbox-993-ci-0129-live-schema.log": {
+      "path": "C:/oto-lanes/inbox-993-ci-0129-live-schema.log",
+      "bytes": 5336,
+      "rawSha256": "db3f2b472c00e430921d58397e99d285b0a00c91cc46eb2ac4cf3e53f598e96f",
+      "canonicalUtf8LfSha256": "1b0ad12c551392c66a805c4ee6f1251af326dea595f9b3eddac55ef195709ebd",
+      "encoding": "utf-16"
+    },
+    "inbox-993-ci-party-db-green.log": {
+      "path": "C:/oto-lanes/inbox-993-ci-party-db-green.log",
+      "bytes": 28700,
+      "rawSha256": "dcb57fe3f33aaf2724fb1aa46141d3bab251a36c34c8c7534977328d96812b34",
+      "canonicalUtf8LfSha256": "7bdcc8edd43b718a806f3d1895d06a14ae98cb8772861ce53b6a7785db0577ca",
+      "encoding": "utf-16"
+    },
+    "inbox-993-ci-r6-review.log": {
+      "path": "C:/oto-lanes/inbox-993-ci-r6-review.log",
+      "bytes": 26110,
+      "rawSha256": "8035449eee19c1998a941f2c6056d487fffab02fc21ba801ec75f5c552f3625d",
+      "canonicalUtf8LfSha256": "0e9d46222050f917332bb2ff1d21ab8cf8ff8c1686ad68e4cedb419ce7a37c32",
+      "encoding": "utf-16"
+    },
+    "inbox-993-ci-repair-lint-final.log": {
+      "path": "C:/oto-lanes/inbox-993-ci-repair-lint-final.log",
+      "bytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalUtf8LfSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "encoding": "utf-8"
+    },
+    "inbox-993-ci-repair-lint-first.log": {
+      "path": "C:/oto-lanes/inbox-993-ci-repair-lint-first.log",
+      "bytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalUtf8LfSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "encoding": "utf-8"
+    },
+    "inbox-993-ci-seams-first.log": {
+      "path": "C:/oto-lanes/inbox-993-ci-seams-first.log",
+      "bytes": 6158,
+      "rawSha256": "d6d8456853d18f39d576f8159864002c2bcf7ee45af1579bc6e858f658537ca9",
+      "canonicalUtf8LfSha256": "4d761b12af6ec535c60839b2d06a243052c2d5f09352f60b3d71bdffd3ffa519",
+      "encoding": "utf-16"
+    },
+    "inbox-993-ci-seams-green.log": {
+      "path": "C:/oto-lanes/inbox-993-ci-seams-green.log",
+      "bytes": 900,
+      "rawSha256": "94a40090367e469fd21444c5b6fd347ba4af4b11879a860727d0e4b396ec5531",
+      "canonicalUtf8LfSha256": "f2678cce63e1a49fdbdeeaac7e9823e50774187073639fde08a6fe9fb2531d76",
+      "encoding": "utf-16"
+    },
+    "inbox-993-ci-types-admin.log": {
+      "path": "C:/oto-lanes/inbox-993-ci-types-admin.log",
+      "bytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalUtf8LfSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "encoding": "utf-8"
+    },
+    "inbox-993-ci-types-api-types.log": {
+      "path": "C:/oto-lanes/inbox-993-ci-types-api-types.log",
+      "bytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalUtf8LfSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "encoding": "utf-8"
+    },
+    "inbox-993-ci-types-api.log": {
+      "path": "C:/oto-lanes/inbox-993-ci-types-api.log",
+      "bytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalUtf8LfSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "encoding": "utf-8"
+    },
+    "inbox-993-ci-types-db.log": {
+      "path": "C:/oto-lanes/inbox-993-ci-types-db.log",
+      "bytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalUtf8LfSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "encoding": "utf-8"
+    },
+    "inbox-993-ci-types-inbox-test.log": {
+      "path": "C:/oto-lanes/inbox-993-ci-types-inbox-test.log",
+      "bytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalUtf8LfSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "encoding": "utf-8"
+    },
+    "inbox-993-ci-types-inbox.log": {
+      "path": "C:/oto-lanes/inbox-993-ci-types-inbox.log",
+      "bytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalUtf8LfSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "encoding": "utf-8"
+    }
+  },
+  "noRepeatedTestsAfterSuccess": true,
+  "activeOwnedProcesses": 0,
+  "ciRerunsIssued": 0,
+  "mainPushes": 0,
+  "deployments": 0,
+  "limits": [
+    "The original99346input/68log record is historical and unchanged; this9input delta explicitly replaces its roles/journal bindings and adds7other inputs.",
+    "No app product source changed in this lane. App mirror/catalogue fixes and their gates belong to the BEO agent.",
+    "No UI production build or broad unchanged suite is repeated for generated-type-argument naming and index-only schema changes.",
+    "Root holds main publication and API/runtime deployment until the shared proof slot releases."
+  ]
+}
