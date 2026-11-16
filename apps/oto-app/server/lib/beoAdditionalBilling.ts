@@ -1,5 +1,4 @@
-import { beoBillingFingerprint, billingSyncAfterAttempt } from "@shared/beoBillingSource";
-import { beoKitchenChargesOf } from "@shared/beoExtras";
+import { approvedBeoBillingSources, billingSourceSetMatches, beoBillingFingerprint, billingSyncAfterAttempt } from "@shared/beoBillingSource";
 import { eq, sql } from "drizzle-orm";
 import { beoBarPlans, beoEventBilling, beoKitchenPlans } from "@shared/schema";
 import { db } from "../db";
@@ -16,11 +15,7 @@ export async function syncApprovedBeoAdditions(eventId: string, userId: string):
     const [kitchen] = await db.select().from(beoKitchenPlans).where(eq(beoKitchenPlans.eventId, eventId));
     const [bar] = await db.select().from(beoBarPlans).where(eq(beoBarPlans.eventId, eventId));
     const menus = object(kitchen?.menus);
-    const kids = rows(menus.kids);
-    const adults = menus.adultsDiffer === true ? rows(menus.adults) : [];
-    const asExtra = (line: Line) => ({ itemName: String(line.itemName ?? ""), quantity: Number(line.quantity) || 1, productCode: typeof line.productCode === "string" ? line.productCode : null });
-    const charges = beoKitchenChargesOf(kids.map(asExtra), adults.map(asExtra), menus.adultsDiffer === true, { till: { known: false, byCode: new Map() }, partyDate: null });
-    return { kitchen, bar, menus, lines: [...kids.map((line): Line => ({ ...line, billingArea: "food" })), ...adults.filter((_, index) => charges.adults[index]?.kind !== "with_kids").map((line): Line => ({ ...line, billingArea: "food" })), ...rows(bar?.items).map((line): Line => ({ ...line, billingArea: "bar" }))].filter((line) => line.chargeApproved === true && line.source !== "set_menu" && typeof line.id === "string" && typeof line.itemName === "string" && line.itemName.trim()) };
+    return { kitchen, bar, menus, lines: approvedBeoBillingSources(menus, bar?.items) };
   };
   const initial = await read();
   const finish = async (result: AdditionalBillingResult): Promise<AdditionalBillingResult> => {
@@ -36,7 +31,7 @@ export async function syncApprovedBeoAdditions(eventId: string, userId: string):
     return { status: "plan_only", message: "No newly approved priced additions." };
   }
   const fingerprint = new Map(initial.lines.map((line) => [String(line.id), beoBillingFingerprint(line, line.billingArea as "food" | "bar")]));
-  const mark = async (status: string) => db.transaction(async (tx) => {
+  const mark = async (status: string, result?: AdditionalBillingResult) => db.transaction(async (tx) => {
     await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${eventId}))`);
     const [kitchen] = await tx.select().from(beoKitchenPlans).where(eq(beoKitchenPlans.eventId, eventId));
     const [bar] = await tx.select().from(beoBarPlans).where(eq(beoBarPlans.eventId, eventId));
@@ -52,7 +47,14 @@ export async function syncApprovedBeoAdditions(eventId: string, userId: string):
     });
     if (kitchen) await tx.update(beoKitchenPlans).set({ menus: { ...menus, kids: update(menus.kids, "food"), adults: update(menus.adults, "food") } }).where(eq(beoKitchenPlans.id, kitchen.id));
     if (bar) await tx.update(beoBarPlans).set({ items: update(bar.items, "bar") }).where(eq(beoBarPlans.id, bar.id));
-    return unchanged && seen.size === fingerprint.size;
+    const same = unchanged && seen.size === fingerprint.size && billingSourceSetMatches(fingerprint, approvedBeoBillingSources(menus, bar?.items));
+    if (result) {
+      const final = same ? result : { status: "pending" as const, message: "The plan changed while the till processed earlier saved items. Review the bill and save the current plan again." };
+      const held = JSON.stringify(final);
+      await tx.insert(beoEventBilling).values({ eventId, addOns: { additionalBilling: final } }).onConflictDoUpdate({ target: beoEventBilling.eventId,
+        set: { addOns: sql`jsonb_set(COALESCE(${beoEventBilling.addOns}, '{}'::jsonb), '{additionalBilling}', ${held}::jsonb)` } });
+    }
+    return same;
   });
   const sameBefore = await mark("pending");
   await finish({ status: "pending", message: "New approved items are waiting for the till to confirm their additional bill. Save again to retry the same source lines." });
@@ -64,8 +66,9 @@ export async function syncApprovedBeoAdditions(eventId: string, userId: string):
     const response = await fetch(`${config.apiUrl}/otoapp/parties/${encodeURIComponent(eventId)}/beo-additions`, { method: "POST", headers: { authorization: `Bearer ${config.key}`, "content-type": "application/json" }, signal: AbortSignal.timeout(10_000), body: JSON.stringify({ actorAppUserId: userId, lines: initial.lines.map((line) => ({ lineId: line.id, productCode: typeof line.productCode === "string" && line.productCode.trim() ? line.productCode.trim() : null, area: line.billingArea, name: line.itemName, quantity: typeof line.quantity === "number" && line.quantity > 0 ? Math.floor(line.quantity) : 1, unitSatang: typeof line.price === "number" && line.price > 0 ? Math.round(line.price * 100) : null, included: line.included === true })) }) });
     const answer = await response.json().catch(() => null) as { status?: string; error?: { message?: string } } | null;
     if (!response.ok || (answer?.status !== "synced" && answer?.status !== "plan_only")) return pending(answer?.error?.message ?? "The till did not confirm the additional bill.");
-    if (!(await mark(answer.status))) return pending("The plan changed while the till processed its earlier saved items. Review that bill before changing a charged line.");
-    return finish({ status: answer.status, message: answer.status === "synced" ? "New approved items are linked to the party's additional bill; the original paid receipt is unchanged." : "Items remain in the plan until the main party is settled." });
+    const result: AdditionalBillingResult = { status: answer.status, message: answer.status === "synced" ? "New approved items are linked to the party's additional bill; the original paid receipt is unchanged." : "Items remain in the plan until the main party is settled." };
+    if (!(await mark(answer.status, result))) return { status: "pending", message: "The plan changed while the till processed its earlier saved items. Review that bill and save the current plan again." };
+    return result;
   } catch {
     return pending("The till did not answer.");
   }

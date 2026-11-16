@@ -1,5 +1,5 @@
 import { lineWithTillItem } from "../shared/tillMenu";
-import { beoBillingFingerprint, billingSyncAfterAttempt } from "../shared/beoBillingSource";
+import { approvedBeoBillingSources, billingSourceSetMatches, beoBillingFingerprint, billingSyncAfterAttempt } from "../shared/beoBillingSource";
 import assert from "node:assert/strict";
 import { parentMenuPriceWords } from "../client/src/pages/public/menu-select";
 import { beoExtraChargeOf, beoExtraHintOf } from "../shared/beoExtras";
@@ -25,4 +25,11 @@ assert.notEqual(beoBillingFingerprint(source, "food"), beoBillingFingerprint(sou
 const legacy = lineWithTillItem({ itemName: "Old legacy drink", price: 50 }, menu);
 assert.equal((legacy as { chargeApproved?: boolean }).chargeApproved, undefined);
 assert.equal(billingSyncAfterAttempt({ ...source, productCode: "CF-2", billingSync: "synced" }, "food", beoBillingFingerprint(source, "food"), "synced"), "pending");
-console.log("tom-beo-review: 16 checks passed");
+const first = approvedBeoBillingSources({ kids: [source], adults: [], adultsDiffer: false }, []);
+const expected = new Map(first.map((line) => [String(line.id), beoBillingFingerprint(line, line.billingArea as "food" | "bar")]));
+assert.equal(billingSourceSetMatches(expected, approvedBeoBillingSources({ kids: [source, { ...source, id: "newer-source" }], adults: [], adultsDiffer: false }, [])), false);
+assert.equal(billingSourceSetMatches(expected, []), false);
+assert.equal(billingSourceSetMatches(expected, first), true);
+assert.equal(billingSourceSetMatches(expected, approvedBeoBillingSources({ kids: [source], adults: [{ ...source, id: "adult-source", itemName: "Other adults dish" }], adultsDiffer: false }, [])), true);
+assert.equal(billingSourceSetMatches(expected, approvedBeoBillingSources({ kids: [source], adults: [{ ...source, id: "adult-source", itemName: "Other adults dish" }], adultsDiffer: true }, [])), false);
+console.log("tom-beo-review: 21 checks passed");
