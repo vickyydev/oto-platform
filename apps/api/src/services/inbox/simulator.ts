@@ -169,7 +169,11 @@ export async function authorizeSimulatorStatus(db: Db, person: { accountId: stri
     const [row] = await db.select({ category: conversation.category }).from(message)
       .innerJoin(conversation, and(eq(conversation.operatorId, message.operatorId), eq(conversation.id, message.conversationId)))
       .where(and(eq(message.operatorId, person.operatorId), eq(message.channelAccountId, channelAccountId), eq(message.externalMessageId, externalMessageId))).limit(1);
-    if (!row) throw errors.notFound('Message not found');
+    if (!row) {
+      const limits = await inboxVisibilityLimits(db, person);
+      if (limits.categories === null && limits.channelAccountIds === null) return;
+      throw errors.notFound('Message not found');
+    }
     await assertInboxPolicy(db, person, row.category, channelAccountId);
   } else {
     const limits = await inboxVisibilityLimits(db, person);

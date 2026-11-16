@@ -184,7 +184,7 @@ describe('SCRUM-993 adversarial category/channel policy review', () => {
     expect(denied.statusCode).toBe(change === 'cannotReply' ? 409 : 404); expect(denied.headers['x-oto-replay']).toBeUndefined();
   });
   it('HIGH: archived Start over checks fresh limits before already-cleared and cached answers', async () => {
-    await ctx.db.update(s.conversation).set({ archivedAt: new Date() }).where(eq(s.conversation.id, f.birthday.id));
+    await ctx.db.update(s.conversation).set({ archivedAt: new Date(), archivedByAccountId: f.admin.accountId }).where(eq(s.conversation.id, f.birthday.id));
     const key = newId(), url = `/inbox/conversations/${f.birthday.id}/start-over`;
     const first = await request('POST', url, f.subject, undefined, key); expect(first.statusCode, first.body).toBe(200);
     expect(first.json()).toMatchObject({ alreadyCleared: true });
@@ -193,6 +193,9 @@ describe('SCRUM-993 adversarial category/channel policy review', () => {
     expect((await request('POST', url)).statusCode).toBe(404);
   });
   it('HIGH: the landed prebooking request keeps its stronger replay guard and denies revoked channel access before cached deposit details', async () => {
+    const [seededTemplate] = await ctx.db.select().from(s.template).where(and(eq(s.template.key, 'party_deposit_request'), eq(s.template.language, 'en'))).limit(1);
+    expect(seededTemplate).toBeDefined();
+    await ctx.db.insert(s.template).values({ ...seededTemplate!, id: newId(), operatorId: f.operatorId });
     const key = newId(), url = `/inbox/conversations/${f.birthday.id}/prebooking`;
     const body = { requestId: newId(), amountSatang: 300000, booking: { id: newId(), branchId: f.branchA,
       date: '2099-11-21', startTime: '14:00', kids: 12, adults: 4, contactName: 'ZZ TEST parent', phone: null, childName: 'ZZ TEST child', childAge: 6 } };
@@ -210,11 +213,15 @@ describe('SCRUM-993 adversarial category/channel policy review', () => {
     const key = newId(), patch = { goodReply: 'ZZ TEST reviewed answer' }, exampleUrl = `/inbox/ai/examples/${exampleId}`;
     const first = await request('PATCH', exampleUrl, f.subject, patch, key); expect(first.statusCode, first.body).toBe(200);
     expect((await request('PATCH', exampleUrl, f.subject, patch, key)).body).toBe(first.body);
+    const importKey = newId(), importing = { examples: [{ id: exampleId, customerText: 'What are the opening hours?', goodReply: 'See the opening hours.', intent: 'hours', language: 'en', verdict: 'should_answer' }] };
+    const imported = await request('POST', '/inbox/ai/examples/import', f.subject, importing, importKey);
+    expect(imported.statusCode, imported.body).toBe(200); expect(imported.body).toContain('restricted source question');
     await restrict({ categories: ['general'], channelAccountIds: [f.channelA] });
     const me = await request('GET', '/inbox/me'); expect(me.statusCode, me.body).toBe(200);
     expect(me.body).not.toContain(f.channelB); expect(me.body).not.toContain('ZZ TEST excluded source'); expect(me.json().teams).not.toEqual(expect.arrayContaining([expect.objectContaining({ key: 'birthdays' })]));
     const queue = await request('GET', '/inbox/ai/examples'); expect(queue.statusCode, queue.body).toBe(200); expect(queue.body).not.toContain(exampleId); expect(queue.body).not.toContain('restricted source question');
     expect((await request('PATCH', exampleUrl, f.subject, patch, key)).statusCode).toBe(404);
+    expect((await request('POST', '/inbox/ai/examples/import', f.subject, importing, importKey)).statusCode).toBe(404);
     expect((await request('PATCH', `/inbox/ai/examples/${exampleId}`, f.subject, { customerText: 'ZZ TEST edited' })).statusCode).toBe(404);
     const channels = await request('GET', '/inbox/ai/channel-accounts'); expect(channels.statusCode, channels.body).toBe(200); expect(channels.body).not.toContain(f.channelB);
   });
@@ -233,11 +240,47 @@ describe('SCRUM-993 adversarial category/channel policy review', () => {
     expect(denied.statusCode, denied.body).toBe(404);
     const [row] = await ctx.db.select().from(s.conversation).where(eq(s.conversation.id, f.general.id)); expect(row!.category).toBe('general');
   });
+  it('HIGH: simulator status retains the existing unknown-receipt outcome only when unrestricted and denies unidentifiable restricted context', async () => {
+    const body = { channelAccountId: f.channelA, externalMessageId: 'ZZ-TEST-unknown-receipt', status: 'read' };
+    const first = await request('POST', '/inbox/simulator/status', f.subject, body);
+    expect(first.statusCode, first.body).toBe(200);
+    await restrict({ categories: ['general'], channelAccountIds: [f.channelA] });
+    const denied = await request('POST', '/inbox/simulator/status', f.subject, body); expect(denied.statusCode).toBe(404);
+  });
+  it('HIGH: deidentified example import without caller IDs keeps byte-exact unchanged-access replay', async () => {
+    const body = { examples: [{ customerText: 'Are socks required?', goodReply: 'Socks are required.', intent: 'socks', language: 'en', verdict: 'should_answer' }] };
+    const key = newId(), url = '/inbox/ai/examples/import';
+    const first = await request('POST', url, f.subject, body, key); expect(first.statusCode, first.body).toBe(200);
+    const replay = await request('POST', url, f.subject, body, key); expect(replay.statusCode, replay.body).toBe(200); expect(replay.body).toBe(first.body); expect(replay.headers['x-oto-replay']).toBe('true');
+    expect(await ctx.db.select().from(s.aiExample).where(eq(s.aiExample.operatorId, f.operatorId))).toHaveLength(1);
+  });
+  it('HIGH: an ID-only deleted-example receipt replays unchanged but rechecks the current KB permission', async () => {
+    const id = newId();
+    await ctx.db.insert(s.aiExample).values({ id, operatorId: f.operatorId, intent: 'hours', language: 'en', customerText: 'ZZ TEST question',
+      verdict: 'should_handover', proposedByAccountId: f.subject.accountId, sourceConversationId: f.birthday.id });
+    const key = newId(), url = `/inbox/ai/examples/${id}`;
+    const remove = () => ctx.app.inject({ method: 'DELETE', url, headers: { cookie: f.subject.cookie, 'idempotency-key': key } });
+    const first = await remove(); expect(first.statusCode, first.body).toBe(200); expect(first.json()).toEqual({ id, deleted: true });
+    const replay = await remove(); expect(replay.statusCode, replay.body).toBe(200); expect(replay.body).toBe(first.body);
+    await ctx.db.delete(s.rolePermission).where(and(eq(s.rolePermission.roleId, f.subject.roleId), eq(s.rolePermission.permission, 'inbox:kb:manage')));
+    expect((await remove()).statusCode).toBe(403);
+  });
   it('HIGH: foreign target/channel policy writes fail and actual administrator targets cannot be restricted', async () => {
     expect((await request('GET', accountUrl(f.foreign.accountId), f.admin)).statusCode).toBe(404);
     expect((await request('PUT', accountUrl(), f.admin, { expectedVersion: 0, categories: null, channelAccountIds: [f.foreignChannel] })).statusCode).toBe(404);
     expect((await request('PUT', accountUrl(f.admin.accountId), f.admin, { expectedVersion: 0, categories: [], channelAccountIds: [] })).statusCode).toBe(403);
     expect(await ctx.db.select().from(s.accountInboxAccess).where(eq(s.accountInboxAccess.operatorId, f.operatorId))).toHaveLength(0);
+    await expect(ctx.db.insert(s.accountInboxAccess).values({ id: newId(), operatorId: f.operatorId, accountId: f.foreign.accountId,
+      version: 1, updatedByAccountId: f.admin.accountId })).rejects.toThrow();
+    await expect(ctx.db.insert(s.accountInboxAccess).values({ id: newId(), operatorId: f.operatorId, accountId: f.subject.accountId,
+      version: 0, updatedByAccountId: f.admin.accountId })).rejects.toThrow();
+    await expect(ctx.db.insert(s.accountInboxAccess).values({ id: newId(), operatorId: f.operatorId, accountId: f.subject.accountId,
+      version: 1, allowedCategories: ['unapproved' as never], updatedByAccountId: f.admin.accountId })).rejects.toThrow();
+    await restrict({ categories: null, channelAccountIds: [] });
+    await expect(ctx.db.insert(s.accountInboxChannelAccess).values({ id: newId(), operatorId: f.operatorId, accountId: f.subject.accountId,
+      channelAccountId: f.foreignChannel })).rejects.toThrow();
+    await expect(ctx.db.insert(s.accountInboxChannelAccess).values({ id: newId(), operatorId: f.operatorId, accountId: f.admin.accountId,
+      channelAccountId: f.channelA })).rejects.toThrow();
   });
   it('HIGH: branch-only role managers can read a dominated local account but cannot write a global policy or see foreign park channel names', async () => {
     const local = await person(f.operatorId, [], 'branch', f.branchA, f.branchA);

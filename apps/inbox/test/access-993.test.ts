@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { InboxMe } from '@/api/inbox';
 import { useInboxAccess } from '@/hooks/useInboxAccess';
-import { inboxAccessSignature, inboxFiltersWithinAccess, inboxItemWithinAccess, inboxSourcesWithinAccess, namedViews, type SourceOption } from '@/lib/inboxes';
+import { inboxAccessSignature, inboxFiltersWithinAccess, inboxItemWithinAccess, inboxMeWithinAccess, inboxSourcesWithinAccess, namedViews, type SourceOption } from '@/lib/inboxes';
 import { EMPTY_FILTERS } from '@/lib/query';
 import { renderHook } from '../../pos/test/support/hooks';
 
@@ -32,6 +32,17 @@ describe('SCRUM-993 cached Inbox boundary state', () => {
     expect(namedViews(me).map(view => view.key)).toEqual(['all', 'general', 'line:allowed']);
     expect(namedViews({ ...me, access: { ...restricted, categories: [], channelAccountIds: null } }).map(view => view.key)).toEqual(['all']);
   });
+  it('removes stale simulator/contact choices immediately and waits for matching server identity before restoring contact creation', () => {
+    const lines = [{ id: 'allowed', channel: 'whatsapp', displayName: 'ZZ TEST allowed', branchId: null }, { id: 'excluded', channel: 'line', displayName: 'ZZ TEST excluded', branchId: null }];
+    const me = { access: unrestricted, teams: [{ kind: 'birthdays' }, { kind: 'reception' }], testLines: lines,
+      simulator: { channelAccounts: lines }, contactChannels: lines, defaultReceptionBranchId: 'park' } as InboxMe;
+    const pending = inboxMeWithinAccess(me, restricted);
+    expect(pending.simulator!.channelAccounts.map(line => line.id)).toEqual(['allowed']);
+    expect(pending.testLines!.map(line => line.id)).toEqual(['allowed']); expect(pending.teams.map(team => team.kind)).toEqual(['reception']);
+    expect(pending.contactChannels).toEqual([]);
+    expect(inboxMeWithinAccess({ ...me, access: restricted }, restricted).contactChannels!.map(line => line.id)).toEqual(['allowed']);
+    expect(inboxMeWithinAccess(me, { ...restricted, categories: [] })).toMatchObject({ teams: [], testLines: [], simulator: { channelAccounts: [] }, contactChannels: [], defaultReceptionBranchId: null });
+  });
   it('reloads identity once per distinct mismatch even when equivalent objects keep arriving', () => {
     const reload = vi.fn(async () => undefined);
     const hook = renderHook(({ page, identity }: { page: Access; identity: Access }) => useInboxAccess(page, identity, reload), { page: restricted, identity: unrestricted }); cleanup = hook.unmount;
@@ -53,5 +64,19 @@ describe('SCRUM-993 cached Inbox boundary state', () => {
   it('normalizes reordered policy values so polling does not erase the selected workspace', () => {
     expect(inboxAccessSignature({ version: 1, categories: ['general', 'gm'], channelAccountIds: ['b', 'a'] }))
       .toBe(inboxAccessSignature({ version: 1, categories: ['gm', 'general'], channelAccountIds: ['a', 'b'] }));
+  });
+  it('equal-version administrator revocation cannot restore stale unrestricted cache and reload remains bounded', () => {
+    const reload = vi.fn(async () => undefined), oldAdmin = { ...unrestricted, version: 1 };
+    const hook = renderHook(({ page, identity }: { page: Access; identity: Access }) => useInboxAccess(page, identity, reload), { page: oldAdmin, identity: oldAdmin }); cleanup = hook.unmount;
+    hook.rerender({ page: oldAdmin, identity: restricted });
+    expect(hook.result.current).toEqual(restricted);
+    for (let i = 0; i < 6; i++) hook.rerender({ page: { ...oldAdmin }, identity: { ...restricted } });
+    expect(hook.result.current).toEqual(restricted); expect(reload).toHaveBeenCalledTimes(1);
+    hook.rerender({ page: undefined, identity: restricted }); expect(hook.result.current).toEqual(restricted);
+    hook.rerender({ page: restricted, identity: restricted }); expect(hook.result.current).toEqual(restricted);
+    // An explicit grant can expand again when both fresh server reads agree.
+    hook.rerender({ page: oldAdmin, identity: restricted }); expect(hook.result.current).toEqual(restricted);
+    hook.rerender({ page: oldAdmin, identity: { ...oldAdmin } }); expect(hook.result.current).toEqual(restricted);
+    hook.rerender({ page: { ...oldAdmin }, identity: { ...oldAdmin } }); expect(hook.result.current).toEqual(oldAdmin);
   });
 });

@@ -52,7 +52,16 @@ export function inboxAccessSignature(access: InboxMe['access']): string {
 }
 /** List and identity reads can finish in either order; an older page cannot restore revoked access. */
 export function newestInboxAccess(page: InboxMe['access'], identity: InboxMe['access']): InboxMe['access'] {
-  return !page || (identity?.version ?? 0) > page.version ? identity : page;
+  if (!page) return identity;
+  if (!identity || page.version > identity.version) return page;
+  if (identity.version > page.version) return identity;
+  // Granting/revoking the administrator exception does not mutate the policy
+  // row's version. Contradictory equal-version reads must fail closed.
+  if (inboxAccessSignature(page) === inboxAccessSignature(identity)) return page;
+  const intersect = <T extends string>(a: T[] | null, b: T[] | null): T[] | null =>
+    a === null ? b : b === null ? a : a.filter(value => b.includes(value));
+  return { version: page.version, categories: intersect(page.categories, identity.categories),
+    channelAccountIds: intersect(page.channelAccountIds, identity.channelAccountIds) };
 }
 export function inboxItemWithinAccess(item: Pick<ConversationRow, 'category' | 'channelAccountId'>, access: InboxMe['access']): boolean {
   return (!access?.categories || access.categories.includes(item.category))
@@ -63,6 +72,18 @@ export function inboxFiltersWithinAccess(filters: Filters, access: InboxMe['acce
   const channelAccountId = filters.channelAccountId && access?.channelAccountIds && !access.channelAccountIds.includes(filters.channelAccountId) ? '' : filters.channelAccountId;
   const inbox = filters.inbox && access?.categories && !access.categories.includes('general') ? '' : filters.inbox;
   return category === filters.category && channelAccountId === filters.channelAccountId && inbox === filters.inbox ? filters : { ...filters, category, channelAccountId, inbox };
+}
+/** Hide identity-owned choices until its fresh read agrees with a newer list policy. */
+export function inboxMeWithinAccess(me: InboxMe, access: InboxMe['access']): InboxMe {
+  const channelAllowed = (id: string) => access?.categories?.length !== 0
+    && (!access?.channelAccountIds || access.channelAccountIds.includes(id));
+  return { ...me, access,
+    teams: me.teams.filter(team => !access?.categories || access.categories.includes(team.kind === 'reception' ? 'general' : team.kind)),
+    testLines: me.testLines?.filter(line => channelAllowed(line.id)),
+    simulator: me.simulator ? { ...me.simulator, channelAccounts: me.simulator.channelAccounts.filter(line => channelAllowed(line.id)) } : null,
+    contactChannels: inboxAccessSignature(me.access) === inboxAccessSignature(access) ? me.contactChannels?.filter(line => channelAllowed(line.id)) : [],
+    defaultReceptionBranchId: access?.categories && !access.categories.includes('general') ? null : me.defaultReceptionBranchId,
+  };
 }
 
 /**

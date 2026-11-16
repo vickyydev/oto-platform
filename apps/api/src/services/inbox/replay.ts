@@ -76,8 +76,19 @@ export const inboxAiMessageReplay = (app: App) => async (req: FastifyRequest) =>
 export const inboxAiExamplesReplay = (app: App, importing = false) => async (req: FastifyRequest) => {
   const ctx = await current(req, 'inbox:kb:manage');
   if (!(await reachOf(app.db, ctx.effective, 'inbox:kb:manage', ctx.viewer.operatorId)).operatorWide) throw new PermissionDeniedError('inbox:kb:manage');
-  const ids = importing ? (req.body as { examples: { id: string }[] }).examples.map(row => row.id) : [idOf(req)];
-  for (const id of ids) await loadExample(app.db, ctx.viewer, id);
+  // An omitted import id always creates a deidentified, source-free row.
+  // Explicit ids may replay a prior source-linked example and still need
+  // that source's current policy check.
+  const ids = importing ? (req.body as { examples: { id?: string }[] }).examples.flatMap(row => row.id ? [row.id] : []) : [idOf(req)];
+  for (const id of ids) {
+    if (req.method === 'DELETE') {
+      const [existing] = await app.db.select({ id: s.aiExample.id }).from(s.aiExample).where(eq(s.aiExample.id, id)).limit(1);
+      // A completed deletion keeps only an id/deleted receipt. Its current
+      // KB authority was checked above; no personal payload can be replayed.
+      if (!existing) continue;
+    }
+    await loadExample(app.db, ctx.viewer, id);
+  }
 };
 export const inboxErasureReplay = (app: App) => async (req: FastifyRequest) => {
   const auth = await req.requirePermission('inbox:contact:erase', { operatorOnly: true });

@@ -17,7 +17,7 @@ import { FiltersDialog, TemplatesDialog } from '@/components/dialogs';
 import { Rail, viewerRoleLabel } from '@/components/Rail';
 import { SimulatorBody, SimulatorDialog } from '@/components/Simulator';
 import { TemplateSettings } from '@/components/TemplateSettings';
-import { inboxAccessSignature, inboxFiltersWithinAccess, inboxItemWithinAccess, inboxSourcesWithinAccess, mergeSources, sourcesOfRows, type SourceOption } from '@/lib/inboxes';
+import { inboxAccessSignature, inboxFiltersWithinAccess, inboxItemWithinAccess, inboxMeWithinAccess, inboxSourcesWithinAccess, mergeSources, sourcesOfRows, type SourceOption } from '@/lib/inboxes';
 import { useInboxAccess } from '@/hooks/useInboxAccess';
 import { EMPTY_FILTERS, listQuery, type Filters } from '@/lib/query';
 import { fastInboxRefresh, startFastInboxRefresh } from '@/lib/refresh';
@@ -265,10 +265,7 @@ export function Workspace({ me }: { me: InboxMe }) {
   const learnSources = useCallback((more: SourceOption[]) => setSources((s) => inboxSourcesWithinAccess(mergeSources(s, more), accessRef.current)), []);
   const accessSignature = inboxAccessSignature(currentAccess);
   const visibleSources = inboxSourcesWithinAccess(sources, currentAccess);
-  const currentMe: InboxMe = { ...me, access: currentAccess,
-    teams: me.teams.filter(team => !currentAccess?.categories || currentAccess.categories.includes(team.kind === 'reception' ? 'general' : team.kind)),
-    testLines: me.testLines?.filter(line => currentAccess?.categories?.length !== 0
-      && (!currentAccess?.channelAccountIds || currentAccess.channelAccountIds.includes(line.id))) };
+  const currentMe = inboxMeWithinAccess(me, currentAccess);
   useEffect(() => {
     setSources(known => inboxSourcesWithinAccess(known, currentAccess));
     setFilters(held => inboxFiltersWithinAccess(held, currentAccess));
@@ -706,7 +703,7 @@ export function Workspace({ me }: { me: InboxMe }) {
               </button>
             )}
             <SettingsMenu
-              me={me}
+              me={currentMe}
               active={settings}
               onChoose={(key) => (key === 'simulator' ? setSimulatorOpen(true) : chooseSettings(key))}
             />
@@ -745,9 +742,9 @@ export function Workspace({ me }: { me: InboxMe }) {
         )}
       </header>
 
-      {settings === 'templates' && <TemplateSettings me={me} onBack={() => chooseSettings(null)} />}
+      {settings === 'templates' && <TemplateSettings me={currentMe} onBack={() => chooseSettings(null)} />}
       {settings === 'assistant' && (
-        <AssistantSettings me={me} tab={assistantTab} onBack={() => chooseSettings(null)} onTab={setAssistantTab} />
+        <AssistantSettings key={accessSignature} me={currentMe} tab={assistantTab} onBack={() => chooseSettings(null)} onTab={setAssistantTab} />
       )}
 
       {/* WORKSPACE */}
@@ -797,7 +794,7 @@ export function Workspace({ me }: { me: InboxMe }) {
               onSelect={select}
               onAskHandle={askHandle}
               onMore={() => void loadMore()}
-              onNewContact={me.contactChannels && me.contactChannels.length > 0 ? () => setNewContactOpen(true) : undefined}
+              onNewContact={currentMe.contactChannels && currentMe.contactChannels.length > 0 ? () => setNewContactOpen(true) : undefined}
             />
           </section>
 
@@ -809,7 +806,7 @@ export function Workspace({ me }: { me: InboxMe }) {
               <ChatPanel
                 row={selected}
                 thread={thread}
-                me={me}
+                me={currentMe}
                 now={now}
                 detailsOpen={detailsOpen}
                 onBack={closeChat}
@@ -832,7 +829,7 @@ export function Workspace({ me }: { me: InboxMe }) {
         open={templatesOpen}
         onClose={() => setTemplatesOpen(false)}
         language={selected?.language ?? null}
-        me={me}
+        me={currentMe}
         onInsert={
           selected && selected.canReply && selected.status !== 'handled' && writeMode(me) === 'live'
             ? (t) => {
@@ -849,11 +846,12 @@ export function Workspace({ me }: { me: InboxMe }) {
         onCancel={() => setConfirmHandleId(null)}
         onConfirm={() => void confirmHandle()}
       />
-      {me.contactChannels && me.contactChannels.length > 0 && (
+      {currentMe.contactChannels && currentMe.contactChannels.length > 0 && (
         <NewContactDialog
+          key={accessSignature}
           open={newContactOpen}
           onClose={() => setNewContactOpen(false)}
-          channels={me.contactChannels}
+          channels={currentMe.contactChannels}
           onCreated={async (r) => {
             await refresh();
             if (r.visible) openConversation(r.conversationId);
@@ -861,11 +859,12 @@ export function Workspace({ me }: { me: InboxMe }) {
           onOpen={openConversation}
         />
       )}
-      {me.simulator && (
+      {currentMe.simulator && (
         <SimulatorDialog
+          key={accessSignature}
           open={simulatorOpen}
           onClose={() => setSimulatorOpen(false)}
-          me={me}
+          me={currentMe}
           onChanged={refresh}
           onReloadMe={reload}
         />
@@ -880,7 +879,7 @@ export function Workspace({ me }: { me: InboxMe }) {
         onClear={() => setFilters((f) => ({ ...EMPTY_FILTERS, q: f.q, archiveRange: f.archiveRange, resolvedBy: f.resolvedBy }))}
       />
     </div>
-      {me.simulator && simPane && (
+      {currentMe.simulator && simPane && (
         <aside className="sticky top-0 hidden h-screen w-[420px] shrink-0 overflow-y-auto border-l border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 xl:block">
           <div className="mb-3 flex items-center justify-between">
             <div>
@@ -895,7 +894,7 @@ export function Workspace({ me }: { me: InboxMe }) {
               Hide
             </button>
           </div>
-          <SimulatorBody me={me} onChanged={refresh} onReloadMe={reload} />
+          <SimulatorBody key={accessSignature} me={currentMe} onChanged={refresh} onReloadMe={reload} />
         </aside>
       )}
     </div>
