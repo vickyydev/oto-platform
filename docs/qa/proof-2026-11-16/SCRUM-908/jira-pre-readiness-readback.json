@@ -1,0 +1,17 @@
+{
+  "at": "2026-11-16T08:59:12.431Z",
+  "status": {
+    "status": "Testing",
+    "summary": "Connect a real WhatsApp number to the unified inbox through Twilio"
+  },
+  "sourceComments": [
+    {
+      "id": "14799",
+      "created": "2026-11-16T15:18:00.156+0700"
+    },
+    {
+      "id": "14800",
+      "created": "2026-11-16T15:35:46.705+0700"
+    }
+  ]
+}

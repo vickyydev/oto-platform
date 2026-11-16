@@ -1,0 +1,18 @@
+{
+  "at": "2026-11-16T08:44:54.614Z",
+  "service": "oto-api-staging",
+  "serviceId": "srv-danh2ljtqb8s73bt9en0",
+  "priorLiveDeployId": "dep-dbtbod9srm7s73aqq8og",
+  "source": "d25f459d2e81fb3379d07b40aadc902ad212ccc7",
+  "setting": "INBOX_TWILIO_ALLOWED_NUMBERS_SANDBOX",
+  "recipientCount": 2,
+  "ownerPreserved": true,
+  "tomPresent": true,
+  "otherSettingsPreserved": true,
+  "credentialsPreserved": true,
+  "deployMode": "deploy_only",
+  "deployId": "dep-dbtc51hsrm7s73ars0mg",
+  "status": "update_in_progress",
+  "tomJoinedConfirmed": false,
+  "unsolicitedOutboundSent": false
+}

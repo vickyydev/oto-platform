@@ -1,0 +1,10 @@
+{
+  "at": "2026-11-16T08:47:29.308Z",
+  "jobId": "job-dbtc68ff3r2c73cieev0",
+  "status": "failed",
+  "reason": "TSX command contained malformed nested SQL quotes; failed before app code",
+  "settingChangedByProbe": false,
+  "customerMessageStored": false,
+  "outboundSent": false,
+  "correctedProbeJob": "job-dbtc785ckfvc73ee8bf0"
+}

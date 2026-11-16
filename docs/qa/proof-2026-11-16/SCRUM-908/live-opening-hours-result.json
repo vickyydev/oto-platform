@@ -1,0 +1,57 @@
+{
+  "at": "2026-11-16T08:41:06.957Z",
+  "source": "d25f459d2e81fb3379d07b40aadc902ad212ccc7",
+  "jobId": "job-dbtc2gjncjis739qt5d0",
+  "liveOpeningHoursProof": {
+    "messages": [
+      {
+        "id": "01a1e381-af9e-75ed-a2b3-25dfe98dc828",
+        "conversation_id": "01a1e381-af9b-74ea-97b7-252d31f23d36",
+        "external_message_id": "SM3223f32dadbf5d47c49f3fbe33917430",
+        "direction": "inbound",
+        "author_kind": "customer",
+        "provider_status": null,
+        "sent_at": null,
+        "delivered_at": null,
+        "read_at": null,
+        "channel_account_id": "01a1cf65-3a81-769f-b624-4b303a84d954",
+        "category": "general",
+        "branch_id": null,
+        "team_id": null
+      },
+      {
+        "id": "01a1e381-d344-76cd-bd76-c113a9d379a9",
+        "conversation_id": "01a1e381-af9b-74ea-97b7-252d31f23d36",
+        "external_message_id": "SMcf26adc5c7e8a1f602e6e61e04b874b3",
+        "direction": "outbound",
+        "author_kind": "ai",
+        "provider_status": "read",
+        "sent_at": "2026-11-16T08:38:24.539Z",
+        "delivered_at": "2026-11-16T08:38:27.663Z",
+        "read_at": "2026-11-16T08:38:38.284Z",
+        "channel_account_id": "01a1cf65-3a81-769f-b624-4b303a84d954",
+        "category": "general",
+        "branch_id": null,
+        "team_id": null
+      }
+    ],
+    "turns": [
+      {
+        "id": "01a1e381-afac-7934-959e-baa108e23d23",
+        "conversation_id": "01a1e381-af9b-74ea-97b7-252d31f23d36",
+        "state": "answered",
+        "intent": "hours",
+        "action": "answer",
+        "reason": "OK",
+        "message_ids": [
+          "01a1e381-d344-76cd-bd76-c113a9d379a9"
+        ]
+      }
+    ],
+    "notices": [
+      {
+        "handover_notices": 0
+      }
+    ]
+  }
+}

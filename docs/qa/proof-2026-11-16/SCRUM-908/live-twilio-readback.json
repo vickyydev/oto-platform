@@ -1,0 +1,24 @@
+{
+  "at": "2026-11-16T08:38:42.026Z",
+  "baselineAt": "2026-11-16T08:26:23.721Z",
+  "messages": [
+    {
+      "kind": "inbound",
+      "sid": "SM3223f32dadbf5d47c49f3fbe33917430",
+      "status": "received",
+      "dateSent": "Mon, 16 Nov 2026 08:38:09 +0000",
+      "errorCode": null,
+      "direction": "inbound",
+      "body": "Hello, what are your opening hours?"
+    },
+    {
+      "kind": "outbound",
+      "sid": "SMcf26adc5c7e8a1f602e6e61e04b874b3",
+      "status": "read",
+      "dateSent": "Mon, 16 Nov 2026 08:38:25 +0000",
+      "errorCode": null,
+      "direction": "outbound-api",
+      "body": "Hi! Both our parks, Central Floresta and Robinson Chalong, are open every day 10:00–20:00, public holidays included 😊"
+    }
+  ]
+}

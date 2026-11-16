@@ -1,0 +1,17 @@
+{
+  "at": "2026-11-16T08:52:17.561Z",
+  "source": "d25f459d2e81fb3379d07b40aadc902ad212ccc7",
+  "deployId": "dep-dbtc51hsrm7s73ars0mg",
+  "jobId": "job-dbtc785ckfvc73ee8bf0",
+  "twoRecipientRuntime": {
+    "connected": true,
+    "recipientCount": 2,
+    "expectedOwner": true,
+    "expectedTom": true,
+    "bothAdapterAccepted": true,
+    "fictionalSenderStillDenied": true,
+    "exactSandboxSender": true,
+    "noOutboundCall": true,
+    "noStoredCustomerMessage": true
+  }
+}

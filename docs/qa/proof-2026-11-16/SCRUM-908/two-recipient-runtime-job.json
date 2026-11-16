@@ -1,0 +1,10 @@
+{
+  "at": "2026-11-16T08:49:37.035Z",
+  "source": "d25f459d2e81fb3379d07b40aadc902ad212ccc7",
+  "deployId": "dep-dbtc51hsrm7s73ars0mg",
+  "status": "live",
+  "jobId": "job-dbtc785ckfvc73ee8bf0",
+  "serviceId": "srv-danh2ljtqb8s73bt9en0",
+  "ownerId": "tea-dakeu6p42hec73abs5g0",
+  "probe": "actual staging image registry; in-memory signed controls only; no outbound or stored message"
+}

@@ -1,0 +1,20 @@
+# SCRUM-908 resume checkpoint
+
+Worktree: `C:/oto-lanes/codex-whatsapp-908-20261116`, branch `lane/codex-whatsapp-908-20261116`. Product source is d25f459d2e81fb3379d07b40aadc902ad212ccc7; CI-only maintenance source is c8f707f31b3cefaad1ff53eaa73ae672cdb0c6cd. Read the newest STATUS and CODEX blocks before acting. No old stage-three, pricing or hardware work is reopened.
+
+The owner confirmed their first real opening-hours message appeared in Inbox and the AI answer reached WhatsApp. Twilio and staging independently bind the same inbound/outbound IDs; the persisted answer is author AI / read, and the actual hours turn is answered. Preserve the real customer thread; do not Start over or erase it during resume. `live-opening-hours-result.json` names the exact conversation/turn/message IDs without personal numbers.
+
+The owner and Tom are approved alongside each other. The API activation is LIVE at dep-dbtc51hsrm7s73ars0mg; Inbox is LIVE at dep-dbtc079srm7s73arfdfg, both product d25. Exactly two expected recipients pass the staging-image actual-adapter probe (`two-recipient-runtime-result.json`). The two-recipient setting and activation request are in `two-recipient-config-request.json`; no personal number is recorded here. Credentials, all other environment values and permissions are preserved. Joining the sandbox is separate from our allow-list. Do not claim Tom joined or sent his first message until verified/confirmed. Staff takeover remains unproven.
+
+Private local helpers (not repository artifacts):
+
+- `.s908-runtime-check.mjs`: named API/Inbox source, health/readiness, authenticated adapter connection and sign-out/old-cookie401 proof; no customer send.
+- `.s908-monitor-twilio.mjs`: bounded provider reads for both approved recipients against the original baseline; metadata only, no body/phone/join phrase. It reports owner/Tom labels, provider states and join-control/confirmation observations. Do not run an unbounded polling loop.
+- `.s908-two-recipient-runtime.mjs`: creates the staging-image in-memory adapter probe. Read the existing result first; do not create another job just to repeat a successful unchanged check.
+- `.whatsapp-sandbox.env`: private scoped values only. Never print, stage or copy them into evidence. Narrow local `.git/info/exclude` entries protect this file, `.s908-*` helpers/scratch and `.channel-read-job.json`; these ignored local artifacts are intentional and are not a claim that the entire directory contains no scratch. Existing generic root `.env` remains unchanged.
+
+CI is background only. Original run43830040929 has the retained Typecheck heap failure; maintenance run43832471471 is separate. Watchers: source PTY42785 / `.s908-ci-watch-gitbash.log`, repair PTY44660 / `.s908-ci-repair-watch.log`. Both use full SHAs and Git Bash. Report actual failures and investigate; do not call pending or app path skips fresh passed coverage.
+
+Next owner-led actions: Tom joins the exact current sandbox invitation and sends his own authorized first question; verify the reply independently. Then demonstrate staff takeover using the existing admin/inbox login and confirm the human response reaches WhatsApp while the AI stands back. Obtain/inspect the native staff proof when available. Keep Jira908 Testing until required proof is complete; only the owner moves Done. No unsolicited outbound message, new role grant, duplicate channel or further deployment loop is authorized by this checkpoint.
+
+Final bounded state read: `staff-tom-state-result.json`, job job-dbtcanm1egvs73a7ags0, found ten owner messages, no staff-authored row, no pause time/event and zero Tom conversation/inbound/outbound rows. That snapshot is not a promise about later incoming actions. On a fresh owner confirmation, rerun the same read-only query for actual authorship/pause/provider IDs; never infer staff takeover from exact message text alone. There is no active readiness polling loop or held test session. CI watchers remain the only intentional running monitors.

@@ -1,0 +1,129 @@
+{
+  "at": "2026-11-16T08:53:49.590Z",
+  "baselineAt": "2026-11-16T08:26:23.721Z",
+  "newMessages": [
+    {
+      "tester": "owner",
+      "kind": "inbound",
+      "sid": "SMac23431b7162c931d6c13f4bd0097d5b",
+      "status": "received",
+      "dateSent": "Mon, 16 Nov 2026 08:49:02 +0000",
+      "errorCode": null,
+      "direction": "inbound",
+      "joinCommand": false,
+      "sandboxConfirmation": false,
+      "staffTestBodyMatches": false
+    },
+    {
+      "tester": "owner",
+      "kind": "inbound",
+      "sid": "SMd6827b705f2eee890a9b7d1ee827e98f",
+      "status": "received",
+      "dateSent": "Mon, 16 Nov 2026 08:48:11 +0000",
+      "errorCode": null,
+      "direction": "inbound",
+      "joinCommand": false,
+      "sandboxConfirmation": false,
+      "staffTestBodyMatches": false
+    },
+    {
+      "tester": "owner",
+      "kind": "inbound",
+      "sid": "SM8245715944af971985f8177f53caeabf",
+      "status": "received",
+      "dateSent": "Mon, 16 Nov 2026 08:47:34 +0000",
+      "errorCode": null,
+      "direction": "inbound",
+      "joinCommand": false,
+      "sandboxConfirmation": false,
+      "staffTestBodyMatches": false
+    },
+    {
+      "tester": "owner",
+      "kind": "inbound",
+      "sid": "SM103387099ecf46e73fb0ea4e1f20c931",
+      "status": "received",
+      "dateSent": "Mon, 16 Nov 2026 08:46:57 +0000",
+      "errorCode": null,
+      "direction": "inbound",
+      "joinCommand": false,
+      "sandboxConfirmation": false,
+      "staffTestBodyMatches": false
+    },
+    {
+      "tester": "owner",
+      "kind": "inbound",
+      "sid": "SM3223f32dadbf5d47c49f3fbe33917430",
+      "status": "received",
+      "dateSent": "Mon, 16 Nov 2026 08:38:09 +0000",
+      "errorCode": null,
+      "direction": "inbound",
+      "joinCommand": false,
+      "sandboxConfirmation": false,
+      "staffTestBodyMatches": false
+    },
+    {
+      "tester": "owner",
+      "kind": "outbound",
+      "sid": "SM7e3290a97a5730c15ec04ebae3a79138",
+      "status": "read",
+      "dateSent": "Mon, 16 Nov 2026 08:49:15 +0000",
+      "errorCode": null,
+      "direction": "outbound-api",
+      "joinCommand": false,
+      "sandboxConfirmation": false,
+      "staffTestBodyMatches": false
+    },
+    {
+      "tester": "owner",
+      "kind": "outbound",
+      "sid": "SM8c029ce5cdb76daac69bea4cee5b2347",
+      "status": "read",
+      "dateSent": "Mon, 16 Nov 2026 08:48:25 +0000",
+      "errorCode": null,
+      "direction": "outbound-api",
+      "joinCommand": false,
+      "sandboxConfirmation": false,
+      "staffTestBodyMatches": false
+    },
+    {
+      "tester": "owner",
+      "kind": "outbound",
+      "sid": "SMf32dacc3391b0f231a37770b8c973776",
+      "status": "read",
+      "dateSent": "Mon, 16 Nov 2026 08:47:45 +0000",
+      "errorCode": null,
+      "direction": "outbound-api",
+      "joinCommand": false,
+      "sandboxConfirmation": false,
+      "staffTestBodyMatches": false
+    },
+    {
+      "tester": "owner",
+      "kind": "outbound",
+      "sid": "SM7ad8acd0c09dc4a0ead30c06b6deaaad",
+      "status": "read",
+      "dateSent": "Mon, 16 Nov 2026 08:47:05 +0000",
+      "errorCode": null,
+      "direction": "outbound-api",
+      "joinCommand": false,
+      "sandboxConfirmation": false,
+      "staffTestBodyMatches": false
+    },
+    {
+      "tester": "owner",
+      "kind": "outbound",
+      "sid": "SMcf26adc5c7e8a1f602e6e61e04b874b3",
+      "status": "read",
+      "dateSent": "Mon, 16 Nov 2026 08:38:25 +0000",
+      "errorCode": null,
+      "direction": "outbound-api",
+      "joinCommand": false,
+      "sandboxConfirmation": false,
+      "staffTestBodyMatches": false
+    }
+  ],
+  "TomJoinCommandObserved": false,
+  "TomProviderJoinConfirmationObserved": false,
+  "TomNonJoinInboundCount": 0
+}

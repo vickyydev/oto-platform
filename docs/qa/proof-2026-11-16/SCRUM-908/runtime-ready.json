@@ -1,17 +1,17 @@
 {
-  "at": "2026-11-16T08:30:30.275Z",
+  "at": "2026-11-16T08:48:30.817Z",
   "sha": "d25f459d2e81fb3379d07b40aadc902ad212ccc7",
   "deployments": [
     {
       "name": "oto-api-staging",
-      "id": "dep-dbtbod9srm7s73aqq8og",
+      "id": "dep-dbtc51hsrm7s73ars0mg",
       "status": "live",
       "source": "d25f459d2e81fb3379d07b40aadc902ad212ccc7"
     },
     {
       "name": "oto-inbox-staging",
-      "id": "dep-dbtbodm7bikc73dlcnig",
-      "status": "build_in_progress",
+      "id": "dep-dbtc079srm7s73arfdfg",
+      "status": "live",
       "source": "d25f459d2e81fb3379d07b40aadc902ad212ccc7"
     }
   ],
@@ -24,6 +24,11 @@
     "connected": true,
     "aiMode": "live",
     "webhookMatches": true
+  },
+  "inboxAsset": {
+    "served": true,
+    "sha256": "3b0a5c704490affcb69d7dcdf7d36e43bf9e6fd3899d1626201eb57f8b5ebb64",
+    "containsTestLineRefreshSources": true
   },
   "sessionCleanup": {
     "signOut": 200,

@@ -1,0 +1,106 @@
+{
+  "at": "2026-11-16T08:37:02.676Z",
+  "deployId": "dep-dbtc079srm7s73arfdfg",
+  "status": "live",
+  "source": "d25f459d2e81fb3379d07b40aadc902ad212ccc7",
+  "buildId": "bld-dbtc079srm7s73arfdg0",
+  "hasMore": false,
+  "events": [
+    {
+      "type": "deploy_ended",
+      "at": "2026-11-16T08:36:10.130241Z",
+      "deployId": "dep-dbtc079srm7s73arfdfg",
+      "status": "succeeded"
+    },
+    {
+      "type": "build_ended",
+      "at": "2026-11-16T08:36:09.046957Z",
+      "buildId": "bld-dbtc079srm7s73arfdg0",
+      "status": "succeeded"
+    },
+    {
+      "type": "build_started",
+      "at": "2026-11-16T08:34:38.178172Z",
+      "buildId": "bld-dbtc079srm7s73arfdg0"
+    },
+    {
+      "type": "deploy_started",
+      "at": "2026-11-16T08:34:38.083845Z",
+      "deployId": "dep-dbtc079srm7s73arfdfg"
+    },
+    {
+      "type": "build_ended",
+      "at": "2026-11-16T08:34:37.295991Z",
+      "buildId": "bld-dbtbodm7bikc73dlcnj0",
+      "status": "canceled"
+    },
+    {
+      "type": "deploy_ended",
+      "at": "2026-11-16T08:34:37.034784Z",
+      "deployId": "dep-dbtbodm7bikc73dlcnig",
+      "status": "canceled"
+    }
+  ],
+  "logs": [
+    {
+      "at": "2026-11-16T08:36:05.562803045Z",
+      "message": "transforming..."
+    },
+    {
+      "at": "2026-11-16T08:36:07.594004962Z",
+      "message": "✓ 1739 modules transformed."
+    },
+    {
+      "at": "2026-11-16T08:36:07.780394381Z",
+      "message": "rendering chunks..."
+    },
+    {
+      "at": "2026-11-16T08:36:07.826676706Z",
+      "message": "computing gzip size..."
+    },
+    {
+      "at": "2026-11-16T08:36:07.871509717Z",
+      "message": "dist/public/index.html                   1.10 kB │ gzip:  0.53 kB"
+    },
+    {
+      "at": "2026-11-16T08:36:07.871520984Z",
+      "message": "dist/public/assets/index-Cp5AJqd3.css   62.27 kB │ gzip: 10.60 kB"
+    },
+    {
+      "at": "2026-11-16T08:36:07.871561125Z",
+      "message": "dist/public/assets/vendor-C-0SGUmZ.js   78.41 kB │ gzip: 21.01 kB"
+    },
+    {
+      "at": "2026-11-16T08:36:07.871651168Z",
+      "message": "dist/public/assets/react-CMVXFKhj.js   185.16 kB │ gzip: 58.31 kB"
+    },
+    {
+      "at": "2026-11-16T08:36:07.871694717Z",
+      "message": "dist/public/assets/index-DXZjh_TL.js   297.47 kB │ gzip: 80.49 kB"
+    },
+    {
+      "at": "2026-11-16T08:36:07.871948584Z",
+      "message": "✓ built in 2.35s"
+    },
+    {
+      "at": "2026-11-16T08:36:07.981501819Z",
+      "message": "\u001b[34;1m==>\u001b[0;22m \u001b[1mRequesting Node.js version 22\u001b[22m"
+    },
+    {
+      "at": "2026-11-16T08:36:08.071289475Z",
+      "message": "\u001b[34;1m==>\u001b[0;22m \u001b[1mUsing Node.js version 22.23.5 via environment variable NODE_VERSION\u001b[22m"
+    },
+    {
+      "at": "2026-11-16T08:36:08.07130789Z",
+      "message": "\u001b[34;1m==>\u001b[0;22m \u001b[1mDocs on specifying a Node.js version: [url]"
+    },
+    {
+      "at": "2026-11-16T08:36:08.836033237Z",
+      "message": "\u001b[34m\u001b[1m==>\u001b(B\u001b[m \u001b[1mUploading build...\u001b(B\u001b[m"
+    },
+    {
+      "at": "2026-11-16T08:36:09.045970465Z",
+      "message": "\u001b[32m\u001b[1m==>\u001b(B\u001b[m \u001b[1mYour site is live 🎉\u001b(B\u001b[m"
+    }
+  ]
+}

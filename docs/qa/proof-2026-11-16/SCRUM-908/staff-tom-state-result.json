@@ -1,0 +1,133 @@
+{
+  "at": "2026-11-16T08:59:11.503Z",
+  "source": "d25f459d2e81fb3379d07b40aadc902ad212ccc7",
+  "deployId": "dep-dbtc51hsrm7s73ars0mg",
+  "jobId": "job-dbtcanm1egvs73a7ags0",
+  "finalStaffTomState": {
+    "ownerConversation": {
+      "id": "01a1e381-af9b-74ea-97b7-252d31f23d36",
+      "category": "general",
+      "ai_paused_at": null,
+      "ai_paused_by_account_id": null,
+      "archived_at": null
+    },
+    "ownerMessages": [
+      {
+        "id": "01a1e381-af9e-75ed-a2b3-25dfe98dc828",
+        "direction": "inbound",
+        "author_kind": "customer",
+        "author_account_id": null,
+        "external_message_id": "SM3223f32dadbf5d47c49f3fbe33917430",
+        "provider_status": null,
+        "sent_at": null,
+        "delivered_at": null,
+        "read_at": null
+      },
+      {
+        "id": "01a1e381-d344-76cd-bd76-c113a9d379a9",
+        "direction": "outbound",
+        "author_kind": "ai",
+        "author_account_id": null,
+        "external_message_id": "SMcf26adc5c7e8a1f602e6e61e04b874b3",
+        "provider_status": "read",
+        "sent_at": "2026-11-16T08:38:24.539Z",
+        "delivered_at": "2026-11-16T08:38:27.663Z",
+        "read_at": "2026-11-16T08:38:38.284Z"
+      },
+      {
+        "id": "01a1e389-bd5d-7f32-9cca-152c705c1502",
+        "direction": "inbound",
+        "author_kind": "customer",
+        "author_account_id": null,
+        "external_message_id": "SM103387099ecf46e73fb0ea4e1f20c931",
+        "provider_status": null,
+        "sent_at": null,
+        "delivered_at": null,
+        "read_at": null
+      },
+      {
+        "id": "01a1e389-d453-7b5f-b964-e6361bec0ea8",
+        "direction": "outbound",
+        "author_kind": "ai",
+        "author_account_id": null,
+        "external_message_id": "SM7ad8acd0c09dc4a0ead30c06b6deaaad",
+        "provider_status": "read",
+        "sent_at": "2026-11-16T08:47:04.505Z",
+        "delivered_at": "2026-11-16T08:47:08.218Z",
+        "read_at": "2026-11-16T08:47:08.260Z"
+      },
+      {
+        "id": "01a1e38a-4ee4-74a3-a365-37ccf7114623",
+        "direction": "inbound",
+        "author_kind": "customer",
+        "author_account_id": null,
+        "external_message_id": "SM8245715944af971985f8177f53caeabf",
+        "provider_status": null,
+        "sent_at": null,
+        "delivered_at": null,
+        "read_at": null
+      },
+      {
+        "id": "01a1e38a-6e93-781c-ac1a-d13ab44c114e",
+        "direction": "outbound",
+        "author_kind": "ai",
+        "author_account_id": null,
+        "external_message_id": "SMf32dacc3391b0f231a37770b8c973776",
+        "provider_status": "read",
+        "sent_at": "2026-11-16T08:47:44.190Z",
+        "delivered_at": "2026-11-16T08:47:47.709Z",
+        "read_at": "2026-11-16T08:47:57.431Z"
+      },
+      {
+        "id": "01a1e38a-de73-7ce9-b700-74b58fc6039e",
+        "direction": "inbound",
+        "author_kind": "customer",
+        "author_account_id": null,
+        "external_message_id": "SMd6827b705f2eee890a9b7d1ee827e98f",
+        "provider_status": null,
+        "sent_at": null,
+        "delivered_at": null,
+        "read_at": null
+      },
+      {
+        "id": "01a1e38a-fef2-7c67-924a-5c9adcd42b86",
+        "direction": "outbound",
+        "author_kind": "ai",
+        "author_account_id": null,
+        "external_message_id": "SM8c029ce5cdb76daac69bea4cee5b2347",
+        "provider_status": "read",
+        "sent_at": "2026-11-16T08:48:24.190Z",
+        "delivered_at": "2026-11-16T08:48:29.527Z",
+        "read_at": "2026-11-16T08:48:29.527Z"
+      },
+      {
+        "id": "01a1e38b-a3eb-716b-a5a2-378839ad523f",
+        "direction": "inbound",
+        "author_kind": "customer",
+        "author_account_id": null,
+        "external_message_id": "SMac23431b7162c931d6c13f4bd0097d5b",
+        "provider_status": null,
+        "sent_at": null,
+        "delivered_at": null,
+        "read_at": null
+      },
+      {
+        "id": "01a1e38b-bcc8-7d07-991a-acccfefa0f8f",
+        "direction": "outbound",
+        "author_kind": "ai",
+        "author_account_id": null,
+        "external_message_id": "SM7e3290a97a5730c15ec04ebae3a79138",
+        "provider_status": "read",
+        "sent_at": "2026-11-16T08:49:14.193Z",
+        "delivered_at": "2026-11-16T08:49:19.632Z",
+        "read_at": "2026-11-16T08:49:20.042Z"
+      }
+    ],
+    "pauseEvents": [],
+    "tomCounts": {
+      "conversations": 0,
+      "inbound_messages": 0,
+      "outbound_messages": 0
+    }
+  }
+}
