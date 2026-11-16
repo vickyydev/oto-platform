@@ -1,0 +1,124 @@
+
+ RUN  v3.2.7 C:/oto-lanes/codex-inbox-feedback-20261116/apps/api
+
+stdout | test/inbox-access-993-review.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/inbox-access-993-review.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-6xw8Zs ... ok
+creating subdirectories ... 
+
+stdout | test/inbox-access-993-review.test.ts
+ok
+
+
+stdout | test/inbox-access-993-review.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ... 
+
+stdout | test/inbox-access-993-review.test.ts
+100
+selecting default shared_buffers ... 
+
+stdout | test/inbox-access-993-review.test.ts
+128MB
+selecting default time zone ... 
+
+stdout | test/inbox-access-993-review.test.ts
+Asia/Bangkok
+creating configuration files ... 
+
+stdout | test/inbox-access-993-review.test.ts
+ok
+running bootstrap script ... 
+
+stdout | test/inbox-access-993-review.test.ts
+ok
+
+
+stdout | test/inbox-access-993-review.test.ts
+performing post-bootstrap initialization ... 
+
+stdout | test/inbox-access-993-review.test.ts
+ok
+syncing data to disk ... 
+
+stdout | test/inbox-access-993-review.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-inbox^-feedback^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-6xw8Zs^" -l logfile start
+
+
+
+stdout | test/inbox-access-993-review.test.ts
+2026-11-16 23:59:05.976 +07 [118776] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/inbox-access-993-review.test.ts
+2026-11-16 23:59:05.980 +07 [118776] LOG:  listening on IPv6 address "::1", port 57708
+
+
+stdout | test/inbox-access-993-review.test.ts
+2026-11-16 23:59:05.980 +07 [118776] LOG:  listening on IPv4 address "127.0.0.1", port 57708
+
+
+stdout | test/inbox-access-993-review.test.ts
+2026-11-16 23:59:06.014 +07 [128388] LOG:  database system was shut down at 2026-11-16 23:59:04 +07
+
+
+stdout | test/inbox-access-993-review.test.ts
+2026-11-16 23:59:06.034 +07 [118776] LOG:  database system is ready to accept connections
+
+
+stdout | test/inbox-access-993-review.test.ts
+2026-11-16 23:59:09.292 +07 [48812] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/inbox-access-993-review.test.ts
+Suite registry: registered 6 app(s).
+
+stdout | test/inbox-access-993-review.test.ts
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/inbox-access-993-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/inbox-access-993-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+node.exe : (node:119444) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the 
+logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level 
+option will be removed in `fastify@6`.
+At C:\Users\waqar\AppData\Roaming\npm\pnpm.ps1:24 char:5
++     & "node$exe"  "$basedir/node_modules/pnpm/bin/pnpm.cjs" $args
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ((node:119444) [...in `fastify@6`.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/inbox-access-993-review.test.ts
+2026-11-16 23:59:12.295 +07 [123948] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/inbox-access-993-review.test.ts
+2026-11-16 23:59:12.306 +07 [123948] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.003 s, sync=0.003 s, total=0.012 s; sync files=7, longest=0.001 s, average=0.001 s; distance=20929 kB, estimate=20929 kB; lsn=0/29E8888, redo lsn=0/29E8850
+
+
+ ✓ test/inbox-access-993-review.test.ts (23 tests) 10348ms
+
+ Test Files  1 passed (1)
+      Tests  23 passed (23)
+   Start at  23:58:55
+   Duration  17.90s (transform 3.95s, setup 0ms, collect 7.29s, tests 10.35s, environment 0ms, prepare 96ms)
+

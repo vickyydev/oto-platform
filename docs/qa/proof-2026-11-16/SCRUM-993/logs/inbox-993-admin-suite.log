@@ -1,0 +1,37 @@
+
+> @oto/admin-screens@0.1.0 test C:\oto-lanes\codex-inbox-feedback-20261116\packages\admin-screens
+> vitest run "--no-file-parallelism"
+
+
+ RUN  v3.2.7 C:/oto-lanes/codex-inbox-feedback-20261116/packages/admin-screens
+
+ ✓ test/money-ports.test.ts (16 tests) 172ms
+ ✓ test/care-ports.test.ts (16 tests) 188ms
+ ✓ test/menu-ports.test.ts (13 tests) 138ms
+ ✓ test/benefits-ports.test.ts (13 tests) 172ms
+ ✓ test/catalogue-ports.test.ts (10 tests) 95ms
+ ✓ test/error-view.test.ts (36 tests) 9ms
+ ✓ test/inbox-access-controls.test.ts (8 tests) 37ms
+ ✓ test/lifted-catalogue-api.test.ts (5 tests) 6ms
+ ✓ test/wallet-report-ports.test.ts (6 tests) 131ms
+ ✓ test/menu-write-recovery.test.ts (6 tests) 7ms
+ ✓ test/report-ports.test.ts (7 tests) 95ms
+ ✓ test/organisation-ports.test.ts (5 tests) 26ms
+ ✓ test/s828-beo-only.test.ts (5 tests) 127ms
+ ✓ test/care-write-recovery.test.ts (10 tests) 15ms
+ ✓ test/s772-member-form-thai-rate.test.ts (7 tests) 29ms
+ ✓ test/account-sessions.test.ts (8 tests) 28ms
+ ✓ test/s799-free-socks-stock-share.test.ts (4 tests) 20ms
+ ✓ test/money-write-recovery.test.ts (4 tests) 14ms
+ ✓ test/operations-markup.test.ts (3 tests) 25ms
+ ✓ test/print-templates-missing.test.ts (6 tests) 21ms
+ ✓ test/lifted-runtime.test.ts (2 tests) 7ms
+ ✓ test/accounts-data.test.ts (3 tests) 15ms
+ ✓ test/s772-tier-confirmed-at-till.test.ts (2 tests) 25ms
+ ✓ test/app-identities-api.test.ts (2 tests) 3ms
+
+ Test Files  24 passed (24)
+      Tests  197 passed (197)
+   Start at  00:10:42
+   Duration  19.05s (transform 1.43s, setup 0ms, collect 12.48s, tests 1.41s, environment 3ms, prepare 2.23s)
+

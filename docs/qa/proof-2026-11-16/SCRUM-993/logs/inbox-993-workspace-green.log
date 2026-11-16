@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 C:/oto-lanes/codex-inbox-feedback-20261116/apps/inbox
+
+ ✓ test/workspace-access-993.test.ts (1 test) 12ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  00:29:45
+   Duration  1.90s (transform 809ms, setup 0ms, collect 1.42s, tests 12ms, environment 0ms, prepare 168ms)
+

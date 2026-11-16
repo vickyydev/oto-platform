@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 C:/oto-lanes/codex-inbox-feedback-20261116/apps/inbox
+
+ ✓ test/access-993.test.ts (6 tests) 4ms
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  23:55:15
+   Duration  596ms (transform 106ms, setup 0ms, collect 148ms, tests 4ms, environment 0ms, prepare 158ms)
+

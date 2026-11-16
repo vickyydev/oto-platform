@@ -1,0 +1,258 @@
+
+ RUN  v3.2.7 C:/oto-lanes/codex-payment-choice-recovery-20261116/packages/db
+
+stdout | test/inbox-ai-a1b.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/inbox-ai-a1b.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+
+stdout | test/inbox-ai-a1b.test.ts
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-KzbQhE ... 
+
+stdout | test/inbox-ai-a1b.test.ts
+ok
+
+
+stdout | test/inbox-ai-a1b.test.ts
+creating subdirectories ... 
+
+stdout | test/inbox-ai-a1b.test.ts
+ok
+
+
+stdout | test/inbox-ai-a1b.test.ts
+selecting dynamic shared memory implementation ... windows
+
+
+stdout | test/inbox-ai-a1b.test.ts
+selecting default max_connections ... 
+
+stdout | test/inbox-ai-a1b.test.ts
+100
+selecting default shared_buffers ... 
+
+stdout | test/inbox-ai-a1b.test.ts
+128MB
+selecting default time zone ... 
+
+stdout | test/inbox-ai-a1b.test.ts
+Asia/Bangkok
+creating configuration files ... 
+
+stdout | test/inbox-ai-a1b.test.ts
+ok
+running bootstrap script ... 
+
+stdout | test/inbox-ai-a1b.test.ts
+ok
+
+
+stdout | test/inbox-ai-a1b.test.ts
+performing post-bootstrap initialization ... 
+
+stdout | test/inbox-ai-a1b.test.ts
+ok
+syncing data to disk ... 
+
+stdout | test/inbox-ai-a1b.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-payment^-choice^-recovery^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-KzbQhE^" -l logfile start
+
+
+
+stdout | test/inbox-ai-a1b.test.ts
+2026-11-16 23:57:54.431 +07 [113900] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/inbox-ai-a1b.test.ts
+2026-11-16 23:57:54.433 +07 [113900] LOG:  listening on IPv6 address "::1", port 64816
+
+
+stdout | test/inbox-ai-a1b.test.ts
+2026-11-16 23:57:54.433 +07 [113900] LOG:  listening on IPv4 address "127.0.0.1", port 64816
+
+
+stdout | test/inbox-ai-a1b.test.ts
+2026-11-16 23:57:54.464 +07 [107808] LOG:  database system was shut down at 2026-11-16 23:57:52 +07
+
+
+stdout | test/inbox-ai-a1b.test.ts
+2026-11-16 23:57:54.545 +07 [113900] LOG:  database system is ready to accept connections
+
+
+stdout | test/inbox-ai-a1b.test.ts > 0080_inbox_ai — structure > adds the three assistant tables and writes no row in them
+2026-11-16 23:57:57.874 +07 [116032] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/inbox-ai-a1b.test.ts > platform-sync for the assistant
+2026-11-16 23:57:58.629 +07 [73076] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/inbox-ai-a1b.test.ts > platform-sync for the assistant
+Suite registry: registered 6 app(s).
+
+stdout | test/inbox-ai-a1b.test.ts > platform-sync for the assistant
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/inbox-ai-a1b.test.ts > platform-sync for the assistant
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/inbox-ai-a1b.test.ts > platform-sync for the assistant
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+stdout | test/inbox-ai-a1b.test.ts > the database refuses what the assistant must never write > ai_turn > holds one pending turn per thread; a finished one frees the place
+2026-11-16 23:57:59.408 +07 [117856] ERROR:  duplicate key value violates unique constraint "ai_turn_pending_unique"
+2026-11-16 23:57:59.408 +07 [117856] DETAIL:  Key (conversation_id)=(01a1e54b-4b64-7c25-9adf-36a458766e04) already exists.
+2026-11-16 23:57:59.408 +07 [117856] STATEMENT:  insert into "inbox"."ai_turn" ("id", "operator_id", "conversation_id", "trigger_message_id", "state", "due_at", "first_seen_at", "lease_until", "attempts", "intent", "action", "certainty", "language", "reason", "model", "persona_version", "kb_version", "input_tokens", "output_tokens", "cache_read_tokens", "latency_ms", "message_ids", "created_at", "updated_at") values ($1, $2, $3, $4, default, $5, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default)
+
+
+stdout | test/inbox-ai-a1b.test.ts > the database refuses what the assistant must never write > ai_turn > refuses a turn that reaches into another operator’s thread or message
+2026-11-16 23:57:59.454 +07 [100468] ERROR:  insert or update on table "ai_turn" violates foreign key constraint "ai_turn_conversation_fk"
+2026-11-16 23:57:59.454 +07 [100468] DETAIL:  Key (operator_id, conversation_id)=(01a1e54b-49ee-7607-a666-8e35f1f1f119, 01a1e54b-4b64-7c25-9adf-36a458766e04) is not present in table "conversation".
+2026-11-16 23:57:59.454 +07 [100468] STATEMENT:  insert into "inbox"."ai_turn" ("id", "operator_id", "conversation_id", "trigger_message_id", "state", "due_at", "first_seen_at", "lease_until", "attempts", "intent", "action", "certainty", "language", "reason", "model", "persona_version", "kb_version", "input_tokens", "output_tokens", "cache_read_tokens", "latency_ms", "message_ids", "created_at", "updated_at") values ($1, $2, $3, $4, $5, $6, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default)
+
+
+stdout | test/inbox-ai-a1b.test.ts > the database refuses what the assistant must never write > ai_turn > refuses a turn that reaches into another operator’s thread or message
+2026-11-16 23:57:59.494 +07 [79160] ERROR:  insert or update on table "ai_turn" violates foreign key constraint "ai_turn_trigger_message_fk"
+2026-11-16 23:57:59.494 +07 [79160] DETAIL:  Key (operator_id, trigger_message_id)=(01a1e54b-49ee-7607-a666-8e35f1f1f119, 01a1e54b-4b69-7c00-b3e9-88b472e0b7a8) is not present in table "message".
+2026-11-16 23:57:59.494 +07 [79160] STATEMENT:  insert into "inbox"."ai_turn" ("id", "operator_id", "conversation_id", "trigger_message_id", "state", "due_at", "first_seen_at", "lease_until", "attempts", "intent", "action", "certainty", "language", "reason", "model", "persona_version", "kb_version", "input_tokens", "output_tokens", "cache_read_tokens", "latency_ms", "message_ids", "created_at", "updated_at") values ($1, $2, $3, $4, $5, $6, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default)
+
+
+stdout | test/inbox-ai-a1b.test.ts > the database refuses what the assistant must never write > ai_turn > takes a reason, an intent and a model only as one word — never a sentence
+2026-11-16 23:57:59.534 +07 [118252] ERROR:  new row for relation "ai_turn" violates check constraint "ai_turn_reason_check"
+2026-11-16 23:57:59.534 +07 [118252] DETAIL:  Failing row contains (01a1e54b-4bed-7733-90a1-7302655cb519, 01a1e54b-48a6-77d0-8587-fea403d4fdbe, 01a1e54b-4b64-7c25-9adf-36a458766e04, 01a1e54b-4b69-7c00-b3e9-88b472e0b7a8, silent, 2026-11-16 23:58:19.533+07, 2026-11-16 23:57:59.53455+07, null, 0, null, null, null, null, the customer asked for a refund, null, null, null, null, null, null, null, {}, 2026-11-16 23:57:59.53455+07, 2026-11-16 23:57:59.53455+07).
+2026-11-16 23:57:59.534 +07 [118252] STATEMENT:  insert into "inbox"."ai_turn" ("id", "operator_id", "conversation_id", "trigger_message_id", "state", "due_at", "first_seen_at", "lease_until", "attempts", "intent", "action", "certainty", "language", "reason", "model", "persona_version", "kb_version", "input_tokens", "output_tokens", "cache_read_tokens", "latency_ms", "message_ids", "created_at", "updated_at") values ($1, $2, $3, $4, $5, $6, default, default, default, default, default, default, default, $7, default, default, default, default, default, default, default, default, default, default)
+
+
+stdout | test/inbox-ai-a1b.test.ts > the database refuses what the assistant must never write > ai_turn > takes a reason, an intent and a model only as one word — never a sentence
+2026-11-16 23:57:59.561 +07 [104748] ERROR:  new row for relation "ai_turn" violates check constraint "ai_turn_intent_check"
+2026-11-16 23:57:59.561 +07 [104748] DETAIL:  Failing row contains (01a1e54b-4bee-7d69-8723-43e7d439f9f9, 01a1e54b-48a6-77d0-8587-fea403d4fdbe, 01a1e54b-4b64-7c25-9adf-36a458766e04, 01a1e54b-4b69-7c00-b3e9-88b472e0b7a8, silent, 2026-11-16 23:58:19.534+07, 2026-11-16 23:57:59.560422+07, null, 0, wants 50% off, null, null, null, null, null, null, null, null, null, null, null, {}, 2026-11-16 23:57:59.560422+07, 2026-11-16 23:57:59.560422+07).
+2026-11-16 23:57:59.561 +07 [104748] STATEMENT:  insert into "inbox"."ai_turn" ("id", "operator_id", "conversation_id", "trigger_message_id", "state", "due_at", "first_seen_at", "lease_until", "attempts", "intent", "action", "certainty", "language", "reason", "model", "persona_version", "kb_version", "input_tokens", "output_tokens", "cache_read_tokens", "latency_ms", "message_ids", "created_at", "updated_at") values ($1, $2, $3, $4, $5, $6, default, default, default, $7, default, default, default, default, default, default, default, default, default, default, default, default, default, default)
+
+
+stdout | test/inbox-ai-a1b.test.ts > the database refuses what the assistant must never write > ai_turn > takes a reason, an intent and a model only as one word — never a sentence
+2026-11-16 23:57:59.589 +07 [130324] ERROR:  new row for relation "ai_turn" violates check constraint "ai_turn_version_words_check"
+2026-11-16 23:57:59.589 +07 [130324] DETAIL:  Failing row contains (01a1e54b-4c09-77f2-bb43-3de7da2c4765, 01a1e54b-48a6-77d0-8587-fea403d4fdbe, 01a1e54b-4b64-7c25-9adf-36a458766e04, 01a1e54b-4b69-7c00-b3e9-88b472e0b7a8, silent, 2026-11-16 23:58:19.561+07, 2026-11-16 23:57:59.588422+07, null, 0, null, null, null, null, null, claude says hello, null, null, null, null, null, null, {}, 2026-11-16 23:57:59.588422+07, 2026-11-16 23:57:59.588422+07).
+2026-11-16 23:57:59.589 +07 [130324] STATEMENT:  insert into "inbox"."ai_turn" ("id", "operator_id", "conversation_id", "trigger_message_id", "state", "due_at", "first_seen_at", "lease_until", "attempts", "intent", "action", "certainty", "language", "reason", "model", "persona_version", "kb_version", "input_tokens", "output_tokens", "cache_read_tokens", "latency_ms", "message_ids", "created_at", "updated_at") values ($1, $2, $3, $4, $5, $6, default, default, default, default, default, default, default, default, $7, default, default, default, default, default, default, default, default, default)
+
+
+stdout | test/inbox-ai-a1b.test.ts > the database refuses what the assistant must never write > ai_turn > takes a reason, an intent and a model only as one word — never a sentence
+2026-11-16 23:57:59.616 +07 [86852] ERROR:  new row for relation "ai_turn" violates check constraint "ai_turn_state_check"
+2026-11-16 23:57:59.616 +07 [86852] DETAIL:  Failing row contains (01a1e54b-4c25-7bf5-88af-ce8fba9628e3, 01a1e54b-48a6-77d0-8587-fea403d4fdbe, 01a1e54b-4b64-7c25-9adf-36a458766e04, 01a1e54b-4b69-7c00-b3e9-88b472e0b7a8, thinking, 2026-11-16 23:58:19.589+07, 2026-11-16 23:57:59.616145+07, null, 0, null, null, null, null, null, null, null, null, null, null, null, null, {}, 2026-11-16 23:57:59.616145+07, 2026-11-16 23:57:59.616145+07).
+2026-11-16 23:57:59.616 +07 [86852] STATEMENT:  insert into "inbox"."ai_turn" ("id", "operator_id", "conversation_id", "trigger_message_id", "state", "due_at", "first_seen_at", "lease_until", "attempts", "intent", "action", "certainty", "language", "reason", "model", "persona_version", "kb_version", "input_tokens", "output_tokens", "cache_read_tokens", "latency_ms", "message_ids", "created_at", "updated_at") values ($1, $2, $3, $4, $5, $6, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default)
+
+
+stdout | test/inbox-ai-a1b.test.ts > the database refuses what the assistant must never write > ai_turn > takes a reason, an intent and a model only as one word — never a sentence
+2026-11-16 23:57:59.643 +07 [96848] ERROR:  new row for relation "ai_turn" violates check constraint "ai_turn_counts_check"
+2026-11-16 23:57:59.643 +07 [96848] DETAIL:  Failing row contains (01a1e54b-4c40-7625-9149-2b1115edbfc8, 01a1e54b-48a6-77d0-8587-fea403d4fdbe, 01a1e54b-4b64-7c25-9adf-36a458766e04, 01a1e54b-4b69-7c00-b3e9-88b472e0b7a8, silent, 2026-11-16 23:58:19.616+07, 2026-11-16 23:57:59.64299+07, null, 0, null, null, null, null, null, null, null, null, -1, null, null, null, {}, 2026-11-16 23:57:59.64299+07, 2026-11-16 23:57:59.64299+07).
+2026-11-16 23:57:59.643 +07 [96848] STATEMENT:  insert into "inbox"."ai_turn" ("id", "operator_id", "conversation_id", "trigger_message_id", "state", "due_at", "first_seen_at", "lease_until", "attempts", "intent", "action", "certainty", "language", "reason", "model", "persona_version", "kb_version", "input_tokens", "output_tokens", "cache_read_tokens", "latency_ms", "message_ids", "created_at", "updated_at") values ($1, $2, $3, $4, $5, $6, default, default, default, default, default, default, default, default, default, default, default, $7, default, default, default, default, default, default)
+
+
+stdout | test/inbox-ai-a1b.test.ts > the database refuses what the assistant must never write > ai_turn > refuses a claimed turn with no lease
+2026-11-16 23:57:59.669 +07 [123608] ERROR:  new row for relation "ai_turn" violates check constraint "ai_turn_lease_check"
+2026-11-16 23:57:59.669 +07 [123608] DETAIL:  Failing row contains (01a1e54b-4c5b-7f98-835b-b9b715ac308d, 01a1e54b-48a6-77d0-8587-fea403d4fdbe, 01a1e54b-4b64-7c25-9adf-36a458766e04, 01a1e54b-4b69-7c00-b3e9-88b472e0b7a8, deciding, 2026-11-16 23:58:19.643+07, 2026-11-16 23:57:59.668639+07, null, 1, null, null, null, null, null, null, null, null, null, null, null, null, {}, 2026-11-16 23:57:59.668639+07, 2026-11-16 23:57:59.668639+07).
+2026-11-16 23:57:59.669 +07 [123608] STATEMENT:  insert into "inbox"."ai_turn" ("id", "operator_id", "conversation_id", "trigger_message_id", "state", "due_at", "first_seen_at", "lease_until", "attempts", "intent", "action", "certainty", "language", "reason", "model", "persona_version", "kb_version", "input_tokens", "output_tokens", "cache_read_tokens", "latency_ms", "message_ids", "created_at", "updated_at") values ($1, $2, $3, $4, $5, $6, default, default, $7, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default)
+
+
+stdout | test/inbox-ai-a1b.test.ts > the database refuses what the assistant must never write > the widened lists and the switches > refuses an unknown assistant mode, and a pause that names a person but no time
+2026-11-16 23:57:59.711 +07 [126708] ERROR:  new row for relation "channel_account" violates check constraint "channel_account_ai_mode_check"
+2026-11-16 23:57:59.711 +07 [126708] DETAIL:  Failing row contains (01a1e54b-4b5e-7911-b0e4-354d3a6e437e, 01a1e54b-48a6-77d0-8587-fea403d4fdbe, null, whatsapp, meta_cloud, ai-a-01a1e54b-4b5e-7911-b0e4-354d3a6e437e, AI a, null, null, null, general, t, active, 2026-11-16 23:57:59.391612+07, 2026-11-16 23:57:59.71+07, null, auto, null).
+2026-11-16 23:57:59.711 +07 [126708] STATEMENT:  update "inbox"."channel_account" set "ai_mode" = $1, "updated_at" = $2 where "inbox"."channel_account"."id" = $3
+
+
+stdout | test/inbox-ai-a1b.test.ts > the database refuses what the assistant must never write > the widened lists and the switches > refuses an unknown assistant mode, and a pause that names a person but no time
+2026-11-16 23:57:59.740 +07 [126520] ERROR:  new row for relation "conversation" violates check constraint "conversation_ai_paused_check"
+2026-11-16 23:57:59.740 +07 [126520] DETAIL:  Failing row contains (01a1e54b-4b64-7c25-9adf-36a458766e04, 01a1e54b-48a6-77d0-8587-fea403d4fdbe, 01a1e54b-4b5f-71eb-9761-cf5b506a11f1, 01a1e54b-4b5e-7911-b0e4-354d3a6e437e, null, null, general, null, null, active, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 2026-11-16 23:57:59.396894+07, 2026-11-16 23:57:59.711+07, null, 01a1e54b-48c2-7503-817c-6b92135d0a22, null, null).
+2026-11-16 23:57:59.740 +07 [126520] STATEMENT:  update "inbox"."conversation" set "ai_paused_by_account_id" = $1, "updated_at" = $2 where "inbox"."conversation"."id" = $3
+
+
+stdout | test/inbox-ai-a1b.test.ts > the database refuses what the assistant must never write > kb_entry > keeps one live entry per key, language and park; archiving frees the key
+2026-11-16 23:57:59.780 +07 [125012] ERROR:  duplicate key value violates unique constraint "kb_entry_key_unique"
+2026-11-16 23:57:59.780 +07 [125012] DETAIL:  Key (operator_id, key, language, COALESCE(branch_id, '00000000-0000-0000-0000-000000000000'::uuid))=(01a1e54b-48a6-77d0-8587-fea403d4fdbe, socks.policy, en, 00000000-0000-0000-0000-000000000000) already exists.
+2026-11-16 23:57:59.780 +07 [125012] STATEMENT:  insert into "inbox"."kb_entry" ("id", "operator_id", "branch_id", "topic", "key", "language", "question", "body", "status", "source_example_id", "updated_by_account_id", "approved_by_account_id", "approved_at", "needs_translation", "created_at", "updated_at") values ($1, $2, default, $3, $4, $5, $6, $7, default, default, default, default, default, default, default, default)
+
+
+stdout | test/inbox-ai-a1b.test.ts > the database refuses what the assistant must never write > kb_entry > refuses an approval that says nobody, a key that is not a slug, an unknown topic and an overlong body
+2026-11-16 23:57:59.874 +07 [117348] ERROR:  new row for relation "kb_entry" violates check constraint "kb_entry_approved_check"
+2026-11-16 23:57:59.874 +07 [117348] DETAIL:  Failing row contains (01a1e54b-4d41-7c19-b538-2a9aefaf2ad7, 01a1e54b-48a6-77d0-8587-fea403d4fdbe, null, socks, faq.a, en, Do I need socks?, Socks are required for everyone on the play floor., approved, null, null, null, null, f, 2026-11-16 23:57:59.874067+07, 2026-11-16 23:57:59.874067+07).
+2026-11-16 23:57:59.874 +07 [117348] STATEMENT:  insert into "inbox"."kb_entry" ("id", "operator_id", "branch_id", "topic", "key", "language", "question", "body", "status", "source_example_id", "updated_by_account_id", "approved_by_account_id", "approved_at", "needs_translation", "created_at", "updated_at") values ($1, $2, default, $3, $4, $5, $6, $7, $8, default, default, default, default, default, default, default)
+
+
+stdout | test/inbox-ai-a1b.test.ts > the database refuses what the assistant must never write > kb_entry > refuses an approval that says nobody, a key that is not a slug, an unknown topic and an overlong body
+2026-11-16 23:57:59.907 +07 [129584] ERROR:  new row for relation "kb_entry" violates check constraint "kb_entry_key_check"
+2026-11-16 23:57:59.907 +07 [129584] DETAIL:  Failing row contains (01a1e54b-4d62-7686-9cfe-d2760668b19b, 01a1e54b-48a6-77d0-8587-fea403d4fdbe, null, socks, Socks Policy, en, Do I need socks?, Socks are required for everyone on the play floor., draft, null, null, null, null, f, 2026-11-16 23:57:59.907065+07, 2026-11-16 23:57:59.907065+07).
+2026-11-16 23:57:59.907 +07 [129584] STATEMENT:  insert into "inbox"."kb_entry" ("id", "operator_id", "branch_id", "topic", "key", "language", "question", "body", "status", "source_example_id", "updated_by_account_id", "approved_by_account_id", "approved_at", "needs_translation", "created_at", "updated_at") values ($1, $2, default, $3, $4, $5, $6, $7, default, default, default, default, default, default, default, default)
+
+
+stdout | test/inbox-ai-a1b.test.ts > the database refuses what the assistant must never write > kb_entry > refuses an approval that says nobody, a key that is not a slug, an unknown topic and an overlong body
+2026-11-16 23:57:59.936 +07 [117356] ERROR:  new row for relation "kb_entry" violates check constraint "kb_entry_topic_check"
+2026-11-16 23:57:59.936 +07 [117356] DETAIL:  Failing row contains (01a1e54b-4d63-7b35-887a-9cc3128eafa5, 01a1e54b-48a6-77d0-8587-fea403d4fdbe, null, refunds, faq.c, en, Do I need socks?, Socks are required for everyone on the play floor., draft, null, null, null, null, f, 2026-11-16 23:57:59.935841+07, 2026-11-16 23:57:59.935841+07).
+2026-11-16 23:57:59.936 +07 [117356] STATEMENT:  insert into "inbox"."kb_entry" ("id", "operator_id", "branch_id", "topic", "key", "language", "question", "body", "status", "source_example_id", "updated_by_account_id", "approved_by_account_id", "approved_at", "needs_translation", "created_at", "updated_at") values ($1, $2, default, $3, $4, $5, $6, $7, default, default, default, default, default, default, default, default)
+
+
+stdout | test/inbox-ai-a1b.test.ts > the database refuses what the assistant must never write > kb_entry > refuses an approval that says nobody, a key that is not a slug, an unknown topic and an overlong body
+2026-11-16 23:58:00.080 +07 [115376] ERROR:  new row for relation "kb_entry" violates check constraint "kb_entry_length_check"
+2026-11-16 23:58:00.080 +07 [115376] DETAIL:  Failing row contains (01a1e54b-4d80-75e4-ba98-ddb9b4d1db8c, 01a1e54b-48a6-77d0-8587-fea403d4fdbe, null, socks, faq.d, en, Do I need socks?, xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx..., draft, null, null, null, null, f, 2026-11-16 23:58:00.080266+07, 2026-11-16 23:58:00.080266+07).
+2026-11-16 23:58:00.080 +07 [115376] STATEMENT:  insert into "inbox"."kb_entry" ("id", "operator_id", "branch_id", "topic", "key", "language", "question", "body", "status", "source_example_id", "updated_by_account_id", "approved_by_account_id", "approved_at", "needs_translation", "created_at", "updated_at") values ($1, $2, default, $3, $4, $5, $6, $7, default, default, default, default, default, default, default, default)
+
+
+stdout | test/inbox-ai-a1b.test.ts > the database refuses what the assistant must never write > ai_example — the de-identification rule > cannot be approved without the confirmation, an approver, or while it still points at a thread
+2026-11-16 23:58:00.121 +07 [119300] ERROR:  new row for relation "ai_example" violates check constraint "ai_example_approved_check"
+2026-11-16 23:58:00.121 +07 [119300] DETAIL:  Failing row contains (01a1e54b-4e38-7b80-8f40-d753db49f905, 01a1e54b-48a6-77d0-8587-fea403d4fdbe, socks, en, Do kids need socks?, Yes, socks are needed on the play floor 😊, should_answer, null, null, approved, 01a1e54b-48c2-7503-817c-6b92135d0a22, 01a1e54b-48d3-7646-a0a6-1cf6893e0fbf, 2026-11-16 23:58:00.12+07, f, 2026-11-16 23:58:00.12151+07, 2026-11-16 23:58:00.12151+07).
+2026-11-16 23:58:00.121 +07 [119300] STATEMENT:  insert into "inbox"."ai_example" ("id", "operator_id", "intent", "language", "customer_text", "good_reply", "verdict", "source_message_id", "source_conversation_id", "status", "proposed_by_account_id", "approved_by_account_id", "approved_at", "deidentified_confirmed", "created_at", "updated_at") values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, default, default, default)
+
+
+stdout | test/inbox-ai-a1b.test.ts > the database refuses what the assistant must never write > ai_example — the de-identification rule > cannot be approved without the confirmation, an approver, or while it still points at a thread
+2026-11-16 23:58:00.150 +07 [72392] ERROR:  new row for relation "ai_example" violates check constraint "ai_example_approved_check"
+2026-11-16 23:58:00.150 +07 [72392] DETAIL:  Failing row contains (01a1e54b-4e3a-71bc-add9-8204b40ccd58, 01a1e54b-48a6-77d0-8587-fea403d4fdbe, socks, en, Do kids need socks?, Yes, socks are needed on the play floor 😊, should_answer, null, 01a1e54b-4b64-7c25-9adf-36a458766e04, approved, 01a1e54b-48c2-7503-817c-6b92135d0a22, 01a1e54b-48d3-7646-a0a6-1cf6893e0fbf, 2026-11-16 23:58:00.12+07, t, 2026-11-16 23:58:00.149916+07, 2026-11-16 23:58:00.149916+07).
+2026-11-16 23:58:00.150 +07 [72392] STATEMENT:  insert into "inbox"."ai_example" ("id", "operator_id", "intent", "language", "customer_text", "good_reply", "verdict", "source_message_id", "source_conversation_id", "status", "proposed_by_account_id", "approved_by_account_id", "approved_at", "deidentified_confirmed", "created_at", "updated_at") values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, default, default)
+
+
+stdout | test/inbox-ai-a1b.test.ts > the database refuses what the assistant must never write > ai_example — the de-identification rule > cannot be approved without the confirmation, an approver, or while it still points at a thread
+2026-11-16 23:58:00.180 +07 [65948] ERROR:  new row for relation "ai_example" violates check constraint "ai_example_approved_check"
+2026-11-16 23:58:00.180 +07 [65948] DETAIL:  Failing row contains (01a1e54b-4e56-7066-952a-a4b7d9998be0, 01a1e54b-48a6-77d0-8587-fea403d4fdbe, socks, en, Do kids need socks?, Yes, socks are needed on the play floor 😊, should_answer, null, null, approved, 01a1e54b-48c2-7503-817c-6b92135d0a22, null, null, t, 2026-11-16 23:58:00.179326+07, 2026-11-16 23:58:00.179326+07).
+2026-11-16 23:58:00.180 +07 [65948] STATEMENT:  insert into "inbox"."ai_example" ("id", "operator_id", "intent", "language", "customer_text", "good_reply", "verdict", "source_message_id", "source_conversation_id", "status", "proposed_by_account_id", "approved_by_account_id", "approved_at", "deidentified_confirmed", "created_at", "updated_at") values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, default, default, $12, default, default)
+
+
+stdout | test/inbox-ai-a1b.test.ts > the database refuses what the assistant must never write > ai_example — the de-identification rule > refuses an answer verdict with no answer, and an intent that is a sentence
+2026-11-16 23:58:00.213 +07 [8380] ERROR:  new row for relation "ai_example" violates check constraint "ai_example_reply_check"
+2026-11-16 23:58:00.213 +07 [8380] DETAIL:  Failing row contains (01a1e54b-4e94-7fb2-a440-491d7a64cc67, 01a1e54b-48a6-77d0-8587-fea403d4fdbe, socks, en, Do kids need socks?, null, should_answer, 01a1e54b-4b69-7c00-b3e9-88b472e0b7a8, 01a1e54b-4b64-7c25-9adf-36a458766e04, proposed, 01a1e54b-48c2-7503-817c-6b92135d0a22, null, null, f, 2026-11-16 23:58:00.213473+07, 2026-11-16 23:58:00.213473+07).
+2026-11-16 23:58:00.213 +07 [8380] STATEMENT:  insert into "inbox"."ai_example" ("id", "operator_id", "intent", "language", "customer_text", "good_reply", "verdict", "source_message_id", "source_conversation_id", "status", "proposed_by_account_id", "approved_by_account_id", "approved_at", "deidentified_confirmed", "created_at", "updated_at") values ($1, $2, $3, $4, $5, $6, $7, $8, $9, default, $10, default, default, default, default, default)
+
+
+stdout | test/inbox-ai-a1b.test.ts > the database refuses what the assistant must never write > ai_example — the de-identification rule > refuses an answer verdict with no answer, and an intent that is a sentence
+2026-11-16 23:58:00.246 +07 [122520] ERROR:  new row for relation "ai_example" violates check constraint "ai_example_intent_check"
+2026-11-16 23:58:00.246 +07 [122520] DETAIL:  Failing row contains (01a1e54b-4eb5-7bc7-b1f5-13d85971b2bc, 01a1e54b-48a6-77d0-8587-fea403d4fdbe, asks about socks, en, Do kids need socks?, Yes, socks are needed on the play floor 😊, should_answer, 01a1e54b-4b69-7c00-b3e9-88b472e0b7a8, 01a1e54b-4b64-7c25-9adf-36a458766e04, proposed, 01a1e54b-48c2-7503-817c-6b92135d0a22, null, null, f, 2026-11-16 23:58:00.246538+07, 2026-11-16 23:58:00.246538+07).
+2026-11-16 23:58:00.246 +07 [122520] STATEMENT:  insert into "inbox"."ai_example" ("id", "operator_id", "intent", "language", "customer_text", "good_reply", "verdict", "source_message_id", "source_conversation_id", "status", "proposed_by_account_id", "approved_by_account_id", "approved_at", "deidentified_confirmed", "created_at", "updated_at") values ($1, $2, $3, $4, $5, $6, $7, $8, $9, default, $10, default, default, default, default, default)
+
+
+stdout | test/inbox-ai-a1b.test.ts
+2026-11-16 23:58:00.275 +07 [121356] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/inbox-ai-a1b.test.ts
+2026-11-16 23:58:00.288 +07 [121356] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.003 s, sync=0.004 s, total=0.013 s; sync files=7, longest=0.001 s, average=0.001 s; distance=17237 kB, estimate=17237 kB; lsn=0/264D680, redo lsn=0/264D648
+
+
+ ✓ test/inbox-ai-a1b.test.ts (22 tests) 10459ms
+   ✓ 0080_inbox_ai — structure > applies a second time as a clean no-op  679ms
+
+ Test Files  1 passed (1)
+      Tests  22 passed (22)
+   Start at  23:57:48
+   Duration  12.63s (transform 899ms, setup 0ms, collect 1.92s, tests 10.46s, environment 0ms, prepare 109ms)
+

@@ -1,0 +1,230 @@
+
+ RUN  v3.2.7 C:/oto-lanes/codex-inbox-feedback-20261116/apps/api
+
+stdout | test/inbox-access-993-review.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/inbox-access-993-review.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+
+
+stdout | test/inbox-access-993-review.test.ts
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-5qDVf4 ... 
+
+stdout | test/inbox-access-993-review.test.ts
+ok
+
+
+stdout | test/inbox-access-993-review.test.ts
+creating subdirectories ... 
+
+stdout | test/inbox-access-993-review.test.ts
+ok
+
+
+stdout | test/inbox-access-993-review.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ... 
+
+stdout | test/inbox-access-993-review.test.ts
+100
+selecting default shared_buffers ... 
+
+stdout | test/inbox-access-993-review.test.ts
+128MB
+selecting default time zone ... 
+
+stdout | test/inbox-access-993-review.test.ts
+Asia/Bangkok
+
+
+stdout | test/inbox-access-993-review.test.ts
+creating configuration files ... 
+
+stdout | test/inbox-access-993-review.test.ts
+ok
+running bootstrap script ... 
+
+stdout | test/inbox-access-993-review.test.ts
+ok
+
+
+stdout | test/inbox-access-993-review.test.ts
+performing post-bootstrap initialization ... 
+
+stdout | test/inbox-access-993-review.test.ts
+ok
+syncing data to disk ... 
+
+stdout | test/inbox-access-993-review.test.ts
+ok
+
+
+stdout | test/inbox-access-993-review.test.ts
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-inbox^-feedback^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-5qDVf4^" -l logfile start
+
+
+
+stdout | test/inbox-access-993-review.test.ts
+2026-11-16 23:58:27.406 +07 [27600] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/inbox-access-993-review.test.ts
+2026-11-16 23:58:27.409 +07 [27600] LOG:  listening on IPv6 address "::1", port 57689
+
+
+stdout | test/inbox-access-993-review.test.ts
+2026-11-16 23:58:27.409 +07 [27600] LOG:  listening on IPv4 address "127.0.0.1", port 57689
+
+
+stdout | test/inbox-access-993-review.test.ts
+2026-11-16 23:58:27.442 +07 [120396] LOG:  database system was shut down at 2026-11-16 23:58:25 +07
+
+
+stdout | test/inbox-access-993-review.test.ts
+2026-11-16 23:58:27.461 +07 [27600] LOG:  database system is ready to accept connections
+
+
+stdout | test/inbox-access-993-review.test.ts
+2026-11-16 23:58:31.457 +07 [130844] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/inbox-access-993-review.test.ts
+Suite registry: registered 6 app(s).
+
+stdout | test/inbox-access-993-review.test.ts
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/inbox-access-993-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/inbox-access-993-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+node.exe : (node:131224) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the 
+logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level 
+option will be removed in `fastify@6`.
+At C:\Users\waqar\AppData\Roaming\npm\pnpm.ps1:24 char:5
++     & "node$exe"  "$basedir/node_modules/pnpm/bin/pnpm.cjs" $args
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ((node:131224) [...in `fastify@6`.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/inbox-access-993-review.test.ts > SCRUM-993 adversarial category/channel policy review > HIGH: archived Start over checks fresh limits before already-cleared and cached answers
+2026-11-16 23:58:34.119 +07 [129780] ERROR:  new row for relation "conversation" violates check constraint "conversation_archived_check"
+2026-11-16 23:58:34.119 +07 [129780] DETAIL:  Failing row contains (01a1e54b-d304-715b-a9bc-865af60bd0e2, 01a1e54b-d2f5-73e7-b831-81120dff34cd, 01a1e54b-d304-715b-a9bc-865bf68f6ffa, 01a1e54b-d303-7124-9026-87dcafe1d251, 01a1e54b-d302-7902-b3ba-99147d09d43c, 01a1e54b-d2f5-73e7-b831-811426b97ec0, birthdays, null, null, active, null, null, null, null, null, 2026-11-16 23:58:34.116+07, null, null, 2026-11-16 23:58:34.116+07, ZZ TEST searchable 1, null, null, null, null, null, 2026-11-16 23:58:34.117205+07, 2026-11-16 23:58:34.119+07, null, null, 2026-11-16 23:58:34.119+07, null).
+2026-11-16 23:58:34.119 +07 [129780] STATEMENT:  update "inbox"."conversation" set "archived_at" = $1, "updated_at" = $2 where "inbox"."conversation"."id" = $3
+
+
+stdout | test/inbox-access-993-review.test.ts
+2026-11-16 23:58:34.787 +07 [111528] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/inbox-access-993-review.test.ts
+2026-11-16 23:58:34.799 +07 [111528] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.003 s, sync=0.003 s, total=0.012 s; sync files=7, longest=0.001 s, average=0.001 s; distance=20910 kB, estimate=20910 kB; lsn=0/29E3930, redo lsn=0/29E38F8
+
+
+ ❯ test/inbox-access-993-review.test.ts (23 tests | 2 failed) 11870ms
+   ✓ SCRUM-993 adversarial category/channel policy review > HIGH: initially empty policies preserve existing reads and never create grants on GET or preview 179ms
+   ✓ SCRUM-993 adversarial category/channel policy review > HIGH: explicit empty categories means none while null restores existing reach 130ms
+   ✓ SCRUM-993 adversarial category/channel policy review > HIGH: explicit empty channelAccountIds means none while null restores existing reach 117ms
+   ✓ SCRUM-993 adversarial category/channel policy review > HIGH: fresh category and channel intersection fences list, counts, search, direct detail, messages and contacts with the same session 102ms
+   ✓ SCRUM-993 adversarial category/channel policy review > HIGH: department and held-assignment reach remain intersected and a policy never adds branch reach 98ms
+   ✓ SCRUM-993 adversarial category/channel policy review > HIGH: foreign and branch-scoped administrator markers do not bypass limits; an actual administrator still has tenant and read-scope fences 67ms
+   ✓ SCRUM-993 adversarial category/channel policy review > HIGH: signed media URLs are not issued after policy revocation 52ms
+   ✓ SCRUM-993 adversarial category/channel policy review > HIGH: cached actions replay exactly while allowed, then deny revoked categories without repeating the action 81ms
+   ✓ SCRUM-993 adversarial category/channel policy review > HIGH: cached actions replay exactly while allowed, then deny revoked channelAccountIds without repeating the action 95ms
+   ✓ SCRUM-993 adversarial category/channel policy review > HIGH: cached contact name and read-marker answers are denied after category revocation 158ms
+   ✓ SCRUM-993 adversarial category/channel policy review > HIGH: cached contact creation rechecks current archived eligibility 61ms
+   ✓ SCRUM-993 adversarial category/channel policy review > HIGH: cached contact creation rechecks current cannotReply eligibility 50ms
+   ✓ SCRUM-993 adversarial category/channel policy review > HIGH: cached contact creation rechecks current category eligibility 63ms
+   ✓ SCRUM-993 adversarial category/channel policy review > HIGH: cached contact creation rechecks current channel eligibility 64ms
+   × SCRUM-993 adversarial category/channel policy review > HIGH: archived Start over checks fresh limits before already-cleared and cached answers 24ms
+     → Failed query: update "inbox"."conversation" set "archived_at" = $1, "updated_at" = $2 where "inbox"."conversation"."id" = $3
+params: 2026-11-16T16:58:34.119Z,2026-11-16T16:58:34.119Z,01a1e54b-d304-715b-a9bc-865af60bd0e2
+   × SCRUM-993 adversarial category/channel policy review > HIGH: the landed prebooking request keeps its stronger replay guard and denies revoked channel access before cached deposit details 167ms
+     → {"error":{"code":"PARTY_TEMPLATE_MISSING","message":"No usable \"party_deposit_request\" message template in en or English — run platform-sync, or restore the template in the Inbox settings","details":{"key":"party_deposit_request","language":"en"}}}: expected 409 to be 200 // Object.is equality
+   ✓ SCRUM-993 adversarial category/channel policy review > HIGH: channel/category names and proposed AI source text disappear from all matching pickers and queues 97ms
+   ✓ SCRUM-993 adversarial category/channel policy review > HIGH: erasure preview and execution cannot expose or erase a subject whose other thread is outside the current limits 54ms
+   ✓ SCRUM-993 adversarial category/channel policy review > HIGH: category changes cannot move a visible conversation into a forbidden category 49ms
+   ✓ SCRUM-993 adversarial category/channel policy review > HIGH: foreign target/channel policy writes fail and actual administrator targets cannot be restricted 37ms
+   ✓ SCRUM-993 adversarial category/channel policy review > HIGH: branch-only role managers can read a dominated local account but cannot write a global policy or see foreign park channel names 36ms
+   ✓ SCRUM-993 adversarial category/channel policy review > HIGH: expected-version CAS serializes different concurrent writes; stale retries cannot overwrite or duplicate the audit 106ms
+   ✓ SCRUM-993 adversarial category/channel policy review > HIGH: policy resend rechecks actor permission before any replay answer 88ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/inbox-access-993-review.test.ts > SCRUM-993 adversarial category/channel policy review > HIGH: archived 
+Start over checks fresh limits before already-cleared and cached answers
+Error: Failed query: update "inbox"."conversation" set "archived_at" = $1, "updated_at" = $2 where 
+"inbox"."conversation"."id" = $3
+params: 2026-11-16T16:58:34.119Z,2026-11-16T16:58:34.119Z,01a1e54b-d304-715b-a9bc-865af60bd0e2
+ ❯ NodePgPreparedQuery.queryWithCache 
+../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/pg-core/session.ts:73:11
+ ❯ test/inbox-access-993-review.test.ts:187:5
+    185|   });
+    186|   it('HIGH: archived Start over checks fresh limits before already-cle…
+    187|     await ctx.db.update(s.conversation).set({ archivedAt: new Date() }…
+       |     ^
+    188|     const key = newId(), url = `/inbox/conversations/${f.birthday.id}/…
+    189|     const first = await request('POST', url, f.subject, undefined, key…
+
+Caused by: error: new row for relation "conversation" violates check constraint "conversation_archived_check"
+ ❯ ../../node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11
+ ❯ 
+../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:149:14
+ ❯ NodePgPreparedQuery.queryWithCache 
+../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/pg-core/session.ts:71:12
+ ❯ test/inbox-access-993-review.test.ts:187:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { length: 742, severity: 'ERROR', code: '23514', detail: 'Failing row contains 
+(01a1e54b-d304-715b-a9bc-865af60bd0e2, 01a1e54b-d2f5-73e7-b831-81120dff34cd, 01a1e54b-d304-715b-a9bc-865bf68f6ffa, 
+01a1e54b-d303-7124-9026-87dcafe1d251, 01a1e54b-d302-7902-b3ba-99147d09d43c, 01a1e54b-d2f5-73e7-b831-811426b97ec0, 
+birthdays, null, null, active, null, null, null, null, null, 2026-11-16 23:58:34.116+07, null, null, 2026-11-16 
+23:58:34.116+07, ZZ TEST searchable 1, null, null, null, null, null, 2026-11-16 23:58:34.117205+07, 2026-11-16 
+23:58:34.119+07, null, null, 2026-11-16 23:58:34.119+07, null).', hint: undefined, position: undefined, 
+internalPosition: undefined, internalQuery: undefined, where: undefined, schema: 'inbox', table: 'conversation', 
+dataType: undefined, constraint: 'conversation_archived_check', file: 'execMain.c', routine: 'ExecConstraints' }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  test/inbox-access-993-review.test.ts > SCRUM-993 adversarial category/channel policy review > HIGH: the landed 
+prebooking request keeps its stronger replay guard and denies revoked channel access before cached deposit details
+AssertionError: {"error":{"code":"PARTY_TEMPLATE_MISSING","message":"No usable \"party_deposit_request\" message 
+template in en or English — run platform-sync, or restore the template in the Inbox 
+settings","details":{"key":"party_deposit_request","language":"en"}}}: expected 409 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 409
+
+ ❯ test/inbox-access-993-review.test.ts:199:106
+    197|     const body = { requestId: newId(), amountSatang: 300000, booking: …
+    198|       date: '2099-11-21', startTime: '14:00', kids: 12, adults: 4, con…
+    199|     const first = await request('POST', url, f.subject, body, key); ex…
+       |                                                                                                          ^
+    200|     const replay = await request('POST', url, f.subject, body, key); e…
+    201|     await restrict({ categories: null, channelAccountIds: [f.channelB]…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 21 passed (23)
+   Start at  23:58:15
+   Duration  19.98s (transform 4.37s, setup 0ms, collect 7.85s, tests 11.87s, environment 0ms, prepare 94ms)
+

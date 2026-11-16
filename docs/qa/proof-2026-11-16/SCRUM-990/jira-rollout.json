@@ -1,0 +1,38 @@
+{
+  "sourceSha": "20c34493fb0aa2d0c33d98df9f6b6053cfc56d94",
+  "pushSha": "9018e03065b452115117ca363337873ae27b5dd7",
+  "issues": [
+    {
+      "key": "SCRUM-988",
+      "before": "Testing",
+      "status": "verified",
+      "commentId": "14847",
+      "httpStatus": 201,
+      "after": "Testing"
+    },
+    {
+      "key": "SCRUM-989",
+      "before": "Testing",
+      "status": "verified",
+      "commentId": "14848",
+      "httpStatus": 201,
+      "after": "Testing"
+    },
+    {
+      "key": "SCRUM-990",
+      "before": "Testing",
+      "status": "verified",
+      "commentId": "14849",
+      "httpStatus": 201,
+      "after": "Testing"
+    },
+    {
+      "key": "SCRUM-991",
+      "before": "Testing",
+      "status": "verified",
+      "commentId": "14850",
+      "httpStatus": 201,
+      "after": "Testing"
+    }
+  ]
+}

@@ -1,0 +1,681 @@
+{
+  "at": "2026-11-16T17:43:55.639Z",
+  "candidate": "d79c0bc3915b172770588717ae0cc68b3a66e49c",
+  "outcome": "Independent review complete; no remaining finding",
+  "inputs": [
+    {
+      "path": "apps/api/src/app.ts",
+      "blob": "d0c5573ce9c7156b5061642f7924cdfc595d0757",
+      "rawSha256": "bedbc2b8ccd9d3fbc984d416a480fbb2cb115a8507494ea59af705af47a9216b",
+      "testedRawSha256": "bedbc2b8ccd9d3fbc984d416a480fbb2cb115a8507494ea59af705af47a9216b",
+      "canonicalSha256": "bedbc2b8ccd9d3fbc984d416a480fbb2cb115a8507494ea59af705af47a9216b"
+    },
+    {
+      "path": "apps/api/src/routes/account-inbox-access.ts",
+      "blob": "f99dddb1009daea8451a37f87367b92c46c2d6b6",
+      "rawSha256": "5606d8606bb147bc84a7c6bcf63542b871773f7e531309d42af27510349e68d7",
+      "testedRawSha256": "5606d8606bb147bc84a7c6bcf63542b871773f7e531309d42af27510349e68d7",
+      "canonicalSha256": "5606d8606bb147bc84a7c6bcf63542b871773f7e531309d42af27510349e68d7"
+    },
+    {
+      "path": "apps/api/src/routes/inbox-actions.ts",
+      "blob": "92201ae51dc0395da2cadda67dfc1f47c046dcc7",
+      "rawSha256": "023368d6c694f968cc1245671f36be0497d81224fade52145ac6fc2ec39d9e37",
+      "testedRawSha256": "023368d6c694f968cc1245671f36be0497d81224fade52145ac6fc2ec39d9e37",
+      "canonicalSha256": "023368d6c694f968cc1245671f36be0497d81224fade52145ac6fc2ec39d9e37"
+    },
+    {
+      "path": "apps/api/src/routes/inbox-ai.ts",
+      "blob": "440e2009ef0d869522cbf8c4b5d164b8cb225ac4",
+      "rawSha256": "f18c587fcc464e11ef6d443f9fb22d5048249dcd04c790a96620389a12ec8aeb",
+      "testedRawSha256": "f18c587fcc464e11ef6d443f9fb22d5048249dcd04c790a96620389a12ec8aeb",
+      "canonicalSha256": "f18c587fcc464e11ef6d443f9fb22d5048249dcd04c790a96620389a12ec8aeb"
+    },
+    {
+      "path": "apps/api/src/routes/inbox-contacts.ts",
+      "blob": "ebb5ca961ae8a0a8ca522e5db7120ee2f19b71ca",
+      "rawSha256": "4c9416db990f06ed94a1467f0b21b57b5f7c7b7c69cb32d9d626ed7e649f637c",
+      "testedRawSha256": "4c9416db990f06ed94a1467f0b21b57b5f7c7b7c69cb32d9d626ed7e649f637c",
+      "canonicalSha256": "4c9416db990f06ed94a1467f0b21b57b5f7c7b7c69cb32d9d626ed7e649f637c"
+    },
+    {
+      "path": "apps/api/src/routes/inbox-privacy.ts",
+      "blob": "1d4a979c861e8f48722eac9d6edcd0aed8cca456",
+      "rawSha256": "a998ab6fce0d332cd36ce206c64fe8cc5608538fcee2c678d06e669c01f15225",
+      "testedRawSha256": "a998ab6fce0d332cd36ce206c64fe8cc5608538fcee2c678d06e669c01f15225",
+      "canonicalSha256": "a998ab6fce0d332cd36ce206c64fe8cc5608538fcee2c678d06e669c01f15225"
+    },
+    {
+      "path": "apps/api/src/routes/inbox-read.ts",
+      "blob": "0e18ef32b8838c331acad62feb37b7d910e88698",
+      "rawSha256": "9d93b37ecf83ffb6e7c8e9457a285b621461f06f23968904e60c9b0dcf7fb01d",
+      "testedRawSha256": "9d93b37ecf83ffb6e7c8e9457a285b621461f06f23968904e60c9b0dcf7fb01d",
+      "canonicalSha256": "9d93b37ecf83ffb6e7c8e9457a285b621461f06f23968904e60c9b0dcf7fb01d"
+    },
+    {
+      "path": "apps/api/src/routes/inbox-reply.ts",
+      "blob": "eab250688d033440538ffc0f62549d8b028f1a66",
+      "rawSha256": "764850a399bd08fa160c47304298c85378688faa8a96675e4e251b9d5b2628e5",
+      "testedRawSha256": "764850a399bd08fa160c47304298c85378688faa8a96675e4e251b9d5b2628e5",
+      "canonicalSha256": "764850a399bd08fa160c47304298c85378688faa8a96675e4e251b9d5b2628e5"
+    },
+    {
+      "path": "apps/api/src/routes/inbox-simulator.ts",
+      "blob": "5b65ddb29140f23ac3219768897fc98a3f690a92",
+      "rawSha256": "51570d8317697655f35070e5d10c6cc77b8acf74c41d85c8b921204f77fdd9ae",
+      "testedRawSha256": "51570d8317697655f35070e5d10c6cc77b8acf74c41d85c8b921204f77fdd9ae",
+      "canonicalSha256": "51570d8317697655f35070e5d10c6cc77b8acf74c41d85c8b921204f77fdd9ae"
+    },
+    {
+      "path": "apps/api/src/routes/inbox-test-line.ts",
+      "blob": "22b3451af7eec8ddbce4e8f00b26edc42b9bc8e0",
+      "rawSha256": "baf8e1547b2c94554856dab1242d8b3dc2a7ef273252692bec4590d750300b16",
+      "testedRawSha256": "baf8e1547b2c94554856dab1242d8b3dc2a7ef273252692bec4590d750300b16",
+      "canonicalSha256": "baf8e1547b2c94554856dab1242d8b3dc2a7ef273252692bec4590d750300b16"
+    },
+    {
+      "path": "apps/api/src/services/account-inbox-access.ts",
+      "blob": "248c920ff63b216eb7c335c4f9ea39be2c39dcc0",
+      "rawSha256": "90cb71d77cea45e204c0c35744d22220c4c1bd7c786dc54847c045c5fdd739c1",
+      "testedRawSha256": "90cb71d77cea45e204c0c35744d22220c4c1bd7c786dc54847c045c5fdd739c1",
+      "canonicalSha256": "90cb71d77cea45e204c0c35744d22220c4c1bd7c786dc54847c045c5fdd739c1"
+    },
+    {
+      "path": "apps/api/src/services/inbox/access.ts",
+      "blob": "7f1801909e9d43fdde2bb3cca121c2f3a589ce38",
+      "rawSha256": "343be9de7c74065695ae00509fb602e965d04e2de2575b7381ba8cc8e4ba168e",
+      "testedRawSha256": "343be9de7c74065695ae00509fb602e965d04e2de2575b7381ba8cc8e4ba168e",
+      "canonicalSha256": "343be9de7c74065695ae00509fb602e965d04e2de2575b7381ba8cc8e4ba168e"
+    },
+    {
+      "path": "apps/api/src/services/inbox/actions.ts",
+      "blob": "bbecff4bfcbd920b20ddc2b08166fadb3104437a",
+      "rawSha256": "6ed9d794bfab8bf4fa9433bcaa68d62db2d3852091ff6e12a6a905b209556743",
+      "testedRawSha256": "6ed9d794bfab8bf4fa9433bcaa68d62db2d3852091ff6e12a6a905b209556743",
+      "canonicalSha256": "6ed9d794bfab8bf4fa9433bcaa68d62db2d3852091ff6e12a6a905b209556743"
+    },
+    {
+      "path": "apps/api/src/services/inbox/ai-settings.ts",
+      "blob": "9ea3c9955b1f44c10f2b4cffb57c8a2f8ef1a3bd",
+      "rawSha256": "56ac532f4f994d6c2a40af3d8a25948f74f81fc9ed8a466b26736a0a0ca3d3f3",
+      "testedRawSha256": "56ac532f4f994d6c2a40af3d8a25948f74f81fc9ed8a466b26736a0a0ca3d3f3",
+      "canonicalSha256": "56ac532f4f994d6c2a40af3d8a25948f74f81fc9ed8a466b26736a0a0ca3d3f3"
+    },
+    {
+      "path": "apps/api/src/services/inbox/contacts.ts",
+      "blob": "7e9a01ea2d0a96a5c94edb93c3b0dd5138bb1777",
+      "rawSha256": "2bea0552c19b2a14e489318c01b18caa104a5b7c55d0d115609d3cea047098d9",
+      "testedRawSha256": "2bea0552c19b2a14e489318c01b18caa104a5b7c55d0d115609d3cea047098d9",
+      "canonicalSha256": "2bea0552c19b2a14e489318c01b18caa104a5b7c55d0d115609d3cea047098d9"
+    },
+    {
+      "path": "apps/api/src/services/inbox/privacy.ts",
+      "blob": "321bd1b4834a16aabed41d6b272587d5989b643b",
+      "rawSha256": "1daa4a7aa1b30261ab393d5094e6ac35fabafe48318985bf3b27973121ed5c04",
+      "testedRawSha256": "1daa4a7aa1b30261ab393d5094e6ac35fabafe48318985bf3b27973121ed5c04",
+      "canonicalSha256": "1daa4a7aa1b30261ab393d5094e6ac35fabafe48318985bf3b27973121ed5c04"
+    },
+    {
+      "path": "apps/api/src/services/inbox/read-visibility.ts",
+      "blob": "9c6add0fc9b815506ca4ba2519dc775d560d5d0e",
+      "rawSha256": "e085d9f804bc0760137b0e07adbb2247d438e402fd344112e576b76fe241c3d9",
+      "testedRawSha256": "e085d9f804bc0760137b0e07adbb2247d438e402fd344112e576b76fe241c3d9",
+      "canonicalSha256": "e085d9f804bc0760137b0e07adbb2247d438e402fd344112e576b76fe241c3d9"
+    },
+    {
+      "path": "apps/api/src/services/inbox/read.ts",
+      "blob": "82520c64352aa18b31fc2aea543c5dd064244829",
+      "rawSha256": "0e1c700eb857a9c1d63e5af4194cf6dd00df838fac79f640fd36a1fd72315fa3",
+      "testedRawSha256": "0e1c700eb857a9c1d63e5af4194cf6dd00df838fac79f640fd36a1fd72315fa3",
+      "canonicalSha256": "0e1c700eb857a9c1d63e5af4194cf6dd00df838fac79f640fd36a1fd72315fa3"
+    },
+    {
+      "path": "apps/api/src/services/inbox/replay.ts",
+      "blob": "da13db2d1c2cfbe682850353fee4446a3008fb48",
+      "rawSha256": "390620115d6cfa64beeb764412ed93960c0594c166d074cd23466f19a2ef8d44",
+      "testedRawSha256": "390620115d6cfa64beeb764412ed93960c0594c166d074cd23466f19a2ef8d44",
+      "canonicalSha256": "390620115d6cfa64beeb764412ed93960c0594c166d074cd23466f19a2ef8d44"
+    },
+    {
+      "path": "apps/api/src/services/inbox/simulator.ts",
+      "blob": "72a750736641965aca0b9374280e040105d1bb1a",
+      "rawSha256": "84287f2e181df1b2656b19abec34eba882c5801a92098f119151e9a31e851b72",
+      "testedRawSha256": "84287f2e181df1b2656b19abec34eba882c5801a92098f119151e9a31e851b72",
+      "canonicalSha256": "84287f2e181df1b2656b19abec34eba882c5801a92098f119151e9a31e851b72"
+    },
+    {
+      "path": "apps/api/src/services/inbox/test-line.ts",
+      "blob": "f96813efa761eecf1f4c6da305f6c71758017360",
+      "rawSha256": "0b51ae6bd64aeb7ce35d43fbd222a53c99e69e7a68dea3b5412e0e76fbd1950b",
+      "testedRawSha256": "0b51ae6bd64aeb7ce35d43fbd222a53c99e69e7a68dea3b5412e0e76fbd1950b",
+      "canonicalSha256": "0b51ae6bd64aeb7ce35d43fbd222a53c99e69e7a68dea3b5412e0e76fbd1950b"
+    },
+    {
+      "path": "apps/api/test/inbox-access-993-review.test.ts",
+      "blob": "5323394198458cd3f15cee9317d8ba9aeac39b30",
+      "rawSha256": "378b1bf5a3077379f43f9e862a8daccf96998ae6596a80082b0141b1b89cd40a",
+      "testedRawSha256": "378b1bf5a3077379f43f9e862a8daccf96998ae6596a80082b0141b1b89cd40a",
+      "canonicalSha256": "378b1bf5a3077379f43f9e862a8daccf96998ae6596a80082b0141b1b89cd40a"
+    },
+    {
+      "path": "apps/api/test/route-scope-target.test.ts",
+      "blob": "81ab72be7bd61c43c3f49a1ce0c707ee656eb4ae",
+      "rawSha256": "cd2621f90c7b6d3a8b3d51a2042d3da1f988959eab8b01af21ab40f31ab6557b",
+      "testedRawSha256": "cd2621f90c7b6d3a8b3d51a2042d3da1f988959eab8b01af21ab40f31ab6557b",
+      "canonicalSha256": "cd2621f90c7b6d3a8b3d51a2042d3da1f988959eab8b01af21ab40f31ab6557b"
+    },
+    {
+      "path": "apps/api/test/route-write-conformance.test.ts",
+      "blob": "465ce62103d5885f718871e49539488ee90da54e",
+      "rawSha256": "1ca3a77adf9256d273cd71d7db789e2714891e6edfebf4e6f897c7b03592573d",
+      "testedRawSha256": "1ca3a77adf9256d273cd71d7db789e2714891e6edfebf4e6f897c7b03592573d",
+      "canonicalSha256": "1ca3a77adf9256d273cd71d7db789e2714891e6edfebf4e6f897c7b03592573d"
+    },
+    {
+      "path": "apps/inbox/src/components/Rail.tsx",
+      "blob": "8d37a2ff0a7644b95442c5ac52013071308c69ee",
+      "rawSha256": "292b48891c76ad8c9b95eac71bd532fc79aed05642360f125b885c53d7756a72",
+      "testedRawSha256": "292b48891c76ad8c9b95eac71bd532fc79aed05642360f125b885c53d7756a72",
+      "canonicalSha256": "292b48891c76ad8c9b95eac71bd532fc79aed05642360f125b885c53d7756a72"
+    },
+    {
+      "path": "apps/inbox/src/components/Simulator.tsx",
+      "blob": "c741ffe8ba8f09569e123e23580c3b4d8bad834c",
+      "rawSha256": "ad0e3a16aec2f1966167b38f80169d35961c14966786dc77be4124b420a3a3dd",
+      "testedRawSha256": "ad0e3a16aec2f1966167b38f80169d35961c14966786dc77be4124b420a3a3dd",
+      "canonicalSha256": "ad0e3a16aec2f1966167b38f80169d35961c14966786dc77be4124b420a3a3dd"
+    },
+    {
+      "path": "apps/inbox/src/components/Workspace.tsx",
+      "blob": "385d29b099b818d90e18671cb3f4361cb70cf544",
+      "rawSha256": "85e6f211807ff69d64f6eb467792868048bfc2eadbc7d30c6ee98ca14f8e23ae",
+      "testedRawSha256": "85e6f211807ff69d64f6eb467792868048bfc2eadbc7d30c6ee98ca14f8e23ae",
+      "canonicalSha256": "85e6f211807ff69d64f6eb467792868048bfc2eadbc7d30c6ee98ca14f8e23ae"
+    },
+    {
+      "path": "apps/inbox/src/hooks/useInboxAccess.ts",
+      "blob": "c9cec5f6a8a042e95fa27931dca027832708268e",
+      "rawSha256": "c6a13d8f8a08a8e80a67ca341c5b4368b9d74d3ce15da3de8a1c125556aaa718",
+      "testedRawSha256": "c6a13d8f8a08a8e80a67ca341c5b4368b9d74d3ce15da3de8a1c125556aaa718",
+      "canonicalSha256": "c6a13d8f8a08a8e80a67ca341c5b4368b9d74d3ce15da3de8a1c125556aaa718"
+    },
+    {
+      "path": "apps/inbox/src/lib/inboxes.ts",
+      "blob": "bb2faef5fed4f83fb5f96d69debfdde48d2630f7",
+      "rawSha256": "7c7975c90fddc800b2d88f80d53e486cc951c840d639e9acd7d3b0009242917c",
+      "testedRawSha256": "7c7975c90fddc800b2d88f80d53e486cc951c840d639e9acd7d3b0009242917c",
+      "canonicalSha256": "7c7975c90fddc800b2d88f80d53e486cc951c840d639e9acd7d3b0009242917c"
+    },
+    {
+      "path": "apps/inbox/test/access-993.test.ts",
+      "blob": "524904ea239b9f6f76f62474fbf71007b1ce0cbc",
+      "rawSha256": "ee1bdfe5cb69b1f809599e07730d00f0ac09b7beeed402ea72459124007dd847",
+      "testedRawSha256": "ee1bdfe5cb69b1f809599e07730d00f0ac09b7beeed402ea72459124007dd847",
+      "canonicalSha256": "ee1bdfe5cb69b1f809599e07730d00f0ac09b7beeed402ea72459124007dd847"
+    },
+    {
+      "path": "apps/inbox/test/workspace-access-993.test.ts",
+      "blob": "b8af3544de41e69a43627b11401a6a31af6e9bc4",
+      "rawSha256": "0f2c7a6b25d56e8aecc87dff0bc528db668d787c30748a21b75c78ec260d51f5",
+      "testedRawSha256": "0f2c7a6b25d56e8aecc87dff0bc528db668d787c30748a21b75c78ec260d51f5",
+      "canonicalSha256": "0f2c7a6b25d56e8aecc87dff0bc528db668d787c30748a21b75c78ec260d51f5"
+    },
+    {
+      "path": "packages/admin-screens/src/api/roles.ts",
+      "blob": "70c394670178396551a24b5163650a0100a78030",
+      "rawSha256": "c27bc3f4d2670476e64ca49f6a4805b8bd4c5d7e2d1c9fd917155743c51c87a7",
+      "testedRawSha256": "c27bc3f4d2670476e64ca49f6a4805b8bd4c5d7e2d1c9fd917155743c51c87a7",
+      "canonicalSha256": "c27bc3f4d2670476e64ca49f6a4805b8bd4c5d7e2d1c9fd917155743c51c87a7"
+    },
+    {
+      "path": "packages/admin-screens/src/roles/AccountPermissionsDialog.tsx",
+      "blob": "e9eb50dbcb72dde8dded2bc928153125dec86bda",
+      "rawSha256": "38f5576fdbb471c7c9c88dd44e1f0047c33be854d15bec97ceb171ea362d7ed7",
+      "testedRawSha256": "38f5576fdbb471c7c9c88dd44e1f0047c33be854d15bec97ceb171ea362d7ed7",
+      "canonicalSha256": "38f5576fdbb471c7c9c88dd44e1f0047c33be854d15bec97ceb171ea362d7ed7"
+    },
+    {
+      "path": "packages/admin-screens/src/roles/InboxAccessControls.tsx",
+      "blob": "38a1f7829b58703d33712af8e5c27f94901e133c",
+      "rawSha256": "a8ea96cd1b21cf9a3fdfb9b1f0fc2d308001d9d61d4fe91c845e70e340c9b2a2",
+      "testedRawSha256": "a8ea96cd1b21cf9a3fdfb9b1f0fc2d308001d9d61d4fe91c845e70e340c9b2a2",
+      "canonicalSha256": "a8ea96cd1b21cf9a3fdfb9b1f0fc2d308001d9d61d4fe91c845e70e340c9b2a2"
+    },
+    {
+      "path": "packages/admin-screens/test/inbox-access-controls.test.ts",
+      "blob": "ae51f662fd84a0321ae4e8e2641ac3927d30b646",
+      "rawSha256": "fa9a7e9b54d532d3ead8fec3d6b3f0b98359c6b70fe607fb0b1e9a0de24f42ee",
+      "testedRawSha256": "fa9a7e9b54d532d3ead8fec3d6b3f0b98359c6b70fe607fb0b1e9a0de24f42ee",
+      "canonicalSha256": "fa9a7e9b54d532d3ead8fec3d6b3f0b98359c6b70fe607fb0b1e9a0de24f42ee"
+    },
+    {
+      "path": "packages/api-types/openapi.json",
+      "blob": "452fcf4cea0c7ca0b32a090c34c1746d8503e144",
+      "rawSha256": "37052c7456df10715e9767764f62518b5aa5c48b82d4d392500bb710087bc58b",
+      "testedRawSha256": "37052c7456df10715e9767764f62518b5aa5c48b82d4d392500bb710087bc58b",
+      "canonicalSha256": "37052c7456df10715e9767764f62518b5aa5c48b82d4d392500bb710087bc58b"
+    },
+    {
+      "path": "packages/api-types/src/openapi.ts",
+      "blob": "e60458d105f05141e0c81d20d3dca8cb2443e56a",
+      "rawSha256": "22e098f34a37cb058a13e1843f810f5c6197bd4999f610a5bec3a2f1a4c8bbe6",
+      "testedRawSha256": "22e098f34a37cb058a13e1843f810f5c6197bd4999f610a5bec3a2f1a4c8bbe6",
+      "canonicalSha256": "22e098f34a37cb058a13e1843f810f5c6197bd4999f610a5bec3a2f1a4c8bbe6"
+    },
+    {
+      "path": "packages/db/migrations/0128_inbox_access.sql",
+      "blob": "fbb9db2d87930c96df222627d99711e67adee41a",
+      "rawSha256": "9c17e83584ea522b13f2af828233886c73ca30b41ab2627ee6eb4c8378c685f8",
+      "testedRawSha256": "9c17e83584ea522b13f2af828233886c73ca30b41ab2627ee6eb4c8378c685f8",
+      "canonicalSha256": "9c17e83584ea522b13f2af828233886c73ca30b41ab2627ee6eb4c8378c685f8"
+    },
+    {
+      "path": "packages/db/migrations/meta/0128_snapshot.json",
+      "blob": "8d9eb78a45815aaf4a8b2d08fc20bb0a999a07c6",
+      "rawSha256": "0cafead1c83b46b5c74cf482210d0b80bd9786ee56a230e5853ebc1e851b4652",
+      "testedRawSha256": "0cafead1c83b46b5c74cf482210d0b80bd9786ee56a230e5853ebc1e851b4652",
+      "canonicalSha256": "0cafead1c83b46b5c74cf482210d0b80bd9786ee56a230e5853ebc1e851b4652"
+    },
+    {
+      "path": "packages/db/migrations/meta/_journal.json",
+      "blob": "ffd4fb02ec08ef4c66619aae9dfff1454f85bc11",
+      "rawSha256": "3e796609740b02781099600cfb1d529d091b9cc01cded4dc4f620c5963482f0a",
+      "testedRawSha256": "3e796609740b02781099600cfb1d529d091b9cc01cded4dc4f620c5963482f0a",
+      "canonicalSha256": "3e796609740b02781099600cfb1d529d091b9cc01cded4dc4f620c5963482f0a"
+    },
+    {
+      "path": "packages/db/src/schema/inbox.ts",
+      "blob": "5c45dd29b3149b34f08fdd45b0263437b48ed173",
+      "rawSha256": "1badb1e0618b4673d767ba3623589ea7a5bcf9a7f68115a5a138392ab39b271d",
+      "testedRawSha256": "1badb1e0618b4673d767ba3623589ea7a5bcf9a7f68115a5a138392ab39b271d",
+      "canonicalSha256": "1badb1e0618b4673d767ba3623589ea7a5bcf9a7f68115a5a138392ab39b271d"
+    },
+    {
+      "path": "packages/db/src/schema/tenancy.ts",
+      "blob": "02b3c71504c0e2258ba50af7ec0ca83618757e70",
+      "rawSha256": "863420ec69f32de626e667fba8f6b26b5e8a853627e2d8eaed8a041f2201f09d",
+      "testedRawSha256": "863420ec69f32de626e667fba8f6b26b5e8a853627e2d8eaed8a041f2201f09d",
+      "canonicalSha256": "863420ec69f32de626e667fba8f6b26b5e8a853627e2d8eaed8a041f2201f09d"
+    },
+    {
+      "path": "packages/db/test/inbox-i1.test.ts",
+      "blob": "5cb35db3657fcdce030a9217c7d384fd7b971e26",
+      "rawSha256": "3eb03a796062e4b156c7d99f0f24105d49ea60edb63cb90decc05961cbfcca66",
+      "testedRawSha256": "3eb03a796062e4b156c7d99f0f24105d49ea60edb63cb90decc05961cbfcca66",
+      "canonicalSha256": "3eb03a796062e4b156c7d99f0f24105d49ea60edb63cb90decc05961cbfcca66"
+    },
+    {
+      "path": "packages/shared/src/inbox-access.ts",
+      "blob": "e39ec2b1d6fab04690b65264d4968e60931024f0",
+      "rawSha256": "20cb2b58111439dd6d578a0911c8017c17d11288266461a6166d4f9fbef11348",
+      "testedRawSha256": "20cb2b58111439dd6d578a0911c8017c17d11288266461a6166d4f9fbef11348",
+      "canonicalSha256": "20cb2b58111439dd6d578a0911c8017c17d11288266461a6166d4f9fbef11348"
+    },
+    {
+      "path": "packages/shared/src/inbox.ts",
+      "blob": "f960b9bdb8286ff0008761c587c2d189f27651bd",
+      "rawSha256": "144ee3665a4752818613a33645e5dd2df20984b85379ed47e71d593cd52d7770",
+      "testedRawSha256": "144ee3665a4752818613a33645e5dd2df20984b85379ed47e71d593cd52d7770",
+      "canonicalSha256": "144ee3665a4752818613a33645e5dd2df20984b85379ed47e71d593cd52d7770"
+    },
+    {
+      "path": "packages/shared/src/index.ts",
+      "blob": "21e8cba0a5476c8866b3e580c214e617579663ae",
+      "rawSha256": "4cff360bfcd1697ff4ed81a072a6035dc1c9350de63e5a0f521a41d8437b74e0",
+      "testedRawSha256": "4cff360bfcd1697ff4ed81a072a6035dc1c9350de63e5a0f521a41d8437b74e0",
+      "canonicalSha256": "4cff360bfcd1697ff4ed81a072a6035dc1c9350de63e5a0f521a41d8437b74e0"
+    }
+  ],
+  "logs": [
+    {
+      "path": "logs/inbox-993-adjacent-api-final.log",
+      "rawSha256": "4043917627a03bdc05200f8a50eec2f8a6e545b9ca74821be148b49e546ec3a6",
+      "canonicalSha256": "0394c2e70a247a8ed11812b741156b321097b06571967d750ee9ea391087ee3b"
+    },
+    {
+      "path": "logs/inbox-993-admin-suite.log",
+      "rawSha256": "872a577f4a2a401574943f3c73b0f41369b0ba51a8469669ab542dcfd63124e4",
+      "canonicalSha256": "ab269051cab991f523ba322c4846ba14f13de827e80b5b2ea4a280a93fd0ca26"
+    },
+    {
+      "path": "logs/inbox-993-api-types-first.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "logs/inbox-993-api-types-generate.log",
+      "rawSha256": "d44958027c347151cd88d66f099ab1f9f9f8bfc6a75d3aa08b84f000cd4b5b41",
+      "canonicalSha256": "99d04a54d4cfc70b092a2b2a17038283d459ea0905932a61a33e17566bb625a5"
+    },
+    {
+      "path": "logs/inbox-993-api-types-second.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "logs/inbox-993-build-console.log",
+      "rawSha256": "583c03b0018bcb191fa7da5ff2fed795557bf26c19db8b07e43dfd6aa19b2bfc",
+      "canonicalSha256": "a66941c451d671f830e94cd0046899112a5db066a270cc7cc8c997bbc4994658"
+    },
+    {
+      "path": "logs/inbox-993-build-inbox.log",
+      "rawSha256": "c547237f2b181009166c4935ca9b58e332807ba5b051ee64e8ea7cba554ffe46",
+      "canonicalSha256": "39857b803e7664a909ea52fee425a8d3721858eaab3cb99761eee7fd7b55e4c4"
+    },
+    {
+      "path": "logs/inbox-993-checkpoint-lint.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "logs/inbox-993-console-suite.log",
+      "rawSha256": "506b91cd1073e7e4ffee5848110a70b443aef208eca0f7463651bd0af858907c",
+      "canonicalSha256": "7dd1b92e4438754d35c6862f6e6dd39b3077e5683477b51ccd93fc6100f05bdb"
+    },
+    {
+      "path": "logs/inbox-993-contracts-final-check.log",
+      "rawSha256": "e4ae49e5cc9d565200139b1c3d9c1ad5dad781503153f7ba7f3425a639902631",
+      "canonicalSha256": "528a1c1c224cd347c69f8c4cc75c0e0949c8c758cec44a328bdb03566c9db4d1"
+    },
+    {
+      "path": "logs/inbox-993-contracts-final-generate.log",
+      "rawSha256": "c0e80e8e1555b44eada3d33210632c85e3b916fcf96e2676038c67c176735bca",
+      "canonicalSha256": "95f587803fd86da30194e29c6ea575935b835a516d04969ca738dd6fbe780083"
+    },
+    {
+      "path": "logs/inbox-993-contracts-final-green.log",
+      "rawSha256": "22c93a22d42f83fca49860d2e0d5f9d6f11ee67f5472d9ad9ab3ac1b5aed5b2a",
+      "canonicalSha256": "145f49a00dee2ad877c59adc950ddf85ec7df7580a46767f83f27483ad710aa3"
+    },
+    {
+      "path": "logs/inbox-993-drawer-first.log",
+      "rawSha256": "8bbe231d00c49dd9bb1aef6d880fe82df779e8dc56d0afd290e3c2ad9772bea7",
+      "canonicalSha256": "45078153c2fd2b539d7ebea27f81a7a51a979e715e1779a6dfbcee199d929de4"
+    },
+    {
+      "path": "logs/inbox-993-filters-fifth.log",
+      "rawSha256": "b34dd1cc591a3ac5b91e1f2b8ebd078abf274796885402dea30d61664a965232",
+      "canonicalSha256": "b27cf31edf7d892126ba272fbe4107eb431e498cc4b2848bc4abc1eb5880d284"
+    },
+    {
+      "path": "logs/inbox-993-filters-first.log",
+      "rawSha256": "23a918f4a2861b2d5e213d741ec20ebef8bcecb5fe6a85d6526f852750630261",
+      "canonicalSha256": "3ce3775e50ee2e9d92efdd4b061e318842cbfe942351f57d4e27f28be66af81f"
+    },
+    {
+      "path": "logs/inbox-993-filters-fourth.log",
+      "rawSha256": "c73dbd5fc7984134784ce70cee7090ae6ade90e7edc1c5795508d119da1466cb",
+      "canonicalSha256": "cee34866bfc7b11b367cf3c8f445271e655022f3c015489b59dbbc746175eac4"
+    },
+    {
+      "path": "logs/inbox-993-filters-second.log",
+      "rawSha256": "be05c22c39da799ff602b5bce19e44a81effabe07f18171c6e018424a4db9c1e",
+      "canonicalSha256": "20875870c8efe5dd1f9509ba0f0c5ffd392d86ed19394e3447ff49a56d83e960"
+    },
+    {
+      "path": "logs/inbox-993-filters-third.log",
+      "rawSha256": "5ce5eef6b7baa0248f1f46f3f19f0ed4d2c8ccc2f26069d33df08af322a139d4",
+      "canonicalSha256": "637f45e09779f2190815908ba971a6d2f2b9bd294cb631d148ba1baa1f74478b"
+    },
+    {
+      "path": "logs/inbox-993-final-api-types-generate.log",
+      "rawSha256": "0457be9895415b2116580daa98668c9cb5d63cddef30220819af1c4f3123ee7e",
+      "canonicalSha256": "cfee8467fff2552f8c643e15060262597605dc1a996463a1d005854b375a1c9d"
+    },
+    {
+      "path": "logs/inbox-993-final-conformance-runtime.log",
+      "rawSha256": "7e2a9380d97f045cc4cd06bf3e05d31760f5c917ba6959955c8ea673600c2e20",
+      "canonicalSha256": "6cea2fce1cd04d55be8c986b81590f2762ddeace88a79030642d87c444b9dcd4"
+    },
+    {
+      "path": "logs/inbox-993-final-db-controls.log",
+      "rawSha256": "29dd0009b498a7c39fee355aa8f04be1643623b5a18d6c2e63799b0fa5cbca0b",
+      "canonicalSha256": "2baffc99fd093262b32975d8edb4224500a309ca8652914db254e067c2b5717b"
+    },
+    {
+      "path": "logs/inbox-993-final-db-repaired.log",
+      "rawSha256": "22257ae2f7488f75394c05dd212a1727e16d4f12940ea71452cf2ee0a93de4fb",
+      "canonicalSha256": "8125000887e07b6211bef31ae4bcf7400f672d95eedecfd4a7acc9572deac571"
+    },
+    {
+      "path": "logs/inbox-993-final-live-schema.log",
+      "rawSha256": "56374a8e915aa452bdbd2a5e2b8c05912ed095da65a975917328b02fbf3773b9",
+      "canonicalSha256": "57386ad61f3b0b77a95da786ed353a005a889e13506f9c796d373a3d17009c17"
+    },
+    {
+      "path": "logs/inbox-993-final-migration-generate.log",
+      "rawSha256": "b1eab4da7b6aa9b3b0ab6fa0c3f0fc314c1e499369d1ecdcb20d7cf5e4e04fe8",
+      "canonicalSha256": "dab3f9a3d8bdd37853e4b6babc1e5efa4a66a369a935203671b99d163b51efac"
+    },
+    {
+      "path": "logs/inbox-993-final-route-guards.log",
+      "rawSha256": "55d4e55c081333d0a5e1795f411301ff9ca1f351487a754668fb9fa1beda8949",
+      "canonicalSha256": "e97e44d4bbaf583752e9539c25a2c9eedf9d389f94309edfa52cd437d30d7b71"
+    },
+    {
+      "path": "logs/inbox-993-final-scope-repaired.log",
+      "rawSha256": "140c5d5ce3854c1d339f527ddef79067be96977b5b730c1f596b31679737cbd6",
+      "canonicalSha256": "f4e59860f7103ff43d4d784acad5fb3cb897b32310959fa6c58c07b35518a14e"
+    },
+    {
+      "path": "logs/inbox-993-http-compat-green.log",
+      "rawSha256": "6c89d6e53d3d5f7c2a268f7b41025879452dc596910238ba30f8cf4ea9700c0b",
+      "canonicalSha256": "e70ac7e00e562a045cb92913586bc0bd93016a5d261a82b4b12a29b91e9788eb"
+    },
+    {
+      "path": "logs/inbox-993-http-compat-red.log",
+      "rawSha256": "9fc827c2115344b185421d50cbf0a9d8a43d35ccc6113511338f0edcd8647f6b",
+      "canonicalSha256": "7803b83224dfdb8b03797a6cd074bc17ea259fa80272a80921870b98fc4f574a"
+    },
+    {
+      "path": "logs/inbox-993-http-first.log",
+      "rawSha256": "55414a683a2a19ff76abbfac69db4deca6079bff983ef53ad97e8c9bc579170c",
+      "canonicalSha256": "17e69cd4d7e9c5f3efaf8800c6f99b9bab867da713391d1a7d916e3b58f5dba5"
+    },
+    {
+      "path": "logs/inbox-993-http-second.log",
+      "rawSha256": "d6397740b973e2e4e85f3dff4577476cb56ddd610d54462139b9debe94de2362",
+      "canonicalSha256": "2bc878d64b0d786ac1b567f2a7f0af5f4f1495227b90ddde26ba83f83a7f8fa3"
+    },
+    {
+      "path": "logs/inbox-993-inbox-suite-final.log",
+      "rawSha256": "125a9199de88caf25aac2399eec6eff1502c4f800dafe8910bb057280515aedc",
+      "canonicalSha256": "2796ee6b4abbb38b502d42cc5e7ba9067ed281277d714344ccd64680a3435cc1"
+    },
+    {
+      "path": "logs/inbox-993-inbox-suite.log",
+      "rawSha256": "c5b1948d64c4990589e9e28737a1671b7ef47178c3d43003e26c2891811ebfde",
+      "canonicalSha256": "808f0514690feb78d45bff7b957fd62f1a3d1c5b0c7a07148ad0418ce3f6b505"
+    },
+    {
+      "path": "logs/inbox-993-indexed-live-schema.log",
+      "rawSha256": "eceafb4c4b31ddf4baba617a6b65a12c795fc003135f03df56b6722ab38a09c1",
+      "canonicalSha256": "2e0ab7061937365fd176a59918e89d7dbc2a19ceabf7cbc604e9e927c4f073e5"
+    },
+    {
+      "path": "logs/inbox-993-indexed-migration-generate.log",
+      "rawSha256": "fa88d03d2ee908faa89f28130f8d01734992b7f39cacb8e7ffaa9bd3130b3b15",
+      "canonicalSha256": "ad3f934f7e70c96a21272afedca13ac0ad952f375e8b93925d3e2bc97a4d7072"
+    },
+    {
+      "path": "logs/inbox-993-lint-final.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "logs/inbox-993-migration-generate.log",
+      "rawSha256": "cfab7e8c9fc2e4cf8ff02cae12f9e7a7f52ee2e8b060b4a3edb7c0d1e1717530",
+      "canonicalSha256": "31bd991ad76273c731dacf63bdc8d960153ab3a6837282f61b6932e30e508d84"
+    },
+    {
+      "path": "logs/inbox-993-replay-hook-lint.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "logs/inbox-993-replay-hook-tests.log",
+      "rawSha256": "083460a2fedc7404643082177e8c02204b6e7648a633a702b3f1b6bfd1cddfa1",
+      "canonicalSha256": "3fd64936d2502633a4e5debc5cf8957276d118d0ea191779456d0b3772114be8"
+    },
+    {
+      "path": "logs/inbox-993-replay-hook-types.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "logs/inbox-993-review-lint-first.log",
+      "rawSha256": "1b1b934c04672fe28977bad5fe779db60ea294620f2522d96d4c419f792ac1c0",
+      "canonicalSha256": "9ba2d0fa5416fed2b9ef1d1e3b9cb07af11a7618ab23d367751d7cd5507d2c0f"
+    },
+    {
+      "path": "logs/inbox-993-review-lint-second.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "logs/inbox-993-review-lint-third.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "logs/inbox-993-schema-shape.log",
+      "rawSha256": "e73ace8afb9f76d5a6d502dde51e88d7591e93936376db879e55ea6cecbb5540",
+      "canonicalSha256": "22209ed7fc75179666e761dd9e8fcfd2892a9d984e654d717ab4d0f22ae764c7"
+    },
+    {
+      "path": "logs/inbox-993-types-admin-final.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "logs/inbox-993-types-admin-first.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "logs/inbox-993-types-api-final.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "logs/inbox-993-types-console-e2e-final.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "logs/inbox-993-types-console-final.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "logs/inbox-993-types-console-test-final.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "logs/inbox-993-types-db-final.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "logs/inbox-993-types-db-first.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "logs/inbox-993-types-inbox-final.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "logs/inbox-993-types-inbox-first.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "logs/inbox-993-types-inbox-post-dashboard.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "logs/inbox-993-types-inbox-test-final.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "logs/inbox-993-types-inbox-test-first.log",
+      "rawSha256": "2df60689170777a70c2e34f5b3b41342083c183dd76a217b20a375b29c260e54",
+      "canonicalSha256": "d4d6c62c05d9e65cf1bb8df074e5fcb549ff0d70b3ef26db9d399bd2c779cc05"
+    },
+    {
+      "path": "logs/inbox-993-types-inbox-test-post-dashboard.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "logs/inbox-993-types-inbox-test-second.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "logs/inbox-993-types-pos-final.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "logs/inbox-993-types-pos-server-final.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "logs/inbox-993-types-pos-test-final.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "logs/inbox-993-types-shared-final.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "logs/inbox-993-types-shared-first.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "logs/inbox-993-workspace-green.log",
+      "rawSha256": "527df8efbfcc692a49fc91f6d2b95dec7c797746ce84812d34db063ddba9af81",
+      "canonicalSha256": "41e114c5841ef057ea5abbe8c961f6d7561a6a1ef2cad6003b492262480805a3"
+    },
+    {
+      "path": "logs/inbox-993-workspace-red.log",
+      "rawSha256": "2bb5a1ea1003a7e27dc8e1c0b9dc0bf2d1bcf0c0afd1e714707ec97f216fa48a",
+      "canonicalSha256": "bd013ae5df16e82390a0b36953002d1dfd6060342fa001257e48d3c0e7506689"
+    },
+    {
+      "path": "logs/inbox-992-exact-ci-db-repro.log",
+      "rawSha256": "3cf2d61fd5955ec9d729e153b636869fa263f1c9445ff4505dc2fbf5f5b85955",
+      "canonicalSha256": "47ceab8797c30559bc762cb695c930e85dbd3507bef65c889456b0e8bee70e4d"
+    },
+    {
+      "path": "logs/inbox-992-ci-retry-watch.log",
+      "rawSha256": "64ed2d1b81f23740df6afcf5e3228c99747b71ac2c0a4525671813bec708b08d",
+      "canonicalSha256": "9e4bf9a97ceba3e1ed7f09fb368ce5c578abe70f31bae610e0ef8f0a813c9a98"
+    },
+    {
+      "path": "logs/inbox-992-ci-retry-watch-gitbash.log",
+      "rawSha256": "50675aa02ccd524c965deffd5ad98c5c13f137519acdc1c050ee594b2556367a",
+      "canonicalSha256": "0a2a7f20b5c37bf18a1b9e74a776ac285d2cdc8f2eb5740a402e8dfd423019a9"
+    }
+  ],
+  "migration": {
+    "priorEntriesUnchanged": true,
+    "previousSnapshot": "2e4b8ea1-48c1-4585-9d08-ce790547c5e3",
+    "sqlSha256": "9c17e83584ea522b13f2af828233886c73ca30b41ab2627ee6eb4c8378c685f8",
+    "additionalReviewedIndexes": [
+      "account_access_updated_by_idx",
+      "account_channel_access_channel_idx"
+    ]
+  },
+  "release": "Held locally until BEO staging proof releases shared API; no live permission claim"
+}

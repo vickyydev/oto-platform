@@ -1,0 +1,2452 @@
+
+ RUN  v3.2.7 C:/oto-lanes/codex-inbox-feedback-20261116/apps/api
+
+node.exe : (node:122000) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the 
+logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level 
+option will be removed in `fastify@6`.
+At C:\Users\waqar\AppData\Roaming\npm\pnpm.ps1:24 char:5
++     & "node$exe"  "$basedir/node_modules/pnpm/bin/pnpm.cjs" $args
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ((node:122000) [...in `fastify@6`.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ❯ test/route-write-conformance.test.ts (31 tests | 4 failed) 974ms
+   ✓ Suite controls registration (SCRUM-643) > every suite-control write is keyed before replay, typed, and reaches the audited transaction without an exemption 4ms
+   ✓ Suite controls registration (SCRUM-643) > the launcher read, the catalogue and the preview write nothing and run nothing 1ms
+   ✓ Support tools registration (SCRUM-648) > every impersonation write is platform-held before replay, typed, and reaches the audited transaction 1ms
+   ✓ Support tools registration (SCRUM-648) > the lookup and the trace are reads that write only their data_access row 0ms
+   ✓ Operator selection write registration (SCRUM-640) > uses the verified session service and its transaction/audit without a write or replay exemption 0ms
+   ✓ Book Date write registration (SCRUM-775) > validates both ways, keys the event by the caller, and commits the link with its audit row 0ms
+   ✓ Create BEO registration (SCRUM-775) > mints through the audited hand-off at the conversation, answers in its schema, and keeps no replay 0ms
+   ✓ Create BEO registration (SCRUM-775) > validates Create BEO's AI Fill flag, and nothing else rides the body (SCRUM-660) 0ms
+   ✓ The BEO confirmation read (SCRUM-660) > is a read with its schema, loading the conversation inside the caller’s operator, and writes nothing 0ms
+   ✓ Platform read registration (SCRUM-639) > adds exactly three reads without a mutation exemption or a control runner 1ms
+   ✓ Console analytics sources writes (SCRUM-646 Q27 Stage 1) > switches through the existing audited service and re-runs by marks only, both keyed and transacted 1ms
+   ✓ Assistant settings atomic replacement (SCRUM-638) > registers one typed keyed write that reaches the audited transaction, without an exemption 0ms
+   ✓ Aggregate read registration (SCRUM-636) > registers exactly five read-only facades without a mutation exemption 0ms
+   ✓ Money oversight read registration (SCRUM-647) > registers exactly eight reads, each through the audited read-only door, with no route that writes money 2ms
+   ✓ Staff summary read registration (SCRUM-634) > keeps business reads separate from the audited temporary handoff 0ms
+   ✓ the audit row commits with the change (SCRUM-291) > no audit.record inside a transaction is written on the pool 137ms
+   ✓ the audit row commits with the change (SCRUM-291) > catches the child.create call as it stood before SCRUM-283 0ms
+   ✓ the audit row commits with the change (SCRUM-291) > accepts the same call with the transaction handle 0ms
+   ✓ one operation, one transaction (SCRUM-291) > Teams and routing mutations retain one transaction and the normal replay store (SCRUM-626) 1ms
+   ✓ one operation, one transaction (SCRUM-291) > the Roles catalogue, reverse lookup and effective diff are reads (SCRUM-612) 0ms
+   × one operation, one transaction (SCRUM-291) > the source walk found every route the app registered 5ms
+     → expected [ …(3) ] to deeply equal []
+   × one operation, one transaction (SCRUM-291) > every mutating route opens a transaction, or writes nothing of its own 7ms
+     → NEW mutating route whose write is not inside a transaction. Fix it, or add it to the list in this file with the ticket that will.: expected [ 'POST /:id/inbox-access/preview' ] to deeply equal []
+   ✓ one operation, one transaction (SCRUM-291) > nothing on the no-write list actually writes 4ms
+   ✓ one operation, one transaction (SCRUM-291) > every route on either list is still registered 0ms
+   ✓ one operation, one transaction (SCRUM-291) > every route on the known-failure list does write, so the debt is real 0ms
+   ✓ the idempotency key (SCRUM-291) > lifecycle delivery commits its durable event receipt, account change and audit together (SCRUM-633) 0ms
+   ✓ the idempotency key (SCRUM-291) > lifecycle restriction commits its durable event receipt, role withdrawal and audit together (SCRUM-769) 0ms
+   × the idempotency key (SCRUM-291) > only these mutating routes are outside the replay store 1ms
+     → a mutating route declared secretResponse, credential or replaysByOwnId — it no longer takes an Idempotency-Key, so say so here on purpose: expected [ …(54) ] to deeply equal [ …(51) ]
+   ✓ the idempotency key (SCRUM-291) > only these mutating routes can be called without a session (SCRUM-298) 0ms
+   ✓ the idempotency key (SCRUM-291) > the plugin still claims a key on all four mutating verbs 1ms
+   × the idempotency key (SCRUM-291) > every other mutating route that has a session is therefore covered 1ms
+     → expected [ …(3) ] to deeply equal []
+stdout | test/routes-guarded.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/routes-guarded.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-ihCKVt ... ok
+creating subdirectories ... 
+
+stdout | test/routes-guarded.test.ts
+ok
+
+
+stdout | test/routes-guarded.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ... 
+
+stdout | test/routes-guarded.test.ts
+100
+selecting default shared_buffers ... 
+
+stdout | test/routes-guarded.test.ts
+128MB
+selecting default time zone ... 
+
+stdout | test/routes-guarded.test.ts
+Asia/Bangkok
+creating configuration files ... 
+
+stdout | test/routes-guarded.test.ts
+ok
+running bootstrap script ... 
+
+stdout | test/routes-guarded.test.ts
+ok
+
+
+stdout | test/routes-guarded.test.ts
+performing post-bootstrap initialization ... 
+
+stdout | test/routes-guarded.test.ts
+ok
+syncing data to disk ... 
+
+stdout | test/routes-guarded.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-inbox^-feedback^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-ihCKVt^" -l logfile start
+
+
+
+stdout | test/routes-guarded.test.ts
+2026-11-17 00:13:41.259 +07 [111984] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/routes-guarded.test.ts
+2026-11-17 00:13:41.262 +07 [111984] LOG:  listening on IPv6 address "::1", port 62305
+
+
+stdout | test/routes-guarded.test.ts
+2026-11-17 00:13:41.262 +07 [111984] LOG:  listening on IPv4 address "127.0.0.1", port 62305
+
+
+stdout | test/routes-guarded.test.ts
+2026-11-17 00:13:41.296 +07 [99488] LOG:  database system was shut down at 2026-11-17 00:13:39 +07
+
+
+stdout | test/routes-guarded.test.ts
+2026-11-17 00:13:41.318 +07 [111984] LOG:  database system is ready to accept connections
+
+
+stdout | test/routes-guarded.test.ts
+2026-11-17 00:13:44.571 +07 [124580] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/routes-guarded.test.ts
+Suite registry: registered 6 app(s).
+
+stdout | test/routes-guarded.test.ts
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/routes-guarded.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/routes-guarded.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:117188) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option 
+with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be 
+removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/routes-guarded.test.ts
+2026-11-17 00:13:45.997 +07 [116208] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/routes-guarded.test.ts
+2026-11-17 00:13:46.010 +07 [116208] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.003 s, sync=0.003 s, total=0.013 s; sync files=7, longest=0.001 s, average=0.001 s; distance=17391 kB, estimate=17391 kB; lsn=0/2673EF0, redo lsn=0/2673EB8
+
+
+ ❯ test/routes-guarded.test.ts (32 tests | 1 failed) 8867ms
+   ✓ route guards (S2-01b) > requires a session for the reach-filtered Analytics and Configuration readers (SCRUM-646) 28ms
+   ✓ route guards (S2-01b) > guards the Console sources panel: reads on the Analytics door, writes on their own permissions (SCRUM-646 Q27) 2ms
+   ✓ route guards (S2-01b) > requires a session for every Money oversight read, none of them public or credentialed (SCRUM-647) 6ms
+   ✓ route guards (S2-01b) > requires the operator-wide switch permission for the current native session (SCRUM-640) 2ms
+   ✓ route guards (S2-01b) > requires a session and genuine platform authority on all Platform reads (SCRUM-639) 2ms
+   ✓ route guards (S2-01b) > guards every suite control (SCRUM-643): the launcher read by session alone, every write platform-wide 7ms
+   ✓ route guards (S2-01b) > requires operator-wide assistant management for both settings routes (SCRUM-638) 1ms
+   ✓ route guards (S2-01b) > requires a session on all five reach-filtered aggregate reads (SCRUM-636) 3ms
+   ✓ route guards (S2-01b) > requires a session before the Staff summary dynamic two-permission check (SCRUM-634) 1ms
+   ✓ route guards (S2-01b) > binds lifecycle delivery to the OTO App operator credential before body validation (SCRUM-633) 1ms
+   ✓ route guards (S2-01b) > binds lifecycle restriction to the OTO App operator credential before body validation (SCRUM-769) 1ms
+   ✓ route guards (S2-01b) > binds the OTO App’s read of a party’s money to its operator credential before the params are read (SCRUM-822) 0ms
+   × route guards (S2-01b) > binds the OTO App’s party deposit and menu doors to its operator credential, and the deposit return to no session (SCRUM-825) 6ms
+     → expected [ …(7) ] to deeply equal [ …(6) ]
+   ✓ route guards (S2-01b) > the Console Teams and routing surface declares actual scoped management guards (SCRUM-626) 0ms
+   ✓ route guards (S2-01b) > Book Date is a session write, guarded at the conversation by its handler (SCRUM-775) 1ms
+   ✓ route guards (S2-01b) > Create BEO is a session write, guarded at the conversation and at the OTO App by its handler (SCRUM-775) 1ms
+   ✓ route guards (S2-01b) > the BEO's confirmation message is a session read, guarded at the conversation by its handler (SCRUM-660) 1ms
+   ✓ route guards (S2-01b) > keeps access review behind the existing role-read gate (SCRUM-616) 0ms
+   ✓ route guards (S2-01b) > keeps the department directory behind the existing account-read gate (SCRUM-615) 0ms
+   ✓ route guards (S2-01b) > keeps the employee directory behind the existing account-read gate (SCRUM-614) 0ms
+   ✓ route guards (S2-01b) > the Roles catalogue, reverse lookup and preview retain the permission-read gate (SCRUM-612) 0ms
+   ✓ route guards (S2-01b) > pins the cloud trading surface refused by a selected forced-offline station 0ms
+   ✓ route guards (S2-01b) > retires the staff-session display mailbox after independent display rollout 0ms
+   ✓ route guards (S2-01b) > every registered route declares how it is guarded 0ms
+   ✓ route guards (S2-01b) > the open surface is only what it should be 0ms
+   ✓ route guards (S2-01b) > the booth surface is only what it should be, and is credential-guarded 0ms
+   ✓ route guards (S2-01b) > the box surface is only what it should be, and is credential-guarded 0ms
+   ✓ route guards (S2-01b) > every box route refuses a caller with no credential 30ms
+   ✓ route guards (S2-01b) > the station bridge is only what it should be, and refuses a caller with neither credential 13ms
+   ✓ route guards (S2-01b) > no route answers an anonymous caller 195ms
+   ✓ route guards (S2-01b) > refuses a route registered without a guard 0ms
+   ✓ route guards (S2-01b) > the declared guard actually runs — no session, no entry 0ms
+stdout | test/inbox-read.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/inbox-read.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-PKfiLB ... ok
+creating subdirectories ... 
+
+stdout | test/inbox-read.test.ts
+ok
+
+
+stdout | test/inbox-read.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ... 
+
+stdout | test/inbox-read.test.ts
+100
+selecting default shared_buffers ... 
+
+stdout | test/inbox-read.test.ts
+128MB
+selecting default time zone ... 
+
+stdout | test/inbox-read.test.ts
+Asia/Bangkok
+creating configuration files ... 
+
+stdout | test/inbox-read.test.ts
+ok
+running bootstrap script ... 
+
+stdout | test/inbox-read.test.ts
+ok
+
+
+stdout | test/inbox-read.test.ts
+performing post-bootstrap initialization ... 
+
+stdout | test/inbox-read.test.ts
+ok
+syncing data to disk ... 
+
+stdout | test/inbox-read.test.ts
+ok
+
+
+stdout | test/inbox-read.test.ts
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-inbox^-feedback^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-PKfiLB^" -l logfile start
+
+
+
+stdout | test/inbox-read.test.ts
+2026-11-17 00:13:53.352 +07 [125476] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/inbox-read.test.ts
+2026-11-17 00:13:53.357 +07 [125476] LOG:  listening on IPv6 address "::1", port 62315
+
+
+stdout | test/inbox-read.test.ts
+2026-11-17 00:13:53.357 +07 [125476] LOG:  listening on IPv4 address "127.0.0.1", port 62315
+
+
+stdout | test/inbox-read.test.ts
+2026-11-17 00:13:53.391 +07 [129808] LOG:  database system was shut down at 2026-11-17 00:13:51 +07
+
+
+stdout | test/inbox-read.test.ts
+2026-11-17 00:13:53.413 +07 [125476] LOG:  database system is ready to accept connections
+
+
+stdout | test/inbox-read.test.ts
+2026-11-17 00:13:58.491 +07 [131396] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/inbox-read.test.ts
+Suite registry: registered 6 app(s).
+
+stdout | test/inbox-read.test.ts
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/inbox-read.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/inbox-read.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:126060) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option 
+with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be 
+removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/inbox-read.test.ts
+2026-11-17 00:14:01.271 +07 [112268] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/inbox-read.test.ts
+2026-11-17 00:14:01.284 +07 [112268] LOG:  checkpoint complete: wrote 10 buffers (0.1%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.003 s, sync=0.004 s, total=0.013 s; sync files=8, longest=0.001 s, average=0.001 s; distance=17724 kB, estimate=17724 kB; lsn=0/26C73D8, redo lsn=0/26C73A0
+
+
+ ✓ test/inbox-read.test.ts (44 tests) 12800ms
+stdout | test/inbox-privacy.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/inbox-privacy.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-YloEaA ... ok
+creating subdirectories ... 
+
+stdout | test/inbox-privacy.test.ts
+ok
+
+
+stdout | test/inbox-privacy.test.ts
+selecting dynamic shared memory implementation ... windows
+
+
+stdout | test/inbox-privacy.test.ts
+selecting default max_connections ... 
+
+stdout | test/inbox-privacy.test.ts
+100
+selecting default shared_buffers ... 
+
+stdout | test/inbox-privacy.test.ts
+128MB
+selecting default time zone ... 
+
+stdout | test/inbox-privacy.test.ts
+Asia/Bangkok
+creating configuration files ... 
+
+stdout | test/inbox-privacy.test.ts
+ok
+running bootstrap script ... 
+
+stdout | test/inbox-privacy.test.ts
+ok
+
+
+stdout | test/inbox-privacy.test.ts
+performing post-bootstrap initialization ... 
+
+stdout | test/inbox-privacy.test.ts
+ok
+syncing data to disk ... 
+
+stdout | test/inbox-privacy.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-inbox^-feedback^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-YloEaA^" -l logfile start
+
+
+
+stdout | test/inbox-privacy.test.ts
+2026-11-17 00:14:08.046 +07 [114264] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/inbox-privacy.test.ts
+2026-11-17 00:14:08.049 +07 [114264] LOG:  listening on IPv6 address "::1", port 62324
+
+
+stdout | test/inbox-privacy.test.ts
+2026-11-17 00:14:08.049 +07 [114264] LOG:  listening on IPv4 address "127.0.0.1", port 62324
+
+
+stdout | test/inbox-privacy.test.ts
+2026-11-17 00:14:08.083 +07 [111340] LOG:  database system was shut down at 2026-11-17 00:14:06 +07
+
+
+stdout | test/inbox-privacy.test.ts
+2026-11-17 00:14:08.104 +07 [114264] LOG:  database system is ready to accept connections
+
+
+stdout | test/inbox-privacy.test.ts
+2026-11-17 00:14:11.429 +07 [110552] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/inbox-privacy.test.ts
+Suite registry: registered 6 app(s).
+
+stdout | test/inbox-privacy.test.ts
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/inbox-privacy.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/inbox-privacy.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:124616) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option 
+with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be 
+removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/inbox-privacy.test.ts > retention: built, OFF until owner Q19 sets the periods (I2g) > the event table stays append-only outside the two doors
+2026-11-17 00:14:13.335 +07 [119020] ERROR:  inbox.event is append-only: UPDATE refused (inbox.event_append_only)
+2026-11-17 00:14:13.335 +07 [119020] CONTEXT:  PL/pgSQL function inbox.event_append_only() line 17 at RAISE
+2026-11-17 00:14:13.335 +07 [119020] STATEMENT:  update "inbox"."event" set "payload" = $1, "updated_at" = $2 where "inbox"."event"."id" = $3
+
+
+stdout | test/inbox-privacy.test.ts > retention: built, OFF until owner Q19 sets the periods (I2g) > the event table stays append-only outside the two doors
+2026-11-17 00:14:13.340 +07 [114528] ERROR:  inbox.event is append-only: DELETE refused (inbox.event_append_only)
+2026-11-17 00:14:13.340 +07 [114528] CONTEXT:  PL/pgSQL function inbox.event_append_only() line 17 at RAISE
+2026-11-17 00:14:13.340 +07 [114528] STATEMENT:  delete from "inbox"."event" where "inbox"."event"."id" = $1
+
+
+stdout | test/inbox-privacy.test.ts
+2026-11-17 00:14:13.575 +07 [123856] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/inbox-privacy.test.ts
+2026-11-17 00:14:13.587 +07 [123856] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.003 s, sync=0.003 s, total=0.012 s; sync files=7, longest=0.001 s, average=0.001 s; distance=17564 kB, estimate=17564 kB; lsn=0/269F438, redo lsn=0/269F400
+
+
+ ✓ test/inbox-privacy.test.ts (16 tests) 9659ms
+   ✓ the no-body sentinel, across every inbox write path landed so far (I2g) > ingest, the forged delivery, the simulator panel, the check-in and booking mirrors and the reads leave no body in audit, events, ops or logs  334ms
+stdout | test/inbox-ingest.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+
+
+stdout | test/inbox-ingest.test.ts
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-deZJsV ... ok
+creating subdirectories ... 
+
+stdout | test/inbox-ingest.test.ts
+ok
+
+
+stdout | test/inbox-ingest.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ... 
+
+stdout | test/inbox-ingest.test.ts
+100
+selecting default shared_buffers ... 
+
+stdout | test/inbox-ingest.test.ts
+128MB
+selecting default time zone ... 
+
+stdout | test/inbox-ingest.test.ts
+Asia/Bangkok
+creating configuration files ... 
+
+stdout | test/inbox-ingest.test.ts
+ok
+running bootstrap script ... 
+
+stdout | test/inbox-ingest.test.ts
+ok
+
+
+stdout | test/inbox-ingest.test.ts
+performing post-bootstrap initialization ... 
+
+stdout | test/inbox-ingest.test.ts
+ok
+syncing data to disk ... 
+
+stdout | test/inbox-ingest.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-inbox^-feedback^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-deZJsV^" -l logfile start
+
+
+
+stdout | test/inbox-ingest.test.ts
+2026-11-17 00:14:20.350 +07 [126356] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/inbox-ingest.test.ts
+2026-11-17 00:14:20.353 +07 [126356] LOG:  listening on IPv6 address "::1", port 62337
+
+
+stdout | test/inbox-ingest.test.ts
+2026-11-17 00:14:20.353 +07 [126356] LOG:  listening on IPv4 address "127.0.0.1", port 62337
+
+
+stdout | test/inbox-ingest.test.ts
+2026-11-17 00:14:20.388 +07 [127332] LOG:  database system was shut down at 2026-11-17 00:14:18 +07
+
+
+stdout | test/inbox-ingest.test.ts
+2026-11-17 00:14:20.409 +07 [126356] LOG:  database system is ready to accept connections
+
+
+stdout | test/inbox-ingest.test.ts
+2026-11-17 00:14:23.698 +07 [11120] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/inbox-ingest.test.ts
+Suite registry: registered 6 app(s).
+
+stdout | test/inbox-ingest.test.ts
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/inbox-ingest.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/inbox-ingest.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:31664) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option 
+with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be 
+removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/inbox-ingest.test.ts > the simulator drive and the demo, end to end (I2d) > with the simulator off, a press is 409 CHANNEL_NOT_CONNECTED
+2026-11-17 00:14:29.575 +07 [126192] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/inbox-ingest.test.ts > the simulator drive and the demo, end to end (I2d) > with the simulator off, a press is 409 CHANNEL_NOT_CONNECTED
+Suite registry: registered 6 app(s).
+
+stdout | test/inbox-ingest.test.ts > the simulator drive and the demo, end to end (I2d) > with the simulator off, a press is 409 CHANNEL_NOT_CONNECTED
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/inbox-ingest.test.ts > the simulator drive and the demo, end to end (I2d) > with the simulator off, a press is 409 CHANNEL_NOT_CONNECTED
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/inbox-ingest.test.ts > the simulator drive and the demo, end to end (I2d) > with the simulator off, a press is 409 CHANNEL_NOT_CONNECTED
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:31664) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option 
+with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be 
+removed in `fastify@6`.
+stdout | test/inbox-ingest.test.ts > the simulator drive and the demo, end to end (I2d) > with the simulator off, a press is 409 CHANNEL_NOT_CONNECTED
+2026-11-17 00:14:30.284 +07 [82656] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/inbox-ingest.test.ts > the simulator drive and the demo, end to end (I2d) > with the simulator off, a press is 409 CHANNEL_NOT_CONNECTED
+2026-11-17 00:14:31.372 +07 [82656] LOG:  checkpoint complete: wrote 2644 buffers (16.1%); 0 WAL file(s) added, 0 removed, 2 recycled; write=0.252 s, sync=0.821 s, total=1.088 s; sync files=2118, longest=0.005 s, average=0.001 s; distance=35637 kB, estimate=35637 kB; lsn=0/38454D8, redo lsn=0/38454A0
+
+
+stdout | test/inbox-ingest.test.ts
+2026-11-17 00:14:31.717 +07 [82656] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/inbox-ingest.test.ts
+2026-11-17 00:14:31.725 +07 [82656] LOG:  checkpoint complete: wrote 4 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.003 s, sync=0.002 s, total=0.009 s; sync files=3, longest=0.001 s, average=0.001 s; distance=284 kB, estimate=32101 kB; lsn=0/388C548, redo lsn=0/388C510
+
+
+ ✓ test/inbox-ingest.test.ts (30 tests) 15725ms
+   ✓ the simulator drive and the demo, end to end (I2d) > POST /inbox/simulator/scenario plays the ten demo conversations through the ingest, once  310ms
+   ✓ the simulator drive and the demo, end to end (I2d) > with the simulator off, a press is 409 CHANNEL_NOT_CONNECTED  5795ms
+stdout | test/inbox-actions.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/inbox-actions.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-jlzCnQ ... ok
+creating subdirectories ... 
+
+stdout | test/inbox-actions.test.ts
+ok
+
+
+stdout | test/inbox-actions.test.ts
+selecting dynamic shared memory implementation ... windows
+
+
+stdout | test/inbox-actions.test.ts
+selecting default max_connections ... 
+
+stdout | test/inbox-actions.test.ts
+100
+selecting default shared_buffers ... 
+
+stdout | test/inbox-actions.test.ts
+128MB
+selecting default time zone ... 
+
+stdout | test/inbox-actions.test.ts
+Asia/Bangkok
+creating configuration files ... 
+
+stdout | test/inbox-actions.test.ts
+ok
+running bootstrap script ... 
+
+stdout | test/inbox-actions.test.ts
+ok
+
+
+stdout | test/inbox-actions.test.ts
+performing post-bootstrap initialization ... 
+
+stdout | test/inbox-actions.test.ts
+ok
+syncing data to disk ... 
+
+stdout | test/inbox-actions.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-inbox^-feedback^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-jlzCnQ^" -l logfile start
+
+
+
+stdout | test/inbox-actions.test.ts
+2026-11-17 00:14:38.713 +07 [74296] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/inbox-actions.test.ts
+2026-11-17 00:14:38.716 +07 [74296] LOG:  listening on IPv6 address "::1", port 62354
+
+
+stdout | test/inbox-actions.test.ts
+2026-11-17 00:14:38.716 +07 [74296] LOG:  listening on IPv4 address "127.0.0.1", port 62354
+
+
+stdout | test/inbox-actions.test.ts
+2026-11-17 00:14:38.749 +07 [116512] LOG:  database system was shut down at 2026-11-17 00:14:37 +07
+
+
+stdout | test/inbox-actions.test.ts
+2026-11-17 00:14:38.767 +07 [74296] LOG:  database system is ready to accept connections
+
+
+stdout | test/inbox-actions.test.ts
+2026-11-17 00:14:43.700 +07 [21316] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/inbox-actions.test.ts
+Suite registry: registered 6 app(s).
+
+stdout | test/inbox-actions.test.ts
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/inbox-actions.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/inbox-actions.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:117076) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option 
+with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be 
+removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/inbox-actions.test.ts
+2026-11-17 00:14:46.102 +07 [124952] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/inbox-actions.test.ts
+2026-11-17 00:14:46.113 +07 [124952] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.003 s, sync=0.003 s, total=0.012 s; sync files=7, longest=0.001 s, average=0.001 s; distance=18274 kB, estimate=18274 kB; lsn=0/27509A8, redo lsn=0/2750970
+
+
+ ✓ test/inbox-actions.test.ts (47 tests) 11653ms
+stdout | test/inbox-reply.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/inbox-reply.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-fLrlAc ... ok
+creating subdirectories ... 
+
+stdout | test/inbox-reply.test.ts
+ok
+
+
+stdout | test/inbox-reply.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ... 
+
+stdout | test/inbox-reply.test.ts
+100
+selecting default shared_buffers ... 
+
+stdout | test/inbox-reply.test.ts
+128MB
+selecting default time zone ... 
+
+stdout | test/inbox-reply.test.ts
+Asia/Bangkok
+creating configuration files ... 
+
+stdout | test/inbox-reply.test.ts
+ok
+running bootstrap script ... 
+
+stdout | test/inbox-reply.test.ts
+ok
+
+
+stdout | test/inbox-reply.test.ts
+performing post-bootstrap initialization ... 
+
+stdout | test/inbox-reply.test.ts
+ok
+syncing data to disk ... 
+
+stdout | test/inbox-reply.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-inbox^-feedback^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-fLrlAc^" -l logfile start
+
+
+
+stdout | test/inbox-reply.test.ts
+2026-11-17 00:14:52.789 +07 [118192] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/inbox-reply.test.ts
+2026-11-17 00:14:52.792 +07 [118192] LOG:  listening on IPv6 address "::1", port 62368
+
+
+stdout | test/inbox-reply.test.ts
+2026-11-17 00:14:52.792 +07 [118192] LOG:  listening on IPv4 address "127.0.0.1", port 62368
+
+
+stdout | test/inbox-reply.test.ts
+2026-11-17 00:14:52.824 +07 [118312] LOG:  database system was shut down at 2026-11-17 00:14:51 +07
+
+
+stdout | test/inbox-reply.test.ts
+2026-11-17 00:14:52.843 +07 [118192] LOG:  database system is ready to accept connections
+
+
+stdout | test/inbox-reply.test.ts
+2026-11-17 00:14:56.064 +07 [122280] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/inbox-reply.test.ts
+Suite registry: registered 6 app(s).
+
+stdout | test/inbox-reply.test.ts
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/inbox-reply.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/inbox-reply.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:117220) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option 
+with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be 
+removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/inbox-reply.test.ts
+2026-11-17 00:14:58.012 +07 [130968] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/inbox-reply.test.ts
+2026-11-17 00:14:58.024 +07 [130968] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.003 s, sync=0.003 s, total=0.012 s; sync files=7, longest=0.001 s, average=0.001 s; distance=17789 kB, estimate=17789 kB; lsn=0/26D7720, redo lsn=0/26D76E8
+
+
+ ✓ test/inbox-reply.test.ts (21 tests) 9406ms
+stdout | test/inbox-ai-kb.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/inbox-ai-kb.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-h7PcdD ... ok
+creating subdirectories ... 
+
+stdout | test/inbox-ai-kb.test.ts
+ok
+
+
+stdout | test/inbox-ai-kb.test.ts
+selecting dynamic shared memory implementation ... windows
+
+
+stdout | test/inbox-ai-kb.test.ts
+selecting default max_connections ... 
+
+stdout | test/inbox-ai-kb.test.ts
+100
+selecting default shared_buffers ... 
+
+stdout | test/inbox-ai-kb.test.ts
+128MB
+selecting default time zone ... 
+
+stdout | test/inbox-ai-kb.test.ts
+Asia/Bangkok
+creating configuration files ... 
+
+stdout | test/inbox-ai-kb.test.ts
+ok
+running bootstrap script ... 
+
+stdout | test/inbox-ai-kb.test.ts
+ok
+
+
+stdout | test/inbox-ai-kb.test.ts
+performing post-bootstrap initialization ... 
+
+stdout | test/inbox-ai-kb.test.ts
+ok
+syncing data to disk ... 
+
+stdout | test/inbox-ai-kb.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-inbox^-feedback^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-h7PcdD^" -l logfile start
+
+
+
+stdout | test/inbox-ai-kb.test.ts
+2026-11-17 00:15:05.121 +07 [88400] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/inbox-ai-kb.test.ts
+2026-11-17 00:15:05.124 +07 [88400] LOG:  listening on IPv6 address "::1", port 62378
+
+
+stdout | test/inbox-ai-kb.test.ts
+2026-11-17 00:15:05.124 +07 [88400] LOG:  listening on IPv4 address "127.0.0.1", port 62378
+
+
+stdout | test/inbox-ai-kb.test.ts
+2026-11-17 00:15:05.156 +07 [110272] LOG:  database system was shut down at 2026-11-17 00:15:03 +07
+
+
+stdout | test/inbox-ai-kb.test.ts
+2026-11-17 00:15:05.175 +07 [88400] LOG:  database system is ready to accept connections
+
+
+stdout | test/inbox-ai-kb.test.ts
+2026-11-17 00:15:08.396 +07 [78248] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/inbox-ai-kb.test.ts
+Suite registry: registered 6 app(s).
+
+stdout | test/inbox-ai-kb.test.ts
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/inbox-ai-kb.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/inbox-ai-kb.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:117212) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option 
+with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be 
+removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/inbox-ai-kb.test.ts > "Correct the assistant" and the examples queue (§E, §D.5) > the database backs it: an approval without the confirmation, or with a source link, is refused
+2026-11-17 00:15:09.992 +07 [124960] ERROR:  new row for relation "ai_example" violates check constraint "ai_example_approved_check"
+2026-11-17 00:15:09.992 +07 [124960] DETAIL:  Failing row contains (01a1e55b-0525-74ed-bfa2-6c6a39a27fcc, 01a1e55a-ff5f-7314-b487-0166e1f9c30d, socks, en, Socks?, null, should_handover, null, null, approved, 01a1e55b-033a-7316-afdf-3f7ac331e739, 01a1e55a-ff82-76ed-9a54-144dcd4ed5d9, 2026-11-17 00:15:09.991+07, f, 2026-11-17 00:15:09.990043+07, 2026-11-17 00:15:09.991+07).
+2026-11-17 00:15:09.992 +07 [124960] STATEMENT:  update "inbox"."ai_example" set "source_conversation_id" = $1, "status" = $2, "approved_by_account_id" = $3, "approved_at" = $4, "deidentified_confirmed" = $5, "updated_at" = $6 where "inbox"."ai_example"."id" = $7
+
+
+stdout | test/inbox-ai-kb.test.ts > "Correct the assistant" and the examples queue (§E, §D.5) > the database backs it: an approval without the confirmation, or with a source link, is refused
+2026-11-17 00:15:10.026 +07 [120792] ERROR:  new row for relation "ai_example" violates check constraint "ai_example_approved_check"
+2026-11-17 00:15:10.026 +07 [120792] DETAIL:  Failing row contains (01a1e55b-0525-74ed-bfa2-6c6a39a27fcc, 01a1e55a-ff5f-7314-b487-0166e1f9c30d, socks, en, Socks?, null, should_handover, null, 01a1e55b-0460-72f1-99d9-e371e7c919dd, approved, 01a1e55b-033a-7316-afdf-3f7ac331e739, 01a1e55a-ff82-76ed-9a54-144dcd4ed5d9, 2026-11-17 00:15:09.993+07, t, 2026-11-17 00:15:09.990043+07, 2026-11-17 00:15:09.993+07).
+2026-11-17 00:15:10.026 +07 [120792] STATEMENT:  update "inbox"."ai_example" set "status" = $1, "approved_by_account_id" = $2, "approved_at" = $3, "deidentified_confirmed" = $4, "updated_at" = $5 where "inbox"."ai_example"."id" = $6
+
+
+stdout | test/inbox-ai-kb.test.ts
+2026-11-17 00:15:10.542 +07 [123924] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/inbox-ai-kb.test.ts
+2026-11-17 00:15:10.553 +07 [123924] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.003 s, sync=0.003 s, total=0.011 s; sync files=7, longest=0.001 s, average=0.001 s; distance=17633 kB, estimate=17633 kB; lsn=0/26B06D8, redo lsn=0/26B06A0
+
+
+ ✓ test/inbox-ai-kb.test.ts (20 tests) 9837ms
+stdout | test/inbox-access-993-review.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/inbox-access-993-review.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-I3XUTJ ... ok
+creating subdirectories ... 
+
+stdout | test/inbox-access-993-review.test.ts
+ok
+
+
+stdout | test/inbox-access-993-review.test.ts
+selecting dynamic shared memory implementation ... windows
+
+
+stdout | test/inbox-access-993-review.test.ts
+selecting default max_connections ... 
+
+stdout | test/inbox-access-993-review.test.ts
+100
+selecting default shared_buffers ... 
+
+stdout | test/inbox-access-993-review.test.ts
+128MB
+selecting default time zone ... 
+
+stdout | test/inbox-access-993-review.test.ts
+Asia/Bangkok
+creating configuration files ... 
+
+stdout | test/inbox-access-993-review.test.ts
+ok
+running bootstrap script ... 
+
+stdout | test/inbox-access-993-review.test.ts
+ok
+
+
+stdout | test/inbox-access-993-review.test.ts
+performing post-bootstrap initialization ... 
+
+stdout | test/inbox-access-993-review.test.ts
+ok
+syncing data to disk ... 
+
+stdout | test/inbox-access-993-review.test.ts
+ok
+
+stdout | test/inbox-access-993-review.test.ts
+
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-inbox^-feedback^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-I3XUTJ^" -l logfile start
+
+
+
+stdout | test/inbox-access-993-review.test.ts
+2026-11-17 00:15:17.065 +07 [119276] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/inbox-access-993-review.test.ts
+2026-11-17 00:15:17.068 +07 [119276] LOG:  listening on IPv6 address "::1", port 58103
+
+
+stdout | test/inbox-access-993-review.test.ts
+2026-11-17 00:15:17.068 +07 [119276] LOG:  listening on IPv4 address "127.0.0.1", port 58103
+
+
+stdout | test/inbox-access-993-review.test.ts
+2026-11-17 00:15:17.104 +07 [102848] LOG:  database system was shut down at 2026-11-17 00:15:15 +07
+
+
+stdout | test/inbox-access-993-review.test.ts
+2026-11-17 00:15:17.123 +07 [119276] LOG:  database system is ready to accept connections
+
+
+stdout | test/inbox-access-993-review.test.ts
+2026-11-17 00:15:20.397 +07 [119512] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/inbox-access-993-review.test.ts
+Suite registry: registered 6 app(s).
+
+stdout | test/inbox-access-993-review.test.ts
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/inbox-access-993-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/inbox-access-993-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:125568) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option 
+with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be 
+removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/inbox-access-993-review.test.ts > SCRUM-993 adversarial category/channel policy review > HIGH: foreign target/channel policy writes fail and actual administrator targets cannot be restricted
+2026-11-17 00:15:23.125 +07 [126236] ERROR:  insert or update on table "account_access" violates foreign key constraint "account_access_account_fk"
+2026-11-17 00:15:23.125 +07 [126236] DETAIL:  Key (operator_id, account_id)=(01a1e55b-384d-7dc7-abba-39a04e371d28, 01a1e55b-3855-7e25-8823-13566b29a2b2) is not present in table "account".
+2026-11-17 00:15:23.125 +07 [126236] STATEMENT:  insert into "inbox"."account_access" ("id", "operator_id", "account_id", "allowed_categories", "restrict_channels", "version", "updated_by_account_id", "created_at", "updated_at") values ($1, $2, $3, default, default, $4, $5, default, default)
+
+
+stdout | test/inbox-access-993-review.test.ts > SCRUM-993 adversarial category/channel policy review > HIGH: foreign target/channel policy writes fail and actual administrator targets cannot be restricted
+2026-11-17 00:15:23.257 +07 [128740] ERROR:  new row for relation "account_access" violates check constraint "account_access_version_check"
+2026-11-17 00:15:23.257 +07 [128740] DETAIL:  Failing row contains (01a1e55b-3875-7e2d-a498-8e979f499d0b, 01a1e55b-384d-7dc7-abba-39a04e371d28, 01a1e55b-3853-76d3-afa1-4bd0f50fc9d5, null, f, 0, 01a1e55b-384e-7801-bd5d-ae00f36dda19, 2026-11-17 00:15:23.256658+07, 2026-11-17 00:15:23.256658+07).
+2026-11-17 00:15:23.257 +07 [128740] STATEMENT:  insert into "inbox"."account_access" ("id", "operator_id", "account_id", "allowed_categories", "restrict_channels", "version", "updated_by_account_id", "created_at", "updated_at") values ($1, $2, $3, default, default, $4, $5, default, default)
+
+
+stdout | test/inbox-access-993-review.test.ts > SCRUM-993 adversarial category/channel policy review > HIGH: foreign target/channel policy writes fail and actual administrator targets cannot be restricted
+2026-11-17 00:15:23.285 +07 [118472] ERROR:  new row for relation "account_access" violates check constraint "account_access_categories_check"
+2026-11-17 00:15:23.285 +07 [118472] DETAIL:  Failing row contains (01a1e55b-38f8-757c-96e1-e0ee0833b467, 01a1e55b-384d-7dc7-abba-39a04e371d28, 01a1e55b-3853-76d3-afa1-4bd0f50fc9d5, {unapproved}, f, 1, 01a1e55b-384e-7801-bd5d-ae00f36dda19, 2026-11-17 00:15:23.284388+07, 2026-11-17 00:15:23.284388+07).
+2026-11-17 00:15:23.285 +07 [118472] STATEMENT:  insert into "inbox"."account_access" ("id", "operator_id", "account_id", "allowed_categories", "restrict_channels", "version", "updated_by_account_id", "created_at", "updated_at") values ($1, $2, $3, $4, default, $5, $6, default, default)
+
+
+stdout | test/inbox-access-993-review.test.ts > SCRUM-993 adversarial category/channel policy review > HIGH: foreign target/channel policy writes fail and actual administrator targets cannot be restricted
+2026-11-17 00:15:23.357 +07 [55988] ERROR:  insert or update on table "account_channel_access" violates foreign key constraint "account_channel_access_channel_fk"
+2026-11-17 00:15:23.357 +07 [55988] DETAIL:  Key (operator_id, channel_account_id)=(01a1e55b-384d-7dc7-abba-39a04e371d28, 01a1e55b-385a-7520-9ff9-9a6609d5dd55) is not present in table "channel_account".
+2026-11-17 00:15:23.357 +07 [55988] STATEMENT:  insert into "inbox"."account_channel_access" ("id", "operator_id", "account_id", "channel_account_id", "created_at", "updated_at") values ($1, $2, $3, $4, default, default)
+
+
+stdout | test/inbox-access-993-review.test.ts > SCRUM-993 adversarial category/channel policy review > HIGH: foreign target/channel policy writes fail and actual administrator targets cannot be restricted
+2026-11-17 00:15:23.386 +07 [121608] ERROR:  insert or update on table "account_channel_access" violates foreign key constraint "account_channel_access_policy_fk"
+2026-11-17 00:15:23.386 +07 [121608] DETAIL:  Key (operator_id, account_id)=(01a1e55b-384d-7dc7-abba-39a04e371d28, 01a1e55b-384e-7801-bd5d-ae00f36dda19) is not present in table "account_access".
+2026-11-17 00:15:23.386 +07 [121608] STATEMENT:  insert into "inbox"."account_channel_access" ("id", "operator_id", "account_id", "channel_account_id", "created_at", "updated_at") values ($1, $2, $3, $4, default, default)
+
+
+stdout | test/inbox-access-993-review.test.ts
+2026-11-17 00:15:23.687 +07 [95848] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/inbox-access-993-review.test.ts
+2026-11-17 00:15:23.699 +07 [95848] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.003 s, sync=0.003 s, total=0.013 s; sync files=7, longest=0.001 s, average=0.001 s; distance=21441 kB, estimate=21441 kB; lsn=0/2A68778, redo lsn=0/2A68740
+
+
+ ✓ test/inbox-access-993-review.test.ts (26 tests) 10598ms
+   ✓ SCRUM-993 adversarial category/channel policy review > HIGH: foreign target/channel policy writes fail and actual administrator targets cannot be restricted  301ms
+stdout | test/prebooking-review.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/prebooking-review.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-rAj3TU ... ok
+creating subdirectories ... 
+
+stdout | test/prebooking-review.test.ts
+ok
+
+
+stdout | test/prebooking-review.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ... 
+
+stdout | test/prebooking-review.test.ts
+100
+selecting default shared_buffers ... 
+
+stdout | test/prebooking-review.test.ts
+128MB
+selecting default time zone ... 
+
+stdout | test/prebooking-review.test.ts
+Asia/Bangkok
+creating configuration files ... 
+
+stdout | test/prebooking-review.test.ts
+ok
+running bootstrap script ... 
+
+stdout | test/prebooking-review.test.ts
+ok
+
+
+stdout | test/prebooking-review.test.ts
+performing post-bootstrap initialization ... 
+
+stdout | test/prebooking-review.test.ts
+ok
+syncing data to disk ... 
+
+stdout | test/prebooking-review.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-inbox^-feedback^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-rAj3TU^" -l logfile start
+
+
+
+stdout | test/prebooking-review.test.ts
+2026-11-17 00:15:31.040 +07 [119532] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/prebooking-review.test.ts
+2026-11-17 00:15:31.043 +07 [119532] LOG:  listening on IPv6 address "::1", port 56793
+2026-11-17 00:15:31.043 +07 [119532] LOG:  listening on IPv4 address "127.0.0.1", port 56793
+
+
+stdout | test/prebooking-review.test.ts
+2026-11-17 00:15:31.081 +07 [131012] LOG:  database system was shut down at 2026-11-17 00:15:29 +07
+
+
+stdout | test/prebooking-review.test.ts
+2026-11-17 00:15:31.102 +07 [119532] LOG:  database system is ready to accept connections
+
+
+stdout | test/prebooking-review.test.ts
+2026-11-17 00:15:34.487 +07 [125600] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/prebooking-review.test.ts
+Suite registry: registered 6 app(s).
+
+stdout | test/prebooking-review.test.ts
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/prebooking-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/prebooking-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:116592) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option 
+with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be 
+removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/prebooking-review.test.ts
+2026-11-17 00:15:36.840 +07 [124252] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/prebooking-review.test.ts
+2026-11-17 00:15:36.853 +07 [124252] LOG:  checkpoint complete: wrote 10 buffers (0.1%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.003 s, sync=0.004 s, total=0.013 s; sync files=8, longest=0.001 s, average=0.001 s; distance=18011 kB, estimate=18011 kB; lsn=0/270ED20, redo lsn=0/270ECE8
+
+
+ ✓ test/prebooking-review.test.ts (17 tests) 10414ms
+stdout | test/inbox-send-media.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/inbox-send-media.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-TtKNNc ... ok
+creating subdirectories ... 
+
+stdout | test/inbox-send-media.test.ts
+ok
+
+
+stdout | test/inbox-send-media.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ... 
+
+stdout | test/inbox-send-media.test.ts
+100
+selecting default shared_buffers ... 
+
+stdout | test/inbox-send-media.test.ts
+128MB
+selecting default time zone ... 
+
+stdout | test/inbox-send-media.test.ts
+Asia/Bangkok
+creating configuration files ... 
+
+stdout | test/inbox-send-media.test.ts
+ok
+running bootstrap script ... 
+
+stdout | test/inbox-send-media.test.ts
+ok
+
+
+stdout | test/inbox-send-media.test.ts
+performing post-bootstrap initialization ... 
+
+stdout | test/inbox-send-media.test.ts
+ok
+syncing data to disk ... 
+
+stdout | test/inbox-send-media.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-inbox^-feedback^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-TtKNNc^" -l logfile start
+
+
+
+stdout | test/inbox-send-media.test.ts
+2026-11-17 00:15:43.728 +07 [130108] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/inbox-send-media.test.ts
+2026-11-17 00:15:43.731 +07 [130108] LOG:  listening on IPv6 address "::1", port 56803
+
+
+stdout | test/inbox-send-media.test.ts
+2026-11-17 00:15:43.731 +07 [130108] LOG:  listening on IPv4 address "127.0.0.1", port 56803
+
+
+stdout | test/inbox-send-media.test.ts
+2026-11-17 00:15:43.762 +07 [122164] LOG:  database system was shut down at 2026-11-17 00:15:42 +07
+
+
+stdout | test/inbox-send-media.test.ts
+2026-11-17 00:15:43.780 +07 [130108] LOG:  database system is ready to accept connections
+
+
+stdout | test/inbox-send-media.test.ts
+2026-11-17 00:15:47.276 +07 [130428] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/inbox-send-media.test.ts
+Suite registry: registered 6 app(s).
+
+stdout | test/inbox-send-media.test.ts
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/inbox-send-media.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/inbox-send-media.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:119984) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option 
+with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be 
+removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/inbox-send-media.test.ts
+2026-11-17 00:15:48.880 +07 [123908] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/inbox-send-media.test.ts
+2026-11-17 00:15:48.892 +07 [123908] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.003 s, sync=0.004 s, total=0.012 s; sync files=7, longest=0.001 s, average=0.001 s; distance=17737 kB, estimate=17737 kB; lsn=0/26CA8A0, redo lsn=0/26CA868
+
+
+ ✓ test/inbox-send-media.test.ts (15 tests) 9538ms
+stdout | test/inbox-contacts.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/inbox-contacts.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-feTPou ... ok
+creating subdirectories ... 
+
+stdout | test/inbox-contacts.test.ts
+ok
+
+
+stdout | test/inbox-contacts.test.ts
+selecting dynamic shared memory implementation ... windows
+
+
+stdout | test/inbox-contacts.test.ts
+selecting default max_connections ... 
+
+stdout | test/inbox-contacts.test.ts
+100
+selecting default shared_buffers ... 
+
+stdout | test/inbox-contacts.test.ts
+128MB
+selecting default time zone ... 
+
+stdout | test/inbox-contacts.test.ts
+Asia/Bangkok
+creating configuration files ... 
+
+stdout | test/inbox-contacts.test.ts
+ok
+running bootstrap script ... 
+
+stdout | test/inbox-contacts.test.ts
+ok
+
+
+stdout | test/inbox-contacts.test.ts
+performing post-bootstrap initialization ... 
+
+stdout | test/inbox-contacts.test.ts
+ok
+syncing data to disk ... 
+
+stdout | test/inbox-contacts.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-inbox^-feedback^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-feTPou^" -l logfile start
+
+
+
+stdout | test/inbox-contacts.test.ts
+2026-11-17 00:15:55.831 +07 [44424] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/inbox-contacts.test.ts
+2026-11-17 00:15:55.834 +07 [44424] LOG:  listening on IPv6 address "::1", port 56812
+2026-11-17 00:15:55.834 +07 [44424] LOG:  listening on IPv4 address "127.0.0.1", port 56812
+
+
+stdout | test/inbox-contacts.test.ts
+2026-11-17 00:15:55.870 +07 [118824] LOG:  database system was shut down at 2026-11-17 00:15:54 +07
+
+
+stdout | test/inbox-contacts.test.ts
+2026-11-17 00:15:55.951 +07 [44424] LOG:  database system is ready to accept connections
+
+
+stdout | test/inbox-contacts.test.ts
+2026-11-17 00:15:59.168 +07 [121364] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/inbox-contacts.test.ts
+Suite registry: registered 6 app(s).
+
+stdout | test/inbox-contacts.test.ts
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/inbox-contacts.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/inbox-contacts.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:106220) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option 
+with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be 
+removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/inbox-contacts.test.ts
+2026-11-17 00:16:00.827 +07 [119272] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/inbox-contacts.test.ts
+2026-11-17 00:16:00.840 +07 [119272] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.003 s, sync=0.003 s, total=0.013 s; sync files=7, longest=0.001 s, average=0.001 s; distance=17496 kB, estimate=17496 kB; lsn=0/268E448, redo lsn=0/268E410
+
+
+ ✓ test/inbox-contacts.test.ts (17 tests) 9294ms
+stdout | test/inbox-twilio-test-line.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/inbox-twilio-test-line.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-4MV14J ... ok
+creating subdirectories ... 
+
+stdout | test/inbox-twilio-test-line.test.ts
+ok
+
+
+stdout | test/inbox-twilio-test-line.test.ts
+selecting dynamic shared memory implementation ... windows
+
+
+stdout | test/inbox-twilio-test-line.test.ts
+selecting default max_connections ... 
+
+stdout | test/inbox-twilio-test-line.test.ts
+100
+selecting default shared_buffers ... 
+
+stdout | test/inbox-twilio-test-line.test.ts
+128MB
+selecting default time zone ... 
+
+stdout | test/inbox-twilio-test-line.test.ts
+Asia/Bangkok
+creating configuration files ... 
+
+stdout | test/inbox-twilio-test-line.test.ts
+ok
+running bootstrap script ... 
+
+stdout | test/inbox-twilio-test-line.test.ts
+ok
+
+
+stdout | test/inbox-twilio-test-line.test.ts
+performing post-bootstrap initialization ... 
+
+stdout | test/inbox-twilio-test-line.test.ts
+ok
+syncing data to disk ... 
+
+stdout | test/inbox-twilio-test-line.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-inbox^-feedback^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-4MV14J^" -l logfile start
+
+
+
+stdout | test/inbox-twilio-test-line.test.ts
+2026-11-17 00:16:07.518 +07 [110008] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/inbox-twilio-test-line.test.ts
+2026-11-17 00:16:07.521 +07 [110008] LOG:  listening on IPv6 address "::1", port 56819
+
+
+stdout | test/inbox-twilio-test-line.test.ts
+2026-11-17 00:16:07.521 +07 [110008] LOG:  listening on IPv4 address "127.0.0.1", port 56819
+
+
+stdout | test/inbox-twilio-test-line.test.ts
+2026-11-17 00:16:07.555 +07 [115784] LOG:  database system was shut down at 2026-11-17 00:16:05 +07
+
+
+stdout | test/inbox-twilio-test-line.test.ts
+2026-11-17 00:16:07.574 +07 [110008] LOG:  database system is ready to accept connections
+
+
+stdout | test/inbox-twilio-test-line.test.ts
+2026-11-17 00:16:10.871 +07 [127552] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/inbox-twilio-test-line.test.ts
+Suite registry: registered 6 app(s).
+
+stdout | test/inbox-twilio-test-line.test.ts
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/inbox-twilio-test-line.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/inbox-twilio-test-line.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:5216) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option 
+with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be 
+removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/inbox-twilio-test-line.test.ts
+2026-11-17 00:16:12.465 +07 [119076] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/inbox-twilio-test-line.test.ts
+2026-11-17 00:16:12.479 +07 [119076] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.004 s, sync=0.004 s, total=0.014 s; sync files=7, longest=0.002 s, average=0.001 s; distance=17523 kB, estimate=17523 kB; lsn=0/2694D48, redo lsn=0/2694D10
+
+
+ ✓ test/inbox-twilio-test-line.test.ts (12 tests) 9093ms
+stdout | test/operator-switch-idempotency-review.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-YBHFHr ... ok
+creating subdirectories ... 
+
+stdout | test/operator-switch-idempotency-review.test.ts
+ok
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ... 
+
+stdout | test/operator-switch-idempotency-review.test.ts
+100
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+selecting default shared_buffers ... 
+
+stdout | test/operator-switch-idempotency-review.test.ts
+128MB
+selecting default time zone ... 
+
+stdout | test/operator-switch-idempotency-review.test.ts
+Asia/Bangkok
+creating configuration files ... 
+
+stdout | test/operator-switch-idempotency-review.test.ts
+ok
+running bootstrap script ... 
+
+stdout | test/operator-switch-idempotency-review.test.ts
+ok
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+performing post-bootstrap initialization ... 
+
+stdout | test/operator-switch-idempotency-review.test.ts
+ok
+syncing data to disk ... 
+
+stdout | test/operator-switch-idempotency-review.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-inbox^-feedback^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-YBHFHr^" -l logfile start
+
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+2026-11-17 00:16:20.710 +07 [99200] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+2026-11-17 00:16:20.713 +07 [99200] LOG:  listening on IPv6 address "::1", port 56832
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+2026-11-17 00:16:20.714 +07 [99200] LOG:  listening on IPv4 address "127.0.0.1", port 56832
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+2026-11-17 00:16:20.750 +07 [121448] LOG:  database system was shut down at 2026-11-17 00:16:17 +07
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+2026-11-17 00:16:20.770 +07 [99200] LOG:  database system is ready to accept connections
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+2026-11-17 00:16:25.157 +07 [2400] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+Suite registry: registered 6 app(s).
+
+stdout | test/operator-switch-idempotency-review.test.ts
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/operator-switch-idempotency-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/operator-switch-idempotency-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:94480) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option 
+with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be 
+removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/operator-switch-idempotency-review.test.ts
+2026-11-17 00:16:26.752 +07 [58788] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+2026-11-17 00:16:26.765 +07 [58788] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.003 s, sync=0.004 s, total=0.014 s; sync files=7, longest=0.001 s, average=0.001 s; distance=17527 kB, estimate=17527 kB; lsn=0/2695FF0, redo lsn=0/2695FB8
+
+
+ ✓ test/operator-switch-idempotency-review.test.ts (21 tests) 11772ms
+stdout | test/inbox-twilio-start-over-party.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/inbox-twilio-start-over-party.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-Kp0F26 ... ok
+creating subdirectories ... 
+
+stdout | test/inbox-twilio-start-over-party.test.ts
+ok
+
+
+stdout | test/inbox-twilio-start-over-party.test.ts
+selecting dynamic shared memory implementation ... windows
+
+
+stdout | test/inbox-twilio-start-over-party.test.ts
+selecting default max_connections ... 
+
+stdout | test/inbox-twilio-start-over-party.test.ts
+100
+selecting default shared_buffers ... 
+
+stdout | test/inbox-twilio-start-over-party.test.ts
+128MB
+
+
+stdout | test/inbox-twilio-start-over-party.test.ts
+selecting default time zone ... 
+
+stdout | test/inbox-twilio-start-over-party.test.ts
+Asia/Bangkok
+
+stdout | test/inbox-twilio-start-over-party.test.ts
+
+creating configuration files ... 
+
+stdout | test/inbox-twilio-start-over-party.test.ts
+ok
+running bootstrap script ... 
+
+stdout | test/inbox-twilio-start-over-party.test.ts
+ok
+
+
+stdout | test/inbox-twilio-start-over-party.test.ts
+performing post-bootstrap initialization ... 
+
+stdout | test/inbox-twilio-start-over-party.test.ts
+ok
+syncing data to disk ... 
+
+stdout | test/inbox-twilio-start-over-party.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-inbox^-feedback^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-Kp0F26^" -l logfile start
+
+
+
+stdout | test/inbox-twilio-start-over-party.test.ts
+2026-11-17 00:16:33.479 +07 [97876] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/inbox-twilio-start-over-party.test.ts
+2026-11-17 00:16:33.482 +07 [97876] LOG:  listening on IPv6 address "::1", port 56843
+
+
+stdout | test/inbox-twilio-start-over-party.test.ts
+2026-11-17 00:16:33.482 +07 [97876] LOG:  listening on IPv4 address "127.0.0.1", port 56843
+
+
+stdout | test/inbox-twilio-start-over-party.test.ts
+2026-11-17 00:16:33.514 +07 [123720] LOG:  database system was shut down at 2026-11-17 00:16:31 +07
+
+
+stdout | test/inbox-twilio-start-over-party.test.ts
+2026-11-17 00:16:33.534 +07 [97876] LOG:  database system is ready to accept connections
+
+
+stdout | test/inbox-twilio-start-over-party.test.ts
+2026-11-17 00:16:36.795 +07 [131172] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/inbox-twilio-start-over-party.test.ts
+Suite registry: registered 6 app(s).
+
+stdout | test/inbox-twilio-start-over-party.test.ts
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/inbox-twilio-start-over-party.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/inbox-twilio-start-over-party.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:65236) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option 
+with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be 
+removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:65236) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option 
+with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be 
+removed in `fastify@6`.
+stdout | test/inbox-twilio-start-over-party.test.ts
+2026-11-17 00:16:40.428 +07 [117212] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/inbox-twilio-start-over-party.test.ts
+2026-11-17 00:16:40.441 +07 [117212] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 2 recycled; write=0.003 s, sync=0.003 s, total=0.014 s; sync files=7, longest=0.001 s, average=0.001 s; distance=28291 kB, estimate=28291 kB; lsn=0/3118DF8, redo lsn=0/3118DC0
+
+
+ ✓ test/inbox-twilio-start-over-party.test.ts (6 tests) 11174ms
+stdout | test/inbox-ai-examples-import.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/inbox-ai-examples-import.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-uKaHuk ... ok
+creating subdirectories ... 
+
+stdout | test/inbox-ai-examples-import.test.ts
+ok
+
+
+stdout | test/inbox-ai-examples-import.test.ts
+selecting dynamic shared memory implementation ... windows
+
+
+stdout | test/inbox-ai-examples-import.test.ts
+selecting default max_connections ... 
+
+stdout | test/inbox-ai-examples-import.test.ts
+100
+selecting default shared_buffers ... 
+
+stdout | test/inbox-ai-examples-import.test.ts
+128MB
+selecting default time zone ... 
+
+stdout | test/inbox-ai-examples-import.test.ts
+Asia/Bangkok
+
+
+stdout | test/inbox-ai-examples-import.test.ts
+creating configuration files ... 
+
+stdout | test/inbox-ai-examples-import.test.ts
+ok
+running bootstrap script ... 
+
+stdout | test/inbox-ai-examples-import.test.ts
+ok
+
+
+stdout | test/inbox-ai-examples-import.test.ts
+performing post-bootstrap initialization ... 
+
+stdout | test/inbox-ai-examples-import.test.ts
+ok
+syncing data to disk ... 
+
+stdout | test/inbox-ai-examples-import.test.ts
+ok
+
+
+stdout | test/inbox-ai-examples-import.test.ts
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-inbox^-feedback^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-uKaHuk^" -l logfile start
+
+
+
+stdout | test/inbox-ai-examples-import.test.ts
+2026-11-17 00:16:47.190 +07 [65948] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/inbox-ai-examples-import.test.ts
+2026-11-17 00:16:47.193 +07 [65948] LOG:  listening on IPv6 address "::1", port 56853
+
+
+stdout | test/inbox-ai-examples-import.test.ts
+2026-11-17 00:16:47.193 +07 [65948] LOG:  listening on IPv4 address "127.0.0.1", port 56853
+
+
+stdout | test/inbox-ai-examples-import.test.ts
+2026-11-17 00:16:47.227 +07 [129500] LOG:  database system was shut down at 2026-11-17 00:16:45 +07
+
+
+stdout | test/inbox-ai-examples-import.test.ts
+2026-11-17 00:16:47.249 +07 [65948] LOG:  database system is ready to accept connections
+
+
+stdout | test/inbox-ai-examples-import.test.ts
+2026-11-17 00:16:52.419 +07 [35140] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/inbox-ai-examples-import.test.ts
+Suite registry: registered 6 app(s).
+
+stdout | test/inbox-ai-examples-import.test.ts
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/inbox-ai-examples-import.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/inbox-ai-examples-import.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:113296) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option 
+with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be 
+removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/inbox-ai-examples-import.test.ts
+2026-11-17 00:16:53.914 +07 [107036] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/inbox-ai-examples-import.test.ts
+2026-11-17 00:16:53.941 +07 [107036] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.004 s, sync=0.011 s, total=0.028 s; sync files=7, longest=0.004 s, average=0.002 s; distance=17445 kB, estimate=17445 kB; lsn=0/26816D8, redo lsn=0/26816A0
+
+
+ ✓ test/inbox-ai-examples-import.test.ts (9 tests) 10888ms
+stdout | test/inbox-ai-teach.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/inbox-ai-teach.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-MMOuvz ... ok
+creating subdirectories ... 
+
+stdout | test/inbox-ai-teach.test.ts
+ok
+
+
+stdout | test/inbox-ai-teach.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ... 
+
+stdout | test/inbox-ai-teach.test.ts
+100
+selecting default shared_buffers ... 
+
+stdout | test/inbox-ai-teach.test.ts
+128MB
+selecting default time zone ... 
+
+stdout | test/inbox-ai-teach.test.ts
+Asia/Bangkok
+creating configuration files ... 
+
+stdout | test/inbox-ai-teach.test.ts
+ok
+running bootstrap script ... 
+
+stdout | test/inbox-ai-teach.test.ts
+ok
+
+
+stdout | test/inbox-ai-teach.test.ts
+performing post-bootstrap initialization ... 
+
+stdout | test/inbox-ai-teach.test.ts
+ok
+syncing data to disk ... 
+
+stdout | test/inbox-ai-teach.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-inbox^-feedback^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-MMOuvz^" -l logfile start
+
+
+
+stdout | test/inbox-ai-teach.test.ts
+2026-11-17 00:17:00.869 +07 [85596] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/inbox-ai-teach.test.ts
+2026-11-17 00:17:00.872 +07 [85596] LOG:  listening on IPv6 address "::1", port 56860
+
+
+stdout | test/inbox-ai-teach.test.ts
+2026-11-17 00:17:00.872 +07 [85596] LOG:  listening on IPv4 address "127.0.0.1", port 56860
+
+
+stdout | test/inbox-ai-teach.test.ts
+2026-11-17 00:17:00.907 +07 [101848] LOG:  database system was shut down at 2026-11-17 00:16:59 +07
+
+
+stdout | test/inbox-ai-teach.test.ts
+2026-11-17 00:17:00.928 +07 [85596] LOG:  database system is ready to accept connections
+
+
+stdout | test/inbox-ai-teach.test.ts
+2026-11-17 00:17:04.200 +07 [124892] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/inbox-ai-teach.test.ts
+Suite registry: registered 6 app(s).
+
+stdout | test/inbox-ai-teach.test.ts
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/inbox-ai-teach.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/inbox-ai-teach.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:123776) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option 
+with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be 
+removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/inbox-ai-teach.test.ts
+2026-11-17 00:17:05.760 +07 [105040] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/inbox-ai-teach.test.ts
+2026-11-17 00:17:05.773 +07 [105040] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.003 s, sync=0.003 s, total=0.013 s; sync files=7, longest=0.001 s, average=0.001 s; distance=17407 kB, estimate=17407 kB; lsn=0/2678050, redo lsn=0/2678018
+
+
+ ✓ test/inbox-ai-teach.test.ts (10 tests) 9284ms
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-ejdK9h ... ok
+creating subdirectories ... 
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+ok
+
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ... 
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+100
+selecting default shared_buffers ... 
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+128MB
+selecting default time zone ... 
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+Asia/Bangkok
+creating configuration files ... 
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+ok
+running bootstrap script ... 
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+ok
+
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+performing post-bootstrap initialization ... 
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+ok
+syncing data to disk ... 
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-inbox^-feedback^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-ejdK9h^" -l logfile start
+
+
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+2026-11-17 00:17:12.640 +07 [122908] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+2026-11-17 00:17:12.642 +07 [122908] LOG:  listening on IPv6 address "::1", port 54288
+
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+2026-11-17 00:17:12.643 +07 [122908] LOG:  listening on IPv4 address "127.0.0.1", port 54288
+
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+2026-11-17 00:17:12.675 +07 [117160] LOG:  database system was shut down at 2026-11-17 00:17:11 +07
+
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+2026-11-17 00:17:12.696 +07 [122908] LOG:  database system is ready to accept connections
+
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+2026-11-17 00:17:16.117 +07 [121816] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+Suite registry: registered 6 app(s).
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:129576) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option 
+with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be 
+removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+2026-11-17 00:17:17.439 +07 [128924] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+2026-11-17 00:17:17.451 +07 [128924] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.003 s, sync=0.003 s, total=0.012 s; sync files=7, longest=0.001 s, average=0.001 s; distance=17376 kB, estimate=17376 kB; lsn=0/26701F0, redo lsn=0/26701B8
+
+
+ ✓ test/permissions.test.ts (26 tests) 9028ms
+stdout | test/safeguards.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/safeguards.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-4vhAXw ... ok
+creating subdirectories ... 
+
+stdout | test/safeguards.test.ts
+ok
+
+
+stdout | test/safeguards.test.ts
+selecting dynamic shared memory implementation ... windows
+
+
+stdout | test/safeguards.test.ts
+selecting default max_connections ... 
+
+stdout | test/safeguards.test.ts
+100
+selecting default shared_buffers ... 
+
+stdout | test/safeguards.test.ts
+128MB
+selecting default time zone ... 
+
+stdout | test/safeguards.test.ts
+Asia/Bangkok
+creating configuration files ... 
+
+stdout | test/safeguards.test.ts
+ok
+running bootstrap script ... 
+
+stdout | test/safeguards.test.ts
+ok
+
+
+stdout | test/safeguards.test.ts
+performing post-bootstrap initialization ... 
+
+stdout | test/safeguards.test.ts
+ok
+syncing data to disk ... 
+
+stdout | test/safeguards.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-inbox^-feedback^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-4vhAXw^" -l logfile start
+
+
+
+stdout | test/safeguards.test.ts
+2026-11-17 00:17:24.198 +07 [127088] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/safeguards.test.ts
+2026-11-17 00:17:24.201 +07 [127088] LOG:  listening on IPv6 address "::1", port 52988
+
+
+stdout | test/safeguards.test.ts
+2026-11-17 00:17:24.201 +07 [127088] LOG:  listening on IPv4 address "127.0.0.1", port 52988
+
+
+stdout | test/safeguards.test.ts
+2026-11-17 00:17:24.290 +07 [126284] LOG:  database system was shut down at 2026-11-17 00:17:22 +07
+
+
+stdout | test/safeguards.test.ts
+2026-11-17 00:17:24.311 +07 [127088] LOG:  database system is ready to accept connections
+
+
+stdout | test/safeguards.test.ts
+2026-11-17 00:17:27.535 +07 [126508] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/safeguards.test.ts
+Suite registry: registered 6 app(s).
+
+stdout | test/safeguards.test.ts
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/safeguards.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/safeguards.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:127036) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option 
+with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be 
+removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/safeguards.test.ts > SCRUM-15 — idempotency > a 5xx releases the key so a real retry runs
+2026-11-17 00:17:28.787 +07 [114100] ERROR:  forced
+2026-11-17 00:17:28.787 +07 [114100] CONTEXT:  PL/pgSQL function oto_idem_fail() line 2 at RAISE
+2026-11-17 00:17:28.787 +07 [114100] STATEMENT:  insert into "core"."audit_log" ("id", "operator_id", "branch_id", "actor_account_id", "home_operator_id", "effective_operator_id", "request_id", "action", "entity_type", "entity_id", "before", "after", "source_app", "category", "action_id", "source_event_id", "target_app", "reason", "origin", "actor_type", "on_behalf_of", "created_at") values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, default)
+
+
+stdout | test/safeguards.test.ts
+2026-11-17 00:17:28.956 +07 [115552] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/safeguards.test.ts
+2026-11-17 00:17:28.969 +07 [115552] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.003 s, sync=0.004 s, total=0.014 s; sync files=7, longest=0.001 s, average=0.001 s; distance=17414 kB, estimate=17414 kB; lsn=0/2679978, redo lsn=0/2679940
+
+
+ ✓ test/safeguards.test.ts (12 tests) 8980ms
+stdout | test/idempotency-replay-authorization-review.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-x2Hsuc ... ok
+creating subdirectories ... 
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+ok
+
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ... 
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+100
+selecting default shared_buffers ... 
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+128MB
+selecting default time zone ... 
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+Asia/Bangkok
+
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+creating configuration files ... 
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+ok
+running bootstrap script ... 
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+ok
+
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+performing post-bootstrap initialization ... 
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+ok
+syncing data to disk ... 
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-inbox^-feedback^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-x2Hsuc^" -l logfile start
+
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+
+
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+2026-11-17 00:17:36.353 +07 [126872] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+2026-11-17 00:17:36.355 +07 [126872] LOG:  listening on IPv6 address "::1", port 55659
+
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+2026-11-17 00:17:36.356 +07 [126872] LOG:  listening on IPv4 address "127.0.0.1", port 55659
+
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+2026-11-17 00:17:36.386 +07 [128296] LOG:  database system was shut down at 2026-11-17 00:17:34 +07
+
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+2026-11-17 00:17:36.403 +07 [126872] LOG:  database system is ready to accept connections
+
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+2026-11-17 00:17:41.420 +07 [128208] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+Suite registry: registered 6 app(s).
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:93232) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option 
+with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be 
+removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/idempotency-replay-authorization-review.test.ts
+2026-11-17 00:17:42.727 +07 [119652] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+2026-11-17 00:17:42.742 +07 [119652] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.003 s, sync=0.003 s, total=0.015 s; sync files=7, longest=0.001 s, average=0.001 s; distance=17388 kB, estimate=17388 kB; lsn=0/26730F8, redo lsn=0/26730C0
+
+
+ ✓ test/idempotency-replay-authorization-review.test.ts (4 tests) 11038ms
+ ✓ test/inbox-ai-examples-import-review.test.ts (6 tests) 9ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/route-write-conformance.test.ts > one operation, one transaction (SCRUM-291) > the source walk found every 
+route the app registered
+AssertionError: expected [ …(3) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "GET /accounts/:id/inbox-access",
++   "POST /accounts/:id/inbox-access/preview",
++   "PUT /accounts/:id/inbox-access",
++ ]
+
+ ❯ test/route-write-conformance.test.ts:641:60
+    639|     );
+    640|     const parsed = new Set(routes.map((r) => `${r.method} ${r.path}`));
+    641|     expect([...live].filter((k) => !parsed.has(k)).sort()).toEqual([]);
+       |                                                            ^
+    642|     expect([...parsed].filter((k) => !live.has(k)).sort()).toEqual([]);
+    643|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯
+
+ FAIL  test/route-write-conformance.test.ts > one operation, one transaction (SCRUM-291) > every mutating route opens 
+a transaction, or writes nothing of its own
+AssertionError: NEW mutating route whose write is not inside a transaction. Fix it, or add it to the list in this file 
+with the ticket that will.: expected [ 'POST /:id/inbox-access/preview' ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "POST /:id/inbox-access/preview",
++ ]
+
+ ❯ expectKnownFailures test/route-write-conformance.test.ts:323:5
+    321|     actual.filter((v) => !expected.has(v)).sort(),
+    322|     `NEW ${label}. Fix it, or add it to the list in this file with the…
+    323|   ).toEqual([]);
+       |     ^
+    324|   expect(
+    325|     known.filter((v) => !seen.has(v)).sort(),
+ ❯ test/route-write-conformance.test.ts:652:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯
+
+ FAIL  test/route-write-conformance.test.ts > the idempotency key (SCRUM-291) > only these mutating routes are outside 
+the replay store
+AssertionError: a mutating route declared secretResponse, credential or replaysByOwnId — it no longer takes an 
+Idempotency-Key, so say so here on purpose: expected [ …(54) ] to deeply equal [ …(51) ]
+
+- Expected
++ Received
+
+@@ -1,6 +1,7 @@
+  [
++   "POST /accounts/:id/inbox-access/preview [replaysByOwnId]",
+    "POST /accounts/:id/temp-password [secretResponse]",
+    "POST /admin/apps/oto_app/lifecycle-deactivations [credential:otoapp-provision]",
+    "POST /admin/apps/oto_app/lifecycle-restrictions [credential:otoapp-provision]",
+    "POST /admin/apps/oto_app/suite-sign-ins [secretResponse,credential:otoapp-provision]",
+    "POST /assistant/asks [replaysByOwnId]",
+@@ -37,17 +38,19 @@
+    "POST /inbox/conversations/:id/dictation [secretResponse]",
+    "POST /inbox/conversations/:id/open-beo [secretResponse]",
+    "POST /kiosk/pairing [secretResponse,credential:kiosk-pairing]",
+    "POST /kiosk/pairing/expire [credential:kiosk-pairing]",
+    "POST /me/staff-token [secretResponse]",
++   "POST /otoapp/parties/:eventId/beo-additions [credential:otoapp-provision]",
+    "POST /otoapp/parties/:eventId/deposit-request [credential:otoapp-provision]",
+    "POST /otoapp/parties/:eventId/deposit-request/:requestId/cancel [credential:otoapp-provision]",
+    "POST /otoapp/parties/:eventId/deposit-request/:requestId/resend [credential:otoapp-provision]",
+    "POST /otoapp/parties/:eventId/menu-link [credential:otoapp-provision]",
+    "POST /otoapp/parties/:eventId/menu-received [credential:otoapp-provision]",
+    "POST /otoapp/party-menu/products [credential:otoapp-provision]",
+    "POST /payments/attempts/:id/result [credential:box]",
+    "POST /sales/:id/benefit/preview [secretResponse]",
+    "POST /settlements/batches/:batchId/terminal-result [credential:box]",
+    "POST /stations/:id/credentials [secretResponse]",
++   "PUT /accounts/:id/inbox-access [replaysByOwnId]",
+    "PUT /me/session/station [secretResponse]",
+  ]
+
+ ❯ test/route-write-conformance.test.ts:1069:7
+    1067|       outside,
+    1068|       'a mutating route declared secretResponse, credential or replays…
+    1069|     ).toEqual(OUTSIDE_THE_REPLAY_STORE.slice().sort());
+       |       ^
+    1070|   });
+    1071| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯
+
+ FAIL  test/route-write-conformance.test.ts > the idempotency key (SCRUM-291) > every other mutating route that has a 
+session is therefore covered
+AssertionError: expected [ …(3) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "/accounts/:id/inbox-access/preview",
++   "/accounts/:id/inbox-access",
++   "/otoapp/parties/:eventId/beo-additions",
++ ]
+
+ ❯ test/route-write-conformance.test.ts:1110:7
+    1108|         .filter((r) => r.config.secretResponse || r.config.credential …
+    1109|         .map((r) => r.url),
+    1110|     ).toEqual([]);
+       |       ^
+    1111|   });
+    1112| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯
+
+ FAIL  test/routes-guarded.test.ts > route guards (S2-01b) > binds the OTO App’s party deposit and menu doors to its 
+operator credential, and the deposit return to no session (SCRUM-825)
+AssertionError: expected [ …(7) ] to deeply equal [ …(6) ]
+
+- Expected
++ Received
+
+@@ -1,7 +1,8 @@
+  [
+    "GET /otoapp/parties/:eventId/deposit-request",
++   "POST /otoapp/parties/:eventId/beo-additions",
+    "POST /otoapp/parties/:eventId/deposit-request",
+    "POST /otoapp/parties/:eventId/deposit-request/:requestId/cancel",
+    "POST /otoapp/parties/:eventId/deposit-request/:requestId/resend",
+    "POST /otoapp/parties/:eventId/menu-link",
+    "POST /otoapp/parties/:eventId/menu-received",
+
+ ❯ test/routes-guarded.test.ts:207:19
+    205|       .map((r) => `${r.method} ${r.url}`)
+    206|       .sort();
+    207|     expect(doors).toEqual([
+       |                   ^
+    208|       'GET /otoapp/parties/:eventId/deposit-request',
+    209|       'POST /otoapp/parties/:eventId/deposit-request',
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯
+
+
+ Test Files  2 failed | 19 passed (21)
+      Tests  5 failed | 417 passed (422)
+   Start at  00:13:26
+   Duration  257.73s (transform 4.57s, setup 0ms, collect 52.58s, tests 200.03s, environment 3ms, prepare 2.02s)
+

@@ -1,0 +1,43 @@
+
+> @oto/inbox@0.1.0 test C:\oto-lanes\codex-inbox-feedback-20261116\apps\inbox
+> vitest run "--no-file-parallelism"
+
+
+ RUN  v3.2.7 C:/oto-lanes/codex-inbox-feedback-20261116/apps/inbox
+
+ ✓ test/testnight.test.ts (26 tests) 197ms
+ ✓ test/playbook-ui.test.ts (21 tests) 110ms
+ ✓ test/book-date-947.test.ts (61 tests) 112ms
+ ✓ test/book-date.test.ts (25 tests) 99ms
+ ✓ test/list-state-992.test.ts (12 tests) 67ms
+ ✓ test/open-question.test.ts (4 tests) 64ms
+ ✓ test/book-date-821.test.ts (19 tests) 72ms
+ ✓ test/voice-transcript.test.ts (13 tests) 56ms
+ ✓ test/ui-round.test.ts (14 tests) 54ms
+ ✓ test/book-date-814.test.ts (17 tests) 45ms
+ ✓ test/assistant.test.ts (32 tests) 46ms
+ ✓ test/dark-theme.test.ts (7 tests) 37ms
+ ✓ test/teach-ui.test.ts (12 tests) 28ms
+ ✓ test/theme.test.ts (12 tests) 27ms
+ ✓ test/view.test.ts (58 tests) 27ms
+ ✓ test/contacts-860.test.ts (11 tests) 14ms
+ ✓ test/handover-notice.test.ts (7 tests) 15ms
+ ✓ test/test-line-908.test.ts (4 tests) 9ms
+ ✓ test/impersonation-banner.test.ts (4 tests) 10ms
+ ✓ test/url.test.ts (24 tests) 6ms
+ ✓ test/access-993.test.ts (8 tests) 5ms
+ ✓ test/test-line-refresh-908.test.ts (3 tests) 5ms
+ ✓ test/party-deposit-825.test.ts (4 tests) 4ms
+ ✓ test/handoff-target.test.ts (10 tests) 4ms
+ ✓ test/composer-837.test.ts (11 tests) 199ms
+ ✓ test/dictation.test.ts (12 tests) 189ms
+ ✓ test/book-date-955.test.ts (22 tests) 200ms
+ ✓ test/simulator-record.test.ts (7 tests) 168ms
+ ✓ test/book-date-826.test.ts (13 tests) 145ms
+ ✓ test/prebooking-987.test.ts (3 tests) 83ms
+
+ Test Files  30 passed (30)
+      Tests  476 passed (476)
+   Start at  00:11:02
+   Duration  23.76s (transform 1.68s, setup 0ms, collect 9.39s, tests 2.10s, environment 5.85s, prepare 2.80s)
+

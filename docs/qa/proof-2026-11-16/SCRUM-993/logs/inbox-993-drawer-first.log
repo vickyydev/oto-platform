@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 C:/oto-lanes/codex-inbox-feedback-20261116/packages/admin-screens
+
+ ✓ test/inbox-access-controls.test.ts (8 tests) 40ms
+
+ Test Files  1 passed (1)
+      Tests  8 passed (8)
+   Start at  23:50:47
+   Duration  1.67s (transform 577ms, setup 0ms, collect 1.18s, tests 40ms, environment 0ms, prepare 180ms)
+

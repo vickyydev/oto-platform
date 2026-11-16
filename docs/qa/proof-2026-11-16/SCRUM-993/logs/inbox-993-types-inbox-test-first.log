@@ -1,0 +1,2 @@
+apps/inbox/test/access-993.test.ts(60,21): error TS2322: Type 'undefined' is not assignable to type '{ categories: ("birthdays" | "general" | "marketing" | "gm")[] | null; channelAccountIds: string[] | null; version: number; }'.
+apps/inbox/test/access-993.test.ts(75,21): error TS2322: Type 'undefined' is not assignable to type '{ version: number; categories: ("birthdays" | "general" | "marketing" | "gm")[] | null; channelAccountIds: string[] | null; }'.

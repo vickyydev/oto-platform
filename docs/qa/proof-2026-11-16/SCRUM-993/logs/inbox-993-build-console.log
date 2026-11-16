@@ -1,0 +1,28 @@
+
+> @oto/console@0.1.0 build C:\oto-lanes\codex-inbox-feedback-20261116\apps\console
+> vite build --config vite.config.ts
+
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 2335 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/public/index.html                        1.33 kB │ gzip:   0.58 kB
+dist/public/assets/logo-oto-nNYXf9Wy.png    173.77 kB
+dist/public/assets/index-DNPW1ASM.css       100.08 kB │ gzip:  16.32 kB
+dist/public/assets/react-C6LhzTnE.js        185.71 kB │ gzip:  58.56 kB
+node.exe : 
+At C:\Users\waqar\AppData\Roaming\npm\pnpm.ps1:24 char:5
++     & "node$exe"  "$basedir/node_modules/pnpm/bin/pnpm.cjs" $args
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: 
+https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+dist/public/assets/vendor-Cj-0W3GU.js       474.06 kB │ gzip: 137.72 kB
+dist/public/assets/index-WMoV-TnO.js      1,486.94 kB │ gzip: 404.80 kB
+✓ built in 5.13s

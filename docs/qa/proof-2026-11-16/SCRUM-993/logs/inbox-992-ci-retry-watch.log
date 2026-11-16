@@ -1,0 +1,7 @@
+bash : <3>WSL (9 - Relay) ERROR: CreateProcessCommon:735: execvpe(/bin/bash) failed: No such file or directory
+At line:2 char:1
++ bash scripts/agent/watch-ci.sh ea7212974dfdb8c2062cf34b2448859939ec40 ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (<3>WSL (9 - Rel...le or directory:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 

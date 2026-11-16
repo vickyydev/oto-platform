@@ -1,0 +1,6 @@
+
+C:\oto-lanes\codex-inbox-feedback-20261116\apps\inbox\src\components\Workspace.tsx
+  333:5  warning  React Hook useCallback has an unnecessary dependency: 'accessSignature'. Either exclude it or remove the dependency array  react-hooks/exhaustive-deps
+
+✖ 1 problem (0 errors, 1 warning)
+

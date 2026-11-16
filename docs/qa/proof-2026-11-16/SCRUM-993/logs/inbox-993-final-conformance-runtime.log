@@ -1,0 +1,159 @@
+
+ RUN  v3.2.7 C:/oto-lanes/codex-inbox-feedback-20261116/apps/api
+
+node.exe : (node:126892) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the 
+logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level 
+option will be removed in `fastify@6`.
+At C:\Users\waqar\AppData\Roaming\npm\pnpm.ps1:24 char:5
++     & "node$exe"  "$basedir/node_modules/pnpm/bin/pnpm.cjs" $args
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ((node:126892) [...in `fastify@6`.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ test/route-write-conformance.test.ts (32 tests) 982ms
+stdout | test/inbox-access-993-review.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/inbox-access-993-review.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-7PFiaU ... ok
+creating subdirectories ... 
+
+stdout | test/inbox-access-993-review.test.ts
+ok
+
+
+stdout | test/inbox-access-993-review.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ... 
+
+stdout | test/inbox-access-993-review.test.ts
+100
+selecting default shared_buffers ... 
+
+stdout | test/inbox-access-993-review.test.ts
+128MB
+selecting default time zone ... 
+
+stdout | test/inbox-access-993-review.test.ts
+Asia/Bangkok
+creating configuration files ... 
+
+stdout | test/inbox-access-993-review.test.ts
+ok
+running bootstrap script ... 
+
+stdout | test/inbox-access-993-review.test.ts
+ok
+
+
+stdout | test/inbox-access-993-review.test.ts
+performing post-bootstrap initialization ... 
+
+stdout | test/inbox-access-993-review.test.ts
+ok
+syncing data to disk ... 
+
+stdout | test/inbox-access-993-review.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-inbox^-feedback^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-7PFiaU^" -l logfile start
+
+
+
+stdout | test/inbox-access-993-review.test.ts
+2026-11-17 00:20:03.796 +07 [118604] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/inbox-access-993-review.test.ts
+2026-11-17 00:20:03.798 +07 [118604] LOG:  listening on IPv6 address "::1", port 54655
+
+
+stdout | test/inbox-access-993-review.test.ts
+2026-11-17 00:20:03.798 +07 [118604] LOG:  listening on IPv4 address "127.0.0.1", port 54655
+
+
+stdout | test/inbox-access-993-review.test.ts
+2026-11-17 00:20:03.831 +07 [121560] LOG:  database system was shut down at 2026-11-17 00:20:02 +07
+
+
+stdout | test/inbox-access-993-review.test.ts
+2026-11-17 00:20:03.850 +07 [118604] LOG:  database system is ready to accept connections
+
+
+stdout | test/inbox-access-993-review.test.ts
+2026-11-17 00:20:07.116 +07 [123420] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/inbox-access-993-review.test.ts
+Suite registry: registered 6 app(s).
+
+stdout | test/inbox-access-993-review.test.ts
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/inbox-access-993-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/inbox-access-993-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:127324) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option 
+with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be 
+removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/inbox-access-993-review.test.ts > SCRUM-993 adversarial category/channel policy review > HIGH: foreign target/channel policy writes fail and actual administrator targets cannot be restricted
+2026-11-17 00:20:09.807 +07 [96876] ERROR:  insert or update on table "account_access" violates foreign key constraint "account_access_account_fk"
+2026-11-17 00:20:09.807 +07 [96876] DETAIL:  Key (operator_id, account_id)=(01a1e55f-9829-7a22-b056-91660ba9e247, 01a1e55f-9830-7b65-b985-c10a69a8af30) is not present in table "account".
+2026-11-17 00:20:09.807 +07 [96876] STATEMENT:  insert into "inbox"."account_access" ("id", "operator_id", "account_id", "allowed_categories", "restrict_channels", "version", "updated_by_account_id", "created_at", "updated_at") values ($1, $2, $3, default, default, $4, $5, default, default)
+
+
+stdout | test/inbox-access-993-review.test.ts > SCRUM-993 adversarial category/channel policy review > HIGH: foreign target/channel policy writes fail and actual administrator targets cannot be restricted
+2026-11-17 00:20:09.838 +07 [129664] ERROR:  new row for relation "account_access" violates check constraint "account_access_version_check"
+2026-11-17 00:20:09.838 +07 [129664] DETAIL:  Failing row contains (01a1e55f-9850-745f-85dd-deb7da19d3ba, 01a1e55f-9829-7a22-b056-91660ba9e247, 01a1e55f-982f-78fe-9e8d-4a20267d5027, null, f, 0, 01a1e55f-982a-7fca-8cc9-f4cbeedc7017, 2026-11-17 00:20:09.837718+07, 2026-11-17 00:20:09.837718+07).
+2026-11-17 00:20:09.838 +07 [129664] STATEMENT:  insert into "inbox"."account_access" ("id", "operator_id", "account_id", "allowed_categories", "restrict_channels", "version", "updated_by_account_id", "created_at", "updated_at") values ($1, $2, $3, default, default, $4, $5, default, default)
+
+
+stdout | test/inbox-access-993-review.test.ts > SCRUM-993 adversarial category/channel policy review > HIGH: foreign target/channel policy writes fail and actual administrator targets cannot be restricted
+2026-11-17 00:20:09.867 +07 [115068] ERROR:  new row for relation "account_access" violates check constraint "account_access_categories_check"
+2026-11-17 00:20:09.867 +07 [115068] DETAIL:  Failing row contains (01a1e55f-986e-7265-aac7-f2a613b884da, 01a1e55f-9829-7a22-b056-91660ba9e247, 01a1e55f-982f-78fe-9e8d-4a20267d5027, {unapproved}, f, 1, 01a1e55f-982a-7fca-8cc9-f4cbeedc7017, 2026-11-17 00:20:09.866478+07, 2026-11-17 00:20:09.866478+07).
+2026-11-17 00:20:09.867 +07 [115068] STATEMENT:  insert into "inbox"."account_access" ("id", "operator_id", "account_id", "allowed_categories", "restrict_channels", "version", "updated_by_account_id", "created_at", "updated_at") values ($1, $2, $3, $4, default, $5, $6, default, default)
+
+
+stdout | test/inbox-access-993-review.test.ts > SCRUM-993 adversarial category/channel policy review > HIGH: foreign target/channel policy writes fail and actual administrator targets cannot be restricted
+2026-11-17 00:20:09.946 +07 [114880] ERROR:  insert or update on table "account_channel_access" violates foreign key constraint "account_channel_access_channel_fk"
+2026-11-17 00:20:09.946 +07 [114880] DETAIL:  Key (operator_id, channel_account_id)=(01a1e55f-9829-7a22-b056-91660ba9e247, 01a1e55f-9835-7ea3-a0e7-af6325418cd1) is not present in table "channel_account".
+2026-11-17 00:20:09.946 +07 [114880] STATEMENT:  insert into "inbox"."account_channel_access" ("id", "operator_id", "account_id", "channel_account_id", "created_at", "updated_at") values ($1, $2, $3, $4, default, default)
+
+
+stdout | test/inbox-access-993-review.test.ts > SCRUM-993 adversarial category/channel policy review > HIGH: foreign target/channel policy writes fail and actual administrator targets cannot be restricted
+2026-11-17 00:20:09.975 +07 [131792] ERROR:  insert or update on table "account_channel_access" violates foreign key constraint "account_channel_access_policy_fk"
+2026-11-17 00:20:09.975 +07 [131792] DETAIL:  Key (operator_id, account_id)=(01a1e55f-9829-7a22-b056-91660ba9e247, 01a1e55f-982a-7fca-8cc9-f4cbeedc7017) is not present in table "account_access".
+2026-11-17 00:20:09.975 +07 [131792] STATEMENT:  insert into "inbox"."account_channel_access" ("id", "operator_id", "account_id", "channel_account_id", "created_at", "updated_at") values ($1, $2, $3, $4, default, default)
+
+
+stdout | test/inbox-access-993-review.test.ts
+2026-11-17 00:20:10.270 +07 [76820] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/inbox-access-993-review.test.ts
+2026-11-17 00:20:10.283 +07 [76820] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.003 s, sync=0.003 s, total=0.014 s; sync files=7, longest=0.001 s, average=0.001 s; distance=21441 kB, estimate=21441 kB; lsn=0/2A68778, redo lsn=0/2A68740
+
+
+ ✓ test/inbox-access-993-review.test.ts (26 tests) 10618ms
+
+ Test Files  2 passed (2)
+      Tests  58 passed (58)
+   Start at  00:19:49
+   Duration  21.92s (transform 4.09s, setup 0ms, collect 9.84s, tests 11.60s, environment 0ms, prepare 182ms)
+

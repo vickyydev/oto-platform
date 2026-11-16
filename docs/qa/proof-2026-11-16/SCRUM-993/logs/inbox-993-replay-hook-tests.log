@@ -1,0 +1,475 @@
+
+ RUN  v3.2.7 C:/oto-lanes/codex-payment-choice-recovery-20261116/apps/api
+
+stdout | test/operator-switch-idempotency-review.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-XzfLE9 ... ok
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+creating subdirectories ... 
+
+stdout | test/operator-switch-idempotency-review.test.ts
+ok
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+selecting dynamic shared memory implementation ... windows
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+selecting default max_connections ... 
+
+stdout | test/operator-switch-idempotency-review.test.ts
+100
+selecting default shared_buffers ... 
+
+stdout | test/operator-switch-idempotency-review.test.ts
+128MB
+selecting default time zone ... 
+
+stdout | test/operator-switch-idempotency-review.test.ts
+Asia/Bangkok
+creating configuration files ... 
+
+stdout | test/operator-switch-idempotency-review.test.ts
+ok
+running bootstrap script ... 
+
+stdout | test/operator-switch-idempotency-review.test.ts
+ok
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+performing post-bootstrap initialization ... 
+
+stdout | test/operator-switch-idempotency-review.test.ts
+ok
+syncing data to disk ... 
+
+stdout | test/operator-switch-idempotency-review.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-payment^-choice^-recovery^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-XzfLE9^" -l logfile start
+
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+2026-11-16 23:12:05.592 +07 [121680] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+2026-11-16 23:12:05.595 +07 [121680] LOG:  listening on IPv6 address "::1", port 64766
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+2026-11-16 23:12:05.595 +07 [121680] LOG:  listening on IPv4 address "127.0.0.1", port 64766
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+2026-11-16 23:12:05.629 +07 [127260] LOG:  database system was shut down at 2026-11-16 23:12:03 +07
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+2026-11-16 23:12:05.648 +07 [121680] LOG:  database system is ready to accept connections
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+2026-11-16 23:12:09.144 +07 [6104] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+Suite registry: registered 6 app(s).
+
+stdout | test/operator-switch-idempotency-review.test.ts
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/operator-switch-idempotency-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/operator-switch-idempotency-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+node.exe : (node:130280) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the 
+logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level 
+option will be removed in `fastify@6`.
+At C:\Users\waqar\AppData\Roaming\npm\pnpm.ps1:24 char:5
++     & "node$exe"  "$basedir/node_modules/pnpm/bin/pnpm.cjs" $args
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ((node:130280) [...in `fastify@6`.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/operator-switch-idempotency-review.test.ts
+2026-11-16 23:12:10.995 +07 [114596] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+2026-11-16 23:12:11.010 +07 [114596] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.004 s, sync=0.003 s, total=0.015 s; sync files=7, longest=0.001 s, average=0.001 s; distance=17352 kB, estimate=17352 kB; lsn=0/266A210, redo lsn=0/266A1D8
+
+
+ ✓ test/operator-switch-idempotency-review.test.ts (21 tests) 10043ms
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-8ODKRp ... ok
+creating subdirectories ... 
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+ok
+
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+selecting dynamic shared memory implementation ... windows
+
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+selecting default max_connections ... 
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+100
+selecting default shared_buffers ... 
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+128MB
+selecting default time zone ... 
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+Asia/Bangkok
+
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+creating configuration files ... 
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+ok
+running bootstrap script ... 
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+ok
+
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+performing post-bootstrap initialization ... 
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+ok
+syncing data to disk ... 
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-payment^-choice^-recovery^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-8ODKRp^" -l logfile start
+
+
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+2026-11-16 23:12:18.168 +07 [122416] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+2026-11-16 23:12:18.171 +07 [122416] LOG:  listening on IPv6 address "::1", port 63676
+
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+2026-11-16 23:12:18.171 +07 [122416] LOG:  listening on IPv4 address "127.0.0.1", port 63676
+
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+2026-11-16 23:12:18.206 +07 [120268] LOG:  database system was shut down at 2026-11-16 23:12:16 +07
+
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+2026-11-16 23:12:18.226 +07 [122416] LOG:  database system is ready to accept connections
+
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+2026-11-16 23:12:22.011 +07 [127588] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+Suite registry: registered 6 app(s).
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:84664) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option 
+with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be 
+removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+2026-11-16 23:12:23.267 +07 [119000] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/permissions.test.ts > permission guard — integration (SCRUM-13)
+2026-11-16 23:12:23.278 +07 [119000] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.003 s, sync=0.002 s, total=0.011 s; sync files=7, longest=0.001 s, average=0.001 s; distance=17202 kB, estimate=17202 kB; lsn=0/2644AF8, redo lsn=0/2644AC0
+
+
+ ✓ test/permissions.test.ts (26 tests) 9612ms
+stdout | test/safeguards.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/safeguards.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-IgpAXQ ... ok
+creating subdirectories ... 
+
+stdout | test/safeguards.test.ts
+ok
+
+
+stdout | test/safeguards.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ... 
+
+stdout | test/safeguards.test.ts
+100
+selecting default shared_buffers ... 
+
+stdout | test/safeguards.test.ts
+128MB
+selecting default time zone ... 
+
+stdout | test/safeguards.test.ts
+Asia/Bangkok
+creating configuration files ...
+
+stdout | test/safeguards.test.ts
+ 
+
+stdout | test/safeguards.test.ts
+ok
+running bootstrap script ... 
+
+stdout | test/safeguards.test.ts
+ok
+
+
+stdout | test/safeguards.test.ts
+performing post-bootstrap initialization ... 
+
+stdout | test/safeguards.test.ts
+ok
+syncing data to disk ... 
+
+stdout | test/safeguards.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-payment^-choice^-recovery^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-IgpAXQ^" -l logfile start
+
+
+
+stdout | test/safeguards.test.ts
+2026-11-16 23:12:30.821 +07 [113236] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/safeguards.test.ts
+2026-11-16 23:12:30.825 +07 [113236] LOG:  listening on IPv6 address "::1", port 62897
+
+
+stdout | test/safeguards.test.ts
+2026-11-16 23:12:30.825 +07 [113236] LOG:  listening on IPv4 address "127.0.0.1", port 62897
+
+
+stdout | test/safeguards.test.ts
+2026-11-16 23:12:30.857 +07 [120932] LOG:  database system was shut down at 2026-11-16 23:12:28 +07
+
+
+stdout | test/safeguards.test.ts
+2026-11-16 23:12:30.929 +07 [113236] LOG:  database system is ready to accept connections
+
+
+stdout | test/safeguards.test.ts
+2026-11-16 23:12:36.287 +07 [123728] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/safeguards.test.ts
+Suite registry: registered 6 app(s).
+
+stdout | test/safeguards.test.ts
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/safeguards.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/safeguards.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:7040) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option 
+with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be 
+removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/safeguards.test.ts > SCRUM-15 — idempotency > a 5xx releases the key so a real retry runs
+2026-11-16 23:12:37.600 +07 [102260] ERROR:  forced
+2026-11-16 23:12:37.600 +07 [102260] CONTEXT:  PL/pgSQL function oto_idem_fail() line 2 at RAISE
+2026-11-16 23:12:37.600 +07 [102260] STATEMENT:  insert into "core"."audit_log" ("id", "operator_id", "branch_id", "actor_account_id", "home_operator_id", "effective_operator_id", "request_id", "action", "entity_type", "entity_id", "before", "after", "source_app", "category", "action_id", "source_event_id", "target_app", "reason", "origin", "actor_type", "on_behalf_of", "created_at") values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, default)
+
+
+stdout | test/safeguards.test.ts
+2026-11-16 23:12:37.855 +07 [102964] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/safeguards.test.ts
+2026-11-16 23:12:37.868 +07 [102964] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.003 s, sync=0.003 s, total=0.014 s; sync files=7, longest=0.001 s, average=0.001 s; distance=17240 kB, estimate=17240 kB; lsn=0/264E290, redo lsn=0/264E258
+
+
+ ✓ test/safeguards.test.ts (12 tests) 12050ms
+stdout | test/idempotency-replay-authorization-review.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-UDM2wG ... ok
+creating subdirectories ... 
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+ok
+
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ... 
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+100
+selecting default shared_buffers ... 
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+128MB
+selecting default time zone ... 
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+Asia/Bangkok
+creating configuration files ... 
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+ok
+running bootstrap script ... 
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+ok
+
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+performing post-bootstrap initialization ... 
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+ok
+syncing data to disk ... 
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-payment^-choice^-recovery^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-UDM2wG^" -l logfile start
+
+
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+2026-11-16 23:12:44.614 +07 [127820] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+2026-11-16 23:12:44.617 +07 [127820] LOG:  listening on IPv6 address "::1", port 62906
+
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+2026-11-16 23:12:44.617 +07 [127820] LOG:  listening on IPv4 address "127.0.0.1", port 62906
+
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+2026-11-16 23:12:44.652 +07 [124948] LOG:  database system was shut down at 2026-11-16 23:12:43 +07
+
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+2026-11-16 23:12:44.674 +07 [127820] LOG:  database system is ready to accept connections
+
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+2026-11-16 23:12:48.169 +07 [119288] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+Suite registry: registered 6 app(s).
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:131712) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option 
+with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be 
+removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/idempotency-replay-authorization-review.test.ts
+2026-11-16 23:12:49.406 +07 [101012] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/idempotency-replay-authorization-review.test.ts
+2026-11-16 23:12:49.418 +07 [101012] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.003 s, sync=0.003 s, total=0.012 s; sync files=7, longest=0.001 s, average=0.001 s; distance=17214 kB, estimate=17214 kB; lsn=0/26478D8, redo lsn=0/26478A0
+
+
+ ✓ test/idempotency-replay-authorization-review.test.ts (4 tests) 8973ms
+
+ Test Files  4 passed (4)
+      Tests  63 passed (63)
+   Start at  23:11:53
+   Duration  56.40s (transform 4.14s, setup 0ms, collect 14.60s, tests 40.68s, environment 0ms, prepare 395ms)
+

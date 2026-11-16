@@ -1,0 +1,83 @@
+
+> @oto/console@0.1.0 test C:\oto-lanes\codex-inbox-feedback-20261116\apps\console
+> vitest run "--no-file-parallelism"
+
+
+ RUN  v3.2.7 C:/oto-lanes/codex-inbox-feedback-20261116/apps/console
+
+ ✓ test/suite-controls-markup.test.ts (30 tests) 106ms
+ ✓ test/booth-report-lifetime.test.ts (61 tests) 210ms
+ ✓ test/support-markup.test.ts (16 tests) 150ms
+ ✓ test/voucher-types.test.ts (40 tests | 2 skipped) 131ms
+ ✓ test/odds.test.ts (35 tests | 1 skipped) 37ms
+ ✓ test/analytics-configuration-markup.test.ts (15 tests) 74ms
+ ✓ test/s971-device-edit-station-prefix.test.ts (11 tests) 406ms
+ ✓ test/s898-station-drawer-save.test.ts (8 tests) 355ms
+ ✓ test/staff-lifetime.test.ts (12 tests) 220ms
+ ✓ test/publish-plan.test.ts (23 tests) 18ms
+ ✓ test/money-oversight-markup.test.ts (8 tests) 81ms
+ ✓ test/s216-r6-health.test.ts (7 tests) 87ms
+ ✓ test/overview-markup.test.ts (8 tests) 102ms
+ ✓ test/s952-printers-after-proof.test.ts (12 tests) 20ms
+ ✓ test/s898-station-form-race.test.ts (10 tests) 26ms
+ ✓ test/s899-printer-address-markup.test.ts (10 tests) 30ms
+ ✓ test/analytics-sources-panel-markup.test.ts (7 tests) 42ms
+ ✓ test/admin-navigation.test.ts (22 tests) 6ms
+ ✓ test/booth-state.test.ts (8 tests) 3ms
+ ✓ test/operator-switch-picker-markup.test.ts (16 tests) 25ms
+ ✓ test/analytics-configuration-api.test.ts (16 tests) 12ms
+ ✓ test/voucher-slip.test.ts (9 tests) 6ms
+ ✓ test/s645-integration-controls-markup.test.ts (9 tests) 36ms
+ ✓ test/error-transport-review.test.ts (42 tests) 24ms
+ ✓ test/reports-api.test.ts (7 tests) 12ms
+ ✓ test/today-nannies.test.ts (7 tests) 16ms
+ ✓ test/operations-api.test.ts (8 tests) 11ms
+ ✓ test/inbox-routing-api.test.ts (10 tests) 11ms
+ ✓ test/teams-routing-markup.test.ts (6 tests) 30ms
+ ✓ test/s771-screen-presence-markup.test.ts (9 tests) 19ms
+ ✓ test/fleet-words.test.ts (7 tests) 3ms
+ ✓ test/s704-terminal-readiness.test.ts (8 tests) 37ms
+ ✓ test/scanner-setup.test.ts (7 tests) 3ms
+ ✓ test/prize-editor-validation.test.ts (6 tests) 48ms
+ ✓ test/access-review-markup.test.ts (4 tests) 43ms
+ ✓ test/alert-routing.test.ts (6 tests) 24ms
+ ✓ test/employees-markup.test.ts (5 tests) 30ms
+ ✓ test/s861-dropoff-band-role.test.ts (4 tests) 22ms
+ ✓ test/roles-markup.test.ts (4 tests) 18ms
+ ✓ test/payment-views.test.ts (4 tests) 3ms
+ ✓ test/care-retry.test.ts (1 test) 47ms
+ ✓ test/s932-device-forms.test.ts (4 tests) 15ms
+ ✓ test/record-view.test.ts (13 tests) 12ms
+ ✓ test/s823-handover-contacts-markup.test.ts (3 tests) 9ms
+ ✓ test/departments-markup.test.ts (5 tests) 26ms
+ ✓ test/staff-api.test.ts (11 tests) 9ms
+ ✓ test/admin-navigation-markup.test.ts (4 tests) 25ms
+ ✓ test/organisation-markup.test.ts (4 tests) 18ms
+ ✓ test/fleet-filters.test.ts (4 tests) 3ms
+ ✓ test/s216-r5-booth-report.test.ts (4 tests) 14ms
+ ✓ test/handoff-target.test.ts (10 tests) 4ms
+ ✓ test/accounts-markup.test.ts (3 tests) 17ms
+ ✓ test/s805-party-slips-station-markup.test.ts (4 tests) 8ms
+ ✓ test/error-panel-review.test.ts (5 tests) 11ms
+ ✓ test/health-readiness-api.test.ts (11 tests) 9ms
+ ✓ test/job-words.test.ts (5 tests) 2ms
+ ✓ test/stock-r3-words.test.ts (2 tests) 3ms
+ ✓ test/departments-api.test.ts (6 tests) 6ms
+ ✓ test/today-staff.test.ts (3 tests) 13ms
+ ✓ test/wallet-r4-words.test.ts (2 tests) 3ms
+ ✓ test/s703-station-readiness.test.ts (3 tests) 19ms
+ ✓ test/band-stock.test.ts (5 tests) 2ms
+ ✓ test/s713-bridge-address.test.ts (4 tests) 13ms
+ ✓ test/suite-controls.test.ts (3 tests) 3ms
+ ✓ test/account-theme.test.ts (3 tests) 16ms
+ ✓ test/app-access-markup.test.ts (2 tests) 13ms
+ ✓ test/scanner-health-markup.test.ts (2 tests) 23ms
+ ✓ test/organisation-api.test.ts (2 tests) 3ms
+ ✓ test/suite-screens.test.ts (2 tests) 3ms
+ ✓ test/missing-route.test.ts (7 tests) 2ms
+
+ Test Files  70 passed (70)
+      Tests  671 passed | 3 todo (674)
+   Start at  00:31:05
+   Duration  37.26s (transform 2.05s, setup 0ms, collect 19.53s, tests 2.89s, environment 8ms, prepare 6.46s)
+
