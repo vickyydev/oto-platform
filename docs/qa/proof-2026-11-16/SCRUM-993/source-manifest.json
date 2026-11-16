@@ -1,0 +1,344 @@
+{
+  "schemaVersion": 1,
+  "sourceSha": "d79c0bc3915b172770588717ae0cc68b3a66e49c",
+  "baseSha": "9018e03065b452115117ca363337873ae27b5dd7",
+  "sourceTree": "f5ac359c742aa84788423b155f9583d79ee9b208",
+  "inputCount": 46,
+  "inputs": {
+    "apps/api/src/app.ts": {
+      "rawSha256": "bedbc2b8ccd9d3fbc984d416a480fbb2cb115a8507494ea59af705af47a9216b",
+      "canonicalSha256": "bedbc2b8ccd9d3fbc984d416a480fbb2cb115a8507494ea59af705af47a9216b",
+      "gitBlob": "d0c5573ce9c7156b5061642f7924cdfc595d0757",
+      "rawBytes": 32464,
+      "canonicalBytes": 32464
+    },
+    "apps/api/src/routes/account-inbox-access.ts": {
+      "rawSha256": "5606d8606bb147bc84a7c6bcf63542b871773f7e531309d42af27510349e68d7",
+      "canonicalSha256": "5606d8606bb147bc84a7c6bcf63542b871773f7e531309d42af27510349e68d7",
+      "gitBlob": "f99dddb1009daea8451a37f87367b92c46c2d6b6",
+      "rawBytes": 3027,
+      "canonicalBytes": 3027
+    },
+    "apps/api/src/routes/inbox-actions.ts": {
+      "rawSha256": "023368d6c694f968cc1245671f36be0497d81224fade52145ac6fc2ec39d9e37",
+      "canonicalSha256": "023368d6c694f968cc1245671f36be0497d81224fade52145ac6fc2ec39d9e37",
+      "gitBlob": "92201ae51dc0395da2cadda67dfc1f47c046dcc7",
+      "rawBytes": 18900,
+      "canonicalBytes": 18900
+    },
+    "apps/api/src/routes/inbox-ai.ts": {
+      "rawSha256": "f18c587fcc464e11ef6d443f9fb22d5048249dcd04c790a96620389a12ec8aeb",
+      "canonicalSha256": "f18c587fcc464e11ef6d443f9fb22d5048249dcd04c790a96620389a12ec8aeb",
+      "gitBlob": "440e2009ef0d869522cbf8c4b5d164b8cb225ac4",
+      "rawBytes": 29017,
+      "canonicalBytes": 29017
+    },
+    "apps/api/src/routes/inbox-contacts.ts": {
+      "rawSha256": "4c9416db990f06ed94a1467f0b21b57b5f7c7b7c69cb32d9d626ed7e649f637c",
+      "canonicalSha256": "4c9416db990f06ed94a1467f0b21b57b5f7c7b7c69cb32d9d626ed7e649f637c",
+      "gitBlob": "ebb5ca961ae8a0a8ca522e5db7120ee2f19b71ca",
+      "rawBytes": 6455,
+      "canonicalBytes": 6455
+    },
+    "apps/api/src/routes/inbox-privacy.ts": {
+      "rawSha256": "a998ab6fce0d332cd36ce206c64fe8cc5608538fcee2c678d06e669c01f15225",
+      "canonicalSha256": "a998ab6fce0d332cd36ce206c64fe8cc5608538fcee2c678d06e669c01f15225",
+      "gitBlob": "1d4a979c861e8f48722eac9d6edcd0aed8cca456",
+      "rawBytes": 4338,
+      "canonicalBytes": 4338
+    },
+    "apps/api/src/routes/inbox-read.ts": {
+      "rawSha256": "9d93b37ecf83ffb6e7c8e9457a285b621461f06f23968904e60c9b0dcf7fb01d",
+      "canonicalSha256": "9d93b37ecf83ffb6e7c8e9457a285b621461f06f23968904e60c9b0dcf7fb01d",
+      "gitBlob": "0e18ef32b8838c331acad62feb37b7d910e88698",
+      "rawBytes": 14399,
+      "canonicalBytes": 14399
+    },
+    "apps/api/src/routes/inbox-reply.ts": {
+      "rawSha256": "764850a399bd08fa160c47304298c85378688faa8a96675e4e251b9d5b2628e5",
+      "canonicalSha256": "764850a399bd08fa160c47304298c85378688faa8a96675e4e251b9d5b2628e5",
+      "gitBlob": "eab250688d033440538ffc0f62549d8b028f1a66",
+      "rawBytes": 12981,
+      "canonicalBytes": 12981
+    },
+    "apps/api/src/routes/inbox-simulator.ts": {
+      "rawSha256": "51570d8317697655f35070e5d10c6cc77b8acf74c41d85c8b921204f77fdd9ae",
+      "canonicalSha256": "51570d8317697655f35070e5d10c6cc77b8acf74c41d85c8b921204f77fdd9ae",
+      "gitBlob": "5b65ddb29140f23ac3219768897fc98a3f690a92",
+      "rawBytes": 9275,
+      "canonicalBytes": 9275
+    },
+    "apps/api/src/routes/inbox-test-line.ts": {
+      "rawSha256": "baf8e1547b2c94554856dab1242d8b3dc2a7ef273252692bec4590d750300b16",
+      "canonicalSha256": "baf8e1547b2c94554856dab1242d8b3dc2a7ef273252692bec4590d750300b16",
+      "gitBlob": "22b3451af7eec8ddbce4e8f00b26edc42b9bc8e0",
+      "rawBytes": 5064,
+      "canonicalBytes": 5064
+    },
+    "apps/api/src/services/account-inbox-access.ts": {
+      "rawSha256": "90cb71d77cea45e204c0c35744d22220c4c1bd7c786dc54847c045c5fdd739c1",
+      "canonicalSha256": "90cb71d77cea45e204c0c35744d22220c4c1bd7c786dc54847c045c5fdd739c1",
+      "gitBlob": "248c920ff63b216eb7c335c4f9ea39be2c39dcc0",
+      "rawBytes": 8252,
+      "canonicalBytes": 8252
+    },
+    "apps/api/src/services/inbox/access.ts": {
+      "rawSha256": "343be9de7c74065695ae00509fb602e965d04e2de2575b7381ba8cc8e4ba168e",
+      "canonicalSha256": "343be9de7c74065695ae00509fb602e965d04e2de2575b7381ba8cc8e4ba168e",
+      "gitBlob": "7f1801909e9d43fdde2bb3cca121c2f3a589ce38",
+      "rawBytes": 4239,
+      "canonicalBytes": 4239
+    },
+    "apps/api/src/services/inbox/actions.ts": {
+      "rawSha256": "6ed9d794bfab8bf4fa9433bcaa68d62db2d3852091ff6e12a6a905b209556743",
+      "canonicalSha256": "6ed9d794bfab8bf4fa9433bcaa68d62db2d3852091ff6e12a6a905b209556743",
+      "gitBlob": "bbecff4bfcbd920b20ddc2b08166fadb3104437a",
+      "rawBytes": 36622,
+      "canonicalBytes": 36622
+    },
+    "apps/api/src/services/inbox/ai-settings.ts": {
+      "rawSha256": "56ac532f4f994d6c2a40af3d8a25948f74f81fc9ed8a466b26736a0a0ca3d3f3",
+      "canonicalSha256": "56ac532f4f994d6c2a40af3d8a25948f74f81fc9ed8a466b26736a0a0ca3d3f3",
+      "gitBlob": "9ea3c9955b1f44c10f2b4cffb57c8a2f8ef1a3bd",
+      "rawBytes": 45133,
+      "canonicalBytes": 45133
+    },
+    "apps/api/src/services/inbox/contacts.ts": {
+      "rawSha256": "2bea0552c19b2a14e489318c01b18caa104a5b7c55d0d115609d3cea047098d9",
+      "canonicalSha256": "2bea0552c19b2a14e489318c01b18caa104a5b7c55d0d115609d3cea047098d9",
+      "gitBlob": "7e9a01ea2d0a96a5c94edb93c3b0dd5138bb1777",
+      "rawBytes": 16481,
+      "canonicalBytes": 16481
+    },
+    "apps/api/src/services/inbox/privacy.ts": {
+      "rawSha256": "1daa4a7aa1b30261ab393d5094e6ac35fabafe48318985bf3b27973121ed5c04",
+      "canonicalSha256": "1daa4a7aa1b30261ab393d5094e6ac35fabafe48318985bf3b27973121ed5c04",
+      "gitBlob": "321bd1b4834a16aabed41d6b272587d5989b643b",
+      "rawBytes": 34681,
+      "canonicalBytes": 34681
+    },
+    "apps/api/src/services/inbox/read-visibility.ts": {
+      "rawSha256": "e085d9f804bc0760137b0e07adbb2247d438e402fd344112e576b76fe241c3d9",
+      "canonicalSha256": "e085d9f804bc0760137b0e07adbb2247d438e402fd344112e576b76fe241c3d9",
+      "gitBlob": "9c6add0fc9b815506ca4ba2519dc775d560d5d0e",
+      "rawBytes": 5695,
+      "canonicalBytes": 5695
+    },
+    "apps/api/src/services/inbox/read.ts": {
+      "rawSha256": "0e1c700eb857a9c1d63e5af4194cf6dd00df838fac79f640fd36a1fd72315fa3",
+      "canonicalSha256": "0e1c700eb857a9c1d63e5af4194cf6dd00df838fac79f640fd36a1fd72315fa3",
+      "gitBlob": "82520c64352aa18b31fc2aea543c5dd064244829",
+      "rawBytes": 39894,
+      "canonicalBytes": 39894
+    },
+    "apps/api/src/services/inbox/replay.ts": {
+      "rawSha256": "390620115d6cfa64beeb764412ed93960c0594c166d074cd23466f19a2ef8d44",
+      "canonicalSha256": "390620115d6cfa64beeb764412ed93960c0594c166d074cd23466f19a2ef8d44",
+      "gitBlob": "da13db2d1c2cfbe682850353fee4446a3008fb48",
+      "rawBytes": 7404,
+      "canonicalBytes": 7404
+    },
+    "apps/api/src/services/inbox/simulator.ts": {
+      "rawSha256": "84287f2e181df1b2656b19abec34eba882c5801a92098f119151e9a31e851b72",
+      "canonicalSha256": "84287f2e181df1b2656b19abec34eba882c5801a92098f119151e9a31e851b72",
+      "gitBlob": "72a750736641965aca0b9374280e040105d1bb1a",
+      "rawBytes": 18681,
+      "canonicalBytes": 18681
+    },
+    "apps/api/src/services/inbox/test-line.ts": {
+      "rawSha256": "0b51ae6bd64aeb7ce35d43fbd222a53c99e69e7a68dea3b5412e0e76fbd1950b",
+      "canonicalSha256": "0b51ae6bd64aeb7ce35d43fbd222a53c99e69e7a68dea3b5412e0e76fbd1950b",
+      "gitBlob": "f96813efa761eecf1f4c6da305f6c71758017360",
+      "rawBytes": 17128,
+      "canonicalBytes": 17128
+    },
+    "apps/api/test/inbox-access-993-review.test.ts": {
+      "rawSha256": "378b1bf5a3077379f43f9e862a8daccf96998ae6596a80082b0141b1b89cd40a",
+      "canonicalSha256": "378b1bf5a3077379f43f9e862a8daccf96998ae6596a80082b0141b1b89cd40a",
+      "gitBlob": "5323394198458cd3f15cee9317d8ba9aeac39b30",
+      "rawBytes": 29558,
+      "canonicalBytes": 29558
+    },
+    "apps/api/test/route-scope-target.test.ts": {
+      "rawSha256": "cd2621f90c7b6d3a8b3d51a2042d3da1f988959eab8b01af21ab40f31ab6557b",
+      "canonicalSha256": "cd2621f90c7b6d3a8b3d51a2042d3da1f988959eab8b01af21ab40f31ab6557b",
+      "gitBlob": "81ab72be7bd61c43c3f49a1ce0c707ee656eb4ae",
+      "rawBytes": 30947,
+      "canonicalBytes": 30947
+    },
+    "apps/api/test/route-write-conformance.test.ts": {
+      "rawSha256": "1ca3a77adf9256d273cd71d7db789e2714891e6edfebf4e6f897c7b03592573d",
+      "canonicalSha256": "1ca3a77adf9256d273cd71d7db789e2714891e6edfebf4e6f897c7b03592573d",
+      "gitBlob": "465ce62103d5885f718871e49539488ee90da54e",
+      "rawBytes": 60347,
+      "canonicalBytes": 60347
+    },
+    "apps/inbox/src/components/Rail.tsx": {
+      "rawSha256": "292b48891c76ad8c9b95eac71bd532fc79aed05642360f125b885c53d7756a72",
+      "canonicalSha256": "292b48891c76ad8c9b95eac71bd532fc79aed05642360f125b885c53d7756a72",
+      "gitBlob": "8d37a2ff0a7644b95442c5ac52013071308c69ee",
+      "rawBytes": 10953,
+      "canonicalBytes": 10953
+    },
+    "apps/inbox/src/components/Simulator.tsx": {
+      "rawSha256": "ad0e3a16aec2f1966167b38f80169d35961c14966786dc77be4124b420a3a3dd",
+      "canonicalSha256": "ad0e3a16aec2f1966167b38f80169d35961c14966786dc77be4124b420a3a3dd",
+      "gitBlob": "c741ffe8ba8f09569e123e23580c3b4d8bad834c",
+      "rawBytes": 18614,
+      "canonicalBytes": 18614
+    },
+    "apps/inbox/src/components/Workspace.tsx": {
+      "rawSha256": "85e6f211807ff69d64f6eb467792868048bfc2eadbc7d30c6ee98ca14f8e23ae",
+      "canonicalSha256": "85e6f211807ff69d64f6eb467792868048bfc2eadbc7d30c6ee98ca14f8e23ae",
+      "gitBlob": "385d29b099b818d90e18671cb3f4361cb70cf544",
+      "rawBytes": 41752,
+      "canonicalBytes": 41752
+    },
+    "apps/inbox/src/hooks/useInboxAccess.ts": {
+      "rawSha256": "c6a13d8f8a08a8e80a67ca341c5b4368b9d74d3ce15da3de8a1c125556aaa718",
+      "canonicalSha256": "c6a13d8f8a08a8e80a67ca341c5b4368b9d74d3ce15da3de8a1c125556aaa718",
+      "gitBlob": "c9cec5f6a8a042e95fa27931dca027832708268e",
+      "rawBytes": 1853,
+      "canonicalBytes": 1853
+    },
+    "apps/inbox/src/lib/inboxes.ts": {
+      "rawSha256": "7c7975c90fddc800b2d88f80d53e486cc951c840d639e9acd7d3b0009242917c",
+      "canonicalSha256": "7c7975c90fddc800b2d88f80d53e486cc951c840d639e9acd7d3b0009242917c",
+      "gitBlob": "bb2faef5fed4f83fb5f96d69debfdde48d2630f7",
+      "rawBytes": 11379,
+      "canonicalBytes": 11379
+    },
+    "apps/inbox/test/access-993.test.ts": {
+      "rawSha256": "ee1bdfe5cb69b1f809599e07730d00f0ac09b7beeed402ea72459124007dd847",
+      "canonicalSha256": "ee1bdfe5cb69b1f809599e07730d00f0ac09b7beeed402ea72459124007dd847",
+      "gitBlob": "524904ea239b9f6f76f62474fbf71007b1ce0cbc",
+      "rawBytes": 7522,
+      "canonicalBytes": 7522
+    },
+    "apps/inbox/test/workspace-access-993.test.ts": {
+      "rawSha256": "0f2c7a6b25d56e8aecc87dff0bc528db668d787c30748a21b75c78ec260d51f5",
+      "canonicalSha256": "0f2c7a6b25d56e8aecc87dff0bc528db668d787c30748a21b75c78ec260d51f5",
+      "gitBlob": "b8af3544de41e69a43627b11401a6a31af6e9bc4",
+      "rawBytes": 4477,
+      "canonicalBytes": 4477
+    },
+    "packages/admin-screens/src/api/roles.ts": {
+      "rawSha256": "c27bc3f4d2670476e64ca49f6a4805b8bd4c5d7e2d1c9fd917155743c51c87a7",
+      "canonicalSha256": "c27bc3f4d2670476e64ca49f6a4805b8bd4c5d7e2d1c9fd917155743c51c87a7",
+      "gitBlob": "70c394670178396551a24b5163650a0100a78030",
+      "rawBytes": 2618,
+      "canonicalBytes": 2618
+    },
+    "packages/admin-screens/src/roles/AccountPermissionsDialog.tsx": {
+      "rawSha256": "38f5576fdbb471c7c9c88dd44e1f0047c33be854d15bec97ceb171ea362d7ed7",
+      "canonicalSha256": "38f5576fdbb471c7c9c88dd44e1f0047c33be854d15bec97ceb171ea362d7ed7",
+      "gitBlob": "e9eb50dbcb72dde8dded2bc928153125dec86bda",
+      "rawBytes": 12823,
+      "canonicalBytes": 12823
+    },
+    "packages/admin-screens/src/roles/InboxAccessControls.tsx": {
+      "rawSha256": "a8ea96cd1b21cf9a3fdfb9b1f0fc2d308001d9d61d4fe91c845e70e340c9b2a2",
+      "canonicalSha256": "a8ea96cd1b21cf9a3fdfb9b1f0fc2d308001d9d61d4fe91c845e70e340c9b2a2",
+      "gitBlob": "38a1f7829b58703d33712af8e5c27f94901e133c",
+      "rawBytes": 11634,
+      "canonicalBytes": 11634
+    },
+    "packages/admin-screens/test/inbox-access-controls.test.ts": {
+      "rawSha256": "fa9a7e9b54d532d3ead8fec3d6b3f0b98359c6b70fe607fb0b1e9a0de24f42ee",
+      "canonicalSha256": "fa9a7e9b54d532d3ead8fec3d6b3f0b98359c6b70fe607fb0b1e9a0de24f42ee",
+      "gitBlob": "ae51f662fd84a0321ae4e8e2641ac3927d30b646",
+      "rawBytes": 9319,
+      "canonicalBytes": 9319
+    },
+    "packages/api-types/openapi.json": {
+      "rawSha256": "37052c7456df10715e9767764f62518b5aa5c48b82d4d392500bb710087bc58b",
+      "canonicalSha256": "37052c7456df10715e9767764f62518b5aa5c48b82d4d392500bb710087bc58b",
+      "gitBlob": "452fcf4cea0c7ca0b32a090c34c1746d8503e144",
+      "rawBytes": 4330747,
+      "canonicalBytes": 4330747
+    },
+    "packages/api-types/src/openapi.ts": {
+      "rawSha256": "22e098f34a37cb058a13e1843f810f5c6197bd4999f610a5bec3a2f1a4c8bbe6",
+      "canonicalSha256": "22e098f34a37cb058a13e1843f810f5c6197bd4999f610a5bec3a2f1a4c8bbe6",
+      "gitBlob": "e60458d105f05141e0c81d20d3dca8cb2443e56a",
+      "rawBytes": 1915832,
+      "canonicalBytes": 1915832
+    },
+    "packages/db/migrations/0128_inbox_access.sql": {
+      "rawSha256": "9c17e83584ea522b13f2af828233886c73ca30b41ab2627ee6eb4c8378c685f8",
+      "canonicalSha256": "9c17e83584ea522b13f2af828233886c73ca30b41ab2627ee6eb4c8378c685f8",
+      "gitBlob": "fbb9db2d87930c96df222627d99711e67adee41a",
+      "rawBytes": 3140,
+      "canonicalBytes": 3140
+    },
+    "packages/db/migrations/meta/0128_snapshot.json": {
+      "rawSha256": "0cafead1c83b46b5c74cf482210d0b80bd9786ee56a230e5853ebc1e851b4652",
+      "canonicalSha256": "0cafead1c83b46b5c74cf482210d0b80bd9786ee56a230e5853ebc1e851b4652",
+      "gitBlob": "8d9eb78a45815aaf4a8b2d08fc20bb0a999a07c6",
+      "rawBytes": 1465674,
+      "canonicalBytes": 1465674
+    },
+    "packages/db/migrations/meta/_journal.json": {
+      "rawSha256": "3e796609740b02781099600cfb1d529d091b9cc01cded4dc4f620c5963482f0a",
+      "canonicalSha256": "3e796609740b02781099600cfb1d529d091b9cc01cded4dc4f620c5963482f0a",
+      "gitBlob": "ffd4fb02ec08ef4c66619aae9dfff1454f85bc11",
+      "rawBytes": 19022,
+      "canonicalBytes": 19022
+    },
+    "packages/db/src/schema/inbox.ts": {
+      "rawSha256": "1badb1e0618b4673d767ba3623589ea7a5bcf9a7f68115a5a138392ab39b271d",
+      "canonicalSha256": "1badb1e0618b4673d767ba3623589ea7a5bcf9a7f68115a5a138392ab39b271d",
+      "gitBlob": "5c45dd29b3149b34f08fdd45b0263437b48ed173",
+      "rawBytes": 83219,
+      "canonicalBytes": 83219
+    },
+    "packages/db/src/schema/tenancy.ts": {
+      "rawSha256": "863420ec69f32de626e667fba8f6b26b5e8a853627e2d8eaed8a041f2201f09d",
+      "canonicalSha256": "863420ec69f32de626e667fba8f6b26b5e8a853627e2d8eaed8a041f2201f09d",
+      "gitBlob": "02b3c71504c0e2258ba50af7ec0ca83618757e70",
+      "rawBytes": 22678,
+      "canonicalBytes": 22678
+    },
+    "packages/db/test/inbox-i1.test.ts": {
+      "rawSha256": "3eb03a796062e4b156c7d99f0f24105d49ea60edb63cb90decc05961cbfcca66",
+      "canonicalSha256": "3eb03a796062e4b156c7d99f0f24105d49ea60edb63cb90decc05961cbfcca66",
+      "gitBlob": "5cb35db3657fcdce030a9217c7d384fd7b971e26",
+      "rawBytes": 39683,
+      "canonicalBytes": 39683
+    },
+    "packages/shared/src/inbox-access.ts": {
+      "rawSha256": "20cb2b58111439dd6d578a0911c8017c17d11288266461a6166d4f9fbef11348",
+      "canonicalSha256": "20cb2b58111439dd6d578a0911c8017c17d11288266461a6166d4f9fbef11348",
+      "gitBlob": "e39ec2b1d6fab04690b65264d4968e60931024f0",
+      "rawBytes": 1393,
+      "canonicalBytes": 1393
+    },
+    "packages/shared/src/inbox.ts": {
+      "rawSha256": "144ee3665a4752818613a33645e5dd2df20984b85379ed47e71d593cd52d7770",
+      "canonicalSha256": "144ee3665a4752818613a33645e5dd2df20984b85379ed47e71d593cd52d7770",
+      "gitBlob": "f960b9bdb8286ff0008761c587c2d189f27651bd",
+      "rawBytes": 46655,
+      "canonicalBytes": 46655
+    },
+    "packages/shared/src/index.ts": {
+      "rawSha256": "4cff360bfcd1697ff4ed81a072a6035dc1c9350de63e5a0f521a41d8437b74e0",
+      "canonicalSha256": "4cff360bfcd1697ff4ed81a072a6035dc1c9350de63e5a0f521a41d8437b74e0",
+      "gitBlob": "21e8cba0a5476c8866b3e580c214e617579663ae",
+      "rawBytes": 3554,
+      "canonicalBytes": 3554
+    }
+  },
+  "sourceTrees": {
+    "apps/api/src": "6e1f2a6191ddacb62fa2bf52165b0da65303b6e4",
+    "apps/inbox/src": "e599026320d7d530bba8973b2b7e951f889704a6",
+    "packages/admin-screens/src": "652055b55033c86b4cb89d2a742ed9d6d70d11ff",
+    "packages/shared/src": "17e4f17bfe14f094efe5e85aa2558d5e6e135897",
+    "packages/db/src/schema": "e451183d7f84aed3d1e948339d14d3ca36523591",
+    "packages/db/migrations": "93c34a485703407f6616bb9f9d7e77861e8f532f"
+  },
+  "limits": [
+    "No main push or staging deployment by this lane.",
+    "Source checks complete; root review/integration and staging proof remain.",
+    "No real staff policy/grant/preference or business-setting writes."
+  ]
+}

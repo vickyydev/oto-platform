@@ -1,0 +1,701 @@
+{
+  "schemaVersion": 1,
+  "sourceSha": "d79c0bc3915b172770588717ae0cc68b3a66e49c",
+  "baseSha": "9018e03065b452115117ca363337873ae27b5dd7",
+  "sourceManifest": "source-manifest.json",
+  "sourceManifestSha256": "e694cba51ca113884454d5c5830aa1f978f79577013cb44b910fccd6b075682e",
+  "recordedAtUtc": "2026-11-16T17:38:58.092731+00:00",
+  "releaseState": "LOCAL_CHECKS_COMPLETE_ROOT_REVIEW_AND_SHARED_API_SLOT_PENDING",
+  "api": {
+    "initialAdjacentBatch": {
+      "files": 21,
+      "passed": 417,
+      "failed": 5,
+      "total": 422,
+      "status": "failed",
+      "log": "inbox-993-adjacent-api-final.log"
+    },
+    "repairedWholeFiles": {
+      "conformance": {
+        "passed": 32,
+        "log": "inbox-993-final-conformance-runtime.log"
+      },
+      "accessReviewAfterRegistration": {
+        "passed": 26,
+        "log": "inbox-993-final-conformance-runtime.log"
+      },
+      "routeGuards": {
+        "passed": 32,
+        "log": "inbox-993-final-route-guards.log"
+      },
+      "scopeTarget": {
+        "passed": 28,
+        "log": "inbox-993-final-scope-repaired.log"
+      },
+      "idConformance": {
+        "passed": 28,
+        "log": "inbox-993-final-route-guards.log"
+      }
+    },
+    "accounting": "Initial nineteen whole files passed. Failed conformance/guard files were repaired and rerun whole; no single all-green 21-file rerun is claimed. Additional scope and ID files were run whole.",
+    "postRuntimeChanges": "API product source unchanged after registration verification. Two missing FK indexes were subsequently added and verified by complete DB files/live schema; later changes were Inbox dashboard fencing and structurally identical generated-contract ordering."
+  },
+  "database": {
+    "original": {
+      "passed": 59,
+      "failed": 2,
+      "total": 61,
+      "log": "inbox-993-final-db-controls.log"
+    },
+    "repaired": {
+      "files": 3,
+      "passed": 61,
+      "failed": 0,
+      "counts": {
+        "inbox-i1": 25,
+        "inbox-ai-a1b": 22,
+        "schema-shape": 14
+      },
+      "log": "inbox-993-final-db-repaired.log"
+    },
+    "liveCatalogue": {
+      "status": "passed",
+      "log": "inbox-993-indexed-live-schema.log"
+    },
+    "migration": {
+      "number": "0128",
+      "canonicalSqlSha256": "9c17e83584ea522b13f2af828233886c73ca30b41ab2627ee6eb4c8378c685f8",
+      "priorStatementsPreserved": 9,
+      "addedFkCoveringIndexes": 2,
+      "snapshotFollows0127": true,
+      "priorJournalEntriesIdentical": true,
+      "timestampFollows0127": true,
+      "precommitCrlfSha256": "cbb5d488a1cc4aec81a675aa53478ab9e655073e27bcab7e2c453db570e73a77",
+      "normalizationOnly": true
+    }
+  },
+  "ui": {
+    "adminScreens": {
+      "files": 24,
+      "passed": 197,
+      "failed": 0,
+      "log": "inbox-993-admin-suite.log"
+    },
+    "inbox": {
+      "files": 31,
+      "passed": 477,
+      "failed": 0,
+      "log": "inbox-993-inbox-suite-final.log"
+    },
+    "console": {
+      "files": 70,
+      "passed": 671,
+      "todo": 3,
+      "failed": 0,
+      "log": "inbox-993-console-suite.log"
+    },
+    "workspaceRace": {
+      "red": "inbox-993-workspace-red.log",
+      "green": "inbox-993-workspace-green.log",
+      "cases": 1,
+      "actualComponent": true
+    }
+  },
+  "typechecks": {
+    "completeConfigurations": [
+      {
+        "configuration": "api",
+        "exitCode": 0,
+        "diagnosticBytes": 0,
+        "log": "inbox-993-types-api-final.log"
+      },
+      {
+        "configuration": "shared",
+        "exitCode": 0,
+        "diagnosticBytes": 0,
+        "log": "inbox-993-types-shared-final.log"
+      },
+      {
+        "configuration": "db",
+        "exitCode": 0,
+        "diagnosticBytes": 0,
+        "log": "inbox-993-types-db-final.log"
+      },
+      {
+        "configuration": "admin",
+        "exitCode": 0,
+        "diagnosticBytes": 0,
+        "log": "inbox-993-types-admin-final.log"
+      },
+      {
+        "configuration": "inbox",
+        "exitCode": 0,
+        "diagnosticBytes": 0,
+        "log": "inbox-993-types-inbox-final.log"
+      },
+      {
+        "configuration": "inbox-test",
+        "exitCode": 0,
+        "diagnosticBytes": 0,
+        "log": "inbox-993-types-inbox-test-final.log"
+      },
+      {
+        "configuration": "console",
+        "exitCode": 0,
+        "diagnosticBytes": 0,
+        "log": "inbox-993-types-console-final.log"
+      },
+      {
+        "configuration": "console-test",
+        "exitCode": 0,
+        "diagnosticBytes": 0,
+        "log": "inbox-993-types-console-test-final.log"
+      },
+      {
+        "configuration": "console-e2e",
+        "exitCode": 0,
+        "diagnosticBytes": 0,
+        "log": "inbox-993-types-console-e2e-final.log"
+      },
+      {
+        "configuration": "pos",
+        "exitCode": 0,
+        "diagnosticBytes": 0,
+        "log": "inbox-993-types-pos-final.log"
+      },
+      {
+        "configuration": "pos-test",
+        "exitCode": 0,
+        "diagnosticBytes": 0,
+        "log": "inbox-993-types-pos-test-final.log"
+      },
+      {
+        "configuration": "pos-server",
+        "exitCode": 0,
+        "diagnosticBytes": 0,
+        "log": "inbox-993-types-pos-server-final.log"
+      }
+    ],
+    "inboxAfterDashboardRepair": [
+      "inbox-993-types-inbox-post-dashboard.log",
+      "inbox-993-types-inbox-test-post-dashboard.log"
+    ]
+  },
+  "lint": {
+    "status": "passed",
+    "diagnosticBytes": 0,
+    "log": "inbox-993-lint-final.log",
+    "scope": "Every authored/touched non-generated TypeScript/TSX file; ignored generated types covered by compiler/contract checks."
+  },
+  "builds": {
+    "inbox": {
+      "status": "passed",
+      "seconds": 2.91,
+      "log": "inbox-993-build-inbox.log"
+    },
+    "console": {
+      "status": "passed",
+      "seconds": 5.13,
+      "warning": "chunk-size warning",
+      "log": "inbox-993-build-console.log"
+    },
+    "pos": "No product build claimed; three complete compiler configurations passed."
+  },
+  "contracts": {
+    "status": "passed",
+    "redOrderingCheck": "inbox-993-contracts-final-check.log",
+    "greenCheck": "inbox-993-contracts-final-green.log",
+    "canonicalOpenApiSha256": "3b6ef44930f24de088102b1b252c4b640dd99f9800f3939625254ff6ab3062a4",
+    "structurallyIdenticalBeforeAndAfterFinalRegistrationOrdering": true
+  },
+  "ci992": {
+    "sourceSha": "ea7212974dfdb8c2062cf34b2448859939ec406d",
+    "runId": 43901776179,
+    "jobId": 133427366967,
+    "localPassed": 22,
+    "localNoOpMs": 679,
+    "rerunsIssued": 1,
+    "attempt2Conclusion": "cancelled",
+    "greenClaim": false,
+    "watcherStopped": true,
+    "receipt": "C:/oto-lanes/inbox-992-exact-ci-db-receipt.json"
+  },
+  "logs": {
+    "inbox-993-adjacent-api-final.log": {
+      "path": "C:/oto-lanes/inbox-993-adjacent-api-final.log",
+      "bytes": 219332,
+      "rawSha256": "4043917627a03bdc05200f8a50eec2f8a6e545b9ca74821be148b49e546ec3a6",
+      "canonicalUtf8LfSha256": "0394c2e70a247a8ed11812b741156b321097b06571967d750ee9ea391087ee3b",
+      "encoding": "utf-16"
+    },
+    "inbox-993-admin-suite.log": {
+      "path": "C:/oto-lanes/inbox-993-admin-suite.log",
+      "bytes": 3272,
+      "rawSha256": "872a577f4a2a401574943f3c73b0f41369b0ba51a8469669ab542dcfd63124e4",
+      "canonicalUtf8LfSha256": "ab269051cab991f523ba322c4846ba14f13de827e80b5b2ea4a280a93fd0ca26",
+      "encoding": "utf-16"
+    },
+    "inbox-993-api-types-first.log": {
+      "path": "C:/oto-lanes/inbox-993-api-types-first.log",
+      "bytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalUtf8LfSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "encoding": "utf-8"
+    },
+    "inbox-993-api-types-generate.log": {
+      "path": "C:/oto-lanes/inbox-993-api-types-generate.log",
+      "bytes": 2056,
+      "rawSha256": "d44958027c347151cd88d66f099ab1f9f9f8bfc6a75d3aa08b84f000cd4b5b41",
+      "canonicalUtf8LfSha256": "99d04a54d4cfc70b092a2b2a17038283d459ea0905932a61a33e17566bb625a5",
+      "encoding": "utf-16"
+    },
+    "inbox-993-api-types-second.log": {
+      "path": "C:/oto-lanes/inbox-993-api-types-second.log",
+      "bytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalUtf8LfSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "encoding": "utf-8"
+    },
+    "inbox-993-build-console.log": {
+      "path": "C:/oto-lanes/inbox-993-build-console.log",
+      "bytes": 2778,
+      "rawSha256": "583c03b0018bcb191fa7da5ff2fed795557bf26c19db8b07e43dfd6aa19b2bfc",
+      "canonicalUtf8LfSha256": "a66941c451d671f830e94cd0046899112a5db066a270cc7cc8c997bbc4994658",
+      "encoding": "utf-16"
+    },
+    "inbox-993-build-inbox.log": {
+      "path": "C:/oto-lanes/inbox-993-build-inbox.log",
+      "bytes": 1262,
+      "rawSha256": "c547237f2b181009166c4935ca9b58e332807ba5b051ee64e8ea7cba554ffe46",
+      "canonicalUtf8LfSha256": "39857b803e7664a909ea52fee425a8d3721858eaab3cb99761eee7fd7b55e4c4",
+      "encoding": "utf-16"
+    },
+    "inbox-993-checkpoint-lint.log": {
+      "path": "C:/oto-lanes/inbox-993-checkpoint-lint.log",
+      "bytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalUtf8LfSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "encoding": "utf-8"
+    },
+    "inbox-993-console-suite.log": {
+      "path": "C:/oto-lanes/inbox-993-console-suite.log",
+      "bytes": 7986,
+      "rawSha256": "506b91cd1073e7e4ffee5848110a70b443aef208eca0f7463651bd0af858907c",
+      "canonicalUtf8LfSha256": "7dd1b92e4438754d35c6862f6e6dd39b3077e5683477b51ccd93fc6100f05bdb",
+      "encoding": "utf-16"
+    },
+    "inbox-993-contracts-final-check.log": {
+      "path": "C:/oto-lanes/inbox-993-contracts-final-check.log",
+      "bytes": 2338,
+      "rawSha256": "e4ae49e5cc9d565200139b1c3d9c1ad5dad781503153f7ba7f3425a639902631",
+      "canonicalUtf8LfSha256": "528a1c1c224cd347c69f8c4cc75c0e0949c8c758cec44a328bdb03566c9db4d1",
+      "encoding": "utf-16"
+    },
+    "inbox-993-contracts-final-generate.log": {
+      "path": "C:/oto-lanes/inbox-993-contracts-final-generate.log",
+      "bytes": 1808,
+      "rawSha256": "c0e80e8e1555b44eada3d33210632c85e3b916fcf96e2676038c67c176735bca",
+      "canonicalUtf8LfSha256": "95f587803fd86da30194e29c6ea575935b835a516d04969ca738dd6fbe780083",
+      "encoding": "utf-16"
+    },
+    "inbox-993-contracts-final-green.log": {
+      "path": "C:/oto-lanes/inbox-993-contracts-final-green.log",
+      "bytes": 1744,
+      "rawSha256": "22c93a22d42f83fca49860d2e0d5f9d6f11ee67f5472d9ad9ab3ac1b5aed5b2a",
+      "canonicalUtf8LfSha256": "145f49a00dee2ad877c59adc950ddf85ec7df7580a46767f83f27483ad710aa3",
+      "encoding": "utf-16"
+    },
+    "inbox-993-drawer-first.log": {
+      "path": "C:/oto-lanes/inbox-993-drawer-first.log",
+      "bytes": 656,
+      "rawSha256": "8bbe231d00c49dd9bb1aef6d880fe82df779e8dc56d0afd290e3c2ad9772bea7",
+      "canonicalUtf8LfSha256": "45078153c2fd2b539d7ebea27f81a7a51a979e715e1779a6dfbcee199d929de4",
+      "encoding": "utf-16"
+    },
+    "inbox-993-filters-fifth.log": {
+      "path": "C:/oto-lanes/inbox-993-filters-fifth.log",
+      "bytes": 606,
+      "rawSha256": "b34dd1cc591a3ac5b91e1f2b8ebd078abf274796885402dea30d61664a965232",
+      "canonicalUtf8LfSha256": "b27cf31edf7d892126ba272fbe4107eb431e498cc4b2848bc4abc1eb5880d284",
+      "encoding": "utf-16"
+    },
+    "inbox-993-filters-first.log": {
+      "path": "C:/oto-lanes/inbox-993-filters-first.log",
+      "bytes": 606,
+      "rawSha256": "23a918f4a2861b2d5e213d741ec20ebef8bcecb5fe6a85d6526f852750630261",
+      "canonicalUtf8LfSha256": "3ce3775e50ee2e9d92efdd4b061e318842cbfe942351f57d4e27f28be66af81f",
+      "encoding": "utf-16"
+    },
+    "inbox-993-filters-fourth.log": {
+      "path": "C:/oto-lanes/inbox-993-filters-fourth.log",
+      "bytes": 606,
+      "rawSha256": "c73dbd5fc7984134784ce70cee7090ae6ade90e7edc1c5795508d119da1466cb",
+      "canonicalUtf8LfSha256": "cee34866bfc7b11b367cf3c8f445271e655022f3c015489b59dbbc746175eac4",
+      "encoding": "utf-16"
+    },
+    "inbox-993-filters-second.log": {
+      "path": "C:/oto-lanes/inbox-993-filters-second.log",
+      "bytes": 606,
+      "rawSha256": "be05c22c39da799ff602b5bce19e44a81effabe07f18171c6e018424a4db9c1e",
+      "canonicalUtf8LfSha256": "20875870c8efe5dd1f9509ba0f0c5ffd392d86ed19394e3447ff49a56d83e960",
+      "encoding": "utf-16"
+    },
+    "inbox-993-filters-third.log": {
+      "path": "C:/oto-lanes/inbox-993-filters-third.log",
+      "bytes": 606,
+      "rawSha256": "5ce5eef6b7baa0248f1f46f3f19f0ed4d2c8ccc2f26069d33df08af322a139d4",
+      "canonicalUtf8LfSha256": "637f45e09779f2190815908ba971a6d2f2b9bd294cb631d148ba1baa1f74478b",
+      "encoding": "utf-16"
+    },
+    "inbox-993-final-api-types-generate.log": {
+      "path": "C:/oto-lanes/inbox-993-final-api-types-generate.log",
+      "bytes": 1808,
+      "rawSha256": "0457be9895415b2116580daa98668c9cb5d63cddef30220819af1c4f3123ee7e",
+      "canonicalUtf8LfSha256": "cfee8467fff2552f8c643e15060262597605dc1a996463a1d005854b375a1c9d",
+      "encoding": "utf-16"
+    },
+    "inbox-993-final-conformance-runtime.log": {
+      "path": "C:/oto-lanes/inbox-993-final-conformance-runtime.log",
+      "bytes": 19482,
+      "rawSha256": "7e2a9380d97f045cc4cd06bf3e05d31760f5c917ba6959955c8ea673600c2e20",
+      "canonicalUtf8LfSha256": "6cea2fce1cd04d55be8c986b81590f2762ddeace88a79030642d87c444b9dcd4",
+      "encoding": "utf-16"
+    },
+    "inbox-993-final-db-controls.log": {
+      "path": "C:/oto-lanes/inbox-993-final-db-controls.log",
+      "bytes": 122956,
+      "rawSha256": "29dd0009b498a7c39fee355aa8f04be1643623b5a18d6c2e63799b0fa5cbca0b",
+      "canonicalUtf8LfSha256": "2baffc99fd093262b32975d8edb4224500a309ca8652914db254e067c2b5717b",
+      "encoding": "utf-16"
+    },
+    "inbox-993-final-db-repaired.log": {
+      "path": "C:/oto-lanes/inbox-993-final-db-repaired.log",
+      "bytes": 110874,
+      "rawSha256": "22257ae2f7488f75394c05dd212a1727e16d4f12940ea71452cf2ee0a93de4fb",
+      "canonicalUtf8LfSha256": "8125000887e07b6211bef31ae4bcf7400f672d95eedecfd4a7acc9572deac571",
+      "encoding": "utf-16"
+    },
+    "inbox-993-final-live-schema.log": {
+      "path": "C:/oto-lanes/inbox-993-final-live-schema.log",
+      "bytes": 5336,
+      "rawSha256": "56374a8e915aa452bdbd2a5e2b8c05912ed095da65a975917328b02fbf3773b9",
+      "canonicalUtf8LfSha256": "57386ad61f3b0b77a95da786ed353a005a889e13506f9c796d373a3d17009c17",
+      "encoding": "utf-16"
+    },
+    "inbox-993-final-migration-generate.log": {
+      "path": "C:/oto-lanes/inbox-993-final-migration-generate.log",
+      "bytes": 17698,
+      "rawSha256": "b1eab4da7b6aa9b3b0ab6fa0c3f0fc314c1e499369d1ecdcb20d7cf5e4e04fe8",
+      "canonicalUtf8LfSha256": "dab3f9a3d8bdd37853e4b6babc1e5efa4a66a369a935203671b99d163b51efac",
+      "encoding": "utf-16"
+    },
+    "inbox-993-final-route-guards.log": {
+      "path": "C:/oto-lanes/inbox-993-final-route-guards.log",
+      "bytes": 34706,
+      "rawSha256": "55d4e55c081333d0a5e1795f411301ff9ca1f351487a754668fb9fa1beda8949",
+      "canonicalUtf8LfSha256": "e97e44d4bbaf583752e9539c25a2c9eedf9d389f94309edfa52cd437d30d7b71",
+      "encoding": "utf-16"
+    },
+    "inbox-993-final-scope-repaired.log": {
+      "path": "C:/oto-lanes/inbox-993-final-scope-repaired.log",
+      "bytes": 2034,
+      "rawSha256": "140c5d5ce3854c1d339f527ddef79067be96977b5b730c1f596b31679737cbd6",
+      "canonicalUtf8LfSha256": "f4e59860f7103ff43d4d784acad5fb3cb897b32310959fa6c58c07b35518a14e",
+      "encoding": "utf-16"
+    },
+    "inbox-993-http-compat-green.log": {
+      "path": "C:/oto-lanes/inbox-993-http-compat-green.log",
+      "bytes": 18684,
+      "rawSha256": "6c89d6e53d3d5f7c2a268f7b41025879452dc596910238ba30f8cf4ea9700c0b",
+      "canonicalUtf8LfSha256": "e70ac7e00e562a045cb92913586bc0bd93016a5d261a82b4b12a29b91e9788eb",
+      "encoding": "utf-16"
+    },
+    "inbox-993-http-compat-red.log": {
+      "path": "C:/oto-lanes/inbox-993-http-compat-red.log",
+      "bytes": 39512,
+      "rawSha256": "9fc827c2115344b185421d50cbf0a9d8a43d35ccc6113511338f0edcd8647f6b",
+      "canonicalUtf8LfSha256": "7803b83224dfdb8b03797a6cd074bc17ea259fa80272a80921870b98fc4f574a",
+      "encoding": "utf-16"
+    },
+    "inbox-993-http-first.log": {
+      "path": "C:/oto-lanes/inbox-993-http-first.log",
+      "bytes": 28790,
+      "rawSha256": "55414a683a2a19ff76abbfac69db4deca6079bff983ef53ad97e8c9bc579170c",
+      "canonicalUtf8LfSha256": "17e69cd4d7e9c5f3efaf8800c6f99b9bab867da713391d1a7d916e3b58f5dba5",
+      "encoding": "utf-16"
+    },
+    "inbox-993-http-second.log": {
+      "path": "C:/oto-lanes/inbox-993-http-second.log",
+      "bytes": 10052,
+      "rawSha256": "d6397740b973e2e4e85f3dff4577476cb56ddd610d54462139b9debe94de2362",
+      "canonicalUtf8LfSha256": "2bc878d64b0d786ac1b567f2a7f0af5f4f1495227b90ddde26ba83f83a7f8fa3",
+      "encoding": "utf-16"
+    },
+    "inbox-993-inbox-suite-final.log": {
+      "path": "C:/oto-lanes/inbox-993-inbox-suite-final.log",
+      "bytes": 3628,
+      "rawSha256": "125a9199de88caf25aac2399eec6eff1502c4f800dafe8910bb057280515aedc",
+      "canonicalUtf8LfSha256": "2796ee6b4abbb38b502d42cc5e7ba9067ed281277d714344ccd64680a3435cc1",
+      "encoding": "utf-16"
+    },
+    "inbox-993-inbox-suite.log": {
+      "path": "C:/oto-lanes/inbox-993-inbox-suite.log",
+      "bytes": 3524,
+      "rawSha256": "c5b1948d64c4990589e9e28737a1671b7ef47178c3d43003e26c2891811ebfde",
+      "canonicalUtf8LfSha256": "808f0514690feb78d45bff7b957fd62f1a3d1c5b0c7a07148ad0418ce3f6b505",
+      "encoding": "utf-16"
+    },
+    "inbox-993-indexed-live-schema.log": {
+      "path": "C:/oto-lanes/inbox-993-indexed-live-schema.log",
+      "bytes": 5326,
+      "rawSha256": "eceafb4c4b31ddf4baba617a6b65a12c795fc003135f03df56b6722ab38a09c1",
+      "canonicalUtf8LfSha256": "2e0ab7061937365fd176a59918e89d7dbc2a19ceabf7cbc604e9e927c4f073e5",
+      "encoding": "utf-16"
+    },
+    "inbox-993-indexed-migration-generate.log": {
+      "path": "C:/oto-lanes/inbox-993-indexed-migration-generate.log",
+      "bytes": 17698,
+      "rawSha256": "fa88d03d2ee908faa89f28130f8d01734992b7f39cacb8e7ffaa9bd3130b3b15",
+      "canonicalUtf8LfSha256": "ad3f934f7e70c96a21272afedca13ac0ad952f375e8b93925d3e2bc97a4d7072",
+      "encoding": "utf-16"
+    },
+    "inbox-993-lint-final.log": {
+      "path": "C:/oto-lanes/inbox-993-lint-final.log",
+      "bytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalUtf8LfSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "encoding": "utf-8"
+    },
+    "inbox-993-migration-generate.log": {
+      "path": "C:/oto-lanes/inbox-993-migration-generate.log",
+      "bytes": 17406,
+      "rawSha256": "cfab7e8c9fc2e4cf8ff02cae12f9e7a7f52ee2e8b060b4a3edb7c0d1e1717530",
+      "canonicalUtf8LfSha256": "31bd991ad76273c731dacf63bdc8d960153ab3a6837282f61b6932e30e508d84",
+      "encoding": "utf-16"
+    },
+    "inbox-993-replay-hook-lint.log": {
+      "path": "C:/oto-lanes/inbox-993-replay-hook-lint.log",
+      "bytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalUtf8LfSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "encoding": "utf-8"
+    },
+    "inbox-993-replay-hook-tests.log": {
+      "path": "C:/oto-lanes/inbox-993-replay-hook-tests.log",
+      "bytes": 41024,
+      "rawSha256": "083460a2fedc7404643082177e8c02204b6e7648a633a702b3f1b6bfd1cddfa1",
+      "canonicalUtf8LfSha256": "3fd64936d2502633a4e5debc5cf8957276d118d0ea191779456d0b3772114be8",
+      "encoding": "utf-16"
+    },
+    "inbox-993-replay-hook-types.log": {
+      "path": "C:/oto-lanes/inbox-993-replay-hook-types.log",
+      "bytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalUtf8LfSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "encoding": "utf-8"
+    },
+    "inbox-993-review-lint-first.log": {
+      "path": "C:/oto-lanes/inbox-993-review-lint-first.log",
+      "bytes": 592,
+      "rawSha256": "1b1b934c04672fe28977bad5fe779db60ea294620f2522d96d4c419f792ac1c0",
+      "canonicalUtf8LfSha256": "9ba2d0fa5416fed2b9ef1d1e3b9cb07af11a7618ab23d367751d7cd5507d2c0f",
+      "encoding": "utf-16"
+    },
+    "inbox-993-review-lint-second.log": {
+      "path": "C:/oto-lanes/inbox-993-review-lint-second.log",
+      "bytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalUtf8LfSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "encoding": "utf-8"
+    },
+    "inbox-993-review-lint-third.log": {
+      "path": "C:/oto-lanes/inbox-993-review-lint-third.log",
+      "bytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalUtf8LfSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "encoding": "utf-8"
+    },
+    "inbox-993-schema-shape.log": {
+      "path": "C:/oto-lanes/inbox-993-schema-shape.log",
+      "bytes": 6638,
+      "rawSha256": "e73ace8afb9f76d5a6d502dde51e88d7591e93936376db879e55ea6cecbb5540",
+      "canonicalUtf8LfSha256": "22209ed7fc75179666e761dd9e8fcfd2892a9d984e654d717ab4d0f22ae764c7",
+      "encoding": "utf-16"
+    },
+    "inbox-993-types-admin-final.log": {
+      "path": "C:/oto-lanes/inbox-993-types-admin-final.log",
+      "bytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalUtf8LfSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "encoding": "utf-8"
+    },
+    "inbox-993-types-admin-first.log": {
+      "path": "C:/oto-lanes/inbox-993-types-admin-first.log",
+      "bytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalUtf8LfSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "encoding": "utf-8"
+    },
+    "inbox-993-types-api-final.log": {
+      "path": "C:/oto-lanes/inbox-993-types-api-final.log",
+      "bytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalUtf8LfSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "encoding": "utf-8"
+    },
+    "inbox-993-types-console-e2e-final.log": {
+      "path": "C:/oto-lanes/inbox-993-types-console-e2e-final.log",
+      "bytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalUtf8LfSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "encoding": "utf-8"
+    },
+    "inbox-993-types-console-final.log": {
+      "path": "C:/oto-lanes/inbox-993-types-console-final.log",
+      "bytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalUtf8LfSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "encoding": "utf-8"
+    },
+    "inbox-993-types-console-test-final.log": {
+      "path": "C:/oto-lanes/inbox-993-types-console-test-final.log",
+      "bytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalUtf8LfSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "encoding": "utf-8"
+    },
+    "inbox-993-types-db-final.log": {
+      "path": "C:/oto-lanes/inbox-993-types-db-final.log",
+      "bytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalUtf8LfSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "encoding": "utf-8"
+    },
+    "inbox-993-types-db-first.log": {
+      "path": "C:/oto-lanes/inbox-993-types-db-first.log",
+      "bytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalUtf8LfSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "encoding": "utf-8"
+    },
+    "inbox-993-types-inbox-final.log": {
+      "path": "C:/oto-lanes/inbox-993-types-inbox-final.log",
+      "bytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalUtf8LfSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "encoding": "utf-8"
+    },
+    "inbox-993-types-inbox-first.log": {
+      "path": "C:/oto-lanes/inbox-993-types-inbox-first.log",
+      "bytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalUtf8LfSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "encoding": "utf-8"
+    },
+    "inbox-993-types-inbox-post-dashboard.log": {
+      "path": "C:/oto-lanes/inbox-993-types-inbox-post-dashboard.log",
+      "bytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalUtf8LfSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "encoding": "utf-8"
+    },
+    "inbox-993-types-inbox-test-final.log": {
+      "path": "C:/oto-lanes/inbox-993-types-inbox-test-final.log",
+      "bytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalUtf8LfSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "encoding": "utf-8"
+    },
+    "inbox-993-types-inbox-test-first.log": {
+      "path": "C:/oto-lanes/inbox-993-types-inbox-test-first.log",
+      "bytes": 922,
+      "rawSha256": "2df60689170777a70c2e34f5b3b41342083c183dd76a217b20a375b29c260e54",
+      "canonicalUtf8LfSha256": "d4d6c62c05d9e65cf1bb8df074e5fcb549ff0d70b3ef26db9d399bd2c779cc05",
+      "encoding": "utf-16"
+    },
+    "inbox-993-types-inbox-test-post-dashboard.log": {
+      "path": "C:/oto-lanes/inbox-993-types-inbox-test-post-dashboard.log",
+      "bytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalUtf8LfSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "encoding": "utf-8"
+    },
+    "inbox-993-types-inbox-test-second.log": {
+      "path": "C:/oto-lanes/inbox-993-types-inbox-test-second.log",
+      "bytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalUtf8LfSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "encoding": "utf-8"
+    },
+    "inbox-993-types-pos-final.log": {
+      "path": "C:/oto-lanes/inbox-993-types-pos-final.log",
+      "bytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalUtf8LfSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "encoding": "utf-8"
+    },
+    "inbox-993-types-pos-server-final.log": {
+      "path": "C:/oto-lanes/inbox-993-types-pos-server-final.log",
+      "bytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalUtf8LfSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "encoding": "utf-8"
+    },
+    "inbox-993-types-pos-test-final.log": {
+      "path": "C:/oto-lanes/inbox-993-types-pos-test-final.log",
+      "bytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalUtf8LfSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "encoding": "utf-8"
+    },
+    "inbox-993-types-shared-final.log": {
+      "path": "C:/oto-lanes/inbox-993-types-shared-final.log",
+      "bytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalUtf8LfSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "encoding": "utf-8"
+    },
+    "inbox-993-types-shared-first.log": {
+      "path": "C:/oto-lanes/inbox-993-types-shared-first.log",
+      "bytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonicalUtf8LfSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "encoding": "utf-8"
+    },
+    "inbox-993-workspace-green.log": {
+      "path": "C:/oto-lanes/inbox-993-workspace-green.log",
+      "bytes": 628,
+      "rawSha256": "527df8efbfcc692a49fc91f6d2b95dec7c797746ce84812d34db063ddba9af81",
+      "canonicalUtf8LfSha256": "41e114c5841ef057ea5abbe8c961f6d7561a6a1ef2cad6003b492262480805a3",
+      "encoding": "utf-16"
+    },
+    "inbox-993-workspace-red.log": {
+      "path": "C:/oto-lanes/inbox-993-workspace-red.log",
+      "bytes": 4256,
+      "rawSha256": "2bb5a1ea1003a7e27dc8e1c0b9dc0bf2d1bcf0c0afd1e714707ec97f216fa48a",
+      "canonicalUtf8LfSha256": "bd013ae5df16e82390a0b36953002d1dfd6060342fa001257e48d3c0e7506689",
+      "encoding": "utf-16"
+    },
+    "inbox-992-exact-ci-db-repro.log": {
+      "path": "C:/oto-lanes/inbox-992-exact-ci-db-repro.log",
+      "bytes": 59124,
+      "rawSha256": "3cf2d61fd5955ec9d729e153b636869fa263f1c9445ff4505dc2fbf5f5b85955",
+      "canonicalUtf8LfSha256": "47ceab8797c30559bc762cb695c930e85dbd3507bef65c889456b0e8bee70e4d",
+      "encoding": "utf-16"
+    },
+    "inbox-992-ci-retry-watch.log": {
+      "path": "C:/oto-lanes/inbox-992-ci-retry-watch.log",
+      "bytes": 884,
+      "rawSha256": "64ed2d1b81f23740df6afcf5e3228c99747b71ac2c0a4525671813bec708b08d",
+      "canonicalUtf8LfSha256": "9e4bf9a97ceba3e1ed7f09fb368ce5c578abe70f31bae610e0ef8f0a813c9a98",
+      "encoding": "utf-16"
+    },
+    "inbox-992-ci-retry-watch-gitbash.log": {
+      "path": "C:/oto-lanes/inbox-992-ci-retry-watch-gitbash.log",
+      "bytes": 230,
+      "rawSha256": "50675aa02ccd524c965deffd5ad98c5c13f137519acdc1c050ee594b2556367a",
+      "canonicalUtf8LfSha256": "0a2a7f20b5c37bf18a1b9e74a776ac285d2cdc8f2eb5740a402e8dfd423019a9",
+      "encoding": "utf-16"
+    }
+  }
+}
