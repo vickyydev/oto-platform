@@ -199,13 +199,14 @@ describe('route guards (S2-01b)', () => {
     expect(response.statusCode).toBe(401);
   });
 
-  it('binds the OTO App’s party deposit and menu doors to its operator credential, and the deposit return to no session (SCRUM-825)', async () => {
+  it('binds the OTO App’s party additional-bill, deposit and menu doors to its operator credential, and the deposit return to no session (SCRUM-825, SCRUM-990)', async () => {
     const doors = ctx.app.routeRegistry
       .filter((r) => r.url.startsWith('/otoapp/parties/:eventId/') && r.url !== '/otoapp/parties/:eventId/billing' && r.method !== 'HEAD' && r.method !== 'OPTIONS')
       .map((r) => `${r.method} ${r.url}`)
       .sort();
     expect(doors).toEqual([
       'GET /otoapp/parties/:eventId/deposit-request',
+      'POST /otoapp/parties/:eventId/beo-additions',
       'POST /otoapp/parties/:eventId/deposit-request',
       'POST /otoapp/parties/:eventId/deposit-request/:requestId/cancel',
       'POST /otoapp/parties/:eventId/deposit-request/:requestId/resend',
