@@ -62,6 +62,7 @@ export const accountInboxAccess = inbox.table('account_access', {
   ...timestamps,
 }, t => [
   unique('account_access_tenant_account_key').on(t.operatorId, t.accountId),
+  index('account_access_updated_by_idx').on(t.updatedByAccountId),
   foreignKey({ columns: [t.operatorId, t.accountId], foreignColumns: [account.operatorId, account.id], name: 'account_access_account_fk' }).onDelete('restrict'),
   check('account_access_categories_check', sql`${t.allowedCategories} is null or ${t.allowedCategories} <@ array['birthdays','general','marketing','gm']::text[]`),
   check('account_access_version_check', sql`${t.version} > 0`),
@@ -76,6 +77,7 @@ export const accountInboxChannelAccess = inbox.table('account_channel_access', {
   ...timestamps,
 }, t => [
   unique('account_channel_access_key').on(t.operatorId, t.accountId, t.channelAccountId),
+  index('account_channel_access_channel_idx').on(t.operatorId, t.channelAccountId),
   foreignKey({ columns: [t.operatorId, t.accountId], foreignColumns: [accountInboxAccess.operatorId, accountInboxAccess.accountId], name: 'account_channel_access_policy_fk' }).onDelete('restrict'),
   foreignKey({ columns: [t.operatorId, t.channelAccountId], foreignColumns: [channelAccount.operatorId, channelAccount.id], name: 'account_channel_access_channel_fk' }).onDelete('restrict'),
 ]);

@@ -31,3 +31,7 @@ ALTER TABLE "inbox"."account_access" ADD CONSTRAINT "account_access_account_fk" 
 ALTER TABLE "inbox"."account_channel_access" ADD CONSTRAINT "account_channel_access_operator_id_operator_id_fk" FOREIGN KEY ("operator_id") REFERENCES "core"."operator"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "inbox"."account_channel_access" ADD CONSTRAINT "account_channel_access_policy_fk" FOREIGN KEY ("operator_id","account_id") REFERENCES "inbox"."account_access"("operator_id","account_id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "inbox"."account_channel_access" ADD CONSTRAINT "account_channel_access_channel_fk" FOREIGN KEY ("operator_id","channel_account_id") REFERENCES "inbox"."channel_account"("operator_id","id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+--> statement-breakpoint
+CREATE INDEX "account_access_updated_by_idx" ON "inbox"."account_access" USING btree ("updated_by_account_id");
+--> statement-breakpoint
+CREATE INDEX "account_channel_access_channel_idx" ON "inbox"."account_channel_access" USING btree ("operator_id","channel_account_id");

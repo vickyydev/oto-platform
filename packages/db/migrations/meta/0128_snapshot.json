@@ -1,5 +1,5 @@
 {
-  "id": "b08208d6-ff0f-416b-8f5d-5a374d6b4e8b",
+  "id": "d3157be6-d279-455b-b3bd-c2589df59249",
   "prevId": "2e4b8ea1-48c1-4585-9d08-ce790547c5e3",
   "version": "7",
   "dialect": "postgresql",
@@ -43090,7 +43090,23 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "account_access_updated_by_idx": {
+          "name": "account_access_updated_by_idx",
+          "columns": [
+            {
+              "expression": "updated_by_account_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "account_access_operator_id_operator_id_fk": {
           "name": "account_access_operator_id_operator_id_fk",
@@ -43204,7 +43220,29 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "account_channel_access_channel_idx": {
+          "name": "account_channel_access_channel_idx",
+          "columns": [
+            {
+              "expression": "operator_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "channel_account_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "account_channel_access_operator_id_operator_id_fk": {
           "name": "account_channel_access_operator_id_operator_id_fk",

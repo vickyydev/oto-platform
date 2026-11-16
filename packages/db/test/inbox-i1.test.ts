@@ -39,9 +39,12 @@ const PKG = join(dirname(fileURLToPath(import.meta.url)), '..');
 /**
  * 0078's fifteen, the assistant's three from 0080_inbox_ai (SCRUM-590), its
  * behaviour rules from 0096_inbox_ai_rule (SCRUM-696), and its open questions
- * from 0112_inbox_open_question (SCRUM-831).
+ * from 0112_inbox_open_question (SCRUM-831), and the initially empty account
+ * policy/line allowlist tables from 0128_inbox_access (SCRUM-993).
  */
 const INBOX_TABLES = [
+  'account_access',
+  'account_channel_access',
   'ai_example',
   'ai_rule',
   'ai_turn',
@@ -121,7 +124,7 @@ const operatorByName = async (name: string) =>
   (await db.select({ id: s.operator.id }).from(s.operator).where(eq(s.operator.name, name)).limit(1))[0]!.id;
 
 describe('0078_inbox_schema — structure (I1)', () => {
-  it('creates the inbox schema with its twenty-one tables and writes no row', async () => {
+  it('creates the inbox schema with its twenty-three tables and writes no row', async () => {
     const tables = await pool.query<{ table_name: string }>(
       `select table_name from information_schema.tables where table_schema = 'inbox' and table_type = 'BASE TABLE' order by 1`,
     );

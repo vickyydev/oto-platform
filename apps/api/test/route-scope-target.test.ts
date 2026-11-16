@@ -226,6 +226,10 @@ const NO_TARGET_NEEDED = new Set([
  * operator-scoped grant. The reads beside them keep their gates.
  */
 const OPERATOR_WIDE_WRITES = [
+  // SCRUM-993: one policy covers the whole account; branch-only role
+  // assignment authority must not alter its global category/channel limits.
+  'POST /accounts/:id/inbox-access/preview',
+  'PUT /accounts/:id/inbox-access',
   // SCRUM-908: the WhatsApp test line is an operator-wide number; setting it up needs inbox:channel:manage there.
   'POST /inbox/test-lines',
   'GET /assistant-settings',
