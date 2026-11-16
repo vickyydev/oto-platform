@@ -1,0 +1,7 @@
+
+> @oto/api@0.1.0 typecheck C:\oto-lanes\tom-beo-approved-20261116\apps\api
+> tsc -p tsconfig.json
+
+src/services/party-settlement.ts(289,41): error TS18046: 'row.items' is of type 'unknown'.
+src/services/party-settlement.ts(289,60): error TS7006: Parameter 'item' implicitly has an 'any' type.
+ ELIFECYCLE  Command failed with exit code 2.

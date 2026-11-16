@@ -8,10 +8,10 @@ The owner reviewed the interactive decision board and pasted the answers into ch
 | --- | --- | --- | --- |
 | CI payment race | SCRUM-986 | An unsent payment choice survives completion of the same new sale write; recorded money remains authoritative | Deployed on both staging tills; owner acceptance pending |
 | 1 Deposit before booking | SCRUM-987 | Gateway-confirmed full deposit before explicit staff booking creation | Simulator staging proof complete; owner acceptance pending |
-| 1.1 Complete reviewed fill | SCRUM-988 | Apply available structured chat details with sources, review and stale-save protection | In implementation and verification |
-| 2 Reusable BEO menu and sync | SCRUM-989 | Reusable BEO-only dishes in appropriate Kitchen/Bar choices across parties, without ordinary POS catalogue exposure | In implementation and verification |
-| 3 Party extras and bills | SCRUM-990 | Extras stay linked to the main party; post-settlement additions receive a new additional bill | In implementation and verification |
-| 4 Parent review and prices | SCRUM-991 | Saved menu choices and selling prices visible; parent confirms choices only | In verification with BEO work |
+| 1.1 Complete reviewed fill | SCRUM-988 | Apply available structured chat details with sources, review and stale-save protection | Reviewed and checked; named staging rollout next |
+| 2 Reusable BEO menu and sync | SCRUM-989 | Reusable BEO-only dishes in appropriate Kitchen/Bar choices across parties, without ordinary POS catalogue exposure | Reviewed and checked; named staging rollout next |
+| 3 Party extras and bills | SCRUM-990 | Extras stay linked to the main party; post-settlement additions receive a new additional bill | Reviewed and checked; named staging rollout next |
+| 4 Parent review and prices | SCRUM-991 | Saved menu choices and selling prices visible; parent confirms choices only | Reviewed and checked; named staging rollout next |
 | 5 Inbox states | SCRUM-992 | Accessible OTO-themed unread and next-action emphasis | Live staging proof complete; owner acceptance pending |
 | 6 Inbox permissions | SCRUM-993 | Manage category and channel restrictions within existing Inbox permissions | In implementation and verification |
 

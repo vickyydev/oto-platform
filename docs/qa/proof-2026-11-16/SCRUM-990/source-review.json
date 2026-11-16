@@ -1,0 +1,937 @@
+{
+  "at": "2026-11-16T17:10:14.212Z",
+  "candidate": "06c372d45c26bfe9e3581bea73d543f73bcb3a99",
+  "outcome": "Reviewed all final source changes; no remaining finding",
+  "inputs": [
+    {
+      "path": "apps/api/package.json",
+      "blob": "01842c000cf6b08cdcfcec616697c5b3e490ef00",
+      "sha256": "e88a347801105fe861a88cabed7b694d01077f0542219df11120a93819eb6ca3",
+      "testedRawSha256": "e88a347801105fe861a88cabed7b694d01077f0542219df11120a93819eb6ca3",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/api/src/routes/otoapp-party-billing.ts",
+      "blob": "6a02c79aa1741c192a83d680d9d1c1fd88553cda",
+      "sha256": "5b21060191a152a5f3f28460e39c31cb2f0c8e730dc97918d3bf21b111d117b6",
+      "testedRawSha256": "5b21060191a152a5f3f28460e39c31cb2f0c8e730dc97918d3bf21b111d117b6",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/api/src/services/beo-additional-charges.ts",
+      "blob": "0412019b32865418e0ae3ed7dc8ac5395a680744",
+      "sha256": "a36362f97ad9bd747cc5eb23ad7ddec37ee17380e7250a9d23379ab55334f430",
+      "testedRawSha256": "a36362f97ad9bd747cc5eb23ad7ddec37ee17380e7250a9d23379ab55334f430",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/api/src/services/events.ts",
+      "blob": "949bcedbbb2a84eb20584874e8f54525bec8100d",
+      "sha256": "463e79da1669c657599d8929eb9181f6cc93cb4f12462706133cf34df1020c45",
+      "testedRawSha256": "463e79da1669c657599d8929eb9181f6cc93cb4f12462706133cf34df1020c45",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/api/src/services/otoapp-directory.ts",
+      "blob": "763bd33e9c5832b363c849724f0e1762932d44a7",
+      "sha256": "ed81b03f39d65afde2f7387dbeaafabb2748f61dad1d798498f20d352f8f124e",
+      "testedRawSha256": "ed81b03f39d65afde2f7387dbeaafabb2748f61dad1d798498f20d352f8f124e",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/api/src/services/parties.ts",
+      "blob": "83b186622bcfe5e5e90453fd9d9ea29613773da3",
+      "sha256": "716e55b60c7ee86fa6bfa946232764314ff95bd7ca37c2601bfef8a4a89bbfe9",
+      "testedRawSha256": "716e55b60c7ee86fa6bfa946232764314ff95bd7ca37c2601bfef8a4a89bbfe9",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/api/src/services/party-additional-bills.ts",
+      "blob": "3fe76af5ef132cf43eeb4f68674a44f0444af068",
+      "sha256": "dc8e2ff59f3500e056a657180f26d430e229ef5609253814e0f2c1d3a895fde5",
+      "testedRawSha256": "dc8e2ff59f3500e056a657180f26d430e229ef5609253814e0f2c1d3a895fde5",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/api/src/services/party-billing.ts",
+      "blob": "ddea250eeeec87138c8fb6f91c42021de8c899c2",
+      "sha256": "299f2c471f79ff61152bb2cc1373b2b6eb5805fddcea9ffa4f67fb22a0fa596a",
+      "testedRawSha256": "299f2c471f79ff61152bb2cc1373b2b6eb5805fddcea9ffa4f67fb22a0fa596a",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/api/src/services/party-kitchen-edit.ts",
+      "blob": "ed2d40b21beb19a3fd59c5e13ddc5c2c4aa2eb61",
+      "sha256": "3859ee57af0c20370722ae53c40017b1f13e78e273079c4117ccde0427ece315",
+      "testedRawSha256": "3859ee57af0c20370722ae53c40017b1f13e78e273079c4117ccde0427ece315",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/api/src/services/party-plan.ts",
+      "blob": "5f88b42403399871a9581bd10a5b02889c755a83",
+      "sha256": "ae206ee34ffd40278c72933f73dd4c6100583dfffe3813dc2a26c119caea30dc",
+      "testedRawSha256": "ae206ee34ffd40278c72933f73dd4c6100583dfffe3813dc2a26c119caea30dc",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/api/src/services/party-settlement.ts",
+      "blob": "89eb0a239d00be156754bbaf38994c3f15e8d225",
+      "sha256": "ae165bc07cdfdc571b685c4fe2531d5913b2e597e924ba72b52c3fb902c0b84f",
+      "testedRawSha256": "1d160ddce84cc2863c8a8416364338cacbd0e984f32b39b06f34a70ed6b4a0e0",
+      "lineEndingNormalizationOnly": true
+    },
+    {
+      "path": "apps/api/src/services/party-tab.ts",
+      "blob": "53018ac255e3376a756415553c6dac5a72e2fc33",
+      "sha256": "45a77284cb0431f3f6ef1624def1c7e5a3b62acd376a8c8b4de9194a9721f953",
+      "testedRawSha256": "45a77284cb0431f3f6ef1624def1c7e5a3b62acd376a8c8b4de9194a9721f953",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/api/test/party-kitchen-edit.test.ts",
+      "blob": "96f6cf4f6944cf960483e34dd8be3a888f76743b",
+      "sha256": "288095d32855bd49fcdcf89d1a11bdf70b33b9686445178702790861312ca63d",
+      "testedRawSha256": "288095d32855bd49fcdcf89d1a11bdf70b33b9686445178702790861312ca63d",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/api/test/party-settlement.test.ts",
+      "blob": "ca6e7ee55c9dd1b971735fb7764e06330838cbf6",
+      "sha256": "2bd8647929e8fa65f83f871aff29243362e4e71611024d15f2c045e89338a623",
+      "testedRawSha256": "4cc5d5e91c088edbbe76f28c847f63d3fe2abfbd1c3c01904ef488bff4b26114",
+      "lineEndingNormalizationOnly": true
+    },
+    {
+      "path": "apps/api/test/s990-additional-bill-review.test.ts",
+      "blob": "a399863e92629fabca1681f08a967414df7ee669",
+      "sha256": "9e44730c26f1b5b7e0ac08a1f7d03c73fe05e9c3068bfe0b7c7cdb7b1b62363a",
+      "testedRawSha256": "9e44730c26f1b5b7e0ac08a1f7d03c73fe05e9c3068bfe0b7c7cdb7b1b62363a",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/oto-app/client/src/components/beo/beo-ai-review.tsx",
+      "blob": "25354671912bb87c519dfe0be20a3fff12ae4b43",
+      "sha256": "7b889e0fecf7547760028e0d5f1eb5c0f3668a9dff3cc520a39d0e3ce056d6fb",
+      "testedRawSha256": "7b889e0fecf7547760028e0d5f1eb5c0f3668a9dff3cc520a39d0e3ce056d6fb",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/oto-app/client/src/components/beo/beo-billing-module.tsx",
+      "blob": "2c196711981ee81d311097fc4490702f44fef511",
+      "sha256": "151607c4372b40440479b75125c0a77836bbe8034a484b68bad5b5d184ddac59",
+      "testedRawSha256": "151607c4372b40440479b75125c0a77836bbe8034a484b68bad5b5d184ddac59",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/oto-app/client/src/components/beo/beo-event-editor.tsx",
+      "blob": "446eb38a65970030d063bff1bba3553346bdbb99",
+      "sha256": "0e07285527557864ab7c72f7f241f7e6b74546a59493e5aa57ba4bbaa549c267",
+      "testedRawSha256": "0e07285527557864ab7c72f7f241f7e6b74546a59493e5aa57ba4bbaa549c267",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/oto-app/client/src/components/beo/beo-extra-price.tsx",
+      "blob": "dbea8e26aa9f055ca07e6cab8bf3019c3d833abd",
+      "sha256": "079a84249198b0aee4192bbdbd749cd13c0c7eda54a9003146e2ad30eda58ea0",
+      "testedRawSha256": "079a84249198b0aee4192bbdbd749cd13c0c7eda54a9003146e2ad30eda58ea0",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/oto-app/client/src/components/beo/beo-party-menu-item.tsx",
+      "blob": "49a06956c7aa9d3479f4473e10d20d34eae6bd6c",
+      "sha256": "0aa5bceab6a05dccf37fb2623634a604f57073a83c5819524ca030403cb51a99",
+      "testedRawSha256": "0aa5bceab6a05dccf37fb2623634a604f57073a83c5819524ca030403cb51a99",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/oto-app/client/src/components/beo/beo-till-billing.tsx",
+      "blob": "5628d789d6ef7665205488c7af6c631fd7a0865d",
+      "sha256": "0ebf6b7216c1d4f2cdd9ebc5c3a7d4351f3a5baca3166856e39d984ac9b43b33",
+      "testedRawSha256": "0ebf6b7216c1d4f2cdd9ebc5c3a7d4351f3a5baca3166856e39d984ac9b43b33",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/oto-app/client/src/components/beo/till-menu-picker.tsx",
+      "blob": "0d19a3e0c6541b130a34b6c34bb3d97e9efc740c",
+      "sha256": "62a2e49244e9a50fcbddbb15720970785d3c5dec7a06b08f1ce11815f23e9d70",
+      "testedRawSha256": "62a2e49244e9a50fcbddbb15720970785d3c5dec7a06b08f1ce11815f23e9d70",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/oto-app/client/src/lib/beo-ai-review.ts",
+      "blob": "7825c19804809977be6fa00124b18925a3d3a1a4",
+      "sha256": "2368b3ff9d87de8000f66465dd0a09ad5b5a199a607a8ec70c111dd38fb4724f",
+      "testedRawSha256": "2368b3ff9d87de8000f66465dd0a09ad5b5a199a607a8ec70c111dd38fb4724f",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/oto-app/client/src/pages/public/menu-select.tsx",
+      "blob": "8bff95c7e9bedb506f57d6db1a4a9930658be2a7",
+      "sha256": "24c196b7d1a0630e4975dc2b7224da074343dc9ccbf7a01aea235fcd56e87ee3",
+      "testedRawSha256": "24c196b7d1a0630e4975dc2b7224da074343dc9ccbf7a01aea235fcd56e87ee3",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/oto-app/migrations/0051_otoapp_set_audience_provenance.sql",
+      "blob": "1be8c1a0c6272a456cebfb270d8ace5a5c86909c",
+      "sha256": "b3cf3bd3106c662307e75576931e8018f55a6d309ae8b211a38b177a17d2f806",
+      "testedRawSha256": "b3cf3bd3106c662307e75576931e8018f55a6d309ae8b211a38b177a17d2f806",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/oto-app/migrations/0052_otoapp_beo_bar_charge_provenance.sql",
+      "blob": "0369a3f7a8b1614658c73546080a748e42a8cb94",
+      "sha256": "5706e5ed8f49199eca03949d6b807681f561ac1e6197f7b746194c6c357c62e1",
+      "testedRawSha256": "5706e5ed8f49199eca03949d6b807681f561ac1e6197f7b746194c6c357c62e1",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/oto-app/migrations/meta/0052_snapshot.json",
+      "blob": "89c796845a995cd603e5341769da2d7997f24c37",
+      "sha256": "2ed2920e3472d3d93bb797fb77c96d36bb7a11ba2ea5fe4818fa6113db847b3f",
+      "testedRawSha256": "2ed2920e3472d3d93bb797fb77c96d36bb7a11ba2ea5fe4818fa6113db847b3f",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/oto-app/migrations/meta/_journal.json",
+      "blob": "67ae7fadbf71f2387fd488d560b50fc2fc1b8ed2",
+      "sha256": "a36f7b0d8b9be0c3d7e6a6963f1c8a36974834f63fea60625956cac42761c715",
+      "testedRawSha256": "a36f7b0d8b9be0c3d7e6a6963f1c8a36974834f63fea60625956cac42761c715",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/oto-app/package-lock.json",
+      "blob": "2a6d05579b14d5f57597b765febf26a0fd394437",
+      "sha256": "a86c72b7664258ae593f7bc75d452ef19cb4c021c6214895b74028c33a48362e",
+      "testedRawSha256": "a86c72b7664258ae593f7bc75d452ef19cb4c021c6214895b74028c33a48362e",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/oto-app/package.json",
+      "blob": "9cc6165cb504c863fac664f0d8232e845314a382",
+      "sha256": "cce280d28a3d1c8c2d9ce092d7fc0b7b18b9380f1aabb8e57a7bb3462eecd61b",
+      "testedRawSha256": "cce280d28a3d1c8c2d9ce092d7fc0b7b18b9380f1aabb8e57a7bb3462eecd61b",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/oto-app/script/typecheck-baseline.json",
+      "blob": "4038f1ca1fe12f04e5bb275b5a4a7bad0ea0f4dc",
+      "sha256": "292674e08361dc084fd1e288cca8047ea1bb6bb80fb3373bbe7c258d4f0ae4e5",
+      "testedRawSha256": "292674e08361dc084fd1e288cca8047ea1bb6bb80fb3373bbe7c258d4f0ae4e5",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/oto-app/server/ai-routes.ts",
+      "blob": "45da8f8fa8183dfba5e3bca4a0275636af413c88",
+      "sha256": "51eb70817761eecd421d768bcc4f8604dd1dc253410ee951dfa989a720d35947",
+      "testedRawSha256": "51eb70817761eecd421d768bcc4f8604dd1dc253410ee951dfa989a720d35947",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/oto-app/server/beo-routes.ts",
+      "blob": "d6587426c7694726d7e7aec9a40a32f62176aac6",
+      "sha256": "62eacd914f65f7a222e9ac6ce89aa7a7ea02d81d63eff87aa064c8b539c35e90",
+      "testedRawSha256": "62eacd914f65f7a222e9ac6ce89aa7a7ea02d81d63eff87aa064c8b539c35e90",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/oto-app/server/directory/kitchenPlanRoutes.ts",
+      "blob": "dc2ae9e1105fc8248c64e1270fd163646c378794",
+      "sha256": "902d286026ce976db004591a278d4932a405d6facc30c546e398485b907a0972",
+      "testedRawSha256": "902d286026ce976db004591a278d4932a405d6facc30c546e398485b907a0972",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/oto-app/server/lib/beoAdditionalBilling.ts",
+      "blob": "d317c7dddc37098e8f2e6fca64d4fa8d5840483c",
+      "sha256": "6a9af127cbfa592af58a69a37fcfe940f496914a00419c3627cc4b3590870f5a",
+      "testedRawSha256": "6a9af127cbfa592af58a69a37fcfe940f496914a00419c3627cc4b3590870f5a",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/oto-app/server/lib/beoAiApprove.ts",
+      "blob": "3cd02deffaf283c1c21438525616e553fdf57bc0",
+      "sha256": "628ee7d96bc03871a022a3b3afb03b531fac61e8136134fe901696615c6f3be9",
+      "testedRawSha256": "628ee7d96bc03871a022a3b3afb03b531fac61e8136134fe901696615c6f3be9",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/oto-app/server/lib/beoFillTillMenu.ts",
+      "blob": "64d2ab93c325b33ecd4f92d49e0e508c2e2e5e76",
+      "sha256": "162bda828170e2486c016998aa92f8b5ed16ac5ebfc6448f44a165061dd906de",
+      "testedRawSha256": "162bda828170e2486c016998aa92f8b5ed16ac5ebfc6448f44a165061dd906de",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/oto-app/server/lib/beoReviewState.ts",
+      "blob": "fdb3382e67f4577e38d294e79cd5a64c4668f9a8",
+      "sha256": "c0300fcf12479d1d92cff6f580856454b81d6f1695ea5eaee331923a69c873fb",
+      "testedRawSha256": "c0300fcf12479d1d92cff6f580856454b81d6f1695ea5eaee331923a69c873fb",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/oto-app/server/lib/tillKitchenEdit.ts",
+      "blob": "552be1d2d9643b0e976daba7874dd64a48c099f2",
+      "sha256": "7a1898c08df6f71d6b1ffed29685d3d6900a7bcfabdd5a570f2ba100195c03f2",
+      "testedRawSha256": "7a1898c08df6f71d6b1ffed29685d3d6900a7bcfabdd5a570f2ba100195c03f2",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/oto-app/server/lib/tillMenu.ts",
+      "blob": "ee89e77b55757dcd61757ce19f306bb53240cdc1",
+      "sha256": "9f820297841cc9a6954bbccdd59956414b3d3ee6283c4ca1bb11bf54f52a5977",
+      "testedRawSha256": "9f820297841cc9a6954bbccdd59956414b3d3ee6283c4ca1bb11bf54f52a5977",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/oto-app/server/party-menu-routes.ts",
+      "blob": "942eb1efa69c97833daf139b3118c172b4234bc8",
+      "sha256": "74242a2faf45e29a01da35c36b9fc429e5ab66fb75c245da2234c37f49a5213c",
+      "testedRawSha256": "74242a2faf45e29a01da35c36b9fc429e5ab66fb75c245da2234c37f49a5213c",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/oto-app/shared/beoAiFill.ts",
+      "blob": "886fe4cd28540ad390d716efdb55233f031315d7",
+      "sha256": "704c666e664709cd30e92b98e4cc949f2a3c1624dce1c601af169dfe63d4b38f",
+      "testedRawSha256": "704c666e664709cd30e92b98e4cc949f2a3c1624dce1c601af169dfe63d4b38f",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/oto-app/shared/beoBillingSource.ts",
+      "blob": "f2c1cdf05fb66fe86cbc5c1777b614cc77751a6a",
+      "sha256": "04bec569f9c11de531651afe07586d18bc19742da1c81c5c274f38e6184da04b",
+      "testedRawSha256": "04bec569f9c11de531651afe07586d18bc19742da1c81c5c274f38e6184da04b",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/oto-app/shared/beoExtras.ts",
+      "blob": "d40df4c46ddc6556284737cb6b8040e29373ec5d",
+      "sha256": "ec9db2f2d003029f907d208f01bed704fe0acb15502d2ddfce8fbde79aba3761",
+      "testedRawSha256": "ec9db2f2d003029f907d208f01bed704fe0acb15502d2ddfce8fbde79aba3761",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/oto-app/shared/partyDeposit.ts",
+      "blob": "673bbd7015082f514703a39398fcd8d18db893a8",
+      "sha256": "883da8fbc8799c4c719b5d600e91b9c718f81198cb56c4470e89aaf5e41dcacf",
+      "testedRawSha256": "495f7fb08c07927c5513f8bb26d308bcfb8dbc3c31a86b914f846b30eaaf8329",
+      "lineEndingNormalizationOnly": true
+    },
+    {
+      "path": "apps/oto-app/shared/partyMenuItem.ts",
+      "blob": "132f5dbee9e6c143a3e6490999303f50ce29f7e0",
+      "sha256": "df82b1ddf6fc8d2fd67c0a7accb72d7ac8247f3fc6bb0239d92906de23c133d0",
+      "testedRawSha256": "df82b1ddf6fc8d2fd67c0a7accb72d7ac8247f3fc6bb0239d92906de23c133d0",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/oto-app/shared/tillBilling.ts",
+      "blob": "78014288d8a41c1752db8fc87950a5e20e5f0489",
+      "sha256": "7eb003c531bc534cfcc64331d1d144f6103239cb297de88507105576a3b68773",
+      "testedRawSha256": "7eb003c531bc534cfcc64331d1d144f6103239cb297de88507105576a3b68773",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/oto-app/shared/tillMenu.ts",
+      "blob": "644e312c4f06d545b11db6b1345c0c61a52d2181",
+      "sha256": "9a86df9f4090b6eee40d948d202ce8e6349b7c4dcc6e50d9029f1645df3f3072",
+      "testedRawSha256": "9a86df9f4090b6eee40d948d202ce8e6349b7c4dcc6e50d9029f1645df3f3072",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/oto-app/tests/beo-fill-till-menu.check.ts",
+      "blob": "e1f176012eb7abd6a844672e5bd822295b14915e",
+      "sha256": "409e9f0c10d91803a5eb2f3de83d00a440c2a339b581f2ad86c2a57a5df5ee5a",
+      "testedRawSha256": "e319e7621d23f70ed040b38c7dda39c42d712ad36a5a999a07969d1de4ca2611",
+      "lineEndingNormalizationOnly": true
+    },
+    {
+      "path": "apps/oto-app/tests/party-deposit-ui.check.ts",
+      "blob": "aa86f1d66e40f111efb512ab38a1dcb8697b90db",
+      "sha256": "91b9be86b3f8b0b040e8e39d3a68f1ca2cb9f1e13d1ae5423b8a5e2a3578ada2",
+      "testedRawSha256": "f87d8b9525161f5187657583f0548cc15320bcbf09118b0498da54fad2b20819",
+      "lineEndingNormalizationOnly": true
+    },
+    {
+      "path": "apps/oto-app/tests/till-kitchen-edit.check.ts",
+      "blob": "afbe8a98f294fe3d670c5d85626bb4564759d30f",
+      "sha256": "0e9e25652574a05a10567833f9ba47c47f1cc1d4f5c66265c974d8574dda50e4",
+      "testedRawSha256": "0e9e25652574a05a10567833f9ba47c47f1cc1d4f5c66265c974d8574dda50e4",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/oto-app/tests/tom-beo-review.check.ts",
+      "blob": "1eb43800bf01e3074c76082e18b63cf0a6a7d9f3",
+      "sha256": "8f663c7d3c53b9ceaa19e85d25579dc27a37b6fa5ea48d3d81e02b339781a5da",
+      "testedRawSha256": "8f663c7d3c53b9ceaa19e85d25579dc27a37b6fa5ea48d3d81e02b339781a5da",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/pos/package.json",
+      "blob": "bc20962bc2c27da014a0863e30a694e077f107bd",
+      "sha256": "a592cf530ac0c95b602b8ca23cd1f7258ce599b0175aa604cd243de9b7e0c239",
+      "testedRawSha256": "a592cf530ac0c95b602b8ca23cd1f7258ce599b0175aa604cd243de9b7e0c239",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/pos/src/api/events.ts",
+      "blob": "f134496ff3b65fd7a893250a9d7d7ca3c2b2a19c",
+      "sha256": "01ad7418601e490ed6c79c4458855154f65241037fb45d2371c7dde82375dab6",
+      "testedRawSha256": "01ad7418601e490ed6c79c4458855154f65241037fb45d2371c7dde82375dab6",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/pos/src/api/parties.ts",
+      "blob": "1a25e39e679fdd3e182e9f5a3cc6ab99615db059",
+      "sha256": "d3b8501ecafe124bd4a73edef68b943fe02961d285a8f2a92ee0cfdf0f6e0976",
+      "testedRawSha256": "d3b8501ecafe124bd4a73edef68b943fe02961d285a8f2a92ee0cfdf0f6e0976",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/pos/src/components/mobile/parties/MobileParties.tsx",
+      "blob": "cfd0c9b99054908ec983501bb72e4a732dfcb5db",
+      "sha256": "44e698c5691c45ca8b89d76f231f0c754f4efe1beefa750ed39d95cec92c6130",
+      "testedRawSha256": "44e698c5691c45ca8b89d76f231f0c754f4efe1beefa750ed39d95cec92c6130",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/pos/src/components/mobile/parties/MobilePartyDetail.tsx",
+      "blob": "e0860d7704ee15523965c86f3a02aa9d4487a177",
+      "sha256": "512a1f0c05d63d05f90b669bccb434eee2b9e5b117d47a151a6c2931cb236baa",
+      "testedRawSha256": "860dcc3c50c8cd57a99eb63c325e27358e47650fd793b598feba2c82cffb423f",
+      "lineEndingNormalizationOnly": true
+    },
+    {
+      "path": "apps/pos/src/components/mobile/parties/MobilePartyPayment.tsx",
+      "blob": "98594096d12bf112d778bbdb6577fcb37165772b",
+      "sha256": "6713917e53266c904ca22e41ec6f43047b0129412dc7becc1362c67d0c98c5c4",
+      "testedRawSha256": "ccf1e8b5ec7a0f31d3ecb7fa89e12695b8bb5d21f41a95a0c290dc32dbe176e0",
+      "lineEndingNormalizationOnly": true
+    },
+    {
+      "path": "apps/pos/src/components/parties/PartyBalanceModal.tsx",
+      "blob": "1e76794afa11a5f561853811426eb7e1bf407d6a",
+      "sha256": "a514cf8b82d573807f61f30727b71b3e96d88e7620d5e9e33a9c8967e5d8e298",
+      "testedRawSha256": "391e895ea75ed1210bfe14d7d22f4c07cffe2359f2687d1f3874687ff454fa06",
+      "lineEndingNormalizationOnly": true
+    },
+    {
+      "path": "apps/pos/src/components/parties/PartyDetail.tsx",
+      "blob": "9ade966722251494dd1d6a5ec025e225fd790dc3",
+      "sha256": "db8ea8e39ca885e80dd587883058bee980f42cfde805add0347b0b75b5e90a3b",
+      "testedRawSha256": "386839b4ea9b25cf69afdf79cc310319108e2354aa6cc489379986053db8c4a0",
+      "lineEndingNormalizationOnly": true
+    },
+    {
+      "path": "apps/pos/src/components/parties/PartyEditForm.tsx",
+      "blob": "12a841b03388c6a9194488aaff673711fba56e3e",
+      "sha256": "f04b4f251e50d266e841e06f6b8687f74fc4adae9c7d721fced1e47cace53547",
+      "testedRawSha256": "801f8fce7afc698e861a58693fb3ae6fe2905868b50476c5eb6c5f8e6c8a87ae",
+      "lineEndingNormalizationOnly": true
+    },
+    {
+      "path": "apps/pos/src/components/parties/PartyKitchenPlanEditor.tsx",
+      "blob": "f6386790f877dcea037028b51efa3f06aa729557",
+      "sha256": "168bc1ed7770eb318dc8931043fb7d0b7d674535f43c85bfb050b6c839f79a44",
+      "testedRawSha256": "8c28f3865e3ae69839abcecdc5ca2b9e806fa0eea3978df5cc2a310c90a91bfd",
+      "lineEndingNormalizationOnly": true
+    },
+    {
+      "path": "apps/pos/src/lib/partyAdditionalBills.ts",
+      "blob": "25b3b6c4c911ca4c4be7f6dd592fec16e0e38833",
+      "sha256": "f2e64479f647e4cd7a475bed6a313015642a0c1c69c34548d3a95807f2555607",
+      "testedRawSha256": "8227f43f96d7bd6e3bc1775d23e73bc340d2c1ed5a3a68506043d06c89445bb3",
+      "lineEndingNormalizationOnly": true
+    },
+    {
+      "path": "apps/pos/src/lib/partyKitchenEdit.ts",
+      "blob": "edce73ff24a8d1de1ad1b2d38c1e58bef55a82cc",
+      "sha256": "7415a7381d4419108a5b8ebd9456722e7fa04b33c7b4b73e7a3c695b81641230",
+      "testedRawSha256": "7415a7381d4419108a5b8ebd9456722e7fa04b33c7b4b73e7a3c695b81641230",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/pos/src/lib/usePartyTender.ts",
+      "blob": "d19a30d32ee3ca28bf897d96c0c6b62dc9a6ac0e",
+      "sha256": "14610805706fb44aa7f380274dd14fdecdb4cc17f00acca28fc747076331866b",
+      "testedRawSha256": "14610805706fb44aa7f380274dd14fdecdb4cc17f00acca28fc747076331866b",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/pos/src/types.ts",
+      "blob": "4615da1df2d63cd9a2c420937da2aa9f273ecb36",
+      "sha256": "dfcae5f0a0bb90964813d673d2d6ab549f14e795760182708dd27be46b0b6b97",
+      "testedRawSha256": "dfcae5f0a0bb90964813d673d2d6ab549f14e795760182708dd27be46b0b6b97",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/pos/test/s220-e4-parties.test.ts",
+      "blob": "e2268d9b4ef2e539cc9fed6815c67949de4f5da8",
+      "sha256": "f9bd3b85e900e07ea9153e23b72f7c0048f017d9261bbdc0b72b7cd0de7b0bea",
+      "testedRawSha256": "f9bd3b85e900e07ea9153e23b72f7c0048f017d9261bbdc0b72b7cd0de7b0bea",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "apps/pos/test/s907-party-kitchen-edit.test.ts",
+      "blob": "e19edda3b41d347667c116285bff9faa0a865d07",
+      "sha256": "8a863f0063ca181964ead4c03a56399eeb477838d44d26eac76d7b755c395df5",
+      "testedRawSha256": "19564ba74971bdad72c0e2c4ecc433586bbd99e9cb8956b2a6da0771e111ad38",
+      "lineEndingNormalizationOnly": true
+    },
+    {
+      "path": "apps/pos/test/s990-party-additional-bill-ui-review.test.ts",
+      "blob": "335fa310a6fd913e0ad3edc17a3b4306fea0a249",
+      "sha256": "892179e5c9d7bde35ab22e118f3bacb4930d0b1a2e8a35e8e0a50bfcd823bf19",
+      "testedRawSha256": "47b28c8e55587c6d78cf823ca841590684145057caf05c654ec62a93706b7cc2",
+      "lineEndingNormalizationOnly": true
+    },
+    {
+      "path": "package.json",
+      "blob": "18a050f017befbb2ffb2a049f6cf9ea1e3ad5aee",
+      "sha256": "aa43fc6128d6ece99f34f8f82b453fec4ae4a4214bbd40eaac57badb5b7b0128",
+      "testedRawSha256": "aa43fc6128d6ece99f34f8f82b453fec4ae4a4214bbd40eaac57badb5b7b0128",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "packages/api-types/openapi.json",
+      "blob": "8fb617deee06c433e7248aca5a1d5b91023d8cf6",
+      "sha256": "c36365e3eb490a28b435cf88539ae5ab0092b03e0f658471b7b7adb157041e0f",
+      "testedRawSha256": "c36365e3eb490a28b435cf88539ae5ab0092b03e0f658471b7b7adb157041e0f",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "packages/api-types/src/openapi.ts",
+      "blob": "5671c85a7feaab4a47454a7b3b442be0a523144e",
+      "sha256": "0aa1adbc1659e41ea9c78fd8ad3687ee282a17191107ea00a5429dc2727027f9",
+      "testedRawSha256": "0aa1adbc1659e41ea9c78fd8ad3687ee282a17191107ea00a5429dc2727027f9",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "packages/db/migrations/0126_prebooking_gateway_deposit.sql",
+      "blob": "aea65757afc1b17fd59e60aab0245e80bde4207e",
+      "sha256": "e5de71742dc1e915a99af0fbc8b8a3dadbb920041026d229252e53c8cc503f27",
+      "testedRawSha256": "e5de71742dc1e915a99af0fbc8b8a3dadbb920041026d229252e53c8cc503f27",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "packages/db/migrations/0127_party_additional_bills.sql",
+      "blob": "5511ea92fd7185138545d6896818bdad38049db9",
+      "sha256": "c3ffdb7f285cff18f1ecc95e2f49709f5c7a683b6ea8f4847e4bc8179c95ca09",
+      "testedRawSha256": "c3ffdb7f285cff18f1ecc95e2f49709f5c7a683b6ea8f4847e4bc8179c95ca09",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "packages/db/migrations/meta/0126_snapshot.json",
+      "blob": "c68692ba1e8f7f0772f6c0fea33076b6f6e6d6ea",
+      "sha256": "e578fd3f3829fb47c3ee6c87be52dee42cfd7e2247f5e325af633a84802e6dfb",
+      "testedRawSha256": "e578fd3f3829fb47c3ee6c87be52dee42cfd7e2247f5e325af633a84802e6dfb",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "packages/db/migrations/meta/0127_snapshot.json",
+      "blob": "30e43bbe0afe2499b78132edc4ba17c50cc2d6c4",
+      "sha256": "65094e790ea6cf53c1dbd9db36c5e8e41dcce117308f4a9fadc1bb475323e4bf",
+      "testedRawSha256": "65094e790ea6cf53c1dbd9db36c5e8e41dcce117308f4a9fadc1bb475323e4bf",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "packages/db/migrations/meta/_journal.json",
+      "blob": "7ec65ce00415f2d39dcb2ea1ad066be56f83fbb9",
+      "sha256": "84f6590260811de61cb3ce89cd060c128e6ad9a108235847824f41de5e78f46c",
+      "testedRawSha256": "84f6590260811de61cb3ce89cd060c128e6ad9a108235847824f41de5e78f46c",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "packages/db/package.json",
+      "blob": "9a737d61266c034df0429cd0c0b29294b78d5928",
+      "sha256": "444bd1a4c894a93c82f1e48c34a04568e1b540dd552a7fbb6b8f5cae2ab42ebd",
+      "testedRawSha256": "444bd1a4c894a93c82f1e48c34a04568e1b540dd552a7fbb6b8f5cae2ab42ebd",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "packages/db/src/schema/parties.ts",
+      "blob": "ab2da27ab6ad29e96f20424fce4a16f6acb297d3",
+      "sha256": "ea12f1701ba97f01bc186d7394c290789d4efdb7b9dd197b6010d3c8616fe936",
+      "testedRawSha256": "ea12f1701ba97f01bc186d7394c290789d4efdb7b9dd197b6010d3c8616fe936",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "packages/db/test/schema-shape.test.ts",
+      "blob": "d86447f36ad071b9eabe17842548177a09dc2912",
+      "sha256": "f938a996bbd3b439cc01d2c7202c37787cac08dfd1531ce85169ce3c31394237",
+      "testedRawSha256": "f938a996bbd3b439cc01d2c7202c37787cac08dfd1531ce85169ce3c31394237",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "packages/db/test/suite-controls.test.ts",
+      "blob": "9f64cc1760458d454f91b497bc55764d1505355b",
+      "sha256": "cdafc1612d9a54c75b6fc2e932e552002d6bd7d97f627cb689a9243add913979",
+      "testedRawSha256": "cdafc1612d9a54c75b6fc2e932e552002d6bd7d97f627cb689a9243add913979",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "packages/shared/package.json",
+      "blob": "09b713f703c7ae4e915f4439482c11595e2c22ab",
+      "sha256": "a384a46e755aec33ba7a44917d662d1d794e005e4d002a1d09ab95ee2d6b85f0",
+      "testedRawSha256": "a384a46e755aec33ba7a44917d662d1d794e005e4d002a1d09ab95ee2d6b85f0",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "packages/shared/src/events.ts",
+      "blob": "9dba4e79749494de8625370a8125f18865677122",
+      "sha256": "e213f5f181f2aa34e0339ef231069ca67dee7dce45854c0ea1384dd9bea2b6c5",
+      "testedRawSha256": "e213f5f181f2aa34e0339ef231069ca67dee7dce45854c0ea1384dd9bea2b6c5",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "packages/shared/src/parties.ts",
+      "blob": "9658adfdb4f2fb85e30aa81fa6e3a8cba961b969",
+      "sha256": "4ca977b05cbd68f723743161a4f9e31deee11fe8a981bfc97ccb939a18b7ffdb",
+      "testedRawSha256": "4ca977b05cbd68f723743161a4f9e31deee11fe8a981bfc97ccb939a18b7ffdb",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "packages/shared/src/party-billing.ts",
+      "blob": "21a4e90c30899e34de1888d4bd8b5a272a955252",
+      "sha256": "c7b3c84dfd74b72e56a9342b01746aa73d8b1f404fdcac4abe298ffb7eb68fc0",
+      "testedRawSha256": "c7b3c84dfd74b72e56a9342b01746aa73d8b1f404fdcac4abe298ffb7eb68fc0",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "packages/shared/src/party-kitchen-edit.ts",
+      "blob": "9fc68d5a916ed2cc6176ac1d5332b3de1abc4fcd",
+      "sha256": "2b2d7402bec6d3b6bcbf9919ebb971841766bcb02234c5785bb9e44c1c581e04",
+      "testedRawSha256": "2b2d7402bec6d3b6bcbf9919ebb971841766bcb02234c5785bb9e44c1c581e04",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "packages/shared/src/party-settlement.ts",
+      "blob": "cedb17dd1404f96f1b0fe56074bbe77ba5dafcb0",
+      "sha256": "17105e97dd69bc5b733e2ee4fba3e7e4f3a2cf71bfbd86ed2423f81c0ef8b6ad",
+      "testedRawSha256": "17105e97dd69bc5b733e2ee4fba3e7e4f3a2cf71bfbd86ed2423f81c0ef8b6ad",
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "blob": "ba5e7015cbc46ec1df9451152ede00ce7a530cf9",
+      "sha256": "63d17852612309e24722d34fe5a05befcde816643a67a381d130fc50d61d2ff8",
+      "testedRawSha256": "63d17852612309e24722d34fe5a05befcde816643a67a381d130fc50d61d2ff8",
+      "lineEndingNormalizationOnly": false
+    }
+  ],
+  "logs": [
+    {
+      "path": "logs/tom-beo-api-settlement-release.log",
+      "rawSha256": "b1a59564a8d5dd966e683bf0f04c47a05deb974ae4a3f9e240ff59c57bee1359"
+    },
+    {
+      "path": "logs/tom-beo-api-tests-1.log",
+      "rawSha256": "bceec9582d58a311409f43f8602a72a642fc1bf8956b9b749f31cd94e13ef507"
+    },
+    {
+      "path": "logs/tom-beo-api-tests-2.log",
+      "rawSha256": "ab47f88b030c0896bda4320d1dfe40e5e42bdf9080c8d250a7e2e0d89af390f0"
+    },
+    {
+      "path": "logs/tom-beo-api-tests-final.log",
+      "rawSha256": "b53208220fb9bab5b62f30536402952aa65e88d8799c2ad3d27274c20e0eb737"
+    },
+    {
+      "path": "logs/tom-beo-api-tests-final2.log",
+      "rawSha256": "992326204d0ec5591e2fd89a0ebd40abfbec25f9fd8c2e328c3a374a9a622161"
+    },
+    {
+      "path": "logs/tom-beo-api-tests-final3.log",
+      "rawSha256": "5539168d75cbaf979841cfc2afce27848080278d05661835da903488462f6aef"
+    },
+    {
+      "path": "logs/tom-beo-api-tests-final4.log",
+      "rawSha256": "20e6c6e853baf8c6fa8a3c767eb3083438fd5fb8e07e22d26324a9935425a3e0"
+    },
+    {
+      "path": "logs/tom-beo-api-types-1.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "logs/tom-beo-api-types-final.log",
+      "rawSha256": "65153b3acaeebf662011d975c807fba8bcc0762ac3c94e2a6d25b6cc4b219dab"
+    },
+    {
+      "path": "logs/tom-beo-api-types-final2.log",
+      "rawSha256": "65153b3acaeebf662011d975c807fba8bcc0762ac3c94e2a6d25b6cc4b219dab"
+    },
+    {
+      "path": "logs/tom-beo-api-types-rebased.log",
+      "rawSha256": "3ee56b19620212c8f69496677088c5ab88ace8b23a07010c354a11a6cd3f4446"
+    },
+    {
+      "path": "logs/tom-beo-api-types-release.log",
+      "rawSha256": "65153b3acaeebf662011d975c807fba8bcc0762ac3c94e2a6d25b6cc4b219dab"
+    },
+    {
+      "path": "logs/tom-beo-app-build-final.log",
+      "rawSha256": "25c27b9e27305a638358835b3268d29459cb25627b84746f9f57d8ed7d6de1d0"
+    },
+    {
+      "path": "logs/tom-beo-app-checks-1.log",
+      "rawSha256": "83c9acca06a2dcf24834f46960dba16ab5ffea2cf211b7a6e663d96dac892597"
+    },
+    {
+      "path": "logs/tom-beo-app-checks-2.log",
+      "rawSha256": "b1f3b26bac2d59823783d1515ef5487d2c5455e2d489b61d217fc693ccc1998a"
+    },
+    {
+      "path": "logs/tom-beo-app-checks-3.log",
+      "rawSha256": "359ccfc921ed2795f9f2df3f9cb7c71e7ae43ccc5c213043c0d6f55cfa9e55e2"
+    },
+    {
+      "path": "logs/tom-beo-app-lint-delta-final.log",
+      "rawSha256": "440da2feec79156e636ed60dd8762fa68490a6b941cf2b0edfd21489c794591c"
+    },
+    {
+      "path": "logs/tom-beo-app-lint-delta-release.log",
+      "rawSha256": "1d1c6a83fcc95a8152909736b7a5f65a194ef11ed5ce47c93a2cbc8ca0cac897"
+    },
+    {
+      "path": "logs/tom-beo-app-lint-delta.log",
+      "rawSha256": "2eba3022a72b824c090fd8c1888f1bed72280331ce84c77fc9d0577c04a02f22"
+    },
+    {
+      "path": "logs/tom-beo-app-lint-delta2.log",
+      "rawSha256": "400161979e95dce3814a13cf16227bfe711ce336bfe4a30f49cc3bcf4fc1ba3a"
+    },
+    {
+      "path": "logs/tom-beo-app-ratchet-1.log",
+      "rawSha256": "7db5938efceab4c1d83d9617aba6dc4e53a04b0f5e2acd9dc6de4024cd61e041"
+    },
+    {
+      "path": "logs/tom-beo-app-ratchet-2.log",
+      "rawSha256": "a23d042a9489574cf772138d640ff6949b65e5ec2e70bf05b44e9b8801874944"
+    },
+    {
+      "path": "logs/tom-beo-app-ratchet-final.log",
+      "rawSha256": "afdcfbe989bac5f48319b508a1bdf8d27bfda1941fa25eacf7717bfe8b487740"
+    },
+    {
+      "path": "logs/tom-beo-app-ratchet-release.log",
+      "rawSha256": "afdcfbe989bac5f48319b508a1bdf8d27bfda1941fa25eacf7717bfe8b487740"
+    },
+    {
+      "path": "logs/tom-beo-app-runtime-final.log",
+      "rawSha256": "a3767c7d5f69c6ef1a8f30896718fff747270e018ada3e812baaccc7d04239fa"
+    },
+    {
+      "path": "logs/tom-beo-app-runtime-final2.log",
+      "rawSha256": "2505cfcca4c30a4832c28acf3be889983a874fe162a4c043762706115b68e130"
+    },
+    {
+      "path": "logs/tom-beo-app-runtime-final3.log",
+      "rawSha256": "f1b42fbe0fdb7fc29ad3b69d0753e05977fde57aab3fd1bb655b11f66d701224"
+    },
+    {
+      "path": "logs/tom-beo-contracts-check-release.log",
+      "rawSha256": "57645aa973b47bebf01d688c3cc964251d95eb4165c192ab2fe8f769b9e16bc5"
+    },
+    {
+      "path": "logs/tom-beo-contracts-final.log",
+      "rawSha256": "188c9cfe30da3e8b16be5be4313d5fddd54d2a246f0417d9ccf5e0630de47bb4"
+    },
+    {
+      "path": "logs/tom-beo-contracts-generate.log",
+      "rawSha256": "cf5551359d4d017cf0166bd3d6e9984bc7791e8dc764f0a88737012a513ba686"
+    },
+    {
+      "path": "logs/tom-beo-db-controls-final.log",
+      "rawSha256": "9e1ce4a78d6d279a8fcc1d491f4764571646e7f3a8da8eda4818c29ba4f2f7e1"
+    },
+    {
+      "path": "logs/tom-beo-deposit-ui-final.log",
+      "rawSha256": "e9066c3549e7ced958ee6626d6e3b0f6e38ce76a08bf541f45a3619b03181d02"
+    },
+    {
+      "path": "logs/tom-beo-deposit-ui-final2.log",
+      "rawSha256": "e9066c3549e7ced958ee6626d6e3b0f6e38ce76a08bf541f45a3619b03181d02"
+    },
+    {
+      "path": "logs/tom-beo-deposit-ui-release.log",
+      "rawSha256": "e9066c3549e7ced958ee6626d6e3b0f6e38ce76a08bf541f45a3619b03181d02"
+    },
+    {
+      "path": "logs/tom-beo-lint-app-full.log",
+      "rawSha256": "d00143d01b22b10cf6dcc46813247ddb1325ad6603bfe88cce506cf8d17b3b47"
+    },
+    {
+      "path": "logs/tom-beo-lint-workspace-final.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "logs/tom-beo-lint-workspace-release.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "logs/tom-beo-lint-workspace.log",
+      "rawSha256": "5d5d1a22b0b2a995f4d6f9e0b3916611857eedbcef6fb10102c42485898f9302"
+    },
+    {
+      "path": "logs/tom-beo-pos-build-final.log",
+      "rawSha256": "ade52280b5b7f16cd6059eccf6249213585805ccb1bfc6639e566d8dc13b843e"
+    },
+    {
+      "path": "logs/tom-beo-pos-tests-1.log",
+      "rawSha256": "5043341a5050c0da6bc0562f03180af5030d5d177cdbb40eef6fdf309c186abf"
+    },
+    {
+      "path": "logs/tom-beo-pos-tests-2.log",
+      "rawSha256": "cd84c7b1d6a1a986f6e82c8314bd416fe0b46ee94f2948f7160c9f3ac94c6b73"
+    },
+    {
+      "path": "logs/tom-beo-pos-tests-3.log",
+      "rawSha256": "da088224768f0c2ed73814ce0bd0cebfee9c9e75d45ca9590a8b64f945955a49"
+    },
+    {
+      "path": "logs/tom-beo-pos-tests-final.log",
+      "rawSha256": "695785f76bc96b9960213000e1f53c268c44bb309083b18e2b3b92809e3b03f7"
+    },
+    {
+      "path": "logs/tom-beo-pos-tests-final5.log",
+      "rawSha256": "f8371fc655f45b41c32508de3514020825aebe1b817e644637abf47fd33d6d35"
+    },
+    {
+      "path": "logs/tom-beo-pos-tests-release.log",
+      "rawSha256": "d20732a9b2430b8027832ad412f05b26ac9b5e7eba4f8bfa840691c1ab721471"
+    },
+    {
+      "path": "logs/tom-beo-pos-tests4.log",
+      "rawSha256": "3ed77a5e631f89c85eddef0a0d8f95790005e4689fa7298906e44932c1c30e60"
+    },
+    {
+      "path": "logs/tom-beo-pos-types-1.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "logs/tom-beo-pos-types-final.log",
+      "rawSha256": "cf6d19a61af32964a4f19229ce9ccb062f5812683da47395f99aa2059a8b6c2a"
+    },
+    {
+      "path": "logs/tom-beo-pos-types-final2.log",
+      "rawSha256": "9d00308294e702efa6039e366a437db4773d7541957abeb26c7bd5aad4f26408"
+    },
+    {
+      "path": "logs/tom-beo-pos-types-final3.log",
+      "rawSha256": "9d00308294e702efa6039e366a437db4773d7541957abeb26c7bd5aad4f26408"
+    },
+    {
+      "path": "logs/tom-beo-pos-types-release.log",
+      "rawSha256": "9d00308294e702efa6039e366a437db4773d7541957abeb26c7bd5aad4f26408"
+    },
+    {
+      "path": "logs/tom-beo-schema-final.log",
+      "rawSha256": "8dc486cba5e0409b61f46ba01087dafbb9e66e4f54812f88137d7de6917924e1"
+    },
+    {
+      "path": "logs/tom-beo-type-account-release.log",
+      "rawSha256": "b70e56ca215546bf71b89bfc6086220b0954ddf2ec3eb93f08ba206ef1cd88d6"
+    },
+    {
+      "path": "logs/tom-beo-app-types-accounting.json",
+      "rawSha256": "14bc31c5c81b89939523ad4b24ffa6456b83789a79e99a36d2591e69c24955b2"
+    },
+    {
+      "path": "logs/tom-beo-lint-app-delta.json",
+      "rawSha256": "19ac87b66ad1578d210ad430e5ef1dc9691ca25ae2023f87e59bdebdad98ce70"
+    }
+  ],
+  "verification": [
+    {
+      "command": "pnpm --dir apps/api run typecheck",
+      "receipt": "C:/oto-lanes/tom-beo-api-types-release.log",
+      "result": "zero TypeScript diagnostics"
+    },
+    {
+      "command": "pnpm api-types:check",
+      "receipt": "C:/oto-lanes/tom-beo-contracts-check-release.log",
+      "result": "matches API"
+    },
+    {
+      "command": "pnpm --dir apps/api exec vitest run test/party-settlement.test.ts",
+      "receipt": "C:/oto-lanes/tom-beo-api-settlement-release.log",
+      "result": "49/49 complete file"
+    },
+    {
+      "command": "pnpm --dir apps/api exec vitest run test/party-settlement.test.ts test/party-kitchen-edit.test.ts",
+      "receipt": "C:/oto-lanes/tom-beo-api-tests-final4.log",
+      "result": "63/63 complete files; kitchen14 unchanged afterward"
+    },
+    {
+      "command": "pnpm --dir apps/api exec vitest run test/s990-additional-bill-review.test.ts test/party-settlement.test.ts test/party-kitchen-edit.test.ts test/party-menu-catalogue.test.ts",
+      "receipt": "C:/oto-lanes/tom-beo-api-tests-final2.log",
+      "result": "72/72; pure4/catalogue6 unchanged afterward; settlement later expanded49 and independently repeated"
+    },
+    {
+      "command": "pnpm --dir apps/pos run typecheck",
+      "receipt": "C:/oto-lanes/tom-beo-pos-types-final3.log",
+      "result": "all three configs; zero diagnostics"
+    },
+    {
+      "command": "pnpm --dir apps/pos exec vitest run test/s990-party-additional-bill-ui-review.test.ts test/s907-party-kitchen-edit.test.ts",
+      "receipt": "C:/oto-lanes/tom-beo-pos-tests-final5.log",
+      "result": "36/36 complete changed files"
+    },
+    {
+      "command": "pnpm --dir apps/pos exec vitest run test/s990-party-additional-bill-ui-review.test.ts test/s220-e4-parties.test.ts test/scrum-732-routed-tenders.test.ts test/s907-party-kitchen-edit.test.ts",
+      "receipt": "C:/oto-lanes/tom-beo-pos-tests-release.log",
+      "result": "85/85; API-body12/routed39 unchanged afterward; final changedfiles36 separately passed"
+    },
+    {
+      "command": "node C:/oto-lanes/tom-beo-app-run.mts",
+      "receipt": "C:/oto-lanes/tom-beo-app-runtime-final3.log",
+      "result": "embeddedPG: app migrate twice no-op after0052 initial apply; pure21 plus unresolved-price assertions; fill14/14; kitchen13/13"
+    },
+    {
+      "command": "node node_modules/tsx/dist/cli.mjs tests/party-deposit-ui.check.ts (app cwd, tests JSX config)",
+      "receipt": "C:/oto-lanes/tom-beo-deposit-ui-release.log",
+      "result": "11/11 including null-neutral and real pending/failed/synced words"
+    },
+    {
+      "command": "npm --prefix apps/oto-app run check:ratchet",
+      "receipt": "C:/oto-lanes/tom-beo-app-ratchet-release.log",
+      "result": "413/413 in54files; full per-file/code accounting unchanged"
+    },
+    {
+      "command": "pnpm --dir packages/db run verify-schema",
+      "receipt": "C:/oto-lanes/tom-beo-schema-final.log",
+      "result": "combined0127 exact tables/columns/FKs/indexes/checks; migration replay no-op; public empty"
+    },
+    {
+      "command": "pnpm --dir packages/db exec vitest run test/schema-shape.test.ts test/suite-controls.test.ts",
+      "receipt": "C:/oto-lanes/tom-beo-db-controls-final.log",
+      "result": "28/28"
+    },
+    {
+      "command": "ESLint all touched workspace TS/TSX (explicit list)",
+      "receipt": "C:/oto-lanes/tom-beo-lint-workspace-release.log",
+      "result": "zero output"
+    },
+    {
+      "command": "forced no-ignore app ESLint, exact samefile/rule/message/source-line baseline comparison",
+      "receipt": "C:/oto-lanes/tom-beo-app-lint-delta-release.log",
+      "result": "68 inherited errors before/after; introduced diagnostics[]; default workspace config intentionally excludes app"
+    },
+    {
+      "command": "pnpm --dir apps/pos run build",
+      "receipt": "C:/oto-lanes/tom-beo-pos-build-final.log",
+      "result": "pass; existing chunk-size warning"
+    },
+    {
+      "command": "npm --prefix apps/oto-app run build",
+      "receipt": "C:/oto-lanes/tom-beo-app-build-final.log",
+      "result": "pass; existing duplicate-key warnings retained"
+    }
+  ],
+  "migration": {
+    "priorEntriesUnchanged": true,
+    "snapshotPrevious": "d4055bea-5674-49a3-be1e-ff1392a9aec4",
+    "sqlSha256": "c3ffdb7f285cff18f1ecc95e2f49709f5c7a683b6ea8f4847e4bc8179c95ca09"
+  }
+}

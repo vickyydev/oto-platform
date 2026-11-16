@@ -1,0 +1,231 @@
+
+C:\oto-lanes\tom-beo-approved-20261116\apps\oto-app\client\src\components\beo\beo-ai-review.tsx
+  1161:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\oto-lanes\tom-beo-approved-20261116\apps\oto-app\client\src\components\beo\beo-billing-module.tsx
+   37:3   error  'Copy' is defined but never used. Allowed unused vars must match /^_/u                                @typescript-eslint/no-unused-vars
+   38:3   error  'Check' is defined but never used. Allowed unused vars must match /^_/u                               @typescript-eslint/no-unused-vars
+   40:3   error  'RefreshCw' is defined but never used. Allowed unused vars must match /^_/u                           @typescript-eslint/no-unused-vars
+   92:10  error  'copiedChecklist' is assigned a value but never used. Allowed unused vars must match /^_/u            @typescript-eslint/no-unused-vars
+   93:10  error  'copiedDetails' is assigned a value but never used. Allowed unused vars must match /^_/u              @typescript-eslint/no-unused-vars
+  107:67  error  'refetchItems' is assigned a value but never used. Allowed unused vars must match /^_/u               @typescript-eslint/no-unused-vars
+  231:9   error  'generatePosChecklist' is assigned a value but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
+  250:9   error  'generateDetailedBreakdown' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  271:9   error  'copyToClipboard' is assigned a value but never used. Allowed unused vars must match /^_/u            @typescript-eslint/no-unused-vars
+
+C:\oto-lanes\tom-beo-approved-20261116\apps\oto-app\client\src\components\beo\beo-event-editor.tsx
+    66:3    error    'MapPin' is defined but never used. Allowed unused vars must match /^_/u                       @typescript-eslint/no-unused-vars
+   119:3    error    'BeoSetupPlan' is defined but never used. Allowed unused vars must match /^_/u                 @typescript-eslint/no-unused-vars
+   120:3    error    'BeoKitchenPlan' is defined but never used. Allowed unused vars must match /^_/u               @typescript-eslint/no-unused-vars
+   320:62   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+   648:44   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+   686:52   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+   723:54   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+   912:17   error    'locations' is assigned a value but never used. Allowed unused vars must match /^_/u           @typescript-eslint/no-unused-vars
+   941:161  warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+  1019:36   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+  1020:32   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+  1021:28   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+  1022:12   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+  1023:35   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+  1026:39   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+  1035:59   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+  1042:41   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+  1051:52   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+  1060:41   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+  1075:31   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+  1107:30   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+  1110:32   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+  1125:30   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+  1135:23   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+  1136:33   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+  1330:9    error    'kitchenTotal' is assigned a value but never used. Allowed unused vars must match /^_/u        @typescript-eslint/no-unused-vars
+  1346:36   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+  1353:38   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+  1422:44   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+  1600:36   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+  1628:19   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+  1660:41   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+  1660:89   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+  1756:5    error    Definition for rule 'react-hooks/exhaustive-deps' was not found                                react-hooks/exhaustive-deps
+  1802:19   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+  1848:50   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+  1890:41   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+  1907:45   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+  1940:45   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+  2019:31   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+  2022:32   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+  2290:44   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+  2291:154  warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+  2298:32   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+  2308:91   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+  2310:43   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+  2439:38   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+  2584:53   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+  3401:41   error    'setAdditionalItems' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  4220:75   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+  4235:70   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+  4245:72   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+  4278:71   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+  4350:54   warning  Unexpected any. Specify a different type                                                       @typescript-eslint/no-explicit-any
+
+C:\oto-lanes\tom-beo-approved-20261116\apps\oto-app\server\ai-routes.ts
+  551:61  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  572:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  654:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  737:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  889:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  947:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\oto-lanes\tom-beo-approved-20261116\apps\oto-app\server\beo-routes.ts
+    11:16  error    'insertBeoBarPlanSchema' is defined but never used. Allowed unused vars must match /^_/u            @typescript-eslint/no-unused-vars
+   207:39  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+   260:51  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+   273:56  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+   273:78  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+   311:7   warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+   313:33  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+   354:52  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+   354:74  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+   362:43  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+   362:91  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+   407:51  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+   409:28  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+   417:38  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+   456:54  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+   458:30  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+   467:43  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+   468:23  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+   469:20  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+   483:38  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+   488:53  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+   488:91  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+   569:43  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+   675:11  error    'query' is never reassigned. Use 'const' instead                                                    prefer-const
+   675:11  error    'query' is assigned a value but never used. Allowed unused vars must match /^_/u                    @typescript-eslint/no-unused-vars
+   862:13  error    'user' is assigned a value but never used. Allowed unused vars must match /^_/u                     @typescript-eslint/no-unused-vars
+   901:13  error    'user' is assigned a value but never used. Allowed unused vars must match /^_/u                     @typescript-eslint/no-unused-vars
+   921:13  error    'user' is assigned a value but never used. Allowed unused vars must match /^_/u                     @typescript-eslint/no-unused-vars
+   942:13  error    'user' is assigned a value but never used. Allowed unused vars must match /^_/u                     @typescript-eslint/no-unused-vars
+   981:13  error    'user' is assigned a value but never used. Allowed unused vars must match /^_/u                     @typescript-eslint/no-unused-vars
+  1001:13  error    'user' is assigned a value but never used. Allowed unused vars must match /^_/u                     @typescript-eslint/no-unused-vars
+  1088:11  error    'partyHostWithNames' is never reassigned. Use 'const' instead                                       prefer-const
+  1088:64  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+  1114:41  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+  1192:13  error    'user' is assigned a value but never used. Allowed unused vars must match /^_/u                     @typescript-eslint/no-unused-vars
+  1209:13  error    'user' is assigned a value but never used. Allowed unused vars must match /^_/u                     @typescript-eslint/no-unused-vars
+  1237:13  error    'user' is assigned a value but never used. Allowed unused vars must match /^_/u                     @typescript-eslint/no-unused-vars
+  1263:13  error    'user' is assigned a value but never used. Allowed unused vars must match /^_/u                     @typescript-eslint/no-unused-vars
+  1280:13  error    'user' is assigned a value but never used. Allowed unused vars must match /^_/u                     @typescript-eslint/no-unused-vars
+  1312:13  error    'user' is assigned a value but never used. Allowed unused vars must match /^_/u                     @typescript-eslint/no-unused-vars
+  1329:13  error    'user' is assigned a value but never used. Allowed unused vars must match /^_/u                     @typescript-eslint/no-unused-vars
+  1357:13  error    'user' is assigned a value but never used. Allowed unused vars must match /^_/u                     @typescript-eslint/no-unused-vars
+  1383:13  error    'user' is assigned a value but never used. Allowed unused vars must match /^_/u                     @typescript-eslint/no-unused-vars
+  1400:13  error    'user' is assigned a value but never used. Allowed unused vars must match /^_/u                     @typescript-eslint/no-unused-vars
+  1468:13  error    'user' is assigned a value but never used. Allowed unused vars must match /^_/u                     @typescript-eslint/no-unused-vars
+  1494:13  error    'user' is assigned a value but never used. Allowed unused vars must match /^_/u                     @typescript-eslint/no-unused-vars
+  1599:13  error    'user' is assigned a value but never used. Allowed unused vars must match /^_/u                     @typescript-eslint/no-unused-vars
+  1617:13  error    'user' is assigned a value but never used. Allowed unused vars must match /^_/u                     @typescript-eslint/no-unused-vars
+  1634:13  error    'user' is assigned a value but never used. Allowed unused vars must match /^_/u                     @typescript-eslint/no-unused-vars
+  1654:13  error    'user' is assigned a value but never used. Allowed unused vars must match /^_/u                     @typescript-eslint/no-unused-vars
+  1674:13  error    'user' is assigned a value but never used. Allowed unused vars must match /^_/u                     @typescript-eslint/no-unused-vars
+  1791:13  error    'id' is assigned a value but never used. Allowed unused vars must match /^_/u                       @typescript-eslint/no-unused-vars
+  1791:17  error    'eventId' is assigned a value but never used. Allowed unused vars must match /^_/u                  @typescript-eslint/no-unused-vars
+  1791:26  error    'createdAt' is assigned a value but never used. Allowed unused vars must match /^_/u                @typescript-eslint/no-unused-vars
+  1791:37  error    'updatedAt' is assigned a value but never used. Allowed unused vars must match /^_/u                @typescript-eslint/no-unused-vars
+  1885:48  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+  1886:43  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+  1912:50  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+  1922:86  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+  1992:54  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+  2060:13  error    'user' is assigned a value but never used. Allowed unused vars must match /^_/u                     @typescript-eslint/no-unused-vars
+  2140:11  error    'query' is never reassigned. Use 'const' instead                                                    prefer-const
+  2194:15  error    'tenantId' is assigned a value but never used. Allowed unused vars must match /^_/u                 @typescript-eslint/no-unused-vars
+  2194:25  error    'createdByUserId' is assigned a value but never used. Allowed unused vars must match /^_/u          @typescript-eslint/no-unused-vars
+  2194:42  error    'createdAt' is assigned a value but never used. Allowed unused vars must match /^_/u                @typescript-eslint/no-unused-vars
+  2240:13  error    'user' is assigned a value but never used. Allowed unused vars must match /^_/u                     @typescript-eslint/no-unused-vars
+  2310:27  error    'createdByUserId' is assigned a value but never used. Allowed unused vars must match /^_/u          @typescript-eslint/no-unused-vars
+  2310:44  error    'createdAt' is assigned a value but never used. Allowed unused vars must match /^_/u                @typescript-eslint/no-unused-vars
+  2310:55  error    'id' is assigned a value but never used. Allowed unused vars must match /^_/u                       @typescript-eslint/no-unused-vars
+  2325:13  error    'user' is assigned a value but never used. Allowed unused vars must match /^_/u                     @typescript-eslint/no-unused-vars
+  2418:14  error    'entAssignment' is assigned a value but never used. Allowed unused vars must match /^_/u            @typescript-eslint/no-unused-vars
+  2423:29  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+  2448:22  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+  2473:54  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+  2653:44  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+  2667:57  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+  2717:38  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+  2732:47  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+  2766:13  error    'user' is assigned a value but never used. Allowed unused vars must match /^_/u                     @typescript-eslint/no-unused-vars
+  2786:13  error    'entertainmentItems' is assigned a value but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
+  2793:13  error    'setupItems' is assigned a value but never used. Allowed unused vars must match /^_/u               @typescript-eslint/no-unused-vars
+  2865:9   error    'entertainmentUserName' is assigned a value but never used. Allowed unused vars must match /^_/u    @typescript-eslint/no-unused-vars
+  2869:9   error    'entertainmentRoleName' is assigned a value but never used. Allowed unused vars must match /^_/u    @typescript-eslint/no-unused-vars
+  2878:13  error    'lineItems' is assigned a value but never used. Allowed unused vars must match /^_/u                @typescript-eslint/no-unused-vars
+  2889:9   error    'pdfPkgSnapshotWithItems' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  2892:13  error    'pdfEntSelections' is assigned a value but never used. Allowed unused vars must match /^_/u         @typescript-eslint/no-unused-vars
+  2905:41  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+  2908:55  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+  2920:32  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+  2930:33  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+  2946:39  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+  2955:39  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+  2966:44  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+  2967:47  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+  2972:39  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+  3063:37  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+  3098:13  error    'user' is assigned a value but never used. Allowed unused vars must match /^_/u                     @typescript-eslint/no-unused-vars
+  3163:13  error    'user' is assigned a value but never used. Allowed unused vars must match /^_/u                     @typescript-eslint/no-unused-vars
+  3274:44  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+  3280:53  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+  3281:58  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+  3301:45  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+  3321:43  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+
+C:\oto-lanes\tom-beo-approved-20261116\apps\oto-app\server\directory\kitchenPlanRoutes.ts
+  37:7  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\oto-lanes\tom-beo-approved-20261116\apps\oto-app\server\lib\tillKitchenEdit.ts
+  108:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  118:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  147:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  148:31  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  380:31  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  381:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  381:64  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  382:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  382:70  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  383:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  383:60  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  384:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  384:66  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  393:7   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  399:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\oto-lanes\tom-beo-approved-20261116\apps\oto-app\tests\beo-fill-till-menu.check.ts
+   85:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  193:11  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  194:11  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  195:11  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  217:88  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  231:58  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  231:97  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  343:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  344:45  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  345:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  364:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  374:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  375:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  384:51  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  385:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  432:70  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  505:52  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  518:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  519:32  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  544:45  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  545:52  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  548:50  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+✖ 211 problems (68 errors, 143 warnings)
+  3 errors and 0 warnings potentially fixable with the `--fix` option.
+

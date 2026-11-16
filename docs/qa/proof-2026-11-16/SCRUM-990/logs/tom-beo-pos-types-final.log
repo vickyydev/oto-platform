@@ -1,0 +1,9 @@
+
+> @oto/pos@0.1.0 typecheck C:\oto-lanes\tom-beo-approved-20261116\apps\pos
+> tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit && tsc -p server/tsconfig.json --noEmit
+
+../console/src/api/client.ts(7,74): error TS2307: Cannot find module '@oto/admin-screens/error-view' or its corresponding type declarations.
+../console/src/api/platform.ts(5,43): error TS2307: Cannot find module '@oto/api-types' or its corresponding type declarations.
+../console/src/components/consoleSections.tsx(5,8): error TS2307: Cannot find module 'lucide-react' or its corresponding type declarations.
+../console/src/components/consoleSections.tsx(6,33): error TS2307: Cannot find module '@oto/shared/permissions' or its corresponding type declarations.
+ ELIFECYCLE  Command failed with exit code 2.

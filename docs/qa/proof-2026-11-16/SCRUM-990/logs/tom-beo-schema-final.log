@@ -1,0 +1,66 @@
+
+> @oto/db@0.1.0 verify-schema C:\oto-lanes\tom-beo-approved-20261116\packages\db
+> tsx scripts/verify-schema.ts
+
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+
+Data page checksums are disabled.
+
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-1XZ1b8 ... 
+ok
+
+creating subdirectories ... 
+ok
+
+selecting dynamic shared memory implementation ... windows
+
+selecting default max_connections ... 
+100
+selecting default shared_buffers ... 
+128MB
+selecting default time zone ... 
+Asia/Bangkok
+creating configuration files ... 
+ok
+running bootstrap script ... 
+ok
+
+performing post-bootstrap initialization ... 
+ok
+syncing data to disk ... 
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-whatsapp^-908^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-1XZ1b8^" -l logfile start
+
+
+2026-11-16 23:48:15.346 +07 [117888] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+2026-11-16 23:48:15.349 +07 [117888] LOG:  listening on IPv6 address "::1", port 54551
+
+2026-11-16 23:48:15.349 +07 [117888] LOG:  listening on IPv4 address "127.0.0.1", port 54551
+
+2026-11-16 23:48:15.391 +07 [74268] LOG:  database system was shut down at 2026-11-16 23:48:13 +07
+
+2026-11-16 23:48:15.419 +07 [117888] LOG:  database system is ready to accept connections
+
+2026-11-16 23:48:20.653 +07 [116208] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+2026-11-16 23:48:21.427 +07 [129528] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+schemas: analytics, assistant, booth, core, crm, drizzle, edge, inbox, otoapp, pos, promo, public
+2026-11-16 23:48:21.547 +07 [122432] LOG:  checkpoint starting: immediate force wait
+
+2026-11-16 23:48:21.582 +07 [122432] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.005 s, sync=0.017 s, total=0.035 s; sync files=7, longest=0.008 s, average=0.003 s; distance=16506 kB, estimate=16506 kB; lsn=0/2596B70, redo lsn=0/2596B38
+
+schema verified against 0127_snapshot.json: tables, columns, foreign keys, indexes and checks all match, and public is empty.

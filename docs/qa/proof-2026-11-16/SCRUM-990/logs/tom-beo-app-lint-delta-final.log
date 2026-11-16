@@ -1,0 +1,27 @@
+node : warning: in the working copy of 'apps/api/src/services/party-settlement.ts', CRLF will be replaced by LF the 
+next time Git touches it
+At line:7 char:1
++ node C:/oto-lanes/tom-beo-app-lint.mjs *> C:/oto-lanes/tom-beo-app-li ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (warning: in the... Git touches it:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+warning: in the working copy of 'apps/api/test/party-settlement.test.ts', CRLF will be replaced by LF the next time 
+Git touches it
+warning: in the working copy of 'apps/oto-app/tests/beo-fill-till-menu.check.ts', CRLF will be replaced by LF the next 
+time Git touches it
+warning: in the working copy of 'apps/pos/src/components/mobile/parties/MobilePartyDetail.tsx', CRLF will be replaced 
+by LF the next time Git touches it
+warning: in the working copy of 'apps/pos/src/components/mobile/parties/MobilePartyPayment.tsx', CRLF will be replaced 
+by LF the next time Git touches it
+warning: in the working copy of 'apps/pos/src/components/parties/PartyBalanceModal.tsx', CRLF will be replaced by LF 
+the next time Git touches it
+warning: in the working copy of 'apps/pos/src/components/parties/PartyDetail.tsx', CRLF will be replaced by LF the 
+next time Git touches it
+warning: in the working copy of 'apps/pos/src/components/parties/PartyKitchenPlanEditor.tsx', CRLF will be replaced by 
+LF the next time Git touches it
+{
+  "baselineErrors": 68,
+  "currentErrors": 68,
+  "introduced": []
+}

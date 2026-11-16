@@ -1,0 +1,580 @@
+
+ RUN  v3.2.7 C:/oto-lanes/tom-beo-approved-20261116/packages/db
+
+ ✓ test/schema-shape.test.ts (14 tests) 9ms
+stdout | test/suite-controls.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/suite-controls.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-S5boTW ... ok
+creating subdirectories ... 
+
+stdout | test/suite-controls.test.ts
+ok
+
+
+stdout | test/suite-controls.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ... 
+
+stdout | test/suite-controls.test.ts
+100
+selecting default shared_buffers ... 
+
+stdout | test/suite-controls.test.ts
+128MB
+selecting default time zone ... 
+
+stdout | test/suite-controls.test.ts
+Asia/Bangkok
+creating configuration files ... 
+
+stdout | test/suite-controls.test.ts
+ok
+running bootstrap script ... 
+
+stdout | test/suite-controls.test.ts
+ok
+
+
+stdout | test/suite-controls.test.ts
+performing post-bootstrap initialization ... 
+
+stdout | test/suite-controls.test.ts
+ok
+syncing data to disk ... 
+
+stdout | test/suite-controls.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-whatsapp^-908^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-S5boTW^" -l logfile start
+
+
+
+stdout | test/suite-controls.test.ts
+2026-11-16 23:48:29.038 +07 [119980] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/suite-controls.test.ts
+2026-11-16 23:48:29.040 +07 [119980] LOG:  listening on IPv6 address "::1", port 59315
+
+
+stdout | test/suite-controls.test.ts
+2026-11-16 23:48:29.041 +07 [119980] LOG:  listening on IPv4 address "127.0.0.1", port 59315
+
+
+stdout | test/suite-controls.test.ts
+2026-11-16 23:48:29.135 +07 [115672] LOG:  database system was shut down at 2026-11-16 23:48:27 +07
+
+
+stdout | test/suite-controls.test.ts
+2026-11-16 23:48:29.164 +07 [119980] LOG:  database system is ready to accept connections
+
+
+stdout | test/suite-controls.test.ts
+2026-11-16 23:48:32.513 +07 [100364] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > preserves all six suite keys as unique identities even when a registry row is archived
+2026-11-16 23:48:32.704 +07 [112332] ERROR:  duplicate key value violates unique constraint "app_registry_key_unique"
+2026-11-16 23:48:32.704 +07 [112332] DETAIL:  Key (key)=(pos) already exists.
+2026-11-16 23:48:32.704 +07 [112332] STATEMENT:  insert into core.app_registry
+	      select $1, key, name, purpose, origin_urls, schema_name, owning_service, health_url, version_source,
+	        required_permission, sort_order, tile_state, maintenance_message, maintenance_expires_at, maintenance_restore_state,
+	        revision, archived_at, created_at, updated_at from core.app_registry where id = $2
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > preserves all six suite keys as unique identities even when a registry row is archived
+2026-11-16 23:48:32.704 +07 [112332] ERROR:  new row for relation "app_registry" violates check constraint "app_registry_key_check"
+2026-11-16 23:48:32.704 +07 [112332] DETAIL:  Failing row contains (01a1e542-a5b8-7413-8cb1-d70ecb4e2f83, not-a-suite-app, ZZ TEST 643 app, ZZ TEST 643 purpose, {"staging": "https://example.test"}, core, ZZ TEST 643 service, null, APP_VERSION, app:pos:access, 0, open, null, null, null, 1, 2026-11-16 23:48:32.701427+07, 2026-11-16 23:48:32.697156+07, 2026-11-16 23:48:32.697156+07).
+2026-11-16 23:48:32.704 +07 [112332] STATEMENT:  update core.app_registry set key = $1 where id = $2
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > requires an object for environment origins and stores positive revision/timestamp defaults
+2026-11-16 23:48:32.706 +07 [112332] ERROR:  new row for relation "app_registry" violates check constraint "app_registry_origins_object_check"
+2026-11-16 23:48:32.706 +07 [112332] DETAIL:  Failing row contains (01a1e542-a5b8-7413-8cb1-d70ecb4e2f83, pos, ZZ TEST 643 app, ZZ TEST 643 purpose, [], core, ZZ TEST 643 service, null, APP_VERSION, app:pos:access, 0, open, null, null, null, 1, null, 2026-11-16 23:48:32.697156+07, 2026-11-16 23:48:32.697156+07).
+2026-11-16 23:48:32.706 +07 [112332] STATEMENT:  update core.app_registry set origin_urls = $1::jsonb where id = $2
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > requires an object for environment origins and stores positive revision/timestamp defaults
+2026-11-16 23:48:32.707 +07 [112332] ERROR:  new row for relation "app_registry" violates check constraint "app_registry_origins_object_check"
+2026-11-16 23:48:32.707 +07 [112332] DETAIL:  Failing row contains (01a1e542-a5b8-7413-8cb1-d70ecb4e2f83, pos, ZZ TEST 643 app, ZZ TEST 643 purpose, null, core, ZZ TEST 643 service, null, APP_VERSION, app:pos:access, 0, open, null, null, null, 1, null, 2026-11-16 23:48:32.697156+07, 2026-11-16 23:48:32.697156+07).
+2026-11-16 23:48:32.707 +07 [112332] STATEMENT:  update core.app_registry set origin_urls = $1::jsonb where id = $2
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > requires an object for environment origins and stores positive revision/timestamp defaults
+2026-11-16 23:48:32.707 +07 [112332] ERROR:  new row for relation "app_registry" violates check constraint "app_registry_origins_object_check"
+2026-11-16 23:48:32.707 +07 [112332] DETAIL:  Failing row contains (01a1e542-a5b8-7413-8cb1-d70ecb4e2f83, pos, ZZ TEST 643 app, ZZ TEST 643 purpose, false, core, ZZ TEST 643 service, null, APP_VERSION, app:pos:access, 0, open, null, null, null, 1, null, 2026-11-16 23:48:32.697156+07, 2026-11-16 23:48:32.697156+07).
+2026-11-16 23:48:32.707 +07 [112332] STATEMENT:  update core.app_registry set origin_urls = $1::jsonb where id = $2
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > requires an object for environment origins and stores positive revision/timestamp defaults
+2026-11-16 23:48:32.707 +07 [112332] ERROR:  new row for relation "app_registry" violates check constraint "app_registry_origins_object_check"
+2026-11-16 23:48:32.707 +07 [112332] DETAIL:  Failing row contains (01a1e542-a5b8-7413-8cb1-d70ecb4e2f83, pos, ZZ TEST 643 app, ZZ TEST 643 purpose, "https://example.test", core, ZZ TEST 643 service, null, APP_VERSION, app:pos:access, 0, open, null, null, null, 1, null, 2026-11-16 23:48:32.697156+07, 2026-11-16 23:48:32.697156+07).
+2026-11-16 23:48:32.707 +07 [112332] STATEMENT:  update core.app_registry set origin_urls = $1::jsonb where id = $2
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > requires an object for environment origins and stores positive revision/timestamp defaults
+2026-11-16 23:48:32.708 +07 [112332] ERROR:  new row for relation "app_registry" violates check constraint "app_registry_revision_positive_check"
+2026-11-16 23:48:32.708 +07 [112332] DETAIL:  Failing row contains (01a1e542-a5b8-7413-8cb1-d70ecb4e2f83, pos, ZZ TEST 643 app, ZZ TEST 643 purpose, {"staging": "https://example.test"}, core, ZZ TEST 643 service, null, APP_VERSION, app:pos:access, 0, open, null, null, null, 0, null, 2026-11-16 23:48:32.697156+07, 2026-11-16 23:48:32.697156+07).
+2026-11-16 23:48:32.708 +07 [112332] STATEMENT:  update core.app_registry set revision = $1 where id = $2
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > requires an object for environment origins and stores positive revision/timestamp defaults
+2026-11-16 23:48:32.708 +07 [112332] ERROR:  new row for relation "app_registry" violates check constraint "app_registry_revision_positive_check"
+2026-11-16 23:48:32.708 +07 [112332] DETAIL:  Failing row contains (01a1e542-a5b8-7413-8cb1-d70ecb4e2f83, pos, ZZ TEST 643 app, ZZ TEST 643 purpose, {"staging": "https://example.test"}, core, ZZ TEST 643 service, null, APP_VERSION, app:pos:access, 0, open, null, null, null, -1, null, 2026-11-16 23:48:32.697156+07, 2026-11-16 23:48:32.697156+07).
+2026-11-16 23:48:32.708 +07 [112332] STATEMENT:  update core.app_registry set revision = $1 where id = $2
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > stores maintenance only with a message, expiry and non-maintenance restoration state
+2026-11-16 23:48:32.710 +07 [112332] ERROR:  new row for relation "app_registry" violates check constraint "app_registry_maintenance_check"
+2026-11-16 23:48:32.710 +07 [112332] DETAIL:  Failing row contains (01a1e542-a5b8-7413-8cb1-d70ecb4e2f83, pos, ZZ TEST 643 app, ZZ TEST 643 purpose, {"staging": "https://example.test"}, core, ZZ TEST 643 service, null, APP_VERSION, app:pos:access, 0, maintenance, null, 2026-11-16 23:48:32.709+07, open, 1, null, 2026-11-16 23:48:32.697156+07, 2026-11-16 23:48:32.697156+07).
+2026-11-16 23:48:32.710 +07 [112332] STATEMENT:  update core.app_registry set tile_state = 'maintenance', maintenance_message = $1,
+	        maintenance_expires_at = $2, maintenance_restore_state = $3 where id = $4
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > stores maintenance only with a message, expiry and non-maintenance restoration state
+2026-11-16 23:48:32.710 +07 [112332] ERROR:  new row for relation "app_registry" violates check constraint "app_registry_maintenance_check"
+2026-11-16 23:48:32.710 +07 [112332] DETAIL:  Failing row contains (01a1e542-a5b8-7413-8cb1-d70ecb4e2f83, pos, ZZ TEST 643 app, ZZ TEST 643 purpose, {"staging": "https://example.test"}, core, ZZ TEST 643 service, null, APP_VERSION, app:pos:access, 0, maintenance,  , 2026-11-16 23:48:32.709+07, open, 1, null, 2026-11-16 23:48:32.697156+07, 2026-11-16 23:48:32.697156+07).
+2026-11-16 23:48:32.710 +07 [112332] STATEMENT:  update core.app_registry set tile_state = 'maintenance', maintenance_message = $1,
+	        maintenance_expires_at = $2, maintenance_restore_state = $3 where id = $4
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > stores maintenance only with a message, expiry and non-maintenance restoration state
+2026-11-16 23:48:32.711 +07 [112332] ERROR:  new row for relation "app_registry" violates check constraint "app_registry_maintenance_check"
+2026-11-16 23:48:32.711 +07 [112332] DETAIL:  Failing row contains (01a1e542-a5b8-7413-8cb1-d70ecb4e2f83, pos, ZZ TEST 643 app, ZZ TEST 643 purpose, {"staging": "https://example.test"}, core, ZZ TEST 643 service, null, APP_VERSION, app:pos:access, 0, maintenance, ZZ TEST maintenance, null, open, 1, null, 2026-11-16 23:48:32.697156+07, 2026-11-16 23:48:32.697156+07).
+2026-11-16 23:48:32.711 +07 [112332] STATEMENT:  update core.app_registry set tile_state = 'maintenance', maintenance_message = $1,
+	        maintenance_expires_at = $2, maintenance_restore_state = $3 where id = $4
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > stores maintenance only with a message, expiry and non-maintenance restoration state
+2026-11-16 23:48:32.711 +07 [112332] ERROR:  new row for relation "app_registry" violates check constraint "app_registry_maintenance_check"
+2026-11-16 23:48:32.711 +07 [112332] DETAIL:  Failing row contains (01a1e542-a5b8-7413-8cb1-d70ecb4e2f83, pos, ZZ TEST 643 app, ZZ TEST 643 purpose, {"staging": "https://example.test"}, core, ZZ TEST 643 service, null, APP_VERSION, app:pos:access, 0, maintenance, ZZ TEST maintenance, 2026-11-16 23:48:32.709+07, null, 1, null, 2026-11-16 23:48:32.697156+07, 2026-11-16 23:48:32.697156+07).
+2026-11-16 23:48:32.711 +07 [112332] STATEMENT:  update core.app_registry set tile_state = 'maintenance', maintenance_message = $1,
+	        maintenance_expires_at = $2, maintenance_restore_state = $3 where id = $4
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > stores maintenance only with a message, expiry and non-maintenance restoration state
+2026-11-16 23:48:32.711 +07 [112332] ERROR:  new row for relation "app_registry" violates check constraint "app_registry_maintenance_check"
+2026-11-16 23:48:32.711 +07 [112332] DETAIL:  Failing row contains (01a1e542-a5b8-7413-8cb1-d70ecb4e2f83, pos, ZZ TEST 643 app, ZZ TEST 643 purpose, {"staging": "https://example.test"}, core, ZZ TEST 643 service, null, APP_VERSION, app:pos:access, 0, maintenance, ZZ TEST maintenance, 2026-11-16 23:48:32.709+07, maintenance, 1, null, 2026-11-16 23:48:32.697156+07, 2026-11-16 23:48:32.697156+07).
+2026-11-16 23:48:32.711 +07 [112332] STATEMENT:  update core.app_registry set tile_state = 'maintenance', maintenance_message = $1,
+	        maintenance_expires_at = $2, maintenance_restore_state = $3 where id = $4
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > stores maintenance only with a message, expiry and non-maintenance restoration state
+2026-11-16 23:48:32.712 +07 [112332] ERROR:  new row for relation "app_registry" violates check constraint "app_registry_maintenance_check"
+2026-11-16 23:48:32.712 +07 [112332] DETAIL:  Failing row contains (01a1e542-a5b8-7413-8cb1-d70ecb4e2f83, pos, ZZ TEST 643 app, ZZ TEST 643 purpose, {"staging": "https://example.test"}, core, ZZ TEST 643 service, null, APP_VERSION, app:pos:access, 0, open, ZZ TEST maintenance, 2020-01-01 07:00:00+07, coming_soon, 1, null, 2026-11-16 23:48:32.697156+07, 2026-11-16 23:48:32.697156+07).
+2026-11-16 23:48:32.712 +07 [112332] STATEMENT:  update core.app_registry set tile_state = $1 where id = $2
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > stores maintenance only with a message, expiry and non-maintenance restoration state
+2026-11-16 23:48:32.713 +07 [112332] ERROR:  new row for relation "app_registry" violates check constraint "app_registry_maintenance_check"
+2026-11-16 23:48:32.713 +07 [112332] DETAIL:  Failing row contains (01a1e542-a5b8-7413-8cb1-d70ecb4e2f83, pos, ZZ TEST 643 app, ZZ TEST 643 purpose, {"staging": "https://example.test"}, core, ZZ TEST 643 service, null, APP_VERSION, app:pos:access, 0, open, ZZ TEST stale message, null, null, 1, null, 2026-11-16 23:48:32.697156+07, 2026-11-16 23:48:32.697156+07).
+2026-11-16 23:48:32.713 +07 [112332] STATEMENT:  update core.app_registry set maintenance_message = $1 where id = $2
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > stores maintenance only with a message, expiry and non-maintenance restoration state
+2026-11-16 23:48:32.713 +07 [112332] ERROR:  new row for relation "app_registry" violates check constraint "app_registry_tile_state_check"
+2026-11-16 23:48:32.713 +07 [112332] DETAIL:  Failing row contains (01a1e542-a5b8-7413-8cb1-d70ecb4e2f83, pos, ZZ TEST 643 app, ZZ TEST 643 purpose, {"staging": "https://example.test"}, core, ZZ TEST 643 service, null, APP_VERSION, app:pos:access, 0, unknown, null, null, null, 1, null, 2026-11-16 23:48:32.697156+07, 2026-11-16 23:48:32.697156+07).
+2026-11-16 23:48:32.713 +07 [112332] STATEMENT:  update core.app_registry set tile_state = $1 where id = $2
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > uniquely identifies a platform key and each non-platform key/scope without treating SQL null as a second platform row
+2026-11-16 23:48:32.716 +07 [112332] ERROR:  duplicate key value violates unique constraint "feature_flag_platform_key_unique"
+2026-11-16 23:48:32.716 +07 [112332] DETAIL:  Key (key)=(ZZ TEST 643 01a1e542-a5ca-75f4-b357-dafb90e75cfb) already exists.
+2026-11-16 23:48:32.716 +07 [112332] STATEMENT:  insert into core.feature_flag
+	    (id, key, kind, target_app, scope_type, scope_id, operator_id, value, default_value, expires_at, reason, updated_by)
+	    values ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10, $11, $12) returning *
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > uniquely identifies a platform key and each non-platform key/scope without treating SQL null as a second platform row
+2026-11-16 23:48:32.717 +07 [112332] ERROR:  duplicate key value violates unique constraint "feature_flag_platform_key_unique"
+2026-11-16 23:48:32.717 +07 [112332] DETAIL:  Key (key)=(ZZ TEST 643 01a1e542-a5ca-75f4-b357-dafb90e75cfb) already exists.
+2026-11-16 23:48:32.717 +07 [112332] STATEMENT:  insert into core.feature_flag
+	    (id, key, kind, target_app, scope_type, scope_id, operator_id, value, default_value, expires_at, reason, updated_by)
+	    values ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10, $11, $12) returning *
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > uniquely identifies a platform key and each non-platform key/scope without treating SQL null as a second platform row
+2026-11-16 23:48:32.719 +07 [112332] ERROR:  duplicate key value violates unique constraint "feature_flag_scoped_key_unique"
+2026-11-16 23:48:32.719 +07 [112332] DETAIL:  Key (key, scope_type, scope_id)=(ZZ TEST 643 01a1e542-a5ca-75f4-b357-dafb90e75cfb, operator, 01a1e542-879d-7887-b31c-0476ba96e0e8) already exists.
+2026-11-16 23:48:32.719 +07 [112332] STATEMENT:  insert into core.feature_flag
+	    (id, key, kind, target_app, scope_type, scope_id, operator_id, value, default_value, expires_at, reason, updated_by)
+	    values ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10, $11, $12) returning *
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > uniquely identifies a platform key and each non-platform key/scope without treating SQL null as a second platform row
+2026-11-16 23:48:32.721 +07 [112332] ERROR:  duplicate key value violates unique constraint "feature_flag_scoped_key_unique"
+2026-11-16 23:48:32.721 +07 [112332] DETAIL:  Key (key, scope_type, scope_id)=(ZZ TEST 643 01a1e542-a5ca-75f4-b357-dafb90e75cfb, branch, 01a1e542-a5ca-75f4-b357-dafc7270e970) already exists.
+2026-11-16 23:48:32.721 +07 [112332] STATEMENT:  insert into core.feature_flag
+	    (id, key, kind, target_app, scope_type, scope_id, operator_id, value, default_value, expires_at, reason, updated_by)
+	    values ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10, $11, $12) returning *
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > requires exact platform/null versus scoped/non-null shape and operator-scope self identity
+2026-11-16 23:48:32.722 +07 [112332] ERROR:  new row for relation "feature_flag" violates check constraint "feature_flag_scope_shape_check"
+2026-11-16 23:48:32.722 +07 [112332] DETAIL:  Failing row contains (01a1e542-a5d2-7f65-9d72-41a0e041a471, ZZ TEST 643 01a1e542-a5d2-7f65-9d72-41a1eaa1f8ab, feature, pos, platform, null, 01a1e542-879d-7887-b31c-0476ba96e0e8, false, true, null, null, null, 1, 2026-11-16 23:48:32.722353+07, 2026-11-16 23:48:32.722353+07).
+2026-11-16 23:48:32.722 +07 [112332] STATEMENT:  insert into core.feature_flag
+	    (id, key, kind, target_app, scope_type, scope_id, operator_id, value, default_value, expires_at, reason, updated_by)
+	    values ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10, $11, $12) returning *
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > requires exact platform/null versus scoped/non-null shape and operator-scope self identity
+2026-11-16 23:48:32.723 +07 [112332] ERROR:  new row for relation "feature_flag" violates check constraint "feature_flag_scope_shape_check"
+2026-11-16 23:48:32.723 +07 [112332] DETAIL:  Failing row contains (01a1e542-a5d2-7f65-9d72-41a2cefaff1b, ZZ TEST 643 01a1e542-a5d2-7f65-9d72-41a33dbaa5da, feature, pos, platform, 01a1e542-879d-7887-b31c-0476ba96e0e8, null, false, true, null, null, null, 1, 2026-11-16 23:48:32.723231+07, 2026-11-16 23:48:32.723231+07).
+2026-11-16 23:48:32.723 +07 [112332] STATEMENT:  insert into core.feature_flag
+	    (id, key, kind, target_app, scope_type, scope_id, operator_id, value, default_value, expires_at, reason, updated_by)
+	    values ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10, $11, $12) returning *
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > requires exact platform/null versus scoped/non-null shape and operator-scope self identity
+2026-11-16 23:48:32.723 +07 [112332] ERROR:  new row for relation "feature_flag" violates check constraint "feature_flag_scope_shape_check"
+2026-11-16 23:48:32.723 +07 [112332] DETAIL:  Failing row contains (01a1e542-a5d3-76c6-baed-422fdf9d6b3c, ZZ TEST 643 01a1e542-a5d3-76c6-baed-423038c985d4, feature, pos, platform, 01a1e542-879d-7887-b31c-0476ba96e0e8, 01a1e542-879d-7887-b31c-0476ba96e0e8, false, true, null, null, null, 1, 2026-11-16 23:48:32.723893+07, 2026-11-16 23:48:32.723893+07).
+2026-11-16 23:48:32.723 +07 [112332] STATEMENT:  insert into core.feature_flag
+	    (id, key, kind, target_app, scope_type, scope_id, operator_id, value, default_value, expires_at, reason, updated_by)
+	    values ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10, $11, $12) returning *
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > requires exact platform/null versus scoped/non-null shape and operator-scope self identity
+2026-11-16 23:48:32.724 +07 [112332] ERROR:  new row for relation "feature_flag" violates check constraint "feature_flag_scope_shape_check"
+2026-11-16 23:48:32.724 +07 [112332] DETAIL:  Failing row contains (01a1e542-a5d4-74cb-bc96-38edc495b405, ZZ TEST 643 01a1e542-a5d4-74cb-bc96-38ee50b57c6f, feature, pos, operator, null, null, false, true, null, null, null, 1, 2026-11-16 23:48:32.724805+07, 2026-11-16 23:48:32.724805+07).
+2026-11-16 23:48:32.724 +07 [112332] STATEMENT:  insert into core.feature_flag
+	    (id, key, kind, target_app, scope_type, scope_id, operator_id, value, default_value, expires_at, reason, updated_by)
+	    values ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10, $11, $12) returning *
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > requires exact platform/null versus scoped/non-null shape and operator-scope self identity
+2026-11-16 23:48:32.725 +07 [112332] ERROR:  new row for relation "feature_flag" violates check constraint "feature_flag_scope_shape_check"
+2026-11-16 23:48:32.725 +07 [112332] DETAIL:  Failing row contains (01a1e542-a5d5-7ab4-a592-6d0ffafc7ec2, ZZ TEST 643 01a1e542-a5d5-7ab4-a592-6d109916aa8f, feature, pos, branch, null, 01a1e542-879d-7887-b31c-0476ba96e0e8, false, true, null, null, null, 1, 2026-11-16 23:48:32.725445+07, 2026-11-16 23:48:32.725445+07).
+2026-11-16 23:48:32.725 +07 [112332] STATEMENT:  insert into core.feature_flag
+	    (id, key, kind, target_app, scope_type, scope_id, operator_id, value, default_value, expires_at, reason, updated_by)
+	    values ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10, $11, $12) returning *
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > requires exact platform/null versus scoped/non-null shape and operator-scope self identity
+2026-11-16 23:48:32.726 +07 [112332] ERROR:  new row for relation "feature_flag" violates check constraint "feature_flag_scope_shape_check"
+2026-11-16 23:48:32.726 +07 [112332] DETAIL:  Failing row contains (01a1e542-a5d5-7ab4-a592-6d11f0e40376, ZZ TEST 643 01a1e542-a5d5-7ab4-a592-6d1244badccf, feature, pos, station, 01a1e542-a5d1-74ad-939f-4475284376f0, null, false, true, null, null, null, 1, 2026-11-16 23:48:32.726236+07, 2026-11-16 23:48:32.726236+07).
+2026-11-16 23:48:32.726 +07 [112332] STATEMENT:  insert into core.feature_flag
+	    (id, key, kind, target_app, scope_type, scope_id, operator_id, value, default_value, expires_at, reason, updated_by)
+	    values ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10, $11, $12) returning *
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > requires exact platform/null versus scoped/non-null shape and operator-scope self identity
+2026-11-16 23:48:32.727 +07 [112332] ERROR:  new row for relation "feature_flag" violates check constraint "feature_flag_operator_scope_check"
+2026-11-16 23:48:32.727 +07 [112332] DETAIL:  Failing row contains (01a1e542-a5d6-728f-a1c6-befa735cc57c, ZZ TEST 643 01a1e542-a5d7-7eb4-bdad-08dfaecccccc, feature, pos, operator, 01a1e542-879e-781b-b437-7675d2d90c9b, 01a1e542-879d-7887-b31c-0476ba96e0e8, false, true, null, null, null, 1, 2026-11-16 23:48:32.727343+07, 2026-11-16 23:48:32.727343+07).
+2026-11-16 23:48:32.727 +07 [112332] STATEMENT:  insert into core.feature_flag
+	    (id, key, kind, target_app, scope_type, scope_id, operator_id, value, default_value, expires_at, reason, updated_by)
+	    values ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10, $11, $12) returning *
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > requires exact platform/null versus scoped/non-null shape and operator-scope self identity
+2026-11-16 23:48:32.728 +07 [112332] ERROR:  new row for relation "feature_flag" violates check constraint "feature_flag_scope_type_check"
+2026-11-16 23:48:32.728 +07 [112332] DETAIL:  Failing row contains (01a1e542-a5d7-7eb4-bdad-08e04f94b6e5, ZZ TEST 643 01a1e542-a5d7-7eb4-bdad-08e13fbf744a, feature, pos, tenant, 01a1e542-879d-7887-b31c-0476ba96e0e8, 01a1e542-879d-7887-b31c-0476ba96e0e8, false, true, null, null, null, 1, 2026-11-16 23:48:32.72802+07, 2026-11-16 23:48:32.72802+07).
+2026-11-16 23:48:32.728 +07 [112332] STATEMENT:  insert into core.feature_flag
+	    (id, key, kind, target_app, scope_type, scope_id, operator_id, value, default_value, expires_at, reason, updated_by)
+	    values ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10, $11, $12) returning *
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > requires exact platform/null versus scoped/non-null shape and operator-scope self identity
+2026-11-16 23:48:32.728 +07 [112332] ERROR:  new row for relation "feature_flag" violates check constraint "feature_flag_kind_check"
+2026-11-16 23:48:32.728 +07 [112332] DETAIL:  Failing row contains (01a1e542-a5d8-7692-9e05-1af35a8b83fc, ZZ TEST 643 01a1e542-a5d8-7692-9e05-1af46f48d610, unknown, pos, platform, null, null, false, true, null, null, null, 1, 2026-11-16 23:48:32.728705+07, 2026-11-16 23:48:32.728705+07).
+2026-11-16 23:48:32.728 +07 [112332] STATEMENT:  insert into core.feature_flag
+	    (id, key, kind, target_app, scope_type, scope_id, operator_id, value, default_value, expires_at, reason, updated_by)
+	    values ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10, $11, $12) returning *
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > requires kill-switch expiry and a trimmed nonempty reason but does not erase expired historical overrides
+2026-11-16 23:48:32.730 +07 [112332] ERROR:  new row for relation "feature_flag" violates check constraint "feature_flag_kill_switch_check"
+2026-11-16 23:48:32.730 +07 [112332] DETAIL:  Failing row contains (01a1e542-a5da-7a3d-a704-86d6f233cd1e, ZZ TEST 643 01a1e542-a5da-7a3d-a704-86d7dab8b8bb, kill_switch, pos, platform, null, null, false, true, null, null, null, 1, 2026-11-16 23:48:32.730371+07, 2026-11-16 23:48:32.730371+07).
+2026-11-16 23:48:32.730 +07 [112332] STATEMENT:  insert into core.feature_flag
+	    (id, key, kind, target_app, scope_type, scope_id, operator_id, value, default_value, expires_at, reason, updated_by)
+	    values ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10, $11, $12) returning *
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > requires kill-switch expiry and a trimmed nonempty reason but does not erase expired historical overrides
+2026-11-16 23:48:32.731 +07 [112332] ERROR:  new row for relation "feature_flag" violates check constraint "feature_flag_kill_switch_check"
+2026-11-16 23:48:32.731 +07 [112332] DETAIL:  Failing row contains (01a1e542-a5da-7a3d-a704-86d83edfa289, ZZ TEST 643 01a1e542-a5da-7a3d-a704-86d9912caee0, kill_switch, pos, platform, null, null, false, true, 2026-11-16 23:48:32.729+07, null, null, 1, 2026-11-16 23:48:32.731086+07, 2026-11-16 23:48:32.731086+07).
+2026-11-16 23:48:32.731 +07 [112332] STATEMENT:  insert into core.feature_flag
+	    (id, key, kind, target_app, scope_type, scope_id, operator_id, value, default_value, expires_at, reason, updated_by)
+	    values ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10, $11, $12) returning *
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > requires kill-switch expiry and a trimmed nonempty reason but does not erase expired historical overrides
+2026-11-16 23:48:32.731 +07 [112332] ERROR:  new row for relation "feature_flag" violates check constraint "feature_flag_kill_switch_check"
+2026-11-16 23:48:32.731 +07 [112332] DETAIL:  Failing row contains (01a1e542-a5db-71f4-888f-900e2afa576e, ZZ TEST 643 01a1e542-a5db-71f4-888f-900f329030bf, kill_switch, pos, platform, null, null, false, true, null, ZZ TEST reason, null, 1, 2026-11-16 23:48:32.731765+07, 2026-11-16 23:48:32.731765+07).
+2026-11-16 23:48:32.731 +07 [112332] STATEMENT:  insert into core.feature_flag
+	    (id, key, kind, target_app, scope_type, scope_id, operator_id, value, default_value, expires_at, reason, updated_by)
+	    values ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10, $11, $12) returning *
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > requires kill-switch expiry and a trimmed nonempty reason but does not erase expired historical overrides
+2026-11-16 23:48:32.732 +07 [112332] ERROR:  new row for relation "feature_flag" violates check constraint "feature_flag_kill_switch_check"
+2026-11-16 23:48:32.732 +07 [112332] DETAIL:  Failing row contains (01a1e542-a5dc-7625-8f03-509ae5fd70f6, ZZ TEST 643 01a1e542-a5dc-7625-8f03-509b9f2bee45, kill_switch, pos, platform, null, null, false, true, 2026-11-16 23:48:32.729+07,   , null, 1, 2026-11-16 23:48:32.732606+07, 2026-11-16 23:48:32.732606+07).
+2026-11-16 23:48:32.732 +07 [112332] STATEMENT:  insert into core.feature_flag
+	    (id, key, kind, target_app, scope_type, scope_id, operator_id, value, default_value, expires_at, reason, updated_by)
+	    values ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10, $11, $12) returning *
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > preserves typed JSON values and enforces positive flag revisions and real updater/operator/app foreign keys
+2026-11-16 23:48:32.739 +07 [112332] ERROR:  new row for relation "feature_flag" violates check constraint "feature_flag_revision_positive_check"
+2026-11-16 23:48:32.739 +07 [112332] DETAIL:  Failing row contains (01a1e542-a5e2-7fdd-a3ab-c731b2b4e608, ZZ TEST 643 01a1e542-a5e2-7fdd-a3ab-c732583230ca, feature, pos, platform, null, null, false, true, null, null, null, 0, 2026-11-16 23:48:32.738992+07, 2026-11-16 23:48:32.738992+07).
+2026-11-16 23:48:32.739 +07 [112332] STATEMENT:  insert into core.feature_flag
+	    (id, key, kind, target_app, scope_type, scope_id, operator_id, value, default_value, expires_at, reason, updated_by, revision)
+	    values ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10, $11, $12, $13) returning *
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > preserves typed JSON values and enforces positive flag revisions and real updater/operator/app foreign keys
+2026-11-16 23:48:32.740 +07 [112332] ERROR:  new row for relation "feature_flag" violates check constraint "feature_flag_revision_positive_check"
+2026-11-16 23:48:32.740 +07 [112332] DETAIL:  Failing row contains (01a1e542-a5e3-7f7e-a838-41c39b2a2562, ZZ TEST 643 01a1e542-a5e3-7f7e-a838-41c4c43a7178, feature, pos, platform, null, null, false, true, null, null, null, -1, 2026-11-16 23:48:32.740067+07, 2026-11-16 23:48:32.740067+07).
+2026-11-16 23:48:32.740 +07 [112332] STATEMENT:  insert into core.feature_flag
+	    (id, key, kind, target_app, scope_type, scope_id, operator_id, value, default_value, expires_at, reason, updated_by, revision)
+	    values ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10, $11, $12, $13) returning *
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > preserves typed JSON values and enforces positive flag revisions and real updater/operator/app foreign keys
+2026-11-16 23:48:32.741 +07 [112332] ERROR:  insert or update on table "feature_flag" violates foreign key constraint "feature_flag_updated_by_account_id_fk"
+2026-11-16 23:48:32.741 +07 [112332] DETAIL:  Key (updated_by)=(01a1e542-a5e4-7fb0-b6e2-7a5c4a4f08d7) is not present in table "account".
+2026-11-16 23:48:32.741 +07 [112332] STATEMENT:  insert into core.feature_flag
+	    (id, key, kind, target_app, scope_type, scope_id, operator_id, value, default_value, expires_at, reason, updated_by)
+	    values ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10, $11, $12) returning *
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > preserves typed JSON values and enforces positive flag revisions and real updater/operator/app foreign keys
+2026-11-16 23:48:32.743 +07 [112332] ERROR:  new row for relation "feature_flag" violates check constraint "feature_flag_operator_scope_check"
+2026-11-16 23:48:32.743 +07 [112332] DETAIL:  Failing row contains (01a1e542-a5e6-7991-a45c-8a5ae2a65008, ZZ TEST 643 01a1e542-a5e6-7991-a45c-8a5b471c99ed, feature, pos, operator, 01a1e542-879d-7887-b31c-0476ba96e0e8, 01a1e542-a5e6-7991-a45c-8a5997d56416, false, true, null, null, null, 1, 2026-11-16 23:48:32.743054+07, 2026-11-16 23:48:32.743054+07).
+2026-11-16 23:48:32.743 +07 [112332] STATEMENT:  insert into core.feature_flag
+	    (id, key, kind, target_app, scope_type, scope_id, operator_id, value, default_value, expires_at, reason, updated_by)
+	    values ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10, $11, $12) returning *
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > preserves typed JSON values and enforces positive flag revisions and real updater/operator/app foreign keys
+2026-11-16 23:48:32.744 +07 [112332] ERROR:  insert or update on table "feature_flag" violates foreign key constraint "feature_flag_operator_id_operator_id_fk"
+2026-11-16 23:48:32.744 +07 [112332] DETAIL:  Key (operator_id)=(01a1e542-a5e7-7e0a-898e-993aad570274) is not present in table "operator".
+2026-11-16 23:48:32.744 +07 [112332] STATEMENT:  insert into core.feature_flag
+	    (id, key, kind, target_app, scope_type, scope_id, operator_id, value, default_value, expires_at, reason, updated_by)
+	    values ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10, $11, $12) returning *
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > preserves typed JSON values and enforces positive flag revisions and real updater/operator/app foreign keys
+2026-11-16 23:48:32.744 +07 [112332] ERROR:  insert or update on table "feature_flag" violates foreign key constraint "feature_flag_target_app_app_registry_key_fk"
+2026-11-16 23:48:32.744 +07 [112332] DETAIL:  Key (target_app)=(missing-app) is not present in table "app_registry".
+2026-11-16 23:48:32.744 +07 [112332] STATEMENT:  insert into core.feature_flag
+	    (id, key, kind, target_app, scope_type, scope_id, operator_id, value, default_value, expires_at, reason, updated_by)
+	    values ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10, $11, $12) returning *
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > preserves typed JSON values and enforces positive flag revisions and real updater/operator/app foreign keys
+2026-11-16 23:48:32.975 +07 [112332] ERROR:  update or delete on table "account" violates foreign key constraint "feature_flag_updated_by_account_id_fk" on table "feature_flag"
+2026-11-16 23:48:32.975 +07 [112332] DETAIL:  Key (id)=(01a1e542-879e-781b-b437-7676ab2ea291) is still referenced from table "feature_flag".
+2026-11-16 23:48:32.975 +07 [112332] STATEMENT:  delete from core.account where id = $1
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > stores only supplied deployment facts and preserves unknown/null CI separately from failed CI
+2026-11-16 23:48:32.978 +07 [112332] ERROR:  new row for relation "deploy_event" violates check constraint "deploy_event_status_check"
+2026-11-16 23:48:32.978 +07 [112332] DETAIL:  Failing row contains (01a1e542-a6d2-7135-ad03-faa5b55d5e93, pos, null, null, null,  , null, null, 2026-11-16 23:48:32.978548+07, 2026-11-16 23:48:32.978548+07, null, null, null, null).
+2026-11-16 23:48:32.978 +07 [112332] STATEMENT:  insert into core.deploy_event (id, app, status) values ($1, 'pos', ' ')
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > stores only supplied deployment facts and preserves unknown/null CI separately from failed CI
+2026-11-16 23:48:32.979 +07 [112332] ERROR:  insert or update on table "deploy_event" violates foreign key constraint "deploy_event_app_app_registry_key_fk"
+2026-11-16 23:48:32.979 +07 [112332] DETAIL:  Key (app)=(missing) is not present in table "app_registry".
+2026-11-16 23:48:32.979 +07 [112332] STATEMENT:  insert into core.deploy_event (id, app, status) values ($1, 'missing', 'unknown')
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > stores only supplied deployment facts and preserves unknown/null CI separately from failed CI
+2026-11-16 23:48:32.979 +07 [112332] ERROR:  insert or update on table "deploy_event" violates foreign key constraint "deploy_event_actor_account_id_account_id_fk"
+2026-11-16 23:48:32.979 +07 [112332] DETAIL:  Key (actor_account_id)=(01a1e542-a6d3-7787-90a3-8fd13a74c48f) is not present in table "account".
+2026-11-16 23:48:32.979 +07 [112332] STATEMENT:  insert into core.deploy_event (id, app, status, actor_account_id) values ($1, 'pos', 'unknown', $2)
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > stores only supplied deployment facts and preserves unknown/null CI separately from failed CI
+2026-11-16 23:48:32.979 +07 [112332] ERROR:  null value in column "status" of relation "deploy_event" violates not-null constraint
+2026-11-16 23:48:32.979 +07 [112332] DETAIL:  Failing row contains (01a1e542-a6d3-7787-90a3-8fd256d6deff, pos, null, null, null, null, null, null, 2026-11-16 23:48:32.979809+07, 2026-11-16 23:48:32.979809+07, null, null, null, null).
+2026-11-16 23:48:32.979 +07 [112332] STATEMENT:  insert into core.deploy_event (id, app, status) values ($1, 'pos', null)
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > requires a bounded approval action, object payload, digest and exact ten-minute request window
+2026-11-16 23:48:32.985 +07 [112332] ERROR:  new row for relation "suite_control_approval" violates check constraint "suite_control_approval_action_check"
+2026-11-16 23:48:32.985 +07 [112332] DETAIL:  Failing row contains (01a1e542-a6d8-71af-967b-ea3c0caee61e, other, {"value": false}, aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, 01a1e542-879d-7887-b31c-0476ba96e0e8, 01a1e542-879e-781b-b437-7676ab2ea291, null, pending, 2026-10-27 07:10:00+07, null, null, null, 2026-10-27 07:00:00+07, 2026-11-16 23:48:32.985342+07).
+2026-11-16 23:48:32.985 +07 [112332] STATEMENT:  insert into core.suite_control_approval
+	    (id, action, operation, payload_sha256, operator_id, requester_account_id, approver_account_id, state,
+	      created_at, request_expires_at, approved_at, consumed_at, expired_at)
+	    values ($1, $2, $3::jsonb, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) returning *
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > requires a bounded approval action, object payload, digest and exact ten-minute request window
+2026-11-16 23:48:32.986 +07 [112332] ERROR:  new row for relation "suite_control_approval" violates check constraint "suite_control_approval_operation_check"
+2026-11-16 23:48:32.986 +07 [112332] DETAIL:  Failing row contains (01a1e542-a6d9-7706-abe2-6a753f6a2970, kill_switch.set, [], aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, 01a1e542-879d-7887-b31c-0476ba96e0e8, 01a1e542-879e-781b-b437-7676ab2ea291, null, pending, 2026-10-27 07:10:00+07, null, null, null, 2026-10-27 07:00:00+07, 2026-11-16 23:48:32.986109+07).
+2026-11-16 23:48:32.986 +07 [112332] STATEMENT:  insert into core.suite_control_approval
+	    (id, action, operation, payload_sha256, operator_id, requester_account_id, approver_account_id, state,
+	      created_at, request_expires_at, approved_at, consumed_at, expired_at)
+	    values ($1, $2, $3::jsonb, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) returning *
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > requires a bounded approval action, object payload, digest and exact ten-minute request window
+2026-11-16 23:48:32.986 +07 [112332] ERROR:  new row for relation "suite_control_approval" violates check constraint "suite_control_approval_operation_check"
+2026-11-16 23:48:32.986 +07 [112332] DETAIL:  Failing row contains (01a1e542-a6da-7c51-b640-22fc51413141, kill_switch.set, null, aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, 01a1e542-879d-7887-b31c-0476ba96e0e8, 01a1e542-879e-781b-b437-7676ab2ea291, null, pending, 2026-10-27 07:10:00+07, null, null, null, 2026-10-27 07:00:00+07, 2026-11-16 23:48:32.986825+07).
+2026-11-16 23:48:32.986 +07 [112332] STATEMENT:  insert into core.suite_control_approval
+	    (id, action, operation, payload_sha256, operator_id, requester_account_id, approver_account_id, state,
+	      created_at, request_expires_at, approved_at, consumed_at, expired_at)
+	    values ($1, $2, $3::jsonb, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) returning *
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > requires a bounded approval action, object payload, digest and exact ten-minute request window
+2026-11-16 23:48:32.987 +07 [112332] ERROR:  new row for relation "suite_control_approval" violates check constraint "suite_control_approval_digest_check"
+2026-11-16 23:48:32.987 +07 [112332] DETAIL:  Failing row contains (01a1e542-a6db-7107-b3e0-037a0d3c7293, kill_switch.set, {"value": false}, bad, 01a1e542-879d-7887-b31c-0476ba96e0e8, 01a1e542-879e-781b-b437-7676ab2ea291, null, pending, 2026-10-27 07:10:00+07, null, null, null, 2026-10-27 07:00:00+07, 2026-11-16 23:48:32.98754+07).
+2026-11-16 23:48:32.987 +07 [112332] STATEMENT:  insert into core.suite_control_approval
+	    (id, action, operation, payload_sha256, operator_id, requester_account_id, approver_account_id, state,
+	      created_at, request_expires_at, approved_at, consumed_at, expired_at)
+	    values ($1, $2, $3::jsonb, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) returning *
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > requires a bounded approval action, object payload, digest and exact ten-minute request window
+2026-11-16 23:48:32.988 +07 [112332] ERROR:  new row for relation "suite_control_approval" violates check constraint "suite_control_approval_ten_minutes_check"
+2026-11-16 23:48:32.988 +07 [112332] DETAIL:  Failing row contains (01a1e542-a6db-7107-b3e0-037b8bc501e9, kill_switch.set, {"value": false}, aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, 01a1e542-879d-7887-b31c-0476ba96e0e8, 01a1e542-879e-781b-b437-7676ab2ea291, null, pending, 2026-10-27 07:09:59.999+07, null, null, null, 2026-10-27 07:00:00+07, 2026-11-16 23:48:32.988255+07).
+2026-11-16 23:48:32.988 +07 [112332] STATEMENT:  insert into core.suite_control_approval
+	    (id, action, operation, payload_sha256, operator_id, requester_account_id, approver_account_id, state,
+	      created_at, request_expires_at, approved_at, consumed_at, expired_at)
+	    values ($1, $2, $3::jsonb, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) returning *
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > requires a bounded approval action, object payload, digest and exact ten-minute request window
+2026-11-16 23:48:32.989 +07 [112332] ERROR:  new row for relation "suite_control_approval" violates check constraint "suite_control_approval_state_check"
+2026-11-16 23:48:32.989 +07 [112332] DETAIL:  Failing row contains (01a1e542-a6dc-7084-8c18-3970ab217c56, kill_switch.set, {"value": false}, aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, 01a1e542-879d-7887-b31c-0476ba96e0e8, 01a1e542-879e-781b-b437-7676ab2ea291, null, unknown, 2026-10-27 07:10:00+07, null, null, null, 2026-10-27 07:00:00+07, 2026-11-16 23:48:32.988986+07).
+2026-11-16 23:48:32.989 +07 [112332] STATEMENT:  insert into core.suite_control_approval
+	    (id, action, operation, payload_sha256, operator_id, requester_account_id, approver_account_id, state,
+	      created_at, request_expires_at, approved_at, consumed_at, expired_at)
+	    values ($1, $2, $3::jsonb, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) returning *
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > requires two distinct real actors and retains the original event owner across approval and expiry
+2026-11-16 23:48:32.991 +07 [112332] ERROR:  insert or update on table "suite_control_approval" violates foreign key constraint "suite_control_approval_requester_account_id_account_id_fk"
+2026-11-16 23:48:32.991 +07 [112332] DETAIL:  Key (requester_account_id)=(01a1e542-a6de-7f54-90b8-98ccb59b383f) is not present in table "account".
+2026-11-16 23:48:32.991 +07 [112332] STATEMENT:  insert into core.suite_control_approval
+	    (id, action, operation, payload_sha256, operator_id, requester_account_id, approver_account_id, state,
+	      created_at, request_expires_at, approved_at, consumed_at, expired_at)
+	    values ($1, $2, $3::jsonb, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) returning *
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > requires two distinct real actors and retains the original event owner across approval and expiry
+2026-11-16 23:48:32.992 +07 [112332] ERROR:  insert or update on table "suite_control_approval" violates foreign key constraint "suite_control_approval_operator_id_operator_id_fk"
+2026-11-16 23:48:32.992 +07 [112332] DETAIL:  Key (operator_id)=(01a1e542-a6de-7f54-90b8-98cda259c93b) is not present in table "operator".
+2026-11-16 23:48:32.992 +07 [112332] STATEMENT:  insert into core.suite_control_approval
+	    (id, action, operation, payload_sha256, operator_id, requester_account_id, approver_account_id, state,
+	      created_at, request_expires_at, approved_at, consumed_at, expired_at)
+	    values ($1, $2, $3::jsonb, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) returning *
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > requires two distinct real actors and retains the original event owner across approval and expiry
+2026-11-16 23:48:32.993 +07 [112332] ERROR:  insert or update on table "suite_control_approval" violates foreign key constraint "suite_control_approval_approver_account_id_account_id_fk"
+2026-11-16 23:48:32.993 +07 [112332] DETAIL:  Key (approver_account_id)=(01a1e542-a6de-7f54-90b8-98ce0f0082d1) is not present in table "account".
+2026-11-16 23:48:32.993 +07 [112332] STATEMENT:  insert into core.suite_control_approval
+	    (id, action, operation, payload_sha256, operator_id, requester_account_id, approver_account_id, state,
+	      created_at, request_expires_at, approved_at, consumed_at, expired_at)
+	    values ($1, $2, $3::jsonb, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) returning *
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > requires two distinct real actors and retains the original event owner across approval and expiry
+2026-11-16 23:48:32.994 +07 [112332] ERROR:  new row for relation "suite_control_approval" violates check constraint "suite_control_approval_transition_check"
+2026-11-16 23:48:32.994 +07 [112332] DETAIL:  Failing row contains (01a1e542-a6e2-7bd8-a410-f6201c954df4, kill_switch.set, {"value": false}, aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, 01a1e542-879d-7887-b31c-0476ba96e0e8, 01a1e542-879e-781b-b437-7676ab2ea291, 01a1e542-879e-781b-b437-7676ab2ea291, approved, 2026-10-27 07:10:00+07, 2026-10-27 07:01:00+07, null, null, 2026-10-27 07:00:00+07, 2026-11-16 23:48:32.994367+07).
+2026-11-16 23:48:32.994 +07 [112332] STATEMENT:  insert into core.suite_control_approval
+	    (id, action, operation, payload_sha256, operator_id, requester_account_id, approver_account_id, state,
+	      created_at, request_expires_at, approved_at, consumed_at, expired_at)
+	    values ($1, $2, $3::jsonb, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) returning *
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > refuses impossible approval/consumption/expiry tuples without deleting historical rows
+2026-11-16 23:48:32.996 +07 [112332] ERROR:  new row for relation "suite_control_approval" violates check constraint "suite_control_approval_transition_check"
+2026-11-16 23:48:32.996 +07 [112332] DETAIL:  Failing row contains (01a1e542-a6e4-7ed2-8838-bfe03e67f5c9, kill_switch.set, {"value": false}, aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, 01a1e542-879d-7887-b31c-0476ba96e0e8, 01a1e542-879e-781b-b437-7676ab2ea291, 01a1e542-879e-781b-b437-767798dffbeb, pending, 2026-10-27 07:10:00+07, null, null, null, 2026-10-27 07:00:00+07, 2026-11-16 23:48:32.996771+07).
+2026-11-16 23:48:32.996 +07 [112332] STATEMENT:  insert into core.suite_control_approval
+	    (id, action, operation, payload_sha256, operator_id, requester_account_id, approver_account_id, state,
+	      created_at, request_expires_at, approved_at, consumed_at, expired_at)
+	    values ($1, $2, $3::jsonb, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) returning *
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > refuses impossible approval/consumption/expiry tuples without deleting historical rows
+2026-11-16 23:48:32.997 +07 [112332] ERROR:  new row for relation "suite_control_approval" violates check constraint "suite_control_approval_transition_check"
+2026-11-16 23:48:32.997 +07 [112332] DETAIL:  Failing row contains (01a1e542-a6e5-7994-830a-e04bb0f6f558, kill_switch.set, {"value": false}, aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, 01a1e542-879d-7887-b31c-0476ba96e0e8, 01a1e542-879e-781b-b437-7676ab2ea291, null, approved, 2026-10-27 07:10:00+07, null, null, null, 2026-10-27 07:00:00+07, 2026-11-16 23:48:32.997452+07).
+2026-11-16 23:48:32.997 +07 [112332] STATEMENT:  insert into core.suite_control_approval
+	    (id, action, operation, payload_sha256, operator_id, requester_account_id, approver_account_id, state,
+	      created_at, request_expires_at, approved_at, consumed_at, expired_at)
+	    values ($1, $2, $3::jsonb, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) returning *
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > refuses impossible approval/consumption/expiry tuples without deleting historical rows
+2026-11-16 23:48:32.998 +07 [112332] ERROR:  new row for relation "suite_control_approval" violates check constraint "suite_control_approval_transition_check"
+2026-11-16 23:48:32.998 +07 [112332] DETAIL:  Failing row contains (01a1e542-a6e5-7994-830a-e04c54384edf, kill_switch.set, {"value": false}, aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, 01a1e542-879d-7887-b31c-0476ba96e0e8, 01a1e542-879e-781b-b437-7676ab2ea291, null, consumed, 2026-10-27 07:10:00+07, null, null, null, 2026-10-27 07:00:00+07, 2026-11-16 23:48:32.998205+07).
+2026-11-16 23:48:32.998 +07 [112332] STATEMENT:  insert into core.suite_control_approval
+	    (id, action, operation, payload_sha256, operator_id, requester_account_id, approver_account_id, state,
+	      created_at, request_expires_at, approved_at, consumed_at, expired_at)
+	    values ($1, $2, $3::jsonb, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) returning *
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > refuses impossible approval/consumption/expiry tuples without deleting historical rows
+2026-11-16 23:48:32.999 +07 [112332] ERROR:  new row for relation "suite_control_approval" violates check constraint "suite_control_approval_transition_check"
+2026-11-16 23:48:32.999 +07 [112332] DETAIL:  Failing row contains (01a1e542-a6e6-77dd-bd99-1e80819a7827, kill_switch.set, {"value": false}, aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, 01a1e542-879d-7887-b31c-0476ba96e0e8, 01a1e542-879e-781b-b437-7676ab2ea291, null, expired, 2026-10-27 07:10:00+07, null, null, null, 2026-10-27 07:00:00+07, 2026-11-16 23:48:32.998869+07).
+2026-11-16 23:48:32.999 +07 [112332] STATEMENT:  insert into core.suite_control_approval
+	    (id, action, operation, payload_sha256, operator_id, requester_account_id, approver_account_id, state,
+	      created_at, request_expires_at, approved_at, consumed_at, expired_at)
+	    values ($1, $2, $3::jsonb, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) returning *
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > refuses impossible approval/consumption/expiry tuples without deleting historical rows
+2026-11-16 23:48:32.999 +07 [112332] ERROR:  new row for relation "suite_control_approval" violates check constraint "suite_control_approval_transition_check"
+2026-11-16 23:48:32.999 +07 [112332] DETAIL:  Failing row contains (01a1e542-a6e7-738f-a83d-df61defb42cf, kill_switch.set, {"value": false}, aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, 01a1e542-879d-7887-b31c-0476ba96e0e8, 01a1e542-879e-781b-b437-7676ab2ea291, null, expired, 2026-10-27 07:10:00+07, null, null, 2026-10-27 07:09:59.999+07, 2026-10-27 07:00:00+07, 2026-11-16 23:48:32.999511+07).
+2026-11-16 23:48:32.999 +07 [112332] STATEMENT:  insert into core.suite_control_approval
+	    (id, action, operation, payload_sha256, operator_id, requester_account_id, approver_account_id, state,
+	      created_at, request_expires_at, approved_at, consumed_at, expired_at)
+	    values ($1, $2, $3::jsonb, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) returning *
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > refuses impossible approval/consumption/expiry tuples without deleting historical rows
+2026-11-16 23:48:33.000 +07 [112332] ERROR:  new row for relation "suite_control_approval" violates check constraint "suite_control_approval_transition_check"
+2026-11-16 23:48:33.000 +07 [112332] DETAIL:  Failing row contains (01a1e542-a6e7-738f-a83d-df629b4be6d4, kill_switch.set, {"value": false}, aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, 01a1e542-879d-7887-b31c-0476ba96e0e8, 01a1e542-879e-781b-b437-7676ab2ea291, 01a1e542-879e-781b-b437-767798dffbeb, approved, 2026-10-27 07:10:00+07, 2026-10-27 07:10:00+07, null, null, 2026-10-27 07:00:00+07, 2026-11-16 23:48:33.000219+07).
+2026-11-16 23:48:33.000 +07 [112332] STATEMENT:  insert into core.suite_control_approval
+	    (id, action, operation, payload_sha256, operator_id, requester_account_id, approver_account_id, state,
+	      created_at, request_expires_at, approved_at, consumed_at, expired_at)
+	    values ($1, $2, $3::jsonb, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) returning *
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > refuses impossible approval/consumption/expiry tuples without deleting historical rows
+2026-11-16 23:48:33.000 +07 [112332] ERROR:  new row for relation "suite_control_approval" violates check constraint "suite_control_approval_transition_check"
+2026-11-16 23:48:33.000 +07 [112332] DETAIL:  Failing row contains (01a1e542-a6e8-743c-868d-affecb2d7787, kill_switch.set, {"value": false}, aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, 01a1e542-879d-7887-b31c-0476ba96e0e8, 01a1e542-879e-781b-b437-7676ab2ea291, 01a1e542-879e-781b-b437-767798dffbeb, consumed, 2026-10-27 07:10:00+07, 2026-10-27 07:01:00+07, 2026-10-27 07:10:00+07, null, 2026-10-27 07:00:00+07, 2026-11-16 23:48:33.000839+07).
+2026-11-16 23:48:33.000 +07 [112332] STATEMENT:  insert into core.suite_control_approval
+	    (id, action, operation, payload_sha256, operator_id, requester_account_id, approver_account_id, state,
+	      created_at, request_expires_at, approved_at, consumed_at, expired_at)
+	    values ($1, $2, $3::jsonb, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) returning *
+
+
+stdout | test/suite-controls.test.ts > SCRUM-643 native suite-control storage > refuses impossible approval/consumption/expiry tuples without deleting historical rows
+2026-11-16 23:48:33.002 +07 [112332] ERROR:  new row for relation "suite_control_approval" violates check constraint "suite_control_approval_transition_check"
+2026-11-16 23:48:33.002 +07 [112332] DETAIL:  Failing row contains (01a1e542-a6e9-7446-9ebe-f3ba34124c77, kill_switch.set, {"value": false}, aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, 01a1e542-879d-7887-b31c-0476ba96e0e8, 01a1e542-879e-781b-b437-7676ab2ea291, 01a1e542-879e-781b-b437-767798dffbeb, pending, 2026-10-27 07:10:00+07, 2026-10-27 07:01:00+07, 2026-10-27 07:02:00+07, null, 2026-10-27 07:00:00+07, 2026-11-16 23:48:33.001581+07).
+2026-11-16 23:48:33.002 +07 [112332] STATEMENT:  update core.suite_control_approval set state = 'pending' where id = $1
+
+
+stdout | test/suite-controls.test.ts
+2026-11-16 23:48:33.037 +07 [129396] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/suite-controls.test.ts
+2026-11-16 23:48:33.047 +07 [129396] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.003 s, sync=0.003 s, total=0.011 s; sync files=7, longest=0.001 s, average=0.001 s; distance=16527 kB, estimate=16527 kB; lsn=0/259C040, redo lsn=0/259BFF0
+
+
+ ✓ test/suite-controls.test.ts (14 tests) 8671ms
+
+ Test Files  2 passed (2)
+      Tests  28 passed (28)
+   Start at  23:48:23
+   Duration  10.64s (transform 902ms, setup 0ms, collect 2.61s, tests 8.68s, environment 0ms, prepare 406ms)
+

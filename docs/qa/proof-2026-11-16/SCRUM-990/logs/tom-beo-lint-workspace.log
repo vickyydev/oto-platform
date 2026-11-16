@@ -1,0 +1,17 @@
+
+C:\oto-lanes\tom-beo-approved-20261116\apps\pos\src\components\mobile\parties\MobilePartyPayment.tsx
+  116:6  warning  React Hook useEffect has a missing dependency: 'party'. Either include it or remove the dependency array. If 'setSelectedBillId' needs the current value of 'party', you can also switch to useReducer instead of useState and read 'party' in the reducer  react-hooks/exhaustive-deps
+  120:6  warning  React Hook useEffect has a missing dependency: 'party'. Either include it or remove the dependency array. If 'setSelectedBillId' needs the current value of 'party', you can also switch to useReducer instead of useState and read 'party' in the reducer  react-hooks/exhaustive-deps
+
+C:\oto-lanes\tom-beo-approved-20261116\apps\pos\src\components\parties\PartyBalanceModal.tsx
+  136:6  warning  React Hook useEffect has a missing dependency: 'party'. Either include it or remove the dependency array. If 'setSelectedBillId' needs the current value of 'party', you can also switch to useReducer instead of useState and read 'party' in the reducer  react-hooks/exhaustive-deps
+  141:6  warning  React Hook useEffect has a missing dependency: 'party'. Either include it or remove the dependency array. If 'setSelectedBillId' needs the current value of 'party', you can also switch to useReducer instead of useState and read 'party' in the reducer  react-hooks/exhaustive-deps
+
+C:\oto-lanes\tom-beo-approved-20261116\apps\pos\src\components\parties\PartyDetail.tsx
+  347:9  error  'hasChoiceGroups' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\oto-lanes\tom-beo-approved-20261116\apps\pos\src\components\parties\PartyKitchenPlanEditor.tsx
+  79:199  warning  React Hook useMemo has a missing dependency: 'line.list'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+✖ 6 problems (1 error, 5 warnings)
+

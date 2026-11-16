@@ -1,0 +1,24 @@
+
+ RUN  v3.2.7 C:/oto-lanes/tom-beo-approved-20261116/apps/pos
+
+ ✓ test/s220-e4-parties.test.ts (11 tests) 19ms
+ ✓ test/s990-party-additional-bill-ui-review.test.ts (5 tests) 21ms
+ ✓ test/scrum-732-routed-tenders.test.ts (39 tests) 113ms
+ ✓ test/s907-party-kitchen-edit.test.ts (29 tests) 6998ms
+   ✓ the party page saves the kitchen plan to the BEO > a manager: the form has the plan and the choices; Save writes the kitchen plan, closes and reads the plan again  397ms
+   ✓ the party page saves the kitchen plan to the BEO > a refusal keeps the form open and says the OTO App's words  418ms
+   ✓ the party page saves the kitchen plan to the BEO > a refusal asking to read the party again reads it now; Cancel reads it again and Edit opens on the BEO as it is  857ms
+   ✓ the party page saves the kitchen plan to the BEO > Edit pressed before that read has answered is asked again, and never opens on the plan the BEO moved past  1137ms
+   ✓ the party page saves the kitchen plan to the BEO > another refusal keeps the plan the form opened on and reads nothing again  785ms
+   ✓ the party page saves the kitchen plan to the BEO > a Save of the kitchen plan alone still says what is kept in the OTO App  406ms
+   ✓ the party page saves the kitchen plan to the BEO > the kitchen plan and the fields together: the fields fail, and Save again sends the same kitchen edit and the fields again  541ms
+   ✓ the party page saves the kitchen plan to the BEO > the kitchen plan written and the fields refused: Cancel reads the plan again and Edit opens on the BEO as it is  802ms
+   ✓ SCRUM-950 — Settle party names each extra it charges > each charged extra with its count, the price of one and its amount; one not charged says so; the add-ons row keeps the plan's own  454ms
+   ✓ SCRUM-950 — Settle party names each extra it charges > an extra of a thousand baht or more is grouped like the form's other figures  449ms
+   ✓ SCRUM-950 — Settle party names each extra it charges > a quote from a platform before it keeps the one add-ons row  433ms
+
+ Test Files  4 passed (4)
+      Tests  84 passed (84)
+   Start at  23:37:56
+   Duration  9.81s (transform 1.75s, setup 0ms, collect 6.97s, tests 7.15s, environment 1ms, prepare 649ms)
+

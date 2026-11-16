@@ -1,0 +1,12 @@
+  ok  nothing asked yet: the amount field and Request deposit; the menu link press beside them
+  ok  an open request: 'Deposit requested · ฿3,000', the link's validity, the payment link, Resend and Cancel request, no amount field
+  ok  reminded, then overdue: the words move; paid, expired and cancelled each say so, and Request deposit is offered again
+  ok  Request deposit: the amount is checked first (empty, a fraction, too much: said, nothing sent); then ONE POST with the baht and a press id
+  ok  a refusal is said in the server's words; a 4xx ends the press (the next is a new one), while the till out of reach or a lost connection keeps it for the retry
+  ok  Resend and Cancel request press the open request's own path with a press id; the menu link press its own
+  ok  a party with no chat: said, and every press is off; a staff member sees the state and no button; no platform, 'Till not reachable'
+  ok  the Billing section mounts the panel under 'From the till', reading the request's state from its own route
+  ok  resend refused because the party was removed: the panel reads the request again at once and shows it closed, the refusal's words still there
+  ok  cancel refused because the party was removed: the panel reads the request again at once and shows it closed, the refusal's words still there
+  ok  a press that got no answer (the till out of reach) does not read the request again: nothing is known to have moved
+party-deposit-ui.check: 11 checks passed

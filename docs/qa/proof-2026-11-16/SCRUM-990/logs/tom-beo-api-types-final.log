@@ -1,0 +1,4 @@
+
+> @oto/api@0.1.0 typecheck C:\oto-lanes\tom-beo-approved-20261116\apps\api
+> tsc -p tsconfig.json
+

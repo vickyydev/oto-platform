@@ -1,0 +1,410 @@
+
+ RUN  v3.2.7 C:/oto-lanes/tom-beo-approved-20261116/apps/api
+
+stdout | test/party-settlement.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/party-settlement.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-evVPzn ... ok
+
+
+stdout | test/party-settlement.test.ts
+creating subdirectories ... 
+
+stdout | test/party-settlement.test.ts
+ok
+
+
+stdout | test/party-settlement.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ... 
+
+stdout | test/party-settlement.test.ts
+100
+selecting default shared_buffers ... 
+
+stdout | test/party-settlement.test.ts
+128MB
+selecting default time zone ... 
+
+stdout | test/party-settlement.test.ts
+Asia/Bangkok
+
+
+stdout | test/party-settlement.test.ts
+creating configuration files ... 
+
+stdout | test/party-settlement.test.ts
+ok
+running bootstrap script ... 
+
+stdout | test/party-settlement.test.ts
+ok
+
+
+stdout | test/party-settlement.test.ts
+performing post-bootstrap initialization ... 
+
+stdout | test/party-settlement.test.ts
+ok
+syncing data to disk ... 
+
+stdout | test/party-settlement.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-whatsapp^-908^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-evVPzn^" -l logfile start
+
+
+
+stdout | test/party-settlement.test.ts
+2026-11-16 23:43:01.535 +07 [128636] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/party-settlement.test.ts
+2026-11-16 23:43:01.538 +07 [128636] LOG:  listening on IPv6 address "::1", port 63804
+
+
+stdout | test/party-settlement.test.ts
+2026-11-16 23:43:01.538 +07 [128636] LOG:  listening on IPv4 address "127.0.0.1", port 63804
+
+
+stdout | test/party-settlement.test.ts
+2026-11-16 23:43:01.576 +07 [125404] LOG:  database system was shut down at 2026-11-16 23:42:59 +07
+
+
+stdout | test/party-settlement.test.ts
+2026-11-16 23:43:01.601 +07 [128636] LOG:  database system is ready to accept connections
+
+
+stdout | test/party-settlement.test.ts
+2026-11-16 23:43:05.008 +07 [98612] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/party-settlement.test.ts
+Suite registry: registered 6 app(s).
+
+stdout | test/party-settlement.test.ts
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/party-settlement.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/party-settlement.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+node.exe : (node:120936) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the 
+logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level 
+option will be removed in `fastify@6`.
+At C:\Users\waqar\AppData\Roaming\npm\pnpm.ps1:24 char:5
++     & "node$exe"  "$basedir/node_modules/pnpm/bin/pnpm.cjs" $args
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ((node:120936) [...in `fastify@6`.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/party-settlement.test.ts
+2026-11-16 23:43:11.653 +07 [115280] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/party-settlement.test.ts
+2026-11-16 23:43:11.669 +07 [115280] LOG:  checkpoint complete: wrote 10 buffers (0.1%); 0 WAL file(s) added, 0 removed, 2 recycled; write=0.004 s, sync=0.004 s, total=0.017 s; sync files=8, longest=0.001 s, average=0.001 s; distance=30045 kB, estimate=30045 kB; lsn=0/32CF4F0, redo lsn=0/32CF4B8
+
+
+ ✓ test/party-settlement.test.ts (48 tests) 14445ms
+   ✓ SCRUM-990 HIGH: independent additional bills after a paid main receipt > keeps earlier additional-bill sources out of re-settlement pricing (paid=true), with a fresh full baseline  323ms
+   ✓ SCRUM-990 HIGH: independent additional bills after a paid main receipt > keeps earlier additional-bill sources out of re-settlement pricing (paid=false), with a fresh full baseline  305ms
+stdout | test/party-kitchen-edit.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/party-kitchen-edit.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-ZaGRjJ ... ok
+
+
+stdout | test/party-kitchen-edit.test.ts
+creating subdirectories ... 
+
+stdout | test/party-kitchen-edit.test.ts
+ok
+
+
+stdout | test/party-kitchen-edit.test.ts
+selecting dynamic shared memory implementation ... windows
+
+
+stdout | test/party-kitchen-edit.test.ts
+selecting default max_connections ... 
+
+stdout | test/party-kitchen-edit.test.ts
+100
+selecting default shared_buffers ... 
+
+stdout | test/party-kitchen-edit.test.ts
+128MB
+selecting default time zone ... 
+
+stdout | test/party-kitchen-edit.test.ts
+Asia/Bangkok
+
+
+stdout | test/party-kitchen-edit.test.ts
+creating configuration files ... 
+
+stdout | test/party-kitchen-edit.test.ts
+ok
+running bootstrap script ... 
+
+stdout | test/party-kitchen-edit.test.ts
+ok
+
+
+stdout | test/party-kitchen-edit.test.ts
+performing post-bootstrap initialization ... 
+
+stdout | test/party-kitchen-edit.test.ts
+ok
+syncing data to disk ... 
+
+stdout | test/party-kitchen-edit.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-whatsapp^-908^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-ZaGRjJ^" -l logfile start
+
+
+
+stdout | test/party-kitchen-edit.test.ts
+2026-11-16 23:43:18.579 +07 [131280] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/party-kitchen-edit.test.ts
+2026-11-16 23:43:18.582 +07 [131280] LOG:  listening on IPv6 address "::1", port 63813
+
+
+stdout | test/party-kitchen-edit.test.ts
+2026-11-16 23:43:18.582 +07 [131280] LOG:  listening on IPv4 address "127.0.0.1", port 63813
+
+
+stdout | test/party-kitchen-edit.test.ts
+2026-11-16 23:43:18.626 +07 [125580] LOG:  database system was shut down at 2026-11-16 23:43:17 +07
+
+
+stdout | test/party-kitchen-edit.test.ts
+2026-11-16 23:43:18.649 +07 [131280] LOG:  database system is ready to accept connections
+
+
+stdout | test/party-kitchen-edit.test.ts
+2026-11-16 23:43:22.059 +07 [121812] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/party-kitchen-edit.test.ts
+Suite registry: registered 6 app(s).
+
+stdout | test/party-kitchen-edit.test.ts
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/party-kitchen-edit.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/party-kitchen-edit.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:125112) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option 
+with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be 
+removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/party-kitchen-edit.test.ts
+2026-11-16 23:43:26.132 +07 [129500] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/party-kitchen-edit.test.ts
+2026-11-16 23:43:26.150 +07 [129500] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 2 recycled; write=0.003 s, sync=0.005 s, total=0.019 s; sync files=7, longest=0.002 s, average=0.001 s; distance=28193 kB, estimate=28193 kB; lsn=0/3100500, redo lsn=0/31004C8
+
+
+ ❯ test/party-kitchen-edit.test.ts (14 tests | 1 failed) 11687ms
+   ✓ who may change it > a branch manager and the administrators hold the permission; reception does not 2ms
+   ✓ who may change it > reception, who edit the party, are refused the kitchen plan and its choices; nothing reaches the OTO App 28ms
+   ✓ who may change it > another park's manager is refused at this party's park 11ms
+   ✓ a manager changes the plan and the BEO is changed > the change goes to the OTO App under the edit id with who did it; the answer is the BEO as the view now reads it; one audit row 119ms
+   ✓ a manager changes the plan and the BEO is changed > an administrator may too, named as one 52ms
+   ✓ a manager changes the plan and the BEO is changed > the same press twice (one Idempotency-Key) is one write in the OTO App and the same answer 127ms
+   ✓ a manager changes the plan and the BEO is changed > a refusal from the OTO App is said in its words, and nothing is recorded as written 27ms
+   ✓ a manager changes the plan and the BEO is changed > no answer is a 502 that says Save again; nothing is recorded, and the same key runs again once the app answers  327ms
+   ✓ a manager changes the plan and the BEO is changed > the app's own not-found is a party it no longer knows; an app with no door yet is told apart, and nothing is recorded 46ms
+   ✓ a manager changes the plan and the BEO is changed > a deployment with no directory says the plan was not changed 22ms
+   ✓ a manager changes the plan and the BEO is changed > a party that is not one of the branch's is 404, and the OTO App is never asked 6ms
+   × a manager changes the plan and the BEO is changed > accepts only the scoped catalogue selling-price snapshot for coded additions 122ms
+     → expected 400 to be 409 // Object.is equality
+   ✓ a manager changes the plan and the BEO is changed > a body the till may not send is refused before anything: a price, a count of 0, no change 12ms
+   ✓ the set menu's choices > a manager reads the groups from the OTO App; when it does not answer the form is told why and offered none 16ms
+stdout | test/party-menu-catalogue.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/party-menu-catalogue.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-tTauDN ... ok
+
+
+stdout | test/party-menu-catalogue.test.ts
+creating subdirectories ... 
+
+stdout | test/party-menu-catalogue.test.ts
+ok
+
+
+stdout | test/party-menu-catalogue.test.ts
+selecting dynamic shared memory implementation ... windows
+
+
+stdout | test/party-menu-catalogue.test.ts
+selecting default max_connections ... 
+
+stdout | test/party-menu-catalogue.test.ts
+100
+selecting default shared_buffers ... 
+
+stdout | test/party-menu-catalogue.test.ts
+128MB
+selecting default time zone ... 
+
+stdout | test/party-menu-catalogue.test.ts
+Asia/Bangkok
+
+
+stdout | test/party-menu-catalogue.test.ts
+creating configuration files ... 
+
+stdout | test/party-menu-catalogue.test.ts
+ok
+running bootstrap script ... 
+
+stdout | test/party-menu-catalogue.test.ts
+ok
+
+
+stdout | test/party-menu-catalogue.test.ts
+performing post-bootstrap initialization ... 
+
+stdout | test/party-menu-catalogue.test.ts
+ok
+syncing data to disk ... 
+
+stdout | test/party-menu-catalogue.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-whatsapp^-908^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-tTauDN^" -l logfile start
+
+
+
+stdout | test/party-menu-catalogue.test.ts
+2026-11-16 23:43:33.194 +07 [81328] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/party-menu-catalogue.test.ts
+2026-11-16 23:43:33.197 +07 [81328] LOG:  listening on IPv6 address "::1", port 52101
+
+
+stdout | test/party-menu-catalogue.test.ts
+2026-11-16 23:43:33.197 +07 [81328] LOG:  listening on IPv4 address "127.0.0.1", port 52101
+
+
+stdout | test/party-menu-catalogue.test.ts
+2026-11-16 23:43:33.235 +07 [121244] LOG:  database system was shut down at 2026-11-16 23:43:31 +07
+
+
+stdout | test/party-menu-catalogue.test.ts
+2026-11-16 23:43:33.258 +07 [81328] LOG:  database system is ready to accept connections
+
+
+stdout | test/party-menu-catalogue.test.ts
+2026-11-16 23:43:36.901 +07 [118352] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/party-menu-catalogue.test.ts
+Suite registry: registered 6 app(s).
+
+stdout | test/party-menu-catalogue.test.ts
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/party-menu-catalogue.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/party-menu-catalogue.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:129368) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option 
+with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be 
+removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:129368) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option 
+with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be 
+removed in `fastify@6`.
+stdout | test/party-menu-catalogue.test.ts
+2026-11-16 23:43:38.192 +07 [113796] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/party-menu-catalogue.test.ts
+2026-11-16 23:43:38.205 +07 [113796] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.003 s, sync=0.003 s, total=0.013 s; sync files=7, longest=0.001 s, average=0.001 s; distance=17316 kB, estimate=17316 kB; lsn=0/2661238, redo lsn=0/2661200
+
+
+ ✓ test/party-menu-catalogue.test.ts (6 tests) 9108ms
+ ✓ test/s990-additional-bill-review.test.ts (4 tests) 3ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/party-kitchen-edit.test.ts > a manager changes the plan and the BEO is changed > accepts only the scoped 
+catalogue selling-price snapshot for coded additions
+AssertionError: expected 400 to be 409 // Object.is equality
+
+- Expected
++ Received
+
+- 409
++ 400
+
+ ❯ test/party-kitchen-edit.test.ts:365:109
+    363|     expect((await put(manager, id, body([{ ...add, productCode: 'ZZ-FO…
+    364|     expect((await put(manager, id, body([{ ...add, list: 'bar', unitPr…
+    365|     expect((await put(manager, id, body([{ ...add, productCode: undefi…
+       |                                                                                                             ^
+    366|     expect(editCalls).toEqual([]);
+    367|     const valid = await put(manager, id, body([{ ...add, unitPriceSata…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 3 passed (4)
+      Tests  1 failed | 71 passed (72)
+   Start at  23:42:48
+   Duration  51.06s (transform 5.13s, setup 0ms, collect 14.73s, tests 35.24s, environment 0ms, prepare 376ms)
+

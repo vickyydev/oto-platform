@@ -1,0 +1,431 @@
+
+ RUN  v3.2.7 C:/oto-lanes/tom-beo-approved-20261116/apps/api
+
+stdout | test/party-settlement.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/party-settlement.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-4A7U84 ... ok
+
+
+stdout | test/party-settlement.test.ts
+creating subdirectories ... 
+
+stdout | test/party-settlement.test.ts
+ok
+
+
+stdout | test/party-settlement.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ... 
+
+stdout | test/party-settlement.test.ts
+100
+selecting default shared_buffers ... 
+
+stdout | test/party-settlement.test.ts
+128MB
+selecting default time zone ... 
+
+stdout | test/party-settlement.test.ts
+Asia/Bangkok
+
+
+stdout | test/party-settlement.test.ts
+creating configuration files ... 
+
+stdout | test/party-settlement.test.ts
+ok
+running bootstrap script ... 
+
+stdout | test/party-settlement.test.ts
+ok
+
+
+stdout | test/party-settlement.test.ts
+performing post-bootstrap initialization ... 
+
+stdout | test/party-settlement.test.ts
+ok
+syncing data to disk ... 
+
+stdout | test/party-settlement.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-whatsapp^-908^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-4A7U84^" -l logfile start
+
+
+
+stdout | test/party-settlement.test.ts
+2026-11-16 23:52:06.333 +07 [114652] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/party-settlement.test.ts
+2026-11-16 23:52:06.336 +07 [114652] LOG:  listening on IPv6 address "::1", port 61031
+
+
+stdout | test/party-settlement.test.ts
+2026-11-16 23:52:06.336 +07 [114652] LOG:  listening on IPv4 address "127.0.0.1", port 61031
+
+
+stdout | test/party-settlement.test.ts
+2026-11-16 23:52:06.377 +07 [126468] LOG:  database system was shut down at 2026-11-16 23:52:04 +07
+
+
+stdout | test/party-settlement.test.ts
+2026-11-16 23:52:06.401 +07 [114652] LOG:  database system is ready to accept connections
+
+
+stdout | test/party-settlement.test.ts
+2026-11-16 23:52:09.835 +07 [83688] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/party-settlement.test.ts
+Suite registry: registered 6 app(s).
+
+stdout | test/party-settlement.test.ts
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/party-settlement.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/party-settlement.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+node.exe : (node:118276) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the 
+logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level 
+option will be removed in `fastify@6`.
+At C:\Users\waqar\AppData\Roaming\npm\pnpm.ps1:24 char:5
++     & "node$exe"  "$basedir/node_modules/pnpm/bin/pnpm.cjs" $args
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ((node:118276) [...in `fastify@6`.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/party-settlement.test.ts
+2026-11-16 23:52:26.399 +07 [130692] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/party-settlement.test.ts
+2026-11-16 23:52:26.413 +07 [130692] LOG:  checkpoint complete: wrote 10 buffers (0.1%); 0 WAL file(s) added, 0 removed, 2 recycled; write=0.003 s, sync=0.003 s, total=0.014 s; sync files=8, longest=0.001 s, average=0.001 s; distance=30063 kB, estimate=30063 kB; lsn=0/32D4080, redo lsn=0/32D4048
+
+
+ ❯ test/party-settlement.test.ts (49 tests | 1 failed) 24511ms
+   ✓ composePartySettlement — who is inside the package and who is an extra > weekend: 12 children and 6 adults are 2 extra children at 1,500 and 2 extra adults at 500, socks free for all 12 2ms
+   ✓ composePartySettlement — who is inside the package and who is an extra > an extra adult the package names no price for is refused, never admitted free 0ms
+   ✓ composePartySettlement — who is inside the package and who is an extra > the till's own count of extras is compared, never used 0ms
+   ✓ GET /parties/:id — the plan the OTO App published, in place of the stubbed line items and kitchen > reads the package with its limits and prices, the counts, the add-ons, the entertainment, the set menu and the food times 92ms
+   ✓ GET /parties/:id — the plan the OTO App published, in place of the stubbed line items and kitchen > answers a party the app has no package for with no plan, and says so 31ms
+   ✓ Floresta weekday: 10 children, 4 adults, socks for all — one sale of 16,900 > previews the figures the settlement will charge, writing nothing 19ms
+   ✓ Floresta weekday: 10 children, 4 adults, socks for all — one sale of 16,900 > settles as one sale: the package fee, the included items at ฿0, the guests at ฿0 and 10 free Regular Socks 63ms
+   ✓ Floresta weekday: 10 children, 4 adults, socks for all — one sale of 16,900 > records the deposit as a payment of "Deposit (paid in advance)": no counter, so not the till's takings 2ms
+   ✓ Floresta weekday: 10 children, 4 adults, socks for all — one sale of 16,900 > refuses a second settlement while the first sale is open 14ms
+   ✓ Floresta weekday: 10 children, 4 adults, socks for all — one sale of 16,900 > the same settlement id again answers what it made 10ms
+   ✓ Floresta weekday: 10 children, 4 adults, socks for all — one sale of 16,900 > while it is open the tab no longer carries the package: the bill is the tab's own 18ms
+   ✓ Floresta weekday: 10 children, 4 adults, socks for all — one sale of 16,900 > the balance is taken on the ordinary payment route; the close prints a band for every child and adult and takes the socks 183ms
+   ✓ Floresta weekday: 10 children, 4 adults, socks for all — one sale of 16,900 > on the close, the sale id is written back to the OTO App through the party edit path 22ms
+   ✓ Floresta weekday: 10 children, 4 adults, socks for all — one sale of 16,900 > a retry of the close writes nothing back twice 10ms
+   ✓ Floresta weekend: 12 children and 6 adults are 20,900 + 2 × 1,500 + 2 × 500 > prices the extras at the package's own weekend prices, never the tier rate 133ms
+   ✓ Floresta weekend: 12 children and 6 adults are 20,900 + 2 × 1,500 + 2 × 500 > a weekday inside a branch holiday is priced at the weekend rate 10ms
+   ✓ After School 10 with 12 children: parents included, socks sold, the package's extra-child rule > charges the 2 children beyond 10 at the package's extra-child price, its 10 parents nothing, and the socks at the shelf price 30ms
+   ✓ After School 10 with 12 children: parents included, socks sold, the package's extra-child rule > an eleventh adult on a package with no extra-adult price is refused by name 9ms
+   ✓ add-ons and entertainment from the plan > the reserved table grants 5,000 of F&B credit at the close and prints its credit voucher on the receipt 113ms
+   ✓ add-ons and entertainment from the plan > refuses an add-on that is not in the plan 7ms
+   ✓ a settlement left unpaid is voided, and the party may be settled again > voids the open sale with its deposit record, and a second settlement then goes through 72ms
+   ✓ a settlement left unpaid is voided, and the party may be settled again > refuses to settle a party whose tab already took money for the package, so it is never charged twice 40ms
+   ✓ a settlement left unpaid is voided, and the party may be settled again > the deposit tender is the platform's own, as paid-online and credit are: never a row, never a tender a till names 42ms
+   ✓ a party with walk-up guests already on its tab > the preview names them and what they came to on the tab, and prices the package without them 25ms
+   ✓ a party with walk-up guests already on its tab > the settlement is refused by name with nothing written, so no guest is charged or banded twice 27ms
+   ✓ a settlement balance paid by QR through the gateway, with no till close after it > the gateway closes the sale and the OTO App is told which sale settled the party 108ms
+   ✓ SCRUM-828: a priced item the BEO added is charged on the settlement; a free one is a 0-baht line > the preview adds the priced item at its product's price, names the free one at ฿0, and leaves the catalogue item out 10ms
+   ✓ SCRUM-828: a priced item the BEO added is charged on the settlement; a free one is a 0-baht line > settles with them on the sale: the cake as F&B at 2 × 450, the juice at ฿0, the receipt naming both 95ms
+   ✓ SCRUM-876 — a settlement left before its balance > with only the deposit on it, the open settlement is not a part-paid sale: End of Day does not list it 74ms
+   ✓ SCRUM-876 — a settlement left before its balance > voided from History or the party page, the deposit stays as it was and the next settlement uses it; nothing is refunded 97ms
+   ✓ SCRUM-876 — a settlement left before its balance > is voided only by an account allowed to void a sale at the party's branch 97ms
+   ✓ SCRUM-876 — a settlement left before its balance > a settlement that took part of its balance in cash is part-paid by that cash alone, and a whole refund gives back the cash only 126ms
+   ✓ SCRUM-876 — a settlement left before its balance > Close Day is not refused over a settlement left with only its deposit 62ms
+   ✓ SCRUM-889 — the sale list names a party settlement > a settlement left at its balance is listed with its party, so the till sends it to the party page 40ms
+   ✓ SCRUM-890 — on the sale list, a settlement with only its deposit is not part-paid > the deposit alone leaves it unpaid; cash on it makes it part-paid, the balance after the deposit and the cash 53ms
+   ✓ SCRUM-906: an EXTRA line is charged at its entered price, else a till item at the till price > the preview charges the extras: the till item at the till price, the entered price as entered, the typed line by its name 11ms
+   ✓ SCRUM-906: an EXTRA line is charged at its entered price, else a till item at the till price > SCRUM-950: the preview names each extra it charges, then each it does not; the figures are unchanged 20ms
+   ✓ SCRUM-906: an EXTRA line is charged at its entered price, else a till item at the till price > on a weekend the till item is at its weekend price; a price entered on the line stays as entered 9ms
+   ✓ SCRUM-906: an EXTRA line is charged at its entered price, else a till item at the till price > settles with them on the sale, each taxed as its product resolves, a typed food line as food 29ms
+   ✓ SCRUM-906: an EXTRA line is charged at its entered price, else a till item at the till price > SCRUM-966 HIGH: each named extra is its exact engine component with exclusive VAT and 0 percent service 41ms
+   ✓ SCRUM-906: an EXTRA line is charged at its entered price, else a till item at the till price > SCRUM-966 HIGH: each named extra is its exact engine component with exclusive VAT and 10 percent service 39ms
+   ✓ SCRUM-906: an EXTRA line is charged at its entered price, else a till item at the till price > a party whose plan has no package is shown with its kitchen plan and still cannot be settled (decision 8) 21ms
+   ✓ SCRUM-990 HIGH: independent additional bills after a paid main receipt > links only the explicitly selected party; closes the final satang, caps overpayment and creates a distinct next bill 248ms
+   ✓ SCRUM-990 HIGH: independent additional bills after a paid main receipt > deduplicates BEO source quantity deltas and refuses lowering/repricing an already billed line 161ms
+   ✓ SCRUM-990 HIGH: independent additional bills after a paid main receipt > retains the explicit bill through QR payment, confirmation and recovery, and refuses retargeted retry 244ms
+   ✓ SCRUM-990 HIGH: independent additional bills after a paid main receipt > keeps earlier additional-bill sources out of re-settlement pricing (paid=true), with a fresh full baseline  322ms
+   ✓ SCRUM-990 HIGH: independent additional bills after a paid main receipt > keeps earlier additional-bill sources out of re-settlement pricing (paid=false), with a fresh full baseline  320ms
+   × SCRUM-990 HIGH: independent additional bills after a paid main receipt > rereads a changed BEO plan after waiting for the party lock and refuses the old preview total 10033ms
+     → Settlement did not reach the held party lock
+   ✓ SCRUM-990 HIGH: independent additional bills after a paid main receipt > uses existing source gross with exclusive VAT and nonzero service, rather than base times quantity 6ms
+stdout | test/party-kitchen-edit.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/party-kitchen-edit.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-xeOgGA ... ok
+
+
+stdout | test/party-kitchen-edit.test.ts
+creating subdirectories ... 
+
+stdout | test/party-kitchen-edit.test.ts
+ok
+
+
+stdout | test/party-kitchen-edit.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ... 
+
+stdout | test/party-kitchen-edit.test.ts
+100
+selecting default shared_buffers ... 
+
+stdout | test/party-kitchen-edit.test.ts
+128MB
+selecting default time zone ... 
+
+stdout | test/party-kitchen-edit.test.ts
+Asia/Bangkok
+
+
+stdout | test/party-kitchen-edit.test.ts
+creating configuration files ... 
+
+stdout | test/party-kitchen-edit.test.ts
+ok
+running bootstrap script ... 
+
+stdout | test/party-kitchen-edit.test.ts
+ok
+
+
+stdout | test/party-kitchen-edit.test.ts
+performing post-bootstrap initialization ... 
+
+stdout | test/party-kitchen-edit.test.ts
+ok
+syncing data to disk ... 
+
+stdout | test/party-kitchen-edit.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-whatsapp^-908^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-xeOgGA^" -l logfile start
+
+
+
+stdout | test/party-kitchen-edit.test.ts
+2026-11-16 23:52:33.325 +07 [116948] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/party-kitchen-edit.test.ts
+2026-11-16 23:52:33.328 +07 [116948] LOG:  listening on IPv6 address "::1", port 61049
+
+
+stdout | test/party-kitchen-edit.test.ts
+2026-11-16 23:52:33.329 +07 [116948] LOG:  listening on IPv4 address "127.0.0.1", port 61049
+
+
+stdout | test/party-kitchen-edit.test.ts
+2026-11-16 23:52:33.364 +07 [82988] LOG:  database system was shut down at 2026-11-16 23:52:31 +07
+
+
+stdout | test/party-kitchen-edit.test.ts
+2026-11-16 23:52:33.389 +07 [116948] LOG:  database system is ready to accept connections
+
+
+stdout | test/party-kitchen-edit.test.ts
+2026-11-16 23:52:36.727 +07 [115772] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/party-kitchen-edit.test.ts
+Suite registry: registered 6 app(s).
+
+stdout | test/party-kitchen-edit.test.ts
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/party-kitchen-edit.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/party-kitchen-edit.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:106096) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option 
+with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be 
+removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/party-kitchen-edit.test.ts
+2026-11-16 23:52:40.961 +07 [78280] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/party-kitchen-edit.test.ts
+2026-11-16 23:52:40.975 +07 [78280] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 2 recycled; write=0.003 s, sync=0.003 s, total=0.014 s; sync files=7, longest=0.001 s, average=0.001 s; distance=28203 kB, estimate=28203 kB; lsn=0/3102F88, redo lsn=0/3102F50
+
+
+ ✓ test/party-kitchen-edit.test.ts (14 tests) 11754ms
+stdout | test/party-menu-catalogue.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/party-menu-catalogue.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-p6JNUJ ... ok
+
+
+stdout | test/party-menu-catalogue.test.ts
+creating subdirectories ... 
+
+stdout | test/party-menu-catalogue.test.ts
+ok
+
+
+stdout | test/party-menu-catalogue.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ... 
+
+stdout | test/party-menu-catalogue.test.ts
+100
+selecting default shared_buffers ... 
+
+stdout | test/party-menu-catalogue.test.ts
+128MB
+selecting default time zone ... 
+
+stdout | test/party-menu-catalogue.test.ts
+Asia/Bangkok
+
+
+stdout | test/party-menu-catalogue.test.ts
+creating configuration files ... 
+
+stdout | test/party-menu-catalogue.test.ts
+ok
+running bootstrap script ... 
+
+stdout | test/party-menu-catalogue.test.ts
+ok
+
+
+stdout | test/party-menu-catalogue.test.ts
+performing post-bootstrap initialization ... 
+
+stdout | test/party-menu-catalogue.test.ts
+ok
+syncing data to disk ... 
+
+stdout | test/party-menu-catalogue.test.ts
+ok
+
+
+stdout | test/party-menu-catalogue.test.ts
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-whatsapp^-908^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-p6JNUJ^" -l logfile start
+
+
+
+stdout | test/party-menu-catalogue.test.ts
+2026-11-16 23:52:47.928 +07 [125308] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/party-menu-catalogue.test.ts
+2026-11-16 23:52:47.930 +07 [125308] LOG:  listening on IPv6 address "::1", port 60338
+
+
+stdout | test/party-menu-catalogue.test.ts
+2026-11-16 23:52:47.931 +07 [125308] LOG:  listening on IPv4 address "127.0.0.1", port 60338
+
+
+stdout | test/party-menu-catalogue.test.ts
+2026-11-16 23:52:47.971 +07 [77616] LOG:  database system was shut down at 2026-11-16 23:52:46 +07
+
+
+stdout | test/party-menu-catalogue.test.ts
+2026-11-16 23:52:47.997 +07 [125308] LOG:  database system is ready to accept connections
+
+
+stdout | test/party-menu-catalogue.test.ts
+2026-11-16 23:52:52.231 +07 [129052] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/party-menu-catalogue.test.ts
+Suite registry: registered 6 app(s).
+
+stdout | test/party-menu-catalogue.test.ts
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/party-menu-catalogue.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/party-menu-catalogue.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:120024) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option 
+with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be 
+removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:120024) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option 
+with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be 
+removed in `fastify@6`.
+stdout | test/party-menu-catalogue.test.ts
+2026-11-16 23:52:53.872 +07 [82208] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/party-menu-catalogue.test.ts
+2026-11-16 23:52:53.888 +07 [82208] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.003 s, sync=0.004 s, total=0.016 s; sync files=7, longest=0.001 s, average=0.001 s; distance=17316 kB, estimate=17316 kB; lsn=0/2661248, redo lsn=0/2661210
+
+
+ ✓ test/party-menu-catalogue.test.ts (6 tests) 10163ms
+ ✓ test/s990-additional-bill-review.test.ts (4 tests) 3ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/party-settlement.test.ts > SCRUM-990 HIGH: independent additional bills after a paid main receipt > 
+rereads a changed BEO plan after waiting for the party lock and refuses the old preview total
+Error: Settlement did not reach the held party lock
+ ❯ test/party-settlement.test.ts:1628:27
+
+ ❯ NodePgSession.transaction ../../../codex-whatsapp-908-20261116/node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.
+1_pg@8.23.0/node_modules/src/node-postgres/session.ts:259:19
+ ❯ test/party-settlement.test.ts:1618:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 3 passed (4)
+      Tests  1 failed | 72 passed (73)
+   Start at  23:51:54
+   Duration  61.44s (transform 4.69s, setup 0ms, collect 13.96s, tests 46.43s, environment 0ms, prepare 365ms)
+

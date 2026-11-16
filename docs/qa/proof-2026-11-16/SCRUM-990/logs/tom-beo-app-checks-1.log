@@ -1,0 +1,100 @@
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+
+Data page checksums are disabled.
+
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-boNMx8 ... 
+ok
+
+creating subdirectories ... 
+ok
+
+selecting dynamic shared memory implementation ... windows
+
+selecting default max_connections ... 
+100
+selecting default shared_buffers ... 
+128MB
+selecting default time zone ... 
+Asia/Bangkok
+creating configuration files ... 
+ok
+running bootstrap script ... 
+ok
+
+performing post-bootstrap initialization ... 
+ok
+syncing data to disk ... 
+ok
+
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-whatsapp^-908^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-boNMx8^" -l logfile start
+
+
+2026-11-16 22:57:37.928 +07 [128396] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+2026-11-16 22:57:37.931 +07 [128396] LOG:  listening on IPv6 address "::1", port 49823
+
+2026-11-16 22:57:37.931 +07 [128396] LOG:  listening on IPv4 address "127.0.0.1", port 49823
+
+2026-11-16 22:57:37.970 +07 [117060] LOG:  database system was shut down at 2026-11-16 22:57:36 +07
+
+2026-11-16 22:57:37.994 +07 [128396] LOG:  database system is ready to accept connections
+
+2026-11-16 22:57:41.251 +07 [123224] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+tom-beo-review: 10 checks passed
+{"level":"info","time":"2026-11-16T15:57:52.651Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":520,"answerChars":1282,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"3ba60948-f608-4483-9d9e-03d80c7c0ac4","team":{"named":0,"matched":0},"msg":"ai fill run"}
+node : (node:123280) DeprecationWarning: Calling client.query() when the client is already executing a query is 
+deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+At line:23 char:48
++ ... size=4096'; node apps/oto-app/node_modules/tsx/dist/cli.mjs C:/oto-la ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ((node:123280) D...hanism instead.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+(Use `node --trace-deprecation ...` to show where the warning was created)
+{"level":"info","time":"2026-11-16T15:57:52.874Z","service":"oto-app","env":"local","eventId":"3ba60948-f608-4483-9d9e-03d80c7c0ac4","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":1,"kitchenLines":5,"freeKitchenLines":1,"tillLines":5,"adultsSetLines":1,"barLines":2,"deposit":true},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-16T15:57:52.920Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":520,"answerChars":1282,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"88dc348a-1c06-4bfd-9559-2fdc544374a8","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-16T15:57:52.987Z","service":"oto-app","env":"local","eventId":"88dc348a-1c06-4bfd-9559-2fdc544374a8","written":{"kitchenLines":1,"freeKitchenLines":0,"tillLines":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-16T15:57:53.058Z","service":"oto-app","env":"local","eventId":"21e22fde-cebf-4c1b-87a4-763f7604aee6","written":{"kitchenLines":1,"freeKitchenLines":0,"tillLines":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-16T15:57:53.067Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":520,"answerChars":1282,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"21e22fde-cebf-4c1b-87a4-763f7604aee6","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-16T15:57:53.109Z","service":"oto-app","env":"local","eventId":"8993e1c5-1397-48c8-93d7-8a63c204779e","written":{"event":true,"kitchenLines":1,"freeKitchenLines":0,"tillLines":1,"adultsLinesFolded":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-16T15:57:53.159Z","service":"oto-app","env":"local","eventId":"81b0778b-33be-484b-8817-91348af5fe42","written":{"event":true,"kitchenLines":2,"freeKitchenLines":0,"tillLines":2},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-16T15:57:53.185Z","service":"oto-app","env":"local","eventId":"21e22fde-cebf-4c1b-87a4-763f7604aee6","written":{"kitchenLines":1,"freeKitchenLines":0,"tillLines":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-16T15:57:53.202Z","service":"oto-app","env":"local","eventId":"21e22fde-cebf-4c1b-87a4-763f7604aee6","written":{"otherLines":1,"event":true},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{
+  "results": {
+    "theReadIsHandedTheTillsFoodAndDrink": true,
+    "aCodeIsTheTillsOnlyWhenTheTillHasIt": false,
+    "theReviewShowsTheTillsItemCodeAndPrice": false,
+    "approvalWritesTheCodeAsTheLinesOwnProductCode": false,
+    "theTillsMarksReadTheLinesTheFillWrites": true,
+    "aTillThatCannotBeReadLeavesTheFillAsItWas": true,
+    "aCodeTheTillLacksIsRefused": false,
+    "theGuardsHoldWithTheTillsMenu": false,
+    "aCodedMirrorOfTheKidsDishStaysAMirror": true,
+    "staleReviewCannotOverwriteManualKitchenAndFreshReviewRetainsIt": true,
+    "unknownEntertainmentIsAnUnresolvedRequestNotAFreeShow": true
+  },
+  "failures": {
+    "aCodeIsTheTillsOnlyWhenTheTillHasIt": "the till's own names; a Coke to the bar; a made-up code and another party's item are lines the menu lacks; SCRUM-926 kept for the shared fried rice\n+ actual - expected\n... Skipped lines\n\n  [\n    [\n      'adults',\n      'CF-14',\n      'Calamari',\n...\n    [\n+     'bar',\n-     'kids',\n      'PARTY-ZZ944A1',\n+     'ZZ TEST 944 juice',\n-     'Party juice',\n      false,\n      1\n    ],\n    [\n      'adults',\n\n+ actual - expected\n... Skipped lines\n",
+    "theReviewShowsTheTillsItemCodeAndPrice": "the dragon roll and the party juice wait for a decision\n\n1 !== 2\n\n\n1 !== 2\n",
+    "approvalWritesTheCodeAsTheLinesOwnProductCode": "Expected values to be strictly deep-equal:\n+ actual - expected\n\n  [\n    [\n      'CF-65-1',\n      10,\n      6000\n    ],\n+   [\n+     'PARTY-ZZ944A1',\n+     1,\n+     5000\n+   ]\n  ]\n\n+ actual - expected\n\n  [",
+    "aCodeTheTillLacksIsRefused": "another party's BEO item is no dish of this party's\n\n200 !== 400\n\n\n200 !== 400\n",
+    "theGuardsHoldWithTheTillsMenu": "nothing written before Approve and create\n+ actual - expected\n\n+ {\n+   cake_mode: 'NONE',\n+   cake_notes: null,\n+   cake_quantity: 1,\n+   cake_time: null,\n+   created_at: 2026-11-16T15:57:53.034Z,\n+   dietary_notes: null,\n+   dietary_tags: null,\n+   event_id: '21e22fde-cebf-4c1b-87a4-763f7604aee6',\n+   food_package_id: null,\n+   food_package_name: null,\n+   food_required: true,\n+   id: '3e3c2f17-1be7-4152-8c44-56a475386bbf',\n+   kitchen_notes: null,\n+   kitchen_ready_offset_minutes: 20,\n+   kitchen_resolved_at: null,\n+   kitchen_resolved_user_id: null,\n+   kitchen_responsible_id: null,\n+   kitchen_responsible_mode: null,\n+   kitchen_responsible_role_id: null,\n+   kitchen_responsible_type: null,\n+   kitchen_responsible_user_id: null,\n+   menus: {\n+     adults: [],\n+     adultsDiffer: false,\n+     kids: [\n+       {\n+         billingSync: 'pending',\n+         chargeApproved: true,\n+         id: 'ai_8729adc4-6934-4d65-9e75-df1aa5e8c768',\n+         included: false,\n+         itemName: 'ZZ TEST 944 juice',\n+         notes: '',\n+         price: 0,\n+         productCode: 'PARTY-ZZ944A1',\n+         quantity: 1\n+       }\n+     ]\n+   },\n+   own_cake_charge: null,\n+   service_schedule: null,\n+   set_menu_enabled: false,\n+   set_menu_template_id: null,\n+   simplified_menus: {\n+     adults: [],\n+     kids: [\n+       {\n+         chargeApproved: true,\n+         id: 'ai_8729adc4-6934-4d65-9e75-df1aa5e8c768',\n+         included: false,\n+         itemName: 'ZZ TEST 944 juice',\n+         notes: '',\n+         price: 0,\n+         productCode: 'PARTY-ZZ944A1',\n+         quantity: 1\n+       }\n+     ]\n+   },\n+   updated_at: 2026-11-16T08:57:53.024Z\n+ }\n- null\n\n+ actual - expected\n\n+ {"
+  }
+}
+2026-11-16 22:57:53.601 +07 [117164] LOG:  checkpoint starting: immediate force wait
+
+2026-11-16 22:57:53.627 +07 [117164] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 2 recycled; write=0.005 s, sync=0.005 s, total=0.026 s; sync files=7, longest=0.001 s, average=0.001 s; distance=27291 kB, estimate=27291 kB; lsn=0/301ED08, redo lsn=0/301ECD0
+

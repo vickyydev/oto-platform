@@ -1,0 +1,96 @@
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-hQcQjT ... 
+ok
+
+creating subdirectories ... 
+ok
+
+selecting dynamic shared memory implementation ... windows
+
+selecting default max_connections ... 
+100
+selecting default shared_buffers ... 
+128MB
+selecting default time zone ... 
+Asia/Bangkok
+creating configuration files ... 
+ok
+running bootstrap script ... 
+ok
+
+performing post-bootstrap initialization ... 
+ok
+syncing data to disk ... 
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-whatsapp^-908^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-hQcQjT^" -l logfile start
+
+
+2026-11-16 23:29:43.185 +07 [127004] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+2026-11-16 23:29:43.188 +07 [127004] LOG:  listening on IPv6 address "::1", port 60612
+
+2026-11-16 23:29:43.188 +07 [127004] LOG:  listening on IPv4 address "127.0.0.1", port 60612
+
+2026-11-16 23:29:43.224 +07 [20420] LOG:  database system was shut down at 2026-11-16 23:29:41 +07
+
+2026-11-16 23:29:43.250 +07 [127004] LOG:  database system is ready to accept connections
+
+2026-11-16 23:29:46.569 +07 [128792] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+tom-beo-review: 21 checks passed
+{"level":"info","time":"2026-11-16T16:29:53.642Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":520,"answerChars":1282,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"35ae75b3-dc24-41c8-9805-9274b1e5287a","team":{"named":0,"matched":0},"msg":"ai fill run"}
+node : (node:105872) DeprecationWarning: Calling client.query() when the client is already executing a query is 
+deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+At line:2 char:360
++ ... g -Tail 35; node apps/oto-app/node_modules/tsx/dist/cli.mjs C:/oto-la ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ((node:105872) D...hanism instead.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+(Use `node --trace-deprecation ...` to show where the warning was created)
+{"level":"info","time":"2026-11-16T16:29:53.830Z","service":"oto-app","env":"local","eventId":"35ae75b3-dc24-41c8-9805-9274b1e5287a","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":1,"kitchenLines":5,"freeKitchenLines":1,"tillLines":5,"adultsSetLines":1,"barLines":2,"deposit":true},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-16T16:29:53.863Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":520,"answerChars":1282,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"38fd003f-76a4-4af1-a21b-b6cce8683251","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-16T16:29:53.900Z","service":"oto-app","env":"local","eventId":"38fd003f-76a4-4af1-a21b-b6cce8683251","written":{"kitchenLines":1,"freeKitchenLines":0,"tillLines":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-16T16:29:53.968Z","service":"oto-app","env":"local","eventId":"b8676061-8b54-4d2c-b535-5bdfd86d824a","written":{"barLines":1,"tillLines":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-16T16:29:53.979Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":520,"answerChars":1282,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"7affec20-c4b9-40a7-8478-f875787fa07f","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-16T16:29:54.034Z","service":"oto-app","env":"local","eventId":"7affec20-c4b9-40a7-8478-f875787fa07f","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":1,"kitchenLines":3,"freeKitchenLines":0,"tillLines":5,"barLines":2,"deposit":true},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-16T16:29:54.078Z","service":"oto-app","env":"local","eventId":"ec0152be-e354-4ffe-9a1c-2d4a000491b2","written":{"event":true,"kitchenLines":1,"freeKitchenLines":0,"tillLines":1,"adultsLinesFolded":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-16T16:29:54.098Z","service":"oto-app","env":"local","eventId":"5c520fa9-8815-4608-81c6-8d25c2b604fc","written":{"event":true,"kitchenLines":2,"freeKitchenLines":0,"tillLines":2},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-16T16:29:54.128Z","service":"oto-app","env":"local","eventId":"7affec20-c4b9-40a7-8478-f875787fa07f","written":{"kitchenLines":1,"freeKitchenLines":0,"tillLines":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-16T16:29:54.144Z","service":"oto-app","env":"local","eventId":"7affec20-c4b9-40a7-8478-f875787fa07f","written":{"otherLines":1,"event":true},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{
+  "results": {
+    "theReadIsHandedTheTillsFoodAndDrink": true,
+    "aCodeIsTheTillsOnlyWhenTheTillHasIt": true,
+    "theReviewShowsTheTillsItemCodeAndPrice": true,
+    "approvalWritesTheCodeAsTheLinesOwnProductCode": true,
+    "theTillsMarksReadTheLinesTheFillWrites": true,
+    "aTillThatCannotBeReadLeavesTheFillAsItWas": true,
+    "aCodeTheTillLacksIsRefused": true,
+    "theGuardsHoldWithTheTillsMenu": true,
+    "aCodedMirrorOfTheKidsDishStaysAMirror": true,
+    "staleReviewCannotOverwriteManualKitchenAndFreshReviewRetainsIt": true,
+    "unknownEntertainmentIsAnUnresolvedRequestNotAFreeShow": true,
+    "staleReviewProtectsConcurrentManualSpecialRequests": true,
+    "parentMenuShowsSavedCustomItemPricesWithoutInternalCostsOrCatalogueReplacement": true,
+    "pendingBillingStaysDurableWhenItsSourceIsRemoved": true
+  },
+  "failures": {}
+}
+2026-11-16 23:29:54.544 +07 [30844] LOG:  checkpoint starting: immediate force wait
+
+2026-11-16 23:29:54.565 +07 [30844] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 2 recycled; write=0.005 s, sync=0.004 s, total=0.022 s; sync files=7, longest=0.001 s, average=0.001 s; distance=27309 kB, estimate=27309 kB; lsn=0/30234D0, redo lsn=0/3023498
+

@@ -1,0 +1,11 @@
+
+ RUN  v3.2.7 C:/oto-lanes/tom-beo-approved-20261116/apps/pos
+
+ ✓ test/s220-e4-parties.test.ts (11 tests) 18ms
+ ✓ test/s990-party-additional-bill-ui-review.test.ts (5 tests) 19ms
+
+ Test Files  2 passed (2)
+      Tests  16 passed (16)
+   Start at  23:37:33
+   Duration  1.99s (transform 839ms, setup 0ms, collect 2.57s, tests 37ms, environment 0ms, prepare 369ms)
+

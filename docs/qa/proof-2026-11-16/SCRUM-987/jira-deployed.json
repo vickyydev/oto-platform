@@ -1,0 +1,22 @@
+{
+  "at": "2026-11-16T17:06:29.575Z",
+  "key": "SCRUM-987",
+  "before": "Testing",
+  "status": "Deployed",
+  "attached": [
+    {
+      "id": "13563",
+      "filename": "paid-explicit-staff-booking.png"
+    },
+    {
+      "id": "13564",
+      "filename": "beo-original-simulator-deposit.png"
+    },
+    {
+      "id": "13565",
+      "filename": "gateway-booking-test-run.png"
+    }
+  ],
+  "commentId": "14839",
+  "readbackMatches": true
+}

@@ -1,0 +1,112 @@
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-UY6VnX ... ok
+
+creating subdirectories ... 
+ok
+
+selecting dynamic shared memory implementation ... windows
+
+selecting default max_connections ... 
+100
+selecting default shared_buffers ... 
+128MB
+selecting default time zone ... 
+Asia/Bangkok
+creating configuration files ... 
+ok
+running bootstrap script ... 
+ok
+
+performing post-bootstrap initialization ... 
+ok
+syncing data to disk ... 
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-whatsapp^-908^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-UY6VnX^" -l logfile start
+
+
+2026-11-16 23:47:45.628 +07 [88552] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+2026-11-16 23:47:45.631 +07 [88552] LOG:  listening on IPv6 address "::1", port 54507
+
+2026-11-16 23:47:45.631 +07 [88552] LOG:  listening on IPv4 address "127.0.0.1", port 54507
+
+2026-11-16 23:47:45.671 +07 [110204] LOG:  database system was shut down at 2026-11-16 23:47:44 +07
+
+2026-11-16 23:47:45.698 +07 [88552] LOG:  database system is ready to accept connections
+
+2026-11-16 23:47:48.989 +07 [119272] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+migrate: otoapp is up to date — 51 migration(s) already applied.
+migrate: otoapp is up to date — 51 migration(s) already applied.
+tom-beo-review: 21 checks passed
+tom-beo-review: unresolved add retains absent price
+{"level":"info","time":"2026-11-16T16:47:56.937Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":520,"answerChars":1282,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"b2791b0e-564b-4218-b133-529602bbb66b","team":{"named":0,"matched":0},"msg":"ai fill run"}
+node : (node:131496) DeprecationWarning: Calling client.query() when the client is already executing a query is 
+deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+At line:2 char:48
++ ... size=4096'; node apps/api/node_modules/tsx/dist/cli.mjs C:/oto-lanes/ ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ((node:131496) D...hanism instead.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+(Use `node --trace-deprecation ...` to show where the warning was created)
+{"level":"info","time":"2026-11-16T16:47:57.129Z","service":"oto-app","env":"local","eventId":"b2791b0e-564b-4218-b133-529602bbb66b","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":1,"kitchenLines":5,"freeKitchenLines":1,"tillLines":5,"adultsSetLines":1,"barLines":2,"deposit":true},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-16T16:47:57.166Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":520,"answerChars":1282,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"b6fab54b-e6f6-4b9e-878a-772b899b5a97","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-16T16:47:57.231Z","service":"oto-app","env":"local","eventId":"b6fab54b-e6f6-4b9e-878a-772b899b5a97","written":{"kitchenLines":1,"freeKitchenLines":0,"tillLines":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-16T16:47:57.299Z","service":"oto-app","env":"local","eventId":"91732359-f1ce-4856-8477-1f69e5629a93","written":{"barLines":1,"tillLines":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-16T16:47:57.312Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":520,"answerChars":1282,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"d9e9ecfc-1018-4a23-9d0d-5bce43365588","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-16T16:47:57.355Z","service":"oto-app","env":"local","eventId":"d9e9ecfc-1018-4a23-9d0d-5bce43365588","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":1,"kitchenLines":3,"freeKitchenLines":0,"tillLines":5,"barLines":2,"deposit":true},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-16T16:47:57.403Z","service":"oto-app","env":"local","eventId":"4976105a-51cb-45ef-bf3a-04ca28a96d83","written":{"event":true,"kitchenLines":1,"freeKitchenLines":0,"tillLines":1,"adultsLinesFolded":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-16T16:47:57.427Z","service":"oto-app","env":"local","eventId":"8f020cd1-0edb-481a-80ff-4732945914c4","written":{"event":true,"kitchenLines":2,"freeKitchenLines":0,"tillLines":2},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-16T16:47:57.471Z","service":"oto-app","env":"local","eventId":"d9e9ecfc-1018-4a23-9d0d-5bce43365588","written":{"kitchenLines":1,"freeKitchenLines":0,"tillLines":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-16T16:47:57.489Z","service":"oto-app","env":"local","eventId":"d9e9ecfc-1018-4a23-9d0d-5bce43365588","written":{"otherLines":1,"event":true},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{
+  "results": {
+    "theReadIsHandedTheTillsFoodAndDrink": true,
+    "aCodeIsTheTillsOnlyWhenTheTillHasIt": true,
+    "theReviewShowsTheTillsItemCodeAndPrice": true,
+    "approvalWritesTheCodeAsTheLinesOwnProductCode": true,
+    "theTillsMarksReadTheLinesTheFillWrites": true,
+    "aTillThatCannotBeReadLeavesTheFillAsItWas": true,
+    "aCodeTheTillLacksIsRefused": true,
+    "theGuardsHoldWithTheTillsMenu": true,
+    "aCodedMirrorOfTheKidsDishStaysAMirror": true,
+    "staleReviewCannotOverwriteManualKitchenAndFreshReviewRetainsIt": true,
+    "unknownEntertainmentIsAnUnresolvedRequestNotAFreeShow": true,
+    "staleReviewProtectsConcurrentManualSpecialRequests": true,
+    "parentMenuShowsSavedCustomItemPricesWithoutInternalCostsOrCatalogueReplacement": true,
+    "pendingBillingStaysDurableWhenItsSourceIsRemoved": true
+  },
+  "failures": {}
+}
+  ok  only the platform's events:write key for the party's own park group; another park group's party is not found
+  ok  a count, a note, an added till item, a typed line, a bar line, a removed extra: the BEO's rows and the till's view
+  ok  the same edit id twice writes once; the same id with another change is refused
+  ok  a set-menu choice within its group, with the template's code; an option outside it, a dish removed, a gone line: refused in words
+  ok  the cake's time and note; a party with no cake is told so
+  ok  an open group chosen on the till as the parent's submit would; the choices door names the groups
+  ok  SCRUM-829: with the adults' own list, a kids' choice carries the adults' copy; the switch is kept
+  ok  SCRUM-958: a dish of the adults' own in a set-menu group stays: a kids' choice moves only its copy, an open group adds none
+  ok  adults' switch on: a kids' line's count and note carry the adults' copies the till shows with it
+  ok  adults' switch on: removing a kids' extra removes the adults' copy the till shows with it
+  ok  a BEO saved before the switch, its adults' list repeating the kids': an adults' line's change is written as theirs
+  ok  the planner alone: a legacy line keeps its group when its note changes; nothing is priced
+  ok  the BEO's own Save writes the kitchen and bar plans as before, through the same writers
+till-kitchen-edit.check: 13 checks passed
+2026-11-16 23:48:01.634 +07 [127460] LOG:  checkpoint starting: immediate force wait
+
+2026-11-16 23:48:01.652 +07 [127460] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 2 recycled; write=0.003 s, sync=0.005 s, total=0.019 s; sync files=7, longest=0.001 s, average=0.001 s; distance=27439 kB, estimate=27439 kB; lsn=0/3044098, redo lsn=0/3044060
+
