@@ -204,11 +204,15 @@ await check("reminded, then overdue: the words move; paid, expired and cancelled
   assert.equal(text("badge-deposit-request-paid"), "Paid");
   await mountPanel(ok(request("paid", { provider: "simulator", writeBack: null })));
   assert.equal(text("badge-deposit-request-paid"), "Simulator test");
+  assert.match(text("text-deposit-request-state")!, /Check the saved deposit amount below/);
+  assert.doesNotMatch(text("text-deposit-request-state")!, /on its way/);
   assert.match(text("text-prebooking-simulator")!, /no real bank money has been received/);
   assert.ok(byTestId("button-request-deposit"), "another deposit can be asked after one was paid");
   assert.equal(byTestId("button-deposit-resend"), null);
   await mountPanel(ok(request("paid", { writeBack: { editId: "x", syncState: "pending", syncError: null } })));
   assert.match(text("text-deposit-request-state")!, /on its way to this app/);
+  await mountPanel(ok(request("paid", { writeBack: { editId: "x", syncState: "failed", syncError: "ZZ TEST writeback not confirmed" } })));
+  assert.match(text("text-deposit-request-state")!, /refresh from the till/);
   await mountPanel(ok(request("expired")));
   assert.equal(text("text-deposit-request-headline"), "Link expired · ฿3,000");
   assert.match(text("text-deposit-request-state")!, /Press Request deposit to send a fresh one/);

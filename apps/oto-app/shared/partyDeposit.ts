@@ -174,7 +174,7 @@ export function depositStateWordsOf(r: PartyDepositRequest): DepositStateWords {
     }
     case "paid": {
       const wb = r.writeBack;
-      const landed = wb?.syncState === "synced" ? "The deposit figure is updated here and at the till." : wb?.syncState === "failed" ? "The deposit figure is still on its way to this app: refresh from the till." : "The deposit figure is on its way to this app.";
+      const landed = wb?.syncState === "synced" ? "The deposit figure is updated here and at the till." : wb?.syncState === "failed" ? "The deposit figure is still on its way to this app: refresh from the till." : wb ? "The deposit figure is on its way to this app." : "Check the saved deposit amount below.";
       return { headline: `Deposit paid · ${amount}`, detail: `Paid ${depositClockOf(r.paidAt) ?? ""} through the chat. ${landed}`.replace("  ", " "), tone: "paid" };
     }
     case "expired":
