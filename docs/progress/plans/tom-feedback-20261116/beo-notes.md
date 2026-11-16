@@ -56,3 +56,31 @@ No new product work remains in this lane. Root should integrate these ordered so
 - cf4f9c4bd56a2fc6a095e872cac2cb3b7231dd9f fix(pos): isolate linked bill customer review totals
 - 293d48b09d63863ebc4a1b7cafda47e516d03cba test(pos): reconcile the selected bill customer total
 - 06c372d45c26bfe9e3581bea73d543f73bcb3a99 fix(beo): keep paid deposit fallback wording neutral
+
+
+## Reviewed follow-up checkpoint - 17 November 2026
+
+Source frozen at dc6e8fdeba8e95cea2335b722ca45351018394c1. Follow-up manifest: `beo-followup-manifest.json` records16 changed source/test inputs,18 unchanged context inputs and41 complete local evidence/harness files with raw SHA256 and canonical Git blob hashes. All changed input differences normalize exactly from CRLF to the committed LF blob. The original88-input release manifest remains unchanged.
+
+Ordered follow-up commits (root has already integrated the first three under its own landing SHAs):
+
+- f1206bf1d117ce0a27fcc53f31dabeb0a1809be0 - unknown-show choice says unresolved request, never free.
+- ded280065ac31b0e21213d4b7f6c89c130db4440 - unknown show's requested time and notes remain in Other requests; requested-time UI does not promise an Act or timeline entry.
+- 93eb98aa3394c7cacd90eb1637a379b082bce3af - D1 structured paid claims are informational, cannot write/raise/lower/redate received money, and have read-only claim amount/date with no Received toggle. Requested-only amounts remain separate. Existing actual gateway and legacy receipt provenance/history are preserved even for crafted paid999 against gateway1. Other approved fields still save. The old manual-save fixture now orders its edit against the persisted revision rather than the host clock.
+- ab145fe4347311e42f3ade699121819df9ad631d - legacy/free-text and structured Load into Editor fallback never populate receipt fields; Fetch from chat cannot offer/apply/mark them. Source audit leaves only actual readback, manual edit and gateway hydration setters. Legacy unknown extras reuse included:false,price:0,source:additional without billing authorization; parent price is null/unresolved. Explicit included/free, SET and genuine priced lines remain. Direct manual Billing behavior is unchanged.
+- dc6e8fdeba8e95cea2335b722ca45351018394c1 - under the existing party lock, billing callback writes kids/adults to both menu projections from one computed result, retaining each object's other metadata. Changed/new eligible sources keep the overall result pending. Catalogue fixtures fetch the current expectedState for intentional fresh approvals; stale409 pins remain in the fill file, and unknown shows create neither free selections nor acts.
+
+Final verification receipts (all whole files; Docker off, embedded PostgreSQL closed):
+
+- `tom-beo-d1-db-first.log`: structured D1 actualDB7 passed, plus the earlier fill14; same receipt retains the later manual timestamp fixture409.
+- `tom-beo-d1-ui-first.log`: real structured review5 passed, including no Received control and read-only claim amount/date.
+- `tom-beo-reliability-db-final.log`: manual Billing/Save7, fill15 and catalogue22 passed after timestamp/mirror repair.
+- `tom-beo-reliability-db-legacy-final.log`: fill15, catalogue22 and Fetch16 passed on the expanded final legacy/Fetch source, including actual Save to parent unresolved-price projection, both mirror arrays/metadata and delayed source changes.
+- `tom-beo-reliability-prefill-ui-repaired.log`: real editor14 passed, including legacy and structured fallback preserving stored2000 against claimed3000/date, and actual Save payloads preserving unknown versus explicit free/SET/priced lines. `tom-beo-reliability-fetch-ui-final.log`: Fetch dialog12 passed.
+- `tom-beo-reliability-ratchet-final.log`: whole app compiler413/413 errors across54 files; complete accounting JSON has no increased diagnostics or new files. The touched editor retains4 inherited errors. This is a passing ratchet, not zero app errors.
+- `tom-beo-reliability-lint-final.log`, `lint-full.json` and `lint-delta.json`: forced16-file lint7 inherited errors to7, no introduced diagnostics; all7 remain in the editor,15 other touched files have zero errors.
+- `tom-beo-reliability-build-final.log`: app production build passed. Existing build and jsdom accessibility warnings remain visible in complete logs.
+
+Commands: the retained `tom-beo-reliability-*-run.mts` harnesses run each listed app test sequentially against createTestDatabase({otoapp:true}) and stop/drop it in finally; jsdom files run with tests/tsconfig.jsx.json. Final compiler/build commands are `npm run check:ratchet` and `npm run build` from apps/oto-app; forced touched lint and whole diagnostic accounting scripts are hashed in the manifest. Original failed UI source-mark expectation and first lint import/const diagnostics remain retained, alongside their repaired receipts. No applied migration or API contract changed in this follow-up.
+
+Root owns final integration, deployment and Jira. No new live proof is claimed here. Final988 native/API retest and exact owned-party cleanup are separately assigned only after root's final app/API LIVE signal. That proof has zero new AI or payment budget and must preserve the original receipt and two paid additional bills, use a fresh current expectedState/minimal approval, and never replay the prior extraction's stale quantity2 body over the current quantity4 plan. The other agent owns993 runtime proof. No fixture mutations have been performed by this follow-up lane.

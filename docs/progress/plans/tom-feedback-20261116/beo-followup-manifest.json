@@ -1,0 +1,567 @@
+{
+  "version": 1,
+  "date": "2026-11-17",
+  "sourceHead": "dc6e8fdeba8e95cea2335b722ca45351018394c1",
+  "lintBaseline": "ded280065ac31b0e21213d4b7f6c89c130db4440",
+  "originalReleaseManifest": "docs/progress/plans/tom-feedback-20261116/beo-manifest.json",
+  "orderedFollowupSourceCommits": [
+    "f1206bf1d117ce0a27fcc53f31dabeb0a1809be0",
+    "ded280065ac31b0e21213d4b7f6c89c130db4440",
+    "93eb98aa3394c7cacd90eb1637a379b082bce3af",
+    "ab145fe4347311e42f3ade699121819df9ad631d",
+    "dc6e8fdeba8e95cea2335b722ca45351018394c1"
+  ],
+  "sourceAndTestInputs": [
+    {
+      "path": "apps/oto-app/client/src/components/beo/beo-ai-review.tsx",
+      "bytes": 67909,
+      "sha256": "26d560d9b980e7fe6ca3815a4ebd64fc00f1e55ca7647b6de042b875b78e8a2b",
+      "gitBlobId": "06610177c58f7336a1eab19fe27dcc805cacfed6",
+      "gitBlobSha256": "a080a3915a7dcb98ffe1eb6a448f520dad22d6a197cc48046be49059b1bc6fcf",
+      "rawDiffersFromGitBlob": true,
+      "rawNormalizesToGitBlob": true
+    },
+    {
+      "path": "apps/oto-app/client/src/components/beo/beo-event-editor.tsx",
+      "bytes": 236513,
+      "sha256": "d13ee39444703138ec43d51a459b385dc25fd5eeb5baf23eddcf86e55c84f52d",
+      "gitBlobId": "3b0ead47385c2f84d4f7bf20988b55e08f1c4ec7",
+      "gitBlobSha256": "841ca294c37bd6e16f1305bfafeddc3796129b99d8d5902b7471383af7980290",
+      "rawDiffersFromGitBlob": true,
+      "rawNormalizesToGitBlob": true
+    },
+    {
+      "path": "apps/oto-app/client/src/lib/beo-ai-review.ts",
+      "bytes": 65969,
+      "sha256": "5b98fb0f6dff355453b639cdf13fae143db581941c51b0e1d124a6655db4016e",
+      "gitBlobId": "abfe76fad474136feacb7bc2db9087ba2757cf57",
+      "gitBlobSha256": "9e793d00300b064923223528e1332df36746fb4d443858295ed66c2328fcc575",
+      "rawDiffersFromGitBlob": true,
+      "rawNormalizesToGitBlob": true
+    },
+    {
+      "path": "apps/oto-app/client/src/lib/beo-fetch-from-chat.ts",
+      "bytes": 41039,
+      "sha256": "538c632e0207d815b6db33e45e6d7d180b70d3b6d9dffb7ec17b448a0c114fa7",
+      "gitBlobId": "3e4dda80d98678d2017cc07bcc0514bb7383e232",
+      "gitBlobSha256": "e1f0d0f916c0a5bc7a6941dd980529200b6f872d7653182b02b275351e5a4d76",
+      "rawDiffersFromGitBlob": true,
+      "rawNormalizesToGitBlob": true
+    },
+    {
+      "path": "apps/oto-app/server/lib/beoAdditionalBilling.ts",
+      "bytes": 7123,
+      "sha256": "c6ce3d9bf53c2fb83f879a3c0ef1c4c4ad119318111c5870b7da219724377e8c",
+      "gitBlobId": "97b6e2a5c57383c71823f59ba631f3400e09ee04",
+      "gitBlobSha256": "4b21585cd5d119a79ddcb52dc9f4b3f0d13af774566703aa42bc9d207034a362",
+      "rawDiffersFromGitBlob": true,
+      "rawNormalizesToGitBlob": true
+    },
+    {
+      "path": "apps/oto-app/server/lib/beoAiApprove.ts",
+      "bytes": 60749,
+      "sha256": "e4b094a6e9c7b9a375913ffea05ec15d6c1ed417bab3b71b8c354763b8f8611c",
+      "gitBlobId": "ed0559f5d3ddb365ed891a4e97f1882b4a336723",
+      "gitBlobSha256": "78ea7ef6244931f46b3293d887273d87a6800579986b2d11963f54467b07a705",
+      "rawDiffersFromGitBlob": true,
+      "rawNormalizesToGitBlob": true
+    },
+    {
+      "path": "apps/oto-app/server/lib/partyDeposit.ts",
+      "bytes": 7751,
+      "sha256": "702b9b454e9f7f4cd5af29a979f8ea791c073075ec96d95fcc57601e5df50fa2",
+      "gitBlobId": "851a434e380a41d7bd6baed3f6005b2385c32502",
+      "gitBlobSha256": "66768f052387d44f0fdede37aa4c2f9577dd8e5b48cd56084c80a29fb88a4019",
+      "rawDiffersFromGitBlob": true,
+      "rawNormalizesToGitBlob": true
+    },
+    {
+      "path": "apps/oto-app/shared/beoAiFill.ts",
+      "bytes": 45899,
+      "sha256": "1e4bfa59c4489bb9cbd45155099cca70f72127a10213a838e03790e9c571be51",
+      "gitBlobId": "0d5c726a38c366b347d7fec50961facbb5ed69ce",
+      "gitBlobSha256": "3b063b156384b441fbe5c40be1ddb2ec308ecb0aa53b2465b43df95045d64605",
+      "rawDiffersFromGitBlob": true,
+      "rawNormalizesToGitBlob": true
+    },
+    {
+      "path": "apps/oto-app/shared/beoLegacyDeposit.ts",
+      "bytes": 2743,
+      "sha256": "b6f0f64be1c849f34fe3617e9da4c7430660c9fbcebe4bb259ced024b92c83e6",
+      "gitBlobId": "d08e9c1a7c1a1126db3fd1bf0e2dc5066b3afcb2",
+      "gitBlobSha256": "08181e8ad908199561b922607df2005b871c8e793d715506a2d872f04b973414",
+      "rawDiffersFromGitBlob": true,
+      "rawNormalizesToGitBlob": true
+    },
+    {
+      "path": "apps/oto-app/tests/ai-approve-deposit-ui.check.ts",
+      "bytes": 16281,
+      "sha256": "7fded5e9227c777164420aa792003b9b350f4dedcad4672228412583d739c763",
+      "gitBlobId": "e73fcd71ee4751a0b6aa1eb71ae7178dfe59b53c",
+      "gitBlobSha256": "cf6dba1b7c3752f013d7c1aeeb09fdf98bfe8eb8cdf262eaab43e0fe99cd4cb4",
+      "rawDiffersFromGitBlob": true,
+      "rawNormalizesToGitBlob": true
+    },
+    {
+      "path": "apps/oto-app/tests/ai-approve-deposit.check.ts",
+      "bytes": 27842,
+      "sha256": "d75cd3c554df6c64006a133a7a71711150621633d3525210a1e87d22fb09a9eb",
+      "gitBlobId": "a842dc0957e77f89f2ddafcf759e801f70a3c1c1",
+      "gitBlobSha256": "256c4728e9516b185c7766961ee493cb888207171ce2ea29a89a577a42ee792e",
+      "rawDiffersFromGitBlob": true,
+      "rawNormalizesToGitBlob": true
+    },
+    {
+      "path": "apps/oto-app/tests/beo-catalogue-fill.check.ts",
+      "bytes": 128338,
+      "sha256": "2012af4476235da9cda514fb28a63a19943d58b68f85dd0b176df10a5dfd1ccb",
+      "gitBlobId": "9183cc263014680e62d0996a98da4dab7b00c2d5",
+      "gitBlobSha256": "f13d5dbe8c7ccbc3110da0247daaba8ac91653167042a4b69421578d90148fbb",
+      "rawDiffersFromGitBlob": true,
+      "rawNormalizesToGitBlob": true
+    },
+    {
+      "path": "apps/oto-app/tests/beo-fill-till-menu.check.ts",
+      "bytes": 46576,
+      "sha256": "7aa3491e505f427d875470592cb3bf51e1a31aa240825acd08d0326ef0ba202b",
+      "gitBlobId": "0c7f6e720a2efa05681d13c4cfcec92713e3b66d",
+      "gitBlobSha256": "379a77219fcd57749bd39654c7b590769826cd31558335eac220101df2e36819",
+      "rawDiffersFromGitBlob": true,
+      "rawNormalizesToGitBlob": true
+    },
+    {
+      "path": "apps/oto-app/tests/beo-prefill-ui.check.ts",
+      "bytes": 55352,
+      "sha256": "dfa447dfc87cd4eac54e9152114095f833e158015c48d605e249259675c0c84d",
+      "gitBlobId": "c31f125b3e1ebf21406a7962cb1deb9954095a99",
+      "gitBlobSha256": "dff7fe4399d79bfdae391d6492d9152ff391580fd5dc0dadb36a603f4f8e07e4",
+      "rawDiffersFromGitBlob": true,
+      "rawNormalizesToGitBlob": true
+    },
+    {
+      "path": "apps/oto-app/tests/deposit-save.check.ts",
+      "bytes": 46029,
+      "sha256": "8a93f32113e697b589952fc6e4ece9995a559537dcf840b7d6efea47698042e0",
+      "gitBlobId": "93e9f4c1114d59eb506e494aa5b6649dfc362cc3",
+      "gitBlobSha256": "6a8e3b7016e1f16dfab59f78e196f3a5dd0a1e5d5ee2a69456b648444034946a",
+      "rawDiffersFromGitBlob": true,
+      "rawNormalizesToGitBlob": true
+    },
+    {
+      "path": "apps/oto-app/tests/fetch-from-chat.check.ts",
+      "bytes": 55527,
+      "sha256": "ea8b4228347e094805b773868df7452c3c02de96465ed6c55fc193ac4da94a7e",
+      "gitBlobId": "dd42e5abad9e017e803d6df36a1a2cc82f4d5bdd",
+      "gitBlobSha256": "0a7b072ca3d1f74914843d1f5c21b630dc4e1772330588a916176f5e048b6e82",
+      "rawDiffersFromGitBlob": true,
+      "rawNormalizesToGitBlob": true
+    }
+  ],
+  "unchangedContextInputs": [
+    {
+      "path": "apps/api/src/routes/otoapp-party-billing.ts",
+      "bytes": 3087,
+      "sha256": "5b21060191a152a5f3f28460e39c31cb2f0c8e730dc97918d3bf21b111d117b6",
+      "gitBlobId": "6a02c79aa1741c192a83d680d9d1c1fd88553cda",
+      "gitBlobSha256": "5b21060191a152a5f3f28460e39c31cb2f0c8e730dc97918d3bf21b111d117b6",
+      "rawDiffersFromGitBlob": false,
+      "rawNormalizesToGitBlob": true
+    },
+    {
+      "path": "apps/oto-app/migrations/meta/_journal.json",
+      "bytes": 7847,
+      "sha256": "a36f7b0d8b9be0c3d7e6a6963f1c8a36974834f63fea60625956cac42761c715",
+      "gitBlobId": "67ae7fadbf71f2387fd488d560b50fc2fc1b8ed2",
+      "gitBlobSha256": "a36f7b0d8b9be0c3d7e6a6963f1c8a36974834f63fea60625956cac42761c715",
+      "rawDiffersFromGitBlob": false,
+      "rawNormalizesToGitBlob": true
+    },
+    {
+      "path": "apps/oto-app/package-lock.json",
+      "bytes": 685867,
+      "sha256": "a86c72b7664258ae593f7bc75d452ef19cb4c021c6214895b74028c33a48362e",
+      "gitBlobId": "2a6d05579b14d5f57597b765febf26a0fd394437",
+      "gitBlobSha256": "a86c72b7664258ae593f7bc75d452ef19cb4c021c6214895b74028c33a48362e",
+      "rawDiffersFromGitBlob": false,
+      "rawNormalizesToGitBlob": true
+    },
+    {
+      "path": "apps/oto-app/package.json",
+      "bytes": 6088,
+      "sha256": "cce280d28a3d1c8c2d9ce092d7fc0b7b18b9380f1aabb8e57a7bb3462eecd61b",
+      "gitBlobId": "9cc6165cb504c863fac664f0d8232e845314a382",
+      "gitBlobSha256": "cce280d28a3d1c8c2d9ce092d7fc0b7b18b9380f1aabb8e57a7bb3462eecd61b",
+      "rawDiffersFromGitBlob": false,
+      "rawNormalizesToGitBlob": true
+    },
+    {
+      "path": "apps/oto-app/script/typecheck-baseline.json",
+      "bytes": 5547,
+      "sha256": "292674e08361dc084fd1e288cca8047ea1bb6bb80fb3373bbe7c258d4f0ae4e5",
+      "gitBlobId": "4038f1ca1fe12f04e5bb275b5a4a7bad0ea0f4dc",
+      "gitBlobSha256": "292674e08361dc084fd1e288cca8047ea1bb6bb80fb3373bbe7c258d4f0ae4e5",
+      "rawDiffersFromGitBlob": false,
+      "rawNormalizesToGitBlob": true
+    },
+    {
+      "path": "apps/oto-app/script/typecheck-ratchet.mjs",
+      "bytes": 3963,
+      "sha256": "bd61f61a83b7aa585f34776313193b3edc972dc00f59a981f46a637591ce4873",
+      "gitBlobId": "4109bbcbf15a95220f32823f49ac75edeca6bfc3",
+      "gitBlobSha256": "bd61f61a83b7aa585f34776313193b3edc972dc00f59a981f46a637591ce4873",
+      "rawDiffersFromGitBlob": false,
+      "rawNormalizesToGitBlob": true
+    },
+    {
+      "path": "apps/oto-app/server/ai-routes.ts",
+      "bytes": 50400,
+      "sha256": "51eb70817761eecd421d768bcc4f8604dd1dc253410ee951dfa989a720d35947",
+      "gitBlobId": "45da8f8fa8183dfba5e3bca4a0275636af413c88",
+      "gitBlobSha256": "51eb70817761eecd421d768bcc4f8604dd1dc253410ee951dfa989a720d35947",
+      "rawDiffersFromGitBlob": false,
+      "rawNormalizesToGitBlob": true
+    },
+    {
+      "path": "apps/oto-app/server/beo-routes.ts",
+      "bytes": 140079,
+      "sha256": "62eacd914f65f7a222e9ac6ce89aa7a7ea02d81d63eff87aa064c8b539c35e90",
+      "gitBlobId": "d6587426c7694726d7e7aec9a40a32f62176aac6",
+      "gitBlobSha256": "62eacd914f65f7a222e9ac6ce89aa7a7ea02d81d63eff87aa064c8b539c35e90",
+      "rawDiffersFromGitBlob": false,
+      "rawNormalizesToGitBlob": true
+    },
+    {
+      "path": "apps/oto-app/server/lib/beoReviewState.ts",
+      "bytes": 3773,
+      "sha256": "c0300fcf12479d1d92cff6f580856454b81d6f1695ea5eaee331923a69c873fb",
+      "gitBlobId": "fdb3382e67f4577e38d294e79cd5a64c4668f9a8",
+      "gitBlobSha256": "c0300fcf12479d1d92cff6f580856454b81d6f1695ea5eaee331923a69c873fb",
+      "rawDiffersFromGitBlob": false,
+      "rawNormalizesToGitBlob": true
+    },
+    {
+      "path": "apps/oto-app/shared/beoBillingSource.ts",
+      "bytes": 2602,
+      "sha256": "04bec569f9c11de531651afe07586d18bc19742da1c81c5c274f38e6184da04b",
+      "gitBlobId": "f2c1cdf05fb66fe86cbc5c1777b614cc77751a6a",
+      "gitBlobSha256": "04bec569f9c11de531651afe07586d18bc19742da1c81c5c274f38e6184da04b",
+      "rawDiffersFromGitBlob": false,
+      "rawNormalizesToGitBlob": true
+    },
+    {
+      "path": "apps/oto-app/shared/beoExtras.ts",
+      "bytes": 12091,
+      "sha256": "ec9db2f2d003029f907d208f01bed704fe0acb15502d2ddfce8fbde79aba3761",
+      "gitBlobId": "d40df4c46ddc6556284737cb6b8040e29373ec5d",
+      "gitBlobSha256": "ec9db2f2d003029f907d208f01bed704fe0acb15502d2ddfce8fbde79aba3761",
+      "rawDiffersFromGitBlob": false,
+      "rawNormalizesToGitBlob": true
+    },
+    {
+      "path": "apps/oto-app/shared/schema.ts",
+      "bytes": 272979,
+      "sha256": "c067fd3d0360ecc129733468bdbd1ff32f7d281dc43fa1fd4b4320ba6390edaf",
+      "gitBlobId": "d23cae1aaa1d12470f58e987b5f558755479b95f",
+      "gitBlobSha256": "c067fd3d0360ecc129733468bdbd1ff32f7d281dc43fa1fd4b4320ba6390edaf",
+      "rawDiffersFromGitBlob": false,
+      "rawNormalizesToGitBlob": true
+    },
+    {
+      "path": "apps/oto-app/tests/fetch-from-chat-ui.check.ts",
+      "bytes": 23755,
+      "sha256": "f8b617670218931dcd211aaf819b86056230825fcd54d387b2a2bd259b8a63a3",
+      "gitBlobId": "9633c63466e9fb2c2bb973c00b7200fdb6c31391",
+      "gitBlobSha256": "f8b617670218931dcd211aaf819b86056230825fcd54d387b2a2bd259b8a63a3",
+      "rawDiffersFromGitBlob": false,
+      "rawNormalizesToGitBlob": true
+    },
+    {
+      "path": "apps/oto-app/tests/tsconfig.jsx.json",
+      "bytes": 81,
+      "sha256": "a881a00ff837c64daab9455d648051acf436958707b6245e094353b7cbca77c3",
+      "gitBlobId": "3ebb619bd5d038b8c5ca2e8d32e5a176253dce08",
+      "gitBlobSha256": "a881a00ff837c64daab9455d648051acf436958707b6245e094353b7cbca77c3",
+      "rawDiffersFromGitBlob": false,
+      "rawNormalizesToGitBlob": true
+    },
+    {
+      "path": "apps/oto-app/tsconfig.json",
+      "bytes": 1043,
+      "sha256": "836cb8e2b5c902df701c7a5d3b2f5b1bf4bace8f5ce98b3f1431c30fec7a6309",
+      "gitBlobId": "8a46f10b899062b11c9a932a3cf13850dccf2528",
+      "gitBlobSha256": "836cb8e2b5c902df701c7a5d3b2f5b1bf4bace8f5ce98b3f1431c30fec7a6309",
+      "rawDiffersFromGitBlob": false,
+      "rawNormalizesToGitBlob": true
+    },
+    {
+      "path": "eslint.config.mjs",
+      "bytes": 8136,
+      "sha256": "ae85a07664bad8fb4c2101b44c22bf3b39c5459fd0de44e85689987412f6d147",
+      "gitBlobId": "190ba866121306b7dc736ef67a642cfec27a32ae",
+      "gitBlobSha256": "ae85a07664bad8fb4c2101b44c22bf3b39c5459fd0de44e85689987412f6d147",
+      "rawDiffersFromGitBlob": false,
+      "rawNormalizesToGitBlob": true
+    },
+    {
+      "path": "packages/shared/src/parties.ts",
+      "bytes": 12175,
+      "sha256": "4ca977b05cbd68f723743161a4f9e31deee11fe8a981bfc97ccb939a18b7ffdb",
+      "gitBlobId": "9658adfdb4f2fb85e30aa81fa6e3a8cba961b969",
+      "gitBlobSha256": "4ca977b05cbd68f723743161a4f9e31deee11fe8a981bfc97ccb939a18b7ffdb",
+      "rawDiffersFromGitBlob": false,
+      "rawNormalizesToGitBlob": true
+    },
+    {
+      "path": "packages/shared/src/party-billing.ts",
+      "bytes": 7547,
+      "sha256": "c7b3c84dfd74b72e56a9342b01746aa73d8b1f404fdcac4abe298ffb7eb68fc0",
+      "gitBlobId": "21a4e90c30899e34de1888d4bd8b5a272a955252",
+      "gitBlobSha256": "c7b3c84dfd74b72e56a9342b01746aa73d8b1f404fdcac4abe298ffb7eb68fc0",
+      "rawDiffersFromGitBlob": false,
+      "rawNormalizesToGitBlob": true
+    }
+  ],
+  "retainedLocalEvidence": [
+    {
+      "path": "C:/oto-lanes/tom-beo-988-copy-build.log",
+      "bytes": 65584,
+      "sha256": "d974fbd8e9169c3b4b9957c4656ef2c9c5260ea746d0d20eb54e6227171dc8c4"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-988-copy-lint-delta.json",
+      "bytes": 67,
+      "sha256": "22a0bcb1414c53989c1672bb29151f58029915ad067e2ec581554fcc42b73251"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-988-copy-lint-delta.log",
+      "bytes": 148,
+      "sha256": "fe570eaa93114968e287f45ff09f70f1e9f610de6511ed9c4691d349102f96e0"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-988-copy-lint-full.log",
+      "bytes": 474,
+      "sha256": "e3710a4ec41023f5802982e10d361b19b09518774a582fed3f34d24a9da343f8"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-988-copy-lint.mjs",
+      "bytes": 1626,
+      "sha256": "5eb6174500a6de6204031754e2978c311897047db3222cb6104d095aa7f33849"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-988-copy-ratchet.log",
+      "bytes": 265142,
+      "sha256": "afdcfbe989bac5f48319b508a1bdf8d27bfda1941fa25eacf7717bfe8b487740"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-988-copy-type-account.mjs",
+      "bytes": 1681,
+      "sha256": "ad3626480de5770facc8c81a549daf25e677223c0f5f6838cdb6305dd2d431a7"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-988-copy-types-accounting.json",
+      "bytes": 2587,
+      "sha256": "bc65d539c3a442f1452214814e72d46420c9508345de356015fb371b942202cd"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-988-copy-types-accounting.log",
+      "bytes": 5308,
+      "sha256": "e21574b9b60988964798098b835ca42ba062c4d2cc5996ecfc27a07de9bae1fe"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-988-copy-ui.log",
+      "bytes": 5578,
+      "sha256": "eb5a3849615d78b93b06ecae200d8dde122bd24f7539bd0caaca9b529daa3efc"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-988-unresolved-build.log",
+      "bytes": 65582,
+      "sha256": "91aea22d29a4b5b631d505f51ebc9ccbc4eb4aa3c8530ea45b267ca45cbf8634"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-988-unresolved-db.log",
+      "bytes": 17902,
+      "sha256": "2c83157f282a17bf96e0cc8aeaa9e7334b900de753f4b207e4157bc748f5234b"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-988-unresolved-lint-delta.json",
+      "bytes": 67,
+      "sha256": "22a0bcb1414c53989c1672bb29151f58029915ad067e2ec581554fcc42b73251"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-988-unresolved-lint-delta.log",
+      "bytes": 148,
+      "sha256": "fe570eaa93114968e287f45ff09f70f1e9f610de6511ed9c4691d349102f96e0"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-988-unresolved-lint-full.log",
+      "bytes": 3958,
+      "sha256": "1bbccdfb7f05b9c4fd3ffc52e033fedd48b718568feaa8526d4e34f66d1d46d8"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-988-unresolved-lint.mjs",
+      "bytes": 1723,
+      "sha256": "eeaf761eff37a55267001f30d9f3e955f41427d300b384fb005172d9264c03e3"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-988-unresolved-ratchet.log",
+      "bytes": 265142,
+      "sha256": "afdcfbe989bac5f48319b508a1bdf8d27bfda1941fa25eacf7717bfe8b487740"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-988-unresolved-type-account.mjs",
+      "bytes": 1693,
+      "sha256": "86f201edb3fdc6e7df8b333ee07b22cd32cee9414ad62be5fe978c89a73ff913"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-988-unresolved-types-accounting.json",
+      "bytes": 2587,
+      "sha256": "bc65d539c3a442f1452214814e72d46420c9508345de356015fb371b942202cd"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-988-unresolved-types-accounting.log",
+      "bytes": 5308,
+      "sha256": "e21574b9b60988964798098b835ca42ba062c4d2cc5996ecfc27a07de9bae1fe"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-988-unresolved-ui.log",
+      "bytes": 5578,
+      "sha256": "eb5a3849615d78b93b06ecae200d8dde122bd24f7539bd0caaca9b529daa3efc"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-d1-db-first.log",
+      "bytes": 21538,
+      "sha256": "6b2f726aab5d4d103168275a4dacf740dfbf5ed20269b4e5a84222d142ba13bf"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-d1-run.mts",
+      "bytes": 1073,
+      "sha256": "15de4aa0fdb2ae9fff9e70ab47303fd264839e18e1cbd4ffd8e531561ab9eaf3"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-d1-ui-first.log",
+      "bytes": 1236,
+      "sha256": "8d5534e341927b16c0ee6a8a3bc4cc98f4c0c730684d220ca847e46b490f52bf"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-reliability-build-final.log",
+      "bytes": 65582,
+      "sha256": "c53c9d34ccf47a0841510464838f4588e0dc841bf424742f8b1ecd95c3e1b639"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-reliability-db-final.log",
+      "bytes": 50240,
+      "sha256": "f159f5b46fba197a94d56b00eb1b68d9eb0f943fe70154a079bdedfed44698b2"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-reliability-db-legacy-final.log",
+      "bytes": 51706,
+      "sha256": "2f6053991bf5bb5602f34ff08c0c4662c3bce9772a82e4a77452a8bc5a43bbeb"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-reliability-fetch-ui-final.log",
+      "bytes": 3068,
+      "sha256": "8908d2bef412780819eaea0529ee669719f0ea3f80f7bdca02bf67866a28e105"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-reliability-final-run.mts",
+      "bytes": 1073,
+      "sha256": "43e5570497cc2e69c3641e637c2a3aa98cb8cc475a30afae008b5b49f0b52d7b"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-reliability-legacy-run.mts",
+      "bytes": 1076,
+      "sha256": "00963ef06979d76f18aeb627f0f8fb65efefcf324f6cfd018ea830856dfd1b1a"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-reliability-lint-delta.json",
+      "bytes": 67,
+      "sha256": "611ee39d12f208b51c83636b560db1a42eea09bd872b34df1caf4458e86bebeb"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-reliability-lint-final.log",
+      "bytes": 148,
+      "sha256": "5642ffd2615db2c9a56d9d40a484353a3f6f2dd9e32248ff316d4a97d4973379"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-reliability-lint-full.json",
+      "bytes": 217643,
+      "sha256": "6587bbccde10cc37841bd182f6bd08d494e90a5e396c81377bc63a4d16cc4a09"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-reliability-lint.log",
+      "bytes": 3286,
+      "sha256": "06c1ffa659116af8c6655d016fdebfaa412f04ec2ddf5e13e34d67ddd7c354d7"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-reliability-lint.mjs",
+      "bytes": 2510,
+      "sha256": "681d4cea0e1966cf8a489aeb37f9fda88bfc952ebd08cb170ebf1b1898bd549e"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-reliability-prefill-ui-final.log",
+      "bytes": 2646,
+      "sha256": "b9328cd9ed398d51373c11276c46e9e2b4f451b13fcb06c6212d6841fd26dc59"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-reliability-prefill-ui-repaired.log",
+      "bytes": 5366,
+      "sha256": "ab573d291d431f5369aaf3e462ac93fc2dd430b9201af47860544712d7caf9dd"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-reliability-ratchet-final.log",
+      "bytes": 265142,
+      "sha256": "7619feb254381cb1cd256ee928004412985bc5893a7eef723c8d886b9f0b8951"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-reliability-types-accounting.json",
+      "bytes": 2564,
+      "sha256": "204b17a93eab4a11d247ac05847ab5c31c14da08902e2e0c83a781868c6705da"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-reliability-types-accounting.log",
+      "bytes": 5260,
+      "sha256": "7ed65d2cee03036c9f8e271d0ab46f9cbab2f5cc3bf461babcb86ee0f7a093be"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-reliability-types-accounting.mjs",
+      "bytes": 1157,
+      "sha256": "8f97688ba0cd085ae9d27aba3e98ccf07a7715ddf897f8a8fce0ab6f18df30ca"
+    }
+  ],
+  "verification": {
+    "dbD1": 7,
+    "receiptUI": 5,
+    "manualBillingGuard": 7,
+    "finalFill": 15,
+    "finalCatalogue": 22,
+    "finalFetch": 16,
+    "prefillUI": 14,
+    "fetchUI": 12,
+    "appTypes": {
+      "errors": 413,
+      "baselineErrors": 413,
+      "files": 54,
+      "increased": [],
+      "newFiles": [],
+      "touchedEditorInheritedErrors": 4
+    },
+    "forcedTouchedLint": {
+      "files": 16,
+      "baselineErrors": 7,
+      "currentErrors": 7,
+      "introduced": []
+    },
+    "appBuild": "passed"
+  },
+  "failedEvidencePreserved": [
+    "tom-beo-d1-db-first.log: D1/fill pass; manual timestamp fixture409 repaired",
+    "tom-beo-reliability-prefill-ui-final.log: obsolete receipt source mark expected; repaired",
+    "tom-beo-reliability-lint.log: newly unused import and prefer-const; repaired"
+  ],
+  "limits": [
+    "These followup gates are local; exact finalLIVE native988 proof remains separately queued.",
+    "No new model/payment call performed or authorized in this lane.",
+    "Direct manual Billing changes and actual gateway hydration retain existing behavior.",
+    "Root owns integration, rollout, shared status and Jira."
+  ]
+}
