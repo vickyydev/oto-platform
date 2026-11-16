@@ -20,14 +20,14 @@
 //     transcript does not hold is the family's, a default to check); the same
 //     add-on, dish, entertainment or choice named twice is the later line's,
 //     whoever wrote it (SCRUM-826); a dish the catalogue lacks is a notInMenu line; an id
-//     the catalogue does not hold is a free line; the chat's price rides
+//     the catalogue does not hold stays unresolved; the chat's price rides
 //     beside the catalogue's;
 //   - nothing is written by the fill;
 //   - "Approve and create", with the body the review itself builds, writes the
 //     package snapshot, the kitchen plan (set menu, choices, extra dish, free
 //     line), the entertainment at the catalogue's prices, the counts, times,
-//     the date when ticked, and the deposit both in billing and where the BEO
-//     reads it (Party Details' prepayment), and one beo_ai_fill activity row
+//     the date when ticked, and a requested-only deposit amount; paid chat
+//     claims never write received money. One beo_ai_fill activity row
 //     with the sources and matches and none of the chat's words; an id outside
 //     the catalogue refuses the whole approval; a staff login is refused,
 //     another park group's event is not found;
@@ -96,6 +96,7 @@ process.env.DEPLOY_ENV ??= "local";
 process.env.SESSION_SECRET ??= randomUUID() + randomUUID();
 process.env.LOG_LEVEL ??= "info";
 
+const { beoReviewState } = await import("../server/lib/beoReviewState");
 const { registerAIRoutes } = await import("../server/ai-routes");
 const { registerBeoRoutes } = await import("../server/beo-routes");
 const { renderTranscript, resolveCatalogueAnswer, loadBeoCatalogue, quoteOf } = await import("../server/lib/beoCatalogueFill");
@@ -467,7 +468,9 @@ async function send(method: string, path: string, body: unknown, as: "manager" |
 }
 const post = (path: string, body: unknown, as: "manager" | "staff" | "b" | null = "manager") => send("POST", path, body, as);
 const fill = (eventId: string, as: "manager" | "b" = "manager") => post(`/api/events/${eventId}/beo/ai-fill/inbox`, { existingData: { event: { title: "ZZ TEST" } } }, as);
-const approve = (eventId: string, body: unknown, as: "manager" | "staff" | "b" = "manager") => post(`/api/events/${eventId}/beo/ai-fill/approve`, body, as);
+const approve = async (eventId: string, body: unknown, as: "manager" | "staff" | "b" = "manager") => {
+  return post(`/api/events/${eventId}/beo/ai-fill/approve`, { ...(body as Record<string, unknown>), expectedState: (await beoReviewState(db, eventId)).version }, as);
+};
 const readBeo = (eventId: string) => send("GET", `/api/events/${eventId}/beo`, undefined);
 
 /** What the BEO holds: every table an approval writes. */
@@ -808,13 +811,14 @@ try {
     assert.deepEqual(setup?.setup_tasks?.simplifiedTasks, []);
     const step = (await q("select label, offset_from_start_minutes, is_system_generated from beo_timeline_items where event_id = $1 and label = $2", [ev.ru, WORDS.ru.cakeStep]))[0];
     assert.deepEqual(step, { label: WORDS.ru.cakeStep, offset_from_start_minutes: 120, is_system_generated: false }, "the chat's 16:00 step, two hours after the 14:00 start, the timeline's own line");
-    assert.equal(rows.billing.deposit_paid, true);
-    assert.equal(rows.billing.deposit_paid_amount, 5000);
+    assert.ok(!rows.billing?.deposit_paid, "a paid chat claim is informational");
+    assert.ok(!(Number(rows.billing?.deposit_paid_amount ?? 0) > 0));
+    assert.equal(res.body.notWritten?.deposit?.reason, "chat_claim");
     // The deposit where the BEO itself reads it: its GET's Party Details (editor, badge, day-of view, PDF).
     const beo = await readBeo(ev.ru);
     assert.equal(beo.status, 200, JSON.stringify(beo.body));
-    assert.equal(beo.body.partyDetails?.prepaymentReceived, 5000, "the BEO shows the prepayment received");
-    assert.equal(beo.body.partyDetails?.depositDate, "2026-11-03");
+    assert.ok(!(Number(beo.body.partyDetails?.prepaymentReceived ?? 0) > 0), "chat claims create no received deposit");
+    assert.ok(!beo.body.partyDetails?.depositDate, "no received date is invented from chat");
     assert.equal(beo.body.partyDetails?.packageName, WORDS.ru.pkg, "SCRUM-827: the POS name, written by the same approval");
     assert.equal(beo.body.decoration, WORDS.ru.deco, "the family's decoration wish");
     // One activity row for the approval: sources and matches, never the chat's words.
@@ -842,7 +846,7 @@ try {
     assert.ok(timeline.some((t) => t.source_key === "guests_arrive"));
     // A second fill now names what approving again would replace.
     const again = await fill(ev.ru);
-    assert.deepEqual(again.body.review.replaces, ["package", "kitchen plan", "entertainment", "deposit"]);
+    assert.deepEqual(again.body.review.replaces, ["package", "kitchen plan", "entertainment"]);
   });
 
   await check("theRestIsWrittenInTheSamePass", async () => {
@@ -899,7 +903,7 @@ try {
     assert.equal(after.entertainment.length, 2, "the approved entertainment stays");
     assert.deepEqual(setMenuLinesOf(after.kitchen), byMenuOrder([["Margherita", PIZZA], ["French fries", "item_cf_bday_fries"], ["Fruit skewers", "item_cf_bday_fruit_skewers"]]), "the approved set menu stays");
     const partyDetails = (await readBeo(ev.ru)).body.partyDetails;
-    assert.equal(partyDetails.prepaymentReceived, 5000, "the approved deposit stays");
+    assert.ok(!(Number(partyDetails.prepaymentReceived ?? 0) > 0), "the editor save does not create a receipt from a claim");
     assert.equal(partyDetails.packageName, WORDS.ru.pkg, "the rest's Party Details are saved");
   });
 
@@ -1032,7 +1036,7 @@ try {
     );
     assert.deepEqual(bp.entertainment.map((e) => [e.templateId, e.name, e.notInCatalogue]), [[null, WORDS.en.bubble, true], [null, WORDS.en.face, true]]);
     assert.equal(bp.entertainment[1]!.from.source, "family", "the family's wish stays the family's");
-    // Approve and create waits for every one of them; decided, it writes them as free lines.
+    // Every unknown item needs a decision; retained shows stay unresolved requests.
     const bState = initialReviewState(bReview, { fill: b.body.fill, bookedDate: BOOKED });
     assert.equal(undecidedLines(bState), 6, "three dishes, two shows and the package wait for a decision");
     bState.menuLines = bState.menuLines.map((l) => ({ ...l, decision: l.itemName === WORDS.en.sushi ? ("drop" as const) : ("keep" as const) }));
@@ -1048,7 +1052,9 @@ try {
       [[WORDS.en.pizza, "Not in the menu"], [WORDS.en.fries, "Not in the menu"]],
       "the kept dishes as free lines, the sushi left out",
     );
-    assert.deepEqual(bRows.entertainment.map((e) => [e.template_id, e.name, e.price]), [[null, WORDS.en.bubble, 0], [null, WORDS.en.face, 0]]);
+    assert.deepEqual(bRows.entertainment, [], "unmatched shows create no free selection");
+    for (const name of [WORDS.en.bubble, WORDS.en.face]) assert.ok(String(bRows.event.special_requests).includes(name), "unmatched show is retained as an unresolved request");
+    assert.deepEqual(await q("select id from beo_entertainment_items where event_id=$1", [ev.b]), [], "unmatched shows create no scheduled act");
     assert.ok(String(bRows.event.special_requests).includes(WORDS.en.pkg), "the package's words kept in Special Requests");
     const bRow = bRows.activity.find((r) => !JSON.parse(r.metadata_json).step);
     assert.equal(bRow?.summary_text, `AI Fill read the inbox conversation for the BEO of "ZZ TEST 815 B"`);
@@ -1462,10 +1468,10 @@ try {
     assert.equal(state.date, null, "no date read: nothing to tick, the booked date stands");
     assert.equal(Object.values(state.details.team.proposals).every((x) => x === null), true, "no host proposed");
     assert.equal(state.details.specialRequests.value, "ZZ typed by staff", "typed text is never overwritten");
-    // A deposit only the family says was paid opens as asked, their words kept; Received is staff's tick (SCRUM-844's rule).
+    // The legacy state flag does not authorize receipts: the original paid claim stays informational.
     assert.deepEqual(state.deposit, { value: { amount: 5000, paid: false, date: "" }, from: family(3, clip120(NO_RULING_TEXTS[2]!)), changed: false });
     const ticked = { ...state, deposit: edited(state.deposit, { ...state.deposit!.value, paid: true }) };
-    assert.deepEqual(approveBodyOf(review, ticked, { conversationId: conv.noRuling, messageId: null }).deposit, { amount: 5000, paid: true, date: null }, "ticked, it is sent as received");
+    assert.deepEqual(approveBodyOf(review, ticked, { conversationId: conv.noRuling, messageId: null }).deposit, { amount: 5000, paid: true, date: null }, "a compatibility state flag does not change the original informational claim");
     // With a ruling message the review opens as the proposal says, as before.
     const ruled = { ...review, ruling: { source: "team" as const, at: at(5), line: 4 } };
     assert.equal(initialReviewState(ruled).deposit?.value.paid, true, "a ruling's review: unchanged");
@@ -1487,7 +1493,7 @@ try {
     assert.equal(body.event.eventDate, undefined);
     assert.equal(body.details?.team, undefined);
     assert.equal(body.details?.specialRequests, undefined, "the typed text is the form's, not sent over the saved");
-    assert.deepEqual(body.deposit, { amount: 5000, paid: false, date: null }, "unticked: the deposit is sent as asked, never as received");
+    assert.deepEqual(body.deposit, { amount: 5000, paid: true, date: null }, "the original paid claim stays informational, not a requested amount");
     assert.ok(body.sources.some((s) => s.field === "entertainment:0" && s.source === "family"));
     assert.ok(!JSON.stringify(body).includes("quote") && NO_RULING_TEXTS.every((t) => !JSON.stringify(body).includes(t)), "the chat's words never ride the approval");
     const approved = await approve(ev.noRuling, body);
@@ -1499,11 +1505,10 @@ try {
     assert.equal(after.event.start_time, "15:00");
     assert.equal(after.event.internal_staff_notes, null, "Final Message to Parent stays empty");
     assert.equal(after.event.event_date, BOOKED, "the booked date stands");
-    // The family's claim is billing's deposit required, never money received the till settles against.
-    assert.equal(after.billing.deposit_required, true);
-    assert.equal(after.billing.deposit_amount, 5000);
-    assert.equal(after.billing.deposit_paid, false, "no deposit received is written");
-    assert.equal(after.billing.deposit_paid_amount, null);
+    // The family's paid claim creates neither a received receipt nor an agreed request.
+    assert.ok(!after.billing?.deposit_required, "the paid claim is not converted into an agreed request");
+    assert.ok(!after.billing?.deposit_paid, "no deposit received is written");
+    assert.ok(!(Number(after.billing?.deposit_paid_amount ?? 0) > 0));
     const [own] = await q("select prepayment_amount from core_events where id = $1", [ev.noRuling]);
     assert.equal(own?.prepayment_amount, null, "the event's own Prepayment untouched");
     const shown = await readBeo(ev.noRuling);

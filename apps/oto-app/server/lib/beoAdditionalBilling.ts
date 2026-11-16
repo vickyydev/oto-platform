@@ -45,7 +45,14 @@ export async function syncApprovedBeoAdditions(eventId: string, userId: string):
       if (expected !== beoBillingFingerprint(line, area)) unchanged = false;
       return { ...line, billingSync: billingSyncAfterAttempt(line, area, expected, status) };
     });
-    if (kitchen) await tx.update(beoKitchenPlans).set({ menus: { ...menus, kids: update(menus.kids, "food"), adults: update(menus.adults, "food") } }).where(eq(beoKitchenPlans.id, kitchen.id));
+    if (kitchen) {
+      const kids = update(menus.kids, "food");
+      const adults = update(menus.adults, "food");
+      await tx.update(beoKitchenPlans).set({
+        menus: { ...menus, kids, adults },
+        simplifiedMenus: { ...object(kitchen.simplifiedMenus), kids, adults },
+      }).where(eq(beoKitchenPlans.id, kitchen.id));
+    }
     if (bar) await tx.update(beoBarPlans).set({ items: update(bar.items, "bar") }).where(eq(beoBarPlans.id, bar.id));
     const same = unchanged && seen.size === fingerprint.size && billingSourceSetMatches(fingerprint, approvedBeoBillingSources(menus, bar?.items));
     if (result) {

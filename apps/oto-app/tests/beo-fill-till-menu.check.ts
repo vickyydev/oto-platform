@@ -94,7 +94,7 @@ async function check(name: string, fn: () => Promise<void> | void) {
     failures[name] = error instanceof Error ? `${error.message}\n${error.stack?.split("\n").slice(1, 4).join("\n")}` : String(error);
   }
 }
-const CHECKS = 14;
+const CHECKS = 15;
 
 const run = randomUUID().slice(0, 8);
 const tenant = randomUUID();
@@ -548,13 +548,62 @@ try {
     const [heldSelection] = await q("select token from beo_set_menu_selections where event_id=$1", [ev.guards]);
     const token = heldSelection?.token ?? randomUUID();
     if (!heldSelection) await q("insert into beo_set_menu_selections (event_id, template_id, token) values ($1,$2,$3)", [ev.guards, cat.setMenu, token]);
+    // The real editor Save persists the same unresolved representation emitted
+    // by the legacy Load into Editor path; the public parent view must retain it.
+    const read = await fetch(`${base}/api/events/${ev.guards}/beo`, { headers: { "x-test-as": "manager" } });
+    const held = await read.json() as { kitchenPlan: { menus: { kids: unknown[]; adults: unknown[] } } };
+    const unknown = { id: "ZZ-988-unpriced", itemName: "ZZ TEST legacy unknown price", quantity: 2, included: false, price: 0, source: "additional" };
+    const save = await fetch(`${base}/api/events/${ev.guards}/beo`, { method: "PUT", headers: { "content-type": "application/json", "x-test-as": "manager" }, body: JSON.stringify({ kitchenPlan: { ...held.kitchenPlan, menus: { ...held.kitchenPlan.menus, kids: [...held.kitchenPlan.menus.kids, unknown] } } }) });
+    assert.equal(save.status, 200, await save.text());
+    const persisted = (await beoRows(ev.guards)).kitchen.menus.kids.find((line: { id: string }) => line.id === unknown.id);
+    assert.equal(persisted.included, false);
+    assert.equal(persisted.price, 0);
+    assert.notEqual(persisted.chargeApproved, true);
     const response = await fetch(`${base}/api/beo/set-menu-selections/public/${token}`);
     assert.equal(response.status, 200);
     const answer = await response.json() as { plannedItems: Record<string, unknown>[]; template: { items: Record<string, unknown>[] } };
     const manual = answer.plannedItems.find((line) => line.name === "ZZ TEST manually agreed food");
     assert.deepEqual(manual, { area: "Kids kitchen", name: "ZZ TEST manually agreed food", quantity: 2, included: false, unitSatang: 32100 });
+    assert.deepEqual(answer.plannedItems.find((line) => line.name === unknown.itemName), { area: "Kids kitchen", name: unknown.itemName, quantity: 2, included: false, unitSatang: null }, "unresolved price is neither free nor zero in parent review");
     assert.ok(!JSON.stringify(answer.plannedItems).includes("internalCost"));
     assert.ok(answer.template.items.every((item) => Object.keys(item).every((key) => ["id", "type", "label", "options", "allowMultiple", "qty", "note", "productCode", "optionProductCodes"].includes(key))));
+  });
+
+  await check("billingCallbackUpdatesBothMirrorsAndPreservesMetadataWhenSourcesChange", async () => {
+    const { syncApprovedBeoAdditions } = await import("../server/lib/beoAdditionalBilling");
+    const kid = { id: "ZZ-988-kid", itemName: "ZZ TEST kid extra", quantity: 1, price: 10, chargeApproved: true, source: "additional", included: false };
+    const adult = { ...kid, id: "ZZ-988-adult", itemName: "ZZ TEST adult extra", price: 20 };
+    const menus = { kids: [kid], adults: [adult], adultsDiffer: true, manualMenuNote: "ZZ TEST retain menus metadata" };
+    const simplified = { ...menus, manualProjectionNote: "ZZ TEST retain projection metadata" };
+    await q("update beo_kitchen_plans set menus=$2, simplified_menus=$3 where event_id=$1", [ev.guards, menus, simplified]);
+    const realFetch = globalThis.fetch;
+    const oldUrl = process.env.PLATFORM_API_URL;
+    const oldKey = process.env.OTOAPP_PROVISION_KEY;
+    process.env.PLATFORM_API_URL = "https://zz-test.invalid";
+    process.env.OTOAPP_PROVISION_KEY = randomUUID();
+    try {
+      globalThis.fetch = async () => {
+        // A manual edit and a new eligible row arrive while the callback waits.
+        const changed = { ...menus, kids: [{ ...kid, price: 11 }, { ...kid, id: "ZZ-988-new" }] };
+        await q("update beo_kitchen_plans set menus=$2 where event_id=$1", [ev.guards, changed]);
+        return new Response(JSON.stringify({ status: "synced" }), { status: 200, headers: { "content-type": "application/json" } });
+      };
+      assert.equal((await syncApprovedBeoAdditions(ev.guards, manager)).status, "pending");
+      const after = await beoRows(ev.guards);
+      assert.deepEqual(after.kitchen.simplified_menus.kids, after.kitchen.menus.kids);
+      assert.deepEqual(after.kitchen.simplified_menus.adults, after.kitchen.menus.adults);
+      assert.equal(after.kitchen.menus.manualMenuNote, menus.manualMenuNote);
+      assert.equal(after.kitchen.simplified_menus.manualProjectionNote, simplified.manualProjectionNote);
+      assert.equal(after.kitchen.menus.kids[0].price, 11);
+      assert.equal(after.kitchen.menus.kids[0].billingSync, "pending", "changed source cannot be falsely marked synced");
+      assert.equal(after.kitchen.menus.kids[1].billingSync, undefined, "new source was never part of this callback");
+      assert.equal(after.kitchen.menus.adults[0].billingSync, "synced");
+      assert.equal(after.billing.add_ons.additionalBilling.status, "pending", "new/changed source keeps overall result pending");
+    } finally {
+      globalThis.fetch = realFetch;
+      if (oldUrl === undefined) delete process.env.PLATFORM_API_URL; else process.env.PLATFORM_API_URL = oldUrl;
+      if (oldKey === undefined) delete process.env.OTOAPP_PROVISION_KEY; else process.env.OTOAPP_PROVISION_KEY = oldKey;
+    }
   });
 
   await check("pendingBillingStaysDurableWhenItsSourceIsRemoved", async () => {
