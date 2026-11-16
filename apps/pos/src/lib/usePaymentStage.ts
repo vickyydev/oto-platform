@@ -883,7 +883,16 @@ export function usePaymentStage(supplied: PaymentStageOptions): PaymentStageCont
         if (beforeRecovery.phase === 'manual' && beforeRecovery.route === 'manual') {
           update({ phase: 'manual', route: 'manual', error: null, retryable: false });
         } else {
-          update({ phase: 'ready', outstandingSatang: outstanding, amountSatang: outstanding, tenderedSatang: outstanding, method: null, error: null, retryable: false, partial: false });
+          // SCRUM-986: the counter's charge id can arrive after staff chose Cash
+          // or entered a part. A verified empty, unchanged
+          // charge must not erase that unsent form. Recorded money still wins above.
+          const draftMethod = beforeRecovery.method ? findPaymentMethod(beforeRecovery.method) : undefined;
+          const keepDraft = beforeRecovery.saleId === null && beforeRecovery.phase === 'ready'
+            && beforeRecovery.attempt === null && beforeRecovery.settlements.length === 0
+            && beforeRecovery.outstandingSatang === outstanding && draftMethod?.enabled;
+          update({ phase: 'ready', outstandingSatang: outstanding, amountSatang: outstanding, tenderedSatang: outstanding, method: null, error: null, retryable: false, partial: false,
+            ...(keepDraft ? { method: draftMethod.id, kind: draftMethod.kind, amountSatang: beforeRecovery.amountSatang,
+              tenderedSatang: beforeRecovery.tenderedSatang, partial: beforeRecovery.partial } : {}) });
         }
       }
       resumedSale.current = saleId;
