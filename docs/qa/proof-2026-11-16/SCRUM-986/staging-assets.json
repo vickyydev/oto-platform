@@ -1,0 +1,43 @@
+{
+  "observedAt": "2026-11-16T15:35:33.370Z",
+  "results": [
+    {
+      "service": "oto-pos-web-staging",
+      "deploy": {
+        "id": "dep-dbti34bncjis73fdee4g",
+        "status": "live",
+        "sha": "10e73db6c446226e60ae5e8979236ac6d5b351b1"
+      },
+      "pageStatus": 200,
+      "assets": [
+        {
+          "url": "https://oto-pos-web-staging.onrender.com/assets/index-CXmy00GA.js",
+          "status": 200,
+          "bytes": 2766279,
+          "sha256": "b8dfdc03d07100dece2f159c191879fd21915513e0e0f939ee75aec9da8ce286",
+          "containsFreshDraftGuard": true,
+          "guardSnippet": "e:\"manual\",route:\"manual\",error:null,retryable:!1});else{const Ye=Ke.method?Yi(Ke.method):void 0,St=Ke.saleId===null&&Ke.phase===\"ready\"&&Ke.attempt===null&&Ke.settlements.length===0&&Ke.outstandingSatang===ht&&Ye?.enabled;_({phase:\"ready\",outstandingSatang:ht,amountSatang:ht,tenderedSatang:ht,method:null,error:null,retryable:!1,partial:!1,...St?{method:Ye.id,kind:Ye.kind,amountSatang:Ke.amountSatang,tenderedSatang:Ke.tenderedSatang,parti"
+        }
+      ]
+    },
+    {
+      "service": "oto-pos-staging",
+      "deploy": {
+        "id": "dep-dbti34on74is73c01tq0",
+        "status": "live",
+        "sha": "10e73db6c446226e60ae5e8979236ac6d5b351b1"
+      },
+      "pageStatus": 200,
+      "assets": [
+        {
+          "url": "https://oto-pos-staging.onrender.com/assets/index-CXmy00GA.js",
+          "status": 200,
+          "bytes": 2766279,
+          "sha256": "b8dfdc03d07100dece2f159c191879fd21915513e0e0f939ee75aec9da8ce286",
+          "containsFreshDraftGuard": true,
+          "guardSnippet": "e:\"manual\",route:\"manual\",error:null,retryable:!1});else{const Ye=Ke.method?Yi(Ke.method):void 0,St=Ke.saleId===null&&Ke.phase===\"ready\"&&Ke.attempt===null&&Ke.settlements.length===0&&Ke.outstandingSatang===ht&&Ye?.enabled;_({phase:\"ready\",outstandingSatang:ht,amountSatang:ht,tenderedSatang:ht,method:null,error:null,retryable:!1,partial:!1,...St?{method:Ye.id,kind:Ye.kind,amountSatang:Ke.amountSatang,tenderedSatang:Ke.tenderedSatang,parti"
+        }
+      ]
+    }
+  ]
+}

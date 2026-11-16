@@ -1,0 +1,23 @@
+{
+  "observedAt": "2026-11-16T15:34:35.060Z",
+  "service": "oto-api-staging",
+  "settings": {
+    "PGW_PROVIDER": "simulator",
+    "PGW_ENV": "unset; inspect source default",
+    "PGW_MERCHANT_ID": {
+      "configured": false
+    },
+    "PGW_SECRET_KEY": {
+      "configured": false
+    },
+    "PGW_BACKEND_RETURN_URL": {
+      "configured": false
+    },
+    "PGW_FRONTEND_RETURN_URL": {
+      "configured": false
+    },
+    "PGW_WEBHOOK_SECRET": {
+      "configured": false
+    }
+  }
+}

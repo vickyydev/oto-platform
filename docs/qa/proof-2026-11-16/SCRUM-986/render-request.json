@@ -1,0 +1,57 @@
+{
+  "observedAt": "2026-11-16T15:30:26.957Z",
+  "receipts": [
+    {
+      "name": "oto-pos-web-staging",
+      "serviceId": "srv-dbk7qu8n74is73bm894g",
+      "recent": [
+        {
+          "id": "dep-dbs3kkqjnfac73br0il0",
+          "status": "live",
+          "sha": "39f02c58d8e7c5c7970b0841e6f025fa58fcd034"
+        },
+        {
+          "id": "dep-dbs28he417fc73f13pc0",
+          "status": "deactivated",
+          "sha": "41158d2310ba4776dc2e1d03e435a8716d76556c"
+        },
+        {
+          "id": "dep-dbs1kauq1p3s73ea0b60",
+          "status": "update_failed",
+          "sha": "5bf409ee4198fa72d0d55a2b400aff5b29a69ca5"
+        }
+      ],
+      "created": {
+        "id": "dep-dbti34bncjis73fdee4g",
+        "status": "build_in_progress",
+        "sha": "10e73db6c446226e60ae5e8979236ac6d5b351b1"
+      }
+    },
+    {
+      "name": "oto-pos-staging",
+      "serviceId": "srv-danh2mf40ujc73bu80j0",
+      "recent": [
+        {
+          "id": "dep-dbs3kkqjnfac73br0iug",
+          "status": "live",
+          "sha": "39f02c58d8e7c5c7970b0841e6f025fa58fcd034"
+        },
+        {
+          "id": "dep-dbs28he417fc73f13otg",
+          "status": "deactivated",
+          "sha": "41158d2310ba4776dc2e1d03e435a8716d76556c"
+        },
+        {
+          "id": "dep-dbs1kb6q1p3s73ea0bg0",
+          "status": "deactivated",
+          "sha": "5bf409ee4198fa72d0d55a2b400aff5b29a69ca5"
+        }
+      ],
+      "created": {
+        "id": "dep-dbti34on74is73c01tq0",
+        "status": "build_in_progress",
+        "sha": "10e73db6c446226e60ae5e8979236ac6d5b351b1"
+      }
+    }
+  ]
+}

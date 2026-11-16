@@ -1,0 +1,12 @@
+﻿{
+    "sourceSha":  "10e73db6c446226e60ae5e8979236ac6d5b351b1",
+    "ciRun":  43897011630,
+    "ciStatus":  "in_progress",
+    "watchSession":  65998,
+    "runtimeStatus":  "Both named tills LIVE on exactsource; HTTP200 and new guard verified in identical served bundles. No new stagingpayment.",
+    "nativeRepairedLocal":  "1/1 passed",
+    "ticket":  "SCRUM-986",
+    "ticketStatus":  "Testing",
+    "otherWork":  "987 deposit and988-991 BEO building;992-993 Inbox starting",
+    "checkedAtUtc":  "2026-11-16T15:32:41.1904205Z"
+}
