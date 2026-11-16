@@ -6,10 +6,12 @@ import { schema as s } from '@oto/db';
 import type { SimulatedInbound } from '@oto/messaging';
 import {
   InboxBookDateResultSchema,
+  InboxBookDateBodySchema,
   InboxConversationDetailSchema,
   InboxDashboardSchema,
   InboxOpenBeoResultSchema,
   newId,
+  deriveId,
   readHandoffTarget,
   type InboxBookDateResult,
   type InboxOpenBeoResult,
@@ -24,6 +26,7 @@ import {
   isRemovedStanding,
 } from '../src/services/inbox/book-date';
 import { inboxToday, inboxWeekStart } from '../src/services/inbox/read';
+import { partyDepositOf } from '../src/services/party-deposit';
 import type {
   DirectoryInboxEventAnswer,
   DirectoryInboxEventBody,
@@ -132,6 +135,84 @@ async function book<T = InboxBookDateResult>(
   body: Record<string, unknown>,
   key: string = newId(),
 ): Promise<Res<T>> {
+  // SCRUM-987: these historical calendar/permission pins start with a verified
+  // gateway receipt. The separate prebooking-review suite proves the real
+  // request/signed settlement path and attacks every unpaid/manual refusal.
+  const parsed = InboxBookDateBodySchema.safeParse(body);
+  const conv = (
+    await ctx.db.select().from(s.conversation).where(eq(s.conversation.id, conversationId)).limit(1)
+  )[0];
+  const validPark =
+    parsed.success &&
+    (
+      await ctx.db
+        .select({ id: s.branch.id })
+        .from(s.branch)
+        .where(eq(s.branch.id, parsed.data.branchId))
+        .limit(1)
+    )[0];
+  if (
+    parsed.success &&
+    validPark &&
+    conv?.operatorId === oto &&
+    conv.category === 'birthdays' &&
+    ['gm', 'bdayA', 'mgrCentral'].includes(who) &&
+    (who !== 'mgrCentral' || parsed.data.branchId === central)
+  ) {
+    const b = parsed.data;
+    const draftId = b.id;
+    const attemptId = deriveId(draftId, 'zz-test-gateway-receipt');
+    await ctx.db
+      .insert(s.prebookingDraft)
+      .values({
+        id: draftId,
+        operatorId: oto,
+        branchId: b.branchId,
+        conversationId,
+        accountId: people[who as keyof typeof people]!,
+        amountSatang: 300_000,
+        currency: 'THB',
+        booking: b,
+      })
+      .onConflictDoNothing();
+    const [stored] = await ctx.db
+      .select()
+      .from(s.prebookingDraft)
+      .where(eq(s.prebookingDraft.id, draftId));
+    if (stored?.conversationId === conversationId) {
+      await ctx.db
+        .insert(s.paymentAttempt)
+        .values({
+          id: attemptId,
+          operatorId: oto,
+          branchId: b.branchId,
+          businessDate: '2026-11-16',
+          method: 'qr',
+          provider: 'simulator',
+          status: 'approved',
+          amountSatang: 300_000,
+          paidAt: new Date(),
+          payload: { prebookingDraftId: draftId, currency: 'THB', settledBy: 'webhook' },
+        })
+        .onConflictDoNothing();
+      await ctx.db
+        .insert(s.prebookingDepositRequest)
+        .values({ id: deriveId(draftId, 'zz-test-request'), draftId, paymentAttemptId: attemptId })
+        .onConflictDoNothing();
+      await ctx.db
+        .insert(s.auditLog)
+        .values({
+          id: deriveId(draftId, 'zz-test-settlement-audit'),
+          operatorId: oto,
+          branchId: b.branchId,
+          action: 'payment.settled',
+          entityType: 'payment_attempt',
+          entityId: attemptId,
+          after: { status: 'approved', source: 'webhook' },
+        })
+        .onConflictDoNothing();
+    }
+  }
   const res = await ctx.app.inject({
     method: 'POST',
     url: `/inbox/conversations/${conversationId}/book-date`,
@@ -421,6 +502,22 @@ describe('Book Date makes a tentative birthday in the Events module, linked both
       whatsapp_phone_e164: '+66812345678',
     });
 
+    const money = await appPool.query(
+      `select e.prepayment_amount, b.deposit_paid_amount, b.add_ons->'prebookingDeposit' as receipt from core_events e join beo_event_billing b on b.event_id=e.id where e.id=$1`,
+      [body.id],
+    );
+    expect(money.rows[0]).toMatchObject({
+      prepayment_amount: 3000,
+      deposit_paid_amount: 3000,
+      receipt: {
+        draftId: body.id,
+        attemptId: deriveId(String(body.id), 'zz-test-gateway-receipt'),
+        amountSatang: 300_000,
+      },
+    });
+
+    const gatewayHistory = await partyDepositOf(ctx.db, { operatorId: oto, eventId: String(body.id) });
+    expect(gatewayHistory.history.filter((r) => r.state === 'paid')).toMatchObject([{ id: body.id, amountSatang: 300_000 }]);
     // The conversation's half: the soft key, the pill, the audit row.
     expect((await convRow(conv)).eventOrderRef).toBe(body.id);
     const p = await pills(conv);

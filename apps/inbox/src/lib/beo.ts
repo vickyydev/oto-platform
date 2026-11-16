@@ -569,6 +569,7 @@ export interface EventChipDeposit {
   amountSatang: number;
   /** A `requested` one the thread was handed to a person for. */
   overdue: boolean;
+  simulator?: boolean;
 }
 
 /**
@@ -584,7 +585,7 @@ export function depositChipWords(deposit: EventChipDeposit | null | undefined): 
     case 'requested':
       return deposit.overdue ? `Deposit overdue ${amount}` : `Deposit requested ${amount}`;
     case 'paid':
-      return `Deposit paid ${amount}`;
+      return deposit.simulator ? `Simulator test deposit ${amount} (no real bank money)` : `Deposit paid ${amount}`;
     case 'expired':
       return 'Deposit link expired';
     default:

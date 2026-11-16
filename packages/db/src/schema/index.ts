@@ -70,3 +70,4 @@ export * from './party-slips';
 // The void and updated-items slips (SCRUM-861): after the sales ledger, whose
 // sale and refund a refund's slip names, and beside the party slips.
 export * from './prep-slips';
+export * from './prebooking';

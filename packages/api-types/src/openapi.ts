@@ -8273,6 +8273,8 @@ export interface paths {
                                 amountSatang: number;
                                 currency: string;
                                 /** @enum {string} */
+                                provider?: "2c2p" | "simulator";
+                                /** @enum {string} */
                                 state: "requested" | "paid" | "expired" | "cancelled";
                                 paymentLink: string | null;
                                 linkExpiresAt: string | null;
@@ -8304,6 +8306,8 @@ export interface paths {
                                 conversationId: string;
                                 amountSatang: number;
                                 currency: string;
+                                /** @enum {string} */
+                                provider?: "2c2p" | "simulator";
                                 /** @enum {string} */
                                 state: "requested" | "paid" | "expired" | "cancelled";
                                 paymentLink: string | null;
@@ -8370,6 +8374,8 @@ export interface paths {
                                 conversationId: string;
                                 amountSatang: number;
                                 currency: string;
+                                /** @enum {string} */
+                                provider?: "2c2p" | "simulator";
                                 /** @enum {string} */
                                 state: "requested" | "paid" | "expired" | "cancelled";
                                 paymentLink: string | null;
@@ -8450,6 +8456,8 @@ export interface paths {
                                 amountSatang: number;
                                 currency: string;
                                 /** @enum {string} */
+                                provider?: "2c2p" | "simulator";
+                                /** @enum {string} */
                                 state: "requested" | "paid" | "expired" | "cancelled";
                                 paymentLink: string | null;
                                 linkExpiresAt: string | null;
@@ -8528,6 +8536,8 @@ export interface paths {
                                 conversationId: string;
                                 amountSatang: number;
                                 currency: string;
+                                /** @enum {string} */
+                                provider?: "2c2p" | "simulator";
                                 /** @enum {string} */
                                 state: "requested" | "paid" | "expired" | "cancelled";
                                 paymentLink: string | null;
@@ -36583,6 +36593,7 @@ export interface paths {
                                     /** @enum {string} */
                                     state: "requested" | "paid" | "expired" | "cancelled";
                                     amountSatang: number;
+                                    simulator?: boolean;
                                     overdue: boolean;
                                 } | null;
                             } | null;
@@ -37852,6 +37863,159 @@ export interface paths {
         };
         trace?: never;
     };
+    "/inbox/conversations/{id}/prebooking": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read the deposit draft. A draft reserves no calendar date; only an inquiry-agreed gateway payment unlocks staff booking. */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            draft: {
+                                /** Format: uuid */
+                                id: string;
+                                booking: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    /** Format: uuid */
+                                    branchId: string;
+                                    date: string;
+                                    startTime: string;
+                                    kids: number | null;
+                                    adults: number | null;
+                                    contactName: string;
+                                    phone: string | null;
+                                    childName: string | null;
+                                    childAge: number | null;
+                                };
+                                amountSatang: number;
+                                currency: string;
+                                simulator: boolean;
+                                /** @enum {string} */
+                                state: "requested" | "paid" | "expired" | "failed" | "needs_review" | "booked";
+                                paymentLink: string | null;
+                                linkExpiresAt: string | null;
+                                paidAt: string | null;
+                            } | null;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** @description Request the agreed whole-baht deposit before booking. Reuses the payment gateway and original attempt ledger; never creates a calendar event. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        booking: {
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            branchId: string;
+                            date: string;
+                            startTime: string;
+                            kids: number | null;
+                            adults: number | null;
+                            contactName: string;
+                            phone: string | null;
+                            childName: string | null;
+                            childAge: number | null;
+                        };
+                        amountSatang: number;
+                        /** Format: uuid */
+                        requestId: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            draft: {
+                                /** Format: uuid */
+                                id: string;
+                                booking: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    /** Format: uuid */
+                                    branchId: string;
+                                    date: string;
+                                    startTime: string;
+                                    kids: number | null;
+                                    adults: number | null;
+                                    contactName: string;
+                                    phone: string | null;
+                                    childName: string | null;
+                                    childAge: number | null;
+                                };
+                                amountSatang: number;
+                                currency: string;
+                                simulator: boolean;
+                                /** @enum {string} */
+                                state: "requested" | "paid" | "expired" | "failed" | "needs_review" | "booked";
+                                paymentLink: string | null;
+                                linkExpiresAt: string | null;
+                                paidAt: string | null;
+                            } | null;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                };
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/inbox/conversations/{id}/book-date": {
         parameters: {
             query?: never;
@@ -37861,7 +38025,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Book Date (SCRUM-775): on a Birthdays & Events conversation, make a TENTATIVE birthday event in the OTO App's Events module from what the person confirmed out of the chat — the park, the date and start time, the guests, the contact and the child — and link the two: the conversation keeps the event (its `event` on GET …/{id}, a `date_booked` pill) and the event names the conversation ("From the inbox"). The body `id` is caller-named — the event's own id in the Events module — so the same id again is the same event (a replay, `x-oto-replay: true`), never a second; an id another conversation holds is 409 ID_IN_USE. Refusals: 409 NOT_A_BIRTHDAY; 409 EVENT_ALREADY_BOOKED when the conversation has its event already (`details.eventId`; Create BEO opens it at `event.beoPath`) — unless the Events module deleted or archived that event (`event.removed`, SCRUM-820), when the new date takes the conversation; 409 EVENT_BRANCH_NOT_MAPPED when the OTO App has no branch for the park; 503 EVENTS_CALENDAR_UNAVAILABLE when the Events module did not answer (nothing was booked; press again); 502 EVENTS_CALENDAR_REFUSED otherwise. Needs a place in the birthdays team or inbox:conversation:assign at the conversation. Refusals: 404 when the conversation is not the caller’s to see (or not in their operator); 403 when the permission is not held at this conversation. */
+        /** @description New bookings require the full agreed prebooking deposit verified by the gateway; manual receipts, slips and AI readings cannot unlock creation. Staff check capacity; payment never auto-books. Book Date (SCRUM-775): on a Birthdays & Events conversation, make a TENTATIVE birthday event in the OTO App's Events module from what the person confirmed out of the chat — the park, the date and start time, the guests, the contact and the child — and link the two: the conversation keeps the event (its `event` on GET …/{id}, a `date_booked` pill) and the event names the conversation ("From the inbox"). The body `id` is caller-named — the event's own id in the Events module — so the same id again is the same event (a replay, `x-oto-replay: true`), never a second; an id another conversation holds is 409 ID_IN_USE. Refusals: 409 NOT_A_BIRTHDAY; 409 EVENT_ALREADY_BOOKED when the conversation has its event already (`details.eventId`; Create BEO opens it at `event.beoPath`) — unless the Events module deleted or archived that event (`event.removed`, SCRUM-820), when the new date takes the conversation; 409 EVENT_BRANCH_NOT_MAPPED when the OTO App has no branch for the park; 503 EVENTS_CALENDAR_UNAVAILABLE when the Events module did not answer (nothing was booked; press again); 502 EVENTS_CALENDAR_REFUSED otherwise. Needs a place in the birthdays team or inbox:conversation:assign at the conversation. Refusals: 404 when the conversation is not the caller’s to see (or not in their operator); 403 when the permission is not held at this conversation. */
         post: {
             parameters: {
                 query?: never;
@@ -37924,6 +38088,7 @@ export interface paths {
                                     /** @enum {string} */
                                     state: "requested" | "paid" | "expired" | "cancelled";
                                     amountSatang: number;
+                                    simulator?: boolean;
                                     overdue: boolean;
                                 } | null;
                             };

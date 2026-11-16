@@ -38,6 +38,7 @@ export type MoveDest = ApiBody<'/inbox/conversations/{id}/move', 'post'>['dest']
 export type PrimaryAssignee = ApiBody<'/inbox/conversations/{id}/primary', 'put'>['assignee'];
 export type SimulatedInbound = ApiBody<'/inbox/simulator/inbound', 'post'>;
 export type BookDateBody = ApiBody<'/inbox/conversations/{id}/book-date', 'post'>;
+export type Prebooking = ApiResponse<'/inbox/conversations/{id}/prebooking', 'get'>;
 /** The words of a dictated clip (SCRUM-834): what the composer places at the caret. */
 export type Dictation = ApiResponse<'/inbox/conversations/{id}/dictation', 'post'>;
 export type BookDateResult = ApiResponse<'/inbox/conversations/{id}/book-date', 'post'>;
@@ -137,6 +138,14 @@ export const inboxApi = {
     api.post<ApiResponse<'/inbox/conversations/{id}/book-date', 'post'>>(`${at(id)}/book-date`, body, {
       idempotencyKey: idemKey(),
     }),
+
+  prebooking: (id: string) => api.get<Prebooking>(`${at(id)}/prebooking`),
+  requestPrebooking: (id: string, body: ApiBody<'/inbox/conversations/{id}/prebooking', 'post'>) =>
+    api.post<ApiResponse<'/inbox/conversations/{id}/prebooking', 'post'>>(
+      `${at(id)}/prebooking`,
+      body,
+      { idempotencyKey: idemKey() },
+    ),
 
   /**
    * Book Date's values read from the whole chat by the model (SCRUM-821), each

@@ -182,6 +182,8 @@ export interface DirectoryInboxEventBody {
   bookingName?: string | null;
   parentName?: string | null;
   whatsappPhone?: string | null;
+  /** Trusted platform assertion backed by the original gateway attempt, never browser input. */
+  verifiedDeposit?: { draftId: string; attemptId: string; amountSatang: number; paidDate: string; provider: '2c2p' | 'simulator' };
 }
 
 /** What the app answers with (`InboxEventResult`, the app's eventWrites.ts). */

@@ -6,6 +6,7 @@
 // leaves the pattern reading as it was and says nothing more. Nothing is saved
 // before Save. Node, no DOM: the merge as the pure functions the dialog calls,
 // and the dialog rendered with react-dom/server.
+import { paidPrebookingFixture } from './paid-prebooking-fixture';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
@@ -117,6 +118,7 @@ const UNAVAILABLE: BookDateProposal = {
 function dialog(initial: BookDateDraft, proposal: BookDateProposal | null, reading = false): string {
   return renderToStaticMarkup(
     createElement(BookDateDialog, {
+      initialDeposit: paidPrebookingFixture(CENTRAL),
       open: true,
       customer: 'ZZ TEST Olga',
       initial,

@@ -28,6 +28,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { BookDateProposal, ConversationRow, Message } from '@/api/inbox';
 import { BookDateDialog, readDraft, type BookDateValues } from '@/components/BookDateDialog';
+import { paidPrebookingFixture } from './paid-prebooking-fixture';
 import {
   bookDateDraft,
   editBookDate,
@@ -122,6 +123,7 @@ function answer(proposal: Partial<Proposal>): BookDateProposal {
 function dialog(initial: BookDateDraft, proposal: BookDateProposal | null, reading = false): string {
   return renderToStaticMarkup(
     createElement(BookDateDialog, {
+      initialDeposit: paidPrebookingFixture(CENTRAL),
       open: true,
       customer: 'ZZ TEST 955',
       initial,
@@ -236,6 +238,7 @@ describe('a count the chat reads two ways is chosen before Book date saves', () 
     // Opened from Create BEO, the same.
     const beo = renderToStaticMarkup(
       createElement(BookDateDialog, {
+      initialDeposit: paidPrebookingFixture(CENTRAL),
         open: true,
         customer: 'ZZ TEST 955',
         initial: draftOf(P6),
@@ -358,6 +361,7 @@ describe('the dialog in a page: a pick or a typed figure frees Book date at once
     act(async () => {
       root!.render(
         createElement(BookDateDialog, {
+      initialDeposit: paidPrebookingFixture(CENTRAL),
           open: true,
           customer: 'ZZ TEST 955',
           initial,

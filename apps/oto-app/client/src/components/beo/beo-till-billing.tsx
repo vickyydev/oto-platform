@@ -511,12 +511,13 @@ export function DepositRequestPanel({
           )}
           {current?.state === "paid" && (
             <Badge className="bg-green-600" data-testid="badge-deposit-request-paid">
-              Paid
+              {current.provider === "simulator" ? "Simulator test" : "Paid"}
             </Badge>
           )}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
+        {current?.provider === "simulator" && <p className="text-sm font-medium" data-testid="text-prebooking-simulator">Simulator test deposit: no real bank money has been received.</p>}
         {loading && !reading ? (
           <p className="text-sm text-muted-foreground flex items-center gap-2">
             <Loader2 className="h-4 w-4 animate-spin" /> Asking the till…

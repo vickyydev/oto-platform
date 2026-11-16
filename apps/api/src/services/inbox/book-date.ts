@@ -1,10 +1,11 @@
 import { and, desc, eq, isNull, sql } from 'drizzle-orm';
 import type { FastifyBaseLogger } from 'fastify';
-import { branch, conversation, inboxEvent, partyDepositRequest, team, type Db } from '@oto/db';
+import { branch, conversation, inboxEvent, partyDepositRequest, prebookingDraft, team, type Db } from '@oto/db';
 import {
   beoPathOf,
   newId,
   normalizePhone,
+  isoDateInTz,
   withHandoffTarget,
   type InboxBookDateBody,
   type InboxBookDateResult,
@@ -29,6 +30,7 @@ import { PermissionDeniedError } from '../../plugins/session';
 import { withTx, type Exec, type OpContext } from '../tx';
 import type { ActionCtx } from './actions';
 import { loadVisibleConversation } from './read-visibility';
+import { claimPrebooking, prebookingEventDeposit } from './prebooking';
 
 /**
  * BOOK DATE — A BIRTHDAY'S EVENT IN THE EVENTS MODULE (SCRUM-775).
@@ -76,15 +78,17 @@ import { loadVisibleConversation } from './read-visibility';
  * No seam, a read that failed, or anything else unsure leaves the event as
  * booked (`eventStandingOf`).
  *
- * ORDER. The app is asked first, outside any transaction here, so no row is
- * held while another service answers; then one transaction locks the
- * conversation, checks again, and writes the link, the pill and the audit row
- * together. If the app does not answer, nothing is written here and the press
- * can simply be made again (`EVENTS_CALENDAR_UNAVAILABLE`). If the commit here
- * fails after the app made the event, the same press again finds it there
- * (a replay) and links it. Two people pressing for one conversation at the
- * same moment with two different ids can leave the second's tentative event in
- * the app unlinked; the second is told `EVENT_ALREADY_BOOKED`.
+ * SCRUM-987. Before a new calendar write, the prebooking draft must hold the
+ * full agreed amount in its original inquiry-agreed gateway receipt. A slip,
+ * AI reading or staff confirmation cannot unlock booking. The draft reserves
+ * no date. Staff check capacity; the owner permits concurrent parties.
+ *
+ * A durable claim fixes one event id, original receipt and final staff-entered
+ * details before asking the app outside the transaction. A lost answer is
+ * retried with those same details and id. The app writes the event and deposit
+ * fact/provenance together; replay never credits money again. The conversation
+ * link, pill and completed draft commit together after the app answers. Older
+ * linked events replay as historical bookings without requiring a new deposit.
  */
 
 export interface BookDateDeps {
@@ -149,6 +153,29 @@ function mayBookAt(ctx: ActionCtx, conv: { branchId: string | null }, convTeam: 
   if (conv.branchId !== null && conv.branchId === branchId) return true;
   if (hasPermission(ctx.effective, ASSIGN, { operatorId: ctx.viewer.operatorId, branchId })) return true;
   return inBirthdaysTeam(ctx, convTeam) && (convTeam.branchId === null || convTeam.branchId === branchId);
+}
+
+/** The deposit draft uses precisely the booking action's existing authority. */
+export async function authorizePrebooking(
+  db: Exec,
+  ctx: ActionCtx,
+  conversationId: string,
+  branchId?: string,
+) {
+  const conv = await loadVisibleConversation(db, ctx.viewer, conversationId);
+  const [convTeam] = conv.teamId
+    ? await db
+        .select({ key: team.key, departmentId: team.departmentId, branchId: team.branchId })
+        .from(team)
+        .where(and(eq(team.operatorId, ctx.viewer.operatorId), eq(team.id, conv.teamId)))
+        .limit(1)
+    : [];
+  if (!mayBook(ctx, conv, convTeam ?? null)) throw new PermissionDeniedError(ASSIGN);
+  if (conv.category !== 'birthdays')
+    throw errors.conflict('NOT_A_BIRTHDAY', BOOK_DATE_MESSAGES.notABirthday);
+  if (branchId && !mayBookAt(ctx, conv, convTeam ?? null, branchId))
+    throw new PermissionDeniedError(ASSIGN);
+  return conv;
 }
 
 /** "Mali's 6th Birthday", as the Events module's own form suggests ("e.g., Emma's 5th Birthday"). */
@@ -255,6 +282,7 @@ export async function conversationEventOf(
   booked.deposit = deposit
     ? { requestId: deposit.id, state: deposit.state, amountSatang: deposit.amountSatang, overdue: deposit.state === 'requested' && deposit.handedOverAt !== null }
     : null;
+  if (!booked.deposit) booked.deposit = await prebookingEventDeposit(db, operatorId, eventId);
   // The Events module is the master: a date moved, a status confirmed or the
   // event archived there shows here. Its view is optional (a deployment
   // without the app has none, one without the grant refuses): the booking as
@@ -345,20 +373,23 @@ export async function bookConversationDate(
   }
 
   const [park] = await db
-    .select({ id: branch.id, name: branch.name })
+    .select({ id: branch.id, name: branch.name, timezone: branch.timezone })
     .from(branch)
     .where(and(eq(branch.id, input.branchId), eq(branch.operatorId, operatorId), isNull(branch.archivedAt)))
     .limit(1);
   if (!park) throw errors.notFound(BOOK_DATE_MESSAGES.branchNotFound);
   if (!mayBookAt(ctx, conv, convTeam ?? null, park.id)) throw new PermissionDeniedError(ASSIGN);
+  if (input.date < isoDateInTz(ctx.now, park.timezone)) throw errors.conflict('EVENT_DATE_PASSED', 'This date has passed. The paid deposit remains for staff resolution; no booking was made.');
   let phone: string | null = null;
   if (input.phone) {
     phone = normalizePhone(input.phone);
     if (!phone) throw errors.badRequest(BOOK_DATE_MESSAGES.phoneUnreadable);
   }
   const title = eventTitleOf(input);
+  const deposit = await claimPrebooking(db, op, operatorId, conv.id, input);
 
-  // The Events module first: nothing here is held while it answers.
+  // The paid receipt and final details are durably claimed; transaction locks
+  // are released before the Events module is asked.
   const outcome = deps.directory.createInboxEvent
     ? await deps.directory.createInboxEvent({
         id: eventId,
@@ -374,6 +405,13 @@ export async function bookConversationDate(
         bookingName: input.contactName,
         parentName: input.contactName,
         whatsappPhone: phone,
+        verifiedDeposit: {
+          draftId: deposit.draft.id,
+          attemptId: deposit.attempt.id,
+          amountSatang: deposit.draft.amountSatang,
+          paidDate: isoDateInTz(deposit.attempt.paidAt!, park.timezone),
+          provider: deposit.attempt.provider === 'simulator' ? 'simulator' : '2c2p',
+        },
       })
     : ({
         ok: false,
@@ -412,6 +450,10 @@ export async function bookConversationDate(
       throw errors.conflict('EVENT_ALREADY_BOOKED', BOOK_DATE_MESSAGES.alreadyBooked, { eventId: locked.eventOrderRef });
     }
     if (locked.eventOrderRef !== eventId) {
+      await tx
+        .update(prebookingDraft)
+        .set({ bookedAt: ctx.now, updatedAt: ctx.now })
+        .where(and(eq(prebookingDraft.id, eventId), eq(prebookingDraft.operatorId, operatorId)));
       await tx
         .update(conversation)
         .set({ eventOrderRef: eventId, updatedAt: ctx.now })

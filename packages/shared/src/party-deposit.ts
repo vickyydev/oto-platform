@@ -90,6 +90,8 @@ export const PartyDepositRequestViewSchema = z.object({
   conversationId: z.string().uuid(),
   amountSatang: z.number().int(),
   currency: z.string(),
+  /** Set on the original prebooking receipt projection; older requests may omit it. */
+  provider: z.enum(['2c2p', 'simulator']).optional(),
   state: z.enum(PARTY_DEPOSIT_STATES),
   /** The gateway's hosted page the family pays on; null until the gateway opened it. */
   paymentLink: z.string().nullable(),

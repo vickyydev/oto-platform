@@ -97,7 +97,12 @@ export type InboxActionResult = z.infer<typeof InboxActionResultSchema>;
  * rule names a person at that branch; the person named is not an active
  * account; they are on the thread already; both support places are taken.
  */
-export const INBOX_HOST_SKIP_REASONS = ['no_host', 'host_inactive', 'already_on', 'support_full'] as const;
+export const INBOX_HOST_SKIP_REASONS = [
+  'no_host',
+  'host_inactive',
+  'already_on',
+  'support_full',
+] as const;
 export type InboxHostSkipReason = (typeof INBOX_HOST_SKIP_REASONS)[number];
 
 /**
@@ -196,6 +201,32 @@ export const InboxBookDateBodySchema = z
   })
   .strict();
 export type InboxBookDateBody = z.infer<typeof InboxBookDateBodySchema>;
+
+/** The same authorized whole-baht amount staff currently request from Billing. */
+export const InboxPrebookingRequestSchema = z
+  .object({
+    booking: InboxBookDateBodySchema,
+    amountSatang: z.number().int().positive().max(100_000_000).multipleOf(100),
+    requestId: Uuid,
+  })
+  .strict();
+export type InboxPrebookingRequest = z.infer<typeof InboxPrebookingRequestSchema>;
+export const InboxPrebookingSchema = z.object({
+  draft: z
+    .object({
+      id: Uuid,
+      booking: InboxBookDateBodySchema,
+      amountSatang: z.number().int(),
+      currency: z.string(),
+      simulator: z.boolean(),
+      state: z.enum(['requested', 'paid', 'expired', 'failed', 'needs_review', 'booked']),
+      paymentLink: z.string().nullable(),
+      linkExpiresAt: z.string().nullable(),
+      paidAt: z.string().nullable(),
+    })
+    .nullable(),
+});
+export type InboxPrebooking = z.infer<typeof InboxPrebookingSchema>;
 
 /** What Book Date answers: the conversation's event, and whether this press made it. */
 export const InboxBookDateResultSchema = z.object({

@@ -17015,6 +17015,13 @@
                         "currency": {
                           "type": "string"
                         },
+                        "provider": {
+                          "type": "string",
+                          "enum": [
+                            "2c2p",
+                            "simulator"
+                          ]
+                        },
                         "state": {
                           "type": "string",
                           "enum": [
@@ -17153,6 +17160,13 @@
                           },
                           "currency": {
                             "type": "string"
+                          },
+                          "provider": {
+                            "type": "string",
+                            "enum": [
+                              "2c2p",
+                              "simulator"
+                            ]
                           },
                           "state": {
                             "type": "string",
@@ -17356,6 +17370,13 @@
                         },
                         "currency": {
                           "type": "string"
+                        },
+                        "provider": {
+                          "type": "string",
+                          "enum": [
+                            "2c2p",
+                            "simulator"
+                          ]
                         },
                         "state": {
                           "type": "string",
@@ -17561,6 +17582,13 @@
                         "currency": {
                           "type": "string"
                         },
+                        "provider": {
+                          "type": "string",
+                          "enum": [
+                            "2c2p",
+                            "simulator"
+                          ]
+                        },
                         "state": {
                           "type": "string",
                           "enum": [
@@ -17764,6 +17792,13 @@
                         },
                         "currency": {
                           "type": "string"
+                        },
+                        "provider": {
+                          "type": "string",
+                          "enum": [
+                            "2c2p",
+                            "simulator"
+                          ]
                         },
                         "state": {
                           "type": "string",
@@ -94768,6 +94803,9 @@
                             "amountSatang": {
                               "type": "integer"
                             },
+                            "simulator": {
+                              "type": "boolean"
+                            },
                             "overdue": {
                               "type": "boolean"
                             }
@@ -98044,9 +98082,446 @@
         }
       }
     },
+    "/inbox/conversations/{id}/prebooking": {
+      "get": {
+        "description": "Read the deposit draft. A draft reserves no calendar date; only an inquiry-agreed gateway payment unlocks staff booking.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "draft": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "booking": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "branchId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "date": {
+                              "type": "string"
+                            },
+                            "startTime": {
+                              "type": "string",
+                              "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                            },
+                            "kids": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 1000,
+                              "nullable": true
+                            },
+                            "adults": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 1000,
+                              "nullable": true
+                            },
+                            "contactName": {
+                              "type": "string",
+                              "maxLength": 200,
+                              "minLength": 1
+                            },
+                            "phone": {
+                              "type": "string",
+                              "maxLength": 50,
+                              "nullable": true
+                            },
+                            "childName": {
+                              "type": "string",
+                              "maxLength": 200,
+                              "nullable": true
+                            },
+                            "childAge": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 30,
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "branchId",
+                            "date",
+                            "startTime",
+                            "kids",
+                            "adults",
+                            "contactName",
+                            "phone",
+                            "childName",
+                            "childAge"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "amountSatang": {
+                          "type": "integer"
+                        },
+                        "currency": {
+                          "type": "string"
+                        },
+                        "simulator": {
+                          "type": "boolean"
+                        },
+                        "state": {
+                          "type": "string",
+                          "enum": [
+                            "requested",
+                            "paid",
+                            "expired",
+                            "failed",
+                            "needs_review",
+                            "booked"
+                          ]
+                        },
+                        "paymentLink": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "linkExpiresAt": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "paidAt": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "booking",
+                        "amountSatang",
+                        "currency",
+                        "simulator",
+                        "state",
+                        "paymentLink",
+                        "linkExpiresAt",
+                        "paidAt"
+                      ],
+                      "additionalProperties": false,
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "draft"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "description": "Request the agreed whole-baht deposit before booking. Reuses the payment gateway and original attempt ledger; never creates a calendar event.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "booking": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "branchId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "date": {
+                        "type": "string"
+                      },
+                      "startTime": {
+                        "type": "string",
+                        "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                      },
+                      "kids": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000,
+                        "nullable": true
+                      },
+                      "adults": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000,
+                        "nullable": true
+                      },
+                      "contactName": {
+                        "type": "string",
+                        "maxLength": 200,
+                        "minLength": 1
+                      },
+                      "phone": {
+                        "type": "string",
+                        "maxLength": 50,
+                        "nullable": true
+                      },
+                      "childName": {
+                        "type": "string",
+                        "maxLength": 200,
+                        "nullable": true
+                      },
+                      "childAge": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 30,
+                        "nullable": true
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "branchId",
+                      "date",
+                      "startTime",
+                      "kids",
+                      "adults",
+                      "contactName",
+                      "phone",
+                      "childName",
+                      "childAge"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "amountSatang": {
+                    "type": "integer",
+                    "exclusiveMinimum": true,
+                    "minimum": 0,
+                    "maximum": 100000000,
+                    "multipleOf": 100
+                  },
+                  "requestId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "required": [
+                  "booking",
+                  "amountSatang",
+                  "requestId"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "draft": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "booking": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "branchId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "date": {
+                              "type": "string"
+                            },
+                            "startTime": {
+                              "type": "string",
+                              "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                            },
+                            "kids": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 1000,
+                              "nullable": true
+                            },
+                            "adults": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 1000,
+                              "nullable": true
+                            },
+                            "contactName": {
+                              "type": "string",
+                              "maxLength": 200,
+                              "minLength": 1
+                            },
+                            "phone": {
+                              "type": "string",
+                              "maxLength": 50,
+                              "nullable": true
+                            },
+                            "childName": {
+                              "type": "string",
+                              "maxLength": 200,
+                              "nullable": true
+                            },
+                            "childAge": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 30,
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "branchId",
+                            "date",
+                            "startTime",
+                            "kids",
+                            "adults",
+                            "contactName",
+                            "phone",
+                            "childName",
+                            "childAge"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "amountSatang": {
+                          "type": "integer"
+                        },
+                        "currency": {
+                          "type": "string"
+                        },
+                        "simulator": {
+                          "type": "boolean"
+                        },
+                        "state": {
+                          "type": "string",
+                          "enum": [
+                            "requested",
+                            "paid",
+                            "expired",
+                            "failed",
+                            "needs_review",
+                            "booked"
+                          ]
+                        },
+                        "paymentLink": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "linkExpiresAt": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "paidAt": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "booking",
+                        "amountSatang",
+                        "currency",
+                        "simulator",
+                        "state",
+                        "paymentLink",
+                        "linkExpiresAt",
+                        "paidAt"
+                      ],
+                      "additionalProperties": false,
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "draft"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "details": {
+                          "type": "object",
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/inbox/conversations/{id}/book-date": {
       "post": {
-        "description": "Book Date (SCRUM-775): on a Birthdays & Events conversation, make a TENTATIVE birthday event in the OTO App's Events module from what the person confirmed out of the chat — the park, the date and start time, the guests, the contact and the child — and link the two: the conversation keeps the event (its `event` on GET …/{id}, a `date_booked` pill) and the event names the conversation (\"From the inbox\"). The body `id` is caller-named — the event's own id in the Events module — so the same id again is the same event (a replay, `x-oto-replay: true`), never a second; an id another conversation holds is 409 ID_IN_USE. Refusals: 409 NOT_A_BIRTHDAY; 409 EVENT_ALREADY_BOOKED when the conversation has its event already (`details.eventId`; Create BEO opens it at `event.beoPath`) — unless the Events module deleted or archived that event (`event.removed`, SCRUM-820), when the new date takes the conversation; 409 EVENT_BRANCH_NOT_MAPPED when the OTO App has no branch for the park; 503 EVENTS_CALENDAR_UNAVAILABLE when the Events module did not answer (nothing was booked; press again); 502 EVENTS_CALENDAR_REFUSED otherwise. Needs a place in the birthdays team or inbox:conversation:assign at the conversation. Refusals: 404 when the conversation is not the caller’s to see (or not in their operator); 403 when the permission is not held at this conversation.",
+        "description": "New bookings require the full agreed prebooking deposit verified by the gateway; manual receipts, slips and AI readings cannot unlock creation. Staff check capacity; payment never auto-books. Book Date (SCRUM-775): on a Birthdays & Events conversation, make a TENTATIVE birthday event in the OTO App's Events module from what the person confirmed out of the chat — the park, the date and start time, the guests, the contact and the child — and link the two: the conversation keeps the event (its `event` on GET …/{id}, a `date_booked` pill) and the event names the conversation (\"From the inbox\"). The body `id` is caller-named — the event's own id in the Events module — so the same id again is the same event (a replay, `x-oto-replay: true`), never a second; an id another conversation holds is 409 ID_IN_USE. Refusals: 409 NOT_A_BIRTHDAY; 409 EVENT_ALREADY_BOOKED when the conversation has its event already (`details.eventId`; Create BEO opens it at `event.beoPath`) — unless the Events module deleted or archived that event (`event.removed`, SCRUM-820), when the new date takes the conversation; 409 EVENT_BRANCH_NOT_MAPPED when the OTO App has no branch for the park; 503 EVENTS_CALENDAR_UNAVAILABLE when the Events module did not answer (nothing was booked; press again); 502 EVENTS_CALENDAR_REFUSED otherwise. Needs a place in the birthdays team or inbox:conversation:assign at the conversation. Refusals: 404 when the conversation is not the caller’s to see (or not in their operator); 403 when the permission is not held at this conversation.",
         "requestBody": {
           "required": true,
           "content": {
@@ -98216,6 +98691,9 @@
                             },
                             "amountSatang": {
                               "type": "integer"
+                            },
+                            "simulator": {
+                              "type": "boolean"
                             },
                             "overdue": {
                               "type": "boolean"

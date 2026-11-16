@@ -137,6 +137,7 @@ export const inboxEventBodySchema = z
     bookingName: optionalText(200),
     parentName: optionalText(200),
     whatsappPhone: optionalText(50),
+    verifiedDeposit: z.object({ draftId: z.string().uuid(), attemptId: z.string().uuid(), amountSatang: z.number().int().positive().max(100_000_000).multipleOf(100), paidDate: isoDate, provider: z.enum(['2c2p', 'simulator']) }).strict().optional(),
   })
   .strict();
 

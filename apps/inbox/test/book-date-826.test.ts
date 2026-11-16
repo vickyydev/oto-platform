@@ -16,6 +16,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { BookDateProposal } from '@/api/inbox';
+import { paidPrebookingFixture } from './paid-prebooking-fixture';
 import { BookDateDialog, readDraft } from '@/components/BookDateDialog';
 import {
   bookDateFetchLine,
@@ -60,6 +61,7 @@ const UNAVAILABLE: BookDateProposal = {
 function dialog(initial: BookDateDraft, proposal: BookDateProposal | null, onFetch?: () => Promise<BookDateProposal>): string {
   return renderToStaticMarkup(
     createElement(BookDateDialog, {
+      initialDeposit: paidPrebookingFixture(CENTRAL),
       open: true,
       customer: 'ZZ TEST Olga',
       initial,
@@ -249,6 +251,7 @@ describe('a fetch answered after the dialog was closed and opened again changes 
     act(async () => {
       root!.render(
         createElement(BookDateDialog, {
+      initialDeposit: paidPrebookingFixture(CENTRAL),
           open: props.open,
           customer: props.open ? 'ZZ TEST family' : 'ZZ TEST nobody',
           initial: props.initial,

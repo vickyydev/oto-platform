@@ -2,6 +2,7 @@
 // dashboard's BEO card. Node, no DOM, as the other markup files: the
 // components rendered with react-dom/server, and the parser, the date it
 // reads and the dialog's checks as the pure functions the components call.
+import { paidPrebookingFixture } from './paid-prebooking-fixture';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -310,6 +311,7 @@ describe('the dialog opens with the reading and checks before it saves', () => {
   it('renders the fields, the chat’s phrase beside the date, and the save', () => {
     const html = renderToStaticMarkup(
       createElement(BookDateDialog, {
+      initialDeposit: paidPrebookingFixture(CENTRAL),
         open: true,
         customer: 'Olga Demo',
         initial: draft,

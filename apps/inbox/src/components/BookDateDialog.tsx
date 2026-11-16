@@ -1,8 +1,21 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Calendar, Check, Clock3, Hash, Loader2, MapPin, Phone, RefreshCw, Users, Wand2, type LucideIcon } from 'lucide-react';
+import {
+  Calendar,
+  Check,
+  Clock3,
+  Hash,
+  Loader2,
+  MapPin,
+  Phone,
+  RefreshCw,
+  Users,
+  Wand2,
+  type LucideIcon,
+} from 'lucide-react';
 import { Dialog } from '@/components/Dialog';
 import { Refusal } from '@/components/confirms';
-import type { BookDateProposal } from '@/api/inbox';
+import type { BookDateProposal, Prebooking } from '@/api/inbox';
+import { newId } from '@oto/shared';
 import {
   bookDateFetchLine,
   countOf,
@@ -44,13 +57,17 @@ export interface BookDateValues {
 export function readDraft(d: BookDateDraft): { values: BookDateValues } | { problem: string } {
   if (!d.branchId) return { problem: 'Choose the park.' };
   if (!/^\d{4}-\d{2}-\d{2}$/.test(d.date)) return { problem: 'Choose the date.' };
-  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(d.startTime)) return { problem: 'Enter the start time as HH:MM.' };
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(d.startTime))
+    return { problem: 'Enter the start time as HH:MM.' };
   const kids = countOf(d.kids);
   const adults = countOf(d.adults);
   const age = countOf(d.childAge);
-  if (Number.isNaN(kids) || (kids !== null && kids > 1000)) return { problem: 'Kids is a whole number.' };
-  if (Number.isNaN(adults) || (adults !== null && adults > 1000)) return { problem: 'Adults is a whole number.' };
-  if (Number.isNaN(age) || (age !== null && age > 30)) return { problem: 'The age is a whole number of years.' };
+  if (Number.isNaN(kids) || (kids !== null && kids > 1000))
+    return { problem: 'Kids is a whole number.' };
+  if (Number.isNaN(adults) || (adults !== null && adults > 1000))
+    return { problem: 'Adults is a whole number.' };
+  if (Number.isNaN(age) || (age !== null && age > 30))
+    return { problem: 'The age is a whole number of years.' };
   if (!d.contactName.trim()) return { problem: 'Enter who is booking.' };
   return {
     values: {
@@ -93,14 +110,19 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 /** A reading's value as a person reads it: "Sat 21 Nov 2026", a park's name, the number. */
-function shown(field: ProposedField, value: string, branches: readonly { value: string; label: string }[]): string {
+function shown(
+  field: ProposedField,
+  value: string,
+  branches: readonly { value: string; label: string }[],
+): string {
   if (field === 'date') {
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
     if (!m) return value;
     const day = new Date(`${value}T12:00:00Z`).getUTCDay();
     return `${DAYS[day] ?? ''} ${Number(m[3])} ${MONTHS[Number(m[2]) - 1] ?? ''} ${m[1]}`.trim();
   }
-  if (field === 'branchId') return branches.find((b) => b.value === value)?.label ?? 'The conversation’s park';
+  if (field === 'branchId')
+    return branches.find((b) => b.value === value)?.label ?? 'The conversation’s park';
   return value;
 }
 
@@ -118,7 +140,9 @@ function Choice({
 }) {
   return (
     <span className="flex flex-col gap-1" data-choice={field}>
-      <span className="text-[11px] font-medium text-amber-700 dark:text-amber-300">The chat reads two ways: choose one</span>
+      <span className="text-[11px] font-medium text-amber-700 dark:text-amber-300">
+        The chat reads two ways: choose one
+      </span>
       <span className="flex flex-wrap gap-1.5">
         {options.map((o) => (
           <button
@@ -128,7 +152,9 @@ function Choice({
             className="inline-flex max-w-full items-center gap-1 rounded-lg border border-amber-200 dark:border-amber-500/40 bg-amber-50 dark:bg-amber-500/10 px-2 py-1 text-left text-[12px] text-slate-800 dark:text-slate-100 hover:bg-amber-100 dark:hover:bg-amber-500/20"
           >
             <span className="font-medium">{shown(field, o.value, branches)}</span>
-            {o.text && <span className="truncate text-slate-500 dark:text-slate-400">“{o.text}”</span>}
+            {o.text && (
+              <span className="truncate text-slate-500 dark:text-slate-400">“{o.text}”</span>
+            )}
             <SourceMark source={o.source} />
           </button>
         ))}
@@ -184,6 +210,9 @@ export function BookDateDialog({
   proposal = null,
   reading = false,
   onFetch,
+  onReadDeposit,
+  onRequestDeposit,
+  initialDeposit = null,
 }: {
   open: boolean;
   /** The contact's name, for the title. */
@@ -211,11 +240,83 @@ export function BookDateDialog({
    * person has not typed in; a typed field stays. Without it, no button.
    */
   onFetch?: () => Promise<BookDateProposal>;
+  onReadDeposit?: () => Promise<Prebooking>;
+  onRequestDeposit?: (
+    values: BookDateValues,
+    amountSatang: number,
+    requestId: string,
+  ) => Promise<Prebooking>;
+  /** A server-read receipt supplied by a containing view, otherwise fetched on opening. */
+  initialDeposit?: Prebooking['draft'];
 }) {
   const branchIds = useMemo(() => branches.map((b) => b.value), [branches]);
-  const [state, setState] = useState<BookDateState>(() => mergeBookDateProposal(freshBookDate(initial), proposal, branchIds));
+  const [state, setState] = useState<BookDateState>(() =>
+    mergeBookDateProposal(freshBookDate(initial), proposal, branchIds),
+  );
   const [problem, setProblem] = useState<string | null>(null);
   const [fetching, setFetching] = useState(false);
+  const [deposit, setDeposit] = useState<Prebooking['draft']>(initialDeposit);
+  const [depositAmount, setDepositAmount] = useState('');
+  const [depositBusy, setDepositBusy] = useState(false);
+  const depositRequestId = useRef(newId());
+  const depositOpening = useRef(0);
+  useEffect(() => {
+    const asked = ++depositOpening.current;
+    if (!open) return;
+    setDeposit(initialDeposit);
+    setDepositAmount(initialDeposit ? String(initialDeposit.amountSatang / 100) : '');
+    depositRequestId.current = newId();
+    if (!onReadDeposit) return;
+    setDepositBusy(true);
+    void onReadDeposit()
+      .then((answer) => {
+        if (asked !== depositOpening.current) return;
+        setDeposit(answer.draft);
+        if (answer.draft) {
+          const b = answer.draft.booking;
+          setDepositAmount(String(answer.draft.amountSatang / 100));
+          setState(
+            freshBookDate({
+              ...initial,
+              date: b.date,
+              dateFrom: '',
+              startTime: b.startTime,
+              timeFrom: '',
+              branchId: b.branchId,
+              kids: b.kids === null ? '' : String(b.kids),
+              adults: b.adults === null ? '' : String(b.adults),
+              contactName: b.contactName,
+              phone: b.phone ?? '',
+              childName: b.childName ?? '',
+              childAge: b.childAge === null ? '' : String(b.childAge),
+            }),
+          );
+        }
+      })
+      .catch((err: unknown) => {
+        if (asked === depositOpening.current)
+          setProblem(err instanceof Error ? err.message : 'The deposit could not be read.');
+      })
+      .finally(() => {
+        if (asked === depositOpening.current) setDepositBusy(false);
+      });
+    // An opening owns its asynchronous answer; parent callbacks change on render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+  const refreshDeposit = async () => {
+    if (!onReadDeposit || depositBusy) return;
+    const asked = depositOpening.current;
+    setDepositBusy(true);
+    try {
+      const answer = await onReadDeposit();
+      if (asked === depositOpening.current) setDeposit(answer.draft);
+    } catch (err) {
+      if (asked === depositOpening.current)
+        setProblem(err instanceof Error ? err.message : 'The deposit could not be read.');
+    } finally {
+      if (asked === depositOpening.current) setDepositBusy(false);
+    }
+  };
   // Which opening of the dialog this is: the panel keeps it mounted across
   // birthday conversations, so a fetch's answer is taken only by the opening
   // that asked for it (a Cancel and another family's Book Date in between
@@ -255,12 +356,22 @@ export function BookDateDialog({
     setFetching(false);
   };
   const draft = state.draft;
-  const set = <K extends keyof BookDateDraft>(k: K, v: BookDateDraft[K]) => setState((s) => editBookDate(s, k, v));
-  const pick = (field: ProposedField, option: FieldOption) => setState((s) => pickBookDateChoice(s, field, option));
+  const set = <K extends keyof BookDateDraft>(k: K, v: BookDateDraft[K]) =>
+    setState((s) => editBookDate(s, k, v));
+  const pick = (field: ProposedField, option: FieldOption) =>
+    setState((s) => pickBookDateChoice(s, field, option));
   /** A field's line under it: the two readings to pick from, else the chat's words for its value. */
   const hint = (field: ProposedField, otherwise?: ReactNode): ReactNode => {
     const options = state.choices[field];
-    if (options) return <Choice field={field} options={options} branches={branches} onPick={(o) => pick(field, o)} />;
+    if (options)
+      return (
+        <Choice
+          field={field}
+          options={options}
+          branches={branches}
+          onPick={(o) => pick(field, o)}
+        />
+      );
     const source = state.sources[field];
     if (source) return <Says text={source.text} source={source.source} />;
     return otherwise;
@@ -269,7 +380,42 @@ export function BookDateDialog({
   // SCRUM-955: while a field is read two ways and the person has neither
   // picked a reading nor typed their own, Save waits, and says for what.
   const waiting = pendingChoice(state);
+  const depositPaid = deposit?.state === 'paid' && deposit.booking.branchId === draft.branchId;
+  const requestDeposit = async () => {
+    if (!onRequestDeposit || depositBusy || waiting) return;
+    const read = readDraft(draft);
+    if ('problem' in read) {
+      setProblem(read.problem);
+      return;
+    }
+    const baht = Number(depositAmount);
+    if (!Number.isSafeInteger(baht) || baht <= 0 || baht > 1_000_000) {
+      setProblem('Enter the agreed deposit in whole baht.');
+      return;
+    }
+    const asked = depositOpening.current;
+    setDepositBusy(true);
+    setProblem(null);
+    try {
+      const answer = await onRequestDeposit(read.values, baht * 100, depositRequestId.current);
+      if (asked !== depositOpening.current) return;
+      setDeposit(answer.draft);
+      if (answer.draft?.state === 'expired' || answer.draft?.state === 'failed')
+        depositRequestId.current = newId();
+    } catch (err) {
+      if (asked === depositOpening.current)
+        setProblem(err instanceof Error ? err.message : 'The deposit could not be requested.');
+    } finally {
+      if (asked === depositOpening.current) setDepositBusy(false);
+    }
+  };
   const save = () => {
+    if (!depositPaid) {
+      setProblem(
+        'Request the full agreed deposit and wait for gateway verification before booking.',
+      );
+      return;
+    }
     if (waiting) {
       setProblem(waiting);
       return;
@@ -290,7 +436,7 @@ export function BookDateDialog({
       icon={Calendar}
       iconTint="bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400"
       title={`Book Date — ${customer}`}
-      subtitle="Read from the conversation. Check it, then save: the date goes into the Events calendar as tentative."
+      subtitle="Request the agreed deposit first. After gateway verification, check capacity and create the booking. A draft reserves no date."
       wide
       footer={
         <>
@@ -305,27 +451,111 @@ export function BookDateDialog({
           <button
             type="button"
             onClick={save}
-            disabled={busy || waiting !== null}
+            disabled={busy || depositBusy || waiting !== null || !depositPaid}
             title={waiting ?? undefined}
             className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-1.5 text-[13px] font-medium text-white hover:bg-amber-600 disabled:opacity-60"
           >
-            {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Calendar className="h-3.5 w-3.5" />}
+            {busy ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Calendar className="h-3.5 w-3.5" />
+            )}
             {thenOpensBeo ? 'Book date and open the BEO' : 'Book date'}
           </button>
         </>
       }
     >
+      <div
+        className="mb-3 rounded-lg border border-amber-200 p-3 text-[13px]"
+        data-testid="prebooking-deposit"
+      >
+        {deposit?.simulator && (
+          <p className="font-semibold">
+            Simulator test payment: no real bank deposit has been received.
+          </p>
+        )}
+        {!onRequestDeposit && <p>A manager requests the agreed deposit. The birthdays team can book after gateway verification.</p>}
+        <p>
+          Full deposit:{' '}
+          {deposit?.state === 'paid'
+            ? 'Gateway verified — check park capacity before booking.'
+            : deposit?.state === 'needs_review'
+              ? 'Payment needs staff resolution. No booking has been created.'
+              : deposit?.state === 'expired' || deposit?.state === 'failed'
+                ? 'The payment request ended unpaid. Request a new link.'
+                : 'Gateway verification required. A payment slip or staff receipt does not unlock booking.'}
+        </p>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <label>
+            Agreed deposit (฿){' '}
+            <input
+              aria-label="Agreed deposit (baht)"
+              inputMode="numeric"
+              value={depositAmount}
+              onChange={(e) => setDepositAmount(e.target.value)}
+              disabled={deposit !== null || depositBusy || !onRequestDeposit}
+              className={INPUT}
+            />
+          </label>
+          {onRequestDeposit && (
+            <button
+              type="button"
+              className={CANCEL}
+              onClick={() => void requestDeposit()}
+              disabled={
+                busy ||
+                depositBusy ||
+                waiting !== null ||
+                deposit?.state === 'paid' ||
+                deposit?.state === 'needs_review'
+              }
+            >
+              Request deposit
+            </button>
+          )}
+          {onReadDeposit && (
+            <button
+              type="button"
+              className={CANCEL}
+              onClick={() => void refreshDeposit()}
+              disabled={busy || depositBusy}
+            >
+              Check payment
+            </button>
+          )}
+          {deposit?.paymentLink && (
+            <a
+              href={deposit.paymentLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline"
+            >
+              Open payment page
+            </a>
+          )}
+        </div>
+        <p className="mt-2">
+          Payment never creates the booking automatically. If the date cannot be accommodated, staff
+          must resolve the paid deposit with the family.
+        </p>
+      </div>
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 dark:bg-indigo-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-indigo-700 dark:text-indigo-300 ring-1 ring-indigo-200 dark:ring-indigo-500/30">
           <Wand2 className="h-3 w-3" /> Read from the chat
         </span>
         {reading && (
-          <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400" data-testid="book-date-reading">
+          <span
+            className="inline-flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400"
+            data-testid="book-date-reading"
+          >
             <Loader2 className="h-3 w-3 animate-spin" /> Reading the whole chat…
           </span>
         )}
         {!reading && proposal?.model === 'ai' && (
-          <span className="inline-flex items-center gap-1 text-[11px] text-emerald-700 dark:text-emerald-300" data-testid="book-date-read">
+          <span
+            className="inline-flex items-center gap-1 text-[11px] text-emerald-700 dark:text-emerald-300"
+            data-testid="book-date-read"
+          >
             <Check className="h-3 w-3" /> Read the whole chat
           </span>
         )}
@@ -338,7 +568,11 @@ export function BookDateDialog({
             title="Read the chat again as it is now. What you typed here stays."
             data-testid="button-fetch-from-chat"
           >
-            {fetching ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+            {fetching ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <RefreshCw className="h-3 w-3" />
+            )}
             {fetching ? 'Fetching from the chat…' : 'Fetch from chat'}
           </button>
         )}
@@ -354,10 +588,20 @@ export function BookDateDialog({
           label="Date"
           hint={hint(
             'date',
-            draft.dateFrom ? <Says text={draft.dateFrom} source={null} /> : <span className={HINT}>The chat names no date</span>,
+            draft.dateFrom ? (
+              <Says text={draft.dateFrom} source={null} />
+            ) : (
+              <span className={HINT}>The chat names no date</span>
+            ),
           )}
         >
-          <input type="date" value={draft.date} onChange={(e) => set('date', e.target.value)} aria-label="Date" className={INPUT} />
+          <input
+            type="date"
+            value={draft.date}
+            onChange={(e) => set('date', e.target.value)}
+            aria-label="Date"
+            className={INPUT}
+          />
         </Field>
         <Field
           icon={Clock3}
@@ -383,9 +627,19 @@ export function BookDateDialog({
           icon={MapPin}
           label="Park"
           full
-          hint={hint('branchId', state.parkHint ? <Says text={state.parkHint.text} source={state.parkHint.source} /> : undefined)}
+          hint={hint(
+            'branchId',
+            state.parkHint ? (
+              <Says text={state.parkHint.text} source={state.parkHint.source} />
+            ) : undefined,
+          )}
         >
-          <select value={draft.branchId} onChange={(e) => set('branchId', e.target.value)} aria-label="Park" className={INPUT}>
+          <select
+            value={draft.branchId}
+            onChange={(e) => set('branchId', e.target.value)}
+            aria-label="Park"
+            className={INPUT}
+          >
             <option value="">Choose the park</option>
             {branches.map((b) => (
               <option key={b.value} value={b.value}>
@@ -396,22 +650,60 @@ export function BookDateDialog({
         </Field>
         {/* SCRUM-955: an empty count shows the window's dash (as the age does), never a 0 that reads as none. */}
         <Field icon={Hash} label="# of kids" hint={hint('kids')}>
-          <input inputMode="numeric" value={draft.kids} onChange={(e) => set('kids', e.target.value)} placeholder={reading ? 'reading…' : '—'} aria-label="Kids" className={INPUT} />
+          <input
+            inputMode="numeric"
+            value={draft.kids}
+            onChange={(e) => set('kids', e.target.value)}
+            placeholder={reading ? 'reading…' : '—'}
+            aria-label="Kids"
+            className={INPUT}
+          />
         </Field>
         <Field icon={Hash} label="# of adults" hint={hint('adults')}>
-          <input inputMode="numeric" value={draft.adults} onChange={(e) => set('adults', e.target.value)} placeholder={reading ? 'reading…' : '—'} aria-label="Adults" className={INPUT} />
+          <input
+            inputMode="numeric"
+            value={draft.adults}
+            onChange={(e) => set('adults', e.target.value)}
+            placeholder={reading ? 'reading…' : '—'}
+            aria-label="Adults"
+            className={INPUT}
+          />
         </Field>
         <Field icon={Users} label="Booking name">
-          <input value={draft.contactName} onChange={(e) => set('contactName', e.target.value)} aria-label="Booking name" className={INPUT} />
+          <input
+            value={draft.contactName}
+            onChange={(e) => set('contactName', e.target.value)}
+            aria-label="Booking name"
+            className={INPUT}
+          />
         </Field>
         <Field icon={Phone} label="Phone">
-          <input value={draft.phone} onChange={(e) => set('phone', e.target.value)} placeholder="+66…" aria-label="Phone" className={INPUT} />
+          <input
+            value={draft.phone}
+            onChange={(e) => set('phone', e.target.value)}
+            placeholder="+66…"
+            aria-label="Phone"
+            className={INPUT}
+          />
         </Field>
         <Field icon={Users} label="Child's name" hint={hint('childName')}>
-          <input value={draft.childName} onChange={(e) => set('childName', e.target.value)} placeholder={reading ? 'reading…' : 'If the chat says it'} aria-label="Child's name" className={INPUT} />
+          <input
+            value={draft.childName}
+            onChange={(e) => set('childName', e.target.value)}
+            placeholder={reading ? 'reading…' : 'If the chat says it'}
+            aria-label="Child's name"
+            className={INPUT}
+          />
         </Field>
         <Field icon={Hash} label="Turning (age)" hint={hint('childAge')}>
-          <input inputMode="numeric" value={draft.childAge} onChange={(e) => set('childAge', e.target.value)} placeholder={reading ? 'reading…' : '—'} aria-label="Turning age" className={INPUT} />
+          <input
+            inputMode="numeric"
+            value={draft.childAge}
+            onChange={(e) => set('childAge', e.target.value)}
+            placeholder={reading ? 'reading…' : '—'}
+            aria-label="Turning age"
+            className={INPUT}
+          />
         </Field>
       </div>
       {(problem ?? error) && <Refusal text={(problem ?? error)!} />}

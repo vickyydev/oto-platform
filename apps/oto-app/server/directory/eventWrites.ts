@@ -977,6 +977,7 @@ export interface InboxEventInput {
   parentName?: string | null;
   /** E.164, as the platform normalised it. */
   whatsappPhone?: string | null;
+  verifiedDeposit?: { draftId: string; attemptId: string; amountSatang: number; paidDate: string; provider: '2c2p' | 'simulator' };
 }
 
 export interface InboxEventResult {
@@ -1126,12 +1127,22 @@ export async function createInboxBirthdayEvent(
         held.tenant_id === tenantId &&
         held.inbox_conversation_id?.toLowerCase() === input.inboxConversationId.toLowerCase()
       ) {
+        if (input.verifiedDeposit) {
+          const { rows } = await tx.query<{ receipt: Record<string, unknown> | null }>(`select add_ons->'prebookingDeposit' as receipt from beo_event_billing where event_id=$1`, [held.id]);
+          const receipt = rows[0]?.receipt;
+          if (!receipt || Object.entries(input.verifiedDeposit).some(([key, value]) => receipt[key] !== value)) return refuse(409, "deposit_receipt_mismatch", "This booking already holds a different deposit receipt");
+        }
         return { ok: true, status: 200, body: { event: inboxEventShape(held, input.coreBranchId), replayed: true } };
       }
       return refuse(409, "id_in_use", "This event id already belongs to another event");
     };
     const earlier = await replay();
     if (earlier) return earlier;
+
+    const deposit = input.verifiedDeposit;
+    if (!deposit || deposit.draftId !== input.id || !UUID.test(deposit.attemptId) || !['2c2p', 'simulator'].includes(deposit.provider) || !Number.isSafeInteger(deposit.amountSatang) || deposit.amountSatang <= 0 || deposit.amountSatang % 100 !== 0 || !/^\d{4}-\d{2}-\d{2}$/.test(deposit.paidDate)) {
+      return refuse(409, "deposit_required", "A full gateway-verified deposit is required before creating this booking");
+    }
 
     const { rows: branchRows } = await tx.query<{ id: string }>(
       `select id from branches where tenant_id = $1 and lower(core_branch_id) = lower($2) limit 1`,
@@ -1150,8 +1161,8 @@ export async function createInboxBirthdayEvent(
         `insert into core_events
            (id, tenant_id, branch_id, event_type, title, event_date, start_time,
             num_children, num_adults, child_name, kid_turning_age, booking_name, parent_name,
-            whatsapp_phone_raw, whatsapp_phone_e164, whatsapp_parse_valid, status, inbox_conversation_id)
-         values ($1, $2, $3, 'birthday', $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $13, true, $14, $15)`,
+            whatsapp_phone_raw, whatsapp_phone_e164, whatsapp_parse_valid, status, inbox_conversation_id, prepayment_amount, prepayment_date)
+         values ($1, $2, $3, 'birthday', $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $13, true, $14, $15, $16, $17)`,
         [
           input.id,
           tenantId,
@@ -1168,6 +1179,8 @@ export async function createInboxBirthdayEvent(
           phone,
           status,
           input.inboxConversationId,
+          deposit.amountSatang / 100,
+          deposit.paidDate,
         ],
       );
     } catch (err) {
@@ -1178,6 +1191,8 @@ export async function createInboxBirthdayEvent(
       if (taken) return taken;
       throw err;
     }
+    await tx.query(`insert into beo_event_billing (event_id, deposit_paid, deposit_paid_amount, deposit_paid_at, add_ons)
+      values ($1, true, $2, $3::date, jsonb_build_object('partyDetails', jsonb_build_object('prepaymentReceived', $2::integer, 'depositDate', $3::text), 'prebookingDeposit', $4::jsonb))`, [input.id, deposit.amountSatang / 100, deposit.paidDate, JSON.stringify(deposit)]);
     const made = await storedInboxEvent(tx, input.id);
     return { ok: true, status: 201, body: { event: inboxEventShape(made!, input.coreBranchId), replayed: false } };
   });

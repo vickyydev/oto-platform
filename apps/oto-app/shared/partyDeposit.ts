@@ -35,6 +35,7 @@ export const PartyDepositRequestSchema = z.object({
   conversationId: z.string(),
   amountSatang: Int,
   currency: z.string(),
+  provider: z.enum(["2c2p", "simulator"]).optional(),
   state: z.enum(PARTY_DEPOSIT_STATES),
   paymentLink: z.string().nullable(),
   linkExpiresAt: z.string().nullable(),

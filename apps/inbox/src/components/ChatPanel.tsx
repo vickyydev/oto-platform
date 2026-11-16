@@ -373,6 +373,27 @@ export function ChatPanel({
     setBookError(null);
     setBooking({ conversationId: conv.id, eventId: newId(), thenBeo });
   };
+  const readDeposit = async () => {
+    const answer = await inboxApi.prebooking(conv.id);
+    if (answer.draft)
+      setBooking((b) => (b?.conversationId === conv.id ? { ...b, eventId: answer.draft!.id } : b));
+    return answer;
+  };
+  const requestDeposit = async (
+    values: BookDateValues,
+    amountSatang: number,
+    requestId: string,
+  ) => {
+    if (!booking) throw new Error('Open Book Date again.');
+    const answer = await inboxApi.requestPrebooking(conv.id, {
+      booking: { id: booking.eventId, ...values },
+      amountSatang,
+      requestId,
+    });
+    if (answer.draft)
+      setBooking((b) => (b?.conversationId === conv.id ? { ...b, eventId: answer.draft!.id } : b));
+    return answer;
+  };
   // SCRUM-826: the dialog's "Fetch from chat" reads the conversation again, as the api holds it now.
   const fetchBookDate = () => inboxApi.bookDateProposal(conv.id);
   // Book Date and Create BEO say why they are off: writes not switched on here
@@ -1117,6 +1138,8 @@ export function ChatPanel({
           proposal={bookProposal?.answer ?? null}
           reading={bookProposal?.reading ?? false}
           onFetch={fetchBookDate}
+          onReadDeposit={readDeposit}
+          onRequestDeposit={me.capabilities.assign ? requestDeposit : undefined}
         />
       )}
       <ContactNameDialog open={editingName} onClose={() => setEditingName(false)} row={conv} now={now} onChanged={onChanged} />

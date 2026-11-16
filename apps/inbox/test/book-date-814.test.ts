@@ -4,6 +4,7 @@
 // chat's own words beside it, and the Events module's 14:00 only when the chat
 // names no time. Node, no DOM: the dialog rendered with react-dom/server, and
 // the parser and the draft as the pure functions ChatPanel calls.
+import { paidPrebookingFixture } from './paid-prebooking-fixture';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
@@ -76,6 +77,7 @@ const draftOf = (language: string, messages: Message[]) =>
 function dialog(initial: BookDateDraft): string {
   return renderToStaticMarkup(
     createElement(BookDateDialog, {
+      initialDeposit: paidPrebookingFixture(CENTRAL),
       open: true,
       customer: 'ZZ TEST Olga',
       initial,

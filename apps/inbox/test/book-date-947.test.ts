@@ -9,6 +9,7 @@
 // `parseBeoFromConversation`), which took the minutes of "13:00" before "เด็ก"
 // for the count. Node, no DOM: the reading and the merge as the pure functions
 // the dialog calls, and the dialog rendered with react-dom/server.
+import { paidPrebookingFixture } from './paid-prebooking-fixture';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
@@ -106,6 +107,7 @@ function answer(proposal: Partial<Proposal>): BookDateProposal {
 function dialog(initial: BookDateDraft, proposal: BookDateProposal | null): string {
   return renderToStaticMarkup(
     createElement(BookDateDialog, {
+      initialDeposit: paidPrebookingFixture(CENTRAL),
       open: true,
       customer: 'ZZ TEST 947',
       initial,

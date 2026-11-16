@@ -485,6 +485,7 @@ export const InboxConversationEventSchema = z.object({
       requestId: Uuid,
       state: z.enum(['requested', 'paid', 'expired', 'cancelled']),
       amountSatang: z.number().int(),
+      simulator: z.boolean().optional(),
       overdue: z.boolean(),
     })
     .nullable()

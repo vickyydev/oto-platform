@@ -883,6 +883,13 @@
       "when": 1794600985017,
       "tag": "0125_retained_party_deposit",
       "breakpoints": true
+    },
+    {
+      "idx": 126,
+      "version": "7",
+      "when": 1794842982703,
+      "tag": "0126_prebooking_gateway_deposit",
+      "breakpoints": true
     }
   ]
 }

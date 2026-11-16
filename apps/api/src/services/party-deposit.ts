@@ -265,6 +265,9 @@ export async function partyDepositOf(db: Db, q: { operatorId: string; eventId: s
     .where(and(eq(partyDepositRequest.operatorId, q.operatorId), eq(partyDepositRequest.otoappEventId, party.id)))
     .orderBy(desc(partyDepositRequest.requestedAt), desc(partyDepositRequest.id));
   const history = await Promise.all(rows.map((r) => viewOf(db, r)));
+  const { prebookingPartyDepositView } = await import('./inbox/prebooking');
+  const prebooking = await prebookingPartyDepositView(db, q.operatorId, party.id);
+  if (prebooking) history.push(prebooking);
   const current = history.find((r) => r.state === 'requested') ?? history[0] ?? null;
   return {
     eventId: party.id,

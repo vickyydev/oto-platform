@@ -5,6 +5,8 @@ import {
   InboxActionResultSchema,
   InboxBookDateBodySchema,
   InboxBookDateResultSchema,
+  InboxPrebookingRequestSchema,
+  InboxPrebookingSchema,
   InboxBranchBodySchema,
   InboxBranchResultSchema,
   InboxMoveBodySchema,
@@ -22,6 +24,7 @@ import { opCtx, withTx } from '../services/tx';
 import { REPLAY_HEADER, wasReplay } from '../services/client-id';
 import { handoffConfig } from '../services/handoff';
 import { bookConversationDate, openConversationBeo } from '../services/inbox/book-date';
+import { readPrebooking, requestPrebookingDeposit } from '../services/inbox/prebooking';
 import { holdsAnywhere, viewerScopeOf } from '../services/inbox/read-visibility';
 import {
   addSupport,
@@ -139,7 +142,10 @@ export async function inboxActionRoutes(app: App): Promise<void> {
     async (req) => {
       const ctx = await actionCtx(req, 'inbox:conversation:assign');
       return withTx(app.db, opCtx(req), 'inbox.conversation_support_remove', (tx) =>
-        removeSupport(tx, ctx, { conversationId: req.params.id, assignmentId: req.params.assignmentId }),
+        removeSupport(tx, ctx, {
+          conversationId: req.params.id,
+          assignmentId: req.params.assignmentId,
+        }),
       );
     },
   );
@@ -214,12 +220,55 @@ export async function inboxActionRoutes(app: App): Promise<void> {
     },
   );
 
+  app.get(
+    '/conversations/:id/prebooking',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'Read the deposit draft. A draft reserves no calendar date; only an inquiry-agreed gateway payment unlocks staff booking.',
+        params: ConversationParams,
+        response: { 200: InboxPrebookingSchema },
+      },
+    },
+    async (req) =>
+      readPrebooking(app.db, await actionCtx(req, 'inbox:conversation:read'), req.params.id),
+  );
+
+  app.post(
+    '/conversations/:id/prebooking',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'Request the agreed whole-baht deposit before booking. Reuses the payment gateway and original attempt ledger; never creates a calendar event.',
+        params: ConversationParams,
+        body: InboxPrebookingRequestSchema,
+        response: { 200: InboxPrebookingSchema, 409: InboxActionRefusalSchema },
+      },
+    },
+    async (req) =>
+      requestPrebookingDeposit(
+        {
+          db: app.db,
+          env: app.env,
+          log: req.log,
+          sender: { channels: app.inboxChannels, storage: app.fileStorage },
+        },
+        await actionCtx(req, 'inbox:conversation:read'),
+        opCtx(req),
+        req.params.id,
+        req.body,
+      ),
+  );
+
   app.post(
     '/conversations/:id/book-date',
     {
       config: { dynamicPermission: true },
       schema: {
         description:
+          'New bookings require the full agreed prebooking deposit verified by the gateway; manual receipts, slips and AI readings cannot unlock creation. Staff check capacity; payment never auto-books. ' +
           'Book Date (SCRUM-775): on a Birthdays & Events conversation, make a TENTATIVE birthday event in the OTO ' +
           "App's Events module from what the person confirmed out of the chat — the park, the date and start time, " +
           'the guests, the contact and the child — and link the two: the conversation keeps the event (its `event` ' +

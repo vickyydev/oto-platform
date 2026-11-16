@@ -202,6 +202,9 @@ await check("reminded, then overdue: the words move; paid, expired and cancelled
   assert.equal(text("text-deposit-request-headline"), "Deposit paid · ฿3,000");
   assert.match(text("text-deposit-request-state")!, /updated here and at the till/);
   assert.equal(text("badge-deposit-request-paid"), "Paid");
+  await mountPanel(ok(request("paid", { provider: "simulator", writeBack: null })));
+  assert.equal(text("badge-deposit-request-paid"), "Simulator test");
+  assert.match(text("text-prebooking-simulator")!, /no real bank money has been received/);
   assert.ok(byTestId("button-request-deposit"), "another deposit can be asked after one was paid");
   assert.equal(byTestId("button-deposit-resend"), null);
   await mountPanel(ok(request("paid", { writeBack: { editId: "x", syncState: "pending", syncError: null } })));
