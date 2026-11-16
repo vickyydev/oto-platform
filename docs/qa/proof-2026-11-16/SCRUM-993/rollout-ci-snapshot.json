@@ -1,0 +1,19 @@
+﻿{
+    "observedAt":  "2026-11-16T18:36:57.6787877Z",
+    "sha":  "0bc4be94abdbf982c3a06146062e96f0bb7b28fb",
+    "runs":  [
+                 {
+                     "conclusion":  "",
+                     "createdAt":  "2026-11-16T18:28:12Z",
+                     "databaseId":  43929126898,
+                     "headSha":  "0bc4be94abdbf982c3a06146062e96f0bb7b28fb",
+                     "status":  "in_progress",
+                     "updatedAt":  "2026-11-16T18:28:16Z",
+                     "url":  "https://github.com/vickyydev/oto-platform/actions/runs/43929126898"
+                 }
+             ],
+    "watcherPid":  124996,
+    "watcherLog":  "C:/oto-lanes/inbox-993-final-ci-watch.log",
+    "watcherErrorLog":  "C:/oto-lanes/inbox-993-final-ci-watch.err.log",
+    "rerunsIssued":  0
+}

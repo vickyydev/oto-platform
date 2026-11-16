@@ -1,0 +1,31 @@
+{
+  "observedAt": "2026-11-16T18:37:12.500Z",
+  "sha": "0bc4be94abdbf982c3a06146062e96f0bb7b28fb",
+  "allLatestExactLive": true,
+  "receipts": [
+    {
+      "name": "oto-app-staging",
+      "id": "dep-dbtkmkuc6qcc73c0pvl0",
+      "status": "live",
+      "sha": "0bc4be94abdbf982c3a06146062e96f0bb7b28fb"
+    },
+    {
+      "name": "oto-api-staging",
+      "id": "dep-dbtkmljl550s73disbng",
+      "status": "live",
+      "sha": "0bc4be94abdbf982c3a06146062e96f0bb7b28fb"
+    },
+    {
+      "name": "oto-inbox-staging",
+      "id": "dep-dbtkpd9srm7s73eh64a0",
+      "status": "live",
+      "sha": "0bc4be94abdbf982c3a06146062e96f0bb7b28fb"
+    },
+    {
+      "name": "oto-console-staging",
+      "id": "dep-dbtkpdu1egvs73b8989g",
+      "status": "live",
+      "sha": "0bc4be94abdbf982c3a06146062e96f0bb7b28fb"
+    }
+  ]
+}

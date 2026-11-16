@@ -1,0 +1,13 @@
+{
+  "at": "2026-11-16T18:51:11.104Z",
+  "sourceSha": "4af191b6a803bb52bf87d30c717027132729eea5",
+  "baseRuntimeSha": "0bc4be94abdbf982c3a06146062e96f0bb7b28fb",
+  "outcome": "Test-only correction reviewed; runtime source unchanged",
+  "changedInputHashesVerified": true,
+  "completeLogHashesVerified": true,
+  "wholeFilePassed": 10,
+  "lintErrors": 0,
+  "inheritedWarnings": 17,
+  "staleApprovalRefusalAndNoWritesPinned": true,
+  "hostedCi": "Original failed step preserved; repaired hosted run not yet claimed"
+}

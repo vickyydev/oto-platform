@@ -1,0 +1,36 @@
+{
+  "at": "2026-11-16T18:28:55.156Z",
+  "sha": "0bc4be94abdbf982c3a06146062e96f0bb7b28fb",
+  "receipts": [
+    {
+      "key": "SCRUM-988",
+      "status": "Testing",
+      "commentId": "14854"
+    },
+    {
+      "key": "SCRUM-989",
+      "status": "Testing",
+      "commentId": "14855"
+    },
+    {
+      "key": "SCRUM-990",
+      "status": "Testing",
+      "commentId": "14856"
+    },
+    {
+      "key": "SCRUM-991",
+      "status": "Testing",
+      "commentId": "14857"
+    },
+    {
+      "key": "SCRUM-993",
+      "status": "Testing",
+      "commentId": "14858"
+    },
+    {
+      "key": "SCRUM-987",
+      "status": "Deployed",
+      "commentId": "14859"
+    }
+  ]
+}
