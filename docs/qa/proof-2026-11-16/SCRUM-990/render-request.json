@@ -1,0 +1,37 @@
+{
+  "sha": "20c34493fb0aa2d0c33d98df9f6b6053cfc56d94",
+  "receipts": [
+    {
+      "name": "oto-app-staging",
+      "serviceId": "srv-danppvjtqb8s73cnvua0",
+      "id": "dep-dbtjib3l550s73dfjh60",
+      "requestedAt": "2026-11-16T17:11:07.637Z",
+      "sha": "20c34493fb0aa2d0c33d98df9f6b6053cfc56d94",
+      "reused": false
+    },
+    {
+      "name": "oto-api-staging",
+      "serviceId": "srv-danh2ljtqb8s73bt9en0",
+      "id": "dep-dbtjk159fdbs73bf1g30",
+      "requestedAt": "2026-11-16T17:14:44.497Z",
+      "sha": "20c34493fb0aa2d0c33d98df9f6b6053cfc56d94",
+      "reused": false
+    },
+    {
+      "name": "oto-pos-staging",
+      "serviceId": "srv-danh2mf40ujc73bu80j0",
+      "id": "dep-dbtjk1psrm7s73edpu8g",
+      "requestedAt": "2026-11-16T17:14:46.755Z",
+      "sha": "20c34493fb0aa2d0c33d98df9f6b6053cfc56d94",
+      "reused": false
+    },
+    {
+      "name": "oto-pos-web-staging",
+      "serviceId": "srv-dbk7qu8n74is73bm894g",
+      "id": "dep-dbtjk28m7kps73b6ehk0",
+      "requestedAt": "2026-11-16T17:14:48.614Z",
+      "sha": "20c34493fb0aa2d0c33d98df9f6b6053cfc56d94",
+      "reused": false
+    }
+  ]
+}
