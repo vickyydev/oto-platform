@@ -1,3 +1,5 @@
+import { additionalBillParty } from '@/lib/partyAdditionalBills';
+import { computePartyTotal } from '@/lib/party';
 import * as React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { MobilePartyPayment } from '@/components/mobile/parties/MobilePartyPayment';
@@ -58,6 +60,14 @@ describe('SCRUM-990 additional-bill payment component review', () => {
     view.rerender(props(party('party-one', [bill('bill-one', 0), bill('bill-two', 10000)])));
     expect(seam.options).toMatchObject({ additionalBillId: 'bill-one', amount: 0.01 });
     view.unmount();
+  });
+  it('projects only the selected bill on the customer display, leaving original package add-ons outside it', () => {
+    const source = { ...party('party', [bill('bill-one', 1)]), basePrice: 500, lineItems: [{ id: 'old-main-addon', name: 'Original package extra', qty: 2, price: 100 }] };
+    const shown = additionalBillParty(source, 'bill-one');
+    expect(shown.lineItems).toEqual([]);
+    expect(shown.packageName).toBe('Additional bill bill-one');
+    expect(computePartyTotal(shown)).toBe(0);
+    expect(source.lineItems).toHaveLength(1);
   });
   it('keeps legacy unassigned-tab partial controls in whole baht', () => {
     const old = { ...party('legacy', []), basePrice: 100 };
