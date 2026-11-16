@@ -52,6 +52,7 @@ interface PartyBalanceModalProps {
     method: PartyPaymentMethod,
     shownOutstanding: number,
     tender?: PartyTenderPress,
+    additionalBillId?: string,
   ) => void | PartyPaymentConfirmation | Promise<PartyPaymentConfirmation>;
   /** SCRUM-732 — the counter a QR or a card is taken at, routed by its own setup. */
   stationId?: string | null;
@@ -85,11 +86,18 @@ export function PartyBalanceModal({
   onBillMoved,
   displayHandoff,
 }: PartyBalanceModalProps) {
-  const total = computePartyTotal(party);
-  const outstanding = computePartyOutstanding(party);
-  const extras = partyExtraChargesTotal(party);
-  const extraGroups = partyExtraChargeGroups(party);
-  const paid = partyPaymentsTotal(party);
+  const [selectedBillId, setSelectedBillId] = useState(() => party.additionalBills?.find((bill) => bill.state === 'open')?.id ?? '');
+  const selectedBill = party.additionalBills?.find((bill) => bill.id === selectedBillId);
+  const billingParty = selectedBill ? { ...party, basePrice: 0, deposit: 0, availableDeposit: 0,
+    partyExtraCharges: party.partyExtraCharges.filter((charge) => selectedBill.charges.some((row) => row.id === charge.id)),
+    partyPayments: party.partyPayments.filter((payment) => selectedBill.payments.some((row) => row.id === payment.id)),
+  } : party;
+  const total = selectedBill ? selectedBill.totalSatang / 100 : computePartyTotal(party);
+  const outstanding = selectedBill ? selectedBill.outstandingSatang / 100 : computePartyOutstanding(party);
+  const extras = partyExtraChargesTotal(billingParty);
+  const extraGroups = partyExtraChargeGroups(billingParty);
+  const paid = selectedBill ? selectedBill.paidSatang / 100 : partyPaymentsTotal(party);
+  const [collectBillId, setCollectBillId] = useState<string | undefined>();
 
   // Tenders come from the store (admin-configurable); disabled ones never render.
   const methods = getEnabledPaymentMethods();
@@ -129,15 +137,16 @@ export function PartyBalanceModal({
 
   const amount = useMemo(() => {
     if (mode === 'full') return outstanding;
-    const n = Math.floor(Number(partialText));
+    const n = selectedBill ? Math.round(Number(partialText) * 100) / 100 : Math.floor(Number(partialText));
     if (!Number.isFinite(n) || n <= 0) return 0;
     return Math.min(n, outstanding);
-  }, [mode, partialText, outstanding]);
+  }, [mode, partialText, outstanding, selectedBill]);
 
   const canContinue = !!method && amount > 0 && outstanding > 0;
 
   const handleContinue = () => {
     if (!method || amount <= 0) return;
+    setCollectBillId(selectedBill?.id);
     setCollectAmount(amount);
     setCollectMethod(method);
     setCollectOutstanding(outstanding);
@@ -148,7 +157,8 @@ export function PartyBalanceModal({
   // the money is in, and only then does the platform's record of it come back.
   const routed = ['card', 'qr'].includes(paymentMethodKind(collectMethod));
   const tender = usePartyTender({
-    scope: `party-balance:${party.id}:${collectMethod}:${collectAmount}:${collectOutstanding}`,
+    scope: `party-balance:${party.id}:${collectBillId ?? "tab"}:${collectMethod}:${collectAmount}:${collectOutstanding}`,
+    additionalBillId: collectBillId,
     active: open && stage === 'collect' && routed,
     paused: Boolean(paused),
     party,
@@ -157,7 +167,7 @@ export function PartyBalanceModal({
     method: collectMethod,
     outstanding: collectOutstanding,
     record: async (press) =>
-      (await onConfirm(collectAmount, collectMethod, collectOutstanding, press)) ?? { recorded: true, amount: collectAmount },
+      (await onConfirm(collectAmount, collectMethod, collectOutstanding, press, collectBillId)) ?? { recorded: true, amount: collectAmount },
     onRecorded: (recorded) => {
       setCollectAmount(recorded);
       setStage('done');
@@ -177,7 +187,7 @@ export function PartyBalanceModal({
     if (collectAmount <= 0 || recording) return;
     setRecording(true);
     try {
-      const result = await onConfirm(collectAmount, collectMethod, collectOutstanding);
+      const result = await onConfirm(collectAmount, collectMethod, collectOutstanding, undefined, collectBillId);
       if (result && !result.recorded) {
         if (!result.retry) setStage('review');
         return;
@@ -237,6 +247,14 @@ export function PartyBalanceModal({
               <div className="mx-auto max-w-lg p-8">
                 {stage === 'review' && (
                   <>
+                    {party.additionalBills && party.additionalBills.length > 0 && <div className="mb-4 space-y-2">
+                      <label className="block text-sm font-medium" htmlFor="additional-party-bill">Additional bill linked to {party.title}</label>
+                      <select id="additional-party-bill" className="w-full rounded border p-2 bg-background" value={selectedBillId} onChange={(event) => setSelectedBillId(event.target.value)}>
+                        <option value="" disabled={party.additionalBills.some((bill) => bill.state === 'open')}>Older unassigned tab balance</option>
+                        {party.additionalBills.map((bill, index) => <option key={bill.id} value={bill.id} disabled={bill.state === 'paid'}>Additional bill {index + 1} - {bill.state} - THB {bahtText(bill.outstandingSatang / 100)} outstanding</option>)}
+                      </select>
+                      <p className="text-xs text-muted-foreground">The original paid receipt stays unchanged. This payment applies only to the selected bill.</p>
+                    </div>}
                     <div className="flex items-center gap-2 text-xl font-bold mb-1">
                       <Wallet className="w-6 h-6 text-primary" />
                       Take balance payment
@@ -472,7 +490,7 @@ export function PartyBalanceModal({
             <div className={`w-1/2 h-full min-w-0 ${customerTheme === 'dark' ? 'dark' : 'light'}`}>
               <PartySettlementCustomerScreen
                 stage={customerStage}
-                party={party}
+                party={billingParty}
                 amount={stage === 'review' ? amount : stage === 'collect' ? shown.amount : collectAmount}
                 method={stage === 'review' ? (method || undefined) : stage === 'collect' ? shown.method : collectMethod}
                 qr={tender.display}

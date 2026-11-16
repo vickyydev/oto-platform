@@ -26,7 +26,7 @@ export const PartyMenuItemBodySchema = z
     /** The press, minted when the form opens: a retry of it is the same item and the same line. */
     actionId: z.string().uuid(),
     /** The kitchen plan's list the line goes in. */
-    menu: z.enum(["kids", "adults"]),
+    menu: z.enum(["kids", "adults", "bar"]),
     name: z.string().trim().min(1).max(PARTY_MENU_ITEM_NAME_MAX),
     station: z.enum(PARTY_MENU_ITEM_STATIONS),
     /** Baht; null with `free` ticked. */
@@ -65,6 +65,9 @@ export interface PartyMenuLine {
   /** The till product's code (`PARTY-…`): what the till's plan and slips find it by. */
   productCode: string;
   source?: "additional";
+  /** New staff-added bar charge; old unapproved PARTY bar lines remain uncharged. */
+  chargeApproved?: boolean;
+  billingSync?: string;
 }
 
 /** The line's id comes from the press, so a retry finds the line it wrote instead of adding a second. */
@@ -84,6 +87,7 @@ export function partyMenuLineOf(body: PartyMenuItemBody, productCode: string, se
     included: body.free,
     price: body.free ? 0 : (body.price ?? 0),
     productCode,
+    chargeApproved: true,
     ...(setMenuEnabled ? { source: "additional" as const } : {}),
   };
 }

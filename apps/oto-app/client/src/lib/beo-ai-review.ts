@@ -547,6 +547,7 @@ export const APPROVAL_WRITES =
  * review was open or would have gone below what the family paid through the chat.
  */
 export interface ApproveAnswer {
+  additionalBilling?: { status: "synced" | "plan_only" | "pending"; message: string };
   /** SCRUM-927: what the approval wrote, as the server counts it (absent from a server before this rule). */
   written?: Record<string, number | boolean>;
   notWritten?: {
@@ -598,7 +599,7 @@ export function approvalResultWords(answer: ApproveAnswer): string {
   const foldWords = answer.written?.adultsMenuOwn === true ? adultsFoldedOnOwnMenuWords(folded) : adultsFoldedWords(folded);
   // SCRUM-978: a repeat of a kids' line that is no set-menu dish, on the adults' own menu as that line.
   const copied = Number(answer.written?.adultsKidsLinesCopied) || 0;
-  return `Saved: ${saved}.${folded > 0 ? ` ${foldWords}` : ""}${copied > 0 ? ` ${adultsFoldedAsKidsLineWords(copied)}` : ""}${steps}${deposit}`;
+  return `${answer.additionalBilling?.status === "pending" ? `${answer.additionalBilling.message} ` : ""}Saved: ${saved}.${folded > 0 ? ` ${foldWords}` : ""}${copied > 0 ? ` ${adultsFoldedAsKidsLineWords(copied)}` : ""}${steps}${deposit}`;
 }
 
 /**
@@ -1243,6 +1244,7 @@ export function approveBodyOf(
   return {
     conversationId: ids.conversationId,
     messageId: ids.messageId,
+    ...(review.currentState ? { expectedState: review.currentState.version } : {}),
     package: pkg ? { templateId: pkg.id, addOns } : null,
     setMenu,
     menuLines,

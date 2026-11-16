@@ -104,7 +104,7 @@ import { beoBillingMutationScope } from "@/lib/beo-deposit-buffer";
 import { bahtOfSatang, tillFiguresOf } from "@shared/tillBilling";
 import type { PartyMenuLine } from "@shared/partyMenuItem";
 import { isTemplateSetMenuLine, lineWithTillItem, lineWithoutTillItem } from "@shared/tillMenu";
-import { TillCodeMark, TillMenuContext, TillMenuPick, tillCodeTitle, useTillMenu, useTillMenuIndex } from "./till-menu-picker";
+import { TillCodeMark, TillMenuContext, TillMenuPick, tillCodeTitle, useTillMenu, useTillMenuIndex, tillMenuQueryKey } from "./till-menu-picker";
 import { isStartTime, needsStartTimeLine } from "@shared/eventStartTime";
 import { ADULTS_SAME_AS_KIDS, adultsDifferOf, kitchenListsEqual, sameKitchenDishNames } from "@shared/kitchenAdults";
 import { beoExtraChargeOf, beoKitchenChargesOf, type BeoExtraCharge } from "@shared/beoExtras";
@@ -186,6 +186,8 @@ type MenuLine = {
   groupId?: string;
   /** SCRUM-828: the till product a new item was made as; what the till's plan and slips find it by. */
   productCode?: string;
+  chargeApproved?: boolean;
+  billingSync?: string;
 };
 
 /** `qty` and `note` are the set menu's own (SCRUM-803); an older item has neither. */
@@ -509,6 +511,7 @@ function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab, charge, 
               quantity: 1,
               notes: "",
               included: item.included,
+              chargeApproved: true,
               price: 0,
               source: "additional",
             };
@@ -655,7 +658,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
   const [tempBarTime, setTempBarTime] = useState("12:00");
   const [menuTab, setMenuTab] = useState<"kids" | "adults">("kids");
   // SCRUM-828: the food list a "New item" is being made for; null while its dialog is closed.
-  const [newItemMenu, setNewItemMenu] = useState<"kids" | "adults" | null>(null);
+  const [newItemMenu, setNewItemMenu] = useState<"kids" | "adults" | "bar" | null>(null);
   const [setMenuEnabled, setSetMenuEnabled] = useState(false);
   const [setMenuTemplateId, setSetMenuTemplateId] = useState<string>("");
   const [showParentLinkDialog, setShowParentLinkDialog] = useState(false);
@@ -1112,6 +1115,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
           included: false,
           price: m.price || 0,
           source: m.source,
+          ...(m.chargeApproved === true ? { chargeApproved: true, billingSync: m.billingSync } : {}),
           // SCRUM-905: a drink picked from the till's menu keeps its till code through every Save.
           ...(typeof m.productCode === "string" && m.productCode.trim() ? { productCode: m.productCode.trim() } : {}),
         });
@@ -1153,6 +1157,8 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
 
   const saveMutation = useMutation({
     mutationFn: async () => {
+      const approved = [...kidsMenu, ...(adultsDiffer ? adultsMenu : []), ...barItems].filter((line) => line.chargeApproved && line.source !== "set_menu");
+      if (approved.length > 0 && !window.confirm("Save the BEO and bill newly added priced items to this same party if its main receipt is already paid? Included/free items stay included. The original receipt stays unchanged.")) throw new Error("Save cancelled before billing.");
       const payload = {
         event: { ...eventData, locationText },
         partyHost,
@@ -1206,7 +1212,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
       if (!res.ok) throw new Error("Failed to save BEO data");
       return res.json();
     },
-    onSuccess: (saved: { oneDeposit?: OneDeposit; depositSave?: DepositSaveNote } | null) => {
+    onSuccess: (saved: { additionalBilling?: { status: string; message: string }; oneDeposit?: OneDeposit; depositSave?: DepositSaveNote } | null) => {
       // The deposit as it stands after the Save: the field shows it at once, and the read that
       // follows brings the rest of the form.
       if (saved?.oneDeposit) {
@@ -1216,7 +1222,8 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
       }
       queryClient.invalidateQueries({ queryKey: ["/api/events", eventId, "beo"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/events"] });
-      if (saved?.depositSave) toast({ title: "BEO saved. The deposit was not changed", description: saved.depositSave.message });
+      if (saved?.additionalBilling?.status === "pending") toast({ title: "Plan saved; additional bill needs resolution", description: saved.additionalBilling.message, variant: "destructive" });
+      else if (saved?.depositSave) toast({ title: "BEO saved. The deposit was not changed", description: saved.depositSave.message });
       else toast({ title: "BEO data saved successfully" });
       onSave?.();
     },
@@ -1268,8 +1275,8 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
    * with its till code. It joins the list on screen as written (the same id,
    * so a retried press replaces its own line), and the next Save keeps it.
    */
-  const addPartyMenuLine = (menu: "kids" | "adults", line: PartyMenuLine) => {
-    const setMenu = menu === "adults" ? setAdultsMenu : setKidsMenu;
+  const addPartyMenuLine = (menu: "kids" | "adults" | "bar", line: PartyMenuLine) => {
+    const setMenu = menu === "bar" ? setBarItems : menu === "adults" ? setAdultsMenu : setKidsMenu;
     const shown: MenuLine = {
       id: line.id,
       itemName: line.itemName,
@@ -1278,11 +1285,13 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
       included: line.included,
       price: line.price,
       productCode: line.productCode,
+      ...(line.chargeApproved ? { chargeApproved: true, billingSync: line.billingSync } : {}),
       ...(line.source ? { source: line.source } : {}),
     };
     setMenu((prev) => (prev.some((m) => m.id === shown.id) ? prev.map((m) => (m.id === shown.id ? shown : m)) : [...prev, shown]));
-    setMenuTab(menu);
-    toast({ title: "New item added", description: `${line.itemName} is on the till as ${line.productCode}, for this party only.` });
+    if (menu !== "bar") setMenuTab(menu);
+    void queryClient.invalidateQueries({ queryKey: tillMenuQueryKey(beoData?.branchId) });
+    toast({ title: line.billingSync === "pending" ? "Item added; additional bill pending" : "New item added", description: line.billingSync === "pending" ? "Save the BEO again to resolve billing. The item is not confirmed charged." : `${line.itemName} is available in this park's BEO menu as ${line.productCode}.` });
   };
 
   const addSetupTask = () => {
@@ -3415,6 +3424,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                               quantity: 1,
                                               notes: "",
                                               included: false,
+                                              chargeApproved: true,
                                               price: 0,
                                               source: "additional",
                                             }]);
@@ -3456,6 +3466,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                               quantity: 1,
                                               notes: "",
                                               included: false,
+                                              chargeApproved: true,
                                               price: 0,
                                               source: "additional",
                                             };
@@ -3556,6 +3567,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                         quantity: 1,
                                         notes: "",
                                         included: false,
+                                        chargeApproved: true,
                                         price: 0,
                                         source: "additional",
                                       }]);
@@ -3593,6 +3605,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                         quantity: 1,
                                         notes: "",
                                         included: false,
+                                        chargeApproved: true,
                                         price: 0,
                                         source: "additional",
                                       }]);
@@ -3933,6 +3946,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                     </div>
                   ))}
                   <div className="flex gap-2 pt-1">
+                    <button type="button" disabled={readOnly} onClick={() => setNewItemMenu("bar")} className="text-xs border rounded-full px-2" data-testid="button-new-bar-item">+ CUSTOM DISH</button>
                     <button
                       className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-blue-500/15 text-blue-600 border-blue-500/30 dark:text-blue-400 hover:bg-blue-500/25 transition-colors"
                       onClick={() => setBarItems(prev => [...prev, {
@@ -3941,6 +3955,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                         quantity: 1,
                         notes: "",
                         included: false,
+                        chargeApproved: true,
                         price: 0,
                         source: "set_menu",
                       }])}
@@ -3957,6 +3972,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                         quantity: 1,
                         notes: "",
                         included: false,
+                        chargeApproved: true,
                         price: 0,
                       }])}
                       disabled={readOnly}

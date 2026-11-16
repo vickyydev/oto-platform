@@ -290,6 +290,7 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
     shownOutstanding: number,
     // SCRUM-732 — a routed tender that has answered names the ids it was opened under.
     tender?: PartyTenderPress,
+    additionalBillId?: string,
   ): Promise<PartyPaymentConfirmation> => {
     const blocked = blockerOf(true);
     if (!operator || blocked || !station) {
@@ -302,8 +303,9 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
       amount,
       method,
       outstanding: shownOutstanding,
+      additionalBillId,
       stationId: station.stationId,
-      ids: tender?.ids ?? idsFor('payment', partyPaymentPress(amount, method, shownOutstanding)),
+      ids: tender?.ids ?? idsFor('payment', `${additionalBillId ?? 'tab'}:${partyPaymentPress(amount, method, shownOutstanding)}`),
       ...(tender?.slip ? { slip: tender.slip } : {}),
     });
     settled('payment', outcome, 'Payment not recorded', PARTY_PAYMENT_NOT_CONFIRMED);
@@ -344,7 +346,7 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
   const [kitchenChoices, setKitchenChoices] = useState<PartyKitchenChoicesAnswer | null>(null);
   const hasChoiceGroups = !!kitchenPlan?.setMenu.some((m) => !!m.choiceGroup);
   useEffect(() => {
-    if (!editing || !mayEditKitchen || !hasChoiceGroups) return;
+    if (!editing || !mayEditKitchen) return;
     let live = true;
     setKitchenChoices(null);
     void readPartyKitchenChoicesOnPlatform(party).then((answer) => {
@@ -449,6 +451,7 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
           });
           return;
         }
+        if (kitchen.answer.kitchenEdit.billingPending) toast({ title: "Plan saved; additional bill needs resolution", description: "The new item is pending billing in the BEO. Open the BEO and save again to retry the same source line without a duplicate charge.", variant: "destructive" });
         setFresh(kitchen.party);
         onChanged();
         // The BEO now holds the change, so the form's plan is behind it: closed by Save or by Cancel
@@ -457,7 +460,7 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
         if (Object.keys(fields).length === 0) {
           ids.current.kitchen = undefined;
           closeEdit();
-          toast({ title: 'Kitchen plan saved', description: `The BEO in the OTO App now has the change.${keptSentence ? ` ${keptSentence}` : ''}` });
+          toast({ title: kitchen.answer?.kitchenEdit.billingPending ? 'Kitchen plan saved; additional billing needs resolution' : 'Kitchen plan saved', description: `The BEO in the OTO App now has the change.${keptSentence ? ` ${keptSentence}` : ''}` });
           return;
         }
       }
@@ -549,6 +552,11 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
             )}
           </>
         )}
+        {party.additionalBills?.map((additional, index) => <div key={additional.id} className="my-3 rounded border p-3 text-sm" data-testid={`party-additional-bill-${index}`}>
+          <p className="font-medium">Additional bill {index + 1} - {additional.state}</p>
+          <p>Total THB {satangText(additional.totalSatang)} - Paid THB {satangText(additional.paidSatang)} - Outstanding THB {satangText(additional.outstandingSatang)}</p>
+          <p className="text-xs text-muted-foreground">Linked to this party. Original receipt unchanged. Reference {additional.id}</p>
+        </div>)}
         {party.lineItems.map((li) => (
           <InfoRow
             key={li.id}

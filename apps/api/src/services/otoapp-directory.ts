@@ -245,6 +245,7 @@ export interface DirectoryKitchenPlanEditBody {
 
 /** What the app answers with (`TillKitchenEditResult`, the app's lib/tillKitchenEdit.ts). */
 export interface DirectoryKitchenPlanEditAnswer {
+  additionalBilling?: { status: "synced" | "plan_only" | "pending"; message: string };
   edit: { id: string; eventId: string; changes: number };
   replayed: boolean;
 }

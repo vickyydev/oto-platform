@@ -372,6 +372,7 @@ export type PartyChargeItem = z.infer<typeof PartyChargeItemSchema>;
  * ledger entry, never a sale — no kitchen ticket, no stock, no bands (Q3).
  */
 export const PartyChargeViewSchema = z.object({
+  additionalBillId: z.string().nullable().optional(),
   id: z.string(),
   kind: z.enum(PARTY_CHARGE_KINDS),
   items: z.array(PartyChargeItemSchema),
@@ -388,6 +389,7 @@ export type PartyChargeView = z.infer<typeof PartyChargeViewSchema>;
  * is the token the till chose, `kind` the ledger's word for the money.
  */
 export const PartyPaymentViewSchema = z.object({
+  additionalBillId: z.string().nullable().optional(),
   id: z.string(),
   amountSatang: z.number().int(),
   method: z.string(),
@@ -405,6 +407,15 @@ export const PartyPaymentViewSchema = z.object({
   attemptId: z.string(),
 });
 export type PartyPaymentView = z.infer<typeof PartyPaymentViewSchema>;
+
+/** A separately payable linked bill, not a replacement fiscal receipt. */
+export const PartyAdditionalBillSchema = z.object({
+  id: z.string(), eventId: z.string(), mainSettlementId: z.string(),
+  state: z.enum(['open', 'paid']), totalSatang: z.number().int(), paidSatang: z.number().int(), outstandingSatang: z.number().int(),
+  createdAt: z.string(), paidAt: z.string().nullable(),
+  charges: z.array(PartyChargeViewSchema), payments: z.array(PartyPaymentViewSchema),
+});
+export type PartyAdditionalBill = z.infer<typeof PartyAdditionalBillSchema>;
 
 /** The stamp `updateParty` leaves: who edited the party at a till, and when. */
 export const PartyLastEditedSchema = z.object({
@@ -494,6 +505,7 @@ export const EventPartyViewSchema = z.object({
    * above is the tab's own charges and payments alone.
    */
   settlement: PartySettlementViewSchema.nullable().optional(),
+  additionalBills: z.array(PartyAdditionalBillSchema).optional(),
 });
 
 export const EventViewSchema = z.object({

@@ -80,6 +80,22 @@ function readAtOf(reading: TillBillingReading | undefined): string | null {
   return at.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Bangkok" });
 }
 
+/** Additional bills are separate ledger documents; the original fiscal receipt stays as recorded. */
+export function AdditionalPartyBills({ reading }: { reading: TillBillingReading | undefined }) {
+  return <div className="space-y-2">{reading?.status === "ok" && reading.billing.additionalBills?.map((bill, index) => <div key={bill.id} className="rounded border p-2 text-xs" data-testid={`additional-bill-${index}`}>
+        <p className="font-medium">Additional bill {index + 1} - {bill.state}</p>
+        {bill.charges.flatMap((charge) => charge.items).map((item, at) => <p key={at}>{item.name} x {item.qty} - {bahtOfSatang(item.lineTotalSatang)}</p>)}
+        <p>Total {bahtOfSatang(bill.totalSatang)} - Paid {bahtOfSatang(bill.paidSatang)} - Outstanding {bahtOfSatang(bill.outstandingSatang)}</p>
+        <p className="text-muted-foreground">Linked to the main party; the original receipt is unchanged. Bill reference {bill.id}</p>
+      </div>)}
+    {reading?.status === "ok" && reading.billing.state === "sale" && reading.billing.unassignedTab && (reading.billing.unassignedTab.charges.length > 0 || reading.billing.unassignedTab.payments.length > 0) && <div className="text-xs" data-testid="unassigned-party-tab">
+      <p className="font-medium">Older unassigned tab records</p>
+      {reading.billing.unassignedTab.charges.map((charge) => <p key={charge.id}>Charge {bahtOfSatang(charge.totalSatang)}</p>)}
+      {reading.billing.unassignedTab.payments.map((payment) => <p key={payment.id}>Payment {bahtOfSatang(payment.amountSatang)}</p>)}
+    </div>}
+  </div>;
+}
+
 /**
  * The three figures, each on its own row: Expected total, Deposit paid,
  * Outstanding (Total, Paid and Outstanding once settled) — or why there are
@@ -105,6 +121,7 @@ export function TillMoneyRows({ reading, loading }: { reading: TillBillingReadin
   }
   return (
     <div className="space-y-1" data-testid="till-money-rows">
+      <AdditionalPartyBills reading={reading} />
       <div className="flex items-center justify-between text-sm">
         <span className="text-muted-foreground">{figures.kind === "sale" ? "Total" : "Expected total"}</span>
         <span className="font-semibold font-mono" data-testid="text-till-expected">{bahtOfSatang(figures.expectedSatang)}</span>
@@ -294,6 +311,7 @@ export function TillBillingPanel({
                 </p>
               </div>
             </div>
+            <AdditionalPartyBills reading={reading} />
             {sale && (
               <div className="text-sm space-y-0.5" data-testid="text-till-receipt">
                 <p>

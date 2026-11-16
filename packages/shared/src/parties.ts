@@ -164,6 +164,7 @@ export const PartyPaymentTenderSchema = z.object({
 
 /** `POST /parties/:id/payments` — `addPartyPayment`. */
 export const PartyPaymentBodySchema = z.object({
+  additionalBillId: z.string().uuid().optional(),
   branchId: z.string().uuid(),
   /** The payment's id, minted by the till: the same id again is the same payment. */
   paymentId: z.string().uuid(),
@@ -190,6 +191,7 @@ export type PartyPaymentBody = z.infer<typeof PartyPaymentBodySchema>;
  * payment id on `/payments`, which answers what it took.
  */
 export const PartyTenderBodySchema = z.object({
+  additionalBillId: z.string().uuid().optional(),
   branchId: z.string().uuid(),
   /** The payment's id, minted by the till: the same id again is the same tender. */
   paymentId: z.string().uuid(),

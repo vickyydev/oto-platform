@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { PartyMenuCatalogueItemSchema } from './party-menu-catalogue';
 import { PARTY_PLAN_LINE_QTY_MAX } from './party-settlement';
 import { PartyDetailWithSlipsAnswerSchema } from './party-slips';
 
@@ -51,6 +52,8 @@ export const PartyKitchenChangeSchema = z.discriminatedUnion('op', [
     name: z.string().trim().min(1).max(200),
     /** The till item's code when it was picked from the till's menu; null for a typed line. */
     productCode: z.string().trim().min(1).max(64).nullable(),
+    /** Selling price snapshot on an explicit new addition; satang, never internal cost. */
+    unitPriceSatang: z.number().int().min(0).max(10000000).optional(),
     qty: Qty,
     note: Note.nullable().optional(),
   }).strict(),
@@ -81,6 +84,7 @@ export type PartyKitchenEditBody = z.infer<typeof PartyKitchenEditBodySchema>;
 export const PartyKitchenEditAnswerSchema = PartyDetailWithSlipsAnswerSchema.extend({
   kitchenEdit: z.object({
     id: z.string().uuid(),
+    billingPending: z.boolean().optional(),
     /** The same edit id was written before: nothing was written again. */
     replayed: z.boolean(),
   }),
@@ -106,6 +110,8 @@ export const PartyKitchenChoicesAnswerSchema = z.object({
   status: z.enum(['ok', 'unavailable']),
   message: z.string().nullable(),
   groups: z.array(PartyKitchenChoiceGroupSchema),
+  /** BEO menu choices, including reusable custom dishes; never the selling grid. */
+  items: z.array(PartyMenuCatalogueItemSchema).optional(),
 });
 export type PartyKitchenChoicesAnswer = z.infer<typeof PartyKitchenChoicesAnswerSchema>;
 

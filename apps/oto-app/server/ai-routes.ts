@@ -46,6 +46,8 @@ import {
   type BeoCatalogue,
   type TranscriptRef,
 } from "./lib/beoCatalogueFill";
+import { syncApprovedBeoAdditions } from "./lib/beoAdditionalBilling";
+import { beoReviewState } from "./lib/beoReviewState";
 import { approveBeoAiFill, depositHeld, parentSelectionOf, sectionsHeld } from "./lib/beoAiApprove";
 import { oneDepositOf, type GatewayFloor } from "./lib/depositSaveGuard";
 import { gatewayDepositFloor } from "./party-deposit-routes";
@@ -723,6 +725,7 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
               ...(till ? { tillMenu: { status: till.status, message: till.message } } : {}),
               transcript: { lines: 1, cut: false },
               replaces: await sectionsHeld(db, event.id),
+              currentState: await beoReviewState(db, event.id),
               parentSelection: await parentSelectionOf(db, event.id),
               adultsDiffer: await savedAdultsDifferOf(event.id),
               // SCRUM-843: the deposit this review was read with; the approval sends it back.
@@ -855,6 +858,7 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
             tillMenu: { status: till.status, message: till.message },
             transcript: { lines: conversation?.refs.length ?? 1, cut: conversation?.cut ?? false },
             replaces: await sectionsHeld(db, event.id),
+              currentState: await beoReviewState(db, event.id),
             parentSelection: await parentSelectionOf(db, event.id),
             adultsDiffer: await savedAdultsDifferOf(event.id),
             // SCRUM-843: the deposit this review was read with; the approval sends it back.
@@ -938,7 +942,8 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
         { eventId: event.id, written: outcome.written, notWrittenSteps: notWritten?.timeline?.steps.length ?? 0, depositKept: notWritten?.deposit?.reason ?? null },
         "ai fill approved",
       );
-      res.json({ written: outcome.written, ...(notWritten ? { notWritten } : {}) });
+      const additionalBilling = await syncApprovedBeoAdditions(event.id, req.user!.id);
+      res.json({ written: outcome.written, additionalBilling, ...(notWritten ? { notWritten } : {}) });
     } catch (error: any) {
       log().warn({ err: error?.message ?? String(error) }, "the AI fill approval failed");
       next(error);

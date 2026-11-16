@@ -1,6 +1,7 @@
+import { additionalBillsOf } from "./party-additional-bills";
 import { partyDepositHistoriesOf, type PartyDepositHistory } from './party-deposit-balance';
 import { and, asc, eq, inArray, sql } from 'drizzle-orm';
-import { account, employee, partyCharge, partyEdit, partyPayment, partySettlement, paymentAttempt, sale } from '@oto/db';
+import { account, employee, partyAdditionalBill, partyCharge, partyEdit, partyPayment, partySettlement, paymentAttempt, sale } from '@oto/db';
 import {
   PAYMENT_ATTEMPT_TAKEN_STATUSES,
   PartyChargeItemSchema,
@@ -50,6 +51,7 @@ export interface PartyLedgers {
   edits: PartyEditWithStaff[];
   /** SCRUM-804 — the party's settlement sale, the one not taken over by a later one; null when none. */
   settlement: PartySettlementView | null;
+  additionalBills?: import("@oto/shared").PartyAdditionalBill[];
 }
 
 /** A settlement's state, from its sale's. */
@@ -102,6 +104,7 @@ export async function partyLedgersOf(
   for (const c of charges) {
     out.get(c.row.otoappEventId)?.charges.push({
       id: c.row.id,
+      additionalBillId: c.row.additionalBillId,
       kind: c.row.kind,
       items: itemsOf(c.row.items),
       totalSatang: c.row.totalSatang,
@@ -140,6 +143,7 @@ export async function partyLedgersOf(
   for (const p of payments) {
     out.get(p.row.otoappEventId)?.payments.push({
       id: p.row.id,
+      additionalBillId: p.row.additionalBillId,
       amountSatang: p.amountSatang,
       method: p.methodCode ?? p.method,
       kind: p.method,
@@ -221,6 +225,12 @@ export async function partyLedgersOf(
     const entry = out.get(id);
     if (entry) entry.depositHistory = history;
   }
+  const billRows = await db.select().from(partyAdditionalBill).where(and(eq(partyAdditionalBill.branchId, q.branchId), inArray(partyAdditionalBill.otoappEventId, ids))).orderBy(asc(partyAdditionalBill.createdAt), asc(partyAdditionalBill.id));
+  for (const eventId of ids) {
+    const held = out.get(eventId)!;
+    held.additionalBills = await additionalBillsOf(db, q.branchId, eventId, held.charges, held.payments, billRows.filter((row) => row.otoappEventId === eventId));
+  }
+
   return out;
 }
 

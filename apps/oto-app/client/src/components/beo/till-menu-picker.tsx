@@ -94,7 +94,7 @@ const NOT_FROM_THE_TILL_WORDS = ["not from the till", "remove", "clear"] as cons
 
 /** The menu in its own order, grouped by category; the preferred station's first, the BEO-made items last. */
 function groupsOf(items: readonly TillMenuItem[], prefer?: TillMenuStation): Group[] {
-  const ordered = prefer ? [...items.filter((i) => i.station === prefer), ...items.filter((i) => i.station !== prefer)] : [...items];
+  const ordered = prefer ? items.filter((i) => i.station === prefer) : [...items];
   const groups: Group[] = [];
   const at = new Map<string, Group>();
   const partyOnly: TillMenuItem[] = [];
@@ -112,7 +112,7 @@ function groupsOf(items: readonly TillMenuItem[], prefer?: TillMenuStation): Gro
     }
     group.items.push(item);
   }
-  if (partyOnly.length > 0) groups.push({ heading: "Made for a party (BEO only)", items: partyOnly });
+  if (partyOnly.length > 0) groups.push({ heading: "Custom dishes (BEO only)", items: partyOnly });
   return groups;
 }
 
@@ -179,7 +179,7 @@ export function TillMenuPick({
         <Badge variant="outline" className="text-[10px] px-1.5 ml-1 shrink-0">Party only</Badge>
       )}
       <span className="text-[10px] font-mono text-muted-foreground ml-2 shrink-0">{item.code}</span>
-      <span className="text-[10px] text-muted-foreground ml-2 shrink-0">{priceText(item.priceSatang)}</span>
+      <span className="text-[10px] text-muted-foreground ml-2 shrink-0">{item.priceSatang === 0 ? "Free / included" : priceText(item.priceSatang)}</span>
     </CommandItem>
   );
   return (

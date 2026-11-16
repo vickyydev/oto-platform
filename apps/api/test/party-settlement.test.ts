@@ -1,3 +1,4 @@
+import { syncBeoAdditionalCharges, priceBeoAddition } from "../src/services/beo-additional-charges";
 import { randomBytes } from 'node:crypto';
 import { and, asc, eq, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
@@ -8,6 +9,7 @@ import {
   branch,
   branchTaxConfig,
   partyEdit,
+  partyPayment,
   partySettlement,
   paymentAttempt,
   paymentMethod,
@@ -1484,5 +1486,125 @@ describe('SCRUM-906: an EXTRA line is charged at its entered price, else a till 
     const res = await preview(bare, { kids: 10, adults: 4, socksGiven: 0 });
     expect(res.status).toBe(409);
     expect((res.body as unknown as { error: { code: string } }).error.code).toBe(PARTY_SETTLE_REFUSALS.NO_PLAN.code);
+  });
+});
+
+
+describe('SCRUM-990 HIGH: independent additional bills after a paid main receipt', () => {
+  async function paidMain() {
+    const id = newId();
+    await appParty(id, 'ZZ TEST 990 paid main', WEEKDAY, 16900, 16900);
+    await appPlan(id, WEEKDAY, FLORESTA, { depositSatang: 1690000, setMenu: [] });
+    const result = await settle(id, { kids: 10, adults: 4, socksGiven: 0 });
+    expect(result.status, JSON.stringify(result.body)).toBe(200);
+    expect(result.body.settlement.state).toBe('settled');
+    return { id, saleId: result.body.sale.id };
+  }
+  const charge = (id: string, chargeId: string, totalSatang: number) => call('POST', reception, `/parties/${id}/charges`, { branchId: central, stationId: till, chargeId, kind: 'fnb', totalSatang, items: [{ name: 'ZZ TEST new food', qty: 1, lineTotalSatang: totalSatang }] });
+  const pay = (id: string, billId: string, paymentId: string, amountSatang: number, expectedOutstandingSatang: number) => call('POST', reception, `/parties/${id}/payments`, { branchId: central, stationId: till, additionalBillId: billId, paymentId, amountSatang, expectedOutstandingSatang, tender: { method: 'cash' } });
+
+  it('links only the explicitly selected party; closes the final satang, caps overpayment and creates a distinct next bill', async () => {
+    const main = await paidMain();
+    const original = JSON.stringify({ sale: await ctx.db.select().from(sale).where(eq(sale.id, main.saleId)), lines: await linesOf(main.saleId), payments: await ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, main.saleId)) });
+    const chargeId = newId();
+    expect((await charge(main.id, chargeId, 10001)).status).toBe(200);
+    expect((await charge(main.id, chargeId, 10001)).status).toBe(200);
+    const first = (await detail(main.id)).body.event.party!.additionalBills!;
+    expect(first).toHaveLength(1);
+    expect(first[0]).toMatchObject({ eventId: main.id, totalSatang: 10001, outstandingSatang: 10001, state: 'open' });
+    expect(first[0]!.charges).toHaveLength(1);
+    expect((await pay(main.id, first[0]!.id, newId(), 10000, 10001)).status).toBe(200);
+    const lastPayment = newId();
+    expect((await pay(main.id, first[0]!.id, lastPayment, 900000, 1)).status).toBe(200);
+    expect((await detail(main.id)).body.event.party!.additionalBills![0]).toMatchObject({ state: 'paid', paidSatang: 10001, outstandingSatang: 0 });
+    expect((await charge(main.id, newId(), 20000)).status).toBe(200);
+    const next = (await detail(main.id)).body.event.party!.additionalBills!;
+    expect(next).toHaveLength(2);
+    expect(next[1]!.id).not.toBe(first[0]!.id);
+    expect((await pay(main.id, next[1]!.id, lastPayment, 900000, 1)).status).toBe(409);
+    const after = JSON.stringify({ sale: await ctx.db.select().from(sale).where(eq(sale.id, main.saleId)), lines: await linesOf(main.saleId), payments: await ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, main.saleId)) });
+    expect(after).toBe(original);
+  });
+
+  it('deduplicates BEO source quantity deltas and refuses lowering/repricing an already billed line', async () => {
+    const main = await paidMain();
+    const line = { lineId: 'ZZ-TEST-990-beo-line', name: 'ZZ TEST manual food', productCode: null, area: 'food' as const, quantity: 2, unitSatang: 12500, included: false };
+    const sync = (value = line) => syncBeoAdditionalCharges(ctx.db, { operatorId }, operatorId, main.id, { actorAppUserId: 'zz-test-staff', lines: [value] });
+    expect((await sync()).added).toBe(1);
+    expect((await sync()).added).toBe(0);
+    expect((await sync({ ...line, quantity: 3 })).added).toBe(1);
+    await expect(sync({ ...line, quantity: 2 })).rejects.toMatchObject({ code: 'BEO_BILLED_QUANTITY_CHANGED' });
+    await expect(sync({ ...line, quantity: 3, unitSatang: 99999 })).rejects.toMatchObject({ code: 'BEO_BILLED_PRICE_CHANGED' });
+    expect((await detail(main.id)).body.event.party!.additionalBills![0]!.charges).toHaveLength(2);
+  });
+
+  it('retains the explicit bill through QR payment, confirmation and recovery, and refuses retargeted retry', async () => {
+    const main = await paidMain();
+    await charge(main.id, newId(), 10001);
+    const bill = (await detail(main.id)).body.event.party!.additionalBills![0]!;
+    const [before] = await ctx.db.select({ routing: station.paymentRouting }).from(station).where(eq(station.id, till));
+    await ctx.db.update(station).set({ paymentRouting: { qr: 'gateway' } }).where(eq(station.id, till));
+    try {
+      const paymentId = newId();
+      const body = { branchId: central, stationId: till, additionalBillId: bill.id, paymentId, amountSatang: 10001, expectedOutstandingSatang: 10001, tender: { method: 'promptpay', kind: 'qr' }, requestQrPayload: true, qrDirection: 'show', actionId: newId() };
+      const start = await call<{ attempt: { id: string; amountSatang: number } }>('POST', reception, `/parties/${main.id}/payments/tender`, body);
+      expect(start.status, JSON.stringify(start.body)).toBe(200);
+      expect(start.body.attempt.amountSatang).toBe(10001);
+      const retry = await call<{ attempt: { id: string } }>('POST', reception, `/parties/${main.id}/payments/tender`, body);
+      expect(retry.status).toBe(200);
+      expect(retry.body.attempt.id).toBe(start.body.attempt.id);
+      const [held] = await ctx.db.select().from(partyPayment).where(eq(partyPayment.id, paymentId));
+      expect(held?.additionalBillId).toBe(bill.id);
+      await simulateGatewayEvent(ctx.db, ctx.app.env, ctx.app.log, { attemptId: start.body.attempt.id, event: 'paid', operatorId });
+      const confirmed = await call('POST', reception, `/parties/${main.id}/payments`, { ...body, tender: { method: 'promptpay', kind: 'qr' } });
+      expect(confirmed.status, JSON.stringify(confirmed.body)).toBe(200);
+      expect((await detail(main.id)).body.event.party!.additionalBills![0]).toMatchObject({ state: 'paid', paidSatang: 10001 });
+      await charge(main.id, newId(), 50000);
+      const other = (await detail(main.id)).body.event.party!.additionalBills![1]!;
+      const wrong = await call('POST', reception, `/parties/${main.id}/payments/tender`, { ...body, additionalBillId: other.id });
+      expect(wrong.status).toBe(409);
+      expect((await ctx.db.select().from(partyPayment).where(eq(partyPayment.id, paymentId)))).toHaveLength(1);
+    } finally {
+      await ctx.db.update(station).set({ paymentRouting: before!.routing }).where(eq(station.id, till));
+    }
+  });
+
+  it('uses a fresh BEO baseline after a real main refund and re-settlement, without summing the old cycle twice', async () => {
+    const id = newId();
+    await appParty(id, 'ZZ TEST 990 second settlement cycle', WEEKDAY, 16900, 2000);
+    await appPlan(id, WEEKDAY, FLORESTA, { depositSatang: 200000, setMenu: [] });
+    const first = await settle(id, { kids: 10, adults: 4, socksGiven: 0 });
+    expect(first.status).toBe(200);
+    expect((await finalise(first.body.sale.id, { method: 'cash', tenderedSatang: 1490000 })).status).toBe(200);
+    const line = { lineId: 'ZZ-TEST-990-cycle-line', name: 'ZZ TEST cycle food', productCode: null, area: 'food' as const, quantity: 2, unitSatang: 10000, included: false };
+    const sync = (quantity: number) => syncBeoAdditionalCharges(ctx.db, { operatorId }, operatorId, id, { actorAppUserId: 'zz-test-staff', lines: [{ ...line, quantity }] });
+    expect((await sync(2)).added).toBe(1);
+    const old = (await detail(id)).body.event.party!.additionalBills![0]!;
+    expect((await pay(id, old.id, newId(), old.outstandingSatang, old.outstandingSatang)).status).toBe(200);
+    const refunded = await ctx.app.inject({ method: 'POST', url: `/sales/${first.body.sale.id}/refunds`, headers: { cookie: admin, 'idempotency-key': newId() }, payload: { mode: 'whole', reason: 'ZZ TEST cycle refund', actionId: newId() } });
+    expect(refunded.statusCode, refunded.body).toBe(200);
+    await ctx.db.execute(sql`update zz_party_contract.event_packages set kitchen_plan = ${JSON.stringify({ version: 1, lines: [{ line_id: line.lineId, source: 'extra', name: line.name, product_code: null, qty: 2, unit_price_satang: 10000 }], bar_lines: [] })}::jsonb where event_id=${id}`);
+    const second = await settle(id, { kids: 10, adults: 4, socksGiven: 0 });
+    expect(second.status, JSON.stringify(second.body)).toBe(200);
+    expect((await finalise(second.body.sale.id, { method: 'cash', tenderedSatang: second.body.sale.outstandingSatang })).status).toBe(200);
+    expect((await sync(2)).added).toBe(0);
+    expect((await sync(3)).added).toBe(1);
+    const bills = (await detail(id)).body.event.party!.additionalBills!;
+    expect(bills).toHaveLength(2);
+    expect(bills[0]!.mainSettlementId).toBe(first.body.settlement.id);
+    expect(bills[1]!.mainSettlementId).toBe(second.body.settlement.id);
+    expect(bills[1]!.totalSatang).toBe(10000);
+  });
+
+  it('uses existing source gross with exclusive VAT and nonzero service, rather than base times quantity', async () => {
+    const [before] = await ctx.db.select().from(branchTaxConfig).where(eq(branchTaxConfig.branchId, central));
+    try {
+      await ctx.db.update(branchTaxConfig).set({ config: { rates: [{ id: 'vat', name: 'VAT', percent: 7 }], categoryRules: TAXABLE_CATEGORIES.map((category) => ({ category, taxRateId: 'vat', taxMode: 'exclusive', serviceChargePercent: 10, taxOnServiceCharge: true })), discountPlacement: 'before_tax' } }).where(eq(branchTaxConfig.branchId, central));
+      const line = { lineId: 'ZZ-TEST-priced', name: 'ZZ TEST selling price', productCode: null, area: 'bar' as const, quantity: 2, unitSatang: 12500, included: false };
+      const gross = await priceBeoAddition(ctx.db, operatorId, central, newId(), line, 2, 12500, newId(), new Date());
+      expect(gross).toBe(29425);
+    } finally {
+      await ctx.db.update(branchTaxConfig).set({ config: before!.config }).where(eq(branchTaxConfig.branchId, central));
+    }
   });
 });

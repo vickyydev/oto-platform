@@ -1,3 +1,4 @@
+import { beoReviewState } from "./beoReviewState";
 import { randomBytes, randomUUID } from "node:crypto";
 import { and, eq, sql } from "drizzle-orm";
 import {
@@ -134,11 +135,22 @@ export interface NotWritten {
 
 export type ApproveOutcome =
   | { ok: true; written: Record<string, number | boolean>; notWritten: NotWritten }
-  | { ok: false; status: 400; message: string };
+  | { ok: false; status: 400 | 409; message: string };
 
 type KitchenLine = Record<string, unknown> & { source?: string };
 
 const asLines = (v: unknown): KitchenLine[] => (Array.isArray(v) ? (v as KitchenLine[]) : []);
+/** A review changes only the named dishes; unrelated manual lines keep their identity and edits. */
+function mergeReviewedLines(current: KitchenLine[], proposed: KitchenLine[]): KitchenLine[] {
+  const rest = [...current];
+  for (const line of proposed) {
+    const at = rest.findIndex((held) => held.source !== "set_menu" && fold(held.itemName) === fold(line.itemName) && fold(held.productCode) === fold(line.productCode));
+    if (at < 0) rest.push({ ...line, chargeApproved: true });
+    else rest[at] = { ...rest[at], ...line, id: rest[at]!.id, chargeApproved: rest[at]!.chargeApproved === true };
+  }
+  return rest;
+}
+
 const asCollection = (v: unknown): Record<string, unknown> =>
   v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
 
@@ -447,11 +459,13 @@ export async function approveBeoAiFill(
   const notWritten: NotWritten = {};
   const matches: Array<Record<string, unknown>> = [];
 
-  await db.transaction(async (tx) => {
+  const accepted = await db.transaction(async (tx) => {
     await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${event.id}))`);
     // SCRUM-843: the event's row is held from here to the commit, as the platform's gateway fact
     // and the BEO's Save hold it, so the deposit decided below is the deposit that is stored.
     const [ev] = await tx.select().from(coreEvents).where(and(eq(coreEvents.id, event.id), eq(coreEvents.tenantId, event.tenantId))).for("update");
+    const savedState = await beoReviewState(tx, event.id, true);
+    if (body.expectedState ? savedState.version !== body.expectedState : savedState.lines.length > 0) return false;
 
     // The event's own fields. SCRUM-904: the age the child turns and the family's WhatsApp number
     // too, the number as the BEO's own Save writes it (the raw text the form shows).
@@ -474,8 +488,10 @@ export async function approveBeoAiFill(
     }
     const requests = details?.specialRequests !== undefined ? details.specialRequests : (ev?.specialRequests ?? "").trim();
     if (details?.specialRequests !== undefined) eventUpdates.specialRequests = requests;
-    if (body.otherLines.length > 0) {
-      const add = body.otherLines.filter((l) => !requests.includes(l));
+    const unresolvedShows = body.entertainment.filter((show) => !show.templateId).map((show) => `${show.name} x ${show.quantity} - entertainment and price unresolved`);
+    const otherRequests = [...body.otherLines, ...unresolvedShows];
+    if (otherRequests.length > 0) {
+      const add = otherRequests.filter((l) => !requests.includes(l));
       if (add.length > 0) eventUpdates.specialRequests = [requests, ...add].filter(Boolean).join("\n");
       written.otherLines = add.length;
     }
@@ -587,7 +603,7 @@ export async function approveBeoAiFill(
       const adultsSaidLines = kitchenLines.filter((l) => l.menu === "adults" && !l.setMenuItemId);
       const kidsExtra = kidsSaid.map(lineOf);
       const adultsExtra = adultsSaidLines.map(lineOf);
-      if (kidsExtra.length > 0) kids = [...kids.filter((l) => l.source === "set_menu"), ...kidsExtra];
+      if (kidsExtra.length > 0) kids = mergeReviewedLines(kids, kidsExtra);
       // SCRUM-958: an adults' SET line of the group and option the kids' set menu already holds is
       // the kids' menu repeated (folded, as SCRUM-829's mirror); any other is the adults' own.
       const adultsSet = kitchenLines.flatMap((l) => {
@@ -677,7 +693,7 @@ export async function approveBeoAiFill(
       if (!adultsOwn) {
         adults = [];
       } else {
-        if (adultsExtra.length > 0 && !adultsRepeat) adults = [...adults.filter((l) => l.source === "set_menu"), ...adultsExtra];
+        if (adultsExtra.length > 0 && !adultsRepeat) adults = mergeReviewedLines(adults, adultsExtra);
         if (kidsLineCopies.length > 0) adults = [...adults, ...kidsLineCopies];
         if (body.setMenu || adultsExtra.length > 0 || adultsSetOwn.length > 0) {
           // SCRUM-958: the kids' set menu copied for the adults, but for a group the adults have a
@@ -726,7 +742,7 @@ export async function approveBeoAiFill(
     const barLines = body.menuLines.filter((l) => l.menu === "bar");
     // SCRUM-904: when the bar serves the drinks, alone: the bar's lines stay as they are.
     if (barLines.length === 0 && service.barServiceTime) {
-      const [bar] = await tx.select({ id: beoBarPlans.id }).from(beoBarPlans).where(eq(beoBarPlans.eventId, event.id));
+      const [bar] = await tx.select().from(beoBarPlans).where(eq(beoBarPlans.eventId, event.id));
       if (bar) await tx.update(beoBarPlans).set({ serviceTime: service.barServiceTime, updatedAt: input.now }).where(eq(beoBarPlans.id, bar.id));
       else await tx.insert(beoBarPlans).values({ eventId: event.id, items: [], serviceTime: service.barServiceTime });
       written.barServiceTime = true;
@@ -739,6 +755,7 @@ export async function approveBeoAiFill(
           id: `ai_${randomUUID()}`,
           itemName: coded.name ?? l.itemName,
           quantity: l.quantity,
+          chargeApproved: true,
           // SCRUM-944: the drink's till code on the line itself, as a drink picked from the till's menu.
           notes: l.notes?.trim() || "",
           included: false,
@@ -746,10 +763,11 @@ export async function approveBeoAiFill(
           ...(coded.code ? { productCode: coded.code } : {}),
         };
       });
-      const [bar] = await tx.select({ id: beoBarPlans.id }).from(beoBarPlans).where(eq(beoBarPlans.eventId, event.id));
+      const [bar] = await tx.select().from(beoBarPlans).where(eq(beoBarPlans.eventId, event.id));
+      const mergedItems = mergeReviewedLines(asLines(bar?.items), items);
       const serviceTime = service.barServiceTime ? { serviceTime: service.barServiceTime } : {};
-      if (bar) await tx.update(beoBarPlans).set({ items, ...serviceTime, updatedAt: input.now }).where(eq(beoBarPlans.id, bar.id));
-      else await tx.insert(beoBarPlans).values({ eventId: event.id, items, ...serviceTime });
+      if (bar) await tx.update(beoBarPlans).set({ items: mergedItems, ...serviceTime, updatedAt: input.now }).where(eq(beoBarPlans.id, bar.id));
+      else await tx.insert(beoBarPlans).values({ eventId: event.id, items: mergedItems, ...serviceTime });
       written.barLines = items.length;
       // SCRUM-958: and the drinks written with a till code.
       const barCoded = items.filter((l) => typeof l.productCode === "string").length;
@@ -758,15 +776,16 @@ export async function approveBeoAiFill(
     }
 
     // Entertainment, from the entertainment menu at its own prices.
-    if (body.entertainment.length > 0) {
-      await tx.delete(beoEntertainmentSelections).where(eq(beoEntertainmentSelections.eventId, event.id));
+    const approvedEntertainment = body.entertainment.filter((show) => !!show.templateId);
+    if (approvedEntertainment.length > 0) {
+      const heldShows = await tx.select().from(beoEntertainmentSelections).where(eq(beoEntertainmentSelections.eventId, event.id));
       let sortOrder = 0;
-      for (const e of body.entertainment) {
+      for (const e of approvedEntertainment) {
         const quantityNote = e.quantity > 1 ? `Quantity ${e.quantity}` : null;
         if (e.templateId) {
           const [t] = await tx.select().from(entertainmentPackageTemplates)
             .where(and(eq(entertainmentPackageTemplates.id, e.templateId), eq(entertainmentPackageTemplates.tenantId, event.tenantId)));
-          await tx.insert(beoEntertainmentSelections).values({
+          const values = {
             eventId: event.id,
             templateId: t!.id,
             templateNameAtApply: t!.name,
@@ -778,20 +797,14 @@ export async function approveBeoAiFill(
             billable: t!.billableByDefault,
             notes: [quantityNote, e.notes?.trim() || null].filter(Boolean).join(" · ") || null,
             sortOrder: sortOrder++,
-          });
+          };
+          const held = heldShows.find((row) => row.templateId === t!.id);
+          if (held) await tx.update(beoEntertainmentSelections).set({ ...values, updatedAt: input.now }).where(eq(beoEntertainmentSelections.id, held.id));
+          else await tx.insert(beoEntertainmentSelections).values(values);
           matches.push({ kind: "entertainment", id: t!.id, name: t!.name, quantity: e.quantity });
-        } else {
-          await tx.insert(beoEntertainmentSelections).values({
-            eventId: event.id,
-            name: e.name,
-            price: 0,
-            billable: true,
-            notes: ["Not in the entertainment menu", quantityNote, e.notes?.trim() || null].filter(Boolean).join(" · "),
-            sortOrder: sortOrder++,
-          });
         }
       }
-      written.entertainment = body.entertainment.length;
+      written.entertainment = approvedEntertainment.length;
 
       // SCRUM-904: every show approved is an Entertainment Act as well (the BEO's Entertainment
       // Acts, where the form shows it), at the time the chat gives it, which puts it on the
@@ -804,7 +817,7 @@ export async function approveBeoAiFill(
         .where(eq(beoEntertainmentItems.eventId, event.id));
       let actOrder = acts.length;
       let added = 0;
-      for (const e of body.entertainment) {
+      for (const e of approvedEntertainment) {
         const name = e.templateId ? (catalogue.entertainment.find((t) => t.id === e.templateId)?.name ?? e.name) : e.name;
         const held = acts.find((a) => fold(a.customName) === fold(name));
         if (held) {
@@ -1005,7 +1018,9 @@ export async function approveBeoAiFill(
       },
       tx,
     );
+    return true;
   });
 
+  if (!accepted) return { ok: false, status: 409, message: "This BEO changed after the review opened. Read the chat again to compare the latest saved plan. Nothing was written." };
   return { ok: true, written, notWritten };
 }

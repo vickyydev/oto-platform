@@ -29,6 +29,7 @@ import { paymentStageText, type PaymentStageController, type PaymentStageState }
  * from the platform; a timer or a failed request never does.
  */
 export interface PartyTenderOptions {
+  additionalBillId?: string;
   scope: string;
   active: boolean;
   paused?: boolean;
@@ -254,6 +255,7 @@ export function usePartyTender(options: PartyTenderOptions): PaymentStageControl
     return perform(async () => {
       const outcome = await startPartyTenderOnPlatform({
         party: o.party,
+        additionalBillId: o.additionalBillId,
         amount: o.amount,
         method,
         outstanding: o.outstanding,

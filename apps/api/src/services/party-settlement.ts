@@ -238,7 +238,7 @@ async function partyExtraChargesOf(
     ...plan.setMenu.flatMap((m, i) =>
       m.origin === 'extra' ? [{ line: { ...m, qty: m.qty ?? 1 }, area: 'fnb' as const, place: i }] : [],
     ),
-    ...plan.barItems.flatMap((b, i) => (b.origin === 'extra' ? [{ line: b, area: 'bar' as const, place: i }] : [])),
+    ...plan.barItems.flatMap((b, i) => (b.origin === 'extra' || (b.origin === 'party_only' && b.chargeApproved === true) ? [{ line: b, area: 'bar' as const, place: i }] : [])),
   ];
   if (extras.length === 0) return { charges: [], notCharged: [] };
   const codes = [...new Set(extras.map((e) => e.line.productCode).filter((c): c is string => !!c))];
@@ -839,6 +839,7 @@ export async function settleParty(
           addOnIds: body.addOnIds,
           entertainmentIds: body.entertainmentIds,
           quote,
+          beoLineQuantities: Object.fromEntries([...plan.setMenu, ...plan.barItems].flatMap((line) => line.lineId ? [[line.lineId, line.qty ?? 1]] : [])),
         },
         depositSatang: quote.depositSatang,
         depositAttemptId,

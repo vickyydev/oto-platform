@@ -599,7 +599,11 @@ export interface BeoAiSetMenuChoices {
 }
 
 /** What the inbox fill (or a pasted message's, SCRUM-818) answers beside the free-text fill when the park has a catalogue. */
+export interface BeoAiCurrentLine { section: string; name: string; quantity: number; price?: number; included?: boolean }
+
 export interface BeoAiReview {
+  /** Saved plan shown beside the proposed changes; the digest protects later manual edits. */
+  currentState?: { version: string; lines: BeoAiCurrentLine[] };
   /**
    * What was read: the inbox's conversation (Create BEO), or a message pasted
    * into AI Fill (SCRUM-818), read as a one-line conversation, the team's.
@@ -691,6 +695,7 @@ const teamMember = z.object({ kind: z.enum(["employee", "department"]), id: z.st
 
 export const BeoAiApproveBodySchema = z
   .object({
+    expectedState: z.string().regex(/^[0-9a-f]{64}$/).optional(),
     /** The inbox conversation and ruling message the proposal was read from, for the activity row. */
     conversationId: uuid.nullish(),
     messageId: uuid.nullish(),

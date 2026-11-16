@@ -73,6 +73,7 @@ export const tillKitchenChangeSchema = z.discriminatedUnion("op", [
       list: z.enum(["food", "bar"]),
       name: z.string().trim().min(1).max(200),
       productCode: z.string().trim().min(1).max(64).nullable(),
+      unitPriceSatang: z.number().int().min(0).max(10000000).optional(),
       qty: Qty,
       note: Note.nullable().optional(),
     })
@@ -240,8 +241,10 @@ export function planTillKitchenEdit(state: KitchenState, changes: readonly TillK
         itemName: change.name.trim(),
         quantity: change.qty,
         notes: (change.note ?? "").trim(),
-        included: false,
-        price: 0,
+        included: change.unitPriceSatang === 0,
+        price: (change.unitPriceSatang ?? 0) / 100,
+        chargeApproved: true,
+        billingSync: "pending",
         // As the BEO's own "+ EXTRA": an additional line beside a set menu, else an unbadged one (an EXTRA).
         ...(change.list === "food" && kp.setMenuEnabled ? { source: "additional" } : {}),
         ...(change.productCode ? { productCode: change.productCode.trim() } : {}),

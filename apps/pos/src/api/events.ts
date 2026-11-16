@@ -207,6 +207,7 @@ export function toOtoEvent(v: EventView, branchSlug: string): OtoEvent {
       ...(v.party.charges ?? []).map(partyChargeToExtra),
     ].sort((a, b) => a.chargedAt.localeCompare(b.chargedAt)),
     partyPayments: (v.party.payments ?? []).map(partyPaymentToPrototype),
+    additionalBills: v.party.additionalBills ?? [],
     ...(v.party.lastEdited
       ? {
           lastEditedBy: v.party.lastEdited.by ?? '—',

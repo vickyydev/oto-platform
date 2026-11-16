@@ -39,6 +39,13 @@ const TillLineSchema = z.object({
 
 /** The platform's answer (its `PartyBillingAnswerSchema`), as far as this app reads it. */
 export const TillBillingSchema = z.object({
+  additionalBills: z.array(z.object({
+    id: z.string(), eventId: z.string(), mainSettlementId: z.string(), state: z.enum(["open", "paid"]),
+    totalSatang: Int, paidSatang: Int, outstandingSatang: Int, createdAt: z.string(), paidAt: z.string().nullable(),
+    charges: z.array(z.object({ id: z.string(), items: z.array(z.object({ name: z.string(), qty: Int, lineTotalSatang: Int })), totalSatang: Int })),
+    payments: z.array(z.object({ id: z.string(), amountSatang: Int, method: z.string(), takenAt: z.string() })),
+  })).optional(),
+  unassignedTab: z.object({ charges: z.array(z.object({ id: z.string(), totalSatang: Int })), payments: z.array(z.object({ id: z.string(), amountSatang: Int })) }).optional(),
   eventId: z.string(),
   state: z.enum(["quote", "sale", "no_quote"]),
   park: z.object({ name: z.string(), branchName: z.string(), address: z.string().nullable() }),

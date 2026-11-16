@@ -1,4 +1,6 @@
-import { PartyBillingAnswerSchema, PartyBillingParamsSchema } from '@oto/shared';
+import { syncBeoAdditionalCharges } from "../services/beo-additional-charges";
+import { opCtx } from "../services/tx";
+import { BeoAdditionalChargesAnswerSchema, BeoAdditionalChargesBodySchema, PartyBillingAnswerSchema, PartyBillingParamsSchema } from '@oto/shared';
 import type { App } from '../app';
 import { otoAppProvisionerOf } from '../plugins/credential';
 import { partyBillingForOtoApp } from '../services/party-billing';
@@ -40,4 +42,12 @@ export async function otoAppPartyBillingRoutes(app: App): Promise<void> {
       return partyBillingForOtoApp(app.db, { operatorId, eventId: req.params.eventId });
     },
   );
+  app.post('/parties/:eventId/beo-additions', {
+    config: { credential: 'otoapp-provision' },
+    schema: { params: PartyBillingParamsSchema, body: BeoAdditionalChargesBodySchema, response: { 200: BeoAdditionalChargesAnswerSchema } },
+  }, async (req) => {
+    const { operatorId } = otoAppProvisionerOf(req);
+    return syncBeoAdditionalCharges(app.db, opCtx(req), operatorId, req.params.eventId, req.body);
+  });
+
 }

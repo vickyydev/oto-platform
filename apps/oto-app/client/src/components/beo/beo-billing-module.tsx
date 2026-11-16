@@ -83,6 +83,7 @@ export function BeoBillingModule({
   onBillingChange,
   isManager,
 }: BeoBillingModuleProps) {
+  const additionalBilling = (billing?.addOns as { additionalBilling?: { status?: string; message?: string } } | null)?.additionalBilling;
   const { toast } = useToast();
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
@@ -306,6 +307,7 @@ export function BeoBillingModule({
 
   return (
     <div className="space-y-4">
+      {additionalBilling?.status === "pending" && <p role="alert" className="rounded border border-destructive p-3 text-sm text-destructive" data-testid="beo-additional-billing-pending">Additional billing needs resolution. {additionalBilling.message}</p>}
       {/* Financial Summary */}
       <Card className="border-2 border-primary/20">
         <CardHeader className="pb-2">

@@ -1,3 +1,4 @@
+import { billForNewCharge, paymentBillOf } from "./party-additional-bills";
 import { assertPartyDepositHistory } from './party-deposit-balance';
 import { and, asc, eq, inArray, ne, or, sql } from 'drizzle-orm';
 import type { FastifyBaseLogger } from 'fastify';
@@ -237,8 +238,13 @@ export async function chargeParty(
       done.raced = again;
       return undefined;
     }
+    const ledgers = (await partyLedgersOf(tx, { branchId: clock.id, eventIds: [event.id] })).get(event.id)!;
+    const additionalBillId = ledgers.settlement?.state === 'settled'
+      ? await billForNewCharge(tx, { operatorId: actor.operatorId, branchId: clock.id, eventId: event.id, mainSettlementId: ledgers.settlement.id, chargeId: body.chargeId, bills: ledgers.additionalBills ?? [], now })
+      : null;
     await tx.insert(partyCharge).values({
       id: body.chargeId,
+      additionalBillId,
       operatorId: actor.operatorId,
       branchId: clock.id,
       otoappEventId: event.id,
@@ -299,6 +305,7 @@ async function waitingOn(tx: Exec, branchId: string, eventId: string) {
       amountSatang: paymentAttempt.amountSatang,
       status: paymentAttempt.status,
       payload: paymentAttempt.payload,
+      additionalBillId: partyPayment.additionalBillId,
     })
     .from(partyPayment)
     .innerJoin(paymentAttempt, eq(paymentAttempt.id, partyPayment.paymentAttemptId))
@@ -319,9 +326,11 @@ async function assessPayment(
   tx: Exec,
   branchId: string,
   eventId: string,
-  body: { amountSatang: number; expectedOutstandingSatang?: number | undefined },
+  body: { amountSatang: number; expectedOutstandingSatang?: number | undefined; additionalBillId?: string | undefined },
 ) {
-  const { confirmed, bill } = await liveBill(tx, branchId, eventId);
+  const { confirmed, bill: wholeBill, ledgers } = await liveBill(tx, branchId, eventId);
+  const additional = paymentBillOf(ledgers.additionalBills ?? [], body.additionalBillId);
+  const bill = additional ? { ...wholeBill, outstandingSatang: additional.outstandingSatang } : wholeBill;
   if (body.expectedOutstandingSatang !== undefined && body.expectedOutstandingSatang !== bill.outstandingSatang) {
     throw errors.conflict(
       'PARTY_BALANCE_CHANGED',
@@ -330,7 +339,7 @@ async function assessPayment(
     );
   }
   // `Math.min(Math.floor(amount), outstanding)` (addPartyPayment), in satang.
-  const requested = body.amountSatang - (body.amountSatang % 100);
+  const requested = additional ? body.amountSatang : body.amountSatang - (body.amountSatang % 100);
   const amount = Math.min(requested, bill.outstandingSatang);
   if (amount <= 0) {
     throw bill.outstandingSatang <= 0
@@ -339,7 +348,7 @@ async function assessPayment(
         })
       : errors.badRequest('A party payment is whole baht, at least ฿1', { amountSatang: body.amountSatang });
   }
-  const waiting = await waitingOn(tx, branchId, eventId);
+  const waiting = (await waitingOn(tx, branchId, eventId)).filter((attempt) => (attempt.additionalBillId ?? null) === (body.additionalBillId ?? null));
   const reserved = waiting.reduce((sum, a) => sum + a.amountSatang, 0);
   if (reserved > 0 && amount > bill.outstandingSatang - reserved) {
     // Named, so the counter that opened it can bring it back after a reload, and
@@ -410,7 +419,7 @@ export async function payParty(
   const event = await partyOf(db, clock.id, partyId);
 
   const replay = async (row: typeof partyPayment.$inferSelect): Promise<PartyPaymentResult> => {
-    if (row.operatorId !== actor.operatorId || row.otoappEventId !== event.id) {
+    if (row.operatorId !== actor.operatorId || row.otoappEventId !== event.id || (row.additionalBillId ?? null) !== (body.additionalBillId ?? null)) {
       throw errors.conflict('PAYMENT_ID_IN_USE', 'That payment id already belongs to another payment', {
         paymentId: row.id,
       });
@@ -522,6 +531,7 @@ export async function payParty(
       branchId: clock.id,
       otoappEventId: event.id,
       paymentAttemptId: opened.id,
+      additionalBillId: body.additionalBillId ?? null,
       partyDate,
       accountId: actor.accountId,
       stationId: counter.id,
@@ -626,18 +636,19 @@ export async function startPartyTender(
   };
 
   const answerFor = async (row: typeof partyPayment.$inferSelect): Promise<StartPaymentResult> => {
-    if (row.operatorId !== actor.operatorId || row.otoappEventId !== event.id) {
+    if (row.operatorId !== actor.operatorId || row.otoappEventId !== event.id || (row.additionalBillId ?? null) !== (body.additionalBillId ?? null)) {
       throw errors.conflict('PAYMENT_ID_IN_USE', 'That payment id already belongs to another payment', {
         paymentId: row.id,
       });
     }
     const read = await readAttempt(db, actor.operatorId, row.paymentAttemptId);
-    const { bill } = await liveBill(db, clock.id, event.id);
+    const { bill, ledgers } = await liveBill(db, clock.id, event.id);
+    const outstandingSatang = row.additionalBillId ? ledgers.additionalBills?.find((held) => held.id === row.additionalBillId)?.outstandingSatang ?? 0 : bill.outstandingSatang;
     return {
       route: read.route,
       attempt: read.attempt,
       replayed: true,
-      outstandingSatang: bill.outstandingSatang,
+      outstandingSatang,
       qrPayload: read.qrPayload,
       qrImageUrl: read.qrImageUrl,
       expiresAt: read.expiresAt,
@@ -670,6 +681,7 @@ export async function startPartyTender(
       branchId: clock.id,
       otoappEventId: event.id,
       paymentAttemptId: attemptId,
+      additionalBillId: body.additionalBillId ?? null,
       partyDate,
       accountId: actor.accountId,
       stationId: counter.id,

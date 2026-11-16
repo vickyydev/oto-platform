@@ -262,6 +262,7 @@ export async function chargePartyOnPlatform(args: {
  * the till is refused with nothing taken, rather than recorded short.
  */
 export async function payPartyOnPlatform(args: {
+  additionalBillId?: string;
   party: PartyBooking;
   amount: number;
   method: PartyPaymentMethod;
@@ -283,6 +284,7 @@ export async function payPartyOnPlatform(args: {
       branchId,
       stationId: args.stationId,
       paymentId: args.ids.id,
+      ...(args.additionalBillId ? { additionalBillId: args.additionalBillId } : {}),
       actionId: args.ids.actionId,
       amountSatang: satang(args.amount),
       tender: { method: args.method, kind: paymentMethodKind(args.method), ...args.slip },
@@ -322,6 +324,7 @@ export type PartyTenderOutcome =
  * records nothing: the money counts once the attempt it answers with is paid.
  */
 export async function startPartyTenderOnPlatform(args: {
+  additionalBillId?: string;
   party: PartyBooking;
   amount: number;
   method: PartyPaymentMethod;
@@ -340,6 +343,7 @@ export async function startPartyTenderOnPlatform(args: {
       branchId,
       stationId: args.stationId,
       paymentId: args.ids.id,
+      ...(args.additionalBillId ? { additionalBillId: args.additionalBillId } : {}),
       actionId: args.ids.actionId,
       amountSatang: satang(args.amount),
       tender: { method: args.method, kind },

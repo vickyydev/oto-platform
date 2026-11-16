@@ -192,9 +192,9 @@ export function PartyEditForm({ party, onSave, onCancel, kitchenPlan: planRead =
   const tillMenu = useMemo(
     () =>
       kitchenPlan && mayEditKitchen
-        ? getMenuItems().flatMap((m) => (m.code ? [{ name: m.name, code: m.code }] : []))
+        ? kitchenChoices?.items ?? getMenuItems().flatMap((m) => (m.code ? [{ name: m.name, code: m.code }] : []))
         : [],
-    [kitchenPlan, mayEditKitchen],
+    [kitchenPlan, mayEditKitchen, kitchenChoices],
   );
 
   const setKitchen = (patch: Partial<PartyBooking['kitchen']>) =>

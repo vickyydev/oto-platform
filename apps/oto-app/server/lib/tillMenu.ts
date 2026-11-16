@@ -37,6 +37,11 @@ type Held = { at: number; result: Promise<TillMenuResult> };
 /** By platform branch: the answer, or the ask in flight. */
 const held = new Map<string, Held>();
 
+/** A newly created custom dish must be offered immediately on this park's next read. */
+export function forgetTillMenu(branchId: string): void {
+  held.delete(branchId);
+}
+
 /** For the checks: forget every held answer. */
 export function forgetTillMenus(): void {
   held.clear();

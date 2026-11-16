@@ -38,6 +38,7 @@ export interface KitchenDraftLine {
   lineId: string | null;
   name: string;
   productCode: string | null;
+  unitPriceSatang?: number;
   /** Null when the plan prints no count (a choice split over several dishes). */
   qty: number | null;
   note: string;
@@ -72,6 +73,7 @@ export function kitchenDraftOf(plan: Pick<PartyKitchenPlan, 'setMenu' | 'barItem
         lineId: m.lineId ?? null,
         name: m.name,
         productCode: m.productCode,
+        ...(m.unitPriceSatang !== undefined ? { unitPriceSatang: m.unitPriceSatang } : {}),
         qty: m.qty,
         note: m.note ?? '',
         origin: m.origin ?? null,
@@ -88,6 +90,7 @@ export function kitchenDraftOf(plan: Pick<PartyKitchenPlan, 'setMenu' | 'barItem
         lineId: b.lineId ?? null,
         name: b.name,
         productCode: b.productCode,
+        ...(b.unitPriceSatang !== undefined ? { unitPriceSatang: b.unitPriceSatang } : {}),
         qty: b.qty,
         note: b.note ?? '',
         origin: b.origin ?? null,
@@ -196,6 +199,7 @@ export function kitchenChangesOf(
       list: l.list,
       name: l.name.trim(),
       productCode: l.productCode?.trim() || null,
+      ...(l.unitPriceSatang !== undefined ? { unitPriceSatang: l.unitPriceSatang } : {}),
       qty: clampQty(l.qty ?? 1),
       ...(l.note.trim() ? { note: l.note.trim() } : {}),
     });
@@ -218,6 +222,10 @@ export function kitchenChangesOf(
 export interface KitchenMenuPick {
   name: string;
   code: string;
+  station?: "kitchen" | "bar";
+  category?: string | null;
+  beoOnly?: boolean;
+  priceSatang?: number;
 }
 
 /** The till's items a search finds, by name or code, the closest first; at most `limit`. */

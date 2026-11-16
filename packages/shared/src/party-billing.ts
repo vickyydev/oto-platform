@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { PartyAdditionalBillSchema, PartyChargeViewSchema, PartyPaymentViewSchema } from './events';
 import {
   PARTY_LINE_ROLES,
   PARTY_SETTLEMENT_STATES,
@@ -114,6 +115,8 @@ export type PartyBillingSale = z.infer<typeof PartyBillingSaleSchema>;
 
 /** `GET /otoapp/parties/:eventId/billing` — the party's money as the till holds it. */
 export const PartyBillingAnswerSchema = z.object({
+  additionalBills: z.array(PartyAdditionalBillSchema).optional(),
+  unassignedTab: z.object({ charges: z.array(PartyChargeViewSchema), payments: z.array(PartyPaymentViewSchema) }).optional(),
   eventId: z.string(),
   state: z.enum(PARTY_BILLING_STATES),
   /** The park: the operator's name, the branch's, and the branch's address. */
@@ -138,3 +141,11 @@ export const PartyBillingAnswerSchema = z.object({
 export type PartyBillingAnswer = z.infer<typeof PartyBillingAnswerSchema>;
 
 export const PartyBillingParamsSchema = z.object({ eventId: z.string().uuid() });
+
+/** Newly staff-approved BEO extras, synchronized by source line identity and target quantity. */
+export const BeoAdditionalChargesBodySchema = z.object({
+  actorAppUserId: z.string().min(1).max(100),
+  lines: z.array(z.object({ lineId: z.string().min(1).max(100), productCode: z.string().min(1).max(64).nullable(), area: z.enum(["food", "bar"]), name: z.string().min(1).max(300), quantity: z.number().int().min(1).max(1000), unitSatang: z.number().int().min(0).nullable(), included: z.boolean() }).strict()).max(200),
+}).strict();
+export const BeoAdditionalChargesAnswerSchema = z.object({ status: z.enum(['plan_only', 'synced']), added: z.number().int(), billIds: z.array(z.string()) });
+export type BeoAdditionalChargesBody = z.infer<typeof BeoAdditionalChargesBodySchema>;

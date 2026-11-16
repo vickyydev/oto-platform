@@ -57,6 +57,7 @@ export const partyCharge = pos.table(
       .references(() => branch.id, { onDelete: 'restrict' }),
     /** The OTO App's party. No foreign key: the app's tables are its own (C10). */
     otoappEventId: uuid('otoapp_event_id').notNull(),
+    additionalBillId: uuid('additional_bill_id').references(() => partyAdditionalBill.id, { onDelete: 'restrict' }),
     kind: text('kind').$type<PartyChargeKindValue>().notNull(),
     /** `[{ name, qty, lineTotalSatang }]`, as the till listed them. */
     items: jsonb('items').notNull(),
@@ -108,6 +109,7 @@ export const partyPayment = pos.table(
     /** The OTO App's party. No foreign key: the app's tables are its own (C10). */
     otoappEventId: uuid('otoapp_event_id').notNull(),
     /** The tender: a real `pos.payment_attempt`, with no sale behind it. */
+    additionalBillId: uuid('additional_bill_id').references(() => partyAdditionalBill.id, { onDelete: 'restrict' }),
     paymentAttemptId: uuid('payment_attempt_id')
       .notNull()
       .references(() => paymentAttempt.id, { onDelete: 'restrict' }),
@@ -267,6 +269,16 @@ export const partySettlement = pos.table(
     check('party_settlement_plan_check', sql`jsonb_typeof(${t.plan}) = 'object'`),
   ],
 );
+
+/** New post-settlement bills use the existing charge/payment ledger; original sales stay immutable. */
+export const partyAdditionalBill = pos.table('party_additional_bill', {
+  id: idPk(),
+  operatorId: uuid('operator_id').notNull().references(() => operator.id, { onDelete: 'restrict' }),
+  branchId: uuid('branch_id').notNull().references(() => branch.id, { onDelete: 'restrict' }),
+  otoappEventId: uuid('otoapp_event_id').notNull(),
+  mainSettlementId: uuid('main_settlement_id').notNull().references(() => partySettlement.id, { onDelete: 'restrict' }),
+  ...timestamps,
+}, (t) => [index('party_additional_bill_event_idx').on(t.branchId, t.otoappEventId, t.createdAt)]);
 
 /**
  * SCRUM-825 — where a deposit request stands. `requested` while the family can

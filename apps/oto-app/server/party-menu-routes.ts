@@ -1,6 +1,6 @@
 import type { Express, NextFunction, Request, Response } from "express";
 import { and, eq, sql } from "drizzle-orm";
-import { beoKitchenPlans, branches, coreEvents } from "@shared/schema";
+import { beoBarPlans, beoKitchenPlans, branches, coreEvents } from "@shared/schema";
 import { adultsDifferOf } from "@shared/kitchenAdults";
 import {
   PartyMenuItemBodySchema,
@@ -15,6 +15,8 @@ import { db } from "./db";
 import { log } from "./lib/logger";
 import { PARTY_MENU_UNCONFIGURED, createPartyMenuProduct } from "./lib/partyMenuItem";
 import { suiteProvisionConfig } from "./lib/suiteSignIn";
+import { syncApprovedBeoAdditions } from "./lib/beoAdditionalBilling";
+import { forgetTillMenu } from "./lib/tillMenu";
 
 /**
  * "New item" on the BEO's food lines (SCRUM-828).
@@ -105,6 +107,17 @@ export function registerPartyMenuRoutes(app: Express): void {
 
       const line = await db.transaction(async (tx) => {
         await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${event.id}))`);
+        if (body.menu === "bar") {
+          const [plan] = await tx.select().from(beoBarPlans).where(eq(beoBarPlans.eventId, event.id));
+          const fresh = partyMenuLineOf(body, made.code, false);
+          const held = asLines(plan?.items);
+          const at = held.findIndex((line) => line.id === fresh.id);
+          const written = (at < 0 ? fresh : { ...held[at], productCode: made.code }) as PartyMenuLine;
+          const values = { items: at < 0 ? [...held, written] : held.map((line, index) => index === at ? written : line), updatedAt: new Date() };
+          if (plan) await tx.update(beoBarPlans).set(values).where(eq(beoBarPlans.id, plan.id));
+          else await tx.insert(beoBarPlans).values({ eventId: event.id, ...values });
+          return written;
+        }
         const [plan] = await tx.select().from(beoKitchenPlans).where(eq(beoKitchenPlans.eventId, event.id));
         const menus = asCollection(plan?.menus);
         const fresh = partyMenuLineOf(body, made.code, plan?.setMenuEnabled ?? false);
@@ -138,7 +151,9 @@ export function registerPartyMenuRoutes(app: Express): void {
         },
         "a new party menu item was made on the till and added to the BEO",
       );
-      res.json({ line, productId: made.productId, productCode: made.code, replayed: made.replayed });
+      forgetTillMenu(coreBranchId);
+      const additionalBilling = await syncApprovedBeoAdditions(event.id, userId);
+      res.json({ line: { ...line, billingSync: additionalBilling.status }, additionalBilling, productId: made.productId, productCode: made.code, replayed: made.replayed });
     } catch (error) {
       next(error);
     }

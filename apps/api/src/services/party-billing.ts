@@ -137,6 +137,8 @@ export async function partyBillingForOtoApp(
   const event = overlayPartyEdits(found, ledgers.edits);
   const base = {
     eventId: found.id,
+    additionalBills: ledgers.additionalBills ?? [],
+    unassignedTab: { charges: ledgers.charges.filter((row) => !row.additionalBillId), payments: ledgers.payments.filter((row) => !row.additionalBillId) },
     park: { name: op.name, branchName: park.name, address: park.address?.trim() ? park.address.trim() : null },
   };
   const party = (packageName: string | null, kids: number | null, adults: number | null) => ({

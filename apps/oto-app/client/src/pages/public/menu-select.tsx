@@ -23,8 +23,18 @@ import {
 
 /** `qty` and `note` are the set menu's own (SCRUM-803); an older item has neither. */
 type SetMenuTemplateItem =
-  | { id: string; type: "always_included"; label: string; qty?: number | null; note?: string | null }
-  | { id: string; type: "choice_group"; label: string; options: string[]; allowMultiple: boolean; qty?: number | null; note?: string | null };
+  | { id: string; type: "always_included"; label: string; qty?: number | null; note?: string | null; productCode?: string | null; optionProductCodes?: Record<string, string | null> }
+  | { id: string; type: "choice_group"; label: string; options: string[]; allowMultiple: boolean; qty?: number | null; note?: string | null; productCode?: string | null; optionProductCodes?: Record<string, string | null> };
+
+/** Catalogue selling prices inform the choice; they do not accept an extra charge. */
+export function parentMenuPriceWords(unitSatang: number | null | undefined, quantity: number | null | undefined, included = true): string {
+  const qty = typeof quantity === "number" && quantity > 0 ? quantity : 1;
+  const detail = included ? "Included in the package" : "Extra item shown for review";
+  if (unitSatang === null || unitSatang === undefined) return `Qty ${qty} - Selling price unresolved - ${detail}`;
+  if (unitSatang === 0) return `Qty ${qty} - Free / included - No extra charge`;
+  const baht = (satang: number) => (satang / 100).toLocaleString("en-US", { maximumFractionDigits: 2 });
+  return `Menu selling price THB ${baht(unitSatang)} each - Qty ${qty} - Line total THB ${baht(unitSatang * qty)} - ${detail}`;
+}
 
 type GroupSelection = {
   groupId: string;
@@ -69,6 +79,8 @@ export default function MenuSelectPage() {
   const [submitted, setSubmitted] = useState(false);
 
   const { data, isLoading, error } = useQuery<{
+    menuPrices?: Array<{ code: string; unitSatang: number }>;
+    plannedItems?: Array<{ area: string; name: string; quantity: number; unitSatang: number | null; included: boolean }>;
     isSubmitted: boolean;
     submittedAt: string | null;
     selections: GroupSelection[] | null;
@@ -162,6 +174,10 @@ export default function MenuSelectPage() {
     );
   }
 
+  const priceWords = (item: SetMenuTemplateItem, option?: string) => {
+    const code = option ? item.optionProductCodes?.[option] ?? item.productCode : item.productCode;
+    return parentMenuPriceWords(data.menuPrices?.find((price) => price.code === code)?.unitSatang, item.qty);
+  };
   const isAlreadySubmitted = data.isSubmitted || submitted;
 
   const templateItems = (data.template.items || []) as SetMenuTemplateItem[];
@@ -204,6 +220,15 @@ export default function MenuSelectPage() {
           </div>
         </div>
 
+        <p className="text-xs text-muted-foreground">Confirm menu choices only. Any extra charges are agreed separately.</p>
+        {data.plannedItems && data.plannedItems.length > 0 && <Card><CardContent className="pt-5 space-y-3">
+          <h2 className="font-semibold">Saved party menu - staff draft</h2>
+          {data.plannedItems.map((item, index) => <div key={index} className="text-sm" data-testid={`parent-saved-menu-${index}`}>
+            <p className="font-medium">{item.area} - {item.name}</p>
+            <p className="text-xs text-muted-foreground">{parentMenuPriceWords(item.unitSatang, item.quantity, item.included)}</p>
+          </div>)}
+          <p className="text-xs text-muted-foreground">Saved selling amounts are shown as entered by staff. Any extra charges are agreed separately.</p>
+        </CardContent></Card>}
         {isAlreadySubmitted ? (
           <Card>
             <CardContent className="pt-8 pb-8 text-center space-y-3">
@@ -239,7 +264,7 @@ export default function MenuSelectPage() {
                     {alwaysIncluded.map((item) => (
                       <li key={item.id} className="flex items-center gap-2 text-sm py-0.5">
                         <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                        <span>{item.label}</span>
+                        <span>{item.label}<span className="block text-xs text-muted-foreground">{priceWords(item)}</span></span>
                         {item.qty != null && <span className="font-medium">×{item.qty}</span>}
                         {item.note && <span className="text-xs text-muted-foreground">{item.note}</span>}
                       </li>
@@ -275,7 +300,7 @@ export default function MenuSelectPage() {
                               onCheckedChange={() => handleToggleOption(group.id, opt, true)}
                             />
                             <Label htmlFor={`${group.id}-${opt}`} className="text-sm cursor-pointer font-normal">
-                              {opt}
+                              {opt}<span className="block text-xs text-muted-foreground">{priceWords(group, opt)}</span>
                             </Label>
                           </div>
                         ))}
@@ -290,7 +315,7 @@ export default function MenuSelectPage() {
                             <div key={opt} className="flex items-center gap-2">
                               <RadioGroupItem value={opt} id={`${group.id}-${opt}`} />
                               <Label htmlFor={`${group.id}-${opt}`} className="text-sm cursor-pointer font-normal">
-                                {opt}
+                                {opt}<span className="block text-xs text-muted-foreground">{priceWords(group, opt)}</span>
                               </Label>
                             </div>
                           ))}

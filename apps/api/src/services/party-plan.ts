@@ -133,6 +133,7 @@ function barItemOf(b: Json, whole906: boolean): PartyPlanBarItem {
   const lineId = whole906 ? text(b.line_id) : null;
   return {
     productCode,
+    ...(b.charge_approved === true ? { chargeApproved: true } : {}),
     name: text(b.name) ?? '',
     qty: lineQty(nonNegative(b.qty)),
     ...(whole906

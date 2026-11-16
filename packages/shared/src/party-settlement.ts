@@ -213,6 +213,8 @@ export const PartyPlanMenuItemSchema = z.object({
 export type PartyPlanMenuItem = z.infer<typeof PartyPlanMenuItemSchema>;
 
 export const PartyPlanBarItemSchema = z.object({
+  /** Explicit approval on new bar additions; absent on legacy held PARTY lines. */
+  chargeApproved: z.boolean().optional(),
   productCode: z.string().nullable(),
   name: z.string(),
   qty: LineCount,

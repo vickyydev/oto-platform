@@ -39,6 +39,8 @@ import { sameKitchenDish } from "./kitchenAdults";
 
 /** A kitchen or bar plan line, as the editor holds it (only these fields matter here). */
 export interface BeoExtraLine {
+  chargeApproved?: boolean;
+  billingSync?: string;
   itemName: string;
   quantity: number;
   /** Baht for each item, as entered on the line; 0 or none is no price. */
@@ -93,8 +95,12 @@ export function beoExtraChargeOf(line: BeoExtraLine, area: "food" | "bar", ctx: 
   const weekend = isWeekendDate(ctx.partyDate);
   const tillPrice = (item: BeoExtraTillItem) => (weekend ? item.priceWeekendSatang : item.priceSatang);
   if (code && isPartyItemCode(code)) {
-    if (area === "bar") return line.source === "set_menu" ? { kind: "set" } : { kind: "not_charged", why: "party_item_on_bar" };
-    // The food lists' party item: the till's own price for it, whatever the badge or the line shows.
+    if (area === "bar" && line.chargeApproved !== true) return line.source === "set_menu" ? { kind: "set" } : { kind: "not_charged", why: "party_item_on_bar" };
+    if (area === "bar" && enteredOf(line.price) !== null) {
+      const unit = enteredOf(line.price)!;
+      return { kind: "charged", unitSatang: unit, quantity, totalSatang: unit * quantity, from: "entered", weekend };
+    }
+    // A food or bar party item: the till's own price for it, whatever the badge or the line shows.
     if (!ctx.till.known) return { kind: "unknown" };
     const item = ctx.till.byCode.get(code);
     if (!item) return { kind: "unknown" };
@@ -158,10 +164,13 @@ const baht = (satang: number) => (Math.round(satang) / 100).toLocaleString("en-U
 export function beoExtraHintOf(charge: BeoExtraCharge): string | null {
   switch (charge.kind) {
     case "charged":
-      if (charge.from === "entered") return "each";
+      if (charge.unitSatang === 0) return "Free / included";
+      if (charge.from === "entered") return `each - ${baht(charge.totalSatang)} total`;
       return `till price ${baht(charge.unitSatang)}${charge.weekend ? " (weekend)" : ""}${charge.from === "party_item" ? " (made for this party)" : ""}`;
     case "not_charged":
-      return "not charged";
+      return "Price unresolved - not charged";
+    case "unknown":
+      return "Price unresolved";
     case "with_kids":
       return "charged once, with the kids' line";
     default:

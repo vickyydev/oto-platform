@@ -65,6 +65,7 @@ process.stdout.write = ((chunk: unknown, ...rest: unknown[]) => {
   return (writeOut as (...a: unknown[]) => boolean)(chunk, ...rest);
 }) as typeof process.stdout.write;
 
+const { beoReviewState } = await import("../server/lib/beoReviewState");
 const { registerAIRoutes } = await import("../server/ai-routes");
 const { registerBeoRoutes } = await import("../server/beo-routes");
 const { loadBeoCatalogue, BEO_TILL_MENU_RULES } = await import("../server/lib/beoCatalogueFill");
@@ -93,7 +94,7 @@ async function check(name: string, fn: () => Promise<void> | void) {
     failures[name] = error instanceof Error ? `${error.message}\n${error.stack?.split("\n").slice(1, 4).join("\n")}` : String(error);
   }
 }
-const CHECKS = 9;
+const CHECKS = 13;
 
 const run = randomUUID().slice(0, 8);
 const tenant = randomUUID();
@@ -101,7 +102,7 @@ const park = randomUUID();
 const coreBranch = randomUUID();
 const manager = randomUUID();
 const cat = { pkg: randomUUID(), setMenu: randomUUID() };
-const KEYS = ["till", "unread", "guards", "tillMirror", "tillOwn"] as const;
+const KEYS = ["till", "unread", "guards", "tillMirror", "tillOwn", "reusable"] as const;
 type Key = (typeof KEYS)[number];
 const ev = Object.fromEntries(KEYS.map((k) => [k, randomUUID()])) as Record<Key, string>;
 const conv = Object.fromEntries(KEYS.map((k) => [k, randomUUID()])) as Record<Key, string>;
@@ -216,7 +217,7 @@ async function post(path: string, body: unknown) {
   return { status: response.status, body: (await response.json().catch(() => null)) as any };
 }
 const fill = (eventId: string) => post(`/api/events/${eventId}/beo/ai-fill/inbox`, { existingData: { event: { title: "ZZ TEST" } } });
-const approve = (eventId: string, body: unknown) => post(`/api/events/${eventId}/beo/ai-fill/approve`, body);
+const approve = async (eventId: string, body: unknown) => post(`/api/events/${eventId}/beo/ai-fill/approve`, { expectedState: (await beoReviewState(db, eventId)).version, ...(body as Record<string, unknown>) });
 async function beoRows(eventId: string) {
   return {
     kitchen: (await q("select * from beo_kitchen_plans where event_id = $1", [eventId]))[0] ?? null,
@@ -265,12 +266,12 @@ try {
     // The till's items as a table: code, name, category, station; no price, no item made for another party.
     assert.ok(call.system.includes('"tillMenu":{"columns":["code","name","category","station"]'), "the till's menu rides the catalogue");
     assert.ok(call.system.includes('["CF-14","Calamari","Sharing","kitchen"]') && call.system.includes('["CF-65-1","Coke","Soft drinks","bar"]'));
-    assert.ok(!call.system.includes("PARTY-ZZ944A1"), "nothing made for another party's BEO");
+    assert.ok(call.system.includes("PARTY-ZZ944A1"), "custom BEO dishes are reusable at the same park");
     assert.ok(!call.system.includes("26000") && !call.system.includes('"priceSatang"'), "no till price is handed to the model");
     assert.ok(call.system.includes(BEO_TILL_MENU_RULES), "with how to match it");
     assert.ok(tillAsked.includes(ev.till), "the till's menu was asked for the party's park");
     assert.deepEqual(tillReview!.tillMenu, { status: "ok", message: null });
-    assert.equal(tillReview!.catalogue.till?.some((t) => t.code === "PARTY-ZZ944A1"), false);
+    assert.equal(tillReview!.catalogue.till?.some((t) => t.code === "PARTY-ZZ944A1"), true);
   });
 
   await check("aCodeIsTheTillsOnlyWhenTheTillHasIt", async () => {
@@ -281,7 +282,7 @@ try {
       ["kids", "CF-24", "Margherita", false, 1],
       ["kids", "CF-53", "Vegetable sticks", false, 2],
       ["kids", null, null, true, 1],
-      ["kids", null, null, true, 1],
+      ["bar", "PARTY-ZZ944A1", "ZZ TEST 944 juice", false, 1],
       ["adults", "CF-43", null, false, 1],
     ], "the till's own names; a Coke to the bar; a made-up code and another party's item are lines the menu lacks; SCRUM-926 kept for the shared fried rice");
     // The activity row counts the till's matches, never the chat's words.
@@ -289,7 +290,7 @@ try {
     const meta = JSON.parse(rows.activity.at(-1)!.metadata_json);
     // SCRUM-958 (the proof read 3 for 4 coded lines): every line matched to the till's menu, a code a set
     // menu names too among them (Margherita, Vegetable sticks); the adults' fried rice is the set menu's.
-    assert.equal(meta.catalogue.tillLines, 4, "Calamari, Coke, Margherita and Vegetable sticks: on the till");
+    assert.equal(meta.catalogue.tillLines, 5, "Calamari, Coke, Margherita and Vegetable sticks: on the till");
     for (const w of CHAT_WORDS) {
       assert.ok(!rows.activity.some((r) => r.metadata_json.includes(w) || r.summary_text.includes(w)), `no "${w}" in the activity row`);
       assert.ok(!logged.some((l) => l.includes(w)), `no "${w}" in the logs`);
@@ -313,7 +314,7 @@ try {
     assert.ok(html.includes("Till ฿260") && html.includes("Till ฿60"), "and the till's price");
     assert.ok(html.includes("— the till&#x27;s price."), "the price as it will be written");
     assert.ok(html.includes("The chat says “Calamari for the adults”"), "with the reason line");
-    assert.equal(undecidedLines(state), 2, "the dragon roll and the party juice wait for a decision");
+    assert.equal(undecidedLines(state), 1, "the unknown dragon roll still waits for a decision; reusable juice is matched");
     assert.equal(undecidedOptions(state), 1, "the fried rice's option waits for staff");
     assert.equal(tillMenuUnreadWords(review), null);
     // Fetch from chat lists the same match.
@@ -367,14 +368,14 @@ try {
     const viewLine = (code: string) => view!.lines.find((l) => l.product_code === code && l.source === "extra");
     assert.deepEqual([viewLine("CF-14")?.qty, viewLine("CF-14")?.unit_price_satang], [3, 26000]);
     assert.deepEqual([viewLine("CF-24")?.unit_price_satang], [45000]);
-    assert.deepEqual(view!.bar_lines.map((l) => [l.product_code, l.qty, l.unit_price_satang]), [["CF-65-1", 10, 6000]]);
+    assert.deepEqual(view!.bar_lines.map((l) => [l.product_code, l.qty, l.unit_price_satang]), [["CF-65-1", 10, 6000], ["PARTY-ZZ944A1", 1, 5000]]);
     // No till product was made, and the activity row names codes, never the chat's words.
     const meta = rows.activity.map((r) => JSON.parse(r.metadata_json)).find((m) => m.step === "approved");
     assert.ok(meta.matches.some((m: any) => m.kind === "menu" && m.code === "CF-14" && m.name === "Calamari"));
     assert.ok(meta.matches.some((m: any) => m.kind === "bar" && m.code === "CF-65-1"));
     // SCRUM-958: the approval's row counts every line it wrote with a till code: the kids' Margherita and
     // Vegetable sticks (codes a set menu names too), the adults' Calamari and the Coke at the bar.
-    assert.deepEqual([res.body.written.tillLines, meta.written.tillLines], [4, 4]);
+    assert.deepEqual([res.body.written.tillLines, meta.written.tillLines], [5, 5]);
     for (const w of CHAT_WORDS) assert.ok(!rows.activity.some((r) => r.metadata_json.includes(w)), `no "${w}" in the activity row`);
   });
 
@@ -443,9 +444,11 @@ try {
     const refused = await approve(ev.guards, body("CF-999"));
     assert.equal(refused.status, 400);
     assert.match(refused.body.message, /the till's menu does not have/);
-    const party = await approve(ev.guards, body("PARTY-ZZ944A1"));
-    assert.equal(party.status, 400, "another party's BEO item is no dish of this party's");
-    assert.equal((await beoRows(ev.guards)).kitchen, null, "nothing written");
+    const reusable = body("PARTY-ZZ944A1");
+    const party = await approve(ev.reusable, { ...reusable, menuLines: reusable.menuLines.map((line) => ({ ...line, menu: "bar" })) });
+    assert.equal(party.status, 200, "the same park's BEO-only item is reusable in a new BEO");
+    assert.equal((await beoRows(ev.reusable)).bar.items[0].productCode, "PARTY-ZZ944A1");
+    assert.equal((await beoRows(ev.guards)).kitchen, null, "unknown code still wrote nothing");
   });
 
   await check("theGuardsHoldWithTheTillsMenu", async () => {
@@ -460,7 +463,7 @@ try {
     const state = initialReviewState(review, { fill: res.body.fill, held, saved: held });
     assert.equal(state.details.specialRequests.value, "ZZ typed by staff: a seat for grandma", "typed text is never replaced");
     assert.equal(state.deposit?.value.paid, false, "a deposit the family only claims opens as asked");
-    assert.equal(undecidedLines(state), 2, "a line the menu lacks must be decided");
+    assert.equal(undecidedLines(state), 1, "the unknown line still must be decided");
     assert.equal(undecidedOptions(state), 1, "an option nobody named waits for staff");
     const decided = { ...state, menuLines: state.menuLines.filter((l) => !l.notInMenu && l.productCode !== "CF-43") };
     const body = approveBodyOf(review, decided, { conversationId: review.conversationId ?? null, messageId: null });
@@ -501,6 +504,49 @@ try {
     assert.equal(rows.kitchen.menus.adultsDiffer, true);
     assert.deepEqual((rows.kitchen.menus.adults as any[]).map((l) => [l.itemName, l.quantity, l.price, l.productCode]), [["Calamari", 10, 300, "CF-14"]]);
   });
+  await check("staleReviewCannotOverwriteManualKitchenAndFreshReviewRetainsIt", async () => {
+    const state = await beoReviewState(db, ev.guards);
+    const manual = { id: "zz-test-manual-988", itemName: "ZZ TEST manually agreed food", quantity: 2, price: 321, notes: "ZZ TEST keep this edit" };
+    await q("insert into beo_kitchen_plans (event_id, menus) values ($1,$2::jsonb) on conflict (event_id) do update set menus=$2::jsonb", [ev.guards, JSON.stringify({ kids: [manual], adults: [] })]);
+    const body = { expectedState: state.version, conversationId: null, messageId: null, package: null, setMenu: null, menuLines: [{ menu: "kids", itemName: "Calamari", quantity: 1, productCode: "CF-14", notes: null, price: 260 }], entertainment: [], otherLines: [], event: {}, cake: null, deposit: null, sources: [] };
+    const stale = await approve(ev.guards, body);
+    assert.equal(stale.status, 409, JSON.stringify(stale.body));
+    assert.deepEqual((await beoRows(ev.guards)).kitchen.menus.kids, [manual]);
+    const fresh = await approve(ev.guards, { ...body, expectedState: (await beoReviewState(db, ev.guards)).version });
+    assert.equal(fresh.status, 200, JSON.stringify(fresh.body));
+    const held = (await beoRows(ev.guards)).kitchen.menus.kids;
+    assert.deepEqual(held.find((line: any) => line.id === manual.id), manual);
+    assert.ok(held.some((line: any) => line.productCode === "CF-14"));
+  });
+
+  await check("unknownEntertainmentIsAnUnresolvedRequestNotAFreeShow", async () => {
+    const before = await q("select id from beo_entertainment_selections where event_id=$1", [ev.guards]);
+    const response = await approve(ev.guards, { conversationId: null, messageId: null, package: null, setMenu: null, menuLines: [], entertainment: [{ templateId: null, name: "ZZ TEST unknown show 988", quantity: 1, notes: null }], otherLines: [], event: {}, cake: null, deposit: null, sources: [] });
+    assert.equal(response.status, 200, JSON.stringify(response.body));
+    assert.deepEqual(await q("select id from beo_entertainment_selections where event_id=$1", [ev.guards]), before);
+    assert.match((await beoRows(ev.guards)).event.special_requests, /ZZ TEST unknown show 988.*unresolved/);
+  });
+
+  await check("staleReviewProtectsConcurrentManualSpecialRequests", async () => {
+    const state = await beoReviewState(db, ev.guards);
+    await q("update core_events set special_requests=$2 where id=$1", [ev.guards, "ZZ TEST manual request made after review"]);
+    const response = await approve(ev.guards, { expectedState: state.version, conversationId: null, messageId: null, package: null, setMenu: null, menuLines: [], entertainment: [], otherLines: [], event: {}, details: { specialRequests: "ZZ TEST stale chat replacement" }, cake: null, deposit: null, sources: [] });
+    assert.equal(response.status, 409, JSON.stringify(response.body));
+    assert.equal((await beoRows(ev.guards)).event.special_requests, "ZZ TEST manual request made after review");
+  });
+
+  await check("parentMenuShowsSavedCustomItemPricesWithoutInternalCostsOrCatalogueReplacement", async () => {
+    const token = randomUUID();
+    await q("insert into beo_set_menu_selections (event_id, template_id, token) values ($1,$2,$3)", [ev.guards, cat.setMenu, token]);
+    const response = await fetch(`${base}/api/beo/set-menu-selections/public/${token}`);
+    assert.equal(response.status, 200);
+    const answer = await response.json() as any;
+    const manual = answer.plannedItems.find((line: any) => line.name === "ZZ TEST manually agreed food");
+    assert.deepEqual(manual, { area: "Kids kitchen", name: "ZZ TEST manually agreed food", quantity: 2, included: false, unitSatang: 32100 });
+    assert.ok(!JSON.stringify(answer.plannedItems).includes("internalCost"));
+    assert.ok(answer.template.items.every((item: any) => Object.keys(item).every((key) => ["id", "type", "label", "options", "allowMultiple", "qty", "note", "productCode", "optionProductCodes"].includes(key))));
+  });
+
 } finally {
   await Promise.all(servers.map((s) => new Promise<void>((resolve) => s.close(() => resolve()))));
   const events = Object.values(ev);

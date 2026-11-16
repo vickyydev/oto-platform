@@ -49,7 +49,7 @@ export function priceOfField(text: string): number | null {
 /** What the form sends for what it holds. */
 export function partyMenuItemBodyOf(form: {
   actionId: string;
-  menu: "kids" | "adults";
+  menu: "kids" | "adults" | "bar";
   name: string;
   station: PartyMenuItemStation;
   price: string;
@@ -80,7 +80,7 @@ export function PartyMenuItemDialog({
   onCreated,
 }: {
   eventId: string;
-  menu: "kids" | "adults";
+  menu: "kids" | "adults" | "bar";
   open: boolean;
   onClose: () => void;
   /** The line as the server wrote it, with the till's code. */
@@ -98,13 +98,13 @@ export function PartyMenuItemDialog({
   useEffect(() => {
     if (!open) return;
     setName("");
-    setStation("kitchen");
+    setStation(menu === "bar" ? "bar" : "kitchen");
     setPrice("");
     setFree(false);
     setError(null);
     setSaving(false);
     setActionId(newActionId());
-  }, [open]);
+  }, [open, menu]);
 
   const create = async () => {
     if (saving) return;
@@ -132,10 +132,10 @@ export function PartyMenuItemDialog({
     <Dialog open={open} onOpenChange={(o) => !o && !saving && onClose()}>
       <DialogContent className="max-w-md" data-testid="dialog-party-menu-item">
         <DialogHeader>
-          <DialogTitle>New item for this party</DialogTitle>
+          <DialogTitle>New custom dish for BEOs</DialogTitle>
           <DialogDescription>
             Not in the menu yet — a special cake, a dish the family asked for. It is added to the till as a party-only
-            item in "Party menu", and prints on the kitchen or bar slip like any other.
+            item in "Party menu", reusable in this park's BEOs, and prints on the kitchen or bar slip like any other.
           </DialogDescription>
         </DialogHeader>
         <form
@@ -220,7 +220,7 @@ export function PartyMenuItemDialog({
             </Button>
             <Button type="submit" disabled={saving} data-testid="button-party-menu-item-create">
               {saving ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Plus className="h-4 w-4 mr-1.5" />}
-              Add to the till and the BEO
+              Add item and bill if party already paid
             </Button>
           </DialogFooter>
         </form>

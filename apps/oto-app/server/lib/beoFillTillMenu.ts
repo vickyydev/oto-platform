@@ -21,7 +21,8 @@ import { readTillMenu } from "./tillMenu";
  *
  * Only what a party's kitchen plan can hold is handed over: items made at the
  * kitchen or the bar, coded, on sale — and not an item made from another
- * party's BEO (SCRUM-828's "BEO only"), which is no dish of this party's.
+ * party's BEO. BEO-only dishes are reusable for this park's BEOs, while
+ * remaining absent from the general selling menu.
  * When the till's menu cannot be read the fill works as before, matching to
  * the set menus only, and says so; nothing is called "no longer on the till".
  */
@@ -61,7 +62,7 @@ export async function readFillTillMenu(
 /** The till's items a party's kitchen and bar plan can hold, as the fill reads them. */
 export function tillItemsForFill(items: readonly TillMenuItem[]): BeoAiTillItem[] {
   return items
-    .filter((i) => !i.beoOnly && i.code.trim() !== "")
+    .filter((i) => i.code.trim() !== "")
     .map((i) => ({ code: i.code.trim(), name: i.name, category: i.category ?? i.parentCategory ?? null, station: i.station, priceSatang: i.priceSatang }));
 }
 

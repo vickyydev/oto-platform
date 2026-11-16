@@ -371,6 +371,7 @@ describe("the set menu's choices", () => {
       status: 'ok',
       message: null,
       groups: [{ label: 'Pizza', options: ['Margherita', 'Hawaiian'], allowMultiple: false }],
+      items: expect.any(Array),
     });
     choicesMode = 'silent';
     const silent = await call('GET', manager, `/parties/${id}/kitchen-plan/choices?branchId=${central}`);
@@ -379,6 +380,7 @@ describe("the set menu's choices", () => {
       status: 'unavailable',
       message: 'The OTO App did not answer, so the set menu choices cannot be changed here now.',
       groups: [],
+      items: expect.any(Array),
     });
   });
 });

@@ -341,6 +341,7 @@ function eventView(
                   ),
                   // SCRUM-804 — the settlement sale, when the till settled the party.
                   settlement: tab.settlement,
+                  additionalBills: tab.additionalBills ?? [],
                 }
               : {}),
           }

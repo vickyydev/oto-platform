@@ -1,0 +1,28 @@
+import { lineWithTillItem } from "../shared/tillMenu";
+import { beoBillingFingerprint, billingSyncAfterAttempt } from "../shared/beoBillingSource";
+import assert from "node:assert/strict";
+import { parentMenuPriceWords } from "../client/src/pages/public/menu-select";
+import { beoExtraChargeOf, beoExtraHintOf } from "../shared/beoExtras";
+import { partyMenuLineOf } from "../shared/partyMenuItem";
+import { tillItemsForFill } from "../server/lib/beoFillTillMenu";
+
+const menu = { code: "PARTY-AABBCCDD", name: "ZZ TEST reusable drink", category: "Party menu", parentCategory: null, station: "bar" as const, priceSatang: 12500, priceWeekendSatang: 15000, beoOnly: true };
+assert.equal(tillItemsForFill([menu])[0]?.code, menu.code);
+const made = partyMenuLineOf({ actionId: "14d59c6c-8864-4674-9639-0f4d5783f781", menu: "bar", name: menu.name, station: "bar", price: 125, free: false }, menu.code, false);
+assert.equal(made.chargeApproved, true);
+const ctx = { till: { known: true, byCode: new Map([[menu.code, menu]]) }, partyDate: "2026-11-16" };
+assert.equal(beoExtraChargeOf({ ...made, chargeApproved: undefined }, "bar", ctx).kind, "not_charged");
+assert.deepEqual(beoExtraChargeOf(made, "bar", ctx), { kind: "charged", unitSatang: 12500, quantity: 1, totalSatang: 12500, from: "entered", weekend: false });
+assert.match(beoExtraHintOf({ kind: "unknown" })!, /unresolved/);
+assert.match(parentMenuPriceWords(null, 2, false), /unresolved/);
+assert.ok(!parentMenuPriceWords(null, 2, false).includes("Free"));
+assert.match(parentMenuPriceWords(0, 2), /Free \/ included/);
+assert.match(parentMenuPriceWords(12500, 3, false), /375/);
+assert.match(parentMenuPriceWords(12500, 3, false), /Extra item shown for review/);
+const source = { id: "new-line", itemName: "ZZ TEST", quantity: 1, price: 50, included: false, productCode: "CF-1", source: "additional", chargeApproved: true };
+for (const patch of [{ productCode: "CF-2" }, { source: "set_menu" }, { chargeApproved: false }]) assert.notEqual(beoBillingFingerprint(source, "food"), beoBillingFingerprint({ ...source, ...patch }, "food"));
+assert.notEqual(beoBillingFingerprint(source, "food"), beoBillingFingerprint(source, "bar"));
+const legacy = lineWithTillItem({ itemName: "Old legacy drink", price: 50 }, menu);
+assert.equal((legacy as { chargeApproved?: boolean }).chargeApproved, undefined);
+assert.equal(billingSyncAfterAttempt({ ...source, productCode: "CF-2", billingSync: "synced" }, "food", beoBillingFingerprint(source, "food"), "synced"), "pending");
+console.log("tom-beo-review: 16 checks passed");

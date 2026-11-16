@@ -1,3 +1,4 @@
+import { syncApprovedBeoAdditions } from "../lib/beoAdditionalBilling";
 import { Router, type NextFunction, type Request, type Response } from "express";
 import type { Pool } from "pg";
 import { and, eq } from "drizzle-orm";
@@ -90,7 +91,8 @@ export function directoryKitchenPlanRouter(pool: Pool, deps: KitchenPlanRouteDep
       const outcome = await applyTillKitchenEdit(deps.db, deps.writers, { id: event.id, tenantId: event.tenantId }, parsed.data);
       if (!outcome.ok) return res.status(outcome.status).json({ error: outcome.error, message: outcome.message });
       if (outcome.wrote && deps.afterWrite) await deps.afterWrite(event.id);
-      return res.status(outcome.status).json(outcome.body);
+      const additionalBilling = await syncApprovedBeoAdditions(event.id, "till-kitchen-editor");
+      return res.status(outcome.status).json({ ...outcome.body, additionalBilling });
     } catch (error) {
       next(error);
     }

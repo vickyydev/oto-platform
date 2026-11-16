@@ -15,6 +15,7 @@ import { DIRECTORY_NOT_CONFIGURED, type DirectoryOutcome } from './otoapp-direct
 import { branchClockOf, getParty, partyOf, stationAt, type PartyDeps } from './parties';
 import { markTillMenu, readPartyPlan } from './party-plan';
 import { partySlipsView } from './party-slips';
+import { readPartyMenuCatalogue } from './party-menu-catalogue';
 import { grantCovers, resolveEffectivePermissions } from './permissions';
 import type { ActorContext } from './sale';
 import { withTx, type Exec, type OpContext } from './tx';
@@ -157,8 +158,14 @@ export async function editPartyKitchenPlan(
   const before = await readPartyPlan(db, { branchId: clock.id, eventId: event.id });
   const by = await kitchenEditorOf(db, { accountId: actor.accountId, operatorId: actor.operatorId, branchId: clock.id });
 
+  const catalogue = body.changes.some((change) => change.op === "add" && change.productCode) ? await readPartyMenuCatalogue(db, { operatorId: actor.operatorId, branchId: clock.id }) : null;
+  const changes = body.changes.map((change) => {
+    if (change.op !== "add" || change.unitPriceSatang !== undefined || !change.productCode) return change;
+    const item = catalogue?.items.find((entry) => entry.code === change.productCode);
+    return item ? { ...change, unitPriceSatang: item.priceSatang } : change;
+  });
   const outcome = deps.directory.editKitchenPlan
-    ? await deps.directory.editKitchenPlan(event.id, { id: body.editId, editedAt: now.toISOString(), by, changes: body.changes })
+    ? await deps.directory.editKitchenPlan(event.id, { id: body.editId, editedAt: now.toISOString(), by, changes })
     : ({
         ok: false,
         status: null,
@@ -195,7 +202,7 @@ export async function editPartyKitchenPlan(
     });
     return undefined;
   });
-  return { ...detail, kitchenEdit: { id: body.editId, replayed: outcome.body.replayed } };
+  return { ...detail, kitchenEdit: { id: body.editId, replayed: outcome.body.replayed, ...(outcome.body.additionalBilling?.status === "pending" ? { billingPending: true } : {}) } };
 }
 
 /** `GET /parties/:id/kitchen-plan/choices` — the set menu's choice groups, from the BEO's template. */
@@ -208,8 +215,9 @@ export async function partyKitchenChoices(
   const clock = await branchClockOf(deps.db, actor.operatorId, branchId);
   await actor.assertBranchAllowed?.(clock.id);
   const event = await partyOf(deps.db, clock.id, partyId);
+  const { items } = await readPartyMenuCatalogue(deps.db, { operatorId: actor.operatorId, branchId: clock.id });
   if (!deps.directory.kitchenPlanChoices) {
-    return { status: 'unavailable', message: 'This till cannot read the set menu from the OTO App yet.', groups: [] };
+    return { status: 'unavailable', message: 'This till cannot read the set menu from the OTO App yet.', groups: [], items };
   }
   const outcome = await deps.directory.kitchenPlanChoices(event.id);
   if (!outcome.ok) {
@@ -224,7 +232,8 @@ export async function partyKitchenChoices(
               ? 'The OTO App cannot read the set menu for the till yet. Change the choice in the BEO.'
               : 'The OTO App did not answer, so the set menu choices cannot be changed here now.',
       groups: [],
+      items,
     };
   }
-  return { status: 'ok', message: null, groups: outcome.body.setMenu?.groups ?? [] };
+  return { status: 'ok', message: null, groups: outcome.body.setMenu?.groups ?? [], items };
 }

@@ -1,5 +1,5 @@
 import type { SupportedLang } from '@/i18n/types';
-import type { PartySettlementView } from '@oto/shared';
+import type { PartyAdditionalBill, PartySettlementView } from '@oto/shared';
 
 export interface Operator {
   id: string;
@@ -1545,6 +1545,7 @@ export interface PartyBooking {
   // its deposit are that sale's, so `basePrice` and `deposit` read 0 here and
   // the bill is the tab's own charges and payments. Absent when none.
   settlement?: PartySettlementView;
+  additionalBills?: PartyAdditionalBill[];
 }
 
 // --- Events (unified: party | camp | event) ---------------------------------

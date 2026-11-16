@@ -73,10 +73,10 @@ function MenuPickInput({
 }: {
   line: KitchenDraftLine;
   menu: readonly KitchenMenuPick[];
-  onPick: (patch: Pick<KitchenDraftLine, 'name' | 'productCode' | 'onTillMenu'>) => void;
+  onPick: (patch: Pick<KitchenDraftLine, 'name' | 'productCode' | 'onTillMenu' | 'unitPriceSatang'>) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const matches = useMemo(() => (open && !line.productCode ? kitchenMenuMatches(menu, line.name) : []), [open, line.name, line.productCode, menu]);
+  const matches = useMemo(() => (open && !line.productCode ? kitchenMenuMatches(menu.filter((item) => !item.station || item.station === (line.list === 'bar' ? 'bar' : 'kitchen')), line.name) : []), [open, line.name, line.productCode, menu]);
   return (
     <div className="relative flex-1 min-w-0">
       <Input
@@ -85,7 +85,7 @@ function MenuPickInput({
         aria-label={line.list === 'bar' ? 'New bar item' : 'New food item'}
         onFocus={() => setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
-        onChange={(e) => onPick({ name: e.target.value, productCode: null, onTillMenu: false })}
+        onChange={(e) => onPick({ name: e.target.value, productCode: null, onTillMenu: false, unitPriceSatang: undefined })}
       />
       {matches.length > 0 && (
         <div className="absolute z-20 left-0 right-0 mt-1 rounded-lg border bg-background shadow-lg overflow-hidden">
@@ -96,11 +96,12 @@ function MenuPickInput({
               className="w-full flex items-center justify-between gap-3 px-3 py-2 text-left text-sm hover:bg-muted"
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => {
-                onPick({ name: m.name, productCode: m.code, onTillMenu: true });
+                onPick({ name: m.name, productCode: m.code, onTillMenu: true, unitPriceSatang: m.priceSatang });
                 setOpen(false);
               }}
             >
-              <span className="truncate">{m.name}</span>
+              <span className="min-w-0"><span className="block truncate">{m.name}</span>{m.category && <span className="block text-xs text-muted-foreground">{m.beoOnly ? "Custom dishes (BEO only)" : m.category}</span>}</span>
+              {m.priceSatang !== undefined && <span className="text-xs shrink-0">{m.priceSatang === 0 ? "Free / included" : `THB ${(m.priceSatang / 100).toLocaleString("en-US")}`}</span>}
               <span className="text-xs text-muted-foreground shrink-0">{m.code}</span>
             </button>
           ))}
@@ -179,6 +180,7 @@ function LineRows({
                   </Button>
                 )}
               </div>
+              <div className="text-xs text-muted-foreground" data-testid="kitchen-line-selling-price">{l.origin === "set_menu" ? "Included in package" : l.unitPriceSatang === undefined ? "Selling price unresolved" : l.unitPriceSatang === 0 ? "Free / included" : `THB ${(l.unitPriceSatang / 100).toLocaleString("en-US")} each - Qty ${l.qty ?? 1} - THB ${((l.unitPriceSatang * (l.qty ?? 1)) / 100).toLocaleString("en-US")} before existing tax/service adjustments`}</div>
               {marks && <div className="text-xs text-muted-foreground" data-testid="kitchen-line-marks">{marks}</div>}
               {l.added && !readOnly && (
                 <div className="text-xs text-muted-foreground">{l.productCode ? `Till item ${l.productCode}` : PARTY_NOT_ON_TILL_MENU}</div>

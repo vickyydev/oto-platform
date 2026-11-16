@@ -1246,6 +1246,15 @@ export function BeoAiReviewDialog({
             </p>
             <p data-testid="text-ai-review-reasons">Under each value, the chat's own words for it, whose line they are and when it was written.</p>
           </div>
+          {review.currentState && (
+            <div className="border rounded-lg p-3 text-xs space-y-1" data-testid="ai-review-current-plan">
+              <p className="font-medium">Current saved plan</p>
+              {review.currentState.lines.length === 0 ? <p>No saved kitchen, bar or entertainment lines.</p> : review.currentState.lines.map((line, index) => (
+                <p key={index}>{line.section}: {line.name} x {line.quantity}{line.included ? " - Included" : line.price !== undefined ? ` - THB ${line.price} each - THB ${line.price * line.quantity} total` : " - Price unresolved"}</p>
+              ))}
+              <p>Proposed changes and their chat sources are below. Approving saves a staff draft; it does not record the parent agreeing to charges.</p>
+            </div>
+          )}
           <BeoAiReviewBody review={review} state={state} onChange={setState} bookedCakeMode={bookedCakeMode} />
           {review.finalMessage && (
             <p className="text-xs text-muted-foreground" data-testid="text-ai-review-final-message">

@@ -140,6 +140,7 @@ export function lineWithTillItem<L extends { itemName: string; price: number; so
     ...line,
     itemName: item.name,
     productCode: item.code,
+    ...(extra ? { included: item.priceSatang === 0 } : {}),
     ...(extra ? { price: bahtOfSatang(item.priceSatang) } : {}),
   };
 }

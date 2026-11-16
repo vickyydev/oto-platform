@@ -42,6 +42,7 @@ import { tillMenuIndexOf } from "@shared/tillMenu";
 import { isTillPartyEventType } from "@shared/tillBilling";
 import { isPartyItemCode } from "@shared/beoExtras";
 import { partyPackageTotal } from "@shared/partyPackageTotal";
+import { syncApprovedBeoAdditions } from "./lib/beoAdditionalBilling";
 import { currentDeposit, depositOfBillingColumns, sameDeposit, writePartyDeposit } from "./lib/partyDeposit";
 import {
   decideDepositSave,
@@ -2036,10 +2037,12 @@ export function registerBeoRoutes(app: Express) {
         beoTasks: [],
       };
 
+      const additionalBilling = await syncApprovedBeoAdditions(eventId, user.id);
       // SCRUM-840: the party's one deposit as it stands after this Save, and, when the Save
       // carried a deposit that was not written, why (the form shows the words and the figure).
       res.json({
         ...result,
+        additionalBilling,
         oneDeposit: oneDeposit ?? oneDepositOf(currentDeposit(bl, event)),
         ...(depositSave ? { depositSave } : {}),
       });
@@ -3205,7 +3208,7 @@ export function registerBeoRoutes(app: Express) {
         .where(eq(beoSetMenuTemplates.id, sel.templateId));
       if (!tmpl) return res.status(404).json({ error: "Template not found" });
 
-      const [event] = await db.select({ title: coreEvents.title, childName: coreEvents.childName, eventDate: coreEvents.eventDate })
+      const [event] = await db.select({ title: coreEvents.title, childName: coreEvents.childName, eventDate: coreEvents.eventDate, tenantId: coreEvents.tenantId, branchId: coreEvents.branchId })
         .from(coreEvents).where(eq(coreEvents.id, sel.eventId));
       // SCRUM-978 (SCRUM-976 point 7): the party's park's clock, so the link prints the day the family
       // submitted on the park's calendar, as the BEO PDF does (pdf.ts), never the device's.
@@ -3222,12 +3225,30 @@ export function registerBeoRoutes(app: Express) {
         selections = setMenuChoicesOfKitchenPlan((tmpl.items as unknown[]) ?? [], kitchenPlan?.menus) ?? sel.selections;
       }
 
+      const publicItems = (Array.isArray(tmpl.items) ? tmpl.items : []).map((raw) => {
+        const item = raw as Record<string, unknown>;
+        return Object.fromEntries(["id", "type", "label", "options", "allowMultiple", "qty", "note", "productCode", "optionProductCodes"].filter((key) => item[key] !== undefined).map((key) => [key, item[key]]));
+      });
+      const [savedKitchen] = await db.select({ menus: beoKitchenPlans.menus }).from(beoKitchenPlans).where(eq(beoKitchenPlans.eventId, sel.eventId));
+      const [savedBar] = await db.select({ items: beoBarPlans.items }).from(beoBarPlans).where(eq(beoBarPlans.eventId, sel.eventId));
+      const savedMenus = savedKitchen?.menus as Record<string, unknown> | null;
+      const plannedItems = ([['Kids kitchen', savedMenus?.kids], ['Adults kitchen', savedMenus?.adultsDiffer === true ? savedMenus?.adults : []], ['Bar', savedBar?.items]] as const).flatMap(([area, rows]) => (Array.isArray(rows) ? rows : []).flatMap((raw: Record<string, unknown>) => {
+        if (typeof raw.itemName !== 'string' || !raw.itemName.trim()) return [];
+        const included = raw.included === true || raw.source === 'set_menu';
+        return [{ area, name: raw.itemName, quantity: typeof raw.quantity === 'number' && raw.quantity > 0 ? raw.quantity : 1, included,
+          unitSatang: included ? 0 : typeof raw.price === 'number' && raw.price > 0 ? Math.round(raw.price * 100) : null }];
+      }));
+      const codes = new Set(publicItems.flatMap((item) => [item.productCode, ...Object.values((item.optionProductCodes ?? {}) as Record<string, unknown>)]).filter((code): code is string => typeof code === "string"));
+      const till = event ? await readFillTillMenu(db, event) : null;
+      const menuPrices = till?.status === "ok" ? till.items.filter((item) => codes.has(item.code)).map((item) => ({ code: item.code, unitSatang: item.priceSatang })) : [];
       res.json({
         isSubmitted: sel.isSubmitted,
         submittedAt: sel.submittedAt,
         selections,
-        template: { id: tmpl.id, name: tmpl.name, items: tmpl.items },
-        event: event || null,
+        template: { id: tmpl.id, name: tmpl.name, items: publicItems },
+        menuPrices,
+        plannedItems,
+        event: event ? { title: event.title, childName: event.childName, eventDate: event.eventDate } : null,
         parkTimeZone: park?.timezone || null,
       });
     } catch (error) {
