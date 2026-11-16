@@ -1,0 +1,128 @@
+﻿{
+    "observedAt":  "2026-11-16T15:28:37.4065192Z",
+    "ticket":  "SCRUM-986",
+    "baseSha":  "398478b5d6faba98bdc3586bacb77c8f58aa8af3",
+    "candidateSha":  "211a5adee4965b4f48e3aaa00f6a363222dfd98a",
+    "branch":  "lane/codex-payment-choice-recovery-20261116",
+    "worktree":  "C:/oto-lanes/codex-payment-choice-recovery-20261116",
+    "problem":  "Late fresh charge id triggers no-attempt reconciliation that erases unsent Cash/partial fields on the same order. Source and deferred-write/read hook pins deterministically reproduce the CI button disappearance.",
+    "repair":  "Keep unsent choice only when no earlier sale id, phase ready, no prior attempt/settlement, same confirmed balance, method still enabled. Recorded money, order changes, total changes and disabled methods remain authoritative.",
+    "red":  {
+                "wholeFile":  true,
+                "failed":  2,
+                "passed":  4
+            },
+    "focusedInitial":  {
+                           "passed":  43,
+                           "files":  5
+                       },
+    "fullPos":  {
+                    "filesPassed":  275,
+                    "seconds":  278,
+                    "command":  "pnpm --filter @oto/pos test --maxWorkers=2",
+                    "failed":  0,
+                    "passed":  3920
+                },
+    "interruptedFullPos":  "First default-worker run interrupted after discovering existing browser fixtures; root clarified standard repository tests permitted. Interrupted result excluded; complete rerun accepted.",
+    "types":  {
+                  "exitCode":  0,
+                  "command":  "pnpm --filter @oto/pos typecheck",
+                  "diagnostics":  0,
+                  "initialFailure":  "Four new-test-only typing errors corrected; optional calls and test scope widening. No product diagnostic.",
+                  "configs":  3
+              },
+    "lint":  {
+                 "exitCode":  0,
+                 "command":  "pnpm exec eslint apps/pos/src/lib/usePaymentStage.ts apps/pos/test/s986-payment-choice-recovery.test.ts",
+                 "outputBytes":  0
+             },
+    "apiReview":  {
+                      "command":  "pnpm --filter @oto/api exec vitest run test/s982-review.test.ts",
+                      "failed":  0,
+                      "passed":  11
+                  },
+    "finalRegression":  {
+                            "command":  "pnpm --filter @oto/pos exec vitest run test/s986-payment-choice-recovery.test.ts",
+                            "failed":  0,
+                            "passed":  7
+                        },
+    "changesAfterFullPos":  "Test optional-call and scope type annotations only; whole7-case regression/types/lint replayed afterward. Product behavior unchanged.",
+    "nativeRepairedSource":  {
+                                 "sha":  "211a5adee4965b4f48e3aaa00f6a363222dfd98a",
+                                 "command":  "POS_E2E_BROWSER=chromium POS_E2E_BUILT=1 pnpm --filter @oto/pos e2e e2e/item-part-paid-exit.spec.ts",
+                                 "testDatabaseUrlUnset":  true,
+                                 "smokeBaseUrlUnset":  true,
+                                 "server":  "embedded Postgres16",
+                                 "built":  true,
+                                 "browser":  "chromium",
+                                 "passed":  1,
+                                 "failed":  0,
+                                 "seconds":  13.3,
+                                 "exitCode":  0,
+                                 "disposableDatabaseRemoved":  true,
+                                 "path":  "docs/qa/proof-2026-11-16/SCRUM-986/logs/ci-43845560647-s986-native-final.log",
+                                 "sha256":  "c71d704c1408a79e68f60b5e963da795586cf23d2ef89131b246c7a1036dde2d"
+                             },
+    "sourceFingerprint":  {
+                              "sha256":  "eff72b16b4696f298d897f40ad904c8c0b8f61cbe8239954dbbdc23ff2eab586",
+                              "path":  "apps/pos/src/lib/usePaymentStage.ts"
+                          },
+    "testFingerprint":  {
+                            "sha256":  "01e641a4728922fc476fb3d188faaed4b445a3c7eaf007fa02a953f47bb819a3",
+                            "path":  "apps/pos/test/s986-payment-choice-recovery.test.ts"
+                        },
+    "artifacts":  [
+                      {
+                          "path":  "docs/qa/proof-2026-11-16/SCRUM-986/logs/ci-43845560647-choice-recovery-red.log",
+                          "bytes":  8584,
+                          "sha256":  "751309ea571cfcfb076f700c1ec8ba07bec716a65ee45dc717f2a9aa384907fd"
+                      },
+                      {
+                          "path":  "docs/qa/proof-2026-11-16/SCRUM-986/logs/ci-43845560647-choice-recovery-green.log",
+                          "bytes":  1130,
+                          "sha256":  "bd2d9e5054794651887b9f0a4a028680c378110748d7658bdb67aa3cd86d4c8a"
+                      },
+                      {
+                          "path":  "docs/qa/proof-2026-11-16/SCRUM-986/logs/ci-43845560647-choice-recovery-pos-all.log",
+                          "bytes":  111502,
+                          "sha256":  "02c9d89cf92ce2fb4973a534e0353625dcf73882112add80d6fbd1f7ec632baa"
+                      },
+                      {
+                          "path":  "docs/qa/proof-2026-11-16/SCRUM-986/logs/ci-43845560647-choice-recovery-pos-all-complete.log",
+                          "bytes":  140550,
+                          "sha256":  "81f58b007c46a896d28cbe426129c1653905297d650968265fc7381c33ffde94"
+                      },
+                      {
+                          "path":  "docs/qa/proof-2026-11-16/SCRUM-986/logs/ci-43845560647-choice-recovery-types.log",
+                          "bytes":  1924,
+                          "sha256":  "bfd7af7e651e1c6796512bbf8f8cd6e17bef51aa60a85492118ae70b497080b0"
+                      },
+                      {
+                          "path":  "docs/qa/proof-2026-11-16/SCRUM-986/logs/ci-43845560647-choice-recovery-types-final.log",
+                          "bytes":  410,
+                          "sha256":  "2829176c96e8d0eb0da05b4a540978e0b87bb6129031d1d77036c9fcea08b1de"
+                      },
+                      {
+                          "path":  "docs/qa/proof-2026-11-16/SCRUM-986/logs/ci-43845560647-choice-recovery-lint-final.log",
+                          "bytes":  0,
+                          "sha256":  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                      },
+                      {
+                          "path":  "docs/qa/proof-2026-11-16/SCRUM-986/logs/ci-43845560647-choice-recovery-api-review.log",
+                          "bytes":  624,
+                          "sha256":  "87e5232c471c358f78e0887fc8142e2a19744fe4143b1836ab3c47054f279fc9"
+                      },
+                      {
+                          "path":  "docs/qa/proof-2026-11-16/SCRUM-986/logs/ci-43845560647-choice-recovery-regression-final.log",
+                          "bytes":  664,
+                          "sha256":  "db52921c8e655b8d9a678182a6ba85874a31c0f48f0c26b4b8c53bf3cadc5368"
+                      }
+                  ],
+    "pushed":  false,
+    "deployments":  0,
+    "additionalCiReruns":  0,
+    "sourceGitBlob":  "7edf54d9a9179879840582311e1320896f506d9b",
+    "testGitBlob":  "fc7d8821be8108240592c7ebe4cca1b72b7508d4",
+    "heavySlot":  "Released to approved_deposit after native ended; no active owned check/browser/DB process.",
+    "nextStep":  "Root independent review, combined source integration/normal landing, exact-source CI in background and named till staging deployment/proof. No mainpush/deploy from this lane."
+}
