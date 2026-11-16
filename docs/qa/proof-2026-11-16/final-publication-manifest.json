@@ -1,0 +1,146 @@
+{
+  "authorized": true,
+  "sourceSha": "0bc4be94abdbf982c3a06146062e96f0bb7b28fb",
+  "evidenceCommit": "1b772c8e6697da237823d5c34ac1c77702064436",
+  "cleanupVerified": true,
+  "cleanupReceipts": [
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-988/988-final-staging-proof.json",
+      "sha256": "9741c34e8418360e5008da71224aad60d82543d57961f82d21eb16f3b7affc76",
+      "inspected": true,
+      "rootInspected": true
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-993/inbox-access-staging-proof.json",
+      "sha256": "20d2a67568b438c0d55e598ff0b3b12471edfc945bb0d513fab42aea49fe7e28",
+      "inspected": true,
+      "rootInspected": true
+    }
+  ],
+  "tickets": [
+    {
+      "key": "SCRUM-988",
+      "target": "Deployed",
+      "parkSummary": "Staff can review the available chat details with their sources and apply the approved BEO changes. Unknown items and prices stay visible for staff resolution. Chat payment claims do not record received money.",
+      "proofSummary": "On final staging source0bc4be94abdbf982c3a06146062e96f0bb7b28fb, the actual app rendered a clearly labelled reconstructed extraction-derived UI fixture: the unknown show retained its requested15:00 time and the paid999-baht claim remained read-only. This is UI-only fixture evidence, not a new extraction. A separate fresh live API approval kept the actual original1-baht simulator receipt unchanged, preserved existing requests and quantity4, retained time/notes without creating an act, and refused stale replay409. No model call or new payment was made. Final cleanup archived the owned party and thread, retired both BEO-only products, made the old parent link return404 and left zero active test sessions, queued messages or device work. Financial and audit history is preserved.",
+      "limits": "Simulator proof only; real merchant acceptance is unverified. The review image uses an intercepted reconstructed extraction-derived fixture on the actual app, not an original raw response replay or model rerun. Actual receipt and request preservation are proven separately by live API/database readback. Native POS additional-bill selector, mobile collection, physical printing and fiscal issuance remain unverified. Original release CI failed an obsolete test fixture; the reviewed test-only correction passes the complete10-case file locally. Hosted replacement CI has no final result yet; no hosted green result is claimed.",
+      "images": [
+        {
+          "path": "docs/qa/jira-comments/attachments/SCRUM-988/988-final-derived-review-ui-only.png",
+          "sha256": "e56b3a17a476442534f1a9c7fa52c88415b89c35ce78a8e2781e6aa889a0e582",
+          "inspected": true,
+          "rootInspected": true
+        },
+        {
+          "path": "docs/qa/jira-comments/attachments/SCRUM-988/988-final-live-api-cleanup-card.png",
+          "sha256": "93d9dee8b1af42d0a81669ba9b1b6f3ce8ebc1e50836236a440fbb2cc81a0613",
+          "inspected": true,
+          "rootInspected": true
+        }
+      ]
+    },
+    {
+      "key": "SCRUM-989",
+      "target": "Deployed",
+      "parkSummary": "Managers can create reusable BEO-only dishes and select them for the appropriate Kitchen or Bar plan on another party. These dishes remain outside the ordinary POS selling catalogue.",
+      "proofSummary": "The initial staging proof shows the reusable BEO-only product codes in the native Kids Kitchen and Bar pickers. The saved parent-view evidence separately shows their selling prices. Cross-party saved reuse and exclusion from ordinary POS selling are covered by the recorded local tests. Final cleanup retired both owned BEO-only products and archived the owned party/thread; the used parent link returns404 and own sessions are zero. The final API addendum preserved saved quantity4 and original financial history.",
+      "limits": "The long native picker labels clip prices; saved prices are shown separately. Native POS additional-bill selector and mobile collection remain unverified. This is synthetic staging evidence; real merchant acceptance is unverified. Original release CI failed an obsolete test fixture; the reviewed test-only correction passes the complete10-case file locally. Hosted replacement CI has no final result yet; no hosted green result is claimed.",
+      "images": [
+        {
+          "path": "docs/qa/jira-comments/attachments/SCRUM-990/picker-kids.png",
+          "sha256": "02c7d0f78ed01a89e1d57799e179a99ce581b454d798fa3f5f4b97ec54edcf03",
+          "inspected": true,
+          "rootInspected": true
+        },
+        {
+          "path": "docs/qa/jira-comments/attachments/SCRUM-990/picker-bar.png",
+          "sha256": "1c1b26d31620fa221fdb2a6a54486ce62fc5c8f25e93d46fc7d56a78055a66aa",
+          "inspected": true,
+          "rootInspected": true
+        },
+        {
+          "path": "docs/qa/jira-comments/attachments/SCRUM-990/parent-saved-selling-prices.png",
+          "sha256": "24d5358d033ddada89e5a4c1c6ec46276b5d34930feec5ea66b4e3edd8bdb870",
+          "inspected": true,
+          "rootInspected": true
+        }
+      ]
+    },
+    {
+      "key": "SCRUM-990",
+      "target": "Deployed",
+      "parkSummary": "Staff can add approved priced extras to the same party after its main bill has been paid. A linked additional bill holds the new charges, while the original paid receipt stays unchanged.",
+      "proofSummary": "The simulator staging proof shows the original paid main bill and two linked additional bills on the same party. Each new bill was paid in full; one was collected as10baht then the final1satang. Retry and recorded-payment replay returned the same results. Independent sale, sale-line and main-payment fingerprints confirm that the original receipt stayed unchanged. The original card records the fixture retained at that earlier stage. The final SCRUM-988 live API/cleanup addendum now closes that retention: party/thread archived, both products retired, old parent link404, sessions zero and financial/audit history preserved. It independently reconfirms the original main receipt and both paid additional bills unchanged.",
+      "limits": "Simulator payments are not real bank payments. Real merchant acceptance, physical devices/printing and fiscal issuance remain unverified; the three own print jobs were skipped. Native POS additional-bill selector and mobile collection remain unverified. The BEO Payments section is cropped; independent financial fingerprints provide the receipt-conservation check. Original release CI failed an obsolete test fixture; the reviewed test-only correction passes the complete10-case file locally. Hosted replacement CI has no final result yet; no hosted green result is claimed.",
+      "images": [
+        {
+          "path": "docs/qa/jira-comments/attachments/SCRUM-990/linked-paid-main-and-additional-bills.png",
+          "sha256": "86688fa80058418b7bd0c49fbd6852aadfbb3530ee96974fa33c2dfd6e465784",
+          "inspected": true,
+          "rootInspected": true
+        },
+        {
+          "path": "docs/qa/jira-comments/attachments/SCRUM-990/additional-bills-test-run.png",
+          "sha256": "eafb62205a710a061c7375c087c59838317cce894a316affe884810d9154164b",
+          "inspected": true,
+          "rootInspected": true
+        }
+      ]
+    },
+    {
+      "key": "SCRUM-991",
+      "target": "Deployed",
+      "parkSummary": "The parent menu review shows the saved quantity, selling price and line total. Included items are explicit; an unknown price stays unresolved. Confirming menu choices does not approve new charges.",
+      "proofSummary": "The saved parent-view evidence shows included/free and unresolved-price controls, and the later saved quantity4 at10.01baht each, totalling40.04baht. Parent confirmation changed choices without changing charges or payments. The unresolved manual-price control was removed before main collection; its earlier display is not a paid price. The final API addendum kept quantity4 and the original financial fingerprints unchanged. Cleanup archived the owned party/thread and retired its products; the used parent link now returns404, test sessions are zero and financial/audit history remains.",
+      "limits": "The saved parent-view and API-derived fixture evidence does not establish native mobile coverage or parent acceptance of new charges. Internal cost is omitted. Native POS selector/mobile collection and real merchant acceptance remain unverified. Original release CI failed an obsolete test fixture; the reviewed test-only correction passes the complete10-case file locally. Hosted replacement CI has no final result yet; no hosted green result is claimed.",
+      "images": [
+        {
+          "path": "docs/qa/jira-comments/attachments/SCRUM-990/parent-saved-selling-prices.png",
+          "sha256": "24d5358d033ddada89e5a4c1c6ec46276b5d34930feec5ea66b4e3edd8bdb870",
+          "inspected": true,
+          "rootInspected": true
+        },
+        {
+          "path": "docs/qa/jira-comments/attachments/SCRUM-990/parent-current-quantity-four.png",
+          "sha256": "ccc46982c05ed75e4724efd897a59d138dcae6a5c35ed9b419447298bb96c042",
+          "inspected": true,
+          "rootInspected": true
+        }
+      ]
+    },
+    {
+      "key": "SCRUM-993",
+      "target": "Deployed",
+      "parkSummary": "An authorized operator administrator can restrict an account's Inbox categories and channels in the existing permissions drawer. The limits apply alongside existing park, branch, team and action permissions, including direct access and retried actions.",
+      "proofSummary": "On staging source0bc4be94abdbf982c3a06146062e96f0bb7b28fb, the same synthetic account session could read the allowed channel, then immediately lost detail/message/search/list/count/dashboard/contact access after its category or channel was restricted. Existing action capabilities stayed unchanged. The native Console screenshots show the already retired own account with default limits restored; its review was cancelled without saving. Cleanup removed the test role assignment, made the account inactive, restored default category/channel limits and left zero active test sessions; the old sessions returned401. The owned thread is archived. One unarchived synthetic employee remains linked to the inactive roleless account, with the synthetic contact and audit history retained, because the platform exposes no supported employee archive action.",
+      "limits": "The native management images show a retired synthetic account, not active revocation in the browser. Active same-session revocation is proven by the labelled HTTP/database test-run card and source-bound receipts. No real staff grants, customer message, model call or payment was changed or created. Native mobile proof is not claimed; retained synthetic directory/contact/audit records are disclosed above. Original release CI failed an obsolete test fixture; the reviewed test-only correction passes the complete10-case file locally. Hosted replacement CI has no final result yet; no hosted green result is claimed.",
+      "images": [
+        {
+          "path": "docs/qa/jira-comments/attachments/SCRUM-993/own-account-inbox-controls.png",
+          "sha256": "9680ac5fcc982e0614dea0b2c04340dc00dc1220c7ab93d3626adbcdcc605f99",
+          "inspected": true,
+          "rootInspected": true
+        },
+        {
+          "path": "docs/qa/jira-comments/attachments/SCRUM-993/own-account-review-current-after.png",
+          "sha256": "5a10786d7576cfd7b1f4353aeeeef960be8f4200c323d130670cc223ff7c5df1",
+          "inspected": true,
+          "rootInspected": true
+        },
+        {
+          "path": "docs/qa/jira-comments/attachments/SCRUM-993/same-session-policy-test-run.png",
+          "sha256": "31f04bbefba4100f9ecb8f817b36471b3e6f69850e0a8a29c03b22853e3e4ba3",
+          "inspected": true,
+          "rootInspected": true
+        }
+      ]
+    }
+  ],
+  "publicationPending": [],
+  "ciNote": "Original0bc run43929126898 failed an obsolete every-field fixture. Test-only repair whole file10/10; hosted replacement run remains pending, no green claim.",
+  "evidenceSourceNotes": {
+    "BEOInitialImages": "20c34493fb0aa2d0c33d98df9f6b6053cfc56d94 initial proof; final app addendum pending",
+    "InboxPermissionImages": "0bc4be94abdbf982c3a06146062e96f0bb7b28fb",
+    "sameImageAcrossTickets": "Each mapped image is attached separately to its destination ticket."
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "authorizedBy": "Root final closeout direction",
+  "evidenceCommit": "1b772c8e6697da237823d5c34ac1c77702064436",
+  "tickets": {
+    "SCRUM-844": {
+      "digest": "87d0635216c7ca935b5238b7b47de07870dbf6a26c6d1d369469fe9436f1dd9f",
+      "beforeStatus": "Deployed",
+      "intentAt": "2026-11-16T19:00:42.722Z",
+      "commentId": "14865",
+      "status": "Deployed",
+      "readbackVerifiedAt": "2026-11-16T19:00:44.506Z"
+    },
+    "SCRUM-966": {
+      "digest": "a75d5c73bde35960680c93f68cc38c6f207b8ba4582f81c36f6749ce2a1b97f9",
+      "beforeStatus": "In Progress",
+      "intentAt": "2026-11-16T19:00:45.429Z",
+      "commentId": "14866",
+      "status": "In Progress",
+      "readbackVerifiedAt": "2026-11-16T19:00:46.450Z"
+    }
+  },
+  "unchangedDelivered": {
+    "SCRUM-987": "Deployed",
+    "SCRUM-992": "Deployed"
+  },
+  "completedAt": "2026-11-16T19:00:47.429Z"
+}

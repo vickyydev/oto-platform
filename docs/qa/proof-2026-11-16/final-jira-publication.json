@@ -1,0 +1,333 @@
+{
+  "sourceSha": "0bc4be94abdbf982c3a06146062e96f0bb7b28fb",
+  "manifestDigest": "4c19bedc10bb8296177f0843fed8ac8e8b15d5cec46eaa63d2cda75196ced16b",
+  "tickets": {
+    "SCRUM-988": {
+      "attachments": {
+        "988-final-derived-review-ui-only.png": {
+          "path": "C:\\oto-lanes\\tom-feedback-coordination-20261116\\docs\\qa\\jira-comments\\attachments\\SCRUM-988\\988-final-derived-review-ui-only.png",
+          "filename": "988-final-derived-review-ui-only.png",
+          "bytes": 94175,
+          "sha256": "e56b3a17a476442534f1a9c7fa52c88415b89c35ce78a8e2781e6aa889a0e582",
+          "baselineIds": [],
+          "intentAt": "2026-11-16T18:59:51.949Z",
+          "id": "13566",
+          "readbackVerifiedAt": "2026-11-16T18:59:53.998Z"
+        },
+        "988-final-live-api-cleanup-card.png": {
+          "path": "C:\\oto-lanes\\tom-feedback-coordination-20261116\\docs\\qa\\jira-comments\\attachments\\SCRUM-988\\988-final-live-api-cleanup-card.png",
+          "filename": "988-final-live-api-cleanup-card.png",
+          "bytes": 121024,
+          "sha256": "93d9dee8b1af42d0a81669ba9b1b6f3ce8ebc1e50836236a440fbb2cc81a0613",
+          "baselineIds": [
+            "13566"
+          ],
+          "intentAt": "2026-11-16T18:59:54.210Z",
+          "id": "13567",
+          "readbackVerifiedAt": "2026-11-16T18:59:56.441Z"
+        }
+      },
+      "transitions": [
+        {
+          "from": "Testing",
+          "to": "Deployed",
+          "id": "2",
+          "intentAt": "2026-11-16T18:59:59.046Z",
+          "requestSucceededAt": "2026-11-16T18:59:59.821Z",
+          "readbackStatus": "Deployed"
+        }
+      ],
+      "beforeStatus": "Testing",
+      "comment": {
+        "bodyDigest": "011e456ddbc276d7b168e8ae4088f0e0b0aa0578eb848dd91a75f942bb73355d",
+        "intentAt": "2026-11-16T18:59:56.954Z",
+        "id": "14860",
+        "readbackVerifiedAt": "2026-11-16T18:59:58.310Z"
+      },
+      "final": {
+        "at": "2026-11-16T19:00:00.415Z",
+        "status": "Deployed",
+        "commentId": "14860",
+        "attachments": [
+          {
+            "filename": "988-final-derived-review-ui-only.png",
+            "id": "13566"
+          },
+          {
+            "filename": "988-final-live-api-cleanup-card.png",
+            "id": "13567"
+          }
+        ]
+      }
+    },
+    "SCRUM-989": {
+      "attachments": {
+        "picker-kids.png": {
+          "path": "C:\\oto-lanes\\tom-feedback-coordination-20261116\\docs\\qa\\jira-comments\\attachments\\SCRUM-990\\picker-kids.png",
+          "filename": "picker-kids.png",
+          "bytes": 4930,
+          "sha256": "02c7d0f78ed01a89e1d57799e179a99ce581b454d798fa3f5f4b97ec54edcf03",
+          "baselineIds": [],
+          "intentAt": "2026-11-16T19:00:01.327Z",
+          "id": "13568",
+          "readbackVerifiedAt": "2026-11-16T19:00:02.921Z"
+        },
+        "picker-bar.png": {
+          "path": "C:\\oto-lanes\\tom-feedback-coordination-20261116\\docs\\qa\\jira-comments\\attachments\\SCRUM-990\\picker-bar.png",
+          "filename": "picker-bar.png",
+          "bytes": 4871,
+          "sha256": "1c1b26d31620fa221fdb2a6a54486ce62fc5c8f25e93d46fc7d56a78055a66aa",
+          "baselineIds": [
+            "13568"
+          ],
+          "intentAt": "2026-11-16T19:00:03.107Z",
+          "id": "13569",
+          "readbackVerifiedAt": "2026-11-16T19:00:04.305Z"
+        },
+        "parent-saved-selling-prices.png": {
+          "path": "C:\\oto-lanes\\tom-feedback-coordination-20261116\\docs\\qa\\jira-comments\\attachments\\SCRUM-990\\parent-saved-selling-prices.png",
+          "filename": "parent-saved-selling-prices.png",
+          "bytes": 40862,
+          "sha256": "24d5358d033ddada89e5a4c1c6ec46276b5d34930feec5ea66b4e3edd8bdb870",
+          "baselineIds": [
+            "13569",
+            "13568"
+          ],
+          "intentAt": "2026-11-16T19:00:04.493Z",
+          "id": "13570",
+          "readbackVerifiedAt": "2026-11-16T19:00:06.254Z"
+        }
+      },
+      "transitions": [
+        {
+          "from": "Testing",
+          "to": "Deployed",
+          "id": "2",
+          "intentAt": "2026-11-16T19:00:08.733Z",
+          "requestSucceededAt": "2026-11-16T19:00:09.161Z",
+          "readbackStatus": "Deployed"
+        }
+      ],
+      "beforeStatus": "Testing",
+      "comment": {
+        "bodyDigest": "cc411c1c13f34d3206963147f875ab1982ee755f8b5f9d8c7e6058e9e2deaa9e",
+        "intentAt": "2026-11-16T19:00:06.494Z",
+        "id": "14861",
+        "readbackVerifiedAt": "2026-11-16T19:00:08.054Z"
+      },
+      "final": {
+        "at": "2026-11-16T19:00:09.749Z",
+        "status": "Deployed",
+        "commentId": "14861",
+        "attachments": [
+          {
+            "filename": "picker-kids.png",
+            "id": "13568"
+          },
+          {
+            "filename": "picker-bar.png",
+            "id": "13569"
+          },
+          {
+            "filename": "parent-saved-selling-prices.png",
+            "id": "13570"
+          }
+        ]
+      }
+    },
+    "SCRUM-990": {
+      "attachments": {
+        "linked-paid-main-and-additional-bills.png": {
+          "path": "C:\\oto-lanes\\tom-feedback-coordination-20261116\\docs\\qa\\jira-comments\\attachments\\SCRUM-990\\linked-paid-main-and-additional-bills.png",
+          "filename": "linked-paid-main-and-additional-bills.png",
+          "bytes": 99246,
+          "sha256": "86688fa80058418b7bd0c49fbd6852aadfbb3530ee96974fa33c2dfd6e465784",
+          "baselineIds": [],
+          "intentAt": "2026-11-16T19:00:10.396Z",
+          "id": "13571",
+          "readbackVerifiedAt": "2026-11-16T19:00:11.957Z"
+        },
+        "additional-bills-test-run.png": {
+          "path": "C:\\oto-lanes\\tom-feedback-coordination-20261116\\docs\\qa\\jira-comments\\attachments\\SCRUM-990\\additional-bills-test-run.png",
+          "filename": "additional-bills-test-run.png",
+          "bytes": 144644,
+          "sha256": "eafb62205a710a061c7375c087c59838317cce894a316affe884810d9154164b",
+          "baselineIds": [
+            "13571"
+          ],
+          "intentAt": "2026-11-16T19:00:12.407Z",
+          "id": "13572",
+          "readbackVerifiedAt": "2026-11-16T19:00:13.891Z"
+        }
+      },
+      "transitions": [
+        {
+          "from": "Testing",
+          "to": "Deployed",
+          "id": "2",
+          "intentAt": "2026-11-16T19:00:15.950Z",
+          "requestSucceededAt": "2026-11-16T19:00:16.351Z",
+          "readbackStatus": "Deployed"
+        }
+      ],
+      "beforeStatus": "Testing",
+      "comment": {
+        "bodyDigest": "49299cd21ca7857872421ec793e5ad72e94d1859ff7bf25f275ef49094420c35",
+        "intentAt": "2026-11-16T19:00:14.137Z",
+        "id": "14862",
+        "readbackVerifiedAt": "2026-11-16T19:00:15.540Z"
+      },
+      "final": {
+        "at": "2026-11-16T19:00:16.929Z",
+        "status": "Deployed",
+        "commentId": "14862",
+        "attachments": [
+          {
+            "filename": "linked-paid-main-and-additional-bills.png",
+            "id": "13571"
+          },
+          {
+            "filename": "additional-bills-test-run.png",
+            "id": "13572"
+          }
+        ]
+      }
+    },
+    "SCRUM-991": {
+      "attachments": {
+        "parent-saved-selling-prices.png": {
+          "path": "C:\\oto-lanes\\tom-feedback-coordination-20261116\\docs\\qa\\jira-comments\\attachments\\SCRUM-990\\parent-saved-selling-prices.png",
+          "filename": "parent-saved-selling-prices.png",
+          "bytes": 40862,
+          "sha256": "24d5358d033ddada89e5a4c1c6ec46276b5d34930feec5ea66b4e3edd8bdb870",
+          "baselineIds": [],
+          "intentAt": "2026-11-16T19:00:17.580Z",
+          "id": "13573",
+          "readbackVerifiedAt": "2026-11-16T19:00:18.744Z"
+        },
+        "parent-current-quantity-four.png": {
+          "path": "C:\\oto-lanes\\tom-feedback-coordination-20261116\\docs\\qa\\jira-comments\\attachments\\SCRUM-990\\parent-current-quantity-four.png",
+          "filename": "parent-current-quantity-four.png",
+          "bytes": 9020,
+          "sha256": "ccc46982c05ed75e4724efd897a59d138dcae6a5c35ed9b419447298bb96c042",
+          "baselineIds": [
+            "13573"
+          ],
+          "intentAt": "2026-11-16T19:00:18.931Z",
+          "id": "13574",
+          "readbackVerifiedAt": "2026-11-16T19:00:20.194Z"
+        }
+      },
+      "transitions": [
+        {
+          "from": "Testing",
+          "to": "Deployed",
+          "id": "2",
+          "intentAt": "2026-11-16T19:00:22.347Z",
+          "requestSucceededAt": "2026-11-16T19:00:23.057Z",
+          "readbackStatus": "Deployed"
+        }
+      ],
+      "beforeStatus": "Testing",
+      "comment": {
+        "bodyDigest": "0794bbd9bce99a7526181af0169b3e939cea8ad982dae210395e667658e62e98",
+        "intentAt": "2026-11-16T19:00:20.674Z",
+        "id": "14863",
+        "readbackVerifiedAt": "2026-11-16T19:00:21.949Z"
+      },
+      "final": {
+        "at": "2026-11-16T19:00:23.899Z",
+        "status": "Deployed",
+        "commentId": "14863",
+        "attachments": [
+          {
+            "filename": "parent-saved-selling-prices.png",
+            "id": "13573"
+          },
+          {
+            "filename": "parent-current-quantity-four.png",
+            "id": "13574"
+          }
+        ]
+      }
+    },
+    "SCRUM-993": {
+      "attachments": {
+        "own-account-inbox-controls.png": {
+          "path": "C:\\oto-lanes\\tom-feedback-coordination-20261116\\docs\\qa\\jira-comments\\attachments\\SCRUM-993\\own-account-inbox-controls.png",
+          "filename": "own-account-inbox-controls.png",
+          "bytes": 56704,
+          "sha256": "9680ac5fcc982e0614dea0b2c04340dc00dc1220c7ab93d3626adbcdcc605f99",
+          "baselineIds": [],
+          "intentAt": "2026-11-16T19:00:24.267Z",
+          "id": "13575",
+          "readbackVerifiedAt": "2026-11-16T19:00:25.429Z"
+        },
+        "own-account-review-current-after.png": {
+          "path": "C:\\oto-lanes\\tom-feedback-coordination-20261116\\docs\\qa\\jira-comments\\attachments\\SCRUM-993\\own-account-review-current-after.png",
+          "filename": "own-account-review-current-after.png",
+          "bytes": 30275,
+          "sha256": "5a10786d7576cfd7b1f4353aeeeef960be8f4200c323d130670cc223ff7c5df1",
+          "baselineIds": [
+            "13575"
+          ],
+          "intentAt": "2026-11-16T19:00:25.615Z",
+          "id": "13576",
+          "readbackVerifiedAt": "2026-11-16T19:00:26.847Z"
+        },
+        "same-session-policy-test-run.png": {
+          "path": "C:\\oto-lanes\\tom-feedback-coordination-20261116\\docs\\qa\\jira-comments\\attachments\\SCRUM-993\\same-session-policy-test-run.png",
+          "filename": "same-session-policy-test-run.png",
+          "bytes": 132471,
+          "sha256": "31f04bbefba4100f9ecb8f817b36471b3e6f69850e0a8a29c03b22853e3e4ba3",
+          "baselineIds": [
+            "13575",
+            "13576"
+          ],
+          "intentAt": "2026-11-16T19:00:27.048Z",
+          "id": "13577",
+          "readbackVerifiedAt": "2026-11-16T19:00:28.371Z"
+        }
+      },
+      "transitions": [
+        {
+          "from": "Testing",
+          "to": "Deployed",
+          "id": "2",
+          "intentAt": "2026-11-16T19:00:30.111Z",
+          "requestSucceededAt": "2026-11-16T19:00:30.549Z",
+          "readbackStatus": "Deployed"
+        }
+      ],
+      "beforeStatus": "Testing",
+      "comment": {
+        "bodyDigest": "7476d7286e9c11557e3fe0ba50be2a82abae8606247d0918dbd10d58e359a931",
+        "intentAt": "2026-11-16T19:00:28.619Z",
+        "id": "14864",
+        "readbackVerifiedAt": "2026-11-16T19:00:29.740Z"
+      },
+      "final": {
+        "at": "2026-11-16T19:00:31.451Z",
+        "status": "Deployed",
+        "commentId": "14864",
+        "attachments": [
+          {
+            "filename": "own-account-inbox-controls.png",
+            "id": "13575"
+          },
+          {
+            "filename": "own-account-review-current-after.png",
+            "id": "13576"
+          },
+          {
+            "filename": "same-session-policy-test-run.png",
+            "id": "13577"
+          }
+        ]
+      }
+    }
+  },
+  "createdAt": "2026-11-16T18:59:51.116Z",
+  "updatedAt": "2026-11-16T19:00:31.452Z",
+  "completedAt": "2026-11-16T19:00:31.452Z"
+}
