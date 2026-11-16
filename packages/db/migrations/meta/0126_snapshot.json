@@ -1,5 +1,5 @@
 {
-  "id": "bbe65c69-10b6-4f14-8485-326f5f16687b",
+  "id": "d4055bea-5674-49a3-be1e-ff1392a9aec4",
   "prevId": "243cb253-8fdf-45a0-a24d-161af7ab3137",
   "version": "7",
   "dialect": "postgresql",
@@ -50337,8 +50337,8 @@
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
-        "prebooking_deposit_request_payment_attempt_id_payment_attempt_id_fk": {
-          "name": "prebooking_deposit_request_payment_attempt_id_payment_attempt_id_fk",
+        "prebooking_deposit_attempt_fk": {
+          "name": "prebooking_deposit_attempt_fk",
           "tableFrom": "prebooking_deposit_request",
           "tableTo": "payment_attempt",
           "schemaTo": "pos",

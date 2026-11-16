@@ -23,7 +23,7 @@ CREATE TABLE "pos"."prebooking_draft" (
 );
 --> statement-breakpoint
 ALTER TABLE "pos"."prebooking_deposit_request" ADD CONSTRAINT "prebooking_deposit_request_draft_id_prebooking_draft_id_fk" FOREIGN KEY ("draft_id") REFERENCES "pos"."prebooking_draft"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "pos"."prebooking_deposit_request" ADD CONSTRAINT "prebooking_deposit_request_payment_attempt_id_payment_attempt_id_fk" FOREIGN KEY ("payment_attempt_id") REFERENCES "pos"."payment_attempt"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "pos"."prebooking_deposit_request" ADD CONSTRAINT "prebooking_deposit_attempt_fk" FOREIGN KEY ("payment_attempt_id") REFERENCES "pos"."payment_attempt"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "pos"."prebooking_draft" ADD CONSTRAINT "prebooking_draft_operator_id_operator_id_fk" FOREIGN KEY ("operator_id") REFERENCES "core"."operator"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "pos"."prebooking_draft" ADD CONSTRAINT "prebooking_draft_branch_id_branch_id_fk" FOREIGN KEY ("branch_id") REFERENCES "core"."branch"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "pos"."prebooking_draft" ADD CONSTRAINT "prebooking_draft_account_id_account_id_fk" FOREIGN KEY ("account_id") REFERENCES "core"."account"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint

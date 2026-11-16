@@ -1,0 +1,295 @@
+{
+  "ticket": "SCRUM-987",
+  "recordedAt": "2026-11-16T16:29:34.450Z",
+  "baseSha": "e163113b326b79a862af4fba7b5fbf10b2622cbc",
+  "initialProductCommit": "a3d6f0d366ca285cc590ddea655c72b15c872a63",
+  "genericHookOriginal": "cbd9e66bf0ca4ad719bdd2dc70e22ddcd26c4175",
+  "genericHookLocal": "f63c615eb8a24207ae2c86e045b9bf51e415a897",
+  "productInputFingerprint": "cbbbbf9a7cf8f719e2cb87be03dfabbd217c2a3182de8f4f7366a8985f12e36f",
+  "results": {
+    "api": {
+      "uniqueControls": 211,
+      "initialIntegratedRun": {
+        "passed": 210,
+        "failed": 1,
+        "reason": "new archive fixture omitted required actor"
+      },
+      "unchangedWholeFilesPassed": 194,
+      "repairedCompleteReviewFile": {
+        "passed": 17,
+        "failed": 0
+      },
+      "singleInitiallyGreen211Run": false
+    },
+    "directApiTypecheckOutputBytes": 0,
+    "inboxCompilers": "both passed",
+    "generatedContracts": "match",
+    "platformInboxLintOutputBytes": 0,
+    "schema": "0126 verified against actual embedded PostgreSQL; explicit short FK repaired before application",
+    "appDirectoryControls": 10,
+    "appFloorControls": 6,
+    "appUiControls": 11,
+    "inboxTests": 468,
+    "inboxFiles": 29,
+    "inboxProductionBuild": "passed",
+    "appRatchet": {
+      "errors": 413,
+      "ceiling": 413,
+      "files": 54,
+      "increasedBuckets": 0
+    },
+    "forcedAppLint": {
+      "errors": 0,
+      "inheritedWarnings": 1,
+      "location": "tests/directory-inbox-event.check.ts:66 existing mixed-response any cast"
+    }
+  },
+  "limits": {
+    "mainPush": false,
+    "deployed": false,
+    "stagingExecuted": false,
+    "realGatewayMerchantAcceptance": false,
+    "dockerStarted": false,
+    "heavyProcessActive": false
+  },
+  "inputs": [
+    {
+      "path": "apps/api/src/plugins/idempotency.ts",
+      "sha256": "334e3ab046dfc49274785d9f5b6d0357769e8952d96be40e7ac3ae74a988eb23"
+    },
+    {
+      "path": "apps/api/src/plugins/permission.ts",
+      "sha256": "7da2f7508655e5f6eee8686b58289ce4c684ade15849a57f5cae11707f991957"
+    },
+    {
+      "path": "apps/api/src/routes/inbox-actions.ts",
+      "sha256": "0344e2fb543afb0b7308147946099d478fa35e53ad0427a9c4efadfa0da69059"
+    },
+    {
+      "path": "apps/api/src/services/inbox/book-date.ts",
+      "sha256": "7179d391b13a68c0ff995b9f5062f65e9e084928f9804a217732fc2bf9dcfe6d"
+    },
+    {
+      "path": "apps/api/src/services/inbox/prebooking.ts",
+      "sha256": "237ca5d9063b64ec710f222d14b4448c00d645a6eb62859e2c4641f6615826ae"
+    },
+    {
+      "path": "apps/api/src/services/otoapp-directory.ts",
+      "sha256": "1ef4ae4c1414966329f6ef80be107b4b11bcc2a9288abf5ccaf44fe2098bf7ef"
+    },
+    {
+      "path": "apps/api/src/services/party-deposit.ts",
+      "sha256": "b60ceb55905ea7ad64b5ad62924b9e96aa0c6e1a13e4fa0a0374ec20a222f4e7"
+    },
+    {
+      "path": "apps/api/test/idempotency-replay-authorization-review.test.ts",
+      "sha256": "4e7d6a03493adeacc64ca75dcb2dcbea4060aa5ec356a7441baefaf2f5a33154"
+    },
+    {
+      "path": "apps/api/test/inbox-book-date.test.ts",
+      "sha256": "12200697fe10783ad99dc5dc321cfc527142ecfa4ccbfe819871554a3352e576"
+    },
+    {
+      "path": "apps/api/test/prebooking-review.test.ts",
+      "sha256": "2b3fde24a6a319a950ce3f28d3231d7510101c2876d4921303d3ab04dad9d1ef"
+    },
+    {
+      "path": "apps/inbox/src/api/inbox.ts",
+      "sha256": "9be22e0f6362a18c935484d0727066942d517accfafd7eb2325b8e8c66e3181f"
+    },
+    {
+      "path": "apps/inbox/src/components/BookDateDialog.tsx",
+      "sha256": "c01ff78f407455b4e8666b8039cda6e1863416bfd4880add345ac5ed69aea434"
+    },
+    {
+      "path": "apps/inbox/src/components/ChatPanel.tsx",
+      "sha256": "3d5378fbeeead429bd7346e7fbd7f9616596d6aeca38de5c7ed6539523dff5bf"
+    },
+    {
+      "path": "apps/inbox/src/lib/beo.ts",
+      "sha256": "7755690bdbfd8cd4914ad1f56195af101d484ad26553d92e2f25f94d7c87ef77"
+    },
+    {
+      "path": "apps/inbox/test/book-date-814.test.ts",
+      "sha256": "5655939fc6619b542a18e7cf69605b3278880b158c660218cbf03ab129c9b47a"
+    },
+    {
+      "path": "apps/inbox/test/book-date-821.test.ts",
+      "sha256": "732ec3ca51b0ee925ddbbdb36adbfad2d109a7ab40abe0aec578afba82ef1ddc"
+    },
+    {
+      "path": "apps/inbox/test/book-date-826.test.ts",
+      "sha256": "e7b9f21b15fdf878e35764c35e68e4de571f4e3f24001e92ace3cdc0203da1a4"
+    },
+    {
+      "path": "apps/inbox/test/book-date-947.test.ts",
+      "sha256": "5238c4e45ac1527f9d7b2bd4c2e180b13e35d7e11c616195369a2ace115c7408"
+    },
+    {
+      "path": "apps/inbox/test/book-date-955.test.ts",
+      "sha256": "84438efb2dcb11010aa9a47783bad87673199a22d3056bf38bba2d73c03f1f72"
+    },
+    {
+      "path": "apps/inbox/test/book-date.test.ts",
+      "sha256": "cec6d5844e7ed67169795c62373ae1da01ea1d85c24ae1adbcd34c5ca21682f7"
+    },
+    {
+      "path": "apps/inbox/test/paid-prebooking-fixture.ts",
+      "sha256": "6d905368ccffcf9f88186bf65bab8a4279d71b07800f7be90c480944407fecc3"
+    },
+    {
+      "path": "apps/inbox/test/prebooking-987.test.ts",
+      "sha256": "bff41dfc68506afa2ac7ebcbfd16ccce2b7b45cf7d1c0e55e9208c878b4828a6"
+    },
+    {
+      "path": "apps/oto-app/client/src/components/beo/beo-till-billing.tsx",
+      "sha256": "94b584313fcab8bfb9b18564c5d8271509bd304c50c7bace2be2a72edf76229f"
+    },
+    {
+      "path": "apps/oto-app/server/directory/eventRoutes.ts",
+      "sha256": "ee7dba794d0f659373f28ba2c70caacc33a1107a43245af485e6fe3066f3082a"
+    },
+    {
+      "path": "apps/oto-app/server/directory/eventWrites.ts",
+      "sha256": "32565e35c7f65e87c9928b24b8f367502fcda0de996034dd90355e5d17cc2afd"
+    },
+    {
+      "path": "apps/oto-app/shared/partyDeposit.ts",
+      "sha256": "0f1efad318105bd6056dcc75127a75bca523f8a261fc0ec0bc08d242885f6202"
+    },
+    {
+      "path": "apps/oto-app/tests/directory-inbox-event.check.ts",
+      "sha256": "65f62f14721247e424a235ccba155bc44811fa928ef7792e3e1fd13fa2505d7f"
+    },
+    {
+      "path": "apps/oto-app/tests/party-deposit-ui.check.ts",
+      "sha256": "6cc569371199b50402f5fede7f05de1c99ccc231d681c4a954f9c77dc8542593"
+    },
+    {
+      "path": "apps/oto-app/tests/prebooking-floor.check.ts",
+      "sha256": "cca912b3748dcfff58676c02de39d6d62ad776e7ab690307207f4183f2966368"
+    },
+    {
+      "path": "packages/api-types/openapi.json",
+      "sha256": "38426b3d00f4ffcc5f4c94c84fc1e3096676b0b631a0c05d84945da3be465404"
+    },
+    {
+      "path": "packages/api-types/src/openapi.ts",
+      "sha256": "9df1e7fc79f04cc1db68fb72ab97eb9e54105ce2d9d8dbbe370ad4afa5cb2369"
+    },
+    {
+      "path": "packages/db/migrations/0126_prebooking_gateway_deposit.sql",
+      "sha256": "e5de71742dc1e915a99af0fbc8b8a3dadbb920041026d229252e53c8cc503f27"
+    },
+    {
+      "path": "packages/db/migrations/meta/0126_snapshot.json",
+      "sha256": "e578fd3f3829fb47c3ee6c87be52dee42cfd7e2247f5e325af633a84802e6dfb"
+    },
+    {
+      "path": "packages/db/migrations/meta/_journal.json",
+      "sha256": "546c75bf597c7e808adfc91e811368648c497604c739998f1850e3d3bc9dce6d"
+    },
+    {
+      "path": "packages/db/src/schema/index.ts",
+      "sha256": "a1198e071b1b50e9bb070f812ae07826de7a7214c71cf846a7a82c861504c451"
+    },
+    {
+      "path": "packages/db/src/schema/prebooking.ts",
+      "sha256": "543310af77f9d8ddf7c129294795281369240a3a43e6cd7e4bf6a515944c2016"
+    },
+    {
+      "path": "packages/shared/src/inbox-actions.ts",
+      "sha256": "ad2f42d89cc2eb15a8aea971f3bce35c085f9d6787e70273908b8a37490df84c"
+    },
+    {
+      "path": "packages/shared/src/inbox.ts",
+      "sha256": "2691a20a8113a233bb09f4c2239c474c122c701c51b4872e4c98998059c80079"
+    },
+    {
+      "path": "packages/shared/src/party-deposit.ts",
+      "sha256": "db97890cddcdcf0eb9b8ddd9ae5bf2b25842181b33fbedc0cd4dd3bc64b80e5c"
+    }
+  ],
+  "logs": [
+    {
+      "path": "work-deposit-integrated-api.log",
+      "bytes": 49574,
+      "sha256": "46e18cc09e3dcef4cedcb1f4980ee9c27d2c09aae48bc5a7ca3d2ebd7fc2dcb6"
+    },
+    {
+      "path": "work-deposit-release-api.log",
+      "bytes": 72904,
+      "sha256": "df52e0c9e62f5e4d479af3cece762386618435f52e369451fbcc3c11d89ad4e9"
+    },
+    {
+      "path": "work-deposit-release-review-repair.log",
+      "bytes": 9914,
+      "sha256": "8ddd7360b175117409b024f663a39744aaec999665a0a256cd6ae56684eeaa1b"
+    },
+    {
+      "path": "work-deposit-release-api-types.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "work-deposit-release-inbox-types.log",
+      "bytes": 312,
+      "sha256": "4a11fc7241ed160db58e6f1b92f33a0569d47e04aae640444d9232331d72bad1"
+    },
+    {
+      "path": "work-deposit-release-contracts.log",
+      "bytes": 1988,
+      "sha256": "7366103fbe716262bcac2ac0735a1fa87ef9903687914f71ca09ffbce89acbe2"
+    },
+    {
+      "path": "work-deposit-release-lint.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "work-deposit-schema.log",
+      "bytes": 6502,
+      "sha256": "b8b07c8ce110284cc7b30da74a1ffecc44699f1de5798e238449e11b8a9c5f7b"
+    },
+    {
+      "path": "work-deposit-schema-final.log",
+      "bytes": 5316,
+      "sha256": "df20b1e32b667c33409b27282bacc49c7427d64a2970a11cd32527e9e21852ec"
+    },
+    {
+      "path": "work-deposit-app-directory.log",
+      "bytes": 4996,
+      "sha256": "52f9a20adbbba1bd2503acacf393502482c0617b0b87847bf62551db35175dc2"
+    },
+    {
+      "path": "work-deposit-floor.log",
+      "bytes": 88,
+      "sha256": "498dfef84f730dc02ace977e1bbd73b604c3d1e5b92ad6e05b57cba9f272c6b8"
+    },
+    {
+      "path": "work-deposit-app-ui.log",
+      "bytes": 2988,
+      "sha256": "e9066c3549e7ced958ee6626d6e3b0f6e38ce76a08bf541f45a3619b03181d02"
+    },
+    {
+      "path": "work-deposit-inbox-integrated.log",
+      "bytes": 3394,
+      "sha256": "efc5b70076f901e1599b23352ee9c173f64a89da14dfdf5b9b501c8644eaa3fa"
+    },
+    {
+      "path": "work-deposit-inbox-build.log",
+      "bytes": 1254,
+      "sha256": "d87f9289b1fc43590852f93ae8ee01b5ffe4b71cfd805705d4d56b99f2684036"
+    },
+    {
+      "path": "work-deposit-app-ratchet-final.log",
+      "bytes": 265142,
+      "sha256": "56f6a27c4540a8f9ddf8ef48af254581447c16d7f025e723b6a0b1a9a6ae7b7e"
+    },
+    {
+      "path": "work-deposit-app-lint.log",
+      "bytes": 456,
+      "sha256": "fb58b41687043689b4359486c905ca6859ec5df53370b31eff30451b484244d0"
+    }
+  ]
+}

@@ -95,11 +95,11 @@ const directory: OtoAppDirectory = {
     };
   },
 };
-const post = (conversationId: string, route: string, payload: unknown, auth = cookie) =>
+const post = (conversationId: string, route: string, payload: unknown, auth = cookie, key = newId()) =>
   ctx.app.inject({
     method: 'POST',
     url: `/inbox/conversations/${conversationId}/${route}`,
-    headers: { cookie: auth, 'idempotency-key': newId() },
+    headers: { cookie: auth, 'idempotency-key': key },
     payload: payload as never,
   });
 const read = async (conversationId: string) =>
@@ -263,6 +263,31 @@ afterAll(async () => {
 });
 
 describe('SCRUM-987 passing adversarial pins', () => {
+  it('P0: a cached deposit response rechecks the manager authority and retains byte-exact authorized replay', async () => {
+    const f = await fixture(); const key = newId();
+    const first = await post(f.conversationId, 'prebooking', f.request, managerCookie, key);
+    expect(first.statusCode, first.body).toBe(200);
+    const replay = await post(f.conversationId, 'prebooking', f.request, managerCookie, key);
+    expect(replay.statusCode).toBe(200); expect(replay.body).toBe(first.body);
+    const [manager] = await ctx.db.select().from(s.account).where(eq(s.account.phone, BRANCH_MANAGER.phone));
+    const grants = await ctx.db.select().from(s.roleAssignment).where(eq(s.roleAssignment.accountId, manager!.id));
+    await ctx.db.delete(s.roleAssignment).where(eq(s.roleAssignment.accountId, manager!.id));
+    try {
+      const refused = await post(f.conversationId, 'prebooking', f.request, managerCookie, key);
+      expect(refused.statusCode).toBe(403);
+      expect(await ctx.db.select().from(s.prebookingDepositRequest).where(eq(s.prebookingDepositRequest.draftId, f.booking.id))).toHaveLength(1);
+    } finally { await ctx.db.insert(s.roleAssignment).values(grants); }
+  });
+  it('P0: a cached booking response rechecks current conversation visibility without creating another event', async () => {
+    const f = await fixture(); const d = await requested(f); await pay(d); const key = newId();
+    const made = await post(f.conversationId, 'book-date', f.booking, birthdayCookie, key);
+    expect(made.statusCode, made.body).toBe(200);
+    const callsBefore = calls.length;
+    await ctx.db.update(s.conversation).set({ archivedAt: new Date(), archivedByAccountId: accountId }).where(eq(s.conversation.id, f.conversationId));
+    const refused = await post(f.conversationId, 'book-date', f.booking, birthdayCookie, key);
+    expect(refused.statusCode).toBe(404); expect(calls.length).toBe(callsBefore);
+    expect(events.get(d.id)?.inboxConversationId).toBe(f.conversationId);
+  });
   it('P0: only scoped managers choose/request the amount; the birthdays team can read and explicitly book the gateway-paid draft', async () => {
     const f = await fixture();
     expect((await post(f.conversationId, 'prebooking', f.request, birthdayCookie)).statusCode).toBe(

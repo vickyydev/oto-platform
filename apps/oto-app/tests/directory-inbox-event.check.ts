@@ -69,8 +69,10 @@ async function post(body: unknown, key: string | null = keys.fresh) {
 const count = async (sql: string, params: unknown[]) =>
   Number((await pool.query<{ n: string }>(`select count(*) as n from ${sql}`, params)).rows[0]!.n);
 
-const booking = (over: Record<string, unknown> = {}) => ({
-  id: randomUUID(),
+const booking = (over: Record<string, unknown> = {}) => {
+  const id = typeof over.id === "string" ? over.id : randomUUID();
+  return {
+  id,
   coreBranchId: coreBranches.fresh,
   inboxConversationId: conversation.a,
   title: "ZZ TEST Mali's Birthday",
@@ -82,8 +84,10 @@ const booking = (over: Record<string, unknown> = {}) => ({
   kidTurningAge: 6,
   bookingName: "ZZ TEST Parent",
   whatsappPhone: "+66812345678",
+  verifiedDeposit: { draftId: id, attemptId: randomUUID(), amountSatang: 300_000, paidDate: "2026-11-18", provider: "simulator" },
   ...over,
-});
+};
+};
 
 try {
   await pool.query(
@@ -148,6 +152,13 @@ try {
     assert.equal(await count("event_statuses where tenant_id = $1", [tenants.fresh]), 0, "no status for a refusal");
   });
 
+  await check("gatewayDepositRequired", async () => {
+    const res = await post(booking({ verifiedDeposit: undefined }));
+    assert.equal(res.status, 409);
+    assert.equal(res.body.error, "deposit_required");
+    assert.equal(await count("core_events where tenant_id = $1", [tenants.fresh]), 0);
+  });
+
   const first = booking();
   await check("tentativeBirthday", async () => {
     const res = await post(first);
@@ -177,6 +188,12 @@ try {
     assert.equal(row.status, "tentative");
     assert.equal(row.inbox_conversation_id, conversation.a);
     assert.equal(row.is_archived, false);
+    assert.equal(row.prepayment_amount, 3000);
+    assert.equal(row.prepayment_date, "2026-11-18");
+    const billing = await pool.query(`select deposit_paid_amount, add_ons->'prebookingDeposit' as receipt from beo_event_billing where event_id=$1`, [first.id]);
+    assert.equal(billing.rows.length, 1);
+    assert.equal(billing.rows[0].deposit_paid_amount, 3000);
+    assert.deepEqual(billing.rows[0].receipt, first.verifiedDeposit);
   });
 
   await check("defaultsThenTentative", async () => {
@@ -201,6 +218,10 @@ try {
     assert.equal(again.status, 200);
     assert.equal(again.body.replayed, true);
     assert.equal(again.body.event.id, first.id);
+    const mismatch = await post({ ...first, verifiedDeposit: { ...first.verifiedDeposit, amountSatang: 100 } });
+    assert.equal(mismatch.status, 409);
+    assert.equal(mismatch.body.error, "deposit_receipt_mismatch");
+    assert.equal(await count("beo_event_billing where event_id = $1", [first.id]), 1);
     const racing = booking();
     const three = await Promise.all([post(racing), post(racing), post(racing)]);
     assert.deepEqual(three.map((r) => r.status).sort(), [200, 200, 201]);
@@ -268,4 +289,4 @@ try {
 }
 
 console.log(JSON.stringify({ results, failures }, null, 2));
-if (Object.values(results).some((ok) => !ok) || Object.keys(results).length !== 9) process.exit(1);
+if (Object.values(results).some((ok) => !ok) || Object.keys(results).length !== 10) process.exit(1);

@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 import {
   bigint,
   check,
+  foreignKey,
   index,
   jsonb,
   text,
@@ -59,12 +60,11 @@ export const prebookingDepositRequest = pos.table(
     draftId: uuid('draft_id')
       .notNull()
       .references(() => prebookingDraft.id, { onDelete: 'restrict' }),
-    paymentAttemptId: uuid('payment_attempt_id')
-      .notNull()
-      .references(() => paymentAttempt.id, { onDelete: 'restrict' }),
+    paymentAttemptId: uuid('payment_attempt_id').notNull(),
     ...timestamps,
   },
   (t) => [
+    foreignKey({ name: 'prebooking_deposit_attempt_fk', columns: [t.paymentAttemptId], foreignColumns: [paymentAttempt.id] }).onDelete('restrict'),
     uniqueIndex('prebooking_deposit_attempt_unique').on(t.paymentAttemptId),
     index('prebooking_deposit_draft_idx').on(t.draftId, t.createdAt),
   ],

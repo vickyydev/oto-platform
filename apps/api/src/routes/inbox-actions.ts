@@ -23,8 +23,8 @@ import { PermissionDeniedError, SESSION_COOKIE } from '../plugins/session';
 import { opCtx, withTx } from '../services/tx';
 import { REPLAY_HEADER, wasReplay } from '../services/client-id';
 import { handoffConfig } from '../services/handoff';
-import { bookConversationDate, openConversationBeo } from '../services/inbox/book-date';
-import { readPrebooking, requestPrebookingDeposit } from '../services/inbox/prebooking';
+import { authorizePrebooking, bookConversationDate, openConversationBeo } from '../services/inbox/book-date';
+import { assertPrebookingRequestAuthority, readPrebooking, requestPrebookingDeposit } from '../services/inbox/prebooking';
 import { holdsAnywhere, viewerScopeOf } from '../services/inbox/read-visibility';
 import {
   addSupport,
@@ -238,7 +238,15 @@ export async function inboxActionRoutes(app: App): Promise<void> {
   app.post(
     '/conversations/:id/prebooking',
     {
-      config: { dynamicPermission: true },
+      config: {
+        dynamicPermission: true,
+        authorizeReplay: async (req) => {
+          const ctx = await actionCtx(req, 'inbox:conversation:read');
+          const body = InboxPrebookingRequestSchema.parse(req.body);
+          await authorizePrebooking(app.db, ctx, ConversationParams.parse(req.params).id, body.booking.branchId);
+          assertPrebookingRequestAuthority(ctx, body.booking.branchId);
+        },
+      },
       schema: {
         description:
           'Request the agreed whole-baht deposit before booking. Reuses the payment gateway and original attempt ledger; never creates a calendar event.',
@@ -265,7 +273,12 @@ export async function inboxActionRoutes(app: App): Promise<void> {
   app.post(
     '/conversations/:id/book-date',
     {
-      config: { dynamicPermission: true },
+      config: {
+        dynamicPermission: true,
+        authorizeReplay: async (req) => {
+          await authorizePrebooking(app.db, await actionCtx(req, 'inbox:conversation:read'), ConversationParams.parse(req.params).id, InboxBookDateBodySchema.parse(req.body).branchId);
+        },
+      },
       schema: {
         description:
           'New bookings require the full agreed prebooking deposit verified by the gateway; manual receipts, slips and AI readings cannot unlock creation. Staff check capacity; payment never auto-books. ' +

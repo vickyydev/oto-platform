@@ -46,6 +46,11 @@ type Draft = typeof prebookingDraft.$inferSelect;
 const TERMINAL_UNPAID = new Set(['declined', 'cancelled', 'not_found']);
 const payloadOf = (attempt: AttemptRow) => (attempt.payload ?? {}) as Record<string, unknown>;
 
+/** Shared by the action and its read-only HTTP replay authorization. */
+export function assertPrebookingRequestAuthority(ctx: ActionCtx, branchId: string): void {
+  if (!hasPermission(ctx.effective, 'inbox:conversation:assign', { operatorId: ctx.viewer.operatorId, branchId })) throw new PermissionDeniedError('inbox:conversation:assign');
+}
+
 /** Only the gateway settlement writer supplies this provenance, after inquiry agreement. */
 export function verifiedPrebookingAttempt(
   draft: Pick<Draft, 'id' | 'operatorId' | 'branchId' | 'amountSatang' | 'currency'>,
@@ -328,13 +333,7 @@ export async function requestPrebookingDeposit(
   const conv = await authorizePrebooking(db, ctx, conversationId, input.booking.branchId);
   // Match the existing manager-only Billing press using the Inbox's scoped
   // manager authority. A conversation assignment itself grants no money action.
-  if (
-    !hasPermission(ctx.effective, 'inbox:conversation:assign', {
-      operatorId: ctx.viewer.operatorId,
-      branchId: input.booking.branchId,
-    })
-  )
-    throw new PermissionDeniedError('inbox:conversation:assign');
+  assertPrebookingRequestAuthority(ctx, input.booking.branchId);
   if (
     conv.eventOrderRef &&
     !isRemovedStanding(await eventStandingOf(db, ctx.viewer.operatorId, conv.eventOrderRef))
