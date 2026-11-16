@@ -32,6 +32,7 @@ import {
   PartyPopper,
 } from 'lucide-react';
 import { bahtText } from '@/lib/bahtText';
+import { additionalBillParty, openAdditionalBillId } from '@/lib/partyAdditionalBills';
 
 interface PartyBalanceModalProps {
   displayHandoff?: StationDisplayHandoff;
@@ -86,12 +87,9 @@ export function PartyBalanceModal({
   onBillMoved,
   displayHandoff,
 }: PartyBalanceModalProps) {
-  const [selectedBillId, setSelectedBillId] = useState(() => party.additionalBills?.find((bill) => bill.state === 'open')?.id ?? '');
+  const [selectedBillId, setSelectedBillId] = useState(() => openAdditionalBillId(party));
   const selectedBill = party.additionalBills?.find((bill) => bill.id === selectedBillId);
-  const billingParty = selectedBill ? { ...party, basePrice: 0, deposit: 0, availableDeposit: 0,
-    partyExtraCharges: party.partyExtraCharges.filter((charge) => selectedBill.charges.some((row) => row.id === charge.id)),
-    partyPayments: party.partyPayments.filter((payment) => selectedBill.payments.some((row) => row.id === payment.id)),
-  } : party;
+  const billingParty = additionalBillParty(party, selectedBillId);
   const total = selectedBill ? selectedBill.totalSatang / 100 : computePartyTotal(party);
   const outstanding = selectedBill ? selectedBill.outstandingSatang / 100 : computePartyOutstanding(party);
   const extras = partyExtraChargesTotal(billingParty);
@@ -124,7 +122,7 @@ export function PartyBalanceModal({
 
   useEffect(() => {
     if (open) {
-      setSelectedBillId(party.additionalBills?.find((bill) => bill.state === 'open')?.id ?? '');
+      setSelectedBillId(openAdditionalBillId(party));
       setCollectBillId(undefined);
       setStage('review');
       setMode('full');
@@ -139,7 +137,7 @@ export function PartyBalanceModal({
 
   useEffect(() => {
     if (!open || stage !== 'review') return;
-    setSelectedBillId((selected) => party.additionalBills?.some((bill) => bill.id === selected && bill.state === 'open') ? selected : party.additionalBills?.find((bill) => bill.state === 'open')?.id ?? '');
+    setSelectedBillId((selected) => openAdditionalBillId(party, selected));
   }, [open, party.id, party.additionalBills, stage]);
 
   const amount = useMemo(() => {

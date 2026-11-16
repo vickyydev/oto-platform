@@ -157,6 +157,7 @@ export function MobileParties() {
     shownOutstanding: number,
     // SCRUM-732 — a routed tender that has answered names the ids it was opened under.
     tender?: PartyTenderPress,
+    additionalBillId?: string,
   ): Promise<PartyPaymentConfirmation> => {
     // Nothing is sent in either case below: the same press may go again.
     if (!operator || !selectedEvent || selectedEvent.type !== 'party') return { recorded: false, retry: true };
@@ -170,8 +171,9 @@ export function MobileParties() {
       amount,
       method,
       outstanding: shownOutstanding,
+      additionalBillId,
       stationId: station.stationId,
-      ids: tender?.ids ?? idsFor('payment', partyPaymentPress(amount, method, shownOutstanding)),
+      ids: tender?.ids ?? idsFor('payment', `${additionalBillId ?? 'tab'}:${partyPaymentPress(amount, method, shownOutstanding)}`),
       ...(tender?.slip ? { slip: tender.slip } : {}),
     });
     settled('payment', outcome, 'Payment not recorded', PARTY_PAYMENT_NOT_CONFIRMED);

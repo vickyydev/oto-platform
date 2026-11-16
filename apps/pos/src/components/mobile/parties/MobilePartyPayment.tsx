@@ -25,6 +25,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ArrowLeft, Check, Wallet } from 'lucide-react';
 import { bahtText } from '@/lib/bahtText';
+import { additionalBillParty, openAdditionalBillId } from '@/lib/partyAdditionalBills';
 
 type Step = 'pick' | 'bill-review' | 'collect' | 'done';
 
@@ -56,6 +57,7 @@ interface MobilePartyPaymentProps {
     method: PartyPaymentMethod,
     shownOutstanding: number,
     tender?: PartyTenderPress,
+    additionalBillId?: string,
   ) => void | PartyPaymentConfirmation | Promise<PartyPaymentConfirmation>;
   onBack: () => void;
   /** SCRUM-732 — the counter a QR or a card is taken at, routed by its own setup. */
@@ -77,10 +79,14 @@ export function MobilePartyPayment({
   displayHandoff,
 }: MobilePartyPaymentProps) {
   const { t } = useLanguage();
-  const total = computePartyTotal(party);
-  const outstanding = computePartyOutstanding(party);
-  const extras = partyExtraChargesTotal(party);
-  const paid = partyPaymentsTotal(party);
+  const [selectedBillId, setSelectedBillId] = useState(() => openAdditionalBillId(party));
+  const [collectBillId, setCollectBillId] = useState<string | undefined>();
+  const selectedBill = party.additionalBills?.find((bill) => bill.id === selectedBillId);
+  const billingParty = additionalBillParty(party, selectedBillId);
+  const total = selectedBill ? selectedBill.totalSatang / 100 : computePartyTotal(party);
+  const outstanding = selectedBill ? selectedBill.outstandingSatang / 100 : computePartyOutstanding(party);
+  const extras = partyExtraChargesTotal(billingParty);
+  const paid = selectedBill ? selectedBill.paidSatang / 100 : partyPaymentsTotal(party);
 
   const methods = getEnabledPaymentMethods();
 
@@ -98,6 +104,8 @@ export function MobilePartyPayment({
 
   useEffect(() => {
     setStep('pick');
+    setSelectedBillId(openAdditionalBillId(party));
+    setCollectBillId(undefined);
     setMode('full');
     setPartialText('');
     setMethod('');
@@ -107,17 +115,22 @@ export function MobilePartyPayment({
     setRecording(false);
   }, [party.id]);
 
+  useEffect(() => {
+    if (step === 'pick') setSelectedBillId((selected) => openAdditionalBillId(party, selected));
+  }, [party.id, party.additionalBills, step]);
+
   const amount = useMemo(() => {
     if (mode === 'full') return outstanding;
-    const n = Math.floor(Number(partialText));
+    const n = selectedBill ? Math.round(Number(partialText) * 100) / 100 : Math.floor(Number(partialText));
     if (!Number.isFinite(n) || n <= 0) return 0;
     return Math.min(n, outstanding);
-  }, [mode, partialText, outstanding]);
+  }, [mode, partialText, outstanding, selectedBill]);
 
   const canContinue = !!method && amount > 0 && outstanding > 0;
 
   const handleContinue = () => {
     if (!method || amount <= 0) return;
+    setCollectBillId(selectedBill?.id);
     setCollectAmount(amount);
     setCollectMethod(method);
     setCollectOutstanding(outstanding);
@@ -132,7 +145,8 @@ export function MobilePartyPayment({
   // the money is in, and only then does the platform's record of it come back.
   const routed = ['card', 'qr'].includes(paymentMethodKind(collectMethod));
   const tender = usePartyTender({
-    scope: `party-balance:${party.id}:${collectMethod}:${collectAmount}:${collectOutstanding}`,
+    scope: `party-balance:${party.id}:${collectBillId ?? "tab"}:${collectMethod}:${collectAmount}:${collectOutstanding}`,
+    additionalBillId: collectBillId,
     active: step === 'collect' && routed,
     paused: Boolean(paused),
     party,
@@ -141,7 +155,7 @@ export function MobilePartyPayment({
     method: collectMethod,
     outstanding: collectOutstanding,
     record: async (press) =>
-      (await onConfirm(collectAmount, collectMethod, collectOutstanding, press)) ?? { recorded: true, amount: collectAmount },
+      (await onConfirm(collectAmount, collectMethod, collectOutstanding, press, collectBillId)) ?? { recorded: true, amount: collectAmount },
     onRecorded: (recorded) => {
       setCollectAmount(recorded);
       setStep('done');
@@ -160,7 +174,7 @@ export function MobilePartyPayment({
     if (collectAmount <= 0 || recording) return;
     setRecording(true);
     try {
-      const result = await onConfirm(collectAmount, collectMethod, collectOutstanding);
+      const result = await onConfirm(collectAmount, collectMethod, collectOutstanding, undefined, collectBillId);
       if (result && !result.recorded) {
         if (!result.retry) setStep('pick');
         return;
@@ -186,7 +200,7 @@ export function MobilePartyPayment({
       >
         <PartySettlementCustomerScreen
           stage={customerStage}
-          party={party}
+          party={additionalBillParty(party, collectBillId ?? "")}
           amount={collectAmount}
           method={collectMethod}
         />
@@ -273,7 +287,7 @@ export function MobilePartyPayment({
   }
 
   if (step === 'done') {
-    const newOutstanding = computePartyOutstanding(party);
+    const newOutstanding = collectBillId ? (party.additionalBills?.find((bill) => bill.id === collectBillId)?.outstandingSatang ?? 0) / 100 : computePartyOutstanding(party);
     return (
       <div className="h-full flex flex-col overflow-hidden">
         <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
@@ -328,6 +342,15 @@ export function MobilePartyPayment({
 
       <ScrollArea className="flex-1">
         <div className="p-4 space-y-5">
+          {(party.additionalBills?.length ?? 0) > 0 && (
+            <label className="block space-y-2 text-sm">
+              <span>Bill to collect</span>
+              <select id="additional-party-bill" className="w-full rounded border bg-background p-3" value={selectedBillId} onChange={(event) => { setSelectedBillId(event.target.value); setPartialText(''); }}>
+                <option value="">Older unassigned tab</option>
+                {party.additionalBills?.filter((bill) => bill.state === 'open').map((bill) => <option key={bill.id} value={bill.id}>Additional bill {bill.id.slice(0, 8)} ? ?{bahtText(bill.outstandingSatang / 100)}</option>)}
+              </select>
+            </label>
+          )}
           {/* Bill summary */}
           <div className="rounded-lg border p-4 space-y-2 text-sm">
             <div className="flex items-center justify-between">
@@ -342,7 +365,7 @@ export function MobilePartyPayment({
             )}
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Deposit paid</span>
-              <span className="tabular-nums">−฿{bahtText(party.availableDeposit ?? party.deposit)}</span>
+              <span className="tabular-nums">−฿{bahtText(billingParty.availableDeposit ?? billingParty.deposit)}</span>
             </div>
             {paid > 0 && (
               <div className="flex items-center justify-between">
@@ -386,8 +409,9 @@ export function MobilePartyPayment({
                 {mode === 'partial' && (
                   <Input
                     type="number"
-                    inputMode="numeric"
-                    min={1}
+                    inputMode={selectedBill ? "decimal" : "numeric"}
+                    min={selectedBill ? 0.01 : 1}
+                    step={selectedBill ? 0.01 : 1}
                     max={outstanding}
                     autoFocus
                     placeholder={`Up to ฿${bahtText(outstanding)}`}

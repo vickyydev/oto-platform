@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { describe, expect, it, vi } from 'vitest';
+import { MobilePartyPayment } from '@/components/mobile/parties/MobilePartyPayment';
 import { PartyBalanceModal } from '@/components/parties/PartyBalanceModal';
 import type { PartyBooking } from '@/types';
 import type { PartyAdditionalBill } from '@oto/shared';
@@ -11,6 +12,7 @@ vi.mock('react', async (original) => {
   const hooks = await import('./support/hooks');
   return { ...real, useState: hooks.useState, useRef: hooks.useRef, useMemo: hooks.useMemo, useEffect: hooks.useEffect, useCallback: hooks.useCallback };
 });
+vi.mock('@/i18n/LanguageContext', () => ({ useLanguage: () => ({ t: (key: string) => key }) }));
 vi.mock('@/lib/customerDisplayPref', () => ({ useCustomerDisplayPref: () => [false, () => undefined] }));
 vi.mock('@/lib/themePref', () => ({ useCustomerTheme: () => ['dark', () => undefined] }));
 vi.mock('@/lib/tenderDisplay', () => ({ useTenderPresentation: () => undefined }));
@@ -60,6 +62,45 @@ describe('SCRUM-990 additional-bill payment component review', () => {
   it('keeps legacy unassigned-tab partial controls in whole baht', () => {
     const old = { ...party('legacy', []), basePrice: 100 };
     const view = renderHook((value: ReturnType<typeof props>) => PartyBalanceModal(value), props(old));
+    (partial(view.result.current).props.onClick as () => void)();
+    expect(nodes(view.result.current).find((node) => node.props.type === 'number')!.props).toMatchObject({ inputMode: 'numeric', min: 1, step: 1 });
+    view.unmount();
+  });
+});
+
+
+describe('SCRUM-990 mobile additional-bill compatibility', () => {
+  it('selects an open bill and retains its final-satang target through cash retry and party refresh', async () => {
+    const onConfirm = vi.fn().mockResolvedValue({ recorded: false, retry: true });
+    const make = (value: PartyBooking) => ({ party: value, operatorName: 'ZZ TEST staff', onConfirm, onBack: vi.fn() });
+    const view = renderHook((value: ReturnType<typeof make>) => MobilePartyPayment(value), make(party('mobile', [bill('bill-one', 1), bill('bill-two', 200)])));
+    expect(selected(view.result.current)).toBe('bill-one');
+    const select = nodes(view.result.current).find((node) => node.props.id === 'additional-party-bill')!;
+    (select.props.onChange as (event: unknown) => void)({ target: { value: 'bill-two' } });
+    expect(selected(view.result.current)).toBe('bill-two');
+    (select.props.onChange as (event: unknown) => void)({ target: { value: 'bill-one' } });
+    (partial(view.result.current).props.onClick as () => void)();
+    const input = nodes(view.result.current).find((node) => node.props.type === 'number')!;
+    expect(input.props).toMatchObject({ inputMode: 'decimal', min: 0.01, step: 0.01 });
+    (input.props.onChange as (event: unknown) => void)({ target: { value: '0.01' } });
+    (nodes(view.result.current).find((node) => node.props.className === 'h-14 flex-col gap-1')!.props.onClick as () => void)();
+    const take = nodes(view.result.current).find((node) => Array.isArray(node.props.children) && node.props.children.some((child) => typeof child === 'string' && child.startsWith('Show bill')))!;
+    (take.props.onClick as () => void)();
+    expect(seam.options).toMatchObject({ additionalBillId: 'bill-one', amount: 0.01 });
+    (nodes(view.result.current).find((node) => typeof node.props.onDone === 'function')!.props.onDone as () => void)();
+    const received = () => nodes(view.result.current).find((node) => Array.isArray(node.props.children) && node.props.children.includes('Payment received'))!;
+    await (received().props.onClick as () => Promise<void>)();
+    await Promise.resolve();
+    view.rerender(make(party('mobile', [bill('bill-one', 0), bill('bill-two', 200)])));
+    expect(seam.options).toMatchObject({ additionalBillId: 'bill-one', amount: 0.01 });
+    await (received().props.onClick as () => Promise<void>)();
+    await Promise.resolve();
+    expect(onConfirm).toHaveBeenCalledTimes(2);
+    expect(onConfirm.mock.calls.every((call) => call[0] === 0.01 && call[2] === 0.01 && call[4] === 'bill-one')).toBe(true);
+    view.unmount();
+  });
+  it('keeps legacy mobile tab amounts in whole baht', () => {
+    const view = renderHook(() => MobilePartyPayment({ party: { ...party('legacy', []), basePrice: 100 }, operatorName: 'staff', onConfirm: vi.fn(), onBack: vi.fn() }));
     (partial(view.result.current).props.onClick as () => void)();
     expect(nodes(view.result.current).find((node) => node.props.type === 'number')!.props).toMatchObject({ inputMode: 'numeric', min: 1, step: 1 });
     view.unmount();

@@ -271,6 +271,16 @@ describe('the party tab, on the platform', () => {
     );
   });
 
+  it('sends the explicit additional-bill target and exact satang unchanged on retry', async () => {
+    postMock.mockRejectedValueOnce(new NetworkError('offline'));
+    postMock.mockResolvedValueOnce(answer(partyView()));
+    const request = { party: asParty(partyView()), amount: 0.01, method: 'cash', outstanding: 0.01, stationId: TILL, ids, additionalBillId: '0190a0a0-0000-7000-8000-00000000b990' };
+    expect(await payPartyOnPlatform(request)).toMatchObject({ ok: false, retryable: true });
+    expect((await payPartyOnPlatform(request)).ok).toBe(true);
+    expect(postMock.mock.calls[0]).toEqual(postMock.mock.calls[1]);
+    expect(postMock.mock.calls[1]?.[1]).toMatchObject({ additionalBillId: request.additionalBillId, amountSatang: 1, expectedOutstandingSatang: 1 });
+  });
+
   it('a refusal is final for these ids; no answer at all may be sent again under them', async () => {
     postMock.mockRejectedValueOnce(new ApiError(409, 'PARTY_BALANCE_CHANGED', 'The balance changed'));
     const refused = await payPartyOnPlatform({ party: asParty(partyView()), amount: 100, method: 'cash', outstanding: 5_370, stationId: TILL, ids });
