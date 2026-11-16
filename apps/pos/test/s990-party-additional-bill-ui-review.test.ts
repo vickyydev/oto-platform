@@ -62,11 +62,12 @@ describe('SCRUM-990 additional-bill payment component review', () => {
     view.unmount();
   });
   it('projects only the selected bill on the customer display, leaving original package add-ons outside it', () => {
-    const source = { ...party('party', [bill('bill-one', 1)]), basePrice: 500, lineItems: [{ id: 'old-main-addon', name: 'Original package extra', qty: 2, price: 100 }] };
+    const source = { ...party('party', [bill('bill-one', 1)]), basePrice: 500, lineItems: [{ id: 'old-main-addon', name: 'Original package extra', qty: 2, price: 100 }], partyExtraCharges: [{ id: 'new-charge', total: 0.01 }] } as unknown as PartyBooking;
+    source.additionalBills![0]!.charges = [{ id: 'new-charge' } as PartyAdditionalBill['charges'][number]];
     const shown = additionalBillParty(source, 'bill-one');
     expect(shown.lineItems).toEqual([]);
     expect(shown.packageName).toBe('Additional bill bill-one');
-    expect(computePartyTotal(shown)).toBe(0);
+    expect(computePartyTotal(shown)).toBe(0.01);
     expect(source.lineItems).toHaveLength(1);
   });
   it('keeps legacy unassigned-tab partial controls in whole baht', () => {
