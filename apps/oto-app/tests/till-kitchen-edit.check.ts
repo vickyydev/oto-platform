@@ -245,12 +245,13 @@ try {
       { op: "set", lineId: "b1", qty: 3 },
     ], id);
     assert.equal(res.status, 200, JSON.stringify(res.body));
-    assert.deepEqual(res.body, { edit: { id, eventId: ev.main, changes: 6 }, replayed: false });
+    assert.deepEqual({ edit: res.body.edit, replayed: res.body.replayed }, { edit: { id, eventId: ev.main, changes: 6 }, replayed: false });
+    assert.equal(res.body.additionalBilling?.status, 'pending', 'saved additions stay visibly unresolved without the till connection');
     const menus = await menusOf(ev.main);
     assert.deepEqual(menus!.kids.find((l) => l.id === "m1"), line("m1", "Calamari", 3, { included: false, price: 120, productCode: "CF-14", source: "additional", notes: "no sauce" }));
     assert.equal(menus!.kids.some((l) => l.id === "m2"), false, "the extra is removed");
     assert.deepEqual(menus!.kids.find((l) => l.id === `till_${added}`), {
-      id: `till_${added}`, itemName: "Hummus", quantity: 1, notes: "", included: false, price: 0, source: "additional", productCode: "CF-13",
+      id: `till_${added}`, itemName: "Hummus", quantity: 1, notes: "", included: false, chargeApproved: true, billingSync: "pending", source: "additional", productCode: "CF-13",
     });
     assert.deepEqual(menus!.adults, [], "the adults eat the kids' list: none kept for them");
     assert.equal(menus!.adultsDiffer, false);
@@ -258,7 +259,7 @@ try {
     assert.equal(bar!.service_time, "19:15");
     assert.deepEqual(bar!.items.map((l) => [l.id, l.itemName, l.quantity, l.productCode ?? null, l.price]), [
       ["b1", "Mineral water", 3, "CF-65-6", 0],
-      [`till_${drink}`, "Kids juice Apple", 4, "CF-66-1", 0],
+      [`till_${drink}`, "Kids juice Apple", 4, "CF-66-1", undefined],
     ]);
     // The till's plan view reads it as the till will.
     const row = await rowOf(ev.main);

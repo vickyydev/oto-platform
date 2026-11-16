@@ -8130,6 +8130,74 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
+                            additionalBills?: {
+                                id: string;
+                                eventId: string;
+                                mainSettlementId: string;
+                                /** @enum {string} */
+                                state: "open" | "paid";
+                                totalSatang: number;
+                                paidSatang: number;
+                                outstandingSatang: number;
+                                createdAt: string;
+                                paidAt: string | null;
+                                charges: {
+                                    additionalBillId?: string | null;
+                                    id: string;
+                                    /** @enum {string} */
+                                    kind: "ticket" | "fnb";
+                                    items: {
+                                        name: string;
+                                        qty: number;
+                                        lineTotalSatang: number;
+                                    }[];
+                                    totalSatang: number;
+                                    chargedBy: string | null;
+                                    chargedById: string | null;
+                                    chargedAt: string;
+                                }[];
+                                payments: {
+                                    additionalBillId?: string | null;
+                                    id: string;
+                                    amountSatang: number;
+                                    method: string;
+                                    kind: string;
+                                    takenBy: string | null;
+                                    takenById: string | null;
+                                    takenAt: string;
+                                    businessDate: string;
+                                    attemptId: string;
+                                }[];
+                            }[];
+                            unassignedTab?: {
+                                charges: {
+                                    additionalBillId?: string | null;
+                                    id: string;
+                                    /** @enum {string} */
+                                    kind: "ticket" | "fnb";
+                                    items: {
+                                        name: string;
+                                        qty: number;
+                                        lineTotalSatang: number;
+                                    }[];
+                                    totalSatang: number;
+                                    chargedBy: string | null;
+                                    chargedById: string | null;
+                                    chargedAt: string;
+                                }[];
+                                payments: {
+                                    additionalBillId?: string | null;
+                                    id: string;
+                                    amountSatang: number;
+                                    method: string;
+                                    kind: string;
+                                    takenBy: string | null;
+                                    takenById: string | null;
+                                    takenAt: string;
+                                    businessDate: string;
+                                    attemptId: string;
+                                }[];
+                            };
                             eventId: string;
                             /** @enum {string} */
                             state: "quote" | "sale" | "no_quote";
@@ -8228,6 +8296,64 @@ export interface paths {
         };
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/otoapp/parties/{eventId}/beo-additions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    eventId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        actorAppUserId: string;
+                        lines: {
+                            lineId: string;
+                            productCode: string | null;
+                            /** @enum {string} */
+                            area: "food" | "bar";
+                            name: string;
+                            quantity: number;
+                            unitSatang: number | null;
+                            included: boolean;
+                        }[];
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {string} */
+                            status: "plan_only" | "synced";
+                            added: number;
+                            billIds: string[];
+                        };
+                    };
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -24957,6 +25083,7 @@ export interface paths {
                                         chargedAt: string;
                                     }[];
                                     charges?: {
+                                        additionalBillId?: string | null;
                                         id: string;
                                         /** @enum {string} */
                                         kind: "ticket" | "fnb";
@@ -24971,6 +25098,7 @@ export interface paths {
                                         chargedAt: string;
                                     }[];
                                     payments?: {
+                                        additionalBillId?: string | null;
                                         id: string;
                                         amountSatang: number;
                                         method: string;
@@ -25020,6 +25148,45 @@ export interface paths {
                                         /** @enum {string|null} */
                                         writeBack: "synced" | "pending" | "failed" | null;
                                     } | null;
+                                    additionalBills?: {
+                                        id: string;
+                                        eventId: string;
+                                        mainSettlementId: string;
+                                        /** @enum {string} */
+                                        state: "open" | "paid";
+                                        totalSatang: number;
+                                        paidSatang: number;
+                                        outstandingSatang: number;
+                                        createdAt: string;
+                                        paidAt: string | null;
+                                        charges: {
+                                            additionalBillId?: string | null;
+                                            id: string;
+                                            /** @enum {string} */
+                                            kind: "ticket" | "fnb";
+                                            items: {
+                                                name: string;
+                                                qty: number;
+                                                lineTotalSatang: number;
+                                            }[];
+                                            totalSatang: number;
+                                            chargedBy: string | null;
+                                            chargedById: string | null;
+                                            chargedAt: string;
+                                        }[];
+                                        payments: {
+                                            additionalBillId?: string | null;
+                                            id: string;
+                                            amountSatang: number;
+                                            method: string;
+                                            kind: string;
+                                            takenBy: string | null;
+                                            takenById: string | null;
+                                            takenAt: string;
+                                            businessDate: string;
+                                            attemptId: string;
+                                        }[];
+                                    }[];
                                 } | null;
                                 attendeeCount: number | null;
                                 attendees?: {
@@ -25155,6 +25322,7 @@ export interface paths {
                                         chargedAt: string;
                                     }[];
                                     charges?: {
+                                        additionalBillId?: string | null;
                                         id: string;
                                         /** @enum {string} */
                                         kind: "ticket" | "fnb";
@@ -25169,6 +25337,7 @@ export interface paths {
                                         chargedAt: string;
                                     }[];
                                     payments?: {
+                                        additionalBillId?: string | null;
                                         id: string;
                                         amountSatang: number;
                                         method: string;
@@ -25218,6 +25387,45 @@ export interface paths {
                                         /** @enum {string|null} */
                                         writeBack: "synced" | "pending" | "failed" | null;
                                     } | null;
+                                    additionalBills?: {
+                                        id: string;
+                                        eventId: string;
+                                        mainSettlementId: string;
+                                        /** @enum {string} */
+                                        state: "open" | "paid";
+                                        totalSatang: number;
+                                        paidSatang: number;
+                                        outstandingSatang: number;
+                                        createdAt: string;
+                                        paidAt: string | null;
+                                        charges: {
+                                            additionalBillId?: string | null;
+                                            id: string;
+                                            /** @enum {string} */
+                                            kind: "ticket" | "fnb";
+                                            items: {
+                                                name: string;
+                                                qty: number;
+                                                lineTotalSatang: number;
+                                            }[];
+                                            totalSatang: number;
+                                            chargedBy: string | null;
+                                            chargedById: string | null;
+                                            chargedAt: string;
+                                        }[];
+                                        payments: {
+                                            additionalBillId?: string | null;
+                                            id: string;
+                                            amountSatang: number;
+                                            method: string;
+                                            kind: string;
+                                            takenBy: string | null;
+                                            takenById: string | null;
+                                            takenAt: string;
+                                            businessDate: string;
+                                            attemptId: string;
+                                        }[];
+                                    }[];
                                 } | null;
                                 attendeeCount: number | null;
                                 attendees?: {
@@ -25355,6 +25563,7 @@ export interface paths {
                                         chargedAt: string;
                                     }[];
                                     charges?: {
+                                        additionalBillId?: string | null;
                                         id: string;
                                         /** @enum {string} */
                                         kind: "ticket" | "fnb";
@@ -25369,6 +25578,7 @@ export interface paths {
                                         chargedAt: string;
                                     }[];
                                     payments?: {
+                                        additionalBillId?: string | null;
                                         id: string;
                                         amountSatang: number;
                                         method: string;
@@ -25418,6 +25628,45 @@ export interface paths {
                                         /** @enum {string|null} */
                                         writeBack: "synced" | "pending" | "failed" | null;
                                     } | null;
+                                    additionalBills?: {
+                                        id: string;
+                                        eventId: string;
+                                        mainSettlementId: string;
+                                        /** @enum {string} */
+                                        state: "open" | "paid";
+                                        totalSatang: number;
+                                        paidSatang: number;
+                                        outstandingSatang: number;
+                                        createdAt: string;
+                                        paidAt: string | null;
+                                        charges: {
+                                            additionalBillId?: string | null;
+                                            id: string;
+                                            /** @enum {string} */
+                                            kind: "ticket" | "fnb";
+                                            items: {
+                                                name: string;
+                                                qty: number;
+                                                lineTotalSatang: number;
+                                            }[];
+                                            totalSatang: number;
+                                            chargedBy: string | null;
+                                            chargedById: string | null;
+                                            chargedAt: string;
+                                        }[];
+                                        payments: {
+                                            additionalBillId?: string | null;
+                                            id: string;
+                                            amountSatang: number;
+                                            method: string;
+                                            kind: string;
+                                            takenBy: string | null;
+                                            takenById: string | null;
+                                            takenAt: string;
+                                            businessDate: string;
+                                            attemptId: string;
+                                        }[];
+                                    }[];
                                 } | null;
                                 attendeeCount: number | null;
                                 attendees?: {
@@ -25555,6 +25804,7 @@ export interface paths {
                                         chargedAt: string;
                                     }[];
                                     charges?: {
+                                        additionalBillId?: string | null;
                                         id: string;
                                         /** @enum {string} */
                                         kind: "ticket" | "fnb";
@@ -25569,6 +25819,7 @@ export interface paths {
                                         chargedAt: string;
                                     }[];
                                     payments?: {
+                                        additionalBillId?: string | null;
                                         id: string;
                                         amountSatang: number;
                                         method: string;
@@ -25618,6 +25869,45 @@ export interface paths {
                                         /** @enum {string|null} */
                                         writeBack: "synced" | "pending" | "failed" | null;
                                     } | null;
+                                    additionalBills?: {
+                                        id: string;
+                                        eventId: string;
+                                        mainSettlementId: string;
+                                        /** @enum {string} */
+                                        state: "open" | "paid";
+                                        totalSatang: number;
+                                        paidSatang: number;
+                                        outstandingSatang: number;
+                                        createdAt: string;
+                                        paidAt: string | null;
+                                        charges: {
+                                            additionalBillId?: string | null;
+                                            id: string;
+                                            /** @enum {string} */
+                                            kind: "ticket" | "fnb";
+                                            items: {
+                                                name: string;
+                                                qty: number;
+                                                lineTotalSatang: number;
+                                            }[];
+                                            totalSatang: number;
+                                            chargedBy: string | null;
+                                            chargedById: string | null;
+                                            chargedAt: string;
+                                        }[];
+                                        payments: {
+                                            additionalBillId?: string | null;
+                                            id: string;
+                                            amountSatang: number;
+                                            method: string;
+                                            kind: string;
+                                            takenBy: string | null;
+                                            takenById: string | null;
+                                            takenAt: string;
+                                            businessDate: string;
+                                            attemptId: string;
+                                        }[];
+                                    }[];
                                 } | null;
                                 attendeeCount: number | null;
                                 attendees?: {
@@ -25881,6 +26171,7 @@ export interface paths {
                                         chargedAt: string;
                                     }[];
                                     charges?: {
+                                        additionalBillId?: string | null;
                                         id: string;
                                         /** @enum {string} */
                                         kind: "ticket" | "fnb";
@@ -25895,6 +26186,7 @@ export interface paths {
                                         chargedAt: string;
                                     }[];
                                     payments?: {
+                                        additionalBillId?: string | null;
                                         id: string;
                                         amountSatang: number;
                                         method: string;
@@ -25944,6 +26236,45 @@ export interface paths {
                                         /** @enum {string|null} */
                                         writeBack: "synced" | "pending" | "failed" | null;
                                     } | null;
+                                    additionalBills?: {
+                                        id: string;
+                                        eventId: string;
+                                        mainSettlementId: string;
+                                        /** @enum {string} */
+                                        state: "open" | "paid";
+                                        totalSatang: number;
+                                        paidSatang: number;
+                                        outstandingSatang: number;
+                                        createdAt: string;
+                                        paidAt: string | null;
+                                        charges: {
+                                            additionalBillId?: string | null;
+                                            id: string;
+                                            /** @enum {string} */
+                                            kind: "ticket" | "fnb";
+                                            items: {
+                                                name: string;
+                                                qty: number;
+                                                lineTotalSatang: number;
+                                            }[];
+                                            totalSatang: number;
+                                            chargedBy: string | null;
+                                            chargedById: string | null;
+                                            chargedAt: string;
+                                        }[];
+                                        payments: {
+                                            additionalBillId?: string | null;
+                                            id: string;
+                                            amountSatang: number;
+                                            method: string;
+                                            kind: string;
+                                            takenBy: string | null;
+                                            takenById: string | null;
+                                            takenAt: string;
+                                            businessDate: string;
+                                            attemptId: string;
+                                        }[];
+                                    }[];
                                 } | null;
                                 attendeeCount: number | null;
                                 attendees?: {
@@ -26058,6 +26389,7 @@ export interface paths {
                                     onTillMenu?: boolean;
                                 }[];
                                 barItems: {
+                                    chargeApproved?: boolean;
                                     productCode: string | null;
                                     name: string;
                                     qty: number;
@@ -26115,6 +26447,7 @@ export interface paths {
                                     onTillMenu?: boolean;
                                 }[];
                                 barItems: {
+                                    chargeApproved?: boolean;
                                     productCode: string | null;
                                     name: string;
                                     qty: number;
@@ -26310,6 +26643,7 @@ export interface paths {
                                         chargedAt: string;
                                     }[];
                                     charges?: {
+                                        additionalBillId?: string | null;
                                         id: string;
                                         /** @enum {string} */
                                         kind: "ticket" | "fnb";
@@ -26324,6 +26658,7 @@ export interface paths {
                                         chargedAt: string;
                                     }[];
                                     payments?: {
+                                        additionalBillId?: string | null;
                                         id: string;
                                         amountSatang: number;
                                         method: string;
@@ -26373,6 +26708,45 @@ export interface paths {
                                         /** @enum {string|null} */
                                         writeBack: "synced" | "pending" | "failed" | null;
                                     } | null;
+                                    additionalBills?: {
+                                        id: string;
+                                        eventId: string;
+                                        mainSettlementId: string;
+                                        /** @enum {string} */
+                                        state: "open" | "paid";
+                                        totalSatang: number;
+                                        paidSatang: number;
+                                        outstandingSatang: number;
+                                        createdAt: string;
+                                        paidAt: string | null;
+                                        charges: {
+                                            additionalBillId?: string | null;
+                                            id: string;
+                                            /** @enum {string} */
+                                            kind: "ticket" | "fnb";
+                                            items: {
+                                                name: string;
+                                                qty: number;
+                                                lineTotalSatang: number;
+                                            }[];
+                                            totalSatang: number;
+                                            chargedBy: string | null;
+                                            chargedById: string | null;
+                                            chargedAt: string;
+                                        }[];
+                                        payments: {
+                                            additionalBillId?: string | null;
+                                            id: string;
+                                            amountSatang: number;
+                                            method: string;
+                                            kind: string;
+                                            takenBy: string | null;
+                                            takenById: string | null;
+                                            takenAt: string;
+                                            businessDate: string;
+                                            attemptId: string;
+                                        }[];
+                                    }[];
                                 } | null;
                                 attendeeCount: number | null;
                                 attendees?: {
@@ -26424,6 +26798,7 @@ export interface paths {
                                 } | null;
                             };
                             charge?: {
+                                additionalBillId?: string | null;
                                 id: string;
                                 /** @enum {string} */
                                 kind: "ticket" | "fnb";
@@ -26438,6 +26813,7 @@ export interface paths {
                                 chargedAt: string;
                             };
                             payment?: {
+                                additionalBillId?: string | null;
                                 id: string;
                                 amountSatang: number;
                                 method: string;
@@ -26497,6 +26873,17 @@ export interface paths {
                                 label: string;
                                 options: string[];
                                 allowMultiple: boolean;
+                            }[];
+                            items?: {
+                                code: string;
+                                name: string;
+                                category: string | null;
+                                parentCategory: string | null;
+                                /** @enum {string} */
+                                station: "kitchen" | "bar";
+                                priceSatang: number;
+                                priceWeekendSatang: number;
+                                beoOnly: boolean;
                             }[];
                         };
                     };
@@ -26558,6 +26945,7 @@ export interface paths {
                             list: "food" | "bar";
                             name: string;
                             productCode: string | null;
+                            unitPriceSatang?: number;
                             qty: number;
                             note?: string | null;
                         } | {
@@ -26628,6 +27016,7 @@ export interface paths {
                                         chargedAt: string;
                                     }[];
                                     charges?: {
+                                        additionalBillId?: string | null;
                                         id: string;
                                         /** @enum {string} */
                                         kind: "ticket" | "fnb";
@@ -26642,6 +27031,7 @@ export interface paths {
                                         chargedAt: string;
                                     }[];
                                     payments?: {
+                                        additionalBillId?: string | null;
                                         id: string;
                                         amountSatang: number;
                                         method: string;
@@ -26691,6 +27081,45 @@ export interface paths {
                                         /** @enum {string|null} */
                                         writeBack: "synced" | "pending" | "failed" | null;
                                     } | null;
+                                    additionalBills?: {
+                                        id: string;
+                                        eventId: string;
+                                        mainSettlementId: string;
+                                        /** @enum {string} */
+                                        state: "open" | "paid";
+                                        totalSatang: number;
+                                        paidSatang: number;
+                                        outstandingSatang: number;
+                                        createdAt: string;
+                                        paidAt: string | null;
+                                        charges: {
+                                            additionalBillId?: string | null;
+                                            id: string;
+                                            /** @enum {string} */
+                                            kind: "ticket" | "fnb";
+                                            items: {
+                                                name: string;
+                                                qty: number;
+                                                lineTotalSatang: number;
+                                            }[];
+                                            totalSatang: number;
+                                            chargedBy: string | null;
+                                            chargedById: string | null;
+                                            chargedAt: string;
+                                        }[];
+                                        payments: {
+                                            additionalBillId?: string | null;
+                                            id: string;
+                                            amountSatang: number;
+                                            method: string;
+                                            kind: string;
+                                            takenBy: string | null;
+                                            takenById: string | null;
+                                            takenAt: string;
+                                            businessDate: string;
+                                            attemptId: string;
+                                        }[];
+                                    }[];
                                 } | null;
                                 attendeeCount: number | null;
                                 attendees?: {
@@ -26805,6 +27234,7 @@ export interface paths {
                                     onTillMenu?: boolean;
                                 }[];
                                 barItems: {
+                                    chargeApproved?: boolean;
                                     productCode: string | null;
                                     name: string;
                                     qty: number;
@@ -26862,6 +27292,7 @@ export interface paths {
                                     onTillMenu?: boolean;
                                 }[];
                                 barItems: {
+                                    chargeApproved?: boolean;
                                     productCode: string | null;
                                     name: string;
                                     qty: number;
@@ -26955,6 +27386,7 @@ export interface paths {
                             kitchenEdit: {
                                 /** Format: uuid */
                                 id: string;
+                                billingPending?: boolean;
                                 replayed: boolean;
                             };
                         };
@@ -27281,6 +27713,7 @@ export interface paths {
                                         chargedAt: string;
                                     }[];
                                     charges?: {
+                                        additionalBillId?: string | null;
                                         id: string;
                                         /** @enum {string} */
                                         kind: "ticket" | "fnb";
@@ -27295,6 +27728,7 @@ export interface paths {
                                         chargedAt: string;
                                     }[];
                                     payments?: {
+                                        additionalBillId?: string | null;
                                         id: string;
                                         amountSatang: number;
                                         method: string;
@@ -27344,6 +27778,45 @@ export interface paths {
                                         /** @enum {string|null} */
                                         writeBack: "synced" | "pending" | "failed" | null;
                                     } | null;
+                                    additionalBills?: {
+                                        id: string;
+                                        eventId: string;
+                                        mainSettlementId: string;
+                                        /** @enum {string} */
+                                        state: "open" | "paid";
+                                        totalSatang: number;
+                                        paidSatang: number;
+                                        outstandingSatang: number;
+                                        createdAt: string;
+                                        paidAt: string | null;
+                                        charges: {
+                                            additionalBillId?: string | null;
+                                            id: string;
+                                            /** @enum {string} */
+                                            kind: "ticket" | "fnb";
+                                            items: {
+                                                name: string;
+                                                qty: number;
+                                                lineTotalSatang: number;
+                                            }[];
+                                            totalSatang: number;
+                                            chargedBy: string | null;
+                                            chargedById: string | null;
+                                            chargedAt: string;
+                                        }[];
+                                        payments: {
+                                            additionalBillId?: string | null;
+                                            id: string;
+                                            amountSatang: number;
+                                            method: string;
+                                            kind: string;
+                                            takenBy: string | null;
+                                            takenById: string | null;
+                                            takenAt: string;
+                                            businessDate: string;
+                                            attemptId: string;
+                                        }[];
+                                    }[];
                                 } | null;
                                 attendeeCount: number | null;
                                 attendees?: {
@@ -27395,6 +27868,7 @@ export interface paths {
                                 } | null;
                             };
                             charge?: {
+                                additionalBillId?: string | null;
                                 id: string;
                                 /** @enum {string} */
                                 kind: "ticket" | "fnb";
@@ -27409,6 +27883,7 @@ export interface paths {
                                 chargedAt: string;
                             };
                             payment?: {
+                                additionalBillId?: string | null;
                                 id: string;
                                 amountSatang: number;
                                 method: string;
@@ -27459,6 +27934,8 @@ export interface paths {
             requestBody: {
                 content: {
                     "application/json": {
+                        /** Format: uuid */
+                        additionalBillId?: string;
                         /** Format: uuid */
                         branchId: string;
                         /** Format: uuid */
@@ -27532,6 +28009,7 @@ export interface paths {
                                         chargedAt: string;
                                     }[];
                                     charges?: {
+                                        additionalBillId?: string | null;
                                         id: string;
                                         /** @enum {string} */
                                         kind: "ticket" | "fnb";
@@ -27546,6 +28024,7 @@ export interface paths {
                                         chargedAt: string;
                                     }[];
                                     payments?: {
+                                        additionalBillId?: string | null;
                                         id: string;
                                         amountSatang: number;
                                         method: string;
@@ -27595,6 +28074,45 @@ export interface paths {
                                         /** @enum {string|null} */
                                         writeBack: "synced" | "pending" | "failed" | null;
                                     } | null;
+                                    additionalBills?: {
+                                        id: string;
+                                        eventId: string;
+                                        mainSettlementId: string;
+                                        /** @enum {string} */
+                                        state: "open" | "paid";
+                                        totalSatang: number;
+                                        paidSatang: number;
+                                        outstandingSatang: number;
+                                        createdAt: string;
+                                        paidAt: string | null;
+                                        charges: {
+                                            additionalBillId?: string | null;
+                                            id: string;
+                                            /** @enum {string} */
+                                            kind: "ticket" | "fnb";
+                                            items: {
+                                                name: string;
+                                                qty: number;
+                                                lineTotalSatang: number;
+                                            }[];
+                                            totalSatang: number;
+                                            chargedBy: string | null;
+                                            chargedById: string | null;
+                                            chargedAt: string;
+                                        }[];
+                                        payments: {
+                                            additionalBillId?: string | null;
+                                            id: string;
+                                            amountSatang: number;
+                                            method: string;
+                                            kind: string;
+                                            takenBy: string | null;
+                                            takenById: string | null;
+                                            takenAt: string;
+                                            businessDate: string;
+                                            attemptId: string;
+                                        }[];
+                                    }[];
                                 } | null;
                                 attendeeCount: number | null;
                                 attendees?: {
@@ -27646,6 +28164,7 @@ export interface paths {
                                 } | null;
                             };
                             charge?: {
+                                additionalBillId?: string | null;
                                 id: string;
                                 /** @enum {string} */
                                 kind: "ticket" | "fnb";
@@ -27660,6 +28179,7 @@ export interface paths {
                                 chargedAt: string;
                             };
                             payment?: {
+                                additionalBillId?: string | null;
                                 id: string;
                                 amountSatang: number;
                                 method: string;
@@ -27710,6 +28230,8 @@ export interface paths {
             requestBody: {
                 content: {
                     "application/json": {
+                        /** Format: uuid */
+                        additionalBillId?: string;
                         /** Format: uuid */
                         branchId: string;
                         /** Format: uuid */

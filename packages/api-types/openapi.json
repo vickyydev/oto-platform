@@ -16536,6 +16536,328 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "additionalBills": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "eventId": {
+                            "type": "string"
+                          },
+                          "mainSettlementId": {
+                            "type": "string"
+                          },
+                          "state": {
+                            "type": "string",
+                            "enum": [
+                              "open",
+                              "paid"
+                            ]
+                          },
+                          "totalSatang": {
+                            "type": "integer"
+                          },
+                          "paidSatang": {
+                            "type": "integer"
+                          },
+                          "outstandingSatang": {
+                            "type": "integer"
+                          },
+                          "createdAt": {
+                            "type": "string"
+                          },
+                          "paidAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "charges": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "additionalBillId": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "ticket",
+                                    "fnb"
+                                  ]
+                                },
+                                "items": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "name": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 300
+                                      },
+                                      "qty": {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 10000
+                                      },
+                                      "lineTotalSatang": {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 10000000000
+                                      }
+                                    },
+                                    "required": [
+                                      "name",
+                                      "qty",
+                                      "lineTotalSatang"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "totalSatang": {
+                                  "type": "integer"
+                                },
+                                "chargedBy": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "chargedById": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "chargedAt": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "kind",
+                                "items",
+                                "totalSatang",
+                                "chargedBy",
+                                "chargedById",
+                                "chargedAt"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "payments": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "additionalBillId": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "amountSatang": {
+                                  "type": "integer"
+                                },
+                                "method": {
+                                  "type": "string"
+                                },
+                                "kind": {
+                                  "type": "string"
+                                },
+                                "takenBy": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "takenById": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "takenAt": {
+                                  "type": "string"
+                                },
+                                "businessDate": {
+                                  "type": "string",
+                                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                },
+                                "attemptId": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "amountSatang",
+                                "method",
+                                "kind",
+                                "takenBy",
+                                "takenById",
+                                "takenAt",
+                                "businessDate",
+                                "attemptId"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "eventId",
+                          "mainSettlementId",
+                          "state",
+                          "totalSatang",
+                          "paidSatang",
+                          "outstandingSatang",
+                          "createdAt",
+                          "paidAt",
+                          "charges",
+                          "payments"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "unassignedTab": {
+                      "type": "object",
+                      "properties": {
+                        "charges": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "additionalBillId": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "id": {
+                                "type": "string"
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "ticket",
+                                  "fnb"
+                                ]
+                              },
+                              "items": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "name": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 300
+                                    },
+                                    "qty": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 10000
+                                    },
+                                    "lineTotalSatang": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 10000000000
+                                    }
+                                  },
+                                  "required": [
+                                    "name",
+                                    "qty",
+                                    "lineTotalSatang"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "totalSatang": {
+                                "type": "integer"
+                              },
+                              "chargedBy": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "chargedById": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "chargedAt": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "kind",
+                              "items",
+                              "totalSatang",
+                              "chargedBy",
+                              "chargedById",
+                              "chargedAt"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "payments": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "additionalBillId": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "id": {
+                                "type": "string"
+                              },
+                              "amountSatang": {
+                                "type": "integer"
+                              },
+                              "method": {
+                                "type": "string"
+                              },
+                              "kind": {
+                                "type": "string"
+                              },
+                              "takenBy": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "takenById": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "takenAt": {
+                                "type": "string"
+                              },
+                              "businessDate": {
+                                "type": "string",
+                                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                              },
+                              "attemptId": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "amountSatang",
+                              "method",
+                              "kind",
+                              "takenBy",
+                              "takenById",
+                              "takenAt",
+                              "businessDate",
+                              "attemptId"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "charges",
+                        "payments"
+                      ],
+                      "additionalProperties": false
+                    },
                     "eventId": {
                       "type": "string"
                     },
@@ -16956,6 +17278,134 @@
                     "quote",
                     "sale",
                     "noQuote"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/otoapp/parties/{eventId}/beo-additions": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "actorAppUserId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "lines": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "lineId": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 100
+                        },
+                        "productCode": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 64,
+                          "nullable": true
+                        },
+                        "area": {
+                          "type": "string",
+                          "enum": [
+                            "food",
+                            "bar"
+                          ]
+                        },
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 300
+                        },
+                        "quantity": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 1000
+                        },
+                        "unitSatang": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "nullable": true
+                        },
+                        "included": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "lineId",
+                        "productCode",
+                        "area",
+                        "name",
+                        "quantity",
+                        "unitSatang",
+                        "included"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "maxItems": 200
+                  }
+                },
+                "required": [
+                  "actorAppUserId",
+                  "lines"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "eventId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "plan_only",
+                        "synced"
+                      ]
+                    },
+                    "added": {
+                      "type": "integer"
+                    },
+                    "billIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "added",
+                    "billIds"
                   ],
                   "additionalProperties": false
                 }
@@ -58942,6 +59392,10 @@
                                 "items": {
                                   "type": "object",
                                   "properties": {
+                                    "additionalBillId": {
+                                      "type": "string",
+                                      "nullable": true
+                                    },
                                     "id": {
                                       "type": "string"
                                     },
@@ -59013,6 +59467,10 @@
                                 "items": {
                                   "type": "object",
                                   "properties": {
+                                    "additionalBillId": {
+                                      "type": "string",
+                                      "nullable": true
+                                    },
                                     "id": {
                                       "type": "string"
                                     },
@@ -59223,6 +59681,189 @@
                                 ],
                                 "additionalProperties": false,
                                 "nullable": true
+                              },
+                              "additionalBills": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "eventId": {
+                                      "type": "string"
+                                    },
+                                    "mainSettlementId": {
+                                      "type": "string"
+                                    },
+                                    "state": {
+                                      "type": "string",
+                                      "enum": [
+                                        "open",
+                                        "paid"
+                                      ]
+                                    },
+                                    "totalSatang": {
+                                      "type": "integer"
+                                    },
+                                    "paidSatang": {
+                                      "type": "integer"
+                                    },
+                                    "outstandingSatang": {
+                                      "type": "integer"
+                                    },
+                                    "createdAt": {
+                                      "type": "string"
+                                    },
+                                    "paidAt": {
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "charges": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "additionalBillId": {
+                                            "type": "string",
+                                            "nullable": true
+                                          },
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "kind": {
+                                            "type": "string",
+                                            "enum": [
+                                              "ticket",
+                                              "fnb"
+                                            ]
+                                          },
+                                          "items": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "object",
+                                              "properties": {
+                                                "name": {
+                                                  "type": "string",
+                                                  "minLength": 1,
+                                                  "maxLength": 300
+                                                },
+                                                "qty": {
+                                                  "type": "integer",
+                                                  "minimum": 0,
+                                                  "maximum": 10000
+                                                },
+                                                "lineTotalSatang": {
+                                                  "type": "integer",
+                                                  "minimum": 0,
+                                                  "maximum": 10000000000
+                                                }
+                                              },
+                                              "required": [
+                                                "name",
+                                                "qty",
+                                                "lineTotalSatang"
+                                              ],
+                                              "additionalProperties": false
+                                            }
+                                          },
+                                          "totalSatang": {
+                                            "type": "integer"
+                                          },
+                                          "chargedBy": {
+                                            "type": "string",
+                                            "nullable": true
+                                          },
+                                          "chargedById": {
+                                            "type": "string",
+                                            "nullable": true
+                                          },
+                                          "chargedAt": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "id",
+                                          "kind",
+                                          "items",
+                                          "totalSatang",
+                                          "chargedBy",
+                                          "chargedById",
+                                          "chargedAt"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    },
+                                    "payments": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "additionalBillId": {
+                                            "type": "string",
+                                            "nullable": true
+                                          },
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "amountSatang": {
+                                            "type": "integer"
+                                          },
+                                          "method": {
+                                            "type": "string"
+                                          },
+                                          "kind": {
+                                            "type": "string"
+                                          },
+                                          "takenBy": {
+                                            "type": "string",
+                                            "nullable": true
+                                          },
+                                          "takenById": {
+                                            "type": "string",
+                                            "nullable": true
+                                          },
+                                          "takenAt": {
+                                            "type": "string"
+                                          },
+                                          "businessDate": {
+                                            "type": "string",
+                                            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                          },
+                                          "attemptId": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "id",
+                                          "amountSatang",
+                                          "method",
+                                          "kind",
+                                          "takenBy",
+                                          "takenById",
+                                          "takenAt",
+                                          "businessDate",
+                                          "attemptId"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "eventId",
+                                    "mainSettlementId",
+                                    "state",
+                                    "totalSatang",
+                                    "paidSatang",
+                                    "outstandingSatang",
+                                    "createdAt",
+                                    "paidAt",
+                                    "charges",
+                                    "payments"
+                                  ],
+                                  "additionalProperties": false
+                                }
                               }
                             },
                             "required": [
@@ -59719,6 +60360,10 @@
                                 "items": {
                                   "type": "object",
                                   "properties": {
+                                    "additionalBillId": {
+                                      "type": "string",
+                                      "nullable": true
+                                    },
                                     "id": {
                                       "type": "string"
                                     },
@@ -59790,6 +60435,10 @@
                                 "items": {
                                   "type": "object",
                                   "properties": {
+                                    "additionalBillId": {
+                                      "type": "string",
+                                      "nullable": true
+                                    },
                                     "id": {
                                       "type": "string"
                                     },
@@ -60000,6 +60649,189 @@
                                 ],
                                 "additionalProperties": false,
                                 "nullable": true
+                              },
+                              "additionalBills": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "eventId": {
+                                      "type": "string"
+                                    },
+                                    "mainSettlementId": {
+                                      "type": "string"
+                                    },
+                                    "state": {
+                                      "type": "string",
+                                      "enum": [
+                                        "open",
+                                        "paid"
+                                      ]
+                                    },
+                                    "totalSatang": {
+                                      "type": "integer"
+                                    },
+                                    "paidSatang": {
+                                      "type": "integer"
+                                    },
+                                    "outstandingSatang": {
+                                      "type": "integer"
+                                    },
+                                    "createdAt": {
+                                      "type": "string"
+                                    },
+                                    "paidAt": {
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "charges": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "additionalBillId": {
+                                            "type": "string",
+                                            "nullable": true
+                                          },
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "kind": {
+                                            "type": "string",
+                                            "enum": [
+                                              "ticket",
+                                              "fnb"
+                                            ]
+                                          },
+                                          "items": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "object",
+                                              "properties": {
+                                                "name": {
+                                                  "type": "string",
+                                                  "minLength": 1,
+                                                  "maxLength": 300
+                                                },
+                                                "qty": {
+                                                  "type": "integer",
+                                                  "minimum": 0,
+                                                  "maximum": 10000
+                                                },
+                                                "lineTotalSatang": {
+                                                  "type": "integer",
+                                                  "minimum": 0,
+                                                  "maximum": 10000000000
+                                                }
+                                              },
+                                              "required": [
+                                                "name",
+                                                "qty",
+                                                "lineTotalSatang"
+                                              ],
+                                              "additionalProperties": false
+                                            }
+                                          },
+                                          "totalSatang": {
+                                            "type": "integer"
+                                          },
+                                          "chargedBy": {
+                                            "type": "string",
+                                            "nullable": true
+                                          },
+                                          "chargedById": {
+                                            "type": "string",
+                                            "nullable": true
+                                          },
+                                          "chargedAt": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "id",
+                                          "kind",
+                                          "items",
+                                          "totalSatang",
+                                          "chargedBy",
+                                          "chargedById",
+                                          "chargedAt"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    },
+                                    "payments": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "additionalBillId": {
+                                            "type": "string",
+                                            "nullable": true
+                                          },
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "amountSatang": {
+                                            "type": "integer"
+                                          },
+                                          "method": {
+                                            "type": "string"
+                                          },
+                                          "kind": {
+                                            "type": "string"
+                                          },
+                                          "takenBy": {
+                                            "type": "string",
+                                            "nullable": true
+                                          },
+                                          "takenById": {
+                                            "type": "string",
+                                            "nullable": true
+                                          },
+                                          "takenAt": {
+                                            "type": "string"
+                                          },
+                                          "businessDate": {
+                                            "type": "string",
+                                            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                          },
+                                          "attemptId": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "id",
+                                          "amountSatang",
+                                          "method",
+                                          "kind",
+                                          "takenBy",
+                                          "takenById",
+                                          "takenAt",
+                                          "businessDate",
+                                          "attemptId"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "eventId",
+                                    "mainSettlementId",
+                                    "state",
+                                    "totalSatang",
+                                    "paidSatang",
+                                    "outstandingSatang",
+                                    "createdAt",
+                                    "paidAt",
+                                    "charges",
+                                    "payments"
+                                  ],
+                                  "additionalProperties": false
+                                }
                               }
                             },
                             "required": [
@@ -60503,6 +61335,10 @@
                               "items": {
                                 "type": "object",
                                 "properties": {
+                                  "additionalBillId": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
                                   "id": {
                                     "type": "string"
                                   },
@@ -60574,6 +61410,10 @@
                               "items": {
                                 "type": "object",
                                 "properties": {
+                                  "additionalBillId": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
                                   "id": {
                                     "type": "string"
                                   },
@@ -60784,6 +61624,189 @@
                               ],
                               "additionalProperties": false,
                               "nullable": true
+                            },
+                            "additionalBills": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "eventId": {
+                                    "type": "string"
+                                  },
+                                  "mainSettlementId": {
+                                    "type": "string"
+                                  },
+                                  "state": {
+                                    "type": "string",
+                                    "enum": [
+                                      "open",
+                                      "paid"
+                                    ]
+                                  },
+                                  "totalSatang": {
+                                    "type": "integer"
+                                  },
+                                  "paidSatang": {
+                                    "type": "integer"
+                                  },
+                                  "outstandingSatang": {
+                                    "type": "integer"
+                                  },
+                                  "createdAt": {
+                                    "type": "string"
+                                  },
+                                  "paidAt": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
+                                  "charges": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "additionalBillId": {
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "kind": {
+                                          "type": "string",
+                                          "enum": [
+                                            "ticket",
+                                            "fnb"
+                                          ]
+                                        },
+                                        "items": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "name": {
+                                                "type": "string",
+                                                "minLength": 1,
+                                                "maxLength": 300
+                                              },
+                                              "qty": {
+                                                "type": "integer",
+                                                "minimum": 0,
+                                                "maximum": 10000
+                                              },
+                                              "lineTotalSatang": {
+                                                "type": "integer",
+                                                "minimum": 0,
+                                                "maximum": 10000000000
+                                              }
+                                            },
+                                            "required": [
+                                              "name",
+                                              "qty",
+                                              "lineTotalSatang"
+                                            ],
+                                            "additionalProperties": false
+                                          }
+                                        },
+                                        "totalSatang": {
+                                          "type": "integer"
+                                        },
+                                        "chargedBy": {
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "chargedById": {
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "chargedAt": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "kind",
+                                        "items",
+                                        "totalSatang",
+                                        "chargedBy",
+                                        "chargedById",
+                                        "chargedAt"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "payments": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "additionalBillId": {
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "amountSatang": {
+                                          "type": "integer"
+                                        },
+                                        "method": {
+                                          "type": "string"
+                                        },
+                                        "kind": {
+                                          "type": "string"
+                                        },
+                                        "takenBy": {
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "takenById": {
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "takenAt": {
+                                          "type": "string"
+                                        },
+                                        "businessDate": {
+                                          "type": "string",
+                                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                        },
+                                        "attemptId": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "amountSatang",
+                                        "method",
+                                        "kind",
+                                        "takenBy",
+                                        "takenById",
+                                        "takenAt",
+                                        "businessDate",
+                                        "attemptId"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "eventId",
+                                  "mainSettlementId",
+                                  "state",
+                                  "totalSatang",
+                                  "paidSatang",
+                                  "outstandingSatang",
+                                  "createdAt",
+                                  "paidAt",
+                                  "charges",
+                                  "payments"
+                                ],
+                                "additionalProperties": false
+                              }
                             }
                           },
                           "required": [
@@ -61286,6 +62309,10 @@
                               "items": {
                                 "type": "object",
                                 "properties": {
+                                  "additionalBillId": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
                                   "id": {
                                     "type": "string"
                                   },
@@ -61357,6 +62384,10 @@
                               "items": {
                                 "type": "object",
                                 "properties": {
+                                  "additionalBillId": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
                                   "id": {
                                     "type": "string"
                                   },
@@ -61567,6 +62598,189 @@
                               ],
                               "additionalProperties": false,
                               "nullable": true
+                            },
+                            "additionalBills": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "eventId": {
+                                    "type": "string"
+                                  },
+                                  "mainSettlementId": {
+                                    "type": "string"
+                                  },
+                                  "state": {
+                                    "type": "string",
+                                    "enum": [
+                                      "open",
+                                      "paid"
+                                    ]
+                                  },
+                                  "totalSatang": {
+                                    "type": "integer"
+                                  },
+                                  "paidSatang": {
+                                    "type": "integer"
+                                  },
+                                  "outstandingSatang": {
+                                    "type": "integer"
+                                  },
+                                  "createdAt": {
+                                    "type": "string"
+                                  },
+                                  "paidAt": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
+                                  "charges": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "additionalBillId": {
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "kind": {
+                                          "type": "string",
+                                          "enum": [
+                                            "ticket",
+                                            "fnb"
+                                          ]
+                                        },
+                                        "items": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "name": {
+                                                "type": "string",
+                                                "minLength": 1,
+                                                "maxLength": 300
+                                              },
+                                              "qty": {
+                                                "type": "integer",
+                                                "minimum": 0,
+                                                "maximum": 10000
+                                              },
+                                              "lineTotalSatang": {
+                                                "type": "integer",
+                                                "minimum": 0,
+                                                "maximum": 10000000000
+                                              }
+                                            },
+                                            "required": [
+                                              "name",
+                                              "qty",
+                                              "lineTotalSatang"
+                                            ],
+                                            "additionalProperties": false
+                                          }
+                                        },
+                                        "totalSatang": {
+                                          "type": "integer"
+                                        },
+                                        "chargedBy": {
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "chargedById": {
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "chargedAt": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "kind",
+                                        "items",
+                                        "totalSatang",
+                                        "chargedBy",
+                                        "chargedById",
+                                        "chargedAt"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "payments": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "additionalBillId": {
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "amountSatang": {
+                                          "type": "integer"
+                                        },
+                                        "method": {
+                                          "type": "string"
+                                        },
+                                        "kind": {
+                                          "type": "string"
+                                        },
+                                        "takenBy": {
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "takenById": {
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "takenAt": {
+                                          "type": "string"
+                                        },
+                                        "businessDate": {
+                                          "type": "string",
+                                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                        },
+                                        "attemptId": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "amountSatang",
+                                        "method",
+                                        "kind",
+                                        "takenBy",
+                                        "takenById",
+                                        "takenAt",
+                                        "businessDate",
+                                        "attemptId"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "eventId",
+                                  "mainSettlementId",
+                                  "state",
+                                  "totalSatang",
+                                  "paidSatang",
+                                  "outstandingSatang",
+                                  "createdAt",
+                                  "paidAt",
+                                  "charges",
+                                  "payments"
+                                ],
+                                "additionalProperties": false
+                              }
                             }
                           },
                           "required": [
@@ -62447,6 +63661,10 @@
                               "items": {
                                 "type": "object",
                                 "properties": {
+                                  "additionalBillId": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
                                   "id": {
                                     "type": "string"
                                   },
@@ -62518,6 +63736,10 @@
                               "items": {
                                 "type": "object",
                                 "properties": {
+                                  "additionalBillId": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
                                   "id": {
                                     "type": "string"
                                   },
@@ -62728,6 +63950,189 @@
                               ],
                               "additionalProperties": false,
                               "nullable": true
+                            },
+                            "additionalBills": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "eventId": {
+                                    "type": "string"
+                                  },
+                                  "mainSettlementId": {
+                                    "type": "string"
+                                  },
+                                  "state": {
+                                    "type": "string",
+                                    "enum": [
+                                      "open",
+                                      "paid"
+                                    ]
+                                  },
+                                  "totalSatang": {
+                                    "type": "integer"
+                                  },
+                                  "paidSatang": {
+                                    "type": "integer"
+                                  },
+                                  "outstandingSatang": {
+                                    "type": "integer"
+                                  },
+                                  "createdAt": {
+                                    "type": "string"
+                                  },
+                                  "paidAt": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
+                                  "charges": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "additionalBillId": {
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "kind": {
+                                          "type": "string",
+                                          "enum": [
+                                            "ticket",
+                                            "fnb"
+                                          ]
+                                        },
+                                        "items": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "name": {
+                                                "type": "string",
+                                                "minLength": 1,
+                                                "maxLength": 300
+                                              },
+                                              "qty": {
+                                                "type": "integer",
+                                                "minimum": 0,
+                                                "maximum": 10000
+                                              },
+                                              "lineTotalSatang": {
+                                                "type": "integer",
+                                                "minimum": 0,
+                                                "maximum": 10000000000
+                                              }
+                                            },
+                                            "required": [
+                                              "name",
+                                              "qty",
+                                              "lineTotalSatang"
+                                            ],
+                                            "additionalProperties": false
+                                          }
+                                        },
+                                        "totalSatang": {
+                                          "type": "integer"
+                                        },
+                                        "chargedBy": {
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "chargedById": {
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "chargedAt": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "kind",
+                                        "items",
+                                        "totalSatang",
+                                        "chargedBy",
+                                        "chargedById",
+                                        "chargedAt"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "payments": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "additionalBillId": {
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "amountSatang": {
+                                          "type": "integer"
+                                        },
+                                        "method": {
+                                          "type": "string"
+                                        },
+                                        "kind": {
+                                          "type": "string"
+                                        },
+                                        "takenBy": {
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "takenById": {
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "takenAt": {
+                                          "type": "string"
+                                        },
+                                        "businessDate": {
+                                          "type": "string",
+                                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                        },
+                                        "attemptId": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "amountSatang",
+                                        "method",
+                                        "kind",
+                                        "takenBy",
+                                        "takenById",
+                                        "takenAt",
+                                        "businessDate",
+                                        "attemptId"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "eventId",
+                                  "mainSettlementId",
+                                  "state",
+                                  "totalSatang",
+                                  "paidSatang",
+                                  "outstandingSatang",
+                                  "createdAt",
+                                  "paidAt",
+                                  "charges",
+                                  "payments"
+                                ],
+                                "additionalProperties": false
+                              }
                             }
                           },
                           "required": [
@@ -63320,6 +64725,9 @@
                           "items": {
                             "type": "object",
                             "properties": {
+                              "chargeApproved": {
+                                "type": "boolean"
+                              },
                               "productCode": {
                                 "type": "string",
                                 "nullable": true
@@ -63592,6 +65000,9 @@
                           "items": {
                             "type": "object",
                             "properties": {
+                              "chargeApproved": {
+                                "type": "boolean"
+                              },
                               "productCode": {
                                 "type": "string",
                                 "nullable": true
@@ -64321,6 +65732,10 @@
                               "items": {
                                 "type": "object",
                                 "properties": {
+                                  "additionalBillId": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
                                   "id": {
                                     "type": "string"
                                   },
@@ -64392,6 +65807,10 @@
                               "items": {
                                 "type": "object",
                                 "properties": {
+                                  "additionalBillId": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
                                   "id": {
                                     "type": "string"
                                   },
@@ -64602,6 +66021,189 @@
                               ],
                               "additionalProperties": false,
                               "nullable": true
+                            },
+                            "additionalBills": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "eventId": {
+                                    "type": "string"
+                                  },
+                                  "mainSettlementId": {
+                                    "type": "string"
+                                  },
+                                  "state": {
+                                    "type": "string",
+                                    "enum": [
+                                      "open",
+                                      "paid"
+                                    ]
+                                  },
+                                  "totalSatang": {
+                                    "type": "integer"
+                                  },
+                                  "paidSatang": {
+                                    "type": "integer"
+                                  },
+                                  "outstandingSatang": {
+                                    "type": "integer"
+                                  },
+                                  "createdAt": {
+                                    "type": "string"
+                                  },
+                                  "paidAt": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
+                                  "charges": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "additionalBillId": {
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "kind": {
+                                          "type": "string",
+                                          "enum": [
+                                            "ticket",
+                                            "fnb"
+                                          ]
+                                        },
+                                        "items": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "name": {
+                                                "type": "string",
+                                                "minLength": 1,
+                                                "maxLength": 300
+                                              },
+                                              "qty": {
+                                                "type": "integer",
+                                                "minimum": 0,
+                                                "maximum": 10000
+                                              },
+                                              "lineTotalSatang": {
+                                                "type": "integer",
+                                                "minimum": 0,
+                                                "maximum": 10000000000
+                                              }
+                                            },
+                                            "required": [
+                                              "name",
+                                              "qty",
+                                              "lineTotalSatang"
+                                            ],
+                                            "additionalProperties": false
+                                          }
+                                        },
+                                        "totalSatang": {
+                                          "type": "integer"
+                                        },
+                                        "chargedBy": {
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "chargedById": {
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "chargedAt": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "kind",
+                                        "items",
+                                        "totalSatang",
+                                        "chargedBy",
+                                        "chargedById",
+                                        "chargedAt"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "payments": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "additionalBillId": {
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "amountSatang": {
+                                          "type": "integer"
+                                        },
+                                        "method": {
+                                          "type": "string"
+                                        },
+                                        "kind": {
+                                          "type": "string"
+                                        },
+                                        "takenBy": {
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "takenById": {
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "takenAt": {
+                                          "type": "string"
+                                        },
+                                        "businessDate": {
+                                          "type": "string",
+                                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                        },
+                                        "attemptId": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "amountSatang",
+                                        "method",
+                                        "kind",
+                                        "takenBy",
+                                        "takenById",
+                                        "takenAt",
+                                        "businessDate",
+                                        "attemptId"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "eventId",
+                                  "mainSettlementId",
+                                  "state",
+                                  "totalSatang",
+                                  "paidSatang",
+                                  "outstandingSatang",
+                                  "createdAt",
+                                  "paidAt",
+                                  "charges",
+                                  "payments"
+                                ],
+                                "additionalProperties": false
+                              }
                             }
                           },
                           "required": [
@@ -64872,6 +66474,10 @@
                     "charge": {
                       "type": "object",
                       "properties": {
+                        "additionalBillId": {
+                          "type": "string",
+                          "nullable": true
+                        },
                         "id": {
                           "type": "string"
                         },
@@ -64940,6 +66546,10 @@
                     "payment": {
                       "type": "object",
                       "properties": {
+                        "additionalBillId": {
+                          "type": "string",
+                          "nullable": true
+                        },
                         "id": {
                           "type": "string"
                         },
@@ -65097,6 +66707,57 @@
                         ],
                         "additionalProperties": false
                       }
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "category": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "parentCategory": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "station": {
+                            "type": "string",
+                            "enum": [
+                              "kitchen",
+                              "bar"
+                            ]
+                          },
+                          "priceSatang": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "priceWeekendSatang": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "beoOnly": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "code",
+                          "name",
+                          "category",
+                          "parentCategory",
+                          "station",
+                          "priceSatang",
+                          "priceWeekendSatang",
+                          "beoOnly"
+                        ],
+                        "additionalProperties": false
+                      }
                     }
                   },
                   "required": [
@@ -65225,6 +66886,11 @@
                               "minLength": 1,
                               "maxLength": 64,
                               "nullable": true
+                            },
+                            "unitPriceSatang": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 10000000
                             },
                             "qty": {
                               "type": "integer",
@@ -65522,6 +67188,10 @@
                               "items": {
                                 "type": "object",
                                 "properties": {
+                                  "additionalBillId": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
                                   "id": {
                                     "type": "string"
                                   },
@@ -65593,6 +67263,10 @@
                               "items": {
                                 "type": "object",
                                 "properties": {
+                                  "additionalBillId": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
                                   "id": {
                                     "type": "string"
                                   },
@@ -65803,6 +67477,189 @@
                               ],
                               "additionalProperties": false,
                               "nullable": true
+                            },
+                            "additionalBills": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "eventId": {
+                                    "type": "string"
+                                  },
+                                  "mainSettlementId": {
+                                    "type": "string"
+                                  },
+                                  "state": {
+                                    "type": "string",
+                                    "enum": [
+                                      "open",
+                                      "paid"
+                                    ]
+                                  },
+                                  "totalSatang": {
+                                    "type": "integer"
+                                  },
+                                  "paidSatang": {
+                                    "type": "integer"
+                                  },
+                                  "outstandingSatang": {
+                                    "type": "integer"
+                                  },
+                                  "createdAt": {
+                                    "type": "string"
+                                  },
+                                  "paidAt": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
+                                  "charges": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "additionalBillId": {
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "kind": {
+                                          "type": "string",
+                                          "enum": [
+                                            "ticket",
+                                            "fnb"
+                                          ]
+                                        },
+                                        "items": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "name": {
+                                                "type": "string",
+                                                "minLength": 1,
+                                                "maxLength": 300
+                                              },
+                                              "qty": {
+                                                "type": "integer",
+                                                "minimum": 0,
+                                                "maximum": 10000
+                                              },
+                                              "lineTotalSatang": {
+                                                "type": "integer",
+                                                "minimum": 0,
+                                                "maximum": 10000000000
+                                              }
+                                            },
+                                            "required": [
+                                              "name",
+                                              "qty",
+                                              "lineTotalSatang"
+                                            ],
+                                            "additionalProperties": false
+                                          }
+                                        },
+                                        "totalSatang": {
+                                          "type": "integer"
+                                        },
+                                        "chargedBy": {
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "chargedById": {
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "chargedAt": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "kind",
+                                        "items",
+                                        "totalSatang",
+                                        "chargedBy",
+                                        "chargedById",
+                                        "chargedAt"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "payments": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "additionalBillId": {
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "amountSatang": {
+                                          "type": "integer"
+                                        },
+                                        "method": {
+                                          "type": "string"
+                                        },
+                                        "kind": {
+                                          "type": "string"
+                                        },
+                                        "takenBy": {
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "takenById": {
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "takenAt": {
+                                          "type": "string"
+                                        },
+                                        "businessDate": {
+                                          "type": "string",
+                                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                        },
+                                        "attemptId": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "amountSatang",
+                                        "method",
+                                        "kind",
+                                        "takenBy",
+                                        "takenById",
+                                        "takenAt",
+                                        "businessDate",
+                                        "attemptId"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "eventId",
+                                  "mainSettlementId",
+                                  "state",
+                                  "totalSatang",
+                                  "paidSatang",
+                                  "outstandingSatang",
+                                  "createdAt",
+                                  "paidAt",
+                                  "charges",
+                                  "payments"
+                                ],
+                                "additionalProperties": false
+                              }
                             }
                           },
                           "required": [
@@ -66395,6 +68252,9 @@
                           "items": {
                             "type": "object",
                             "properties": {
+                              "chargeApproved": {
+                                "type": "boolean"
+                              },
                               "productCode": {
                                 "type": "string",
                                 "nullable": true
@@ -66667,6 +68527,9 @@
                           "items": {
                             "type": "object",
                             "properties": {
+                              "chargeApproved": {
+                                "type": "boolean"
+                              },
                               "productCode": {
                                 "type": "string",
                                 "nullable": true
@@ -67069,6 +68932,9 @@
                         "id": {
                           "type": "string",
                           "format": "uuid"
+                        },
+                        "billingPending": {
+                          "type": "boolean"
                         },
                         "replayed": {
                           "type": "boolean"
@@ -68067,6 +69933,10 @@
                               "items": {
                                 "type": "object",
                                 "properties": {
+                                  "additionalBillId": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
                                   "id": {
                                     "type": "string"
                                   },
@@ -68138,6 +70008,10 @@
                               "items": {
                                 "type": "object",
                                 "properties": {
+                                  "additionalBillId": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
                                   "id": {
                                     "type": "string"
                                   },
@@ -68348,6 +70222,189 @@
                               ],
                               "additionalProperties": false,
                               "nullable": true
+                            },
+                            "additionalBills": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "eventId": {
+                                    "type": "string"
+                                  },
+                                  "mainSettlementId": {
+                                    "type": "string"
+                                  },
+                                  "state": {
+                                    "type": "string",
+                                    "enum": [
+                                      "open",
+                                      "paid"
+                                    ]
+                                  },
+                                  "totalSatang": {
+                                    "type": "integer"
+                                  },
+                                  "paidSatang": {
+                                    "type": "integer"
+                                  },
+                                  "outstandingSatang": {
+                                    "type": "integer"
+                                  },
+                                  "createdAt": {
+                                    "type": "string"
+                                  },
+                                  "paidAt": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
+                                  "charges": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "additionalBillId": {
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "kind": {
+                                          "type": "string",
+                                          "enum": [
+                                            "ticket",
+                                            "fnb"
+                                          ]
+                                        },
+                                        "items": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "name": {
+                                                "type": "string",
+                                                "minLength": 1,
+                                                "maxLength": 300
+                                              },
+                                              "qty": {
+                                                "type": "integer",
+                                                "minimum": 0,
+                                                "maximum": 10000
+                                              },
+                                              "lineTotalSatang": {
+                                                "type": "integer",
+                                                "minimum": 0,
+                                                "maximum": 10000000000
+                                              }
+                                            },
+                                            "required": [
+                                              "name",
+                                              "qty",
+                                              "lineTotalSatang"
+                                            ],
+                                            "additionalProperties": false
+                                          }
+                                        },
+                                        "totalSatang": {
+                                          "type": "integer"
+                                        },
+                                        "chargedBy": {
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "chargedById": {
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "chargedAt": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "kind",
+                                        "items",
+                                        "totalSatang",
+                                        "chargedBy",
+                                        "chargedById",
+                                        "chargedAt"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "payments": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "additionalBillId": {
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "amountSatang": {
+                                          "type": "integer"
+                                        },
+                                        "method": {
+                                          "type": "string"
+                                        },
+                                        "kind": {
+                                          "type": "string"
+                                        },
+                                        "takenBy": {
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "takenById": {
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "takenAt": {
+                                          "type": "string"
+                                        },
+                                        "businessDate": {
+                                          "type": "string",
+                                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                        },
+                                        "attemptId": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "amountSatang",
+                                        "method",
+                                        "kind",
+                                        "takenBy",
+                                        "takenById",
+                                        "takenAt",
+                                        "businessDate",
+                                        "attemptId"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "eventId",
+                                  "mainSettlementId",
+                                  "state",
+                                  "totalSatang",
+                                  "paidSatang",
+                                  "outstandingSatang",
+                                  "createdAt",
+                                  "paidAt",
+                                  "charges",
+                                  "payments"
+                                ],
+                                "additionalProperties": false
+                              }
                             }
                           },
                           "required": [
@@ -68618,6 +70675,10 @@
                     "charge": {
                       "type": "object",
                       "properties": {
+                        "additionalBillId": {
+                          "type": "string",
+                          "nullable": true
+                        },
                         "id": {
                           "type": "string"
                         },
@@ -68686,6 +70747,10 @@
                     "payment": {
                       "type": "object",
                       "properties": {
+                        "additionalBillId": {
+                          "type": "string",
+                          "nullable": true
+                        },
                         "id": {
                           "type": "string"
                         },
@@ -68786,6 +70851,10 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "additionalBillId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
                   "branchId": {
                     "type": "string",
                     "format": "uuid"
@@ -69060,6 +71129,10 @@
                               "items": {
                                 "type": "object",
                                 "properties": {
+                                  "additionalBillId": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
                                   "id": {
                                     "type": "string"
                                   },
@@ -69131,6 +71204,10 @@
                               "items": {
                                 "type": "object",
                                 "properties": {
+                                  "additionalBillId": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
                                   "id": {
                                     "type": "string"
                                   },
@@ -69341,6 +71418,189 @@
                               ],
                               "additionalProperties": false,
                               "nullable": true
+                            },
+                            "additionalBills": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "eventId": {
+                                    "type": "string"
+                                  },
+                                  "mainSettlementId": {
+                                    "type": "string"
+                                  },
+                                  "state": {
+                                    "type": "string",
+                                    "enum": [
+                                      "open",
+                                      "paid"
+                                    ]
+                                  },
+                                  "totalSatang": {
+                                    "type": "integer"
+                                  },
+                                  "paidSatang": {
+                                    "type": "integer"
+                                  },
+                                  "outstandingSatang": {
+                                    "type": "integer"
+                                  },
+                                  "createdAt": {
+                                    "type": "string"
+                                  },
+                                  "paidAt": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
+                                  "charges": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "additionalBillId": {
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "kind": {
+                                          "type": "string",
+                                          "enum": [
+                                            "ticket",
+                                            "fnb"
+                                          ]
+                                        },
+                                        "items": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "name": {
+                                                "type": "string",
+                                                "minLength": 1,
+                                                "maxLength": 300
+                                              },
+                                              "qty": {
+                                                "type": "integer",
+                                                "minimum": 0,
+                                                "maximum": 10000
+                                              },
+                                              "lineTotalSatang": {
+                                                "type": "integer",
+                                                "minimum": 0,
+                                                "maximum": 10000000000
+                                              }
+                                            },
+                                            "required": [
+                                              "name",
+                                              "qty",
+                                              "lineTotalSatang"
+                                            ],
+                                            "additionalProperties": false
+                                          }
+                                        },
+                                        "totalSatang": {
+                                          "type": "integer"
+                                        },
+                                        "chargedBy": {
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "chargedById": {
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "chargedAt": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "kind",
+                                        "items",
+                                        "totalSatang",
+                                        "chargedBy",
+                                        "chargedById",
+                                        "chargedAt"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "payments": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "additionalBillId": {
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "amountSatang": {
+                                          "type": "integer"
+                                        },
+                                        "method": {
+                                          "type": "string"
+                                        },
+                                        "kind": {
+                                          "type": "string"
+                                        },
+                                        "takenBy": {
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "takenById": {
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "takenAt": {
+                                          "type": "string"
+                                        },
+                                        "businessDate": {
+                                          "type": "string",
+                                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                        },
+                                        "attemptId": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "amountSatang",
+                                        "method",
+                                        "kind",
+                                        "takenBy",
+                                        "takenById",
+                                        "takenAt",
+                                        "businessDate",
+                                        "attemptId"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "eventId",
+                                  "mainSettlementId",
+                                  "state",
+                                  "totalSatang",
+                                  "paidSatang",
+                                  "outstandingSatang",
+                                  "createdAt",
+                                  "paidAt",
+                                  "charges",
+                                  "payments"
+                                ],
+                                "additionalProperties": false
+                              }
                             }
                           },
                           "required": [
@@ -69611,6 +71871,10 @@
                     "charge": {
                       "type": "object",
                       "properties": {
+                        "additionalBillId": {
+                          "type": "string",
+                          "nullable": true
+                        },
                         "id": {
                           "type": "string"
                         },
@@ -69679,6 +71943,10 @@
                     "payment": {
                       "type": "object",
                       "properties": {
+                        "additionalBillId": {
+                          "type": "string",
+                          "nullable": true
+                        },
                         "id": {
                           "type": "string"
                         },
@@ -69779,6 +72047,10 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "additionalBillId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
                   "branchId": {
                     "type": "string",
                     "format": "uuid"

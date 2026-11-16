@@ -1,5 +1,5 @@
 import { availablePartyDeposit } from './party-deposit-balance';
-import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { and, eq, inArray, isNull, isNotNull } from 'drizzle-orm';
 import type { FastifyBaseLogger } from 'fastify';
 import {
   branchHoliday,
@@ -284,7 +284,7 @@ async function partyExtraChargesOf(
 
 /** Earlier additional bills survive a main-sale refund; their exact sources are never sold again. */
 async function withoutRetainedAdditionalSources(db: Exec, operatorId: string, eventId: string, plan: PartyPlan): Promise<Pick<PartyPlan, 'setMenu' | 'barItems'>> {
-  const held = await db.select({ items: partyCharge.items }).from(partyCharge).where(and(eq(partyCharge.operatorId, operatorId), eq(partyCharge.otoappEventId, eventId)));
+  const held = await db.select({ items: partyCharge.items }).from(partyCharge).where(and(eq(partyCharge.operatorId, operatorId), eq(partyCharge.otoappEventId, eventId), isNotNull(partyCharge.additionalBillId)));
   type Source = { lineId: string; quantity: number; unitSatang: number; productCode?: string | null; area?: 'food' | 'bar'; name?: string };
   const sources = held.flatMap((row) => Array.isArray(row.items) ? row.items.flatMap((item: { beo?: Source } | null) => item?.beo ? [item.beo] : []) : []);
   const adjust = <T extends PartyPlan['setMenu'][number] | PartyPlan['barItems'][number]>(lines: readonly T[], area: 'food' | 'bar'): T[] => lines.map((line) => {

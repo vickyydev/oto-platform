@@ -186,6 +186,8 @@ beforeAll(async () => {
   const cat = newId();
   await ctx.db.insert(productCategory).values({ id: cat, operatorId, code: 'ZZ-907-FOOD', name: 'ZZ party food', taxableCategory: 'fnb', defaultPrepStation: 'kitchen' });
   await ctx.db.insert(product).values({ id: newId(), operatorId, branchId: central, categoryId: cat, kind: 'menu', code: 'ZZ-907-CAL', name: 'Calamari', priceSatang: 29_500 });
+  const [foreign] = await ctx.db.select().from(branch).where(sql`${branch.operatorId} <> ${operatorId}`).limit(1);
+  await ctx.db.insert(product).values({ id: newId(), operatorId: foreign!.operatorId, branchId: foreign!.id, kind: 'menu', code: 'ZZ-FOREIGN-ONLY', name: 'ZZ TEST foreign party food', priceSatang: 29_500 });
   await ctx.db.execute(sql`insert into otoapp.tenants (id, name, slug) values (${appTenant}, 'OTO', 'oto-907')`);
   await ctx.db.execute(sql`
     insert into otoapp.branches (id, tenant_id, name, address, core_branch_id)
