@@ -45,7 +45,7 @@ describe('SCRUM-993 cached Inbox boundary state', () => {
   });
   it('reloads identity once per distinct mismatch even when equivalent objects keep arriving', () => {
     const reload = vi.fn(async () => undefined);
-    const hook = renderHook(({ page, identity }: { page: Access; identity: Access }) => useInboxAccess(page, identity, reload), { page: restricted, identity: unrestricted }); cleanup = hook.unmount;
+    const hook = renderHook<{ page: Access; identity: Access }, Access>(({ page, identity }) => useInboxAccess(page, identity, reload), { page: restricted, identity: unrestricted }); cleanup = hook.unmount;
     for (let i = 0; i < 8; i++) hook.rerender({ page: { ...restricted }, identity: { ...unrestricted } });
     expect(reload).toHaveBeenCalledTimes(1); expect(hook.result.current).toEqual(restricted);
     hook.rerender({ page: restricted, identity: restricted });
@@ -55,7 +55,7 @@ describe('SCRUM-993 cached Inbox boundary state', () => {
   });
   it('a newer identity policy wins immediately over an old page and survives list reset or out-of-order completion', () => {
     const reload = vi.fn(async () => undefined);
-    const hook = renderHook(({ page, identity }: { page: Access; identity: Access }) => useInboxAccess(page, identity, reload), { page: unrestricted, identity: restricted }); cleanup = hook.unmount;
+    const hook = renderHook<{ page: Access; identity: Access }, Access>(({ page, identity }) => useInboxAccess(page, identity, reload), { page: unrestricted, identity: restricted }); cleanup = hook.unmount;
     expect(hook.result.current).toEqual(restricted); expect(reload).not.toHaveBeenCalled();
     hook.rerender({ page: undefined, identity: unrestricted }); expect(hook.result.current).toEqual(restricted);
     hook.rerender({ page: unrestricted, identity: unrestricted }); expect(hook.result.current).toEqual(restricted);
@@ -67,7 +67,7 @@ describe('SCRUM-993 cached Inbox boundary state', () => {
   });
   it('equal-version administrator revocation cannot restore stale unrestricted cache and reload remains bounded', () => {
     const reload = vi.fn(async () => undefined), oldAdmin = { ...unrestricted, version: 1 };
-    const hook = renderHook(({ page, identity }: { page: Access; identity: Access }) => useInboxAccess(page, identity, reload), { page: oldAdmin, identity: oldAdmin }); cleanup = hook.unmount;
+    const hook = renderHook<{ page: Access; identity: Access }, Access>(({ page, identity }) => useInboxAccess(page, identity, reload), { page: oldAdmin, identity: oldAdmin }); cleanup = hook.unmount;
     hook.rerender({ page: oldAdmin, identity: restricted });
     expect(hook.result.current).toEqual(restricted);
     for (let i = 0; i < 6; i++) hook.rerender({ page: { ...oldAdmin }, identity: { ...restricted } });
