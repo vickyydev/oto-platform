@@ -1,9 +1,9 @@
 import type { PartyBooking } from '@/types';
 
 /** Keep review on an open bill; collection retains its separately frozen target. */
-export function openAdditionalBillId(party: PartyBooking, selected = ''): string {
-  return party.additionalBills?.some((bill) => bill.id === selected && bill.state === 'open')
-    ? selected : party.additionalBills?.find((bill) => bill.state === 'open')?.id ?? '';
+export function openAdditionalBillId(bills: PartyBooking['additionalBills'], selected = ''): string {
+  return bills?.some((bill) => bill.id === selected && bill.state === 'open')
+    ? selected : bills?.find((bill) => bill.state === 'open')?.id ?? '';
 }
 
 export function additionalBillParty(party: PartyBooking, billId: string): PartyBooking {

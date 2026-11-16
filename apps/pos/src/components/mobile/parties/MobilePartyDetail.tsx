@@ -251,12 +251,12 @@ export function MobilePartyDetail({
           </SectionCard>
 
           {party.additionalBills?.map((additional, index) => (
-            <SectionCard key={additional.id} icon={ReceiptText} title={`Additional bill ${index + 1} ? ${additional.state}`}>
+            <SectionCard key={additional.id} icon={ReceiptText} title={`Additional bill ${index + 1} - ${additional.state}`}>
               <div className="text-xs space-y-1">
-                {additional.charges.flatMap((charge) => charge.items).map((item, at) => <InfoRow key={at} label={`${item.qty} ? ${item.name}`} value={`?${satangText(item.lineTotalSatang)}`} />)}
-                <InfoRow label="Total" value={`?${satangText(additional.totalSatang)}`} />
-                <InfoRow label="Paid" value={`?${satangText(additional.paidSatang)}`} />
-                <InfoRow label="Outstanding" value={`?${satangText(additional.outstandingSatang)}`} />
+                {additional.charges.flatMap((charge) => charge.items).map((item, at) => <InfoRow key={at} label={`${item.qty} x ${item.name}`} value={`THB ${satangText(item.lineTotalSatang)}`} />)}
+                <InfoRow label="Total" value={`THB ${satangText(additional.totalSatang)}`} />
+                <InfoRow label="Paid" value={`THB ${satangText(additional.paidSatang)}`} />
+                <InfoRow label="Outstanding" value={`THB ${satangText(additional.outstandingSatang)}`} />
                 <p className="text-muted-foreground">Original receipt unchanged. Bill reference {additional.id}</p>
               </div>
             </SectionCard>

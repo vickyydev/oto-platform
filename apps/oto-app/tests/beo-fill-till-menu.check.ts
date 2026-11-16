@@ -515,8 +515,8 @@ try {
     const fresh = await approve(ev.guards, { ...body, expectedState: (await beoReviewState(db, ev.guards)).version });
     assert.equal(fresh.status, 200, JSON.stringify(fresh.body));
     const held = (await beoRows(ev.guards)).kitchen.menus.kids;
-    assert.deepEqual(held.find((line: any) => line.id === manual.id), manual);
-    assert.ok(held.some((line: any) => line.productCode === "CF-14"));
+    assert.deepEqual(held.find((line: Record<string, unknown>) => line.id === manual.id), manual);
+    assert.ok(held.some((line: Record<string, unknown>) => line.productCode === "CF-14"));
   });
 
   await check("unknownEntertainmentIsAnUnresolvedRequestNotAFreeShow", async () => {
@@ -541,11 +541,11 @@ try {
     if (!heldSelection) await q("insert into beo_set_menu_selections (event_id, template_id, token) values ($1,$2,$3)", [ev.guards, cat.setMenu, token]);
     const response = await fetch(`${base}/api/beo/set-menu-selections/public/${token}`);
     assert.equal(response.status, 200);
-    const answer = await response.json() as any;
-    const manual = answer.plannedItems.find((line: any) => line.name === "ZZ TEST manually agreed food");
+    const answer = await response.json() as { plannedItems: Record<string, unknown>[]; template: { items: Record<string, unknown>[] } };
+    const manual = answer.plannedItems.find((line) => line.name === "ZZ TEST manually agreed food");
     assert.deepEqual(manual, { area: "Kids kitchen", name: "ZZ TEST manually agreed food", quantity: 2, included: false, unitSatang: 32100 });
     assert.ok(!JSON.stringify(answer.plannedItems).includes("internalCost"));
-    assert.ok(answer.template.items.every((item: any) => Object.keys(item).every((key) => ["id", "type", "label", "options", "allowMultiple", "qty", "note", "productCode", "optionProductCodes"].includes(key))));
+    assert.ok(answer.template.items.every((item) => Object.keys(item).every((key) => ["id", "type", "label", "options", "allowMultiple", "qty", "note", "productCode", "optionProductCodes"].includes(key))));
   });
 
   await check("pendingBillingStaysDurableWhenItsSourceIsRemoved", async () => {

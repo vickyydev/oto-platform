@@ -731,7 +731,7 @@ export async function settleParty(
   const [prior] = await db.select().from(partySettlement).where(eq(partySettlement.id, body.settlementId)).limit(1);
   if (prior) return replay(prior);
 
-  const { branchId, event, plan } = await partyAndPlan(db, actor, body, partyId);
+  const { branchId, event } = await partyAndPlan(db, actor, body, partyId);
   if (event.archived) throw errors.conflict('EVENT_ARCHIVED', 'This party has been archived in the OTO App');
   const counter = await stationAt(db, actor.operatorId, branchId, body.stationId);
   if (!counter) throw errors.badRequest('A party is settled at a counter: name the station');
@@ -788,7 +788,10 @@ export async function settleParty(
       });
     }
 
-    const built = await buildSettlement(tx, actor, branchId, event, plan, body, body.settlementId);
+    const locked = await readPartyPlan(tx, { branchId, eventId: event.id });
+    if (!locked.plan) throw errors.conflict('PARTY_PLAN_CHANGED', 'Reload the party before settling it.');
+    const currentPlan = locked.plan;
+    const built = await buildSettlement(tx, actor, branchId, event, currentPlan, body, body.settlementId);
     const committed = await commitSale(
       tx,
       actor,
@@ -830,7 +833,7 @@ export async function settleParty(
           partyDeposit: true,
           partyEventId: event.id,
           settlementId: body.settlementId,
-          depositSatang: plan.settlement.depositSatang,
+          depositSatang: currentPlan.settlement.depositSatang,
           recordedByAccountId: actor.accountId,
           ...(actionId ? { actionId } : {}),
         },
@@ -852,13 +855,13 @@ export async function settleParty(
         socksGiven: body.socksGiven,
         tier: body.tier ?? null,
         rateMode: built.composition.rateMode,
-        partyDate: plan.partyDate,
+        partyDate: currentPlan.partyDate,
         plan: {
-          package: plan.package,
+          package: currentPlan.package,
           addOnIds: body.addOnIds,
           entertainmentIds: body.entertainmentIds,
           quote,
-          beoLineQuantities: Object.fromEntries([...plan.setMenu, ...plan.barItems].flatMap((line) => line.lineId ? [[line.lineId, line.qty ?? 1]] : [])),
+          beoLineQuantities: Object.fromEntries([...currentPlan.setMenu, ...currentPlan.barItems].flatMap((line) => line.lineId ? [[line.lineId, line.qty ?? 1]] : [])),
         },
         depositSatang: quote.depositSatang,
         depositAttemptId,
@@ -882,9 +885,9 @@ export async function settleParty(
       after: {
         eventId: event.id,
         saleId: committed.sale.id,
-        package: plan.package.name,
-        packageTemplateId: plan.package.templateId,
-        partyDate: plan.partyDate,
+        package: currentPlan.package.name,
+        packageTemplateId: currentPlan.package.templateId,
+        partyDate: currentPlan.partyDate,
         rateMode: built.composition.rateMode,
         kids: body.kids,
         adults: body.adults,

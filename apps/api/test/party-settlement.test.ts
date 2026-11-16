@@ -1,3 +1,5 @@
+import { lockParty } from '../src/services/party-tab';
+import { setTimeout as delay } from 'node:timers/promises';
 import { syncBeoAdditionalCharges, priceBeoAddition } from "../src/services/beo-additional-charges";
 import { randomBytes } from 'node:crypto';
 import { and, asc, eq, sql } from 'drizzle-orm';
@@ -1606,6 +1608,36 @@ describe('SCRUM-990 HIGH: independent additional bills after a paid main receipt
     const ambiguous = await preview(id, { kids: 10, adults: 4, socksGiven: 0 });
     expect(ambiguous.status).toBe(409);
     expect((ambiguous.body as unknown as { error: { code: string } }).error.code).toBe('BEO_RETAINED_BILL_SOURCE_CHANGED');
+  });
+
+  it('rereads a changed BEO plan after waiting for the party lock and refuses the old preview total', async () => {
+    const id = newId();
+    await appParty(id, 'ZZ TEST 990 waiting settlement', WEEKDAY, 16900, 0);
+    await appPlan(id, WEEKDAY, FLORESTA, { depositSatang: 0, setMenu: [] });
+    const old = await preview(id, { kids: 10, adults: 4, socksGiven: 0 });
+    let request!: ReturnType<typeof settle>;
+    await ctx.db.transaction(async (tx) => {
+      await lockParty(tx, id);
+      request = settle(id, { kids: 10, adults: 4, socksGiven: 0, expectedTotalSatang: old.body.quote.totalSatang });
+      let blocked = false;
+      const until = Date.now() + 10000;
+      while (Date.now() < until) {
+        const waiting = await ctx.db.execute<{ waiting: boolean }>(sql`select exists(select 1 from pg_locks l join pg_stat_activity a on a.pid=l.pid where a.datname=current_database() and not l.granted and a.wait_event='advisory') as waiting`);
+        if (waiting.rows[0]?.waiting) { blocked = true; break; }
+        await delay(20);
+      }
+      if (!blocked) throw new Error('Settlement did not reach the held party lock');
+      await tx.execute(sql`update zz_party_contract.event_packages set kitchen_plan = ${JSON.stringify({ version: 1, lines: [{ line_id: 'ZZ-TEST-newer-plan', source: 'extra', name: 'ZZ TEST newer food', product_code: null, qty: 2, unit_price_satang: 10000 }], bar_lines: [] })}::jsonb where event_id=${id}`);
+    });
+    const stale = await request;
+    expect(stale.status, JSON.stringify(stale.body)).toBe(409);
+    expect((stale.body as unknown as { error: { code: string } }).error.code).toBe('SALE_TOTAL_MISMATCH');
+    expect(await ctx.db.select().from(partySettlement).where(eq(partySettlement.otoappEventId, id))).toEqual([]);
+    const fresh = await settle(id, { kids: 10, adults: 4, socksGiven: 0 });
+    expect(fresh.status, JSON.stringify(fresh.body)).toBe(200);
+    expect(fresh.body.sale.grossSatang).toBe(old.body.quote.totalSatang + 20000);
+    const [saved] = await ctx.db.select().from(partySettlement).where(eq(partySettlement.id, fresh.body.settlement.id));
+    expect(saved?.plan).toMatchObject({ beoLineQuantities: { 'ZZ-TEST-newer-plan': 2 } });
   });
 
   it('uses existing source gross with exclusive VAT and nonzero service, rather than base times quantity', async () => {

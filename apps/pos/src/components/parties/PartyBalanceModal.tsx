@@ -87,7 +87,7 @@ export function PartyBalanceModal({
   onBillMoved,
   displayHandoff,
 }: PartyBalanceModalProps) {
-  const [selectedBillId, setSelectedBillId] = useState(() => openAdditionalBillId(party));
+  const [selectedBillId, setSelectedBillId] = useState(() => openAdditionalBillId(party.additionalBills));
   const selectedBill = party.additionalBills?.find((bill) => bill.id === selectedBillId);
   const billingParty = additionalBillParty(party, selectedBillId);
   const total = selectedBill ? selectedBill.totalSatang / 100 : computePartyTotal(party);
@@ -122,7 +122,7 @@ export function PartyBalanceModal({
 
   useEffect(() => {
     if (open) {
-      setSelectedBillId(openAdditionalBillId(party));
+      setSelectedBillId(openAdditionalBillId(party.additionalBills));
       setCollectBillId(undefined);
       setStage('review');
       setMode('full');
@@ -133,11 +133,13 @@ export function PartyBalanceModal({
       setCollectOutstanding(0);
       setRecording(false);
     }
+    // A live party refresh must not reset an active collection session.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   useEffect(() => {
     if (!open || stage !== 'review') return;
-    setSelectedBillId((selected) => openAdditionalBillId(party, selected));
+    setSelectedBillId((selected) => openAdditionalBillId(party.additionalBills, selected));
   }, [open, party.id, party.additionalBills, stage]);
 
   const amount = useMemo(() => {

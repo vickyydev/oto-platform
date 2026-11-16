@@ -344,7 +344,6 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
   // Asked only while the form is open: the page itself shows the plan to everyone.
   const mayEditKitchen = editing && can('pos:party:kitchen_update');
   const [kitchenChoices, setKitchenChoices] = useState<PartyKitchenChoicesAnswer | null>(null);
-  const hasChoiceGroups = !!kitchenPlan?.setMenu.some((m) => !!m.choiceGroup);
   useEffect(() => {
     if (!editing || !mayEditKitchen) return;
     let live = true;

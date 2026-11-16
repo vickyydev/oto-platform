@@ -79,7 +79,7 @@ export function MobilePartyPayment({
   displayHandoff,
 }: MobilePartyPaymentProps) {
   const { t } = useLanguage();
-  const [selectedBillId, setSelectedBillId] = useState(() => openAdditionalBillId(party));
+  const [selectedBillId, setSelectedBillId] = useState(() => openAdditionalBillId(party.additionalBills));
   const [collectBillId, setCollectBillId] = useState<string | undefined>();
   const selectedBill = party.additionalBills?.find((bill) => bill.id === selectedBillId);
   const billingParty = additionalBillParty(party, selectedBillId);
@@ -104,7 +104,6 @@ export function MobilePartyPayment({
 
   useEffect(() => {
     setStep('pick');
-    setSelectedBillId(openAdditionalBillId(party));
     setCollectBillId(undefined);
     setMode('full');
     setPartialText('');
@@ -116,7 +115,7 @@ export function MobilePartyPayment({
   }, [party.id]);
 
   useEffect(() => {
-    if (step === 'pick') setSelectedBillId((selected) => openAdditionalBillId(party, selected));
+    if (step === 'pick') setSelectedBillId((selected) => openAdditionalBillId(party.additionalBills, selected));
   }, [party.id, party.additionalBills, step]);
 
   const amount = useMemo(() => {
@@ -347,7 +346,7 @@ export function MobilePartyPayment({
               <span>Bill to collect</span>
               <select id="additional-party-bill" className="w-full rounded border bg-background p-3" value={selectedBillId} onChange={(event) => { setSelectedBillId(event.target.value); setPartialText(''); }}>
                 <option value="">Older unassigned tab</option>
-                {party.additionalBills?.filter((bill) => bill.state === 'open').map((bill) => <option key={bill.id} value={bill.id}>Additional bill {bill.id.slice(0, 8)} ? ?{bahtText(bill.outstandingSatang / 100)}</option>)}
+                {party.additionalBills?.filter((bill) => bill.state === 'open').map((bill) => <option key={bill.id} value={bill.id}>Additional bill {bill.id.slice(0, 8)} - THB {bahtText(bill.outstandingSatang / 100)}</option>)}
               </select>
             </label>
           )}

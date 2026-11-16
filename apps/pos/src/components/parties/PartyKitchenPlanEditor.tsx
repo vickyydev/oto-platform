@@ -76,7 +76,7 @@ function MenuPickInput({
   onPick: (patch: Pick<KitchenDraftLine, 'name' | 'productCode' | 'onTillMenu' | 'unitPriceSatang'>) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const matches = useMemo(() => (open && !line.productCode ? kitchenMenuMatches(menu.filter((item) => !item.station || item.station === (line.list === 'bar' ? 'bar' : 'kitchen')), line.name) : []), [open, line.name, line.productCode, menu]);
+  const matches = useMemo(() => (open && !line.productCode ? kitchenMenuMatches(menu.filter((item) => !item.station || item.station === (line.list === 'bar' ? 'bar' : 'kitchen')), line.name) : []), [open, line.name, line.productCode, line.list, menu]);
   return (
     <div className="relative flex-1 min-w-0">
       <Input
