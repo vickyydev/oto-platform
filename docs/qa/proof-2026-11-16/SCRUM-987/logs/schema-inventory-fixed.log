@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 C:/oto-lanes/tom-deposit-gate-20261116/packages/db
+
+ ✓ test/schema-shape.test.ts (14 tests) 8ms
+
+ Test Files  1 passed (1)
+      Tests  14 passed (14)
+   Start at  23:37:45
+   Duration  2.11s (transform 783ms, setup 0ms, collect 1.66s, tests 8ms, environment 0ms, prepare 180ms)
+

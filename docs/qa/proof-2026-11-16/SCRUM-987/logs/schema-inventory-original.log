@@ -1,0 +1,61 @@
+
+ RUN  v3.2.7 C:/oto-lanes/codex-inbox-feedback-20261116/packages/db
+
+ ❯ test/schema-shape.test.ts (14 tests | 1 failed) 14ms
+   ✓ retains one scoped display response per credential with restrictive history references (SCRUM-201) 1ms
+   ✓ tenancy columns (SCRUM-292) > reads every table in the schema 0ms
+   × tenancy columns (SCRUM-292) > every table declares operator_id, names its scoped parent, or is a listed exception 6ms
+     → NEW table with no tenancy column and no named parent. Fix it, or add it to the list in this file with the ticket that will.: expected [ 'pos.prebooking_deposit_request' ] to deeply equal []
+   ✓ tenancy columns (SCRUM-292) > every claimed parent exists, is joined by a real foreign key, and is itself scoped 1ms
+   ✓ tenancy columns (SCRUM-292) > the edge family really is reachable through its box, which is why it is debt and not a hole 0ms
+   ✓ tenancy columns (SCRUM-292) > every listed exception is still a table, so the lists cannot rot 0ms
+   ✓ tenancy columns (SCRUM-292) > a branch-scoped row is an operator-scoped row: branch_id implies operator_id or a named parent 0ms
+   ✓ tenancy columns (SCRUM-292) > every tenancy column is a real foreign key, not a loose uuid 3ms
+   ✓ timestamps (SCRUM-292) > every timestamp column carries a timezone 0ms
+   ✓ timestamps (SCRUM-292) > is actually looking at timestamp columns 0ms
+   ✓ soft deletion (SCRUM-292) > every unique key on an archivable table is partial on archived_at 0ms
+   ✓ soft deletion (SCRUM-292) > every exempt unique key still exists 0ms
+   ✓ phone numbers (SCRUM-292) > is actually looking at phone columns 0ms
+   ✓ phone numbers (SCRUM-292) > every phone column is constrained to E.164 by the database 0ms
+node.exe : 
+At C:\Users\waqar\AppData\Roaming\npm\pnpm.ps1:24 char:5
++     & "node$exe"  "$basedir/node_modules/pnpm/bin/pnpm.cjs" $args
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/schema-shape.test.ts > tenancy columns (SCRUM-292) > every table declares operator_id, names its scoped 
+parent, or is a listed exception
+AssertionError: NEW table with no tenancy column and no named parent. Fix it, or add it to the list in this file with 
+the ticket that will.: expected [ 'pos.prebooking_deposit_request' ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "pos.prebooking_deposit_request",
++ ]
+
+ ❯ expectKnownFailures test/schema-shape.test.ts:112:5
+    110|     actual.filter((v) => !expected.has(v)).sort(),
+    111|     `NEW ${label}. Fix it, or add it to the list in this file with the…
+    112|   ).toEqual([]);
+       |     ^
+    113|   expect(
+    114|     known.filter((v) => !seen.has(v)).sort(),
+ ❯ test/schema-shape.test.ts:238:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 13 passed (14)
+   Start at  23:36:58
+   Duration  2.03s (transform 745ms, setup 0ms, collect 1.58s, tests 14ms, environment 0ms, prepare 178ms)
+
+undefined
+C:\oto-lanes\codex-inbox-feedback-20261116\packages\db:
+ ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL  Command failed with exit code 1: vitest run test/schema-shape.test.ts

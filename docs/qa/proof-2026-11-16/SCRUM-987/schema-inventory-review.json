@@ -1,0 +1,31 @@
+{
+  "at": "2026-11-16T16:42:52.533Z",
+  "candidate": "c0b28c3ff6108b37b4930d706a19b2fe489a6949",
+  "outcome": "Reviewed: precise existing parent-scope registry entry, no weakened assertion",
+  "original": {
+    "passed": 13,
+    "failed": 1,
+    "context": "Combined 987 and isolated 993 source; missing 987 parent registration"
+  },
+  "fixed": {
+    "wholeFilePassed": 14,
+    "lintOutputBytes": 0
+  },
+  "productChanges": false,
+  "migrationChanges": false,
+  "stagingSource": "caa85d054536b04bbb6afb02c776485195e28424",
+  "receipts": [
+    {
+      "path": "logs/schema-inventory-original.log",
+      "sourceSha256": "e73ace8afb9f76d5a6d502dde51e88d7591e93936376db879e55ea6cecbb5540"
+    },
+    {
+      "path": "logs/schema-inventory-fixed.log",
+      "sourceSha256": "b9be256ae42ef2dbc886bd1a0768d9b6dc8f87765f8df6f11d3b849079dce978"
+    },
+    {
+      "path": "logs/schema-inventory-lint.log",
+      "sourceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ]
+}

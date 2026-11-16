@@ -1,0 +1,33 @@
+{
+  "observedAt": "2026-11-16T16:41:51.061Z",
+  "sha": "caa85d054536b04bbb6afb02c776485195e28424",
+  "receipts": [
+    {
+      "name": "oto-app-staging",
+      "serviceId": "srv-danppvjtqb8s73cnvua0",
+      "id": "dep-dbtj0hbl550s73ddtao0",
+      "requestedAt": "2026-11-16T16:33:08.670Z",
+      "sha": "caa85d054536b04bbb6afb02c776485195e28424",
+      "reused": false,
+      "status": "live"
+    },
+    {
+      "name": "oto-api-staging",
+      "serviceId": "srv-danh2ljtqb8s73bt9en0",
+      "id": "dep-dbtj2dou01pc73e2gug0",
+      "requestedAt": "2026-11-16T16:37:11.067Z",
+      "sha": "caa85d054536b04bbb6afb02c776485195e28424",
+      "reused": false,
+      "status": "update_in_progress"
+    },
+    {
+      "name": "oto-inbox-staging",
+      "serviceId": "srv-dbbb4srrjlhs73dk2rm0",
+      "id": "dep-dbtj2e8u01pc73e2h16g",
+      "requestedAt": "2026-11-16T16:37:12.949Z",
+      "sha": "caa85d054536b04bbb6afb02c776485195e28424",
+      "reused": false,
+      "status": "live"
+    }
+  ]
+}
