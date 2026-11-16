@@ -1,3 +1,5 @@
+**16 November 2026 update:** the owner has joined and saved both POST webhooks. The existing test line is reused, with one private allowed recipient initially; Tom remains approved to join alongside the owner once his number is available. The owner approved test-line chat refresh at about three seconds and suppression of real manager/GM notices for the exact sandbox sender only. Staff still see and take over the conversation. Native WhatsApp and staff UI acceptance is pending the named deployment and first owner question; no live acceptance is inferred from local checks. See `docs/qa/proof-2026-11-16/SCRUM-908`. The earlier open handover-notification question below is resolved by this scoped demo ruling.
+
 # A real WhatsApp number on the unified inbox: what was decided and what is built (12 November 2026)
 
 Ticket: SCRUM-908, "Connect a real WhatsApp number to the unified inbox through

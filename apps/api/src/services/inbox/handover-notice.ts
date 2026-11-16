@@ -1,7 +1,9 @@
-import { and, asc, eq, inArray, isNull, lte, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, lte, notExists, sql } from 'drizzle-orm';
 import type { FastifyBaseLogger } from 'fastify';
 import {
   branch,
+  channelAccount,
+  conversation,
   handoverNotification,
   type BranchNoticeContact,
   type Db,
@@ -10,10 +12,12 @@ import {
   type InboxCategory,
 } from '@oto/db';
 import { newId, normalizePhone } from '@oto/shared';
+import { TWILIO_SANDBOX_NUMBER } from '@oto/messaging';
 import { audit } from '../audit';
 import type { OtoAppDirectory } from '../otoapp-directory';
 import type { SmsSender } from '../sms';
 import { withTx, type Exec, type Tx } from '../tx';
+import { isTestLine } from './test-line';
 
 /**
  * A HAND-OVER TELLS A PERSON (SCRUM-823; owner, 10 Nov 2026).
@@ -81,6 +85,15 @@ export const NOTICE_MAX_ATTEMPTS = 3;
 /** A claimed notice whose sender died is taken again after this long. */
 const NOTICE_LEASE_MS = 2 * 60_000;
 const BATCH = 25;
+/** Sandbox hand-overs stay in the staff queue without notifying real managers. */
+export const TEST_LINE_SUPPRESSED = 'TEST_LINE_SUPPRESSED';
+
+async function testConversation(exec: Exec, operatorId: string, conversationId: string): Promise<boolean> {
+  const [account] = await exec.select({ provider: channelAccount.provider, externalId: channelAccount.externalId }).from(conversation)
+    .innerJoin(channelAccount, and(eq(channelAccount.id, conversation.channelAccountId), eq(channelAccount.operatorId, operatorId)))
+    .where(and(eq(conversation.id, conversationId), eq(conversation.operatorId, operatorId))).limit(1);
+  return account !== undefined && isTestLine(account) && account.externalId === TWILIO_SANDBOX_NUMBER;
+}
 
 export interface HandoverNoticeDeps {
   /** The OTO App's directory: the bell. A directory without `notify` (or unconfigured) records the bell failed. */
@@ -198,6 +211,7 @@ export interface QueueHandoverInput {
 export async function queueHandoverNotices(tx: Tx, input: QueueHandoverInput): Promise<number> {
   if (!NOTIFIED_DESTINATIONS.has(input.destination)) return 0;
   if (!input.intents.includes(NOTIFIED_INTENT)) return 0;
+  if (await testConversation(tx, input.operatorId, input.conversationId)) return 0;
   const parks = await parksFor(tx, input.operatorId, input.branchId);
   const rows = targetsOf(parks, 'notice', input.branchId).map((t) => ({
     id: newId(),
@@ -359,7 +373,11 @@ export async function deliverHandoverNotices(db: Db, deps: HandoverNoticeDeps, n
     const park = row.branchId ? (parks.get(row.branchId) ?? null) : null;
     let result: SendResult;
     try {
-      result = await sendOne(deps, row, park, handed.get(row.turnId) ?? row.createdAt);
+      // Also fence notices queued before the sandbox guard was deployed,
+      // including already queued GM escalations and retried directory calls.
+      result = await testConversation(db, row.operatorId, row.conversationId)
+        ? { state: 'skipped', code: TEST_LINE_SUPPRESSED }
+        : await sendOne(deps, row, park, handed.get(row.turnId) ?? row.createdAt);
     } catch {
       result = { state: 'retry', code: 'SEND_FAILED' };
     }
@@ -462,6 +480,12 @@ export async function runHandoverEscalationJob(db: Db, deps: HandoverNoticeDeps,
         isNull(handoverNotification.escalatedAt),
         isNull(handoverNotification.pickedUpAt),
         lte(handoverNotification.createdAt, due),
+        sql`${handoverNotification.errorCode} is distinct from ${TEST_LINE_SUPPRESSED}`,
+        // Exclude historical sandbox notices in every state before LIMIT:
+        // already-sent demo turns must not crowd real parks out of the sweep.
+        notExists(db.select({ id: conversation.id }).from(conversation)
+          .innerJoin(channelAccount, and(eq(channelAccount.id, conversation.channelAccountId), eq(channelAccount.operatorId, conversation.operatorId)))
+          .where(and(eq(conversation.id, handoverNotification.conversationId), eq(conversation.operatorId, handoverNotification.operatorId), eq(channelAccount.provider, 'twilio'), eq(channelAccount.externalId, TWILIO_SANDBOX_NUMBER)))),
       ),
     )
     .groupBy(handoverNotification.operatorId, handoverNotification.turnId)
@@ -492,6 +516,7 @@ async function escalate(db: Db, operatorId: string, turnId: string, now: Date): 
       .for('update');
     const first = notices[0];
     if (!first || notices.some((n) => n.escalatedAt !== null || n.pickedUpAt !== null)) return 'none';
+    if (await testConversation(tx, operatorId, first.conversationId)) return 'none';
     const picked = await pickedUpAt(tx, operatorId, first.conversationId, first.createdAt);
     if (picked) {
       await tx
@@ -581,7 +606,11 @@ export async function handoverNoticesOf(exec: Exec, operatorId: string, conversa
     .where(and(eq(handoverNotification.operatorId, operatorId), eq(handoverNotification.conversationId, conversationId)))
     .orderBy(asc(handoverNotification.createdAt), asc(handoverNotification.id));
   const byTurn = new Map<string, NoticeRow[]>();
-  for (const r of rows) byTurn.set(r.turnId, [...(byTurn.get(r.turnId) ?? []), r]);
+  // The staff-visible ai_handover event remains. A sandbox skip must not
+  // claim that a real manager was notified, picked up, or merely logged.
+  for (const r of rows) {
+    if (r.errorCode !== TEST_LINE_SUPPRESSED) byTurn.set(r.turnId, [...(byTurn.get(r.turnId) ?? []), r]);
+  }
   const iso = (d: Date | null) => (d ? d.toISOString() : null);
   const earliest = (ds: (Date | null)[]) => ds.filter((d): d is Date => d !== null).sort((a, b) => a.getTime() - b.getTime())[0] ?? null;
   return [...byTurn.entries()].map(([turnId, set]) => {

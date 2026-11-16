@@ -1,0 +1,55 @@
+{
+  "at": "2026-11-16T08:15:52.829Z",
+  "base": "63305244ba32f7ee35eb0b137d74913d74d7f8e1",
+  "sourceFiles": [
+    {
+      "path": "apps/api/src/services/inbox/handover-notice.ts",
+      "sha256": "376c7cdc2c4f46d4ae74027c9761da3b8444326fb4dc2db8b0fd81dec6fb0f9e"
+    },
+    {
+      "path": "apps/api/test/s908-sandbox-handover-review.test.ts",
+      "sha256": "0d84092bf61c77592e0f4b78b129817ea0f1537471846fd2848b202e3574513e"
+    },
+    {
+      "path": "apps/inbox/src/components/Workspace.tsx",
+      "sha256": "c3554469e850d0ab44ab72e9b133e3679b913893fd679ff733f031ab84fef7ff"
+    },
+    {
+      "path": "apps/inbox/src/lib/refresh.ts",
+      "sha256": "aa4828a7a12807beeadf9f10b08a5eae40613456d6eeb7538d509894f3232be5"
+    },
+    {
+      "path": "apps/inbox/test/test-line-refresh-908.test.ts",
+      "sha256": "6c967718901617d76bbcc00b5e4516e91fd2a44a8c761411bebca7e5aab197dd"
+    }
+  ],
+  "api": {
+    "files": 3,
+    "passed": 33,
+    "failed": 0
+  },
+  "inbox": {
+    "files": 27,
+    "passed": 453,
+    "failed": 0
+  },
+  "apiTypecheck": {
+    "exitCode": 0,
+    "outputBytes": 0
+  },
+  "inboxTypecheck": {
+    "exitCode": 0,
+    "outputBytes": 0
+  },
+  "sourceReview": "approved",
+  "migration": false,
+  "nativeBrowser": "unavailable; no substitute browser automation",
+  "liveEndToEnd": "pending",
+  "touchedLint": {
+    "exitCode": 0,
+    "outputBytes": 0
+  },
+  "inboxBuild": {
+    "exitCode": 0
+  }
+}

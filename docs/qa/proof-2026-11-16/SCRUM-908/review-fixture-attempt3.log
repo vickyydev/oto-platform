@@ -1,0 +1,298 @@
+
+ RUN  v3.2.7 C:/oto-lanes/codex-whatsapp-908-20261116/apps/api
+
+stdout | test/s908-sandbox-handover-review.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/s908-sandbox-handover-review.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-TDkp32 ... 
+
+stdout | test/s908-sandbox-handover-review.test.ts
+ok
+
+
+stdout | test/s908-sandbox-handover-review.test.ts
+creating subdirectories ... 
+
+stdout | test/s908-sandbox-handover-review.test.ts
+ok
+
+
+stdout | test/s908-sandbox-handover-review.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ... 
+
+stdout | test/s908-sandbox-handover-review.test.ts
+100
+selecting default shared_buffers ... 
+
+stdout | test/s908-sandbox-handover-review.test.ts
+128MB
+selecting default time zone ... 
+
+stdout | test/s908-sandbox-handover-review.test.ts
+Asia/Bangkok
+creating configuration files ... 
+
+stdout | test/s908-sandbox-handover-review.test.ts
+ok
+running bootstrap script ... 
+
+stdout | test/s908-sandbox-handover-review.test.ts
+ok
+
+
+stdout | test/s908-sandbox-handover-review.test.ts
+performing post-bootstrap initialization ... 
+
+stdout | test/s908-sandbox-handover-review.test.ts
+ok
+syncing data to disk ... 
+
+stdout | test/s908-sandbox-handover-review.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-whatsapp^-908^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-TDkp32^" -l logfile start
+
+
+
+stdout | test/s908-sandbox-handover-review.test.ts
+2026-11-16 15:11:25.479 +07 [96488] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/s908-sandbox-handover-review.test.ts
+2026-11-16 15:11:25.482 +07 [96488] LOG:  listening on IPv6 address "::1", port 63771
+
+
+stdout | test/s908-sandbox-handover-review.test.ts
+2026-11-16 15:11:25.482 +07 [96488] LOG:  listening on IPv4 address "127.0.0.1", port 63771
+
+
+stdout | test/s908-sandbox-handover-review.test.ts
+2026-11-16 15:11:25.524 +07 [25980] LOG:  database system was shut down at 2026-11-16 15:11:23 +07
+
+
+stdout | test/s908-sandbox-handover-review.test.ts
+2026-11-16 15:11:25.549 +07 [96488] LOG:  database system is ready to accept connections
+
+
+stdout | test/s908-sandbox-handover-review.test.ts
+2026-11-16 15:11:29.075 +07 [73312] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/s908-sandbox-handover-review.test.ts
+Suite registry: registered 6 app(s).
+
+stdout | test/s908-sandbox-handover-review.test.ts
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/s908-sandbox-handover-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/s908-sandbox-handover-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+node.exe : (node:85756) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the 
+logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level 
+option will be removed in `fastify@6`.
+At C:\Users\waqar\AppData\Roaming\npm\pnpm.ps1:24 char:5
++     & "node$exe"  "$basedir/node_modules/pnpm/bin/pnpm.cjs" $args
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ((node:85756) [F...in `fastify@6`.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/s908-sandbox-handover-review.test.ts > SCRUM-908 sandbox handover review > P1 FIXED: pending manager bells, phone pings and already queued GM notices are skipped before any sender runs
+2026-11-16 15:11:30.692 +07 [99720] ERROR:  duplicate key value violates unique constraint "channel_account_external_unique"
+2026-11-16 15:11:30.692 +07 [99720] DETAIL:  Key (operator_id, provider, external_id)=(01a1e369-44a0-7525-aa87-03dd9c36905b, simulator, +14155238886) already exists.
+2026-11-16 15:11:30.692 +07 [99720] STATEMENT:  update "inbox"."channel_account" set "provider" = $1, "updated_at" = $2 where "inbox"."channel_account"."provider" = $3
+
+
+stdout | test/s908-sandbox-handover-review.test.ts > SCRUM-908 sandbox handover review > P1 control: a non-sandbox Twilio sender still notifies the manager and escalates to the GM normally
+2026-11-16 15:11:30.876 +07 [54096] ERROR:  duplicate key value violates unique constraint "channel_account_external_unique"
+2026-11-16 15:11:30.876 +07 [54096] DETAIL:  Key (operator_id, provider, external_id)=(01a1e369-44a0-7525-aa87-03dd9c36905b, simulator, +14155238886) already exists.
+2026-11-16 15:11:30.876 +07 [54096] STATEMENT:  update "inbox"."channel_account" set "provider" = $1, "updated_at" = $2 where "inbox"."channel_account"."provider" = $3
+
+
+stdout | test/s908-sandbox-handover-review.test.ts > SCRUM-908 sandbox handover review > P2 FIXED: more than a full batch of historical sent sandbox turns cannot starve a real overdue handover
+2026-11-16 15:11:31.032 +07 [112032] ERROR:  duplicate key value violates unique constraint "channel_account_external_unique"
+2026-11-16 15:11:31.032 +07 [112032] DETAIL:  Key (operator_id, provider, external_id)=(01a1e369-44a0-7525-aa87-03dd9c36905b, twilio, +14155238886) already exists.
+2026-11-16 15:11:31.032 +07 [112032] STATEMENT:  update "inbox"."channel_account" set "provider" = $1, "external_id" = $2, "updated_at" = $3 where "inbox"."channel_account"."id" = $4
+
+
+stdout | test/s908-sandbox-handover-review.test.ts > SCRUM-908 sandbox handover review > P2 FIXED: more than a full batch of historical sent sandbox turns cannot starve a real overdue handover
+2026-11-16 15:11:31.071 +07 [107020] ERROR:  duplicate key value violates unique constraint "channel_account_external_unique"
+2026-11-16 15:11:31.071 +07 [107020] DETAIL:  Key (operator_id, provider, external_id)=(01a1e369-44a0-7525-aa87-03dd9c36905b, simulator, +14155238886) already exists.
+2026-11-16 15:11:31.071 +07 [107020] STATEMENT:  update "inbox"."channel_account" set "provider" = $1, "updated_at" = $2 where "inbox"."channel_account"."provider" = $3
+
+
+stdout | test/s908-sandbox-handover-review.test.ts
+2026-11-16 15:11:31.102 +07 [107728] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/s908-sandbox-handover-review.test.ts
+2026-11-16 15:11:31.114 +07 [107728] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.003 s, sync=0.003 s, total=0.012 s; sync files=7, longest=0.001 s, average=0.001 s; distance=17397 kB, estimate=17397 kB; lsn=0/2675768, redo lsn=0/2675730
+
+
+ ❯ test/s908-sandbox-handover-review.test.ts (4 tests | 3 failed) 10142ms
+   ✓ SCRUM-908 sandbox handover review > P1 FIXED: sandbox advice remains a staff-visible handover but queues no real manager notice, even without a branch 188ms
+   × SCRUM-908 sandbox handover review > P1 FIXED: pending manager bells, phone pings and already queued GM notices are skipped before any sender runs 123ms
+     → Failed query: update "inbox"."channel_account" set "provider" = $1, "updated_at" = $2 where "inbox"."channel_account"."provider" = $3
+params: simulator,2026-11-16T08:11:30.691Z,twilio
+   × SCRUM-908 sandbox handover review > P1 control: a non-sandbox Twilio sender still notifies the manager and escalates to the GM normally 179ms
+     → Failed query: update "inbox"."channel_account" set "provider" = $1, "updated_at" = $2 where "inbox"."channel_account"."provider" = $3
+params: simulator,2026-11-16T08:11:30.875Z,twilio
+   × SCRUM-908 sandbox handover review > P2 FIXED: more than a full batch of historical sent sandbox turns cannot starve a real overdue handover 196ms
+     → Failed query: update "inbox"."channel_account" set "provider" = $1, "external_id" = $2, "updated_at" = $3 where "inbox"."channel_account"."id" = $4
+params: twilio,+14155238886,2026-11-16T08:11:31.031Z,01a1e369-4abc-7923-9a91-03e84800cca5
+     → Failed query: update "inbox"."channel_account" set "provider" = $1, "updated_at" = $2 where "inbox"."channel_account"."provider" = $3
+params: simulator,2026-11-16T08:11:31.068Z,twilio
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/s908-sandbox-handover-review.test.ts > SCRUM-908 sandbox handover review > P1 FIXED: pending manager 
+bells, phone pings and already queued GM notices are skipped before any sender runs
+Error: Failed query: update "inbox"."channel_account" set "provider" = $1, "updated_at" = $2 where 
+"inbox"."channel_account"."provider" = $3
+params: simulator,2026-11-16T08:11:30.691Z,twilio
+ ❯ NodePgPreparedQuery.queryWithCache 
+../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/pg-core/session.ts:73:11
+ ❯ test/s908-sandbox-handover-review.test.ts:37:3
+     35|   // an earlier case's notices or collide with the sandbox's unique se…
+     36|   await w.ctx.db.delete(s.handoverNotification);
+     37|   await w.ctx.db.update(s.channelAccount).set({ provider: 'simulator' …
+       |   ^
+     38| });
+     39| 
+
+Caused by: error: duplicate key value violates unique constraint "channel_account_external_unique"
+ ❯ ../../node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11
+ ❯ 
+../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:149:14
+ ❯ NodePgPreparedQuery.queryWithCache 
+../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/pg-core/session.ts:71:12
+ ❯ test/s908-sandbox-handover-review.test.ts:37:3
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { length: 323, severity: 'ERROR', code: '23505', detail: 'Key (operator_id, provider, 
+external_id)=(01a1e369-44a0-7525-aa87-03dd9c36905b, simulator, +14155238886) already exists.', hint: undefined, 
+position: undefined, internalPosition: undefined, internalQuery: undefined, where: undefined, schema: 'inbox', table: 
+'channel_account', dataType: undefined, constraint: 'channel_account_external_unique', file: 'nbtinsert.c', routine: 
+'_bt_check_unique' }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  test/s908-sandbox-handover-review.test.ts > SCRUM-908 sandbox handover review > P1 control: a non-sandbox 
+Twilio sender still notifies the manager and escalates to the GM normally
+Error: Failed query: update "inbox"."channel_account" set "provider" = $1, "updated_at" = $2 where 
+"inbox"."channel_account"."provider" = $3
+params: simulator,2026-11-16T08:11:30.875Z,twilio
+ ❯ NodePgPreparedQuery.queryWithCache 
+../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/pg-core/session.ts:73:11
+ ❯ test/s908-sandbox-handover-review.test.ts:37:3
+     35|   // an earlier case's notices or collide with the sandbox's unique se…
+     36|   await w.ctx.db.delete(s.handoverNotification);
+     37|   await w.ctx.db.update(s.channelAccount).set({ provider: 'simulator' …
+       |   ^
+     38| });
+     39| 
+
+Caused by: error: duplicate key value violates unique constraint "channel_account_external_unique"
+ ❯ ../../node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11
+ ❯ 
+../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:149:14
+ ❯ NodePgPreparedQuery.queryWithCache 
+../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/pg-core/session.ts:71:12
+ ❯ test/s908-sandbox-handover-review.test.ts:37:3
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { length: 323, severity: 'ERROR', code: '23505', detail: 'Key (operator_id, provider, 
+external_id)=(01a1e369-44a0-7525-aa87-03dd9c36905b, simulator, +14155238886) already exists.', hint: undefined, 
+position: undefined, internalPosition: undefined, internalQuery: undefined, where: undefined, schema: 'inbox', table: 
+'channel_account', dataType: undefined, constraint: 'channel_account_external_unique', file: 'nbtinsert.c', routine: 
+'_bt_check_unique' }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  test/s908-sandbox-handover-review.test.ts > SCRUM-908 sandbox handover review > P2 FIXED: more than a full 
+batch of historical sent sandbox turns cannot starve a real overdue handover
+Error: Failed query: update "inbox"."channel_account" set "provider" = $1, "external_id" = $2, "updated_at" = $3 where 
+"inbox"."channel_account"."id" = $4
+params: twilio,+14155238886,2026-11-16T08:11:31.031Z,01a1e369-4abc-7923-9a91-03e84800cca5
+ ❯ NodePgPreparedQuery.queryWithCache 
+../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/pg-core/session.ts:73:11
+ ❯ sandbox test/s908-sandbox-handover-review.test.ts:52:3
+     50| }
+     51| async function sandbox(account: string, externalId = TWILIO_SANDBOX_NU…
+     52|   await w.ctx.db.update(s.channelAccount).set({ provider: 'twilio', ex…
+       |   ^
+     53| }
+     54| const rowsOf = (id: string) => w.ctx.db.select().from(s.handoverNotifi…
+ ❯ test/s908-sandbox-handover-review.test.ts:106:5
+
+Caused by: error: duplicate key value violates unique constraint "channel_account_external_unique"
+ ❯ ../../node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11
+ ❯ 
+../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:149:14
+ ❯ NodePgPreparedQuery.queryWithCache 
+../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/pg-core/session.ts:71:12
+ ❯ sandbox test/s908-sandbox-handover-review.test.ts:52:3
+ ❯ test/s908-sandbox-handover-review.test.ts:106:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { length: 320, severity: 'ERROR', code: '23505', detail: 'Key (operator_id, provider, 
+external_id)=(01a1e369-44a0-7525-aa87-03dd9c36905b, twilio, +14155238886) already exists.', hint: undefined, position: 
+undefined, internalPosition: undefined, internalQuery: undefined, where: undefined, schema: 'inbox', table: 
+'channel_account', dataType: undefined, constraint: 'channel_account_external_unique', file: 'nbtinsert.c', routine: 
+'_bt_check_unique' }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+ FAIL  test/s908-sandbox-handover-review.test.ts > SCRUM-908 sandbox handover review > P2 FIXED: more than a full 
+batch of historical sent sandbox turns cannot starve a real overdue handover
+Error: Failed query: update "inbox"."channel_account" set "provider" = $1, "updated_at" = $2 where 
+"inbox"."channel_account"."provider" = $3
+params: simulator,2026-11-16T08:11:31.068Z,twilio
+ ❯ NodePgPreparedQuery.queryWithCache 
+../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/pg-core/session.ts:73:11
+ ❯ test/s908-sandbox-handover-review.test.ts:37:3
+     35|   // an earlier case's notices or collide with the sandbox's unique se…
+     36|   await w.ctx.db.delete(s.handoverNotification);
+     37|   await w.ctx.db.update(s.channelAccount).set({ provider: 'simulator' …
+       |   ^
+     38| });
+     39| 
+
+Caused by: error: duplicate key value violates unique constraint "channel_account_external_unique"
+ ❯ ../../node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11
+ ❯ 
+../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:149:14
+ ❯ NodePgPreparedQuery.queryWithCache 
+../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/pg-core/session.ts:71:12
+ ❯ test/s908-sandbox-handover-review.test.ts:37:3
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { length: 323, severity: 'ERROR', code: '23505', detail: 'Key (operator_id, provider, 
+external_id)=(01a1e369-44a0-7525-aa87-03dd9c36905b, simulator, +14155238886) already exists.', hint: undefined, 
+position: undefined, internalPosition: undefined, internalQuery: undefined, where: undefined, schema: 'inbox', table: 
+'channel_account', dataType: undefined, constraint: 'channel_account_external_unique', file: 'nbtinsert.c', routine: 
+'_bt_check_unique' }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  3 failed | 1 passed (4)
+   Start at  15:11:13
+   Duration  18.27s (transform 4.27s, setup 0ms, collect 7.87s, tests 10.14s, environment 0ms, prepare 91ms)
+
+undefined
+C:\oto-lanes\codex-whatsapp-908-20261116\apps\api:
+ ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL  Command failed with exit code 1: vitest run test/s908-sandbox-handover-review.test.ts --maxWorkers=1 --no-file-parallelism

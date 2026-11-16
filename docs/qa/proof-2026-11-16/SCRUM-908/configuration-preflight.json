@@ -1,0 +1,57 @@
+{
+  "at": "2026-11-16T08:15:52.828Z",
+  "twilio": {
+    "accountCheckStatus": 200,
+    "intendedAccountMatches": true,
+    "active": true,
+    "authTokenPresent": true
+  },
+  "runtime": {
+    "source": "39f02c58d8e7c5c7970b0841e6f025fa58fcd034",
+    "status": "live",
+    "staging": true,
+    "twilioEnabled": true,
+    "aiEnabled": true,
+    "scopedCredentialsPresent": false
+  },
+  "channel": {
+    "id": "01a1cf65-3a81-769f-b624-4b303a84d954",
+    "displayName": "WhatsApp test line",
+    "credentialRef": "SANDBOX",
+    "provider": "twilio",
+    "channel": "whatsapp",
+    "branchId": null,
+    "defaultCategory": "general",
+    "canReply": true,
+    "status": "active",
+    "aiMode": "live",
+    "activeTwilioLines": 1,
+    "reused": true
+  },
+  "webhook": {
+    "incomingAndStatus": "https://oto-api-staging.onrender.com/webhooks/inbox/twilio/01a1cf65-3a81-769f-b624-4b303a84d954",
+    "method": "POST",
+    "savedByOwner": true
+  },
+  "roleProof": {
+    "admin": {
+      "signIn": 200,
+      "inboxMe": 200,
+      "testLineVisible": true,
+      "startOver": true,
+      "signOut": 200,
+      "oldCookie": 401
+    },
+    "seededReception": {
+      "signIn": 200,
+      "inboxMe": 403,
+      "signOut": 200,
+      "oldCookie": 401
+    },
+    "roleGrantsChanged": false
+  },
+  "privateScopedSettingsPrepared": true,
+  "allowedRecipientCount": 1,
+  "genericSmsConfigurationChanged": false,
+  "liveEndToEndProven": false
+}

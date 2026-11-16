@@ -1,0 +1,354 @@
+
+ RUN  v3.2.7 C:/oto-lanes/codex-whatsapp-908-20261116/apps/api
+
+stdout | test/s908-sandbox-handover-review.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/s908-sandbox-handover-review.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-MgYD8d ... ok
+
+
+stdout | test/s908-sandbox-handover-review.test.ts
+creating subdirectories ... 
+
+stdout | test/s908-sandbox-handover-review.test.ts
+ok
+
+
+stdout | test/s908-sandbox-handover-review.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ... 
+
+stdout | test/s908-sandbox-handover-review.test.ts
+100
+selecting default shared_buffers ... 
+
+stdout | test/s908-sandbox-handover-review.test.ts
+128MB
+selecting default time zone ... 
+
+stdout | test/s908-sandbox-handover-review.test.ts
+Asia/Bangkok
+creating configuration files ... 
+
+stdout | test/s908-sandbox-handover-review.test.ts
+ok
+running bootstrap script ... 
+
+stdout | test/s908-sandbox-handover-review.test.ts
+ok
+
+
+stdout | test/s908-sandbox-handover-review.test.ts
+performing post-bootstrap initialization ... 
+
+stdout | test/s908-sandbox-handover-review.test.ts
+ok
+syncing data to disk ... 
+
+stdout | test/s908-sandbox-handover-review.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-whatsapp^-908^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-MgYD8d^" -l logfile start
+
+
+
+stdout | test/s908-sandbox-handover-review.test.ts
+2026-11-16 15:12:04.445 +07 [76772] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/s908-sandbox-handover-review.test.ts
+2026-11-16 15:12:04.448 +07 [76772] LOG:  listening on IPv6 address "::1", port 63788
+
+
+stdout | test/s908-sandbox-handover-review.test.ts
+2026-11-16 15:12:04.448 +07 [76772] LOG:  listening on IPv4 address "127.0.0.1", port 63788
+
+
+stdout | test/s908-sandbox-handover-review.test.ts
+2026-11-16 15:12:04.483 +07 [114660] LOG:  database system was shut down at 2026-11-16 15:12:02 +07
+
+
+stdout | test/s908-sandbox-handover-review.test.ts
+2026-11-16 15:12:04.509 +07 [76772] LOG:  database system is ready to accept connections
+
+
+stdout | test/s908-sandbox-handover-review.test.ts
+2026-11-16 15:12:07.968 +07 [113156] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/s908-sandbox-handover-review.test.ts
+Suite registry: registered 6 app(s).
+
+stdout | test/s908-sandbox-handover-review.test.ts
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/s908-sandbox-handover-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/s908-sandbox-handover-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+node.exe : (node:103724) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the 
+logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level 
+option will be removed in `fastify@6`.
+At C:\Users\waqar\AppData\Roaming\npm\pnpm.ps1:24 char:5
++     & "node$exe"  "$basedir/node_modules/pnpm/bin/pnpm.cjs" $args
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ((node:103724) [...in `fastify@6`.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/s908-sandbox-handover-review.test.ts
+2026-11-16 15:12:09.659 +07 [112016] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/s908-sandbox-handover-review.test.ts
+2026-11-16 15:12:09.671 +07 [112016] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.003 s, sync=0.004 s, total=0.013 s; sync files=7, longest=0.001 s, average=0.001 s; distance=17438 kB, estimate=17438 kB; lsn=0/267F980, redo lsn=0/267F948
+
+
+ ✓ test/s908-sandbox-handover-review.test.ts (4 tests) 9752ms
+stdout | test/inbox-ai-handover-notice.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/inbox-ai-handover-notice.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-i2hJEo ... ok
+
+
+stdout | test/inbox-ai-handover-notice.test.ts
+creating subdirectories ... 
+
+stdout | test/inbox-ai-handover-notice.test.ts
+ok
+
+
+stdout | test/inbox-ai-handover-notice.test.ts
+selecting dynamic shared memory implementation ... windows
+
+
+stdout | test/inbox-ai-handover-notice.test.ts
+selecting default max_connections ... 
+
+stdout | test/inbox-ai-handover-notice.test.ts
+100
+selecting default shared_buffers ... 
+
+stdout | test/inbox-ai-handover-notice.test.ts
+128MB
+selecting default time zone ... 
+
+stdout | test/inbox-ai-handover-notice.test.ts
+Asia/Bangkok
+
+
+stdout | test/inbox-ai-handover-notice.test.ts
+creating configuration files ... 
+
+stdout | test/inbox-ai-handover-notice.test.ts
+ok
+running bootstrap script ... 
+
+stdout | test/inbox-ai-handover-notice.test.ts
+ok
+
+
+stdout | test/inbox-ai-handover-notice.test.ts
+performing post-bootstrap initialization ... 
+
+stdout | test/inbox-ai-handover-notice.test.ts
+ok
+syncing data to disk ... 
+
+stdout | test/inbox-ai-handover-notice.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-whatsapp^-908^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-i2hJEo^" -l logfile start
+
+
+
+stdout | test/inbox-ai-handover-notice.test.ts
+2026-11-16 15:12:17.158 +07 [100040] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/inbox-ai-handover-notice.test.ts
+2026-11-16 15:12:17.160 +07 [100040] LOG:  listening on IPv6 address "::1", port 50160
+
+
+stdout | test/inbox-ai-handover-notice.test.ts
+2026-11-16 15:12:17.160 +07 [100040] LOG:  listening on IPv4 address "127.0.0.1", port 50160
+
+
+stdout | test/inbox-ai-handover-notice.test.ts
+2026-11-16 15:12:17.309 +07 [46964] LOG:  database system was shut down at 2026-11-16 15:12:15 +07
+
+
+stdout | test/inbox-ai-handover-notice.test.ts
+2026-11-16 15:12:17.333 +07 [100040] LOG:  database system is ready to accept connections
+
+
+stdout | test/inbox-ai-handover-notice.test.ts
+2026-11-16 15:12:20.955 +07 [18736] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/inbox-ai-handover-notice.test.ts
+Suite registry: registered 6 app(s).
+
+stdout | test/inbox-ai-handover-notice.test.ts
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/inbox-ai-handover-notice.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/inbox-ai-handover-notice.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:102800) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option 
+with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be 
+removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/inbox-ai-handover-notice.test.ts
+2026-11-16 15:12:23.393 +07 [17928] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/inbox-ai-handover-notice.test.ts
+2026-11-16 15:12:23.411 +07 [17928] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.004 s, sync=0.005 s, total=0.018 s; sync files=7, longest=0.002 s, average=0.001 s; distance=17685 kB, estimate=17685 kB; lsn=0/26BD820, redo lsn=0/26BD7E8
+
+
+ ✓ test/inbox-ai-handover-notice.test.ts (17 tests) 10689ms
+stdout | test/inbox-twilio-test-line.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/inbox-twilio-test-line.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-bOC3Ag ... ok
+
+
+stdout | test/inbox-twilio-test-line.test.ts
+creating subdirectories ... 
+
+stdout | test/inbox-twilio-test-line.test.ts
+ok
+
+
+stdout | test/inbox-twilio-test-line.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ... 
+
+stdout | test/inbox-twilio-test-line.test.ts
+100
+selecting default shared_buffers ... 
+
+stdout | test/inbox-twilio-test-line.test.ts
+128MB
+selecting default time zone ... 
+
+stdout | test/inbox-twilio-test-line.test.ts
+Asia/Bangkok
+creating configuration files ... 
+
+stdout | test/inbox-twilio-test-line.test.ts
+ok
+running bootstrap script ... 
+
+stdout | test/inbox-twilio-test-line.test.ts
+ok
+
+
+stdout | test/inbox-twilio-test-line.test.ts
+performing post-bootstrap initialization ... 
+
+stdout | test/inbox-twilio-test-line.test.ts
+ok
+syncing data to disk ... 
+
+stdout | test/inbox-twilio-test-line.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-whatsapp^-908^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-bOC3Ag^" -l logfile start
+
+
+
+stdout | test/inbox-twilio-test-line.test.ts
+2026-11-16 15:12:30.781 +07 [113736] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/inbox-twilio-test-line.test.ts
+2026-11-16 15:12:30.784 +07 [113736] LOG:  listening on IPv6 address "::1", port 50721
+2026-11-16 15:12:30.784 +07 [113736] LOG:  listening on IPv4 address "127.0.0.1", port 50721
+
+
+stdout | test/inbox-twilio-test-line.test.ts
+2026-11-16 15:12:30.921 +07 [64572] LOG:  database system was shut down at 2026-11-16 15:12:28 +07
+
+
+stdout | test/inbox-twilio-test-line.test.ts
+2026-11-16 15:12:30.944 +07 [113736] LOG:  database system is ready to accept connections
+
+
+stdout | test/inbox-twilio-test-line.test.ts
+2026-11-16 15:12:35.560 +07 [83400] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/inbox-twilio-test-line.test.ts
+Suite registry: registered 6 app(s).
+
+stdout | test/inbox-twilio-test-line.test.ts
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/inbox-twilio-test-line.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/inbox-twilio-test-line.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:50328) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option 
+with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be 
+removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/inbox-twilio-test-line.test.ts
+2026-11-16 15:12:37.263 +07 [107544] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/inbox-twilio-test-line.test.ts
+2026-11-16 15:12:37.308 +07 [107544] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.004 s, sync=0.026 s, total=0.045 s; sync files=7, longest=0.009 s, average=0.004 s; distance=17349 kB, estimate=17349 kB; lsn=0/26695D8, redo lsn=0/26695A0
+
+
+ ✓ test/inbox-twilio-test-line.test.ts (12 tests) 11152ms
+
+ Test Files  3 passed (3)
+      Tests  33 passed (33)
+   Start at  15:11:52
+   Duration  45.19s (transform 4.26s, setup 0ms, collect 12.79s, tests 31.59s, environment 0ms, prepare 290ms)
+

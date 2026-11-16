@@ -19,6 +19,7 @@ import { SimulatorBody, SimulatorDialog } from '@/components/Simulator';
 import { TemplateSettings } from '@/components/TemplateSettings';
 import { mergeSources, sourcesOfRows, type SourceOption } from '@/lib/inboxes';
 import { EMPTY_FILTERS, listQuery, type Filters } from '@/lib/query';
+import { fastInboxRefresh, startFastInboxRefresh } from '@/lib/refresh';
 import { nextTheme, themeTitle, useTheme, type Theme } from '@/lib/theme';
 import { inboxSearch, readInboxUrl, viewFromUrl, type AssistantTab, type SettingsPage } from '@/lib/url';
 import { defaultTab, landingTab, writeMode } from '@/lib/view';
@@ -440,18 +441,15 @@ export function Workspace({ me }: { me: InboxMe }) {
     return () => window.clearInterval(t);
   }, [loadList, loadDashboard, loadThread, selectedKey, rowCount]);
 
-  // While the simulator pane is up (staging and local only), test replies
-  // land in seconds — poll the open thread fast so Tom sees them without
-  // switching chats. Production has no simulator, so no extra load there.
+  // Test replies arrive without switching chats: one fast timer for the
+  // simulator, the selected test-line inbox (even empty), or its open chat.
+  const fastRefresh = fastInboxRefresh(me, simPane, filters.channelAccountId, selected?.channelAccountId);
   useEffect(() => {
-    if (!me.simulator || !simPane) return;
-    const fast = window.setInterval(() => {
-      if (document.visibilityState !== 'visible') return;
+    return startFastInboxRefresh(fastRefresh, () => document.visibilityState === 'visible', () => {
       if (selectedKey) void loadThread(selectedKey, true);
       void loadList({ refresh: true, limit: Math.min(PAGE_MAX, Math.max(PAGE, rowCount)) });
-    }, 3000);
-    return () => window.clearInterval(fast);
-  }, [me.simulator, simPane, selectedKey, loadThread, loadList, rowCount]);
+    });
+  }, [fastRefresh, selectedKey, loadThread, loadList, rowCount]);
 
   // After a write: the list, the dashboard and the open thread, read again.
   const refresh = useCallback(async () => {
