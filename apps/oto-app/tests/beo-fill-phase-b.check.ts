@@ -23,7 +23,7 @@
 //   - the review proposes it all with a reason line under each row (the Date
 //     row and the Team rows too), and every guard holds: nothing written
 //     before Approve and create; the date and a host apply only when ticked;
-//     a deposit only the family claims opens as asked; typed text is never
+//     a claimed payment stays informational and never writes a deposit; typed text is never
 //     overwritten (the allergy is offered beside it, first in Special
 //     requests); the chat's words never ride the approval or the activity row;
 //   - Approve and create writes every field where the BEO keeps it, the shows
@@ -440,7 +440,8 @@ try {
       { kind: "special_request", text: "a quiet corner", from: family(2) },
       { kind: "allergy", text: "nuts", from: family(3) },
     ], "special_request").map((r) => r.kind), ["allergy", "special_request"], "allergies first");
-    // A deposit only the family says was paid opens as asked; nobody assigned until ticked.
+    // The compatibility state opens as asked; approval preserves the original
+    // paid claim as informational so it cannot become a requested deposit.
     assert.equal(state.deposit?.value.paid, false);
     assert.deepEqual(state.details.team.accepted, []);
     assert.equal(undecidedLines(state), 0, "every line the chat names is the catalogue's");
@@ -448,7 +449,7 @@ try {
     assert.equal(body.event.eventDate, undefined, "an unticked date is not sent");
     assert.equal(body.details?.team, undefined, "an unticked host is not sent");
     assert.equal(body.details?.specialRequests, undefined, "typed text is the form's");
-    assert.deepEqual(body.deposit, { amount: 3000, paid: false, date: null }, "the family's claim is sent as asked");
+    assert.deepEqual(body.deposit, { amount: 3000, paid: true, date: null }, "the family's paid claim stays informational");
     assert.equal(body.event.kidTurningAge, 6);
     assert.equal(body.event.whatsappPhoneRaw, "+66 81 234 5678");
     assert.deepEqual(body.service, { kidsFoodTime: "14:30", adultsFoodTime: "15:00", barServiceTime: "14:15" });
@@ -498,6 +499,8 @@ try {
     // Unticked first: the date and the host stay as booked.
     const res = await approve(ev.family, approveBodyOf(review, state, { conversationId: review.conversationId ?? null, messageId: null }));
     assert.equal(res.status, 200, JSON.stringify(res.body));
+    assert.equal(res.body.notWritten?.deposit?.reason, "chat_claim");
+    assert.equal(res.body.written.deposit, undefined, "the claim writes no requested or received deposit");
     let rows = await beoRows(ev.family);
     assert.equal(rows.event.event_date, BOOKED, "unticked: the booked date stands");
     assert.equal(rows.host, null, "unticked: nobody assigned");
@@ -525,14 +528,30 @@ try {
     // Every show is an Entertainment Act: the bubble show at 15:00, the face painting waiting for a time.
     assert.deepEqual(rows.acts.map((a) => [a.custom_name, a.start_time]), [["Bubble show", "15:00"], ["Face painting", null]]);
     assert.deepEqual(rows.entertainment.map((e) => e.name), ["Bubble show", "Face painting"]);
-    // The family's claim stays asked: no money received.
+    // D1: a paid claim creates neither an asked amount nor received money/date.
     assert.equal(rows.billing.deposit_paid, false);
-    assert.equal(rows.billing.deposit_amount, 3000);
-    // Ticked, a second approval: the date and the host apply; the acts are not added twice.
+    assert.equal(rows.billing.deposit_amount, null);
+    assert.equal(rows.billing.deposit_paid_amount, null);
+    assert.equal(rows.billing.deposit_paid_at, null);
+    // The first save invalidates the old review; a repeated stale approval
+    // writes nothing. Re-read before approving the date and host.
     const ticked = { ...state, useDate: true, details: { ...state.details, team: { ...state.details.team, accepted: ["partyHost" as const] } } };
-    const again = await approve(ev.family, approveBodyOf(review, ticked, { conversationId: review.conversationId ?? null, messageId: null }));
+    const stale = await approve(ev.family, approveBodyOf(review, ticked, { conversationId: review.conversationId ?? null, messageId: null }));
+    assert.equal(stale.status, 409, "the original review cannot overwrite the saved plan");
+    assert.deepEqual(await beoRows(ev.family), rows, "stale approval changes no BEO, receipt, act or activity row");
+    const reread = await fill(ev.family);
+    assert.equal(reread.status, 200, JSON.stringify(reread.body));
+    const freshReview = reread.body.review as BeoAiReview;
+    assert.notEqual(freshReview.currentState?.version, review.currentState?.version);
+    const again = await approve(ev.family, approveBodyOf(freshReview, ticked, { conversationId: freshReview.conversationId ?? null, messageId: null }));
     assert.equal(again.status, 200, JSON.stringify(again.body));
+    assert.equal(again.body.notWritten?.deposit?.reason, "chat_claim");
+    assert.equal(again.body.written.deposit, undefined);
     rows = await beoRows(ev.family);
+    assert.equal(rows.billing.deposit_amount, null, "repeated approval never turns a paid claim into an asked amount");
+    assert.equal(rows.billing.deposit_paid, false);
+    assert.equal(rows.billing.deposit_paid_amount, null);
+    assert.equal(rows.billing.deposit_paid_at, null);
     assert.equal(rows.event.event_date, CHAT_DAY, "ticked: the chat's date");
     assert.equal(rows.host?.assigned_employee_id, nok, "ticked: the host assigned");
     assert.deepEqual(rows.acts.map((a) => [a.custom_name, a.start_time]), [["Bubble show", "15:00"], ["Face painting", null]], "never twice");
