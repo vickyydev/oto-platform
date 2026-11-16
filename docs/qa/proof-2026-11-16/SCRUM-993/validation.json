@@ -13,12 +13,143 @@
       "failed": 5,
       "total": 422,
       "status": "failed",
-      "log": "inbox-993-adjacent-api-final.log"
+      "log": "inbox-993-adjacent-api-final.log",
+      "command": "pnpm exec vitest run test/inbox-access-993-review.test.ts test/inbox-read.test.ts test/inbox-actions.test.ts test/inbox-reply.test.ts test/inbox-contacts.test.ts test/inbox-privacy.test.ts test/inbox-ingest.test.ts test/inbox-send-media.test.ts test/inbox-twilio-test-line.test.ts test/inbox-twilio-start-over-party.test.ts test/inbox-ai-kb.test.ts test/inbox-ai-examples-import.test.ts test/inbox-ai-examples-import-review.test.ts test/inbox-ai-teach.test.ts test/prebooking-review.test.ts test/idempotency-replay-authorization-review.test.ts test/operator-switch-idempotency-review.test.ts test/safeguards.test.ts test/permissions.test.ts test/routes-guarded.test.ts test/route-write-conformance.test.ts --no-file-parallelism",
+      "workingDirectory": "apps/api",
+      "wholeFileResults": [
+        {
+          "file": "test/route-write-conformance.test.ts",
+          "total": 31,
+          "passed": 27,
+          "failed": 4
+        },
+        {
+          "file": "test/routes-guarded.test.ts",
+          "total": 32,
+          "passed": 31,
+          "failed": 1
+        },
+        {
+          "file": "test/inbox-read.test.ts",
+          "total": 44,
+          "passed": 44,
+          "failed": 0
+        },
+        {
+          "file": "test/inbox-privacy.test.ts",
+          "total": 16,
+          "passed": 16,
+          "failed": 0
+        },
+        {
+          "file": "test/inbox-ingest.test.ts",
+          "total": 30,
+          "passed": 30,
+          "failed": 0
+        },
+        {
+          "file": "test/inbox-actions.test.ts",
+          "total": 47,
+          "passed": 47,
+          "failed": 0
+        },
+        {
+          "file": "test/inbox-reply.test.ts",
+          "total": 21,
+          "passed": 21,
+          "failed": 0
+        },
+        {
+          "file": "test/inbox-ai-kb.test.ts",
+          "total": 20,
+          "passed": 20,
+          "failed": 0
+        },
+        {
+          "file": "test/inbox-access-993-review.test.ts",
+          "total": 26,
+          "passed": 26,
+          "failed": 0
+        },
+        {
+          "file": "test/prebooking-review.test.ts",
+          "total": 17,
+          "passed": 17,
+          "failed": 0
+        },
+        {
+          "file": "test/inbox-send-media.test.ts",
+          "total": 15,
+          "passed": 15,
+          "failed": 0
+        },
+        {
+          "file": "test/inbox-contacts.test.ts",
+          "total": 17,
+          "passed": 17,
+          "failed": 0
+        },
+        {
+          "file": "test/inbox-twilio-test-line.test.ts",
+          "total": 12,
+          "passed": 12,
+          "failed": 0
+        },
+        {
+          "file": "test/operator-switch-idempotency-review.test.ts",
+          "total": 21,
+          "passed": 21,
+          "failed": 0
+        },
+        {
+          "file": "test/inbox-twilio-start-over-party.test.ts",
+          "total": 6,
+          "passed": 6,
+          "failed": 0
+        },
+        {
+          "file": "test/inbox-ai-examples-import.test.ts",
+          "total": 9,
+          "passed": 9,
+          "failed": 0
+        },
+        {
+          "file": "test/inbox-ai-teach.test.ts",
+          "total": 10,
+          "passed": 10,
+          "failed": 0
+        },
+        {
+          "file": "test/permissions.test.ts",
+          "total": 26,
+          "passed": 26,
+          "failed": 0
+        },
+        {
+          "file": "test/safeguards.test.ts",
+          "total": 12,
+          "passed": 12,
+          "failed": 0
+        },
+        {
+          "file": "test/idempotency-replay-authorization-review.test.ts",
+          "total": 4,
+          "passed": 4,
+          "failed": 0
+        },
+        {
+          "file": "test/inbox-ai-examples-import-review.test.ts",
+          "total": 6,
+          "passed": 6,
+          "failed": 0
+        }
+      ]
     },
     "repairedWholeFiles": {
       "conformance": {
         "passed": 32,
-        "log": "inbox-993-final-conformance-runtime.log"
+        "log": "inbox-993-final-conformance-runtime.log",
+        "command": "pnpm exec vitest run test/route-write-conformance.test.ts test/inbox-access-993-review.test.ts --no-file-parallelism"
       },
       "accessReviewAfterRegistration": {
         "passed": 26,
@@ -26,11 +157,13 @@
       },
       "routeGuards": {
         "passed": 32,
-        "log": "inbox-993-final-route-guards.log"
+        "log": "inbox-993-final-route-guards.log",
+        "command": "pnpm --filter @oto/api exec vitest run test/routes-guarded.test.ts test/route-scope-target.test.ts test/id-conformance.test.ts --no-file-parallelism"
       },
       "scopeTarget": {
         "passed": 28,
-        "log": "inbox-993-final-scope-repaired.log"
+        "log": "inbox-993-final-scope-repaired.log",
+        "command": "pnpm --filter @oto/api exec vitest run test/route-scope-target.test.ts --no-file-parallelism"
       },
       "idConformance": {
         "passed": 28,
@@ -56,11 +189,13 @@
         "inbox-ai-a1b": 22,
         "schema-shape": 14
       },
-      "log": "inbox-993-final-db-repaired.log"
+      "log": "inbox-993-final-db-repaired.log",
+      "command": "pnpm --filter @oto/db exec vitest run test/schema-shape.test.ts test/inbox-i1.test.ts test/inbox-ai-a1b.test.ts --no-file-parallelism"
     },
     "liveCatalogue": {
       "status": "passed",
-      "log": "inbox-993-indexed-live-schema.log"
+      "log": "inbox-993-indexed-live-schema.log",
+      "command": "pnpm --filter @oto/db verify-schema"
     },
     "migration": {
       "number": "0128",
@@ -79,20 +214,23 @@
       "files": 24,
       "passed": 197,
       "failed": 0,
-      "log": "inbox-993-admin-suite.log"
+      "log": "inbox-993-admin-suite.log",
+      "command": "pnpm --filter @oto/admin-screens test --no-file-parallelism"
     },
     "inbox": {
       "files": 31,
       "passed": 477,
       "failed": 0,
-      "log": "inbox-993-inbox-suite-final.log"
+      "log": "inbox-993-inbox-suite-final.log",
+      "command": "pnpm --filter @oto/inbox test --no-file-parallelism"
     },
     "console": {
       "files": 70,
       "passed": 671,
       "todo": 3,
       "failed": 0,
-      "log": "inbox-993-console-suite.log"
+      "log": "inbox-993-console-suite.log",
+      "command": "pnpm --filter @oto/console test --no-file-parallelism"
     },
     "workspaceRace": {
       "red": "inbox-993-workspace-red.log",
@@ -107,73 +245,85 @@
         "configuration": "api",
         "exitCode": 0,
         "diagnosticBytes": 0,
-        "log": "inbox-993-types-api-final.log"
+        "log": "inbox-993-types-api-final.log",
+        "command": "pnpm exec tsc -p apps/api/tsconfig.json --noEmit"
       },
       {
         "configuration": "shared",
         "exitCode": 0,
         "diagnosticBytes": 0,
-        "log": "inbox-993-types-shared-final.log"
+        "log": "inbox-993-types-shared-final.log",
+        "command": "pnpm exec tsc -p packages/shared/tsconfig.json --noEmit"
       },
       {
         "configuration": "db",
         "exitCode": 0,
         "diagnosticBytes": 0,
-        "log": "inbox-993-types-db-final.log"
+        "log": "inbox-993-types-db-final.log",
+        "command": "pnpm exec tsc -p packages/db/tsconfig.json --noEmit"
       },
       {
         "configuration": "admin",
         "exitCode": 0,
         "diagnosticBytes": 0,
-        "log": "inbox-993-types-admin-final.log"
+        "log": "inbox-993-types-admin-final.log",
+        "command": "pnpm exec tsc -p packages/admin-screens/tsconfig.json --noEmit"
       },
       {
         "configuration": "inbox",
         "exitCode": 0,
         "diagnosticBytes": 0,
-        "log": "inbox-993-types-inbox-final.log"
+        "log": "inbox-993-types-inbox-final.log",
+        "command": "pnpm exec tsc -p apps/inbox/tsconfig.json --noEmit"
       },
       {
         "configuration": "inbox-test",
         "exitCode": 0,
         "diagnosticBytes": 0,
-        "log": "inbox-993-types-inbox-test-final.log"
+        "log": "inbox-993-types-inbox-test-final.log",
+        "command": "pnpm exec tsc -p apps/inbox/tsconfig.test.json --noEmit"
       },
       {
         "configuration": "console",
         "exitCode": 0,
         "diagnosticBytes": 0,
-        "log": "inbox-993-types-console-final.log"
+        "log": "inbox-993-types-console-final.log",
+        "command": "pnpm exec tsc -p apps/console/tsconfig.json --noEmit"
       },
       {
         "configuration": "console-test",
         "exitCode": 0,
         "diagnosticBytes": 0,
-        "log": "inbox-993-types-console-test-final.log"
+        "log": "inbox-993-types-console-test-final.log",
+        "command": "pnpm exec tsc -p apps/console/tsconfig.test.json --noEmit"
       },
       {
         "configuration": "console-e2e",
         "exitCode": 0,
         "diagnosticBytes": 0,
-        "log": "inbox-993-types-console-e2e-final.log"
+        "log": "inbox-993-types-console-e2e-final.log",
+        "command": "pnpm exec tsc -p apps/console/e2e/tsconfig.json --noEmit"
       },
       {
         "configuration": "pos",
         "exitCode": 0,
         "diagnosticBytes": 0,
-        "log": "inbox-993-types-pos-final.log"
+        "log": "inbox-993-types-pos-final.log",
+        "command": "pnpm exec tsc -p apps/pos/tsconfig.json --noEmit"
       },
       {
         "configuration": "pos-test",
         "exitCode": 0,
         "diagnosticBytes": 0,
-        "log": "inbox-993-types-pos-test-final.log"
+        "log": "inbox-993-types-pos-test-final.log",
+        "command": "pnpm exec tsc -p apps/pos/tsconfig.test.json --noEmit"
       },
       {
         "configuration": "pos-server",
         "exitCode": 0,
         "diagnosticBytes": 0,
-        "log": "inbox-993-types-pos-server-final.log"
+        "log": "inbox-993-types-pos-server-final.log",
+        "command": "pnpm exec tsc -p apps/pos/server/tsconfig.json --noEmit"
       }
     ],
     "inboxAfterDashboardRepair": [
@@ -191,13 +341,15 @@
     "inbox": {
       "status": "passed",
       "seconds": 2.91,
-      "log": "inbox-993-build-inbox.log"
+      "log": "inbox-993-build-inbox.log",
+      "command": "pnpm --filter @oto/inbox build"
     },
     "console": {
       "status": "passed",
       "seconds": 5.13,
       "warning": "chunk-size warning",
-      "log": "inbox-993-build-console.log"
+      "log": "inbox-993-build-console.log",
+      "command": "pnpm --filter @oto/console build"
     },
     "pos": "No product build claimed; three complete compiler configurations passed."
   },
@@ -206,7 +358,8 @@
     "redOrderingCheck": "inbox-993-contracts-final-check.log",
     "greenCheck": "inbox-993-contracts-final-green.log",
     "canonicalOpenApiSha256": "3b6ef44930f24de088102b1b252c4b640dd99f9800f3939625254ff6ab3062a4",
-    "structurallyIdenticalBeforeAndAfterFinalRegistrationOrdering": true
+    "structurallyIdenticalBeforeAndAfterFinalRegistrationOrdering": true,
+    "command": "pnpm --filter @oto/api api-types --check"
   },
   "ci992": {
     "sourceSha": "ea7212974dfdb8c2062cf34b2448859939ec406d",
@@ -697,5 +850,13 @@
       "canonicalUtf8LfSha256": "0a2a7f20b5c37bf18a1b9e74a776ac285d2cdc8f2eb5740a402e8dfd423019a9",
       "encoding": "utf-16"
     }
-  }
+  },
+  "inputBindingNotes": [
+    "Original adjacent API batch preceded explicitly recorded registration/control and FK-index fixes; its RED status is preserved.",
+    "Repaired whole conformance/access files verify final API registration; later API product source is identical.",
+    "Whole DB files and live catalogue were rerun after the two indexes; committed SQL differs only by documented CRLF normalization.",
+    "Twelve compiler configs passed on frozen prior candidate; later application-source change is dashboard response fencing, followed by both Inbox compilers and the 477-case suite/build.",
+    "Final contracts differ by serialization/property order only; parsed OpenAPI equality and final generator check pass.",
+    "Final raw and canonical inputs are listed in source-manifest.json. Individual whole-file results do not claim one green combined run."
+  ]
 }
