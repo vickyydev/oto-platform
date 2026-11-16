@@ -1,0 +1,70 @@
+{
+  "ci": {
+    "key": "SCRUM-986",
+    "summary": "Keep an unsent payment choice when a new sale finishes loading",
+    "status": {
+      "status": "In Progress",
+      "summary": "Keep an unsent payment choice when a new sale finishes loading"
+    }
+  },
+  "deposit": {
+    "key": "SCRUM-987",
+    "summary": "Require a gateway-confirmed deposit before creating a birthday booking",
+    "status": {
+      "status": "In Progress",
+      "summary": "Require a gateway-confirmed deposit before creating a birthday booking"
+    }
+  },
+  "extract": {
+    "key": "SCRUM-988",
+    "summary": "Apply all reviewed chat details safely to the BEO form",
+    "status": {
+      "status": "In Progress",
+      "summary": "Apply all reviewed chat details safely to the BEO form"
+    }
+  },
+  "menu": {
+    "key": "SCRUM-989",
+    "summary": "Reuse BEO-only dishes across parties in kitchen and bar choices",
+    "status": {
+      "status": "In Progress",
+      "summary": "Reuse BEO-only dishes across parties in kitchen and bar choices"
+    }
+  },
+  "party": {
+    "key": "SCRUM-990",
+    "summary": "Show party-linked extras and bill later additions separately",
+    "status": {
+      "status": "In Progress",
+      "summary": "Show party-linked extras and bill later additions separately"
+    }
+  },
+  "parent": {
+    "key": "SCRUM-991",
+    "summary": "Show BEO item prices and saved choices on the parent review link",
+    "status": {
+      "status": "To Do",
+      "summary": "Show BEO item prices and saved choices on the parent review link"
+    }
+  },
+  "highlight": {
+    "key": "SCRUM-992",
+    "summary": "Distinguish unread chats and customer waiting states in the inbox",
+    "status": {
+      "status": "To Do",
+      "summary": "Distinguish unread chats and customer waiting states in the inbox"
+    }
+  },
+  "access": {
+    "key": "SCRUM-993",
+    "summary": "Manage chat category and channel access within inbox permissions",
+    "status": {
+      "status": "To Do",
+      "summary": "Manage chat category and channel access within inbox permissions"
+    }
+  },
+  "relatedComment": {
+    "status": 201,
+    "body": "{\"self\":\"https://oto-suite-dev.atlassian.net/rest/api/3/issue/11035/comment/14803\",\"id\":\"14803\",\"author\":{\"self\":\"https://oto-suite-dev.atlassian.net/rest/api/3/user?accountId=62948e77658d58006887827d\",\"accountId\":\"62948e77658d58006887827d\",\"emailAddress\":\"waqaraziz74@gmail.com\",\"avatarUrls\":{\"48x48\":\"https://secure.gravatar.com/avatar/ab8b3a0aaa89d864df8f99ec7f52e2f3?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FWA-3.png\",\"24x24\":\"https://secure.gravatar.com/avatar/ab8b3a0aaa89d864df8f99ec7f52e2f3?d=https%3A%2F%2Favatar-management--avatars.us-west-"
+  }
+}

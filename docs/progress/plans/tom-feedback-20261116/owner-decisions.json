@@ -1,0 +1,68 @@
+﻿{
+    "source":  "Owner pasted interactive review answers in chat on 2026-11-16",
+    "authorization":  "IMPLEMENTATION APPROVED in later chat: 1 yes they can be re usable. 2.yes approve to implement. Custom dishes reusable across BEOs; point3 approved with new additional bill linked to main party.",
+    "points":  {
+                   "1":  {
+                             "status":  "Approve proposal",
+                             "notes":  "None entered",
+                             "rule":  "Create booking blocked until deposit requested and full required amount verified received; staff creates booking after payment; draft does not reserve date."
+                         },
+                   "1.1":  {
+                               "status":  "Approve proposal",
+                               "notes":  "None entered"
+                           },
+                   "2":  {
+                             "status":  "Approve proposal",
+                             "notes":  "The manager can also add a new dish or custom dish on top of current kitchen menu list from POS in the BEO menu for the party but that item will be limited to BEO menus only."
+                         },
+                   "3":  {
+                             "status":  "Approve proposal (later explicit chat ruling)",
+                             "notes":  "Add the extras to the main party record and for database keep those sales linked to main party"
+                         },
+                   "4":  {
+                             "status":  "Approve proposal",
+                             "notes":  "adding category was meant to be able to show BEO added menu items from form. Also note that this point was supposed to mean that when a new menu items is added from BEO form in the backend, then those added items should show up in kitchen and bar menu when modifying items dropdwn"
+                         },
+                   "5":  {
+                             "status":  "Approve proposal",
+                             "notes":  "make sure the color contrast aligns well with the OTO theme"
+                         },
+                   "6":  {
+                             "status":  "Approve proposal",
+                             "notes":  "None entered"
+                         }
+               },
+    "decisions":  {
+                      "D1":  "B: Gateway confirmation only. Customer claim, slip or AI interpretation alone never qualifies.",
+                      "D2":  "A: Existing configured or agreed amount.",
+                      "D2_amount_change_authority_verbatim":  "D1 B\nD2 A",
+                      "D3":  "A: New additional bill linked to the party.",
+                      "D4":  "A: Menu choices only, with selling prices visible.",
+                      "D5":  "A: The BEO section above Kitchen and Bar; see corrected point4 note.",
+                      "D6":  "A: Both categories and specific channels.",
+                      "D7_verbatim":  "Just add the control to manage sub permissions (of chats, inboxes, categories list) inside inbox permissiom"
+                  },
+    "reconciliation":  {
+                           "party_sales":  "Propose original paid receipt unchanged, separately billed extras linked to same main party and shown in its overview; point3 remains pending until owner confirms.",
+                           "custom_items":  "Reusable across BEOs, BEO-only catalogue, appropriate Kitchen/Bar dropdown; excluded from ordinary POS selling catalogue.",
+                           "access":  "Build management controls within existing Inbox permissions; no initial staff roster or grant changes inferred.",
+                           "deposit_amount_authority":  "No new authority inferred from repeated D1/D2 labels; retain existing authorized amount controls and validate during source review.",
+                           "gateway":  "Verify actual provider/webhook and merchant readiness before claiming real gateway acceptance; no manual receipt fallback under D1B."
+                       },
+    "ci":  {
+               "sha":  "398478b5d6faba98bdc3586bacb77c8f58aa8af3",
+               "run":  "43845560647",
+               "current_result":  "failure",
+               "original_db":  "Local full file22/22; one GH retry database465/465passed.",
+               "remaining":  "Till end-to-end partial-payment button detached; click timeout. Local whole spec passed but cause unproven. Sol6.1 diagnosis resumed; no speculative source change or further rerun."
+           },
+    "safeguards":  [
+                       "Recheck payment and date availability",
+                       "Prevent duplicate booking and charge",
+                       "Unknown price is not free",
+                       "Preserve manual edits",
+                       "Preserve paid receipt history",
+                       "Retain operator, branch, team and action boundaries"
+                   ],
+    "capacity_ruling":  "Allow both; staff checks capacity before creating the booking. Same park/date/start time is permitted. Explicit owner answer16November2026."
+}
