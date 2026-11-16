@@ -2,23 +2,11 @@
 // synthetic. Not a Playwright file: it renders the real AI Fill review under
 // jsdom with React, react-query and Radix as the app builds them.
 //
-// SCRUM-843 — the AI Fill's "Approve and create" follows the Save's deposit
-// rule; the review's half (the routes' is tests/ai-approve-deposit.check.ts).
-// The stand-in server keeps the rule as the real one does: an approval whose
-// `expectedDeposit` is not the stored deposit keeps the stored one, and one
-// that names none does not lower it; either answers `notWritten.deposit`.
-//
-//   1. the review read with no deposit, the family pays ฿3,000 through the
-//      chat, Approve and create: the review sends the deposit it was read with
-//      beside the chat's figure, and its result says, in plain words, "Not
-//      written: the deposit — it changed while this review was open (now
-//      ฿3,000)." — the deposit is not among what it says was saved, and the
-//      form wears no mark for it;
-//   2. a fresh review approving a deliberate higher figure: sent with the
-//      deposit the review was read with, written, and said as saved;
-//   3. a review from a server before the rule carries no deposit and sends
-//      none; the server's words for a lowering it kept are shown;
-//   4. a timeline step with no place AND a deposit that was kept: both said.
+// SCRUM-988 / D1: the real review shows paid chat claims as informational,
+// with read-only amount/date and no Received toggle. The server's not-written
+// response is visible and never marked saved. Requested-only amounts remain
+// editable without becoming received money; independent timeline failures
+// remain visible alongside the informational claim.
 //
 // Run from apps/oto-app:
 //   TSX_TSCONFIG_PATH=tests/tsconfig.jsx.json npx tsx tests/ai-approve-deposit-ui.check.ts
@@ -28,7 +16,7 @@ import { fileURLToPath } from "node:url";
 import { buildSync } from "esbuild";
 import { JSDOM } from "jsdom";
 import type { BeoAiApproveBody, BeoAiReview } from "../shared/beoAiFill";
-import { depositNotApprovedWords, type OneDeposit } from "../shared/partyDeposit";
+import type { OneDeposit } from "../shared/partyDeposit";
 
 const APP = fileURLToPath(new URL("../", import.meta.url));
 const dom = new JSDOM("<!doctype html><html><body></body></html>", { url: "http://localhost/studio/events", pretendToBeVisual: true });
@@ -94,7 +82,7 @@ const SHOW = "d4d4d4d4-0000-4000-8000-000000000843";
 const team = { source: "team" as const, at: "2099-03-01T08:00:00.000Z", line: 1 };
 
 /** What a pasted message proposed: 9 children, a timed step, and a deposit the chat says was received. */
-const review = (deposit: { amount: number; date: string | null }, oneDeposit?: OneDeposit): BeoAiReview => ({
+const review = (deposit: { amount: number; date: string | null }, oneDeposit?: OneDeposit, paid = true): BeoAiReview => ({
   origin: "pasted",
   proposal: {
     package: null,
@@ -105,7 +93,7 @@ const review = (deposit: { amount: number; date: string | null }, oneDeposit?: O
     otherLines: [],
     event: { numChildren: { value: 9, from: team } },
     cake: null,
-    deposit: { amount: deposit.amount, paid: true, date: deposit.date, from: team },
+    deposit: { amount: deposit.amount, paid, date: deposit.date, from: team },
     details: {
       title: null,
       bookingName: null,
@@ -133,9 +121,9 @@ const review = (deposit: { amount: number; date: string | null }, oneDeposit?: O
 type Asked = { method: string; path: string; body: Record<string, unknown> };
 const asked: Asked[] = [];
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
-const same = (a: OneDeposit, b: OneDeposit) => a.amountThb === b.amountThb && (a.date ?? null) === (b.date ?? null);
 /** The party's one deposit, per event, as the stand-in server stores it; and the events with no start time yet. */
 const stored = new Map<string, OneDeposit>();
+const requested = new Map<string, number>();
 const noStart = new Set<string>();
 let made = 0;
 const party = (deposit: OneDeposit) => {
@@ -160,13 +148,10 @@ g.fetch = async (input: string | URL | Request, init?: RequestInit) => {
     }
     const written: Record<string, unknown> = { event: true };
     if (sent.deposit?.paid) {
-      const said = { amountThb: sent.deposit.amount, date: sent.deposit.date };
-      const reason = sent.expectedDeposit && !same(sent.expectedDeposit, was) ? "moved" : !sent.expectedDeposit && said.amountThb < was.amountThb ? "unconfirmed" : null;
-      if (reason) notWritten.deposit = { reason, message: depositNotApprovedWords(reason, was.amountThb), ...was };
-      else {
-        stored.set(id, said);
-        written.deposit = true;
-      }
+      notWritten.deposit = { reason: "chat_claim", message: "the chat payment claim is informational and does not record received money. The saved receipt is unchanged; confirm payment through the gateway", ...was };
+    } else if (sent.deposit) {
+      requested.set(id, sent.deposit.amount);
+      written.deposit = true;
     }
     return json({ written, ...(Object.keys(notWritten).length > 0 ? { notWritten } : {}) });
   }
@@ -236,7 +221,7 @@ const check = async (title: string, fn: () => Promise<void> | void) => {
   console.log(`  ok  ${title}`);
 };
 
-const NOT_WRITTEN_3000 = "Not written: the deposit — it changed while this review was open (now ฿3,000).";
+const NOT_WRITTEN_3000 = "Not written: the deposit \u2014 the chat payment claim is informational and does not record received money. The saved receipt is unchanged; confirm payment through the gateway.";
 // SCRUM-927 (the owner's rule of 12 November): the result names only the sections the server
 // says it wrote; this stub server writes the event, and the deposit when it is not kept.
 const SAVED_WITHOUT = "Saved: the event's details (name, counts, times).";
@@ -263,22 +248,26 @@ await check("the review read with no deposit, the family pays ฿3,000, Approve 
   assert.equal(byTestId("button-ai-review-approve"), null, "nothing stays open");
 });
 
-await check("a fresh review approving a deliberate higher figure: sent with the deposit the review was read with, written, and said as saved", async () => {
+await check("a claimed paid amount/date are informational, with no Received toggle and no change to stored money", async () => {
   const id = party({ amountThb: 3000, date: DAY });
   await open(id, review({ amount: 3000, date: DAY }, { amountThb: 3000, date: DAY }));
+  assert.equal(byTestId("checkbox-ai-review-deposit-paid"), null);
+  assert.equal((required("input-ai-review-deposit") as HTMLInputElement).readOnly, true);
+  const date = doc.querySelector('input[type="date"]') as HTMLInputElement;
+  assert.equal(date.readOnly, true);
+  assert.ok(says("Payment claimed in chat"));
+  assert.ok(says("Chat payment claims do not record received money"));
   await setValue("input-ai-review-deposit", "5000");
-  await click("button-ai-review-approve");
-  await settle(10);
+  await click("button-ai-review-approve"); await settle(10);
   const sent = approval(id);
-  assert.deepEqual(sent.expectedDeposit, { amountThb: 3000, date: DAY });
-  assert.deepEqual(sent.deposit, { amount: 5000, paid: true, date: DAY });
-  assert.deepEqual(stored.get(id), { amountThb: 5000, date: DAY });
-  assert.ok(says(SAVED_WITH), "the usual words: what was written");
-  assert.ok(!says("Not written"));
-  assert.ok(Object.keys(marks ?? {}).length > 0);
+  assert.deepEqual(sent.deposit, { amount: 3000, paid: true, date: DAY });
+  assert.deepEqual(stored.get(id), { amountThb: 3000, date: DAY });
+  assert.ok(says(NOT_WRITTEN_3000));
+  assert.ok(!says(SAVED_WITH));
+  assert.ok(!Object.keys(marks ?? {}).some(key => /deposit|prepayment/i.test(key)));
 });
 
-await check("a review from a server before the rule sends no deposit of its own reading; the server's words for a lowering it kept are shown", async () => {
+await check("a legacy review without an expected deposit still reports its paid claim as informational", async () => {
   const id = party({ amountThb: 3000, date: DAY });
   await open(id, review({ amount: 1000, date: "2099-03-01" }));
   await click("button-ai-review-approve");
@@ -286,7 +275,7 @@ await check("a review from a server before the rule sends no deposit of its own 
   const sent = approval(id);
   assert.ok(!("expectedDeposit" in sent), "nothing to send back");
   assert.deepEqual(stored.get(id), { amountThb: 3000, date: DAY }, "not lowered");
-  assert.ok(says("Not written: the deposit — it was not lowered (it stays ฿3,000): this page is out of date. Reload it, then run AI Fill again."), page().slice(-400));
+  assert.ok(says(NOT_WRITTEN_3000), page().slice(-400));
   assert.ok(!says(SAVED_WITH));
 });
 
@@ -304,6 +293,18 @@ await check("a timeline step with no place and a deposit that was kept: both are
   );
 });
 
+await check("requested-only amount remains editable and never becomes received money", async () => {
+  const id = party(NONE);
+  await open(id, review({ amount: 3000, date: null }, NONE, false));
+  assert.equal(byTestId("checkbox-ai-review-deposit-paid"), null);
+  assert.equal((required("input-ai-review-deposit") as HTMLInputElement).readOnly, false);
+  await setValue("input-ai-review-deposit", "5000");
+  await click("button-ai-review-approve"); await settle(10);
+  assert.deepEqual(approval(id).deposit, { amount: 5000, paid: false, date: null });
+  assert.equal(requested.get(id), 5000);
+  assert.deepEqual(stored.get(id), NONE);
+});
+
 await act(async () => { root.unmount(); });
 console.log(`ai-approve-deposit-ui.check: ${checks} checks passed`);
-process.exit(checks === 4 ? 0 : 1);
+process.exit(checks === 5 ? 0 : 1);

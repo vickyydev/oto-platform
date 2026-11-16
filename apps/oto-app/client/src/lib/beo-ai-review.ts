@@ -508,14 +508,8 @@ export function reviewDateLine(review: BeoAiReview, fill: unknown, bookedDate: s
   return line ? { ...line, from: review.ruling } : null;
 }
 
-/**
- * SCRUM-903: whether the deposit opens ticked Received. With no message of
- * the team's confirming the party, a deposit only the family says was paid
- * ("I already transferred the 5,000") opens as asked: its amount and their
- * words stay pre-filled, and staff tick Received themselves, so one press of
- * Approve and create never writes the family's claim as money received (the
- * party's one deposit the till settles against). A ruling message's review
- * opens as the proposal says. The wider asked-vs-received rule is SCRUM-844's.
+/** Compatibility review-state value; it never authorizes received-money writes.
+ * The original proposal identifies an informational paid claim when approving.
  */
 export function depositOpensPaid(review: BeoAiReview): boolean {
   const d = review.proposal.deposit;
@@ -1232,7 +1226,7 @@ export function approveBodyOf(
     state.deposit && state.deposit.value.amount > 0
       ? {
           amount: Math.round(state.deposit.value.amount),
-          paid: state.deposit.value.paid,
+          paid: review.proposal.deposit?.paid === true,
           date: /^\d{4}-\d{2}-\d{2}$/.test(state.deposit.value.date) ? state.deposit.value.date : null,
         }
       : null;

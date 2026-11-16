@@ -1066,30 +1066,26 @@ function ReviewSections({
 
       {state.deposit && (
         <Section title="Deposit" icon={<Wallet className="h-4 w-4" />}>
-          <Row label={state.deposit.value.paid ? "Deposit paid" : "Deposit asked"} field={state.deposit} says={state.deposit.from}>
+          <Row label={review.proposal.deposit?.paid ? "Payment claimed in chat" : "Deposit asked"} field={state.deposit} says={state.deposit.from}>
             <Input
               type="number"
               min={0}
               className="h-8 w-28"
               value={state.deposit.value.amount}
-              onChange={(e) => set({ deposit: edited(state.deposit, { ...state.deposit!.value, amount: Math.max(0, parseInt(e.target.value, 10) || 0) }) })}
+              readOnly={review.proposal.deposit?.paid === true}
+              onChange={review.proposal.deposit?.paid ? undefined : (e) => set({ deposit: edited(state.deposit, { ...state.deposit!.value, amount: Math.max(0, parseInt(e.target.value, 10) || 0) }) })}
               data-testid="input-ai-review-deposit"
             />
             <span className="text-xs text-muted-foreground">THB</span>
-            <label className="flex items-center gap-1 text-xs">
-              <input
-                type="checkbox"
-                checked={state.deposit.value.paid}
-                onChange={(e) => set({ deposit: edited(state.deposit, { ...state.deposit!.value, paid: e.target.checked }) })}
-                data-testid="checkbox-ai-review-deposit-paid"
-              />
-              Received
-            </label>
+            <span className="text-xs text-muted-foreground" data-testid="text-ai-review-deposit-claim">
+              Chat payment claims do not record received money. Confirm payment through the gateway.
+            </span>
             <Input
               type="date"
               className="h-8 w-36"
               value={state.deposit.value.date}
-              onChange={(e) => set({ deposit: edited(state.deposit, { ...state.deposit!.value, date: e.target.value }) })}
+              readOnly={review.proposal.deposit?.paid === true}
+              onChange={review.proposal.deposit?.paid ? undefined : (e) => set({ deposit: edited(state.deposit, { ...state.deposit!.value, date: e.target.value }) })}
             />
           </Row>
         </Section>

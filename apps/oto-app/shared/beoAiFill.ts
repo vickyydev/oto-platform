@@ -822,11 +822,8 @@ export const BeoAiApproveBodySchema = z
       .strict()
       .nullable(),
     /**
-     * SCRUM-843: the party's one deposit as the review was read with
-     * (`BeoAiReview.oneDeposit`), in whole baht. A received deposit is written
-     * under the Save's rule (server/lib/depositSaveGuard.ts): one that moved
-     * since stays as stored; a page from before this rule sends none, and may
-     * not lower a deposit.
+     * Compatibility snapshot of the received deposit shown when the review was read.
+     * Paid chat claims remain informational and never authorize a receipt write.
      */
     expectedDeposit: z
       .object({ amountThb: z.number().int().min(0).max(100_000_000), date: z.string().regex(DAY).nullable() })

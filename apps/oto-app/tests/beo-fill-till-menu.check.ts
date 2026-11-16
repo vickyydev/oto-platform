@@ -467,12 +467,13 @@ try {
     assert.equal(undecidedOptions(state), 1, "an option nobody named waits for staff");
     const decided = { ...state, menuLines: state.menuLines.filter((l) => !l.notInMenu && l.productCode !== "CF-43") };
     const body = approveBodyOf(review, decided, { conversationId: review.conversationId ?? null, messageId: null });
-    assert.deepEqual(body.deposit, { amount: 3000, paid: false, date: null }, "sent as asked");
+    assert.deepEqual(body.deposit, { amount: 3000, paid: true, date: null }, "the paid claim remains informational for backend enforcement");
     assert.equal(body.details?.specialRequests, undefined, "the typed text is the form's");
     const ok = await approve(ev.guards, body);
     assert.equal(ok.status, 200, JSON.stringify(ok.body));
     rows = await beoRows(ev.guards);
-    assert.equal(rows.billing.deposit_paid, false, "no money received");
+    assert.ok(!rows.billing?.deposit_paid && !(Number(rows.billing?.deposit_paid_amount ?? 0) > 0), "no money received");
+    assert.ok(!rows.billing?.deposit_required, "a paid claim is not rewritten as an agreed request");
     assert.equal(rows.event.special_requests, "ZZ typed by staff: a seat for grandma", "the typed text stands; the chat's line was offered beside it, not over it");
     for (const r of rows.activity) for (const w of CHAT_WORDS) assert.ok(!r.metadata_json.includes(w) && !r.summary_text.includes(w), `no "${w}" in the activity row`);
   });

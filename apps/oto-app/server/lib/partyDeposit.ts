@@ -19,8 +19,8 @@ import type { DbExecutor } from "./packageSnapshot";
  * A deposit typed in the BEO never reached the till's party page.
  *
  * From here every writer of a received deposit writes the SAME figure to all
- * three (`writePartyDeposit`): the BEO's billing route, the BEO's Save, the AI
- * fill's approval, the Events page's Prepayment and a till's party edit
+ * three (`writePartyDeposit`): the BEO's billing route, the BEO's Save,
+ * the Events page's Prepayment and a till's party edit
  * (server/directory/eventWrites.ts, in its own SQL). So there is no second
  * home: whichever screen is used last, every reader shows its figure.
  *

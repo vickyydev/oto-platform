@@ -299,8 +299,8 @@ function applyApproval(eventId: string, body: BeoAiApproveBody) {
       serviceSchedule: [],
     };
   }
-  if (d.posName !== undefined || d.posNotes !== undefined || body.deposit) {
-    beo.partyDetails = { packageName: d.posName ?? "", notes: d.posNotes ?? "", items: [], prepaymentReceived: body.deposit?.amount ?? 0, depositDate: body.deposit?.date ?? "" };
+  if (d.posName !== undefined || d.posNotes !== undefined) {
+    beo.partyDetails = { ...beo.partyDetails, packageName: d.posName ?? "", notes: d.posNotes ?? "", items: [] };
   }
   if (d.team?.partyHost) beo.partyHost = { eventId, assignedEmployeeId: d.team.partyHost.id, assignmentMode: "INDIVIDUAL", assignedEmployeeName: "Nok" };
   const timeline = timelines.get(eventId)!;
@@ -355,7 +355,7 @@ g.fetch = async (input: string | URL | Request, init?: RequestInit) => {
   if (approve && method === "POST") {
     approvals += 1;
     applyApproval(approve[1]!, body as unknown as BeoAiApproveBody);
-    return json({ written: { event: true } });
+    return json({ written: { event: true }, ...(body.deposit && (body.deposit as { paid?: boolean }).paid ? { notWritten: { deposit: { reason: "chat_claim", message: "the chat payment claim is informational and does not record received money. The saved receipt is unchanged; confirm payment through the gateway" } } } : {}) });
   }
   if (url.pathname === "/api/ai/parse-beo" && method === "POST") {
     const text = String(body.text ?? "");
@@ -780,11 +780,11 @@ await check("SCRUM-903: no team confirmation and an empty catalogue — the revi
   }
   const start = required("input-ai-review-startTime").parentElement!.parentElement!;
   assert.match(text("text-ai-review-chat-says", start)!, /15:00, pizza for the kids/, "the start time's reason is under the start time");
-  // The family's paid deposit opens as asked, Received unticked, their words under it.
-  const received = required("checkbox-ai-review-deposit-paid") as HTMLInputElement;
-  assert.equal(received.checked, false, "Received is staff's tick, not the family's word");
+  // A family claim is displayed, never offered as received money.
+  assert.equal(byTestId("checkbox-ai-review-deposit-paid"), null);
+  assert.equal((required("input-ai-review-deposit") as HTMLInputElement).readOnly, true);
   const depositRow = required("input-ai-review-deposit").parentElement!.parentElement!;
-  assert.match(depositRow.textContent!, /Deposit asked/);
+  assert.match(depositRow.textContent!, /Payment claimed in chat/);
   assert.match(text("text-ai-review-chat-says", depositRow)!, /I already transferred the 5,000 baht deposit/);
   // The lines the catalogue lacks keep Approve and create shut until each is decided; nothing is sent before it.
   assert.equal((required("button-ai-review-approve") as HTMLButtonElement).disabled, true);
@@ -805,7 +805,7 @@ await check("SCRUM-903: no team confirmation and an empty catalogue — the revi
   assert.deepEqual(body.menuLines.map((l) => [l.itemName, l.productCode]), [["pizza", null]]);
   assert.deepEqual(body.entertainment.map((e) => [e.templateId, e.name]), [[null, "a magic show"]]);
   assert.equal(body.entertainment[0]?.time, "17:25", "the edited requested time reaches approval without scheduling an act");
-  assert.deepEqual(body.deposit, { amount: 5000, paid: false, date: null }, "unticked: sent as asked, never as received");
+  assert.deepEqual(body.deposit, { amount: 5000, paid: true, date: null }, "the original informational claim is identified for the backend to keep out of receipts");
   assert.ok(body.sources.length > 0 && body.sources.every((src) => src.source === "family" || src.source === "staff"), JSON.stringify(body.sources));
   assert.ok(!JSON.stringify(body).includes("quote") && !JSON.stringify(body).includes("NORULING-903"), "the chat's words never ride the approval");
 });

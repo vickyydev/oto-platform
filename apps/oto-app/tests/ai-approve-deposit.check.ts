@@ -4,36 +4,12 @@
 // server, beside a stand-in platform, and needs a database whose otoapp schema
 // the app's migrator has built.
 //
-// SCRUM-843 — the AI Fill's "Approve and create" follows the Save's deposit
-// rule (SCRUM-840, server/lib/depositSaveGuard.ts). A review read BEFORE the
-// family paid through the chat and approved AFTER wrote the chat's deposit
-// figure over the paid deposit. The screen's half is
-// tests/ai-approve-deposit-ui.check.ts.
-//
-//   - the words, and what the review sends: the review carries the party's
-//     one deposit as it was read (`oneDeposit`) and the approval's body sends
-//     it back (`expectedDeposit`); a review from a server before the rule
-//     sends none;
-//   - THE RACE: a pasted message read into a review on a party with no
-//     deposit (the chat says "deposit 1,000 received"), the platform's gateway
-//     fact lands ฿3,000, the review is approved — the deposit is ฿3,000 in
-//     every place the app keeps it, the approval's other fields are written,
-//     the answer names the deposit under `notWritten` in plain words, the
-//     activity row says why and no amount; the same for an approval carrying
-//     0, and with the fact and the approval sent together;
-//   - a deposit the chat only ASKS for is never money received: it is
-//     billing's deposit required, on a party with no deposit and on one the
-//     family has paid, and the paid deposit's three places are left alone;
-//   - a fresh review (read with the stored deposit) approving a deliberate
-//     higher figure writes it, without asking the platform; the amount the
-//     party already holds, named with no day, keeps the stored day;
-//   - an approval with no `expectedDeposit` (a page loaded before this build)
-//     cannot lower the deposit, and can raise it;
-//   - a deliberate lowering from a fresh review is written down to what the
-//     family paid through the chat (the platform asked once, only then), kept
-//     below it, and kept when the platform does not answer;
-//   - the review names "deposit" among what the BEO already holds when the
-//     deposit sits only on the event (paid through the chat, no billing row).
+// SCRUM-988 / D1: paid chat claims are informational. Structured approval
+// may save the other reviewed fields and requested-only amounts, but cannot
+// create or change a received deposit. Actual gateway and legacy receipts,
+// their dates, original provenance and history survive crafted claims and
+// concurrent gateway delivery. Manual Billing/Save guards are independently
+// covered by deposit-save.check.ts.
 //
 // Run from apps/oto-app, with DATABASE_URL set:
 //   npx tsx tests/ai-approve-deposit.check.ts
@@ -349,67 +325,64 @@ try {
     assert.equal((await approve(none, { ...body, expectedDeposit: { amountThb: 3000 } })).status, 400);
   });
 
-  await check("THE RACE: a review read with no deposit, the family pays ฿3,000 through the chat, the review is approved — the deposit stays ฿3,000 everywhere, the rest is written, the answer names the deposit", async () => {
-    const asked = askedOf.length;
-    // 1. The chat's own figure ("deposit 1,000 received"), as the review proposes it.
-    const stale = await party("race");
-    const read = await readReview(stale, "Confirmed. ZZ843 PAID 1000 2099-03-01");
-    assert.deepEqual(read.review.oneDeposit, { amountThb: 0, date: null });
-    const fact = await gatewayFact(stale, 3000);
-    assert.equal(fact.status, 200, show(fact));
-    stands((await homes(stale)).deposit, 3000, DAY);
-    const body = bodyOf(read);
-    assert.deepEqual(body.deposit, { amount: 1000, paid: true, date: "2099-03-01" });
-    const res = await approve(stale, body);
-    assert.equal(res.status, 200, show(res));
-    assert.deepEqual(res.body.notWritten, { deposit: { reason: "moved", message: MOVED_3000, amountThb: 3000, date: DAY } });
-    assert.equal(res.body.written.deposit, undefined, "the deposit is not said to be written");
-    assert.equal(res.body.written.event, true);
-    const after = await homes(stale);
-    stands(after.deposit, 3000, DAY, "the paid deposit, in every place");
-    assert.equal(after.numChildren, 9, "the approval's other fields are written");
-    assert.equal(after.decoration, "ZZ TEST balloons");
-    assert.ok(!after.asked?.[0], "and nothing is marked as asked");
-    const row = await approvedRow(stale);
-    assert.deepEqual(row.meta.notWritten, { deposit: { reason: "moved" } });
-    assert.equal(row.meta.written.deposit, undefined);
-    assert.ok(!row.raw.includes("3000") && !row.raw.includes("3,000"), "the activity row names no amount");
-
-    // 2. An approval carrying 0 as received (the API takes it): kept too.
-    const zero = await party("race-zero");
-    const zeroRead = await readReview(zero, "Confirmed. ZZ843 NONE");
-    assert.equal((await gatewayFact(zero, 3000)).status, 200);
-    const cleared = await approve(zero, { ...bodyOf(zeroRead), deposit: { amount: 0, paid: true, date: null } });
-    assert.equal(cleared.status, 200, show(cleared));
-    assert.equal(cleared.body.notWritten?.deposit?.reason, "moved");
-    assert.equal(cleared.body.notWritten?.deposit?.message, MOVED_3000);
-    stands((await homes(zero)).deposit, 3000, DAY);
-
-    // 3. A higher figure than the paid one, from the stale review: kept as well, and said — the
-    //    reviewer reads the paid deposit and runs AI Fill again on it.
-    const higher = await party("race-higher");
-    const higherRead = await readReview(higher, "Confirmed. ZZ843 PAID 9000 2099-03-01");
-    assert.equal((await gatewayFact(higher, 3000)).status, 200);
-    const kept = await approve(higher, bodyOf(higherRead));
-    assert.equal(kept.body.notWritten?.deposit?.reason, "moved", show(kept));
-    stands((await homes(higher)).deposit, 3000, DAY);
-
-    // 4. The fact and the approval sent together, both ways round: ฿3,000 stands either way.
-    for (const order of ["fact first", "approval first"] as const) {
-      const both = await party(`race-together-${order.replace(" ", "-")}`);
-      const bothRead = await readReview(both, "Confirmed. ZZ843 PAID 1000 2099-03-01");
-      const sent = order === "fact first"
-        ? await Promise.all([gatewayFact(both, 3000), approve(both, bodyOf(bothRead))])
-        : await Promise.all([approve(both, bodyOf(bothRead)), gatewayFact(both, 3000)]).then(([a, f]) => [f, a] as const);
-      assert.equal(sent[0].status, 200, show(sent[0]));
-      assert.equal(sent[1].status, 200, show(sent[1]));
-      const together = await homes(both);
-      stands(together.deposit, 3000, DAY, `${order}: the paid deposit stands`);
-      assert.equal(together.numChildren, 9);
-    }
-    assert.equal(askedOf.length, asked, "a deposit that moved is kept without asking the platform");
+  const receiptSnapshot = async (id: string) => ({
+    event: await q("select prepayment_amount, prepayment_date from core_events where id=$1", [id]),
+    billing: await q("select deposit_paid, deposit_paid_amount, deposit_paid_at::text as paid_at, add_ons->'prebookingDeposit' as original_receipt, add_ons->'partyDetails'->'prepaymentReceived' as received, add_ons->'partyDetails'->'depositDate' as received_date from beo_event_billing where event_id=$1", [id]),
   });
-
+  await check("D1: a crafted999 paid claim cannot change the actual gateway1 projection, original receipt or history", async () => {
+    const id = await party("gateway-one-claim999");
+    assert.equal((await gatewayFact(id, 1)).status, 200);
+    const receipt = { draftId: id, attemptId: randomUUID(), amountSatang: 100, provider: "simulator", paidDate: DAY };
+    await q("insert into beo_event_billing (event_id,add_ons) values ($1,$2::jsonb) on conflict(event_id) do update set add_ons=coalesce(beo_event_billing.add_ons,'{}'::jsonb)||excluded.add_ons", [id, JSON.stringify({ prebookingDeposit: receipt })]);
+    paidThroughChat.set(id, [paidRequest(id, 100)]);
+    const history = JSON.stringify(paidThroughChat.get(id));
+    const before = await receiptSnapshot(id);
+    const asked = askedOf.length;
+    for (const claim of [{ amount: 999, date: "2099-03-05" }, { amount: 0, date: null }, { amount: 1, date: DAY }, { amount: 1, date: "2099-04-01" }]) {
+      const fresh = await readReview(id, "Confirmed. ZZ843 PAID 999 2099-03-05");
+      const res = await approve(id, { ...bodyOf(fresh), deposit: { ...claim, paid: true } });
+      assert.equal(res.status, 200, show(res));
+      assert.equal(res.body.notWritten?.deposit?.reason, "chat_claim");
+      assert.equal(res.body.notWritten?.deposit?.amountThb, 1);
+      assert.equal(res.body.written.deposit, undefined);
+      assert.equal(res.body.written.event, true);
+      assert.deepEqual(await receiptSnapshot(id), before);
+      assert.deepEqual((await homes(id)).deposit.read, { amountThb: 1, date: DAY });
+    }
+    assert.equal(JSON.stringify(paidThroughChat.get(id)), history);
+    assert.equal(askedOf.length, asked, "approval does not ask a gateway floor to reinterpret a claim");
+    assert.equal((await homes(id)).numChildren, 9);
+    assert.equal((await homes(id)).decoration, "ZZ TEST balloons");
+    assert.deepEqual((await approvedRow(id)).meta.notWritten, { deposit: { reason: "chat_claim" } });
+  });
+  await check("D1: a paid chat claim on an unpaid party creates no receipt and no asked amount", async () => {
+    const id = await party("no-paid-receipt");
+    const read = await readReview(id, "Confirmed. ZZ843 PAID 999 2099-03-05");
+    const before = await receiptSnapshot(id);
+    const res = await approve(id, bodyOf(read));
+    assert.equal(res.status, 200, show(res));
+    assert.equal(res.body.notWritten?.deposit?.reason, "chat_claim");
+    assert.deepEqual(await receiptSnapshot(id), before);
+    assert.deepEqual((await homes(id)).deposit.read, { amountThb: 0, date: null });
+    assert.equal((await homes(id)).asked, null);
+  });
+  await check("D1: existing legacy received money and its date survive an old client, changed amount and changed date", async () => {
+    const id = await party("legacy-receipt");
+    await q("update core_events set prepayment_amount=3000,prepayment_date=$2 where id=$1", [id, DAY]);
+    await q("insert into beo_event_billing (event_id,deposit_paid,deposit_paid_amount,deposit_paid_at,add_ons) values ($1,true,3000,$2,$3::jsonb)", [id, DAY, JSON.stringify({ partyDetails: { prepaymentReceived: 3000, depositDate: DAY, manualNote: "ZZ TEST legacy note" } })]);
+    const before = await receiptSnapshot(id);
+    const read = await readReview(id, "Confirmed. ZZ843 PAID 9999 2099-03-05");
+    assert.deepEqual(read.review.oneDeposit, { amountThb: 3000, date: DAY });
+    for (const amount of [0, 1000, 3000, 9999]) {
+      const fresh = await readReview(id, "Confirmed. ZZ843 PAID 9999 2099-03-05");
+      const { expectedDeposit: _old, ...oldClient } = bodyOf(fresh);
+      const res = await approve(id, { ...oldClient, deposit: { amount, paid: true, date: "2099-03-05" } });
+      assert.equal(res.status, 200, show(res));
+      assert.equal(res.body.notWritten?.deposit?.reason, "chat_claim");
+      assert.deepEqual(await receiptSnapshot(id), before);
+      stands((await homes(id)).deposit, 3000, DAY);
+    }
+  });
   await check("a deposit the chat only ASKS for is never money received: billing's deposit required, the paid deposit's places untouched", async () => {
     // On a party with no deposit: nothing is received anywhere.
     const fresh = await party("asked");
@@ -442,122 +415,17 @@ try {
     assert.deepEqual(both.asked, [true, 2000]);
   });
 
-  await check("a fresh review approving a deliberate higher figure writes it, without asking the platform", async () => {
-    const asked = askedOf.length;
-    const id = await party("raise");
-    assert.equal((await gatewayFact(id, 3000)).status, 200);
-    const read = await readReview(id, "Confirmed. ZZ843 PAID 5000 2099-03-05");
-    assert.deepEqual(read.review.oneDeposit, { amountThb: 3000, date: DAY });
-    const res = await approve(id, bodyOf(read));
-    assert.equal(res.status, 200, show(res));
-    assert.equal(res.body.notWritten, undefined);
-    assert.equal(res.body.written.deposit, true);
-    assert.deepEqual((await homes(id)).deposit, everywhere(5000, "2099-03-05"));
-    // The figure the party already holds, approved again: written as before, nothing to say.
-    const again = await readReview(id, "Confirmed. ZZ843 PAID 5000 2099-03-05");
-    const same = await approve(id, bodyOf(again));
-    assert.equal(same.body.notWritten, undefined, show(same));
-    assert.equal(same.body.written.deposit, true);
-    assert.deepEqual((await homes(id)).deposit, everywhere(5000, "2099-03-05"));
-    // The same amount with no day (the chat gave none): the stored deposit, its day kept — from a
-    // fresh review, and from one read before the family paid that very amount through the chat.
-    const noDay = await readReview(id, "Confirmed. ZZ843 PAID 5000");
-    assert.deepEqual(bodyOf(noDay).deposit, { amount: 5000, paid: true, date: null });
-    const keptDay = await approve(id, bodyOf(noDay));
-    assert.equal(keptDay.body.notWritten, undefined, show(keptDay));
-    assert.deepEqual((await homes(id)).deposit, everywhere(5000, "2099-03-05"), "the day the deposit was paid is not cleared");
-    const early = await party("same-figure");
-    const earlyRead = await readReview(early, "Confirmed. ZZ843 PAID 3000");
-    assert.deepEqual(earlyRead.review.oneDeposit, { amountThb: 0, date: null });
-    assert.equal((await gatewayFact(early, 3000)).status, 200);
-    const agreed = await approve(early, bodyOf(earlyRead));
-    assert.equal(agreed.status, 200, show(agreed));
-    assert.equal(agreed.body.notWritten, undefined, "the chat's figure is the paid one: nothing to say");
-    assert.deepEqual((await homes(early)).deposit, everywhere(3000, DAY));
-    assert.equal(askedOf.length, asked);
-  });
-
-  await check("an approval that names no expectedDeposit (a page loaded before this build) cannot lower the deposit, and can raise it", async () => {
-    const asked = askedOf.length;
-    const id = await party("old-page");
-    assert.equal((await gatewayFact(id, 3000)).status, 200);
-    const read = await readReview(id, "Confirmed. ZZ843 PAID 1000 2099-03-01");
-    const { expectedDeposit: _none, ...old } = bodyOf(read);
-    const lowered = await approve(id, old);
-    assert.equal(lowered.status, 200, show(lowered));
-    assert.deepEqual(lowered.body.notWritten, {
-      deposit: { reason: "unconfirmed", message: "it was not lowered (it stays ฿3,000): this page is out of date. Reload it, then run AI Fill again", amountThb: 3000, date: DAY },
-    });
-    const after = await homes(id);
-    stands(after.deposit, 3000, DAY);
-    assert.equal(after.numChildren, 9, "the rest of the approval is written");
-    const cleared = await approve(id, { ...old, deposit: { amount: 0, paid: true, date: null } });
-    assert.equal(cleared.body.notWritten?.deposit?.reason, "unconfirmed", show(cleared));
-    stands((await homes(id)).deposit, 3000, DAY);
-    const raised = await approve(id, { ...old, deposit: { amount: 4000, paid: true, date: DAY } });
-    assert.equal(raised.body.notWritten, undefined, show(raised));
-    assert.deepEqual((await homes(id)).deposit, everywhere(4000, DAY));
-    assert.equal(askedOf.length, asked, "an old page is kept without asking the platform");
-  });
-
-  await check("a deliberate lowering from a fresh review goes down to what the family paid through the chat, never below it, and not at all when the platform does not answer", async () => {
-    const id = await party("lower");
-    paidThroughChat.set(id, [paidRequest(id, 300_000)]);
-    assert.equal((await gatewayFact(id, 3000)).status, 200);
-    // ฿2,000 more in cash, typed in the BEO: the party holds ฿5,000, ฿3,000 of it through the chat.
-    const first = await readReview(id, "Confirmed. ZZ843 PAID 5000");
-    assert.equal((await approve(id, bodyOf(first, { amount: 5000, paid: true, date: DAY }))).status, 200);
-    assert.deepEqual((await homes(id)).deposit, everywhere(5000, DAY));
-
-    // Down to ฿4,000: above the chat's payment, written; the platform asked once.
-    let asked = askedOf.length;
-    const fresh = await readReview(id, "Confirmed. ZZ843 PAID 4000");
-    const down = await approve(id, bodyOf(fresh, { amount: 4000, paid: true, date: DAY }));
-    assert.equal(down.status, 200, show(down));
-    assert.equal(down.body.notWritten, undefined);
-    assert.deepEqual((await homes(id)).deposit, everywhere(4000, DAY));
-    assert.deepEqual(askedOf.slice(asked), [id], "the platform is asked once, for this party");
-
-    // Down to ฿2,000: below the chat's payment — kept, and said.
-    asked = askedOf.length;
-    const again = await readReview(id, "Confirmed. ZZ843 PAID 2000");
-    const below = await approve(id, bodyOf(again, { amount: 2000, paid: true, date: DAY }));
-    assert.equal(below.status, 200, show(below));
-    assert.deepEqual(below.body.notWritten, {
-      deposit: {
-        reason: "gateway",
-        message: "฿3,000 of it was paid through the chat, so the approval does not lower it below that (it stays ฿4,000). A paid deposit is corrected in the BEO's Billing section (Deposit Paid)",
-        amountThb: 4000,
-        date: DAY,
-      },
-    });
-    assert.deepEqual((await homes(id)).deposit, everywhere(4000, DAY));
-    assert.equal(askedOf.length, asked + 1);
-
-    // The platform does not answer: the deposit is not lowered on a guess.
-    platformDown = true;
-    try {
-      const blind = await approve(id, bodyOf(again, { amount: 3500, paid: true, date: DAY }));
-      assert.equal(blind.status, 200, show(blind));
-      assert.equal(blind.body.notWritten?.deposit?.reason, "unchecked");
-      assert.equal(
-        blind.body.notWritten?.deposit?.message,
-        "it was not lowered (it stays ฿4,000): the till could not be asked whether it was paid through the chat. Try again in a moment",
-      );
-      assert.deepEqual((await homes(id)).deposit, everywhere(4000, DAY));
+  await check("D1: actual gateway fact and informational approval commute in either order", async () => {
+    for (const order of ["fact first", "approval first"] as const) {
+      const id = await party(`commute-${order.replace(" ", "-")}`);
+      const read = await readReview(id, "Confirmed. ZZ843 PAID 999 2099-03-05");
+      const results = order === "fact first"
+        ? await Promise.all([gatewayFact(id, 3000), approve(id, bodyOf(read))])
+        : await Promise.all([approve(id, bodyOf(read)), gatewayFact(id, 3000)]);
+      assert.ok(results.every(result => result.status === 200), JSON.stringify(results));
+      stands((await homes(id)).deposit, 3000, DAY);
       assert.equal((await homes(id)).numChildren, 9);
-    } finally {
-      platformDown = false;
     }
-
-    // A party the chat paid nothing for: a fresh review lowers it freely.
-    const cash = await party("lower-cash");
-    const typed = await readReview(cash, "Confirmed. ZZ843 PAID 5000");
-    assert.equal((await approve(cash, bodyOf(typed, { amount: 5000, paid: true, date: DAY }))).status, 200);
-    const less = await readReview(cash, "Confirmed. ZZ843 PAID 1000");
-    const lowered = await approve(cash, bodyOf(less, { amount: 1000, paid: true, date: DAY }));
-    assert.equal(lowered.body.notWritten, undefined, show(lowered));
-    assert.deepEqual((await homes(cash)).deposit, everywhere(1000, DAY));
   });
 } finally {
   await Promise.all(servers.map((s) => new Promise<void>((resolve) => s.close(() => resolve()))));

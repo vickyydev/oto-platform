@@ -686,9 +686,12 @@ try {
     paidThroughChat.set(id, [paidRequest(id, 300_000)]);
     assert.equal((await gatewayFact(id, 3000)).status, 200);
     // A till's party edit (an admin's deliberate correction there): written, below the chat's payment too.
+    // Order this edit after the persisted app revision, independent of the test
+    // database's timezone and the host clock.
+    const [revision] = await q("select to_char(updated_at + interval '1 second', 'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"') as next_edit from core_events where id=$1", [id]);
     const till = await call("POST", `/api/directory/events/${id}/edits`, {
       bearer: directoryKey,
-      body: { id: randomUUID(), editedAt: new Date(Date.now() + 5_000).toISOString(), fields: { prepaymentAmountThb: 1000, prepaymentDate: DAY } },
+      body: { id: randomUUID(), editedAt: revision.next_edit, fields: { prepaymentAmountThb: 1000, prepaymentDate: DAY } },
     });
     assert.equal(till.status, 200, show(till));
     assert.equal((await depositOf(id)).till, 100_000);
