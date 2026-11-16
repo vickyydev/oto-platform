@@ -23,5 +23,7 @@
     "all other reviewed module fingerprints",
     "runtime file access/tenant checks remain in the whole review file"
   ],
-  "scope": "Only the reviewed beo-routes fingerprint and explanatory comment change; no app source edit by this lane."
+  "scope": "Only the reviewed beo-routes fingerprint and explanatory comment change; no app source edit by this lane.",
+  "semanticDiffArtifact": "beo-routes-approved-delta.json",
+  "semanticDiffRawSha256": "84093f693e41e63b0cade339bb002996cc498ff00a813540f0f3fa4be6bb3e57"
 }
