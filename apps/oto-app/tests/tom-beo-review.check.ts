@@ -1,3 +1,4 @@
+import { planTillKitchenEdit } from '../server/lib/tillKitchenEdit';
 import { lineWithTillItem } from "../shared/tillMenu";
 import { approvedBeoBillingSources, billingSourceSetMatches, beoBillingFingerprint, billingSyncAfterAttempt } from "../shared/beoBillingSource";
 import assert from "node:assert/strict";
@@ -33,3 +34,12 @@ assert.equal(billingSourceSetMatches(expected, first), true);
 assert.equal(billingSourceSetMatches(expected, approvedBeoBillingSources({ kids: [source], adults: [{ ...source, id: "adult-source", itemName: "Other adults dish" }], adultsDiffer: false }, [])), true);
 assert.equal(billingSourceSetMatches(expected, approvedBeoBillingSources({ kids: [source], adults: [{ ...source, id: "adult-source", itemName: "Other adults dish" }], adultsDiffer: true }, [])), false);
 console.log("tom-beo-review: 21 checks passed");
+
+const unresolvedAdded = planTillKitchenEdit({ kitchen: null, bar: null, template: null }, [{ op: 'add', id: '0175e89f-b79d-499f-9989-72fec720078a', list: 'food', name: 'Unknown request', productCode: null, qty: 1 }]);
+assert.equal(unresolvedAdded.ok, true);
+if (unresolvedAdded.ok) {
+  const line = (unresolvedAdded.kitchen?.menus as { kids: Record<string, unknown>[] }).kids[0];
+  assert.equal(line?.price, undefined);
+  assert.equal(line?.included, false);
+}
+console.log('tom-beo-review: unresolved add retains absent price');

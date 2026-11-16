@@ -352,6 +352,26 @@ describe('a manager changes the plan and the BEO is changed', () => {
     expect(editCalls).toEqual([]);
   });
 
+  it('accepts only the scoped catalogue selling-price snapshot for coded additions', async () => {
+    const id = await appParty(newId(), 'ZZ TEST 990 catalogue price');
+    const add = { op: 'add', id: newId(), list: 'food', name: 'Calamari', productCode: 'ZZ-907-CAL', qty: 1 };
+    for (const unitPriceSatang of [0, 1, 29_499]) {
+      const response = await put(manager, id, body([{ ...add, unitPriceSatang }]));
+      expect(response.status).toBe(409);
+      expect((response.body as unknown as { error: { code: string } }).error.code).toBe('PARTY_KITCHEN_PRICE_CHANGED');
+    }
+    expect((await put(manager, id, body([{ ...add, productCode: 'ZZ-FOREIGN-ONLY', unitPriceSatang: 29_500 }]))).status).toBe(409);
+    expect((await put(manager, id, body([{ ...add, list: 'bar', unitPriceSatang: 29_500 }]))).status).toBe(409);
+    expect((await put(manager, id, body([{ ...add, productCode: null, unitPriceSatang: 0 }]))).status).toBe(409);
+    expect(editCalls).toEqual([]);
+    const valid = await put(manager, id, body([{ ...add, unitPriceSatang: 29_500 }]));
+    expect(valid.status, JSON.stringify(valid.body)).toBe(200);
+    expect(editCalls[0]?.body.changes[0]).toMatchObject({ productCode: 'ZZ-907-CAL', unitPriceSatang: 29_500 });
+    const unresolved = await put(manager, id, body([{ ...add, id: newId(), productCode: null, name: 'Unresolved custom request' }]));
+    expect(unresolved.status).toBe(200);
+    expect(editCalls[1]?.body.changes[0]).not.toHaveProperty('unitPriceSatang');
+  });
+
   it('a body the till may not send is refused before anything: a price, a count of 0, no change', async () => {
     const id = await appParty(newId(), 'ZZ TEST 907 body');
     const add = { op: 'add', id: newId(), list: 'food', name: 'Hummus', productCode: 'CF-13', qty: 1 };

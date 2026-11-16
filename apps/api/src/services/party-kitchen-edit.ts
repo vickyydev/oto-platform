@@ -160,9 +160,15 @@ export async function editPartyKitchenPlan(
 
   const catalogue = body.changes.some((change) => change.op === "add" && change.productCode) ? await readPartyMenuCatalogue(db, { operatorId: actor.operatorId, branchId: clock.id }) : null;
   const changes = body.changes.map((change) => {
-    if (change.op !== "add" || change.unitPriceSatang !== undefined || !change.productCode) return change;
+    if (change.op !== 'add') return change;
+    if (!change.productCode) {
+      if (change.unitPriceSatang !== undefined) throw errors.conflict('PARTY_KITCHEN_PRICE_UNRESOLVED', 'Enter a custom selling price in the BEO, then choose that saved item here.');
+      return change;
+    }
     const item = catalogue?.items.find((entry) => entry.code === change.productCode);
-    return item ? { ...change, unitPriceSatang: item.priceSatang } : change;
+    if (!item || item.station !== (change.list === 'bar' ? 'bar' : 'kitchen')) throw errors.conflict('PARTY_KITCHEN_ITEM_UNAVAILABLE', 'This item is no longer available in this party menu. Read the menu again.');
+    if (change.unitPriceSatang !== undefined && change.unitPriceSatang !== item.priceSatang) throw errors.conflict('PARTY_KITCHEN_PRICE_CHANGED', 'The selling price changed. Read the menu again before adding this item.');
+    return { ...change, unitPriceSatang: item.priceSatang };
   });
   const outcome = deps.directory.editKitchenPlan
     ? await deps.directory.editKitchenPlan(event.id, { id: body.editId, editedAt: now.toISOString(), by, changes })

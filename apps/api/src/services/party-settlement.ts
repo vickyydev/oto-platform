@@ -4,6 +4,7 @@ import type { FastifyBaseLogger } from 'fastify';
 import {
   branchHoliday,
   partyEdit,
+  partyCharge,
   partySettlement,
   product,
   sale,
@@ -281,6 +282,23 @@ async function partyExtraChargesOf(
   return { charges: [...charges.values()], notCharged };
 }
 
+/** Earlier additional bills survive a main-sale refund; their exact sources are never sold again. */
+async function withoutRetainedAdditionalSources(db: Exec, operatorId: string, eventId: string, plan: PartyPlan): Promise<Pick<PartyPlan, 'setMenu' | 'barItems'>> {
+  const held = await db.select({ items: partyCharge.items }).from(partyCharge).where(and(eq(partyCharge.operatorId, operatorId), eq(partyCharge.otoappEventId, eventId)));
+  type Source = { lineId: string; quantity: number; unitSatang: number; productCode?: string | null; area?: 'food' | 'bar'; name?: string };
+  const sources = held.flatMap((row) => Array.isArray(row.items) ? row.items.flatMap((item: { beo?: Source } | null) => item?.beo ? [item.beo] : []) : []);
+  const adjust = <T extends PartyPlan['setMenu'][number] | PartyPlan['barItems'][number]>(lines: readonly T[], area: 'food' | 'bar'): T[] => lines.map((line) => {
+    const retained = sources.filter((source) => source.lineId === line.lineId);
+    if (retained.length === 0) return line;
+    const quantity = retained.reduce((sum, source) => sum + source.quantity, 0);
+    if (retained.some((source) => source.area !== area || source.productCode !== line.productCode || source.name !== line.name || source.unitSatang !== line.unitPriceSatang) || quantity > (line.qty ?? 1) || line.origin === 'set_menu') {
+      throw errors.conflict('BEO_RETAINED_BILL_SOURCE_CHANGED', 'This plan item is already on a separate additional bill. Restore its saved quantity and price, or resolve that bill before settling the main party again.');
+    }
+    return { ...line, qty: (line.qty ?? 1) - quantity };
+  });
+  return { setMenu: adjust(plan.setMenu, 'food'), barItems: adjust(plan.barItems, 'bar') };
+}
+
 interface BuiltSettlement {
   plan: PartyPlan;
   composition: PartyComposition;
@@ -327,8 +345,9 @@ async function buildSettlement(
   if (socksGiven > 0 && !socksProductId) {
     throw errors.conflict('PARTY_NO_SOCKS', 'This park sells no Regular Socks, so socks cannot be handed out on this party');
   }
-  const extraCharges = await partyExtraChargesOf(db, actor.operatorId, plan, c.rateMode);
-  const partyMenu = [...(await partyMenuChargesOf(db, actor.operatorId, plan.setMenu, c.rateMode)), ...extraCharges.charges];
+  const unbilledPlan = await withoutRetainedAdditionalSources(db, actor.operatorId, event.id, plan);
+  const extraCharges = await partyExtraChargesOf(db, actor.operatorId, unbilledPlan, c.rateMode);
+  const partyMenu = [...(await partyMenuChargesOf(db, actor.operatorId, unbilledPlan.setMenu, c.rateMode)), ...extraCharges.charges];
   // SCRUM-950: each extra by name, as the sale charges it (the price of one times the count), then those it does not charge.
   const namedExtras: BuiltSettlement['extras'] = [
     ...partyMenu.map((m) => ({
@@ -716,7 +735,6 @@ export async function settleParty(
   if (event.archived) throw errors.conflict('EVENT_ARCHIVED', 'This party has been archived in the OTO App');
   const counter = await stationAt(db, actor.operatorId, branchId, body.stationId);
   if (!counter) throw errors.badRequest('A party is settled at a counter: name the station');
-  const built = await buildSettlement(db, actor, branchId, event, plan, body, body.settlementId);
   const actionId = body.actionId ?? null;
 
   const done: { raced: SettlementRow | null; row: SettlementRow | null; notes: string[]; closed: boolean } = {
@@ -770,6 +788,7 @@ export async function settleParty(
       });
     }
 
+    const built = await buildSettlement(tx, actor, branchId, event, plan, body, body.settlementId);
     const committed = await commitSale(
       tx,
       actor,

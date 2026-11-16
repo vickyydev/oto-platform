@@ -13,7 +13,7 @@ import { billForNewCharge } from './party-additional-bills';
 import { audit } from './audit';
 import { withTx, type OpContext } from './tx';
 
-type Source = { lineId: string; quantity: number; unitSatang: number };
+type Source = { lineId: string; quantity: number; unitSatang: number; productCode: string | null; area: "food" | "bar"; name: string };
 const sources = (items: unknown): Source[] => Array.isArray(items) ? items.flatMap((item: { beo?: Source }) => item?.beo ? [item.beo] : []) : [];
 /** Same party-add-on engine path as settlement, preserving VAT/service and entered-price semantics. */
 export async function priceBeoAddition(db: Exec, operatorId: string, branchId: string, eventId: string, line: BeoAdditionalChargesBody['lines'][number], quantity: number, unitSatang: number, id: string, now: Date) {
@@ -59,14 +59,14 @@ export async function syncBeoAdditionalCharges(db: Db, ctx: OpContext, operatorI
       if (line.quantity === quantityBefore && previous.length === 0) continue;
       const unitSatang = line.included ? 0 : line.unitSatang;
       if (unitSatang === null) throw errors.conflict('BEO_PRICE_UNRESOLVED', 'A new BEO item has no confirmed selling price. Set its price or mark it included before saving again.');
-      if (previous.some((source) => source.unitSatang !== unitSatang)) throw errors.conflict('BEO_BILLED_PRICE_CHANGED', 'This BEO line was already billed at another price. Add a separate new line instead of repricing the old bill.');
+      if (previous.some((source) => source.unitSatang !== unitSatang || source.productCode !== line.productCode || source.area !== line.area || source.name !== line.name)) throw errors.conflict('BEO_BILLED_PRICE_CHANGED', 'This BEO line was already billed at another price. Add a separate new line instead of repricing the old bill.');
       if (line.quantity === quantityBefore) continue;
       if (unitSatang === 0) continue;
       const quantity = line.quantity - quantityBefore;
       const id = deriveId(event.id, `beo-addition:${mainSettlementId}:${line.lineId}:${line.quantity}:${unitSatang}`);
       const totalSatang = await priceBeoAddition(tx, operatorId, event.branchId, event.id, line, quantity, unitSatang, id, now);
       const billId = await billForNewCharge(tx, { operatorId, branchId: event.branchId, eventId: event.id, mainSettlementId, chargeId: id, bills: ledger.additionalBills ?? [], now });
-      await tx.insert(partyCharge).values({ id, operatorId, branchId: event.branchId, otoappEventId: event.id, additionalBillId: billId, kind: 'fnb', items: [{ name: line.name, qty: quantity, lineTotalSatang: totalSatang, beo: { lineId: line.lineId, quantity, unitSatang } }], totalSatang, chargedAt: now, createdAt: now, updatedAt: now });
+      await tx.insert(partyCharge).values({ id, operatorId, branchId: event.branchId, otoappEventId: event.id, additionalBillId: billId, kind: 'fnb', items: [{ name: line.name, qty: quantity, lineTotalSatang: totalSatang, beo: { lineId: line.lineId, quantity, unitSatang, productCode: line.productCode, area: line.area, name: line.name } }], totalSatang, chargedAt: now, createdAt: now, updatedAt: now });
       await audit.record(tx, { actorAccountId: null, operatorId, branchId: event.branchId, action: 'party.beo_addition', entityType: 'party_charge', entityId: id, after: { eventId: event.id, lineId: line.lineId, quantity, billId, actorAppUserId: body.actorAppUserId } });
       added += 1;
       billIds.add(billId);

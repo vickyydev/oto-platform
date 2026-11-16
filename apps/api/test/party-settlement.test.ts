@@ -1569,7 +1569,7 @@ describe('SCRUM-990 HIGH: independent additional bills after a paid main receipt
     }
   });
 
-  it('uses a fresh BEO baseline after a real main refund and re-settlement, without summing the old cycle twice', async () => {
+  it.each([true, false])('keeps earlier additional-bill sources out of re-settlement pricing (paid=%s), with a fresh full baseline', async (paid) => {
     const id = newId();
     await appParty(id, 'ZZ TEST 990 second settlement cycle', WEEKDAY, 16900, 2000);
     await appPlan(id, WEEKDAY, FLORESTA, { depositSatang: 200000, setMenu: [] });
@@ -1580,10 +1580,15 @@ describe('SCRUM-990 HIGH: independent additional bills after a paid main receipt
     const sync = (quantity: number) => syncBeoAdditionalCharges(ctx.db, { operatorId }, operatorId, id, { actorAppUserId: 'zz-test-staff', lines: [{ ...line, quantity }] });
     expect((await sync(2)).added).toBe(1);
     const old = (await detail(id)).body.event.party!.additionalBills![0]!;
-    expect((await pay(id, old.id, newId(), old.outstandingSatang, old.outstandingSatang)).status).toBe(200);
+    if (paid) expect((await pay(id, old.id, newId(), old.outstandingSatang, old.outstandingSatang)).status).toBe(200);
+    const originalBill = JSON.stringify((await detail(id)).body.event.party!.additionalBills![0]);
     const refunded = await ctx.app.inject({ method: 'POST', url: `/sales/${first.body.sale.id}/refunds`, headers: { cookie: admin, 'idempotency-key': newId() }, payload: { mode: 'whole', reason: 'ZZ TEST cycle refund', actionId: newId() } });
     expect(refunded.statusCode, refunded.body).toBe(200);
     await ctx.db.execute(sql`update zz_party_contract.event_packages set kitchen_plan = ${JSON.stringify({ version: 1, lines: [{ line_id: line.lineId, source: 'extra', name: line.name, product_code: null, qty: 2, unit_price_satang: 10000 }], bar_lines: [] })}::jsonb where event_id=${id}`);
+    const secondPreview = await preview(id, { kids: 10, adults: 4, socksGiven: 0 });
+    expect(secondPreview.status).toBe(200);
+    expect(secondPreview.body.quote.addOnsSatang).toBe(0);
+    expect(secondPreview.body.quote.totalSatang).toBe(first.body.sale.grossSatang);
     const second = await settle(id, { kids: 10, adults: 4, socksGiven: 0 });
     expect(second.status, JSON.stringify(second.body)).toBe(200);
     expect((await finalise(second.body.sale.id, { method: 'cash', tenderedSatang: second.body.sale.outstandingSatang })).status).toBe(200);
@@ -1593,7 +1598,14 @@ describe('SCRUM-990 HIGH: independent additional bills after a paid main receipt
     expect(bills).toHaveLength(2);
     expect(bills[0]!.mainSettlementId).toBe(first.body.settlement.id);
     expect(bills[1]!.mainSettlementId).toBe(second.body.settlement.id);
+    expect(bills[0]!.totalSatang).toBe(20000);
+    expect(bills[0]!.paidSatang).toBe(paid ? 20000 : 0);
+    expect(JSON.stringify(bills[0])).toBe(originalBill);
     expect(bills[1]!.totalSatang).toBe(10000);
+    await ctx.db.execute(sql`update zz_party_contract.event_packages set kitchen_plan = ${JSON.stringify({ version: 1, lines: [{ line_id: line.lineId, source: 'extra', name: line.name, product_code: null, qty: 3, unit_price_satang: 10001 }], bar_lines: [] })}::jsonb where event_id=${id}`);
+    const ambiguous = await preview(id, { kids: 10, adults: 4, socksGiven: 0 });
+    expect(ambiguous.status).toBe(409);
+    expect((ambiguous.body as unknown as { error: { code: string } }).error.code).toBe('BEO_RETAINED_BILL_SOURCE_CHANGED');
   });
 
   it('uses existing source gross with exclusive VAT and nonzero service, rather than base times quantity', async () => {

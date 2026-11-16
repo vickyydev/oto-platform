@@ -242,7 +242,7 @@ export function planTillKitchenEdit(state: KitchenState, changes: readonly TillK
         quantity: change.qty,
         notes: (change.note ?? "").trim(),
         included: change.unitPriceSatang === 0,
-        price: (change.unitPriceSatang ?? 0) / 100,
+        ...(change.unitPriceSatang !== undefined ? { price: change.unitPriceSatang / 100 } : {}),
         chargeApproved: true,
         billingSync: "pending",
         // As the BEO's own "+ EXTRA": an additional line beside a set menu, else an unbadged one (an EXTRA).
