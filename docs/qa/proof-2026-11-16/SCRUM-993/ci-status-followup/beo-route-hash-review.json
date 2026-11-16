@@ -1,0 +1,27 @@
+{
+  "oldReference": "7b7cc45b7",
+  "newReference": "7c30fcf0d",
+  "oldBeoRouteSha256": "376971471e2f7fe8bbda3796284a4219a44ab31244825e4b3903f7fe4f8bef96",
+  "newBeoRouteSha256": "62eacd914f65f7a222e9ac6ce89aa7a7ea02d81d63eff87aa064c8b539c35e90",
+  "reviewedChanges": [
+    "Save preserves existing billing add-ons when updating party details.",
+    "Save runs approved additional-line sync after the plan transaction and returns its status.",
+    "Public parent selection returns allowlisted catalogue fields, current selling prices and saved planned items.",
+    "Parent response does not expose newly-read tenant/branch identifiers."
+  ],
+  "protectedModulesByteIdentical": {
+    "pdf-storage.ts": "c23daf4541026ebff0bb49cce05161b76d59ad1ba2040ba913eaebe568dd43e3",
+    "file-storage.ts": "faa0c5c7e17f949aeb1f74e91391e019220f29cfd97bf6eefae47c46fbdd850e",
+    "storage/s3Client.ts": "9d51fea745ad10e3944543ec6b9e17a36d5af128c923703b010e4be7c1c8ddcb",
+    "pdf.ts": "cb54281507ca9a832e80ee9c98fe5037a5c4d27eaf0b2e218011b221e71bcc54",
+    "orgChartRoutes.ts": "eff8d4478165e8b0157ef07d37891222104f751b49932e70f525f06366fe9d90"
+  },
+  "unchangedAssertions": [
+    "publicFileFolders exact whitelist",
+    "publicFolders exact whitelist",
+    "signed file URL expiry",
+    "all other reviewed module fingerprints",
+    "runtime file access/tenant checks remain in the whole review file"
+  ],
+  "scope": "Only the reviewed beo-routes fingerprint and explanatory comment change; no app source edit by this lane."
+}

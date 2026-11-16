@@ -76,6 +76,7 @@ export const partyCharge = pos.table(
     index('party_charge_branch_idx').on(t.branchId, t.chargedAt),
     /** A party's bill reads its charges. */
     index('party_charge_event_idx').on(t.otoappEventId, t.chargedAt),
+    index('party_charge_additional_bill_idx').on(t.additionalBillId),
     index('party_charge_account_idx').on(t.accountId),
     index('party_charge_station_idx').on(t.stationId),
     index('party_charge_box_idx').on(t.boxId),
@@ -128,6 +129,7 @@ export const partyPayment = pos.table(
     index('party_payment_branch_day_idx').on(t.branchId, t.partyDate),
     /** A party's bill reads its payments. */
     index('party_payment_event_idx').on(t.otoappEventId),
+    index('party_payment_additional_bill_idx').on(t.additionalBillId),
     index('party_payment_account_idx').on(t.accountId),
     index('party_payment_station_idx').on(t.stationId),
     index('party_payment_box_idx').on(t.boxId),

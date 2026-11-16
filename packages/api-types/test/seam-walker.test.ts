@@ -139,6 +139,12 @@ const MACHINE_CALLERS: Array<{ prefix: string; exact?: boolean; except?: string;
       "the OTO App's server (server/lib/tillBilling.ts, SCRUM-822), reading a party's money from the till for the BEO's Billing section, Party Details, Day-of view and Quote PDF, with the operator-bound provision key",
   },
   {
+    prefix: '/otoapp/parties/{eventId}/beo-additions',
+    exact: true,
+    caller:
+      "the OTO App's server (server/lib/beoAdditionalBilling.ts, SCRUM-990), forwarding reviewed source lines and the acting app user to the party's additional bill with the operator-bound provision key; durable source identities own retries",
+  },
+  {
     prefix: '/otoapp/parties/{eventId}/deposit-request',
     caller:
       "the OTO App's server (server/lib/partyDepositRequest.ts, SCRUM-825), when staff ask, resend or cancel a party's deposit from the BEO's Billing section, with the operator-bound provision key and the press's Idempotency-Key",

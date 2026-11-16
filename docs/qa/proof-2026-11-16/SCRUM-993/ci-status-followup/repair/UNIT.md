@@ -1,0 +1,15 @@
+# CI follow-up: checked non-app delta
+
+Root assigned these narrow repairs after the exact-source CI snapshot. The original SCRUM-993 source manifest at d79c0bc3915b172770588717ae0cc68b3a66e49c and its 46-input/68-log validation record remain historical and unchanged. This directory binds the follow-up delta separately. Root owns integration, main publication and deployment; none occurred in this lane. No real staff policy, grant, preference, payment or business setting was changed.
+
+Forward platform migration 0129 adds only party_charge_additional_bill_idx(additional_bill_id) and party_payment_additional_bill_idx(additional_bill_id). Its snapshot follows local approved 0128, and its journal entry follows 0128 with a later timestamp. All 129 prior raw SQL files remain byte-identical, including applied 0127 and approved 0128. This delta depends on the original 993 migration chain; do not land 0129 without 0128.
+
+The existing party column census now names the actual additional_bill_id column on both tables, retaining every index invariant. The seam registry names the actual additional-billing server caller. Prebooking and three account-limit calls now name their exact generated ApiResponse type inline, preserving their generated aliases for consumers; no response shape or runtime call changed. The first whole seam run exposed those three additional alias sites (9/10); the repaired whole file passes 10/10 without enlarging a hand-typed allowance or weakening the walker.
+
+The BEO route fingerprint was refreshed only after comparing its old approved source (7b7cc45b7, hash376971...) with the approved BEO changes (7c30fcf0d, hash62eacd...). The delta preserves billing add-ons, invokes approved additional-line sync and returns allowlisted parent-menu plan/selling-price fields. All five PDF/storage/org-chart modules are byte-identical; their hashes and the public-folder/access assertions remain. The exact semantic review and diff are in the parent directory.
+
+Checks: the two complete party DB files pass 7/7, including both FK-covering-index assertions and a clean second migration; actual catalogue verification matches final 0129. The complete seam suite passes 10/10 after its preserved 9/10 RED. The whole s217b-r6 review finishes 14 passing and 51 skipped: static fences and migration attacks run, while its preexisting HAS_APP_RUNTIME guard skips app HTTP sections because this lane has no separate app npm runtime. Those 51 cases are not claimed passed. App mirror/catalogue repairs and their runtime gates belong to the BEO lane, not this delta.
+
+Whole compiler output is zero bytes for API, DB, API-types, admin-screens and both Inbox configurations. Final six-file lint is zero output. No additional test rerun followed these successes. The heavy slot was returned to the BEO lane immediately; no owned local process or watcher remains. Full nonsecret local gate logs are retained under C:/oto-lanes/inbox-993-ci-*.log and fingerprinted in the delta validation manifest.
+
+The root source review found no code issue before this freeze. Main publication/deployment remains held for the shared API proof slot.

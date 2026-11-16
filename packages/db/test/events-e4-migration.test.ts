@@ -84,13 +84,13 @@ describe('the party tab migration — charges, payments and edits', () => {
       ).rows.map((r: { column_name: string }) => r.column_name).sort();
     expect(await cols('party_charge')).toEqual(
       [
-        'id', 'operator_id', 'branch_id', 'otoapp_event_id', 'kind', 'items', 'total_satang', 'account_id',
+        'id', 'operator_id', 'branch_id', 'otoapp_event_id', 'additional_bill_id', 'kind', 'items', 'total_satang', 'account_id',
         'station_id', 'box_id', 'action_id', 'charged_at', 'created_at', 'updated_at',
       ].sort(),
     );
     expect(await cols('party_payment')).toEqual(
       [
-        'id', 'operator_id', 'branch_id', 'otoapp_event_id', 'payment_attempt_id', 'party_date', 'account_id',
+        'id', 'operator_id', 'branch_id', 'otoapp_event_id', 'additional_bill_id', 'payment_attempt_id', 'party_date', 'account_id',
         'station_id', 'box_id', 'action_id', 'created_at', 'updated_at',
       ].sort(),
     );

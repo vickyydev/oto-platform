@@ -1,0 +1,2 @@
+CREATE INDEX "party_charge_additional_bill_idx" ON "pos"."party_charge" USING btree ("additional_bill_id");--> statement-breakpoint
+CREATE INDEX "party_payment_additional_bill_idx" ON "pos"."party_payment" USING btree ("additional_bill_id");

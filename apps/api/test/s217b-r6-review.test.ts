@@ -559,7 +559,10 @@ describe('A. fences and seams', () => {
       // number (cakeCountOf), and the kitchen-plan route's note says its check takes what the plan's
       // readers read; where the BEO's documents live is unchanged.
       // SCRUM-983: parent receipts return the saved instant and adult-code writers reuse their helper; the PDF/storage route is unchanged.
-      'beo-routes.ts': '376971471e2f7fe8bbda3796284a4219a44ab31244825e4b3903f7fe4f8bef96',
+      // SCRUM-990/991: Save preserves billing add-ons and synchronizes approved additional lines; the parent
+      // menu returns allowlisted plan/catalogue fields and current selling prices. The reviewed diff adds
+      // no PDF, file, bucket or public-folder door; their hashes and access assertions remain unchanged.
+      'beo-routes.ts': '62eacd914f65f7a222e9ac6ce89aa7a7ea02d81d63eff87aa064c8b539c35e90',
       'orgChartRoutes.ts': 'eff8d4478165e8b0157ef07d37891222104f751b49932e70f525f06366fe9d90',
     };
     for (const [file, hash] of Object.entries(main)) expect(sha256(committed(join(APP_SERVER, file))), file).toBe(hash);

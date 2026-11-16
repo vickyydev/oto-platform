@@ -139,7 +139,7 @@ export const inboxApi = {
       idempotencyKey: idemKey(),
     }),
 
-  prebooking: (id: string) => api.get<Prebooking>(`${at(id)}/prebooking`),
+  prebooking: (id: string) => api.get<ApiResponse<'/inbox/conversations/{id}/prebooking', 'get'>>(`${at(id)}/prebooking`),
   requestPrebooking: (id: string, body: ApiBody<'/inbox/conversations/{id}/prebooking', 'post'>) =>
     api.post<ApiResponse<'/inbox/conversations/{id}/prebooking', 'post'>>(
       `${at(id)}/prebooking`,

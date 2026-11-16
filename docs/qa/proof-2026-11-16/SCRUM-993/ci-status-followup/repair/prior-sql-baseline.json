@@ -1,0 +1,523 @@
+{
+  "reference993Source": "d79c0bc3915b172770588717ae0cc68b3a66e49c",
+  "priorSqlFiles": 129,
+  "comparison": "Every prior canonical SQL byte identical; raw working hashes retained separately for line-ending transparency.",
+  "files": {
+    "packages/db/migrations/0000_real_tattoo.sql": {
+      "baselineCanonicalSha256": "504b6530f7fcd9da0e343fb4905907c573b683c3a11cdd0067bb5556681c32ef",
+      "workingRawSha256": "504b6530f7fcd9da0e343fb4905907c573b683c3a11cdd0067bb5556681c32ef"
+    },
+    "packages/db/migrations/0001_breezy_energizer.sql": {
+      "baselineCanonicalSha256": "c53ebcf702e6009af961a44f212b6b2bb3601dc89864c87e34c8505aeaa0dd31",
+      "workingRawSha256": "c53ebcf702e6009af961a44f212b6b2bb3601dc89864c87e34c8505aeaa0dd31"
+    },
+    "packages/db/migrations/0002_add-line-contact-channel.sql": {
+      "baselineCanonicalSha256": "9a172d32b9998d5399acb320992094cc18854fd958cfdcb249246a92c7516ce9",
+      "workingRawSha256": "9a172d32b9998d5399acb320992094cc18854fd958cfdcb249246a92c7516ce9"
+    },
+    "packages/db/migrations/0003_session_lock_model.sql": {
+      "baselineCanonicalSha256": "e5edbe04b9190607eca842ea0fef9e5cf7f17162dcf7652a09a5c94a15789b9f",
+      "workingRawSha256": "e5edbe04b9190607eca842ea0fef9e5cf7f17162dcf7652a09a5c94a15789b9f"
+    },
+    "packages/db/migrations/0004_auth_throttle.sql": {
+      "baselineCanonicalSha256": "04dfc2d5bc9bfa548eb36cc34727735f3ca364db0c0a19f40ea61002183fdc95",
+      "workingRawSha256": "04dfc2d5bc9bfa548eb36cc34727735f3ca364db0c0a19f40ea61002183fdc95"
+    },
+    "packages/db/migrations/0005_schema_move.sql": {
+      "baselineCanonicalSha256": "e5f80d47c739b6c114b7f43b935ee7c4d9704992bb2337068ed4622bf25d4e07",
+      "workingRawSha256": "e5f80d47c739b6c114b7f43b935ee7c4d9704992bb2337068ed4622bf25d4e07"
+    },
+    "packages/db/migrations/0006_handoff_token.sql": {
+      "baselineCanonicalSha256": "dc0069f4880d8a0b96b7ba1d566d81eac8e6ce0569e134a072b71793b7c17a5a",
+      "workingRawSha256": "dc0069f4880d8a0b96b7ba1d566d81eac8e6ce0569e134a072b71793b7c17a5a"
+    },
+    "packages/db/migrations/0007_ops_record.sql": {
+      "baselineCanonicalSha256": "5e63d543b98bc7faeb8bce85eb210944551d71e532e629b4eb56935542c3ebed",
+      "workingRawSha256": "5e63d543b98bc7faeb8bce85eb210944551d71e532e629b4eb56935542c3ebed"
+    },
+    "packages/db/migrations/0008_app_identity.sql": {
+      "baselineCanonicalSha256": "7a5cfcc8f89219ca235c74f18e8cc2c958e9df1514045cbe4df76791553993dd",
+      "workingRawSha256": "7a5cfcc8f89219ca235c74f18e8cc2c958e9df1514045cbe4df76791553993dd"
+    },
+    "packages/db/migrations/0009_fleet.sql": {
+      "baselineCanonicalSha256": "c0335b3943bd890298f00f6d11c249fbbb933b9cc210ace04b21a5ef06be6b9c",
+      "workingRawSha256": "c0335b3943bd890298f00f6d11c249fbbb933b9cc210ace04b21a5ef06be6b9c"
+    },
+    "packages/db/migrations/0010_sync_core.sql": {
+      "baselineCanonicalSha256": "053b3f8b4b2aa74190a2712efe26efb5d0b7c41c66fedb2626a3cb5b49575f62",
+      "workingRawSha256": "053b3f8b4b2aa74190a2712efe26efb5d0b7c41c66fedb2626a3cb5b49575f62"
+    },
+    "packages/db/migrations/0011_print_and_staff_tokens.sql": {
+      "baselineCanonicalSha256": "12d048d8de02068961ead4f0143d9651c1504cc7c2b9b4963f592588b0b7a861",
+      "workingRawSha256": "12d048d8de02068961ead4f0143d9651c1504cc7c2b9b4963f592588b0b7a861"
+    },
+    "packages/db/migrations/0012_booth.sql": {
+      "baselineCanonicalSha256": "bfb45a173545198aff1ca490f980285fe7227ac8ca07953461e5242dcf86f8c2",
+      "workingRawSha256": "bfb45a173545198aff1ca490f980285fe7227ac8ca07953461e5242dcf86f8c2"
+    },
+    "packages/db/migrations/0013_box_local.sql": {
+      "baselineCanonicalSha256": "ef0f5f797f5f50b7d4dc1fe64bc6dec677d316e87067b14a9b2b6915a1dc2d32",
+      "workingRawSha256": "ef0f5f797f5f50b7d4dc1fe64bc6dec677d316e87067b14a9b2b6915a1dc2d32"
+    },
+    "packages/db/migrations/0014_sales_ledger.sql": {
+      "baselineCanonicalSha256": "fe7aac34211cdd93b02b365cc52b3adb308c6122555fb59c74fc189617db1f6d",
+      "workingRawSha256": "fe7aac34211cdd93b02b365cc52b3adb308c6122555fb59c74fc189617db1f6d"
+    },
+    "packages/db/migrations/0015_menu_catalogue.sql": {
+      "baselineCanonicalSha256": "92d369943d4abec7aaee2dd71b4220b437913efe51b4fe44024cb72a1f066f76",
+      "workingRawSha256": "92d369943d4abec7aaee2dd71b4220b437913efe51b4fe44024cb72a1f066f76"
+    },
+    "packages/db/migrations/0016_box_cache_receipt_hwm.sql": {
+      "baselineCanonicalSha256": "d589151de93bac7adb0403b9e463765354013d69c0704344a3fe9c021e5f03fe",
+      "workingRawSha256": "d589151de93bac7adb0403b9e463765354013d69c0704344a3fe9c021e5f03fe"
+    },
+    "packages/db/migrations/0017_sale_tier_claim.sql": {
+      "baselineCanonicalSha256": "2fbcf32ce9329df1e08f665739205a685e4651cfd5e3d719f8a34b5079c8743e",
+      "workingRawSha256": "2fbcf32ce9329df1e08f665739205a685e4651cfd5e3d719f8a34b5079c8743e"
+    },
+    "packages/db/migrations/0018_booking_redemption.sql": {
+      "baselineCanonicalSha256": "c9a4370b374e7c758c46cbe63169891db4b1562c67ed2df9a97fb9456f602911",
+      "workingRawSha256": "c9a4370b374e7c758c46cbe63169891db4b1562c67ed2df9a97fb9456f602911"
+    },
+    "packages/db/migrations/0019_payment_tenders.sql": {
+      "baselineCanonicalSha256": "acd461f114a41ab5b69fd197d524089490bb86212dbcc22881364f486d85b2f7",
+      "workingRawSha256": "acd461f114a41ab5b69fd197d524089490bb86212dbcc22881364f486d85b2f7"
+    },
+    "packages/db/migrations/0020_product_variants.sql": {
+      "baselineCanonicalSha256": "204a068fc29177a06757b19bd28ed2387fc7a541fd8800754c2f2123055934e6",
+      "workingRawSha256": "204a068fc29177a06757b19bd28ed2387fc7a541fd8800754c2f2123055934e6"
+    },
+    "packages/db/migrations/0021_voucher_redemption.sql": {
+      "baselineCanonicalSha256": "4023b82281c3952f1c75c1b0292196b7e123ac9742a3b821b93ee40e57e40eb9",
+      "workingRawSha256": "4023b82281c3952f1c75c1b0292196b7e123ac9742a3b821b93ee40e57e40eb9"
+    },
+    "packages/db/migrations/0022_booth_staff_session_and_voucher_wording.sql": {
+      "baselineCanonicalSha256": "9266eb87945edaab99d3b8222e195e93131ccda6345dd97eff0baa3ef424e3dd",
+      "workingRawSha256": "9266eb87945edaab99d3b8222e195e93131ccda6345dd97eff0baa3ef424e3dd"
+    },
+    "packages/db/migrations/0023_voucher_redemption_no_truncate.sql": {
+      "baselineCanonicalSha256": "91780b8b9815a50e9ad6ecba97cc398ae7a7aa402f33490f23ad2dba6a1192da",
+      "workingRawSha256": "91780b8b9815a50e9ad6ecba97cc398ae7a7aa402f33490f23ad2dba6a1192da"
+    },
+    "packages/db/migrations/0024_redemption_throttle_code_hashes.sql": {
+      "baselineCanonicalSha256": "6a4e2b458e74a4619b125d10a030f9088eec3822ba118eb67552ce7ea19d029b",
+      "workingRawSha256": "6a4e2b458e74a4619b125d10a030f9088eec3822ba118eb67552ce7ea19d029b"
+    },
+    "packages/db/migrations/0025_voucher_line_labels.sql": {
+      "baselineCanonicalSha256": "a4d02b50cba79cc506fb4a953c5a388dda5e78e06f6f3568aa280ecc7a8daba2",
+      "workingRawSha256": "a4d02b50cba79cc506fb4a953c5a388dda5e78e06f6f3568aa280ecc7a8daba2"
+    },
+    "packages/db/migrations/0026_voucher_miss_by_person.sql": {
+      "baselineCanonicalSha256": "5a69243f8ecdf85ac1a444bca01169f6bbf9a639f69f117c69abae6cbfa22e52",
+      "workingRawSha256": "5a69243f8ecdf85ac1a444bca01169f6bbf9a639f69f117c69abae6cbfa22e52"
+    },
+    "packages/db/migrations/0027_booth_pin_expiry.sql": {
+      "baselineCanonicalSha256": "f3581e81c028db9b4b9c22df25c9cbbab4a1373ce93ef019eb698251055f21e5",
+      "workingRawSha256": "f3581e81c028db9b4b9c22df25c9cbbab4a1373ce93ef019eb698251055f21e5"
+    },
+    "packages/db/migrations/0028_booth_spin_duration.sql": {
+      "baselineCanonicalSha256": "db70b1bc09b419290f7b5d85cdbbe9d65b06f2cdee8e5a80b6524277e957fac2",
+      "workingRawSha256": "db70b1bc09b419290f7b5d85cdbbe9d65b06f2cdee8e5a80b6524277e957fac2"
+    },
+    "packages/db/migrations/0029_payment_gateway_invoice_scope.sql": {
+      "baselineCanonicalSha256": "b0ad906c50477a0848d4967addba979fa8e59037269b2e1ac058c814595653ec",
+      "workingRawSha256": "b0ad906c50477a0848d4967addba979fa8e59037269b2e1ac058c814595653ec"
+    },
+    "packages/db/migrations/0030_display_pairing.sql": {
+      "baselineCanonicalSha256": "0732c034c6e1f317944b1dca233b214cc08e1d56075bc996095f23319942fa9f",
+      "workingRawSha256": "0732c034c6e1f317944b1dca233b214cc08e1d56075bc996095f23319942fa9f"
+    },
+    "packages/db/migrations/0031_active_station_display.sql": {
+      "baselineCanonicalSha256": "f59865f35bfb8cb7c43b81f3c64dbb4e02f7a1c3d226f68df96991c6c13d37dd",
+      "workingRawSha256": "f59865f35bfb8cb7c43b81f3c64dbb4e02f7a1c3d226f68df96991c6c13d37dd"
+    },
+    "packages/db/migrations/0032_display_response_snapshot.sql": {
+      "baselineCanonicalSha256": "ba2eeaa2c0c61d9c17a87d3b9faa9feea21aa5ba452d5b34e8fdb56c911125f7",
+      "workingRawSha256": "ba2eeaa2c0c61d9c17a87d3b9faa9feea21aa5ba452d5b34e8fdb56c911125f7"
+    },
+    "packages/db/migrations/0033_retire_session_lookup.sql": {
+      "baselineCanonicalSha256": "f1152b817fcbfc3e94c3bcbcfc1f51f386de8142ecbb468d3fd270c15acb9445",
+      "workingRawSha256": "f1152b817fcbfc3e94c3bcbcfc1f51f386de8142ecbb468d3fd270c15acb9445"
+    },
+    "packages/db/migrations/0034_bands_refunds.sql": {
+      "baselineCanonicalSha256": "e4cfefdba7b6c7fa0d385f86d852c3624353332b01771f4219381d8da68cf35f",
+      "workingRawSha256": "e4cfefdba7b6c7fa0d385f86d852c3624353332b01771f4219381d8da68cf35f"
+    },
+    "packages/db/migrations/0035_edge_box_overlay.sql": {
+      "baselineCanonicalSha256": "62b620502cd080a48fe64273502887b93904ea99752e62d7532df7960760ebbd",
+      "workingRawSha256": "62b620502cd080a48fe64273502887b93904ea99752e62d7532df7960760ebbd"
+    },
+    "packages/db/migrations/0036_member_alias.sql": {
+      "baselineCanonicalSha256": "3338b796620132a7b898c39e9fc4779ec8451e6d414ac2544b20df0caf191943",
+      "workingRawSha256": "3338b796620132a7b898c39e9fc4779ec8451e6d414ac2544b20df0caf191943"
+    },
+    "packages/db/migrations/0037_sync_anomaly_offline_kinds.sql": {
+      "baselineCanonicalSha256": "be3fce5315d940a2549af0fe2831bf7bb1931c0fc350a0eab72ae486a7d75c9a",
+      "workingRawSha256": "be3fce5315d940a2549af0fe2831bf7bb1931c0fc350a0eab72ae486a7d75c9a"
+    },
+    "packages/db/migrations/0038_booking_checkout.sql": {
+      "baselineCanonicalSha256": "7d9e1a76aecb67e9e5490938d4fcba0fb176174941680736039a4867c74cc479",
+      "workingRawSha256": "7d9e1a76aecb67e9e5490938d4fcba0fb176174941680736039a4867c74cc479"
+    },
+    "packages/db/migrations/0039_booth_voucher_slip.sql": {
+      "baselineCanonicalSha256": "53cd34f88b83b71a1ef970e2db871ba6f630ff568125ab80b504cc685f09164e",
+      "workingRawSha256": "53cd34f88b83b71a1ef970e2db871ba6f630ff568125ab80b504cc685f09164e"
+    },
+    "packages/db/migrations/0040_booth_duty.sql": {
+      "baselineCanonicalSha256": "688a2a27ee73447c6e0873dbe942d0e6b2f6aa8e82f592f41a15e8306b9e17a0",
+      "workingRawSha256": "688a2a27ee73447c6e0873dbe942d0e6b2f6aa8e82f592f41a15e8306b9e17a0"
+    },
+    "packages/db/migrations/0041_band_event_gate_kinds.sql": {
+      "baselineCanonicalSha256": "bcafdecfcee20cb2728c5ea32e70f35f5c3a778e7f87ecef255d8c6d6cabd036",
+      "workingRawSha256": "bcafdecfcee20cb2728c5ea32e70f35f5c3a778e7f87ecef255d8c6d6cabd036"
+    },
+    "packages/db/migrations/0042_occupancy_fact.sql": {
+      "baselineCanonicalSha256": "c88b33cd59bc30c349b879f08237ce2e45ad2227858caa3c42f13fb53bf73cda",
+      "workingRawSha256": "c88b33cd59bc30c349b879f08237ce2e45ad2227858caa3c42f13fb53bf73cda"
+    },
+    "packages/db/migrations/0043_checkin_supervision.sql": {
+      "baselineCanonicalSha256": "6b97dfaaaa5e987dde12c88d37474138fec248b091a78e1bd484a4c0abdb6aa9",
+      "workingRawSha256": "6b97dfaaaa5e987dde12c88d37474138fec248b091a78e1bd484a4c0abdb6aa9"
+    },
+    "packages/db/migrations/0044_checkin_overlay_kinds.sql": {
+      "baselineCanonicalSha256": "d1201cda6c1c17bda2a5f9477d04f970a4d0f5e512dfd705bdd2ffc38d56e4e6",
+      "workingRawSha256": "d1201cda6c1c17bda2a5f9477d04f970a4d0f5e512dfd705bdd2ffc38d56e4e6"
+    },
+    "packages/db/migrations/0045_wallet_ledger.sql": {
+      "baselineCanonicalSha256": "e83f254411fc03655cdc271487ef873e67b96e157714470fc667a994d6a08565",
+      "workingRawSha256": "e83f254411fc03655cdc271487ef873e67b96e157714470fc667a994d6a08565"
+    },
+    "packages/db/migrations/0046_sync_anomaly_wallet_overdraft.sql": {
+      "baselineCanonicalSha256": "5bb913fa4e50e1eeda9e481011deca837979b2b2b3151a4e6063c6cc17e5e202",
+      "workingRawSha256": "5bb913fa4e50e1eeda9e481011deca837979b2b2b3151a4e6063c6cc17e5e202"
+    },
+    "packages/db/migrations/0047_promo_vouchers.sql": {
+      "baselineCanonicalSha256": "a26e0ee35312d8a56cd1224bccdbaf858cdbdaf5179dfbd083483c1bb4c0b027",
+      "workingRawSha256": "a26e0ee35312d8a56cd1224bccdbaf858cdbdaf5179dfbd083483c1bb4c0b027"
+    },
+    "packages/db/migrations/0048_stock_ledger.sql": {
+      "baselineCanonicalSha256": "ae29cff9017f2f6d1c733eef174b7db315da5438a06ce1e093b126bdc1a61330",
+      "workingRawSha256": "ae29cff9017f2f6d1c733eef174b7db315da5438a06ce1e093b126bdc1a61330"
+    },
+    "packages/db/migrations/0049_sync_anomaly_stock_oversold.sql": {
+      "baselineCanonicalSha256": "07d3a1162a70ccd509d07c0fd8ede9d9b375ef34bdf1b0a0e6510bb8e6ca8353",
+      "workingRawSha256": "07d3a1162a70ccd509d07c0fd8ede9d9b375ef34bdf1b0a0e6510bb8e6ca8353"
+    },
+    "packages/db/migrations/0050_fact_stock_daily_signed.sql": {
+      "baselineCanonicalSha256": "6644efc9597ac29eb8f6826cc9808b4bb50977dedf118470561adcdd948ccbd4",
+      "workingRawSha256": "6644efc9597ac29eb8f6826cc9808b4bb50977dedf118470561adcdd948ccbd4"
+    },
+    "packages/db/migrations/0051_stock_take_line_opening.sql": {
+      "baselineCanonicalSha256": "e5eccf8433940cf31dcde66a5418d0995357357c90ba4531877e302834e60fce",
+      "workingRawSha256": "e5eccf8433940cf31dcde66a5418d0995357357c90ba4531877e302834e60fce"
+    },
+    "packages/db/migrations/0052_end_of_day.sql": {
+      "baselineCanonicalSha256": "5ad8eec1f870a8aca76c71afc32585061b239c12547837b834bfb4af00b024f5",
+      "workingRawSha256": "5ad8eec1f870a8aca76c71afc32585061b239c12547837b834bfb4af00b024f5"
+    },
+    "packages/db/migrations/0053_band_gate_access.sql": {
+      "baselineCanonicalSha256": "7717f4921004ce0cbccdb092af0064e19c863577ec905af355e43f94e99d8f0c",
+      "workingRawSha256": "7717f4921004ce0cbccdb092af0064e19c863577ec905af355e43f94e99d8f0c"
+    },
+    "packages/db/migrations/0054_sale_tier_claim_expiry_optional.sql": {
+      "baselineCanonicalSha256": "08203efb2567a6a1be59511f150465dd01d9b81143835b42387b693133f25974",
+      "workingRawSha256": "08203efb2567a6a1be59511f150465dd01d9b81143835b42387b693133f25974"
+    },
+    "packages/db/migrations/0055_voucher_fixed_code.sql": {
+      "baselineCanonicalSha256": "cd78909e60edf8787b5106fd7c4ed0b616f917645400c1ed19e521c7424abd02",
+      "workingRawSha256": "cd78909e60edf8787b5106fd7c4ed0b616f917645400c1ed19e521c7424abd02"
+    },
+    "packages/db/migrations/0056_booth_voucher_design.sql": {
+      "baselineCanonicalSha256": "3d9c35e7b64483260b3126d30e118ad52c5c438f3bcdb1c10989b08b8c61b789",
+      "workingRawSha256": "3d9c35e7b64483260b3126d30e118ad52c5c438f3bcdb1c10989b08b8c61b789"
+    },
+    "packages/db/migrations/0057_voucher_legacy_qr.sql": {
+      "baselineCanonicalSha256": "0b5cb48da27a5c54266e9b3abac19c54b040d702002837377d1af760e80ebe8e",
+      "workingRawSha256": "0b5cb48da27a5c54266e9b3abac19c54b040d702002837377d1af760e80ebe8e"
+    },
+    "packages/db/migrations/0058_end_of_day_round_2.sql": {
+      "baselineCanonicalSha256": "241703a97af2b6147019b1494ce07fba2c1c2b751f1a13f320f1bcf004d84680",
+      "workingRawSha256": "241703a97af2b6147019b1494ce07fba2c1c2b751f1a13f320f1bcf004d84680"
+    },
+    "packages/db/migrations/0059_eod_settlement.sql": {
+      "baselineCanonicalSha256": "380b6077616bf7fdc536762d32d1c6b102a16a3cebd0bc360d483033da4a1ed1",
+      "workingRawSha256": "380b6077616bf7fdc536762d32d1c6b102a16a3cebd0bc360d483033da4a1ed1"
+    },
+    "packages/db/migrations/0060_payment_method_other.sql": {
+      "baselineCanonicalSha256": "ff1c8f967db6dc9010b2a49deab88e6814e26f21759f4ff31e1f8bf674a1bac7",
+      "workingRawSha256": "ff1c8f967db6dc9010b2a49deab88e6814e26f21759f4ff31e1f8bf674a1bac7"
+    },
+    "packages/db/migrations/0061_end_of_day_receipt_after_close.sql": {
+      "baselineCanonicalSha256": "e4dd36b94d3442b06e4ef1b40a234a96f9969fda28ed45e370034d1d049691d5",
+      "workingRawSha256": "e4dd36b94d3442b06e4ef1b40a234a96f9969fda28ed45e370034d1d049691d5"
+    },
+    "packages/db/migrations/0062_sale_extensions.sql": {
+      "baselineCanonicalSha256": "6691080e921803ad3d13bca0a496a584b104c306d7a83da824e22bd4b19b32cf",
+      "workingRawSha256": "6691080e921803ad3d13bca0a496a584b104c306d7a83da824e22bd4b19b32cf"
+    },
+    "packages/db/migrations/0063_stock_single_each_pack.sql": {
+      "baselineCanonicalSha256": "645d28f4d9597c70df1dca8b0084e662c31ba26730cff1a648ab45303960326e",
+      "workingRawSha256": "645d28f4d9597c70df1dca8b0084e662c31ba26730cff1a648ab45303960326e"
+    },
+    "packages/db/migrations/0064_analytics_summaries.sql": {
+      "baselineCanonicalSha256": "7d5e01b5cfc4dd8efa8e4ce7a95376b02a6ff8190f4837c38df0cceb8dc55f68",
+      "workingRawSha256": "7d5e01b5cfc4dd8efa8e4ce7a95376b02a6ff8190f4837c38df0cceb8dc55f68"
+    },
+    "packages/db/migrations/0065_analytics_reports.sql": {
+      "baselineCanonicalSha256": "a43d9137fb1e859221d9f03b8f63439b51a992a4aa66750a5ce40e21992e8525",
+      "workingRawSha256": "a43d9137fb1e859221d9f03b8f63439b51a992a4aa66750a5ce40e21992e8525"
+    },
+    "packages/db/migrations/0066_staff_benefits.sql": {
+      "baselineCanonicalSha256": "fe0d0be3ff8f9f404a7006cbba13be35631d3665eaa4177d43f25e45f6217035",
+      "workingRawSha256": "fe0d0be3ff8f9f404a7006cbba13be35631d3665eaa4177d43f25e45f6217035"
+    },
+    "packages/db/migrations/0067_kiosk_redemption.sql": {
+      "baselineCanonicalSha256": "33ca4a1167fac59426f56ee4cf295e272cda602fe72eec8c73b9cf1725ac385f",
+      "workingRawSha256": "33ca4a1167fac59426f56ee4cf295e272cda602fe72eec8c73b9cf1725ac385f"
+    },
+    "packages/db/migrations/0068_benefit_credentials.sql": {
+      "baselineCanonicalSha256": "a4af9c46a62eef94d96893f86e666434850405a018d2e477f2e562f5c03638dd",
+      "workingRawSha256": "a4af9c46a62eef94d96893f86e666434850405a018d2e477f2e562f5c03638dd"
+    },
+    "packages/db/migrations/0069_sale_line_prepaid_stay_index.sql": {
+      "baselineCanonicalSha256": "f09da022b9f96d8a33a360e145a8a2d52609335ccb31d955b950a1b2454190dd",
+      "workingRawSha256": "f09da022b9f96d8a33a360e145a8a2d52609335ccb31d955b950a1b2454190dd"
+    },
+    "packages/db/migrations/0070_event_attendee_link.sql": {
+      "baselineCanonicalSha256": "4c08ccf44ad631526a635b4ad8ec7c0d26cfdfa39f45d1a888153b7b7a66eb76",
+      "workingRawSha256": "4c08ccf44ad631526a635b4ad8ec7c0d26cfdfa39f45d1a888153b7b7a66eb76"
+    },
+    "packages/db/migrations/0071_benefit_checkout.sql": {
+      "baselineCanonicalSha256": "daf36bc1421b8de7c9b246cea0b2bdcb7226b32727776f67e1a89f8b9d910fe8",
+      "workingRawSha256": "daf36bc1421b8de7c9b246cea0b2bdcb7226b32727776f67e1a89f8b9d910fe8"
+    },
+    "packages/db/migrations/0072_party_tab.sql": {
+      "baselineCanonicalSha256": "61b0660984467e4f53723c17ade03b9ed93005f49e62ec428bc9c2badbf12ab0",
+      "workingRawSha256": "61b0660984467e4f53723c17ade03b9ed93005f49e62ec428bc9c2badbf12ab0"
+    },
+    "packages/db/migrations/0073_event_checkin.sql": {
+      "baselineCanonicalSha256": "574d8aba76b0b3bfeb980002fc18981200c33d2781ac5ab5fb46fa02da662a64",
+      "workingRawSha256": "574d8aba76b0b3bfeb980002fc18981200c33d2781ac5ab5fb46fa02da662a64"
+    },
+    "packages/db/migrations/0074_benefit_daily.sql": {
+      "baselineCanonicalSha256": "081ed8685784ab27e57d9dc0579b48b6d0b0eec74d9456d12955a3fe88143c17",
+      "workingRawSha256": "081ed8685784ab27e57d9dc0579b48b6d0b0eec74d9456d12955a3fe88143c17"
+    },
+    "packages/db/migrations/0075_event_booking_pass.sql": {
+      "baselineCanonicalSha256": "4b606e564413bf6b6453f512eaad2499b73034e8e5600020be7f98dc6c0cad05",
+      "workingRawSha256": "4b606e564413bf6b6453f512eaad2499b73034e8e5600020be7f98dc6c0cad05"
+    },
+    "packages/db/migrations/0076_archived_frees_keys.sql": {
+      "baselineCanonicalSha256": "7d7ea45a6ed6025a9615a8433483505b9e5f56e1df2cd324b1a56b9c965fd85b",
+      "workingRawSha256": "7d7ea45a6ed6025a9615a8433483505b9e5f56e1df2cd324b1a56b9c965fd85b"
+    },
+    "packages/db/migrations/0077_voucher_product_link.sql": {
+      "baselineCanonicalSha256": "fbb2b77aa0c51a4a51a5dfb6a89dfc6087d4fd5db0f08b47958ac50f0c54e69c",
+      "workingRawSha256": "fbb2b77aa0c51a4a51a5dfb6a89dfc6087d4fd5db0f08b47958ac50f0c54e69c"
+    },
+    "packages/db/migrations/0078_inbox_schema.sql": {
+      "baselineCanonicalSha256": "afe19c1d6d7a2ed4336e157bc0787c48129502e670dde6b8f53693ce278bbb43",
+      "workingRawSha256": "afe19c1d6d7a2ed4336e157bc0787c48129502e670dde6b8f53693ce278bbb43"
+    },
+    "packages/db/migrations/0079_inbox_send.sql": {
+      "baselineCanonicalSha256": "04736b56e8924b688523dc71f2cfca8e1dcf6eace11ab0d8b885acd192ce5c01",
+      "workingRawSha256": "04736b56e8924b688523dc71f2cfca8e1dcf6eace11ab0d8b885acd192ce5c01"
+    },
+    "packages/db/migrations/0080_inbox_ai.sql": {
+      "baselineCanonicalSha256": "e3cb07f6fdd081746c454fd765705c2933700aff2a7e222b66c7fadd8a8ae93d",
+      "workingRawSha256": "e3cb07f6fdd081746c454fd765705c2933700aff2a7e222b66c7fadd8a8ae93d"
+    },
+    "packages/db/migrations/0081_assistant.sql": {
+      "baselineCanonicalSha256": "7c3c798f6d0a05e1a064eaf1422dcb68aa023dad88ee87249bdf7ee9c14b4aa4",
+      "workingRawSha256": "7c3c798f6d0a05e1a064eaf1422dcb68aa023dad88ee87249bdf7ee9c14b4aa4"
+    },
+    "packages/db/migrations/0082_assistant_small_talk.sql": {
+      "baselineCanonicalSha256": "80206accfd998b31b3332370468620bf53d06cc18c49fdc7a1da48b0224a1668",
+      "workingRawSha256": "80206accfd998b31b3332370468620bf53d06cc18c49fdc7a1da48b0224a1668"
+    },
+    "packages/db/migrations/0083_inbox_test_night.sql": {
+      "baselineCanonicalSha256": "5e4fa4551fbf5b472a38c689d34372b6ab4cf002db323a5d7c0d568cbd7f4eee",
+      "workingRawSha256": "5e4fa4551fbf5b472a38c689d34372b6ab4cf002db323a5d7c0d568cbd7f4eee"
+    },
+    "packages/db/migrations/0084_inbox_ai_shadow.sql": {
+      "baselineCanonicalSha256": "5bef36f1d7c41208611d82eeca4d3fdcd440e0d82534cc57047cd08615321bf4",
+      "workingRawSha256": "5bef36f1d7c41208611d82eeca4d3fdcd440e0d82534cc57047cd08615321bf4"
+    },
+    "packages/db/migrations/0085_account_ui_preferences.sql": {
+      "baselineCanonicalSha256": "be120d590f08cc7c6adcfd00acbc54579ad47e8da799666c6b5075b407a006a3",
+      "workingRawSha256": "be120d590f08cc7c6adcfd00acbc54579ad47e8da799666c6b5075b407a006a3"
+    },
+    "packages/db/migrations/0086_department_mirror.sql": {
+      "baselineCanonicalSha256": "12732bf3a6bfb61f695eef89eca3539ec6edcc3698c132dfd394eca049824762",
+      "workingRawSha256": "12732bf3a6bfb61f695eef89eca3539ec6edcc3698c132dfd394eca049824762"
+    },
+    "packages/db/migrations/0087_assistant_settings.sql": {
+      "baselineCanonicalSha256": "cf6da37360ceca531bc9335dee9125684d2929761e297755d6a520f6ccaa6049",
+      "workingRawSha256": "cf6da37360ceca531bc9335dee9125684d2929761e297755d6a520f6ccaa6049"
+    },
+    "packages/db/migrations/0088_operator_switch.sql": {
+      "baselineCanonicalSha256": "57302eac8aa840fc318b17726e4cbf23d3344e63c7ceecc486e78690cd51b625",
+      "workingRawSha256": "57302eac8aa840fc318b17726e4cbf23d3344e63c7ceecc486e78690cd51b625"
+    },
+    "packages/db/migrations/0089_console_setting_registry.sql": {
+      "baselineCanonicalSha256": "e1c8ede7578aac6193c06e0bbede3e73f74148e2fe918b06febe25fae5c17a0e",
+      "workingRawSha256": "e1c8ede7578aac6193c06e0bbede3e73f74148e2fe918b06febe25fae5c17a0e"
+    },
+    "packages/db/migrations/0090_suite_controls.sql": {
+      "baselineCanonicalSha256": "cecb8293ee82c7627c77e9ad81d19f2301034b91f3603e7f344d457d4abc52a0",
+      "workingRawSha256": "cecb8293ee82c7627c77e9ad81d19f2301034b91f3603e7f344d457d4abc52a0"
+    },
+    "packages/db/migrations/0091_alert_routing.sql": {
+      "baselineCanonicalSha256": "a61c255ddc63b463261b92b73b860581e01575dbfb2535845148163af3da84e7",
+      "workingRawSha256": "a61c255ddc63b463261b92b73b860581e01575dbfb2535845148163af3da84e7"
+    },
+    "packages/db/migrations/0092_integration_expiry.sql": {
+      "baselineCanonicalSha256": "71cc11b69cc2aa12f6ff758e47b390bd2a037e58d32cbf500fb2b9efc295a2eb",
+      "workingRawSha256": "71cc11b69cc2aa12f6ff758e47b390bd2a037e58d32cbf500fb2b9efc295a2eb"
+    },
+    "packages/db/migrations/0093_support_impersonation.sql": {
+      "baselineCanonicalSha256": "d2ddd83b96917d1d212e6d60adeb327495e844c496f289ab3a069d3bc443ae50",
+      "workingRawSha256": "d2ddd83b96917d1d212e6d60adeb327495e844c496f289ab3a069d3bc443ae50"
+    },
+    "packages/db/migrations/0094_inbox_playbook.sql": {
+      "baselineCanonicalSha256": "e941f6b0fe77b45aa3a4f43003d314acd16b246c093969e050a567adee34937a",
+      "workingRawSha256": "e941f6b0fe77b45aa3a4f43003d314acd16b246c093969e050a567adee34937a"
+    },
+    "packages/db/migrations/0095_inbox_booking_closing.sql": {
+      "baselineCanonicalSha256": "73d4a7e9bf7e7011d08ead24954f02cf207107e851dc9d1773fde03ebe44bdfe",
+      "workingRawSha256": "73d4a7e9bf7e7011d08ead24954f02cf207107e851dc9d1773fde03ebe44bdfe"
+    },
+    "packages/db/migrations/0096_inbox_ai_rule.sql": {
+      "baselineCanonicalSha256": "94bb666b386ff194f38a7b6ed8bdb226f12890092f70bf917486d6acde816cfa",
+      "workingRawSha256": "94bb666b386ff194f38a7b6ed8bdb226f12890092f70bf917486d6acde816cfa"
+    },
+    "packages/db/migrations/0097_sale_tier_claim_note.sql": {
+      "baselineCanonicalSha256": "e579ab278433fbdf3d863484e10c71be49427b61c9204fcf92897df7e2dbfee5",
+      "workingRawSha256": "e579ab278433fbdf3d863484e10c71be49427b61c9204fcf92897df7e2dbfee5"
+    },
+    "packages/db/migrations/0098_nanny_duty.sql": {
+      "baselineCanonicalSha256": "2f69df0a44d81b1d668800d84bbbebfcc8296b46c384711a9917e28de770df33",
+      "workingRawSha256": "2f69df0a44d81b1d668800d84bbbebfcc8296b46c384711a9917e28de770df33"
+    },
+    "packages/db/migrations/0099_box_bridge_origin.sql": {
+      "baselineCanonicalSha256": "26370abed04b68aeb5b501a0a0cd95cb4355061f5ef48ec8485dcda260e35731",
+      "workingRawSha256": "26370abed04b68aeb5b501a0a0cd95cb4355061f5ef48ec8485dcda260e35731"
+    },
+    "packages/db/migrations/0100_event_pass_hold.sql": {
+      "baselineCanonicalSha256": "a9081a65f31edacf6a2bbb7fb6ca0b8d930045870848c006210f19a69c5188b5",
+      "workingRawSha256": "a9081a65f31edacf6a2bbb7fb6ca0b8d930045870848c006210f19a69c5188b5"
+    },
+    "packages/db/migrations/0101_deploy_event_source.sql": {
+      "baselineCanonicalSha256": "74361586a3a0bd122e9f494aa4f71f29a8527d166bb29bada7b36480bbb6fb16",
+      "workingRawSha256": "74361586a3a0bd122e9f494aa4f71f29a8527d166bb29bada7b36480bbb6fb16"
+    },
+    "packages/db/migrations/0102_tier_claim_hand_approval.sql": {
+      "baselineCanonicalSha256": "b970cadba1bba4232efc1b88805dc0f73630b54f38bc08f40c27b1b526623acb",
+      "workingRawSha256": "b970cadba1bba4232efc1b88805dc0f73630b54f38bc08f40c27b1b526623acb"
+    },
+    "packages/db/migrations/0103_sale_hold.sql": {
+      "baselineCanonicalSha256": "d3bd056aec64a02199dda7f40dc423d2621880f37c7e67df5ecc4e8280db723d",
+      "workingRawSha256": "d3bd056aec64a02199dda7f40dc423d2621880f37c7e67df5ecc4e8280db723d"
+    },
+    "packages/db/migrations/0104_sale_customer_phone.sql": {
+      "baselineCanonicalSha256": "678b526022aa7335b24e88336959c573e478dd79c45075e00192a1809dbd8c05",
+      "workingRawSha256": "678b526022aa7335b24e88336959c573e478dd79c45075e00192a1809dbd8c05"
+    },
+    "packages/db/migrations/0105_golden_ticket.sql": {
+      "baselineCanonicalSha256": "68d36d5a33ec81f7723344c273aa23b2fb208271946230e8382d337145152422",
+      "workingRawSha256": "68d36d5a33ec81f7723344c273aa23b2fb208271946230e8382d337145152422"
+    },
+    "packages/db/migrations/0106_station_screen_presence.sql": {
+      "baselineCanonicalSha256": "d46d81b9c7e01335a58f287687a6eb8971beea219e01eb69c42c01d5303de63d",
+      "workingRawSha256": "d46d81b9c7e01335a58f287687a6eb8971beea219e01eb69c42c01d5303de63d"
+    },
+    "packages/db/migrations/0107_tier_confirmation_station.sql": {
+      "baselineCanonicalSha256": "4865d91d1ff56a38007df84b103567fc92277d62c3fb630a5688110b4ad61f2a",
+      "workingRawSha256": "4865d91d1ff56a38007df84b103567fc92277d62c3fb630a5688110b4ad61f2a"
+    },
+    "packages/db/migrations/0108_party_settlement.sql": {
+      "baselineCanonicalSha256": "9eb734a242f0ab1dc05415e080f5e85fb2ae091065e59ababd7544187dc16dd6",
+      "workingRawSha256": "9eb734a242f0ab1dc05415e080f5e85fb2ae091065e59ababd7544187dc16dd6"
+    },
+    "packages/db/migrations/0109_party_slips.sql": {
+      "baselineCanonicalSha256": "87e5e17e7467610fba8c8e94ecac2105b3ee22d7298630d2a030a14f939993c8",
+      "workingRawSha256": "87e5e17e7467610fba8c8e94ecac2105b3ee22d7298630d2a030a14f939993c8"
+    },
+    "packages/db/migrations/0110_inbox_voice_transcript.sql": {
+      "baselineCanonicalSha256": "43f5fd4bf52f980cde97c84dfd23deefe65c275a7cb1a627899f81a2a8ff4cfb",
+      "workingRawSha256": "43f5fd4bf52f980cde97c84dfd23deefe65c275a7cb1a627899f81a2a8ff4cfb"
+    },
+    "packages/db/migrations/0111_inbox_handover_notification.sql": {
+      "baselineCanonicalSha256": "f9db7a84aab10f9dec5a64dc17e2bfca5ff3cbb1fa86a06c6381253987b1f1ac",
+      "workingRawSha256": "f9db7a84aab10f9dec5a64dc17e2bfca5ff3cbb1fa86a06c6381253987b1f1ac"
+    },
+    "packages/db/migrations/0112_inbox_open_question.sql": {
+      "baselineCanonicalSha256": "3a3184b75736cefaf8233387509febcbca72486509e2cecfca0f3beb16d6376b",
+      "workingRawSha256": "3a3184b75736cefaf8233387509febcbca72486509e2cecfca0f3beb16d6376b"
+    },
+    "packages/db/migrations/0113_product_beo_only.sql": {
+      "baselineCanonicalSha256": "404c83babbf5371d814457ee8a0f667b6bd2c5ea315085f50de260d236ad4334",
+      "workingRawSha256": "404c83babbf5371d814457ee8a0f667b6bd2c5ea315085f50de260d236ad4334"
+    },
+    "packages/db/migrations/0114_inbox_advice_opener.sql": {
+      "baselineCanonicalSha256": "da6573b40f3102a2160f750bea9193cd69deabba90bf445415897e7e5f13ec41",
+      "workingRawSha256": "da6573b40f3102a2160f750bea9193cd69deabba90bf445415897e7e5f13ec41"
+    },
+    "packages/db/migrations/0115_party_deposit_request.sql": {
+      "baselineCanonicalSha256": "ee5c17205989026bcad6929cafe197c72080d6116425396e60a9834bd0e4ad62",
+      "workingRawSha256": "ee5c17205989026bcad6929cafe197c72080d6116425396e60a9834bd0e4ad62"
+    },
+    "packages/db/migrations/0116_stay_cancelled.sql": {
+      "baselineCanonicalSha256": "0993307940fc5adfd3aae52c3874adf5b742fffc5afa79bda506f25f21a0ed9a",
+      "workingRawSha256": "0993307940fc5adfd3aae52c3874adf5b742fffc5afa79bda506f25f21a0ed9a"
+    },
+    "packages/db/migrations/0117_inbox_contact_name.sql": {
+      "baselineCanonicalSha256": "8bfee131306920fd467a267338a5ac1a5c0852a25eb8697577a6e3287c0522a5",
+      "workingRawSha256": "8bfee131306920fd467a267338a5ac1a5c0852a25eb8697577a6e3287c0522a5"
+    },
+    "packages/db/migrations/0118_dropoff_band_role.sql": {
+      "baselineCanonicalSha256": "debf1e54a499a530a304c3cbb71d61b0907775c4508195eb82eac83ebf254e3f",
+      "workingRawSha256": "debf1e54a499a530a304c3cbb71d61b0907775c4508195eb82eac83ebf254e3f"
+    },
+    "packages/db/migrations/0119_prep_slips.sql": {
+      "baselineCanonicalSha256": "33b4ebe00048e22db7f4f65a9eef4430923e3b7998d1ce99c75826520b171b5f",
+      "workingRawSha256": "33b4ebe00048e22db7f4f65a9eef4430923e3b7998d1ce99c75826520b171b5f"
+    },
+    "packages/db/migrations/0120_registration_contact_confirmed.sql": {
+      "baselineCanonicalSha256": "f2a1c27f2152e8a35d953dd1258c0df5aee4237df5c31c59322d74893da463e4",
+      "workingRawSha256": "f2a1c27f2152e8a35d953dd1258c0df5aee4237df5c31c59322d74893da463e4"
+    },
+    "packages/db/migrations/0121_inbox_twilio_test_line.sql": {
+      "baselineCanonicalSha256": "b97e0cf9bda7bbd0bfe9ea7c405968b78903ca8e07cf01102d12268a54779566",
+      "workingRawSha256": "b97e0cf9bda7bbd0bfe9ea7c405968b78903ca8e07cf01102d12268a54779566"
+    },
+    "packages/db/migrations/0122_station_session_theme.sql": {
+      "baselineCanonicalSha256": "86f8e0319d2e1971afd01df2de6e93bdcf1cfdbd16eb71893b999c37a3e2115b",
+      "workingRawSha256": "86f8e0319d2e1971afd01df2de6e93bdcf1cfdbd16eb71893b999c37a3e2115b"
+    },
+    "packages/db/migrations/0123_party_slip_baseline.sql": {
+      "baselineCanonicalSha256": "b451b100ccc4dea94d200ff0c5121fbc146056bba7c20914b17728009e8137bd",
+      "workingRawSha256": "b451b100ccc4dea94d200ff0c5121fbc146056bba7c20914b17728009e8137bd"
+    },
+    "packages/db/migrations/0124_party_slip_schedule_start.sql": {
+      "baselineCanonicalSha256": "d8f7ea9d25ebb13142f9301bd3276bedde0fc80a8a91a5c221003599b8b4a418",
+      "workingRawSha256": "d8f7ea9d25ebb13142f9301bd3276bedde0fc80a8a91a5c221003599b8b4a418"
+    },
+    "packages/db/migrations/0125_retained_party_deposit.sql": {
+      "baselineCanonicalSha256": "4f449f6afe613fa876e78b5bca0b2e3c3ac78adf0d33d9c7e62bfaa43697bcd9",
+      "workingRawSha256": "4f449f6afe613fa876e78b5bca0b2e3c3ac78adf0d33d9c7e62bfaa43697bcd9"
+    },
+    "packages/db/migrations/0126_prebooking_gateway_deposit.sql": {
+      "baselineCanonicalSha256": "e5de71742dc1e915a99af0fbc8b8a3dadbb920041026d229252e53c8cc503f27",
+      "workingRawSha256": "e5de71742dc1e915a99af0fbc8b8a3dadbb920041026d229252e53c8cc503f27"
+    },
+    "packages/db/migrations/0127_party_additional_bills.sql": {
+      "baselineCanonicalSha256": "c3ffdb7f285cff18f1ecc95e2f49709f5c7a683b6ea8f4847e4bc8179c95ca09",
+      "workingRawSha256": "c3ffdb7f285cff18f1ecc95e2f49709f5c7a683b6ea8f4847e4bc8179c95ca09"
+    },
+    "packages/db/migrations/0128_inbox_access.sql": {
+      "baselineCanonicalSha256": "9c17e83584ea522b13f2af828233886c73ca30b41ab2627ee6eb4c8378c685f8",
+      "workingRawSha256": "9c17e83584ea522b13f2af828233886c73ca30b41ab2627ee6eb4c8378c685f8"
+    }
+  }
+}
