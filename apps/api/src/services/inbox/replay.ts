@@ -7,7 +7,7 @@ import { errors } from '../../lib/errors';
 import { PermissionDeniedError } from '../../plugins/session';
 import { assertInboxPolicy } from './access';
 import { authorizeActionReplay, type ActionCtx, type InboxReplayAction } from './actions';
-import { authorizeContactChange } from './contacts';
+import { authorizeContactChange, authorizeContactCreate } from './contacts';
 import { holdsAnywhere, loadVisibleConversation, viewerScopeOf } from './read-visibility';
 import { loadReplyableConversation, replyViewerOf } from './reply';
 import { managesLine } from './test-line';
@@ -41,10 +41,7 @@ export const inboxContactReplay = (app: App, create = false) => async (req: Fast
   const ctx = await current(req, 'inbox:conversation:reply');
   if (!create) { await authorizeContactChange(app.db, ctx, idOf(req)); return; }
   const body = req.body as { channelAccountId: string };
-  const [channel] = await app.db.select().from(s.channelAccount)
-    .where(and(eq(s.channelAccount.operatorId, ctx.viewer.operatorId), eq(s.channelAccount.id, body.channelAccountId))).limit(1);
-  if (!channel) throw errors.notFound('Channel account not found');
-  await assertInboxPolicy(app.db, ctx.viewer, channel.defaultCategory, channel.id);
+  await authorizeContactCreate(app.db, ctx, body.channelAccountId);
 };
 export const inboxStartOverReplay = (app: App) => async (req: FastifyRequest) => {
   const ctx = await current(req, 'inbox:channel:manage');

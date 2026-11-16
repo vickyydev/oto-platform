@@ -257,26 +257,32 @@ async function visibleThreadOf(
  * can see one, its thread. An erased contact's handle is a hash, so the
  * same number again is a new contact, as it is when the number writes again.
  */
+export async function authorizeContactCreate(db: Exec, ctx: ContactCtx, channelAccountId: string) {
+  const { operatorId } = ctx.viewer;
+  const [account] = await db
+    .select()
+    .from(channelAccount)
+    .where(
+      and(
+        eq(channelAccount.operatorId, operatorId),
+        eq(channelAccount.id, channelAccountId),
+        isNull(channelAccount.archivedAt),
+      ),
+    )
+    .limit(1);
+  if (!account) throw errors.notFound(INBOX_CONTACT_MESSAGES.channelNotFound);
+  await assertInboxPolicy(db, ctx.viewer, account.defaultCategory, account.id);
+  if (!account.canReply) throw errors.conflict('CHANNEL_CANNOT_CARRY_CONTACT', INBOX_CONTACT_MESSAGES.channelCannotCarry);
+  return account;
+}
+
 export async function createContact(
   tx: Tx,
   ctx: ContactCtx,
   input: { channelAccountId: string; displayName: string; identity: string },
 ): Promise<InboxContactCreated> {
   const { operatorId } = ctx.viewer;
-  const [account] = await tx
-    .select()
-    .from(channelAccount)
-    .where(
-      and(
-        eq(channelAccount.operatorId, operatorId),
-        eq(channelAccount.id, input.channelAccountId),
-        isNull(channelAccount.archivedAt),
-      ),
-    )
-    .limit(1);
-  if (!account) throw errors.notFound(INBOX_CONTACT_MESSAGES.channelNotFound);
-  await assertInboxPolicy(tx, ctx.viewer, account.defaultCategory, account.id);
-  if (!account.canReply) throw errors.conflict('CHANNEL_CANNOT_CARRY_CONTACT', INBOX_CONTACT_MESSAGES.channelCannotCarry);
+  const account = await authorizeContactCreate(tx, ctx, input.channelAccountId);
 
   const name = cleanName(input.displayName);
   if (name === null) throw errors.badRequest('Enter a name.', { field: 'displayName' });

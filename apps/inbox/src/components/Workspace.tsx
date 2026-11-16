@@ -17,7 +17,8 @@ import { FiltersDialog, TemplatesDialog } from '@/components/dialogs';
 import { Rail, viewerRoleLabel } from '@/components/Rail';
 import { SimulatorBody, SimulatorDialog } from '@/components/Simulator';
 import { TemplateSettings } from '@/components/TemplateSettings';
-import { inboxAccessSignature, inboxSourcesWithinAccess, mergeSources, sourcesOfRows, type SourceOption } from '@/lib/inboxes';
+import { inboxAccessSignature, inboxFiltersWithinAccess, inboxItemWithinAccess, inboxSourcesWithinAccess, mergeSources, sourcesOfRows, type SourceOption } from '@/lib/inboxes';
+import { useInboxAccess } from '@/hooks/useInboxAccess';
 import { EMPTY_FILTERS, listQuery, type Filters } from '@/lib/query';
 import { fastInboxRefresh, startFastInboxRefresh } from '@/lib/refresh';
 import { nextTheme, themeTitle, useTheme, type Theme } from '@/lib/theme';
@@ -259,16 +260,30 @@ export function Workspace({ me }: { me: InboxMe }) {
   const [sources, setSources] = useState<SourceOption[]>(() =>
     mergeSources([], (me.simulator?.channelAccounts ?? []).map((a) => ({ id: a.id, channel: a.channel, name: a.displayName }))),
   );
-  const learnSources = useCallback((more: SourceOption[]) => setSources((s) => mergeSources(s, more)), []);
-  const currentAccess = page?.access ?? me.access;
+  const currentAccess = useInboxAccess(page?.access, me.access, reload);
+  const accessRef = useRef(currentAccess); accessRef.current = currentAccess;
+  const learnSources = useCallback((more: SourceOption[]) => setSources((s) => inboxSourcesWithinAccess(mergeSources(s, more), accessRef.current)), []);
+  const accessSignature = inboxAccessSignature(currentAccess);
   const visibleSources = inboxSourcesWithinAccess(sources, currentAccess);
   const currentMe: InboxMe = { ...me, access: currentAccess,
     teams: me.teams.filter(team => !currentAccess?.categories || currentAccess.categories.includes(team.kind === 'reception' ? 'general' : team.kind)),
     testLines: me.testLines?.filter(line => currentAccess?.categories?.length !== 0
       && (!currentAccess?.channelAccountIds || currentAccess.channelAccountIds.includes(line.id))) };
   useEffect(() => {
-    if (page?.access && inboxAccessSignature(page.access) !== inboxAccessSignature(me.access)) void reload();
-  }, [page?.access, me.access, reload]);
+    setSources(known => inboxSourcesWithinAccess(known, currentAccess));
+    setFilters(held => inboxFiltersWithinAccess(held, currentAccess));
+    setRows(held => held.filter(row => inboxItemWithinAccess(row, currentAccess)));
+    setPinned(held => held && !inboxItemWithinAccess(held, currentAccess) ? null : held);
+    if (thread.detail && !inboxItemWithinAccess(thread.detail, currentAccess)) {
+      threadSeq.current++;
+      setThread(EMPTY_THREAD); setSelectedId(null); setShowChatMobile(false);
+      setDetailsOpen(false); setTemplatesOpen(false);
+    }
+    setDashboard(null);
+    // Policy contents are normalized in the signature; object identity alone
+    // must not clear/reload the workspace on every poll.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accessSignature]);
   useEffect(() => {
     if (!me.capabilities.ai) return;
     let cancelled = false;
@@ -296,10 +311,11 @@ export function Workspace({ me }: { me: InboxMe }) {
   const loadList = useCallback(
     async (opts: { refresh?: boolean; limit?: number } = {}) => {
       const seq = ++listSeq.current;
+      const accessAtRequest = accessSignature;
       if (!opts.refresh) setListLoading(true);
       try {
         const next = await inboxApi.conversations(listQuery(tab, filters, { limit: opts.limit ?? PAGE }));
-        if (seq !== listSeq.current) return;
+        if (seq !== listSeq.current || accessAtRequest !== inboxAccessSignature(accessRef.current)) return;
         setPage(next);
         setRows(next.conversations);
         learnSources(sourcesOfRows(next.conversations));
@@ -316,7 +332,7 @@ export function Workspace({ me }: { me: InboxMe }) {
         if (seq === listSeq.current) setListLoading(false);
       }
     },
-    [tab, filters, me.tabs, learnSources],
+    [tab, filters, me.tabs, learnSources, accessSignature],
   );
 
   useEffect(() => {
@@ -371,6 +387,7 @@ export function Workspace({ me }: { me: InboxMe }) {
     try {
       const [detail, newest] = await Promise.all([inboxApi.conversation(id), inboxApi.messages(id)]);
       if (seq !== threadSeq.current) return;
+      if (!inboxItemWithinAccess(detail, accessRef.current)) return;
       setThread((t) => {
         const merged =
           refresh && t.detail?.id === id
@@ -402,9 +419,11 @@ export function Workspace({ me }: { me: InboxMe }) {
     const id = selectedKey;
     const before = thread.olderCursor;
     if (!id || !before || thread.loadingOlder) return;
+    const seq = threadSeq.current;
     setThread((t) => ({ ...t, loadingOlder: true }));
     try {
       const older = await inboxApi.messages(id, before);
+      if (seq !== threadSeq.current) return;
       setThread((t) =>
         t.detail?.id === id
           ? {
@@ -416,7 +435,11 @@ export function Workspace({ me }: { me: InboxMe }) {
           : t,
       );
     } catch (err) {
-      setThread((t) => ({ ...t, loadingOlder: false, error: message(err, 'Earlier messages could not be read.') }));
+      if (seq !== threadSeq.current) return;
+      if (err instanceof ApiError && (err.status === 403 || err.status === 404)) {
+        threadSeq.current++; setThread(EMPTY_THREAD); setPinned(row => row?.id === id ? null : row);
+        setRows(held => held.filter(row => row.id !== id)); setSelectedId(held => held === id ? null : held);
+      } else setThread((t) => ({ ...t, loadingOlder: false, error: message(err, 'Earlier messages could not be read.') }));
     }
   }, [selectedKey, thread.olderCursor, thread.loadingOlder]);
 
@@ -487,7 +510,7 @@ export function Workspace({ me }: { me: InboxMe }) {
     const seq = ++pinSeq.current;
     try {
       const detail = await inboxApi.conversation(id);
-      if (seq === pinSeq.current) setPinned(detail);
+      if (seq === pinSeq.current && inboxItemWithinAccess(detail, accessRef.current)) setPinned(detail);
     } catch {
       if (seq !== pinSeq.current || latest.current.selectedId !== id) return;
       setSelectedId(null);

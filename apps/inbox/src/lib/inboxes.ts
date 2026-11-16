@@ -50,6 +50,20 @@ export function inboxAccessSignature(access: InboxMe['access']): string {
   return JSON.stringify({ categories: access?.categories?.slice().sort() ?? null,
     channelAccountIds: access?.channelAccountIds?.slice().sort() ?? null, version: access?.version ?? 0 });
 }
+/** List and identity reads can finish in either order; an older page cannot restore revoked access. */
+export function newestInboxAccess(page: InboxMe['access'], identity: InboxMe['access']): InboxMe['access'] {
+  return !page || (identity?.version ?? 0) > page.version ? identity : page;
+}
+export function inboxItemWithinAccess(item: Pick<ConversationRow, 'category' | 'channelAccountId'>, access: InboxMe['access']): boolean {
+  return (!access?.categories || access.categories.includes(item.category))
+    && (!access?.channelAccountIds || access.channelAccountIds.includes(item.channelAccountId));
+}
+export function inboxFiltersWithinAccess(filters: Filters, access: InboxMe['access']): Filters {
+  const category = filters.category && access?.categories && !access.categories.includes(filters.category) ? '' : filters.category;
+  const channelAccountId = filters.channelAccountId && access?.channelAccountIds && !access.channelAccountIds.includes(filters.channelAccountId) ? '' : filters.channelAccountId;
+  const inbox = filters.inbox && access?.categories && !access.categories.includes('general') ? '' : filters.inbox;
+  return category === filters.category && channelAccountId === filters.channelAccountId && inbox === filters.inbox ? filters : { ...filters, category, channelAccountId, inbox };
+}
 
 /**
  * How a conversation's source reads: the number's display name ("Reception ·
@@ -130,12 +144,13 @@ export function namedViews(me: Pick<InboxMe, 'teams'> & Partial<Pick<InboxMe, 't
       out.push({ key: category, label: CATEGORY_LABEL[category], kind: 'category', chips: { category } });
     }
   }
-  for (const b of branchOptions(me.teams)) {
+  for (const b of me.access?.categories?.length === 0 ? [] : branchOptions(me.teams)) {
     out.push({ key: `branch:${b.id}`, label: b.label, kind: 'branch', chips: { branchId: b.id } });
   }
   // SCRUM-908: each WhatsApp test line is an inbox of its own, last — the
   // number's conversations and nothing else (its Source chip, saved).
   for (const line of me.testLines ?? []) {
+    if (me.access?.categories?.length === 0) continue;
     if (me.access?.channelAccountIds && !me.access.channelAccountIds.includes(line.id)) continue;
     out.push({ key: `line:${line.id}`, label: line.displayName, kind: 'line', chips: { channelAccountId: line.id } });
   }

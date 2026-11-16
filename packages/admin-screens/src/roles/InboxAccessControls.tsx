@@ -19,13 +19,15 @@ export function InboxAccessControls({ api, accountId, canAssign, onSaved }: {
   const roles = useMemo(() => createRolesApi(api), [api]);
   const selected = useRef<string | null>(accountId);
   selected.current = accountId;
-  const readRequest = useRef<object>({}), previewRequest = useRef<object>({}), saving = useRef(false);
+  const readRequest = useRef<object>({}), previewRequest = useRef<object>({}), saveRequest = useRef<object | null>(null), saving = useRef(false);
   const [data, setData] = useState<AccountInboxAccess | null>(null);
   const [edit, setEdit] = useState<Selection>({ categories: null, channelAccountIds: null });
   const [preview, setPreview] = useState<InboxAccessPreview | null>(null);
   const [reviewing, setReviewing] = useState(false), [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null), [previewError, setPreviewError] = useState<string | null>(null);
   const [reload, setReload] = useState(0);
+  const currentView = useRef({ data, edit, preview });
+  currentView.current = { data, edit, preview };
   useEffect(() => {
     selected.current = accountId;
     const request = {}; readRequest.current = request; previewRequest.current = {};
@@ -34,7 +36,7 @@ export function InboxAccessControls({ api, accountId, canAssign, onSaved }: {
       if (readRequest.current !== request || selected.current !== accountId) return;
       if (answer.accountId !== accountId) { setError('The Inbox limits did not match this account. Refresh and try again.'); return; }
       setData(answer); setEdit({ categories: answer.categories, channelAccountIds: answer.channelAccountIds });
-    }).catch(failure => { if (readRequest.current === request) setError(message(failure)); });
+    }).catch(failure => { if (readRequest.current === request && selected.current === accountId) setError(message(failure)); });
     return () => { readRequest.current = {}; previewRequest.current = {}; selected.current = null; };
   }, [accountId, reload, roles]);
   const editable = canAssign && Boolean(data?.canManage) && data?.accountId === accountId;
@@ -57,19 +59,26 @@ export function InboxAccessControls({ api, accountId, canAssign, onSaved }: {
   };
   const save = async () => {
     if (!editable || !data || !preview || previewError || saving.current || selected.current !== accountId
+      || currentView.current.data !== data || currentView.current.edit !== edit || currentView.current.preview !== preview
       || preview.accountId !== accountId || preview.version !== data.version || normalized(preview.after) !== normalized(edit)) return;
-    const captured = accountId;
+    const captured = accountId, view = readRequest.current, request = {};
+    saveRequest.current = request;
+    const isCurrent = () => selected.current === captured && readRequest.current === view && saveRequest.current === request;
     saving.current = true; setBusy(true);
     try {
       const answer = await roles.saveInboxAccess(captured, { ...preview.after, expectedVersion: preview.version });
-      if (selected.current !== captured) return;
+      if (!isCurrent()) return;
       if (answer.accountId !== captured) throw new Error('The saved limits did not match this account. Refresh before another change.');
       setData(answer); setEdit({ categories: answer.categories, channelAccountIds: answer.channelAccountIds });
       setReviewing(false); setPreview(null); onSaved?.();
       toast({ title: 'Inbox access updated', description: 'The account keeps its existing roles, within these category and channel limits.' });
     } catch (failure) {
-      if (selected.current === captured) { setPreview(null); setPreviewError(message(failure)); }
-    } finally { saving.current = false; if (selected.current !== null) setBusy(false); }
+      if (isCurrent()) { setPreview(null); setPreviewError(message(failure)); }
+    } finally {
+      // One save may be in flight across account changes. Release its shared
+      // busy state without letting its result replace a newer view/read.
+      if (saveRequest.current === request) { saveRequest.current = null; saving.current = false; if (selected.current !== null) setBusy(false); }
+    }
   };
   const channelName = (id: string) => data?.channels.find(channel => channel.id === id)?.displayName
     ?? (data?.channels.some(channel => channel.id === id) ? 'Unnamed channel' : 'Channel outside your readable branches');
