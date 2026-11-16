@@ -1,0 +1,23 @@
+{
+  "at": "2026-11-16T08:32:52.830Z",
+  "serviceId": "srv-dbbb4srrjlhs73dk2rm0",
+  "deployId": "dep-dbtbodm7bikc73dlcnig",
+  "buildId": "bld-dbtbodm7bikc73dlcnj0",
+  "direction": "backward",
+  "limit": 100,
+  "hasMore": false,
+  "entries": [
+    {
+      "at": "2026-11-16T08:18:02.391894255Z",
+      "message": "\u001b[34m\u001b[1m==>\u001b(B\u001b[m \u001b[1mDownloading cache...\u001b(B\u001b[m"
+    },
+    {
+      "at": "2026-11-16T08:18:02.416285735Z",
+      "message": "\u001b[34m\u001b[1m==>\u001b(B\u001b[m \u001b[1mCloning from [url]"
+    },
+    {
+      "at": "2026-11-16T08:18:11.68334144Z",
+      "message": "\u001b[34;1m==>\u001b[0;22m \u001b[1mDownloaded and extracted 200 MiB cache in 9s.\u001b[22m"
+    }
+  ]
+}

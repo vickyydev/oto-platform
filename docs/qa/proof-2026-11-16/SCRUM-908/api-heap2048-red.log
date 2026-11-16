@@ -1,0 +1,34 @@
+node.exe : 
+At C:\Users\waqar\AppData\Roaming\npm\pnpm.ps1:24 char:5
++     & "node$exe"  "$basedir/node_modules/pnpm/bin/pnpm.cjs" $args
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+<--- Last few GCs --->
+
+[82792:0000024B2C51C000]    28826 ms: Scavenge (reduce) (interleaved) 2042.2 (2082.1) -> 2041.6 (2082.4) MB, pooled: 0 
+MB, 3.69 / 0.00 ms  (average mu = 0.567, current mu = 0.580) allocation failure; 
+[82792:0000024B2C51C000]    29291 ms: Mark-Compact (reduce) 2048.0 (2087.9) -> 2045.3 (2086.9) MB, pooled: 0 MB, 
+457.64 / 0.01 ms  (+ 328.3 ms in 0 steps since start of marking, biggest step 0.0 ms, walltime since start of marking 
+937 ms) (average mu = 0.
+
+<--- JS stacktrace --->
+
+FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory
+----- Native stack trace -----
+
+ 1: 00007FF6D6CE0CD7 node::SetCppgcReference+16599
+ 2: 00007FF6D6C44568 v8::base::CPU::num_virtual_address_bits+103336
+ 3: 00007FF6D77B53B1 v8::Isolate::ReportExternalAllocationLimitReached+65
+ 4: 00007FF6D77A1F36 v8::Function::Experimental_IsNopFunction+3302
+ 5: 00007FF6D75FE870 v8::internal::StrongRootAllocatorBase::StrongRootAllocatorBase+33904
+ 6: 00007FF6D75FAEFA v8::internal::StrongRootAllocatorBase::StrongRootAllocatorBase+19194
+ 7: 00007FF6D761139C v8::Isolate::GetHeapProfiler+7692
+ 8: 00007FF6D7611C1A v8::Isolate::GetHeapProfiler+9866
+ 9: 00007FF6D762260B v8::Isolate::GetHeapProfiler+77947
+10: 00007FF6D72EF90B v8::base::AddressSpaceReservation::AddressSpaceReservation+323419
+11: 00007FF67782D4BA 
+undefined
+C:\oto-lanes\codex-whatsapp-908-20261116\apps\api:
+ ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL  Command failed with exit code 134: tsc -p tsconfig.json

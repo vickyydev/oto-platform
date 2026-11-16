@@ -1,0 +1,28 @@
+{
+  "at": "2026-11-16T08:25:11.331Z",
+  "source": "d25f459d2e81fb3379d07b40aadc902ad212ccc7",
+  "jobId": "job-dbtbrhjbc2fs73dn945g",
+  "syntheticOnly": true,
+  "passed": true,
+  "syntheticDenyProof": {
+    "receipts": 1,
+    "valid_count_only_receipt": true,
+    "contacts": 0,
+    "conversations": 0,
+    "messages": 0,
+    "ai_turns": 0,
+    "audit": {
+      "events": 1,
+      "foreign": 0,
+      "unknown": 1,
+      "messages": 0,
+      "reopened": 0,
+      "statuses": 0,
+      "duplicates": 0,
+      "outOfHours": [],
+      "conversationIds": [],
+      "channelAccountId": "01a1cf65-3a81-769f-b624-4b303a84d954",
+      "conversationsCreated": 0
+    }
+  }
+}

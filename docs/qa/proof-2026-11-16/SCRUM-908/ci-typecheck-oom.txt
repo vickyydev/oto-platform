@@ -1,0 +1,8 @@
+Source d25f459d2e81fb3379d07b40aadc902ad212ccc7
+Run 43830040929, ci job133172907989, Typecheck step8
+2026-11-16T08:26:09.9195478Z [;31m@oto/api:typecheck[;0m
+2026-11-16T08:26:09.9635287Z FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory
+2026-11-16T08:26:09.9657898Z  ELIFECYCLE  Command failed with exit code 134.
+2026-11-16T08:26:10.2649603Z  ELIFECYCLE  Command failed.
+2026-11-16T08:26:10.2870059Z  ELIFECYCLE  Command failed with exit code 134.
+2026-11-16T08:26:10.3135923Z ##[error]Process completed with exit code 134.

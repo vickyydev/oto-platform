@@ -1,0 +1,32 @@
+{
+  "at": "2026-11-16T08:30:30.275Z",
+  "sha": "d25f459d2e81fb3379d07b40aadc902ad212ccc7",
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "id": "dep-dbtbod9srm7s73aqq8og",
+      "status": "live",
+      "source": "d25f459d2e81fb3379d07b40aadc902ad212ccc7"
+    },
+    {
+      "name": "oto-inbox-staging",
+      "id": "dep-dbtbodm7bikc73dlcnig",
+      "status": "build_in_progress",
+      "source": "d25f459d2e81fb3379d07b40aadc902ad212ccc7"
+    }
+  ],
+  "healthStatus": 200,
+  "readyStatus": 200,
+  "runningAdapter": {
+    "status": 200,
+    "channelReused": true,
+    "expectedChannel": true,
+    "connected": true,
+    "aiMode": "live",
+    "webhookMatches": true
+  },
+  "sessionCleanup": {
+    "signOut": 200,
+    "oldCookie": 401
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "at": "2026-11-16T08:17:56.620Z",
+  "sha": "d25f459d2e81fb3379d07b40aadc902ad212ccc7",
+  "scopedSettings": [
+    {
+      "key": "INBOX_TWILIO_ACCOUNT_SID_SANDBOX",
+      "present": true,
+      "readbackMatches": true
+    },
+    {
+      "key": "INBOX_TWILIO_AUTH_TOKEN_SANDBOX",
+      "present": true,
+      "readbackMatches": true
+    },
+    {
+      "key": "INBOX_TWILIO_ALLOWED_NUMBERS_SANDBOX",
+      "present": true,
+      "readbackMatches": true,
+      "allowedRecipientCount": 1
+    }
+  ],
+  "otherSettingsPreserved": true,
+  "genericSmsPreserved": true,
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "serviceId": "srv-danh2ljtqb8s73bt9en0",
+      "id": "dep-dbtbod9srm7s73aqq8og",
+      "status": "build_in_progress"
+    },
+    {
+      "name": "oto-inbox-staging",
+      "serviceId": "srv-dbbb4srrjlhs73dk2rm0",
+      "id": "dep-dbtbodm7bikc73dlcnig",
+      "status": "build_in_progress"
+    }
+  ]
+}

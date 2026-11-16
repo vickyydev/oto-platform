@@ -91,6 +91,8 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Typecheck
         if: steps.changes.outputs.workspace == 'true'
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
         run: pnpm typecheck
       - name: Lint
         if: steps.changes.outputs.workspace == 'true'

@@ -1,0 +1,101 @@
+
+> oto-platform@0.1.0 typecheck C:\oto-lanes\codex-whatsapp-908-20261116
+> turbo run typecheck
+
+node.exe : • turbo 2.10.12
+At C:\Users\waqar\AppData\Roaming\npm\pnpm.ps1:24 char:5
++     & "node$exe"  "$basedir/node_modules/pnpm/bin/pnpm.cjs" $args
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (• turbo 2.10.12:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+   • Packages in scope: @oto/admin-screens, @oto/api, @oto/api-types, @oto/assistant, @oto/booth, @oto/box-agent, @oto/config, @oto/console, @oto/db, @oto/inbox, @oto/launcher, @oto/messaging, @oto/payments-2c2p, @oto/pos, @oto/print, @oto/shared, @oto/telemetry
+   • Running typecheck in 17 packages
+   • Remote caching disabled, using shared worktree cache
+
+@oto/shared:typecheck: cache miss, executing 4c5079fef58723e8
+@oto/print:typecheck: cache miss, executing 8f679116226f8d7d
+@oto/box-agent:typecheck: cache miss, executing 181b8ae13c8679e0
+@oto/api-types:typecheck: cache miss, executing 83c82a8f70772a15
+@oto/messaging:typecheck: cache miss, executing 6241f16be01f6b3a
+@oto/db:typecheck: cache miss, executing 14a03e042baf7645
+@oto/booth:typecheck: cache miss, executing f9a2147e063f5263
+@oto/assistant:typecheck: cache miss, executing fa4c8fbd075fceef
+@oto/payments-2c2p:typecheck: cache miss, executing ec7bebfd8eb9b8e6
+@oto/telemetry:typecheck: cache hit, replaying logs 2173b47779e7cd96
+@oto/telemetry:typecheck: 
+@oto/telemetry:typecheck: > @oto/telemetry@0.1.0 typecheck C:\oto-lanes\codex-first-print-20261103\packages\telemetry
+@oto/telemetry:typecheck: > tsc -p tsconfig.json
+@oto/telemetry:typecheck: 
+@oto/pos:typecheck: cache miss, executing 9662cddc79e5996d
+@oto/shared:typecheck: 
+@oto/shared:typecheck: > @oto/shared@0.1.0 typecheck C:\oto-lanes\codex-whatsapp-908-20261116\packages\shared
+@oto/shared:typecheck: > tsc -p tsconfig.json
+@oto/shared:typecheck: 
+@oto/print:typecheck: 
+@oto/print:typecheck: > @oto/print@0.1.0 typecheck C:\oto-lanes\codex-whatsapp-908-20261116\packages\print
+@oto/print:typecheck: > tsc -p tsconfig.json
+@oto/print:typecheck: 
+@oto/box-agent:typecheck: 
+@oto/box-agent:typecheck: > @oto/box-agent@0.1.0 typecheck C:\oto-lanes\codex-whatsapp-908-20261116\packages\box-agent
+@oto/box-agent:typecheck: > tsc -p tsconfig.json && tsc -p tsconfig.test.json
+@oto/box-agent:typecheck: 
+@oto/api-types:typecheck: 
+@oto/api-types:typecheck: > @oto/api-types@0.1.0 typecheck C:\oto-lanes\codex-whatsapp-908-20261116\packages\api-types
+@oto/api-types:typecheck: > tsc -p tsconfig.json
+@oto/api-types:typecheck: 
+@oto/messaging:typecheck: 
+@oto/messaging:typecheck: > @oto/messaging@0.1.0 typecheck C:\oto-lanes\codex-whatsapp-908-20261116\packages\messaging
+@oto/messaging:typecheck: > tsc -p tsconfig.json
+@oto/messaging:typecheck: 
+@oto/db:typecheck: 
+@oto/db:typecheck: > @oto/db@0.1.0 typecheck C:\oto-lanes\codex-whatsapp-908-20261116\packages\db
+@oto/db:typecheck: > tsc -p tsconfig.json
+@oto/db:typecheck: 
+@oto/booth:typecheck: 
+@oto/booth:typecheck: > @oto/booth@0.1.0 typecheck C:\oto-lanes\codex-whatsapp-908-20261116\apps\booth
+@oto/booth:typecheck: > tsc -p tsconfig.json --noEmit
+@oto/booth:typecheck: 
+@oto/assistant:typecheck: 
+@oto/assistant:typecheck: > @oto/assistant@0.1.0 typecheck C:\oto-lanes\codex-whatsapp-908-20261116\packages\assistant
+@oto/assistant:typecheck: > tsc -p tsconfig.json
+@oto/assistant:typecheck: 
+@oto/payments-2c2p:typecheck: 
+@oto/payments-2c2p:typecheck: > @oto/payments-2c2p@0.1.0 typecheck C:\oto-lanes\codex-whatsapp-908-20261116\packages\payments-2c2p
+@oto/payments-2c2p:typecheck: > tsc -p tsconfig.json
+@oto/payments-2c2p:typecheck: 
+@oto/pos:typecheck: 
+@oto/pos:typecheck: > @oto/pos@0.1.0 typecheck C:\oto-lanes\codex-whatsapp-908-20261116\apps\pos
+@oto/pos:typecheck: > tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit && tsc -p server/tsconfig.json --noEmit
+@oto/pos:typecheck: 
+@oto/admin-screens:typecheck: cache miss, executing b413b56b0fd9652b
+@oto/admin-screens:typecheck: 
+@oto/admin-screens:typecheck: > @oto/admin-screens@0.1.0 typecheck C:\oto-lanes\codex-whatsapp-908-20261116\packages\admin-screens
+@oto/admin-screens:typecheck: > tsc -p tsconfig.json --noEmit
+@oto/admin-screens:typecheck: 
+@oto/api:typecheck: cache miss, executing 722d3fe2964ee5d1
+@oto/inbox:typecheck: cache miss, executing c8eeae7437cb1a5d
+@oto/launcher:typecheck: cache miss, executing 5bdf3638e03d7432
+@oto/api:typecheck: 
+@oto/api:typecheck: > @oto/api@0.1.0 typecheck C:\oto-lanes\codex-whatsapp-908-20261116\apps\api
+@oto/api:typecheck: > tsc -p tsconfig.json
+@oto/api:typecheck: 
+@oto/inbox:typecheck: 
+@oto/inbox:typecheck: > @oto/inbox@0.1.0 typecheck C:\oto-lanes\codex-whatsapp-908-20261116\apps\inbox
+@oto/inbox:typecheck: > tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit
+@oto/inbox:typecheck: 
+@oto/console:typecheck: cache miss, executing 1d98160c83ae3ea1
+@oto/launcher:typecheck: 
+@oto/launcher:typecheck: > @oto/launcher@0.1.0 typecheck C:\oto-lanes\codex-whatsapp-908-20261116\apps\launcher
+@oto/launcher:typecheck: > tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit
+@oto/launcher:typecheck: 
+@oto/console:typecheck: 
+@oto/console:typecheck: > @oto/console@0.1.0 typecheck C:\oto-lanes\codex-whatsapp-908-20261116\apps\console
+@oto/console:typecheck: > tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit && tsc -p e2e/tsconfig.json --noEmit
+@oto/console:typecheck: 
+
+ Tasks:    16 successful, 16 total
+Cached:    1 cached, 16 total
+  Time:    1m15.157s 
+

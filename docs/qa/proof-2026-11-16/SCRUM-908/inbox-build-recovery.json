@@ -1,0 +1,13 @@
+{
+  "at": "2026-11-16T08:34:37.131Z",
+  "service": "oto-inbox-staging",
+  "serviceId": "srv-dbbb4srrjlhs73dk2rm0",
+  "source": "d25f459d2e81fb3379d07b40aadc902ad212ccc7",
+  "oldDeployId": "dep-dbtbodm7bikc73dlcnig",
+  "cancellationStatus": "canceled",
+  "clearBuildCache": true,
+  "oneBoundedRecovery": true,
+  "apiTouched": false,
+  "replacementDeployId": "dep-dbtc079srm7s73arfdfg",
+  "replacementStatus": "build_in_progress"
+}

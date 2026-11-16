@@ -1,0 +1,17 @@
+{
+  "at": "2026-11-16T08:24:38.436Z",
+  "source": "d25f459d2e81fb3379d07b40aadc902ad212ccc7",
+  "syntheticOnly": true,
+  "syntheticSid": "SMe8f17bf4e973f12714b04bf0dd40e196",
+  "providerEventId": "2701675da3526d2ee3c9a14163fa9494655044d919b6b296670999cb884b41bc",
+  "httpStatus": 200,
+  "emptyTwiml": true,
+  "nonallowlistedAsserted": true,
+  "noTwilioApiSend": true,
+  "readbackJob": {
+    "jobId": "job-dbtbrhjbc2fs73dn945g",
+    "serviceId": "srv-danh2ljtqb8s73bt9en0",
+    "ownerId": "tea-dakeu6p42hec73abs5g0",
+    "status": "pending"
+  }
+}
