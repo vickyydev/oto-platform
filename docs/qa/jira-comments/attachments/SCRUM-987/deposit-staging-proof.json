@@ -1,0 +1,629 @@
+{
+  "ticket": "SCRUM-987",
+  "sourceSha": "caa85d054536b04bbb6afb02c776485195e28424",
+  "simulatorOnly": true,
+  "realMerchantAcceptance": "NOT PROVEN: merchant credentials and callback configuration absent; no real bank money or real customer messages used.",
+  "deployments": [
+    {
+      "name": "oto-app-staging",
+      "serviceId": "srv-danppvjtqb8s73cnvua0",
+      "deployId": "dep-dbtj0hbl550s73ddtao0",
+      "sha": "caa85d054536b04bbb6afb02c776485195e28424"
+    },
+    {
+      "name": "oto-api-staging",
+      "serviceId": "srv-danh2ljtqb8s73bt9en0",
+      "deployId": "dep-dbtj2dou01pc73e2gug0",
+      "sha": "caa85d054536b04bbb6afb02c776485195e28424"
+    },
+    {
+      "name": "oto-inbox-staging",
+      "serviceId": "srv-dbbb4srrjlhs73dk2rm0",
+      "deployId": "dep-dbtj2e8u01pc73e2h16g",
+      "sha": "caa85d054536b04bbb6afb02c776485195e28424"
+    }
+  ],
+  "verified": {
+    "beforeRequest": {
+      "httpStatus": 409,
+      "code": "DEPOSIT_REQUIRED"
+    },
+    "afterRequestUnpaid": {
+      "httpStatus": 409,
+      "code": "DEPOSIT_NOT_VERIFIED"
+    },
+    "clientPaidFlag": {
+      "httpStatus": 400,
+      "proofRejected": true
+    },
+    "requestedAmountSatang": 100,
+    "requestRetries": "same body/request id with same and new HTTP idempotency keys",
+    "paidNoEvent": {
+      "stage": "paid_no_event",
+      "at": "2026-11-16T16:53:24.342Z",
+      "jobId": "job-dbtj9e88v5cc73962en0",
+      "phase": "paid_no_event",
+      "fixtures": [
+        {
+          "conversationId": "01a1e542-7f11-7a7a-91c1-4509b96de523",
+          "draftId": "899aaa76-d795-4528-8ab3-8da577a90cc6",
+          "attemptId": "01a1e542-7fe1-799e-948e-cedd9f9c0f3e",
+          "provider": "simulator",
+          "status": "approved",
+          "amountSatang": 100,
+          "settledBy": "webhook",
+          "settlementAudits": 1,
+          "calendarRows": 0,
+          "billingRows": 0,
+          "requestMessages": 1,
+          "queuedMessages": 0,
+          "archived": null
+        },
+        {
+          "conversationId": "01a1e542-97dd-7346-a7c7-ef6dc166322a",
+          "draftId": "70e0d006-940e-46b8-9dde-84e799bbd344",
+          "attemptId": "01a1e542-98a1-7ada-b265-a207cb51779f",
+          "provider": "simulator",
+          "status": "approved",
+          "amountSatang": 100,
+          "settledBy": "webhook",
+          "settlementAudits": 1,
+          "calendarRows": 0,
+          "billingRows": 0,
+          "requestMessages": 1,
+          "queuedMessages": 0,
+          "archived": null
+        }
+      ]
+    },
+    "explicitStaffActions": [
+      {
+        "stage": "explicit_book_and_replay",
+        "at": "2026-11-16T16:53:29.742Z",
+        "conversationId": "01a1e542-7f11-7a7a-91c1-4509b96de523",
+        "eventId": "899aaa76-d795-4528-8ab3-8da577a90cc6",
+        "created": true,
+        "replaySameBytes": true
+      },
+      {
+        "stage": "explicit_book_and_replay",
+        "at": "2026-11-16T16:53:33.677Z",
+        "conversationId": "01a1e542-97dd-7346-a7c7-ef6dc166322a",
+        "eventId": "70e0d006-940e-46b8-9dde-84e799bbd344",
+        "created": true,
+        "replaySameBytes": true
+      }
+    ],
+    "booked": {
+      "stage": "booked",
+      "at": "2026-11-16T16:58:14.127Z",
+      "jobId": "job-dbtjbmo8v5cc73969v40",
+      "phase": "booked",
+      "fixtures": [
+        {
+          "conversationId": "01a1e542-7f11-7a7a-91c1-4509b96de523",
+          "draftId": "899aaa76-d795-4528-8ab3-8da577a90cc6",
+          "attemptId": "01a1e542-7fe1-799e-948e-cedd9f9c0f3e",
+          "provider": "simulator",
+          "status": "approved",
+          "amountSatang": 100,
+          "settledBy": "webhook",
+          "settlementAudits": 1,
+          "calendarRows": 1,
+          "billingRows": 1,
+          "requestMessages": 1,
+          "queuedMessages": 0,
+          "archived": false
+        },
+        {
+          "conversationId": "01a1e542-97dd-7346-a7c7-ef6dc166322a",
+          "draftId": "70e0d006-940e-46b8-9dde-84e799bbd344",
+          "attemptId": "01a1e542-98a1-7ada-b265-a207cb51779f",
+          "provider": "simulator",
+          "status": "approved",
+          "amountSatang": 100,
+          "settledBy": "webhook",
+          "settlementAudits": 1,
+          "calendarRows": 1,
+          "billingRows": 1,
+          "requestMessages": 1,
+          "queuedMessages": 0,
+          "archived": false
+        }
+      ],
+      "assertions": [
+        "original draft/attempt/provider metadata exact",
+        "prepayment and billing deposit each1baht",
+        "paidDate equals confirmed paidAt in park timezone",
+        "same park/date14:00 preserved"
+      ]
+    },
+    "sameSlot": {
+      "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+      "date": "2026-12-16",
+      "startTime": "14:00",
+      "distinctEventIds": [
+        "899aaa76-d795-4528-8ab3-8da577a90cc6",
+        "70e0d006-940e-46b8-9dde-84e799bbd344"
+      ]
+    },
+    "cleanup": {
+      "stage": "cleanup",
+      "at": "2026-11-16T17:01:13.402Z",
+      "jobId": "job-dbtjd3h42hec738r1gsg",
+      "phase": "cleanup",
+      "fixtures": [
+        {
+          "conversationId": "01a1e542-7f11-7a7a-91c1-4509b96de523",
+          "draftId": "899aaa76-d795-4528-8ab3-8da577a90cc6",
+          "attemptId": "01a1e542-7fe1-799e-948e-cedd9f9c0f3e",
+          "provider": "simulator",
+          "status": "approved",
+          "amountSatang": 100,
+          "settledBy": "webhook",
+          "settlementAudits": 1,
+          "calendarRows": 1,
+          "billingRows": 1,
+          "requestMessages": 1,
+          "queuedMessages": 0,
+          "archived": true
+        },
+        {
+          "conversationId": "01a1e542-97dd-7346-a7c7-ef6dc166322a",
+          "draftId": "70e0d006-940e-46b8-9dde-84e799bbd344",
+          "attemptId": "01a1e542-98a1-7ada-b265-a207cb51779f",
+          "provider": "simulator",
+          "status": "approved",
+          "amountSatang": 100,
+          "settledBy": "webhook",
+          "settlementAudits": 1,
+          "calendarRows": 1,
+          "billingRows": 1,
+          "requestMessages": 1,
+          "queuedMessages": 0,
+          "archived": true
+        }
+      ],
+      "visibleThreads": 0
+    },
+    "billingProjection": {
+      "originalReceiptEntriesPerEvent": 1,
+      "provider": "simulator",
+      "amountSatang": 100,
+      "readThrough": "authenticated app deposit-request route",
+      "assertedForEvents": [
+        "899aaa76-d795-4528-8ab3-8da577a90cc6",
+        "70e0d006-940e-46b8-9dde-84e799bbd344"
+      ]
+    }
+  },
+  "sessions": [
+    {
+      "run": "20261116164706",
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "sessionId": "01a1e541-645a-798c-97a8-aea771ae3b46",
+      "signOutReceipts": [
+        {
+          "stage": "platform_signout_failed",
+          "at": "2026-11-16T16:49:40.395Z"
+        }
+      ],
+      "additionalExactServiceRevocation": {
+        "verifiedByJob": "job-dbtj9e88v5cc73962en0",
+        "service": "signOut",
+        "revoked": true
+      }
+    },
+    {
+      "run": "20261116165152",
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "sessionId": "01a1e545-c0d2-77e7-bc50-50f91a4ffd23",
+      "signOutReceipts": [
+        {
+          "stage": "platform_signout_failed",
+          "at": "2026-11-16T16:54:49.776Z",
+          "message": "r.status is not a function"
+        }
+      ],
+      "additionalExactServiceRevocation": {
+        "verifiedByJob": "job-dbtjbmo8v5cc73969v40",
+        "service": "signOut",
+        "revoked": true
+      }
+    },
+    {
+      "run": "20261116165526",
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "sessionId": "01a1e549-0438-7e80-b29d-6508a0412a3e",
+      "signOutReceipts": [
+        {
+          "stage": "platform_session_signed_out",
+          "at": "2026-11-16T16:58:44.841Z",
+          "oldSessionStatus": 401
+        }
+      ],
+      "additionalExactServiceRevocation": null
+    },
+    {
+      "run": "20261116165945",
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "sessionId": "01a1e54c-f959-7b23-956b-074f42741371",
+      "signOutReceipts": [
+        {
+          "stage": "app_session_signed_out",
+          "at": "2026-11-16T17:01:14.652Z",
+          "status": 200,
+          "oldSessionStatus": 401
+        },
+        {
+          "stage": "platform_session_signed_out",
+          "at": "2026-11-16T17:01:14.973Z",
+          "oldSessionStatus": 401
+        }
+      ],
+      "additionalExactServiceRevocation": null
+    }
+  ],
+  "fixtures": [
+    {
+      "name": "ZZ TEST 987 20261116164706 A",
+      "fictionalHandle": "6680616470660",
+      "conversationId": "01a1e542-7f11-7a7a-91c1-4509b96de523",
+      "eventId": "899aaa76-d795-4528-8ab3-8da577a90cc6",
+      "attemptId": "01a1e542-7fe1-799e-948e-cedd9f9c0f3e",
+      "booking": {
+        "id": "899aaa76-d795-4528-8ab3-8da577a90cc6",
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "date": "2026-12-16",
+        "startTime": "14:00",
+        "kids": 1,
+        "adults": 1,
+        "contactName": "ZZ TEST 987 20261116164706 A",
+        "phone": null,
+        "childName": "ZZ TEST 987 20261116164706 A child",
+        "childAge": 6
+      },
+      "paidAt": "2026-11-16T16:48:28.880Z"
+    },
+    {
+      "name": "ZZ TEST 987 20261116164706 B",
+      "fictionalHandle": "6680616470661",
+      "conversationId": "01a1e542-97dd-7346-a7c7-ef6dc166322a",
+      "eventId": "70e0d006-940e-46b8-9dde-84e799bbd344",
+      "attemptId": "01a1e542-98a1-7ada-b265-a207cb51779f",
+      "booking": {
+        "id": "70e0d006-940e-46b8-9dde-84e799bbd344",
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "date": "2026-12-16",
+        "startTime": "14:00",
+        "kids": 1,
+        "adults": 1,
+        "contactName": "ZZ TEST 987 20261116164706 B",
+        "phone": null,
+        "childName": "ZZ TEST 987 20261116164706 B child",
+        "childAge": 6
+      },
+      "paidAt": "2026-11-16T16:48:29.809Z"
+    }
+  ],
+  "recovery": [
+    {
+      "run": "20261116164706",
+      "failure": "paid_no_event job failed: DEPOSIT987_ERROR operator does not exist: text  uuid",
+      "stages": [
+        {
+          "stage": "live_before",
+          "at": "2026-11-16T16:47:09.467Z",
+          "deployments": [
+            {
+              "name": "oto-app-staging",
+              "serviceId": "srv-danppvjtqb8s73cnvua0",
+              "deployId": "dep-dbtj0hbl550s73ddtao0",
+              "sha": "caa85d054536b04bbb6afb02c776485195e28424"
+            },
+            {
+              "name": "oto-api-staging",
+              "serviceId": "srv-danh2ljtqb8s73bt9en0",
+              "deployId": "dep-dbtj2dou01pc73e2gug0",
+              "sha": "caa85d054536b04bbb6afb02c776485195e28424"
+            },
+            {
+              "name": "oto-inbox-staging",
+              "serviceId": "srv-dbbb4srrjlhs73dk2rm0",
+              "deployId": "dep-dbtj2e8u01pc73e2h16g",
+              "sha": "caa85d054536b04bbb6afb02c776485195e28424"
+            }
+          ]
+        },
+        {
+          "stage": "census_job_started",
+          "at": "2026-11-16T16:47:10.515Z",
+          "jobId": "job-dbtj73ifngtc73cqc3ug"
+        },
+        {
+          "stage": "census",
+          "at": "2026-11-16T16:48:20.072Z",
+          "jobId": "job-dbtj73ifngtc73cqc3ug",
+          "channelId": "01a156bb-6778-72b0-8237-6028f8874503",
+          "provider": "simulator",
+          "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "appBranchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+          "timezone": "Asia/Bangkok",
+          "existingContacts": 0
+        },
+        {
+          "stage": "paid_not_booked",
+          "at": "2026-11-16T16:48:28.382Z",
+          "conversationId": "01a1e542-7f11-7a7a-91c1-4509b96de523",
+          "draftId": "899aaa76-d795-4528-8ab3-8da577a90cc6",
+          "attemptId": "01a1e542-7fe1-799e-948e-cedd9f9c0f3e"
+        },
+        {
+          "stage": "paid_not_booked",
+          "at": "2026-11-16T16:48:29.304Z",
+          "conversationId": "01a1e542-97dd-7346-a7c7-ef6dc166322a",
+          "draftId": "70e0d006-940e-46b8-9dde-84e799bbd344",
+          "attemptId": "01a1e542-98a1-7ada-b265-a207cb51779f"
+        },
+        {
+          "stage": "paid_no_event_job_started",
+          "at": "2026-11-16T16:48:29.905Z",
+          "jobId": "job-dbtj7nmk1f9s73cs96hg"
+        },
+        {
+          "stage": "platform_signout_failed",
+          "at": "2026-11-16T16:49:40.395Z"
+        }
+      ]
+    },
+    {
+      "run": "20261116165152",
+      "failure": "booked job failed: DEPOSIT987_ERROR syntax error at or near day",
+      "stages": [
+        {
+          "stage": "live_before",
+          "at": "2026-11-16T16:51:55.340Z",
+          "deployments": [
+            {
+              "name": "oto-app-staging",
+              "serviceId": "srv-danppvjtqb8s73cnvua0",
+              "deployId": "dep-dbtj0hbl550s73ddtao0",
+              "sha": "caa85d054536b04bbb6afb02c776485195e28424"
+            },
+            {
+              "name": "oto-api-staging",
+              "serviceId": "srv-danh2ljtqb8s73bt9en0",
+              "deployId": "dep-dbtj2dou01pc73e2gug0",
+              "sha": "caa85d054536b04bbb6afb02c776485195e28424"
+            },
+            {
+              "name": "oto-inbox-staging",
+              "serviceId": "srv-dbbb4srrjlhs73dk2rm0",
+              "deployId": "dep-dbtj2e8u01pc73e2h16g",
+              "sha": "caa85d054536b04bbb6afb02c776485195e28424"
+            }
+          ]
+        },
+        {
+          "stage": "census_job_started",
+          "at": "2026-11-16T16:51:56.609Z",
+          "jobId": "job-dbtj9b6i0phs73dh8dng"
+        },
+        {
+          "stage": "census",
+          "at": "2026-11-16T16:52:07.708Z",
+          "jobId": "job-dbtj9b6i0phs73dh8dng",
+          "channelId": "01a156bb-6778-72b0-8237-6028f8874503",
+          "provider": "simulator",
+          "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "appBranchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+          "timezone": "Asia/Bangkok",
+          "existingContacts": 2
+        },
+        {
+          "stage": "paid_no_event_job_started",
+          "at": "2026-11-16T16:52:09.320Z",
+          "jobId": "job-dbtj9e88v5cc73962en0"
+        },
+        {
+          "stage": "paid_no_event",
+          "at": "2026-11-16T16:53:24.342Z",
+          "jobId": "job-dbtj9e88v5cc73962en0",
+          "phase": "paid_no_event",
+          "fixtures": [
+            {
+              "conversationId": "01a1e542-7f11-7a7a-91c1-4509b96de523",
+              "draftId": "899aaa76-d795-4528-8ab3-8da577a90cc6",
+              "attemptId": "01a1e542-7fe1-799e-948e-cedd9f9c0f3e",
+              "provider": "simulator",
+              "status": "approved",
+              "amountSatang": 100,
+              "settledBy": "webhook",
+              "settlementAudits": 1,
+              "calendarRows": 0,
+              "billingRows": 0,
+              "requestMessages": 1,
+              "queuedMessages": 0,
+              "archived": null
+            },
+            {
+              "conversationId": "01a1e542-97dd-7346-a7c7-ef6dc166322a",
+              "draftId": "70e0d006-940e-46b8-9dde-84e799bbd344",
+              "attemptId": "01a1e542-98a1-7ada-b265-a207cb51779f",
+              "provider": "simulator",
+              "status": "approved",
+              "amountSatang": 100,
+              "settledBy": "webhook",
+              "settlementAudits": 1,
+              "calendarRows": 0,
+              "billingRows": 0,
+              "requestMessages": 1,
+              "queuedMessages": 0,
+              "archived": null
+            }
+          ]
+        },
+        {
+          "stage": "explicit_book_and_replay",
+          "at": "2026-11-16T16:53:29.742Z",
+          "conversationId": "01a1e542-7f11-7a7a-91c1-4509b96de523",
+          "eventId": "899aaa76-d795-4528-8ab3-8da577a90cc6",
+          "created": true,
+          "replaySameBytes": true
+        },
+        {
+          "stage": "explicit_book_and_replay",
+          "at": "2026-11-16T16:53:33.677Z",
+          "conversationId": "01a1e542-97dd-7346-a7c7-ef6dc166322a",
+          "eventId": "70e0d006-940e-46b8-9dde-84e799bbd344",
+          "created": true,
+          "replaySameBytes": true
+        },
+        {
+          "stage": "booked_job_started",
+          "at": "2026-11-16T16:53:34.305Z",
+          "jobId": "job-dbtja3gm7kps73b5iba0"
+        },
+        {
+          "stage": "platform_signout_failed",
+          "at": "2026-11-16T16:54:49.776Z",
+          "message": "r.status is not a function"
+        }
+      ]
+    },
+    {
+      "run": "20261116165526",
+      "failure": "browserContext.waitForEvent: Timeout 30000ms exceeded while waiting for event \"page\"",
+      "stages": [
+        {
+          "stage": "live_before",
+          "at": "2026-11-16T16:55:29.266Z",
+          "deployments": [
+            {
+              "name": "oto-app-staging",
+              "serviceId": "srv-danppvjtqb8s73cnvua0",
+              "deployId": "dep-dbtj0hbl550s73ddtao0",
+              "sha": "caa85d054536b04bbb6afb02c776485195e28424"
+            },
+            {
+              "name": "oto-api-staging",
+              "serviceId": "srv-danh2ljtqb8s73bt9en0",
+              "deployId": "dep-dbtj2dou01pc73e2gug0",
+              "sha": "caa85d054536b04bbb6afb02c776485195e28424"
+            },
+            {
+              "name": "oto-inbox-staging",
+              "serviceId": "srv-dbbb4srrjlhs73dk2rm0",
+              "deployId": "dep-dbtj2e8u01pc73e2h16g",
+              "sha": "caa85d054536b04bbb6afb02c776485195e28424"
+            }
+          ]
+        },
+        {
+          "stage": "census_job_started",
+          "at": "2026-11-16T16:55:30.107Z",
+          "jobId": "job-dbtjb0g8v5cc73967nkg"
+        },
+        {
+          "stage": "census",
+          "at": "2026-11-16T16:56:57.231Z",
+          "jobId": "job-dbtjb0g8v5cc73967nkg",
+          "channelId": "01a156bb-6778-72b0-8237-6028f8874503",
+          "provider": "simulator",
+          "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "appBranchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+          "timezone": "Asia/Bangkok",
+          "existingContacts": 2
+        },
+        {
+          "stage": "booked_job_started",
+          "at": "2026-11-16T16:56:58.905Z",
+          "jobId": "job-dbtjbmo8v5cc73969v40"
+        },
+        {
+          "stage": "booked",
+          "at": "2026-11-16T16:58:14.127Z",
+          "jobId": "job-dbtjbmo8v5cc73969v40",
+          "phase": "booked",
+          "fixtures": [
+            {
+              "conversationId": "01a1e542-7f11-7a7a-91c1-4509b96de523",
+              "draftId": "899aaa76-d795-4528-8ab3-8da577a90cc6",
+              "attemptId": "01a1e542-7fe1-799e-948e-cedd9f9c0f3e",
+              "provider": "simulator",
+              "status": "approved",
+              "amountSatang": 100,
+              "settledBy": "webhook",
+              "settlementAudits": 1,
+              "calendarRows": 1,
+              "billingRows": 1,
+              "requestMessages": 1,
+              "queuedMessages": 0,
+              "archived": false
+            },
+            {
+              "conversationId": "01a1e542-97dd-7346-a7c7-ef6dc166322a",
+              "draftId": "70e0d006-940e-46b8-9dde-84e799bbd344",
+              "attemptId": "01a1e542-98a1-7ada-b265-a207cb51779f",
+              "provider": "simulator",
+              "status": "approved",
+              "amountSatang": 100,
+              "settledBy": "webhook",
+              "settlementAudits": 1,
+              "calendarRows": 1,
+              "billingRows": 1,
+              "requestMessages": 1,
+              "queuedMessages": 0,
+              "archived": false
+            }
+          ]
+        },
+        {
+          "stage": "platform_session_signed_out",
+          "at": "2026-11-16T16:58:44.841Z",
+          "oldSessionStatus": 401
+        }
+      ]
+    }
+  ],
+  "limits": [
+    "The first disabled-button native crop was taken during initial loading; it is excluded from published evidence. Complete API refusals and local native component gate controls passed. No extra fixture was created just for another crop.",
+    "Two readback-helper SQL errors (text/UUID audit join and reserved day alias) were repaired; original drafts, payments and booked events were recovered without additional payment or duplicate credit.",
+    "Initial native Create BEO click preceded ready event detail; helper was corrected to wait for Date Booked. The final actual BEO view and manager archive succeeded.",
+    "Early sign-out reporting called numeric Fetch Response.status as a function after sign-out and old-cookie read. Exact service revocation was subsequently verified; final app and platform old-cookie 401 receipts are explicit.",
+    "The deployed BEO crop says the deposit figure is on its way despite its one atomic original credit. This known wording condition is apps/oto-app/shared/partyDeposit.ts:177 with prebooking projection writeBack:null. A narrow BEO follow-up is queued; this source does not claim it fixed."
+  ],
+  "retainedHistory": {
+    "approvedSimulatorAttempts": 2,
+    "totalSimulatedSatang": 200,
+    "refundsCreated": 0,
+    "paymentRowsDeleted": 0,
+    "activeTestEvents": 0,
+    "visibleTestConversations": 0,
+    "queuedTestMessages": 0
+  },
+  "finalRecoveryHelper": {
+    "path": "work-deposit-staging.mjs",
+    "sha256": "c5991305a6710a7fc930e49a6e25668fb24426121ed9dd15e6c8bd4d25a0259d"
+  },
+  "images": [
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-987/paid-explicit-staff-booking.png",
+      "sha256": "5c9b1250753a94bd30964371b1bf1096658817c716a90c2eb98d32387d0c8165",
+      "inspected": true
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-987/beo-original-simulator-deposit.png",
+      "sha256": "ba1a9c2190d8d983708c586a0c2c89d7a0b57eced2807c774cbf6b07858be3f3",
+      "inspected": true
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-987/gateway-booking-test-run.png",
+      "sha256": "ac5ba949ba02506aafebaa1f4a138aaf42c3bdbd458277fd959d087e6e92ba7d",
+      "inspected": true
+    }
+  ]
+}
