@@ -1,0 +1,35 @@
+{
+  "at": "2026-11-16T10:01:21.717Z",
+  "providerReadAt": "2026-11-16T09:55:24.318Z",
+  "conversationId": "01a1e381-af9b-74ea-97b7-252d31f23d36",
+  "staffMessageId": "01a1e3c7-9a66-7513-a38c-9612486ba71a",
+  "staffAuthorAccountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+  "provider": {
+    "tester": "owner",
+    "kind": "outbound",
+    "sid": "SM442b4043514d45d73533014c040594ce",
+    "status": "read",
+    "dateSent": "Mon, 16 Nov 2026 09:54:33 +0000",
+    "errorCode": null,
+    "direction": "outbound-api",
+    "joinCommand": false,
+    "sandboxConfirmation": false,
+    "staffTestBodyMatches": false
+  },
+  "databaseProviderStatus": "read",
+  "sentAt": "2026-11-16T09:54:32.927Z",
+  "deliveredAt": "2026-11-16T09:54:36.860Z",
+  "readAt": "2026-11-16T09:54:39.067Z",
+  "aiState": "person_replied",
+  "eligibilityReasonFromShippedAiStateMapping": "STAFF_ACTED",
+  "noAiOutboundAfterStaffReply": true,
+  "customerInboundAfterStaffCount": 0,
+  "explicitPauseButtonExercised": false,
+  "ownerUiReceiptConfirmed": true,
+  "nativeAutomationScreenshot": false,
+  "tomCounts": {
+    "conversations": 0,
+    "inbound_messages": 0,
+    "outbound_messages": 0
+  }
+}

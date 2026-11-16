@@ -1,5 +1,5 @@
 {
-  "at": "2026-11-16T08:53:49.590Z",
+  "at": "2026-11-16T09:55:24.318Z",
   "baselineAt": "2026-11-16T08:26:23.721Z",
   "newMessages": [
     {
@@ -58,6 +58,18 @@
       "dateSent": "Mon, 16 Nov 2026 08:38:09 +0000",
       "errorCode": null,
       "direction": "inbound",
+      "joinCommand": false,
+      "sandboxConfirmation": false,
+      "staffTestBodyMatches": false
+    },
+    {
+      "tester": "owner",
+      "kind": "outbound",
+      "sid": "SM442b4043514d45d73533014c040594ce",
+      "status": "read",
+      "dateSent": "Mon, 16 Nov 2026 09:54:33 +0000",
+      "errorCode": null,
+      "direction": "outbound-api",
       "joinCommand": false,
       "sandboxConfirmation": false,
       "staffTestBodyMatches": false

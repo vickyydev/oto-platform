@@ -1,0 +1,13 @@
+{
+  "at": "2026-11-16T09:59:58.054Z",
+  "conversationId": "01a1e381-af9b-74ea-97b7-252d31f23d36",
+  "detailStatus": 200,
+  "aiState": "person_replied",
+  "aiPausedAt": null,
+  "threadPreserved": true,
+  "appPermission": null,
+  "sessionCleanup": {
+    "signOut": 200,
+    "oldCookie": 401
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "runId": 43832471471,
+  "source": "c8f707f31b3cefaad1ff53eaa73ae672cdb0c6cd",
+  "conclusion": "failure",
+  "passedJobs": [
+    "ci",
+    "pos-tests",
+    "api-tests (1)",
+    "api-tests (2)",
+    "api-tests (3)"
+  ],
+  "failedJob": "oto-app",
+  "failedStep": "The OTO App inherited typecheck ceiling",
+  "jobId": 133188347187,
+  "cause": "Node default heap exhausted; ratchet compiler did not finish; no ratchet-count pass or new TS diagnostic claim",
+  "appTreeBefore": "bb77aaa82531baf886ae67ef234a1a8036c1525a",
+  "appTreeAfter": "bb77aaa82531baf886ae67ef234a1a8036c1525a",
+  "appTreeIdentical": true,
+  "appFilesChangedInSandboxRound": [],
+  "automaticRetry": false,
+  "reasonNoRetry": "Resource ceiling failure is not proven transient; no unchanged-capacity retry expected to repair it",
+  "runtimeRedeployed": false
+}

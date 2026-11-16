@@ -1,0 +1,7 @@
+Full-SHA repair run43832471471, app job133188347187
+2026-11-16T08:54:03.8062970Z > rest-express@1.0.0 check:ratchet
+2026-11-16T08:54:03.8064537Z > node script/typecheck-ratchet.mjs
+2026-11-16T08:55:55.0395346Z [3118:0x446f4000]    91782 ms: Mark-Compact (reduce) 2044.4 (2087.4) -> 2042.8 (2082.9) MB, pooled: 0 MB, 1214.51 / 0.00 ms  (+ 333.7 ms in 0 steps since start of marking, biggest step 0.0 ms, walltime since start of marking 1570 ms) (average mu = 0.241,
+2026-11-16T08:55:55.0399210Z FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory
+2026-11-16T08:55:55.0415631Z typecheck: TypeScript did not finish normally; the ratchet did not pass.
+2026-11-16T08:55:55.0541346Z ##[error]Process completed with exit code 1.

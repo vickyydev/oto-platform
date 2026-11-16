@@ -499,6 +499,8 @@ jobs:
         run: npm run build
       - name: The OTO App's inherited typecheck ceiling
         if: steps.changes.outputs.app == 'true'
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
         run: npm run check:ratchet
       # SCRUM-566 (Payroll R1): the payroll engine, ported from the prototype,
       # pure and with no database — the September golden example's engine leg

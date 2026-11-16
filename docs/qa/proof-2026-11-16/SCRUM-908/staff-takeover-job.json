@@ -1,0 +1,10 @@
+{
+  "at": "2026-11-16T09:56:37.581Z",
+  "source": "d25f459d2e81fb3379d07b40aadc902ad212ccc7",
+  "deployId": "dep-dbtc51hsrm7s73ars0mg",
+  "jobId": "job-dbtd6lbbc2fs73dqrkpg",
+  "serviceId": "srv-danh2ljtqb8s73bt9en0",
+  "ownerId": "tea-dakeu6p42hec73abs5g0",
+  "ownerUiReceiptConfirmed": true,
+  "noOutboundFromProbe": true
+}

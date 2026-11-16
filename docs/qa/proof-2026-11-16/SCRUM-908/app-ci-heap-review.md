@@ -1,0 +1,7 @@
+# App CI compiler heap follow-up
+
+The assigned independent read-only reviewer approved the exact two-line environment addition under only the existing OTO App inherited typecheck-ceiling step. The condition and npm command are unchanged. No app/job NODE_OPTIONS existed to replace. The ratchet spawnSync inherits environment, keeps abnormal compiler exits as failure and retains every file/code bucket ceiling. The reviewer ran no heavy command, browser or deployment.
+
+Run43832471471 passed the main CI job, POS and all three API shards. Its app compiler exhausted the default approximately2GiB heap before reporting a completed diagnostic inventory. Both source trees use identical app tree bb77aaa82531baf886ae67ef234a1a8036c1525a; the integration changed no app product file. The original failed log/cause remain recorded.
+
+The current app npm run check:ratchet with4096MiB completed exit0:413/413 errors,54 files,108 buckets, zero increased or reduced buckets. Its committed baseline blob4038f1ca1fe12f04e5bb275b5a4a7bad0ea0f4dc is unchanged. The full compiler output is captured and parsed, not a tail-only acceptance. Package.json/package-lock and installed TypeScript version were matched before using a local node_modules junction to the prior worktree. No app code, ratchet baseline, assertion or gate was relaxed. The follow-up is CI capacity only, so no Render deployment or duplicate customer proof is needed.
