@@ -1,0 +1,306 @@
+{
+  "ticket": "SCRUM-993",
+  "sourceSha": "0bc4be94abdbf982c3a06146062e96f0bb7b28fb",
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "serviceId": "srv-danh2ljtqb8s73bt9en0",
+      "deployId": "dep-dbtkmljl550s73disbng",
+      "sha": "0bc4be94abdbf982c3a06146062e96f0bb7b28fb"
+    },
+    {
+      "name": "oto-inbox-staging",
+      "serviceId": "srv-dbbb4srrjlhs73dk2rm0",
+      "deployId": "dep-dbtkpd9srm7s73eh64a0",
+      "sha": "0bc4be94abdbf982c3a06146062e96f0bb7b28fb"
+    },
+    {
+      "name": "oto-console-staging",
+      "serviceId": "srv-danng2p42hec73f38e3g",
+      "deployId": "dep-dbtkpdu1egvs73b8989g",
+      "sha": "0bc4be94abdbf982c3a06146062e96f0bb7b28fb"
+    }
+  ],
+  "proofJobId": "job-dbtkt2942hec738vasa0",
+  "proofRunnerSourceHash": "c7651028a04ef68d7b712cee88459a7b633af08f0bd0e51df3f0f0904f1dfc3e",
+  "verified": {
+    "policyStages": [
+      {
+        "stage": "initial_none",
+        "run": "20261116184228",
+        "sourceSha": "0bc4be94abdbf982c3a06146062e96f0bb7b28fb",
+        "subjectSessionId": "01a1e5aa-f6ba-70be-9b85-37ebdaefe28e",
+        "accountId": "83f9cfb7-36c0-4f5c-a26a-104add80d8c7",
+        "policyVersion": 1,
+        "detailStatus": 404,
+        "messagesStatus": 404,
+        "listCount": 0,
+        "ownSearchCount": 0,
+        "tabCounts": {
+          "team": 0,
+          "handled": 0
+        },
+        "dashboard": {
+          "active": 0,
+          "handledToday": 0,
+          "beosThisWeek": 0,
+          "byCategory": {
+            "birthdays": 0,
+            "general": 0,
+            "marketing": 0,
+            "gm": 0
+          }
+        },
+        "contactOptionCount": 0,
+        "freshAccessMatchesPolicy": true,
+        "permissionFingerprint": "3238d7467d4f0488b0b127ff29f5d5a83a9ad7dc1bebd17068ec7b503f8e234a",
+        "capabilitiesUnchanged": true
+      },
+      {
+        "stage": "allowed",
+        "run": "20261116184228",
+        "sourceSha": "0bc4be94abdbf982c3a06146062e96f0bb7b28fb",
+        "subjectSessionId": "01a1e5aa-f6ba-70be-9b85-37ebdaefe28e",
+        "accountId": "83f9cfb7-36c0-4f5c-a26a-104add80d8c7",
+        "policyVersion": 2,
+        "detailStatus": 200,
+        "messagesStatus": 200,
+        "listCount": 20,
+        "ownSearchCount": 1,
+        "tabCounts": {
+          "team": 20,
+          "handled": 48
+        },
+        "dashboard": {
+          "active": 20,
+          "handledToday": 0,
+          "beosThisWeek": 0,
+          "byCategory": {
+            "birthdays": 0,
+            "general": 20,
+            "marketing": 0,
+            "gm": 0
+          }
+        },
+        "contactOptionCount": 1,
+        "freshAccessMatchesPolicy": true,
+        "permissionFingerprint": "3238d7467d4f0488b0b127ff29f5d5a83a9ad7dc1bebd17068ec7b503f8e234a",
+        "capabilitiesUnchanged": true
+      },
+      {
+        "stage": "category_revoked_same_session",
+        "run": "20261116184228",
+        "sourceSha": "0bc4be94abdbf982c3a06146062e96f0bb7b28fb",
+        "subjectSessionId": "01a1e5aa-f6ba-70be-9b85-37ebdaefe28e",
+        "accountId": "83f9cfb7-36c0-4f5c-a26a-104add80d8c7",
+        "policyVersion": 3,
+        "detailStatus": 404,
+        "messagesStatus": 404,
+        "listCount": 0,
+        "ownSearchCount": 0,
+        "tabCounts": {
+          "team": 0,
+          "handled": 0
+        },
+        "dashboard": {
+          "active": 0,
+          "handledToday": 0,
+          "beosThisWeek": 0,
+          "byCategory": {
+            "birthdays": 0,
+            "general": 0,
+            "marketing": 0,
+            "gm": 0
+          }
+        },
+        "contactOptionCount": 0,
+        "freshAccessMatchesPolicy": true,
+        "permissionFingerprint": "3238d7467d4f0488b0b127ff29f5d5a83a9ad7dc1bebd17068ec7b503f8e234a",
+        "capabilitiesUnchanged": true
+      },
+      {
+        "stage": "category_restored_same_session",
+        "run": "20261116184228",
+        "sourceSha": "0bc4be94abdbf982c3a06146062e96f0bb7b28fb",
+        "subjectSessionId": "01a1e5aa-f6ba-70be-9b85-37ebdaefe28e",
+        "accountId": "83f9cfb7-36c0-4f5c-a26a-104add80d8c7",
+        "policyVersion": 4,
+        "detailStatus": 200,
+        "messagesStatus": 200,
+        "listCount": 20,
+        "ownSearchCount": 1,
+        "tabCounts": {
+          "team": 20,
+          "handled": 48
+        },
+        "dashboard": {
+          "active": 20,
+          "handledToday": 0,
+          "beosThisWeek": 0,
+          "byCategory": {
+            "birthdays": 0,
+            "general": 20,
+            "marketing": 0,
+            "gm": 0
+          }
+        },
+        "contactOptionCount": 1,
+        "freshAccessMatchesPolicy": true,
+        "permissionFingerprint": "3238d7467d4f0488b0b127ff29f5d5a83a9ad7dc1bebd17068ec7b503f8e234a",
+        "capabilitiesUnchanged": true
+      },
+      {
+        "stage": "channel_revoked_same_session",
+        "run": "20261116184228",
+        "sourceSha": "0bc4be94abdbf982c3a06146062e96f0bb7b28fb",
+        "subjectSessionId": "01a1e5aa-f6ba-70be-9b85-37ebdaefe28e",
+        "accountId": "83f9cfb7-36c0-4f5c-a26a-104add80d8c7",
+        "policyVersion": 5,
+        "detailStatus": 404,
+        "messagesStatus": 404,
+        "listCount": 0,
+        "ownSearchCount": 0,
+        "tabCounts": {
+          "team": 0,
+          "handled": 0
+        },
+        "dashboard": {
+          "active": 0,
+          "handledToday": 0,
+          "beosThisWeek": 0,
+          "byCategory": {
+            "birthdays": 0,
+            "general": 0,
+            "marketing": 0,
+            "gm": 0
+          }
+        },
+        "contactOptionCount": 0,
+        "freshAccessMatchesPolicy": true,
+        "permissionFingerprint": "3238d7467d4f0488b0b127ff29f5d5a83a9ad7dc1bebd17068ec7b503f8e234a",
+        "capabilitiesUnchanged": true
+      }
+    ],
+    "unchangedSessionId": "01a1e5aa-f6ba-70be-9b85-37ebdaefe28e",
+    "unchangedPermissionsFingerprint": "3238d7467d4f0488b0b127ff29f5d5a83a9ad7dc1bebd17068ec7b503f8e234a",
+    "initialPolicyBeforeSubjectInboxRead": true,
+    "subjectAuthentication": "Actual POST /auth/sign-in with randomly generated internal-fixture password; password/hash/cookies never emitted.",
+    "administratorAuthentication": "Dedicated seeded QA identity independently verified; one audited 10-minute session bootstrap for job HTTP administration, not an admin-login proof. Native Console used ordinary QA-administrator sign-in.",
+    "native": {
+      "accountId": "83f9cfb7-36c0-4f5c-a26a-104add80d8c7",
+      "label": "ZZ TEST 993 20261116184228",
+      "sessionId": "01a1e5ab-c910-7ab2-ae60-f6b8d37669a7",
+      "policyVersion": 6,
+      "cancelled": true,
+      "policyVersionUnchanged": true,
+      "policyWrites": 0,
+      "oldSessionStatus": 401
+    }
+  },
+  "fixture": {
+    "label": "ZZ TEST 993 20261116184228",
+    "employeeId": "4dbd7b70-813a-4e4c-890b-9abd31798e66",
+    "accountId": "83f9cfb7-36c0-4f5c-a26a-104add80d8c7",
+    "assignmentId": "a8e6a3cd-0ad8-4c88-9498-636e927994ce",
+    "channelId": "01a156bb-6778-72b0-8237-6028f8874503",
+    "provider": "simulator",
+    "category": "general",
+    "contactId": "01a1e5aa-f67e-7efa-bbea-c8ef9af5c5f6",
+    "conversationId": "01a1e5aa-f680-7f5a-82fd-a49669fe7098"
+  },
+  "cleanup": {
+    "stage": "retirement_readback",
+    "run": "20261116184228",
+    "sourceSha": "0bc4be94abdbf982c3a06146062e96f0bb7b28fb",
+    "employeeId": "4dbd7b70-813a-4e4c-890b-9abd31798e66",
+    "accountId": "83f9cfb7-36c0-4f5c-a26a-104add80d8c7",
+    "assignmentId": "a8e6a3cd-0ad8-4c88-9498-636e927994ce",
+    "adminSessionId": "59fd5b7e-080c-4efa-bc43-d4ac0ccbf0e3",
+    "subjectSessionId": "01a1e5aa-f6ba-70be-9b85-37ebdaefe28e",
+    "contactId": "01a1e5aa-f67e-7efa-bbea-c8ef9af5c5f6",
+    "conversationId": "01a1e5aa-f680-7f5a-82fd-a49669fe7098",
+    "status": "inactive",
+    "assignments": 0,
+    "active_subject_sessions": 0,
+    "active_bootstrap_sessions": 0,
+    "categories_restored": true,
+    "channels_restored": true,
+    "channel_children": 0,
+    "retained": "One unarchived platform employee remains in the employee directory, linked to its inactive roleless account; default policy, synthetic contact and audit history remain. The exact owned thread is archived. Employee has no active/inactive status field; the account status is verified inactive.",
+    "employeeArchive": "NOT BUILT: platform employee API exposes only read-only GET /employees, with no supported archive route. No invented flag or SQL bypass was used.",
+    "subjectOldSessionStatus": 401,
+    "bootstrapOldSessionStatus": 401,
+    "nativeOldSessionStatus": 401,
+    "policyDefaultVersion": 6,
+    "threadArchiveActorVerified": true,
+    "noMessagesDraftsOrPaymentBindingsVerified": true,
+    "roleAssignmentRemoved": true
+  },
+  "recovery": {
+    "firstGuardFailure": {
+      "jobId": "job-dbtkqiek1f9s73d0t1dg",
+      "stages": [
+        {
+          "stage": "proof_failure",
+          "run": "20261116183805",
+          "sourceSha": "0bc4be94abdbf982c3a06146062e96f0bb7b28fb",
+          "message": "dedicated seeded QA administrator only"
+        },
+        {
+          "stage": "independent_retirement",
+          "run": "20261116183805",
+          "sourceSha": "0bc4be94abdbf982c3a06146062e96f0bb7b28fb",
+          "ok": true
+        },
+        {
+          "stage": "complete",
+          "run": "20261116183805",
+          "sourceSha": "0bc4be94abdbf982c3a06146062e96f0bb7b28fb",
+          "success": false,
+          "failure": {
+            "message": "dedicated seeded QA administrator only"
+          },
+          "cleanupErrors": [],
+          "employeeId": "0a84e278-aeba-4978-85f9-e3d0679a2c2d",
+          "accountId": "7fa5c983-ee64-4e20-adfe-052964a8237c",
+          "assignmentId": "fa0bfec9-69c4-4c81-8cb4-707c0235c1bf",
+          "adminSessionId": "7bc35a0b-53b4-4e3d-af49-24cfa52adf39"
+        }
+      ]
+    },
+    "readOnlyIdentityCensus": {
+      "jobId": "job-dbtkrpp5efls73feus6g",
+      "readOnly": true,
+      "status": "succeeded",
+      "lines": [
+        "INBOX993_CENSUS {\"sourceSha\":\"0bc4be94abdbf982c3a06146062e96f0bb7b28fb\",\"known\":[{\"id\":\"01a0bbdc-8c64-7283-aa3b-2af7e79c525d\",\"active\":true,\"operator_matches\":true,\"seed_phone_matches\":true,\"employee_linked\":true,\"seed_employee_name_matches\":true,\"source\":\"otoapp\",\"employee_archived\":true,\"employee_phone_matches\":null,\"seeded_platform_admin_grant\":1,\"proposed_subject_rows\":0,\"proposed_bootstrap_rows\":0}],\"seedPhoneMapping\":[{\"id\":\"01a0bbdc-8c64-7283-aa3b-2af7e79c525d\",\"active\":true,\"known_qa_id\":true,\"source\":\"otoapp\",\"seed_name_matches\":true}]}"
+      ]
+    },
+    "decision": "The first initializer refused obsolete employee source metadata before any write. Read-only census verified the exact immutable dedicated seed account ID, unique seed-phone mapping, exact seeded employee name, active account/operator and existing genuine system platform-admin grant, and zero proposed subject/bootstrap rows. Root authorized one corrected initializer. Only obsolete employee metadata was removed from the QA guard; source sign-in/session code was checked and does not reject archived employee metadata. No application authentication policy or real staff record was changed."
+  },
+  "limits": [
+    "This is one internal synthetic employee/account and one simulator-channel contact. No customer outbound message, model call or payment was made. No invite/code/app identity/custom role or other staff grant was created.",
+    "The native Console images show the already retired, roleless own account with restored default limits; active same-session revocation is proven by the source-bound HTTP/DB test-run card and policy-stage receipts. The preview was cancelled without a policy PUT.",
+    "Initial private native-receipt image flags were false until visual inspection. Published flags below are true after both agent and root inspection."
+  ],
+  "images": [
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-993/own-account-inbox-controls.png",
+      "sha256": "9680ac5fcc982e0614dea0b2c04340dc00dc1220c7ab93d3626adbcdcc605f99",
+      "inspected": true,
+      "native": true
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-993/own-account-review-current-after.png",
+      "sha256": "5a10786d7576cfd7b1f4353aeeeef960be8f4200c323d130670cc223ff7c5df1",
+      "inspected": true,
+      "native": true
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-993/same-session-policy-test-run.png",
+      "sha256": "31f04bbefba4100f9ecb8f817b36471b3e6f69850e0a8a29c03b22853e3e4ba3",
+      "inspected": true,
+      "labelledTestRunCard": true
+    }
+  ]
+}
