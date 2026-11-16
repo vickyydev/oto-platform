@@ -1,0 +1,848 @@
+{
+  "version": 1,
+  "sourceHead": "06c372d45c26bfe9e3581bea73d543f73bcb3a99",
+  "base": "18043d99cf1af00a81a8463e67aefc9c4975bfca",
+  "date": "2026-11-17",
+  "branch": "lane/tom-beo-approved-20261116",
+  "orderedSourceCommits": [
+    "e0602cb232a69f3f8273bdab7d226666733c7f93 feat(beo): link reviewed party additions and separate bills",
+    "dc3f4fe70bcf3c2f6a3166c46761f71a19a19f17 fix(beo): retain pending billing when eligible sources change",
+    "0712ef654faf56933097cc7318b829bf779cc640 fix(pos): refresh additional bill selection before payment",
+    "c53ebc47707995cb50899672ad703c51d4d75e92 test(beo): reuse the existing parent selection fixture",
+    "66b0f0efccc04c59005a9eaeb4729eee28972ee9 fix(beo): preserve unresolved billing across later saves",
+    "45f0a12009090856b645eba2e0fe40cd6e06ee99 fix(pos): collect linked party bills on mobile",
+    "370485ab8951acecde980fc4e2c9770652bf420b fix(beo): preserve separate bill obligations across settlement cycles",
+    "cc980cae34f4349adbff50ceb390ed1eb9225006 test(beo): bind pending additions and bill targets to their sources",
+    "127467dbc620290c8dd25285e0be781c97698d4f fix(beo): settle from the plan read under the party lock",
+    "a9d65fea70706600ef450748e5eb85e509e330bb fix(pos): confirm newly priced party additions on save",
+    "cf4f9c4bd56a2fc6a095e872cac2cb3b7231dd9f fix(pos): isolate linked bill customer review totals",
+    "293d48b09d63863ebc4a1b7cafda47e516d03cba test(pos): reconcile the selected bill customer total",
+    "06c372d45c26bfe9e3581bea73d543f73bcb3a99 fix(beo): keep paid deposit fallback wording neutral"
+  ],
+  "sourceAndTestInputs": [
+    {
+      "path": "apps/api/package.json",
+      "bytes": 1436,
+      "sha256": "e88a347801105fe861a88cabed7b694d01077f0542219df11120a93819eb6ca3"
+    },
+    {
+      "path": "apps/api/src/routes/otoapp-party-billing.ts",
+      "bytes": 3087,
+      "sha256": "5b21060191a152a5f3f28460e39c31cb2f0c8e730dc97918d3bf21b111d117b6"
+    },
+    {
+      "path": "apps/api/src/services/beo-additional-charges.ts",
+      "bytes": 7280,
+      "sha256": "a36362f97ad9bd747cc5eb23ad7ddec37ee17380e7250a9d23379ab55334f430"
+    },
+    {
+      "path": "apps/api/src/services/events.ts",
+      "bytes": 25291,
+      "sha256": "463e79da1669c657599d8929eb9181f6cc93cb4f12462706133cf34df1020c45"
+    },
+    {
+      "path": "apps/api/src/services/otoapp-directory.ts",
+      "bytes": 27874,
+      "sha256": "ed81b03f39d65afde2f7387dbeaafabb2748f61dad1d798498f20d352f8f124e"
+    },
+    {
+      "path": "apps/api/src/services/parties.ts",
+      "bytes": 52039,
+      "sha256": "716e55b60c7ee86fa6bfa946232764314ff95bd7ca37c2601bfef8a4a89bbfe9"
+    },
+    {
+      "path": "apps/api/src/services/party-additional-bills.ts",
+      "bytes": 3175,
+      "sha256": "dc8e2ff59f3500e056a657180f26d430e229ef5609253814e0f2c1d3a895fde5"
+    },
+    {
+      "path": "apps/api/src/services/party-billing.ts",
+      "bytes": 8842,
+      "sha256": "299f2c471f79ff61152bb2cc1373b2b6eb5805fddcea9ffa4f67fb22a0fa596a"
+    },
+    {
+      "path": "apps/api/src/services/party-kitchen-edit.ts",
+      "bytes": 12322,
+      "sha256": "3859ee57af0c20370722ae53c40017b1f13e78e273079c4117ccde0427ece315"
+    },
+    {
+      "path": "apps/api/src/services/party-plan.ts",
+      "bytes": 14957,
+      "sha256": "ae206ee34ffd40278c72933f73dd4c6100583dfffe3813dc2a26c119caea30dc"
+    },
+    {
+      "path": "apps/api/src/services/party-settlement.ts",
+      "bytes": 43064,
+      "sha256": "1d160ddce84cc2863c8a8416364338cacbd0e984f32b39b06f34a70ed6b4a0e0"
+    },
+    {
+      "path": "apps/api/src/services/party-tab.ts",
+      "bytes": 14984,
+      "sha256": "45a77284cb0431f3f6ef1624def1c7e5a3b62acd376a8c8b4de9194a9721f953"
+    },
+    {
+      "path": "apps/api/test/party-kitchen-edit.test.ts",
+      "bytes": 20651,
+      "sha256": "288095d32855bd49fcdcf89d1a11bdf70b33b9686445178702790861312ca63d"
+    },
+    {
+      "path": "apps/api/test/party-settlement.test.ts",
+      "bytes": 89049,
+      "sha256": "4cc5d5e91c088edbbe76f28c847f63d3fe2abfbd1c3c01904ef488bff4b26114"
+    },
+    {
+      "path": "apps/api/test/s990-additional-bill-review.test.ts",
+      "bytes": 1991,
+      "sha256": "9e44730c26f1b5b7e0ac08a1f7d03c73fe05e9c3068bfe0b7c7cdb7b1b62363a"
+    },
+    {
+      "path": "apps/oto-app/client/src/components/beo/beo-ai-review.tsx",
+      "bytes": 66007,
+      "sha256": "7b889e0fecf7547760028e0d5f1eb5c0f3668a9dff3cc520a39d0e3ce056d6fb"
+    },
+    {
+      "path": "apps/oto-app/client/src/components/beo/beo-billing-module.tsx",
+      "bytes": 36683,
+      "sha256": "151607c4372b40440479b75125c0a77836bbe8034a484b68bad5b5d184ddac59"
+    },
+    {
+      "path": "apps/oto-app/client/src/components/beo/beo-event-editor.tsx",
+      "bytes": 232430,
+      "sha256": "0e07285527557864ab7c72f7f241f7e6b74546a59493e5aa57ba4bbaa549c267"
+    },
+    {
+      "path": "apps/oto-app/client/src/components/beo/beo-extra-price.tsx",
+      "bytes": 3159,
+      "sha256": "079a84249198b0aee4192bbdbd749cd13c0c7eda54a9003146e2ad30eda58ea0"
+    },
+    {
+      "path": "apps/oto-app/client/src/components/beo/beo-party-menu-item.tsx",
+      "bytes": 8267,
+      "sha256": "0aa5bceab6a05dccf37fb2623634a604f57073a83c5819524ca030403cb51a99"
+    },
+    {
+      "path": "apps/oto-app/client/src/components/beo/beo-till-billing.tsx",
+      "bytes": 39051,
+      "sha256": "0ebf6b7216c1d4f2cdd9ebc5c3a7d4351f3a5baca3166856e39d984ac9b43b33"
+    },
+    {
+      "path": "apps/oto-app/client/src/components/beo/till-menu-picker.tsx",
+      "bytes": 11739,
+      "sha256": "62a2e49244e9a50fcbddbb15720970785d3c5dec7a06b08f1ce11815f23e9d70"
+    },
+    {
+      "path": "apps/oto-app/client/src/lib/beo-ai-review.ts",
+      "bytes": 65050,
+      "sha256": "2368b3ff9d87de8000f66465dd0a09ad5b5a199a607a8ec70c111dd38fb4724f"
+    },
+    {
+      "path": "apps/oto-app/client/src/pages/public/menu-select.tsx",
+      "bytes": 16786,
+      "sha256": "24c196b7d1a0630e4975dc2b7224da074343dc9ccbf7a01aea235fcd56e87ee3"
+    },
+    {
+      "path": "apps/oto-app/migrations/0051_otoapp_set_audience_provenance.sql",
+      "bytes": 36771,
+      "sha256": "b3cf3bd3106c662307e75576931e8018f55a6d309ae8b211a38b177a17d2f806"
+    },
+    {
+      "path": "apps/oto-app/migrations/0052_otoapp_beo_bar_charge_provenance.sql",
+      "bytes": 36549,
+      "sha256": "5706e5ed8f49199eca03949d6b807681f561ac1e6197f7b746194c6c357c62e1"
+    },
+    {
+      "path": "apps/oto-app/migrations/meta/0052_snapshot.json",
+      "bytes": 1155537,
+      "sha256": "2ed2920e3472d3d93bb797fb77c96d36bb7a11ba2ea5fe4818fa6113db847b3f"
+    },
+    {
+      "path": "apps/oto-app/migrations/meta/_journal.json",
+      "bytes": 7847,
+      "sha256": "a36f7b0d8b9be0c3d7e6a6963f1c8a36974834f63fea60625956cac42761c715"
+    },
+    {
+      "path": "apps/oto-app/package-lock.json",
+      "bytes": 685867,
+      "sha256": "a86c72b7664258ae593f7bc75d452ef19cb4c021c6214895b74028c33a48362e"
+    },
+    {
+      "path": "apps/oto-app/package.json",
+      "bytes": 6088,
+      "sha256": "cce280d28a3d1c8c2d9ce092d7fc0b7b18b9380f1aabb8e57a7bb3462eecd61b"
+    },
+    {
+      "path": "apps/oto-app/script/typecheck-baseline.json",
+      "bytes": 5547,
+      "sha256": "292674e08361dc084fd1e288cca8047ea1bb6bb80fb3373bbe7c258d4f0ae4e5"
+    },
+    {
+      "path": "apps/oto-app/server/ai-routes.ts",
+      "bytes": 50400,
+      "sha256": "51eb70817761eecd421d768bcc4f8604dd1dc253410ee951dfa989a720d35947"
+    },
+    {
+      "path": "apps/oto-app/server/beo-routes.ts",
+      "bytes": 140079,
+      "sha256": "62eacd914f65f7a222e9ac6ce89aa7a7ea02d81d63eff87aa064c8b539c35e90"
+    },
+    {
+      "path": "apps/oto-app/server/directory/kitchenPlanRoutes.ts",
+      "bytes": 5220,
+      "sha256": "902d286026ce976db004591a278d4932a405d6facc30c546e398485b907a0972"
+    },
+    {
+      "path": "apps/oto-app/server/lib/beoAdditionalBilling.ts",
+      "bytes": 6893,
+      "sha256": "6a9af127cbfa592af58a69a37fcfe940f496914a00419c3627cc4b3590870f5a"
+    },
+    {
+      "path": "apps/oto-app/server/lib/beoAiApprove.ts",
+      "bytes": 63284,
+      "sha256": "628ee7d96bc03871a022a3b3afb03b531fac61e8136134fe901696615c6f3be9"
+    },
+    {
+      "path": "apps/oto-app/server/lib/beoFillTillMenu.ts",
+      "bytes": 3841,
+      "sha256": "162bda828170e2486c016998aa92f8b5ed16ac5ebfc6448f44a165061dd906de"
+    },
+    {
+      "path": "apps/oto-app/server/lib/beoReviewState.ts",
+      "bytes": 3773,
+      "sha256": "c0300fcf12479d1d92cff6f580856454b81d6f1695ea5eaee331923a69c873fb"
+    },
+    {
+      "path": "apps/oto-app/server/lib/tillKitchenEdit.ts",
+      "bytes": 24651,
+      "sha256": "7a1898c08df6f71d6b1ffed29685d3d6900a7bcfabdd5a570f2ba100195c03f2"
+    },
+    {
+      "path": "apps/oto-app/server/lib/tillMenu.ts",
+      "bytes": 5008,
+      "sha256": "9f820297841cc9a6954bbccdd59956414b3d3ee6283c4ca1bb11bf54f52a5977"
+    },
+    {
+      "path": "apps/oto-app/server/party-menu-routes.ts",
+      "bytes": 8450,
+      "sha256": "74242a2faf45e29a01da35c36b9fc429e5ab66fb75c245da2234c37f49a5213c"
+    },
+    {
+      "path": "apps/oto-app/shared/beoAiFill.ts",
+      "bytes": 45071,
+      "sha256": "704c666e664709cd30e92b98e4cc949f2a3c1624dce1c601af169dfe63d4b38f"
+    },
+    {
+      "path": "apps/oto-app/shared/beoBillingSource.ts",
+      "bytes": 2602,
+      "sha256": "04bec569f9c11de531651afe07586d18bc19742da1c81c5c274f38e6184da04b"
+    },
+    {
+      "path": "apps/oto-app/shared/beoExtras.ts",
+      "bytes": 12091,
+      "sha256": "ec9db2f2d003029f907d208f01bed704fe0acb15502d2ddfce8fbde79aba3761"
+    },
+    {
+      "path": "apps/oto-app/shared/partyDeposit.ts",
+      "bytes": 13855,
+      "sha256": "495f7fb08c07927c5513f8bb26d308bcfb8dbc3c31a86b914f846b30eaaf8329"
+    },
+    {
+      "path": "apps/oto-app/shared/partyMenuItem.ts",
+      "bytes": 4003,
+      "sha256": "df82b1ddf6fc8d2fd67c0a7accb72d7ac8247f3fc6bb0239d92906de23c133d0"
+    },
+    {
+      "path": "apps/oto-app/shared/tillBilling.ts",
+      "bytes": 8998,
+      "sha256": "7eb003c531bc534cfcc64331d1d144f6103239cb297de88507105576a3b68773"
+    },
+    {
+      "path": "apps/oto-app/shared/tillMenu.ts",
+      "bytes": 11482,
+      "sha256": "9a86df9f4090b6eee40d948d202ce8e6349b7c4dcc6e50d9029f1645df3f3072"
+    },
+    {
+      "path": "apps/oto-app/tests/beo-fill-till-menu.check.ts",
+      "bytes": 41340,
+      "sha256": "e319e7621d23f70ed040b38c7dda39c42d712ad36a5a999a07969d1de4ca2611"
+    },
+    {
+      "path": "apps/oto-app/tests/party-deposit-ui.check.ts",
+      "bytes": 25252,
+      "sha256": "f87d8b9525161f5187657583f0548cc15320bcbf09118b0498da54fad2b20819"
+    },
+    {
+      "path": "apps/oto-app/tests/till-kitchen-edit.check.ts",
+      "bytes": 36785,
+      "sha256": "0e9e25652574a05a10567833f9ba47c47f1cc1d4f5c66265c974d8574dda50e4"
+    },
+    {
+      "path": "apps/oto-app/tests/tom-beo-review.check.ts",
+      "bytes": 4147,
+      "sha256": "8f663c7d3c53b9ceaa19e85d25579dc27a37b6fa5ea48d3d81e02b339781a5da"
+    },
+    {
+      "path": "apps/pos/package.json",
+      "bytes": 3002,
+      "sha256": "a592cf530ac0c95b602b8ca23cd1f7258ce599b0175aa604cd243de9b7e0c239"
+    },
+    {
+      "path": "apps/pos/src/api/events.ts",
+      "bytes": 39800,
+      "sha256": "01ad7418601e490ed6c79c4458855154f65241037fb45d2371c7dde82375dab6"
+    },
+    {
+      "path": "apps/pos/src/api/parties.ts",
+      "bytes": 31675,
+      "sha256": "d3b8501ecafe124bd4a73edef68b943fe02961d285a8f2a92ee0cfdf0f6e0976"
+    },
+    {
+      "path": "apps/pos/src/components/mobile/parties/MobileParties.tsx",
+      "bytes": 14890,
+      "sha256": "44e698c5691c45ca8b89d76f231f0c754f4efe1beefa750ed39d95cec92c6130"
+    },
+    {
+      "path": "apps/pos/src/components/mobile/parties/MobilePartyDetail.tsx",
+      "bytes": 21201,
+      "sha256": "860dcc3c50c8cd57a99eb63c325e27358e47650fd793b598feba2c82cffb423f"
+    },
+    {
+      "path": "apps/pos/src/components/mobile/parties/MobilePartyPayment.tsx",
+      "bytes": 19874,
+      "sha256": "ccf1e8b5ec7a0f31d3ecb7fa89e12695b8bb5d21f41a95a0c290dc32dbe176e0"
+    },
+    {
+      "path": "apps/pos/src/components/parties/PartyBalanceModal.tsx",
+      "bytes": 25053,
+      "sha256": "391e895ea75ed1210bfe14d7d22f4c07cffe2359f2687d1f3874687ff454fa06"
+    },
+    {
+      "path": "apps/pos/src/components/parties/PartyDetail.tsx",
+      "bytes": 48287,
+      "sha256": "386839b4ea9b25cf69afdf79cc310319108e2354aa6cc489379986053db8c4a0"
+    },
+    {
+      "path": "apps/pos/src/components/parties/PartyEditForm.tsx",
+      "bytes": 28463,
+      "sha256": "801f8fce7afc698e861a58693fb3ae6fe2905868b50476c5eb6c5f8e6c8a87ae"
+    },
+    {
+      "path": "apps/pos/src/components/parties/PartyKitchenPlanEditor.tsx",
+      "bytes": 14290,
+      "sha256": "8c28f3865e3ae69839abcecdc5ca2b9e806fa0eea3978df5cc2a310c90a91bfd"
+    },
+    {
+      "path": "apps/pos/src/lib/partyAdditionalBills.ts",
+      "bytes": 952,
+      "sha256": "8227f43f96d7bd6e3bc1775d23e73bc340d2c1ed5a3a68506043d06c89445bb3"
+    },
+    {
+      "path": "apps/pos/src/lib/partyKitchenEdit.ts",
+      "bytes": 11062,
+      "sha256": "7415a7381d4419108a5b8ebd9456722e7fa04b33c7b4b73e7a3c695b81641230"
+    },
+    {
+      "path": "apps/pos/src/lib/usePartyTender.ts",
+      "bytes": 20133,
+      "sha256": "14610805706fb44aa7f380274dd14fdecdb4cc17f00acca28fc747076331866b"
+    },
+    {
+      "path": "apps/pos/src/types.ts",
+      "bytes": 100796,
+      "sha256": "dfcae5f0a0bb90964813d673d2d6ab549f14e795760182708dd27be46b0b6b97"
+    },
+    {
+      "path": "apps/pos/test/s220-e4-parties.test.ts",
+      "bytes": 16238,
+      "sha256": "f9bd3b85e900e07ea9153e23b72f7c0048f017d9261bbdc0b72b7cd0de7b0bea"
+    },
+    {
+      "path": "apps/pos/test/s907-party-kitchen-edit.test.ts",
+      "bytes": 46682,
+      "sha256": "19564ba74971bdad72c0e2c4ecc433586bbd99e9cb8956b2a6da0771e111ad38"
+    },
+    {
+      "path": "apps/pos/test/s990-party-additional-bill-ui-review.test.ts",
+      "bytes": 9471,
+      "sha256": "47b28c8e55587c6d78cf823ca841590684145057caf05c654ec62a93706b7cc2"
+    },
+    {
+      "path": "package.json",
+      "bytes": 940,
+      "sha256": "aa43fc6128d6ece99f34f8f82b453fec4ae4a4214bbd40eaac57badb5b7b0128"
+    },
+    {
+      "path": "packages/api-types/openapi.json",
+      "bytes": 4313218,
+      "sha256": "c36365e3eb490a28b435cf88539ae5ab0092b03e0f658471b7b7adb157041e0f"
+    },
+    {
+      "path": "packages/api-types/src/openapi.ts",
+      "bytes": 1908735,
+      "sha256": "0aa1adbc1659e41ea9c78fd8ad3687ee282a17191107ea00a5429dc2727027f9"
+    },
+    {
+      "path": "packages/db/migrations/0126_prebooking_gateway_deposit.sql",
+      "bytes": 2720,
+      "sha256": "e5de71742dc1e915a99af0fbc8b8a3dadbb920041026d229252e53c8cc503f27"
+    },
+    {
+      "path": "packages/db/migrations/0127_party_additional_bills.sql",
+      "bytes": 1928,
+      "sha256": "c3ffdb7f285cff18f1ecc95e2f49709f5c7a683b6ea8f4847e4bc8179c95ca09"
+    },
+    {
+      "path": "packages/db/migrations/meta/0126_snapshot.json",
+      "bytes": 1452653,
+      "sha256": "e578fd3f3829fb47c3ee6c87be52dee42cfd7e2247f5e325af633a84802e6dfb"
+    },
+    {
+      "path": "packages/db/migrations/meta/0127_snapshot.json",
+      "bytes": 1457549,
+      "sha256": "65094e790ea6cf53c1dbd9db36c5e8e41dcce117308f4a9fadc1bb475323e4bf"
+    },
+    {
+      "path": "packages/db/migrations/meta/_journal.json",
+      "bytes": 18881,
+      "sha256": "84f6590260811de61cb3ce89cd060c128e6ad9a108235847824f41de5e78f46c"
+    },
+    {
+      "path": "packages/db/package.json",
+      "bytes": 1171,
+      "sha256": "444bd1a4c894a93c82f1e48c34a04568e1b540dd552a7fbb6b8f5cae2ab42ebd"
+    },
+    {
+      "path": "packages/db/src/schema/parties.ts",
+      "bytes": 21413,
+      "sha256": "ea12f1701ba97f01bc186d7394c290789d4efdb7b9dd197b6010d3c8616fe936"
+    },
+    {
+      "path": "packages/db/test/schema-shape.test.ts",
+      "bytes": 25328,
+      "sha256": "f938a996bbd3b439cc01d2c7202c37787cac08dfd1531ce85169ce3c31394237"
+    },
+    {
+      "path": "packages/db/test/suite-controls.test.ts",
+      "bytes": 20179,
+      "sha256": "cdafc1612d9a54c75b6fc2e932e552002d6bd7d97f627cb689a9243add913979"
+    },
+    {
+      "path": "packages/shared/package.json",
+      "bytes": 995,
+      "sha256": "a384a46e755aec33ba7a44917d662d1d794e005e4d002a1d09ab95ee2d6b85f0"
+    },
+    {
+      "path": "packages/shared/src/events.ts",
+      "bytes": 38041,
+      "sha256": "e213f5f181f2aa34e0339ef231069ca67dee7dce45854c0ea1384dd9bea2b6c5"
+    },
+    {
+      "path": "packages/shared/src/parties.ts",
+      "bytes": 12175,
+      "sha256": "4ca977b05cbd68f723743161a4f9e31deee11fe8a981bfc97ccb939a18b7ffdb"
+    },
+    {
+      "path": "packages/shared/src/party-billing.ts",
+      "bytes": 7547,
+      "sha256": "c7b3c84dfd74b72e56a9342b01746aa73d8b1f404fdcac4abe298ffb7eb68fc0"
+    },
+    {
+      "path": "packages/shared/src/party-kitchen-edit.ts",
+      "bytes": 5941,
+      "sha256": "2b2d7402bec6d3b6bcbf9919ebb971841766bcb02234c5785bb9e44c1c581e04"
+    },
+    {
+      "path": "packages/shared/src/party-settlement.ts",
+      "bytes": 26882,
+      "sha256": "17105e97dd69bc5b733e2ee4fba3e7e4f3a2cf71bfbd86ed2423f81c0ef8b6ad"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "bytes": 294262,
+      "sha256": "63d17852612309e24722d34fe5a05befcde816643a67a381d130fc50d61d2ff8"
+    }
+  ],
+  "retainedLogs": [
+    {
+      "path": "C:/oto-lanes/tom-beo-api-settlement-release.log",
+      "bytes": 10518,
+      "sha256": "b1a59564a8d5dd966e683bf0f04c47a05deb974ae4a3f9e240ff59c57bee1359"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-api-tests-1.log",
+      "bytes": 28116,
+      "sha256": "bceec9582d58a311409f43f8602a72a642fc1bf8956b9b749f31cd94e13ef507"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-api-tests-2.log",
+      "bytes": 28136,
+      "sha256": "ab47f88b030c0896bda4320d1dfe40e5e42bdf9080c8d250a7e2e0d89af390f0"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-api-tests-final.log",
+      "bytes": 34932,
+      "sha256": "b53208220fb9bab5b62f30536402952aa65e88d8799c2ad3d27274c20e0eb737"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-api-tests-final2.log",
+      "bytes": 28062,
+      "sha256": "992326204d0ec5591e2fd89a0ebd40abfbec25f9fd8c2e328c3a374a9a622161"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-api-tests-final3.log",
+      "bytes": 47214,
+      "sha256": "5539168d75cbaf979841cfc2afce27848080278d05661835da903488462f6aef"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-api-tests-final4.log",
+      "bytes": 18796,
+      "sha256": "20e6c6e853baf8c6fa8a3c767eb3083438fd5fb8e07e22d26324a9935425a3e0"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-api-types-1.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-api-types-final.log",
+      "bytes": 210,
+      "sha256": "65153b3acaeebf662011d975c807fba8bcc0762ac3c94e2a6d25b6cc4b219dab"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-api-types-final2.log",
+      "bytes": 210,
+      "sha256": "65153b3acaeebf662011d975c807fba8bcc0762ac3c94e2a6d25b6cc4b219dab"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-api-types-rebased.log",
+      "bytes": 696,
+      "sha256": "3ee56b19620212c8f69496677088c5ab88ace8b23a07010c354a11a6cd3f4446"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-api-types-release.log",
+      "bytes": 210,
+      "sha256": "65153b3acaeebf662011d975c807fba8bcc0762ac3c94e2a6d25b6cc4b219dab"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-app-build-final.log",
+      "bytes": 65584,
+      "sha256": "25c27b9e27305a638358835b3268d29459cb25627b84746f9f57d8ed7d6de1d0"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-app-checks-1.log",
+      "bytes": 19302,
+      "sha256": "83c9acca06a2dcf24834f46960dba16ab5ffea2cf211b7a6e663d96dac892597"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-app-checks-2.log",
+      "bytes": 16308,
+      "sha256": "b1f3b26bac2d59823783d1515ef5487d2c5455e2d489b61d217fc693ccc1998a"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-app-checks-3.log",
+      "bytes": 14684,
+      "sha256": "359ccfc921ed2795f9f2df3f9cb7c71e7ae43ccc5c213043c0d6f55cfa9e55e2"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-app-lint-delta-final.log",
+      "bytes": 3168,
+      "sha256": "440da2feec79156e636ed60dd8762fa68490a6b941cf2b0edfd21489c794591c"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-app-lint-delta-release.log",
+      "bytes": 152,
+      "sha256": "1d1c6a83fcc95a8152909736b7a5f65a194ef11ed5ce47c93a2cbc8ca0cac897"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-app-lint-delta.log",
+      "bytes": 2482,
+      "sha256": "2eba3022a72b824c090fd8c1888f1bed72280331ce84c77fc9d0577c04a02f22"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-app-lint-delta2.log",
+      "bytes": 14480,
+      "sha256": "400161979e95dce3814a13cf16227bfe711ce336bfe4a30f49cc3bcf4fc1ba3a"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-app-ratchet-1.log",
+      "bytes": 266112,
+      "sha256": "7db5938efceab4c1d83d9617aba6dc4e53a04b0f5e2acd9dc6de4024cd61e041"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-app-ratchet-2.log",
+      "bytes": 265142,
+      "sha256": "a23d042a9489574cf772138d640ff6949b65e5ec2e70bf05b44e9b8801874944"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-app-ratchet-final.log",
+      "bytes": 265142,
+      "sha256": "afdcfbe989bac5f48319b508a1bdf8d27bfda1941fa25eacf7717bfe8b487740"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-app-ratchet-release.log",
+      "bytes": 265142,
+      "sha256": "afdcfbe989bac5f48319b508a1bdf8d27bfda1941fa25eacf7717bfe8b487740"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-app-runtime-final.log",
+      "bytes": 1138,
+      "sha256": "a3767c7d5f69c6ef1a8f30896718fff747270e018ada3e812baaccc7d04239fa"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-app-runtime-final2.log",
+      "bytes": 18678,
+      "sha256": "2505cfcca4c30a4832c28acf3be889983a874fe162a4c043762706115b68e130"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-app-runtime-final3.log",
+      "bytes": 17894,
+      "sha256": "f1b42fbe0fdb7fc29ad3b69d0753e05977fde57aab3fd1bb655b11f66d701224"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-contracts-check-release.log",
+      "bytes": 1986,
+      "sha256": "57645aa973b47bebf01d688c3cc964251d95eb4165c192ab2fe8f769b9e16bc5"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-contracts-final.log",
+      "bytes": 2040,
+      "sha256": "188c9cfe30da3e8b16be5be4313d5fddd54d2a246f0417d9ccf5e0630de47bb4"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-contracts-generate.log",
+      "bytes": 2040,
+      "sha256": "cf5551359d4d017cf0166bd3d6e9984bc7791e8dc764f0a88737012a513ba686"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-db-controls-final.log",
+      "bytes": 118224,
+      "sha256": "9e1ce4a78d6d279a8fcc1d491f4764571646e7f3a8da8eda4818c29ba4f2f7e1"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-deposit-ui-final.log",
+      "bytes": 2988,
+      "sha256": "e9066c3549e7ced958ee6626d6e3b0f6e38ce76a08bf541f45a3619b03181d02"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-deposit-ui-final2.log",
+      "bytes": 2988,
+      "sha256": "e9066c3549e7ced958ee6626d6e3b0f6e38ce76a08bf541f45a3619b03181d02"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-deposit-ui-release.log",
+      "bytes": 2988,
+      "sha256": "e9066c3549e7ced958ee6626d6e3b0f6e38ce76a08bf541f45a3619b03181d02"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-lint-app-full.log",
+      "bytes": 61480,
+      "sha256": "d00143d01b22b10cf6dcc46813247ddb1325ad6603bfe88cce506cf8d17b3b47"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-lint-workspace-final.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-lint-workspace-release.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-lint-workspace.log",
+      "bytes": 3854,
+      "sha256": "5d5d1a22b0b2a995f4d6f9e0b3916611857eedbcef6fb10102c42485898f9302"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-pos-build-final.log",
+      "bytes": 8308,
+      "sha256": "ade52280b5b7f16cd6059eccf6249213585805ccb1bfc6639e566d8dc13b843e"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-pos-tests-1.log",
+      "bytes": 60322,
+      "sha256": "5043341a5050c0da6bc0562f03180af5030d5d177cdbb40eef6fdf309c186abf"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-pos-tests-2.log",
+      "bytes": 46696,
+      "sha256": "cd84c7b1d6a1a986f6e82c8314bd416fe0b46ee94f2948f7160c9f3ac94c6b73"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-pos-tests-3.log",
+      "bytes": 46698,
+      "sha256": "da088224768f0c2ed73814ce0bd0cebfee9c9e75d45ca9590a8b64f945955a49"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-pos-tests-final.log",
+      "bytes": 752,
+      "sha256": "695785f76bc96b9960213000e1f53c268c44bb309083b18e2b3b92809e3b03f7"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-pos-tests-final5.log",
+      "bytes": 4284,
+      "sha256": "f8371fc655f45b41c32508de3514020825aebe1b817e644637abf47fd33d6d35"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-pos-tests-release.log",
+      "bytes": 4500,
+      "sha256": "d20732a9b2430b8027832ad412f05b26ac9b5e7eba4f8bfa840691c1ab721471"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-pos-tests4.log",
+      "bytes": 4498,
+      "sha256": "3ed77a5e631f89c85eddef0a0d8f95790005e4689fa7298906e44932c1c30e60"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-pos-types-1.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-pos-types-final.log",
+      "bytes": 1608,
+      "sha256": "cf6d19a61af32964a4f19229ce9ccb062f5812683da47395f99aa2059a8b6c2a"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-pos-types-final2.log",
+      "bytes": 384,
+      "sha256": "9d00308294e702efa6039e366a437db4773d7541957abeb26c7bd5aad4f26408"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-pos-types-final3.log",
+      "bytes": 384,
+      "sha256": "9d00308294e702efa6039e366a437db4773d7541957abeb26c7bd5aad4f26408"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-pos-types-release.log",
+      "bytes": 384,
+      "sha256": "9d00308294e702efa6039e366a437db4773d7541957abeb26c7bd5aad4f26408"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-schema-final.log",
+      "bytes": 5332,
+      "sha256": "8dc486cba5e0409b61f46ba01087dafbb9e66e4f54812f88137d7de6917924e1"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-type-account-release.log",
+      "bytes": 6154,
+      "sha256": "b70e56ca215546bf71b89bfc6086220b0954ddf2ec3eb93f08ba206ef1cd88d6"
+    }
+  ],
+  "structuredReceipts": [
+    {
+      "path": "C:/oto-lanes/tom-beo-app-types-accounting.json",
+      "bytes": 3001,
+      "sha256": "14bc31c5c81b89939523ad4b24ffa6456b83789a79e99a36d2591e69c24955b2"
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-lint-app-delta.json",
+      "bytes": 69,
+      "sha256": "19ac87b66ad1578d210ad430e5ef1dc9691ca25ae2023f87e59bdebdad98ce70"
+    }
+  ],
+  "verification": [
+    {
+      "command": "pnpm --dir apps/api run typecheck",
+      "receipt": "C:/oto-lanes/tom-beo-api-types-release.log",
+      "result": "zero TypeScript diagnostics"
+    },
+    {
+      "command": "pnpm api-types:check",
+      "receipt": "C:/oto-lanes/tom-beo-contracts-check-release.log",
+      "result": "matches API"
+    },
+    {
+      "command": "pnpm --dir apps/api exec vitest run test/party-settlement.test.ts",
+      "receipt": "C:/oto-lanes/tom-beo-api-settlement-release.log",
+      "result": "49/49 complete file"
+    },
+    {
+      "command": "pnpm --dir apps/api exec vitest run test/party-settlement.test.ts test/party-kitchen-edit.test.ts",
+      "receipt": "C:/oto-lanes/tom-beo-api-tests-final4.log",
+      "result": "63/63 complete files; kitchen14 unchanged afterward"
+    },
+    {
+      "command": "pnpm --dir apps/api exec vitest run test/s990-additional-bill-review.test.ts test/party-settlement.test.ts test/party-kitchen-edit.test.ts test/party-menu-catalogue.test.ts",
+      "receipt": "C:/oto-lanes/tom-beo-api-tests-final2.log",
+      "result": "72/72; pure4/catalogue6 unchanged afterward; settlement later expanded49 and independently repeated"
+    },
+    {
+      "command": "pnpm --dir apps/pos run typecheck",
+      "receipt": "C:/oto-lanes/tom-beo-pos-types-final3.log",
+      "result": "all three configs; zero diagnostics"
+    },
+    {
+      "command": "pnpm --dir apps/pos exec vitest run test/s990-party-additional-bill-ui-review.test.ts test/s907-party-kitchen-edit.test.ts",
+      "receipt": "C:/oto-lanes/tom-beo-pos-tests-final5.log",
+      "result": "36/36 complete changed files"
+    },
+    {
+      "command": "pnpm --dir apps/pos exec vitest run test/s990-party-additional-bill-ui-review.test.ts test/s220-e4-parties.test.ts test/scrum-732-routed-tenders.test.ts test/s907-party-kitchen-edit.test.ts",
+      "receipt": "C:/oto-lanes/tom-beo-pos-tests-release.log",
+      "result": "85/85; API-body12/routed39 unchanged afterward; final changedfiles36 separately passed"
+    },
+    {
+      "command": "node C:/oto-lanes/tom-beo-app-run.mts",
+      "receipt": "C:/oto-lanes/tom-beo-app-runtime-final3.log",
+      "result": "embeddedPG: app migrate twice no-op after0052 initial apply; pure21 plus unresolved-price assertions; fill14/14; kitchen13/13"
+    },
+    {
+      "command": "node node_modules/tsx/dist/cli.mjs tests/party-deposit-ui.check.ts (app cwd, tests JSX config)",
+      "receipt": "C:/oto-lanes/tom-beo-deposit-ui-release.log",
+      "result": "11/11 including null-neutral and real pending/failed/synced words"
+    },
+    {
+      "command": "npm --prefix apps/oto-app run check:ratchet",
+      "receipt": "C:/oto-lanes/tom-beo-app-ratchet-release.log",
+      "result": "413/413 in54files; full per-file/code accounting unchanged"
+    },
+    {
+      "command": "pnpm --dir packages/db run verify-schema",
+      "receipt": "C:/oto-lanes/tom-beo-schema-final.log",
+      "result": "combined0127 exact tables/columns/FKs/indexes/checks; migration replay no-op; public empty"
+    },
+    {
+      "command": "pnpm --dir packages/db exec vitest run test/schema-shape.test.ts test/suite-controls.test.ts",
+      "receipt": "C:/oto-lanes/tom-beo-db-controls-final.log",
+      "result": "28/28"
+    },
+    {
+      "command": "ESLint all touched workspace TS/TSX (explicit list)",
+      "receipt": "C:/oto-lanes/tom-beo-lint-workspace-release.log",
+      "result": "zero output"
+    },
+    {
+      "command": "forced no-ignore app ESLint, exact samefile/rule/message/source-line baseline comparison",
+      "receipt": "C:/oto-lanes/tom-beo-app-lint-delta-release.log",
+      "result": "68 inherited errors before/after; introduced diagnostics[]; default workspace config intentionally excludes app"
+    },
+    {
+      "command": "pnpm --dir apps/pos run build",
+      "receipt": "C:/oto-lanes/tom-beo-pos-build-final.log",
+      "result": "pass; existing chunk-size warning"
+    },
+    {
+      "command": "npm --prefix apps/oto-app run build",
+      "receipt": "C:/oto-lanes/tom-beo-app-build-final.log",
+      "result": "pass; existing duplicate-key warnings retained"
+    }
+  ],
+  "rollout": {
+    "namedServices": [
+      "oto-app-staging",
+      "oto-api-staging",
+      "oto-pos-staging",
+      "oto-pos-web-staging"
+    ],
+    "order": "app first, then API and both tills; root owns release and exact-SHA proof",
+    "noDeploymentByThisLane": true,
+    "platformMigration": "0127_party_additional_bills",
+    "platformSqlSha256": "c3ffdb7f285cff18f1ecc95e2f49709f5c7a683b6ea8f4847e4bc8179c95ca09",
+    "appMigration": "0052_otoapp_beo_bar_charge_provenance",
+    "limits": [
+      "No additional-bill refund UI or new fiscal receipt product",
+      "No staging/native/provider/printer acceptance by this lane",
+      "Historical unassigned records and other945/966/968 holds retained"
+    ]
+  }
+}
