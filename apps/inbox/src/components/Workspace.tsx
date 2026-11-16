@@ -356,15 +356,20 @@ export function Workspace({ me }: { me: InboxMe }) {
   }, [page, loadingMore, tab, filters, learnSources]);
 
   // --- The dashboard ---------------------------------------------------------------
+  const dashboardSeq = useRef(0);
   const loadDashboard = useCallback(async () => {
     if (!me.capabilities.dashboard) return;
+    const seq = ++dashboardSeq.current, accessAtRequest = accessSignature;
     try {
-      setDashboard(await inboxApi.dashboard());
+      const next = await inboxApi.dashboard();
+      if (seq !== dashboardSeq.current || accessAtRequest !== inboxAccessSignature(accessRef.current)) return;
+      setDashboard(next);
       setDashboardError(null);
     } catch (err) {
+      if (seq !== dashboardSeq.current || accessAtRequest !== inboxAccessSignature(accessRef.current)) return;
       setDashboardError(message(err, 'The dashboard could not be read.'));
     }
-  }, [me.capabilities.dashboard]);
+  }, [me.capabilities.dashboard, accessSignature]);
   useEffect(() => void loadDashboard(), [loadDashboard]);
 
   // --- The open conversation -------------------------------------------------------

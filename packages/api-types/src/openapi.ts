@@ -1076,167 +1076,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/accounts/{id}/inbox-access": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description Existing-account permission scope and dominance apply. Reads Inbox category/channel limits; channel names stay within the caller's readable branches. No row means existing unrestricted access. Limits never add a role or action grant. */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            categories: ("birthdays" | "general" | "marketing" | "gm")[] | null;
-                            channelAccountIds: string[] | null;
-                            /** Format: uuid */
-                            accountId: string;
-                            version: number;
-                            administrator: boolean;
-                            canManage: boolean;
-                            channels: {
-                                /** Format: uuid */
-                                id: string;
-                                /** @enum {string} */
-                                channel: "whatsapp" | "instagram" | "facebook" | "line" | "telegram" | "webform";
-                                displayName: string | null;
-                                /** Format: uuid */
-                                branchId: string | null;
-                            }[];
-                        };
-                    };
-                };
-            };
-        };
-        /** @description Save reviewed account Inbox limits with version-CAS. Existing operator-wide role assignment, account reach and dominance are rechecked on every call, including retries. Operator administrators retain management. No initial grants or access rows are changed by deployment. */
-        put: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": {
-                        categories: ("birthdays" | "general" | "marketing" | "gm")[] | null;
-                        channelAccountIds: string[] | null;
-                        expectedVersion: number;
-                    };
-                };
-            };
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            categories: ("birthdays" | "general" | "marketing" | "gm")[] | null;
-                            channelAccountIds: string[] | null;
-                            /** Format: uuid */
-                            accountId: string;
-                            version: number;
-                            administrator: boolean;
-                            canManage: boolean;
-                            channels: {
-                                /** Format: uuid */
-                                id: string;
-                                /** @enum {string} */
-                                channel: "whatsapp" | "instagram" | "facebook" | "line" | "telegram" | "webform";
-                                displayName: string | null;
-                                /** Format: uuid */
-                                branchId: string | null;
-                            }[];
-                        };
-                    };
-                };
-            };
-        };
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/accounts/{id}/inbox-access/preview": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** @description Fresh before/after Inbox access preview under existing operator-wide role assignment and target-account dominance. expectedVersion rejects a stale edit. Null means no extra restriction, an empty list means none. Writes nothing. */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": {
-                        categories: ("birthdays" | "general" | "marketing" | "gm")[] | null;
-                        channelAccountIds: string[] | null;
-                        expectedVersion: number;
-                    };
-                };
-            };
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /** Format: uuid */
-                            accountId: string;
-                            version: number;
-                            before: {
-                                categories: ("birthdays" | "general" | "marketing" | "gm")[] | null;
-                                channelAccountIds: string[] | null;
-                            };
-                            after: {
-                                categories: ("birthdays" | "general" | "marketing" | "gm")[] | null;
-                                channelAccountIds: string[] | null;
-                            };
-                            changed: boolean;
-                        };
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/accounts/": {
         parameters: {
             query?: never;
@@ -1673,6 +1512,167 @@ export interface paths {
                     content: {
                         "application/json": {
                             sessionsEnded: number;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounts/{id}/inbox-access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Existing-account permission scope and dominance apply. Reads Inbox category/channel limits; channel names stay within the caller's readable branches. No row means existing unrestricted access. Limits never add a role or action grant. */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            categories: ("birthdays" | "general" | "marketing" | "gm")[] | null;
+                            channelAccountIds: string[] | null;
+                            /** Format: uuid */
+                            accountId: string;
+                            version: number;
+                            administrator: boolean;
+                            canManage: boolean;
+                            channels: {
+                                /** Format: uuid */
+                                id: string;
+                                /** @enum {string} */
+                                channel: "whatsapp" | "instagram" | "facebook" | "line" | "telegram" | "webform";
+                                displayName: string | null;
+                                /** Format: uuid */
+                                branchId: string | null;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        /** @description Save reviewed account Inbox limits with version-CAS. Existing operator-wide role assignment, account reach and dominance are rechecked on every call, including retries. Operator administrators retain management. No initial grants or access rows are changed by deployment. */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        categories: ("birthdays" | "general" | "marketing" | "gm")[] | null;
+                        channelAccountIds: string[] | null;
+                        expectedVersion: number;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            categories: ("birthdays" | "general" | "marketing" | "gm")[] | null;
+                            channelAccountIds: string[] | null;
+                            /** Format: uuid */
+                            accountId: string;
+                            version: number;
+                            administrator: boolean;
+                            canManage: boolean;
+                            channels: {
+                                /** Format: uuid */
+                                id: string;
+                                /** @enum {string} */
+                                channel: "whatsapp" | "instagram" | "facebook" | "line" | "telegram" | "webform";
+                                displayName: string | null;
+                                /** Format: uuid */
+                                branchId: string | null;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounts/{id}/inbox-access/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Fresh before/after Inbox access preview under existing operator-wide role assignment and target-account dominance. expectedVersion rejects a stale edit. Null means no extra restriction, an empty list means none. Writes nothing. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        categories: ("birthdays" | "general" | "marketing" | "gm")[] | null;
+                        channelAccountIds: string[] | null;
+                        expectedVersion: number;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            accountId: string;
+                            version: number;
+                            before: {
+                                categories: ("birthdays" | "general" | "marketing" | "gm")[] | null;
+                                channelAccountIds: string[] | null;
+                            };
+                            after: {
+                                categories: ("birthdays" | "general" | "marketing" | "gm")[] | null;
+                                channelAccountIds: string[] | null;
+                            };
+                            changed: boolean;
                         };
                     };
                 };
