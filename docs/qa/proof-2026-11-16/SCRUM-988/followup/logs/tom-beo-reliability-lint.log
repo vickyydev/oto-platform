@@ -1,0 +1,61 @@
+{
+  "baselineErrors": 7,
+  "currentErrors": 9,
+  "introduced": [
+    {
+      "file": "apps/oto-app/client/src/components/beo/beo-event-editor.tsx",
+      "introduced": [
+        {
+          "ruleId": "@typescript-eslint/no-unused-vars",
+          "severity": 2,
+          "message": "'Checkbox' is defined but never used. Allowed unused vars must match /^_/u.",
+          "line": 85,
+          "column": 10,
+          "nodeType": "Identifier",
+          "messageId": "unusedVar",
+          "endLine": 85,
+          "endColumn": 18,
+          "suggestions": [
+            {
+              "messageId": "removeUnusedImportDeclaration",
+              "data": {
+                "varName": "Checkbox"
+              },
+              "fix": {
+                "range": [
+                  2479,
+                  2533
+                ],
+                "text": ""
+              },
+              "desc": "Remove unused import declaration."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "apps/oto-app/tests/ai-approve-deposit.check.ts",
+      "introduced": [
+        {
+          "ruleId": "prefer-const",
+          "severity": 2,
+          "message": "'platformDown' is never reassigned. Use 'const' instead.",
+          "line": 34,
+          "column": 5,
+          "nodeType": "Identifier",
+          "messageId": "useConst",
+          "endLine": 34,
+          "endColumn": 17,
+          "fix": {
+            "range": [
+              1684,
+              1709
+            ],
+            "text": "const platformDown = false;"
+          }
+        }
+      ]
+    }
+  ]
+}

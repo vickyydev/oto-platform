@@ -1,0 +1,13 @@
+  ok  the press warns first — it may change typed details — and reads nothing until Read the chat is pressed
+  ok  Read the chat: every change listed — the field, the form's value → the chat's, whose line — undecided, and Apply says Done
+  ok  one accepted, one declined, Apply: only the accepted lands in the form; the declined is remembered on this chat; the dialog closes
+  ok  the same chat fetched again: the declined change is held back and said so; nothing else is new
+  ok  the chat's newest line moved: the declined change is offered again; Accept all, Apply lands it
+  ok  a row left undecided is neither applied nor remembered; Decline all remembers every row and applies none; Cancel does neither
+  ok  SCRUM-826: a declined field is held on the same chat whatever value the chat reads for it next
+  ok  a read that fails says why and offers to try again; nothing new at all says so
+  ok  the chat names a magician the BEO lacks: listed to read beside the adults, with no accept or decline, and where it is chosen; alone, it is never called the same
+  ok  SCRUM-827: the model's own title is never offered; the park's default the proposal carries is, marked as the default, only where it differs
+  ok  SCRUM-903: each change and each catalogue line shows the chat's words under it — whose line and when, on the park's clock
+  ok  the editor mounts the dialog with its own form, read, memory and apply, behind a Fetch from chat button shown for a BEO from the inbox
+fetch-from-chat-ui.check: 12 checks passed

@@ -1,0 +1,6 @@
+  ok  the review read with no deposit, the family pays ฿3,000, Approve and create: the deposit it was read with is sent, and the result says the deposit was not written
+  ok  a claimed paid amount/date are informational, with no Received toggle and no change to stored money
+  ok  a review from a server before the rule sends no deposit of its own reading; the server's words for a lowering it kept are shown
+  ok  a timeline step with no place and a deposit that was kept: both are said
+  ok  requested-only amount remains editable and never becomes received money
+ai-approve-deposit-ui.check: 5 checks passed

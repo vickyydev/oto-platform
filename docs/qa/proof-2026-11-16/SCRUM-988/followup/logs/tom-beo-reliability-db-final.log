@@ -1,0 +1,186 @@
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+
+Data page checksums are disabled.
+
+
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-qMcKBY ... 
+ok
+
+creating subdirectories ... 
+ok
+
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ... 
+100
+selecting default shared_buffers ... 
+128MB
+selecting default time zone ... 
+Asia/Bangkok
+creating configuration files ... 
+ok
+running bootstrap script ... 
+ok
+
+performing post-bootstrap initialization ... 
+ok
+syncing data to disk ... 
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-whatsapp^-908^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-qMcKBY^" -l logfile start
+
+
+2026-11-17 01:11:45.030 +07 [119024] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+2026-11-17 01:11:45.033 +07 [119024] LOG:  listening on IPv6 address "::1", port 62472
+
+2026-11-17 01:11:45.033 +07 [119024] LOG:  listening on IPv4 address "127.0.0.1", port 62472
+
+2026-11-17 01:11:45.073 +07 [126160] LOG:  database system was shut down at 2026-11-17 01:11:43 +07
+
+2026-11-17 01:11:45.099 +07 [119024] LOG:  database system is ready to accept connections
+
+2026-11-17 01:11:48.482 +07 [76956] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+  ok  the rule: the stored deposit stays unless the form was opened with it and changed it; a lowering is checked against the chat's payment
+  ok  THE RACE: the BEO open with no deposit, the family pays ฿3,000 through the chat, the stale form is saved — the deposit stays ฿3,000 everywhere, the other fields are saved, the answer says so
+  ok  the fact and the stale Save sent together: whichever lands first, the deposit is ฿3,000
+  ok  a deliberate change from a fresh form is written; lowered below what the chat paid it is kept and said; the platform is asked only for a lowering
+  ok  the Billing section's Deposit Paid, sent with the deposit it showed: one that moved is kept and said, a deliberate figure is written
+  ok  the Events page's Save: a deposit that moved while the form was open stays, its other fields are saved; a deliberate change is written
+  ok  nobody else is in the way: a till's party edit still lowers the deposit, and the gateway fact lands over a Save made since
+deposit-save.check: 7 checks passed
+2026-11-17 01:12:02.109 +07 [94276] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+2026-11-17 01:12:02.109 +07 [128192] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+2026-11-17 01:12:02.109 +07 [124836] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+2026-11-17 01:12:02.109 +07 [86112] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+2026-11-17 01:12:02.109 +07 [130332] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+{"level":"info","time":"2026-11-16T18:12:06.102Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":520,"answerChars":1282,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"3879203b-332f-419e-8490-f717422fe880","team":{"named":0,"matched":0},"msg":"ai fill run"}
+node : (node:107856) DeprecationWarning: Calling client.query() when the client is already executing a query is 
+deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+At line:2 char:1
++ node apps/api/node_modules/tsx/dist/cli.mjs C:/oto-lanes/tom-beo-reli ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ((node:107856) D...hanism instead.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+(Use `node --trace-deprecation ...` to show where the warning was created)
+{"level":"info","time":"2026-11-16T18:12:06.257Z","service":"oto-app","env":"local","eventId":"3879203b-332f-419e-8490-f717422fe880","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":1,"kitchenLines":5,"freeKitchenLines":1,"tillLines":5,"adultsSetLines":1,"barLines":2},"notWrittenSteps":0,"depositKept":"chat_claim","msg":"ai fill approved"}
+{"level":"info","time":"2026-11-16T18:12:06.293Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":520,"answerChars":1282,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"083ce9dd-f69c-485c-bc8a-78ffdcfc76c1","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-16T18:12:06.362Z","service":"oto-app","env":"local","eventId":"083ce9dd-f69c-485c-bc8a-78ffdcfc76c1","written":{"kitchenLines":1,"freeKitchenLines":0,"tillLines":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-16T18:12:06.438Z","service":"oto-app","env":"local","eventId":"deeaf720-4e54-43e4-a10d-e2d6e25e1e07","written":{"barLines":1,"tillLines":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-16T18:12:06.450Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":520,"answerChars":1282,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"032d008e-3933-4eae-9aef-c14b3baa73ae","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-16T18:12:06.513Z","service":"oto-app","env":"local","eventId":"032d008e-3933-4eae-9aef-c14b3baa73ae","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":1,"kitchenLines":3,"freeKitchenLines":0,"tillLines":5,"barLines":2},"notWrittenSteps":0,"depositKept":"chat_claim","msg":"ai fill approved"}
+{"level":"info","time":"2026-11-16T18:12:06.558Z","service":"oto-app","env":"local","eventId":"e43bded9-67fd-4f0a-b05c-918b283981c9","written":{"event":true,"kitchenLines":1,"freeKitchenLines":0,"tillLines":1,"adultsLinesFolded":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-16T18:12:06.582Z","service":"oto-app","env":"local","eventId":"4ed09a6a-356f-49f8-b855-50cddea58b6e","written":{"event":true,"kitchenLines":2,"freeKitchenLines":0,"tillLines":2},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-16T18:12:06.609Z","service":"oto-app","env":"local","eventId":"032d008e-3933-4eae-9aef-c14b3baa73ae","written":{"kitchenLines":1,"freeKitchenLines":0,"tillLines":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-16T18:12:06.646Z","service":"oto-app","env":"local","eventId":"032d008e-3933-4eae-9aef-c14b3baa73ae","written":{"otherLines":1,"event":true},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{
+  "results": {
+    "theReadIsHandedTheTillsFoodAndDrink": true,
+    "aCodeIsTheTillsOnlyWhenTheTillHasIt": true,
+    "theReviewShowsTheTillsItemCodeAndPrice": true,
+    "approvalWritesTheCodeAsTheLinesOwnProductCode": true,
+    "theTillsMarksReadTheLinesTheFillWrites": true,
+    "aTillThatCannotBeReadLeavesTheFillAsItWas": true,
+    "aCodeTheTillLacksIsRefused": true,
+    "theGuardsHoldWithTheTillsMenu": true,
+    "aCodedMirrorOfTheKidsDishStaysAMirror": true,
+    "staleReviewCannotOverwriteManualKitchenAndFreshReviewRetainsIt": true,
+    "unknownEntertainmentIsAnUnresolvedRequestNotAFreeShow": true,
+    "staleReviewProtectsConcurrentManualSpecialRequests": true,
+    "parentMenuShowsSavedCustomItemPricesWithoutInternalCostsOrCatalogueReplacement": true,
+    "billingCallbackUpdatesBothMirrorsAndPreservesMetadataWhenSourcesChange": true,
+    "pendingBillingStaysDurableWhenItsSourceIsRemoved": true
+  },
+  "failures": {}
+}
+{"level":"info","time":"2026-11-16T18:12:11.050Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":193,"answerChars":442,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"8ff4f163-03ee-4d60-900b-b493a616d24d","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-16T18:12:11.127Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":163,"answerChars":450,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"b69c77d5-00d6-4502-8fcd-f3ab80dccc63","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-16T18:12:11.174Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":165,"answerChars":453,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"2baca719-2d7d-4131-8052-15d4c15f44d6","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-16T18:12:11.209Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":117,"answerChars":21,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"4fdbf999-bebe-45b3-b066-f74af35adcb9","team":{"named":0,"matched":0},"msg":"ai fill run"}
+(node:108336) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated 
+and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+{"level":"info","time":"2026-11-16T18:12:11.334Z","service":"oto-app","env":"local","eventId":"8ff4f163-03ee-4d60-900b-b493a616d24d","written":{"event":true,"eventDate":true,"package":true,"addOns":1,"setMenu":true,"choices":1,"kitchenLines":2,"freeKitchenLines":1,"tillLines":1,"cake":true,"entertainment":2,"entertainmentActs":2,"setup":true,"setupTasks":0,"pos":true,"posItems":0,"timelineLines":1},"notWrittenSteps":0,"depositKept":"chat_claim","msg":"ai fill approved"}
+{"level":"info","time":"2026-11-16T18:12:11.375Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":193,"answerChars":442,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"8ff4f163-03ee-4d60-900b-b493a616d24d","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-16T18:12:11.418Z","service":"oto-app","env":"local","eventId":"8ff4f163-03ee-4d60-900b-b493a616d24d","written":{"otherLines":1,"event":true,"eventDate":true,"package":true,"addOns":1,"setMenu":true,"choices":1,"kitchenLines":2,"freeKitchenLines":1,"tillLines":1,"cake":true,"entertainment":2,"setup":true,"setupTasks":0,"pos":true,"posItems":0,"timelineLines":0},"notWrittenSteps":0,"depositKept":"chat_claim","msg":"ai fill approved"}
+{"level":"info","time":"2026-11-16T18:12:11.444Z","service":"oto-app","env":"local","eventId":"8ff4f163-03ee-4d60-900b-b493a616d24d","written":{"otherLines":1,"event":true,"eventDate":true,"package":true,"addOns":1,"setMenu":true,"choices":1,"kitchenLines":2,"freeKitchenLines":1,"tillLines":1,"cake":true,"entertainment":2,"setup":true,"setupTasks":0,"pos":true,"posItems":0,"timelineLines":0},"notWrittenSteps":0,"depositKept":"chat_claim","msg":"ai fill approved"}
+{"level":"info","time":"2026-11-16T18:12:11.516Z","service":"oto-app","env":"local","eventId":"b69c77d5-00d6-4502-8fcd-f3ab80dccc63","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":1,"kitchenLines":1,"freeKitchenLines":0,"tillLines":1,"cake":true,"entertainment":1,"entertainmentActs":1,"setup":true,"setupTasks":0,"pos":true,"posItems":0,"timelineLines":1},"notWrittenSteps":0,"depositKept":"chat_claim","msg":"ai fill approved"}
+{"level":"info","time":"2026-11-16T18:12:11.545Z","service":"oto-app","env":"local","eventId":"100fbeb2-f32d-417b-9670-24245ad80417","written":{"event":true,"timelineLines":0},"notWrittenSteps":2,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-16T18:12:11.564Z","service":"oto-app","env":"local","eventId":"100fbeb2-f32d-417b-9670-24245ad80417","written":{"event":true,"timelineLines":2},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-16T18:12:11.573Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":165,"answerChars":453,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"186c5e51-aeac-40aa-bfb3-b02e1908fac6","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-16T18:12:11.624Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":165,"answerChars":453,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"e63b2c3a-e5f8-41a8-aa2c-917294f79db6","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-16T18:12:11.642Z","service":"oto-app","env":"local","eventId":"e63b2c3a-e5f8-41a8-aa2c-917294f79db6","written":{"otherLines":3,"event":true,"kitchenLines":2,"freeKitchenLines":2,"cake":true,"setup":true,"setupTasks":0,"pos":true,"posItems":0,"timelineLines":1},"notWrittenSteps":0,"depositKept":"chat_claim","msg":"ai fill approved"}
+{"level":"info","time":"2026-11-16T18:12:11.654Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":165,"answerChars":1926,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"d65c01f4-556b-43b6-8e6f-cff7ebc89d42","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-16T18:12:11.673Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":139,"answerChars":206,"outcome":"filled","issues":[],"source":"pasted","purpose":"fill","eventId":"a5792705-3906-49c4-9736-f44300502600","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-16T18:12:11.698Z","service":"oto-app","env":"local","eventId":"a5792705-3906-49c4-9736-f44300502600","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":1,"kitchenLines":0,"freeKitchenLines":0,"entertainment":1,"entertainmentActs":1},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-16T18:12:11.705Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":139,"answerChars":206,"outcome":"filled","issues":[],"source":"pasted","purpose":"fill","eventId":"e63b2c3a-e5f8-41a8-aa2c-917294f79db6","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-16T18:12:11.713Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":139,"answerChars":206,"outcome":"filled","issues":[],"source":"pasted","purpose":"fill","eventId":null,"team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-16T18:12:11.731Z","service":"oto-app","env":"local","eventId":"4fdbf999-bebe-45b3-b066-f74af35adcb9","written":{"kitchenLines":0,"freeKitchenLines":0,"cake":true},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-16T18:12:11.758Z","service":"oto-app","env":"local","eventId":"4fdbf999-bebe-45b3-b066-f74af35adcb9","written":{"kitchenLines":0,"freeKitchenLines":0,"cake":true},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-16T18:12:11.770Z","service":"oto-app","env":"local","eventId":"4fdbf999-bebe-45b3-b066-f74af35adcb9","written":{"kitchenLines":0,"freeKitchenLines":0,"cake":true},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-16T18:12:11.781Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":98,"answerChars":106,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"7cb7ac6b-835d-4c04-ab4c-bff3c80e0c06","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-16T18:12:11.801Z","service":"oto-app","env":"local","eventId":"7cb7ac6b-835d-4c04-ab4c-bff3c80e0c06","written":{"event":true,"package":true,"addOns":0,"setMenu":true,"choices":2,"kitchenLines":0,"freeKitchenLines":0},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-16T18:12:11.811Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":165,"answerChars":453,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"8995a701-58e0-405f-8274-5f02287c8f66","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-16T18:12:11.833Z","service":"oto-app","env":"local","eventId":"8995a701-58e0-405f-8274-5f02287c8f66","written":{"setMenu":true,"choices":0,"parentChoicesKept":3,"kitchenLines":0,"freeKitchenLines":0},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-16T18:12:11.844Z","service":"oto-app","env":"local","eventId":"8995a701-58e0-405f-8274-5f02287c8f66","written":{"setMenu":true,"choices":1,"parentChoicesKept":2,"kitchenLines":0,"freeKitchenLines":0},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-16T18:12:11.857Z","service":"oto-app","env":"local","eventId":"8995a701-58e0-405f-8274-5f02287c8f66","written":{"setMenu":true,"choices":0,"selectionReset":true,"kitchenLines":0,"freeKitchenLines":0},"notWrittenSteps":0,"depositKept":null,"msg":"ai fill approved"}
+{"level":"info","time":"2026-11-16T18:12:11.864Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":300,"answerChars":619,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"b1d6fa20-2e21-4c08-b831-1a5cac71e0df","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-16T18:12:11.883Z","service":"oto-app","env":"local","eventId":"b1d6fa20-2e21-4c08-b831-1a5cac71e0df","written":{"event":true,"setMenu":true,"choices":1,"kitchenLines":0,"freeKitchenLines":0,"entertainment":1,"entertainmentActs":1},"notWrittenSteps":0,"depositKept":"chat_claim","msg":"ai fill approved"}
+{"level":"info","time":"2026-11-16T18:12:11.906Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":300,"answerChars":619,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"9e143ba9-067c-4eff-80e0-92809d059d18","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-16T18:12:11.930Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":165,"answerChars":453,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"b966aa36-2e36-47f6-87fd-20d5ade5c7e7","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"info","time":"2026-11-16T18:12:11.943Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":165,"answerChars":453,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"b966aa36-2e36-47f6-87fd-20d5ade5c7e7","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"warn","time":"2026-11-16T18:12:11.953Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":536,"answerChars":42,"outcome":"unreadable","issues":["not JSON"],"attempts":2,"eventId":"b966aa36-2e36-47f6-87fd-20d5ade5c7e7","msg":"the conversation's catalogue read did not fill"}
+{"level":"info","time":"2026-11-16T18:12:11.953Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":165,"answerChars":453,"outcome":"filled","issues":[],"source":"inbox","purpose":"fill","eventId":"b966aa36-2e36-47f6-87fd-20d5ade5c7e7","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{"level":"warn","time":"2026-11-16T18:12:11.961Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":300,"answerChars":42,"outcome":"unreadable","issues":["not JSON"],"attempts":2,"eventId":"b1d6fa20-2e21-4c08-b831-1a5cac71e0df","msg":"the conversation's catalogue read did not fill"}
+{"level":"info","time":"2026-11-16T18:12:11.961Z","service":"oto-app","env":"local","helper":"beo_parsing","model":"claude-opus-5","adviceFrom":"built_in","outputFormatFrom":"built_in","modelFrom":"built_in","requiredFields":"appended","inputChars":300,"answerChars":42,"outcome":"unreadable","issues":["not JSON"],"attempts":2,"source":"inbox","purpose":"fill","eventId":"b1d6fa20-2e21-4c08-b831-1a5cac71e0df","team":{"named":0,"matched":0},"msg":"ai fill run"}
+{
+  "results": {
+    "conversationAndCatalogueReachTheModel": true,
+    "idsMatchAndSourcesAreTheLines": true,
+    "unknownIdsBecomeFreeLines": true,
+    "nothingWrittenBeforeApproval": true,
+    "reviewRendersSourcesMatchesPricesAndTheDate": true,
+    "approvalWritesTheBeo": true,
+    "theRestIsWrittenInTheSamePass": true,
+    "reviewerEditsAreWhatIsWritten": true,
+    "stepsWithNoStartTimeAreAnswered": true,
+    "noBirthdayTitleForACampOrCorporateEvent": true,
+    "approvalRefusesWhatTheCatalogueLacks": true,
+    "emptyCatalogueReadsTheConversationNoTranscriptAsBefore": true,
+    "pastedTextMatchesTheCatalogue": true,
+    "aCakeWithNoOwnerKeepsTheBeosCakeType": true,
+    "theLaterLineWinsForEveryList": true,
+    "sourcesAreTheLinesNeverTheModel": true,
+    "aGroupOfSeveralChoicesKeepsThemAll": true,
+    "theParentLinksChoicesAreKeptOrReset": true,
+    "noRulingReadsTheConversationAlone": true,
+    "theChatsWordsForEveryValue": true,
+    "theConversationReadIsAskedOnceMore": true,
+    "transcriptAndResolverUnits": true
+  },
+  "failures": {}
+}
+2026-11-17 01:12:12.495 +07 [118016] LOG:  checkpoint starting: immediate force wait
+
+2026-11-17 01:12:12.513 +07 [118016] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 2 recycled; write=0.003 s, sync=0.003 s, total=0.019 s; sync files=7, longest=0.001 s, average=0.001 s; distance=27610 kB, estimate=27610 kB; lsn=0/306EB58, redo lsn=0/306EB20
+

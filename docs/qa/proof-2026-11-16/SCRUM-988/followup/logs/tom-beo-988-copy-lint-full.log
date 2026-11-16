@@ -1,0 +1,6 @@
+
+C:\oto-lanes\tom-beo-approved-20261116\apps\oto-app\client\src\components\beo\beo-ai-review.tsx
+  1161:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+✖ 1 problem (0 errors, 1 warning)
+
