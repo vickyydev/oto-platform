@@ -1,0 +1,266 @@
+{
+  "version": 1,
+  "ticket": "SCRUM-988",
+  "sourceSha": "0bc4be94abdbf982c3a06146062e96f0bb7b28fb",
+  "verifiedServices": [
+    {
+      "name": "oto-app-staging",
+      "deployId": "dep-dbtkmkuc6qcc73c0pvl0",
+      "sha": "0bc4be94abdbf982c3a06146062e96f0bb7b28fb"
+    },
+    {
+      "name": "oto-api-staging",
+      "deployId": "dep-dbtkmljl550s73disbng",
+      "sha": "0bc4be94abdbf982c3a06146062e96f0bb7b28fb"
+    }
+  ],
+  "fixture": {
+    "eventId": "59358f42-0407-4d51-b545-d33a4c84a8d7",
+    "conversationId": "01a1e566-8ba5-746b-b42a-3013e0114ca9",
+    "productIds": [
+      "01a0bbdc-8c41-7b40-bebf-091b155eb276",
+      "01a0bbdc-8c41-78e7-9922-06680407ef19"
+    ],
+    "selectionId": "23e3b443-dbf8-442e-8b80-9652599a3372"
+  },
+  "nativeProof": {
+    "path": "docs/qa/jira-comments/attachments/SCRUM-988/988-final-derived-review-ui-only.png",
+    "inspected": true,
+    "kind": "Actual finalLIVE app rendering with intercepted reconstructed extraction-derived fixture, UI only",
+    "facts": [
+      "Unknown-show name/time derived from saved reviewed fields; payment999 is a crafted D1 control.",
+      "Unresolved request choice and Requested time15:00 visible; no Act scheduling promise.",
+      "Claimed payment amount/date read-only; Received control absent."
+    ],
+    "limits": [
+      "Native review is a reconstructed extraction-derived UI-only fixture, not an original raw response replay or extraction rerun.",
+      "Actual live API approval is fresh/minimal with current expectedState and no old menu/quantity body."
+    ]
+  },
+  "liveApiProof": {
+    "stage": "live_minimal_approval",
+    "at": "2026-11-16T18:47:55.954Z",
+    "httpStatus": 200,
+    "depositReason": "chat_claim",
+    "paidClaimSatang": 99900,
+    "receivedDepositSatang": 100,
+    "requestedTime": "15:00",
+    "notesPreserved": true,
+    "existingRequestsPreserved": true,
+    "menuLinesSubmitted": 0,
+    "quantity": 4,
+    "staleReplayStatus": 409
+  },
+  "appReceiptBefore": {
+    "stage": "app_before",
+    "at": "2026-11-16T18:47:48.302Z",
+    "eventId": "59358f42-0407-4d51-b545-d33a4c84a8d7",
+    "receiptHash": "eded2628cfa5e99159e8c0ee340e12a942e0a3862dda884dbdb985795d1c1f61",
+    "depositSatang": 100,
+    "kitchenQuantity": 4,
+    "unitSatang": 1001,
+    "knownShowRows": 0,
+    "actRows": 0,
+    "currentStateVersion": "1fbe28b939fda4eeb1e3d865a1cf24ca3b00f5c58bed98d7f99ef74b350b15d5",
+    "sourceLineCount": 11,
+    "stateAlgorithmSource": "apps/oto-app/server/lib/beoReviewState.ts",
+    "mappingSha256": "b1a3d10daa0c02fdb90839755407e05802d908fe05206c7100ef766a579db7f9"
+  },
+  "appReceiptAfter": {
+    "stage": "app_after",
+    "at": "2026-11-16T18:49:11.814Z",
+    "eventId": "59358f42-0407-4d51-b545-d33a4c84a8d7",
+    "receiptHash": "eded2628cfa5e99159e8c0ee340e12a942e0a3862dda884dbdb985795d1c1f61",
+    "depositSatang": 100,
+    "kitchenQuantity": 4,
+    "unitSatang": 1001,
+    "knownShowRows": 0,
+    "actRows": 0,
+    "currentStateVersion": "dd0203bc3ebb7600716f4dcd2a64dfd910094837caa3e2fb62643ab23e56c1d6",
+    "sourceLineCount": 11,
+    "stateAlgorithmSource": "apps/oto-app/server/lib/beoReviewState.ts",
+    "mappingSha256": "b1a3d10daa0c02fdb90839755407e05802d908fe05206c7100ef766a579db7f9"
+  },
+  "moneyAfterApproval": {
+    "stage": "money_after_approval",
+    "at": "2026-11-16T18:49:23.350Z",
+    "eventId": "59358f42-0407-4d51-b545-d33a4c84a8d7",
+    "mainReceipt": "Q6EDB0-000001",
+    "fingerprint": "15eb8986d4087797dd79f4f1d702bb816ffb588cec848e29ce9ebfddc6b426bf",
+    "originalUnchanged": true,
+    "bills": [
+      {
+        "id": "59358f42-0407-7176-a5c9-60a0a5a19578",
+        "totalSatang": 1001,
+        "paidSatang": 1001
+      },
+      {
+        "id": "59358f42-0407-71bd-b495-fc998d76bfc0",
+        "totalSatang": 1001,
+        "paidSatang": 1001
+      }
+    ],
+    "gatewayReceiptCount": 5,
+    "totalReceivedSatang": 1694205
+  },
+  "moneyAfterCleanup": {
+    "stage": "money_after_cleanup",
+    "at": "2026-11-16T18:50:41.582Z",
+    "eventId": "59358f42-0407-4d51-b545-d33a4c84a8d7",
+    "mainReceipt": "Q6EDB0-000001",
+    "fingerprint": "15eb8986d4087797dd79f4f1d702bb816ffb588cec848e29ce9ebfddc6b426bf",
+    "originalUnchanged": true,
+    "bills": [
+      {
+        "id": "59358f42-0407-7176-a5c9-60a0a5a19578",
+        "totalSatang": 1001,
+        "paidSatang": 1001
+      },
+      {
+        "id": "59358f42-0407-71bd-b495-fc998d76bfc0",
+        "totalSatang": 1001,
+        "paidSatang": 1001
+      }
+    ],
+    "gatewayReceiptCount": 5,
+    "totalReceivedSatang": 1694205
+  },
+  "cleanup": {
+    "sourceSha": "0bc4be94abdbf982c3a06146062e96f0bb7b28fb",
+    "jobId": "job-dbtl1jbl550s73djpcd0",
+    "eventId": "59358f42-0407-4d51-b545-d33a4c84a8d7",
+    "partyArchived": true,
+    "conversationId": "01a1e566-8ba5-746b-b42a-3013e0114ca9",
+    "conversationArchived": true,
+    "archiveActorId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+    "queuedMessages": 0,
+    "productIds": [
+      "01a0bbdc-8c41-78e7-9922-06680407ef19",
+      "01a0bbdc-8c41-7b40-bebf-091b155eb276"
+    ],
+    "activeProducts": 0,
+    "retainedInactiveProducts": 2,
+    "parentSelectionId": "23e3b443-dbf8-442e-8b80-9652599a3372",
+    "parentSelectionRetained": true,
+    "usedSharedLinkInvalidated": true,
+    "newOwnSessionId": "01a1e5af-d925-7bcb-9f6a-ea1d33fb04e3",
+    "newOwnActiveSessions": 0,
+    "pendingOwnDeviceWork": {
+      "prints": 0,
+      "outbox": 0,
+      "commands": 0
+    },
+    "financialRowsRetained": true
+  },
+  "sessionRetirement": {
+    "stage": "own_sessions_retired",
+    "at": "2026-11-16T18:50:29.874Z",
+    "platformSessionId": "01a1e5af-d925-7bcb-9f6a-ea1d33fb04e3",
+    "appOldCookieStatus": 401,
+    "platformOldCookieStatus": 401
+  },
+  "modelCalls": 0,
+  "paymentCalls": 0,
+  "helperFailures": [
+    {
+      "jobId": "job-dbtkqduk1f9s73d0smqg",
+      "beforeAnySessionOrWrite": true,
+      "note": "App-service helper failed; original working-directory assumption, no product result."
+    },
+    {
+      "jobId": "job-dbtksjp5efls73ff0sbg",
+      "beforeAnySessionOrWrite": true,
+      "cause": "ERR_MODULE_NOT_FOUND: Cannot find package 'tsx'; production app image omits dev dependencies."
+    }
+  ],
+  "sourceEquivalentStateRead": {
+    "actualLockedApiGuardAccepted": true,
+    "algorithmSource": "apps/oto-app/server/lib/beoReviewState.ts",
+    "tables": [
+      "core_events",
+      "beo_kitchen_plans",
+      "beo_bar_plans",
+      "beo_package_snapshots",
+      "beo_entertainment_selections",
+      "beo_set_menu_selections"
+    ],
+    "columns": 128,
+    "method": "Actual app schema metadata/camel keys, exact timestamp conversion validated locally, same protected-event exclusions and stable full-row/order hash; no guard bypass."
+  },
+  "localEvidence": [
+    {
+      "path": "work-beo-988-retest-20261116184734/receipt.json",
+      "sha256": "8cfa48d654c3c836775a511082a86afea892cc933122ba61adaf8727540a36fc",
+      "bytes": 8005
+    },
+    {
+      "path": "work-beo-988-retest-20261116184734/cleanup-census.json",
+      "sha256": "3dbb37725ed3eb6467ae93387c4158ecefec2205fddb7182714e451e84e10c44",
+      "bytes": 863
+    },
+    {
+      "path": "work-beo-988-retest.mjs",
+      "sha256": "7a0973869aba0aac3ab8584e7ae9d269b7fb59a506a8bbb61fa12de832d59468",
+      "bytes": 23247
+    },
+    {
+      "path": "work-beo-988-state-map.mts",
+      "sha256": "5ee3319e2819f04be925f88b417b7d48739570e1939b6b2fc47be935e8e2cd87",
+      "bytes": 1348
+    },
+    {
+      "path": "work-beo-988-state-map.json",
+      "sha256": "db15e49124d081af267a967f0e9351c65c6f2cf08f3efbdbf3c7621342c7be88",
+      "bytes": 22986
+    },
+    {
+      "path": "work-beo-988-cleanup-census.mjs",
+      "sha256": "277bdbbdd8d8bbbcd09756bcda0bc0aa371ac7ee4eda7b4dfc7bd811c47a3c7f",
+      "bytes": 5455
+    },
+    {
+      "path": "apps/oto-app/server/lib/beoReviewState.ts",
+      "sha256": "c0300fcf12479d1d92cff6f580856454b81d6f1695ea5eaee331923a69c873fb",
+      "bytes": 3773
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-988-live-retest.log",
+      "sha256": "37543b539c36a0e877c83fca203b9ac5556c85d4905e8457d52ea194eb191408",
+      "bytes": 1956
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-988-live-retest-recovery.log",
+      "sha256": "cb33d5214a503d44d9fa5fd1b07316e6fadb97feabcaac1f6e004896c6a2e565",
+      "bytes": 1340
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-988-live-retest-api-recovery.log",
+      "sha256": "ca266fe4bb6ea8b08f6eaf2ee15e6100f25dfbc1027d08de7f079493f97088d1",
+      "bytes": 8716
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-988-cleanup-census.log",
+      "sha256": "d2245d1d561ed6ab5467af4e5febbb31071626f8f0e006a35602b8e11925aba5",
+      "bytes": 1650
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-988-state-map.log",
+      "sha256": "d11a6ce2f41ea08cfffe89ce60c3a424fed5a2095b4cccf2fa9c657eafb55312",
+      "bytes": 3032
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-988/988-final-derived-review-ui-only.png",
+      "sha256": "e56b3a17a476442534f1a9c7fa52c88415b89c35ce78a8e2781e6aa889a0e582",
+      "bytes": 94175,
+      "inspected": true
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-988/988-final-live-api-cleanup-card.png",
+      "sha256": "07a2fec88485b1e93b7884b56dc9710c5c9377410bb21cac34693aa9d2cb338d",
+      "bytes": 118288,
+      "inspected": true
+    }
+  ]
+}
