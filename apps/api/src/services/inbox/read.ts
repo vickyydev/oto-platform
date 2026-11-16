@@ -3,6 +3,7 @@ import { schema as s, type Db, type InboxCategory, type InboxTeamKey } from '@ot
 import {
   INBOX_DAY_TIMEZONE,
   isUnanswered,
+  inboxNextAction,
   isoDateInTz,
   newId,
   normalizePhone,
@@ -28,6 +29,7 @@ import { handoverNoticesOf } from './handover-notice';
 import { openQuestionsOf } from './open-question';
 import { generalPoolSql } from './placement';
 import { testLinesOf } from './test-line';
+import { nextActionColumns } from './next-action';
 import {
   INBOX_READ,
   activeAssignmentsOf,
@@ -191,6 +193,7 @@ function selectRows(db: Db | Tx, viewer: InboxViewer) {
   return db
     .select({
       ...rowColumns,
+      ...nextActionColumns,
       unread: unreadSql(viewer),
       mine: sql<boolean>`${heldByViewerSql(viewer)}`,
     })
@@ -282,6 +285,8 @@ function toRow(r: RawRow, assignments: InboxConversationRow['assignments']): Inb
     lastMessageAt: iso(r.lastMessageAt),
     lastMessagePreview: r.lastMessagePreview,
     unanswered: isUnanswered(r),
+    nextAction: inboxNextAction({ status: r.status, aiMode: r.nextActionAiMode,
+      pendingAi: Boolean(r.nextActionPendingAi), aiHeld: Boolean(r.nextActionHeld), outbound: r.nextActionOutbound }),
     unread: Number(r.unread),
     mine: Boolean(r.mine),
     assignments,

@@ -128,10 +128,11 @@ describe('the dark palette on the key surfaces', () => {
         onMore: noop,
       }),
     );
-    expect(html).toContain('dark:bg-slate-950/60'); // the selected row's ground
+    expect(html).toContain('dark:bg-emerald-950'); // selection stays distinct from unread
     expect(html).toContain('dark:text-slate-100'); // the contact's name
     expect(html).toContain('dark:ring-slate-700'); // search and pills
-    expect(html).toContain('dark:bg-rose-500/15'); // the unanswered chip, readable rose
+    expect(html).toContain('dark:bg-amber-950'); // staff-needed label uses the accessible OTO palette
+    expect(html).toContain('dark:text-amber-100');
   });
 
   it('the bubbles: customer white to slate-800, staff tuned, AI indigo tuned, shadow dashed indigo', () => {

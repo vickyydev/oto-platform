@@ -7,6 +7,7 @@ import { PendingControl } from '@/components/writes';
 import { NEW_CONTACT_LABEL } from '@/lib/contacts';
 import { sourceLabel, type SourceOption } from '@/lib/inboxes';
 import { activeFilterCount, filterPills, type Filters } from '@/lib/query';
+import { conversationRowColour, NEXT_ACTION_COLOURS, NEXT_ACTION_LABELS } from '@/lib/list-state';
 import { TAB_ICON } from '@/components/Rail';
 import {
   ARCHIVE_RANGES,
@@ -330,11 +331,13 @@ function Row({
   const pendingWrites = writeMode(me) === 'disabled';
   const handleHere = canHandle(c, me);
   const teamName = me.teams.find((t) => t.id === c.teamId)?.name ?? null;
+  const nextAction = c.nextAction ?? (c.status === 'handled' ? 'handled' : c.unanswered ? 'staff_reply_needed' : 'waiting_customer');
   return (
     <div
       role="button"
       tabIndex={0}
       aria-current={selected ? 'true' : undefined}
+      aria-label={`${name}${c.unread > 0 ? `, ${c.unread} unread for you` : ''}, ${NEXT_ACTION_LABELS[nextAction]}`}
       onClick={() => onSelect(c.id)}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -342,9 +345,7 @@ function Row({
           onSelect(c.id);
         }
       }}
-      className={`group relative block w-full cursor-pointer border-b border-slate-100 dark:border-slate-800 px-4 py-3 text-left transition ${
-        selected ? 'bg-slate-50 dark:bg-slate-950/60' : 'hover:bg-slate-50/60 dark:hover:bg-slate-800/60'
-      }`}
+      className={`group relative block w-full cursor-pointer border-b border-slate-100 dark:border-slate-800 px-4 py-3 text-left transition focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-emerald-700 dark:focus-visible:outline-emerald-300 ${conversationRowColour(selected, c.unread)}`}
     >
       <div className="flex items-start gap-3">
         <div className="relative">
@@ -356,9 +357,9 @@ function Row({
             <div className="min-w-0 truncate text-[13px] font-semibold text-slate-900 dark:text-slate-100">
               {name}
               {/* The number it came in on (SCRUM-220 playbook), not the bare channel. */}
-              <span className="font-normal text-slate-400"> · {sourceLabel(c.channel, c.channelAccountName)}</span>
+              <span className="font-normal text-slate-600 dark:text-slate-300"> · {sourceLabel(c.channel, c.channelAccountName)}</span>
             </div>
-            <div className="shrink-0 text-[11px] text-slate-400">{listTime(c.lastMessageAt, now)}</div>
+            <div className="shrink-0 text-[11px] text-slate-600 dark:text-slate-300">{listTime(c.lastMessageAt, now)}</div>
           </div>
           <div className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
             {c.intent && (
@@ -377,13 +378,13 @@ function Row({
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
             <CategoryBadge category={c.category} title={categoryTitle(c.category, teamName)} />
             <StatusBadge status={c.status} />
-            {c.unanswered && (
-              <span className="inline-flex items-center rounded-full bg-rose-50 dark:bg-rose-500/15 px-2 py-0.5 text-[11px] font-medium text-rose-700 dark:text-rose-300 ring-1 ring-rose-200 dark:ring-rose-500/30">
-                Unanswered
+            {nextAction !== 'handled' && (
+              <span data-next-action={nextAction} className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ${NEXT_ACTION_COLOURS[nextAction]}`}>
+                {NEXT_ACTION_LABELS[nextAction]}
               </span>
             )}
-            {c.unread > 0 && c.status !== 'handled' && (
-              <span className="ml-auto inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-emerald-500 px-1 text-[11px] font-semibold text-white">
+            {c.unread > 0 && (
+              <span aria-label={`${c.unread} unread messages for you`} className="ml-auto inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-indigo-700 px-1 text-[11px] font-semibold text-white dark:bg-indigo-300 dark:text-indigo-950">
                 {c.unread}
               </span>
             )}

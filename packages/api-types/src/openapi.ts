@@ -36397,6 +36397,8 @@ export interface paths {
                                 lastMessageAt: string | null;
                                 lastMessagePreview: string | null;
                                 unanswered: boolean;
+                                /** @enum {string} */
+                                nextAction?: "staff_reply_needed" | "ai_replying" | "ai_previewing" | "ai_sent" | "waiting_customer" | "shadow_preview" | "handled";
                                 unread: number;
                                 mine: boolean;
                                 assignments: {
@@ -36498,6 +36500,8 @@ export interface paths {
                             lastMessageAt: string | null;
                             lastMessagePreview: string | null;
                             unanswered: boolean;
+                            /** @enum {string} */
+                            nextAction?: "staff_reply_needed" | "ai_replying" | "ai_previewing" | "ai_sent" | "waiting_customer" | "shadow_preview" | "handled";
                             unread: number;
                             mine: boolean;
                             assignments: {

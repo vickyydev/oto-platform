@@ -344,6 +344,32 @@ export const InboxContactSchema = z.object({
   erased: z.boolean(),
 });
 
+export const INBOX_NEXT_ACTIONS = ['staff_reply_needed', 'ai_replying', 'ai_previewing', 'ai_sent', 'waiting_customer', 'shadow_preview', 'handled'] as const;
+export type InboxNextAction = (typeof INBOX_NEXT_ACTIONS)[number];
+
+/** SCRUM-992: delivery truth is separate from both a person's unread count and AI eligibility. */
+export function inboxNextAction(facts: {
+  status: InboxStatusKey;
+  aiMode: 'off' | 'shadow' | 'live';
+  pendingAi: boolean;
+  aiHeld: boolean;
+  /** Latest outbound after the latest customer message or routing; never its body. */
+  outbound: { authorKind: string; providerStatus: string | null } | null;
+}): InboxNextAction {
+  if (facts.status === 'handled') return 'handled';
+  const message = facts.outbound;
+  const sent = ['sent', 'delivered', 'read'].includes(message?.providerStatus ?? '');
+  // A person's newer action outranks a turn that has not yet been cancelled.
+  if (message?.authorKind === 'staff') return sent ? 'waiting_customer' : 'staff_reply_needed';
+  if (facts.pendingAi && !facts.aiHeld && facts.aiMode === 'live') return 'ai_replying';
+  if (facts.pendingAi && !facts.aiHeld && facts.aiMode === 'shadow') return 'ai_previewing';
+  if (!message) return 'staff_reply_needed';
+  if (message.authorKind === 'ai' && message.providerStatus === 'shadow') return 'shadow_preview';
+  if (message.authorKind === 'ai' && message.providerStatus === 'queued') return facts.aiHeld ? 'staff_reply_needed' : 'ai_replying';
+  if (!sent) return 'staff_reply_needed';
+  return message.authorKind === 'ai' ? 'ai_sent' : 'waiting_customer';
+}
+
 export const InboxConversationRowSchema = z.object({
   id: Uuid,
   channel: InboxChannelSchema,
@@ -369,6 +395,8 @@ export const InboxConversationRowSchema = z.object({
   lastMessageAt: Iso.nullable(),
   lastMessagePreview: z.string().nullable(),
   unanswered: z.boolean(),
+  /** The next action, confirmed from current delivery/turn facts; independent of unread. */
+  nextAction: z.enum(INBOX_NEXT_ACTIONS).optional(),
   /** Customer messages after the viewer's last read one (`participant`). */
   unread: z.number().int().min(0),
   /** The viewer holds a slot on it — My Inbox. */

@@ -94157,6 +94157,18 @@
                           "unanswered": {
                             "type": "boolean"
                           },
+                          "nextAction": {
+                            "type": "string",
+                            "enum": [
+                              "staff_reply_needed",
+                              "ai_replying",
+                              "ai_previewing",
+                              "ai_sent",
+                              "waiting_customer",
+                              "shadow_preview",
+                              "handled"
+                            ]
+                          },
                           "unread": {
                             "type": "integer",
                             "minimum": 0
@@ -94453,6 +94465,18 @@
                     },
                     "unanswered": {
                       "type": "boolean"
+                    },
+                    "nextAction": {
+                      "type": "string",
+                      "enum": [
+                        "staff_reply_needed",
+                        "ai_replying",
+                        "ai_previewing",
+                        "ai_sent",
+                        "waiting_customer",
+                        "shadow_preview",
+                        "handled"
+                      ]
                     },
                     "unread": {
                       "type": "integer",
