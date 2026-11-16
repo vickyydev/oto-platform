@@ -1,0 +1,6 @@
+
+C:\oto-lanes\tom-deposit-gate-20261116\apps\oto-app\tests\directory-inbox-event.check.ts
+  66:88  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+✖ 1 problem (0 errors, 1 warning)
+

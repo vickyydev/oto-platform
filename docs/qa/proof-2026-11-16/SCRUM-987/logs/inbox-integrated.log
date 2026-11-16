@@ -1,0 +1,42 @@
+
+> @oto/inbox@0.1.0 test C:\oto-lanes\tom-deposit-gate-20261116\apps\inbox
+> vitest run
+
+
+ RUN  v3.2.7 C:/oto-lanes/tom-deposit-gate-20261116/apps/inbox
+
+ ✓ test/test-line-refresh-908.test.ts (3 tests) 6ms
+ ✓ test/handoff-target.test.ts (10 tests) 7ms
+ ✓ test/handover-notice.test.ts (7 tests) 38ms
+ ✓ test/party-deposit-825.test.ts (4 tests) 9ms
+ ✓ test/impersonation-banner.test.ts (4 tests) 15ms
+ ✓ test/view.test.ts (58 tests) 52ms
+ ✓ test/test-line-908.test.ts (4 tests) 15ms
+ ✓ test/contacts-860.test.ts (11 tests) 27ms
+ ✓ test/voice-transcript.test.ts (13 tests) 93ms
+ ✓ test/teach-ui.test.ts (12 tests) 50ms
+ ✓ test/assistant.test.ts (32 tests) 73ms
+ ✓ test/url.test.ts (24 tests) 11ms
+ ✓ test/book-date-814.test.ts (17 tests) 84ms
+ ✓ test/theme.test.ts (12 tests) 43ms
+ ✓ test/book-date-821.test.ts (19 tests) 123ms
+ ✓ test/book-date-947.test.ts (61 tests) 194ms
+ ✓ test/dark-theme.test.ts (7 tests) 74ms
+ ✓ test/ui-round.test.ts (14 tests) 101ms
+ ✓ test/open-question.test.ts (4 tests) 125ms
+ ✓ test/list-state-992.test.ts (12 tests) 136ms
+ ✓ test/playbook-ui.test.ts (21 tests) 216ms
+ ✓ test/book-date.test.ts (25 tests) 194ms
+ ✓ test/testnight.test.ts (26 tests) 393ms
+ ✓ test/dictation.test.ts (12 tests) 260ms
+ ✓ test/simulator-record.test.ts (7 tests) 281ms
+ ✓ test/composer-837.test.ts (11 tests) 274ms
+ ✓ test/prebooking-987.test.ts (3 tests) 91ms
+ ✓ test/book-date-826.test.ts (13 tests) 184ms
+ ✓ test/book-date-955.test.ts (22 tests) 203ms
+
+ Test Files  29 passed (29)
+      Tests  468 passed (468)
+   Start at  23:09:24
+   Duration  5.33s (transform 6.31s, setup 0ms, collect 42.25s, tests 3.37s, environment 14.43s, prepare 14.95s)
+

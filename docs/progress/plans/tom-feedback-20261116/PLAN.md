@@ -7,7 +7,7 @@ The owner reviewed the interactive decision board and pasted the answers into ch
 | Unit | Jira | Approved outcome | Current state |
 | --- | --- | --- | --- |
 | CI payment race | SCRUM-986 | An unsent payment choice survives completion of the same new sale write; recorded money remains authoritative | Deployed on both staging tills; owner acceptance pending |
-| 1 Deposit before booking | SCRUM-987 | Gateway-confirmed full deposit before explicit staff booking creation | Building |
+| 1 Deposit before booking | SCRUM-987 | Gateway-confirmed full deposit before explicit staff booking creation | Reviewed and checked; ordered staging rollout next |
 | 1.1 Complete reviewed fill | SCRUM-988 | Apply available structured chat details with sources, review and stale-save protection | Building |
 | 2 Reusable BEO menu and sync | SCRUM-989 | Reusable BEO-only dishes in appropriate Kitchen/Bar choices across parties, without ordinary POS catalogue exposure | Building |
 | 3 Party extras and bills | SCRUM-990 | Extras stay linked to the main party; post-settlement additions receive a new additional bill | Building |

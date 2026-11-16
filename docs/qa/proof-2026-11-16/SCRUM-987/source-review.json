@@ -1,0 +1,357 @@
+{
+  "at": "2026-11-16T16:32:03.872Z",
+  "candidate": "e18f102632ba4792749c391255b9f4c481673c1d",
+  "outcome": "No remaining finding",
+  "inputs": [
+    {
+      "path": "apps/api/src/plugins/idempotency.ts",
+      "candidateBlob": "6f0b7936877b730b4f788d51842f0f79377f749d",
+      "landedBlob": "6f0b7936877b730b4f788d51842f0f79377f749d",
+      "rawFingerprintMatches": true
+    },
+    {
+      "path": "apps/api/src/plugins/permission.ts",
+      "candidateBlob": "ebc4e80412d3e1e8f6f0500f14494c1fd84d5756",
+      "landedBlob": "ebc4e80412d3e1e8f6f0500f14494c1fd84d5756",
+      "rawFingerprintMatches": true
+    },
+    {
+      "path": "apps/api/src/routes/inbox-actions.ts",
+      "candidateBlob": "a43564bcb2bc3540b2d33f495c5805bf01738008",
+      "landedBlob": "a43564bcb2bc3540b2d33f495c5805bf01738008",
+      "rawFingerprintMatches": true
+    },
+    {
+      "path": "apps/api/src/services/inbox/book-date.ts",
+      "candidateBlob": "e73d932f4c05747210355b973654cac4738e9d3c",
+      "landedBlob": "e73d932f4c05747210355b973654cac4738e9d3c",
+      "rawFingerprintMatches": true
+    },
+    {
+      "path": "apps/api/src/services/inbox/prebooking.ts",
+      "candidateBlob": "86a071f98dc7661917c11a2b13a3d3cd987ac0d1",
+      "landedBlob": "86a071f98dc7661917c11a2b13a3d3cd987ac0d1",
+      "rawFingerprintMatches": true
+    },
+    {
+      "path": "apps/api/src/services/otoapp-directory.ts",
+      "candidateBlob": "dc63e90e0f97a4c8d46e9a4489fb63effa324d2e",
+      "landedBlob": "dc63e90e0f97a4c8d46e9a4489fb63effa324d2e",
+      "rawFingerprintMatches": true
+    },
+    {
+      "path": "apps/api/src/services/party-deposit.ts",
+      "candidateBlob": "d185e70b011abedd2ffd6c37b3eb4d404c5c01bf",
+      "landedBlob": "d185e70b011abedd2ffd6c37b3eb4d404c5c01bf",
+      "rawFingerprintMatches": true
+    },
+    {
+      "path": "apps/api/test/idempotency-replay-authorization-review.test.ts",
+      "candidateBlob": "b59728d56d385675956af5d38ea3a4578c95d67e",
+      "landedBlob": "b59728d56d385675956af5d38ea3a4578c95d67e",
+      "rawFingerprintMatches": true
+    },
+    {
+      "path": "apps/api/test/inbox-book-date.test.ts",
+      "candidateBlob": "43e05677db1647c785248ffd8aae204813c79858",
+      "landedBlob": "43e05677db1647c785248ffd8aae204813c79858",
+      "rawFingerprintMatches": true
+    },
+    {
+      "path": "apps/api/test/prebooking-review.test.ts",
+      "candidateBlob": "e51b325002b162b1d8ce58f3e72bade99ee6fd5e",
+      "landedBlob": "e51b325002b162b1d8ce58f3e72bade99ee6fd5e",
+      "rawFingerprintMatches": true
+    },
+    {
+      "path": "apps/inbox/src/api/inbox.ts",
+      "candidateBlob": "8c54c6c4e112cfc7202d14e4fb66af3038040a9f",
+      "landedBlob": "8c54c6c4e112cfc7202d14e4fb66af3038040a9f",
+      "rawFingerprintMatches": true
+    },
+    {
+      "path": "apps/inbox/src/components/BookDateDialog.tsx",
+      "candidateBlob": "517a57aa8ef53de688c09a2fc9b1abbe8af4af4a",
+      "landedBlob": "517a57aa8ef53de688c09a2fc9b1abbe8af4af4a",
+      "rawFingerprintMatches": true
+    },
+    {
+      "path": "apps/inbox/src/components/ChatPanel.tsx",
+      "candidateBlob": "b7f2618f6aca20011815c35de4360faa0446ba55",
+      "landedBlob": "b7f2618f6aca20011815c35de4360faa0446ba55",
+      "rawFingerprintMatches": true
+    },
+    {
+      "path": "apps/inbox/src/lib/beo.ts",
+      "candidateBlob": "3534ff48a3aa1a02b968ec569f6e8e5860a3e55d",
+      "landedBlob": "3534ff48a3aa1a02b968ec569f6e8e5860a3e55d",
+      "rawFingerprintMatches": true
+    },
+    {
+      "path": "apps/inbox/test/book-date-814.test.ts",
+      "candidateBlob": "bbf8b18c65d4e7f90428c6d7ce4aa86b77378f6c",
+      "landedBlob": "bbf8b18c65d4e7f90428c6d7ce4aa86b77378f6c",
+      "rawFingerprintMatches": true
+    },
+    {
+      "path": "apps/inbox/test/book-date-821.test.ts",
+      "candidateBlob": "35eb377dcce559df7e3269909d27883d350a590e",
+      "landedBlob": "35eb377dcce559df7e3269909d27883d350a590e",
+      "rawFingerprintMatches": true
+    },
+    {
+      "path": "apps/inbox/test/book-date-826.test.ts",
+      "candidateBlob": "6dc784225e9549f267c310a4681d30aa59fbb5c8",
+      "landedBlob": "6dc784225e9549f267c310a4681d30aa59fbb5c8",
+      "rawFingerprintMatches": true
+    },
+    {
+      "path": "apps/inbox/test/book-date-947.test.ts",
+      "candidateBlob": "3ba1d2dd088fb825e1e2d6af8655595a68b805de",
+      "landedBlob": "3ba1d2dd088fb825e1e2d6af8655595a68b805de",
+      "rawFingerprintMatches": true
+    },
+    {
+      "path": "apps/inbox/test/book-date-955.test.ts",
+      "candidateBlob": "6e39450aff53954df7c52e63c9817fe62dfe9c38",
+      "landedBlob": "6e39450aff53954df7c52e63c9817fe62dfe9c38",
+      "rawFingerprintMatches": true
+    },
+    {
+      "path": "apps/inbox/test/book-date.test.ts",
+      "candidateBlob": "63850e847609c167536c9b9b39fd6b47fdbfd976",
+      "landedBlob": "63850e847609c167536c9b9b39fd6b47fdbfd976",
+      "rawFingerprintMatches": true
+    },
+    {
+      "path": "apps/inbox/test/paid-prebooking-fixture.ts",
+      "candidateBlob": "3c37a941d38a2470ca9fe805623a35d837b8c25e",
+      "landedBlob": "3c37a941d38a2470ca9fe805623a35d837b8c25e",
+      "rawFingerprintMatches": true
+    },
+    {
+      "path": "apps/inbox/test/prebooking-987.test.ts",
+      "candidateBlob": "8b3625a3d92e1dba92cbc7f5dc439e972ed772cd",
+      "landedBlob": "8b3625a3d92e1dba92cbc7f5dc439e972ed772cd",
+      "rawFingerprintMatches": true
+    },
+    {
+      "path": "apps/oto-app/client/src/components/beo/beo-till-billing.tsx",
+      "candidateBlob": "343a43be58e5493370227e5f08ad286b5d305bed",
+      "landedBlob": "343a43be58e5493370227e5f08ad286b5d305bed",
+      "rawFingerprintMatches": true
+    },
+    {
+      "path": "apps/oto-app/server/directory/eventRoutes.ts",
+      "candidateBlob": "13890ec2cdc825486ad3d5cfe47cb814535255e3",
+      "landedBlob": "13890ec2cdc825486ad3d5cfe47cb814535255e3",
+      "rawFingerprintMatches": true
+    },
+    {
+      "path": "apps/oto-app/server/directory/eventWrites.ts",
+      "candidateBlob": "872d5d935fd2e08d6ff1a2b290f030a01b566c48",
+      "landedBlob": "872d5d935fd2e08d6ff1a2b290f030a01b566c48",
+      "rawFingerprintMatches": true
+    },
+    {
+      "path": "apps/oto-app/shared/partyDeposit.ts",
+      "candidateBlob": "7643921f1ef3decd64a8718998f6dab27126f042",
+      "landedBlob": "7643921f1ef3decd64a8718998f6dab27126f042",
+      "rawFingerprintMatches": true
+    },
+    {
+      "path": "apps/oto-app/tests/directory-inbox-event.check.ts",
+      "candidateBlob": "40f2fc97e490ac8ba227872b6bc9236852503f2f",
+      "landedBlob": "40f2fc97e490ac8ba227872b6bc9236852503f2f",
+      "rawFingerprintMatches": true
+    },
+    {
+      "path": "apps/oto-app/tests/party-deposit-ui.check.ts",
+      "candidateBlob": "5b6892e17961e11bd0d7d6746e4d09a06fff3651",
+      "landedBlob": "5b6892e17961e11bd0d7d6746e4d09a06fff3651",
+      "rawFingerprintMatches": true
+    },
+    {
+      "path": "apps/oto-app/tests/prebooking-floor.check.ts",
+      "candidateBlob": "19f6e23fb4e926b222795a58fc090763ad0a8097",
+      "landedBlob": "19f6e23fb4e926b222795a58fc090763ad0a8097",
+      "rawFingerprintMatches": true
+    },
+    {
+      "path": "packages/api-types/openapi.json",
+      "candidateBlob": "52f3f648253c0657e5f524144d1a7622666b7caf",
+      "landedBlob": "52f3f648253c0657e5f524144d1a7622666b7caf",
+      "rawFingerprintMatches": true
+    },
+    {
+      "path": "packages/api-types/src/openapi.ts",
+      "candidateBlob": "6b58d74be9aedbcf1933f94be510b6e052ae6247",
+      "landedBlob": "6b58d74be9aedbcf1933f94be510b6e052ae6247",
+      "rawFingerprintMatches": true
+    },
+    {
+      "path": "packages/db/migrations/0126_prebooking_gateway_deposit.sql",
+      "candidateBlob": "aea65757afc1b17fd59e60aab0245e80bde4207e",
+      "landedBlob": "aea65757afc1b17fd59e60aab0245e80bde4207e",
+      "rawFingerprintMatches": true
+    },
+    {
+      "path": "packages/db/migrations/meta/0126_snapshot.json",
+      "candidateBlob": "c68692ba1e8f7f0772f6c0fea33076b6f6e6d6ea",
+      "landedBlob": "c68692ba1e8f7f0772f6c0fea33076b6f6e6d6ea",
+      "rawFingerprintMatches": true
+    },
+    {
+      "path": "packages/db/migrations/meta/_journal.json",
+      "candidateBlob": "077988007f177b03131a2661964eaf79c63e947a",
+      "landedBlob": "077988007f177b03131a2661964eaf79c63e947a",
+      "rawFingerprintMatches": true
+    },
+    {
+      "path": "packages/db/src/schema/index.ts",
+      "candidateBlob": "cec6d18534b1521723b6c8eafed3191e97b5cac5",
+      "landedBlob": "cec6d18534b1521723b6c8eafed3191e97b5cac5",
+      "rawFingerprintMatches": true
+    },
+    {
+      "path": "packages/db/src/schema/prebooking.ts",
+      "candidateBlob": "6b124c070fd585955bd53c618b908a938321fa2c",
+      "landedBlob": "6b124c070fd585955bd53c618b908a938321fa2c",
+      "rawFingerprintMatches": true
+    },
+    {
+      "path": "packages/shared/src/inbox-actions.ts",
+      "candidateBlob": "2e8c14862af02a2684dd8fd4bb77b9078f31e475",
+      "landedBlob": "2e8c14862af02a2684dd8fd4bb77b9078f31e475",
+      "rawFingerprintMatches": true
+    },
+    {
+      "path": "packages/shared/src/inbox.ts",
+      "candidateBlob": "566e07ba84eb867ad14fef5e9a47faaf572d41e4",
+      "landedBlob": "566e07ba84eb867ad14fef5e9a47faaf572d41e4",
+      "rawFingerprintMatches": true
+    },
+    {
+      "path": "packages/shared/src/party-deposit.ts",
+      "candidateBlob": "6cdc13d28851f15a70c75e5451a848fcec885425",
+      "landedBlob": "6cdc13d28851f15a70c75e5451a848fcec885425",
+      "rawFingerprintMatches": true
+    }
+  ],
+  "logs": [
+    {
+      "path": "logs/integrated-api.log",
+      "originalSha256": "46e18cc09e3dcef4cedcb1f4980ee9c27d2c09aae48bc5a7ca3d2ebd7fc2dcb6",
+      "publishedSha256": "6944be8c4c3d22c3eccb33250389e12a424917c0990fa9a8ad78db864c0d2b5f",
+      "encodingNote": "UTF-16LE decoded to UTF-8; complete text preserved"
+    },
+    {
+      "path": "logs/release-api.log",
+      "originalSha256": "df52e0c9e62f5e4d479af3cece762386618435f52e369451fbcc3c11d89ad4e9",
+      "publishedSha256": "d7977b4dfca423311edb68e3cc44df01112581a2041305b8861cf12849382782",
+      "encodingNote": "UTF-16LE decoded to UTF-8; complete text preserved"
+    },
+    {
+      "path": "logs/release-review-repair.log",
+      "originalSha256": "8ddd7360b175117409b024f663a39744aaec999665a0a256cd6ae56684eeaa1b",
+      "publishedSha256": "4bb29f980af261745204c56b91dfe60a92382aa21ceb38fee15a024bc2b9f72b",
+      "encodingNote": "UTF-16LE decoded to UTF-8; complete text preserved"
+    },
+    {
+      "path": "logs/release-api-types.log",
+      "originalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "publishedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "encodingNote": "UTF-8 text preserved"
+    },
+    {
+      "path": "logs/release-inbox-types.log",
+      "originalSha256": "4a11fc7241ed160db58e6f1b92f33a0569d47e04aae640444d9232331d72bad1",
+      "publishedSha256": "e69853dd3fcec51a0c5dddd5bd848786e6eec88e16881d64bcb86bebb28d20f8",
+      "encodingNote": "UTF-16LE decoded to UTF-8; complete text preserved"
+    },
+    {
+      "path": "logs/release-contracts.log",
+      "originalSha256": "7366103fbe716262bcac2ac0735a1fa87ef9903687914f71ca09ffbce89acbe2",
+      "publishedSha256": "57e291dc32217db4db5b086647092fc24c6fc930eab913c8ffc7d4ee50426d5f",
+      "encodingNote": "UTF-16LE decoded to UTF-8; complete text preserved"
+    },
+    {
+      "path": "logs/release-lint.log",
+      "originalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "publishedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "encodingNote": "UTF-8 text preserved"
+    },
+    {
+      "path": "logs/schema.log",
+      "originalSha256": "b8b07c8ce110284cc7b30da74a1ffecc44699f1de5798e238449e11b8a9c5f7b",
+      "publishedSha256": "78da846d62f112a01313963d6061ea5e2ad985794051f4b3a72e48cfb1520a42",
+      "encodingNote": "UTF-16LE decoded to UTF-8; complete text preserved"
+    },
+    {
+      "path": "logs/schema-final.log",
+      "originalSha256": "df20b1e32b667c33409b27282bacc49c7427d64a2970a11cd32527e9e21852ec",
+      "publishedSha256": "2d3926df55a0b12b12b493b63ab792ed23b91e5040ddfb213ae7502f3b84dc6a",
+      "encodingNote": "UTF-16LE decoded to UTF-8; complete text preserved"
+    },
+    {
+      "path": "logs/app-directory.log",
+      "originalSha256": "52f9a20adbbba1bd2503acacf393502482c0617b0b87847bf62551db35175dc2",
+      "publishedSha256": "23ccf8c26733cb6702c5ac83c161c443e7321217eb4242c1af7e7b4b1b231cd0",
+      "encodingNote": "UTF-16LE decoded to UTF-8; complete text preserved"
+    },
+    {
+      "path": "logs/floor.log",
+      "originalSha256": "498dfef84f730dc02ace977e1bbd73b604c3d1e5b92ad6e05b57cba9f272c6b8",
+      "publishedSha256": "8c825ec33ecf9a35e64181488a0045c67e33b786a6c952ffc9c9ae1ebf23973d",
+      "encodingNote": "UTF-16LE decoded to UTF-8; complete text preserved"
+    },
+    {
+      "path": "logs/app-ui.log",
+      "originalSha256": "e9066c3549e7ced958ee6626d6e3b0f6e38ce76a08bf541f45a3619b03181d02",
+      "publishedSha256": "167e5c680694422e1fe2f272c8a7d5dcf38f6f1d5b71fdb2e4a708471dd3b9a5",
+      "encodingNote": "UTF-16LE decoded to UTF-8; complete text preserved"
+    },
+    {
+      "path": "logs/inbox-integrated.log",
+      "originalSha256": "efc5b70076f901e1599b23352ee9c173f64a89da14dfdf5b9b501c8644eaa3fa",
+      "publishedSha256": "5e95e9f7903c0ed9fd438599692ed22c70ddafc6ca3999cf702ad834002bf6dc",
+      "encodingNote": "UTF-16LE decoded to UTF-8; complete text preserved"
+    },
+    {
+      "path": "logs/inbox-build.log",
+      "originalSha256": "d87f9289b1fc43590852f93ae8ee01b5ffe4b71cfd805705d4d56b99f2684036",
+      "publishedSha256": "928db952c893bcc7703216e03cf44323a09c71eb9980e3669cc23ef8b9514f51",
+      "encodingNote": "UTF-16LE decoded to UTF-8; complete text preserved"
+    },
+    {
+      "path": "logs/app-ratchet-final.log",
+      "originalSha256": "56f6a27c4540a8f9ddf8ef48af254581447c16d7f025e723b6a0b1a9a6ae7b7e",
+      "publishedSha256": "71633246cb1a987a23ba4af9fe85ab7269136feda58efa5641d7746c46595e48",
+      "encodingNote": "UTF-16LE decoded to UTF-8; complete text preserved"
+    },
+    {
+      "path": "logs/app-lint.log",
+      "originalSha256": "fb58b41687043689b4359486c905ca6859ec5df53370b31eff30451b484244d0",
+      "publishedSha256": "64ce071c7cc5d1cf72dffd89816adaa5cc271da433e77f54c9c55b8917d40436",
+      "encodingNote": "UTF-16LE decoded to UTF-8; complete text preserved"
+    }
+  ],
+  "migration": {
+    "number": 126,
+    "priorJournalUnchanged": true,
+    "actualSchemaVerified": true
+  },
+  "scope": [
+    "gateway-only amount and audit provenance",
+    "actual refund allocation exclusion",
+    "durable cross-service booking claim",
+    "single original receipt and BEO floor",
+    "current-authority cached replay",
+    "same-slot parties permitted",
+    "explicit simulator labels"
+  ],
+  "limits": [
+    "No real merchant acceptance",
+    "No staging proof yet"
+  ]
+}

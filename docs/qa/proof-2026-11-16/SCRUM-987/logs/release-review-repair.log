@@ -1,0 +1,130 @@
+
+ RUN  v3.2.7 C:/oto-lanes/tom-deposit-gate-20261116/apps/api
+
+stdout | test/prebooking-review.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/prebooking-review.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-SOA6x0 ... ok
+creating subdirectories ... 
+
+stdout | test/prebooking-review.test.ts
+ok
+
+
+stdout | test/prebooking-review.test.ts
+selecting dynamic shared memory implementation ... windows
+
+
+stdout | test/prebooking-review.test.ts
+selecting default max_connections ... 
+
+stdout | test/prebooking-review.test.ts
+100
+selecting default shared_buffers ... 
+
+stdout | test/prebooking-review.test.ts
+128MB
+selecting default time zone ... 
+
+stdout | test/prebooking-review.test.ts
+Asia/Bangkok
+
+
+stdout | test/prebooking-review.test.ts
+creating configuration files ... 
+
+stdout | test/prebooking-review.test.ts
+ok
+running bootstrap script ... 
+
+stdout | test/prebooking-review.test.ts
+ok
+
+
+stdout | test/prebooking-review.test.ts
+performing post-bootstrap initialization ... 
+
+stdout | test/prebooking-review.test.ts
+ok
+syncing data to disk ... 
+
+stdout | test/prebooking-review.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\tom^-deposit^-gate^-20261116^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-SOA6x0^" -l logfile start
+
+
+
+stdout | test/prebooking-review.test.ts
+2026-11-16 23:27:09.045 +07 [129396] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/prebooking-review.test.ts
+2026-11-16 23:27:09.048 +07 [129396] LOG:  listening on IPv6 address "::1", port 64405
+
+
+stdout | test/prebooking-review.test.ts
+2026-11-16 23:27:09.048 +07 [129396] LOG:  listening on IPv4 address "127.0.0.1", port 64405
+
+
+stdout | test/prebooking-review.test.ts
+2026-11-16 23:27:09.082 +07 [41648] LOG:  database system was shut down at 2026-11-16 23:27:07 +07
+
+
+stdout | test/prebooking-review.test.ts
+2026-11-16 23:27:09.100 +07 [129396] LOG:  database system is ready to accept connections
+
+
+stdout | test/prebooking-review.test.ts
+2026-11-16 23:27:12.454 +07 [121112] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+
+stdout | test/prebooking-review.test.ts
+Suite registry: registered 6 app(s).
+
+stdout | test/prebooking-review.test.ts
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/prebooking-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/prebooking-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+node.exe : (node:96668) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the 
+logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level 
+option will be removed in `fastify@6`.
+At C:\Users\waqar\AppData\Roaming\npm\pnpm.ps1:24 char:5
++     & "node$exe"  "$basedir/node_modules/pnpm/bin/pnpm.cjs" $args
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ((node:96668) [F...in `fastify@6`.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/prebooking-review.test.ts
+2026-11-16 23:27:14.875 +07 [131384] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/prebooking-review.test.ts
+2026-11-16 23:27:14.889 +07 [131384] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.003 s, sync=0.004 s, total=0.014 s; sync files=7, longest=0.001 s, average=0.001 s; distance=17897 kB, estimate=17897 kB; lsn=0/26F2670, redo lsn=0/26F2638
+
+
+ ✓ test/prebooking-review.test.ts (17 tests) 10005ms
+
+ Test Files  1 passed (1)
+      Tests  17 passed (17)
+   Start at  23:26:57
+   Duration  17.77s (transform 4.05s, setup 0ms, collect 7.47s, tests 10.00s, environment 0ms, prepare 92ms)
+
