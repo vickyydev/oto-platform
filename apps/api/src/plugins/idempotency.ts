@@ -367,6 +367,10 @@ export const idempotencyPlugin = fp(async (app: FastifyInstance) => {
           // ordinary business replies need a still-current verified context.
           await requireCurrentOrdinaryContext(app.db, req);
         }
+        // Resource-scoped routes may have lost access since the first call.
+        // Re-authorize with this authenticated request before revealing any
+        // cached payload. Routes without the optional guard keep their behavior.
+        await req.routeOptions.config.authorizeReplay?.(req);
         reply.header('x-oto-replay', 'true');
         return reply.status(existing.statusCode).send(existing.responseBody);
       }

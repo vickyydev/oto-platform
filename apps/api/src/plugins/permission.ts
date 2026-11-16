@@ -61,6 +61,8 @@ export interface PermissionConfig {
    * oversight.
    */
   dynamicPermission?: true;
+  /** Optional current resource/action authorization before an HTTP cached response is returned. */
+  authorizeReplay?: (req: FastifyRequest) => Promise<void>;
   /**
    * Guarded by a platform-wide assignment rather than a named permission:
    * managing operators themselves is not an operator's business.
