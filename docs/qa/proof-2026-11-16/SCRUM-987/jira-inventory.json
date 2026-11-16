@@ -1,0 +1,16 @@
+{
+  "at": "2026-11-16T16:47:30.076Z",
+  "sha": "18043d99cf1af00a81a8463e67aefc9c4975bfca",
+  "receipts": [
+    {
+      "key": "SCRUM-987",
+      "status": "Testing",
+      "commentId": "14836"
+    },
+    {
+      "key": "SCRUM-990",
+      "status": "In Progress",
+      "commentId": "14837"
+    }
+  ]
+}

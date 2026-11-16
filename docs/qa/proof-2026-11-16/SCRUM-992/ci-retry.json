@@ -1,0 +1,26 @@
+{
+  "at": "2026-11-16T16:59:50.496Z",
+  "sha": "ea7212974dfdb8c2062cf34b2448859939ec406d",
+  "runId": 43901776179,
+  "original": {
+    "attempt": 1,
+    "status": "failure",
+    "jobId": 133427366967,
+    "file": "packages/db/test/inbox-ai-a1b.test.ts",
+    "reason": "second migration no-op exceeded5000ms"
+  },
+  "local": {
+    "wholeFilePassed": 22,
+    "migrationNoopMs": 679,
+    "rawLogSha256": "3cf2d61fd5955ec9d729e153b636869fa263f1c9445ff4505dc2fbf5f5b85955"
+  },
+  "retry": {
+    "attempt": 2,
+    "status": "pending",
+    "count": 1
+  },
+  "jira": {
+    "status": "Deployed",
+    "commentId": "14838"
+  }
+}

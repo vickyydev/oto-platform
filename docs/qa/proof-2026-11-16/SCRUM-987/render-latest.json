@@ -1,5 +1,5 @@
 {
-  "observedAt": "2026-11-16T16:41:51.061Z",
+  "observedAt": "2026-11-16T16:46:14.390Z",
   "sha": "caa85d054536b04bbb6afb02c776485195e28424",
   "receipts": [
     {
@@ -18,7 +18,7 @@
       "requestedAt": "2026-11-16T16:37:11.067Z",
       "sha": "caa85d054536b04bbb6afb02c776485195e28424",
       "reused": false,
-      "status": "update_in_progress"
+      "status": "live"
     },
     {
       "name": "oto-inbox-staging",
