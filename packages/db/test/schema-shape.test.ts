@@ -153,6 +153,8 @@ const PLATFORM_OWNED: Record<string, string> = {
  * habit, and a habit is what SCRUM-290 is for.
  */
 const SCOPED_BY_PARENT: Record<string, { column: string; parent: string }> = {
+  // SCRUM-987: request rows inherit the draft's operator through the restrictive FK.
+  'pos.prebooking_deposit_request': { column: 'draft_id', parent: 'pos.prebooking_draft' },
   'core.app_identity': { column: 'account_id', parent: 'core.account' },
   'core.handoff_token': { column: 'account_id', parent: 'core.account' },
   'core.role_assignment': { column: 'account_id', parent: 'core.account' },
