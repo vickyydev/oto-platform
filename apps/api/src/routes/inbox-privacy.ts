@@ -9,6 +9,7 @@ import { errors } from '../lib/errors';
 import { PermissionDeniedError } from '../plugins/session';
 import { opCtx, withTx } from '../services/tx';
 import { eraseContact, previewErasure } from '../services/inbox/privacy';
+import { inboxErasureReplay } from '../services/inbox/replay';
 
 /**
  * THE INBOX'S PDPA ERASURE ROUTE (S2-19 I2g, SCRUM-586; plan §3.6).
@@ -36,7 +37,7 @@ export async function inboxPrivacyRoutes(app: App): Promise<void> {
   app.post(
     '/contacts/:id/erase',
     {
-      config: { dynamicPermission: true },
+      config: { dynamicPermission: true, authorizeReplay: inboxErasureReplay(app) },
       schema: {
         description:
           'PDPA erasure of an Inbox contact — IRREVERSIBLE. Anonymises in place, in one transaction: the contact and ' +
@@ -66,7 +67,7 @@ export async function inboxPrivacyRoutes(app: App): Promise<void> {
       if (!operatorWide) throw new PermissionDeniedError('inbox:contact:erase');
 
       // 404 before 409: the confirmation is never a way to learn that an id exists elsewhere.
-      const preview = await previewErasure(app.db, auth.operatorId, req.params.id);
+      const preview = await previewErasure(app.db, auth.operatorId, req.params.id, auth.accountId);
       const confirmed =
         req.body.confirmContactId === req.params.id && req.body.confirm === INBOX_ERASE_CONFIRM_WORD;
       if (!confirmed) {

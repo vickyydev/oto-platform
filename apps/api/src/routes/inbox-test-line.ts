@@ -11,6 +11,7 @@ import { PermissionDeniedError } from '../plugins/session';
 import { opCtx, withTx } from '../services/tx';
 import { holdsAnywhere, viewerScopeOf } from '../services/inbox/read-visibility';
 import { setUpTestLine, startOver } from '../services/inbox/test-line';
+import { inboxStartOverReplay } from '../services/inbox/replay';
 
 /**
  * THE WHATSAPP TEST LINE'S ROUTES (SCRUM-908). The rules are in
@@ -61,7 +62,7 @@ export async function inboxTestLineRoutes(app: App): Promise<void> {
   app.post(
     '/conversations/:id/start-over',
     {
-      config: { dynamicPermission: true },
+      config: { dynamicPermission: true, authorizeReplay: inboxStartOverReplay(app) },
       schema: {
         description:
           'Start over on a conversation of the WhatsApp test line (SCRUM-908), so the tester can write again as a ' +

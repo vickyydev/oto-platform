@@ -30,6 +30,7 @@ import { openQuestionsOf } from './open-question';
 import { generalPoolSql } from './placement';
 import { testLinesOf } from './test-line';
 import { nextActionColumns } from './next-action';
+import { inboxChannelAllowsSql, inboxPolicyAllowsSql, inboxVisibilityLimits } from './access';
 import {
   INBOX_READ,
   activeAssignmentsOf,
@@ -384,6 +385,7 @@ export async function listConversations(
   );
   return {
     conversations: page.map((r) => toRow(r, assignments.get(r.id) ?? [])),
+    access: await inboxVisibilityLimits(db, viewer),
     nextCursor,
     tabCounts: await tabCountsOf(db, viewer, tabs),
   };
@@ -830,6 +832,8 @@ export async function inboxMe(
   const teams = await operatorTeams(db, viewer.operatorId);
   const roles = viewRolesOf(viewer, teams, holdsAnywhere(effective, INBOX_READ, viewer.operatorId));
 
+  const access = await inboxVisibilityLimits(db, viewer);
+
   // Who can hold a slot: every active account of the operator that reads the
   // Inbox somewhere — the teams' people by their department grants, the
   // operator-wide readers, and the manual-only people, who read only what
@@ -881,6 +885,7 @@ export async function inboxMe(
                 eq(s.channelAccount.operatorId, viewer.operatorId),
                 eq(s.channelAccount.provider, 'simulator'),
                 isNull(s.channelAccount.archivedAt),
+                inboxChannelAllowsSql(viewer),
               ),
             )
             .orderBy(asc(s.channelAccount.displayName), asc(s.channelAccount.id)),
@@ -905,6 +910,7 @@ export async function inboxMe(
             eq(s.channelAccount.operatorId, viewer.operatorId),
             eq(s.channelAccount.canReply, true),
             isNull(s.channelAccount.archivedAt),
+            inboxPolicyAllowsSql(viewer, sql`${s.channelAccount.defaultCategory}`, sql`${s.channelAccount.id}`),
           ),
         )
         .orderBy(asc(s.channelAccount.displayName), asc(s.channelAccount.id))
@@ -912,10 +918,11 @@ export async function inboxMe(
 
   return {
     accountId: viewer.accountId,
+    access,
     name: names.get(viewer.accountId) ?? null,
     roles,
     tabs: tabsForRoles(roles),
-    teams: teams.map((t) => ({
+    teams: teams.filter(t => access.categories === null || access.categories.includes(t.key === 'reception' ? 'general' : t.key)).map((t) => ({
       id: t.id,
       kind: t.key,
       name: t.name,
@@ -931,7 +938,7 @@ export async function inboxMe(
         operatorWide: p.operatorWide,
       }))
       .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? '') || a.accountId.localeCompare(b.accountId)),
-    defaultReceptionBranchId: reception?.branchId ?? null,
+    defaultReceptionBranchId: access.categories === null || access.categories.includes('general') ? reception?.branchId ?? null : null,
     capabilities: {
       // The write switch (plan "How Cut A is marked"): on since I2f (SCRUM-585)
       // landed the reply, the templates and the send job — for every channel
@@ -948,7 +955,7 @@ export async function inboxMe(
     simulator,
     contactChannels,
     // SCRUM-908: the WhatsApp test lines, each an inbox of its own in the rail.
-    testLines: await testLinesOf(db, viewer.operatorId, effective),
+    testLines: await testLinesOf(db, viewer, effective),
   };
 }
 

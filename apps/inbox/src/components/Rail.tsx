@@ -118,14 +118,14 @@ export function FilterFields({
       )}
       {sources.length > 0 && (
         <ChipRow icon={MessageCircle} title="Source" label="Filter by source">
-          {sources.map((s) => {
+          {sources.filter(s => !me.access?.channelAccountIds || me.access.channelAccountIds.includes(s.id)).map((s) => {
             const label = sourceLabel(s.channel, s.name);
             return chip('channelAccountId', s.id, label, CHANNEL_TINT[s.channel], s.name ? `${label} · ${CHANNEL_LABEL[s.channel]}` : label);
           })}
         </ChipRow>
       )}
       <ChipRow icon={Tag} title="Topic" label="Filter by topic">
-        {CATEGORY_OPTIONS.map(([k, label]) => chip('category', k, label, CATEGORY_BAR[k]))}
+        {CATEGORY_OPTIONS.filter(([k]) => !me.access?.categories || me.access.categories.includes(k)).map(([k, label]) => chip('category', k, label, CATEGORY_BAR[k]))}
       </ChipRow>
       <ChipRow icon={Activity} title="Status" label="Filter by status">
         {STATUS_OPTIONS.map(([k, label]) => chip('status', k, label, STATUS_DOT[k]))}

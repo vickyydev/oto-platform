@@ -31,6 +31,7 @@ import { pickRule, routeConversation } from './router';
 import { isGeneralPool } from './placement';
 import { handledPatch, reopenAuditBefore, reopenPatch, reopenedPayload } from './status';
 import { cancelAiForThread, type AiCancelReason } from './ai-turns';
+import { assertInboxPolicy } from './access';
 
 /**
  * THE INBOX'S OWNERSHIP AND STATUS ACTIONS (S2-19 I2e, SCRUM-584; plan
@@ -192,6 +193,25 @@ function requireAt(ctx: ActionCtx, permission: Permission, l: Loaded): void {
 
 const primaryOf = (slots: SlotRow[]) => slots.find((a) => a.slot === 'primary') ?? null;
 const isPrimary = (slots: SlotRow[], accountId: string) => primaryOf(slots)?.accountId === accountId;
+
+function requireOwnerAction(ctx: ActionCtx, loaded: Loaded): void {
+  if (!holdsAt(ctx, 'inbox:conversation:assign', loaded) && !isPrimary(loaded.slots, ctx.viewer.accountId)) {
+    throw new PermissionDeniedError('inbox:conversation:assign');
+  }
+}
+function requireHandleAction(ctx: ActionCtx, loaded: Loaded): void {
+  if (!loaded.slots.some(slot => slot.accountId === ctx.viewer.accountId) && !holdsAt(ctx, 'inbox:conversation:handle', loaded)) {
+    throw new PermissionDeniedError('inbox:conversation:handle');
+  }
+}
+export type InboxReplayAction = 'owner' | 'assign' | 'move' | 'handle' | 'reopen';
+/** The actual action's current authority, without repeating its state transition. */
+export async function authorizeActionReplay(tx: Tx, ctx: ActionCtx, conversationId: string, action: InboxReplayAction): Promise<void> {
+  const loaded = await loadForAction(tx, ctx, conversationId);
+  if (action === 'owner') requireOwnerAction(ctx, loaded);
+  else if (action === 'handle') requireHandleAction(ctx, loaded);
+  else requireAt(ctx, `inbox:conversation:${action}`, loaded);
+}
 
 function actionEvent(
   ctx: ActionCtx,
@@ -418,9 +438,7 @@ export interface SetPrimaryInput {
 export async function setPrimary(tx: Tx, ctx: ActionCtx, input: SetPrimaryInput): Promise<InboxActionResult> {
   const l = await loadForAction(tx, ctx, input.conversationId);
   // A manager, or the primary handing it on.
-  if (!holdsAt(ctx, 'inbox:conversation:assign', l) && !isPrimary(l.slots, ctx.viewer.accountId)) {
-    throw new PermissionDeniedError('inbox:conversation:assign');
-  }
+  requireOwnerAction(ctx, l);
   const { operatorId } = ctx.viewer;
 
   // Where the new primary sits: their team, if it is not the conversation's.
@@ -446,6 +464,7 @@ export async function setPrimary(tx: Tx, ctx: ActionCtx, input: SetPrimaryInput)
   // leave: seating a reception person (or a reception team) on it is its
   // first seat at a park, not a move between departments, and asks nothing.
   const firstSeat = dest !== null && dest.key === 'reception' && isGeneralPool(l.conv);
+  if (dest) await assertInboxPolicy(tx, ctx.viewer, CATEGORY_OF_TEAM[dest.key], l.conv.channelAccountId);
   if (dest && !firstSeat && input.confirmMove !== true) {
     throw errors.conflict('CATEGORY_MOVE_UNCONFIRMED', INBOX_ACTION_MESSAGES.moveUnconfirmed, {
       fromCategory: l.conv.category,
@@ -621,9 +640,7 @@ export async function divertTarget(
 export async function divert(tx: Tx, ctx: ActionCtx, input: { conversationId: string }): Promise<InboxActionResult> {
   const l = await loadForAction(tx, ctx, input.conversationId);
   // The primary taps it; a manager can do it on their behalf (Brief §9).
-  if (!isPrimary(l.slots, ctx.viewer.accountId) && !holdsAt(ctx, 'inbox:conversation:assign', l)) {
-    throw new PermissionDeniedError('inbox:conversation:assign');
-  }
+  requireOwnerAction(ctx, l);
   const primary = primaryOf(l.slots);
   const { ruleId, target } = await divertTarget(tx, ctx.viewer.operatorId, l.conv, primary?.accountId ?? null);
   if (!target) throw errors.conflict('DIVERT_NO_BACKUP', INBOX_ACTION_MESSAGES.divertNoBackup);
@@ -718,6 +735,7 @@ export async function moveTeam(
   if (dest.id === l.conv.teamId) throw errors.conflict('ALREADY_IN_TEAM', INBOX_ACTION_MESSAGES.alreadyInTeam);
 
   const category = CATEGORY_OF_TEAM[dest.key];
+  await assertInboxPolicy(tx, ctx.viewer, category, l.conv.channelAccountId);
   const branchId = dest.key === 'reception' ? dest.branchId : l.conv.branchId;
 
   // Every slot goes: the support places are cleared, and the primary is
@@ -906,10 +924,7 @@ export async function markHandled(tx: Tx, ctx: ActionCtx, input: { conversationI
   const l = await loadForAction(tx, ctx, input.conversationId);
   // On the conversation (primary or support), or in its team (feature doc:
   // support "can read, reply and mark handled").
-  const onIt = l.slots.some((a) => a.accountId === ctx.viewer.accountId);
-  if (!onIt && !holdsAt(ctx, 'inbox:conversation:handle', l)) {
-    throw new PermissionDeniedError('inbox:conversation:handle');
-  }
+  requireHandleAction(ctx, l);
   if (l.conv.status === 'handled') throw errors.conflict('ALREADY_HANDLED', INBOX_ACTION_MESSAGES.alreadyHandled);
   const patch = handledPatch(ctx.viewer.accountId, ctx.now);
   await tx

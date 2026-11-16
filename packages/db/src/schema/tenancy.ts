@@ -7,6 +7,7 @@ import {
   text,
   time,
   timestamp,
+  unique,
   uniqueIndex,
   uuid,
   type AnyPgColumn,
@@ -218,6 +219,7 @@ export const account = core.table(
   },
   (t) => [
     uniqueIndex('account_phone_unique').on(t.operatorId, t.phone),
+    unique('account_tenant_key').on(t.operatorId, t.id),
     index('account_operator_idx').on(t.operatorId),
     index('account_employee_idx').on(t.employeeId),
     check('account_status_check', sql`${t.status} in ('invited','active','inactive')`),

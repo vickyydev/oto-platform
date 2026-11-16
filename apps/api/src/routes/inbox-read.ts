@@ -24,6 +24,7 @@ import { bannerOf, impersonationMarksOf } from '../services/impersonation';
 import { beoConfirmationOf } from '../services/inbox/beo-confirmation';
 import { BOOK_DATE_PROPOSAL_RATE, bookDateProposalOf } from '../services/inbox/book-date-proposal';
 import { holdsAnywhere, viewerScopeOf, type InboxViewer } from '../services/inbox/read-visibility';
+import { inboxReadReplay } from '../services/inbox/replay';
 import {
   conversationDetail,
   conversationMessages,
@@ -229,7 +230,7 @@ export async function inboxReadRoutes(app: App): Promise<void> {
   app.post(
     '/conversations/:id/read',
     {
-      config: { dynamicPermission: true },
+      config: { dynamicPermission: true, authorizeReplay: inboxReadReplay(app) },
       schema: {
         description:
           'Mark the conversation read up to a message (default: the newest) for the caller — the unread counts. The ' +

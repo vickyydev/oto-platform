@@ -50,6 +50,36 @@ import { fileObject } from './platform';
 export const INBOX_CHANNELS = ['whatsapp', 'instagram', 'facebook', 'line', 'telegram', 'webform'] as const;
 export type InboxChannel = (typeof INBOX_CHANNELS)[number];
 
+/** SCRUM-993: empty policy tables preserve every account's existing grants. */
+export const accountInboxAccess = inbox.table('account_access', {
+  id: idPk(),
+  operatorId: uuid('operator_id').notNull().references(() => operator.id),
+  accountId: uuid('account_id').notNull(),
+  allowedCategories: text('allowed_categories').array().$type<InboxCategory[]>(),
+  restrictChannels: boolean('restrict_channels').notNull().default(false),
+  version: integer('version').notNull(),
+  updatedByAccountId: uuid('updated_by_account_id').notNull().references(() => account.id),
+  ...timestamps,
+}, t => [
+  unique('account_access_tenant_account_key').on(t.operatorId, t.accountId),
+  foreignKey({ columns: [t.operatorId, t.accountId], foreignColumns: [account.operatorId, account.id], name: 'account_access_account_fk' }).onDelete('restrict'),
+  check('account_access_categories_check', sql`${t.allowedCategories} is null or ${t.allowedCategories} <@ array['birthdays','general','marketing','gm']::text[]`),
+  check('account_access_version_check', sql`${t.version} > 0`),
+]);
+
+/** A channel allowlist has composite tenant keys; [] is represented by no children. */
+export const accountInboxChannelAccess = inbox.table('account_channel_access', {
+  id: idPk(),
+  operatorId: uuid('operator_id').notNull().references(() => operator.id),
+  accountId: uuid('account_id').notNull(),
+  channelAccountId: uuid('channel_account_id').notNull(),
+  ...timestamps,
+}, t => [
+  unique('account_channel_access_key').on(t.operatorId, t.accountId, t.channelAccountId),
+  foreignKey({ columns: [t.operatorId, t.accountId], foreignColumns: [accountInboxAccess.operatorId, accountInboxAccess.accountId], name: 'account_channel_access_policy_fk' }).onDelete('restrict'),
+  foreignKey({ columns: [t.operatorId, t.channelAccountId], foreignColumns: [channelAccount.operatorId, channelAccount.id], name: 'account_channel_access_channel_fk' }).onDelete('restrict'),
+]);
+
 /**
  * Who carries a channel account's traffic. `console` is the SMS console sender
  * the check-in confirmation already goes through (`can_reply = false`);

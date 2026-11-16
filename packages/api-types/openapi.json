@@ -1710,6 +1710,443 @@
         }
       }
     },
+    "/accounts/{id}/inbox-access": {
+      "get": {
+        "description": "Existing-account permission scope and dominance apply. Reads Inbox category/channel limits; channel names stay within the caller's readable branches. No row means existing unrestricted access. Limits never add a role or action grant.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "categories": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "birthdays",
+                          "general",
+                          "marketing",
+                          "gm"
+                        ]
+                      },
+                      "maxItems": 4,
+                      "nullable": true
+                    },
+                    "channelAccountIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "maxItems": 500,
+                      "nullable": true
+                    },
+                    "accountId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "administrator": {
+                      "type": "boolean"
+                    },
+                    "canManage": {
+                      "type": "boolean"
+                    },
+                    "channels": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "channel": {
+                            "type": "string",
+                            "enum": [
+                              "whatsapp",
+                              "instagram",
+                              "facebook",
+                              "line",
+                              "telegram",
+                              "webform"
+                            ]
+                          },
+                          "displayName": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "branchId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "channel",
+                          "displayName",
+                          "branchId"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "categories",
+                    "channelAccountIds",
+                    "accountId",
+                    "version",
+                    "administrator",
+                    "canManage",
+                    "channels"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "description": "Save reviewed account Inbox limits with version-CAS. Existing operator-wide role assignment, account reach and dominance are rechecked on every call, including retries. Operator administrators retain management. No initial grants or access rows are changed by deployment.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "categories": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "birthdays",
+                        "general",
+                        "marketing",
+                        "gm"
+                      ]
+                    },
+                    "maxItems": 4,
+                    "nullable": true
+                  },
+                  "channelAccountIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "maxItems": 500,
+                    "nullable": true
+                  },
+                  "expectedVersion": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 2147483646
+                  }
+                },
+                "required": [
+                  "categories",
+                  "channelAccountIds",
+                  "expectedVersion"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "categories": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "birthdays",
+                          "general",
+                          "marketing",
+                          "gm"
+                        ]
+                      },
+                      "maxItems": 4,
+                      "nullable": true
+                    },
+                    "channelAccountIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "maxItems": 500,
+                      "nullable": true
+                    },
+                    "accountId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "administrator": {
+                      "type": "boolean"
+                    },
+                    "canManage": {
+                      "type": "boolean"
+                    },
+                    "channels": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "channel": {
+                            "type": "string",
+                            "enum": [
+                              "whatsapp",
+                              "instagram",
+                              "facebook",
+                              "line",
+                              "telegram",
+                              "webform"
+                            ]
+                          },
+                          "displayName": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "branchId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "channel",
+                          "displayName",
+                          "branchId"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "categories",
+                    "channelAccountIds",
+                    "accountId",
+                    "version",
+                    "administrator",
+                    "canManage",
+                    "channels"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/accounts/{id}/inbox-access/preview": {
+      "post": {
+        "description": "Fresh before/after Inbox access preview under existing operator-wide role assignment and target-account dominance. expectedVersion rejects a stale edit. Null means no extra restriction, an empty list means none. Writes nothing.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "categories": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "birthdays",
+                        "general",
+                        "marketing",
+                        "gm"
+                      ]
+                    },
+                    "maxItems": 4,
+                    "nullable": true
+                  },
+                  "channelAccountIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "maxItems": 500,
+                    "nullable": true
+                  },
+                  "expectedVersion": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 2147483646
+                  }
+                },
+                "required": [
+                  "categories",
+                  "channelAccountIds",
+                  "expectedVersion"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accountId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "before": {
+                      "type": "object",
+                      "properties": {
+                        "categories": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "birthdays",
+                              "general",
+                              "marketing",
+                              "gm"
+                            ]
+                          },
+                          "maxItems": 4,
+                          "nullable": true
+                        },
+                        "channelAccountIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "maxItems": 500,
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "categories",
+                        "channelAccountIds"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "after": {
+                      "type": "object",
+                      "properties": {
+                        "categories": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "birthdays",
+                              "general",
+                              "marketing",
+                              "gm"
+                            ]
+                          },
+                          "maxItems": 4,
+                          "nullable": true
+                        },
+                        "channelAccountIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "maxItems": 500,
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "categories",
+                        "channelAccountIds"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "changed": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "accountId",
+                    "version",
+                    "before",
+                    "after",
+                    "changed"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/accounts/": {
       "get": {
         "description": "List/search accounts the caller may see (branch-scoped unless operator-wide)",
@@ -95764,6 +96201,42 @@
                       "type": "string",
                       "format": "uuid"
                     },
+                    "access": {
+                      "type": "object",
+                      "properties": {
+                        "categories": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "birthdays",
+                              "general",
+                              "marketing",
+                              "gm"
+                            ]
+                          },
+                          "nullable": true
+                        },
+                        "channelAccountIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "nullable": true
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "categories",
+                        "channelAccountIds",
+                        "version"
+                      ],
+                      "additionalProperties": false
+                    },
                     "name": {
                       "type": "string",
                       "nullable": true
@@ -96583,6 +97056,42 @@
                         ],
                         "additionalProperties": false
                       }
+                    },
+                    "access": {
+                      "type": "object",
+                      "properties": {
+                        "categories": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "birthdays",
+                              "general",
+                              "marketing",
+                              "gm"
+                            ]
+                          },
+                          "nullable": true
+                        },
+                        "channelAccountIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "nullable": true
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "categories",
+                        "channelAccountIds",
+                        "version"
+                      ],
+                      "additionalProperties": false
                     },
                     "nextCursor": {
                       "type": "string",

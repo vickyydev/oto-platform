@@ -24,6 +24,7 @@ import {
   redactThreadMessages,
 } from './privacy';
 import { loadVisibleConversation, type InboxViewer } from './read-visibility';
+import { assertInboxPolicy, inboxChannelAllowsSql } from './access';
 
 /**
  * THE WHATSAPP TEST LINE (SCRUM-908).
@@ -115,11 +116,12 @@ export function managesLine(effective: EffectivePermission[], operatorId: string
 }
 
 /** The operator's live test lines, for `GET /inbox/me`. */
-export async function testLinesOf(db: Exec, operatorId: string, effective: EffectivePermission[]): Promise<InboxTestLine[]> {
+export async function testLinesOf(db: Exec, viewer: InboxViewer, effective: EffectivePermission[]): Promise<InboxTestLine[]> {
+  const operatorId = viewer.operatorId;
   const rows = await db
     .select()
     .from(s.channelAccount)
-    .where(and(eq(s.channelAccount.operatorId, operatorId), eq(s.channelAccount.provider, 'twilio'), isNull(s.channelAccount.archivedAt)))
+    .where(and(eq(s.channelAccount.operatorId, operatorId), eq(s.channelAccount.provider, 'twilio'), isNull(s.channelAccount.archivedAt), inboxChannelAllowsSql(viewer)))
     .orderBy(asc(s.channelAccount.displayName), asc(s.channelAccount.id));
   return rows.map((r) => ({
     id: r.id,
@@ -242,6 +244,7 @@ export async function startOver(tx: Tx, storage: FileStorage | null, input: Star
     .limit(1)
     .for('update');
   if (!conv) throw errors.notFound('Conversation not found');
+  await assertInboxPolicy(tx, viewer, conv.category, conv.channelAccountId);
   const [account] = await tx
     .select()
     .from(s.channelAccount)

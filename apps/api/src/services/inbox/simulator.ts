@@ -20,7 +20,7 @@ import {
   type InboxDemoCounts,
 } from '@oto/db/seed';
 import type { DeliveryStatus, SimulatorChannel } from '@oto/messaging';
-import { newId } from '@oto/shared';
+import { INBOX_CATEGORY_KEYS, newId } from '@oto/shared';
 import type { FastifyBaseLogger } from 'fastify';
 import { errors } from '../../lib/errors';
 import { audit } from '../audit';
@@ -28,6 +28,7 @@ import type { InboxChannels } from './channels';
 import type { FileStorage } from '../files';
 import type { InboxAiSchedule } from './ai-runtime';
 import { channelRow, ingestDelivery, type IngestResult } from './ingest';
+import { assertInboxPolicy, inboxVisibilityLimits } from './access';
 
 /**
  * THE SIMULATOR'S DRIVE (S2-19 I2d, SCRUM-583; plan §2.1, §3.3).
@@ -113,6 +114,7 @@ export async function simulateInbound(
   press: SimulatedPress,
 ): Promise<{ externalMessageId: string; result: IngestResult }> {
   const { account, sim } = await simulatorAccount(deps, ctx.operatorId, channelAccountId);
+  if (ctx.actorAccountId) await assertInboxPolicy(deps.db, { accountId: ctx.actorAccountId, operatorId: ctx.operatorId }, press.hint?.category ?? account.defaultCategory, account.id);
   const played = sim.inbound({
     from: press.from,
     ...(press.name ? { name: press.name } : {}),
@@ -147,6 +149,7 @@ export async function simulateStatus(
   named: { externalMessageId: string; status: DeliveryStatus } | null,
 ): Promise<IngestResult[]> {
   const { account, sim } = await simulatorAccount(deps, ctx.operatorId, channelAccountId);
+  if (ctx.actorAccountId) await authorizeSimulatorStatus(deps.db, { accountId: ctx.actorAccountId, operatorId: ctx.operatorId }, account.id, named?.externalMessageId ?? null);
   const webhooks = named ? [sim.statusWebhook(named.externalMessageId, named.status)] : sim.takeScheduled();
   const results: IngestResult[] = [];
   for (const webhook of webhooks) {
@@ -159,6 +162,22 @@ export async function simulateStatus(
     );
   }
   return results;
+}
+
+export async function authorizeSimulatorStatus(db: Db, person: { accountId: string; operatorId: string }, channelAccountId: string, externalMessageId: string | null) {
+  if (externalMessageId) {
+    const [row] = await db.select({ category: conversation.category }).from(message)
+      .innerJoin(conversation, and(eq(conversation.operatorId, message.operatorId), eq(conversation.id, message.conversationId)))
+      .where(and(eq(message.operatorId, person.operatorId), eq(message.channelAccountId, channelAccountId), eq(message.externalMessageId, externalMessageId))).limit(1);
+    if (!row) throw errors.notFound('Message not found');
+    await assertInboxPolicy(db, person, row.category, channelAccountId);
+  } else {
+    const limits = await inboxVisibilityLimits(db, person);
+    if ((limits.categories !== null && INBOX_CATEGORY_KEYS.some(category => !limits.categories!.includes(category)))
+      || (limits.channelAccountIds !== null && !limits.channelAccountIds.includes(channelAccountId))) {
+      throw errors.forbidden('Inbox limits do not allow delivery updates for every conversation on this channel.');
+    }
+  }
 }
 
 /** The demo set, played into the caller's operator. */

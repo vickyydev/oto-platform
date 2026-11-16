@@ -251,7 +251,7 @@ export function SimulatorBody({
               <Field label="Category (instead of the AI)">
                 <select value={category} onChange={(e) => setCategory(e.target.value as Category | '')} className={FIELD}>
                   <option value="">As the channel routes it</option>
-                  {(Object.keys(CATEGORY_LABEL) as Category[]).map((k) => (
+                  {(Object.keys(CATEGORY_LABEL) as Category[]).filter(key => !me.access?.categories || me.access.categories.includes(key)).map((k) => (
                     <option key={k} value={k}>
                       {CATEGORY_LABEL[k]}
                     </option>

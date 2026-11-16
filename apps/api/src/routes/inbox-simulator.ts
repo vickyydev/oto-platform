@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { INBOX_CATEGORIES } from '@oto/db';
 import type { App } from '../app';
+import { inboxSimulatorReplay } from '../services/inbox/replay';
 import { errors } from '../lib/errors';
 import { scheduleOf } from '../services/inbox/ai-runtime';
 import {
@@ -64,7 +65,7 @@ export function inboxSimulatorRoutes(app: App): Promise<void> {
   app.post(
     '/inbox/simulator/inbound',
     {
-      config: { permission: 'inbox:channel:manage' },
+      config: { permission: 'inbox:channel:manage', authorizeReplay: inboxSimulatorReplay(app, 'inbound') },
       // SCRUM-824: room for a short voice note, base64 in the JSON.
       bodyLimit: SIMULATOR_BODY_LIMIT,
       schema: {
@@ -124,7 +125,7 @@ export function inboxSimulatorRoutes(app: App): Promise<void> {
   app.post(
     '/inbox/simulator/status',
     {
-      config: { permission: 'inbox:channel:manage' },
+      config: { permission: 'inbox:channel:manage', authorizeReplay: inboxSimulatorReplay(app, 'status') },
       schema: {
         description:
           'Push delivery receipts through the real inbox webhook for a simulator channel account: one named status for one outbound message, or, with none named, every delivered and read receipt the simulator scheduled for the replies it accepted. Simulator only.',
@@ -157,7 +158,7 @@ export function inboxSimulatorRoutes(app: App): Promise<void> {
   app.post(
     '/inbox/simulator/scenario',
     {
-      config: { permission: 'inbox:channel:manage' },
+      config: { permission: 'inbox:channel:manage', authorizeReplay: inboxSimulatorReplay(app, 'scenario') },
       schema: {
         description:
           "Play the inbox demo conversations into the caller's operator: ten fictional threads whose customer lines go through the simulator and the real webhook handler (so routing assigns them), the staff side laid around them, six demo staff and the four simulator channel accounts. Idempotent: a second play writes nothing. Simulator only, and refused on production.",
@@ -179,6 +180,7 @@ export function inboxSimulatorRoutes(app: App): Promise<void> {
     async (req) => {
       const auth = req.requireAuth();
       // Operator-wide: the demo writes staff, rules and accounts across the operator.
+      await inboxSimulatorReplay(app, 'scenario')(req);
       await req.requirePermission('inbox:channel:manage', { operatorId: auth.operatorId, branchId: undefined });
       return playDemoScenario(deps(req.log), {
         operatorId: auth.operatorId,

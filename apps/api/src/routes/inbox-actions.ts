@@ -25,6 +25,8 @@ import { REPLAY_HEADER, wasReplay } from '../services/client-id';
 import { handoffConfig } from '../services/handoff';
 import { authorizePrebooking, bookConversationDate, openConversationBeo } from '../services/inbox/book-date';
 import { assertPrebookingRequestAuthority, readPrebooking, requestPrebookingDeposit } from '../services/inbox/prebooking';
+import { inboxActionReplay } from '../services/inbox/replay';
+import type { InboxReplayAction } from '../services/inbox/actions';
 import { holdsAnywhere, viewerScopeOf } from '../services/inbox/read-visibility';
 import {
   addSupport,
@@ -59,6 +61,16 @@ const REFUSALS =
   'permission is not held at this conversation.';
 
 export async function inboxActionRoutes(app: App): Promise<void> {
+  // BookDate's own guard is supplied by the prebooking unit; its durable
+  // request id and current park authority remain that service's responsibility.
+  app.addHook('onRoute', route => {
+    if (route.config?.authorizeReplay) return;
+    const leaf = route.url.split('/').at(-1);
+    const action: InboxReplayAction | undefined = leaf === 'primary' || leaf === 'divert' ? 'owner'
+      : route.url.includes('/support') || leaf === 'branch' ? 'assign'
+        : leaf === 'move' ? 'move' : leaf === 'handle' ? 'handle' : leaf === 'reopen' ? 'reopen' : undefined;
+    if (action) route.config = { ...route.config, authorizeReplay: inboxActionReplay(app, action) };
+  });
   /** The caller, refused unless they hold `permission` somewhere in their operator. */
   async function actionCtx(req: FastifyRequest, permission: Permission): Promise<ActionCtx> {
     const auth = req.requireAuth();

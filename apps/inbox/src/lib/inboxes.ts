@@ -41,6 +41,15 @@ export interface SourceOption {
   channel: InboxChannelKey;
   name: string | null;
 }
+/** Previously learned names cannot survive a newer server access restriction. */
+export function inboxSourcesWithinAccess(sources: readonly SourceOption[], access: InboxMe['access']): SourceOption[] {
+  if (access?.categories?.length === 0) return [];
+  return sources.filter(source => !access?.channelAccountIds || access.channelAccountIds.includes(source.id));
+}
+export function inboxAccessSignature(access: InboxMe['access']): string {
+  return JSON.stringify({ categories: access?.categories?.slice().sort() ?? null,
+    channelAccountIds: access?.channelAccountIds?.slice().sort() ?? null, version: access?.version ?? 0 });
+}
 
 /**
  * How a conversation's source reads: the number's display name ("Reception ·
@@ -111,13 +120,13 @@ export const GENERAL_INBOX_LABEL = 'General';
  * the park's reception desk names it (`branchOptions`) — a park's view holds
  * only what its local team must handle.
  */
-export function namedViews(me: Pick<InboxMe, 'teams'> & Partial<Pick<InboxMe, 'testLines'>>): NamedView[] {
+export function namedViews(me: Pick<InboxMe, 'teams'> & Partial<Pick<InboxMe, 'testLines' | 'access'>>): NamedView[] {
   const out: NamedView[] = [
     { key: 'all', label: ALL_VIEW_LABEL, kind: 'all', chips: {} },
-    { key: 'general', label: GENERAL_INBOX_LABEL, kind: 'general', chips: { inbox: 'general' } },
   ];
+  if (!me.access?.categories || me.access.categories.includes('general')) out.push({ key: 'general', label: GENERAL_INBOX_LABEL, kind: 'general', chips: { inbox: 'general' } });
   for (const category of ['birthdays', 'gm'] as const) {
-    if (me.teams.some((t) => t.kind === category)) {
+    if ((!me.access?.categories || me.access.categories.includes(category)) && me.teams.some((t) => t.kind === category)) {
       out.push({ key: category, label: CATEGORY_LABEL[category], kind: 'category', chips: { category } });
     }
   }
@@ -127,6 +136,7 @@ export function namedViews(me: Pick<InboxMe, 'teams'> & Partial<Pick<InboxMe, 't
   // SCRUM-908: each WhatsApp test line is an inbox of its own, last — the
   // number's conversations and nothing else (its Source chip, saved).
   for (const line of me.testLines ?? []) {
+    if (me.access?.channelAccountIds && !me.access.channelAccountIds.includes(line.id)) continue;
     out.push({ key: `line:${line.id}`, label: line.displayName, kind: 'line', chips: { channelAccountId: line.id } });
   }
   return out;

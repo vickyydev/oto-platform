@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { accountInboxAccessRoutes } from './account-inbox-access';
 import { randomBytes } from 'node:crypto';
 import { hash } from '@node-rs/argon2';
 import { and, eq, sql, type SQL } from 'drizzle-orm';
@@ -88,6 +89,7 @@ const AccountSessions = z.object({
 });
 
 export async function accountRoutes(app: App): Promise<void> {
+  await accountInboxAccessRoutes(app);
   // SCRUM-266 / SCRUM-607 — the account-by-id fence lives in
   // services/access-control.ts, shared with /admin/apps and /files.
   const assertAccountInScope = (

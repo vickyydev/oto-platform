@@ -17,7 +17,7 @@ import { FiltersDialog, TemplatesDialog } from '@/components/dialogs';
 import { Rail, viewerRoleLabel } from '@/components/Rail';
 import { SimulatorBody, SimulatorDialog } from '@/components/Simulator';
 import { TemplateSettings } from '@/components/TemplateSettings';
-import { mergeSources, sourcesOfRows, type SourceOption } from '@/lib/inboxes';
+import { inboxAccessSignature, inboxSourcesWithinAccess, mergeSources, sourcesOfRows, type SourceOption } from '@/lib/inboxes';
 import { EMPTY_FILTERS, listQuery, type Filters } from '@/lib/query';
 import { fastInboxRefresh, startFastInboxRefresh } from '@/lib/refresh';
 import { nextTheme, themeTitle, useTheme, type Theme } from '@/lib/theme';
@@ -260,6 +260,15 @@ export function Workspace({ me }: { me: InboxMe }) {
     mergeSources([], (me.simulator?.channelAccounts ?? []).map((a) => ({ id: a.id, channel: a.channel, name: a.displayName }))),
   );
   const learnSources = useCallback((more: SourceOption[]) => setSources((s) => mergeSources(s, more)), []);
+  const currentAccess = page?.access ?? me.access;
+  const visibleSources = inboxSourcesWithinAccess(sources, currentAccess);
+  const currentMe: InboxMe = { ...me, access: currentAccess,
+    teams: me.teams.filter(team => !currentAccess?.categories || currentAccess.categories.includes(team.kind === 'reception' ? 'general' : team.kind)),
+    testLines: me.testLines?.filter(line => currentAccess?.categories?.length !== 0
+      && (!currentAccess?.channelAccountIds || currentAccess.channelAccountIds.includes(line.id))) };
+  useEffect(() => {
+    if (page?.access && inboxAccessSignature(page.access) !== inboxAccessSignature(me.access)) void reload();
+  }, [page?.access, me.access, reload]);
   useEffect(() => {
     if (!me.capabilities.ai) return;
     let cancelled = false;
@@ -371,7 +380,12 @@ export function Workspace({ me }: { me: InboxMe }) {
       });
     } catch (err) {
       if (seq === threadSeq.current) {
-        setThread((t) => ({ ...t, loading: false, error: message(err, 'This conversation could not be read.') }));
+        if (err instanceof ApiError && (err.status === 403 || err.status === 404)) {
+          setThread({ ...EMPTY_THREAD, error: message(err, 'This conversation could not be read.') });
+          setPinned(row => row?.id === id ? null : row);
+          setRows(held => held.filter(row => row.id !== id));
+          setSelectedId(held => held === id ? null : held);
+        } else setThread((t) => ({ ...t, loading: false, error: message(err, 'This conversation could not be read.') }));
       }
     }
   }, []);
@@ -717,11 +731,11 @@ export function Workspace({ me }: { me: InboxMe }) {
       <div className={`${settings !== null ? 'hidden ' : ''}overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-[0_12px_40px_-16px_rgba(15,23,42,0.18)]`}>
         <div className="grid h-[calc(100dvh-2rem)] min-h-[520px] grid-cols-1 lg:h-[min(82vh,860px)] lg:grid-cols-[220px_360px_minmax(0,1fr)]">
           <Rail
-            me={me}
+            me={currentMe}
             tab={tab}
             counts={page?.tabCounts ?? null}
             filters={filters}
-            sources={sources}
+            sources={visibleSources}
             onTab={chooseTab}
             onFilters={patchFilters}
           />
@@ -731,7 +745,7 @@ export function Workspace({ me }: { me: InboxMe }) {
             aria-label="Conversations"
           >
             <ConversationList
-              me={me}
+              me={currentMe}
               tab={tab}
               strip={
                 me.capabilities.dashboard ? (
@@ -752,7 +766,7 @@ export function Workspace({ me }: { me: InboxMe }) {
               search={search}
               selectedId={selected?.id ?? null}
               now={now}
-              sources={sources}
+              sources={visibleSources}
               onSearch={setSearch}
               onFilters={patchFilters}
               onTab={chooseTab}
@@ -836,9 +850,9 @@ export function Workspace({ me }: { me: InboxMe }) {
       <FiltersDialog
         open={filtersOpen}
         onClose={() => setFiltersOpen(false)}
-        me={me}
+        me={currentMe}
         filters={filters}
-        sources={sources}
+        sources={visibleSources}
         onChange={patchFilters}
         onClear={() => setFilters((f) => ({ ...EMPTY_FILTERS, q: f.q, archiveRange: f.archiveRange, resolvedBy: f.resolvedBy }))}
       />

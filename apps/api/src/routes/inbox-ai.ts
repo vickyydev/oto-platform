@@ -34,6 +34,7 @@ import { PermissionDeniedError } from '../plugins/session';
 import { REPLAY_HEADER, wasReplay } from '../services/client-id';
 import { opCtx, withTx } from '../services/tx';
 import { holdsAnywhere, viewerScopeOf } from '../services/inbox/read-visibility';
+import { inboxAiChannelReplay, inboxAiExamplesReplay, inboxAiMessageReplay, inboxAiPauseReplay } from '../services/inbox/replay';
 import { replyViewerOf } from '../services/inbox/reply';
 import { approveRule, archiveRule, createRule, listRules, updateRule } from '../services/inbox/ai-rules';
 import { teach, TEACH_LINES, toolOpCtx } from '../services/inbox/ai-teach';
@@ -97,6 +98,15 @@ import {
 const IdParams = z.object({ id: z.string().uuid() });
 
 export async function inboxAiRoutes(app: App): Promise<void> {
+  app.addHook('onRoute', route => {
+    if (route.config?.authorizeReplay || route.method === 'GET' || route.method === 'HEAD') return;
+    const guard = route.url.endsWith('/ai-pause') || route.url.endsWith('/ai-resume') ? inboxAiPauseReplay(app)
+      : route.url.endsWith('/ai-mode') ? inboxAiChannelReplay(app)
+        : route.url.endsWith('/ai/examples/import') ? inboxAiExamplesReplay(app, true)
+          : route.url.endsWith('/ai/examples') ? inboxAiMessageReplay(app)
+            : route.url.includes('/ai/examples/:id') ? inboxAiExamplesReplay(app) : undefined;
+    if (guard) route.config = { ...route.config, authorizeReplay: guard };
+  });
   async function callerHolding(req: FastifyRequest, permission: Permission) {
     const auth = req.requireAuth();
     const effective = await req.effectivePermissions();
@@ -259,7 +269,7 @@ export async function inboxAiRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const { auth } = await queueCaller(req);
-      return listExamples(app.db, auth.operatorId, req.query);
+      return listExamples(app.db, auth, req.query);
     },
   );
 
@@ -558,7 +568,7 @@ export async function inboxAiRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const { auth, effective } = await callerHolding(req, AI_MANAGE);
-      return listAiChannelAccounts(app.db, auth.operatorId, await reachOf(app.db, effective, AI_MANAGE, auth.operatorId));
+      return listAiChannelAccounts(app.db, auth, await reachOf(app.db, effective, AI_MANAGE, auth.operatorId));
     },
   );
 

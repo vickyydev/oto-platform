@@ -412,8 +412,14 @@ export const InboxTabCountsSchema = z.object({
   handled: z.number().int().min(0).optional(),
 });
 
+export const InboxVisibilityLimitsSchema = z.object({
+  categories: z.array(InboxCategorySchema).nullable(),
+  channelAccountIds: z.array(Uuid).nullable(),
+  version: z.number().int().min(0),
+});
 export const InboxConversationListSchema = z.object({
   conversations: z.array(InboxConversationRowSchema),
+  access: InboxVisibilityLimitsSchema.optional(),
   /** Pass back as `cursor` for the next page; null on the last one. */
   nextCursor: z.string().nullable(),
   /** The viewer's tabs, counted over everything they can see, before filters (:1088-1097). */
@@ -817,6 +823,7 @@ export type InboxStartOver = z.infer<typeof InboxStartOverSchema>;
 
 export const InboxMeSchema = z.object({
   accountId: Uuid,
+  access: InboxVisibilityLimitsSchema.optional(),
   name: z.string().nullable(),
   /** The prototype views the viewer stands in. */
   roles: z.array(InboxViewRoleSchema),

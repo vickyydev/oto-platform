@@ -13,6 +13,7 @@ import { PermissionDeniedError } from '../../plugins/session';
 import { errors } from '../../lib/errors';
 import type { Exec, Tx } from '../tx';
 import { loadVisibleConversation, visibleConversationsSql, type InboxViewer } from './read-visibility';
+import { assertInboxPolicy } from './access';
 
 /**
  * A CONTACT MADE BY STAFF, A NAME SET BY STAFF (SCRUM-860; the owner, 8 and 12
@@ -162,8 +163,7 @@ export async function renameContact(
   input: { conversationId: string; displayName: string | null },
 ): Promise<InboxContactView> {
   const { operatorId } = ctx.viewer;
-  const conv = await loadVisibleConversation(tx, ctx.viewer, input.conversationId);
-  await requireAtConversation(tx, ctx, INBOX_CONTACT_PERMISSION, conv);
+  const conv = await authorizeContactChange(tx, ctx, input.conversationId);
 
   // Locked: two people renaming at once still leave one clear answer.
   const [locked] = await tx
@@ -229,6 +229,12 @@ export async function renameContact(
   return contactView(after!);
 }
 
+export async function authorizeContactChange(db: Exec, ctx: ContactCtx, conversationId: string) {
+  const conv = await loadVisibleConversation(db, ctx.viewer, conversationId);
+  await requireAtConversation(db, ctx, INBOX_CONTACT_PERMISSION, conv);
+  return conv;
+}
+
 /** The most useful thread of an existing contact for the caller: on this account if any, else the latest they can see. */
 async function visibleThreadOf(
   db: Exec,
@@ -269,6 +275,7 @@ export async function createContact(
     )
     .limit(1);
   if (!account) throw errors.notFound(INBOX_CONTACT_MESSAGES.channelNotFound);
+  await assertInboxPolicy(tx, ctx.viewer, account.defaultCategory, account.id);
   if (!account.canReply) throw errors.conflict('CHANNEL_CANNOT_CARRY_CONTACT', INBOX_CONTACT_MESSAGES.channelCannotCarry);
 
   const name = cleanName(input.displayName);
@@ -288,6 +295,8 @@ export async function createContact(
   }
 
   const refuseExisting = async (existing: ContactRow): Promise<never> => {
+    const visible = await visibleThreadOf(tx, ctx.viewer, existing.id, account.id);
+    if (!visible) throw errors.conflict('CONTACT_EXISTS', 'A contact already exists on this channel. Ask an authorized colleague to review it.');
     throw errors.conflict(
       'CONTACT_EXISTS',
       INBOX_CONTACT_MESSAGES.exists(existing.displayName ?? existing.externalHandle, CHANNEL_WORD[account.channel] ?? account.channel),
@@ -295,7 +304,7 @@ export async function createContact(
         contactId: existing.id,
         displayName: existing.displayName,
         handle: existing.externalHandle,
-        conversationId: await visibleThreadOf(tx, ctx.viewer, existing.id, account.id),
+        conversationId: visible,
       },
     );
   };

@@ -12,6 +12,7 @@ import {
 } from '../ui/alert-dialog';
 import { toast } from '../hooks/use-toast';
 import { PermissionDiffView } from './PermissionDiffView';
+import { InboxAccessControls } from './InboxAccessControls';
 import { permissionWords, scopeWords } from './presentation';
 
 export type PermissionAccount = Pick<AccountRow, 'id' | 'phone' | 'employee'>;
@@ -191,6 +192,7 @@ export function AccountPermissionsDialog({ account, api, branches, me, canAssign
                 className="rounded-full bg-foreground/5 px-2 py-1 text-xs font-mono">{permission.permission}</span>)}
             </div>
           </div>
+          {account && <InboxAccessControls api={api} accountId={account.id} canAssign={canAssign} onSaved={onSaved} />}
         </div>}
       </DialogContent>
     </Dialog>

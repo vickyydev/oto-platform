@@ -28,6 +28,7 @@ import type { Exec, Tx } from '../tx';
 import { aiEligibility, cancelAiForThread } from './ai-turns';
 import { personalDataIn } from './personal-data';
 import { loadVisibleConversation, type InboxViewer } from './read-visibility';
+import { inboxChannelAllowsSql, inboxSourceAllowsSql } from './access';
 
 /**
  * THE ASSISTANT'S SETTINGS: THE KNOWLEDGE BASE, THE CURATED EXAMPLES AND THE
@@ -531,10 +532,10 @@ function exampleAudit(r: ExampleRow) {
 
 export async function listExamples(
   db: Exec,
-  operatorId: string,
+  viewer: { accountId: string; operatorId: string },
   query: { status?: string; intent?: string; language?: string },
 ): Promise<{ examples: InboxAiExample[]; intents: string[] }> {
-  const where: SQL[] = [eq(aiExample.operatorId, operatorId)];
+  const where: SQL[] = [eq(aiExample.operatorId, viewer.operatorId), inboxSourceAllowsSql(viewer, sql`${aiExample.sourceConversationId}`)];
   if (query.status) where.push(eq(aiExample.status, query.status as ExampleRow['status']));
   if (query.intent) where.push(eq(aiExample.intent, query.intent));
   if (query.language) where.push(eq(aiExample.language, query.language as ExampleRow['language']));
@@ -546,11 +547,11 @@ export async function listExamples(
   return { examples: rows.map(exampleView), intents: [...AI_INTENTS] };
 }
 
-export async function loadExample(db: Exec, operatorId: string, id: string, lock = false): Promise<ExampleRow> {
+export async function loadExample(db: Exec, viewer: { accountId: string; operatorId: string }, id: string, lock = false): Promise<ExampleRow> {
   const q = db
     .select()
     .from(aiExample)
-    .where(and(eq(aiExample.operatorId, operatorId), eq(aiExample.id, id)))
+    .where(and(eq(aiExample.operatorId, viewer.operatorId), eq(aiExample.id, id), inboxSourceAllowsSql(viewer, sql`${aiExample.sourceConversationId}`)))
     .limit(1);
   const [row] = lock ? await q.for('update') : await q;
   if (!row) throw errors.notFound('Example not found');
@@ -598,7 +599,7 @@ export interface CorrectViewers {
  * thread rules every person action is held to.
  */
 async function threadForPerson(
-  tx: Tx,
+  tx: Exec,
   viewers: CorrectViewers,
   conversationId: string,
   alsoAllowed: (conv: typeof conversation.$inferSelect) => boolean,
@@ -632,7 +633,6 @@ export async function createExample(
     async (id) => (await tx.select().from(aiExample).where(eq(aiExample.id, id)).limit(1))[0],
     (row) => row.operatorId === ctx.operatorId && row.proposedByAccountId === ctx.accountId,
   );
-  if (claim.replay) return markReplay(exampleView(claim.row));
 
   const [msg] = await tx
     .select({ id: message.id, conversationId: message.conversationId })
@@ -648,6 +648,7 @@ export async function createExample(
     if (err instanceof AppError && err.statusCode === 404) throw errors.notFound('Message not found');
     throw err;
   }
+  if (claim.replay) return markReplay(exampleView(await loadExample(tx, ctx, claim.id)));
 
   const [turn] = await tx
     .select({ intent: aiTurn.intent, language: aiTurn.language })
@@ -720,7 +721,7 @@ export async function updateExample(
   id: string,
   patch: InboxAiExamplePatch,
 ): Promise<InboxAiExample> {
-  const before = await loadExample(tx, ctx.operatorId, id, true);
+  const before = await loadExample(tx, ctx, id, true);
   if (before.status !== 'proposed') throw errors.conflict('EXAMPLE_NOT_PROPOSED', EXAMPLE_MESSAGES.notProposed);
   const verdict = patch.verdict ?? before.verdict;
   const goodReply = patch.goodReply === undefined ? before.goodReply : patch.goodReply;
@@ -768,7 +769,7 @@ export async function approveExample(
   id: string,
   body: { deidentifiedConfirmed?: boolean | undefined },
 ): Promise<InboxAiExample> {
-  const before = await loadExample(tx, ctx.operatorId, id, true);
+  const before = await loadExample(tx, ctx, id, true);
   if (before.status === 'approved') return exampleView(before);
   if (before.status === 'rejected') throw errors.conflict('EXAMPLE_REJECTED', EXAMPLE_MESSAGES.rejectedCannotApprove);
   if (body.deidentifiedConfirmed !== true) {
@@ -804,7 +805,7 @@ export async function approveExample(
 
 /** Reject (the archive of an example): out of the queue, and out of the assistant if it was approved. */
 export async function rejectExample(tx: Tx, ctx: SettingsCtx, id: string): Promise<InboxAiExample> {
-  const before = await loadExample(tx, ctx.operatorId, id, true);
+  const before = await loadExample(tx, ctx, id, true);
   if (before.status === 'rejected') return exampleView(before);
   const [after] = await tx
     .update(aiExample)
@@ -827,7 +828,7 @@ export async function rejectExample(tx: Tx, ctx: SettingsCtx, id: string): Promi
 
 /** A proposed example withdrawn before review: deleted (it is a draft, and may hold a thread's words). */
 export async function deleteExample(tx: Tx, ctx: SettingsCtx, id: string): Promise<{ id: string; deleted: true }> {
-  const before = await loadExample(tx, ctx.operatorId, id, true);
+  const before = await loadExample(tx, ctx, id, true);
   if (before.status !== 'proposed') throw errors.conflict('EXAMPLE_NOT_DELETABLE', EXAMPLE_MESSAGES.notDeletable);
   await tx.delete(aiExample).where(and(eq(aiExample.operatorId, ctx.operatorId), eq(aiExample.id, before.id)));
   await audit.record(tx, {
@@ -899,7 +900,7 @@ export async function importExamples(tx: Tx, ctx: SettingsCtx, input: InboxAiExa
     );
     if (claim.replay) {
       replayedIds.push(claim.id);
-      out.push(exampleView(claim.row));
+      out.push(exampleView(await loadExample(tx, ctx, claim.id)));
       continue;
     }
     const [made] = await tx
@@ -985,13 +986,14 @@ function channelAccountView(r: typeof channelAccount.$inferSelect): InboxAiChann
  */
 export async function listAiChannelAccounts(
   db: Exec,
-  operatorId: string,
+  viewer: { accountId: string; operatorId: string },
   reach: Reach,
 ): Promise<{ channelAccounts: InboxAiChannelAccount[] }> {
+  const operatorId = viewer.operatorId;
   const rows = await db
     .select()
     .from(channelAccount)
-    .where(and(eq(channelAccount.operatorId, operatorId), sql`${channelAccount.archivedAt} is null`, eq(channelAccount.canReply, true)))
+    .where(and(eq(channelAccount.operatorId, operatorId), sql`${channelAccount.archivedAt} is null`, eq(channelAccount.canReply, true), inboxChannelAllowsSql(viewer, sql`${channelAccount.id}`)))
     .orderBy(asc(channelAccount.displayName), asc(channelAccount.id));
   return { channelAccounts: rows.filter((r) => reaches(reach, r.branchId)).map(channelAccountView) };
 }
@@ -1004,14 +1006,7 @@ export async function setAiMode(
   channelAccountId: string,
   aiMode: InboxAiMode,
 ): Promise<InboxAiChannelAccount> {
-  const [before] = await tx
-    .select()
-    .from(channelAccount)
-    .where(and(eq(channelAccount.operatorId, ctx.operatorId), eq(channelAccount.id, channelAccountId)))
-    .limit(1)
-    .for('update');
-  if (!before) throw errors.notFound('Channel account not found');
-  requireReach(reach, before.branchId, AI_MANAGE);
+  const before = await authorizeAiChannel(tx, ctx, reach, channelAccountId, true);
   if (!before.canReply && aiMode !== 'off') {
     throw errors.conflict('CHANNEL_CANNOT_REPLY', 'This number only sends notices and cannot carry the assistant.');
   }
@@ -1059,9 +1054,7 @@ export async function setAiPaused(
     .limit(1)
     .for('update');
   if (!locked) throw errors.notFound('Conversation not found');
-  const conv = await threadForPerson(tx, viewers, conversationId, (c) =>
-    hasPermission(effective, AI_MANAGE, { operatorId: ctx.operatorId, ...(c.branchId ? { branchId: c.branchId } : {}), recordId: c.id }),
-  );
+  const conv = await authorizeAiPause(tx, viewers, effective, conversationId);
   const answer = (c: { aiPausedAt: Date | null; aiPausedByAccountId: string | null }, turns = 0, withdrawn = 0): InboxAiPause => ({
     conversationId: conv.id,
     aiPaused: c.aiPausedAt !== null,
@@ -1118,4 +1111,26 @@ export async function setAiPaused(
     },
   });
   return answer(after!, stood.turnsCancelled.length, stood.messagesWithdrawn.length);
+}
+
+export async function authorizeAiPause(db: Exec, viewers: CorrectViewers, effective: EffectivePermission[], conversationId: string) {
+  return threadForPerson(db, viewers, conversationId, conv => hasPermission(effective, AI_MANAGE,
+    { operatorId: viewers.read.operatorId, ...(conv.branchId ? { branchId: conv.branchId } : {}), recordId: conv.id }));
+}
+
+export async function authorizeAiChannel(db: Exec, ctx: Pick<SettingsCtx, 'operatorId' | 'accountId'>,
+  reach: Reach, channelAccountId: string, lock = false) {
+  const query = db.select().from(channelAccount).where(and(eq(channelAccount.operatorId, ctx.operatorId),
+    eq(channelAccount.id, channelAccountId), inboxChannelAllowsSql(ctx, sql`${channelAccount.id}`))).limit(1);
+  const [row] = lock ? await query.for('update') : await query;
+  if (!row) throw errors.notFound('Channel account not found');
+  requireReach(reach, row.branchId, AI_MANAGE);
+  return row;
+}
+
+export async function authorizeAiMessageReplay(db: Exec, viewers: CorrectViewers, messageId: string) {
+  const [msg] = await db.select({ conversationId: message.conversationId }).from(message)
+    .where(and(eq(message.operatorId, viewers.read.operatorId), eq(message.id, messageId))).limit(1);
+  if (!msg) throw errors.notFound('Message not found');
+  await threadForPerson(db, viewers, msg.conversationId, () => false);
 }

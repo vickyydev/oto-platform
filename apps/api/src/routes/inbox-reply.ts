@@ -20,6 +20,7 @@ import { opCtx, withTx } from '../services/tx';
 import { holdsAnywhere, viewerScopeOf, type InboxViewer } from '../services/inbox/read-visibility';
 import { INBOX_REPLY, messageView, replyToConversation, replyViewerOf, type ReplyResult } from '../services/inbox/reply';
 import { sendAfterCommit } from '../services/inbox/send';
+import { inboxReplyReplay } from '../services/inbox/replay';
 import {
   INBOX_BROCHURE_MAX_BYTES,
   INBOX_BROCHURE_TYPES,
@@ -77,7 +78,7 @@ export async function inboxReplyRoutes(app: App): Promise<void> {
   app.post(
     '/conversations/:id/messages',
     {
-      config: { dynamicPermission: true },
+      config: { dynamicPermission: true, authorizeReplay: inboxReplyReplay(app) },
       schema: {
         description:
           'Reply in a conversation the caller can see and may reply in. Free text inside the channel’s free-text ' +

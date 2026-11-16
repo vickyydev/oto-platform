@@ -1,4 +1,5 @@
 export * from './ids';
+export * from './inbox-access';
 export * from './money';
 export * from './phone';
 export * from './dates';

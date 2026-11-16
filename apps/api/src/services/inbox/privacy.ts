@@ -9,6 +9,7 @@ import type { FileStorage } from '../files';
 import { withTx, type Exec, type Tx } from '../tx';
 import { cancelAiForThread } from './ai-turns';
 import { eraseOpenQuestionAnswers } from './open-question';
+import { inboxPolicyAllowsSql, inboxVisibilityLimits } from './access';
 
 /** The examples sourced from these threads (or a message in them): soft links, so matched by value. */
 function sourcedFrom(operatorId: string, conversationIds: string[]): SQL {
@@ -412,8 +413,22 @@ async function subjectOf(db: Exec, operatorId: string, contactId: string, lock: 
  * unconfirmed call, so the second confirmation is made knowing the reach.
  * Counts only.
  */
-export async function previewErasure(db: Db, operatorId: string, contactId: string): Promise<InboxErasureCounts> {
-  const subject = await subjectOf(db, operatorId, contactId, false);
+export async function authorizeErasureSubject(db: Exec, operatorId: string, contactId: string, accountId: string, lock = false): Promise<Subject> {
+  const subject = await subjectOf(db, operatorId, contactId, lock);
+  const ids = subject.conversations.map(row => row.id);
+  if (ids.length) {
+    const [blocked] = await db.select({ id: s.conversation.id }).from(s.conversation).where(and(
+      eq(s.conversation.operatorId, operatorId), inArray(s.conversation.id, ids), sql`not ${inboxPolicyAllowsSql({ operatorId, accountId })}`)).limit(1);
+    if (blocked) throw errors.notFound('Contact not found');
+  } else {
+    const limits = await inboxVisibilityLimits(db, { operatorId, accountId });
+    if (limits.categories !== null || limits.channelAccountIds !== null) throw errors.notFound('Contact not found');
+  }
+  return subject;
+}
+
+export async function previewErasure(db: Db, operatorId: string, contactId: string, accountId: string): Promise<InboxErasureCounts> {
+  const subject = await authorizeErasureSubject(db, operatorId, contactId, accountId);
   const convIds = subject.conversations.map((c) => c.id);
   let messages = 0;
   let noticeMessages = 0;
@@ -464,7 +479,7 @@ export interface EraseInput {
 /** The erasure itself. Call inside `withTx`; the caller has checked the two confirmations. */
 export async function eraseContact(tx: Tx, storage: FileStorage | null, input: EraseInput): Promise<InboxEraseContact> {
   const { operatorId, now } = input;
-  const subject = await subjectOf(tx, operatorId, input.contactId, true);
+  const subject = await authorizeErasureSubject(tx, operatorId, input.contactId, input.actorAccountId, true);
   const contactIds = subject.contacts.map((c) => c.id);
   const convIds = subject.conversations.map((c) => c.id);
   const alreadyErased = subject.contacts.every((c) => c.erasedAt !== null);

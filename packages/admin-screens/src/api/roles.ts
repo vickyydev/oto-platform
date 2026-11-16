@@ -7,6 +7,9 @@ export type PermissionPreview = ApiResponse<'/roles/preview', 'get'>;
 export type PreviewQuery = ApiQuery<'/roles/preview', 'get'>;
 export type AccountPermissions = ApiResponse<'/accounts/{id}/permissions', 'get'>;
 export type GrantRole = ApiBody<'/accounts/{id}/role-assignments', 'post'>;
+export type AccountInboxAccess = ApiResponse<'/accounts/{id}/inbox-access', 'get'>;
+export type InboxAccessChange = ApiBody<'/accounts/{id}/inbox-access', 'put'>;
+export type InboxAccessPreview = ApiResponse<'/accounts/{id}/inbox-access/preview', 'post'>;
 
 function queryString(query: Record<string, string | null | undefined>): string {
   const result = new URLSearchParams();
@@ -21,6 +24,9 @@ export function createRolesApi(api: AdminApi) {
     holders: (permission: string) => api.get<ApiResponse<'/roles/holders', 'get'>>(`/roles/holders?permission=${encodeURIComponent(permission)}`),
     preview: (query: PreviewQuery) => api.get<ApiResponse<'/roles/preview', 'get'>>(`/roles/preview?${queryString(query)}`),
     accountPermissions: (accountId: string) => api.get<ApiResponse<'/accounts/{id}/permissions', 'get'>>(`${at(accountId)}/permissions`),
+    inboxAccess: (accountId: string) => api.get<AccountInboxAccess>(`${at(accountId)}/inbox-access`),
+    previewInboxAccess: (accountId: string, body: InboxAccessChange) => api.post<InboxAccessPreview>(`${at(accountId)}/inbox-access/preview`, body, { idempotencyKey: crypto.randomUUID() }),
+    saveInboxAccess: (accountId: string, body: InboxAccessChange) => api.put<AccountInboxAccess>(`${at(accountId)}/inbox-access`, body, { idempotencyKey: crypto.randomUUID() }),
     grant: (accountId: string, body: GrantRole) => api.post<ApiResponse<'/accounts/{id}/role-assignments', 'post'>>(`${at(accountId)}/role-assignments`, body, { idempotencyKey: crypto.randomUUID() }),
     remove: (accountId: string, assignmentId: string) => api.delete<ApiResponse<'/accounts/{id}/role-assignments/{assignmentId}', 'delete'>>(`${at(accountId)}/role-assignments/${encodeURIComponent(assignmentId)}`, { idempotencyKey: crypto.randomUUID() }),
   };

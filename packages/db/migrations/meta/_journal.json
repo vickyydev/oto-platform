@@ -897,6 +897,13 @@
       "when": 1794845124650,
       "tag": "0127_party_additional_bills",
       "breakpoints": true
+    },
+    {
+      "idx": 128,
+      "version": "7",
+      "when": 1794849121865,
+      "tag": "0128_inbox_access",
+      "breakpoints": true
     }
   ]
 }

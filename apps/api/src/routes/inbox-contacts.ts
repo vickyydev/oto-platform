@@ -9,6 +9,7 @@ import {
   type Permission,
 } from '@oto/shared';
 import type { App } from '../app';
+import { inboxContactReplay } from '../services/inbox/replay';
 import { PermissionDeniedError } from '../plugins/session';
 import { opCtx, withTx } from '../services/tx';
 import { holdsAnywhere, viewerScopeOf } from '../services/inbox/read-visibility';
@@ -84,7 +85,7 @@ export async function inboxContactRoutes(app: App): Promise<void> {
   app.patch(
     '/conversations/:id/contact',
     {
-      config: { dynamicPermission: true },
+      config: { dynamicPermission: true, authorizeReplay: inboxContactReplay(app) },
       schema: {
         description:
           'Set the name the inbox shows for this conversation’s contact — everywhere it is shown: the list, the ' +
@@ -110,7 +111,7 @@ export async function inboxContactRoutes(app: App): Promise<void> {
   app.post(
     '/contacts',
     {
-      config: { dynamicPermission: true },
+      config: { dynamicPermission: true, authorizeReplay: inboxContactReplay(app, true) },
       schema: {
         description:
           'A new contact and its conversation on one channel account (one of `GET /inbox/me`’s `contactChannels`). ' +

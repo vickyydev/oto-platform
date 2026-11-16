@@ -4,6 +4,7 @@ import type { InboxViewerScope, Permission } from '@oto/shared';
 import type { EffectivePermission } from '../permissions';
 import { errors } from '../../lib/errors';
 import type { Exec } from '../tx';
+import { inboxPolicyAllowsSql } from './access';
 
 /**
  * WHO SEES WHICH CONVERSATION (S2-19 I2b, SCRUM-581; plan §3.2).
@@ -89,7 +90,7 @@ export function heldByViewerSql(viewer: InboxViewer): SQL {
  * its conversation through here.
  */
 export function visibleConversationsSql(viewer: InboxViewer): SQL {
-  const fence = and(eq(s.conversation.operatorId, viewer.operatorId), isNull(s.conversation.archivedAt))!;
+  const fence = and(eq(s.conversation.operatorId, viewer.operatorId), isNull(s.conversation.archivedAt), inboxPolicyAllowsSql(viewer))!;
   if (viewer.scope.operatorWide) return fence;
   const arms: SQL[] = [heldByViewerSql(viewer)];
   if (viewer.scope.branchIds.length > 0) {
