@@ -258,9 +258,11 @@
     },
     {
       "path": "docs/qa/jira-comments/attachments/SCRUM-988/988-final-live-api-cleanup-card.png",
-      "sha256": "07a2fec88485b1e93b7884b56dc9710c5c9377410bb21cac34693aa9d2cb338d",
-      "bytes": 118288,
+      "sha256": "93d9dee8b1af42d0a81669ba9b1b6f3ce8ebc1e50836236a440fbb2cc81a0613",
+      "bytes": 121024,
       "inspected": true
     }
-  ]
+  ],
+  "simulatorOnly": true,
+  "paymentProviderLimit": "SIMULATOR ONLY - NO REAL BANK PAYMENT. All five original gateway receipts are simulated; no new payment was made in this retest."
 }
