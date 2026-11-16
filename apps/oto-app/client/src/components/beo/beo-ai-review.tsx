@@ -1002,8 +1002,8 @@ function ReviewSections({
                 </Button>
               </div>
               <ChatSays from={e.from} indent={false} />
-              {/* SCRUM-904: every show approved is an Entertainment Act as well; at the chat's time it is on the Timeline. */}
-              <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap" data-testid="ai-review-entertainment-act">
+              {/* Matched shows become Entertainment Acts; unlisted shows remain unresolved requests. */}
+              {!e.notInCatalogue && <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap" data-testid="ai-review-entertainment-act">
                 <span>Act at</span>
                 <Input type="time" className="h-8 w-28" value={e.time ?? ""} onChange={(ev) => update({ time: ev.target.value })} data-testid="input-ai-review-entertainment-time" />
                 <span>
@@ -1011,13 +1011,13 @@ function ReviewSections({
                     ? "— added to Entertainment Acts, which puts it on the Timeline."
                     : "— added to Entertainment Acts with no time: the chat gives none."}
                 </span>
-              </div>
+              </div>}
               <PriceBeside chat={e.chatPrice} catalogue={t ? [t.price] : []} />
               {e.notInCatalogue && (
                 <div className="flex items-center gap-2 text-xs text-amber-800 dark:text-amber-200 flex-wrap">
                   <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-                  <span className="flex-1">Not on the entertainment menu: keep it as a free line, or leave it out.</span>
-                  <Decide decision={e.decision} onDecide={(decision) => update({ decision })} keepLabel="Keep as a free line" />
+                  <span className="flex-1">Not on the entertainment menu: keep it in Other requests with entertainment and price unresolved, or leave it out.</span>
+                  <Decide decision={e.decision} onDecide={(decision) => update({ decision })} keepLabel="Keep as an unresolved request" />
                 </div>
               )}
             </div>

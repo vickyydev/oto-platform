@@ -759,6 +759,13 @@ await check("SCRUM-903: no team confirmation and an empty catalogue — the revi
   assert.match(text("text-ai-review-no-catalogue")!, /catalogue is empty: every package, dish and show the chat names is a line to keep or leave out/);
   assert.equal(byTestId("button-ai-review-fallback"), null, "no ruling message: no free-text fill to load");
   assert.equal(byTestId("text-ai-review-final-message"), null, "Final Message to Parent stays empty");
+  const unknownShow = doc.querySelector('[data-testid="ai-review-not-in-catalogue"]');
+  assert.ok(unknownShow, 'the unlisted magic show is reviewed');
+  assert.match(unknownShow.textContent!, /Other requests with entertainment and price unresolved/);
+  assert.match(unknownShow.textContent!, /Keep as an unresolved request/);
+  assert.doesNotMatch(unknownShow.textContent!, /free line|added to Entertainment Acts/i, 'an unknown show is neither priced free nor promised as an act');
+  assert.equal(unknownShow.querySelector('[data-testid="ai-review-entertainment-act"]'), null);
+
   // Book Date's reason line under each value: the chat's words, whose line, when on the park's clock.
   const says = [...doc.querySelectorAll('[data-testid="text-ai-review-chat-says"]')].map((el) => el.textContent!.replace(/\s+/g, " ").trim());
   for (const line of [
