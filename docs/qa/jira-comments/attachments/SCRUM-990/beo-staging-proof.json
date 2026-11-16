@@ -1,0 +1,569 @@
+{
+  "tickets": [
+    "SCRUM-988",
+    "SCRUM-989",
+    "SCRUM-990",
+    "SCRUM-991"
+  ],
+  "sourceSha": "20c34493fb0aa2d0c33d98df9f6b6053cfc56d94",
+  "simulatorOnly": true,
+  "run": "20261116172425",
+  "status": "Money and counter retirement complete; one party and its linked BEO fixtures deliberately retained for the approved final app correction retest.",
+  "deployments": [
+    {
+      "name": "oto-app-staging",
+      "serviceId": "srv-danppvjtqb8s73cnvua0",
+      "deployId": "dep-dbtjib3l550s73dfjh60",
+      "sha": "20c34493fb0aa2d0c33d98df9f6b6053cfc56d94"
+    },
+    {
+      "name": "oto-api-staging",
+      "serviceId": "srv-danh2ljtqb8s73bt9en0",
+      "deployId": "dep-dbtjk159fdbs73bf1g30",
+      "sha": "20c34493fb0aa2d0c33d98df9f6b6053cfc56d94"
+    },
+    {
+      "name": "oto-pos-staging",
+      "serviceId": "srv-danh2mf40ujc73bu80j0",
+      "deployId": "dep-dbtjk1psrm7s73edpu8g",
+      "sha": "20c34493fb0aa2d0c33d98df9f6b6053cfc56d94"
+    },
+    {
+      "name": "oto-pos-web-staging",
+      "serviceId": "srv-dbk7qu8n74is73bm894g",
+      "deployId": "dep-dbtjk28m7kps73b6ehk0",
+      "sha": "20c34493fb0aa2d0c33d98df9f6b6053cfc56d94"
+    }
+  ],
+  "budgets": {
+    "modelCalls": 1,
+    "approvedSimulatorAttempts": 5,
+    "remainingModelCalls": 0,
+    "remainingApprovedSimulatorAttempts": 0
+  },
+  "verified": {
+    "catalogue": [
+      {
+        "stage": "native_picker",
+        "at": "2026-11-16T17:30:56.830Z",
+        "area": "kids",
+        "productCode": "PARTY-155EB276"
+      },
+      {
+        "stage": "native_picker",
+        "at": "2026-11-16T17:30:57.176Z",
+        "area": "bar",
+        "productCode": "PARTY-0407EF19"
+      },
+      {
+        "stage": "app_catalogue_read",
+        "at": "2026-11-16T17:30:57.265Z",
+        "productCodes": [
+          "PARTY-155EB276",
+          "PARTY-0407EF19"
+        ],
+        "matchingItemsPresent": true
+      }
+    ],
+    "review": [
+      {
+        "stage": "single_extraction",
+        "at": "2026-11-16T17:34:29.196Z",
+        "httpStatus": 200,
+        "modelCalls": 1,
+        "keys": [
+          "summary",
+          "event",
+          "setupPlan",
+          "kitchenPlan",
+          "partyDetails",
+          "timeline",
+          "proposals",
+          "review"
+        ]
+      },
+      {
+        "stage": "review_approved",
+        "at": "2026-11-16T17:36:43.039Z",
+        "httpStatus": 200,
+        "written": {
+          "otherLines": 1,
+          "event": true,
+          "kitchenLines": 1,
+          "freeKitchenLines": 0,
+          "tillLines": 2,
+          "foodTimes": true,
+          "barLines": 1,
+          "barServiceTime": true,
+          "pos": true,
+          "posItems": 1,
+          "timelineLines": 1
+        },
+        "manualLinePreserved": true,
+        "depositBaht": 1,
+        "entertainment": []
+      },
+      {
+        "stage": "stale_refusal",
+        "at": "2026-11-16T17:36:52.880Z",
+        "httpStatus": 409,
+        "message": "This BEO changed after the review opened. Read the chat again to compare the latest saved plan. Nothing was written.",
+        "manualPlanUnchanged": true
+      },
+      {
+        "stage": "unknown_entertainment_retained",
+        "at": "2026-11-16T17:38:43.819Z",
+        "specialRequests": "Keep the existing manual included dish and its note\nZZ TEST unlisted dragon juggling show x 1 - entertainment and price unresolved",
+        "knownShowRows": 0
+      }
+    ],
+    "parent": [
+      {
+        "stage": "parent_price_view",
+        "at": "2026-11-16T17:37:12.474Z",
+        "selectionId": "23e3b443-dbf8-442e-8b80-9652599a3372",
+        "plannedItems": [
+          {
+            "area": "Kids kitchen",
+            "name": "ZZ TEST BEO 20261116172425 dish",
+            "quantity": 2,
+            "included": false,
+            "unitSatang": 1001
+          },
+          {
+            "area": "Kids kitchen",
+            "name": "ZZ TEST BEO 20261116172425 manual included",
+            "quantity": 1,
+            "included": true,
+            "unitSatang": 0
+          },
+          {
+            "area": "Kids kitchen",
+            "name": "ZZ TEST BEO 20261116172425 unresolved price",
+            "quantity": 1,
+            "included": false,
+            "unitSatang": null
+          },
+          {
+            "area": "Bar",
+            "name": "ZZ TEST BEO 20261116172425 drink",
+            "quantity": 1,
+            "included": false,
+            "unitSatang": 201
+          }
+        ],
+        "internalCostFields": []
+      },
+      {
+        "stage": "parent_choices_only",
+        "at": "2026-11-16T17:38:46.114Z",
+        "selectionId": "23e3b443-dbf8-442e-8b80-9652599a3372",
+        "httpStatus": 200,
+        "isSubmitted": true,
+        "chargesAndPaymentsUnchanged": true,
+        "depositSatang": 100
+      },
+      {
+        "stage": "current_parent_after_additions",
+        "at": "2026-11-16T18:03:10.427Z",
+        "selectionId": "23e3b443-dbf8-442e-8b80-9652599a3372",
+        "isSubmitted": true,
+        "quantity": 4,
+        "unitSatang": 1001,
+        "lineTotalSatang": 4004,
+        "partyId": "59358f42-0407-4d51-b545-d33a4c84a8d7",
+        "billIds": [
+          "59358f42-0407-71bd-b495-fc998d76bfc0",
+          "59358f42-0407-7176-a5c9-60a0a5a19578"
+        ]
+      }
+    ],
+    "additionalBills": [
+      {
+        "stage": "additional_delta",
+        "at": "2026-11-16T17:49:54.225Z",
+        "billId": "59358f42-0407-71bd-b495-fc998d76bfc0",
+        "sourceLineId": "party_36aac371-c15c-4d61-b7ae-134f605853a3",
+        "sourceQuantity": 3,
+        "sourceCode": "PARTY-155EB276",
+        "totalSatang": 1001,
+        "outstandingSatang": 1001,
+        "repeatedSaveSameSource": true,
+        "mainSettlementId": "1b3473f5-8739-4191-9064-c1229dfc600c"
+      },
+      {
+        "stage": "additional_bill_payment",
+        "at": "2026-11-16T17:50:51.713Z",
+        "billId": "59358f42-0407-71bd-b495-fc998d76bfc0",
+        "paymentId": "25c45422-c1f7-42d4-8086-38762eb65665",
+        "attemptId": "01a1e57b-b1e3-713a-ba51-2825e75a3b04",
+        "amountSatang": 1000,
+        "outstandingSatang": 1,
+        "state": "open",
+        "tenderRetrySameAttempt": true,
+        "takenReplay": true
+      },
+      {
+        "stage": "additional_bill_payment",
+        "at": "2026-11-16T17:50:53.504Z",
+        "billId": "59358f42-0407-71bd-b495-fc998d76bfc0",
+        "paymentId": "7b494910-c5e7-4650-8ddc-6ce229260c69",
+        "attemptId": "01a1e57b-b8e8-7329-aacb-e66daf310a7e",
+        "amountSatang": 1,
+        "outstandingSatang": 0,
+        "state": "paid",
+        "tenderRetrySameAttempt": true,
+        "takenReplay": true
+      },
+      {
+        "stage": "additional_delta",
+        "at": "2026-11-16T17:52:29.538Z",
+        "billId": "59358f42-0407-7176-a5c9-60a0a5a19578",
+        "sourceLineId": "party_36aac371-c15c-4d61-b7ae-134f605853a3",
+        "sourceQuantity": 4,
+        "sourceCode": "PARTY-155EB276",
+        "totalSatang": 1001,
+        "outstandingSatang": 1001,
+        "repeatedSaveSameSource": true,
+        "mainSettlementId": "1b3473f5-8739-4191-9064-c1229dfc600c"
+      },
+      {
+        "stage": "additional_bill_payment",
+        "at": "2026-11-16T17:58:40.889Z",
+        "billId": "59358f42-0407-7176-a5c9-60a0a5a19578",
+        "paymentId": "586853ad-02c7-4d26-a99b-667e6b01dd6a",
+        "attemptId": "01a1e582-d85e-7b18-839a-df09431a024d",
+        "amountSatang": 1001,
+        "outstandingSatang": 0,
+        "state": "paid",
+        "tenderRetrySameAttempt": true,
+        "takenReplay": true
+      }
+    ],
+    "independentFinal": {
+      "stage": "financial_and_counter_retirement",
+      "at": "2026-11-16T18:11:53.682Z",
+      "jobId": "job-dbtkem61egvs73b7e1bg",
+      "eventId": "59358f42-0407-4d51-b545-d33a4c84a8d7",
+      "mainReceipt": "Q6EDB0-000001",
+      "mainGrossSatang": 1692203,
+      "originalFingerprint": "15eb8986d4087797dd79f4f1d702bb816ffb588cec848e29ce9ebfddc6b426bf",
+      "unchanged": true,
+      "bills": [
+        {
+          "id": "59358f42-0407-7176-a5c9-60a0a5a19578",
+          "mainSettlementId": "1b3473f5-8739-4191-9064-c1229dfc600c",
+          "totalSatang": 1001,
+          "paidSatang": 1001,
+          "outstandingSatang": 0
+        },
+        {
+          "id": "59358f42-0407-71bd-b495-fc998d76bfc0",
+          "mainSettlementId": "1b3473f5-8739-4191-9064-c1229dfc600c",
+          "totalSatang": 1001,
+          "paidSatang": 1001,
+          "outstandingSatang": 0
+        }
+      ],
+      "gatewayReceipts": [
+        {
+          "id": "01a1e566-8c1b-7594-acc2-555177990966",
+          "status": "approved",
+          "amountSatang": 100,
+          "provider": "simulator",
+          "settlementAudits": 1
+        },
+        {
+          "id": "01a1e571-f109-764a-9a31-3a72a20fa909",
+          "status": "approved",
+          "amountSatang": 1692103,
+          "provider": "simulator",
+          "settlementAudits": 1
+        },
+        {
+          "id": "01a1e57b-b1e3-713a-ba51-2825e75a3b04",
+          "status": "approved",
+          "amountSatang": 1000,
+          "provider": "simulator",
+          "settlementAudits": 1
+        },
+        {
+          "id": "01a1e57b-b8e8-7329-aacb-e66daf310a7e",
+          "status": "approved",
+          "amountSatang": 1,
+          "provider": "simulator",
+          "settlementAudits": 1
+        },
+        {
+          "id": "01a1e582-d85e-7b18-839a-df09431a024d",
+          "status": "approved",
+          "amountSatang": 1001,
+          "provider": "simulator",
+          "settlementAudits": 1
+        }
+      ],
+      "totalSimulatedReceivedSatang": 1694205,
+      "counter": {
+        "station_archived": true,
+        "box_archived": true,
+        "role": "virtual",
+        "no_bridge": true,
+        "secret_cleared": "[private]",
+        "claim_cleared": true,
+        "devices": 0,
+        "box_devices": 0
+      },
+      "sessions": [
+        {
+          "id": "01a1e561-2e2e-7182-babb-e791ce764de2",
+          "revoked": true
+        },
+        {
+          "id": "01a1e563-eefc-7a92-ab10-a07961b1c186",
+          "revoked": true
+        },
+        {
+          "id": "01a1e586-ff2f-7704-a206-b9391bd8b2c3",
+          "revoked": true
+        },
+        {
+          "id": "01a1e589-306a-7d94-9dad-baca68bb9022",
+          "revoked": true
+        },
+        {
+          "id": "01a1e58a-2ab2-7bb0-ad43-6dfafefb58fc",
+          "revoked": true
+        }
+      ],
+      "print": [
+        {
+          "kind": "adult_wristband",
+          "status": "skipped",
+          "n": 1
+        },
+        {
+          "kind": "kids_wristband",
+          "status": "skipped",
+          "n": 1
+        },
+        {
+          "kind": "receipt",
+          "status": "skipped",
+          "n": 1
+        }
+      ],
+      "outbox": [],
+      "commands": [],
+      "remainingFixture": {
+        "id": "59358f42-0407-4d51-b545-d33a4c84a8d7",
+        "is_archived": false,
+        "conversation_id": "01a1e566-8ba5-746b-b42a-3013e0114ca9",
+        "conversation_archived": false,
+        "queued_messages": 0
+      },
+      "deferredCleanup": [
+        "party",
+        "conversation",
+        "two BEO-only products",
+        "used parent link"
+      ]
+    }
+  },
+  "oldSessionAssertions": {
+    "appStatus": 401,
+    "primaryPlatformStatus": 401,
+    "finalCleanupPlatformStatus": 401,
+    "assertedIn": "work-beo-actions.mjs finishCounterAuth before counter_and_sessions_retired receipt",
+    "allFivePlatformSessionsIndependentlyRevoked": true
+  },
+  "retained": {
+    "eventId": "59358f42-0407-4d51-b545-d33a4c84a8d7",
+    "conversationId": "01a1e566-8ba5-746b-b42a-3013e0114ca9",
+    "products": [
+      {
+        "id": "01a0bbdc-8c41-7b40-bebf-091b155eb276",
+        "code": "PARTY-155EB276"
+      },
+      {
+        "id": "01a0bbdc-8c41-78e7-9922-06680407ef19",
+        "code": "PARTY-0407EF19"
+      }
+    ],
+    "selectionId": "23e3b443-dbf8-442e-8b80-9652599a3372",
+    "originalSaleId": "07d91a59-52e3-4aac-a9f3-e3360a740a0a",
+    "originalSettlementId": "1b3473f5-8739-4191-9064-c1229dfc600c",
+    "originalReceiptFingerprint": "15eb8986d4087797dd79f4f1d702bb816ffb588cec848e29ce9ebfddc6b426bf",
+    "reason": "Root explicitly requested reuse for final paid-claim/unknown-entertainment app retest without another model call, payment or party. Archive party/thread/products and invalidate parent link after that retest; financial history remains."
+  },
+  "coverageLimits": [
+    "Simulator only. Real merchant/bank acceptance, physical devices/printing and fiscal issuance are not proven. The three own print jobs were skipped, not physically printed.",
+    "Native BEO shows both paid linked bills and the original sale; its lower Payments section is cropped. Independent sale, complete sale-line and main-payment fingerprint equality supplies receipt conservation evidence.",
+    "Desktop till additional-bill selector and mobile collection native proof remain unproven: bounded selectors timed out while the shared own session was locked/at station selection. API tender, partial payment, final satang, retry and recorded-payment replay passed. No extra payment or fixture was created for screenshots.",
+    "Kitchen/Bar native option crops prove the appropriate BEO-only product codes; the long synthetic labels clip prices. Saved prices are proven separately by API/parent views. Cross-party saved reuse and wrong-bill/overpay/race refusal edges are local-test coverage, not staged here.",
+    "review-current-proposed-source.png is a diagnostic from source20c only. Unknown-show free-price/Received copy and dropped requested time/notes are known follow-up findings; it is not evidence of the subsequent correction. Native current-plan top is outside that crop. Manual preservation and stale 409 unchanged plan are read back independently.",
+    "The original parent view covers included/free and unresolved-price controls. The unresolved manual price control was explicitly removed before main collection; the existing submitted parent link then correctly showed the later saved quantity4 at THB10.01 each."
+  ],
+  "recoveries": [
+    {
+      "stage": "helper_interruption",
+      "action": "addItems",
+      "message": "expect(locator).toBeVisible() failed",
+      "at": "2026-11-16T17:29:21.241Z"
+    },
+    {
+      "stage": "helper_interruption",
+      "action": "parent",
+      "message": "app POST /api/beo/set-menu-selections 201",
+      "at": "2026-11-16T17:36:52.963Z"
+    },
+    {
+      "stage": "helper_interruption",
+      "action": "mainSettlement",
+      "message": "API POST /parties/<id>/settle/preview 409 SALE_KIDS_WITHOUT_REGISTRATION",
+      "at": "2026-11-16T17:39:29.140Z"
+    },
+    {
+      "stage": "helper_interruption",
+      "action": "mainFingerprint",
+      "message": "job failed",
+      "at": "2026-11-16T17:42:46.929Z"
+    },
+    {
+      "stage": "helper_interruption",
+      "action": "mainFingerprint",
+      "message": "job failed",
+      "at": "2026-11-16T17:44:39.893Z"
+    },
+    {
+      "stage": "helper_interruption",
+      "action": "mainFingerprint",
+      "message": "await is only valid in async functions and the top level bodies of modules",
+      "at": "2026-11-16T17:45:30.946Z"
+    },
+    {
+      "stage": "helper_interruption",
+      "action": "mainFingerprint",
+      "message": "BEO_QA_ERROR paid main receipt",
+      "at": "2026-11-16T17:45:57.500Z"
+    },
+    {
+      "stage": "helper_interruption",
+      "action": "nativeBill",
+      "message": "locator.waitFor: Timeout 45000ms exceeded.",
+      "at": "2026-11-16T17:55:11.598Z"
+    },
+    {
+      "stage": "helper_interruption",
+      "action": "posRetry",
+      "message": "locator.waitFor: Timeout 15000ms exceeded.",
+      "at": "2026-11-16T17:57:14.663Z"
+    },
+    {
+      "stage": "helper_interruption",
+      "action": "parentCurrent",
+      "message": "API GET /parties/<id>?branchId=<id> 423 SESSION_LOCKED",
+      "at": "2026-11-16T18:02:11.582Z"
+    },
+    {
+      "stage": "helper_interruption",
+      "action": "releaseCounter",
+      "message": "owned cleanup route",
+      "at": "2026-11-16T18:03:11.512Z"
+    },
+    {
+      "stage": "helper_interruption",
+      "action": "finishCounterAuth",
+      "message": "cleanup GET 404 ROUTE_NOT_FOUND",
+      "at": "2026-11-16T18:05:35.324Z"
+    },
+    {
+      "stage": "helper_interruption",
+      "action": "finalMoneyCensus",
+      "message": "BEO_QA_ERROR operator does not exist: uuid  text",
+      "at": "2026-11-16T18:08:56.003Z"
+    }
+  ],
+  "recoveryExplanation": [
+    "Native initial picker timing was recovered using existing created items; no duplicate catalogue item.",
+    "Parent selection create succeeded with HTTP201; helper expected200. Existing selection was recovered by authorized read; no second selection or extraction.",
+    "Main preview required an accompanying adult for the child. Own fixture counts corrected to one child/one adult, with zero socks given; no park setting changed.",
+    "Readback helper SQL/quoting/top-level-await and finalised-status expectations were corrected before claiming the independent baseline. Final uuid/text bind was corrected and the whole bounded final job passed.",
+    "Empty JSON DELETE and an unsupported box GET were corrected from supported route source; owned station then box archived. Two interrupted cleanup sessions were revoked through the actual signOut service and included in the final five-session census."
+  ],
+  "privateHelperFingerprints": [
+    {
+      "path": "work-beo-runner.mjs",
+      "sha256": "05aaf4b2302f9b3a22bf42ebac4972a3f7eb8dadce06b78ec63c52c40e21fe0f"
+    },
+    {
+      "path": "work-beo-actions.mjs",
+      "sha256": "36b627c55f236593c6dd1f7262efb6e45d136354db44574be1cfef4499a48dce"
+    }
+  ],
+  "images": [
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-990/linked-paid-main-and-additional-bills.png",
+      "sha256": "86688fa80058418b7bd0c49fbd6852aadfbb3530ee96974fa33c2dfd6e465784",
+      "inspected": true,
+      "diagnosticOnly": false,
+      "rootInspected": true
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-990/parent-saved-selling-prices.png",
+      "sha256": "24d5358d033ddada89e5a4c1c6ec46276b5d34930feec5ea66b4e3edd8bdb870",
+      "inspected": true,
+      "diagnosticOnly": false,
+      "rootInspected": true
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-990/parent-current-quantity-four.png",
+      "sha256": "ccc46982c05ed75e4724efd897a59d138dcae6a5c35ed9b419447298bb96c042",
+      "inspected": true,
+      "diagnosticOnly": false,
+      "rootInspected": true
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-990/neutral-original-simulator-deposit.png",
+      "sha256": "d8ae33314348878e6e0db5c2f6c3245b40416c55e0a5263e48a0b08892a65f12",
+      "inspected": true,
+      "diagnosticOnly": false,
+      "rootInspected": true
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-990/picker-kids.png",
+      "sha256": "02c7d0f78ed01a89e1d57799e179a99ce581b454d798fa3f5f4b97ec54edcf03",
+      "inspected": true,
+      "diagnosticOnly": false,
+      "rootInspected": true
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-990/picker-bar.png",
+      "sha256": "1c1b26d31620fa221fdb2a6a54486ce62fc5c8f25e93d46fc7d56a78055a66aa",
+      "inspected": true,
+      "diagnosticOnly": false,
+      "rootInspected": true
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-990/review-current-proposed-source.png",
+      "sha256": "d9d787f118eca255f2387b50be3584dc5254cd103d8a7a542aa9acb455b5db03",
+      "inspected": true,
+      "diagnosticOnly": true,
+      "rootInspected": true
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-990/additional-bills-test-run.png",
+      "sha256": "eafb62205a710a061c7375c087c59838317cce894a316affe884810d9154164b",
+      "inspected": true,
+      "labelledTestRunCard": true,
+      "rootInspected": true
+    }
+  ],
+  "rootReview": {
+    "at": "2026-11-16T18:17:49.677Z",
+    "allEightImagesInspected": true,
+    "originalReviewImageDiagnosticOnly": true,
+    "counterCleanupVerified": true,
+    "partyCleanup": "Deliberately deferred for the approved final app retest; not complete",
+    "acceptance": "Staging simulator proof, with native selector/mobile and real merchant limits preserved"
+  }
+}
