@@ -1,0 +1,22 @@
+{
+  "at": "2026-11-16T15:56:08.280Z",
+  "sha": "ea7212974dfdb8c2062cf34b2448859939ec406d",
+  "receipts": [
+    {
+      "name": "oto-api-staging",
+      "serviceId": "srv-danh2ljtqb8s73bt9en0",
+      "id": "dep-dbtif5p42hec73bj3i20",
+      "status": "build_in_progress",
+      "sha": "ea7212974dfdb8c2062cf34b2448859939ec406d",
+      "reused": false
+    },
+    {
+      "name": "oto-inbox-staging",
+      "serviceId": "srv-dbbb4srrjlhs73dk2rm0",
+      "id": "dep-dbtif615efls73cprfd0",
+      "status": "build_in_progress",
+      "sha": "ea7212974dfdb8c2062cf34b2448859939ec406d",
+      "reused": false
+    }
+  ]
+}

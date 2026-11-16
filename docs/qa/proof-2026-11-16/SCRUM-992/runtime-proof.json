@@ -1,0 +1,48 @@
+{
+  "at": "2026-11-16T16:01:29.063Z",
+  "sha": "ea7212974dfdb8c2062cf34b2448859939ec406d",
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "id": "dep-dbtif5p42hec73bj3i20",
+      "status": "live",
+      "sha": "ea7212974dfdb8c2062cf34b2448859939ec406d"
+    },
+    {
+      "name": "oto-inbox-staging",
+      "id": "dep-dbtif615efls73cprfd0",
+      "status": "live",
+      "sha": "ea7212974dfdb8c2062cf34b2448859939ec406d"
+    }
+  ],
+  "servedAsset": {
+    "pageStatus": 200,
+    "assetStatus": 200,
+    "path": "/assets/index-CSlyncnq.js",
+    "sha256": "71871962aafacb03676d154b2ecf6ee968fa0c164a60da898eeea8b4102ae89a",
+    "newLabels": true
+  },
+  "api": {
+    "status": 200,
+    "rows": 100,
+    "allRowsHaveValidNextAction": true,
+    "states": {
+      "waiting_customer": 92,
+      "ai_sent": 7,
+      "staff_reply_needed": 1
+    }
+  },
+  "browser": {
+    "labels": [
+      "Waiting for customer",
+      "AI sent · waiting for customer"
+    ],
+    "labelCount": 50,
+    "blockedWrites": [],
+    "screenshotNote": "Actual staging list and state badges; personal row text masked. Theme class changed locally for rendering checks without saving a preference. No conversation selected."
+  },
+  "sessionCleanup": {
+    "signOut": 200,
+    "oldCookie": 401
+  }
+}

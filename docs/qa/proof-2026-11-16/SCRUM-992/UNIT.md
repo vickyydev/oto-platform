@@ -22,3 +22,7 @@ The first API compiler run found one test-only typing mismatch: the established 
 Pending: root's final independent source review, fresh-main integration, exact-source background CI and named staging proof. This source is not deployed and has no staging acceptance claim. Root owns integration, independent review, Jira and shared checkpoint documents.
 
 Local receipts: `C:/oto-lanes/inbox-992-all-tests-final.log`, `inbox-992-api-review.log`, `inbox-992-api-types-final.log`, `inbox-992-shared-types.log`, `inbox-992-inbox-types.log`, `inbox-992-build.log`, `inbox-992-lint-final.log` in the same local directory. The review file is `apps/api/test/inbox-next-action-992-review.test.ts`.
+
+## Live verification
+
+Reviewed product ea7212974dfdb8c2062cf34b2448859939ec406d is live on the API and Inbox. See runtime-proof.json for exact deployment IDs, served asset hash, real API response state counts and session cleanup. Both staging screenshots were inspected. Browser capture opened no conversation and attempted no write. Theme class changes were local rendering checks, not saved account preferences. The screenshots demonstrate actual waiting/customer and AI-sent rows; other states, personal unread and selection boundaries retain the local test coverage recorded above. No native interaction with a real customer thread or new message was performed.
