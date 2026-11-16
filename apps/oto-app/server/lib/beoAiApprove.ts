@@ -488,7 +488,11 @@ export async function approveBeoAiFill(
     }
     const requests = details?.specialRequests !== undefined ? details.specialRequests : (ev?.specialRequests ?? "").trim();
     if (details?.specialRequests !== undefined) eventUpdates.specialRequests = requests;
-    const unresolvedShows = body.entertainment.filter((show) => !show.templateId).map((show) => `${show.name} x ${show.quantity} - entertainment and price unresolved`);
+    const unresolvedShows = body.entertainment.filter((show) => !show.templateId).map((show) => [
+      `${show.name} x ${show.quantity} - entertainment and price unresolved`,
+      ...(show.time ? [`requested time ${show.time}`] : []),
+      ...(show.notes?.trim() ? [`notes: ${show.notes.trim()}`] : []),
+    ].join("; "));
     const otherRequests = [...body.otherLines, ...unresolvedShows];
     if (otherRequests.length > 0) {
       const add = otherRequests.filter((l) => !requests.includes(l));

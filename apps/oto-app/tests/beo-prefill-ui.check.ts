@@ -765,6 +765,8 @@ await check("SCRUM-903: no team confirmation and an empty catalogue — the revi
   assert.match(unknownShow.textContent!, /Keep as an unresolved request/);
   assert.doesNotMatch(unknownShow.textContent!, /free line|added to Entertainment Acts/i, 'an unknown show is neither priced free nor promised as an act');
   assert.equal(unknownShow.querySelector('[data-testid="ai-review-entertainment-act"]'), null);
+  assert.match(unknownShow.textContent!, /Requested time/);
+  await setValue(required("input-ai-review-entertainment-request-time") as HTMLInputElement, "17:25");
 
   // Book Date's reason line under each value: the chat's words, whose line, when on the park's clock.
   const says = [...doc.querySelectorAll('[data-testid="text-ai-review-chat-says"]')].map((el) => el.textContent!.replace(/\s+/g, " ").trim());
@@ -802,6 +804,7 @@ await check("SCRUM-903: no team confirmation and an empty catalogue — the revi
   assert.equal(body.event.startTime, "15:00");
   assert.deepEqual(body.menuLines.map((l) => [l.itemName, l.productCode]), [["pizza", null]]);
   assert.deepEqual(body.entertainment.map((e) => [e.templateId, e.name]), [[null, "a magic show"]]);
+  assert.equal(body.entertainment[0]?.time, "17:25", "the edited requested time reaches approval without scheduling an act");
   assert.deepEqual(body.deposit, { amount: 5000, paid: false, date: null }, "unticked: sent as asked, never as received");
   assert.ok(body.sources.length > 0 && body.sources.every((src) => src.source === "family" || src.source === "staff"), JSON.stringify(body.sources));
   assert.ok(!JSON.stringify(body).includes("quote") && !JSON.stringify(body).includes("NORULING-903"), "the chat's words never ride the approval");

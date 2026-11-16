@@ -521,10 +521,18 @@ try {
 
   await check("unknownEntertainmentIsAnUnresolvedRequestNotAFreeShow", async () => {
     const before = await q("select id from beo_entertainment_selections where event_id=$1", [ev.guards]);
-    const response = await approve(ev.guards, { conversationId: null, messageId: null, package: null, setMenu: null, menuLines: [], entertainment: [{ templateId: null, name: "ZZ TEST unknown show 988", quantity: 1, notes: null }], otherLines: [], event: {}, cake: null, deposit: null, sources: [] });
+    assert.equal(before.length, 0);
+    const manual = [(await beoRows(ev.guards)).event.special_requests, "ZZ TEST manual request kept beside unknown show"].filter(Boolean).join("\n");
+    await q("update core_events set special_requests=$2 where id=$1", [ev.guards, manual]);
+    const response = await approve(ev.guards, { conversationId: null, messageId: null, package: null, setMenu: null, menuLines: [], entertainment: [{ templateId: null, name: "ZZ TEST unknown show 988", quantity: 1, time: "16:45", notes: "ZZ TEST quiet show requested by the family" }], otherLines: [], event: {}, cake: null, deposit: null, sources: [] });
     assert.equal(response.status, 200, JSON.stringify(response.body));
     assert.deepEqual(await q("select id from beo_entertainment_selections where event_id=$1", [ev.guards]), before);
     assert.match((await beoRows(ev.guards)).event.special_requests, /ZZ TEST unknown show 988.*unresolved/);
+    const requests = (await beoRows(ev.guards)).event.special_requests;
+    assert.ok(requests.includes(manual), 'existing manual requests remain intact');
+    assert.match(requests, /requested time 16:45/);
+    assert.match(requests, /notes: ZZ TEST quiet show requested by the family/);
+    assert.deepEqual(await q("select id from beo_entertainment_items where event_id=$1", [ev.guards]), [], 'unknown show creates no act');
   });
 
   await check("staleReviewProtectsConcurrentManualSpecialRequests", async () => {

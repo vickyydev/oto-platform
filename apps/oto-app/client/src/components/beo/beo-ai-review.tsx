@@ -1012,6 +1012,11 @@ function ReviewSections({
                     : "— added to Entertainment Acts with no time: the chat gives none."}
                 </span>
               </div>}
+              {e.notInCatalogue && <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap" data-testid="ai-review-entertainment-request-time">
+                <span>Requested time</span>
+                <Input type="time" className="h-8 w-28" value={e.time ?? ""} onChange={(ev) => update({ time: ev.target.value })} data-testid="input-ai-review-entertainment-request-time" />
+                <span>Kept with the unresolved request; no act is scheduled.</span>
+              </div>}
               <PriceBeside chat={e.chatPrice} catalogue={t ? [t.price] : []} />
               {e.notInCatalogue && (
                 <div className="flex items-center gap-2 text-xs text-amber-800 dark:text-amber-200 flex-wrap">
