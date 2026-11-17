@@ -277,9 +277,11 @@ try {
       ]),
     ]);
     const row = await rowOf(ev.bar);
+    // SCRUM-989 (8a09885a2, app migration 0052): each bar line says whether staff approved its
+    // charge; neither line here carries the approval, so both read false.
     assert.deepEqual(row!.kitchen_plan.bar_lines, [
-      { line_id: "b1", source: "set_menu", product_code: "CF-66-4", name: "Cranberry mors", qty: 2, note: null, unit_price_satang: null },
-      { line_id: "b2", source: "extra", product_code: null, name: "Juice pitcher", qty: 1, note: "orange", unit_price_satang: 9000 },
+      { line_id: "b1", source: "set_menu", product_code: "CF-66-4", name: "Cranberry mors", qty: 2, note: null, unit_price_satang: null, charge_approved: false },
+      { line_id: "b2", source: "extra", product_code: null, name: "Juice pitcher", qty: 1, note: "orange", unit_price_satang: 9000, charge_approved: false },
     ]);
     assert.deepEqual(row!.kitchen_plan.cake, { mode: "INTERNAL", qty: 2, time: "15:30", notes: "chocolate, \"Mali 6\"" });
     assert.equal(row!.kitchen_plan.bar_service_time, "14:00");

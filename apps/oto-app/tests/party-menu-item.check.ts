@@ -60,11 +60,13 @@ await check("the form's rules: a name, and a price or the tick, never both; baht
   assert.equal(satangOfBaht(450.5), 45_050);
   assert.equal(satangOfBaht(0.1 + 0.2), 30, "rounded to the satang");
   const actionId = randomUUID();
+  // SCRUM-989 (8a09885a2): a line staff add as a new item carries its charge approval; older PARTY
+  // bar lines without it stay uncharged.
   assert.deepEqual(partyMenuLineOf({ actionId, menu: "kids", name: " Cake ", station: "bar", price: null, free: true }, "PARTY-1", true), {
-    id: `party_${actionId}`, itemName: "Cake", quantity: 1, notes: "", included: true, price: 0, productCode: "PARTY-1", source: "additional",
+    id: `party_${actionId}`, itemName: "Cake", quantity: 1, notes: "", included: true, price: 0, productCode: "PARTY-1", chargeApproved: true, source: "additional",
   });
   assert.deepEqual(partyMenuLineOf({ actionId, menu: "adults", name: "Tea", station: "kitchen", price: 125, free: false }, "PARTY-2", false), {
-    id: `party_${actionId}`, itemName: "Tea", quantity: 1, notes: "", included: false, price: 125, productCode: "PARTY-2",
+    id: `party_${actionId}`, itemName: "Tea", quantity: 1, notes: "", included: false, price: 125, productCode: "PARTY-2", chargeApproved: true,
   });
 });
 
@@ -83,11 +85,25 @@ const succeed: Reply = (req, res) => {
   res.end(JSON.stringify({ ...product, categoryId: "33333333-3333-4333-8333-333333333333", replayed: !!held }));
 };
 let reply: Reply = succeed;
+/**
+ * SCRUM-990 (8a09885a2): once a new item is on the plan the app asks the platform to bill the
+ * party's approved additions. The platform answers an unsettled party "plan_only"
+ * (apps/api/src/services/beo-additional-charges.ts). Those asks are kept apart from `asked`,
+ * which holds the product requests each check counts.
+ */
+const additions: Asked[] = [];
+const ADDITIONS = /^\/otoapp\/parties\/[^/]+\/beo-additions$/;
 const platform = createServer((req, res) => {
   let raw = "";
   req.on("data", (c) => (raw += c));
   req.on("end", () => {
     const body = JSON.parse(raw || "{}") as Record<string, unknown>;
+    if (ADDITIONS.test(req.url ?? "")) {
+      additions.push({ url: req.url ?? "", headers: req.headers, body });
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ status: "plan_only", added: 0, billIds: [] }));
+      return;
+    }
     asked.push({ url: req.url ?? "", headers: req.headers, body });
     reply(req, res, body);
   });
@@ -283,9 +299,16 @@ try {
   await check("an admin adds a free kitchen item: the platform is asked with the key and the press, and the line is written with its code", async () => {
     const actionId = randomUUID();
     const before = asked.length;
+    const additionsBefore = additions.length;
     const res = await add(keyed, admin, partyA, { actionId });
     assert.equal(res.status, 200, JSON.stringify(res.body));
     assert.equal(asked.length, before + 1);
+    // SCRUM-990 (8a09885a2): the party's approved additions offered to the platform once, with the
+    // key; an unsettled party keeps them on the plan.
+    assert.equal(additions.length, additionsBefore + 1);
+    assert.equal(additions.at(-1)!.url, `/otoapp/parties/${partyA}/beo-additions`);
+    assert.equal(additions.at(-1)!.headers.authorization, "Bearer zz-828-key");
+    assert.equal(res.body.additionalBilling?.status, "plan_only");
     const sent = asked.at(-1)!;
     assert.equal(sent.headers.authorization, "Bearer zz-828-key");
     assert.equal(sent.headers["idempotency-key"], actionId);
@@ -295,7 +318,8 @@ try {
       source: { eventId: partyA, lineLabel: "ZZ TEST unicorn cake" },
       actorAppUserId: adminA.id,
     }, "who pressed travels, for the platform's audit rows");
-    const line = { id: `party_${actionId}`, itemName: "ZZ TEST unicorn cake", quantity: 1, notes: "", included: true, price: 0, productCode: res.body.productCode };
+    // SCRUM-989/990 (8a09885a2): the new line carries its charge approval and the billing state.
+    const line = { id: `party_${actionId}`, itemName: "ZZ TEST unicorn cake", quantity: 1, notes: "", included: true, price: 0, productCode: res.body.productCode, chargeApproved: true, billingSync: "plan_only" };
     assert.match(res.body.productCode, /^PARTY-ZZ/);
     assert.deepEqual(res.body.line, line);
     assert.equal(res.body.replayed, false);
@@ -311,8 +335,13 @@ try {
     assert.equal(asked.at(-1)!.body.priceSatang, 45_050);
     assert.equal(asked.at(-1)!.body.station, "bar");
     assert.equal(asked.at(-1)!.body.actorAppUserId, managerA.id);
+    assert.equal(additions.at(-1)!.url, `/otoapp/parties/${partyA}/beo-additions`);
+    // The adults' list is off here (the first add set "Different for adults" to false), so this
+    // line is no billing source and the plan stores it with no billing state; the answer's line
+    // is the stored line, as since SCRUM-828. It carries its charge approval (SCRUM-989).
     assert.deepEqual(res.body.line, {
       id: res.body.line.id, itemName: "ZZ TEST bubble tea", quantity: 1, notes: "", included: false, price: 450.5, productCode: res.body.productCode,
+      chargeApproved: true,
     });
     const plan = await kitchenOf(partyA);
     assert.equal((plan?.menus?.kids as unknown[]).length, 1, "the kids' list as it was");
@@ -363,7 +392,8 @@ try {
       { name: "   " },
       { actionId: "not-a-uuid" },
       { station: "none" },
-      { menu: "bar" },
+      // SCRUM-989 (8a09885a2) made the bar plan a list this route writes to; "drinks" is none.
+      { menu: "drinks" },
     ]) {
       const res = await add(keyed, admin, partyA, bad);
       assert.equal(res.status, 400, `${JSON.stringify(bad)}: ${JSON.stringify(res.body)}`);
