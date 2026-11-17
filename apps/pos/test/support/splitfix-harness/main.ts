@@ -18,6 +18,8 @@ import type { TaxBreakdownBaht } from '@/lib/cartWire';
 import type { EodStrandedRow } from '@oto/shared';
 import type { CartLine, Member, MenuItem, MerchItem, MerchOrderLine, Sale } from '@/types';
 import { readSplitFix } from './measure';
+import { GROUPED_MENU, groupedDishes, readSubRows } from './sub-rows';
+import { ChevronUp, GlassWater, ShoppingCart, StickyNote } from 'lucide-react';
 import '@/fonts.css';
 import '@/index.css';
 
@@ -39,13 +41,20 @@ import '@/index.css';
  *   `history-search`   History's search row (14f);
  *   `stranded`         the phone End of Day's "Still counted inside" with a
  *                      long band code (17b).
+ *   `fnb-menu-grouped` SCRUM-994: the F&B menu as staging groups it on 13
+ *                      November (Food, Drinks, Special and their
+ *                      sub-categories), three dishes in every one; at a
+ *                      desk, or with `frame=phone` in the phone till's frame.
  *
  * `split=1` puts the staff half beside the customer half (`w-1/2`), as the
  * test harness the park runs on one screen does; `split=0` is full width.
+ * `theme=dark` draws the page dark (the pictures); the default is light.
  */
 const params = new URLSearchParams(window.location.search);
 const screen = params.get('screen') ?? 'tiers-two-line';
 const split = params.get('split') === '1';
+const phoneFrame = params.get('frame') === 'phone';
+const dark = params.get('theme') === 'dark';
 
 // --- The platform's answers: an empty shelf, so nothing is stock-tracked ---------
 
@@ -217,6 +226,52 @@ function ItemFrame({ grid }: { grid: ReactNode }) {
   return chromeAnd(146, staff);
 }
 
+/** SCRUM-994 — staging's menu grouped on 13 November (`GROUPED_MENU`), three dishes in every sub-category. */
+function seedGroupedMenu(): MenuItem[] {
+  for (const c of getMenuCategories()) deleteMenuCategory(c.id);
+  const items: MenuItem[] = [];
+  Object.entries(GROUPED_MENU).forEach(([tab, subs], i) => {
+    upsertMenuCategory({ id: catId(tab), name: tab, sortOrder: i + 1, defaultPrepStation: 'kitchen', defaultTaxCategory: 'fnb' });
+    subs.forEach((sub, j) => {
+      upsertMenuCategory({ id: catId(sub), name: sub, parentId: catId(tab), sortOrder: j + 1 });
+      groupedDishes(sub).forEach((name, k) => {
+        const baht = 100 + j * 10 + k * 5;
+        items.push({ id: `m-${catId(sub)}-${k + 1}`, name, category: catId(sub), price: { weekday: baht, weekend: baht } });
+      });
+    });
+  });
+  return items;
+}
+
+/**
+ * The phone till's F&B order stage, as `MobileShell` and `MobileOrderStation`
+ * draw it (classes pinned by the s994 test): the top bar, the order-note bar,
+ * the menu (the region read), the sticky cart bar and the bottom tabs.
+ */
+function PhoneOrderFrame({ grid }: { grid: ReactNode }) {
+  return h('div', { className: 'h-[100dvh] flex flex-col bg-background text-foreground overflow-hidden' },
+    h('div', { className: 'shrink-0 flex items-center gap-3 px-4 h-14 border-b bg-card/30' }),
+    h('div', { className: 'flex-1 min-h-0 overflow-hidden' },
+      h('div', { className: 'h-full flex flex-col bg-background text-foreground overflow-hidden' },
+        h('div', { className: 'flex-1 min-h-0 flex flex-col' },
+          h('div', { className: 'shrink-0 px-4 pt-2 pb-1' },
+            h('div', { className: 'w-full flex items-center gap-2 h-9 px-3 rounded-xl border text-sm transition-colors cursor-pointer select-none border-dashed bg-card/50 text-muted-foreground' },
+              h(StickyNote, { className: 'w-3.5 h-3.5 shrink-0' }),
+              h('span', { className: 'truncate flex-1' }, 'Add order note…'))),
+          h('div', { id: 'region', className: 'flex-1 min-h-0 px-4 pt-2 pb-1' }, grid)),
+        h('button', { type: 'button', className: 'w-full flex items-center justify-between gap-3 bg-card border-t px-4 py-3 active:bg-muted transition-colors' },
+          h('div', { className: 'flex items-center gap-3' },
+            h('div', { className: 'relative' }, h(ShoppingCart, { className: 'w-5 h-5 text-primary' })),
+            h('span', { className: 'text-sm text-muted-foreground' }, 'No items yet')),
+          h('div', { className: 'flex items-center gap-2' },
+            h('span', { className: 'text-lg font-bold tabular-nums' }, '฿0'),
+            h(ChevronUp, { className: 'w-4 h-4 text-muted-foreground' }))))),
+    h('nav', { className: 'shrink-0 grid border-t bg-card/30', style: { gridTemplateColumns: 'repeat(8, minmax(0, 1fr))' } },
+      h('button', { type: 'button', className: 'w-full flex flex-col items-center justify-center gap-0.5 py-2.5 text-[10px] font-semibold transition-colors text-primary' },
+        h('span', { className: 'relative' }, h(GlassWater, { className: 'w-5 h-5 text-primary' })),
+        'F&B')));
+}
+
 /** The Shop's customer half with two lines on the order, as the station draws it in the split view. */
 function MerchDisplayFrame() {
   const items = shopItems();
@@ -303,6 +358,10 @@ function Page() {
       const items = seedMenu();
       return h(ItemFrame, { grid: h(MenuGrid, { items, quantities: { 'm-pancakes': 1 }, onAdd: noop }) });
     }
+    case 'fnb-menu-grouped': {
+      const grid = h(MenuGrid, { items: seedGroupedMenu(), quantities: {}, onAdd: noop });
+      return phoneFrame ? h(PhoneOrderFrame, { grid }) : h(ItemFrame, { grid });
+    }
     case 'merch-grid':
       return h(ItemFrame, { grid: h(MerchGrid, { items: shopItems(), quantities: { 's-helium-65': 1 }, onAdd: noop }) });
     case 'merch-display':
@@ -317,10 +376,11 @@ function Page() {
 }
 
 window.__readSplitFix = readSplitFix;
+window.__readSubRows = readSubRows;
 // SCRUM-963 — whether the last wheel turned over the page was taken by
 // something on it (the one-row categories), or left to the page.
 window.addEventListener('wheel', (event) => {
   (window as unknown as { __lastWheelTaken: boolean }).__lastWheelTaken = event.defaultPrevented;
 }, { passive: true });
-document.documentElement.classList.add('light');
+document.documentElement.classList.add(dark ? 'dark' : 'light');
 createRoot(document.getElementById('root')!).render(h(Page));

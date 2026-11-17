@@ -135,6 +135,25 @@ const MENU_TILES = 'grid grid-cols-2 lg:grid-cols-3 gap-3 pb-2 md:@max-xl/menu:g
 const CATEGORY_ROW =
   'flex gap-2 mb-3 shrink-0 flex-wrap md:@max-xl/menu:flex-nowrap md:@max-xl/menu:overflow-x-auto md:@max-xl/menu:-mx-2 md:@max-xl/menu:px-2';
 
+/**
+ * SCRUM-994 — THE SUB-CATEGORIES IN ROWS. The prototype draws a tab's
+ * sub-categories as one row of pills that scrolls sideways, and so did this
+ * grid until now. On the owner's word of 13 November ("scroll is not good
+ * here. it can slow the process. show all of them in rows"), a deliberate
+ * change from the prototype: they are equal buttons in aligned columns that
+ * wrap into rows, every one on screen at once, with no sideways scroll at any
+ * width. The columns follow the menu column's own width (`@container/menu`),
+ * as SCRUM-959's dish tiles do: at least 5.75rem each under 28rem (three in
+ * the 1440 split view, whose column is 290px, and on a phone), 6.75rem from
+ * 28rem up (five at a 1024 desk, eight at 1440). A label too long for one
+ * line takes a second ("Free Drinks Menu" in a narrow column), never an
+ * ellipsis; the side padding is 6px so that "Free Drinks" still fits one
+ * line of a 290px column's chip (at 8px it took three lines). Which
+ * sub-category is chosen, and when the block shows, is as before.
+ */
+const SUB_CATEGORY_GRID =
+  'shrink-0 mb-3 grid grid-cols-[repeat(auto-fill,minmax(5.75rem,1fr))] gap-1.5 @md/menu:grid-cols-[repeat(auto-fill,minmax(6.75rem,1fr))] @md/menu:gap-2';
+
 // Pseudo-id for the "Other" sub-chip that gathers items assigned directly to a
 // top-level category (i.e. not placed in any of its sub-categories).
 const OTHER = '__other__';
@@ -296,29 +315,28 @@ export function MenuGrid({ items, quantities, onAdd }: MenuGridProps) {
             })}
           </CategoryRow>
 
-          {/* Secondary level: sub-category chips (only when the top-level has them) */}
+          {/* Secondary level: sub-category chips (only when the top-level has them), in rows (SCRUM-994) */}
           {subChips.length > 0 && (
-            <div className="shrink-0 mb-3 -mx-2 px-2 overflow-x-auto">
-              <div className="flex gap-2 w-max">
-                {subChips.map((chip) => {
-                  const isActive = chip.id === activeSubId;
-                  return (
-                    <button
-                      key={chip.id}
-                      type="button"
-                      onClick={() => setActiveSub(chip.id)}
-                      className={cn(
-                        'px-4 h-9 rounded-full text-sm font-semibold whitespace-nowrap transition-all active:scale-95',
-                        isActive
-                          ? 'bg-amber-500/20 text-amber-400 border border-amber-500'
-                          : 'bg-card border text-muted-foreground hover:text-amber-400 hover:border-amber-500/50'
-                      )}
-                    >
-                      {chip.name}
-                    </button>
-                  );
-                })}
-              </div>
+            <div data-testid="sub-category-grid" className={SUB_CATEGORY_GRID}>
+              {subChips.map((chip) => {
+                const isActive = chip.id === activeSubId;
+                return (
+                  <button
+                    key={chip.id}
+                    type="button"
+                    aria-pressed={isActive}
+                    onClick={() => setActiveSub(chip.id)}
+                    className={cn(
+                      'h-10 px-1.5 rounded-full flex items-center justify-center text-center text-sm font-semibold leading-tight transition-all active:scale-95',
+                      isActive
+                        ? 'bg-amber-500/20 text-amber-400 border border-amber-500'
+                        : 'bg-card border text-muted-foreground hover:text-amber-400 hover:border-amber-500/50'
+                    )}
+                  >
+                    {chip.name}
+                  </button>
+                );
+              })}
             </div>
           )}
 
