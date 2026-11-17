@@ -67,14 +67,16 @@ const line = (itemName: string, over: Partial<BeoExtraLine> = {}): BeoExtraLine 
 await check("an EXTRA line: the entered price for each item, times its count; else the till's for its code; else not charged", () => {
   const entered = beoExtraChargeOf(line("Margherita", { quantity: 2, price: 450, productCode: "CF-24" }), "food", read);
   assert.deepEqual(entered, { kind: "charged", unitSatang: 45_000, quantity: 2, totalSatang: 90_000, from: "entered", weekend: false });
-  assert.equal(beoExtraHintOf(entered), "each");
+  // SCRUM-991 (8a09885a2): the hint now says the line's total beside "each", and names an
+  // unknown price ("Price unresolved") instead of leaving it blank or calling it free.
+  assert.equal(beoExtraHintOf(entered), "each - 900 total");
   const till = beoExtraChargeOf(line("Margherita", { quantity: 3, productCode: "CF-24" }), "food", read);
   assert.deepEqual(till, { kind: "charged", unitSatang: 40_000, quantity: 3, totalSatang: 120_000, from: "till", weekend: false });
   assert.equal(beoExtraHintOf(till), "till price 400", "an empty box on a coded line: the till's price, what will be charged");
   assert.deepEqual(beoExtraChargeOf(line("Margherita", { price: 0, productCode: "CF-24" }), "food", read).kind, "charged", "a price of 0 is no price: the till's");
   const typed = beoExtraChargeOf(line("Durian pizza"), "food", read);
   assert.deepEqual(typed, { kind: "not_charged", why: "no_price" });
-  assert.equal(beoExtraHintOf(typed), "not charged", "an empty box on a line with no code: not charged");
+  assert.equal(beoExtraHintOf(typed), "Price unresolved - not charged", "an empty box on a line with no code: not charged");
   assert.equal(beoExtraChargeOf(line("Durian pizza", { price: 300 }), "food", read).kind, "charged", "a hand-typed line with a price is charged at it");
   assert.deepEqual(beoExtraChargeOf(line("Old soda", { productCode: "CF-77" }), "bar", read), { kind: "unknown" }, "a picker missing the code cannot prove that settlement charges nothing");
   // A count the till cannot read is one, as the plan view reads it.
@@ -91,7 +93,7 @@ await check("the party's day: the till's weekend price on a Saturday or a Sunday
   const weekend = beoExtraChargeOf(line("Latte", { quantity: 2, productCode: "CF-58-4" }), "bar", { ...read, partyDate: SATURDAY });
   assert.deepEqual([weekend.kind === "charged" && weekend.unitSatang, weekend.kind === "charged" && weekend.totalSatang], [15_500, 31_000]);
   assert.equal(beoExtraHintOf(weekend), "till price 155 (weekend)");
-  assert.equal(beoExtraHintOf(beoExtraChargeOf(line("Latte", { price: 160, productCode: "CF-58-4" }), "bar", { ...read, partyDate: SATURDAY })), "each", "an entered price stands on a weekend too");
+  assert.equal(beoExtraHintOf(beoExtraChargeOf(line("Latte", { price: 160, productCode: "CF-58-4" }), "bar", { ...read, partyDate: SATURDAY })), "each - 160 total", "an entered price stands on a weekend too");
 });
 
 await check("a SET line is the package's; an item made for this party is charged at the till's own price on the food lists, nothing on the bar", () => {
@@ -130,7 +132,7 @@ await check("the extras' total as the till will charge them; nothing said when t
   assert.equal(hasExtraLines([beoExtraChargeOf(line("Margherita", { source: "set_menu" }), "food", read)]), false, "SET lines alone: no extras' total");
   const notRead = beoExtraChargeOf(line("Fries", { productCode: "CF-11" }), "food", unread);
   assert.deepEqual(notRead, { kind: "unknown" });
-  assert.equal(beoExtraHintOf(notRead), null, "the till's menu not read: nothing rather than a wrong figure");
+  assert.equal(beoExtraHintOf(notRead), "Price unresolved", "the till's menu not read: unresolved rather than a wrong figure");
   assert.equal(beoExtrasTotalOf([plan[0]!, notRead]), null, "and no total");
   assert.equal(beoExtraChargeOf(line("Fries", { productCode: "CF-11", price: 180 }), "food", unread).kind, "charged", "an entered price needs no till");
 });

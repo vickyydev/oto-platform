@@ -9,16 +9,17 @@
 //   1. every EXTRA line of the kids' menu and the bar plan shows a price box
 //      beside its count, in the style of the cake's Price box; a SET line
 //      shows none;
-//   2. the box shows a price the line holds ("each"); an empty box on a
-//      coded line shows the till's price as what will be charged ("till
-//      price 290"); an empty box on a line with no code says "not charged";
+//   2. the box shows a price the line holds ("each - 450 total" since
+//      SCRUM-991); an empty box on a coded line shows the till's price as
+//      what will be charged ("till price 290"); an empty box on a line with
+//      no code says "Price unresolved - not charged";
 //   3. staff enter, change and clear it; Save sends it as the line's price
 //      for each item (cleared: 0, none); the plan's extras total follows;
 //   4. a weekend party: the till's weekend price, said so;
 //   5. the adults' own list: the copy of a kids' line is charged once, with
 //      the kids' line; a line of their own shows its own;
-//   6. a till whose menu cannot be read: nothing is said of a coded line's
-//      price, and no total (nothing rather than a wrong figure);
+//   6. a till whose menu cannot be read: a coded line's price is said
+//      unresolved (SCRUM-991), and no total (never a wrong figure);
 //   7. SCRUM-940 point 2: the first line made from "Nothing on the kids' menu
 //      yet" is saved as the EXTRA it shows.
 //
@@ -237,8 +238,9 @@ await check("every EXTRA line shows a price box beside its count; a SET line sho
 
 await check("what the till will charge: the till's price for an empty coded box, each for an entered price, not charged with neither; the totals", () => {
   assert.equal(text("text-menu-price-hint-kids-0"), "till price 290");
-  assert.equal(text("text-menu-price-hint-kids-1"), "not charged");
-  assert.equal(text("text-menu-price-hint-kids-2"), "each");
+  // SCRUM-991 (8a09885a2): the hint names an unknown price and says an entered price's line total.
+  assert.equal(text("text-menu-price-hint-kids-1"), "Price unresolved - not charged");
+  assert.equal(text("text-menu-price-hint-kids-2"), "each - 450 total");
   assert.equal(text("text-menu-price-hint-bar-0"), "till price 90.5");
   // 2 × 290 + 3 × 150; 10 × 90.50.
   assert.equal(text("text-kitchen-extras-total"), "Extras charged at the till: ฿1,030");
@@ -247,7 +249,7 @@ await check("what the till will charge: the till's price for an empty coded box,
 
 await check("staff enter, change and clear a price; Save sends it for each item; the totals follow", async () => {
   await typeInto("input-menu-price-kids-0", "300");
-  assert.equal(text("text-menu-price-hint-kids-0"), "each");
+  assert.equal(text("text-menu-price-hint-kids-0"), "each - 600 total");
   await typeInto("input-menu-price-kids-2", "");
   assert.equal(text("text-menu-price-hint-kids-2"), "till price 120", "cleared: the till's price again");
   await typeInto("input-menu-price-bar-0", "100");
@@ -276,14 +278,16 @@ await check("a weekend party: the till's weekend price, said so; the adults' cop
   absent("text-bar-extras-total", "no EXTRA drink: no bar total");
 });
 
-await check("a till whose menu cannot be read: nothing is said of a coded line's price, and no total", async () => {
+await check("a till whose menu cannot be read: a coded line's price is said unresolved, never a figure, and no total", async () => {
   queryClient.clear();
   tillAnswer = (parkId) => ({ parks: [{ parkId: parkId ?? PARK, parkName: "ZZ TEST Floresta", status: "not_reachable", message: "The till did not answer.", items: [], readAt: null }] });
   BEOS.set(E3, { date: WEEKDAY, kids: [line("k1", "Margherita", { quantity: 2, productCode: "CF-24" }), line("k2", "Durian pizza"), line("k3", "Chips", { price: 80 })], bar: [] });
   await openBeo(E3);
-  absent("text-menu-price-hint-kids-0", "no till price said while the till's menu is not read");
-  assert.equal(text("text-menu-price-hint-kids-1"), "not charged");
-  assert.equal(text("text-menu-price-hint-kids-2"), "each");
+  // SCRUM-991 (8a09885a2): no till price said while the till's menu is not read; the price is
+  // named unresolved where the hint once stayed off the screen.
+  assert.equal(text("text-menu-price-hint-kids-0"), "Price unresolved", "no till price said while the till's menu is not read");
+  assert.equal(text("text-menu-price-hint-kids-1"), "Price unresolved - not charged");
+  assert.equal(text("text-menu-price-hint-kids-2"), "each - 80 total");
   absent("text-kitchen-extras-total", "no total rather than a wrong one");
 });
 

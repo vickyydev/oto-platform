@@ -94,7 +94,9 @@ await check("a pick writes the till's name and code; an EXTRA takes the till's p
   const extra = { id: "m1", itemName: "pizza", quantity: 6, notes: "no basil", included: false, price: 0 };
   assert.deepEqual(lineWithTillItem(extra, PIZZA), { ...extra, itemName: "Margherita", productCode: "CF-24", price: 290 });
   const firstLine = { id: "m2", itemName: "", quantity: 1, notes: "", included: true, price: 0, source: "additional" };
-  assert.deepEqual(lineWithTillItem(firstLine, JUICE), { ...firstLine, itemName: "Kids juice Apple", productCode: "CF-66-1", price: 90.5 }, "an EXTRA by its badge");
+  // SCRUM-991 (8a09885a2): an EXTRA's included flag follows the till's price (a priced item is no
+  // longer marked included); its badge, the line's source, stays.
+  assert.deepEqual(lineWithTillItem(firstLine, JUICE), { ...firstLine, itemName: "Kids juice Apple", productCode: "CF-66-1", included: false, price: 90.5 }, "an EXTRA by its badge");
   const setLine = { id: "m3", itemName: "Pizza", quantity: 1, notes: "", included: true, price: 0, source: "set_menu" };
   assert.deepEqual(lineWithTillItem(setLine, PIZZA), { ...setLine, itemName: "Margherita", productCode: "CF-24" }, "part of the package: no price");
   const picked = lineWithTillItem(extra, PIZZA);

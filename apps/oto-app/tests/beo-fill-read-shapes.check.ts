@@ -681,23 +681,25 @@ try {
     assert.equal(price(read, />Margherita \(Pizza\)/), "SET", "a SET line");
     assert.equal(price(read, /2x<\/td>/), "EXTRA till price 450 (weekend)", "the till's weekend price, as the editor's hint");
     assert.equal(price(read, />Pepperoni(?:<| <span)/), "EXTRA 120฿ each", "the price entered, for each item");
-    assert.equal(price(read, />ZZ TEST mango sticky rice/), "EXTRA not charged", "a typed dish the till does not sell");
+    // SCRUM-991 (8a09885a2): the editor's hint says an unknown price, never free: so does the PDF.
+    assert.equal(price(read, />ZZ TEST mango sticky rice/), "EXTRA Price unresolved - not charged", "a typed dish the till does not sell");
     assert.equal(price(read, />ZZ TEST bubble tea/), "EXTRA till price 120 (weekend) (made for this party)");
     assert.equal(price(read, />Pepperoni pizza for us/), "EXTRA till price 420 (weekend)", "the adults' own EXTRA");
     const barPart = read.slice(read.indexOf("<h2>Bar Plan</h2>"));
     assert.equal(price(barPart, />Latte/), "EXTRA till price 155 (weekend)");
-    assert.equal(price(barPart, />Water/), "EXTRA not charged");
+    assert.equal(price(barPart, />Water/), "EXTRA Price unresolved - not charged");
     // The very words of the editor's hint (shared/beoExtras.ts), line by line.
     const ctx = { till: { known: true, byCode }, partyDate: SATURDAY };
     assert.equal(beoExtraHintOf(beoExtraChargeOf(kids[1]!, "food", ctx)), "till price 450 (weekend)");
-    assert.equal(beoExtraHintOf(beoExtraChargeOf(kids[3]!, "food", ctx)), "not charged");
+    assert.equal(beoExtraHintOf(beoExtraChargeOf(kids[3]!, "food", ctx)), "Price unresolved - not charged");
     // A weekday party: the weekday price.
     assert.equal(price(await pdf({ known: true, byCode }, "2026-12-02"), /2x<\/td>/), "EXTRA till price 400");
-    // The till's menu not read: the coded line with no price prints its badge alone, as before.
+    // The till's menu not read: the coded line with no price is unknown, and since SCRUM-991 the
+    // editor's hint says so ("Price unresolved"), where it once printed the badge alone.
     const unread = await pdf(undefined);
-    assert.equal(price(unread, /2x<\/td>/), "EXTRA");
+    assert.equal(price(unread, /2x<\/td>/), "EXTRA Price unresolved");
     assert.equal(price(unread, />Pepperoni(?:<| <span)/), "EXTRA 120฿ each");
-    assert.equal(price(unread, />ZZ TEST mango sticky rice/), "EXTRA not charged");
+    assert.equal(price(unread, />ZZ TEST mango sticky rice/), "EXTRA Price unresolved - not charged");
   });
 
   await check("theBeoPdfPrintsTheParksDates", async () => {

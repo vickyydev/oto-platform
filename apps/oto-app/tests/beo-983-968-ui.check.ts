@@ -217,7 +217,13 @@ await check("HIGH 983: read-only food and bar controls cannot change local state
 await check("HIGH 968: a loaded picker missing a coded product cannot claim not charged or a complete sum", async () => {
   const id="44444444-4444-4444-8444-444444444983";
   BEOS.set(id,{date:WEEKDAY,kids:[line("k1","ZZ TEST unavailable dish",{productCode:"CF-MISSING"}),line("k2","ZZ TEST entered price",{price:100})],bar:[]});
-  await openBeo(id);absent("text-menu-price-hint-kids-0","no false free-price claim");absent("text-kitchen-extras-total","unknown code prevents a complete sum");assert.equal(text("text-menu-price-hint-kids-1"),"each");
+  await openBeo(id);
+  // SCRUM-991 (8a09885a2): an unknown price is said, never left blank or taken as free. The hint
+  // that once stayed off the screen now names it, and still claims neither "not charged" nor a sum.
+  assert.equal(text("text-menu-price-hint-kids-0"),"Price unresolved","no false free-price claim");
+  absent("text-kitchen-extras-total","unknown code prevents a complete sum");
+  // An entered price says its line total beside "each" (the same commit; one item at 100).
+  assert.equal(text("text-menu-price-hint-kids-1"),"each - 100 total");
 });
 await check("HIGH 983: public success shows the persisted server timestamp immediately and after reload on the park day", async()=>{
   queryClient.clear();win.history.replaceState({},"","/menu-select/zz983");
