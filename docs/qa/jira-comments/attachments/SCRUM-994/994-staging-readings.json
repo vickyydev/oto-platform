@@ -1,0 +1,308 @@
+{
+ "identity": {
+  "name": "Som (Reception)",
+  "branch": "Oto Play Park, Central Floresta",
+  "station": null
+ },
+ "afterStation": [
+  "Hide customer display",
+  "2in parkno gate",
+  "F&B",
+  "F&B",
+  "Shop",
+  "Shop",
+  "Events",
+  "Events",
+  "Check-in",
+  "Check-in",
+  "History",
+  "History",
+  "Today",
+  "Today",
+  "7Messages",
+  "7Messages",
+  "Cash",
+  "Reception Till 1",
+  "Reception Till 1",
+  "6 overdueReview →",
+  "Redeem Booking",
+  "Apply",
+  "Redeem",
+  "Issue a voucher…",
+  "Add manual discount",
+  "Cancel",
+  "Pay ฿0",
+  "EnglishContinue in Engli",
+  "中文使用中文继续",
+  "ไทยดำเนินการต่อเป็นภาษาไ",
+  "РусскийПродолжить на рус",
+  "FrançaisContinuer en fra"
+ ],
+ "split-1440:drinks": {
+  "grid": true,
+  "count": 11,
+  "rows": 4,
+  "cols": 3,
+  "widths": [
+   93
+  ],
+  "heights": [
+   40
+  ],
+  "labels": [
+   "Coffee",
+   "Iced Coffee",
+   "Chocolate",
+   "Soda",
+   "Smoothies",
+   "Juice",
+   "Tea pot",
+   "Soft drinks",
+   "Kids juice",
+   "Alcohol",
+   "Free Drinks Menu"
+  ],
+  "pressed": [
+   "Coffee"
+  ],
+  "sideways": [],
+  "gridOverflow": false
+ },
+ "split-1440:alcohol": {
+  "grid": true,
+  "count": 11,
+  "rows": 4,
+  "cols": 3,
+  "widths": [
+   93
+  ],
+  "heights": [
+   40
+  ],
+  "labels": [
+   "Coffee",
+   "Iced Coffee",
+   "Chocolate",
+   "Soda",
+   "Smoothies",
+   "Juice",
+   "Tea pot",
+   "Soft drinks",
+   "Kids juice",
+   "Alcohol",
+   "Free Drinks Menu"
+  ],
+  "pressed": [
+   "Alcohol"
+  ],
+  "sideways": [],
+  "gridOverflow": false
+ },
+ "split-1440:food": {
+  "grid": true,
+  "count": 10,
+  "rows": 4,
+  "cols": 3,
+  "widths": [
+   93
+  ],
+  "heights": [
+   40
+  ],
+  "labels": [
+   "Breakfast",
+   "Sides",
+   "Sharing",
+   "Salads",
+   "Pizza & Pasta",
+   "Mains",
+   "Asian Food",
+   "Kids",
+   "Desserts",
+   "Other"
+  ],
+  "pressed": [
+   "Breakfast"
+  ],
+  "sideways": [],
+  "gridOverflow": false
+ },
+ "full-1440:drinks": {
+  "grid": true,
+  "count": 11,
+  "rows": 2,
+  "cols": 8,
+  "widths": [
+   119
+  ],
+  "heights": [
+   40
+  ],
+  "labels": [
+   "Coffee",
+   "Iced Coffee",
+   "Chocolate",
+   "Soda",
+   "Smoothies",
+   "Juice",
+   "Tea pot",
+   "Soft drinks",
+   "Kids juice",
+   "Alcohol",
+   "Free Drinks Menu"
+  ],
+  "pressed": [
+   "Coffee"
+  ],
+  "sideways": [],
+  "gridOverflow": false
+ },
+ "full-1440:alcohol": {
+  "grid": true,
+  "count": 11,
+  "rows": 2,
+  "cols": 8,
+  "widths": [
+   119
+  ],
+  "heights": [
+   40
+  ],
+  "labels": [
+   "Coffee",
+   "Iced Coffee",
+   "Chocolate",
+   "Soda",
+   "Smoothies",
+   "Juice",
+   "Tea pot",
+   "Soft drinks",
+   "Kids juice",
+   "Alcohol",
+   "Free Drinks Menu"
+  ],
+  "pressed": [
+   "Alcohol"
+  ],
+  "sideways": [],
+  "gridOverflow": false
+ },
+ "full-1440:food": {
+  "grid": true,
+  "count": 10,
+  "rows": 2,
+  "cols": 8,
+  "widths": [
+   119
+  ],
+  "heights": [
+   40
+  ],
+  "labels": [
+   "Breakfast",
+   "Sides",
+   "Sharing",
+   "Salads",
+   "Pizza & Pasta",
+   "Mains",
+   "Asian Food",
+   "Kids",
+   "Desserts",
+   "Other"
+  ],
+  "pressed": [
+   "Breakfast"
+  ],
+  "sideways": [],
+  "gridOverflow": false
+ },
+ "full-1024:drinks": {
+  "grid": true,
+  "count": 11,
+  "rows": 3,
+  "cols": 5,
+  "widths": [
+   113
+  ],
+  "heights": [
+   40
+  ],
+  "labels": [
+   "Coffee",
+   "Iced Coffee",
+   "Chocolate",
+   "Soda",
+   "Smoothies",
+   "Juice",
+   "Tea pot",
+   "Soft drinks",
+   "Kids juice",
+   "Alcohol",
+   "Free Drinks Menu"
+  ],
+  "pressed": [
+   "Coffee"
+  ],
+  "sideways": [],
+  "gridOverflow": false
+ },
+ "full-1024:alcohol": {
+  "grid": true,
+  "count": 11,
+  "rows": 3,
+  "cols": 5,
+  "widths": [
+   113
+  ],
+  "heights": [
+   40
+  ],
+  "labels": [
+   "Coffee",
+   "Iced Coffee",
+   "Chocolate",
+   "Soda",
+   "Smoothies",
+   "Juice",
+   "Tea pot",
+   "Soft drinks",
+   "Kids juice",
+   "Alcohol",
+   "Free Drinks Menu"
+  ],
+  "pressed": [
+   "Alcohol"
+  ],
+  "sideways": [],
+  "gridOverflow": false
+ },
+ "full-1024:food": {
+  "grid": true,
+  "count": 10,
+  "rows": 2,
+  "cols": 5,
+  "widths": [
+   113
+  ],
+  "heights": [
+   40
+  ],
+  "labels": [
+   "Breakfast",
+   "Sides",
+   "Sharing",
+   "Salads",
+   "Pizza & Pasta",
+   "Mains",
+   "Asian Food",
+   "Kids",
+   "Desserts",
+   "Other"
+  ],
+  "pressed": [
+   "Breakfast"
+  ],
+  "sideways": [],
+  "gridOverflow": false
+ }
+}
