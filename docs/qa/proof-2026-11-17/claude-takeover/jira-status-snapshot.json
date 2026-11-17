@@ -1,0 +1,211 @@
+{
+  "observedAt": "2026-11-17T13:56:08.253Z",
+  "scope": "Read-only status snapshot; no fresh acceptance or description rewrite",
+  "issues": [
+    {
+      "key": "SCRUM-191",
+      "status": "Deployed"
+    },
+    {
+      "key": "SCRUM-223",
+      "status": "In Progress"
+    },
+    {
+      "key": "SCRUM-369",
+      "status": "Deployed"
+    },
+    {
+      "key": "SCRUM-508",
+      "status": "Deployed"
+    },
+    {
+      "key": "SCRUM-679",
+      "status": "Deployed"
+    },
+    {
+      "key": "SCRUM-680",
+      "status": "Deployed"
+    },
+    {
+      "key": "SCRUM-681",
+      "status": "Deployed"
+    },
+    {
+      "key": "SCRUM-682",
+      "status": "Deployed"
+    },
+    {
+      "key": "SCRUM-683",
+      "status": "Deployed"
+    },
+    {
+      "key": "SCRUM-684",
+      "status": "Deployed"
+    },
+    {
+      "key": "SCRUM-736",
+      "status": "Deployed"
+    },
+    {
+      "key": "SCRUM-746",
+      "status": "Deployed"
+    },
+    {
+      "key": "SCRUM-747",
+      "status": "Deployed"
+    },
+    {
+      "key": "SCRUM-748",
+      "status": "Deployed"
+    },
+    {
+      "key": "SCRUM-778",
+      "status": "Deployed"
+    },
+    {
+      "key": "SCRUM-781",
+      "status": "Deployed"
+    },
+    {
+      "key": "SCRUM-783",
+      "status": "Deployed"
+    },
+    {
+      "key": "SCRUM-784",
+      "status": "Deployed"
+    },
+    {
+      "key": "SCRUM-785",
+      "status": "Deployed"
+    },
+    {
+      "key": "SCRUM-800",
+      "status": "Deployed"
+    },
+    {
+      "key": "SCRUM-801",
+      "status": "Deployed"
+    },
+    {
+      "key": "SCRUM-802",
+      "status": "Deployed"
+    },
+    {
+      "key": "SCRUM-807",
+      "status": "Deployed"
+    },
+    {
+      "key": "SCRUM-809",
+      "status": "Deployed"
+    },
+    {
+      "key": "SCRUM-810",
+      "status": "Deployed"
+    },
+    {
+      "key": "SCRUM-819",
+      "status": "Deployed"
+    },
+    {
+      "key": "SCRUM-844",
+      "status": "Deployed"
+    },
+    {
+      "key": "SCRUM-908",
+      "status": "Testing"
+    },
+    {
+      "key": "SCRUM-910",
+      "status": "Deployed"
+    },
+    {
+      "key": "SCRUM-945",
+      "status": "In Progress"
+    },
+    {
+      "key": "SCRUM-953",
+      "status": "Testing"
+    },
+    {
+      "key": "SCRUM-964",
+      "status": "Deployed"
+    },
+    {
+      "key": "SCRUM-966",
+      "status": "In Progress"
+    },
+    {
+      "key": "SCRUM-968",
+      "status": "In Progress"
+    },
+    {
+      "key": "SCRUM-975",
+      "status": "In Progress"
+    },
+    {
+      "key": "SCRUM-976",
+      "status": "Testing"
+    },
+    {
+      "key": "SCRUM-977",
+      "status": "Deployed"
+    },
+    {
+      "key": "SCRUM-978",
+      "status": "Deployed"
+    },
+    {
+      "key": "SCRUM-979",
+      "status": "In Progress"
+    },
+    {
+      "key": "SCRUM-981",
+      "status": "In Progress"
+    },
+    {
+      "key": "SCRUM-982",
+      "status": "Deployed"
+    },
+    {
+      "key": "SCRUM-983",
+      "status": "In Progress"
+    },
+    {
+      "key": "SCRUM-985",
+      "status": "Testing"
+    },
+    {
+      "key": "SCRUM-986",
+      "status": "Deployed"
+    },
+    {
+      "key": "SCRUM-987",
+      "status": "Deployed"
+    },
+    {
+      "key": "SCRUM-988",
+      "status": "Deployed"
+    },
+    {
+      "key": "SCRUM-989",
+      "status": "Deployed"
+    },
+    {
+      "key": "SCRUM-990",
+      "status": "Deployed"
+    },
+    {
+      "key": "SCRUM-991",
+      "status": "Deployed"
+    },
+    {
+      "key": "SCRUM-992",
+      "status": "Deployed"
+    },
+    {
+      "key": "SCRUM-993",
+      "status": "Deployed"
+    }
+  ],
+  "missingRequested": []
+}

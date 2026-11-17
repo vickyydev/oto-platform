@@ -1,0 +1,62 @@
+{
+  "observedAt": "2026-11-17T13:57:26.122Z",
+  "readOnly": true,
+  "receipts": [
+    {
+      "name": "oto-app-staging",
+      "found": true,
+      "id": "dep-dbtkmkuc6qcc73c0pvl0",
+      "status": "live",
+      "sha": "0bc4be94abdbf982c3a06146062e96f0bb7b28fb"
+    },
+    {
+      "name": "oto-api-staging",
+      "found": true,
+      "id": "dep-dbtkmljl550s73disbng",
+      "status": "live",
+      "sha": "0bc4be94abdbf982c3a06146062e96f0bb7b28fb"
+    },
+    {
+      "name": "oto-inbox-staging",
+      "found": true,
+      "id": "dep-dbtkpd9srm7s73eh64a0",
+      "status": "live",
+      "sha": "0bc4be94abdbf982c3a06146062e96f0bb7b28fb"
+    },
+    {
+      "name": "oto-console-staging",
+      "found": true,
+      "id": "dep-dbtkpdu1egvs73b8989g",
+      "status": "live",
+      "sha": "0bc4be94abdbf982c3a06146062e96f0bb7b28fb"
+    },
+    {
+      "name": "oto-pos-web-staging",
+      "found": true,
+      "id": "dep-dbtjk28m7kps73b6ehk0",
+      "status": "live",
+      "sha": "20c34493fb0aa2d0c33d98df9f6b6053cfc56d94"
+    },
+    {
+      "name": "oto-pos-staging",
+      "found": true,
+      "id": "dep-dbtjk1psrm7s73edpu8g",
+      "status": "live",
+      "sha": "20c34493fb0aa2d0c33d98df9f6b6053cfc56d94"
+    },
+    {
+      "name": "oto-launcher-staging",
+      "found": true,
+      "id": "dep-dbtik968bjmc73fpg5a0",
+      "status": "live",
+      "sha": "10e73db6c446226e60ae5e8979236ac6d5b351b1"
+    },
+    {
+      "name": "oto-radar-staging",
+      "found": true,
+      "id": "dep-dbckuuss728c73fd0dtg",
+      "status": "live",
+      "sha": "608b1fd1ae6b95113cb4d353d5a96304bfd1c560"
+    }
+  ]
+}

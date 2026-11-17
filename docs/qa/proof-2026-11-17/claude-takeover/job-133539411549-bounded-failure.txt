@@ -1,0 +1,47 @@
+2026-11-16T19:39:32.6538536Z  FAIL  test/s220-e5-review-2.test.ts > D. the guards, swept > D1. the new way out of the replay store reaches the event check-in alone, and that route still names its permission and its branch
+2026-11-16T19:39:32.6557395Z AssertionError: expected [ …(4) ] to deeply equal [ 'POST /assistant/asks', …(1) ]
+2026-11-16T19:39:32.6576397Z 
+2026-11-16T19:39:32.6586259Z - Expected
+2026-11-16T19:39:32.6596802Z + Received
+2026-11-16T19:39:32.6616534Z 
+2026-11-16T19:39:32.6636838Z   [
+2026-11-16T19:39:32.6657089Z +   "POST /accounts/:id/inbox-access/preview",
+2026-11-16T19:39:32.6696924Z     "POST /assistant/asks",
+2026-11-16T19:39:32.6737063Z     "POST /events/:id/attendees/:attendeeId/checkin",
+2026-11-16T19:39:32.6756846Z +   "PUT /accounts/:id/inbox-access",
+2026-11-16T19:39:32.6776665Z   ]
+2026-11-16T19:39:32.6783720Z 
+2026-11-16T19:39:32.6784499Z  ❯ test/s220-e5-review-2.test.ts:756:78
+2026-11-16T19:39:32.7027311Z     754|     // from its own row on a resend, so no second copy of the answer s…
+2026-11-16T19:39:32.7067239Z     755|     // store (route-write-conformance's OUTSIDE_THE_REPLAY_STORE says …
+2026-11-16T19:39:32.7067894Z 
+2026-11-16T19:39:32.7087068Z     756|     expect(out.map((r) => `${r.method} ${r.url.replace(/\/$/, '')}`).s…
+2026-11-16T19:39:32.7088698Z  Test Files  1 failed | 178 passed | 2 skipped (181)
+2026-11-16T19:39:32.7127027Z        |                                                                              ^
+2026-11-16T19:39:32.7128641Z       Tests  1 failed | 2520 passed | 106 skipped (2627)
+2026-11-16T19:39:32.7147155Z     757|       'POST /assistant/asks',
+2026-11-16T19:39:32.7147901Z    Start at  19:06:54
+2026-11-16T19:39:32.7202658Z     758|       'POST /events/:id/attendees/:attendeeId/checkin',
+2026-11-16T19:39:32.7204462Z    Duration  1958.54s (transform 13.92s, setup 0ms, collect 380.32s, tests 1521.61s, environment 61ms, prepare 21.89s)
+2026-11-16T19:39:32.7241118Z 
+2026-11-16T19:39:32.7241138Z 
+2026-11-16T19:39:32.7241988Z ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+2026-11-16T19:39:32.7242379Z 
+2026-11-16T19:39:32.7266554Z 
+2026-11-16T19:39:32.7335033Z ##[error]AssertionError: expected [ …(4) ] to deeply equal [ 'POST /assistant/asks', …(1) ]
+
+- Expected
++ Received
+
+  [
++   "POST /accounts/:id/inbox-access/preview",
+    "POST /assistant/asks",
+    "POST /events/:id/attendees/:attendeeId/checkin",
++   "PUT /accounts/:id/inbox-access",
+  ]
+
+ ❯ test/s220-e5-review-2.test.ts:756:78
+
+
+2026-11-16T19:39:32.9367067Z undefined
+2026-11-16T19:39:32.9380845Z /home/runner/work/oto-platform/oto-platform/apps/api:

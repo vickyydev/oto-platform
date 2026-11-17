@@ -1,0 +1,24 @@
+[
+  {
+    "sha": "1b772c8e6697da237823d5c34ac1c77702064436",
+    "runId": 43934499470,
+    "jobId": 133539411086,
+    "kind": "app",
+    "rawLogRetained": false,
+    "excerpt": "job-133539411086-bounded-failure.txt",
+    "excerptSha256": "56bebc5442e749f9a7df5687f03810be54ab306cdbe69569665028ec253daeb7",
+    "limit": "Bounded sanitized failure summary only; no reproduction or cause established."
+  },
+  {
+    "sha": "1b772c8e6697da237823d5c34ac1c77702064436",
+    "runId": 43934499470,
+    "jobId": 133539411549,
+    "kind": "api-shard1",
+    "rawLogRetained": false,
+    "excerpt": "job-133539411549-bounded-failure.txt",
+    "excerptSha256": "a63cf52f4df9e298804572cd1c9fde161a10d5d2a9839212292c9d6584df3a3b",
+    "limit": "Bounded sanitized failure summary only; no reproduction or cause established.",
+    "rawLogSha256": "ed524ba6b5dcbe1487805559d0aea7c50b94cfca449d931bc19b151878d54a1b",
+    "rawLogBytes": 495931
+  }
+]

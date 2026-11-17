@@ -1,0 +1,134 @@
+{
+  "observedAt": "2026-11-17T13:56:16.016360+00:00",
+  "readOnly": true,
+  "rerunsIssued": 0,
+  "waitedForCi": false,
+  "snapshots": [
+    {
+      "sha": "382080a5e3d01eb6c2006a3f43a3572c2757bbb8",
+      "runs": []
+    },
+    {
+      "sha": "1b772c8e6697da237823d5c34ac1c77702064436",
+      "runs": [
+        {
+          "conclusion": "failure",
+          "databaseId": 43934499470,
+          "headSha": "1b772c8e6697da237823d5c34ac1c77702064436",
+          "status": "completed",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/43934499470",
+          "jobs": [
+            {
+              "id": 133539411086,
+              "name": "oto-app",
+              "status": "completed",
+              "conclusion": "failure",
+              "failedSteps": [
+                "The app's AI fill corrections checks"
+              ]
+            },
+            {
+              "id": 133539411515,
+              "name": "api-tests (3)",
+              "status": "completed",
+              "conclusion": "success",
+              "failedSteps": []
+            },
+            {
+              "id": 133539411549,
+              "name": "api-tests (1)",
+              "status": "completed",
+              "conclusion": "failure",
+              "failedSteps": [
+                "Api tests (shard 1 of 3)"
+              ]
+            },
+            {
+              "id": 133539411586,
+              "name": "api-tests (2)",
+              "status": "completed",
+              "conclusion": "success",
+              "failedSteps": []
+            },
+            {
+              "id": 133539411600,
+              "name": "ci",
+              "status": "completed",
+              "conclusion": "success",
+              "failedSteps": []
+            },
+            {
+              "id": 133539411634,
+              "name": "pos-tests",
+              "status": "completed",
+              "conclusion": "success",
+              "failedSteps": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sha": "0bc4be94abdbf982c3a06146062e96f0bb7b28fb",
+      "runs": [
+        {
+          "conclusion": "failure",
+          "databaseId": 43929126898,
+          "headSha": "0bc4be94abdbf982c3a06146062e96f0bb7b28fb",
+          "status": "completed",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/43929126898",
+          "jobs": [
+            {
+              "id": 133516506273,
+              "name": "oto-app",
+              "status": "completed",
+              "conclusion": "failure",
+              "failedSteps": [
+                "The app's AI fill every-field checks"
+              ]
+            },
+            {
+              "id": 133516506629,
+              "name": "api-tests (2)",
+              "status": "completed",
+              "conclusion": "success",
+              "failedSteps": []
+            },
+            {
+              "id": 133516506737,
+              "name": "api-tests (3)",
+              "status": "completed",
+              "conclusion": "success",
+              "failedSteps": []
+            },
+            {
+              "id": 133516506875,
+              "name": "pos-tests",
+              "status": "completed",
+              "conclusion": "success",
+              "failedSteps": []
+            },
+            {
+              "id": 133516506880,
+              "name": "ci",
+              "status": "completed",
+              "conclusion": "failure",
+              "failedSteps": [
+                "Test"
+              ]
+            },
+            {
+              "id": 133516508329,
+              "name": "api-tests (1)",
+              "status": "completed",
+              "conclusion": "failure",
+              "failedSteps": [
+                "Api tests (shard 1 of 3)"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

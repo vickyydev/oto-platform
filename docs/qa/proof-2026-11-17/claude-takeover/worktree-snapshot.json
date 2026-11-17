@@ -1,0 +1,144 @@
+{
+  "observedAt": "2026-11-17T13:58:55.989668+00:00",
+  "selectedLanesOnly": true,
+  "worktrees": [
+    {
+      "path": "C:/oto-lanes/tom-feedback-coordination-20261116",
+      "head": "382080a5e3d01eb6c2006a3f43a3572c2757bbb8",
+      "branch": "lane/tom-feedback-coordination-20261116",
+      "trackedDirty": [],
+      "untracked": [
+        "docs/qa/proof-2026-11-16/SCRUM-990/ci-watch-9018-stderr.log",
+        "docs/qa/proof-2026-11-16/SCRUM-990/ci-watch-9018.json",
+        "docs/qa/proof-2026-11-16/SCRUM-990/ci-watch-9018.log",
+        "docs/qa/proof-2026-11-16/SCRUM-992/screens/",
+        "docs/qa/proof-2026-11-17/"
+      ]
+    },
+    {
+      "path": "C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos",
+      "head": "26c308edc5c09c3f576d5189b9e58ad8f1cbabe7",
+      "branch": "main",
+      "trackedDirty": [],
+      "untracked": [
+        "docs/qa/proof-2026-11-13/SCRUM-978/",
+        "work/"
+      ]
+    },
+    {
+      "path": "C:/oto-lanes/codex-inbox-feedback-20261116",
+      "head": "2796fbaeaf77131ab20e4c0ffaf17f26e6d47337",
+      "branch": "lane/codex-inbox-feedback-20261116",
+      "trackedDirty": [],
+      "untracked": []
+    },
+    {
+      "path": "C:/oto-lanes/codex-app-every-field-20261117",
+      "head": "d7c9b00e2b2b4f48796807eb1641586d82660654",
+      "branch": "lane/codex-app-every-field-20261117",
+      "trackedDirty": [],
+      "untracked": []
+    },
+    {
+      "path": "C:/oto-lanes/tom-beo-approved-20261116",
+      "head": "d10840860ed26bb9d284ca96d68a0c607f31b192",
+      "branch": "lane/tom-beo-approved-20261116",
+      "trackedDirty": [],
+      "untracked": [
+        "work-beo-988-cleanup-census.mjs",
+        "work-beo-988-retest-20261116183520/",
+        "work-beo-988-retest-20261116184116/",
+        "work-beo-988-retest-20261116184734/",
+        "work-beo-988-retest.mjs",
+        "work-beo-988-state-map.json",
+        "work-beo-988-state-map.mts"
+      ]
+    },
+    {
+      "path": "C:/oto-lanes/tom-deposit-gate-20261116",
+      "head": "af355261bc8632cbdd5bc73403300a07aba5b02d",
+      "branch": "lane/tom-deposit-gate-20261116",
+      "trackedDirty": [],
+      "untracked": [
+        "docs/qa/jira-comments/attachments/SCRUM-990/",
+        "work-beo-actions.mjs",
+        "work-beo-package.mjs",
+        "work-beo-preflight.json",
+        "work-beo-preflight.log",
+        "work-beo-preflight.mjs",
+        "work-beo-proof-20261116172130/",
+        "work-beo-proof-20261116172425/",
+        "work-beo-runner.mjs",
+        "work-deposit-api-final.log",
+        "work-deposit-api-tsc-verified.log",
+        "work-deposit-api-verified.log",
+        "work-deposit-api.log",
+        "work-deposit-app-db-run.mts",
+        "work-deposit-app-directory.log",
+        "work-deposit-app-lint.log",
+        "work-deposit-app-ratchet-final.log",
+        "work-deposit-app-ratchet.log",
+        "work-deposit-app-ui.log",
+        "work-deposit-contracts.log",
+        "work-deposit-floor.log",
+        "work-deposit-format-new.log",
+        "work-deposit-format.log",
+        "work-deposit-inbox-build.log",
+        "work-deposit-inbox-final.log",
+        "work-deposit-inbox-integrated.log",
+        "work-deposit-inbox-tsc-verified.log",
+        "work-deposit-inbox.log",
+        "work-deposit-integrated-api.log",
+        "work-deposit-integrated-contracts.log",
+        "work-deposit-lint-verified.log",
+        "work-deposit-lint.log",
+        "work-deposit-migration-final.log",
+        "work-deposit-migration.log",
+        "work-deposit-package-proof.mjs",
+        "work-deposit-proof-20261116164706/",
+        "work-deposit-proof-20261116165152/",
+        "work-deposit-proof-20261116165526/",
+        "work-deposit-proof-20261116165945/",
+        "work-deposit-release-api-types.log",
+        "work-deposit-release-api.log",
+        "work-deposit-release-contracts.log",
+        "work-deposit-release-inbox-types.log",
+        "work-deposit-release-lint.log",
+        "work-deposit-release-review-repair.log",
+        "work-deposit-review.log",
+        "work-deposit-schema-final.log",
+        "work-deposit-schema-shape-lint.log",
+        "work-deposit-schema-shape.log",
+        "work-deposit-schema.log",
+        "work-deposit-staging-beo-resume.log",
+        "work-deposit-staging-booked-resume.log",
+        "work-deposit-staging-resume.log",
+        "work-deposit-staging-run.log",
+        "work-deposit-staging.mjs",
+        "work-deposit-types-final.log",
+        "work-deposit-types.log",
+        "work-deposit-unpaid-body.txt",
+        "work-deposit-unpaid.mjs",
+        "work-inbox993-census.mjs",
+        "work-inbox993-job.mjs",
+        "work-inbox993-native.mjs",
+        "work-inbox993-package.mjs",
+        "work-inbox993-proof-20261116183656/",
+        "work-inbox993-proof-20261116184216/",
+        "work-inbox993-runner.mjs"
+      ]
+    },
+    {
+      "path": "C:/oto-lanes/codex-payment-handover-20261113",
+      "head": "f7df3150f9405dd6aa3480d11c6ab166abf345b2",
+      "branch": "lane/codex-payment-handover-20261113",
+      "trackedDirty": [],
+      "untracked": []
+    },
+    {
+      "path": "C:/oto-lanes/audit-takeover-20261113",
+      "notGitWorktree": true,
+      "purpose": "Local preserved audit/proof directory; do not delete."
+    }
+  ]
+}

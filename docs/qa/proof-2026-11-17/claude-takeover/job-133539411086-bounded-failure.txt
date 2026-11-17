@@ -1,0 +1,27 @@
+2026-11-16T19:21:22.8237341Z   "results": {
+2026-11-16T19:21:22.8267470Z     "anExtraOrderForTheAdultsIsWritten": true,
+2026-11-16T19:21:22.8290632Z     "anAdultsLineIsTheirOwnLineByLine": true,
+2026-11-16T19:21:22.8307027Z     "aSetMenuDishIsNoExtraCharge": true,
+2026-11-16T19:21:22.8309828Z     "theChatsPriceIsWrittenOnTheLineForEachItem": true,
+2026-11-16T19:21:22.8310860Z     "aTotalForSeveralIsNoPriceEach": true,
+2026-11-16T19:21:22.8311728Z     "fetchFromChatComparesByWhatIsSaid": true,
+2026-11-16T19:21:22.8318606Z     "theWhatsAppNumberIsNotARequestLine": true,
+2026-11-16T19:21:22.8339481Z     "aChatNumberNotTakenStaysARequest": true,
+2026-11-16T19:21:22.8340424Z     "aCodesOptionsAreThePartysOwnSetMenus": true,
+2026-11-16T19:21:22.8341294Z     "theTimelineHoldsEachMomentOnce": true,
+2026-11-16T19:21:22.8342085Z     "aStepOfThePartyIsNotASetupTask": true,
+2026-11-16T19:21:22.8342865Z     "aShowIsItsActNotActivitiesText": true,
+2026-11-16T19:21:22.8343628Z     "theCakeIsInThePackageOnlyWhenSaid": true,
+2026-11-16T19:21:22.8344582Z     "anotherWhatsAppNumberIsStoredInItsInternationalForm": true,
+2026-11-16T19:21:22.8345822Z     "choicesFromTheChatAreNotSelectionsReceived": false,
+2026-11-16T19:21:22.8346679Z     "theDepositBoxSaysTheDepositTheBeoAsks": false,
+2026-11-16T19:21:22.8347489Z     "theToastNamesOnlyWhatWasWritten": false,
+2026-11-16T19:21:22.8348331Z     "aLongMessageIsQuotedByTheWordsThatMatter": true
+2026-11-16T19:21:22.8349059Z   },
+2026-11-16T19:21:22.8349553Z   "failures": {
+2026-11-16T19:21:22.8352351Z     "choicesFromTheChatAreNotSelectionsReceived": "Expected values to be strictly deep-equal:\n+ actual - expected\n\n  [\n    {\n      chosenOptions: [\n        'Chicken'\n      ],\n      groupId: 'item_946_fried_rice'\n    },\n-   {\n-     chosenOptions: [\n-       'Margherita'\n-     ],\n-     groupId: 'item_946_pizza',\n-     recordedFrom: 'chat'\n-   }\n  ]\n\n+ actual - expected\n\n  [",
+2026-11-16T19:21:22.8356576Z     "theDepositBoxSaysTheDepositTheBeoAsks": "{\"message\":\"This BEO changed after the review opened. Read the chat again to compare the latest saved plan. Nothing was written.\"}\n\n409 !== 200\n\n\n409 !== 200\n",
+2026-11-16T19:21:22.8362354Z     "theToastNamesOnlyWhatWasWritten": "Expected values to be strictly equal:\n+ actual - expected\n\n+ \"Saved: the event's name and details, the counts, the times, the date when ticked, the package, the kitchen plan, the bar, the entertainment, the setup plan, the POS box, the timeline's steps, the team you ticked and the deposit.\"\n- 'Saved: the kitchen plan.'\n\n+ actual - expected\n\n+ \"Saved: the event's name and details, the counts, the times, the date when ticked, the package, the kitchen plan, the bar, the entertainment, the setup plan, the POS box, the timeline's steps, the team you ticked and the deposit.\""
+2026-11-16T19:21:22.8368459Z   }
+2026-11-16T19:21:22.8369015Z }
+2026-11-16T19:21:22.8984018Z ##[error]Process completed with exit code 1.
