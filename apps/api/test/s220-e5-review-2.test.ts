@@ -72,7 +72,9 @@ import { linkedAgent, type CuttableLink } from './box-link';
  *      booking that could not register it, naming no other child; the booking's
  *      other pass still registered and checked in; a replayed confirmation
  *      saying nothing twice.
- *   D. THE GUARDS, SWEPT — the new declaration reaches the check-in alone, and
+ *   D. THE GUARDS, SWEPT — the new declaration reaches only the routes listed
+ *      on purpose (the check-in first; later the assistant's ask and the
+ *      Inbox access preview and save, each with its reason), and
  *      every write on the events, parties and bookings surface is turned away
  *      without a session and declares a permission or a machine credential.
  */
@@ -748,17 +750,31 @@ describe('D. the guards, swept', () => {
   const SURFACE = /^\/(events|parties|bookings)(\/|$)/;
   const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
-  it('D1. the new way out of the replay store reaches the event check-in alone, and that route still names its permission and its branch', () => {
+  it('D1. the way out of the replay store reaches only the routes listed on purpose, and the check-in and the Inbox access routes still name their permission and their target', () => {
     const out = ctx.app.routeRegistry.filter((r) => r.config.replaysByOwnId);
     // SCRUM-591 I2 took the second: an ask of the internal assistant is answered
     // from its own row on a resend, so no second copy of the answer sits in the
     // store (route-write-conformance's OUTSIDE_THE_REPLAY_STORE says why).
+    // SCRUM-993 took the third and fourth (19f1c1d88): an account's Inbox
+    // access preview is a fresh read, and its save is a compare-and-set on the
+    // policy's expected version under a lock on the account; both re-run the
+    // actor's permission, reach and dominance on every call, a resend
+    // included, so a stored answer could only outlive a revoked permission
+    // (inbox-access-993-review.test.ts pins the stale, concurrent and revoked
+    // resends).
     expect(out.map((r) => `${r.method} ${r.url.replace(/\/$/, '')}`).sort()).toEqual([
+      'POST /accounts/:id/inbox-access/preview',
       'POST /assistant/asks',
       'POST /events/:id/attendees/:attendeeId/checkin',
+      'PUT /accounts/:id/inbox-access',
     ]);
     const checkin = out.find((r) => r.url.startsWith('/events/'))!;
     expect(checkin.config).toMatchObject({ permission: 'pos:event:checkin', target: { branchId: 'body.branchId' } });
+    const inboxAccess = out.filter((r) => /^\/accounts\/:id\/inbox-access(\/preview)?$/.test(r.url));
+    expect(inboxAccess.map((r) => r.method).sort()).toEqual(['POST', 'PUT']);
+    for (const r of inboxAccess) {
+      expect(r.config, `${r.method} ${r.url}`).toMatchObject({ permission: 'admin:role:assign', target: { operator: true } });
+    }
   });
 
   it('D2. every write on the events, parties and bookings surface, pressed with no session, is turned away — never a 2xx, never a 5xx', async () => {
