@@ -62,6 +62,7 @@ process.env.LOG_LEVEL ??= "warn";
 const beoRoutes = await import("../server/beo-routes");
 const { applyTillKitchenEdit, planTillKitchenEdit } = await import("../server/lib/tillKitchenEdit");
 const { approveBeoAiFill } = await import("../server/lib/beoAiApprove");
+const { beoReviewState } = await import("../server/lib/beoReviewState");
 const { kitchenPlanPutBodySchema, isCakeCount } = await import("../server/lib/kitchenPlanBody");
 const { adultsDifferOf } = await import("../shared/kitchenAdults");
 const { chatTotalOf, adultsSameAsKidsFolds, figureSaidEach, chatPriceIsTotal } = await import("../server/lib/beoCatalogueFill");
@@ -622,8 +623,11 @@ try {
     await kitchenPlan(ev.on, { kids: [], adults: [own], adultsDiffer: true });
     await kitchenPlan(ev.off, { kids: [], adults: [], adultsDiffer: false });
     await kitchenPlan(ev.more, { kids: [], adults: [own], adultsDiffer: true });
-    const approve = (eventId: string, adultsLine: Record<string, unknown>) => {
+    // Each review is opened over the plan saved above, and the screen sends the state it opened with
+    // (since SCRUM-990 an approval without it is refused once the event holds saved plan lines).
+    const approve = async (eventId: string, adultsLine: Record<string, unknown>) => {
       const body = BeoAiApproveBodySchema.parse({
+        expectedState: (await beoReviewState(appDb, eventId)).version,
         conversationId: null, messageId: null, package: null,
         setMenu: { templateId: setMenuId, choices: [{ itemId: PIZZA, options: ["Margherita"] }] },
         menuLines: [{ menu: "adults", productCode: "CF-24", notes: null, ...adultsLine }],
