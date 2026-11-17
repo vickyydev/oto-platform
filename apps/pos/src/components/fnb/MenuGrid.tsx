@@ -127,7 +127,8 @@ function MenuItemCard({ item, qty, onAdd }: MenuItemCardProps) {
  * (`@container/menu`), as SCRUM-884 keyed the till's steps: under 36rem the
  * tiles go two a row (one under 24rem, the 1440 split view) and the
  * categories stay on one row that scrolls sideways, as the prototype's own
- * sub-category chips below do. A desk at full width gives the menu 595px or
+ * sub-category chips below did until SCRUM-994. A desk at full width gives
+ * the menu 595px or
  * more (a window of 1024), so it is exactly as it was there; so is the phone,
  * under `md`.
  */
