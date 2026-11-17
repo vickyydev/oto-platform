@@ -32,6 +32,12 @@ import { GROUPED_MENU, groupedDishes, LONG_SUB_NAME, withLongName, type SubRowsR
  * than two lines in a narrow column: its row grows to hold it, its label stays
  * inside its chip, no row runs over the next and the columns stay aligned.
  *
+ * On a short screen, with the staff banners of a scanned band above the menu
+ * (the allergy alert, "Food not authorized", the prepaid entitlements) on the
+ * phones and in a 1366x768 split view, the rows hold and the first dishes,
+ * the last chip and its dishes are on screen or come on screen when the menu
+ * is scrolled up and down, as staff would.
+ *
  * FONT-INDEPENDENT, as `s884` and `s959` keep their split-view checks: these
  * are relations (inside, equal, on a line, fits), and the column counts come
  * from the frames' widths alone, so CI's Linux runner reads what Windows reads.
@@ -61,6 +67,18 @@ const FRAMES: Frame[] = [
   { name: 'phone', query: 'frame=phone', size: { width: 390, height: 844 }, columns: 3 },
 ];
 const TABS = ['Drinks', 'Food'] as const;
+
+/**
+ * Short screens, once a band is scanned: the staff banners above the menu
+ * (`banners=`) on the phones and in a 1366x768 split view, whose 255px menu
+ * column gives two columns, so twelve chips stand in six rows.
+ */
+const SHORT_FRAMES: Frame[] = [
+  { name: 'phone', query: 'frame=phone', size: { width: 360, height: 740 }, columns: 3 },
+  { name: 'phone', query: 'frame=phone', size: { width: 390, height: 844 }, columns: 3 },
+  { name: 'split', query: 'split=1', size: { width: 1366, height: 768 }, columns: 2 },
+];
+const BANNER_SETS = ['allergy', 'allergy,noauth', 'allergy,prepaid'] as const;
 
 const { browser, why } = await launchBrowser();
 if (!browser) console.warn(`SCRUM-994 sub-category rows measurement skipped: no browser to lay the page out (${why})`);
@@ -100,6 +118,42 @@ async function open(frame: Frame, tab: (typeof TABS)[number], extra = '', names 
 
 const at = (frame: Frame) => `${frame.name} ${frame.size.width}x${frame.size.height}`;
 const near = (a: number, b: number) => Math.abs(a - b) <= 0.5;
+
+/** The first row of dish tiles not whole on screen (all of it with no dish). */
+const firstDishesCut = (r: SubRowsReading): string[] =>
+  r.tiles.length === 0 ? ['no dish'] : r.tiles.filter((t) => near(t.top, r.tiles[0]!.top) && !t.inView).map((t) => t.name);
+
+/**
+ * Under the staff banners on a short phone, the first row of dish tiles
+ * neither whole on screen nor showing as much of itself as a dish whose name
+ * takes one line (the tile's own `min-height`): a dish whose name takes three
+ * lines is taller than all the room the banners leave, so it is reached, not
+ * whole, there.
+ */
+const firstDishesOutOfReach = (r: SubRowsReading): string[] =>
+  r.tiles.length === 0
+    ? ['no dish']
+    : r.tiles
+      .filter((t) => near(t.top, r.tiles[0]!.top) && !t.inView && t.visible < Math.min(t.height, t.minHeight) - 0.5)
+      .map((t) => `${t.name}: ${t.visible} of ${t.height} on screen`);
+
+/** The numbers behind a dish check, for its message: the first tile's box and the scroll that holds it. */
+const dishBox = (r: SubRowsReading): string =>
+  `first tile ${r.tiles[0] ? `${r.tiles[0].top} +${r.tiles[0].height}, ${r.tiles[0].visible} on screen` : 'none'}, its scroll ${JSON.stringify(r.dishScroll)}`;
+
+/**
+ * Brings a chip (by its name) or, with null, the first row of dishes on
+ * screen as staff would: nothing to do when it is whole on screen already,
+ * else the box around it that scrolls up and down is scrolled to it
+ * (`revealInMenu`). The reading after.
+ */
+async function bringUp(names: string[], chip: string | null): Promise<SubRowsReading> {
+  const now = await readRows(names);
+  const whole = chip === null ? firstDishesCut(now).length === 0 : now.chips.find((c) => c.name === chip)?.inView === true;
+  if (whole) return now;
+  await harness.page.evaluate((c) => window.__revealInMenu!(c), chip);
+  return readRows(names);
+}
 
 /** What holds of the chips whatever their names: in order, in the column, no sideways scroll, one width, on the column lines, every label whole. */
 function expectColumns(r: SubRowsReading, names: string[], frame: Frame): void {
@@ -198,10 +252,44 @@ describe.skipIf(!browser)('SCRUM-994: a sub-category name as long as the platfor
     expect(LONG_SUB_NAME).toHaveLength(40);
   });
   for (const frame of FRAMES) {
-    it(`Drinks with a 40-character name, ${at(frame)}: every label inside its chip, the row grows, the columns stay`, async () => {
+    it(`Drinks with a 40-character name, ${at(frame)}: every label inside its chip, the row grows, the columns stay, the dishes come on screen`, async () => {
       const r = await open(frame, 'Drinks', '&long=1', names);
       expectGrownRows(r, names, frame, LONG_SUB_NAME);
+      const dishes = await bringUp(names, null);
+      expect(firstDishesCut(dishes), `the first row of dishes whole on screen, or once the menu is scrolled to it; ${dishBox(dishes)}`).toEqual([]);
     }, 120_000);
+  }
+});
+
+describe.skipIf(!browser)('SCRUM-994: under the staff banners of a scanned band, every chip and the dishes can still be reached', () => {
+  // With the chips standing above the dishes' scroll, a 360x740 phone with
+  // the allergy alert left the dishes 77px and with the prepaid entitlements
+  // too 0px, and a 1366x768 split view with both 0px: no dish at all.
+  const names = GROUPED_MENU.Drinks!;
+  const last = names[names.length - 1]!;
+  for (const frame of SHORT_FRAMES) {
+    for (const set of BANNER_SETS) {
+      it(`Drinks, ${at(frame)}, banners ${set}: the rows hold; the first dishes, the last chip and its dishes come on screen`, async () => {
+        const r = await open(frame, 'Drinks', `&banners=${set}`);
+        expectColumns(r, names, frame);
+        const heights = r.chips.map((c) => c.height);
+        expect(Math.max(...heights) - Math.min(...heights), `heights ${heights.join(', ')}`).toBeLessThanOrEqual(0.5);
+        expect(r.chips.filter((c) => c.lines < 1 || c.lines > 2).map((c) => `${c.name}: ${c.lines} lines`)).toEqual([]);
+        // The first row of dishes (one-line names): whole on screen, or once the menu is scrolled to it.
+        const dishes = await bringUp(names, null);
+        expect(firstDishesCut(dishes), `the first row of dishes whole on screen, or once the menu is scrolled to it; ${dishBox(dishes)}`).toEqual([]);
+        // The last chip the same way; pressed, it shows its dishes, which come on screen the same way. Their
+        // names take three lines in a phone's tile, a tile taller than the room the allergy alert and the
+        // entitlements leave at 360x740: there, as much of it as a one-line dish tile shows at a time.
+        const chip = await bringUp(names, last);
+        expect(chip.chips.find((c) => c.name === last)?.inView, `${last} on screen, or once the menu is scrolled to it`).toBe(true);
+        await harness.page.getByTestId('sub-category-grid').getByRole('button', { name: last, exact: true }).click({ timeout: 10_000 });
+        const after = await bringUp(names, null);
+        expect(after.chips.map((c) => c.pressed)).toEqual(names.map((n) => String(n === last)));
+        expect(after.tiles.map((t) => t.name)).toEqual(groupedDishes(last));
+        expect(firstDishesOutOfReach(after), `${last}'s first dishes on screen once the menu is scrolled to them; ${dishBox(after)}`).toEqual([]);
+      }, 120_000);
+    }
   }
 });
 
@@ -214,14 +302,34 @@ describe.skipIf(!browser || !SHOTS)('SCRUM-994 pictures (SPLITFIX_SHOTS)', () =>
       it(`Drinks, ${at(frame)}, ${theme}`, async () => {
         const r = await open(frame, 'Drinks', theme === 'dark' ? '&theme=dark' : '');
         expectRows(r, GROUPED_MENU.Drinks!, frame);
-        const name = `s994-drinks-${frame.name}-${frame.size.width}x${frame.size.height}-${theme}`;
-        await harness.page.screenshot({ path: path.join(SHOTS!, `${name}.png`) });
-        // What the picture shows, in numbers: the column, each chip's box and lines.
-        writeFileSync(path.join(SHOTS!, `${name}.json`), `${JSON.stringify(r, null, 1)}\n`);
+        await shoot(`s994-drinks-${frame.name}-${frame.size.width}x${frame.size.height}-${theme}`, r);
       }, 120_000);
     }
   }
+  // The short screens under the staff banners and the 40-character name: at rest, and scrolled to the first dishes when they are not whole.
+  const cases: [Frame, string, string][] = [
+    [SHORT_FRAMES[0]!, '&banners=allergy,prepaid', 'banners-allergy-prepaid'],
+    [SHORT_FRAMES[2]!, '&banners=allergy,prepaid', 'banners-allergy-prepaid'],
+    [FRAMES[0]!, '&long=1', 'long-name'],
+    [FRAMES[5]!, '&long=1', 'long-name'],
+  ];
+  for (const [frame, query, label] of cases) {
+    it(`Drinks, ${at(frame)}, ${label}, light`, async () => {
+      const names = query === '&long=1' ? withLongName(GROUPED_MENU.Drinks!) : GROUPED_MENU.Drinks!;
+      const r = await open(frame, 'Drinks', query, names);
+      const name = `s994-drinks-${frame.name}-${frame.size.width}x${frame.size.height}-${label}`;
+      await shoot(name, r);
+      const scrolled = await bringUp(names, null);
+      if ((scrolled.dishScroll?.scrollTop ?? 0) > 0) await shoot(`${name}-scrolled`, scrolled);
+    }, 120_000);
+  }
 });
+
+/** Saves a picture of the page, and beside it what the picture shows in numbers: the column, each chip's box and lines, the dishes. */
+async function shoot(name: string, r: SubRowsReading): Promise<void> {
+  await harness.page.screenshot({ path: path.join(SHOTS!, `${name}.png`) });
+  writeFileSync(path.join(SHOTS!, `${name}.json`), `${JSON.stringify(r, null, 1)}\n`);
+}
 
 describe("the harness draws the phone till's own frame", () => {
   // If the phone till's frame changes, the phone measurement above is of the
@@ -250,6 +358,46 @@ describe("the harness draws the phone till's own frame", () => {
     it(`${file}: ${cls}`, () => {
       expect(source(...rel)).toContain(cls);
       if (drawn) expect(harnessPage).toContain(cls);
+    });
+  }
+});
+
+describe("the harness draws the till's own staff banners above the menu", () => {
+  // If the banners a scanned band brings change, the short-screen measurement
+  // above is of the wrong banners: this fails first.
+  const source = (...rel: string[]) => readFileSync(path.resolve(import.meta.dirname, '..', 'src', ...rel), 'utf8');
+  const harnessPage = readFileSync(path.join(import.meta.dirname, 'support', 'splitfix-harness', 'main.ts'), 'utf8');
+  const desk = ['pages', 'OrderStation.tsx'];
+  const phone = ['components', 'mobile', 'order-station', 'MobileOrderStation.tsx'];
+  // [where, its path, the text, whether the harness draws it word for word too]
+  const pins: [string, string[], string, boolean?][] = [
+    ['OrderStation', desk, 'flex-1 min-w-0 flex flex-col p-6 border-r bg-card/20'],
+    ['OrderStation', desk, '<FoodSafetyBanner wristband={wristband} />', false],
+    ['OrderStation', desk, 'mb-4 shrink-0 rounded-xl border border-amber-500/50 bg-amber-500/15 px-4 py-3 text-amber-900 dark:text-amber-100'],
+    ['OrderStation', desk, 'text-sm font-bold uppercase tracking-wide text-amber-800 dark:text-amber-200', false],
+    ['OrderStation', desk, 'mb-4 shrink-0 rounded-xl border border-violet-500/40 bg-violet-500/10 px-4 py-3'],
+    ['MobileOrderStation', phone, 'shrink-0 px-4 pt-3 space-y-2'],
+    ['MobileOrderStation', phone, '<FoodSafetyBanner wristband={wristband} compact />', false],
+    ['MobileOrderStation', phone, 'rounded-xl border border-amber-500/50 bg-amber-500/15 px-4 py-3 text-amber-900 dark:text-amber-100'],
+    ['MobileOrderStation', phone, 'text-xs font-bold uppercase tracking-wide text-amber-800 dark:text-amber-200', false],
+    ['MobileOrderStation', phone, 'shrink-0 px-4 pt-3'],
+    ['MobileOrderStation', phone, 'rounded-xl border border-violet-500/40 bg-violet-500/10 px-4 py-3'],
+    ...[desk, phone].flatMap((rel): [string, string[], string][] => [
+      [rel[rel.length - 1]!, rel, 'flex items-start gap-2.5'],
+      [rel[rel.length - 1]!, rel, 'mt-0.5 h-5 w-5 shrink-0 text-amber-700 dark:text-amber-300'],
+      [rel[rel.length - 1]!, rel, 'Parent did not authorize food orders for this child.'],
+      [rel[rel.length - 1]!, rel, 'flex items-center gap-2 mb-2.5'],
+      [rel[rel.length - 1]!, rel, 'w-4 h-4 text-violet-700 dark:text-violet-300 shrink-0'],
+      [rel[rel.length - 1]!, rel, 'text-xs font-bold uppercase tracking-wide text-violet-800 dark:text-violet-200'],
+      [rel[rel.length - 1]!, rel, 'flex flex-wrap gap-2'],
+      [rel[rel.length - 1]!, rel, 'flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-all'],
+      [rel[rel.length - 1]!, rel, 'border-violet-500/50 text-violet-900 dark:text-violet-100 bg-violet-500/15 hover:bg-violet-500/25 active:scale-[0.97]'],
+    ]),
+  ];
+  for (const [file, rel, text, drawn = true] of pins) {
+    it(`${file}: ${text}`, () => {
+      expect(source(...rel)).toContain(text);
+      if (drawn) expect(harnessPage).toContain(text);
     });
   }
 });

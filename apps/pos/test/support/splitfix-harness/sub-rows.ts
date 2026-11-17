@@ -5,7 +5,8 @@
  * the browser laid out, nothing inferred from class names. The chips are found
  * by their names (the buttons under the menu that carry a sub-category's name,
  * outside the top-level tab row), so the reading means the same on the base
- * commit's scrolling row and on the rows that replace it.
+ * commit's scrolling row and on the rows that replace it, wherever in the menu
+ * the rows stand. `revealInMenu` scrolls the menu as staff would.
  */
 /**
  * Staging's menu grouped on 13 November: three tabs and their sub-categories
@@ -50,13 +51,24 @@ export interface ChipReading {
 export interface SubRowsReading {
   /** The menu column: `MenuGrid`'s own root (`@container/menu`). */
   column: { left: number; right: number; width: number };
-  /** The chips' block: the menu root's child that holds them (null with no chip). */
+  /** The chips' block: the nearest box that holds every chip (null with no chip). */
   block: { testId: string | null; overflowX: string; scrollWidth: number; clientWidth: number } | null;
-  /** Each element from a chip's parent up to the block that scrolls sideways or is wider than it shows. */
+  /**
+   * Each element from a chip's parent up to the menu root that scrolls
+   * sideways (`overflow-x` auto or scroll) or is wider than it shows. A box
+   * that scrolls up and down only (the dishes' scroll, `overflow-x` hidden)
+   * is not one, unless something in it is wider than it.
+   */
   sideways: string[];
   chips: ChipReading[];
-  /** The dish tiles in order: name, top and whether the whole tile is on screen. */
-  tiles: { name: string; top: number; inView: boolean }[];
+  /**
+   * The dish tiles in order: name, top, height, its own `min-height` (a dish
+   * whose name takes one line is that tall), how much of it is on screen
+   * inside every box that clips it, and whether the whole tile is.
+   */
+  tiles: { name: string; top: number; height: number; minHeight: number; visible: number; inView: boolean }[];
+  /** The box that scrolls the first dish up and down (`revealInMenu`'s), null with none. */
+  dishScroll: { top: number; height: number; scrollTop: number; scrollHeight: number } | null;
 }
 
 const EPS = 1;
@@ -76,6 +88,19 @@ function onScreen(rect: R, el: Element): boolean {
   return true;
 }
 
+/** How much of an element's height is on screen, inside the window and every box around it that clips up and down. */
+function visibleHeight(rect: R, el: Element): number {
+  let top = Math.max(rect.top, 0);
+  let bottom = Math.min(rect.bottom, window.innerHeight);
+  for (let at = el.parentElement; at; at = at.parentElement) {
+    if (getComputedStyle(at).overflowY === 'visible') continue;
+    const box = at.getBoundingClientRect();
+    top = Math.max(top, box.top);
+    bottom = Math.min(bottom, box.bottom);
+  }
+  return Math.max(0, bottom - top);
+}
+
 function paddingBox(el: Element): R {
   const r = el.getBoundingClientRect();
   const s = getComputedStyle(el);
@@ -93,24 +118,51 @@ function lineRects(el: Element): DOMRect[] {
   return Array.from(range.getClientRects()).filter((r) => r.width > 0);
 }
 
-export function readSubRows(names: string[]): SubRowsReading {
+function menuRoot(): Element {
   const root = document.querySelector('[class*="@container/menu"]');
   if (!root) throw new Error('no menu on the page');
-  const rootBox = root.getBoundingClientRect();
+  return root;
+}
+
+/** The buttons under the menu that carry these names, outside the top-level tab row. */
+function chipsNamed(root: Element, names: string[]): HTMLButtonElement[] {
   const tabRow = root.querySelector('[data-testid="category-row"]')?.parentElement ?? null;
-  const chipEls = Array.from(root.querySelectorAll('button')).filter(
+  return Array.from(root.querySelectorAll('button')).filter(
     (b) => names.includes(squash(b.textContent ?? '')) && !(tabRow && tabRow.contains(b)),
   );
+}
+
+const dishTiles = (root: Element): Element[] => Array.from(root.querySelectorAll('.text-card-foreground[role="button"]'));
+
+/** The nearest box around an element that scrolls up and down (`overflow-y` auto or scroll): what a finger moves. */
+function scrollerOf(el: Element): Element | null {
+  for (let at = el.parentElement; at; at = at.parentElement) {
+    const overflowY = getComputedStyle(at).overflowY;
+    if (overflowY === 'auto' || overflowY === 'scroll') return at;
+  }
+  return null;
+}
+
+export function readSubRows(names: string[]): SubRowsReading {
+  const root = menuRoot();
+  const rootBox = root.getBoundingClientRect();
+  const chipEls = chipsNamed(root, names);
 
   let block: Element | null = null;
+  for (let at = chipEls[0]?.parentElement ?? null; at && at !== root; at = at.parentElement) {
+    const box = at;
+    if (chipEls.every((chip) => box.contains(chip))) {
+      block = box;
+      break;
+    }
+  }
   const sideways = new Set<string>();
   for (const chip of chipEls) {
     for (let at = chip.parentElement; at && at !== root; at = at.parentElement) {
       const style = getComputedStyle(at);
-      if (style.overflowX !== 'visible' || at.scrollWidth > at.clientWidth) {
+      if (style.overflowX === 'auto' || style.overflowX === 'scroll' || at.scrollWidth > at.clientWidth) {
         sideways.add(`${at.tagName.toLowerCase()}.${squash(at.className)}: overflow-x ${style.overflowX}, ${at.scrollWidth} of ${at.clientWidth}`);
       }
-      if (at.parentElement === root) block = at;
     }
   }
 
@@ -135,10 +187,20 @@ export function readSubRows(names: string[]): SubRowsReading {
     };
   });
 
-  const tiles = Array.from(root.querySelectorAll('.text-card-foreground[role="button"]')).map((tile) => {
+  const tileEls = dishTiles(root);
+  const tiles = tileEls.map((tile) => {
     const r = tile.getBoundingClientRect();
-    return { name: squash(tile.querySelector('.text-lg.leading-tight')?.textContent ?? ''), top: round(r.top), inView: onScreen(r, tile) };
+    return {
+      name: squash(tile.querySelector('.text-lg.leading-tight')?.textContent ?? ''),
+      top: round(r.top),
+      height: round(r.height),
+      minHeight: parseFloat(getComputedStyle(tile).minHeight) || 0,
+      visible: round(visibleHeight(r, tile)),
+      inView: onScreen(r, tile),
+    };
   });
+  const scroller = tileEls[0] ? scrollerOf(tileEls[0]) : null;
+  const scrollerBox = scroller?.getBoundingClientRect();
 
   const blockStyle = block ? getComputedStyle(block) : null;
   return {
@@ -149,11 +211,32 @@ export function readSubRows(names: string[]): SubRowsReading {
     sideways: [...sideways],
     chips,
     tiles,
+    dishScroll: scroller && scrollerBox
+      ? { top: round(scrollerBox.top), height: round(scrollerBox.height), scrollTop: round(scroller.scrollTop), scrollHeight: scroller.scrollHeight }
+      : null,
   };
+}
+
+/**
+ * Scrolls what a member of staff can scroll to bring up a chip (by its name)
+ * or, with null, the first dish tile: the nearest box around it that scrolls
+ * up and down (`overflow-y` auto or scroll), until its top meets that box's
+ * top. A box that only clips (`overflow: hidden`) is never moved, as no
+ * finger can move it. False when no box around it scrolls.
+ */
+export function revealInMenu(chip: string | null): boolean {
+  const root = menuRoot();
+  const el = chip === null ? dishTiles(root)[0] : chipsNamed(root, [chip])[0];
+  if (!el) throw new Error(`nothing to bring up: ${chip ?? 'the first dish'}`);
+  const scroller = scrollerOf(el);
+  if (!scroller) return false;
+  scroller.scrollTop += el.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
+  return true;
 }
 
 declare global {
   interface Window {
     __readSubRows?: typeof readSubRows;
+    __revealInMenu?: typeof revealInMenu;
   }
 }

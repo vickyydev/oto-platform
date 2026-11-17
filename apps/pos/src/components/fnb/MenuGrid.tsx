@@ -158,9 +158,19 @@ const CATEGORY_ROW =
  * over the chips of the next row. Its corners are 20px, half of 40: the same
  * pill as `rounded-full` on every 40px chip, and a rounded box, not an oval,
  * on a row that grew.
+ *
+ * The rows stand at the top of the dishes' own scroll, not above it. A short
+ * menu column (a phone, or a 1366x768 split view whose two columns stack
+ * twelve chips in six rows) under the staff banners of a scanned band (the
+ * allergy alert, "Food not authorized", the prepaid entitlements) left a
+ * fixed block of four to six rows no room below it: the dishes got 77px at
+ * 360x740 with the allergy alert, 0px with it and the entitlements. In the
+ * scroll, the rows and the dishes move up together, and only when the column
+ * is too short for both; where it is not, it draws as it did, every chip and
+ * the first dishes on screen at once.
  */
 const SUB_CATEGORY_GRID =
-  'shrink-0 mb-3 grid grid-cols-[repeat(auto-fill,minmax(5.75rem,1fr))] gap-1.5 @md/menu:grid-cols-[repeat(auto-fill,minmax(6.75rem,1fr))] @md/menu:gap-2';
+  'mb-3 grid grid-cols-[repeat(auto-fill,minmax(5.75rem,1fr))] gap-1.5 @md/menu:grid-cols-[repeat(auto-fill,minmax(6.75rem,1fr))] @md/menu:gap-2';
 
 // Pseudo-id for the "Other" sub-chip that gathers items assigned directly to a
 // top-level category (i.e. not placed in any of its sub-categories).
@@ -323,32 +333,32 @@ export function MenuGrid({ items, quantities, onAdd }: MenuGridProps) {
             })}
           </CategoryRow>
 
-          {/* Secondary level: sub-category chips (only when the top-level has them), in rows (SCRUM-994) */}
-          {subChips.length > 0 && (
-            <div data-testid="sub-category-grid" className={SUB_CATEGORY_GRID}>
-              {subChips.map((chip) => {
-                const isActive = chip.id === activeSubId;
-                return (
-                  <button
-                    key={chip.id}
-                    type="button"
-                    aria-pressed={isActive}
-                    onClick={() => setActiveSub(chip.id)}
-                    className={cn(
-                      'min-h-10 px-1.5 rounded-[1.25rem] flex items-center justify-center text-center text-sm font-semibold leading-tight transition-all active:scale-95',
-                      isActive
-                        ? 'bg-amber-500/20 text-amber-400 border border-amber-500'
-                        : 'bg-card border text-muted-foreground hover:text-amber-400 hover:border-amber-500/50'
-                    )}
-                  >
-                    {chip.name}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
           <ScrollArea className="flex-1 -mx-2 px-2">
+            {/* Secondary level: sub-category chips (only when the top-level has them), in rows at the top of the dishes' scroll (SCRUM-994) */}
+            {subChips.length > 0 && (
+              <div data-testid="sub-category-grid" className={SUB_CATEGORY_GRID}>
+                {subChips.map((chip) => {
+                  const isActive = chip.id === activeSubId;
+                  return (
+                    <button
+                      key={chip.id}
+                      type="button"
+                      aria-pressed={isActive}
+                      onClick={() => setActiveSub(chip.id)}
+                      className={cn(
+                        'min-h-10 px-1.5 rounded-[1.25rem] flex items-center justify-center text-center text-sm font-semibold leading-tight transition-all active:scale-95',
+                        isActive
+                          ? 'bg-amber-500/20 text-amber-400 border border-amber-500'
+                          : 'bg-card border text-muted-foreground hover:text-amber-400 hover:border-amber-500/50'
+                      )}
+                    >
+                      {chip.name}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
             <div className={MENU_TILES}>
               {shown.map((item) => (
                 <MenuItemCard key={item.id} item={item} qty={quantities[item.id] ?? 0} onAdd={onAdd} />

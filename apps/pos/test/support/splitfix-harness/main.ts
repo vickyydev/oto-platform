@@ -16,10 +16,11 @@ import { upsertMenuCategory, deleteMenuCategory } from '@/store/catalogStore';
 import { HISTORY_SEARCH_PLACEHOLDER } from '@/lib/historyLookup';
 import type { TaxBreakdownBaht } from '@/lib/cartWire';
 import type { EodStrandedRow } from '@oto/shared';
-import type { CartLine, Member, MenuItem, MerchItem, MerchOrderLine, Sale } from '@/types';
+import type { CartLine, Member, MenuItem, MerchItem, MerchOrderLine, Sale, Wristband } from '@/types';
+import { FoodSafetyBanner } from '@/components/fnb/FoodSafetyBanner';
 import { readSplitFix } from './measure';
-import { GROUPED_MENU, groupedDishes, readSubRows, withLongName } from './sub-rows';
-import { ChevronUp, GlassWater, ShoppingCart, StickyNote } from 'lucide-react';
+import { GROUPED_MENU, groupedDishes, readSubRows, revealInMenu, withLongName } from './sub-rows';
+import { Ban, ChevronUp, Gift, GlassWater, ShoppingCart, StickyNote } from 'lucide-react';
 import '@/fonts.css';
 import '@/index.css';
 
@@ -45,7 +46,9 @@ import '@/index.css';
  *                      November (Food, Drinks, Special and their
  *                      sub-categories), three dishes in every one; at a
  *                      desk, or with `frame=phone` in the phone till's frame;
- *                      `long=1` adds a 40-character name under Drinks.
+ *                      `long=1` adds a 40-character name under Drinks;
+ *                      `banners=allergy[,noauth|,prepaid]` draws the staff
+ *                      banners of a scanned band above the menu.
  *
  * `split=1` puts the staff half beside the customer half (`w-1/2`), as the
  * test harness the park runs on one screen does; `split=0` is full width.
@@ -217,11 +220,12 @@ function shopItems(): MerchItem[] {
  * `pages/MerchStation.tsx` draw it at a desk (classes pinned by the test): the
  * menu column (the region read) beside the 380px order column.
  */
-function ItemFrame({ grid }: { grid: ReactNode }) {
+function ItemFrame({ grid, banners }: { grid: ReactNode; banners?: ReactNode[] }) {
   const staff = h('div', { className: 'h-full w-full flex flex-col bg-background text-foreground overflow-hidden' },
     h('div', { className: 'flex-1 min-h-0' },
       h('div', { className: 'flex h-full min-h-0' },
         h('div', { id: 'region', className: 'flex-1 min-w-0 flex flex-col p-6 border-r bg-card/20' },
+          ...(banners ?? []),
           h('div', { className: 'flex-1 min-h-0' }, grid)),
         h('div', { className: 'w-[380px] shrink-0 bg-sidebar p-6 overflow-y-auto' }))));
   // F&B and the Shop: the harness banner, the header and the stock strip (staging's 146px, picture 14a).
@@ -251,9 +255,76 @@ function seedGroupedMenu(): MenuItem[] {
 }
 
 /**
+ * SCRUM-994 — the staff banners the F&B till draws above the menu once a band
+ * is scanned (`banners=allergy`, `allergy,noauth` or `allergy,prepaid`): the
+ * allergy alert (`FoodSafetyBanner`), "Food not authorized" (it stays after
+ * an override, as "Overridden by …"), and the prepaid entitlements, as
+ * `pages/OrderStation.tsx` (desk) and `MobileOrderStation` (phone) draw them
+ * (classes pinned by the s994 test). A synthetic child.
+ */
+const bannerSet = (params.get('banners') ?? '').split(',').filter(Boolean);
+const bannerBand = { allergiesMedical: 'Peanut allergy (severe), carries EpiPen', holderName: 'Mia' } as unknown as Wristband;
+const ENTITLEMENTS = ['Kids Meal', 'Apple Juice Box'];
+
+function noAuthBody(size: string): ReactNode {
+  return h('div', { className: 'flex items-start gap-2.5' },
+    h(Ban, { className: 'mt-0.5 h-5 w-5 shrink-0 text-amber-700 dark:text-amber-300' }),
+    h('div', { className: 'min-w-0' },
+      h('div', { className: `${size} font-bold uppercase tracking-wide text-amber-800 dark:text-amber-200` }, 'Food not authorized'),
+      h('div', { className: size }, 'Parent did not authorize food orders for this child.')));
+}
+
+function prepaidBody(): ReactNode[] {
+  return [
+    h('div', { key: 'head', className: 'flex items-center gap-2 mb-2.5' },
+      h(Gift, { className: 'w-4 h-4 text-violet-700 dark:text-violet-300 shrink-0' }),
+      h('span', { className: 'text-xs font-bold uppercase tracking-wide text-violet-800 dark:text-violet-200' }, 'Prepaid entitlements · Mia')),
+    h('div', { key: 'items', className: 'flex flex-wrap gap-2' },
+      ...ENTITLEMENTS.map((name) => h('button', {
+        key: name, type: 'button',
+        className: 'flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-all border-violet-500/50 text-violet-900 dark:text-violet-100 bg-violet-500/15 hover:bg-violet-500/25 active:scale-[0.97]',
+      },
+      h(Gift, { className: 'w-3.5 h-3.5 shrink-0' }),
+      h('span', null, name),
+      h('span', { className: 'tabular-nums text-xs text-violet-700 dark:text-violet-300' }, '1 left')))),
+  ];
+}
+
+/** The desk's banners: each its own block above the menu, in the menu column. */
+function deskBanners(): ReactNode[] | undefined {
+  if (bannerSet.length === 0) return undefined;
+  return [
+    h(FoodSafetyBanner, { key: 'allergy', wristband: bannerBand }),
+    bannerSet.includes('noauth')
+      ? h('div', { key: 'noauth', className: 'mb-4 shrink-0 rounded-xl border border-amber-500/50 bg-amber-500/15 px-4 py-3 text-amber-900 dark:text-amber-100' }, noAuthBody('text-sm'))
+      : null,
+    bannerSet.includes('prepaid')
+      ? h('div', { key: 'prepaid', className: 'mb-4 shrink-0 rounded-xl border border-violet-500/40 bg-violet-500/10 px-4 py-3' }, ...prepaidBody())
+      : null,
+  ];
+}
+
+/** The phone's banners, above the order-note bar. */
+function phoneBanners(): ReactNode[] {
+  if (bannerSet.length === 0) return [];
+  return [
+    h('div', { key: 'safety', className: 'shrink-0 px-4 pt-3 space-y-2' },
+      h(FoodSafetyBanner, { wristband: bannerBand, compact: true }),
+      bannerSet.includes('noauth')
+        ? h('div', { className: 'rounded-xl border border-amber-500/50 bg-amber-500/15 px-4 py-3 text-amber-900 dark:text-amber-100' }, noAuthBody('text-xs'))
+        : null),
+    bannerSet.includes('prepaid')
+      ? h('div', { key: 'prepaid', className: 'shrink-0 px-4 pt-3' },
+        h('div', { className: 'rounded-xl border border-violet-500/40 bg-violet-500/10 px-4 py-3' }, ...prepaidBody()))
+      : null,
+  ];
+}
+
+/**
  * The phone till's F&B order stage, as `MobileShell` and `MobileOrderStation`
- * draw it (classes pinned by the s994 test): the top bar, the order-note bar,
- * the menu (the region read), the sticky cart bar and the bottom tabs.
+ * draw it (classes pinned by the s994 test): the top bar, the staff banners
+ * when asked for, the order-note bar, the menu (the region read), the sticky
+ * cart bar and the bottom tabs.
  */
 function PhoneOrderFrame({ grid }: { grid: ReactNode }) {
   return h('div', { className: 'h-[100dvh] flex flex-col bg-background text-foreground overflow-hidden' },
@@ -261,6 +332,7 @@ function PhoneOrderFrame({ grid }: { grid: ReactNode }) {
     h('div', { className: 'flex-1 min-h-0 overflow-hidden' },
       h('div', { className: 'h-full flex flex-col bg-background text-foreground overflow-hidden' },
         h('div', { className: 'flex-1 min-h-0 flex flex-col' },
+          ...phoneBanners(),
           h('div', { className: 'shrink-0 px-4 pt-2 pb-1' },
             h('div', { className: 'w-full flex items-center gap-2 h-9 px-3 rounded-xl border text-sm transition-colors cursor-pointer select-none border-dashed bg-card/50 text-muted-foreground' },
               h(StickyNote, { className: 'w-3.5 h-3.5 shrink-0' }),
@@ -367,7 +439,7 @@ function Page() {
     }
     case 'fnb-menu-grouped': {
       const grid = h(MenuGrid, { items: seedGroupedMenu(), quantities: {}, onAdd: noop });
-      return phoneFrame ? h(PhoneOrderFrame, { grid }) : h(ItemFrame, { grid });
+      return phoneFrame ? h(PhoneOrderFrame, { grid }) : h(ItemFrame, { grid, banners: deskBanners() });
     }
     case 'merch-grid':
       return h(ItemFrame, { grid: h(MerchGrid, { items: shopItems(), quantities: { 's-helium-65': 1 }, onAdd: noop }) });
@@ -384,6 +456,7 @@ function Page() {
 
 window.__readSplitFix = readSplitFix;
 window.__readSubRows = readSubRows;
+window.__revealInMenu = revealInMenu;
 // SCRUM-963 — whether the last wheel turned over the page was taken by
 // something on it (the one-row categories), or left to the page.
 window.addEventListener('wheel', (event) => {
