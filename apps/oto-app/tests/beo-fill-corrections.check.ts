@@ -84,6 +84,7 @@ const { registerBeoRoutes } = await import("../server/beo-routes");
 const { loadBeoCatalogue, resolveCatalogueAnswer, timedElsewhere, namesOnlyShows, detailsFromFill, cakeSaidIncluded, quoteOf, moreAsked, BEO_TILL_MENU_RULES, chatPriceIsTotal, beoCatalogueSystemBlock } = await import("../server/lib/beoCatalogueFill");
 type TranscriptRef = import("../server/lib/beoCatalogueFill").TranscriptRef;
 const { db, pool: appDbPool } = await import("../server/db");
+const { beoReviewState } = await import("../server/lib/beoReviewState");
 const { initialReviewState, approveBodyOf, menuLinePriceWords, namesPhone, NOTHING_HELD, undecidedOptions, approvalResultWords, adultsFoldNoticeOf, withWhatsappRow, useChatText, requestFromsOf } = await import("../client/src/lib/beo-ai-review");
 const { BeoAiReviewBody } = await import("../client/src/components/beo/beo-ai-review");
 const { DepositRequestPanel, depositAskedOf, depositAskedWords } = await import("../client/src/components/beo/beo-till-billing");
@@ -193,6 +194,15 @@ async function post(path: string, body: unknown) {
 const fill = (eventId: string, existingData: Record<string, unknown> = { event: { title: "ZZ TEST" } }) =>
   post(`/api/events/${eventId}/beo/ai-fill/inbox`, { existingData });
 const approve = (eventId: string, body: unknown) => post(`/api/events/${eventId}/beo/ai-fill/approve`, body);
+/**
+ * An approval made after an earlier approval saved this event's plan. The screen sends the
+ * state its review was opened with (`review.currentState.version`, which the fill's answer
+ * reads with `beoReviewState`), and since SCRUM-990 the server refuses an approval without it
+ * once the event holds saved plan lines. Each repeat here is the review opened again after
+ * that save, so the state is read fresh, after any change made to the event in between.
+ */
+const approveAgain = async (eventId: string, body: BeoAiApproveBody) =>
+  approve(eventId, { ...body, expectedState: (await beoReviewState(db, eventId)).version });
 const bodyOf = (over: Partial<BeoAiApproveBody>): BeoAiApproveBody => ({
   conversationId: null, messageId: null, package: null, setMenu: null, menuLines: [], entertainment: [], otherLines: [], event: {}, cake: null, deposit: null, sources: [], ...over,
 });
@@ -861,7 +871,7 @@ try {
     const ok = await approve(ev.cake, body);
     assert.equal(ok.status, 200, JSON.stringify(ok.body));
     assert.equal((await kitchenOf(ev.cake)).menus.cakeIncluded, false);
-    const ticked = await approve(ev.cake, bodyOf({ cake: { mode: "INTERNAL", notes: "the park's cake", time: "15:00", included: true } }));
+    const ticked = await approveAgain(ev.cake, bodyOf({ cake: { mode: "INTERNAL", notes: "the park's cake", time: "15:00", included: true } }));
     assert.equal(ticked.status, 200);
     assert.equal((await kitchenOf(ev.cake)).menus.cakeIncluded, true, "ticked in the review: ticked");
     // Staff's own tick on a plan is kept by an approval that says nothing of it.
@@ -879,16 +889,16 @@ try {
     assert.equal(res.status, 200, JSON.stringify(res.body));
     let row = await phoneRow();
     assert.deepEqual([row.whatsapp_phone_raw, row.whatsapp_phone_e164, row.whatsapp_parse_valid, row.whatsapp_parse_error], ["089 870 0417", "+66898700417", true, null], "the new number, both forms");
-    res = await approve(ev.phone, bodyOf({ event: { whatsappPhoneRaw: "+44 20 7946 0958" } }));
+    res = await approveAgain(ev.phone, bodyOf({ event: { whatsappPhoneRaw: "+44 20 7946 0958" } }));
     row = await phoneRow();
     assert.equal(row.whatsapp_phone_e164, "+442079460958", "an international number as written");
-    res = await approve(ev.phone, bodyOf({ event: { whatsappPhoneRaw: "1234" } }));
+    res = await approveAgain(ev.phone, bodyOf({ event: { whatsappPhoneRaw: "1234" } }));
     assert.equal(res.status, 200);
     row = await phoneRow();
     assert.deepEqual([row.whatsapp_phone_raw, row.whatsapp_phone_e164, row.whatsapp_parse_valid], ["1234", null, false], "a number the rule cannot read: kept raw, said so, never the old number's link");
     assert.ok(typeof row.whatsapp_parse_error === "string" && row.whatsapp_parse_error.length > 0);
     // An approval that sends no number leaves both as they are.
-    await approve(ev.phone, bodyOf({ event: { numChildren: 12 } }));
+    await approveAgain(ev.phone, bodyOf({ event: { numChildren: 12 } }));
     assert.equal((await phoneRow()).whatsapp_phone_raw, "1234");
   });
 
@@ -902,8 +912,10 @@ try {
     assert.deepEqual(sel.selections, [{ groupId: PIZZA, chosenOptions: ["Hawaiian"], recordedFrom: "chat" }]);
     assert.equal(choicesFromChatOnly(sel.selections), true, "no parent answered: not 'Selections received'");
     // A choice a parent sent is kept unmarked beside an approval's own; then a parent did answer.
+    // The review is opened after the parent's choice, so its state is read after that write.
     await q("update beo_set_menu_selections set selections = $2 where event_id = $1", [ev.chosen, JSON.stringify([{ groupId: RICE, chosenOptions: ["Chicken"] }])]);
-    await approve(ev.chosen, bodyOf({ setMenu: { templateId: cat.setMenu, choices: [{ itemId: PIZZA, options: ["Margherita"] }] } }));
+    const again = await approveAgain(ev.chosen, bodyOf({ setMenu: { templateId: cat.setMenu, choices: [{ itemId: PIZZA, options: ["Margherita"] }] } }));
+    assert.equal(again.status, 200, JSON.stringify(again.body));
     sel = await selectionOf();
     assert.deepEqual(sel.selections, [{ groupId: RICE, chosenOptions: ["Chicken"] }, { groupId: PIZZA, chosenOptions: ["Margherita"], recordedFrom: "chat" }]);
     assert.equal(choicesFromChatOnly(sel.selections), false, "a parent's choice in it: 'Selections received'");
@@ -919,7 +931,7 @@ try {
   // --- 9c. Billing's deposit box agrees with the BEO ------------------------------------------
   await check("theDepositBoxSaysTheDepositTheBeoAsks", async () => {
     // The proof's thread E: the team asked 3,000 in the chat; the approval wrote it as asked.
-    const res = await approve(ev.chosen, bodyOf({ deposit: { amount: 3000, paid: false, date: null } }));
+    const res = await approveAgain(ev.chosen, bodyOf({ deposit: { amount: 3000, paid: false, date: null } }));
     assert.equal(res.status, 200, JSON.stringify(res.body));
     const [billing] = await q("select deposit_required, deposit_amount, deposit_paid from beo_event_billing where event_id = $1", [ev.chosen]);
     const asked = depositAskedOf({ depositRequired: billing!.deposit_required, depositAmount: billing!.deposit_amount, depositPaid: billing!.deposit_paid });
@@ -956,9 +968,11 @@ try {
       approvalResultWords(res.body),
       "Saved: the event's details (name, counts, times), the package, the kitchen plan and the timeline's steps.",
     );
-    res = await approve(ev.toast, bodyOf({ cake: { mode: "EXTERNAL", notes: "their own cake", time: "17:00" } }));
+    res = await approveAgain(ev.toast, bodyOf({ cake: { mode: "EXTERNAL", notes: "their own cake", time: "17:00" } }));
+    assert.equal(res.status, 200, JSON.stringify(res.body));
     assert.equal(approvalResultWords(res.body), "Saved: the kitchen plan.");
-    res = await approve(ev.toast, bodyOf({ deposit: { amount: 3000, paid: false, date: null }, details: { setupReadyBy: "14:30" } }));
+    res = await approveAgain(ev.toast, bodyOf({ deposit: { amount: 3000, paid: false, date: null }, details: { setupReadyBy: "14:30" } }));
+    assert.equal(res.status, 200, JSON.stringify(res.body));
     assert.equal(approvalResultWords(res.body), "Saved: the setup plan and the deposit.");
     // A server before this rule answers no count: the fixed words, as before.
     assert.ok(approvalResultWords({}).startsWith("Saved: the event's name and details, the counts"));
