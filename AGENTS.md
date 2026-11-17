@@ -33,7 +33,7 @@ not a generator.
 - **Never print or record secret values** (tokens, PINs, claim codes, passwords, database
   URLs, box secrets). Variable names, file locations and sha256 fingerprints only.
 - **Migrations are forward-only and immutable once applied.** Platform migrations live in
-  `packages/db/migrations` (applied through 0114; read the journal before numbering). The
+  `packages/db/migrations` (applied through 0129 on 18 November 2026; read the journal before numbering). The
   OTO App has its own under `apps/oto-app/migrations` (read its `meta/_journal.json` before
   numbering). A lane builds under a provisional number and renumbers at landing,
   regenerating the snapshot and diffing the SQL identical. Never edit an applied migration.
@@ -65,7 +65,7 @@ not a generator.
   This supersedes older main-red/CI waiting blocks. "Force push Render" means trigger
   a deployment, NEVER force Git history. All other safeguards and local gates remain.
 - **Typecheck output is read whole:** the api must print zero lines; the OTO App's ratchet
-  (`npm run check:ratchet`) holds at its committed baseline (currently 414 diagnostics) and that count may never rise. Eslint every
+  (`npm run check:ratchet`) holds at its committed baseline (currently 413 diagnostics in 54 files) and that count may never rise. Eslint every
   touched file. Never use `vitest -t` on serial suites.
 - **Be honest about lost or partial work.** Never claim something is built, tested or
   deployed that you did not see built, tested or deployed. Three answers only to "is X
@@ -93,7 +93,8 @@ the known remedy for a raced cross-service call is Retry on the Failures page.
 
 ## Environment and tools (this PC)
 
-- Node 22, pnpm, Docker; test database on port 5433. `pnpm typecheck`, `pnpm test`,
+- Node 22, pnpm. Docker stays off: api and db tests use the embedded Postgres (leave
+  `TEST_DATABASE_URL` unset; run local app checks under `TZ=UTC`, as CI is). `pnpm typecheck`, `pnpm test`,
   per-package via each package's own script. The repo is
   `https://github.com/vickyydev/oto-platform`, branch `main`; `gh` is signed in.
 - **Helpers in `scripts/agent/`** (they read `.env` at the repo root; never print values):
