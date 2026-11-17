@@ -18,7 +18,7 @@ import type { TaxBreakdownBaht } from '@/lib/cartWire';
 import type { EodStrandedRow } from '@oto/shared';
 import type { CartLine, Member, MenuItem, MerchItem, MerchOrderLine, Sale } from '@/types';
 import { readSplitFix } from './measure';
-import { GROUPED_MENU, groupedDishes, readSubRows } from './sub-rows';
+import { GROUPED_MENU, groupedDishes, readSubRows, withLongName } from './sub-rows';
 import { ChevronUp, GlassWater, ShoppingCart, StickyNote } from 'lucide-react';
 import '@/fonts.css';
 import '@/index.css';
@@ -44,7 +44,8 @@ import '@/index.css';
  *   `fnb-menu-grouped` SCRUM-994: the F&B menu as staging groups it on 13
  *                      November (Food, Drinks, Special and their
  *                      sub-categories), three dishes in every one; at a
- *                      desk, or with `frame=phone` in the phone till's frame.
+ *                      desk, or with `frame=phone` in the phone till's frame;
+ *                      `long=1` adds a 40-character name under Drinks.
  *
  * `split=1` puts the staff half beside the customer half (`w-1/2`), as the
  * test harness the park runs on one screen does; `split=0` is full width.
@@ -54,6 +55,7 @@ const params = new URLSearchParams(window.location.search);
 const screen = params.get('screen') ?? 'tiers-two-line';
 const split = params.get('split') === '1';
 const phoneFrame = params.get('frame') === 'phone';
+const longName = params.get('long') === '1';
 const dark = params.get('theme') === 'dark';
 
 // --- The platform's answers: an empty shelf, so nothing is stock-tracked ---------
@@ -226,12 +228,17 @@ function ItemFrame({ grid }: { grid: ReactNode }) {
   return chromeAnd(146, staff);
 }
 
-/** SCRUM-994 — staging's menu grouped on 13 November (`GROUPED_MENU`), three dishes in every sub-category. */
+/**
+ * SCRUM-994 — staging's menu grouped on 13 November (`GROUPED_MENU`), three
+ * dishes in every sub-category; with `long=1`, Drinks also has a name as long
+ * as the platform takes (`withLongName`).
+ */
 function seedGroupedMenu(): MenuItem[] {
   for (const c of getMenuCategories()) deleteMenuCategory(c.id);
   const items: MenuItem[] = [];
-  Object.entries(GROUPED_MENU).forEach(([tab, subs], i) => {
+  Object.entries(GROUPED_MENU).forEach(([tab, names], i) => {
     upsertMenuCategory({ id: catId(tab), name: tab, sortOrder: i + 1, defaultPrepStation: 'kitchen', defaultTaxCategory: 'fnb' });
+    const subs = longName && tab === 'Drinks' ? withLongName(names) : names;
     subs.forEach((sub, j) => {
       upsertMenuCategory({ id: catId(sub), name: sub, parentId: catId(tab), sortOrder: j + 1 });
       groupedDishes(sub).forEach((name, k) => {

@@ -150,6 +150,14 @@ const CATEGORY_ROW =
  * ellipsis; the side padding is 6px so that "Free Drinks" still fits one
  * line of a 290px column's chip (at 8px it took three lines). Which
  * sub-category is chosen, and when the block shows, is as before.
+ *
+ * A chip is AT LEAST 40px tall, not exactly: a name the platform allows (up
+ * to 40 characters, `MenuCategoryBodySchema`) can need three lines or four in
+ * a narrow column, and then its row grows to hold it, the chips beside it
+ * grow with it and the columns stay where they are; a fixed 40px let it spill
+ * over the chips of the next row. Its corners are 20px, half of 40: the same
+ * pill as `rounded-full` on every 40px chip, and a rounded box, not an oval,
+ * on a row that grew.
  */
 const SUB_CATEGORY_GRID =
   'shrink-0 mb-3 grid grid-cols-[repeat(auto-fill,minmax(5.75rem,1fr))] gap-1.5 @md/menu:grid-cols-[repeat(auto-fill,minmax(6.75rem,1fr))] @md/menu:gap-2';
@@ -327,7 +335,7 @@ export function MenuGrid({ items, quantities, onAdd }: MenuGridProps) {
                     aria-pressed={isActive}
                     onClick={() => setActiveSub(chip.id)}
                     className={cn(
-                      'h-10 px-1.5 rounded-full flex items-center justify-center text-center text-sm font-semibold leading-tight transition-all active:scale-95',
+                      'min-h-10 px-1.5 rounded-[1.25rem] flex items-center justify-center text-center text-sm font-semibold leading-tight transition-all active:scale-95',
                       isActive
                         ? 'bg-amber-500/20 text-amber-400 border border-amber-500'
                         : 'bg-card border text-muted-foreground hover:text-amber-400 hover:border-amber-500/50'

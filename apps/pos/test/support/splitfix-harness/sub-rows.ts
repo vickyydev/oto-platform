@@ -19,6 +19,13 @@ export const GROUPED_MENU: Record<string, string[]> = {
 };
 /** The three dishes the screen puts in each sub-category, named after it so a test finds them. */
 export const groupedDishes = (sub: string): string[] => [1, 2, 3].map((n) => `${sub} ${n}`);
+/**
+ * A sub-category name as long as the platform takes (40 characters,
+ * `MenuCategoryBodySchema` in `packages/shared/src/menu-shapes.ts`): with
+ * `long=1` the screen puts it third under Drinks (`withLongName`).
+ */
+export const LONG_SUB_NAME = 'Fresh Seasonal Fruit Smoothies and Juice';
+export const withLongName = (names: string[]): string[] => [...names.slice(0, 2), LONG_SUB_NAME, ...names.slice(2)];
 
 export interface ChipReading {
   name: string;

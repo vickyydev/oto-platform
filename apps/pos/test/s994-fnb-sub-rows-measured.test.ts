@@ -3,7 +3,7 @@ import path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { launchBrowser } from './support/splitview-harness/server';
 import { startSplitFixHarness, type SplitFixHarness } from './support/splitfix-harness/server';
-import { GROUPED_MENU, groupedDishes, type SubRowsReading } from './support/splitfix-harness/sub-rows';
+import { GROUPED_MENU, groupedDishes, LONG_SUB_NAME, withLongName, type SubRowsReading } from './support/splitfix-harness/sub-rows';
 
 /**
  * SCRUM-994 — THE F&B SUB-CATEGORIES IN ALIGNED ROWS, MEASURED IN A BROWSER.
@@ -27,6 +27,10 @@ import { GROUPED_MENU, groupedDishes, type SubRowsReading } from './support/spli
  * as the column's width gives; no label is cut, and none takes more than two
  * lines; the dishes still start on screen; a press on the last chip shows its
  * dishes and marks it pressed.
+ *
+ * A name as long as the platform takes (40 characters, `long=1`) needs more
+ * than two lines in a narrow column: its row grows to hold it, its label stays
+ * inside its chip, no row runs over the next and the columns stay aligned.
  *
  * FONT-INDEPENDENT, as `s884` and `s959` keep their split-view checks: these
  * are relations (inside, equal, on a line, fits), and the column counts come
@@ -82,20 +86,23 @@ async function readRows(names: string[]): Promise<SubRowsReading> {
   return JSON.parse(last) as SubRowsReading;
 }
 
-/** Opens the grouped menu in a frame, on a tab (Food is the first, chosen when the menu opens). */
-async function open(frame: Frame, tab: (typeof TABS)[number], theme = ''): Promise<SubRowsReading> {
-  await harness.read(`screen=fnb-menu-grouped&${frame.query}${theme}`, frame.size);
+/**
+ * Opens the grouped menu in a frame, on a tab (Food is the first, chosen when
+ * the menu opens). `extra` adds to the page's query (`&theme=dark`, `&long=1`).
+ */
+async function open(frame: Frame, tab: (typeof TABS)[number], extra = '', names = GROUPED_MENU[tab]!): Promise<SubRowsReading> {
+  await harness.read(`screen=fnb-menu-grouped&${frame.query}${extra}`, frame.size);
   if (tab !== 'Food') {
     await harness.page.getByTestId('category-row').getByRole('button', { name: tab, exact: true }).click({ timeout: 10_000 });
   }
-  return readRows(GROUPED_MENU[tab]!);
+  return readRows(names);
 }
 
 const at = (frame: Frame) => `${frame.name} ${frame.size.width}x${frame.size.height}`;
 const near = (a: number, b: number) => Math.abs(a - b) <= 0.5;
 
-/** Everything that must hold of the chips as drawn, whichever is chosen. */
-function expectRows(r: SubRowsReading, names: string[], frame: Frame): void {
+/** What holds of the chips whatever their names: in order, in the column, no sideways scroll, one width, on the column lines, every label whole. */
+function expectColumns(r: SubRowsReading, names: string[], frame: Frame): void {
   expect(r.chips.map((c) => c.name), 'every sub-category, in order').toEqual(names);
   // No sideways scroll: the block, and nothing between it and a chip, scrolls or clips sideways.
   expect(r.block, 'the chips sit in one block under the menu').not.toBeNull();
@@ -103,15 +110,12 @@ function expectRows(r: SubRowsReading, names: string[], frame: Frame): void {
   expect(r.block!.overflowX).toBe('visible');
   expect(r.block!.scrollWidth).toBeLessThanOrEqual(r.block!.clientWidth);
   expect(r.block!.testId).toBe('sub-category-grid');
-  // Every chip inside the menu column, and on screen.
+  // Every chip inside the menu column.
   const outside = r.chips.filter((c) => c.left < r.column.left - 0.5 || c.left + c.width > r.column.right + 0.5);
   expect(outside.map((c) => `${c.name}: ${c.left}..${c.left + c.width} in ${r.column.left}..${r.column.right}`)).toEqual([]);
-  expect(r.chips.filter((c) => !c.inView).map((c) => c.name), 'every chip on screen at once').toEqual([]);
-  // One width and one height.
+  // One width.
   const widths = r.chips.map((c) => c.width);
-  const heights = r.chips.map((c) => c.height);
   expect(Math.max(...widths) - Math.min(...widths), `widths ${widths.join(', ')}`).toBeLessThanOrEqual(0.5);
-  expect(Math.max(...heights) - Math.min(...heights), `heights ${heights.join(', ')}`).toBeLessThanOrEqual(0.5);
   // Aligned columns: the first row's left edges are the column lines, every chip starts on one.
   const lines = r.chips.filter((c) => near(c.top, r.chips[0]!.top)).map((c) => c.left);
   expect(lines.length, `columns in a ${r.column.width}px menu column, ${at(frame)}`).toBe(frame.columns);
@@ -119,14 +123,46 @@ function expectRows(r: SubRowsReading, names: string[], frame: Frame): void {
   expect(offLine.map((c) => `${c.name} at ${c.left}`), `column lines ${lines.join(', ')}`).toEqual([]);
   const rows = new Set(r.chips.map((c) => Math.round(c.top))).size;
   expect(rows).toBe(Math.ceil(names.length / frame.columns));
-  // No label cut, none on more than two lines.
+  // No label cut.
   const cut = r.chips.filter((c) => c.scrollWidth > c.clientWidth || c.scrollHeight > c.clientHeight || !c.labelInside);
   expect(cut.map((c) => `${c.name}: ${c.scrollWidth}/${c.clientWidth} x ${c.scrollHeight}/${c.clientHeight}, inside ${c.labelInside}`)).toEqual([]);
+}
+
+/** Everything that must hold of staging's chips as drawn, whichever is chosen. */
+function expectRows(r: SubRowsReading, names: string[], frame: Frame): void {
+  expectColumns(r, names, frame);
+  // Every chip on screen.
+  expect(r.chips.filter((c) => !c.inView).map((c) => c.name), 'every chip on screen at once').toEqual([]);
+  // One height.
+  const heights = r.chips.map((c) => c.height);
+  expect(Math.max(...heights) - Math.min(...heights), `heights ${heights.join(', ')}`).toBeLessThanOrEqual(0.5);
+  // None on more than two lines.
   expect(r.chips.filter((c) => c.lines < 1 || c.lines > 2).map((c) => `${c.name}: ${c.lines} lines`)).toEqual([]);
   // The dishes still start on screen: the first row of tiles whole.
   expect(r.tiles.length, 'the chosen sub-category has dishes').toBeGreaterThan(0);
   const firstRow = r.tiles.filter((t) => near(t.top, r.tiles[0]!.top));
   expect(firstRow.filter((t) => !t.inView).map((t) => t.name), 'the first row of dishes whole on screen').toEqual([]);
+}
+
+/**
+ * A name too long for two lines: its row grows to hold it. The chips of a row
+ * share one height, a row starts below the end of the one above (nothing
+ * spills over the next row's chips), and every row without the long name
+ * keeps the height the others have.
+ */
+function expectGrownRows(r: SubRowsReading, names: string[], frame: Frame, long: string): void {
+  expectColumns(r, names, frame);
+  expect(r.chips.filter((c) => c.lines < 1).map((c) => c.name), 'every label drawn').toEqual([]);
+  const tops = [...new Set(r.chips.map((c) => c.top))].sort((a, b) => a - b);
+  const rows = tops.map((top) => r.chips.filter((c) => c.top === top));
+  for (const row of rows) {
+    const heights = row.map((c) => c.height);
+    expect(Math.max(...heights) - Math.min(...heights), `one height in the row of ${row[0]!.name}: ${heights.join(', ')}`).toBeLessThanOrEqual(0.5);
+  }
+  const overlaps = rows.slice(1).filter((row, i) => row[0]!.top < rows[i]![0]!.top + rows[i]![0]!.height - 0.5);
+  expect(overlaps.map((row) => `${row[0]!.name} at ${row[0]!.top}`), 'every row starts below the one above').toEqual([]);
+  const others = rows.filter((row) => !row.some((c) => c.name === long)).map((row) => row[0]!.height);
+  expect(Math.max(...others) - Math.min(...others), `the other rows' heights ${others.join(', ')}`).toBeLessThanOrEqual(0.5);
 }
 
 describe.skipIf(!browser)('SCRUM-994: the F&B sub-categories stand in aligned rows, with no sideways scroll', () => {
@@ -153,6 +189,19 @@ describe.skipIf(!browser)('SCRUM-994: the F&B sub-categories stand in aligned ro
         expect(r.tiles.map((t) => t.name)).toEqual(groupedDishes(last));
       }, 120_000);
     }
+  }
+});
+
+describe.skipIf(!browser)('SCRUM-994: a sub-category name as long as the platform takes grows its row, never spills', () => {
+  const names = withLongName(GROUPED_MENU.Drinks!);
+  it('the name is 40 characters, the most `MenuCategoryBodySchema` takes', () => {
+    expect(LONG_SUB_NAME).toHaveLength(40);
+  });
+  for (const frame of FRAMES) {
+    it(`Drinks with a 40-character name, ${at(frame)}: every label inside its chip, the row grows, the columns stay`, async () => {
+      const r = await open(frame, 'Drinks', '&long=1', names);
+      expectGrownRows(r, names, frame, LONG_SUB_NAME);
+    }, 120_000);
   }
 });
 
