@@ -245,13 +245,21 @@ describe('keys and expiry', () => {
     }
   });
 
-  it('a Bangkok business day ends at the next 05:00 on its wall clock', () => {
+  it('SCRUM-1010: a Bangkok business day ends at the park’s next midnight on its wall clock', () => {
+    expect(businessDayEndsAt('2026-10-01', 'Asia/Bangkok', 0).toISOString()).toBe('2026-10-01T17:00:00.000Z');
+    // The setting decides: a park on a 05:00 start ends its day at 05:00.
     expect(businessDayEndsAt('2026-10-01', 'Asia/Bangkok', 300).toISOString()).toBe('2026-10-01T22:00:00.000Z');
   });
 
   it('a DST zone is resolved against the wall clock the instant shows', () => {
     // London springs forward on 2026-03-29 at 01:00 UTC; 05:00 that morning is BST (UTC+1).
     expect(businessDayEndsAt('2026-03-28', 'Europe/London', 300).toISOString()).toBe('2026-03-29T04:00:00.000Z');
+  });
+
+  it('SCRUM-1010: same-day credit granted on a midnight park stops at midnight, not at 05:00 and not at the UTC date change', () => {
+    const at = grantExpiresAt({ expiry: 'same_day', expiryDays: null }, '2026-10-01', 'Asia/Bangkok', 0)!;
+    expect(at.toISOString()).toBe('2026-10-01T17:00:00.000Z'); // 00:00 on 2 Oct in Bangkok
+    expect(grantExpiresAt({ expiry: 'days_n', expiryDays: 3 }, '2026-10-01', 'Asia/Bangkok', 0)?.toISOString()).toBe('2026-10-03T17:00:00.000Z');
   });
 
   it('same_day expires at the end of the business day; days_n later; never not at all', () => {
