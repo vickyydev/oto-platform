@@ -98,7 +98,8 @@ export async function loadCatalogFromApi(activeSlug?: string): Promise<void> {
     // The trading day is read off the branch's calendar, not the browser's
     // (SCRUM-229). Set before anything prices, and re-set on every branch switch.
     setBranchTimezone(active.timezone);
-    // And its trading day starts at 05:00, not midnight (SCRUM-308).
+    // And its trading day starts at the park's own day start (SCRUM-308;
+    // midnight since SCRUM-1010).
     setBranchDayStart(active.businessDayStart);
     const [tiersRes, packagesRes, holidaysRes, taxRes, rateModeRes] = await Promise.all([
       catalogApi.tiers(),

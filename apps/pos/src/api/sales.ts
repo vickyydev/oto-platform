@@ -505,7 +505,7 @@ export interface ApiSaleQuote {
   /**
    * WHERE THE TILL AND THE PLATFORM SAW THIS CART DIFFERENTLY.
    *
-   * Neither is refused — a cart left open across 05:00, or a member whose tier
+   * Neither is refused — a cart left open across midnight, or a member whose tier
    * was verified on another till mid-sale, are both ordinary — and the
    * platform's answer is the one charged. But staff are looking at a screen
    * that still shows the tier they picked and the mode the header chip showed,

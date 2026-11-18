@@ -214,7 +214,8 @@ create index if not exists box_print_job_device_idx on box_print_job (device_id)
 
 -- Counters for one trading day: spins, and spins per prize, which is what a
 -- daily cap is read from. A business date and not a timestamp, because the
--- park's day starts at branch.business_day_start and not at midnight.
+-- park's day starts at branch.business_day_start (midnight since SCRUM-1010,
+-- but the park's setting decides).
 create table if not exists box_counter (
   box_id text not null,
   scope text not null,

@@ -124,9 +124,9 @@ export function MobileHistory() {
   /** S2-14a round 2 — the platform wallet the scanned band carries, if any. */
   const [bandWallet, setBandWallet] = useState<Wristband | null>(null);
 
-  // The day the park is on, from the branch's own clock and 05:00 boundary —
-  // not the browser's calendar, which between midnight and five belongs to
-  // tomorrow while the till is still ringing up today.
+  // The day the park is on, from the branch's own clock and day start
+  // (midnight since SCRUM-1010) — not the browser's calendar, which may sit in
+  // another timezone than the park.
   useEffect(() => {
     let cancelled = false;
     setSelected(null);
