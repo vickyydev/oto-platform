@@ -1,0 +1,231 @@
+{
+  "steps": [
+    {
+      "stage": "party_created",
+      "at": "2026-11-18T15:57:35.011Z",
+      "eventId": "6ef9a376-efef-4caa-8015-ebcde41c9f41",
+      "title": "ZZ TEST 1000 party 20261118",
+      "snapStatus": 201,
+      "via": "OTO App POST /api/admin/events, package After School Birthday Package, Central (10 kids)"
+    },
+    {
+      "stage": "main_settled_cash",
+      "at": "2026-11-18T16:00:45.527Z",
+      "saleId": "01a1ef63-4082-701e-98cb-e5e827952ad5",
+      "receiptNumber": "Z703-000001",
+      "grossSatang": 1090000,
+      "payments": [
+        {
+          "method": "cash",
+          "status": "approved",
+          "amountSatang": 1090000
+        }
+      ],
+      "fingerprint": "2188861ce031a332b271d64bd1c0cbc69a509c063b46d6cf7813f5bc580323f8",
+      "tillState": "sale",
+      "additionalBills": 0
+    },
+    {
+      "stage": "kitchen_extra_added_after_settlement",
+      "at": "2026-11-18T16:01:01.841Z",
+      "saveStatus": 200,
+      "confirmShown": true,
+      "billsBefore": 0,
+      "billsAfter": [
+        {
+          "state": "open",
+          "totalSatang": 2503,
+          "outstandingSatang": 2503
+        }
+      ]
+    },
+    {
+      "stage": "bar_extra_added_after_settlement",
+      "at": "2026-11-18T16:01:19.924Z",
+      "saveStatus": 200,
+      "confirmShown": true,
+      "billsAfter": [
+        {
+          "state": "open",
+          "totalSatang": 3208,
+          "outstandingSatang": 3208
+        }
+      ]
+    },
+    {
+      "stage": "bill1_paid_cash_desk",
+      "at": "2026-11-18T16:04:31.637Z",
+      "net": [
+        {
+          "m": "POST",
+          "path": "/api/parties/<party>/payments",
+          "status": 200,
+          "error": null
+        }
+      ],
+      "bills": [
+        {
+          "state": "paid",
+          "totalSatang": 3208,
+          "paidSatang": 3208,
+          "outstandingSatang": 0
+        }
+      ],
+      "firstReceiptUnchanged": true
+    },
+    {
+      "stage": "bar_extra_c_added_after_bill1_paid",
+      "at": "2026-11-18T16:04:56.725Z",
+      "saveStatus": 200,
+      "confirmShown": true,
+      "billsAfter": [
+        {
+          "state": "paid",
+          "totalSatang": 3208,
+          "outstandingSatang": 0
+        },
+        {
+          "state": "open",
+          "totalSatang": 705,
+          "outstandingSatang": 705
+        }
+      ]
+    },
+    {
+      "stage": "bill2_paid_cash_phone",
+      "at": "2026-11-18T16:06:40.138Z",
+      "bills": [
+        {
+          "state": "paid",
+          "totalSatang": 3208,
+          "paidSatang": 3208,
+          "outstandingSatang": 0
+        },
+        {
+          "state": "paid",
+          "totalSatang": 705,
+          "paidSatang": 705,
+          "outstandingSatang": 0
+        }
+      ],
+      "firstReceiptUnchanged": true
+    },
+    {
+      "stage": "cleanup",
+      "at": "2026-11-18T16:08:53.214Z",
+      "menuStatus": 200,
+      "productsNamedZZTEST1000": [],
+      "archiveStatus": 200,
+      "archived": true,
+      "mainReceipt": {
+        "receiptNumber": "Z703-000001",
+        "grossSatang": 1090000,
+        "unchanged": true
+      },
+      "additionalBills": [
+        {
+          "state": "paid",
+          "totalSatang": 3208,
+          "paidSatang": 3208,
+          "outstandingSatang": 0
+        },
+        {
+          "state": "paid",
+          "totalSatang": 705,
+          "paidSatang": 705,
+          "outstandingSatang": 0
+        }
+      ]
+    },
+    {
+      "stage": "own_sessions_signed_out",
+      "at": "2026-11-18T16:08:58.706Z",
+      "desk": {
+        "signOutStatus": 200,
+        "oldCookieMeStatus": 401
+      },
+      "phone": {
+        "signOutStatus": 200,
+        "oldCookieMeStatus": 401
+      },
+      "launcher-admin": {
+        "signOutStatus": 200,
+        "oldCookieMeStatus": 401
+      },
+      "app": {
+        "logoutStatus": 200,
+        "oldCookieUserStatus": 401
+      }
+    }
+  ],
+  "receiptReads": [
+    {
+      "label": "after_settlement",
+      "at": "2026-11-18T16:00:45.312Z",
+      "httpStatus": 200,
+      "receiptNumber": "Z703-000001",
+      "status": "finalised",
+      "grossSatang": 1090000,
+      "lineCount": 9,
+      "payments": [
+        {
+          "method": "cash",
+          "status": "approved",
+          "amountSatang": 1090000
+        }
+      ],
+      "fingerprint": "2188861ce031a332b271d64bd1c0cbc69a509c063b46d6cf7813f5bc580323f8"
+    },
+    {
+      "label": "after_bill1_desk",
+      "at": "2026-11-18T16:04:31.636Z",
+      "httpStatus": 200,
+      "receiptNumber": "Z703-000001",
+      "status": "finalised",
+      "grossSatang": 1090000,
+      "lineCount": 9,
+      "payments": [
+        {
+          "method": "cash",
+          "status": "approved",
+          "amountSatang": 1090000
+        }
+      ],
+      "fingerprint": "2188861ce031a332b271d64bd1c0cbc69a509c063b46d6cf7813f5bc580323f8"
+    },
+    {
+      "label": "after_bill2_phone",
+      "at": "2026-11-18T16:06:40.137Z",
+      "httpStatus": 200,
+      "receiptNumber": "Z703-000001",
+      "status": "finalised",
+      "grossSatang": 1090000,
+      "lineCount": 9,
+      "payments": [
+        {
+          "method": "cash",
+          "status": "approved",
+          "amountSatang": 1090000
+        }
+      ],
+      "fingerprint": "2188861ce031a332b271d64bd1c0cbc69a509c063b46d6cf7813f5bc580323f8"
+    },
+    {
+      "label": "after_cleanup",
+      "at": "2026-11-18T16:08:53.065Z",
+      "httpStatus": 200,
+      "receiptNumber": "Z703-000001",
+      "status": "finalised",
+      "grossSatang": 1090000,
+      "lineCount": 9,
+      "payments": [
+        {
+          "method": "cash",
+          "status": "approved",
+          "amountSatang": 1090000
+        }
+      ],
+      "fingerprint": "2188861ce031a332b271d64bd1c0cbc69a509c063b46d6cf7813f5bc580323f8"
+    }
+  ]
+}
