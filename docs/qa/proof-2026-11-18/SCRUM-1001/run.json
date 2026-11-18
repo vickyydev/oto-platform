@@ -1,0 +1,561 @@
+{
+  "tickets": [
+    "SCRUM-1001",
+    "SCRUM-1002"
+  ],
+  "title": "BEO billing after settlement says what is open and what was billed; a paid BEO line kept at the till's kitchen edit and the AI fill approval",
+  "authorisation": "Owner decisions page, 18 November 2026: SCRUM-1001 \"Fix them\"; SCRUM-1002 ruling 3 \"Refuse both: a paid item stays\".",
+  "ranAt": {
+    "start": "2026-11-18T17:16:39.737Z",
+    "end": "2026-11-18T17:29:26.631Z"
+  },
+  "environment": "staging only (Render *-staging services)",
+  "landed": {
+    "commits": [
+      "38e8d467182e52fc06f2eb3ea72ce5f9aaf4302d",
+      "d8b6f656a051a33d8b8391263e329312b474ba22"
+    ],
+    "deploy": {
+      "service": "oto-app-staging",
+      "deployId": "dep-dbutq6d9fdbs73avt310",
+      "sha": "d8b6f656a051a33d8b8391263e329312b474ba22",
+      "liveAt": "2026-11-18T17:18:27Z"
+    }
+  },
+  "money": "cash on staging only; no gateway, no card, no real payment; Close Day not pressed",
+  "actors": {
+    "app": "seeded ADMIN sign-in (Khun Anan, Owner) on the launcher, the OTO App opened through its tile",
+    "till": "seeded RECEPTION sign-in (Som) for settlement and the two cash payments; seeded MANAGER sign-in (Khun Lek) for the kitchen-plan edit; both on the station ZZ TEST setup traps 20261102 (not Reception Till 1)"
+  },
+  "aiFill": "AI Fill pressed once in the BEO with a short ZZ TEST message (one model call, as the staging app makes on one press); the review proposed the paid dish at 1; its one line not in the catalogue was kept as a free line and Approve and create was pressed in the review",
+  "party": {
+    "eventId": "9d00662d-0b1d-43e4-916c-ec92fed21329",
+    "title": "ZZ TEST 1001 party A 20261119",
+    "package": "After School Birthday Package, Central (10 kids)",
+    "guests": "10 kids, 2 adults",
+    "deposit": 0
+  },
+  "firstReceipt": {
+    "receiptNumber": "Z703-000005",
+    "grossSatang": 1090000,
+    "reads": 8,
+    "distinctFingerprints": 1,
+    "fingerprintCovers": "sha256 of canonical JSON of GET /sales/:id fields sale, lines, attempts, discounts, taxBreakdown, refunds, refundStatus, refundableSatang"
+  },
+  "evidence": {
+    "p1-additional-open-billing.png": "after an extra was billed after settlement: Billing badge Additional bill open · 60.14 outstanding; From the till: Main bill settled, Main bill 10,900, Main bill outstanding 0, receipt Z703-000005; Additional bill 1 · Open 60.14",
+    "p1-additional-open-summary.png": "the Financial Summary at the same moment: badge Additional bill open · 60.14 outstanding, Outstanding 60.14, the note that the till holds what is paid and outstanding",
+    "p3-all-paid-billing.png": "after the bill was paid in cash: Billing badge Paid; Additional bill 1 · Paid",
+    "p3-all-paid-summary.png": "the Financial Summary then: Paid, Outstanding 0",
+    "p4-save-nothing-new.png": "a Save with nothing new: no question asked; toast BEO saved, nothing new to bill",
+    "p5-save-new-extra.png": "a Save adding a priced extra: the question was asked; toast BEO saved / New approved items are linked to the party's additional bill",
+    "q1-till-edit-lower-after-save.png": "the till after the manager lowered the paid dish from 2 to 1 and saved: the kitchen plan read back with the dish at 2, both additional bills paid",
+    "q3-till-edit-remove-toast.png": "the till after the manager removed the paid dish and saved: toast Kitchen plan saved / The BEO in the OTO App now has the change; the dish still at 2",
+    "r2-ai-approved.png": "the BEO after Approve and create: toast Saved: the kitchen plan. Kept as billed: ZZ TEST 1001 after-settle dish (2 paid). Everything else was saved."
+  },
+  "notInRepo": "pictures of the till's Edit party form (its WhatsApp field shows a number), the settle screens and the AI review over the board stay in the local run folder",
+  "steps": [
+    {
+      "stage": "station",
+      "at": "2026-11-18T17:16:39.737Z",
+      "chosen": "ZZ TEST setup traps 20261102",
+      "clicked": true,
+      "tillOneUsed": false,
+      "who": {
+        "name": "Som (Reception)",
+        "branch": "Oto Play Park, Central Floresta",
+        "station": null
+      }
+    },
+    {
+      "stage": "party_created",
+      "at": "2026-11-18T17:16:40.047Z",
+      "eventId": "9d00662d-0b1d-43e4-916c-ec92fed21329",
+      "title": "ZZ TEST 1001 party A 20261119",
+      "date": "2026-11-19",
+      "snapStatus": 201,
+      "via": "OTO App route POST /api/admin/events (session entered through the launcher tile), package After School Birthday Package, Central (10 kids)"
+    },
+    {
+      "stage": "a_settled_cash",
+      "at": "2026-11-18T17:22:25.875Z",
+      "status": "PASSED",
+      "saleId": "01a1efac-e6f0-7fd4-8a96-83067eae6458",
+      "receiptNumber": "Z703-000005",
+      "grossSatang": 1090000,
+      "payments": [
+        {
+          "method": "cash",
+          "status": "approved",
+          "amountSatang": 1090000
+        }
+      ],
+      "fingerprint": "5f6cd3a33de7d469c1942800a2b9052498b9b82624f306557f578a40aed1e5d4",
+      "tillState": "sale",
+      "additionalBills": 0,
+      "evidence": [
+        "a1-settle-preview.png",
+        "a1-main-paid.png"
+      ]
+    },
+    {
+      "stage": "extra_added_after_settlement",
+      "at": "2026-11-18T17:22:59.755Z",
+      "saveStatus": 200,
+      "question": "Save the BEO and bill newly added priced items to this same party if its main receipt is already paid? Included/free items stay included. The original receipt stays unchanged.",
+      "additionalBilling": {
+        "status": "synced",
+        "message": "New approved items are linked to the party's additional bill; the original paid receipt is unchanged.",
+        "added": 1
+      },
+      "toast": [
+        "BEO saved | New approved items are linked to the party's additional bill; the original paid receipt is unchanged."
+      ],
+      "line": {
+        "id": "menu_1795022558881_v6ti",
+        "itemName": "ZZ TEST 1001 after-settle dish",
+        "quantity": 2,
+        "price": 30.07
+      },
+      "billsBefore": 0,
+      "billsAfter": [
+        {
+          "id": "9d00662d-0b1d-7581-98c3-4cf162334505",
+          "state": "open",
+          "totalSatang": 6014,
+          "paidSatang": 0,
+          "outstandingSatang": 6014
+        }
+      ],
+      "shown": {
+        "headerBadge": "Additional bill open",
+        "billingBadge": "Additional bill open · ฿60.14 outstanding",
+        "tillBadge": "Main bill settled",
+        "panelExpected": "฿10,900",
+        "panelOutstanding": "฿0",
+        "receipt": "Receipt Z703-000005 · ZZ TEST setup traps 20261102Settled 19 Nov 2026, 00:22",
+        "bills": [
+          "Additional bill 1 · Open |  | ZZ TEST 1001 after-settle dish x 2 - ฿60.14 |  | Total ฿60.14 - Paid ฿0 - Outstanding ฿60.14 |  | Linked to the main party; the original receipt is unchanged. Bill reference 9d00662d-0b1d-7581-98c3-4cf162334505"
+        ],
+        "summaryBadge": "Additional bill open · ฿60.14 outstanding",
+        "summaryOutstanding": "฿60.14",
+        "summaryNote": "Settled at the till: what is paid and outstanding is the till's, as above. The totals here are the app's own invoice rows.",
+        "summaryText": "Financial Summary | Additional bill open · ฿60.14 outstanding |  | Total (Inc VAT) |  | ฿0 |  | Total (Ex VAT) |  | ฿0 |  | VAT (7%) |  | ฿0 |  | Outstanding |  | ฿60.14 |  | Settled at the till: what is paid and outstanding is the till's, as above. The totals here are the app's own invoice rows. |  | Deposit Paid: | THB | Date Paid: | Select date"
+      },
+      "shots": [
+        "p1-additional-open-billing.png",
+        "p1-additional-open-summary.png"
+      ],
+      "firstReceiptUnchanged": true
+    },
+    {
+      "stage": "all_paid_view",
+      "at": "2026-11-18T17:23:58.035Z",
+      "shown": {
+        "headerBadge": "Paid",
+        "billingBadge": "Paid",
+        "tillBadge": "Main bill settled",
+        "panelExpected": "฿10,900",
+        "panelOutstanding": "฿0",
+        "receipt": "Receipt Z703-000005 · ZZ TEST setup traps 20261102Settled 19 Nov 2026, 00:22",
+        "bills": [
+          "Additional bill 1 · Paid |  | ZZ TEST 1001 after-settle dish x 2 - ฿60.14 |  | Total ฿60.14 - Paid ฿60.14 - Outstanding ฿0 |  | Linked to the main party; the original receipt is unchanged. Bill reference 9d00662d-0b1d-7581-98c3-4cf162334505"
+        ],
+        "summaryBadge": "Paid",
+        "summaryOutstanding": "฿0",
+        "summaryNote": "Settled at the till: what is paid and outstanding is the till's, as above. The totals here are the app's own invoice rows.",
+        "summaryText": "Financial Summary | Paid |  | Total (Inc VAT) |  | ฿0 |  | Total (Ex VAT) |  | ฿0 |  | VAT (7%) |  | ฿0 |  | Outstanding |  | ฿0 |  | Settled at the till: what is paid and outstanding is the till's, as above. The totals here are the app's own invoice rows. |  | Deposit Paid: | THB | Date Paid: | Select date"
+      },
+      "shots": [
+        "p3-all-paid-billing.png",
+        "p3-all-paid-summary.png"
+      ],
+      "bills": [
+        {
+          "id": "9d00662d-0b1d-7581-98c3-4cf162334505",
+          "state": "paid",
+          "totalSatang": 6014,
+          "paidSatang": 6014,
+          "outstandingSatang": 0
+        }
+      ]
+    },
+    {
+      "stage": "save_nothing_new",
+      "at": "2026-11-18T17:24:14.386Z",
+      "saveStatus": 200,
+      "question": null,
+      "additionalBilling": {
+        "status": "synced",
+        "message": "Nothing new to bill; the party's bills are unchanged.",
+        "added": 0
+      },
+      "toast": [
+        "BEO saved, nothing new to bill"
+      ],
+      "billsUnchanged": true
+    },
+    {
+      "stage": "save_new_extra",
+      "at": "2026-11-18T17:24:36.783Z",
+      "saveStatus": 200,
+      "question": "Save the BEO and bill newly added priced items to this same party if its main receipt is already paid? Included/free items stay included. The original receipt stays unchanged.",
+      "additionalBilling": {
+        "status": "synced",
+        "message": "New approved items are linked to the party's additional bill; the original paid receipt is unchanged.",
+        "added": 1
+      },
+      "toast": [
+        "BEO saved | New approved items are linked to the party's additional bill; the original paid receipt is unchanged."
+      ],
+      "newBill": {
+        "id": "9d00662d-0b1d-7ed4-801f-2d87350d8f6d",
+        "state": "open",
+        "totalSatang": 2503,
+        "items": [
+          {
+            "name": "ZZ TEST 1001 second extra",
+            "qty": 1,
+            "lineTotalSatang": 2503
+          }
+        ]
+      }
+    },
+    {
+      "stage": "manager_till",
+      "at": "2026-11-18T17:25:39.380Z",
+      "station": "ZZ TEST setup traps 20261102",
+      "clicked": true,
+      "offered": [
+        "Counter 2Virtual box 2 · not registered yet · 2 devicesCard is routed to the ter",
+        "FortuneWheelBoothVirtual box 1 · online · 0 devicesKept for named staff",
+        "Reception Till 1Virtual box 1 · online · 7 devices",
+        "Till 1 (Pi)HKT till box (Pi 5) · not answering · 4 devices",
+        "Till 2 (test)HKT till box (Pi 5) · not answering · 4 devices",
+        "ZZ TEST SCRUM-710 displayZZ TEST SCRUM-710 display · not registered yet · 0 devi",
+        "ZZ TEST SCRUM-718 pathZZ TEST SCRUM-718 path · not registered yet · 0 devices",
+        "ZZ TEST setup traps 20261102Virtual box 1 · online · 1 device",
+        "Set up a station"
+      ],
+      "who": {
+        "name": "Khun Lek (Manager)",
+        "branch": "Oto Play Park, Central Floresta",
+        "station": null
+      }
+    },
+    {
+      "stage": "till_kitchen_edit_lower",
+      "at": "2026-11-18T17:26:17.637Z",
+      "mode": "lower",
+      "saveLabel": "Save changes",
+      "net": [
+        {
+          "status": 200,
+          "kitchenEdit": {
+            "id": "01a1efb1-cfed-70e4-b5a7-9c112b5e0969",
+            "replayed": false
+          },
+          "error": null,
+          "dishLines": []
+        }
+      ],
+      "toast": [],
+      "screenText": "with 2 portions of Chicken Schnitzel | ×1 | Fruit Skewers · not on the till menu | ×2 | ZZ TEST 1001 after-settle dish · not on the till menu | ×2 | ZZ TEST 1001 second extra · not on the till menu | ×1 | Included: Table reservation · Entrance for 10 child",
+      "lineBefore": {
+        "quantity": 2
+      },
+      "lineAfter": {
+        "quantity": 2
+      },
+      "billsUnchanged": true,
+      "bills": [
+        {
+          "id": "9d00662d-0b1d-7581-98c3-4cf162334505",
+          "state": "paid",
+          "totalSatang": 6014,
+          "paidSatang": 6014
+        },
+        {
+          "id": "9d00662d-0b1d-7ed4-801f-2d87350d8f6d",
+          "state": "paid",
+          "totalSatang": 2503,
+          "paidSatang": 2503
+        }
+      ],
+      "activityStatus": 200,
+      "activity": [
+        "Kitchen plan of \"ZZ TEST 1001 party A 20261119\" changed on the till by Lek (Manager): ZZ TEST 1001 after-settle dish ×2 → ×1. Kept as billed: ZZ TEST 1001 after-settle dish (2 paid). Everything else was saved."
+      ],
+      "firstReceiptUnchanged": true
+    },
+    {
+      "stage": "till_kitchen_edit_remove",
+      "at": "2026-11-18T17:27:35.637Z",
+      "unlocked": "unlocked",
+      "lineAfter": {
+        "quantity": 2
+      },
+      "bills": [
+        {
+          "id": "9d00662d-0b1d-7581-98c3-4cf162334505",
+          "state": "paid",
+          "totalSatang": 6014,
+          "paidSatang": 6014
+        },
+        {
+          "id": "9d00662d-0b1d-7ed4-801f-2d87350d8f6d",
+          "state": "paid",
+          "totalSatang": 2503,
+          "paidSatang": 2503
+        }
+      ],
+      "activity": [
+        "Kitchen plan of \"ZZ TEST 1001 party A 20261119\" changed on the till by Lek (Manager): removed ZZ TEST 1001 after-settle dish. Kept as billed: ZZ TEST 1001 after-settle dish (2 paid). Everything else was saved.",
+        "Kitchen plan of \"ZZ TEST 1001 party A 20261119\" changed on the till by Lek (Manager): ZZ TEST 1001 after-settle dish ×2 → ×1. Kept as billed: ZZ TEST 1001 after-settle dish (2 paid). Everything else was saved."
+      ],
+      "firstReceiptUnchanged": true
+    },
+    {
+      "stage": "ai_fill_pressed_once",
+      "at": "2026-11-18T17:28:07.816Z",
+      "pasted": "ZZ TEST 1001 staging test message. Kids extras: please change ZZ TEST 1001 after-settle dish to 1 instead of 2.",
+      "status": 200,
+      "hasReview": true,
+      "version": "present",
+      "menuLines": [
+        {
+          "menu": "kids",
+          "itemName": "ZZ TEST 1001 after-settle dish",
+          "quantity": 1,
+          "productCode": null,
+          "notInMenu": true,
+          "price": null
+        }
+      ],
+      "approveShown": true,
+      "approveEnabled": false,
+      "message": null
+    },
+    {
+      "stage": "ai_review_line_decided",
+      "at": "2026-11-18T17:28:34.632Z",
+      "decision": "Keep as a free line",
+      "approveEnabled": true
+    },
+    {
+      "stage": "ai_fill_approve",
+      "at": "2026-11-18T17:28:38.139Z",
+      "via": "review Approve and create",
+      "status": 200,
+      "paidLinesKept": [
+        {
+          "id": "menu_1795022558881_v6ti",
+          "itemName": "ZZ TEST 1001 after-settle dish",
+          "list": "kids",
+          "paidQuantity": 2
+        }
+      ],
+      "written": {
+        "kitchenLines": 1,
+        "freeKitchenLines": 1
+      },
+      "additionalBilling": {
+        "status": "synced",
+        "message": "Nothing new to bill; the party's bills are unchanged.",
+        "added": 0
+      },
+      "toast": [
+        "BEO created from the pasted message | Saved: the kitchen plan. Kept as billed: ZZ TEST 1001 after-settle dish (2 paid). Everything else was saved."
+      ],
+      "lineAfter": {
+        "quantity": 2
+      },
+      "billsUnchanged": true,
+      "firstReceiptUnchanged": true
+    },
+    {
+      "stage": "cleanup",
+      "at": "2026-11-18T17:29:21.740Z",
+      "archived": 200,
+      "readBack": true,
+      "firstReceipt": {
+        "receiptNumber": "Z703-000005",
+        "grossSatang": 1090000,
+        "unchanged": true
+      },
+      "bills": [
+        {
+          "state": "paid",
+          "totalSatang": 6014,
+          "paidSatang": 6014,
+          "outstandingSatang": 0
+        },
+        {
+          "state": "paid",
+          "totalSatang": 2503,
+          "paidSatang": 2503,
+          "outstandingSatang": 0
+        }
+      ]
+    },
+    {
+      "stage": "own_sessions_signed_out",
+      "at": "2026-11-18T17:29:26.631Z",
+      "desk": {
+        "signOutStatus": 200,
+        "oldCookieMeStatus": 401
+      },
+      "manager-till": {
+        "signOutStatus": 200,
+        "oldCookieMeStatus": 401
+      },
+      "app": {
+        "logoutStatus": 200,
+        "oldCookieUserStatus": 401
+      },
+      "launcher": {
+        "signOutStatus": 200,
+        "oldCookieMeStatus": 401
+      }
+    }
+  ],
+  "receiptReads": [
+    {
+      "label": "a_after_settlement",
+      "at": "2026-11-18T17:22:25.704Z",
+      "httpStatus": 200,
+      "receiptNumber": "Z703-000005",
+      "status": "finalised",
+      "grossSatang": 1090000,
+      "lineCount": 9,
+      "payments": [
+        {
+          "method": "cash",
+          "status": "approved",
+          "amountSatang": 1090000
+        }
+      ],
+      "fingerprint": "5f6cd3a33de7d469c1942800a2b9052498b9b82624f306557f578a40aed1e5d4"
+    },
+    {
+      "label": "after_extra_added",
+      "at": "2026-11-18T17:22:59.755Z",
+      "httpStatus": 200,
+      "receiptNumber": "Z703-000005",
+      "status": "finalised",
+      "grossSatang": 1090000,
+      "lineCount": 9,
+      "payments": [
+        {
+          "method": "cash",
+          "status": "approved",
+          "amountSatang": 1090000
+        }
+      ],
+      "fingerprint": "5f6cd3a33de7d469c1942800a2b9052498b9b82624f306557f578a40aed1e5d4"
+    },
+    {
+      "label": "after_p2-bill1",
+      "at": "2026-11-18T17:23:43.881Z",
+      "httpStatus": 200,
+      "receiptNumber": "Z703-000005",
+      "status": "finalised",
+      "grossSatang": 1090000,
+      "lineCount": 9,
+      "payments": [
+        {
+          "method": "cash",
+          "status": "approved",
+          "amountSatang": 1090000
+        }
+      ],
+      "fingerprint": "5f6cd3a33de7d469c1942800a2b9052498b9b82624f306557f578a40aed1e5d4"
+    },
+    {
+      "label": "after_p6-bill2",
+      "at": "2026-11-18T17:25:16.335Z",
+      "httpStatus": 200,
+      "receiptNumber": "Z703-000005",
+      "status": "finalised",
+      "grossSatang": 1090000,
+      "lineCount": 9,
+      "payments": [
+        {
+          "method": "cash",
+          "status": "approved",
+          "amountSatang": 1090000
+        }
+      ],
+      "fingerprint": "5f6cd3a33de7d469c1942800a2b9052498b9b82624f306557f578a40aed1e5d4"
+    },
+    {
+      "label": "after_till_kitchen_lower",
+      "at": "2026-11-18T17:26:17.636Z",
+      "httpStatus": 200,
+      "receiptNumber": "Z703-000005",
+      "status": "finalised",
+      "grossSatang": 1090000,
+      "lineCount": 9,
+      "payments": [
+        {
+          "method": "cash",
+          "status": "approved",
+          "amountSatang": 1090000
+        }
+      ],
+      "fingerprint": "5f6cd3a33de7d469c1942800a2b9052498b9b82624f306557f578a40aed1e5d4"
+    },
+    {
+      "label": "after_till_kitchen_remove",
+      "at": "2026-11-18T17:27:35.636Z",
+      "httpStatus": 200,
+      "receiptNumber": "Z703-000005",
+      "status": "finalised",
+      "grossSatang": 1090000,
+      "lineCount": 9,
+      "payments": [
+        {
+          "method": "cash",
+          "status": "approved",
+          "amountSatang": 1090000
+        }
+      ],
+      "fingerprint": "5f6cd3a33de7d469c1942800a2b9052498b9b82624f306557f578a40aed1e5d4"
+    },
+    {
+      "label": "after_ai_approve",
+      "at": "2026-11-18T17:28:38.138Z",
+      "httpStatus": 200,
+      "receiptNumber": "Z703-000005",
+      "status": "finalised",
+      "grossSatang": 1090000,
+      "lineCount": 9,
+      "payments": [
+        {
+          "method": "cash",
+          "status": "approved",
+          "amountSatang": 1090000
+        }
+      ],
+      "fingerprint": "5f6cd3a33de7d469c1942800a2b9052498b9b82624f306557f578a40aed1e5d4"
+    },
+    {
+      "label": "after_all",
+      "at": "2026-11-18T17:29:21.267Z",
+      "httpStatus": 200,
+      "receiptNumber": "Z703-000005",
+      "status": "finalised",
+      "grossSatang": 1090000,
+      "lineCount": 9,
+      "payments": [
+        {
+          "method": "cash",
+          "status": "approved",
+          "amountSatang": 1090000
+        }
+      ],
+      "fingerprint": "5f6cd3a33de7d469c1942800a2b9052498b9b82624f306557f578a40aed1e5d4"
+    }
+  ],
+  "leftOnStaging": "the ZZ TEST 1001 party A 20261119, archived; its settled receipt Z703-000005 (10,900 cash) and the two additional bills, paid in cash (60.14 and 25.03, receipts Z703-000006 and Z703-000008 as the till shows them), stay in the records of the open park day; two BEO activity rows of the till kitchen edits; no product created, nothing voided, Close Day not pressed; all four sessions of the run signed out"
+}
