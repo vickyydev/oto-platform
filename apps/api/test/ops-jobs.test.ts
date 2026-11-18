@@ -349,6 +349,19 @@ describe('S2-03 — one schedule, however many instances', () => {
   });
 });
 
+describe('SCRUM-1015 — a run longer than the column holds is clamped', () => {
+  it('records a 40-day run with the largest duration the column holds', async () => {
+    const finishedAt = new Date('2026-11-19T00:00:00Z');
+    const startedAt = new Date(finishedAt.getTime() - 40 * 24 * 3600 * 1000);
+    const name = 'zz.test.clamp-1015';
+    const run = await recordRun(ctx.db, { kind: 'job', name, outcome: 'ok', startedAt, finishedAt });
+    const [row] = await ctx.db.select().from(opsRun).where(eq(opsRun.id, run.id));
+    expect(row!.durationMs).toBe(2_147_483_647);
+    await ctx.db.delete(opsLast).where(eq(opsLast.name, name));
+    await ctx.db.delete(opsRun).where(eq(opsRun.name, name));
+  });
+});
+
 describe('S2-03 — the watchdog', () => {
   const name = 'job:test.silent';
   const key = `ops.missing:${name}`;

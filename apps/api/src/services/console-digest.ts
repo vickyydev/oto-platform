@@ -120,7 +120,7 @@ export async function runConsoleDigest(db: Db, options: DigestOptions): Promise<
         // This completed operation means only that the local intent persisted.
         // A failed record must never be followed by a new outbound call.
         await recordRun(db, { kind: 'console', name: INTENT, outcome: 'ok',
-          operatorId: group.operatorId, branchId: group.branchId, startedAt: options.now, detail: identity });
+          operatorId: group.operatorId, branchId: group.branchId, startedAt: options.now, finishedAt: options.now, detail: identity });
       } catch { group.code = 'intent-write'; continue; }
 
       let delivery: DigestSendResult;
@@ -131,7 +131,7 @@ export async function runConsoleDigest(db: Db, options: DigestOptions): Promise<
       try {
         await recordRun(db, { kind: 'console', name: DELIVERY,
           outcome: delivery.state === 'accepted' ? 'ok' : 'failed',
-          operatorId: group.operatorId, branchId: group.branchId, startedAt: options.now,
+          operatorId: group.operatorId, branchId: group.branchId, startedAt: options.now, finishedAt: options.now,
           detail: { ...identity, ...delivery } });
       } catch {
         // Even an observed acknowledgement cannot become a durable success when

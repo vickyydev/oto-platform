@@ -114,6 +114,7 @@ describe('SCRUM-637 branch morning digest — real receipts, injected transport 
     const intentId = (intent.detail as { intentId: string }).intentId;
     expect(intentId).toMatch(/^[0-9a-f-]{36}$/);
     expect(delivery.detail).toMatchObject({ version: 1, intentId, date: '2026-10-25', state: 'accepted', status: 202, summaryHash });
+    expect(records.map(r => r.durationMs)).toEqual([0, 0]);
     expect(JSON.stringify(records)).not.toContain(summary);
   });
 

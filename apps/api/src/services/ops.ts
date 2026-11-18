@@ -169,7 +169,8 @@ export interface RecordedRun {
 export async function recordRun(exec: Exec, input: RecordRunInput): Promise<RecordedRun> {
   const id = input.id ?? newId();
   const finishedAt = input.finishedAt ?? new Date();
-  const durationMs = Math.max(0, finishedAt.getTime() - input.startedAt.getTime());
+  // ops_run.duration_ms is a 32-bit integer: clamp to what the column holds.
+  const durationMs = Math.min(2_147_483_647, Math.max(0, finishedAt.getTime() - input.startedAt.getTime()));
   const failed = input.outcome === 'failed';
   const info = input.error !== undefined ? errorInfo(input.error) : null;
   const errorCode = info?.code ?? (failed ? 'UNKNOWN' : null);
