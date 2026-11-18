@@ -163,7 +163,16 @@ export type VoucherCampaignBody = z.infer<typeof VoucherCampaignBodySchema>;
  *                     from here), not revenue foregone at the load, so it is
  *                     reported beside the line and never inside it.
  */
+export const PromoVoucherOriginSchema = z.enum(['lucky_wheel', 'other']);
+export type PromoVoucherOrigin = z.infer<typeof PromoVoucherOriginSchema>;
+
 export const PromoVoucherReportRowSchema = z.object({
+  /**
+   * Where the voucher came from, worked out when the report is read: the Lucky
+   * Wheel when its source is `booth`, or `fixed` (a shared wheel code redeemed
+   * at a till) and its type is a wheel prize's; otherwise `other`.
+   */
+  origin: PromoVoucherOriginSchema,
   definitionId: z.string().uuid(),
   definitionCode: z.string(),
   nameEn: z.string(),
@@ -174,6 +183,14 @@ export const PromoVoucherReportRowSchema = z.object({
 });
 export type PromoVoucherReportRow = z.infer<typeof PromoVoucherReportRowSchema>;
 
+export const PromoVoucherOriginTotalSchema = z.object({
+  origin: PromoVoucherOriginSchema,
+  redemptions: z.number().int(),
+  foregoneSatang: z.number().int(),
+  creditLoadedSatang: z.number().int(),
+});
+export type PromoVoucherOriginTotal = z.infer<typeof PromoVoucherOriginTotalSchema>;
+
 export const PromoVoucherReportSchema = z.object({
   range: z.object({ from: z.string(), to: z.string() }),
   summary: z.object({
@@ -181,6 +198,8 @@ export const PromoVoucherReportSchema = z.object({
     foregoneSatang: z.number().int(),
     creditLoadedSatang: z.number().int(),
   }),
+  /** The same total split in two: always both lines, Lucky Wheel first; they add up to `summary`. */
+  byOrigin: z.array(PromoVoucherOriginTotalSchema),
   rows: z.array(PromoVoucherReportRowSchema),
 });
 export type PromoVoucherReport = z.infer<typeof PromoVoucherReportSchema>;

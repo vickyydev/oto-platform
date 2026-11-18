@@ -37545,11 +37545,49 @@
                       ],
                       "additionalProperties": false
                     },
+                    "byOrigin": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "origin": {
+                            "type": "string",
+                            "enum": [
+                              "lucky_wheel",
+                              "other"
+                            ]
+                          },
+                          "redemptions": {
+                            "type": "integer"
+                          },
+                          "foregoneSatang": {
+                            "type": "integer"
+                          },
+                          "creditLoadedSatang": {
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "origin",
+                          "redemptions",
+                          "foregoneSatang",
+                          "creditLoadedSatang"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
                     "rows": {
                       "type": "array",
                       "items": {
                         "type": "object",
                         "properties": {
+                          "origin": {
+                            "type": "string",
+                            "enum": [
+                              "lucky_wheel",
+                              "other"
+                            ]
+                          },
                           "definitionId": {
                             "type": "string",
                             "format": "uuid"
@@ -37574,6 +37612,7 @@
                           }
                         },
                         "required": [
+                          "origin",
                           "definitionId",
                           "definitionCode",
                           "nameEn",
@@ -37589,6 +37628,7 @@
                   "required": [
                     "range",
                     "summary",
+                    "byOrigin",
                     "rows"
                   ],
                   "additionalProperties": false

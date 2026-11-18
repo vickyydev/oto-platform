@@ -17375,7 +17375,16 @@ export interface paths {
                                 foregoneSatang: number;
                                 creditLoadedSatang: number;
                             };
+                            byOrigin: {
+                                /** @enum {string} */
+                                origin: "lucky_wheel" | "other";
+                                redemptions: number;
+                                foregoneSatang: number;
+                                creditLoadedSatang: number;
+                            }[];
                             rows: {
+                                /** @enum {string} */
+                                origin: "lucky_wheel" | "other";
                                 /** Format: uuid */
                                 definitionId: string;
                                 definitionCode: string;

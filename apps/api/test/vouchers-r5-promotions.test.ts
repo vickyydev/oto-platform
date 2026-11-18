@@ -5,6 +5,7 @@ import {
   account,
   auditLog,
   box,
+  boothPrize,
   boxCommand,
   branch,
   member,
@@ -113,7 +114,7 @@ async function define(values: Partial<typeof voucherDefinition.$inferInsert>): P
 }
 
 /** A voucher as a campaign files one: a fresh code, issued now, never expiring. */
-async function issue(definitionId: string, opts: { memberId?: string | null } = {}): Promise<{ id: string; code: string }> {
+async function issue(definitionId: string, opts: { memberId?: string | null; source?: 'campaign' | 'booth' | 'fixed' } = {}): Promise<{ id: string; code: string }> {
   const id = newId();
   const code = mintBoothCode('CP', (max) => randomInt(max));
   await ctx.db.insert(voucher).values({
@@ -122,7 +123,7 @@ async function issue(definitionId: string, opts: { memberId?: string | null } = 
     branchId: hktId,
     voucherDefinitionId: definitionId,
     code,
-    source: 'campaign',
+    source: opts.source ?? 'campaign',
     status: 'issued',
     issuedAt: new Date(),
     expiresAt: null,
@@ -836,6 +837,40 @@ describe('foregone revenue is its own line, separate from discounts, and reconci
     const [manualRow] = await ctx.db.select().from(saleDiscount).where(and(eq(saleDiscount.saleId, saleId), eq(saleDiscount.kind, 'manual')));
     expect(manualRow!.amountSatang).toBe(b(30));
     expect(report.summary.foregoneSatang).toBe(rows.reduce((s, r) => s + Number(r.foregone), 0));
+  });
+
+  it('shows the Lucky Wheel apart from the other vouchers: a booth voucher and a fixed-code wheel prize on one line, a till voucher on the other, adding up to the old total', async () => {
+    const wheelType = await define({ nameEn: 'ZZ TEST wheel type' });
+    const fixedPrizeType = await define({ nameEn: 'ZZ TEST fixed wheel prize type' });
+    await ctx.db.insert(boothPrize).values({
+      id: newId(), operatorId, branchId: hktId, stationId: t1.id, voucherDefinitionId: fixedPrizeType, nameEn: 'ZZ TEST fixed wheel prize',
+    });
+    // One type won at the booth AND issued at a till; a fixed-code wheel prize redeemed at a till (source fixed).
+    await holdCommitPay(tillA, t1.id, (await issue(wheelType, { source: 'booth' })).code, family(t1.id));
+    await holdCommitPay(tillA, t1.id, (await issue(fixedPrizeType, { source: 'fixed' })).code, family(t1.id));
+    await holdCommitPay(tillA, t1.id, (await issue(wheelType, { source: 'campaign' })).code, family(t1.id));
+
+    const day = today();
+    const res = await ctx.app.inject({ method: 'GET', url: `/vouchers/promotions/report?branchId=${hktId}&from=${day}&to=${day}`, headers: { cookie: manager } });
+    expect(res.statusCode, res.body).toBe(200);
+    const report = res.json() as {
+      summary: { redemptions: number; foregoneSatang: number; creditLoadedSatang: number };
+      byOrigin: Array<{ origin: string; redemptions: number; foregoneSatang: number; creditLoadedSatang: number }>;
+      rows: Array<{ origin: string; definitionId: string; redemptions: number; foregoneSatang: number }>;
+    };
+    const line = (origin: string, def: string) => report.rows.find((r) => r.origin === origin && r.definitionId === def);
+    expect(line('lucky_wheel', wheelType)).toMatchObject({ redemptions: 1, foregoneSatang: b(100) });
+    expect(line('other', wheelType)).toMatchObject({ redemptions: 1, foregoneSatang: b(100) });
+    expect(line('lucky_wheel', fixedPrizeType)).toMatchObject({ redemptions: 1, foregoneSatang: b(100) });
+    expect(line('other', fixedPrizeType)).toBeUndefined();
+    // A till voucher of an ordinary type is on Other.
+    expect(report.rows.filter((r) => r.origin === 'other').every((r) => r.definitionId !== fixedPrizeType)).toBe(true);
+    // Both lines always present, Lucky Wheel first, and they add up to the old single figure.
+    expect(report.byOrigin.map((o) => o.origin)).toEqual(['lucky_wheel', 'other']);
+    expect(report.byOrigin[0]!.redemptions).toBe(2);
+    for (const k of ['redemptions', 'foregoneSatang', 'creditLoadedSatang'] as const) {
+      expect(report.byOrigin.reduce((n, o) => n + o[k], 0)).toBe(report.summary[k]);
+    }
   });
 
   it('reception cannot read it; a range the wrong way round is refused', async () => {

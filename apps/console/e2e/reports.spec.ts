@@ -78,7 +78,7 @@ async function fixture(page: Page, options: {
       { kind: 'merch', transactionId: 'zz-receipt-merch', createdAt: '2026-10-23T09:00:00.000Z', branchId: branch, branchName: scope.branches[0]!.name, operatorName: 'ZZ TEST Other cashier', netSubtotalSatang: 20000, serviceChargeSatang: 0, taxTotalSatang: 1400, grandTotalSatang: 21400, taxSummaryLabel: 'ZZ TEST VAT', categories: ['merch'], paymentMethod: 'card' },
     ]) };
     if (path === '/wallets/report') answer = { summary: { grantedSatang: 12345, spentSatang: 2345, refundedSatang: 0, expiredSatang: 0, reactivatedSatang: 0, outstandingSatang: 10000, ledgerOutstandingSatang: 10000, entryCount: control.empty ? 0 : 1 }, rows: rows([{ entryId: RECORD, walletId: RECORD, keyDisplay: 'ZZ TEST BAND', holderName: 'ZZ TEST Wallet holder', kind: 'grant', source: 'ticket_sale', amountSatang: 12345, businessDate: '2026-10-23', at: '2026-10-23T08:00:00.000Z', by: 'ZZ TEST Report manager' }]) };
-    if (path === '/vouchers/promotions/report') answer = { range: { from, to }, summary: { redemptions: 1, foregoneSatang: 456, creditLoadedSatang: 0 }, rows: rows([{ definitionId: RECORD, definitionCode: 'ZZTESTVOUCHER', nameEn: 'ZZ TEST report voucher', kind: 'amount_off', redemptions: 1, foregoneSatang: 456, creditLoadedSatang: 0 }]) };
+    if (path === '/vouchers/promotions/report') answer = { range: { from, to }, summary: { redemptions: 1, foregoneSatang: 456, creditLoadedSatang: 0 }, byOrigin: [{ origin: 'lucky_wheel', redemptions: 0, foregoneSatang: 0, creditLoadedSatang: 0 }, { origin: 'other', redemptions: 1, foregoneSatang: 456, creditLoadedSatang: 0 }], rows: rows([{ origin: 'other', definitionId: RECORD, definitionCode: 'ZZTESTVOUCHER', nameEn: 'ZZ TEST report voucher', kind: 'amount_off', redemptions: 1, foregoneSatang: 456, creditLoadedSatang: 0 }]) };
     if (path === '/analytics/booths') answer = { ...scope, booths: [], prizes: [], staff: [], days: [], lastRolledUpAt: null };
     if (answer !== undefined) {
       // Freeze data at dispatch so a late actor/park reply really is the obsolete answer.
@@ -176,6 +176,7 @@ test('Wallet preserves lifetime promo counters, ranged value and separate forego
   const promo = card(page, 'Promo code usage'); await expect(promo.getByRole('row').filter({ hasText: 'ZZTESTREPORT' })).toContainText('฿3.45');
   await expect(promo.getByRole('row').filter({ hasText: 'ZZTESTREPORT' })).toContainText('7');
   await expect(page.getByText('ZZ TEST report voucher', { exact: true })).toBeVisible();
+  await expect(page.getByTestId('voucher-origin-line')).toHaveText([/Lucky Wheel/, /Other vouchers/]);
   const pending = page.waitForEvent('download'); await card(page, /^Wallet ledger/).getByRole('button', { name: 'Export CSV', exact: true }).click(); const text = await csv(await pending);
   expect(text).toContain('ZZ TEST BAND,ZZ TEST Wallet holder,grant,123.45');
   expect(state.calls.some(call => call.path === '/wallets/report' && new URLSearchParams(call.query).get('limit') === '1000')).toBe(true);

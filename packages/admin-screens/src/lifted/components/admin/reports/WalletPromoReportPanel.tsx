@@ -1,5 +1,5 @@
 import { useAdminScreenRuntime } from '../../../runtime/AdminScreenRuntime';
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../ui/table";
 import { Badge } from "../../ui/badge";
 import { downloadCsv } from "../../../lib/csv";
@@ -10,6 +10,9 @@ import { type DiscountTransactions, type PromoVoucherReport } from "@oto/shared"
 
 
 
+
+/** The two lines the voucher card shows: where a redeemed voucher came from. */
+const originLabel = (origin: string | undefined): string => (origin === 'lucky_wheel' ? 'Lucky Wheel' : 'Other vouchers');
 
 const EMPTY_REPORT: WalletCreditReport = {
   summary: { grantedSatang: 0, spentSatang: 0, refundedSatang: 0, expiredSatang: 0, netOutstandingSatang: 0, entryCount: 0 },
@@ -200,8 +203,9 @@ export function WalletPromoReportPanelWithPorts({ ports }: { ports: WalletReport
             onExport={() =>
               downloadCsv(
                 `voucher-foregone-revenue_${filters.startDate}_${filters.endDate}`,
-                ['Voucher', 'Code', 'Kind', 'Redemptions', 'Foregone revenue', 'Credit loaded'],
+                ['Origin', 'Voucher', 'Code', 'Kind', 'Redemptions', 'Foregone revenue', 'Credit loaded'],
                 (foregone?.rows ?? []).map((r) => [
+                  originLabel(r.origin),
                   r.nameEn,
                   r.definitionCode,
                   r.kind,
@@ -227,18 +231,36 @@ export function WalletPromoReportPanelWithPorts({ ports }: { ports: WalletReport
           </TableHeader>
           <TableBody>
             {(foregone?.rows.length ?? 0) === 0 && <EmptyRow colSpan={5} label="No vouchers were used in this range." />}
-            {(foregone?.rows ?? []).map((r) => (
-              <TableRow key={r.definitionId} data-testid="voucher-foregone-row">
-                <TableCell>
-                  <div className="font-medium">{r.nameEn}</div>
-                  <div className="font-mono text-xs text-foreground/45">{r.definitionCode}</div>
-                </TableCell>
-                <TableCell className="capitalize">{r.kind.replace('_', ' ')}</TableCell>
-                <TableCell className="text-right tabular-nums">{r.redemptions}</TableCell>
-                <TableCell className="text-right tabular-nums">{thbFromSatang(r.foregoneSatang)}</TableCell>
-                <TableCell className="text-right tabular-nums">{thbFromSatang(r.creditLoadedSatang)}</TableCell>
-              </TableRow>
-            ))}
+            {foregone && (['lucky_wheel', 'other'] as const).map((origin) => {
+              const mine = foregone.rows.filter((r) => (r.origin ?? 'other') === origin);
+              const total = foregone.byOrigin?.find((o) => o.origin === origin) ?? {
+                redemptions: mine.reduce((n, r) => n + r.redemptions, 0),
+                foregoneSatang: mine.reduce((n, r) => n + r.foregoneSatang, 0),
+                creditLoadedSatang: mine.reduce((n, r) => n + r.creditLoadedSatang, 0),
+              };
+              return (
+                <Fragment key={origin}>
+                  <TableRow data-testid="voucher-origin-line" data-origin={origin} className="bg-foreground/[0.04] font-semibold">
+                    <TableCell colSpan={2}>{originLabel(origin)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{total.redemptions}</TableCell>
+                    <TableCell className="text-right tabular-nums">{thbFromSatang(total.foregoneSatang)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{thbFromSatang(total.creditLoadedSatang)}</TableCell>
+                  </TableRow>
+                  {mine.map((r) => (
+                    <TableRow key={`${origin}-${r.definitionId}`} data-testid="voucher-foregone-row">
+                      <TableCell>
+                        <div className="pl-3 font-medium">{r.nameEn}</div>
+                        <div className="pl-3 font-mono text-xs text-foreground/45">{r.definitionCode}</div>
+                      </TableCell>
+                      <TableCell className="capitalize">{r.kind.replace('_', ' ')}</TableCell>
+                      <TableCell className="text-right tabular-nums">{r.redemptions}</TableCell>
+                      <TableCell className="text-right tabular-nums">{thbFromSatang(r.foregoneSatang)}</TableCell>
+                      <TableCell className="text-right tabular-nums">{thbFromSatang(r.creditLoadedSatang)}</TableCell>
+                    </TableRow>
+                  ))}
+                </Fragment>
+              );
+            })}
           </TableBody>
         </Table>
         <p className="mt-2 text-xs text-foreground/50">

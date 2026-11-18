@@ -14,7 +14,7 @@ const loaded: WalletCreditReport = {
   summary: { ...empty.summary, grantedSatang: 12345, netOutstandingSatang: 67890, entryCount: 1 },
   rows: [{ wristbandCode: 'ZZ TEST band', customerNickname: 'ZZ TEST guest', kind: 'grant', amountSatang: 12345, source: 'sale', at: '2026-10-22T01:00:00Z' }], totalEntries: 1,
 };
-const voucher = { range: { from: first.startDate, to: first.endDate }, summary: { redemptions: 1, foregoneSatang: 123, creditLoadedSatang: 0 }, rows: [] };
+const voucher = { range: { from: first.startDate, to: first.endDate }, summary: { redemptions: 1, foregoneSatang: 123, creditLoadedSatang: 0 }, byOrigin: [{ origin: 'lucky_wheel' as const, redemptions: 0, foregoneSatang: 0, creditLoadedSatang: 0 }, { origin: 'other' as const, redemptions: 1, foregoneSatang: 123, creditLoadedSatang: 0 }], rows: [] };
 function deferred<T>() {
   let resolve!: (value: T) => void;
   const promise = new Promise<T>(accept => { resolve = accept; });
@@ -136,5 +136,11 @@ describe('Wallet report owns its displayed range and CSV requests', () => {
     await expect(work).resolves.toBeUndefined();
     expect(view.downloadCsv).not.toHaveBeenCalled();
     expect(view.render().exportError).toContain('could not be exported');
+  });
+  it('the voucher card shows the Lucky Wheel and the other vouchers as two lines and the CSV carries an Origin column', () => {
+    const source = readFileSync(new URL('../src/lifted/components/admin/reports/WalletPromoReportPanel.tsx', import.meta.url), 'utf8');
+    expect(source).toContain("(['lucky_wheel', 'other'] as const).map((origin)");
+    expect(source).toContain("'Lucky Wheel' : 'Other vouchers'");
+    expect(source).toContain("['Origin', 'Voucher', 'Code', 'Kind', 'Redemptions', 'Foregone revenue', 'Credit loaded']");
   });
 });

@@ -1176,6 +1176,7 @@ export async function promoVoucherReportOf(
             sql`, `,
           )})`;
   const { rows } = await db.execute<{
+    origin: 'lucky_wheel' | 'other';
     id: string;
     code: string;
     name_en: string;
@@ -1184,7 +1185,12 @@ export async function promoVoucherReportOf(
     foregone: number | string;
     credit: number | string;
   }>(sql`
-    select d.id, d.code, d.name_en, d.kind,
+    select
+      case when v.source = 'booth'
+        or (v.source = 'fixed' and exists (
+          select 1 from booth.booth_prize bp where bp.voucher_definition_id = v.voucher_definition_id))
+        then 'lucky_wheel' else 'other' end as origin,
+      d.id, d.code, d.name_en, d.kind,
       count(v.id)::int as redemptions,
       coalesce(sum(coalesce(fg.amount, 0)), 0)::bigint as foregone,
       coalesce(sum(coalesce(we.amount_satang, 0)), 0)::bigint as credit
@@ -1201,9 +1207,10 @@ export async function promoVoucherReportOf(
       and v.status = 'redeemed'
       and s.business_date between ${filters.from}::date and ${filters.to}::date
       and ${branchFilter}
-    group by d.id, d.code, d.name_en, d.kind
-    order by foregone desc, d.name_en asc`);
+    group by 1, d.id, d.code, d.name_en, d.kind
+    order by 1 asc, foregone desc, d.name_en asc`);
   const out = rows.map((r) => ({
+    origin: r.origin,
     definitionId: r.id,
     definitionCode: r.code,
     nameEn: r.name_en,
@@ -1219,6 +1226,15 @@ export async function promoVoucherReportOf(
       foregoneSatang: out.reduce((n, r) => n + r.foregoneSatang, 0),
       creditLoadedSatang: out.reduce((n, r) => n + r.creditLoadedSatang, 0),
     },
+    byOrigin: (['lucky_wheel', 'other'] as const).map((origin) => {
+      const mine = out.filter((r) => r.origin === origin);
+      return {
+        origin,
+        redemptions: mine.reduce((n, r) => n + r.redemptions, 0),
+        foregoneSatang: mine.reduce((n, r) => n + r.foregoneSatang, 0),
+        creditLoadedSatang: mine.reduce((n, r) => n + r.creditLoadedSatang, 0),
+      };
+    }),
     rows: out,
   };
 }
