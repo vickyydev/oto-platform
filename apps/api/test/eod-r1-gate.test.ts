@@ -47,6 +47,8 @@ let central: string;
 let chalong: string;
 let tz: string;
 let dayStart: number;
+/** The park's day start as stored ("00:00:00" since SCRUM-1010), frozen on each sale. */
+let dayStartText: string;
 let till1: string;
 let counter2: string;
 let chalongTill: string;
@@ -130,7 +132,7 @@ async function ringUp(opts: { branchId: string; stationId: string; at: Date; att
     branchId: opts.branchId,
     stationId: opts.stationId,
     businessDate: day,
-    businessDayStart: '05:00',
+    businessDayStart: dayStartText,
     timezone: tz,
     occurredAt: opts.at,
     createdByAccountId: receptionId,
@@ -219,7 +221,10 @@ beforeAll(async () => {
     .from(schema.branch)
     .where(eq(schema.branch.id, central));
   tz = b!.tz;
+  dayStartText = b!.start;
   dayStart = parseDayStart(b!.start);
+  // SCRUM-1010: the seeded park's day runs midnight to midnight.
+  expect(dayStart).toBe(0);
   D = businessDate(new Date(), tz, dayStart);
   G = addDaysToIsoDate(D, -3);
   P = addDaysToIsoDate(G, -1);
@@ -261,12 +266,13 @@ describe('gate (2): every attempt and refund lands on the right line and the rig
     // Two stations' cash: ONE combined cash line.
     await ringUp({ branchId: central, stationId: till1, at: local(G, '10:00'), attempts: [{ method: 'cash', methodCode: 'cash', amountSatang: 1_000_00 }] });
     await ringUp({ branchId: central, stationId: counter2, at: local(G, '12:00'), attempts: [{ method: 'cash', methodCode: 'cash', amountSatang: 250_25 }] });
-    // 01:30 local on the next calendar morning: still day G (the day starts 05:00).
-    const late = await ringUp({ branchId: central, stationId: counter2, at: local(addDaysToIsoDate(G, 1), '01:30'), attempts: [{ method: 'cash', methodCode: 'cash', amountSatang: 30_00 }] });
+    // 23:59 local: still day G (SCRUM-1010: the day runs midnight to midnight).
+    const late = await ringUp({ branchId: central, stationId: counter2, at: local(G, '23:59'), attempts: [{ method: 'cash', methodCode: 'cash', amountSatang: 30_00 }] });
     expect(late.businessDate).toBe(G);
-    // 05:00 the next morning is the NEXT day — never on G.
-    const next = await ringUp({ branchId: central, stationId: till1, at: local(addDaysToIsoDate(G, 1), '05:00'), attempts: [{ method: 'cash', methodCode: 'cash', amountSatang: 7_00 }] });
+    // 00:00 the next morning is the NEXT day — never on G, and 01:30 with it.
+    const next = await ringUp({ branchId: central, stationId: till1, at: local(addDaysToIsoDate(G, 1), '00:00'), attempts: [{ method: 'cash', methodCode: 'cash', amountSatang: 7_00 }] });
     expect(next.businessDate).toBe(addDaysToIsoDate(G, 1));
+    expect(businessDate(local(addDaysToIsoDate(G, 1), '01:30'), tz, dayStart)).toBe(addDaysToIsoDate(G, 1));
 
     // QR: a terminal QR taken on its own 4G (awaiting settlement IS money), and a gateway QR.
     await ringUp({ branchId: central, stationId: counter2, at: local(G, '13:00'), attempts: [{ method: 'qr', methodCode: 'promptpay', provider: 'ghl', deviceId: edc1.id, amountSatang: 120_00, status: 'awaiting_settlement' }] });

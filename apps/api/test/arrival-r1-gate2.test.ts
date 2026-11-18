@@ -24,15 +24,17 @@ import { CENTRAL_BRANCH_CODE, createTestContext, teardownAll, type TestContext }
  * and, since this round, refuses a shown total that is not that quote
  * (409 `BOOKING_TOTAL_CHANGED`). The site prices at its `todayRateMode()`,
  * which trusts the catalogue's `rateMode` only while the catalogue's date is
- * the branch's TRADING date (`businessDate`, 05:00 day start) — see
+ * the branch's TRADING date (`businessDate`, the park's day start) — see
  * `apps/pos/src/lib/pricingMode.ts` `liveServerAnswer` — and otherwise uses the
  * trading date's own mode. `apps/pos/test/arrival-r1-gate2.test.ts` shows the
  * site doing exactly that; this file shows the platform then refusing it.
  *
- * Between 00:00 and 05:00 Bangkok on a Saturday (and a Monday, and either side
- * of a holiday range) every booking made on the site is refused. The `it`
- * states the behaviour owed: the family is not refused for the figure the site
- * showed them. Credentials here are minted in this process.
+ * Under the earlier 05:00 day start, between 00:00 and 05:00 Bangkok on a
+ * Saturday (and a Monday, and either side of a holiday range) every booking
+ * made on the site was refused. Since SCRUM-1010 the day runs midnight to
+ * midnight, so those hours are the calendar day's: the `it`s state that a
+ * family booking at 02:30 is quoted and accepted on that calendar day.
+ * Credentials here are minted in this process.
  *
  * FIXED IN THE SECOND FIX ROUND. The public catalogue's `rateMode` and the
  * quote's default date are both the branch's TRADING day now
@@ -140,24 +142,24 @@ async function bookAsTheSiteDoes(at: string) {
   return { cat, mode, shown, res };
 }
 
-describe('R1 — a booking made on the site between 00:00 and 05:00 Bangkok', () => {
-  it('Saturday 02:30: the family is not refused for the total the site showed', async () => {
+describe('R1 — a booking made on the site between 00:00 and 05:00 Bangkok (SCRUM-1010: the calendar day)', () => {
+  it('Saturday 02:30: Saturday at the weekend price, and the family is not refused for the total the site showed', async () => {
     const { cat, mode, res } = await bookAsTheSiteDoes('2026-10-02T19:30:00Z'); // Sat 2026-10-03 02:30
     expect(timezone).toBe('Asia/Bangkok');
-    expect(parseDayStart(dayStart)).toBeGreaterThan(0);
+    expect(parseDayStart(dayStart)).toBe(0); // the park's day runs midnight to midnight
     // The basket is priced differently on a weekday and at the weekend.
     expect(siteTotal(cat, 'weekday')).not.toBe(siteTotal(cat, 'weekend'));
-    // The catalogue answers for the trading day, Friday / weekday, as the site reads it.
-    expect(cat.rateMode).toMatchObject({ date: '2026-10-02', mode: 'weekday' });
-    expect(mode).toBe('weekday');
+    // The catalogue answers for the trading day, Saturday / weekend, as the site reads it.
+    expect(cat.rateMode).toMatchObject({ date: '2026-10-03', mode: 'weekend' });
+    expect(mode).toBe('weekend');
     expect(res.statusCode, res.body).toBe(200);
   });
 
-  it('Monday 02:30: the family is not refused for the total the site showed', async () => {
+  it('Monday 02:30: Monday at the weekday price, and the family is not refused for the total the site showed', async () => {
     const { cat, mode, res } = await bookAsTheSiteDoes('2026-10-04T19:30:00Z'); // Mon 2026-10-05 02:30
-    // The trading day is still Sunday / weekend.
-    expect(cat.rateMode).toMatchObject({ date: '2026-10-04', mode: 'weekend' });
-    expect(mode).toBe('weekend');
+    // The trading day is Monday / weekday from midnight.
+    expect(cat.rateMode).toMatchObject({ date: '2026-10-05', mode: 'weekday' });
+    expect(mode).toBe('weekday');
     expect(res.statusCode, res.body).toBe(200);
   });
 

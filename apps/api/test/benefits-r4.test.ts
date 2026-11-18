@@ -48,6 +48,7 @@ import {
   type TestContext,
 } from './helpers';
 import { loadEnv } from '../src/env';
+import { benefitToday } from '../src/services/benefits';
 import { buildDefaultJobs, createJobRunner, runWatchdog } from '../src/services/jobs';
 import { ROLLUP_DAILY_JOB, runDailyRollupJob } from '../src/services/analytics-rollup';
 import {
@@ -684,14 +685,15 @@ describe('job:benefit.period_rollover — the previous period, closed at the day
 // --- The periods roll by key (plan §3 "Periods", Q6, H13) ------------------------------------------
 
 describe('the periods roll by key at the branch’s business day, with or without the rollover (H13)', () => {
-  it('the keys follow the branch’s trading day, never the calendar midnight (Q6’s default: the sale’s business date)', () => {
-    // Asia/Bangkok, the day starting 05:00: 31 Oct 23:59, 1 Nov 00:01 and
-    // 04:59 are all 31 October's trading day; 05:01 is the first of November's.
-    const at = (iso: string) => businessDate(new Date(iso), 'Asia/Bangkok', 5 * 60);
+  it('the keys follow the branch’s trading day, which turns at the park’s midnight (Q6 answered by SCRUM-1010)', () => {
+    // Asia/Bangkok, the park's day running midnight to midnight: 31 Oct 23:59
+    // is 31 October's day; 1 Nov 00:01 and 04:59 are already the first of
+    // November's, so the daily and the monthly allowance turn at midnight.
+    const at = (iso: string) => businessDate(new Date(iso), 'Asia/Bangkok', 0);
     const cases: Array<[string, string, string]> = [
       ['2026-10-31T16:59:00Z', '2026-10-31', '2026-10'],
-      ['2026-10-31T17:01:00Z', '2026-10-31', '2026-10'],
-      ['2026-10-31T21:59:00Z', '2026-10-31', '2026-10'],
+      ['2026-10-31T17:01:00Z', '2026-11-01', '2026-11'],
+      ['2026-10-31T21:59:00Z', '2026-11-01', '2026-11'],
       ['2026-10-31T22:01:00Z', '2026-11-01', '2026-11'],
     ];
     for (const [instant, day, month] of cases) {
@@ -700,6 +702,14 @@ describe('the periods roll by key at the branch’s business day, with or withou
       expect(benefitPeriodKey('daily', d), instant).toBe(day);
       expect(benefitPeriodKey('monthly', d), instant).toBe(month);
     }
+  });
+
+  it('SCRUM-1010: a staff member’s allowance day at the park turns at 00:00 park time', async () => {
+    // 23:59 on 31 October in Bangkok is October's last day; 00:01 on 1 November
+    // is November's first, for the daily and the monthly allowance alike.
+    expect(await benefitToday(ctx.db, { operatorId, branchId }, new Date('2026-10-31T16:59:00Z'))).toBe('2026-10-31');
+    expect(await benefitToday(ctx.db, { operatorId, branchId }, new Date('2026-10-31T17:01:00Z'))).toBe('2026-11-01');
+    expect(await benefitToday(ctx.db, { operatorId, branchId }, new Date('2026-10-31T21:59:00Z'))).toBe('2026-11-01');
   });
 
   async function seedUsage(employeeId: string, itemKey: string, kind: 'daily' | 'monthly', key: string, qty: number, credit: number) {

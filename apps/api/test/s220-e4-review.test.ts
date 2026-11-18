@@ -72,8 +72,8 @@ import {
  *      lines, and the closed day all say the same thing; no party write made a
  *      sale, a sale line, a print job, a stock movement, a band or a wallet
  *      entry.
- *   2. THE DAY RULE across the 05:00 boundary: 04:30 the next calendar morning
- *      is still the day that is finishing; 05:00 is the next day. Money taken
+ *   2. THE DAY RULE across the midnight boundary (SCRUM-1010): 23:30 is still
+ *      the day that is finishing; 00:00 is the next day. Money taken
  *      for another day's party is on no line of either day (plan §6).
  *   3. PATCH: protected fields refused / ignored; an allowed change written
  *      back once under an Idempotency-Key replay and under a lost answer at
@@ -318,7 +318,7 @@ beforeAll(async () => {
   operatorId = hkt!.operatorId;
   tz = hkt!.timezone;
   T = businessDate(new Date(), tz, parseDayStart(hkt!.businessDayStart));
-  expect(hkt!.businessDayStart.startsWith('05:00')).toBe(true);
+  expect(hkt!.businessDayStart.startsWith('00:00')).toBe(true);
   const [som] = await ctx.db
     .select({ id: account.id })
     .from(account)
@@ -383,7 +383,7 @@ describe('1 — one party, replayed, raced, beside a part-refunded sale: the led
       branchId: central,
       stationId: till,
       businessDate: T,
-      businessDayStart: '05:00',
+      businessDayStart: '00:00',
       timezone: tz,
       occurredAt: new Date(),
       createdByAccountId: receptionId,
@@ -565,7 +565,7 @@ describe('1 — one party, replayed, raced, beside a part-refunded sale: the led
 });
 
 // =============================================================================
-// 2. The day rule, across the 05:00 boundary
+// 2. The day rule, across the midnight boundary (SCRUM-1010)
 // =============================================================================
 
 describe("2 — Q3's day rule: the day the money is taken, for that day's party, on the branch's business day", () => {
@@ -581,29 +581,29 @@ describe("2 — Q3's day rule: the day the money is taken, for that day's party,
   const payAt = (partyId: string, amount: number, now: Date) =>
     payParty(deps(), {}, actor(), partyId, paymentBody({ amount, method: 'card' }), now);
 
-  it("04:30 the next calendar morning is still the day that is finishing: today's party counts today", async () => {
+  it("23:30 is still the day that is finishing: today's party counts today", async () => {
     const before = lineOf(await endOfDay(T), 'party_prepay');
-    const { answer } = await payAt(ev.today, 10_000, at(addDaysToIsoDate(T, 1), '04:30'));
+    const { answer } = await payAt(ev.today, 10_000, at(T, '23:30'));
     expect(answer.payment).toMatchObject({ businessDate: T });
     expect(lineOf(await endOfDay(T), 'party_prepay')).toBe(before + 10_000);
   });
 
-  it("04:59, for tomorrow's party: on no line today, nor tomorrow (plan §6)", async () => {
+  it("23:59, for tomorrow's party: on no line today, nor tomorrow (plan §6)", async () => {
     const today = lineOf(await endOfDay(T), 'party_prepay');
     const tomorrow = lineOf(await endOfDay(addDaysToIsoDate(T, 1)), 'party_prepay');
-    const { answer } = await payAt(ev.tomorrow, 10_000, at(addDaysToIsoDate(T, 1), '04:59'));
+    const { answer } = await payAt(ev.tomorrow, 10_000, at(T, '23:59'));
     expect(answer.payment).toMatchObject({ businessDate: T });
     expect(lineOf(await endOfDay(T), 'party_prepay')).toBe(today);
     expect(lineOf(await endOfDay(addDaysToIsoDate(T, 1)), 'party_prepay')).toBe(tomorrow);
   });
 
-  it("05:00 is the next day: tomorrow's party counts tomorrow; today's party, paid then, counts on neither", async () => {
+  it("00:00 is the next day: tomorrow's party counts tomorrow; today's party, paid then, counts on neither", async () => {
     const d1 = addDaysToIsoDate(T, 1);
     const today = lineOf(await endOfDay(T), 'party_prepay');
     const tomorrow = lineOf(await endOfDay(d1), 'party_prepay');
-    const forTomorrow = await payAt(ev.tomorrow, 20_000, at(d1, '05:00'));
+    const forTomorrow = await payAt(ev.tomorrow, 20_000, at(d1, '00:00'));
     expect(forTomorrow.answer.payment).toMatchObject({ businessDate: d1 });
-    const forToday = await payAt(ev.today, 20_000, at(d1, '05:00'));
+    const forToday = await payAt(ev.today, 20_000, at(d1, '00:00'));
     expect(forToday.answer.payment).toMatchObject({ businessDate: d1 });
     expect(lineOf(await endOfDay(T), 'party_prepay')).toBe(today);
     expect(lineOf(await endOfDay(d1), 'party_prepay')).toBe(tomorrow + 20_000);
