@@ -1,0 +1,2018 @@
+{
+  "ticket": "SCRUM-990",
+  "title": "Show party-linked extras and bill later additions separately",
+  "authorisation": "Owner review of 18 November 2026: \"looks right\", \"test it properly\". Testing and evidence only; no code, deploy, setting change or real payment.",
+  "ranAt": {
+    "start": "2026-11-18T12:23:17.384Z",
+    "end": "2026-11-18T12:45:28.943Z"
+  },
+  "environment": "staging only (Render *-staging services)",
+  "deploymentsLiveDuringRun": {
+    "unchangedBeforeAndAfter": true,
+    "services": [
+      {
+        "name": "oto-app-staging",
+        "deployId": "dep-dbup9e7b9u1s738tr0cg",
+        "sha": "a6877cccfd149a795fd2eee735a10f8de77c0b36"
+      },
+      {
+        "name": "oto-api-staging",
+        "deployId": "dep-dbup9efb9u1s738tr150",
+        "sha": "a6877cccfd149a795fd2eee735a10f8de77c0b36"
+      },
+      {
+        "name": "oto-pos-staging",
+        "deployId": "dep-dbuoq2kipgvc739ise50",
+        "sha": "849ac4db2610f2ebc4777cffd541b630649066e1"
+      },
+      {
+        "name": "oto-pos-web-staging",
+        "deployId": "dep-dbuoq46k1f9s73au63n0",
+        "sha": "849ac4db2610f2ebc4777cffd541b630649066e1"
+      },
+      {
+        "name": "oto-launcher-staging",
+        "deployId": "dep-dbup9enb9u1s738tr2g0",
+        "sha": "a6877cccfd149a795fd2eee735a10f8de77c0b36"
+      }
+    ]
+  },
+  "money": "cash on staging and the staging payment simulator only (the virtual box simulated terminal EDC 3, tid 54355548, approved the PromptPay QR tenders by itself); no real payment, no gateway, no bank",
+  "actors": {
+    "till": "seeded RECEPTION sign-in (Som), virtual station Reception Till 1 on Virtual box 1; desk 1600x1000 with the customer display hidden, and phone 390x844 (phone layout)",
+    "app": "seeded ADMIN sign-in (Khun Anan, Owner) on the launcher; the OTO App opened through its tile",
+    "productCleanup": "the same ADMIN session on the launcher origin"
+  },
+  "party": {
+    "eventId": "48073b00-3abb-4778-9fb7-6d642a982527",
+    "title": "ZZ TEST 990 party 20261118",
+    "date": "2026-11-18",
+    "time": "20:00-22:00",
+    "branch": "Oto Play Park, Central Floresta",
+    "package": "After School Birthday Package, Central (10 kids), fixed 10,900.00",
+    "guests": "10 kids, 2 adults",
+    "deposit": 0,
+    "createdVia": "OTO App routes POST /api/admin/events and POST /api/beo/events/:id/package-snapshot, app session entered through the launcher tile"
+  },
+  "firstReceipt": {
+    "saleId": "01a1ee9e-63de-7ea8-bc38-4f407b99258e",
+    "settlementId": "01a1ee9e-63dd-7f5d-9ce2-2ab10c25e336",
+    "receiptNumber": "T1-000089",
+    "status": "finalised",
+    "grossSatang": 1091001,
+    "lineCount": 10,
+    "payment": {
+      "id": "01a1ee9f-757c-7ce4-b13c-75be830c490f",
+      "method": "cash",
+      "amountSatang": 1091001
+    },
+    "printJobsAtSettlementAndAtEnd": 13,
+    "fingerprint": "5dc94ca2e1da22d9eb4dcae42824cf06246e2b013bb42c3c8bdbfa3c9854339c",
+    "fingerprintCovers": "sha256 of canonical (key-sorted) JSON of GET /sales/:id fields sale, lines, attempts, discounts, taxBreakdown, refunds, refundStatus, refundableSatang; print jobs and bands excluded",
+    "reads": [
+      {
+        "label": "after_step2_settlement",
+        "at": "2026-11-18T12:26:58.038Z",
+        "receiptNumber": "T1-000089",
+        "grossSatang": 1091001,
+        "lineCount": 10,
+        "fingerprint": "5dc94ca2e1da22d9eb4dcae42824cf06246e2b013bb42c3c8bdbfa3c9854339c",
+        "status": "finalised",
+        "payments": 1,
+        "refundedSatang": 0
+      },
+      {
+        "label": "after_step3_bill1_created",
+        "at": "2026-11-18T12:28:25.012Z",
+        "receiptNumber": "T1-000089",
+        "grossSatang": 1091001,
+        "lineCount": 10,
+        "fingerprint": "5dc94ca2e1da22d9eb4dcae42824cf06246e2b013bb42c3c8bdbfa3c9854339c",
+        "status": "finalised",
+        "payments": 1,
+        "refundedSatang": 0
+      },
+      {
+        "label": "after_step4_bill1_paid_desk",
+        "at": "2026-11-18T12:29:50.935Z",
+        "receiptNumber": "T1-000089",
+        "grossSatang": 1091001,
+        "lineCount": 10,
+        "fingerprint": "5dc94ca2e1da22d9eb4dcae42824cf06246e2b013bb42c3c8bdbfa3c9854339c",
+        "status": "finalised",
+        "payments": 1,
+        "refundedSatang": 0
+      },
+      {
+        "label": "after_step5_bill2_paid_phone",
+        "via": "phone",
+        "at": "2026-11-18T12:35:28.913Z",
+        "receiptNumber": "T1-000089",
+        "grossSatang": 1091001,
+        "lineCount": 10,
+        "fingerprint": "5dc94ca2e1da22d9eb4dcae42824cf06246e2b013bb42c3c8bdbfa3c9854339c",
+        "status": "finalised",
+        "payments": 1,
+        "refundedSatang": 0
+      },
+      {
+        "label": "after_7a_unchanged_saves",
+        "via": "phone",
+        "at": "2026-11-18T12:36:32.214Z",
+        "receiptNumber": "T1-000089",
+        "grossSatang": 1091001,
+        "lineCount": 10,
+        "fingerprint": "5dc94ca2e1da22d9eb4dcae42824cf06246e2b013bb42c3c8bdbfa3c9854339c",
+        "status": "finalised",
+        "payments": 1,
+        "refundedSatang": 0
+      },
+      {
+        "label": "after_7a_unchanged_saves",
+        "via": "phone",
+        "at": "2026-11-18T12:36:52.663Z",
+        "receiptNumber": "T1-000089",
+        "grossSatang": 1091001,
+        "lineCount": 10,
+        "fingerprint": "5dc94ca2e1da22d9eb4dcae42824cf06246e2b013bb42c3c8bdbfa3c9854339c",
+        "status": "finalised",
+        "payments": 1,
+        "refundedSatang": 0
+      },
+      {
+        "label": "after_7b1_kitchen_qty_change",
+        "via": "phone",
+        "at": "2026-11-18T12:38:41.241Z",
+        "receiptNumber": "T1-000089",
+        "grossSatang": 1091001,
+        "lineCount": 10,
+        "fingerprint": "5dc94ca2e1da22d9eb4dcae42824cf06246e2b013bb42c3c8bdbfa3c9854339c",
+        "status": "finalised",
+        "payments": 1,
+        "refundedSatang": 0
+      },
+      {
+        "label": "after_7b3_decrease_refused_and_restored",
+        "via": "phone",
+        "at": "2026-11-18T12:39:18.107Z",
+        "receiptNumber": "T1-000089",
+        "grossSatang": 1091001,
+        "lineCount": 10,
+        "fingerprint": "5dc94ca2e1da22d9eb4dcae42824cf06246e2b013bb42c3c8bdbfa3c9854339c",
+        "status": "finalised",
+        "payments": 1,
+        "refundedSatang": 0
+      },
+      {
+        "label": "after_bill3_paid_desk_cash",
+        "via": "phone",
+        "at": "2026-11-18T12:40:03.512Z",
+        "receiptNumber": "T1-000089",
+        "grossSatang": 1091001,
+        "lineCount": 10,
+        "fingerprint": "5dc94ca2e1da22d9eb4dcae42824cf06246e2b013bb42c3c8bdbfa3c9854339c",
+        "status": "finalised",
+        "payments": 1,
+        "refundedSatang": 0
+      },
+      {
+        "label": "after_7d1_set_item",
+        "via": "phone",
+        "at": "2026-11-18T12:40:28.902Z",
+        "receiptNumber": "T1-000089",
+        "grossSatang": 1091001,
+        "lineCount": 10,
+        "fingerprint": "5dc94ca2e1da22d9eb4dcae42824cf06246e2b013bb42c3c8bdbfa3c9854339c",
+        "status": "finalised",
+        "payments": 1,
+        "refundedSatang": 0
+      },
+      {
+        "label": "after_7d2_free_item",
+        "via": "phone",
+        "at": "2026-11-18T12:41:04.791Z",
+        "receiptNumber": "T1-000089",
+        "grossSatang": 1091001,
+        "lineCount": 10,
+        "fingerprint": "5dc94ca2e1da22d9eb4dcae42824cf06246e2b013bb42c3c8bdbfa3c9854339c",
+        "status": "finalised",
+        "payments": 1,
+        "refundedSatang": 0
+      },
+      {
+        "label": "after_7c_remove_billed_bar_item",
+        "via": "phone",
+        "at": "2026-11-18T12:41:31.013Z",
+        "receiptNumber": "T1-000089",
+        "grossSatang": 1091001,
+        "lineCount": 10,
+        "fingerprint": "5dc94ca2e1da22d9eb4dcae42824cf06246e2b013bb42c3c8bdbfa3c9854339c",
+        "status": "finalised",
+        "payments": 1,
+        "refundedSatang": 0
+      },
+      {
+        "label": "before_cleanup",
+        "via": "phone",
+        "at": "2026-11-18T12:44:18.733Z",
+        "receiptNumber": "T1-000089",
+        "grossSatang": 1091001,
+        "lineCount": 10,
+        "fingerprint": "5dc94ca2e1da22d9eb4dcae42824cf06246e2b013bb42c3c8bdbfa3c9854339c",
+        "status": "finalised",
+        "payments": 1,
+        "refundedSatang": 0
+      },
+      {
+        "label": "after_cleanup_archive",
+        "via": "phone",
+        "at": "2026-11-18T12:45:10.760Z",
+        "receiptNumber": "T1-000089",
+        "grossSatang": 1091001,
+        "lineCount": 10,
+        "fingerprint": "5dc94ca2e1da22d9eb4dcae42824cf06246e2b013bb42c3c8bdbfa3c9854339c",
+        "status": "finalised",
+        "payments": 1,
+        "refundedSatang": 0
+      }
+    ],
+    "allReadsIdentical": true
+  },
+  "additionalBills": [
+    {
+      "n": 1,
+      "id": "48073b00-3abb-7104-ba0d-af2c559be98d",
+      "source": "kitchen ZZ TEST 990 after-settle dish A 1 x 25.03",
+      "totalSatang": 2503,
+      "paidSatang": 2503,
+      "payment": {
+        "id": "01a1eea1-ef50-75ff-a416-a1a34bbb8429",
+        "attemptId": "01a1eea1-f19b-7af1-a675-4c8efed00813",
+        "method": "PromptPay QR via the virtual simulated terminal",
+        "where": "desk till"
+      },
+      "receiptNumber": null
+    },
+    {
+      "n": 2,
+      "id": "48073b00-3abb-7542-a771-eff72f08f1da",
+      "source": "bar ZZ TEST 990 after-settle drink B 1 x 7.05",
+      "totalSatang": 705,
+      "paidSatang": 705,
+      "payment": {
+        "attemptId": "01a1eea5-e00c-7148-ae0d-72156c8bf3d6",
+        "method": "PromptPay QR via the virtual simulated terminal",
+        "where": "phone till"
+      },
+      "receiptNumber": null
+    },
+    {
+      "n": 3,
+      "id": "48073b00-3abb-7175-8a3d-36dd40167967",
+      "source": "bar drink B quantity raised 1 -> 2 (edge 7b): the difference 1 x 7.05",
+      "totalSatang": 705,
+      "paidSatang": 705,
+      "payment": {
+        "id": "01a1eeab-bfa5-77f7-b0f4-ada5ff8d39aa",
+        "method": "cash",
+        "where": "desk till"
+      },
+      "receiptNumber": null
+    }
+  ],
+  "steps": [
+    {
+      "step": "1",
+      "name": "Before settlement: priced extra stays in the plan and is part of the main bill",
+      "status": "PASSED",
+      "evidence": [
+        "s1-beo-billing-quote.png",
+        "s1-till-party-before-settle.png",
+        "s2-settle-preview.png"
+      ],
+      "detail": {
+        "stage": "step1_before_settlement",
+        "at": "2026-11-18T12:24:42.953Z",
+        "status": "PASSED",
+        "saveAnswer": {
+          "status": "plan_only",
+          "message": "Items remain in the plan until the main party is settled."
+        },
+        "confirmDialogShown": true,
+        "line": {
+          "id": "menu_1795004644049_kj6g",
+          "name": "ZZ TEST 990 pre-settle dish",
+          "quantity": 1,
+          "unitBaht": 10.01,
+          "billingSync": "plan_only"
+        },
+        "tillQuote": {
+          "state": "quote",
+          "totalSatang": 1091001,
+          "balanceSatang": 1091001,
+          "dishLine": {
+            "role": "add_on",
+            "label": "ZZ TEST 990 pre-settle dish",
+            "quantity": 1,
+            "unitSatang": 1001,
+            "totalSatang": 1001
+          }
+        },
+        "additionalBills": 0,
+        "evidence": [
+          "s1-beo-billing-quote.png"
+        ]
+      }
+    },
+    {
+      "step": "2",
+      "name": "Settle the main bill at the till (cash)",
+      "status": "PASSED",
+      "evidence": [
+        "s2-settle-preview.png",
+        "s2-main-paid-screen.png"
+      ],
+      "detail": {
+        "stage": "step2_main_settled",
+        "at": "2026-11-18T12:26:58.040Z",
+        "status": "PASSED",
+        "saleId": "01a1ee9e-63de-7ea8-bc38-4f407b99258e",
+        "receiptNumber": "T1-000089",
+        "grossSatang": 1091001,
+        "lines": [
+          {
+            "label": "After School Birthday Package, Central (10 kids)",
+            "quantity": 1,
+            "grossSatang": 1090000
+          },
+          {
+            "label": "Table reservation",
+            "quantity": 1,
+            "grossSatang": 0
+          },
+          {
+            "label": "Entrance for 10 children",
+            "quantity": 1,
+            "grossSatang": 0
+          },
+          {
+            "label": "Entrance for 10 adults",
+            "quantity": 1,
+            "grossSatang": 0
+          },
+          {
+            "label": "Birthday Food Set for Kids",
+            "quantity": 1,
+            "grossSatang": 0
+          },
+          {
+            "label": "Ice Cream Cake",
+            "quantity": 1,
+            "grossSatang": 0
+          },
+          {
+            "label": "Unlimited complimentary drinking water",
+            "quantity": 1,
+            "grossSatang": 0
+          },
+          {
+            "label": "Children (in the package)",
+            "quantity": 10,
+            "grossSatang": 0
+          },
+          {
+            "label": "Adults (in the package)",
+            "quantity": 2,
+            "grossSatang": 0
+          },
+          {
+            "label": "ZZ TEST 990 pre-settle dish",
+            "quantity": 1,
+            "grossSatang": 1001
+          }
+        ],
+        "payments": [
+          {
+            "id": "01a1ee9f-757c-7ce4-b13c-75be830c490f",
+            "method": "cash",
+            "status": "approved",
+            "amountSatang": 1091001
+          }
+        ],
+        "fingerprint": "5dc94ca2e1da22d9eb4dcae42824cf06246e2b013bb42c3c8bdbfa3c9854339c",
+        "fingerprintCovers": "sha256 of canonical JSON of GET /sales/:id fields sale, lines, attempts, discounts, taxBreakdown, refunds, refundStatus, refundableSatang (print jobs and bands excluded)",
+        "method": "cash (staging, fake money) at virtual station Reception Till 1",
+        "evidence": [
+          "s2-settle-preview.png",
+          "s2-main-paid-screen.png"
+        ]
+      }
+    },
+    {
+      "step": "3",
+      "name": "After settlement: new kitchen item makes a separate additional bill for the added amount only",
+      "status": "PASSED",
+      "evidence": [
+        "s3-beo-new-kitchen-line-before-save.png",
+        "s3-beo-additional-bill-1-open.png",
+        "s3-till-party-additional-bill-1.png"
+      ],
+      "detail": {
+        "stage": "step3_after_settlement_kitchen_addition",
+        "at": "2026-11-18T12:28:26.527Z",
+        "status": "PASSED",
+        "added": {
+          "lineId": "menu_1795004837106_nmyg",
+          "name": "ZZ TEST 990 after-settle dish A",
+          "quantity": 1,
+          "unitBaht": 25.03,
+          "area": "kids kitchen"
+        },
+        "saveAnswer": {
+          "status": "synced",
+          "message": "New approved items are linked to the party's additional bill; the original paid receipt is unchanged."
+        },
+        "bill": {
+          "id": "48073b00-3abb-7104-ba0d-af2c559be98d",
+          "totalSatang": 2503,
+          "outstandingSatang": 2503,
+          "state": "open",
+          "mainSettlementId": "01a1ee9e-63dd-7f5d-9ce2-2ab10c25e336",
+          "charges": [
+            {
+              "id": "48073b00-3abb-781d-b2e5-f7170fdd2a3d",
+              "items": [
+                {
+                  "name": "ZZ TEST 990 after-settle dish A",
+                  "qty": 1,
+                  "lineTotalSatang": 2503
+                }
+              ],
+              "totalSatang": 2503
+            }
+          ]
+        },
+        "partyReadStatus": 200,
+        "firstReceipt": {
+          "receiptNumber": "T1-000089",
+          "grossSatang": 1091001,
+          "fingerprint": "5dc94ca2e1da22d9eb4dcae42824cf06246e2b013bb42c3c8bdbfa3c9854339c",
+          "unchanged": true
+        },
+        "evidence": [
+          "s3-beo-new-kitchen-line-before-save.png",
+          "s3-beo-additional-bill-1-open.png",
+          "s3-till-party-additional-bill-1.png"
+        ],
+        "notes": [
+          "BEO Billing header badge reads 'Paid' and its Outstanding tile reads 0 while Additional bill 1 is open with 25.03 outstanding (shown in the panel below)."
+        ]
+      }
+    },
+    {
+      "step": "4",
+      "name": "Take the additional bill on the counter till (desk) through its own screens",
+      "status": "PASSED for collection; no receipt is issued for the bill",
+      "evidence": [
+        "s4-desk-balance-selector.png",
+        "s4-desk-payment-recorded.png",
+        "s4-desk-party-bill1-paid.png"
+      ],
+      "detail": {
+        "stage": "step4_desk_collect_bill1",
+        "at": "2026-11-18T12:29:50.936Z",
+        "status": "PASSED_WITH_FINDING",
+        "path": "Events > party > Take balance 25.03 > Additional bill selector (Additional bill 1 preselected, older tab disabled) > PromptPay > Take 25.03 by PromptPay > Show payment QR > Payment recorded",
+        "viewport": "1600x1000 desk till, customer display hidden",
+        "station": "Reception Till 1 (Virtual box 1)",
+        "attempt": {
+          "id": "01a1eea1-f19b-7af1-a675-4c8efed00813",
+          "method": "qr",
+          "provider": "simulator",
+          "status": "approved",
+          "amountSatang": 2503,
+          "saleId": null,
+          "approvedAfterSeconds": 3.2,
+          "how": "virtual box simulated terminal approved it on its own; no gateway or bank"
+        },
+        "routes": [
+          {
+            "m": "POST",
+            "path": "/api/parties/<event>/payments/tender",
+            "status": 200
+          },
+          {
+            "m": "POST",
+            "path": "/api/parties/<event>/payments",
+            "status": 200
+          }
+        ],
+        "bill": {
+          "id": "48073b00-3abb-7104-ba0d-af2c559be98d",
+          "state": "paid",
+          "totalSatang": 2503,
+          "paidSatang": 2503,
+          "outstandingSatang": 0,
+          "payments": [
+            {
+              "id": "01a1eea1-ef50-75ff-a416-a1a34bbb8429",
+              "amountSatang": 2503,
+              "method": "promptpay"
+            }
+          ]
+        },
+        "receiptIssued": false,
+        "receiptNote": "The till showed Payment recorded with no receipt number; the payment attempt has saleId null (party payments are recorded with no sale and no receipt by design, services/parties.ts payParty comment Q3).",
+        "firstReceipt": {
+          "receiptNumber": "T1-000089",
+          "grossSatang": 1091001,
+          "fingerprint": "5dc94ca2e1da22d9eb4dcae42824cf06246e2b013bb42c3c8bdbfa3c9854339c",
+          "unchanged": true
+        },
+        "evidence": [
+          "s4-desk-balance-selector.png",
+          "s4-desk-payment-recorded.png",
+          "s4-desk-party-bill1-paid.png"
+        ]
+      }
+    },
+    {
+      "step": "5",
+      "name": "Bar item after that; take its bill on the phone till",
+      "status": "PASSED for collection; no receipt; findings on the phone screens",
+      "evidence": [
+        "s5-beo-new-bar-line-before-save.png",
+        "s5-beo-two-additional-bills.png",
+        "s5-phone-events-list.png",
+        "s5-phone-party-detail-top.png",
+        "s5-phone-take-payment-selector.png",
+        "s5-phone-older-tab-refused.png",
+        "f1-phone-older-tab-customer-bill-float.png",
+        "s5-phone-customer-bill-bill2.png",
+        "s5-phone-payment-recorded.png",
+        "s5-phone-party-bill2-paid.png"
+      ],
+      "detail": {
+        "stage": "step5_bar_addition_and_phone_collect_bill2",
+        "at": "2026-11-18T12:35:28.914Z",
+        "status": "PASSED_WITH_FINDINGS",
+        "added": {
+          "lineId": "bar_1795005008967_e7sr",
+          "name": "ZZ TEST 990 after-settle drink B",
+          "quantity": 1,
+          "unitBaht": 7.05,
+          "area": "bar"
+        },
+        "saveAnswer": {
+          "status": "synced"
+        },
+        "bill": {
+          "id": "48073b00-3abb-7542-a771-eff72f08f1da",
+          "state": "paid",
+          "totalSatang": 705,
+          "paidSatang": 705,
+          "outstandingSatang": 0,
+          "payments": [
+            {
+              "id": "01a1eea5-ddb8-741c-a8e5-081bd5dac563",
+              "amountSatang": 705,
+              "method": "promptpay"
+            }
+          ]
+        },
+        "path": "phone till 390x844 (phone layout), Reception Till 1: Events > party > Take payment 7.05 > Bill to collect (Additional bill 48073b00 preselected) > PromptPay > Show bill > Customer is ready > Customer reviewed - continue > Show payment QR > Payment recorded",
+        "attempt": {
+          "id": "01a1eea5-e00c-7148-ae0d-72156c8bf3d6",
+          "method": "qr",
+          "provider": "simulator",
+          "status": "approved",
+          "amountSatang": 705,
+          "saleId": null
+        },
+        "receiptIssued": false,
+        "negativeCheck": {
+          "what": "phone Bill to collect = Older unassigned tab while bill 2 open, cash 7.05, Payment received",
+          "answer": "409 ADDITIONAL_BILL_REQUIRED, toast Payment not recorded, nothing taken",
+          "customerScreenShowed": "Outstanding due now 7.049999999999997 (floating point) on the customer bill for the older-tab path"
+        },
+        "firstReceipt": {
+          "receiptNumber": "T1-000089",
+          "grossSatang": 1091001,
+          "fingerprint": "5dc94ca2e1da22d9eb4dcae42824cf06246e2b013bb42c3c8bdbfa3c9854339c",
+          "unchanged": true
+        },
+        "evidence": [
+          "s5-beo-new-bar-line-before-save.png",
+          "s5-beo-two-additional-bills.png",
+          "s5-phone-events-list.png",
+          "s5-phone-party-detail-top.png",
+          "s5-phone-take-payment-selector.png",
+          "s5-phone-older-tab-refused.png",
+          "f1-phone-older-tab-customer-bill-float.png",
+          "s5-phone-customer-bill-bill2.png",
+          "s5-phone-payment-recorded.png",
+          "s5-phone-party-bill2-paid.png"
+        ]
+      }
+    },
+    {
+      "step": "6",
+      "name": "First receipt unchanged after every step; each bill only its own amount",
+      "status": "PASSED for the first receipt (14 reads, one fingerprint, 13 print jobs throughout); each additional bill holds only its own charge and payment, but none has a receipt number",
+      "evidence": [
+        "s3-beo-additional-bill-1-open.png",
+        "s5-beo-two-additional-bills.png",
+        "e7e-desk-party-totals.png"
+      ]
+    },
+    {
+      "step": "7a",
+      "name": "Save again with no change",
+      "status": "PASSED",
+      "evidence": [
+        "e7a-beo-after-two-unchanged-saves.png"
+      ],
+      "detail": {
+        "stage": "edge_7a_unchanged_save",
+        "at": "2026-11-18T12:36:52.664Z",
+        "status": "PASSED",
+        "saves": [
+          {
+            "status": "synced",
+            "message": "New approved items are linked to the party's additional bill; the original paid receipt is unchanged."
+          },
+          {
+            "status": "synced",
+            "message": "New approved items are linked to the party's additional bill; the original paid receipt is unchanged."
+          }
+        ],
+        "billsBefore": 2,
+        "billsAfter": 2,
+        "chargesBefore": 2,
+        "chargesAfter": 2,
+        "billsFingerprintBefore": "8ac0cd9f6b8cd5354566ef2a49d8859e905cdd4d81bd4c72a5e7f4074b048af8",
+        "billsFingerprintAfter": "8ac0cd9f6b8cd5354566ef2a49d8859e905cdd4d81bd4c72a5e7f4074b048af8",
+        "firstReceiptUnchanged": true,
+        "evidence": [
+          "e7a-beo-after-two-unchanged-saves.png"
+        ],
+        "note": "Four unchanged saves in all (two in a first attempt whose record step stopped on a locked till session, then two recorded); bills stayed 2 with the same charges every time."
+      }
+    },
+    {
+      "step": "7b",
+      "name": "Change the quantity of an already billed added item",
+      "status": "RECORDED, with finding F1",
+      "evidence": [
+        "e7b1-kitchen-dishA-qty2-before-save.png",
+        "e7b1-beo-billing-no-new-bill.png",
+        "e7b1-till-kitchen-x2-no-new-bill.png",
+        "e7b2-bar-drinkB-qty2-before-save.png",
+        "e7b3-bar-decrease-toast.png",
+        "e7b-desk-bill3-cash-selector.png",
+        "e7b-desk-bill3-cash-recorded.png"
+      ],
+      "detail": {
+        "kitchenRaiseAfterReopen": {
+          "stage": "edge_7b1_kitchen_quantity_raise_after_reopen",
+          "at": "2026-11-18T12:38:41.242Z",
+          "status": "FINDING",
+          "did": "Reopened the BEO, raised the already billed kitchen extra ZZ TEST 990 after-settle dish A from 1 to 2, Save (confirm accepted)",
+          "saveAnswer": {
+            "status": "synced",
+            "message": "New approved items are linked to the party's additional bill; the original paid receipt is unchanged."
+          },
+          "billsBefore": 2,
+          "billsAfter": 2,
+          "newBill": null,
+          "storedLine": {
+            "quantity": 2,
+            "chargeApproved": "absent",
+            "billingSync": "absent"
+          },
+          "beoEditorSays": "Extras charged at the till: 60.07 (10.01 + 2 x 25.03)",
+          "tillCharged": "main receipt 10.01 for the pre-settle dish + Additional bill 1 25.03 = 35.04 for kitchen extras; the second dish A (25.03) is on the kitchen plan (x2) but on no bill",
+          "cause": "apps/oto-app/client/src/components/beo/beo-event-editor.tsx mapMenu (kitchen lines on load) does not carry chargeApproved or billingSync (the bar mapping does), so the first Save after the BEO is reopened stores kitchen extras without chargeApproved and shared/beoBillingSource.ts approvedBeoBillingSources no longer counts them",
+          "firstReceiptUnchanged": true,
+          "evidence": [
+            "e7b1-kitchen-dishA-qty2-before-save.png",
+            "e7b1-beo-billing-no-new-bill.png",
+            "e7b1-till-kitchen-x2-no-new-bill.png"
+          ]
+        },
+        "barRaise": {
+          "stage": "edge_7b2_bar_quantity_raise",
+          "at": "2026-11-18T12:38:54.896Z",
+          "status": "RECORDED",
+          "did": "Raised the already billed bar extra ZZ TEST 990 after-settle drink B from 1 to 2 (same editor session), Save",
+          "result": "a new separate Additional bill 3 for the difference only: 1 x 7.05 = 705 satang, open",
+          "bill3": "48073b00-3abb-7175-8a3d-36dd40167967",
+          "evidence": [
+            "e7b2-bar-drinkB-qty2-before-save.png"
+          ]
+        },
+        "barLower": {
+          "stage": "edge_7b3_bar_quantity_lower",
+          "at": "2026-11-18T12:39:18.108Z",
+          "status": "RECORDED",
+          "did": "Lowered drink B from 2 (both billed) to 1, Save; then restored 2, Save",
+          "lowerAnswer": {
+            "status": "pending",
+            "message": "This BEO line was already billed. Reducing it needs a separate bill adjustment; the original receipt stays unchanged. The plan is saved; additional billing needs resolution. Save again to retry without duplicating a charge."
+          },
+          "lowerEffect": "plan saved at quantity 1 with the line marked pending and a red notice in the BEO Billing section; bills unchanged (3 bills, no credit, no adjustment)",
+          "restoreAnswer": {
+            "status": "synced",
+            "message": "New approved items are linked to the party's additional bill; the original paid receipt is unchanged."
+          },
+          "billsUnchangedByRestore": true,
+          "storedLineAfterRestore": {
+            "quantity": 2,
+            "billingSync": "synced"
+          },
+          "firstReceiptUnchanged": true,
+          "evidence": [
+            "e7b3-bar-decrease-toast.png"
+          ]
+        },
+        "bill3Paid": {
+          "stage": "bill3_paid_desk_cash",
+          "at": "2026-11-18T12:40:03.513Z",
+          "status": "PASSED",
+          "bill": {
+            "id": "48073b00-3abb-7175-8a3d-36dd40167967",
+            "state": "paid",
+            "totalSatang": 705,
+            "paidSatang": 705,
+            "payments": [
+              {
+                "id": "01a1eeab-bfa5-77f7-b0f4-ada5ff8d39aa",
+                "amountSatang": 705,
+                "method": "cash"
+              }
+            ]
+          },
+          "routes": [
+            {
+              "m": "POST",
+              "path": "/api/parties/<event>/payments",
+              "status": 200,
+              "paymentId": "01a1eeab-bfa5-77f7-b0f4-ada5ff8d39aa",
+              "error": null
+            }
+          ],
+          "receiptIssued": false,
+          "firstReceiptUnchanged": true,
+          "evidence": [
+            "e7b-desk-bill3-cash-selector.png",
+            "e7b-desk-bill3-cash-recorded.png"
+          ]
+        }
+      }
+    },
+    {
+      "step": "7c",
+      "name": "Remove an already billed added item",
+      "status": "RECORDED",
+      "evidence": [
+        "e7c-beo-after-removing-billed-drink.png"
+      ],
+      "detail": {
+        "stage": "edge_7c_remove_billed_item",
+        "at": "2026-11-18T12:41:31.014Z",
+        "status": "RECORDED",
+        "did": "Deleted the already billed and paid bar extra ZZ TEST 990 after-settle drink B (quantity 2, billed on Additional bills 2 and 3) from the bar plan, Save",
+        "saveAnswer": {
+          "status": "plan_only",
+          "message": "No newly approved priced additions."
+        },
+        "billsBefore": 3,
+        "billsAfter": 3,
+        "billsUnchanged": true,
+        "barPlanAfter": [
+          "ZZ TEST 990 bar set item"
+        ],
+        "behaviour": "nothing happens to money: no refusal, no credit, no adjustment bill; Additional bills 2 and 3 stay paid and keep the drink lines; the plan no longer lists the drink",
+        "firstReceiptUnchanged": true,
+        "evidence": [
+          "e7c-beo-after-removing-billed-drink.png"
+        ]
+      }
+    },
+    {
+      "step": "7d",
+      "name": "Included/free or set-menu item added after settlement",
+      "status": "PASSED",
+      "evidence": [
+        "e7d1-bar-set-line-before-save.png",
+        "e7d2-free-item-dialog.png",
+        "e7d2-free-item-in-kitchen.png"
+      ],
+      "detail": {
+        "setMenu": {
+          "stage": "edge_7d1_set_menu_item_after_settlement",
+          "at": "2026-11-18T12:40:28.903Z",
+          "status": "PASSED",
+          "did": "Bar plan + SET line ZZ TEST 990 bar set item x1 (no price box on a SET line), Save",
+          "saveAnswer": {
+            "status": "synced",
+            "message": "New approved items are linked to the party's additional bill; the original paid receipt is unchanged."
+          },
+          "billsBefore": 3,
+          "billsAfter": 3,
+          "unchanged": true,
+          "storedLine": {
+            "source": "set_menu",
+            "chargeApproved": true,
+            "price": 0,
+            "billingSync": null
+          },
+          "firstReceiptUnchanged": true,
+          "evidence": [
+            "e7d1-bar-set-line-before-save.png"
+          ]
+        },
+        "freeIncluded": {
+          "stage": "edge_7d2_free_included_item_after_settlement",
+          "at": "2026-11-18T12:41:04.792Z",
+          "status": "PASSED",
+          "did": "Kitchen + NEW ITEM (not in the menu) dialog, ZZ TEST 990 free dish, Free / included ticked, Create (this made a BEO-only till item PARTY-19061329), then Save",
+          "createAnswer": {
+            "status": "synced",
+            "message": "New approved items are linked to the party's additional bill; the original paid receipt is unchanged.",
+            "lineIncluded": true,
+            "price": 0
+          },
+          "saveAnswer": {
+            "status": "synced",
+            "message": "New approved items are linked to the party's additional bill; the original paid receipt is unchanged."
+          },
+          "billsBefore": 3,
+          "billsAfter": 3,
+          "unchanged": true,
+          "storedLine": {
+            "included": true,
+            "price": 0,
+            "chargeApproved": true,
+            "productCode": "PARTY-19061329"
+          },
+          "beoOnlyProduct": {
+            "productId": "01a0bbdc-8c41-7b11-9616-07cc19061329",
+            "productCode": "PARTY-19061329"
+          },
+          "firstReceiptUnchanged": true,
+          "evidence": [
+            "e7d2-free-item-dialog.png",
+            "e7d2-free-item-in-kitchen.png"
+          ]
+        }
+      }
+    },
+    {
+      "step": "7e",
+      "name": "Party totals on the till and in the BEO agree",
+      "status": "PASSED on money; display differences noted",
+      "evidence": [
+        "e7e-desk-party-totals.png",
+        "e7e-phone-party-totals.png",
+        "e7c-beo-after-removing-billed-drink.png",
+        "e7b1-kitchen-dishA-qty2-before-save.png"
+      ],
+      "detail": {
+        "stage": "edge_7e_totals_agree",
+        "at": "2026-11-18T12:43:01.699Z",
+        "status": "PASSED_MONEY_WITH_DISPLAY_NOTES",
+        "money": {
+          "mainReceipt": "T1-000089",
+          "mainGrossSatang": 1091001,
+          "mainPaidSatang": 1091001,
+          "additionalBills": [
+            {
+              "n": 1,
+              "totalSatang": 2503,
+              "paidSatang": 2503,
+              "method": "promptpay (simulator)"
+            },
+            {
+              "n": 2,
+              "totalSatang": 705,
+              "paidSatang": 705,
+              "method": "promptpay (simulator)"
+            },
+            {
+              "n": 3,
+              "totalSatang": 705,
+              "paidSatang": 705,
+              "method": "cash"
+            }
+          ],
+          "additionalTotalSatang": 3913,
+          "grandTotalSatang": 1094914,
+          "outstandingSatang": 0
+        },
+        "tillApi": "GET /events (party.bill) chargesSatang 3913 paidSatang 3913 outstanding 0; settlement T1-000089 gross 1091001 paid 1091001",
+        "beoApi": "GET /api/events/:id/beo/till-billing sale gross 1091001 paid 1091001 outstanding 0; additional bills 3913 / 3913 / 0",
+        "agreeOnMoney": true,
+        "displayNotes": [
+          "Desk till Party bill shows Receipt T1-000089 then Total 39.13 (the additional bills only); BEO From the till shows Total 10,910.01 (the main receipt only) with the bills listed under it; no screen shows the party grand total 10,949.14",
+          "Phone till Party bill shows the package at 0 and Total 39.13 and does not name receipt T1-000089",
+          "BEO Billing header badge reads Paid and its Outstanding tile 0 even while an additional bill is open (seen at steps 3 and 5)",
+          "BEO kitchen plan says Extras charged at the till: 60.07 (10.01 + 2 x 25.03) while the till charged 35.04 for kitchen extras (see 7b1)",
+          "BEO legacy Financial Summary card in the Billing section reads NOT PAID with Total 0 on this settled and paid party (seen in e7b3 picture)"
+        ],
+        "evidence": [
+          "e7e-desk-party-totals.png",
+          "e7e-phone-party-totals.png",
+          "e7c-beo-after-removing-billed-drink.png",
+          "e7b1-kitchen-dishA-qty2-before-save.png"
+        ]
+      }
+    },
+    {
+      "step": "7f",
+      "name": "End of Day figures (read only; Close Day never pressed)",
+      "status": "PASSED by the code rule; notes",
+      "evidence": [
+        "f7-desk-end-of-day-open-day.png",
+        "f7-desk-eod-unmatched-payments.png"
+      ],
+      "detail": {
+        "stage": "edge_7f_end_of_day_read_only",
+        "at": "2026-11-18T12:44:18.617Z",
+        "status": "PASSED_WITH_NOTES",
+        "date": "2026-11-18",
+        "branch": "Oto Play Park, Central Floresta",
+        "dayStatus": "open",
+        "closeDayPressed": false,
+        "totalExpectedSatang": 1094914,
+        "lines": [
+          {
+            "channel": "cash",
+            "expectedSatang": 1091001
+          },
+          {
+            "channel": "promptpay",
+            "expectedSatang": 0
+          },
+          {
+            "channel": "card:SIMTID01",
+            "expectedSatang": 0
+          },
+          {
+            "channel": "card:65703235",
+            "expectedSatang": 0
+          },
+          {
+            "channel": "card:54355548",
+            "expectedSatang": 0
+          },
+          {
+            "channel": "ewallet",
+            "expectedSatang": 0
+          },
+          {
+            "channel": "bank_transfer",
+            "expectedSatang": 0
+          },
+          {
+            "channel": "party_prepay",
+            "expectedSatang": 3913
+          },
+          {
+            "channel": "credit",
+            "expectedSatang": 0
+          }
+        ],
+        "reading": [
+          "Cash line 10,910.01 = the main receipt T1-000089 cash payment",
+          "Party prepayments line 39.13 = all three additional-bill payments (25.03 QR, 7.05 QR, 7.05 cash), as the code rule says: party payments go on party_prepay whatever the tender (services/end-of-day.ts, S2-20 E4 / H10)",
+          "PromptPay / QR line 0 and the simulated terminal line Card EDC 3 (54355548) 0, while the settlement panel lists the two QR payments (25.03 and 7.05) on terminal 54355548 as payments without a matched settlement",
+          "Expected cash 10,910.01 does not include the 7.05 cash taken for Additional bill 3; that cash is inside Party prepayments",
+          "Expected total 10,949.14 = 10,910.01 + 39.13: no other money was taken at this branch on staging today"
+        ],
+        "evidence": [
+          "f7-desk-end-of-day-open-day.png",
+          "f7-desk-eod-unmatched-payments.png"
+        ]
+      }
+    }
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "kind": "money",
+      "title": "A kitchen extra loses its billing mark at the next Save after the BEO re-reads it, so a later quantity raise is never billed",
+      "did": "Reopened the BEO, raised the already billed kitchen extra dish A from 1 to 2, Save",
+      "expected": "Ticket comment: only the new source-quantity delta is charged, on a separate bill (as happened for the bar line in edge 7b)",
+      "happened": "No bill. Save answered synced. The kitchen plan and the till show dish A x2; the BEO says Extras charged at the till 60.07; the till charged 35.04 for kitchen extras (10.01 on the main receipt + 25.03 on Additional bill 1); the party shows Fully paid",
+      "cause": "apps/oto-app/client/src/components/beo/beo-event-editor.tsx: the kitchen load mapping (mapMenu) does not carry chargeApproved or billingSync, unlike the bar mapping; stored kitchen lines lose chargeApproved at the next Save (seen on the pre-settle dish, dish A and the free dish)",
+      "evidence": [
+        "e7b1-kitchen-dishA-qty2-before-save.png",
+        "e7b1-beo-billing-no-new-bill.png",
+        "e7b1-till-kitchen-x2-no-new-bill.png"
+      ]
+    },
+    {
+      "id": "F2",
+      "kind": "gap against the test brief",
+      "title": "No receipt for an additional bill",
+      "happened": "Desk and phone end on Payment recorded with no receipt number; the payment attempts have saleId null (party payments record no sale, receipt or VAT line by design: services/parties.ts payParty, Q3). Each bill has only its bill reference and its own payment record",
+      "evidence": [
+        "s4-desk-payment-recorded.png",
+        "s5-phone-payment-recorded.png",
+        "e7b-desk-bill3-cash-recorded.png"
+      ]
+    },
+    {
+      "id": "F3",
+      "kind": "display",
+      "title": "Phone customer bill shows 7.049999999999997",
+      "did": "Phone Take payment, Bill to collect = Older unassigned tab while bill 2 was open, Cash, Show bill, Customer is ready",
+      "happened": "The customer-facing Outstanding due now read 7.049999999999997. Pressing Payment received was then refused 409 ADDITIONAL_BILL_REQUIRED (toast Payment not recorded), nothing taken",
+      "evidence": [
+        "f1-phone-older-tab-customer-bill-float.png",
+        "s5-phone-older-tab-refused.png"
+      ]
+    },
+    {
+      "id": "F4",
+      "kind": "display",
+      "title": "Phone keeps Older unassigned tab selectable and names every bill by the party id prefix",
+      "happened": "The desk disables Older unassigned tab balance while a bill is open and names bills Additional bill 1/2/3 with their state; the phone offers Older unassigned tab (refused by the server when used) and names the bill Additional bill 48073b00, the first 8 characters shared by every bill of this party",
+      "evidence": [
+        "s5-phone-take-payment-selector.png",
+        "s4-desk-balance-selector.png",
+        "e7b-desk-bill3-cash-selector.png"
+      ]
+    },
+    {
+      "id": "F5",
+      "kind": "display",
+      "title": "BEO Billing badge Paid and Outstanding 0 while an additional bill is open",
+      "evidence": [
+        "s3-beo-additional-bill-1-open.png",
+        "s5-beo-two-additional-bills.png"
+      ]
+    },
+    {
+      "id": "F6",
+      "kind": "display",
+      "title": "No screen shows the party grand total; three screens show three different totals",
+      "happened": "BEO Total 10,910.01 (main receipt only); desk Party bill names receipt T1-000089 then Total 39.13 (bills only); phone Party bill shows the package at 0 and Total 39.13 with no main receipt reference. The money agrees (main 1,091,001 + bills 3,913 = 1,094,914 satang, outstanding 0, on both reads)",
+      "evidence": [
+        "e7e-desk-party-totals.png",
+        "e7e-phone-party-totals.png",
+        "e7c-beo-after-removing-billed-drink.png"
+      ]
+    },
+    {
+      "id": "F7",
+      "kind": "display",
+      "title": "BEO legacy Financial Summary card reads NOT PAID, Total 0 on the settled and paid party",
+      "evidence": [
+        "e7b3-bar-decrease-toast.png",
+        "e7b2-bar-drinkB-qty2-before-save.png"
+      ]
+    },
+    {
+      "id": "F8",
+      "kind": "wording",
+      "title": "Each Save after settlement asks to bill newly added priced items and answers New approved items are linked to the party additional bill, even when nothing was billed (unchanged saves, free item, set item)",
+      "evidence": [
+        "e7a-beo-after-two-unchanged-saves.png"
+      ]
+    },
+    {
+      "id": "F9",
+      "kind": "fact for the owner (code rule S2-20 E4 / H10)",
+      "title": "End of Day puts all additional-bill money on Party prepayments, whatever the tender",
+      "happened": "Cash line 10,910.01 excludes the 7.05 cash taken for bill 3; PromptPay and terminal EDC 3 lines read 0 while the settlement panel lists the two QR payments on terminal 54355548 as payments without a matched settlement",
+      "evidence": [
+        "f7-desk-end-of-day-open-day.png",
+        "f7-desk-eod-unmatched-payments.png"
+      ]
+    },
+    {
+      "id": "F10",
+      "kind": "fact",
+      "title": "Lowering or removing a billed item",
+      "happened": "Lowering a billed bar line is refused (plan saved at the lower quantity, line pending, red notice and toast; restoring the quantity clears it); removing the line changes nothing in money: the bills stay paid and still list the removed drink",
+      "evidence": [
+        "e7b3-bar-decrease-toast.png",
+        "e7c-beo-after-removing-billed-drink.png"
+      ]
+    }
+  ],
+  "phoneCollectionAsBuilt": "The phone till (the same till app at phone width, signed in at a station) has its own path: party > Take payment > Bill to collect > method > Show bill > Customer is ready > Customer reviewed - continue > Show payment QR (or Payment received for cash). There is no payment link for an additional bill: the only party payment link in the code is the deposit request sent from the BEO through the inbox (services/party-deposit.ts).",
+  "cleanup": {
+    "done": {
+      "stage": "cleanup",
+      "at": "2026-11-18T12:45:10.939Z",
+      "productRetired": {
+        "id": "01a0bbdc-8c41-7b11-9616-07cc19061329",
+        "code": "PARTY-19061329",
+        "deleteStatus": 200,
+        "stillInActiveMenu": false
+      },
+      "eventArchived": {
+        "status": 200,
+        "archived": true
+      },
+      "tillEventsListAfterArchive": {
+        "stillListed": false
+      },
+      "tillBillingAfterArchive": {
+        "status": "ok",
+        "state": "sale",
+        "noQuote": null
+      },
+      "firstReceiptAfterCleanup": {
+        "receiptNumber": "T1-000089",
+        "grossSatang": 1091001,
+        "fingerprint": "5dc94ca2e1da22d9eb4dcae42824cf06246e2b013bb42c3c8bdbfa3c9854339c",
+        "unchanged": true
+      },
+      "eodAfterArchive": {
+        "totalExpectedSatang": 1094914,
+        "partyPrepay": 3913,
+        "cash": 1091001
+      }
+    },
+    "sessions": {
+      "stage": "own_sessions_signed_out",
+      "at": "2026-11-18T12:45:28.943Z",
+      "desk": {
+        "signOutStatus": 200,
+        "oldCookieMeStatus": 401
+      },
+      "phone": {
+        "signOutStatus": 200,
+        "oldCookieMeStatus": 401
+      },
+      "launcher-admin": {
+        "signOutStatus": 200,
+        "oldCookieMeStatus": 401
+      },
+      "app": {
+        "logoutStatus": 200,
+        "oldCookieUserStatus": 401
+      }
+    }
+  },
+  "leftOnStaging": [
+    "ZZ TEST 990 party 20261118 (OTO App event 48073b00-3abb-4778-9fb7-6d642a982527), archived; its BEO, package snapshot and kitchen/bar plan lines kept with it",
+    "Main settlement sale T1-000089 (01a1ee9e-63de-7ea8-bc38-4f407b99258e), finalised, 10,910.01 cash, with its 13 print jobs to the virtual printers and the bands it minted",
+    "Three paid additional bills (25.03, 7.05, 7.05) with their party charges and party payments: two simulator QR attempts on terminal 54355548 and one cash attempt",
+    "End of Day 18 Nov 2026 at Central Floresta is open; its expected figures include 10,910.01 cash and 39.13 party prepayments from this run (total 10,949.14); Close Day was not pressed",
+    "BEO-only till item ZZ TEST 990 free dish (PARTY-19061329), withdrawn from the menu (DELETE answered 200; no longer in the active menu)",
+    "Audit rows for every write above"
+  ],
+  "notProved": [
+    "a real card terminal or a real PromptPay/bank payment (simulated terminal only)",
+    "the 2C2P gateway QR or hosted page (the till routed the QR to the virtual terminal)",
+    "physical printing of the main receipt, bands and kitchen slips (virtual printers only)",
+    "a fiscal/VAT receipt for an additional bill (none is issued)",
+    "a real phone device (desktop Chromium at 390x844)",
+    "two counters collecting the same bill at once",
+    "a main-bill refund and re-settlement with additional bills present",
+    "Close Day with this money in it"
+  ],
+  "pictures": [
+    {
+      "file": "s1-beo-billing-quote.png",
+      "sha256": "0d146d8f7e2c93e8e6e4dca9d02ed0ff4923665992e5e9a3958803712ecb4519",
+      "inspected": true
+    },
+    {
+      "file": "s1-till-party-before-settle.png",
+      "sha256": "2973673111c91382cd2cf462271f6c4fa5ed690efbed3abeb00e53b15ed46454",
+      "inspected": true
+    },
+    {
+      "file": "s2-settle-preview.png",
+      "sha256": "19ddd726c8dd1f8e2aa655dcafe21c7ffe9f6137f0202ea90c5c1cf393ea8b36",
+      "inspected": true
+    },
+    {
+      "file": "s2-main-paid-screen.png",
+      "sha256": "cd66c5a27605ffd5f6ebfc8f9425a9e6ed9cc0f3a5fc08a0db29cacf3245f4ff",
+      "inspected": true
+    },
+    {
+      "file": "s3-beo-new-kitchen-line-before-save.png",
+      "sha256": "d35af13b01b29fb48813f084a32e2779aee36cd90e05b4b06a8dc6901317a6d1",
+      "inspected": true
+    },
+    {
+      "file": "s3-beo-additional-bill-1-open.png",
+      "sha256": "9b7b82ab2cb8f57b4af7545d2c2d03ab898159ce47d234cbe788782711d6a4a8",
+      "inspected": true
+    },
+    {
+      "file": "s3-till-party-additional-bill-1.png",
+      "sha256": "9f56c29db26684d151d5a463b594d4fdf8969393ad463cca3818c3c27573c9d3",
+      "inspected": true
+    },
+    {
+      "file": "s4-desk-balance-selector.png",
+      "sha256": "a8b9943d11db9d8b36e5d4c4a9225faad0e8f57e3e82d9b2150c76a64d2a936d",
+      "inspected": true
+    },
+    {
+      "file": "s4-desk-payment-recorded.png",
+      "sha256": "0b890170dc6ca52706ac2b033005a918c776aff8cfba125915e338ccd4476915",
+      "inspected": true
+    },
+    {
+      "file": "s4-desk-party-bill1-paid.png",
+      "sha256": "bc1095a77802f421874375fbbc966846245c182404039ea5c7b6f1848ae455df",
+      "inspected": true
+    },
+    {
+      "file": "s5-beo-new-bar-line-before-save.png",
+      "sha256": "4d5a448c7836cfd603c6d97e62a8a8a6d5a0f6c92633bc24ddcb41649dd2a602",
+      "inspected": true
+    },
+    {
+      "file": "s5-beo-two-additional-bills.png",
+      "sha256": "80e21ee184c3697ec4710ce1944d2fd975dd084bad729bd2eaf7d5ce2aa06aa3",
+      "inspected": true
+    },
+    {
+      "file": "s5-phone-events-list.png",
+      "sha256": "875f62a1e76b59755f58571aeca1c7560bbe69a8281989dc26bac7fdc200f1fb",
+      "inspected": true
+    },
+    {
+      "file": "s5-phone-party-detail-top.png",
+      "sha256": "3ae9917f876496876d1a238319b21dc65fc1aad5cf9d4ac90f1617b5e790d2b7",
+      "inspected": true
+    },
+    {
+      "file": "s5-phone-take-payment-selector.png",
+      "sha256": "e2c582c2b3873f0c63c08bbde64fba7ac69034a1aa89e714ed692f11a1d71e5b",
+      "inspected": true
+    },
+    {
+      "file": "s5-phone-older-tab-refused.png",
+      "sha256": "ff1af98f4fe8e90ddb6bbec3e8c812a44b912066b120e78e18f5a0fd75596de4",
+      "inspected": true
+    },
+    {
+      "file": "f1-phone-older-tab-customer-bill-float.png",
+      "sha256": "0451469aeaad8875fea00afc85a861940c6bb834d85c18536ba9fc8b7d23c883",
+      "inspected": true
+    },
+    {
+      "file": "s5-phone-customer-bill-bill2.png",
+      "sha256": "713656434ced3ae2dec3df782f441436897a5f42c0b53b101e7ad97d68841e1b",
+      "inspected": true
+    },
+    {
+      "file": "s5-phone-payment-recorded.png",
+      "sha256": "90dafdc14a33de30e597cce7c81f27b77428378d80e12f092fdac3941922aea1",
+      "inspected": true
+    },
+    {
+      "file": "s5-phone-party-bill2-paid.png",
+      "sha256": "6616f0fbbc3956234790ba810559e030c021ff45264c37dfc395dffc4b018e2f",
+      "inspected": true
+    },
+    {
+      "file": "e7a-beo-after-two-unchanged-saves.png",
+      "sha256": "6f25e960951525fc12c1a11e81f5caa718374f65dc8ca2d66b5412b76dade1b6",
+      "inspected": true
+    },
+    {
+      "file": "e7b1-kitchen-dishA-qty2-before-save.png",
+      "sha256": "f88829ce09b9526f4f89c20ccc7cbbbb69ce8a8d5a38c993733fbfdfeab2d890",
+      "inspected": true
+    },
+    {
+      "file": "e7b1-beo-billing-no-new-bill.png",
+      "sha256": "e36ef2399e4ca8ccf349641c10c7c4cc17831c3f9f6ec2f3284859cf7f19ec42",
+      "inspected": true
+    },
+    {
+      "file": "e7b1-till-kitchen-x2-no-new-bill.png",
+      "sha256": "71ad96062e2ef6c6d71c9cb659dc4b1c05f6a1d592c933845ed15190b62715c7",
+      "inspected": true
+    },
+    {
+      "file": "e7b2-bar-drinkB-qty2-before-save.png",
+      "sha256": "cb270fda576e2b0242c33fdfc1361396a815431cacba13903b21a9861daa6292",
+      "inspected": true
+    },
+    {
+      "file": "e7b3-bar-decrease-toast.png",
+      "sha256": "f0fd1a01de67f9e92723b3d8ace419b1ea93e9f3cd431d7206062671aaa00900",
+      "inspected": true
+    },
+    {
+      "file": "e7b-desk-bill3-cash-selector.png",
+      "sha256": "bf52798f0e5aa0f81eef5350905d138dcfd37af7fe30ed5131a0aac1bff7e4c5",
+      "inspected": true
+    },
+    {
+      "file": "e7b-desk-bill3-cash-recorded.png",
+      "sha256": "3158bed0fb6f191febe8ea1afe31c1300332f67b840e2fe92ba5778136457477",
+      "inspected": true
+    },
+    {
+      "file": "e7d1-bar-set-line-before-save.png",
+      "sha256": "c7b9a1cfa0389e1c5529ca91ca0f43394be2377588205a5d66c2fc741bd7d0bd",
+      "inspected": true
+    },
+    {
+      "file": "e7d2-free-item-dialog.png",
+      "sha256": "a1b3844c18ac895528fa13aaf456d30ca1b2b44f3731a264e620994c8cf072a3",
+      "inspected": true
+    },
+    {
+      "file": "e7d2-free-item-in-kitchen.png",
+      "sha256": "e8910dd5f1176da44c0470844de9d9c2620161f3aa9e670889cb98e969bf0c25",
+      "inspected": true
+    },
+    {
+      "file": "e7c-beo-after-removing-billed-drink.png",
+      "sha256": "6c17c489ba099afdf0362ded4f081036d4821b1dff2360b2d0c7e72255dd3d5a",
+      "inspected": true
+    },
+    {
+      "file": "e7e-desk-party-totals.png",
+      "sha256": "98dde403af361aa69ba7985807cf15e4521824e885b52608e57f3ddccb203fe3",
+      "inspected": true
+    },
+    {
+      "file": "e7e-phone-party-totals.png",
+      "sha256": "387e9363b519cb0e6908047e7c3b4d13b1a22f4755d23cbccd4d80a6d1abbf7c",
+      "inspected": true
+    },
+    {
+      "file": "f7-desk-end-of-day-open-day.png",
+      "sha256": "72053dcdf2b98326e200de13d89d43e45afcd9c0fb325523db9adafdee81bc90",
+      "inspected": true
+    },
+    {
+      "file": "f7-desk-eod-unmatched-payments.png",
+      "sha256": "a501986e37086c15c94fda3dd73b61cb48cb4d3341ccb17b53d3ea6a43637ef4",
+      "inspected": true
+    }
+  ],
+  "rawLog": [
+    {
+      "stage": "party_created",
+      "at": "2026-11-18T12:23:17.384Z",
+      "eventId": "48073b00-3abb-4778-9fb7-6d642a982527",
+      "title": "ZZ TEST 990 party 20261118",
+      "eventDate": "2026-11-18",
+      "startTime": "20:00",
+      "appBranchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+      "via": "OTO App route POST /api/admin/events (session entered through the launcher tile)",
+      "packageSnapshot": {
+        "status": 201,
+        "templateId": "0a8137c3-2775-491d-ac4d-567e7332b3ad",
+        "name": "After School Birthday Package, Central (10 kids)",
+        "setMenuTemplateId": "87e49b75-754f-4e5a-9336-995d5307b135",
+        "items": 9
+      }
+    },
+    {
+      "stage": "step1_before_settlement",
+      "at": "2026-11-18T12:24:42.953Z",
+      "status": "PASSED",
+      "saveAnswer": {
+        "status": "plan_only",
+        "message": "Items remain in the plan until the main party is settled."
+      },
+      "confirmDialogShown": true,
+      "line": {
+        "id": "menu_1795004644049_kj6g",
+        "name": "ZZ TEST 990 pre-settle dish",
+        "quantity": 1,
+        "unitBaht": 10.01,
+        "billingSync": "plan_only"
+      },
+      "tillQuote": {
+        "state": "quote",
+        "totalSatang": 1091001,
+        "balanceSatang": 1091001,
+        "dishLine": {
+          "role": "add_on",
+          "label": "ZZ TEST 990 pre-settle dish",
+          "quantity": 1,
+          "unitSatang": 1001,
+          "totalSatang": 1001
+        }
+      },
+      "additionalBills": 0,
+      "evidence": [
+        "s1-beo-billing-quote.png"
+      ]
+    },
+    {
+      "stage": "step2_main_settled",
+      "at": "2026-11-18T12:26:58.040Z",
+      "status": "PASSED",
+      "saleId": "01a1ee9e-63de-7ea8-bc38-4f407b99258e",
+      "receiptNumber": "T1-000089",
+      "grossSatang": 1091001,
+      "lines": [
+        {
+          "label": "After School Birthday Package, Central (10 kids)",
+          "quantity": 1,
+          "grossSatang": 1090000
+        },
+        {
+          "label": "Table reservation",
+          "quantity": 1,
+          "grossSatang": 0
+        },
+        {
+          "label": "Entrance for 10 children",
+          "quantity": 1,
+          "grossSatang": 0
+        },
+        {
+          "label": "Entrance for 10 adults",
+          "quantity": 1,
+          "grossSatang": 0
+        },
+        {
+          "label": "Birthday Food Set for Kids",
+          "quantity": 1,
+          "grossSatang": 0
+        },
+        {
+          "label": "Ice Cream Cake",
+          "quantity": 1,
+          "grossSatang": 0
+        },
+        {
+          "label": "Unlimited complimentary drinking water",
+          "quantity": 1,
+          "grossSatang": 0
+        },
+        {
+          "label": "Children (in the package)",
+          "quantity": 10,
+          "grossSatang": 0
+        },
+        {
+          "label": "Adults (in the package)",
+          "quantity": 2,
+          "grossSatang": 0
+        },
+        {
+          "label": "ZZ TEST 990 pre-settle dish",
+          "quantity": 1,
+          "grossSatang": 1001
+        }
+      ],
+      "payments": [
+        {
+          "id": "01a1ee9f-757c-7ce4-b13c-75be830c490f",
+          "method": "cash",
+          "status": "approved",
+          "amountSatang": 1091001
+        }
+      ],
+      "fingerprint": "5dc94ca2e1da22d9eb4dcae42824cf06246e2b013bb42c3c8bdbfa3c9854339c",
+      "fingerprintCovers": "sha256 of canonical JSON of GET /sales/:id fields sale, lines, attempts, discounts, taxBreakdown, refunds, refundStatus, refundableSatang (print jobs and bands excluded)",
+      "method": "cash (staging, fake money) at virtual station Reception Till 1",
+      "evidence": [
+        "s2-settle-preview.png",
+        "s2-main-paid-screen.png"
+      ]
+    },
+    {
+      "stage": "step3_after_settlement_kitchen_addition",
+      "at": "2026-11-18T12:28:26.527Z",
+      "status": "PASSED",
+      "added": {
+        "lineId": "menu_1795004837106_nmyg",
+        "name": "ZZ TEST 990 after-settle dish A",
+        "quantity": 1,
+        "unitBaht": 25.03,
+        "area": "kids kitchen"
+      },
+      "saveAnswer": {
+        "status": "synced",
+        "message": "New approved items are linked to the party's additional bill; the original paid receipt is unchanged."
+      },
+      "bill": {
+        "id": "48073b00-3abb-7104-ba0d-af2c559be98d",
+        "totalSatang": 2503,
+        "outstandingSatang": 2503,
+        "state": "open",
+        "mainSettlementId": "01a1ee9e-63dd-7f5d-9ce2-2ab10c25e336",
+        "charges": [
+          {
+            "id": "48073b00-3abb-781d-b2e5-f7170fdd2a3d",
+            "items": [
+              {
+                "name": "ZZ TEST 990 after-settle dish A",
+                "qty": 1,
+                "lineTotalSatang": 2503
+              }
+            ],
+            "totalSatang": 2503
+          }
+        ]
+      },
+      "partyReadStatus": 200,
+      "firstReceipt": {
+        "receiptNumber": "T1-000089",
+        "grossSatang": 1091001,
+        "fingerprint": "5dc94ca2e1da22d9eb4dcae42824cf06246e2b013bb42c3c8bdbfa3c9854339c",
+        "unchanged": true
+      },
+      "evidence": [
+        "s3-beo-new-kitchen-line-before-save.png",
+        "s3-beo-additional-bill-1-open.png",
+        "s3-till-party-additional-bill-1.png"
+      ],
+      "notes": [
+        "BEO Billing header badge reads 'Paid' and its Outstanding tile reads 0 while Additional bill 1 is open with 25.03 outstanding (shown in the panel below)."
+      ]
+    },
+    {
+      "stage": "step4_desk_collect_bill1",
+      "at": "2026-11-18T12:29:50.936Z",
+      "status": "PASSED_WITH_FINDING",
+      "path": "Events > party > Take balance 25.03 > Additional bill selector (Additional bill 1 preselected, older tab disabled) > PromptPay > Take 25.03 by PromptPay > Show payment QR > Payment recorded",
+      "viewport": "1600x1000 desk till, customer display hidden",
+      "station": "Reception Till 1 (Virtual box 1)",
+      "attempt": {
+        "id": "01a1eea1-f19b-7af1-a675-4c8efed00813",
+        "method": "qr",
+        "provider": "simulator",
+        "status": "approved",
+        "amountSatang": 2503,
+        "saleId": null,
+        "approvedAfterSeconds": 3.2,
+        "how": "virtual box simulated terminal approved it on its own; no gateway or bank"
+      },
+      "routes": [
+        {
+          "m": "POST",
+          "path": "/api/parties/<event>/payments/tender",
+          "status": 200
+        },
+        {
+          "m": "POST",
+          "path": "/api/parties/<event>/payments",
+          "status": 200
+        }
+      ],
+      "bill": {
+        "id": "48073b00-3abb-7104-ba0d-af2c559be98d",
+        "state": "paid",
+        "totalSatang": 2503,
+        "paidSatang": 2503,
+        "outstandingSatang": 0,
+        "payments": [
+          {
+            "id": "01a1eea1-ef50-75ff-a416-a1a34bbb8429",
+            "amountSatang": 2503,
+            "method": "promptpay"
+          }
+        ]
+      },
+      "receiptIssued": false,
+      "receiptNote": "The till showed Payment recorded with no receipt number; the payment attempt has saleId null (party payments are recorded with no sale and no receipt by design, services/parties.ts payParty comment Q3).",
+      "firstReceipt": {
+        "receiptNumber": "T1-000089",
+        "grossSatang": 1091001,
+        "fingerprint": "5dc94ca2e1da22d9eb4dcae42824cf06246e2b013bb42c3c8bdbfa3c9854339c",
+        "unchanged": true
+      },
+      "evidence": [
+        "s4-desk-balance-selector.png",
+        "s4-desk-payment-recorded.png",
+        "s4-desk-party-bill1-paid.png"
+      ]
+    },
+    {
+      "stage": "step5_bar_addition_and_phone_collect_bill2",
+      "at": "2026-11-18T12:35:28.914Z",
+      "status": "PASSED_WITH_FINDINGS",
+      "added": {
+        "lineId": "bar_1795005008967_e7sr",
+        "name": "ZZ TEST 990 after-settle drink B",
+        "quantity": 1,
+        "unitBaht": 7.05,
+        "area": "bar"
+      },
+      "saveAnswer": {
+        "status": "synced"
+      },
+      "bill": {
+        "id": "48073b00-3abb-7542-a771-eff72f08f1da",
+        "state": "paid",
+        "totalSatang": 705,
+        "paidSatang": 705,
+        "outstandingSatang": 0,
+        "payments": [
+          {
+            "id": "01a1eea5-ddb8-741c-a8e5-081bd5dac563",
+            "amountSatang": 705,
+            "method": "promptpay"
+          }
+        ]
+      },
+      "path": "phone till 390x844 (phone layout), Reception Till 1: Events > party > Take payment 7.05 > Bill to collect (Additional bill 48073b00 preselected) > PromptPay > Show bill > Customer is ready > Customer reviewed - continue > Show payment QR > Payment recorded",
+      "attempt": {
+        "id": "01a1eea5-e00c-7148-ae0d-72156c8bf3d6",
+        "method": "qr",
+        "provider": "simulator",
+        "status": "approved",
+        "amountSatang": 705,
+        "saleId": null
+      },
+      "receiptIssued": false,
+      "negativeCheck": {
+        "what": "phone Bill to collect = Older unassigned tab while bill 2 open, cash 7.05, Payment received",
+        "answer": "409 ADDITIONAL_BILL_REQUIRED, toast Payment not recorded, nothing taken",
+        "customerScreenShowed": "Outstanding due now 7.049999999999997 (floating point) on the customer bill for the older-tab path"
+      },
+      "firstReceipt": {
+        "receiptNumber": "T1-000089",
+        "grossSatang": 1091001,
+        "fingerprint": "5dc94ca2e1da22d9eb4dcae42824cf06246e2b013bb42c3c8bdbfa3c9854339c",
+        "unchanged": true
+      },
+      "evidence": [
+        "s5-beo-new-bar-line-before-save.png",
+        "s5-beo-two-additional-bills.png",
+        "s5-phone-events-list.png",
+        "s5-phone-party-detail-top.png",
+        "s5-phone-take-payment-selector.png",
+        "s5-phone-older-tab-refused.png",
+        "f1-phone-older-tab-customer-bill-float.png",
+        "s5-phone-customer-bill-bill2.png",
+        "s5-phone-payment-recorded.png",
+        "s5-phone-party-bill2-paid.png"
+      ]
+    },
+    {
+      "stage": "edge_7a_unchanged_save",
+      "at": "2026-11-18T12:36:52.664Z",
+      "status": "PASSED",
+      "saves": [
+        {
+          "status": "synced",
+          "message": "New approved items are linked to the party's additional bill; the original paid receipt is unchanged."
+        },
+        {
+          "status": "synced",
+          "message": "New approved items are linked to the party's additional bill; the original paid receipt is unchanged."
+        }
+      ],
+      "billsBefore": 2,
+      "billsAfter": 2,
+      "chargesBefore": 2,
+      "chargesAfter": 2,
+      "billsFingerprintBefore": "8ac0cd9f6b8cd5354566ef2a49d8859e905cdd4d81bd4c72a5e7f4074b048af8",
+      "billsFingerprintAfter": "8ac0cd9f6b8cd5354566ef2a49d8859e905cdd4d81bd4c72a5e7f4074b048af8",
+      "firstReceiptUnchanged": true,
+      "evidence": [
+        "e7a-beo-after-two-unchanged-saves.png"
+      ]
+    },
+    {
+      "stage": "edge_7b1_kitchen_quantity_raise_after_reopen",
+      "at": "2026-11-18T12:38:41.242Z",
+      "status": "FINDING",
+      "did": "Reopened the BEO, raised the already billed kitchen extra ZZ TEST 990 after-settle dish A from 1 to 2, Save (confirm accepted)",
+      "saveAnswer": {
+        "status": "synced",
+        "message": "New approved items are linked to the party's additional bill; the original paid receipt is unchanged."
+      },
+      "billsBefore": 2,
+      "billsAfter": 2,
+      "newBill": null,
+      "storedLine": {
+        "quantity": 2,
+        "chargeApproved": "absent",
+        "billingSync": "absent"
+      },
+      "beoEditorSays": "Extras charged at the till: 60.07 (10.01 + 2 x 25.03)",
+      "tillCharged": "main receipt 10.01 for the pre-settle dish + Additional bill 1 25.03 = 35.04 for kitchen extras; the second dish A (25.03) is on the kitchen plan (x2) but on no bill",
+      "cause": "apps/oto-app/client/src/components/beo/beo-event-editor.tsx mapMenu (kitchen lines on load) does not carry chargeApproved or billingSync (the bar mapping does), so the first Save after the BEO is reopened stores kitchen extras without chargeApproved and shared/beoBillingSource.ts approvedBeoBillingSources no longer counts them",
+      "firstReceiptUnchanged": true,
+      "evidence": [
+        "e7b1-kitchen-dishA-qty2-before-save.png",
+        "e7b1-beo-billing-no-new-bill.png",
+        "e7b1-till-kitchen-x2-no-new-bill.png"
+      ]
+    },
+    {
+      "stage": "edge_7b2_bar_quantity_raise",
+      "at": "2026-11-18T12:38:54.896Z",
+      "status": "RECORDED",
+      "did": "Raised the already billed bar extra ZZ TEST 990 after-settle drink B from 1 to 2 (same editor session), Save",
+      "result": "a new separate Additional bill 3 for the difference only: 1 x 7.05 = 705 satang, open",
+      "bill3": "48073b00-3abb-7175-8a3d-36dd40167967",
+      "evidence": [
+        "e7b2-bar-drinkB-qty2-before-save.png"
+      ]
+    },
+    {
+      "stage": "edge_7b3_bar_quantity_lower",
+      "at": "2026-11-18T12:39:18.108Z",
+      "status": "RECORDED",
+      "did": "Lowered drink B from 2 (both billed) to 1, Save; then restored 2, Save",
+      "lowerAnswer": {
+        "status": "pending",
+        "message": "This BEO line was already billed. Reducing it needs a separate bill adjustment; the original receipt stays unchanged. The plan is saved; additional billing needs resolution. Save again to retry without duplicating a charge."
+      },
+      "lowerEffect": "plan saved at quantity 1 with the line marked pending and a red notice in the BEO Billing section; bills unchanged (3 bills, no credit, no adjustment)",
+      "restoreAnswer": {
+        "status": "synced",
+        "message": "New approved items are linked to the party's additional bill; the original paid receipt is unchanged."
+      },
+      "billsUnchangedByRestore": true,
+      "storedLineAfterRestore": {
+        "quantity": 2,
+        "billingSync": "synced"
+      },
+      "firstReceiptUnchanged": true,
+      "evidence": [
+        "e7b3-bar-decrease-toast.png"
+      ]
+    },
+    {
+      "stage": "bill3_paid_desk_cash",
+      "at": "2026-11-18T12:40:03.513Z",
+      "status": "PASSED",
+      "bill": {
+        "id": "48073b00-3abb-7175-8a3d-36dd40167967",
+        "state": "paid",
+        "totalSatang": 705,
+        "paidSatang": 705,
+        "payments": [
+          {
+            "id": "01a1eeab-bfa5-77f7-b0f4-ada5ff8d39aa",
+            "amountSatang": 705,
+            "method": "cash"
+          }
+        ]
+      },
+      "routes": [
+        {
+          "m": "POST",
+          "path": "/api/parties/<event>/payments",
+          "status": 200,
+          "paymentId": "01a1eeab-bfa5-77f7-b0f4-ada5ff8d39aa",
+          "error": null
+        }
+      ],
+      "receiptIssued": false,
+      "firstReceiptUnchanged": true,
+      "evidence": [
+        "e7b-desk-bill3-cash-selector.png",
+        "e7b-desk-bill3-cash-recorded.png"
+      ]
+    },
+    {
+      "stage": "edge_7d1_set_menu_item_after_settlement",
+      "at": "2026-11-18T12:40:28.903Z",
+      "status": "PASSED",
+      "did": "Bar plan + SET line ZZ TEST 990 bar set item x1 (no price box on a SET line), Save",
+      "saveAnswer": {
+        "status": "synced",
+        "message": "New approved items are linked to the party's additional bill; the original paid receipt is unchanged."
+      },
+      "billsBefore": 3,
+      "billsAfter": 3,
+      "unchanged": true,
+      "storedLine": {
+        "source": "set_menu",
+        "chargeApproved": true,
+        "price": 0,
+        "billingSync": null
+      },
+      "firstReceiptUnchanged": true,
+      "evidence": [
+        "e7d1-bar-set-line-before-save.png"
+      ]
+    },
+    {
+      "stage": "edge_7d2_free_included_item_after_settlement",
+      "at": "2026-11-18T12:41:04.792Z",
+      "status": "PASSED",
+      "did": "Kitchen + NEW ITEM (not in the menu) dialog, ZZ TEST 990 free dish, Free / included ticked, Create (this made a BEO-only till item PARTY-19061329), then Save",
+      "createAnswer": {
+        "status": "synced",
+        "message": "New approved items are linked to the party's additional bill; the original paid receipt is unchanged.",
+        "lineIncluded": true,
+        "price": 0
+      },
+      "saveAnswer": {
+        "status": "synced",
+        "message": "New approved items are linked to the party's additional bill; the original paid receipt is unchanged."
+      },
+      "billsBefore": 3,
+      "billsAfter": 3,
+      "unchanged": true,
+      "storedLine": {
+        "included": true,
+        "price": 0,
+        "chargeApproved": true,
+        "productCode": "PARTY-19061329"
+      },
+      "beoOnlyProduct": {
+        "productId": "01a0bbdc-8c41-7b11-9616-07cc19061329",
+        "productCode": "PARTY-19061329"
+      },
+      "firstReceiptUnchanged": true,
+      "evidence": [
+        "e7d2-free-item-dialog.png",
+        "e7d2-free-item-in-kitchen.png"
+      ]
+    },
+    {
+      "stage": "edge_7c_remove_billed_item",
+      "at": "2026-11-18T12:41:31.014Z",
+      "status": "RECORDED",
+      "did": "Deleted the already billed and paid bar extra ZZ TEST 990 after-settle drink B (quantity 2, billed on Additional bills 2 and 3) from the bar plan, Save",
+      "saveAnswer": {
+        "status": "plan_only",
+        "message": "No newly approved priced additions."
+      },
+      "billsBefore": 3,
+      "billsAfter": 3,
+      "billsUnchanged": true,
+      "barPlanAfter": [
+        "ZZ TEST 990 bar set item"
+      ],
+      "behaviour": "nothing happens to money: no refusal, no credit, no adjustment bill; Additional bills 2 and 3 stay paid and keep the drink lines; the plan no longer lists the drink",
+      "firstReceiptUnchanged": true,
+      "evidence": [
+        "e7c-beo-after-removing-billed-drink.png"
+      ]
+    },
+    {
+      "stage": "edge_7e_totals_agree",
+      "at": "2026-11-18T12:43:01.699Z",
+      "status": "PASSED_MONEY_WITH_DISPLAY_NOTES",
+      "money": {
+        "mainReceipt": "T1-000089",
+        "mainGrossSatang": 1091001,
+        "mainPaidSatang": 1091001,
+        "additionalBills": [
+          {
+            "n": 1,
+            "totalSatang": 2503,
+            "paidSatang": 2503,
+            "method": "promptpay (simulator)"
+          },
+          {
+            "n": 2,
+            "totalSatang": 705,
+            "paidSatang": 705,
+            "method": "promptpay (simulator)"
+          },
+          {
+            "n": 3,
+            "totalSatang": 705,
+            "paidSatang": 705,
+            "method": "cash"
+          }
+        ],
+        "additionalTotalSatang": 3913,
+        "grandTotalSatang": 1094914,
+        "outstandingSatang": 0
+      },
+      "tillApi": "GET /events (party.bill) chargesSatang 3913 paidSatang 3913 outstanding 0; settlement T1-000089 gross 1091001 paid 1091001",
+      "beoApi": "GET /api/events/:id/beo/till-billing sale gross 1091001 paid 1091001 outstanding 0; additional bills 3913 / 3913 / 0",
+      "agreeOnMoney": true,
+      "displayNotes": [
+        "Desk till Party bill shows Receipt T1-000089 then Total 39.13 (the additional bills only); BEO From the till shows Total 10,910.01 (the main receipt only) with the bills listed under it; no screen shows the party grand total 10,949.14",
+        "Phone till Party bill shows the package at 0 and Total 39.13 and does not name receipt T1-000089",
+        "BEO Billing header badge reads Paid and its Outstanding tile 0 even while an additional bill is open (seen at steps 3 and 5)",
+        "BEO kitchen plan says Extras charged at the till: 60.07 (10.01 + 2 x 25.03) while the till charged 35.04 for kitchen extras (see 7b1)",
+        "BEO legacy Financial Summary card in the Billing section reads NOT PAID with Total 0 on this settled and paid party (seen in e7b3 picture)"
+      ],
+      "evidence": [
+        "e7e-desk-party-totals.png",
+        "e7e-phone-party-totals.png",
+        "e7c-beo-after-removing-billed-drink.png",
+        "e7b1-kitchen-dishA-qty2-before-save.png"
+      ]
+    },
+    {
+      "stage": "edge_7f_end_of_day_read_only",
+      "at": "2026-11-18T12:44:18.617Z",
+      "status": "PASSED_WITH_NOTES",
+      "date": "2026-11-18",
+      "branch": "Oto Play Park, Central Floresta",
+      "dayStatus": "open",
+      "closeDayPressed": false,
+      "totalExpectedSatang": 1094914,
+      "lines": [
+        {
+          "channel": "cash",
+          "expectedSatang": 1091001
+        },
+        {
+          "channel": "promptpay",
+          "expectedSatang": 0
+        },
+        {
+          "channel": "card:SIMTID01",
+          "expectedSatang": 0
+        },
+        {
+          "channel": "card:65703235",
+          "expectedSatang": 0
+        },
+        {
+          "channel": "card:54355548",
+          "expectedSatang": 0
+        },
+        {
+          "channel": "ewallet",
+          "expectedSatang": 0
+        },
+        {
+          "channel": "bank_transfer",
+          "expectedSatang": 0
+        },
+        {
+          "channel": "party_prepay",
+          "expectedSatang": 3913
+        },
+        {
+          "channel": "credit",
+          "expectedSatang": 0
+        }
+      ],
+      "reading": [
+        "Cash line 10,910.01 = the main receipt T1-000089 cash payment",
+        "Party prepayments line 39.13 = all three additional-bill payments (25.03 QR, 7.05 QR, 7.05 cash), as the code rule says: party payments go on party_prepay whatever the tender (services/end-of-day.ts, S2-20 E4 / H10)",
+        "PromptPay / QR line 0 and the simulated terminal line Card EDC 3 (54355548) 0, while the settlement panel lists the two QR payments (25.03 and 7.05) on terminal 54355548 as payments without a matched settlement",
+        "Expected cash 10,910.01 does not include the 7.05 cash taken for Additional bill 3; that cash is inside Party prepayments",
+        "Expected total 10,949.14 = 10,910.01 + 39.13: no other money was taken at this branch on staging today"
+      ],
+      "evidence": [
+        "f7-desk-end-of-day-open-day.png",
+        "f7-desk-eod-unmatched-payments.png"
+      ]
+    },
+    {
+      "stage": "cleanup",
+      "at": "2026-11-18T12:45:10.939Z",
+      "productRetired": {
+        "id": "01a0bbdc-8c41-7b11-9616-07cc19061329",
+        "code": "PARTY-19061329",
+        "deleteStatus": 200,
+        "stillInActiveMenu": false
+      },
+      "eventArchived": {
+        "status": 200,
+        "archived": true
+      },
+      "tillEventsListAfterArchive": {
+        "stillListed": false
+      },
+      "tillBillingAfterArchive": {
+        "status": "ok",
+        "state": "sale",
+        "noQuote": null
+      },
+      "firstReceiptAfterCleanup": {
+        "receiptNumber": "T1-000089",
+        "grossSatang": 1091001,
+        "fingerprint": "5dc94ca2e1da22d9eb4dcae42824cf06246e2b013bb42c3c8bdbfa3c9854339c",
+        "unchanged": true
+      },
+      "eodAfterArchive": {
+        "totalExpectedSatang": 1094914,
+        "partyPrepay": 3913,
+        "cash": 1091001
+      }
+    },
+    {
+      "stage": "own_sessions_signed_out",
+      "at": "2026-11-18T12:45:28.943Z",
+      "desk": {
+        "signOutStatus": 200,
+        "oldCookieMeStatus": 401
+      },
+      "phone": {
+        "signOutStatus": 200,
+        "oldCookieMeStatus": 401
+      },
+      "launcher-admin": {
+        "signOutStatus": 200,
+        "oldCookieMeStatus": 401
+      },
+      "app": {
+        "logoutStatus": 200,
+        "oldCookieUserStatus": 401
+      }
+    }
+  ]
+}
