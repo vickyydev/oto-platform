@@ -19,6 +19,7 @@ import { SimulatorBody, SimulatorDialog } from '@/components/Simulator';
 import { TemplateSettings } from '@/components/TemplateSettings';
 import { inboxAccessSignature, inboxFiltersWithinAccess, inboxItemWithinAccess, inboxMeWithinAccess, inboxSourcesWithinAccess, mergeSources, sourcesOfRows, type SourceOption } from '@/lib/inboxes';
 import { useInboxAccess } from '@/hooks/useInboxAccess';
+import { withReadyToBook } from '@/lib/list-state';
 import { EMPTY_FILTERS, listQuery, type Filters } from '@/lib/query';
 import { fastInboxRefresh, startFastInboxRefresh } from '@/lib/refresh';
 import { nextTheme, themeTitle, useTheme, type Theme } from '@/lib/theme';
@@ -314,8 +315,11 @@ export function Workspace({ me }: { me: InboxMe }) {
         const next = await inboxApi.conversations(listQuery(tab, filters, { limit: opts.limit ?? PAGE }));
         if (seq !== listSeq.current || accessAtRequest !== inboxAccessSignature(accessRef.current)) return;
         setPage(next);
-        setRows(next.conversations);
-        learnSources(sourcesOfRows(next.conversations));
+        // SCRUM-996: the "Ready to book" group rides on the first page, also
+        // for a paid chat further down the list than this page reaches.
+        const listed = withReadyToBook(next.readyToBook, next.conversations);
+        setRows(listed);
+        learnSources(sourcesOfRows(listed));
         setListError(null);
         // The landing's one decision, off the first page's counts (U8).
         if (landing.current) {

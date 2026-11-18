@@ -30,6 +30,7 @@ import {
   type ConversationRow,
   type InboxMe,
   type Message,
+  type Prebooking,
 } from '@/api/inbox';
 import { openBlankTab, openConversationBeo } from '@/api/otoApp';
 import { Avatar, CategoryBadge, ChannelDot, ChipView, StatusBadge } from '@/components/atoms';
@@ -52,6 +53,7 @@ import { SlotPicker } from '@/components/SlotPicker';
 import { PendingControl } from '@/components/writes';
 import { EDIT_NAME_LABEL } from '@/lib/contacts';
 import { mayStartOver, sourceLabel } from '@/lib/inboxes';
+import { depositPaidLine, isReadyToBook } from '@/lib/list-state';
 import { openQuestionsByMessage } from '@/lib/open-question';
 import { PARTY_REMOVED_LABEL, bookDateDraft, eventChipLabel, eventLinkOf, parseBeoFromConversation } from '@/lib/beo';
 import {
@@ -369,6 +371,32 @@ export function ChatPanel({
   // open; the thread says so and the date can be booked again.
   const { event, removed: removedEvent } = eventLinkOf<ConversationEvent>(detail?.event);
   const mayBook = live && mayBookDate(me);
+  // SCRUM-996: the paid deposit beside Book Date, for a person who may book —
+  // the amount and the verified time come from the deposit read Book Date
+  // itself uses, which the api refuses to anyone else. The row's label says
+  // when to ask; nothing is asked for a chat without a paid deposit.
+  const paidSignal = isReadyToBook(conv.depositSignal) ? conv.depositSignal ?? null : null;
+  const booked = event !== null;
+  const [paidDeposit, setPaidDeposit] = useState<{ convId: string; draft: NonNullable<Prebooking['draft']> } | null>(null);
+  useEffect(() => {
+    if (!mayBook || !paidSignal || conv.category !== 'birthdays' || booked) {
+      setPaidDeposit(null);
+      return;
+    }
+    let gone = false;
+    inboxApi.prebooking(conv.id).then(
+      (answer) => {
+        if (!gone) setPaidDeposit(answer.draft?.state === 'paid' ? { convId: conv.id, draft: answer.draft } : null);
+      },
+      () => {
+        if (!gone) setPaidDeposit(null);
+      },
+    );
+    return () => {
+      gone = true;
+    };
+  }, [conv.id, conv.category, mayBook, paidSignal, booked]);
+  const paidLine = paidSignal && paidDeposit?.convId === conv.id ? depositPaidLine(paidDeposit.draft, paidSignal) : null;
   const askBookDate = (thenBeo: boolean) => {
     setBookError(null);
     setBooking({ conversationId: conv.id, eventId: newId(), thenBeo });
@@ -918,6 +946,18 @@ export function ChatPanel({
                     <FileText className="h-3.5 w-3.5" />
                     Create BEO
                   </PendingControl>
+                )}
+                {!event && mayBook && paidLine && (
+                  <button
+                    type="button"
+                    onClick={() => askBookDate(false)}
+                    disabled={busy !== null}
+                    title="Open Book Date"
+                    data-testid="deposit-paid-line"
+                    className="inline-flex items-center rounded-lg bg-teal-50 px-2.5 py-1 text-left text-[12px] font-medium text-teal-900 ring-1 ring-teal-300 hover:bg-teal-100 disabled:opacity-60 dark:bg-teal-950 dark:text-teal-100 dark:ring-teal-700 dark:hover:bg-teal-900"
+                  >
+                    {paidLine}
+                  </button>
                 )}
                 {event && (
                   <button

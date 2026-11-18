@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { INBOX_NEXT_ACTIONS } from '@oto/shared';
 import type { ConversationRow, InboxMe } from '@/api/inbox';
 import { ConversationList } from '@/components/ConversationList';
-import { conversationRowColour, NEXT_ACTION_COLOURS, NEXT_ACTION_LABELS } from '@/lib/list-state';
+import { conversationRowColour, DEPOSIT_SIGNAL_COLOURS, NEXT_ACTION_COLOURS, NEXT_ACTION_LABELS } from '@/lib/list-state';
 import { EMPTY_FILTERS } from '@/lib/query';
 
 const me: InboxMe = { accountId: 'viewer', name: 'ZZ TEST viewer', roles: ['owner'], tabs: ['team', 'handled'],
@@ -83,7 +83,8 @@ function contrast(a: string, b: string): number {
 }
 describe('SCRUM-992: actual OTO palette contrast in both themes', () => {
   it.each([false, true])('every next-action and unread text meets4.5:1 (dark=%s)', dark => {
-    for (const classes of Object.values(NEXT_ACTION_COLOURS)) {
+    // SCRUM-996: the deposit's labels stand beside these, held to the same contrast.
+    for (const classes of [...Object.values(NEXT_ACTION_COLOURS), ...Object.values(DEPOSIT_SIGNAL_COLOURS)]) {
       expect(contrast(themeColour(classes, 'text', dark), themeColour(classes, 'bg', dark))).toBeGreaterThanOrEqual(4.5);
     }
     const badgeClasses = render().match(/aria-label="2 unread messages for you" class="([^"]+)"/)![1]!;

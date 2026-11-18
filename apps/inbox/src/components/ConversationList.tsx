@@ -7,7 +7,15 @@ import { PendingControl } from '@/components/writes';
 import { NEW_CONTACT_LABEL } from '@/lib/contacts';
 import { sourceLabel, type SourceOption } from '@/lib/inboxes';
 import { activeFilterCount, filterPills, type Filters } from '@/lib/query';
-import { conversationRowColour, NEXT_ACTION_COLOURS, NEXT_ACTION_LABELS } from '@/lib/list-state';
+import {
+  conversationRowColour,
+  DEPOSIT_SIGNAL_COLOURS,
+  DEPOSIT_SIGNAL_LABELS,
+  isReadyToBook,
+  NEXT_ACTION_COLOURS,
+  NEXT_ACTION_LABELS,
+  READY_TO_BOOK_LABEL,
+} from '@/lib/list-state';
 import { TAB_ICON } from '@/components/Rail';
 import {
   ARCHIVE_RANGES,
@@ -88,6 +96,13 @@ export function ConversationList({
   const filterCount = activeFilterCount(filters);
   const hasStrip = strip !== undefined && strip !== null;
   const pills = filterPills(filters, me.teams, sources);
+  // SCRUM-996, owner choice 1: the paid chats pinned above the list in their
+  // own last-activity order; everything else keeps the list's order below.
+  const readyToBook = rows.filter((c) => isReadyToBook(c.depositSignal));
+  const rest = readyToBook.length > 0 ? rows.filter((c) => !isReadyToBook(c.depositSignal)) : rows;
+  const rowOf = (c: ConversationRow) => (
+    <Row key={c.id} c={c} me={me} selected={c.id === selectedId} now={now} onSelect={onSelect} onAskHandle={onAskHandle} />
+  );
   return (
     <>
       <div className="border-b border-slate-200 dark:border-slate-800 px-4 py-3">
@@ -274,17 +289,16 @@ export function ConversationList({
           <EmptyState icon={Inbox} title="No conversations" subtitle="Try a different tab or filter." />
         ) : (
           <>
-            {rows.map((c) => (
-              <Row
-                key={c.id}
-                c={c}
-                me={me}
-                selected={c.id === selectedId}
-                now={now}
-                onSelect={onSelect}
-                onAskHandle={onAskHandle}
-              />
-            ))}
+            {readyToBook.length > 0 && (
+              <section aria-label={READY_TO_BOOK_LABEL} data-testid="ready-to-book" className="border-b-2 border-teal-300 dark:border-teal-700">
+                <div className="flex items-center justify-between bg-teal-50 px-4 py-1.5 text-[11px] font-semibold text-teal-900 dark:bg-teal-950 dark:text-teal-100">
+                  <span>{READY_TO_BOOK_LABEL}</span>
+                  <span className="rounded-full bg-teal-700 px-1.5 text-[10px] text-white dark:bg-teal-300 dark:text-teal-950">{readyToBook.length}</span>
+                </div>
+                {readyToBook.map(rowOf)}
+              </section>
+            )}
+            {rest.map(rowOf)}
             {page?.nextCursor && (
               <div className="flex justify-center p-3">
                 <button
@@ -332,12 +346,14 @@ function Row({
   const handleHere = canHandle(c, me);
   const teamName = me.teams.find((t) => t.id === c.teamId)?.name ?? null;
   const nextAction = c.nextAction ?? (c.status === 'handled' ? 'handled' : c.unanswered ? 'staff_reply_needed' : 'waiting_customer');
+  // SCRUM-996: the deposit's words, for whoever sees the row; said aloud with the rest of it.
+  const deposit = c.depositSignal ?? null;
   return (
     <div
       role="button"
       tabIndex={0}
       aria-current={selected ? 'true' : undefined}
-      aria-label={`${name}${c.unread > 0 ? `, ${c.unread} unread for you` : ''}, ${NEXT_ACTION_LABELS[nextAction]}`}
+      aria-label={`${name}${c.unread > 0 ? `, ${c.unread} unread for you` : ''}, ${NEXT_ACTION_LABELS[nextAction]}${deposit ? `, ${DEPOSIT_SIGNAL_LABELS[deposit]}` : ''}`}
       onClick={() => onSelect(c.id)}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -381,6 +397,11 @@ function Row({
             {nextAction !== 'handled' && (
               <span data-next-action={nextAction} className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ${NEXT_ACTION_COLOURS[nextAction]}`}>
                 {NEXT_ACTION_LABELS[nextAction]}
+              </span>
+            )}
+            {deposit && (
+              <span data-deposit-signal={deposit} className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ${DEPOSIT_SIGNAL_COLOURS[deposit]}`}>
+                {DEPOSIT_SIGNAL_LABELS[deposit]}
               </span>
             )}
             {c.unread > 0 && (
