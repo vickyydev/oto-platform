@@ -57,13 +57,14 @@ export const branch = core.table(
      */
     openingHours: jsonb('opening_hours'),
     /**
-     * When one trading day becomes the next, in the branch's timezone. Not
-     * midnight: the park closes at 20:00 but a late party, the cash count and
-     * the end-of-day print land after it, and every one of those belongs to the
-     * day that is finishing rather than to the one starting. 05:00 puts the
-     * boundary in the only hour nothing happens in.
+     * When one trading day becomes the next, in the branch's timezone.
+     * Midnight: the park's day runs midnight to midnight, a normal 24-hour
+     * day (the owner's ruling of 19 November 2026, SCRUM-1010, which retired
+     * the earlier 05:00 start). Kept as a setting rather than assumed, so a
+     * park in another country can name its own hour; every reader passes it
+     * to `businessDate()` and no code assumes an hour.
      */
-    businessDayStart: time('business_day_start').notNull().default('05:00'),
+    businessDayStart: time('business_day_start').notNull().default('00:00'),
     /**
      * SCRUM-805 — the station whose kitchen and bar printers receive the
      * party slips, printed at each party's slip time (birthday plan §5, the

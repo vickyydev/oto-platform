@@ -36,10 +36,12 @@ export function heldSaleKindOf(paidSatang: number): HeldSaleKind {
 /**
  * THE MIDNIGHT RULE — a held sale still in the list when the calendar day it
  * was parked on ends in the branch's timezone (00:00, the park's day end for
- * this list) has outlived its day. This is deliberately the calendar
- * midnight, NOT the 05:00 business-day boundary every report counts on: the
- * park closes in the evening, and a sale nobody collected by midnight is not
- * coming back. Nothing else in the platform moves to this boundary.
+ * this list) has outlived its day. This is deliberately the CALENDAR midnight
+ * (the owner's ruling of 4 November), not the park's business-day setting:
+ * the park closes in the evening, and a sale nobody collected by midnight is
+ * not coming back. Since SCRUM-1010 the business day also turns at midnight,
+ * so the two moments are the same; this rule stays on the calendar even if a
+ * park ever sets another day start.
  */
 export function holdOutlivedItsDay(heldAt: Date, now: Date, timeZone: string): boolean {
   return isoDateInTz(now, timeZone) > isoDateInTz(heldAt, timeZone);

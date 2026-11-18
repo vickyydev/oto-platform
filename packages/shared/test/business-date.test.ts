@@ -33,14 +33,31 @@ describe('business date — the fixture cases', () => {
 });
 
 describe('business date — the boundary, minute by minute', () => {
-  it('every minute before 05:00 Bangkok belongs to the previous business date, and 05:00 starts the new one', () => {
+  it('SCRUM-1010: with the default (midnight) start every minute of the Bangkok day is its own calendar date', () => {
     // 2026-09-23 00:00 Bangkok is 2026-09-22 17:00 UTC.
     const midnightBangkokUtc = Date.UTC(2026, 8, 22, 17, 0, 0);
+    expect(DEFAULT_BUSINESS_DAY_START_MINUTES).toBe(0);
     for (let minute = 0; minute < 24 * 60; minute += 1) {
       const instant = new Date(midnightBangkokUtc + minute * 60_000);
       expect(wallClockMinutesInTz(instant, BANGKOK), `minute ${minute}`).toBe(minute);
-      const expected = minute < DEFAULT_BUSINESS_DAY_START_MINUTES ? '2026-09-22' : '2026-09-23';
-      expect(businessDate(instant, BANGKOK), `minute ${minute}`).toBe(expected);
+      expect(businessDate(instant, BANGKOK), `minute ${minute}`).toBe('2026-09-23');
+      expect(businessDate(instant, BANGKOK, parseDayStart('00:00')), `minute ${minute}`).toBe('2026-09-23');
+      expect(businessDate(instant, BANGKOK), `minute ${minute}`).toBe(branchToday(BANGKOK, instant));
+    }
+    // One minute either side of the turn: 23:59 is the day before, 00:00 the new day.
+    expect(businessDate(new Date(midnightBangkokUtc - 60_000), BANGKOK)).toBe('2026-09-22');
+    expect(businessDate(new Date(midnightBangkokUtc), BANGKOK)).toBe('2026-09-23');
+  });
+
+  it('a park that sets another start still gets it: with 05:00 every minute before 05:00 is the previous date', () => {
+    // The setting is kept per park (a park abroad may need another hour), so
+    // the rule is "the park's setting decides", not "midnight is hard-coded".
+    const midnightBangkokUtc = Date.UTC(2026, 8, 22, 17, 0, 0);
+    const fiveAm = parseDayStart('05:00');
+    for (let minute = 0; minute < 24 * 60; minute += 1) {
+      const instant = new Date(midnightBangkokUtc + minute * 60_000);
+      const expected = minute < fiveAm ? '2026-09-22' : '2026-09-23';
+      expect(businessDate(instant, BANGKOK, fiveAm), `minute ${minute}`).toBe(expected);
     }
   });
 
@@ -51,7 +68,8 @@ describe('business date — the boundary, minute by minute', () => {
     try {
       for (const hostZone of ['UTC', 'America/Los_Angeles', 'Pacific/Kiritimati', 'Asia/Bangkok']) {
         process.env.TZ = hostZone;
-        expect(businessDate(instant, BANGKOK), `host ${hostZone}`).toBe('2026-09-22');
+        expect(businessDate(instant, BANGKOK), `host ${hostZone}`).toBe('2026-09-23');
+        expect(businessDate(instant, BANGKOK, parseDayStart('05:00')), `host ${hostZone}`).toBe('2026-09-22');
         expect(branchToday(BANGKOK, instant), `host ${hostZone}`).toBe('2026-09-23');
       }
     } finally {
@@ -62,7 +80,7 @@ describe('business date — the boundary, minute by minute', () => {
 
   it('a branch in another timezone gets its own answer for the same instant', () => {
     const instant = new Date('2026-09-22T17:30:00Z');
-    expect(businessDate(instant, BANGKOK)).toBe('2026-09-22'); // 00:30 next day, before the start
+    expect(businessDate(instant, BANGKOK)).toBe('2026-09-23'); // 00:30 next day, after midnight
     expect(businessDate(instant, 'UTC')).toBe('2026-09-22'); // 17:30 same day
     expect(businessDate(instant, 'America/Los_Angeles')).toBe('2026-09-22'); // 10:30 same day
     expect(businessDate(instant, 'Pacific/Kiritimati')).toBe('2026-09-23'); // 07:30 next day
@@ -111,10 +129,16 @@ describe('business date — DST, pinned rather than ruled on', () => {
     // The business date still advances exactly once across the transition.
   });
 
-  it('the plan default of 05:00 clears both transitions, which is why this is latent', () => {
+  it('the default midnight start clears both US transitions, which is why this is latent', () => {
     const dayStart = DEFAULT_BUSINESS_DAY_START_MINUTES;
+    // 01:45 EDT and 01:15 EST on the fall-back Sunday: both after midnight,
+    // so both are that Sunday, in real-time order.
     for (const instant of ['2026-11-01T05:45:00Z', '2026-11-01T06:15:00Z']) {
-      expect(businessDate(new Date(instant), NY, dayStart)).toBe('2026-10-31');
+      expect(businessDate(new Date(instant), NY, dayStart)).toBe('2026-11-01');
+    }
+    // The retired 05:00 start cleared them too, from the other side.
+    for (const instant of ['2026-11-01T05:45:00Z', '2026-11-01T06:15:00Z']) {
+      expect(businessDate(new Date(instant), NY, parseDayStart('05:00'))).toBe('2026-10-31');
     }
     // And Asia/Bangkok has no DST at all, so HKT Central cannot reach any of it.
     expect(businessDate(new Date('2026-11-01T05:45:00Z'), BANGKOK, dayStart)).toBe('2026-11-01');
@@ -217,7 +241,7 @@ describe('business date — inputs', () => {
     expect(parseDayStart('05:00:00')).toBe(300);
     expect(parseDayStart('00:00')).toBe(0);
     expect(parseDayStart('23:59')).toBe(1439);
-    expect(DEFAULT_BUSINESS_DAY_START_MINUTES).toBe(300);
+    expect(DEFAULT_BUSINESS_DAY_START_MINUTES).toBe(0); // SCRUM-1010: midnight
   });
 
   it('refuses a day start it cannot read rather than guessing one', () => {
