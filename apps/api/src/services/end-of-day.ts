@@ -144,7 +144,8 @@ export interface ExpectedInputs {
    * S2-20 E4 — party payments taken this day for the parties held this day,
    * whatever the tender (`getEndOfDay` 2298-2304) — the party's day as it is
    * when the day is read. Their attempts are on no other line. Absent is ฿0,
-   * the line's value before parties were on the platform.
+   * the line's value before parties were on the platform. SCRUM-1002: an
+   * additional bill's payments are not among them; they are in `attempts`.
    */
   partyPrepaySatang?: number;
 }
@@ -356,6 +357,8 @@ async function expectedInputsOf(db: Exec, operatorId: string, branchId: string, 
       amountSatang: paymentAttempt.amountSatang,
       /** S2-20 E4 — set when the attempt is a party payment: the OTO App's party it paid. */
       partyEventId: partyPayment.otoappEventId,
+      /** SCRUM-1002 — set when that party payment paid an additional bill. */
+      additionalBillId: partyPayment.additionalBillId,
     })
     .from(paymentAttempt)
     .leftJoin(partyPayment, eq(partyPayment.paymentAttemptId, paymentAttempt.id))
@@ -381,9 +384,22 @@ async function expectedInputsOf(db: Exec, operatorId: string, branchId: string, 
    * was paid takes its money's line with it. (A till's edit the OTO App has
    * not taken does not move it; a party the app no longer has at this branch
    * is held on no day.) A closed day keeps the lines it was closed with.
+   *
+   * SCRUM-1002 RULING 2 (the owner, 18 November 2026: "By how it was paid:
+   * cash with cash, QR with QR"): money taken for an ADDITIONAL bill — the
+   * extras invited families pay for after the party's main bill is settled,
+   * each with its own receipt — is not party money on that line. It is on the
+   * line of its tender on the day it was taken, as a sale's is: cash in the
+   * cash line and so in Expected cash and the drawer count, a QR with the QR
+   * payments, a card on its terminal's line. Each attempt is on one line only,
+   * so the day's total is unchanged. The party's own payments stay where they
+   * were.
    */
-  const attempts = taken.filter((a) => a.partyEventId === null && countsAsTillTakings(a));
-  const paidParties = taken.flatMap((a) => (a.partyEventId ? [{ eventId: a.partyEventId, amountSatang: a.amountSatang }] : []));
+  const ownTender = (a: (typeof taken)[number]) => a.partyEventId === null || a.additionalBillId !== null;
+  const attempts = taken.filter((a) => ownTender(a) && countsAsTillTakings(a));
+  const paidParties = taken.flatMap((a) =>
+    a.partyEventId && !ownTender(a) ? [{ eventId: a.partyEventId, amountSatang: a.amountSatang }] : [],
+  );
   const partyDay = await partyDaysOf(db, branchId, paidParties.map((p) => p.eventId));
   const partyPrepaySatang = paidParties
     .filter((p) => partyDay.get(p.eventId) === date)

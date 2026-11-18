@@ -394,8 +394,9 @@ export interface PartyPaymentResult {
  * card terminal's batch reconciliation and the drawer, but in no sale, no
  * receipt and no VAT line (Q3). SCRUM-1002 ruling 1: a payment that pays an
  * ADDITIONAL bill off gives that bill its own receipt — its payments become
- * the tenders of a sale of its lines (`party-additional-bill-receipt.ts`).
- * Its trading day is the branch's business day
+ * the tenders of a sale of its lines (`party-additional-bill-receipt.ts`) —
+ * and ruling 2 counts an additional bill's money on its tender's line on End
+ * of Day, never on the party line. Its trading day is the branch's business day
  * when it is taken. WHICH PARTY'S DAY it counts on is End of Day's to work
  * out when the day is read (`end-of-day.ts`, the prototype's
  * `getPartiesForDate`): the party's date as the OTO App holds it then, so a

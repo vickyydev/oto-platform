@@ -402,6 +402,8 @@ export const PartyPaymentViewSchema = z.object({
    * day's `party_prepay` line when the party is held that day — the party's
    * day as it stands when End of Day is read, so a party moved after it was
    * paid takes its money's line with it (the prototype's `getPartiesForDate`).
+   * SCRUM-1002 ruling 2: a payment of an ADDITIONAL bill is not party money on
+   * that line — it counts on its own tender's line (cash, QR, card) that day.
    */
   businessDate: IsoDate,
   attemptId: z.string(),

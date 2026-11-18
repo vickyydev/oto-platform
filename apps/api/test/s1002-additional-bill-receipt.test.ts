@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { auditLog, box, branch, paymentAttempt, printJob, receiptSeries, sale, saleLine, station } from '@oto/db';
 import { deriveId, newId, type PartyAdditionalBill, type PartyDetailAnswer, type PartySettleAnswer, type PartyWriteAnswer } from '@oto/shared';
 import { syncBeoAdditionalCharges } from '../src/services/beo-additional-charges';
-import { branchClockFor, currentBusinessDate } from '../src/services/end-of-day';
+import { branchClockFor, currentBusinessDate, getEndOfDay } from '../src/services/end-of-day';
 import { partyFactsOf } from '../src/services/analytics-parties';
 import { simulateGatewayEvent } from '../src/services/payments/gateway';
 import {
@@ -133,6 +133,8 @@ const payCash = (eventId: string, billId: string, paymentId: string, amountSatan
     tender: { method: 'cash', ...(tenderedSatang === undefined ? {} : { tenderedSatang }) },
   });
 
+const line = (eod: Awaited<ReturnType<typeof getEndOfDay>>, channel: string) => eod.lines.find((l) => l.channel === channel)?.expectedSatang ?? 0;
+const endOfDayNow = () => getEndOfDay(ctx.db, operatorId, central, today);
 
 beforeAll(async () => {
   ctx = await createTestContext({
@@ -312,5 +314,39 @@ describe('SCRUM-1002 adversarial review', () => {
     });
     const after = (await billsOf(party.id))[0]!;
     expect(refunded.statusCode === 409 || after.state === 'open').toBe(true);
+  });
+});
+
+describe('SCRUM-1002 ruling 2: End of Day shows an additional bill by how it was paid', () => {
+  it('cash with the cash (in Expected cash), QR with the QR payments, neither on the party line; the summary counts it once', async () => {
+    const party = await settledParty('ZZ TEST 1002 end of day');
+    await beoExtra(party.id, 'ZZ-TEST-1002-eod-food', 'ZZ TEST 1002 nuggets', 'food', 1, 12345);
+    const eodBefore = await endOfDayNow();
+    const [cashBill] = await billsOf(party.id);
+    expect((await payCash(party.id, cashBill!.id, newId(), 12345, 12345)).status).toBe(200);
+
+    const eodCash = await endOfDayNow();
+    expect(line(eodCash, 'cash') - line(eodBefore, 'cash')).toBe(12345);
+    expect(line(eodCash, 'party_prepay')).toBe(line(eodBefore, 'party_prepay'));
+    expect(eodCash.totalExpectedSatang - eodBefore.totalExpectedSatang).toBe(12345);
+
+    // A second bill, paid by QR through the gateway.
+    await beoExtra(party.id, 'ZZ-TEST-1002-eod-drink', 'ZZ TEST 1002 soda', 'bar', 1, 4321);
+    const qrBill = (await billsOf(party.id))[1]!;
+    const [before] = await ctx.db.select({ routing: station.paymentRouting }).from(station).where(eq(station.id, till));
+    await ctx.db.update(station).set({ paymentRouting: { qr: 'gateway' } }).where(eq(station.id, till));
+    try {
+      const body = { branchId: central, stationId: till, additionalBillId: qrBill.id, paymentId: newId(), amountSatang: 4321, expectedOutstandingSatang: 4321, tender: { method: 'promptpay', kind: 'qr' }, requestQrPayload: true, qrDirection: 'show', actionId: newId() };
+      const start = await call<{ attempt: { id: string } }>('POST', `/parties/${party.id}/payments/tender`, body);
+      expect(start.status).toBe(200);
+      await simulateGatewayEvent(ctx.db, ctx.app.env, ctx.app.log, { attemptId: start.body.attempt.id, event: 'paid', operatorId });
+    } finally {
+      await ctx.db.update(station).set({ paymentRouting: before!.routing }).where(eq(station.id, till));
+    }
+    const eodQr = await endOfDayNow();
+    expect(line(eodQr, 'promptpay') - line(eodCash, 'promptpay')).toBe(4321);
+    expect(line(eodQr, 'cash')).toBe(line(eodCash, 'cash'));
+    expect(line(eodQr, 'party_prepay')).toBe(line(eodBefore, 'party_prepay'));
+    expect(eodQr.totalExpectedSatang - eodBefore.totalExpectedSatang).toBe(12345 + 4321);
   });
 });

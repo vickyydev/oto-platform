@@ -313,7 +313,8 @@ export async function partyRoutes(app: App): Promise<void> {
           'refused when nothing is. Recorded through the tender machine as a real tender at the counter (a cash ' +
           'one opens the drawer) with no sale behind it — not a sale of goods — and counted by End of Day on the ' +
           "party prepayments line on the day it is taken, for that day's party, never on the cash, card or QR line. " +
-          'A payment of an additional bill (`additionalBillId`) that pays the bill off gives the bill its own receipt — a sale ' +
+          'A payment of an additional bill (`additionalBillId`) is the exception (SCRUM-1002): End of Day counts it on ' +
+          'the line of its own tender, and the payment that pays the bill off gives the bill its own receipt — a sale ' +
           "of that bill's lines in this station's receipt series, printed here — shown on the bill as `receipt`; " +
           '`receiptNotes` says what its printing noted, or why none was issued (the payment stands either way). ' +
           'A balance that moved since the till showed it (`expectedOutstandingSatang`) is refused 409 ' +
