@@ -7168,6 +7168,12 @@
                   "id": {
                     "type": "string",
                     "format": "uuid"
+                  },
+                  "source": {
+                    "type": "string",
+                    "enum": [
+                      "customer_display"
+                    ]
                   }
                 },
                 "required": [
@@ -7268,8 +7274,19 @@
         }
       },
       "delete": {
-        "description": "Remove a child from the member's saved list — archived, audited, and idempotent",
+        "description": "Remove a child from the member's saved list — archived, audited, and idempotent. `source=customer_display` when the family pressed \"Remove from saved\" on the paired display (SCRUM-1014).",
         "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "customer_display"
+              ]
+            },
+            "in": "query",
+            "name": "source",
+            "required": false
+          },
           {
             "schema": {
               "type": "string",

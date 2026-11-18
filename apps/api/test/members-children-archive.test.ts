@@ -1,8 +1,8 @@
 import { and, eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { auditLog, child, member, operator, visit, visitChild } from '@oto/db';
+import { auditLog, child, member, operator, station, visit, visitChild } from '@oto/db';
 import { newId } from '@oto/shared';
-import { ADMIN, RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
+import { ADMIN, RECEPTION, createTestContext, signInAs, takeStation, teardownAll, type TestContext } from './helpers';
 
 /**
  * SCRUM-337 — "Remove from saved" removes a child from the member's list.
@@ -148,6 +148,76 @@ describe('SCRUM-337 — archiving a saved child', () => {
   it('is a 404 for a child id that was never real', async () => {
     const res = await archive(newId());
     expect(res.statusCode).toBe(404);
+  });
+});
+
+/**
+ * SCRUM-1014 — the family adds and removes saved children on the customer
+ * display. The till carries each change out under its own session, as staff
+ * do, and says where it came from: the audit row names the customer display
+ * and the till session's own station — never one the request names — and a
+ * session at no till cannot claim one at all.
+ */
+describe('SCRUM-1014 — a change the family made on the customer display', () => {
+  let tillCookie: string;
+  let tillId: string;
+
+  beforeAll(async () => {
+    tillCookie = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
+    tillId = (await ctx.db.select().from(station)).find((s) => s.name === 'Reception Till 1')!.id;
+    await takeStation(ctx.app, tillCookie, tillId);
+  });
+
+  const auditOf = async (action: string, entityId: string) =>
+    ctx.db.select().from(auditLog).where(and(eq(auditLog.action, action), eq(auditLog.entityId, entityId)));
+
+  it('"Remove from saved" archives the child and names the display of this till', async () => {
+    const { childId } = await familyOf('0655551003', 'Display Remove', 'Nong Display');
+    const res = await ctx.app.inject({ method: 'DELETE', url: `/members/children/${childId}?source=customer_display`,
+      headers: { cookie: tillCookie } });
+    expect(res.statusCode, res.body).toBe(200);
+    const [row] = await ctx.db.select().from(child).where(eq(child.id, childId));
+    expect(row!.archivedAt).toBeTruthy();
+    const rows = await auditOf('child.archive', childId);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.origin).toBe('customer_display');
+    expect(rows[0]!.actorAccountId).toBeTruthy();
+    expect(rows[0]!.after).toMatchObject({ source: 'customer_display', stationId: tillId });
+    expect((rows[0]!.after as { archivedAt: string | null }).archivedAt).toBeTruthy();
+  });
+
+  it('a new child the family typed is created and names the display of this till', async () => {
+    const { memberId } = await familyOf('0655551004', 'Display Add', 'Nong First');
+    const res = await ctx.app.inject({ method: 'POST', url: `/members/${memberId}/children`, headers: { cookie: tillCookie },
+      payload: { name: 'Nong Added', ageYears: 4, source: 'customer_display' } });
+    expect(res.statusCode, res.body).toBe(200);
+    const id = res.json().child.id as string;
+    const rows = await auditOf('child.create', id);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.origin).toBe('customer_display');
+    expect(rows[0]!.after).toMatchObject({ name: 'Nong Added', ageYears: 4, source: 'customer_display', stationId: tillId });
+  });
+
+  it('staff changes stay as they were: no source, no origin', async () => {
+    const { childId } = await familyOf('0655551005', 'Staff Remove', 'Nong Staff');
+    expect((await ctx.app.inject({ method: 'DELETE', url: `/members/children/${childId}`, headers: { cookie: tillCookie } })).statusCode).toBe(200);
+    const [row] = await auditOf('child.archive', childId);
+    expect(row!.origin).toBeNull();
+    expect(row!.after).not.toHaveProperty('source');
+  });
+
+  it('a session at no till cannot claim the display, and nothing is written', async () => {
+    const { memberId, childId } = await familyOf('0655551006', 'No Till', 'Nong Kept');
+    const removed = await ctx.app.inject({ method: 'DELETE', url: `/members/children/${childId}?source=customer_display`,
+      headers: { cookie } });
+    expect(removed.statusCode).toBe(400);
+    expect((await ctx.db.select().from(child).where(eq(child.id, childId)))[0]!.archivedAt).toBeNull();
+    const added = await ctx.app.inject({ method: 'POST', url: `/members/${memberId}/children`, headers: { cookie },
+      payload: { name: 'Nong Refused', source: 'customer_display' } });
+    expect(added.statusCode).toBe(400);
+    const other = await ctx.app.inject({ method: 'DELETE', url: `/members/children/${childId}?source=somewhere`,
+      headers: { cookie: tillCookie } });
+    expect(other.statusCode).toBe(400);
   });
 });
 

@@ -24,6 +24,7 @@ import { AppError, errors } from '../lib/errors';
 import { audit } from '../services/audit';
 import { ClientIdSchema, REPLAY_HEADER, claimClientId } from '../services/client-id';
 import {
+  CUSTOMER_DISPLAY_SOURCE,
   REGISTER_PAGE_DEFAULT,
   REGISTER_PAGE_MAX,
   archiveChild,
@@ -91,6 +92,20 @@ const ChildBody = z.object({
   foodRestrictions: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
 });
+
+/**
+ * SCRUM-1014 — "this came from the family, on the customer display": the
+ * till sends it when it carries out a change the family made on the paired
+ * display of its station, and the audit row names the source and the station.
+ * The station is the till session's own, never one the request names.
+ */
+const ChildSourceSchema = z.literal(CUSTOMER_DISPLAY_SOURCE).optional();
+
+function displayStationOf(source: string | undefined, stationId: string | null): { stationId: string } | null {
+  if (!source) return null;
+  if (!stationId) throw errors.badRequest('A change from the customer display is made at a till: this session is not standing at one');
+  return { stationId };
+}
 
 const MemberAnswer = z.object({ member: z.object({
   id: z.string().uuid(), phone: z.string(), nickname: z.string(), name: z.string().nullable(),
@@ -800,11 +815,14 @@ export async function memberRoutes(app: App): Promise<void> {
         body: ChildBody.extend({
           /** Client-minted UUIDv7 (OD-12): re-sending it returns the child that exists. */
           id: ClientIdSchema.optional(),
+          /** SCRUM-1014 — the family added this child on the station's customer display. */
+          source: ChildSourceSchema,
         }),
       },
     },
     async (req, reply) => {
       const auth = req.requireAuth();
+      const fromDisplay = displayStationOf(req.body.source, auth.stationId);
       // The guardian proves the tenancy: a child is only reachable through a
       // live member of the caller's own operator — an archived guardian takes
       // no new children (SCRUM-273).
@@ -820,7 +838,7 @@ export async function memberRoutes(app: App): Promise<void> {
         )
         .limit(1);
       if (!m) throw errors.notFound('Member not found');
-      const { id: sentId, ...details } = req.body;
+      const { id: sentId, source: _source, ...details } = req.body;
       // A child id carries no operator; the guardian does. So "this record" is
       // a child of THIS member — which the lookup above already placed inside
       // the caller's operator — and a child of anybody else is somebody else's.
@@ -867,8 +885,9 @@ export async function memberRoutes(app: App): Promise<void> {
           action: 'child.create',
           entityType: 'child',
           entityId: id,
-          after: details,
+          after: fromDisplay ? { ...details, source: CUSTOMER_DISPLAY_SOURCE, stationId: fromDisplay.stationId } : details,
           requestId: req.id,
+          ...(fromDisplay ? { origin: CUSTOMER_DISPLAY_SOURCE } : {}),
         });
       });
       const [c] = await app.db.select().from(child).where(eq(child.id, id)).limit(1);
@@ -983,12 +1002,15 @@ export async function memberRoutes(app: App): Promise<void> {
       config: { permission: 'pos:child:update', stationTrading: true },
       schema: {
         description:
-          "Remove a child from the member's saved list — archived, audited, and idempotent",
+          "Remove a child from the member's saved list — archived, audited, and idempotent. " +
+          '`source=customer_display` when the family pressed "Remove from saved" on the paired display (SCRUM-1014).',
         params: z.object({ childId: z.string().uuid() }),
+        querystring: z.object({ source: ChildSourceSchema }),
       },
     },
     async (req) => {
       const auth = req.requireAuth();
+      const fromDisplay = displayStationOf(req.query.source, auth.stationId);
       const [before] = await app.db
         .select()
         .from(child)
@@ -1012,6 +1034,7 @@ export async function memberRoutes(app: App): Promise<void> {
             operatorId: auth.operatorId,
             branchId: auth.branchId,
             requestId: req.id,
+            ...(fromDisplay ? { fromDisplay } : {}),
           },
           req.params.childId,
         ),

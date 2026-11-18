@@ -38,7 +38,16 @@ export interface ChildArchiveActor {
   operatorId: string;
   branchId: string | null;
   requestId?: string;
+  /**
+   * SCRUM-1014 — the family pressed "Remove from saved" on the customer
+   * display of this station: the till carries it out under its own session,
+   * and the audit row says where it came from.
+   */
+  fromDisplay?: { stationId: string };
 }
+
+/** SCRUM-1014 — how an audit row names a change the family made on a station's customer display. */
+export const CUSTOMER_DISPLAY_SOURCE = 'customer_display';
 
 export interface ChildArchiveResult {
   ok: true;
@@ -109,8 +118,11 @@ export async function archiveChild(
     entityType: 'child',
     entityId: childId,
     before,
-    after,
+    after: actor.fromDisplay
+      ? { ...after, source: CUSTOMER_DISPLAY_SOURCE, stationId: actor.fromDisplay.stationId }
+      : after,
     requestId: actor.requestId,
+    ...(actor.fromDisplay ? { origin: CUSTOMER_DISPLAY_SOURCE } : {}),
   });
   return { ok: true, alreadyArchived: false };
 }

@@ -3674,6 +3674,8 @@ export interface paths {
                         notes?: string | null;
                         /** Format: uuid */
                         id?: string;
+                        /** @enum {string} */
+                        source?: "customer_display";
                     };
                 };
             };
@@ -3703,10 +3705,12 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** @description Remove a child from the member's saved list — archived, audited, and idempotent */
+        /** @description Remove a child from the member's saved list — archived, audited, and idempotent. `source=customer_display` when the family pressed "Remove from saved" on the paired display (SCRUM-1014). */
         delete: {
             parameters: {
-                query?: never;
+                query?: {
+                    source?: "customer_display";
+                };
                 header?: never;
                 path: {
                     childId: string;
