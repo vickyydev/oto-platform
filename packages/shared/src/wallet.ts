@@ -341,7 +341,7 @@ export function normaliseWalletKeyValue(kind: WalletKeyKind, value: string): str
 
 /**
  * The instant a business day ENDS at a branch: the next day's start on the
- * branch's wall clock (`branch.business_day_start`, 05:00 by default). A
+ * branch's wall clock (`branch.business_day_start`, midnight since SCRUM-1010). A
  * `same_day` grant stops being spendable then. Pure; Asia/Bangkok has no DST,
  * and a zone that has it is resolved by correcting the guess once against the
  * wall clock the instant actually shows.

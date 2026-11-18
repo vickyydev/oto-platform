@@ -580,9 +580,9 @@ export interface CartTotalsOptions {
  * rediscovered: RULINGS 3 AND 4 DECIDE WHICH DATE IS READ, BUT WHAT ACTUALLY
  * PROTECTS THE MONEY IS THE FREEZE. A price and a code's validity are resolved
  * ONCE, when the line goes into the cart, and stored on the sale — never
- * recalculated. A cart open across 05:00 must not silently re-price itself, and
- * a code scanned at 04:55 must not stop being valid at 04:56 while the guest is
- * still at the till.
+ * recalculated. A cart open across the day's turn (midnight, SCRUM-1010) must
+ * not silently re-price itself, and a code scanned at 23:55 must not stop being
+ * valid at 00:00 while the guest is still at the till.
  *
  * This function is the first half of that: it REFUSES a cart whose stored line
  * totals were not priced under the context it is being totalled with, so the
