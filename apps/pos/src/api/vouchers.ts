@@ -119,6 +119,22 @@ export interface IssuableDefinition {
   validUntil: string | null;
   usageLimit: number | null;
   redeemed: number;
+  /**
+   * SCRUM-482 — a credit voucher the person at this till may issue only with a
+   * manager approving on the spot: the picker names it "(needs a manager)" and
+   * Issue opens "Needs a manager". Optional so an older api still reads.
+   */
+  needsManager?: boolean;
+}
+
+/**
+ * SCRUM-482 — a manager's own phone and password, typed on this till to
+ * approve a credit voucher. Sent with that one issue and held nowhere else:
+ * the dialog clears its fields once the platform has answered.
+ */
+export interface CreditApproval {
+  phone: string;
+  password: string;
 }
 
 export interface IssuedVoucher {
@@ -145,9 +161,25 @@ export interface VoucherCredit {
 
 export const vouchersApi = {
   issuable: () => api.get<{ definitions: IssuableDefinition[] }>('/vouchers/issuable'),
-  /** One key per press: a retried press is the same voucher, never a second. */
-  issue: (definitionId: string, memberId: string | null, idempotencyKey: string = idemKey()) =>
-    api.post<IssuedVoucher>('/vouchers/issue', { definitionId, ...(memberId ? { memberId } : {}) }, { idempotencyKey }),
+  /**
+   * One key per press: a retried press is the same voucher, never a second.
+   * `approval` only for a credit voucher a manager approves on the spot.
+   */
+  issue: (
+    definitionId: string,
+    memberId: string | null,
+    idempotencyKey: string = idemKey(),
+    approval?: CreditApproval,
+  ) =>
+    api.post<IssuedVoucher>(
+      '/vouchers/issue',
+      {
+        definitionId,
+        ...(memberId ? { memberId } : {}),
+        ...(approval ? { approval: { phone: approval.phone, password: approval.password } } : {}),
+      },
+      { idempotencyKey },
+    ),
   credit: (voucherId: string) => api.get<VoucherCredit>(`/vouchers/${encodeURIComponent(voucherId)}/credit`),
   printCredit: (voucherId: string) =>
     api.post<{ walletId: string; print: VoucherPrintAnswer }>(

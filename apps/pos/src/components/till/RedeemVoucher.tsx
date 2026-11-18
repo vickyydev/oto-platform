@@ -5,9 +5,12 @@ import { CheckCircle2, Gift, Printer, ShieldX, Ticket, Trash2, Wallet, X } from 
 import {
   vouchersApi,
   type IssuableDefinition,
+  type IssuedVoucher,
   type VoucherCredit,
   type VoucherView,
 } from '@/api/vouchers';
+import { useManagerApproval } from '@/lib/managerApproval';
+import { ManagerApprovalDialog } from '@/components/till/ManagerApprovalDialog';
 import type { QuotedVoucher } from '@/api/sales';
 import {
   RECENT_SALE_MS,
@@ -623,9 +626,16 @@ export function definitionUsedUp(d: Pick<IssuableDefinition, 'usageLimit' | 'red
   return d.usageLimit !== null && d.redeemed >= d.usageLimit;
 }
 
-/** A promotion as the Issue picker names it: its name and, when it has a limit, how much of it is used. */
-function issueOptionLabel(d: Pick<IssuableDefinition, 'nameEn' | 'usageLimit' | 'redeemed'>): string {
-  return d.usageLimit !== null ? `${d.nameEn} (${d.redeemed}/${d.usageLimit} used)` : d.nameEn;
+/**
+ * A promotion as the Issue picker names it: its name and, when it has a limit,
+ * how much of it is used — and, SCRUM-482, "(needs a manager)" on a credit
+ * voucher this till's person may issue only with a manager approving.
+ */
+export function issueOptionLabel(
+  d: Pick<IssuableDefinition, 'nameEn' | 'usageLimit' | 'redeemed' | 'needsManager'>,
+): string {
+  const name = d.usageLimit !== null ? `${d.nameEn} (${d.redeemed}/${d.usageLimit} used)` : d.nameEn;
+  return d.needsManager ? `${name} (needs a manager)` : name;
 }
 
 /**
@@ -660,27 +670,59 @@ export function IssueVoucherEntry({ memberId, disabled }: { memberId?: string | 
     };
   }, [open, options]);
   const usedUpChosen = (options ?? []).some((d) => d.id === chosen && definitionUsedUp(d));
+  const chosenDef = (options ?? []).find((d) => d.id === chosen);
+  // SCRUM-482 — a credit voucher this person may issue only with a manager approving on the spot.
+  const approval = useManagerApproval();
+  const [approving, setApproving] = useState(false);
+  const issued = (res: IssuedVoucher) =>
+    setAnswer({
+      ok: true,
+      text: `Issued ${res.voucher.nameEn} · ${res.voucher.code}${res.print.note ? ` — ${res.print.note}` : ' — printing'}`,
+    });
+  const refused = (err: unknown) => {
+    setAnswer({ ok: false, text: err instanceof Error ? err.message : 'The voucher was not issued.' });
+    // Used up since the list was read: read it again, so the picker greys it.
+    if ((err as { code?: unknown } | null)?.code === 'VOUCHER_LIMIT_REACHED') {
+      setChosen('');
+      setOptions(null);
+    }
+  };
   const issue = () => {
     if (!chosen || busy || usedUpChosen) return;
-    setBusy(true);
     setAnswer(null);
+    if (chosenDef?.needsManager) {
+      approval.reset();
+      setApproving(true);
+      return;
+    }
+    setBusy(true);
     vouchersApi
       .issue(chosen, memberId ?? null)
-      .then((res) =>
-        setAnswer({
-          ok: true,
-          text: `Issued ${res.voucher.nameEn} · ${res.voucher.code}${res.print.note ? ` — ${res.print.note}` : ' — printing'}`,
-        }),
-      )
-      .catch((err: unknown) => {
-        setAnswer({ ok: false, text: err instanceof Error ? err.message : 'The voucher was not issued.' });
-        // Used up since the list was read: read it again, so the picker greys it.
-        if ((err as { code?: unknown } | null)?.code === 'VOUCHER_LIMIT_REACHED') {
-          setChosen('');
-          setOptions(null);
+      .then(issued)
+      .catch(refused)
+      .finally(() => setBusy(false));
+  };
+  const approveAndPrint = () => {
+    if (!chosen) return;
+    setBusy(true);
+    void approval
+      .submit((typed) => vouchersApi.issue(chosen, memberId ?? null, undefined, typed))
+      .then((outcome) => {
+        if (!outcome) return;
+        if (outcome.ok) {
+          setApproving(false);
+          issued(outcome.value);
+        } else if (!outcome.approvalRefused) {
+          // Not about the manager (used up, switched off, offline): said on the row, as any issue's refusal is.
+          setApproving(false);
+          refused(outcome.error);
         }
       })
       .finally(() => setBusy(false));
+  };
+  const backFromApproval = () => {
+    approval.reset();
+    setApproving(false);
   };
   if (!open) {
     return (
@@ -696,16 +738,30 @@ export function IssueVoucherEntry({ memberId, disabled }: { memberId?: string | 
     );
   }
   return (
-    <IssueVoucherRow
-      options={options}
-      chosen={chosen}
-      busy={busy}
-      {...(disabled !== undefined ? { disabled } : {})}
-      answer={answer}
-      onChoose={setChosen}
-      onIssue={issue}
-      onClose={() => setOpen(false)}
-    />
+    <>
+      <IssueVoucherRow
+        options={options}
+        chosen={chosen}
+        busy={busy}
+        {...(disabled !== undefined ? { disabled } : {})}
+        answer={answer}
+        onChoose={setChosen}
+        onIssue={issue}
+        onClose={() => setOpen(false)}
+      />
+      <ManagerApprovalDialog
+        open={approving}
+        voucherName={chosenDef?.nameEn ?? 'This voucher'}
+        phone={approval.phone}
+        password={approval.password}
+        busy={approval.busy}
+        error={approval.error}
+        onPhone={approval.setPhone}
+        onPassword={approval.setPassword}
+        onApprove={approveAndPrint}
+        onBack={backFromApproval}
+      />
+    </>
   );
 }
 
