@@ -1,0 +1,216 @@
+{
+  "unit": "SCRUM-1010",
+  "landed": "13a31b5de4d7bb20d5752fa5b3867d3db2b960f4",
+  "deploys": {
+    "oto-api-staging": {
+      "id": "dep-dbv2tgnbhbds73f2sgf0",
+      "live": "2026-11-18T23:13:03Z"
+    },
+    "oto-pos-staging": {
+      "id": "dep-dbv324rm8hqs738q1u6g",
+      "live": "2026-11-18T23:14:57Z"
+    },
+    "oto-console-staging": {
+      "id": "dep-dbv3259srm7s73b966p0",
+      "live": "2026-11-18T23:14:57Z"
+    },
+    "oto-pos-web-staging": {
+      "id": "dep-dbv3253m8hqs738q1v50",
+      "live": "2026-11-18T23:17:17Z"
+    }
+  },
+  "steps": {
+    "before": {
+      "at": "2026-11-18T20:01:28.648Z",
+      "note": "read before the deploy, 03:01 park time",
+      "parks": [
+        {
+          "code": "hkt-central",
+          "timezone": "Asia/Bangkok",
+          "businessDayStart": "05:00:00"
+        },
+        {
+          "code": "robinson-chalong",
+          "timezone": "Asia/Bangkok",
+          "businessDayStart": "05:00:00"
+        }
+      ],
+      "pricing": {
+        "date": "2026-11-18",
+        "mode": "weekday",
+        "reason": "Weekday pricing"
+      },
+      "virtualBox": {
+        "name": "Virtual box 1",
+        "status": "online",
+        "lastHeartbeatAt": "2026-11-18T20:00:46.825Z",
+        "configVersion": "9ea1bc292864deb5"
+      }
+    },
+    "console-before": {
+      "at": "2026-11-18T20:40:24.927Z",
+      "value": "05:00:00",
+      "file": "docs/qa/proof-2026-11-19/SCRUM-1010/01-console-business-day-start-before.png"
+    },
+    "till-before": {
+      "at": "2026-11-18T20:56:31.294Z",
+      "bangkokCalendarDate": "2026-11-19",
+      "file": "docs/qa/proof-2026-11-19/SCRUM-1010/02-till-pricing-chip-before.png",
+      "endOfDay": "docs/qa/proof-2026-11-19/SCRUM-1010/03-till-end-of-day-before.png"
+    },
+    "console-after": {
+      "at": "2026-11-18T23:17:41.700Z",
+      "value": "00:00:00",
+      "file": "docs/qa/proof-2026-11-19/SCRUM-1010/01-console-business-day-start-after.png"
+    },
+    "till-after": {
+      "at": "2026-11-18T23:18:13.211Z",
+      "bangkokCalendarDate": "2026-11-19",
+      "file": "docs/qa/proof-2026-11-19/SCRUM-1010/02-till-pricing-chip-after.png",
+      "endOfDay": "docs/qa/proof-2026-11-19/SCRUM-1010/03-till-end-of-day-after.png"
+    },
+    "sale": {
+      "at": "2026-11-18T23:18:15.150Z",
+      "bangkokCalendarDate": "2026-11-19",
+      "station": {
+        "id": "01a1998f-0cf3-70e3-890b-a7ff88c71bda",
+        "name": "ZZ TEST setup traps 20261102"
+      },
+      "product": {
+        "code": "CF-7",
+        "name": "Yogurt"
+      },
+      "pricing": {
+        "date": "2026-11-19",
+        "mode": "weekday",
+        "reason": "Weekday pricing"
+      },
+      "commitStatus": 200,
+      "finaliseStatus": 409,
+      "readStatus": 200,
+      "sale": {
+        "id": "01a1f0f4-2627-74d3-8b3b-337ce408046f",
+        "status": "tendering",
+        "businessDate": "2026-11-19",
+        "occurredAt": "2026-11-18T23:18:15.939Z",
+        "receiptNo": null,
+        "grossSatang": 23000,
+        "pricingMode": "weekday"
+      },
+      "session": {
+        "signOut": 200,
+        "meAfter": 401
+      }
+    },
+    "finish": {
+      "at": "2026-11-18T23:18:29.644Z",
+      "bangkokCalendarDate": "2026-11-19",
+      "finaliseStatus": 200,
+      "sale": {
+        "id": "01a1f0f4-2627-74d3-8b3b-337ce408046f",
+        "status": "finalised",
+        "businessDate": "2026-11-19",
+        "occurredAt": "2026-11-18T23:18:15.939Z",
+        "receiptNo": "Z703-000010",
+        "grossSatang": null,
+        "pricingMode": "weekday",
+        "businessDayStart": null
+      },
+      "endOfDay": {
+        "status": 200,
+        "businessDate": "2026-11-19",
+        "state": "open"
+      },
+      "session": {
+        "signOut": 200,
+        "meAfter": 401
+      }
+    },
+    "till-after-sale": {
+      "at": "2026-11-18T23:19:04.666Z",
+      "bangkokCalendarDate": "2026-11-19",
+      "file": "docs/qa/proof-2026-11-19/SCRUM-1010/02-till-pricing-chip-after-sale.png",
+      "endOfDay": "docs/qa/proof-2026-11-19/SCRUM-1010/03-till-end-of-day-after-sale.png"
+    },
+    "readsAtLive": {
+      "at": "2026-11-18T23:13:34.254Z",
+      "bangkokCalendarDate": "2026-11-19",
+      "branchesStatus": 200,
+      "parks": [
+        {
+          "code": "hkt-central",
+          "name": "Oto Play Park, Central Floresta",
+          "timezone": "Asia/Bangkok",
+          "businessDayStart": "00:00:00"
+        },
+        {
+          "code": "robinson-chalong",
+          "name": "Oto Play Park, Robinson Chalong",
+          "timezone": "Asia/Bangkok",
+          "businessDayStart": "00:00:00"
+        }
+      ],
+      "pricingStatus": 200,
+      "pricing": {
+        "date": "2026-11-19",
+        "mode": "weekday",
+        "reason": "Weekday pricing"
+      },
+      "endOfDay": {
+        "status": 200,
+        "businessDate": "2026-11-19",
+        "state": "open"
+      },
+      "virtualBox": {
+        "name": "Virtual box 1",
+        "status": "online",
+        "lastHeartbeatAt": "2026-11-18T23:12:56.632Z",
+        "configVersion": "bf49b5abd4e1c003"
+      },
+      "session": {
+        "signOut": 200,
+        "meAfter": 401
+      }
+    },
+    "readsAfterHeartbeat": {
+      "at": "2026-11-18T23:19:06.061Z",
+      "bangkokCalendarDate": "2026-11-19",
+      "branchesStatus": 200,
+      "parks": [
+        {
+          "code": "hkt-central",
+          "name": "Oto Play Park, Central Floresta",
+          "timezone": "Asia/Bangkok",
+          "businessDayStart": "00:00:00"
+        },
+        {
+          "code": "robinson-chalong",
+          "name": "Oto Play Park, Robinson Chalong",
+          "timezone": "Asia/Bangkok",
+          "businessDayStart": "00:00:00"
+        }
+      ],
+      "pricingStatus": 200,
+      "pricing": {
+        "date": "2026-11-19",
+        "mode": "weekday",
+        "reason": "Weekday pricing"
+      },
+      "endOfDay": {
+        "status": 200,
+        "businessDate": "2026-11-19",
+        "state": "open"
+      },
+      "virtualBox": {
+        "name": "Virtual box 1",
+        "status": "online",
+        "lastHeartbeatAt": "2026-11-18T23:19:04.834Z",
+        "configVersion": "bf49b5abd4e1c003"
+      },
+      "session": {
+        "signOut": 200,
+        "meAfter": 401
+      }
+    }
+  }
+}
