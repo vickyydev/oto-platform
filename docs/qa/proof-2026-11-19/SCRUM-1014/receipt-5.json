@@ -1,0 +1,190 @@
+{
+  "ticket": "SCRUM-1014",
+  "sha": "4c094e19227150c0b4081a0038dc949af2870dec",
+  "run": 5,
+  "startedAt": "2026-11-18T21:39:41.590Z",
+  "phase": "audit rows",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/members",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/members/:id/children",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/members/:id/children",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/:id/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/:id/revoke",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    }
+  ],
+  "created": [
+    {
+      "kind": "member",
+      "id": "01a1f099-f9d9-7167-9cd0-deeb214131c8"
+    },
+    {
+      "kind": "child",
+      "id": "01a1f099-fa2d-7bb5-b876-0e3ea11be9f8",
+      "name": "ZZ TEST Aya"
+    },
+    {
+      "kind": "child",
+      "id": "01a1f099-fa85-78ce-b55d-26e28d435ada",
+      "name": "ZZ TEST Ben"
+    },
+    {
+      "kind": "display",
+      "id": "01a1f09a-2012-7a0d-8f30-862d381242b8"
+    }
+  ],
+  "checks": {
+    "leaseFree": true,
+    "benPlace": 2,
+    "removed": {
+      "onTill": true,
+      "onRecord": "ZZ TEST Ben off the saved list"
+    },
+    "displayAges": {
+      "max": 12,
+      "offered": 13
+    },
+    "added": {
+      "onTill": true
+    },
+    "auditArchive": {
+      "action": "child.archive",
+      "actorName": "Som (Reception)",
+      "source": "customer_display",
+      "stationMatches": true,
+      "archivedAt": true,
+      "createdAt": "2026-11-18T21:40:03.452Z"
+    },
+    "auditForBen": [
+      {
+        "action": "child.archive",
+        "actorName": "Som (Reception)",
+        "createdAt": "2026-11-18T21:40:03.452Z"
+      },
+      {
+        "action": "child.create",
+        "actorName": "Khun Anan (Owner)",
+        "createdAt": "2026-11-18T21:39:45.414Z"
+      }
+    ]
+  },
+  "cleanup": [
+    {
+      "kind": "display",
+      "id": "01a1f09a-2012-7a0d-8f30-862d381242b8",
+      "revoked": true
+    },
+    {
+      "kind": "sales-checked",
+      "open": 0
+    },
+    {
+      "kind": "member",
+      "id": "01a1f099-f9d9-7167-9cd0-deeb214131c8",
+      "archived": true
+    },
+    {
+      "kind": "till-session",
+      "signedOut": true
+    },
+    {
+      "kind": "admin-session",
+      "signedOut": true
+    }
+  ],
+  "pictures": [
+    "01-display-review-saved-children-run5.png",
+    "02-till-review-before-run5.png",
+    "03-display-after-remove-place-empty-run5.png",
+    "04-till-shows-removal-run5.png",
+    "05-display-age-picker-stops-at-12-run5.png",
+    "06-display-new-child-named-run5.png",
+    "07-till-shows-new-child-run5.png"
+  ],
+  "deployments": {
+    "oto-api-staging": {
+      "id": "dep-dbv1hp3rjlhs73ajnb70",
+      "status": "live",
+      "sha": "4c094e19227150c0b4081a0038dc949af2870dec"
+    },
+    "oto-pos-staging": {
+      "id": "dep-dbv1hphsrm7s73b4oc5g",
+      "status": "live",
+      "sha": "4c094e19227150c0b4081a0038dc949af2870dec"
+    },
+    "oto-pos-web-staging": {
+      "id": "dep-dbv1hprm8hqs738loq50",
+      "status": "live",
+      "sha": "4c094e19227150c0b4081a0038dc949af2870dec"
+    }
+  },
+  "station": {
+    "id": "01a1998f-0cf3-70e3-890b-a7ff88c71bda",
+    "name": "ZZ TEST setup traps 20261102"
+  },
+  "passed": true,
+  "finishedAt": "2026-11-18T21:40:05.795Z"
+}

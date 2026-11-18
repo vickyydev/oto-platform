@@ -1,0 +1,146 @@
+{
+  "ticket": "SCRUM-1014",
+  "sha": "4c094e19227150c0b4081a0038dc949af2870dec",
+  "run": 4,
+  "startedAt": "2026-11-18T21:37:40.975Z",
+  "phase": "the family gives their number on the display",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/members",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/members/:id/children",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/members/:id/children",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/:id/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/:id/revoke",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    }
+  ],
+  "created": [
+    {
+      "kind": "member",
+      "id": "01a1f098-22bc-7113-8c08-c647f831b41f"
+    },
+    {
+      "kind": "child",
+      "id": "01a1f098-230d-795b-90f2-0680e5817eb1",
+      "name": "ZZ TEST Aya"
+    },
+    {
+      "kind": "child",
+      "id": "01a1f098-237f-7991-8fb5-26a1eda8d7cf",
+      "name": "ZZ TEST Ben"
+    },
+    {
+      "kind": "display",
+      "id": "01a1f098-30c2-7b2c-b1a5-0984855b6f21"
+    }
+  ],
+  "checks": {},
+  "cleanup": [
+    {
+      "kind": "display",
+      "id": "01a1f098-30c2-7b2c-b1a5-0984855b6f21",
+      "revoked": true
+    },
+    {
+      "kind": "sales-checked",
+      "open": 0
+    },
+    {
+      "kind": "member",
+      "id": "01a1f098-22bc-7113-8c08-c647f831b41f",
+      "archived": true
+    },
+    {
+      "kind": "till-session",
+      "signedOut": true
+    },
+    {
+      "kind": "admin-session",
+      "signedOut": true
+    }
+  ],
+  "pictures": [
+    "failed-till-run4.png",
+    "failed-display-run4.png"
+  ],
+  "deployments": {
+    "oto-api-staging": {
+      "id": "dep-dbv1hp3rjlhs73ajnb70",
+      "status": "live",
+      "sha": "4c094e19227150c0b4081a0038dc949af2870dec"
+    },
+    "oto-pos-staging": {
+      "id": "dep-dbv1hphsrm7s73b4oc5g",
+      "status": "live",
+      "sha": "4c094e19227150c0b4081a0038dc949af2870dec"
+    },
+    "oto-pos-web-staging": {
+      "id": "dep-dbv1hprm8hqs738loq50",
+      "status": "live",
+      "sha": "4c094e19227150c0b4081a0038dc949af2870dec"
+    }
+  },
+  "station": {
+    "id": "01a1998f-0cf3-70e3-890b-a7ff88c71bda",
+    "name": "ZZ TEST setup traps 20261102"
+  },
+  "passed": false,
+  "failure": {
+    "phase": "the family gives their number on the display",
+    "kind": "TimeoutError",
+    "message": "locator.waitFor: Timeout 30000ms exceeded."
+  },
+  "finishedAt": "2026-11-18T21:38:18.283Z"
+}

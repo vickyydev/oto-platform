@@ -1,0 +1,148 @@
+{
+  "ticket": "SCRUM-1014",
+  "sha": "4c094e19227150c0b4081a0038dc949af2870dec",
+  "run": 1,
+  "startedAt": "2026-11-18T21:35:45.028Z",
+  "phase": "two children playing alone: the review opens",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/members",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/members/:id/children",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/members/:id/children",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/:id/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/:id/revoke",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    }
+  ],
+  "created": [
+    {
+      "kind": "member",
+      "id": "01a1f096-60a0-77df-94fd-fb0133bd0145"
+    },
+    {
+      "kind": "child",
+      "id": "01a1f096-60fd-7edb-8a59-067a13d7a049",
+      "name": "ZZ TEST Aya"
+    },
+    {
+      "kind": "child",
+      "id": "01a1f096-6151-7f66-941b-a06072f4c421",
+      "name": "ZZ TEST Ben"
+    },
+    {
+      "kind": "display",
+      "id": "01a1f096-6fd2-71ad-b095-156192333976"
+    }
+  ],
+  "checks": {},
+  "cleanup": [
+    {
+      "kind": "display",
+      "id": "01a1f096-6fd2-71ad-b095-156192333976",
+      "revoked": true
+    },
+    {
+      "kind": "sales-checked",
+      "open": 0
+    },
+    {
+      "kind": "member",
+      "id": "01a1f096-60a0-77df-94fd-fb0133bd0145",
+      "archived": true
+    },
+    {
+      "kind": "till-session",
+      "signedOut": true
+    },
+    {
+      "kind": "admin-session",
+      "signedOut": true
+    }
+  ],
+  "pictures": [
+    "explore-1-till-after-identify.png",
+    "explore-1-ticket-grid.png",
+    "failed-till-run1.png",
+    "failed-display-run1.png"
+  ],
+  "deployments": {
+    "oto-api-staging": {
+      "id": "dep-dbv1hp3rjlhs73ajnb70",
+      "status": "live",
+      "sha": "4c094e19227150c0b4081a0038dc949af2870dec"
+    },
+    "oto-pos-staging": {
+      "id": "dep-dbv1hphsrm7s73b4oc5g",
+      "status": "live",
+      "sha": "4c094e19227150c0b4081a0038dc949af2870dec"
+    },
+    "oto-pos-web-staging": {
+      "id": "dep-dbv1hprm8hqs738loq50",
+      "status": "live",
+      "sha": "4c094e19227150c0b4081a0038dc949af2870dec"
+    }
+  },
+  "station": {
+    "id": "01a1998f-0cf3-70e3-890b-a7ff88c71bda",
+    "name": "ZZ TEST setup traps 20261102"
+  },
+  "passed": false,
+  "failure": {
+    "phase": "two children playing alone: the review opens",
+    "kind": "Error",
+    "message": "explore: ticket grid not scripted yet"
+  },
+  "finishedAt": "2026-11-18T21:35:58.795Z"
+}
