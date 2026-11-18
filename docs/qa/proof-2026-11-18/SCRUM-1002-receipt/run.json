@@ -1,0 +1,1087 @@
+{
+  "ticket": "SCRUM-1002",
+  "rulings": [
+    "1: an additional bill gets its own receipt",
+    "2: End of Day by how it was paid (cash with cash, QR with QR)"
+  ],
+  "landed": {
+    "receipt": "bface49386b94687ea3be14806fbeafad03081e8",
+    "endOfDay": "ba6c4811d91072c8afff4ddc2d2d0f330a6dde2e"
+  },
+  "deploys": {
+    "oto-api-staging": "dep-dbutpb6k1f9s73aljni0 live 2026-11-18T17:19:20Z",
+    "oto-pos-staging": "dep-dbutpe68bjmc73ahe9s0 live 2026-11-18T17:14:54Z",
+    "oto-pos-web-staging": "dep-dbutped6e07s73elilng live 2026-11-18T17:17:12Z"
+  },
+  "where": "staging, Central Floresta, station ZZ TEST setup traps 20261102 (virtual box 1, receipt series Z703), business day 2026-11-18",
+  "notes": [
+    "The first eod_before entry is HTTP 423 (the till was locked); it was read again after unlocking and the second entry is the before figure.",
+    "Bill 1 (25.03, cash, desk): the platform issued receipt Z703-000004 at once, but the desk page was still running the previous till build from its service-worker cache, so its Payment recorded screen drew no receipt card (picture 1002-desk-bill1-cash-old-cached-build.png). The till was then brought onto the served build through its own update path (OTO_SKIP_WAITING) and bill 2 (12.34, cash) was taken to show the screen.",
+    "The first bill3_paid_qr_phone entry is a refusal: the ZZ TEST station is set to take no QR (qr: none), 409 QR_DISABLED_FOR_STATION, nothing taken. Its QR was routed to the staging gateway simulator for the run and put back to qr: none straight after (zz_station_* entries).",
+    "Receipt numbers Z703-000005, -000006 and -000008 belong to another lane's ZZ TEST 1001 party run on the same station during this run; eod_reconcile separates its money from this run's.",
+    "Close Day and Refresh settlement were not pressed; End of Day was read only."
+  ],
+  "steps": [
+    {
+      "stage": "eod_before",
+      "at": "2026-11-18T17:20:07.876Z",
+      "label": "before_run",
+      "httpStatus": 423,
+      "lines": [],
+      "cashCount": null
+    },
+    {
+      "stage": "eod_before",
+      "at": "2026-11-18T17:20:20.832Z",
+      "label": "before_run",
+      "httpStatus": 200,
+      "status": "open",
+      "totalExpectedSatang": 4382854,
+      "lines": [
+        {
+          "channel": "cash",
+          "expectedSatang": 4379646
+        },
+        {
+          "channel": "promptpay",
+          "expectedSatang": 3208
+        },
+        {
+          "channel": "card:SIMTID01",
+          "expectedSatang": 0
+        },
+        {
+          "channel": "card:65703235",
+          "expectedSatang": 0
+        },
+        {
+          "channel": "card:54355548",
+          "expectedSatang": 0
+        },
+        {
+          "channel": "ewallet",
+          "expectedSatang": 0
+        },
+        {
+          "channel": "bank_transfer",
+          "expectedSatang": 0
+        },
+        {
+          "channel": "party_prepay",
+          "expectedSatang": 0
+        },
+        {
+          "channel": "credit",
+          "expectedSatang": 0
+        }
+      ],
+      "cashCount": {
+        "countedSatang": null,
+        "floatSatang": 600000,
+        "cashIncomeSatang": null
+      }
+    },
+    {
+      "stage": "party_created",
+      "at": "2026-11-18T17:20:27.998Z",
+      "eventId": "672fb50d-efe6-4e80-8461-97e6c5bb5e26",
+      "title": "ZZ TEST 1002 bill receipt 20261118",
+      "snapStatus": 201,
+      "via": "OTO App POST /api/admin/events, package After School Birthday Package, Central (10 kids)"
+    },
+    {
+      "stage": "main_settled_cash",
+      "at": "2026-11-18T17:21:14.262Z",
+      "saleId": "01a1efad-079f-7636-b171-beb1049d38cb",
+      "receiptNumber": "Z703-000003",
+      "grossSatang": 1090000,
+      "payments": [
+        {
+          "method": "cash",
+          "status": "approved",
+          "amountSatang": 1090000
+        }
+      ],
+      "fingerprint": "1d5e3d8b5b99c3833e6cb2f11a598152a777d6461ec45c50a3f944b57669fe1d",
+      "tillState": "sale",
+      "additionalBills": 0
+    },
+    {
+      "stage": "kitchen_extra_added_after_settlement",
+      "at": "2026-11-18T17:21:30.929Z",
+      "saveStatus": 200,
+      "confirmShown": true,
+      "billsBefore": 0,
+      "billsAfter": [
+        {
+          "state": "open",
+          "totalSatang": 2503,
+          "outstandingSatang": 2503
+        }
+      ]
+    },
+    {
+      "stage": "bill1_paid_cash_desk",
+      "at": "2026-11-18T17:22:11.810Z",
+      "net": [
+        {
+          "m": "POST",
+          "path": "/api/parties/<party>/payments",
+          "status": 200,
+          "error": null,
+          "receiptNotes": [
+            "Receipt not printed — no receipt printer at this station"
+          ]
+        }
+      ],
+      "bill": {
+        "state": "paid",
+        "totalSatang": 2503,
+        "paidSatang": 2503,
+        "payments": [
+          {
+            "amountSatang": 2503,
+            "method": "cash",
+            "attemptId": "01a1efae-058a-70b0-a69c-c0bb9bf81195"
+          }
+        ],
+        "receiptNumber": "Z703-000004",
+        "receiptDocument": {
+          "title": "Receipt",
+          "taxInvoiceLines": [
+            "ใบกำกับภาษีอย่างย่อ",
+            "ABBREVIATED TAX INVOICE",
+            "OTO · Oto Play Park, Central Floresta",
+            "VAT included"
+          ],
+          "receiptNumber": "Z703-000004",
+          "dateTime": "2026-11-19 00:22",
+          "staffName": "Som",
+          "lines": [
+            {
+              "qty": 1,
+              "name": "ZZ TEST 1002 after-settle dish A",
+              "price": "฿25.03"
+            }
+          ],
+          "subtotal": "฿25.03",
+          "vat": "฿1.64",
+          "total": "฿25.03",
+          "tenders": [
+            {
+              "label": "Cash",
+              "amount": "฿25.03"
+            }
+          ],
+          "taxRows": [
+            {
+              "label": "VAT included",
+              "amount": "฿1.64",
+              "kind": "tax_included"
+            }
+          ]
+        }
+      },
+      "sale": {
+        "httpStatus": 200,
+        "receiptNumber": "Z703-000004",
+        "status": "finalised",
+        "stationName": null,
+        "note": "Party: ZZ TEST 1002 bill receipt 20261118 · Additional bill 1",
+        "grossSatang": 2503,
+        "taxInclusiveSatang": 164,
+        "lines": [
+          {
+            "label": "ZZ TEST 1002 after-settle dish A",
+            "quantity": 1,
+            "grossSatang": 2503
+          }
+        ],
+        "attempts": [
+          {
+            "id": "01a1efae-058a-70b0-a69c-c0bb9bf81195",
+            "method": "cash",
+            "methodCode": null,
+            "status": "approved",
+            "amountSatang": 2503,
+            "provider": "manual"
+          }
+        ],
+        "printJobs": [
+          {
+            "kind": "receipt",
+            "status": "skipped",
+            "deviceLabel": null
+          }
+        ]
+      },
+      "firstReceiptUnchanged": true,
+      "picture": "1002-desk-bill1-cash-receipt.png"
+    },
+    {
+      "stage": "kitchen_extra_C_added_after_settlement",
+      "at": "2026-11-18T17:24:34.298Z",
+      "saveStatus": 200,
+      "confirmShown": true,
+      "billsBefore": 1,
+      "billsAfter": [
+        {
+          "state": "paid",
+          "totalSatang": 2503,
+          "outstandingSatang": 0
+        },
+        {
+          "state": "open",
+          "totalSatang": 1234,
+          "outstandingSatang": 1234
+        }
+      ]
+    },
+    {
+      "stage": "bill2_paid_cash_desk",
+      "at": "2026-11-18T17:25:15.029Z",
+      "net": [
+        {
+          "m": "POST",
+          "path": "/api/parties/<party>/payments",
+          "status": 200,
+          "error": null,
+          "receiptNotes": [
+            "Receipt not printed — no receipt printer at this station"
+          ]
+        }
+      ],
+      "bill": {
+        "state": "paid",
+        "totalSatang": 1234,
+        "paidSatang": 1234,
+        "payments": [
+          {
+            "amountSatang": 1234,
+            "method": "cash",
+            "attemptId": "01a1efb0-d161-7f99-8b2c-e6de42d392fd"
+          }
+        ],
+        "receiptNumber": "Z703-000007",
+        "receiptDocument": {
+          "title": "Receipt",
+          "taxInvoiceLines": [
+            "ใบกำกับภาษีอย่างย่อ",
+            "ABBREVIATED TAX INVOICE",
+            "OTO · Oto Play Park, Central Floresta",
+            "VAT included"
+          ],
+          "receiptNumber": "Z703-000007",
+          "dateTime": "2026-11-19 00:25",
+          "staffName": "Som",
+          "lines": [
+            {
+              "qty": 1,
+              "name": "ZZ TEST 1002 after-settle dish C",
+              "price": "฿12.34"
+            }
+          ],
+          "subtotal": "฿12.34",
+          "vat": "฿0.81",
+          "total": "฿12.34",
+          "tenders": [
+            {
+              "label": "Cash",
+              "amount": "฿12.34"
+            }
+          ],
+          "taxRows": [
+            {
+              "label": "VAT included",
+              "amount": "฿0.81",
+              "kind": "tax_included"
+            }
+          ]
+        }
+      },
+      "sale": {
+        "httpStatus": 200,
+        "receiptNumber": "Z703-000007",
+        "status": "finalised",
+        "stationName": null,
+        "note": "Party: ZZ TEST 1002 bill receipt 20261118 · Additional bill 2",
+        "grossSatang": 1234,
+        "taxInclusiveSatang": 81,
+        "lines": [
+          {
+            "label": "ZZ TEST 1002 after-settle dish C",
+            "quantity": 1,
+            "grossSatang": 1234
+          }
+        ],
+        "attempts": [
+          {
+            "id": "01a1efb0-d161-7f99-8b2c-e6de42d392fd",
+            "method": "cash",
+            "methodCode": null,
+            "status": "approved",
+            "amountSatang": 1234,
+            "provider": "manual"
+          }
+        ],
+        "printJobs": [
+          {
+            "kind": "receipt",
+            "status": "skipped",
+            "deviceLabel": null
+          }
+        ]
+      },
+      "firstReceiptUnchanged": true,
+      "picture": "1002-desk-bill2-cash-receipt.png"
+    },
+    {
+      "stage": "bar_extra_added_after_settlement",
+      "at": "2026-11-18T17:25:42.911Z",
+      "saveStatus": 200,
+      "confirmShown": true,
+      "billsAfter": [
+        {
+          "state": "paid",
+          "totalSatang": 2503,
+          "outstandingSatang": 0
+        },
+        {
+          "state": "paid",
+          "totalSatang": 1234,
+          "outstandingSatang": 0
+        },
+        {
+          "state": "open",
+          "totalSatang": 705,
+          "outstandingSatang": 705
+        }
+      ]
+    },
+    {
+      "stage": "bill3_paid_qr_phone",
+      "at": "2026-11-18T17:28:03.478Z",
+      "net": [
+        {
+          "m": "POST",
+          "path": "/api/parties/<party>/payments/tender",
+          "status": 409,
+          "route": null,
+          "attemptId": null,
+          "provider": null,
+          "error": "QR_DISABLED_FOR_STATION",
+          "receiptNotes": null
+        }
+      ],
+      "bill": {
+        "state": "open",
+        "totalSatang": 705,
+        "paidSatang": 0,
+        "payments": [],
+        "receiptNumber": null,
+        "receiptDocument": null
+      },
+      "sale": null,
+      "firstReceiptUnchanged": true,
+      "picture": "1002-phone-bill3-qr-receipt.png"
+    },
+    {
+      "stage": "zz_station_qr_routed_to_gateway_simulator",
+      "at": "2026-11-18T17:29:13.406Z",
+      "station": "ZZ TEST setup traps 20261102",
+      "before": {
+        "qr": "none",
+        "card": "card_terminal"
+      },
+      "patchStatus": 200,
+      "after": {
+        "qr": "gateway",
+        "card": "card_terminal"
+      }
+    },
+    {
+      "stage": "bill3_paid_qr_phone",
+      "at": "2026-11-18T17:30:25.038Z",
+      "net": [
+        {
+          "m": "POST",
+          "path": "/api/parties/<party>/payments/tender",
+          "status": 200,
+          "route": "gateway",
+          "attemptId": "01a1efb5-73a2-7730-87d8-978fe1a40b36",
+          "provider": "simulator",
+          "error": null,
+          "receiptNotes": null
+        },
+        {
+          "m": "POST",
+          "path": "/api/parties/<party>/payments",
+          "status": 200,
+          "route": null,
+          "attemptId": null,
+          "provider": null,
+          "error": null,
+          "receiptNotes": null
+        }
+      ],
+      "simulator": {
+        "status": 200,
+        "event": "paid",
+        "webhookOutcome": "settled",
+        "gatewayState": "paid"
+      },
+      "bill": {
+        "state": "paid",
+        "totalSatang": 705,
+        "paidSatang": 705,
+        "payments": [
+          {
+            "amountSatang": 705,
+            "method": "promptpay",
+            "attemptId": "01a1efb5-73a2-7730-87d8-978fe1a40b36"
+          }
+        ],
+        "receiptNumber": "Z703-000009",
+        "receiptDocument": {
+          "title": "Receipt",
+          "taxInvoiceLines": [
+            "ใบกำกับภาษีอย่างย่อ",
+            "ABBREVIATED TAX INVOICE",
+            "OTO · Oto Play Park, Central Floresta",
+            "VAT included"
+          ],
+          "receiptNumber": "Z703-000009",
+          "dateTime": "2026-11-19 00:30",
+          "staffName": "Som",
+          "lines": [
+            {
+              "qty": 1,
+              "name": "ZZ TEST 1002 after-settle drink B",
+              "price": "฿7.05"
+            }
+          ],
+          "subtotal": "฿7.05",
+          "vat": "฿0.46",
+          "total": "฿7.05",
+          "tenders": [
+            {
+              "label": "Promptpay",
+              "amount": "฿7.05"
+            }
+          ],
+          "taxRows": [
+            {
+              "label": "VAT included",
+              "amount": "฿0.46",
+              "kind": "tax_included"
+            }
+          ]
+        }
+      },
+      "sale": {
+        "httpStatus": 200,
+        "receiptNumber": "Z703-000009",
+        "status": "finalised",
+        "stationName": null,
+        "note": "Party additional bill 3",
+        "grossSatang": 705,
+        "taxInclusiveSatang": 46,
+        "lines": [
+          {
+            "label": "ZZ TEST 1002 after-settle drink B",
+            "quantity": 1,
+            "grossSatang": 705
+          }
+        ],
+        "attempts": [
+          {
+            "id": "01a1efb5-73a2-7730-87d8-978fe1a40b36",
+            "method": "qr",
+            "methodCode": null,
+            "status": "approved",
+            "amountSatang": 705,
+            "provider": "simulator"
+          }
+        ],
+        "printJobs": [
+          {
+            "kind": "receipt",
+            "status": "skipped",
+            "deviceLabel": null
+          }
+        ]
+      },
+      "firstReceiptUnchanged": true,
+      "picture": "1002-phone-bill3-qr-receipt.png"
+    },
+    {
+      "stage": "zz_station_qr_routing_restored",
+      "at": "2026-11-18T17:30:37.118Z",
+      "patchStatus": 200,
+      "after": {
+        "qr": "none",
+        "card": "card_terminal"
+      },
+      "expected": {
+        "qr": "none",
+        "card": "card_terminal"
+      }
+    },
+    {
+      "stage": "eod_after",
+      "at": "2026-11-18T17:31:09.267Z",
+      "before": {
+        "totalExpectedSatang": 4382854,
+        "lines": [
+          {
+            "channel": "cash",
+            "expectedSatang": 4379646
+          },
+          {
+            "channel": "promptpay",
+            "expectedSatang": 3208
+          },
+          {
+            "channel": "card:SIMTID01",
+            "expectedSatang": 0
+          },
+          {
+            "channel": "card:65703235",
+            "expectedSatang": 0
+          },
+          {
+            "channel": "card:54355548",
+            "expectedSatang": 0
+          },
+          {
+            "channel": "ewallet",
+            "expectedSatang": 0
+          },
+          {
+            "channel": "bank_transfer",
+            "expectedSatang": 0
+          },
+          {
+            "channel": "party_prepay",
+            "expectedSatang": 0
+          },
+          {
+            "channel": "credit",
+            "expectedSatang": 0
+          }
+        ]
+      },
+      "after": {
+        "totalExpectedSatang": 6575813,
+        "lines": [
+          {
+            "channel": "cash",
+            "expectedSatang": 6571900
+          },
+          {
+            "channel": "promptpay",
+            "expectedSatang": 3913
+          },
+          {
+            "channel": "card:SIMTID01",
+            "expectedSatang": 0
+          },
+          {
+            "channel": "card:65703235",
+            "expectedSatang": 0
+          },
+          {
+            "channel": "card:54355548",
+            "expectedSatang": 0
+          },
+          {
+            "channel": "ewallet",
+            "expectedSatang": 0
+          },
+          {
+            "channel": "bank_transfer",
+            "expectedSatang": 0
+          },
+          {
+            "channel": "party_prepay",
+            "expectedSatang": 0
+          },
+          {
+            "channel": "credit",
+            "expectedSatang": 0
+          }
+        ]
+      },
+      "delta": {
+        "cash": 2192254,
+        "promptpay": 705
+      },
+      "totalDelta": 2192959,
+      "closeDayPressed": false,
+      "firstReceiptUnchanged": true
+    },
+    {
+      "stage": "eod_reconcile",
+      "at": "2026-11-18T17:31:10.068Z",
+      "since": "2026-11-18T17:20:20.832Z",
+      "sales": [
+        {
+          "receiptNumber": "Z703-000009",
+          "note": "Party additional bill 3",
+          "grossSatang": 705,
+          "mine": true,
+          "attempts": [
+            {
+              "method": "qr",
+              "status": "approved",
+              "amountSatang": 705,
+              "provider": "simulator"
+            }
+          ]
+        },
+        {
+          "receiptNumber": "Z703-000008",
+          "note": "Party: ZZ TEST 1001 party A 20261119 · Additional bill 2",
+          "grossSatang": 2503,
+          "mine": false,
+          "attempts": [
+            {
+              "method": "cash",
+              "status": "approved",
+              "amountSatang": 2503,
+              "provider": "manual"
+            }
+          ]
+        },
+        {
+          "receiptNumber": "Z703-000007",
+          "note": "Party: ZZ TEST 1002 bill receipt 20261118 · Additional bill 2",
+          "grossSatang": 1234,
+          "mine": true,
+          "attempts": [
+            {
+              "method": "cash",
+              "status": "approved",
+              "amountSatang": 1234,
+              "provider": "manual"
+            }
+          ]
+        },
+        {
+          "receiptNumber": "Z703-000006",
+          "note": "Party: ZZ TEST 1001 party A 20261119 · Additional bill 1",
+          "grossSatang": 6014,
+          "mine": false,
+          "attempts": [
+            {
+              "method": "cash",
+              "status": "approved",
+              "amountSatang": 6014,
+              "provider": "manual"
+            }
+          ]
+        },
+        {
+          "receiptNumber": "Z703-000004",
+          "note": "Party: ZZ TEST 1002 bill receipt 20261118 · Additional bill 1",
+          "grossSatang": 2503,
+          "mine": true,
+          "attempts": [
+            {
+              "method": "cash",
+              "status": "approved",
+              "amountSatang": 2503,
+              "provider": "manual"
+            }
+          ]
+        },
+        {
+          "receiptNumber": "Z703-000003",
+          "note": "Party: ZZ TEST 1002 bill receipt 20261118",
+          "grossSatang": 1090000,
+          "mine": true,
+          "attempts": [
+            {
+              "method": "cash",
+              "status": "approved",
+              "amountSatang": 1090000,
+              "provider": "manual"
+            }
+          ]
+        },
+        {
+          "receiptNumber": "Z703-000005",
+          "note": "Party: ZZ TEST 1001 party A 20261119",
+          "grossSatang": 1090000,
+          "mine": false,
+          "attempts": [
+            {
+              "method": "cash",
+              "status": "approved",
+              "amountSatang": 1090000,
+              "provider": "manual"
+            }
+          ]
+        }
+      ],
+      "tally": {
+        "mineCash": 1093737,
+        "mineQr": 705,
+        "othersCash": 1098517,
+        "othersQr": 0,
+        "othersOther": 0
+      }
+    },
+    {
+      "stage": "cleanup",
+      "at": "2026-11-18T17:32:11.472Z",
+      "menuStatus": 200,
+      "productsNamedZZTEST1002": [],
+      "archiveStatus": 200,
+      "archived": true,
+      "mainReceipt": {
+        "receiptNumber": "Z703-000003",
+        "grossSatang": 1090000,
+        "unchanged": true
+      },
+      "additionalBills": [
+        {
+          "state": "paid",
+          "totalSatang": 2503,
+          "paidSatang": 2503,
+          "receiptNumber": "Z703-000004"
+        },
+        {
+          "state": "paid",
+          "totalSatang": 1234,
+          "paidSatang": 1234,
+          "receiptNumber": "Z703-000007"
+        },
+        {
+          "state": "paid",
+          "totalSatang": 705,
+          "paidSatang": 705,
+          "receiptNumber": "Z703-000009"
+        }
+      ]
+    },
+    {
+      "stage": "own_sessions_signed_out",
+      "at": "2026-11-18T17:32:13.526Z",
+      "desk": {
+        "signOutStatus": 200,
+        "oldCookieMeStatus": 401
+      },
+      "phone": {
+        "signOutStatus": 200,
+        "oldCookieMeStatus": 401
+      },
+      "launcher-admin": {
+        "signOutStatus": 200,
+        "oldCookieMeStatus": 401
+      },
+      "app": {
+        "logoutStatus": 200,
+        "oldCookieUserStatus": 401
+      }
+    }
+  ],
+  "eodReads": [
+    {
+      "label": "before_run",
+      "at": "2026-11-18T17:20:07.876Z",
+      "httpStatus": 423,
+      "lines": [],
+      "cashCount": null
+    },
+    {
+      "label": "before_run",
+      "at": "2026-11-18T17:20:20.832Z",
+      "httpStatus": 200,
+      "status": "open",
+      "totalExpectedSatang": 4382854,
+      "lines": [
+        {
+          "channel": "cash",
+          "expectedSatang": 4379646
+        },
+        {
+          "channel": "promptpay",
+          "expectedSatang": 3208
+        },
+        {
+          "channel": "card:SIMTID01",
+          "expectedSatang": 0
+        },
+        {
+          "channel": "card:65703235",
+          "expectedSatang": 0
+        },
+        {
+          "channel": "card:54355548",
+          "expectedSatang": 0
+        },
+        {
+          "channel": "ewallet",
+          "expectedSatang": 0
+        },
+        {
+          "channel": "bank_transfer",
+          "expectedSatang": 0
+        },
+        {
+          "channel": "party_prepay",
+          "expectedSatang": 0
+        },
+        {
+          "channel": "credit",
+          "expectedSatang": 0
+        }
+      ],
+      "cashCount": {
+        "countedSatang": null,
+        "floatSatang": 600000,
+        "cashIncomeSatang": null
+      }
+    },
+    {
+      "label": "after_run",
+      "at": "2026-11-18T17:31:09.167Z",
+      "httpStatus": 200,
+      "status": "open",
+      "totalExpectedSatang": 6575813,
+      "lines": [
+        {
+          "channel": "cash",
+          "expectedSatang": 6571900
+        },
+        {
+          "channel": "promptpay",
+          "expectedSatang": 3913
+        },
+        {
+          "channel": "card:SIMTID01",
+          "expectedSatang": 0
+        },
+        {
+          "channel": "card:65703235",
+          "expectedSatang": 0
+        },
+        {
+          "channel": "card:54355548",
+          "expectedSatang": 0
+        },
+        {
+          "channel": "ewallet",
+          "expectedSatang": 0
+        },
+        {
+          "channel": "bank_transfer",
+          "expectedSatang": 0
+        },
+        {
+          "channel": "party_prepay",
+          "expectedSatang": 0
+        },
+        {
+          "channel": "credit",
+          "expectedSatang": 0
+        }
+      ],
+      "cashCount": {
+        "countedSatang": null,
+        "floatSatang": 600000,
+        "cashIncomeSatang": null
+      }
+    }
+  ],
+  "receiptReads": [
+    {
+      "label": "after_settlement",
+      "at": "2026-11-18T17:21:14.084Z",
+      "httpStatus": 200,
+      "receiptNumber": "Z703-000003",
+      "status": "finalised",
+      "grossSatang": 1090000,
+      "lineCount": 9,
+      "payments": [
+        {
+          "method": "cash",
+          "status": "approved",
+          "amountSatang": 1090000
+        }
+      ],
+      "fingerprint": "1d5e3d8b5b99c3833e6cb2f11a598152a777d6461ec45c50a3f944b57669fe1d"
+    },
+    {
+      "label": "before_bill1_desk",
+      "at": "2026-11-18T17:21:35.203Z",
+      "httpStatus": 200,
+      "receiptNumber": "Z703-000003",
+      "status": "finalised",
+      "grossSatang": 1090000,
+      "lineCount": 9,
+      "payments": [
+        {
+          "method": "cash",
+          "status": "approved",
+          "amountSatang": 1090000
+        }
+      ],
+      "fingerprint": "1d5e3d8b5b99c3833e6cb2f11a598152a777d6461ec45c50a3f944b57669fe1d"
+    },
+    {
+      "label": "after_bill1_desk",
+      "at": "2026-11-18T17:22:11.809Z",
+      "httpStatus": 200,
+      "receiptNumber": "Z703-000003",
+      "status": "finalised",
+      "grossSatang": 1090000,
+      "lineCount": 9,
+      "payments": [
+        {
+          "method": "cash",
+          "status": "approved",
+          "amountSatang": 1090000
+        }
+      ],
+      "fingerprint": "1d5e3d8b5b99c3833e6cb2f11a598152a777d6461ec45c50a3f944b57669fe1d"
+    },
+    {
+      "label": "before_bill2_desk",
+      "at": "2026-11-18T17:24:38.468Z",
+      "httpStatus": 200,
+      "receiptNumber": "Z703-000003",
+      "status": "finalised",
+      "grossSatang": 1090000,
+      "lineCount": 9,
+      "payments": [
+        {
+          "method": "cash",
+          "status": "approved",
+          "amountSatang": 1090000
+        }
+      ],
+      "fingerprint": "1d5e3d8b5b99c3833e6cb2f11a598152a777d6461ec45c50a3f944b57669fe1d"
+    },
+    {
+      "label": "after_bill2_desk",
+      "at": "2026-11-18T17:25:15.029Z",
+      "httpStatus": 200,
+      "receiptNumber": "Z703-000003",
+      "status": "finalised",
+      "grossSatang": 1090000,
+      "lineCount": 9,
+      "payments": [
+        {
+          "method": "cash",
+          "status": "approved",
+          "amountSatang": 1090000
+        }
+      ],
+      "fingerprint": "1d5e3d8b5b99c3833e6cb2f11a598152a777d6461ec45c50a3f944b57669fe1d"
+    },
+    {
+      "label": "before_bill3_phone",
+      "at": "2026-11-18T17:26:09.429Z",
+      "httpStatus": 200,
+      "receiptNumber": "Z703-000003",
+      "status": "finalised",
+      "grossSatang": 1090000,
+      "lineCount": 9,
+      "payments": [
+        {
+          "method": "cash",
+          "status": "approved",
+          "amountSatang": 1090000
+        }
+      ],
+      "fingerprint": "1d5e3d8b5b99c3833e6cb2f11a598152a777d6461ec45c50a3f944b57669fe1d"
+    },
+    {
+      "label": "after_bill3_phone",
+      "at": "2026-11-18T17:28:03.478Z",
+      "httpStatus": 200,
+      "receiptNumber": "Z703-000003",
+      "status": "finalised",
+      "grossSatang": 1090000,
+      "lineCount": 9,
+      "payments": [
+        {
+          "method": "cash",
+          "status": "approved",
+          "amountSatang": 1090000
+        }
+      ],
+      "fingerprint": "1d5e3d8b5b99c3833e6cb2f11a598152a777d6461ec45c50a3f944b57669fe1d"
+    },
+    {
+      "label": "before_bill3_phone",
+      "at": "2026-11-18T17:29:40.033Z",
+      "httpStatus": 200,
+      "receiptNumber": "Z703-000003",
+      "status": "finalised",
+      "grossSatang": 1090000,
+      "lineCount": 9,
+      "payments": [
+        {
+          "method": "cash",
+          "status": "approved",
+          "amountSatang": 1090000
+        }
+      ],
+      "fingerprint": "1d5e3d8b5b99c3833e6cb2f11a598152a777d6461ec45c50a3f944b57669fe1d"
+    },
+    {
+      "label": "after_bill3_phone",
+      "at": "2026-11-18T17:30:25.037Z",
+      "httpStatus": 200,
+      "receiptNumber": "Z703-000003",
+      "status": "finalised",
+      "grossSatang": 1090000,
+      "lineCount": 9,
+      "payments": [
+        {
+          "method": "cash",
+          "status": "approved",
+          "amountSatang": 1090000
+        }
+      ],
+      "fingerprint": "1d5e3d8b5b99c3833e6cb2f11a598152a777d6461ec45c50a3f944b57669fe1d"
+    },
+    {
+      "label": "at_end_of_day",
+      "at": "2026-11-18T17:31:09.266Z",
+      "httpStatus": 200,
+      "receiptNumber": "Z703-000003",
+      "status": "finalised",
+      "grossSatang": 1090000,
+      "lineCount": 9,
+      "payments": [
+        {
+          "method": "cash",
+          "status": "approved",
+          "amountSatang": 1090000
+        }
+      ],
+      "fingerprint": "1d5e3d8b5b99c3833e6cb2f11a598152a777d6461ec45c50a3f944b57669fe1d"
+    },
+    {
+      "label": "after_cleanup",
+      "at": "2026-11-18T17:32:11.472Z",
+      "httpStatus": 200,
+      "receiptNumber": "Z703-000003",
+      "status": "finalised",
+      "grossSatang": 1090000,
+      "lineCount": 9,
+      "payments": [
+        {
+          "method": "cash",
+          "status": "approved",
+          "amountSatang": 1090000
+        }
+      ],
+      "fingerprint": "1d5e3d8b5b99c3833e6cb2f11a598152a777d6461ec45c50a3f944b57669fe1d"
+    }
+  ]
+}
