@@ -35,7 +35,7 @@ function bundle(): BoxConfigBundle {
       operatorId: '018f0000-0000-7000-8000-0000000000b1',
       timezone: 'Asia/Bangkok',
       openingHours: null,
-      businessDayStart: '05:00',
+      businessDayStart: '00:00',
     },
     stations: [
       {
@@ -731,19 +731,21 @@ test('settlement uses the branch day start and preserves the terminal identity t
     const config = bundle();
     const options = { bundle: () => config, boxId: () => BOX_ID, store: held.store,
       now: () => new Date('2026-09-23T20:00:00Z') };
-    const controller = createTerminals(options); // 03:00 Bangkok, still trading on the 23rd.
+    // 03:00 Bangkok on the 24th: with the park's midnight day start
+    // (SCRUM-1010) that is the 24th's trading day, not the 23rd's.
+    const controller = createTerminals(options);
     await controller.runCommand({ mode: 'sale',
       attemptId: '018f0000-0000-7000-8000-000000007777', deviceId: NEXGO, tender: 'card', amountSatang: 7000 });
     const originalTid = config.stations[0]!.devices[0]!.terminalId;
     config.stations[0]!.devices[0]!.terminalId = 'REPLACED';
     const rebooted = createTerminals(options);
     const payload = { batchId: '018f0000-0000-7000-8000-000000008888', deviceId: NEXGO,
-      businessDate: '2026-09-24' };
+      businessDate: '2026-09-23' };
     assert.deepEqual((await rebooted.settle(payload)).lines, []);
-    const previousDay = await rebooted.settle({ ...payload, businessDate: '2026-09-23',
+    const sameDay = await rebooted.settle({ ...payload, businessDate: '2026-09-24',
       batchId: '018f0000-0000-7000-8000-000000009999' });
-    assert.equal(previousDay.lines.length, 1);
-    assert.equal(previousDay.tid, originalTid);
+    assert.equal(sameDay.lines.length, 1);
+    assert.equal(sameDay.tid, originalTid);
   } finally { held.close(); }
 });
 

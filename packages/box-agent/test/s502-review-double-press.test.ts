@@ -107,7 +107,7 @@ function checkinItem(meals: number) {
 function walletsItem(): WalletSnapshotItem {
   return {
     version: 'w-s502-review', generatedAt: new Date().toISOString(), branchId: BRANCH_ID,
-    businessDate: businessDate(new Date(), 'Asia/Bangkok', 5 * 60), capSatang: 30_000, truncated: false,
+    businessDate: businessDate(new Date(), 'Asia/Bangkok', 0), capSatang: 30_000, truncated: false,
     wallets: [{
       id: uuidv7(), status: 'active', balanceSatang: 0, expiresAt: null, boxSpentSatang: 0,
       keys: [...walletKeyDigestsOf({ kind: 'child', value: MINT_CHILD })],

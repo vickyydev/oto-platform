@@ -34,7 +34,8 @@ const FOOD = '018f0000-0000-7000-8000-0000000000c4';
 const WALLET = '018f0000-0000-7000-8000-00000000ab77';
 const QR = 'QR-WALLETGATEROUNDFOUR01';
 const TZ = 'Asia/Bangkok';
-const DAY_START = 5 * 60;
+/** The park's day start, as the till bundle carries it: midnight (SCRUM-1010). */
+const DAY_START = 0;
 
 const quiet = { info() {}, warn() {}, error() {} };
 
@@ -244,8 +245,8 @@ test('GATE (1): one box, one wallet, link down across the trading-day boundary �
 });
 
 test('GATE (1): credit held before the trading day turns and closed after it — the box’s days add up to what it closed', async () => {
-  // 04:50 Bangkok on 2 Oct is still trading day 1 Oct (the day starts at 05:00).
-  const start = '2026-10-01T21:50:00.000Z';
+  // 23:50 Bangkok on 1 Oct, trading day 1 Oct; the day turns at midnight.
+  const start = '2026-10-01T16:50:00.000Z';
   const box = await openGateBox(start, 100_000);
   try {
     const day1 = businessDate(new Date(start), TZ, DAY_START);
@@ -254,8 +255,8 @@ test('GATE (1): credit held before the trading day turns and closed after it —
     assert.equal(first.walletSpend.amountSatang, 30_000);
     assert.equal(first.finalised, false);
 
-    // 05:10: trading day 2 Oct. The held order is closed in cash, then a new order spends the cap again.
-    box.setNow('2026-10-01T22:10:00.000Z');
+    // 00:10: trading day 2 Oct. The held order is closed in cash, then a new order spends the cap again.
+    box.setNow('2026-10-01T17:10:00.000Z');
     const day2 = businessDate(box.now(), TZ, DAY_START);
     assert.notEqual(day2, day1);
     await send(box, 'sale.finalise', { saleId: held.saleId, actionId: held.actionId, cart: held.cart, tender: cash(first.outstandingSatang) });

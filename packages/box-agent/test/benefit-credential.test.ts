@@ -65,7 +65,7 @@ const PARK = keypair();
 const OTHER = keypair();
 const NOW = new Date('2026-10-07T06:00:00.000Z');
 const IN_A_YEAR = Math.floor(NOW.getTime() / 1000) + 365 * 86_400;
-const TODAY = businessDate(NOW, 'Asia/Bangkok', 5 * 60);
+const TODAY = businessDate(NOW, 'Asia/Bangkok', 0); // the park's midnight day (SCRUM-1010)
 
 const ANAN = { employeeId: uuidv7(), credentialId: uuidv7() };
 const LEK = { employeeId: uuidv7(), credentialId: uuidv7() };
