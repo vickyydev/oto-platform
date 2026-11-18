@@ -1303,7 +1303,8 @@ export function createBooth(options: BoothOptions): BoothModule {
          * Yesterday is checked too, and that is not belt-and-braces.
          *
          * A counter row is keyed by trading day, so a retry that arrives after
-         * the day rolled over — 05:00 on the branch's wall clock — would look
+         * the day rolled over — the branch's day start on its wall clock,
+         * midnight since SCRUM-1010 — would look
          * at an empty row for the new day and draw a second prize for one
          * press. One extra read closes the boundary, and without it the
          * sentence above would be true of every press except the ones nobody

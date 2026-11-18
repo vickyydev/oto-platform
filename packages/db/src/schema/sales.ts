@@ -258,12 +258,13 @@ export const sale = pos.table(
     boxId: uuid('box_id').references(() => box.id, { onDelete: 'restrict' }),
     /**
      * THE TRADING DAY, resolved once from the branch's `business_day_start`
-     * (`businessDate` in `@oto/shared`) and never derived on a read. A sale at
-     * 00:30 belongs to the day that is finishing: the park trades until 20:00
-     * and the late party, the cash count and the day-close print all land
-     * after midnight. Every report, cash-up and till roll counts on this
-     * column, and `rateModeToday`'s ruling 3 says the same date also chose the
-     * price — everything answers to the day printed on the receipt.
+     * (`businessDate` in `@oto/shared`) and never derived on a read. Since
+     * SCRUM-1010 (the owner's ruling of 19 November 2026) the park's day runs
+     * midnight to midnight, so a sale at 00:30 belongs to the new calendar
+     * day; sales stored under the earlier 05:00 start keep the date they were
+     * stored with. Every report, cash-up and till roll counts on this column,
+     * and `rateModeToday`'s ruling 3 says the same date also chose the price —
+     * everything answers to the day printed on the receipt.
      */
     businessDate: date('business_date').notNull(),
     /**

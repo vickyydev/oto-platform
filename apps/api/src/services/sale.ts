@@ -738,9 +738,9 @@ interface PricingScope {
  * Where and when the sale is happening, resolved server-side from the branch's
  * clock — never from the request.
  *
- * `businessDate` is the trading day, not the calendar day: a sale at 00:30
- * belongs to the day that is finishing (`business_day_start`, 05:00 here), and
- * the engine's ruling 3 says the same date also chooses the price. A caller
+ * `businessDate` is the trading day from the branch's `business_day_start`
+ * — midnight since SCRUM-1010, so a sale at 00:30 is on the new calendar
+ * day — and the engine's ruling 3 says the same date also chooses the price. A caller
  * that could pass its own date could choose weekend pricing on a Tuesday, so
  * there is no parameter for it. The station-level "business date override"
  * S2-09a describes for reproducible weekend demos is a separate, staging-only
@@ -2365,7 +2365,7 @@ export async function priceCart(
     tierClaimRefusal: claimed.refusal,
     disagreements: {
       // The till says what it believed; the platform says what it charged.
-      // Neither is refused — a cart open across 05:00 or across a tier change
+      // Neither is refused — a cart open across midnight or across a tier change
       // is ordinary — but the answer carries both so the till can show the
       // mode that was actually used, and a report can find the difference.
       pricingModeSentByTill: input.pricingMode ?? null,

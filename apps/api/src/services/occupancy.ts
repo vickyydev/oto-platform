@@ -80,8 +80,8 @@ import type { Exec } from './tx';
  * THE BRANCH is the gate station's, not the band's: a band sold at one park
  * and walked through another's gate is inside the second.
  *
- * THE TRADING DAY starts at `branch.business_day_start` (05:00 Asia/Bangkok by
- * default) — the same boundary the ledger, pricing and the cash-up use
+ * THE TRADING DAY starts at `branch.business_day_start` (midnight on the park's
+ * clock since SCRUM-1010) — the same boundary the ledger, pricing and the cash-up use
  * (`@oto/shared` business-date.ts). A group still "inside" at the boundary is
  * not carried into the next day: the window simply starts again, and
  * `clearTradingDay` writes the audit row that says who was stranded.
@@ -660,7 +660,8 @@ export const DAY_END_CLEAR_ACTION = 'occupancy.day_end_clear';
 /**
  * CLOSE A TRADING DAY'S STRANDED GROUPS, WITH A RECORD.
  *
- * Nobody is still inside at 05:00; a band whose last passage was an entry is
+ * Nobody is still inside when the day turns at midnight (the park closes at
+ * 20:00); a band whose last passage was an entry is
  * an exit the gate never saw (a lane held open for a fire alarm, a gate box
  * swapped, somebody leaving through a door with no reader). The projection
  * already forgets them — its window starts again — so this changes no count.

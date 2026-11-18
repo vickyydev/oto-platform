@@ -597,7 +597,8 @@ const partPaidAlertKey = (branchId: string): string => `${PART_PAID_ALERT_CATEGO
  * `job:sales.held_midnight` — A HELD SALE NOBODY CAME BACK FOR.
  *
  * Every open hold whose calendar day has ended in its branch's timezone
- * (midnight, `holdOutlivedItsDay` — NOT the 05:00 business-day boundary):
+ * (calendar midnight, `holdOutlivedItsDay`; since SCRUM-1010 the business day
+ * turns at the same moment):
  *
  *   - a held sale with no money is voided with the reason "not collected", by
  *     the platform (no account), through the same void a till uses — its
