@@ -69,13 +69,13 @@ export function getBranchTimezone(): string {
 /**
  * When the branch's trading day starts, in minutes after midnight (SCRUM-308).
  *
- * A sale is priced on the trading day — `branch.business_day_start`, 05:00 by
- * default — and until this was here the till read the calendar day: between
- * midnight and five the header chip said one thing and the receipt said
- * another. Seen on staging at 00:20 on the 23rd: chip Weekday, basket priced
- * Weekend for a holiday on the 22nd, which was still the trading day. Set from
- * the same hydration that sets the timezone; unparseable falls back to the
- * default rather than taking the till down.
+ * A sale is priced on the trading day — `branch.business_day_start`, which
+ * is midnight since SCRUM-1010 (the park's day runs midnight to midnight), so
+ * the chip and the receipt read the same calendar day. Kept as the park's own
+ * setting rather than assumed: the till must never disagree with the platform
+ * about which day it is. Set from the same hydration that sets the timezone;
+ * missing or unparseable falls back to the default (midnight) rather than
+ * taking the till down.
  */
 let branchDayStartMinutes = DEFAULT_BUSINESS_DAY_START_MINUTES;
 
@@ -183,7 +183,7 @@ function liveServerAnswer(): RateModeResult | null {
    * What makes an answer stale is its day being BEHIND this device's trading
    * day, and only that (SCRUM-209 fix round 2). An answer dated AHEAD of it is
    * the platform's clock saying the day has already moved on where this
-   * device's has not (a device a few minutes slow across 05:00, or a date the
+   * device's has not (a device a few minutes slow across midnight, or a date the
    * platform decided on its own clock), and the platform is the one the
    * booking is quoted by: overruling it with this device's calendar is how the
    * booking site came to show one day's rate while the platform quoted

@@ -25,7 +25,16 @@ describe('holdOutlivedItsDay — midnight in the branch, not 05:00', () => {
     expect(holdOutlivedItsDay(at('2026-11-04T20:15:00'), at('2026-11-05T00:00:00'), TZ)).toBe(true);
   });
 
-  it('midnight is not the business-day boundary: at 00:30 the business day has not changed, the hold has', () => {
+  it("SCRUM-1010: the hold's midnight and the business day turn together at the park's midnight", () => {
+    const held = at('2026-11-04T20:15:00');
+    const now = at('2026-11-05T00:30:00');
+    // The default day start is midnight, so at 00:30 both have moved on.
+    expect(businessDate(now, TZ)).not.toBe(businessDate(held, TZ));
+    expect(businessDate(now, TZ, 0)).toBe('2026-11-05');
+    expect(holdOutlivedItsDay(held, now, TZ)).toBe(true);
+  });
+
+  it('the hold stays on the calendar midnight even for a park that sets another day start', () => {
     const held = at('2026-11-04T20:15:00');
     const now = at('2026-11-05T00:30:00');
     expect(businessDate(now, TZ, 5 * 60)).toBe(businessDate(held, TZ, 5 * 60));

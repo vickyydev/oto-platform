@@ -197,8 +197,9 @@ export function isEmptyBenefitProfile(profile: BenefitProfile): boolean {
  * entitlement, `YYYY-MM` for a monthly one (prototype `benefitPeriodKey`).
  *
  * The prototype reads the device's local date. Here the date is an argument:
- * which day it is — calendar midnight or the 05:00 trading day, and on whose
- * clock — is the caller's to decide (plan §4, Q6).
+ * which day it is, and on whose clock, is the caller's to decide (plan §4,
+ * Q6). The callers pass the park's business date, which since SCRUM-1010
+ * turns at the park's midnight (the owner's "normal 24 hour day").
  */
 export function benefitPeriodKey(period: BenefitPeriod, isoDate: string): string {
   return period === 'monthly' ? isoDate.slice(0, 7) : isoDate.slice(0, 10);
