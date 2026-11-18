@@ -32,7 +32,7 @@ vi.mock('@/components/till/AddOnsGrid', () => ({ AddOnsGrid: () => null }));
 Object.assign(globalThis, { React });
 
 beforeEach(() => {
-  // Weekday fixture carts must not follow the live branch's 05:00 trading-day rollover.
+  // Weekday fixture carts must not follow the live branch's trading-day rollover (midnight).
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date('2026-11-12T05:00:00Z')); // Thursday noon in Bangkok; leave timers real.
 });

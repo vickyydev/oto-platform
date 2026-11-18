@@ -88,7 +88,7 @@ function liveCatalogue(products: ApiProduct[]) {
 }
 
 beforeEach(() => {
-  // These carts are weekday fixtures; keep the branch's 05:00 trading-day rollover out of this test.
+  // These carts are weekday fixtures; keep the branch's trading-day rollover (midnight) out of this test.
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date('2026-11-12T05:00:00Z')); // Thursday noon in Bangkok; real timers still run.
   seeded = getAddOns();

@@ -77,7 +77,7 @@ beforeAll(async () => {
   if (browser) {
     harness = await startSplitFixHarness(browser);
     // The recorded receipt is a weekday cart. Pin Date before its first navigation,
-    // clear of the branch's 05:00 rollover, without freezing rendering/timeout timers.
+    // clear of the branch's midnight rollover, without freezing rendering/timeout timers.
     await harness.page.clock.setFixedTime(new Date('2026-11-12T05:00:00Z'));
   }
 }, 180_000);

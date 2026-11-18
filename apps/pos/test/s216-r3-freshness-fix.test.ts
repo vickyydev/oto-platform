@@ -15,7 +15,10 @@ import { PerformanceFreshness } from '@/components/floor/PerformanceFreshness';
  * with its day start) and, when this device's clock agrees on that day, on
  * the clock's calendar date. Anything older names its day.
  *
- * Times below are Asia/Bangkok (UTC+7), day start 05:00.
+ * Times below are Asia/Bangkok (UTC+7). Most cases name a 05:00 day start
+ * as data — the setting every park held before SCRUM-1010 — to pin that the
+ * line follows the park's setting; the last case pins the park's day now,
+ * midnight to midnight.
  */
 
 Object.assign(globalThis, { React });
@@ -149,6 +152,17 @@ describe('fix round — the freshness line after a stalled rollup', () => {
     );
     // Same trading day, but an earlier calendar date than the clock's: named.
     expect(evening).toBe('Provisional — still being added up · Updated 6 Oct, 23:50');
+  });
+
+  it('SCRUM-1010: with the park’s midnight day start, 01:30 on the 7th is the 7th’s: 01:25 is bare, 23:50 the evening before names the 6th', () => {
+    vi.useFakeTimers({ now: new Date('2026-10-06T18:30:00.000Z') }); // 01:30, 7 Oct
+    const props = { provisional: true, timezone: 'Asia/Bangkok', today: '2026-10-07', dayStart: '00:00' };
+    expect(
+      text(React.createElement(PerformanceFreshness, { ...props, updatedAt: '2026-10-06T18:25:00.000Z' })), // 01:25, 7 Oct
+    ).toBe('Provisional — still being added up · Updated 01:25');
+    expect(
+      text(React.createElement(PerformanceFreshness, { ...props, updatedAt: '2026-10-06T16:50:00.000Z' })), // 23:50, 6 Oct
+    ).toBe('Provisional — still being added up · Updated 6 Oct, 23:50');
   });
 
   it('a till clock on the wrong date is not believed: the platform’s trading day decides', () => {
