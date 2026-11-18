@@ -35,6 +35,13 @@ interface PartySettlementCustomerScreenProps {
   method?: PartyPaymentMethod;
   /** SCRUM-732 — the code the payment route answered with, once it has. */
   qr?: { qrPayload: string | null; qrImageUrl: string | null; expiresAt: string | null } | null;
+  /**
+   * SCRUM-1001 — `party` is one additional bill (`additionalBillParty`), named
+   * so ("Additional bill 2"): the guest paying it sees that bill only, under its
+   * name, with no package and no deposit line (those are the main bill's, which
+   * the parents settled), and is not told the whole party is paid.
+   */
+  billName?: string;
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
@@ -89,6 +96,7 @@ export function PartySettlementCustomerScreen({
   amount,
   method,
   qr,
+  billName,
 }: PartySettlementCustomerScreenProps) {
   const { t, lang } = useLanguage();
   const lineItemsTotal = partyLineItemsTotal(party);
@@ -132,7 +140,11 @@ export function PartySettlementCustomerScreen({
           </div>
 
           <div className="rounded-2xl bg-foreground/5 border border-foreground/10 p-6 space-y-3">
-            <BillRow label={party.packageName ?? t('party.review.partyPackage')} value={`฿${bahtText(party.basePrice)}`} />
+            {billName ? (
+              <div className="text-lg font-semibold text-foreground/90">{billName}</div>
+            ) : (
+              <BillRow label={party.packageName ?? t('party.review.partyPackage')} value={`฿${bahtText(party.basePrice)}`} />
+            )}
             {party.lineItems.map((li) => (
               <BillRow
                 key={li.id}
@@ -198,7 +210,9 @@ export function PartySettlementCustomerScreen({
 
             <div className="border-t border-foreground/10 pt-3 space-y-2">
               <BillRow label={t('party.review.total')} value={`฿${bahtText(total)}`} strong />
-              <BillRow label={t('party.review.lessDeposit')} value={`−฿${bahtText(party.availableDeposit ?? party.deposit)}`} muted />
+              {!billName && (
+                <BillRow label={t('party.review.lessDeposit')} value={`−฿${bahtText(party.availableDeposit ?? party.deposit)}`} muted />
+              )}
               {prior > 0 && (
                 <BillRow label={t('party.review.lessPayments')} value={`−฿${bahtText(prior)}`} muted />
               )}
@@ -297,7 +311,7 @@ export function PartySettlementCustomerScreen({
             </div>
           </div>
         </div>
-        {settled && (
+        {settled && !billName && (
           <p className="text-xl text-foreground/60 mt-8">{t('party.thankyou.fullyPaid')}</p>
         )}
       </div>

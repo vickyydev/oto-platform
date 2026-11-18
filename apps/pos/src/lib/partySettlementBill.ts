@@ -14,6 +14,7 @@ import {
   partyLineItemsTotal,
   partyPaymentsTotal,
 } from './party';
+import { satangText } from './bahtText';
 
 /**
  * SCRUM-916 — THE PARTY BILL AS THE PARTY PAGE SHOWS IT, in baht.
@@ -59,6 +60,21 @@ export interface PartyBillShown {
 }
 
 const satang = (baht: number) => Math.round(baht * 100);
+
+/**
+ * SCRUM-1001 — THE SETTLEMENT'S LINE ON A PARTY BILL, the same on the counter
+ * and phone tills' party pages: a settled party names its receipt ("Party
+ * settled · Receipt T1-000089"), an open settlement what is left to take. The
+ * phone page named the package at ฿0 once the party was settled, where the
+ * counter's named the receipt. Staff only: no customer screen shows it. Null
+ * before a settlement (the package line shows instead).
+ */
+export function partySettlementLine(settlement: PartyBooking['settlement'] | null | undefined): { label: string; value: string } | null {
+  if (!settlement || !partySettlementLive(settlement)) return null;
+  return settlement.state === 'settled'
+    ? { label: 'Party settled', value: `Receipt ${settlement.receiptNumber ?? '—'}` }
+    : { label: 'Settlement open', value: `฿${satangText(settlement.outstandingSatang)} to take` };
+}
 
 /**
  * SCRUM-936 — A PARTY THE PLATFORM WILL NOT SETTLE AS ONE SALE, though its

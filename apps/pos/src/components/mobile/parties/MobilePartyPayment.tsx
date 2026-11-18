@@ -25,7 +25,8 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ArrowLeft, Check, Wallet } from 'lucide-react';
 import { bahtText } from '@/lib/bahtText';
-import { additionalBillChoices, additionalBillParty, openAdditionalBillId } from '@/lib/partyAdditionalBills';
+import { additionalBillChoices, additionalBillName, additionalBillParty, openAdditionalBillId } from '@/lib/partyAdditionalBills';
+import { AdditionalBillSummary } from '@/components/parties/AdditionalBillSummary';
 
 type Step = 'pick' | 'bill-review' | 'collect' | 'done';
 
@@ -82,6 +83,7 @@ export function MobilePartyPayment({
   const [selectedBillId, setSelectedBillId] = useState(() => openAdditionalBillId(party.additionalBills));
   const [collectBillId, setCollectBillId] = useState<string | undefined>();
   const selectedBill = party.additionalBills?.find((bill) => bill.id === selectedBillId);
+  const selectedBillName = additionalBillName(party.additionalBills, selectedBill?.id);
   const billingParty = additionalBillParty(party, selectedBillId);
   const total = selectedBill ? selectedBill.totalSatang / 100 : computePartyTotal(party);
   const outstanding = selectedBill ? selectedBill.outstandingSatang / 100 : computePartyOutstanding(party);
@@ -200,6 +202,7 @@ export function MobilePartyPayment({
         <PartySettlementCustomerScreen
           stage={customerStage}
           party={additionalBillParty(party, collectBillId ?? "")}
+          billName={additionalBillName(party.additionalBills, collectBillId) ?? undefined}
           amount={collectAmount}
           method={collectMethod}
         />
@@ -349,7 +352,10 @@ export function MobilePartyPayment({
               </select>
             </label>
           )}
-          {/* Bill summary */}
+          {/* Bill summary — an additional bill's own (SCRUM-1001), else the tab's */}
+          {selectedBill && selectedBillName ? (
+            <AdditionalBillSummary bill={selectedBill} name={selectedBillName} />
+          ) : (
           <div className="rounded-lg border p-4 space-y-2 text-sm">
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Package total</span>
@@ -376,6 +382,7 @@ export function MobilePartyPayment({
               <span className="text-2xl tabular-nums">฿{bahtText(outstanding)}</span>
             </div>
           </div>
+          )}
 
           {outstanding <= 0 ? (
             <div className="rounded-lg bg-emerald-500/10 text-emerald-500 p-4 text-center font-semibold">

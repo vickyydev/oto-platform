@@ -32,7 +32,8 @@ import {
   PartyPopper,
 } from 'lucide-react';
 import { bahtText } from '@/lib/bahtText';
-import { additionalBillChoices, additionalBillParty, openAdditionalBillId } from '@/lib/partyAdditionalBills';
+import { additionalBillChoices, additionalBillName, additionalBillParty, openAdditionalBillId } from '@/lib/partyAdditionalBills';
+import { AdditionalBillSummary } from './AdditionalBillSummary';
 
 interface PartyBalanceModalProps {
   displayHandoff?: StationDisplayHandoff;
@@ -89,6 +90,7 @@ export function PartyBalanceModal({
 }: PartyBalanceModalProps) {
   const [selectedBillId, setSelectedBillId] = useState(() => openAdditionalBillId(party.additionalBills));
   const selectedBill = party.additionalBills?.find((bill) => bill.id === selectedBillId);
+  const selectedBillName = additionalBillName(party.additionalBills, selectedBill?.id);
   const billingParty = additionalBillParty(party, selectedBillId);
   const total = selectedBill ? selectedBill.totalSatang / 100 : computePartyTotal(party);
   const outstanding = selectedBill ? selectedBill.outstandingSatang / 100 : computePartyOutstanding(party);
@@ -269,7 +271,10 @@ export function PartyBalanceModal({
                       {party.title} · by {operatorName}
                     </p>
 
-                    {/* Bill summary */}
+                    {/* Bill summary — an additional bill's own (SCRUM-1001), else the tab's */}
+                    {selectedBill && selectedBillName ? (
+                      <AdditionalBillSummary bill={selectedBill} name={selectedBillName} className="mb-5" />
+                    ) : (
                     <div className="rounded-lg border p-4 space-y-2 text-sm mb-5">
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground">Package total</span>
@@ -304,6 +309,7 @@ export function PartyBalanceModal({
                         <span className="text-2xl tabular-nums">฿{bahtText(outstanding)}</span>
                       </div>
                     </div>
+                    )}
 
                     {outstanding <= 0 ? (
                       <div className="rounded-lg bg-emerald-500/10 text-emerald-500 p-4 text-center font-semibold">
@@ -498,6 +504,7 @@ export function PartyBalanceModal({
               <PartySettlementCustomerScreen
                 stage={customerStage}
                 party={billingParty}
+                billName={selectedBillName ?? undefined}
                 amount={stage === 'review' ? amount : stage === 'collect' ? shown.amount : collectAmount}
                 method={stage === 'review' ? (method || undefined) : stage === 'collect' ? shown.method : collectMethod}
                 qr={tender.display}

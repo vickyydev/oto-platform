@@ -12,6 +12,7 @@ import {
 import {
   partyBillShown,
   partyBillUnpriced,
+  partySettlementLine,
   plannedQuoteOf,
   usePlannedSettleQuote,
 } from '@/lib/partySettlementBill';
@@ -144,6 +145,8 @@ export function MobilePartyDetail({
   // counter's page shows it; settled on a counter till.
   const bill = partyBillShown(party, planned);
   const settlementOpen = party.settlement?.state === 'open';
+  // SCRUM-1001 — a settled party names its receipt here as the counter's page does, not its package at ฿0.
+  const settlementLine = partySettlementLine(party.settlement);
   const cake = party.kitchen.cake;
   const cakeLabel = partyCakeLabel(cake);
 
@@ -200,8 +203,8 @@ export function MobilePartyDetail({
           {/* Bill */}
           <SectionCard icon={ReceiptText} title="Party bill">
             <div className="text-xs">
-              {settlementOpen ? (
-                <InfoRow icon={CheckCircle2} label="Settlement open" value={`฿${bahtText(bill.settlementOwed)} to take`} />
+              {settlementLine ? (
+                <InfoRow icon={CheckCircle2} label={settlementLine.label} value={settlementLine.value} />
               ) : (
                 <>
                   <InfoRow

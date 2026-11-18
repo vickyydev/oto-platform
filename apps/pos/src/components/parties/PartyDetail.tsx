@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
-import { newId, partySettlementLive, type PartyKitchenChange, type PartyKitchenChoicesAnswer } from '@oto/shared';
+import { newId, type PartyKitchenChange, type PartyKitchenChoicesAnswer } from '@oto/shared';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -20,7 +20,7 @@ import {
   partyLineItemsTotal,
   PARTY_STATUS_LABELS,
 } from '@/lib/party';
-import { partyBillShown, partyBillUnpriced, plannedQuoteOf, usePlannedSettleQuote } from '@/lib/partySettlementBill';
+import { partyBillShown, partyBillUnpriced, partySettlementLine, plannedQuoteOf, usePlannedSettleQuote } from '@/lib/partySettlementBill';
 import { useOperator } from '@/auth/OperatorContext';
 import { useStation } from '@/station/StationContext';
 import {
@@ -197,7 +197,7 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
   // SCRUM-906 — the whole kitchen plan, with or without a package; a platform before it gives the plan's own.
   const kitchenPlan = planRead?.kitchenPlan ?? plan;
   const settlement = party.settlement ?? null;
-  const settledByPlan = partySettlementLive(settlement);
+  const settlementLine = partySettlementLine(settlement);
 
   const outstanding = computePartyOutstanding(party);
   const extras = partyExtraChargesTotal(party);
@@ -529,16 +529,8 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
   const billSection = (
     <SectionCard icon={ReceiptText} title="Party bill">
       <div className="text-sm">
-        {settledByPlan && settlement ? (
-          <InfoRow
-            icon={CheckCircle2}
-            label={settlement.state === 'settled' ? 'Party settled' : 'Settlement open'}
-            value={
-              settlement.state === 'settled'
-                ? `Receipt ${settlement.receiptNumber ?? '—'}`
-                : `฿${satangText(settlement.outstandingSatang)} to take`
-            }
-          />
+        {settlementLine ? (
+          <InfoRow icon={CheckCircle2} label={settlementLine.label} value={settlementLine.value} />
         ) : (
           <>
             <InfoRow
