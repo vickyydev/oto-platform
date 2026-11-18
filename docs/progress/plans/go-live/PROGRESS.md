@@ -7,7 +7,7 @@ settings and hashes only: never a value, a connection string or a person.
 
 ## Status
 
-_Updated 12 November 2026, 18:05 Bangkok._
+_Updated 18 November 2026 (the phone numbers of SCRUM-921); the rest as of 12 November 2026, 18:05 Bangkok._
 
 **The live link: https://oto-launcher-production.onrender.com** (sign in
 there; the HR app itself is https://oto-app-production.onrender.com).
@@ -54,6 +54,14 @@ there; the HR app itself is https://oto-app-production.onrender.com).
   recorded and cannot sign in at the launcher yet**: their names are in
   `C:\oto-data\golive\staff-without-phone.csv`, on the owner's laptop only.
   A second dry run reads provision 0, already linked 52.
+  **18 November:** the owner gave the numbers of 13 of the 14. They were saved
+  on those users through the HR app's own Users route as the administrator
+  (13 of 13, read back) and the staff accounts script made their logins (13
+  provisioned, 0 failed; 2 managers, 11 staff; phones unverified, 1 forced
+  password change). A further dry run reads provision 0, already linked 66,
+  no phone 1: the fourteenth is a test user and stays as it is. The numbers
+  are in `C:\oto-data\golive\staff-phones-20261118.csv`, on the owner's
+  laptop only.
 - **The launcher shows only the HR app.** The other five apps are `hidden` in
   the suite registry. Seen on the live page as the administrator: one tile,
   OTO App (pictures in `docs/qa/proof-2026-11-12/SCRUM-110/`). For a moment
@@ -182,7 +190,10 @@ Render API and read back: 46 on the api, 24 on the app, 1 on the launcher.
    (`prepare`, allow the laptop, `apply`, `production-bootstrap.ts` writes
    nothing new, `otoapp-staff-accounts.ts` picks up new people, remove the
    laptop). Whatever staff entered in the old app after the dump is otherwise
-   not in the new one.
+   not in the new one. A fresh dump also replaces the 13 phone numbers added
+   on 18 November unless they were added in the old app too: put them back
+   from the private file (`feed-phones.mjs --apply` in the go-live scripts)
+   BEFORE `otoapp-staff-accounts.ts` runs.
 2. On Render, add the custom domain to `oto-launcher-production` (the
    address staff type today) and one to `oto-app-production`; add the DNS
    records Render shows; wait for the certificates.
@@ -204,8 +215,9 @@ Each is a ticket under SCRUM-110 (P7 Cutover), filed 12 November:
 
 1. SCRUM-920 (the administrator's profile inside the HR app, then the app's
    screens): DONE on 12 November, Deployed with its pictures.
-2. SCRUM-921 (14 active people have no phone number): the owner gives the
-   numbers, or they are added in the old app before the final dump.
+2. SCRUM-921 (14 active people have no phone number): 13 numbers entered and
+   13 logins made on 18 November; the fourteenth is a test user. To repeat
+   after the final dump (the switch, step 1).
 3. SCRUM-922 (one real staff member signs in on the live link).
 4. SCRUM-923 (switch the domains): the steps above, when DNS access is there.
 5. SCRUM-924 (land the one-off set-up script): the owner's call on landing
