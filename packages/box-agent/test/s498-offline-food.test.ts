@@ -199,7 +199,7 @@ function walletsItem(): WalletSnapshotItem {
     version: 'w-s498',
     generatedAt: new Date().toISOString(),
     branchId: BRANCH_ID,
-    businessDate: businessDate(new Date(), 'Asia/Bangkok', 5 * 60),
+    businessDate: businessDate(new Date(), 'Asia/Bangkok', 0),
     capSatang: 30_000,
     truncated: false,
     wallets: [

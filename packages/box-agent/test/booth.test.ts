@@ -52,7 +52,7 @@ const CONFIG_VERSION_ID = '018f1d2c-0000-7000-8000-00000000fc01';
 const ACCOUNT_ID = '018f1d2c-0000-7000-8000-00000000fb01';
 const AT = '2026-09-21T06:00:00.000Z';
 
-/** 13:00 in Bangkok, which is the middle of a trading day that starts at 05:00. */
+/** 13:00 in Bangkok, the middle of the park's day, which runs midnight to midnight (SCRUM-1010). */
 const BUSINESS_DATE = '2026-09-21';
 
 interface Prize {
@@ -136,6 +136,8 @@ interface HarnessOptions {
   codeIndex?: (max: number) => number;
   /** The branch's time zone. Bangkok unless a test says otherwise. */
   timezone?: string;
+  /** The branch's business day start. Midnight, the park's (SCRUM-1010), unless a test says otherwise. */
+  businessDayStart?: string;
   /** How long a press waits on the printer. The booth's own default unless set. */
   printWaitMs?: number;
   log?: AgentLog;
@@ -182,7 +184,7 @@ function openBooth(options: HarnessOptions = {}): Harness {
       operatorId: OPERATOR_ID,
       name: 'HKT Central',
       timezone: options.timezone ?? 'Asia/Bangkok',
-      businessDayStart: '05:00',
+      businessDayStart: options.businessDayStart ?? '00:00',
     }),
     privateKey: () => (options.privateKey === undefined ? keys.privateKeyPem : options.privateKey),
     print: options.print === false ? null : port,
@@ -680,14 +682,14 @@ test('a voucher runs to the end of the date its slip prints, in the branch’s t
   await seed(h);
   h.printOutcome = 'queued';
 
-  // The seeded prizes run fourteen days. Three wins on the 21st in Bangkok:
-  // the morning, just before midnight, and — a trading day earlier than its
-  // calendar date — half past midnight on the 22nd.
+  // The seeded prizes run fourteen days. Three wins in Bangkok: the morning
+  // and just before midnight on the 21st, and half past midnight on the 22nd
+  // (the 22nd's trading day too, since SCRUM-1010).
   h.setNow('2026-09-21T02:00:00.000Z'); // 09:00 on the 21st in Bangkok
   const morning = await h.booth.spin({ idempotencyKey: 'press-morning' });
   h.setNow('2026-09-21T16:30:00.000Z'); // 23:30 on the 21st
   const lateEvening = await h.booth.spin({ idempotencyKey: 'press-late' });
-  h.setNow('2026-09-21T17:30:00.000Z'); // 00:30 on the 22nd; the 21st's trading day
+  h.setNow('2026-09-21T17:30:00.000Z'); // 00:30 on the 22nd
   const afterMidnight = await h.booth.spin({ idempotencyKey: 'press-night' });
 
   // 5 Oct 23:59:59.999 in Bangkok, whatever the time of day it was won.
@@ -869,19 +871,19 @@ test('a repeated key the process can no longer answer for is refused, never redr
 test('a retry that arrives after the trading day rolls over is still one spin', async () => {
   /**
    * The counter rows a press is guarded by are keyed by trading day, so the
-   * boundary — 05:00 on the branch's wall clock — is the one moment at which a
-   * naive guard forgets everything and draws a second prize for one press. A
-   * booth is shut at five in the morning, which is exactly why this would have
+   * boundary — the park's midnight since SCRUM-1010 — is the one moment at
+   * which a naive guard forgets everything and draws a second prize for one
+   * press. A booth is shut at midnight, which is exactly why this would have
    * gone unnoticed.
    */
   const h = openBooth({ rolls: [0] });
   await seed(h);
-  h.setNow('2026-09-21T21:30:00.000Z'); // 04:30 on the 22nd in Bangkok: still the 21st.
+  h.setNow('2026-09-21T16:59:00.000Z'); // 23:59 on the 21st in Bangkok.
   const first = await h.booth.spin({ idempotencyKey: 'press-1' });
 
   // The day rolls. A fresh module, so only the durable guard is left.
   const restarted = openBooth({ rolls: [0], store: h.store });
-  restarted.setNow('2026-09-21T22:30:00.000Z'); // 05:30 on the 22nd: a new trading day.
+  restarted.setNow('2026-09-21T17:01:00.000Z'); // 00:01 on the 22nd: a new trading day.
   await restarted.booth.refresh();
   await assert.rejects(
     () => restarted.booth.spin({ idempotencyKey: 'press-1' }),
@@ -1065,8 +1067,40 @@ test('a booth with no cap plays on: null is no limit', async () => {
   h.close();
 });
 
-test('the day’s spins reset at the trading-day boundary, not at midnight', async () => {
+test('SCRUM-1010: the day’s spins reset at the park’s midnight, not at 05:00 and not at the UTC date change', async () => {
   const h = openBooth({ rolls: [0] });
+  await seed(h, [withSpinCap(1)]);
+
+  // 23:30 in Bangkok on the 21st: the booth's one spin for that day.
+  h.setNow('2026-09-21T16:30:00.000Z');
+  await h.booth.spin({ idempotencyKey: 'press-1' });
+
+  // 23:59: still the 21st, still capped.
+  h.setNow('2026-09-21T16:59:00.000Z');
+  await assert.rejects(
+    () => h.booth.spin({ idempotencyKey: 'press-2' }),
+    (err: unknown) => err instanceof BoothRefusal && err.code === 'daily_spin_cap_reached',
+  );
+
+  // 00:00 on the 22nd: a new day at the park's midnight. The UTC date is
+  // still the 21st (it turns at 07:00 Bangkok), and 05:00 is five hours off.
+  h.setNow('2026-09-21T17:00:00.000Z');
+  const next = await h.booth.spin({ idempotencyKey: 'press-3' });
+  assert.equal(typeof next.voucherCode, 'string');
+
+  assert.deepEqual(await h.store.readCounters(BOX_ID, BOOTH_SPIN_COUNTER_SCOPE, '2026-09-21'), {
+    [STATION_ID]: 1,
+  });
+  assert.deepEqual(
+    await h.store.readCounters(BOX_ID, BOOTH_SPIN_COUNTER_SCOPE, '2026-09-22'),
+    { [STATION_ID]: 1 },
+    'the new day counts from zero, in a row of its own',
+  );
+  h.close();
+});
+
+test('a park that sets a 05:00 day start keeps its cap until 05:00: the park’s setting decides', async () => {
+  const h = openBooth({ rolls: [0], businessDayStart: '05:00' });
   await seed(h, [withSpinCap(1)]);
 
   // 23:30 in Bangkok on the 21st: the booth's one spin for that trading day.
@@ -1075,10 +1109,8 @@ test('the day’s spins reset at the trading-day boundary, not at midnight', asy
 
   /**
    * 04:30 the next morning. Midnight has passed and the date on a wall
-   * calendar has changed, and the booth is still inside the 21st's trading day
-   * — which is the whole of this test. A cap that reset at midnight would hand
-   * out a second day's prizes to whoever was still at the mall at one in the
-   * morning.
+   * calendar has changed, and this park's booth is still inside the 21st's
+   * trading day, because its setting says the day starts at 05:00.
    */
   h.setNow('2026-09-21T21:30:00.000Z');
   await assert.rejects(
