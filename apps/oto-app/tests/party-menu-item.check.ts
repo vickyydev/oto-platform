@@ -19,7 +19,11 @@
 //     the key and a form that does not read are refused before the platform
 //     is asked;
 //   - the BEO's own Save and read keep the line's code, and the till's plan
-//     view (otoapp_v.event_packages, migration 0047) names it by its code.
+//     view (otoapp_v.event_packages, migration 0047) names it by its code;
+//   - SCRUM-998: an item added to the adults' list is added with "Different
+//     for adults" on (the list offers "New item" only then), so the saved BEO
+//     turns the switch on at once and the line is billed as any adults' line;
+//     an item added to the kids' list leaves the switch as it was.
 //
 // Usage, from apps/oto-app, with DATABASE_URL set:
 //   npx tsx tests/party-menu-item.check.ts
@@ -32,6 +36,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 import { createPartyMenuProduct } from "../server/lib/partyMenuItem";
+import { approvedBeoBillingSources } from "../shared/beoBillingSource";
 import { partyMenuItemProblem, partyMenuLineOf, satangOfBaht } from "../shared/partyMenuItem";
 
 const APP_DIR = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -329,23 +334,60 @@ try {
     cake = { actionId, code: res.body.productCode };
   });
 
-  await check("a manager adds a priced bar item to the adults' list: satang to the platform, baht on the line", async () => {
+  await check("a manager adds a priced bar item to the adults' list: satang to the platform, baht on the line; the saved BEO turns the adults' switch on and bills it", async () => {
+    // The first add saved "Different for adults" off (the plan's two lists said so).
+    assert.equal((await kitchenOf(partyA))?.menus?.adultsDiffer, false, "the switch saved off before this add");
     const res = await add(keyed, manager, partyA, { menu: "adults", name: "ZZ TEST bubble tea", station: "bar", price: 450.5, free: false });
     assert.equal(res.status, 200, JSON.stringify(res.body));
     assert.equal(asked.at(-1)!.body.priceSatang, 45_050);
     assert.equal(asked.at(-1)!.body.station, "bar");
     assert.equal(asked.at(-1)!.body.actorAppUserId, managerA.id);
     assert.equal(additions.at(-1)!.url, `/otoapp/parties/${partyA}/beo-additions`);
-    // The adults' list is off here (the first add set "Different for adults" to false), so this
-    // line is no billing source and the plan stores it with no billing state; the answer's line
-    // is the stored line, as since SCRUM-828. It carries its charge approval (SCRUM-989).
+    // SCRUM-998: the adults' "New item" shows only with "Different for adults" on, so the item is
+    // added with the switch on and the saved BEO says so at once: the line is a billing source, the
+    // platform is offered it with the party's other approved lines, and the answer's line is the
+    // stored line with the billing state the sync wrote on it (SCRUM-995).
     assert.deepEqual(res.body.line, {
       id: res.body.line.id, itemName: "ZZ TEST bubble tea", quantity: 1, notes: "", included: false, price: 450.5, productCode: res.body.productCode,
-      chargeApproved: true,
+      chargeApproved: true, billingSync: "plan_only",
     });
     const plan = await kitchenOf(partyA);
+    assert.equal(plan?.menus?.adultsDiffer, true, "the saved BEO has the adults' switch on");
     assert.equal((plan?.menus?.kids as unknown[]).length, 1, "the kids' list as it was");
     assert.deepEqual(plan?.menus?.adults, [res.body.line]);
+    assert.deepEqual(plan?.simplified_menus?.adults, [res.body.line]);
+    const sources = approvedBeoBillingSources(plan?.menus, null).map((l) => l.id);
+    assert.ok(sources.includes(res.body.line.id), `the adults' line is a billing source: ${JSON.stringify(sources)}`);
+    const offered = (additions.at(-1)!.body.lines as Array<{ lineId: string }>).map((l) => l.lineId);
+    assert.ok(offered.includes(res.body.line.id), "the platform was offered the adults' line to bill");
+  });
+
+  await check("an item added to the kids' list leaves the adults' switch as it was saved, off or on", async () => {
+    const partyK = await party(A, "kids switch");
+    const saveSwitch = async (adultsDiffer: boolean, adults: unknown[]) => {
+      const res = await call(keyed, "PUT", `/api/events/${partyK}/beo`, admin, {
+        kitchenPlan: {
+          foodRequired: true, cakeMode: "NONE", setMenuEnabled: false, setMenuTemplateId: null,
+          menus: { kids: (await kitchenOf(partyK))?.menus?.kids ?? [], adults, adultsDiffer, kidsFoodTime: "", adultsFoodTime: "" },
+          serviceSchedule: [],
+        },
+      });
+      assert.equal(res.status, 200, JSON.stringify(res.body));
+      assert.equal((await kitchenOf(partyK))?.menus?.adultsDiffer, adultsDiffer);
+    };
+    await saveSwitch(false, []);
+    const off = await add(keyed, admin, partyK, { name: "ZZ TEST kids pudding", price: 120, free: false });
+    assert.equal(off.status, 200, JSON.stringify(off.body));
+    let plan = await kitchenOf(partyK);
+    assert.equal(plan?.menus?.adultsDiffer, false, "saved off: still off");
+    assert.deepEqual(plan?.menus?.adults, []);
+    assert.deepEqual((plan?.menus?.kids as Array<{ id: string }>).map((l) => l.id), [off.body.line.id]);
+    await saveSwitch(true, [{ id: "zz_adults_own", itemName: "ZZ TEST adults' soup", quantity: 1, notes: "", included: true, price: 0 }]);
+    const on = await add(keyed, admin, partyK, { name: "ZZ TEST kids jelly", price: null, free: true });
+    assert.equal(on.status, 200, JSON.stringify(on.body));
+    plan = await kitchenOf(partyK);
+    assert.equal(plan?.menus?.adultsDiffer, true, "saved on: still on");
+    assert.deepEqual((plan?.menus?.adults as Array<{ id: string }>).map((l) => l.id), ["zz_adults_own"], "the adults' list as it was");
   });
 
   await check("the same press again is the same item and the same line, never a second", async () => {
@@ -449,4 +491,4 @@ try {
   platform.close();
   await pool.end();
 }
-process.exit(checks === 9 ? 0 : 1);
+process.exit(checks === 10 ? 0 : 1);

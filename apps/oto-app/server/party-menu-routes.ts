@@ -138,9 +138,13 @@ export function registerPartyMenuRoutes(app: Express): void {
         const written = (at < 0 ? fresh : { ...held[at], productCode: made.code }) as PartyMenuLine;
         const lines = at < 0 ? [...held, written] : held.map((l, i) => (i === at ? written : l));
         const nextMenus = { ...menus, [body.menu]: lines };
-        // SCRUM-829: the plan records "Different for adults" as its readers resolve it, so a line
-        // added to the adults' list here reads one way on the till, in the editor and on the PDF.
-        if (typeof nextMenus.adultsDiffer !== "boolean") nextMenus.adultsDiffer = adultsDifferOf(nextMenus);
+        // SCRUM-998: the adults' list offers "New item" only with "Different for adults" on, so an
+        // item added there is added with the switch on, and the plan says so at once: the line is
+        // billed as any adults' line and never waits for a Save. An item added to the kids' list
+        // leaves the switch as saved; a plan with none records it as its readers resolve it
+        // (SCRUM-829), so the line reads one way on the till, in the editor and on the PDF.
+        if (body.menu === "adults") nextMenus.adultsDiffer = true;
+        else if (typeof nextMenus.adultsDiffer !== "boolean") nextMenus.adultsDiffer = adultsDifferOf(nextMenus);
         const values = {
           menus: nextMenus,
           simplifiedMenus: { kids: asLines(nextMenus.kids), adults: asLines(nextMenus.adults) },
@@ -165,8 +169,8 @@ export function registerPartyMenuRoutes(app: Express): void {
       forgetTillMenu(coreBranchId);
       const additionalBilling = await syncApprovedBeoAdditions(event.id, userId);
       // SCRUM-995: the answered line is the line as saved. The sync writes a billing state only onto
-      // a line the additional bill counts (shared/beoBillingSource.ts); an adults' line while
-      // "Different for adults" is off is none, so it is answered with none, never the party's state.
+      // a line the additional bill counts (shared/beoBillingSource.ts); a line it does not count is
+      // answered with none, never the party's state.
       const saved = await savedLineOf(event.id, body.menu, String(line.id));
       res.json({ line: saved ?? line, additionalBilling, productId: made.productId, productCode: made.code, replayed: made.replayed });
     } catch (error) {
