@@ -116,7 +116,11 @@ export async function inboxReadRoutes(app: App): Promise<void> {
           'no team, a general question the assistant is answering), status, language, `q` (customer, intent, last message), ' +
           '`unanswered=true` (a customer message or a routing after the last staff reply; AI lines do not count), the ' +
           'handled date range, and `resolvedBy` (on the handled tab only). `tabCounts` counts the viewer’s tabs over ' +
-          'everything visible, before filters. Needs inbox:conversation:read somewhere in the operator.',
+          'everything visible, before filters. (SCRUM-996) Each row’s `depositSignal` says where a pre-booking ' +
+          'birthday deposit stands — `paid`, `paid_date_passed` or `needs_checking`, words only, never an amount — to ' +
+          'whoever sees the row; the first page also carries `readyToBook`, the tab’s rows (same filters) whose ' +
+          'deposit is paid and not yet booked, newest activity first, which the shell pins above the list. ' +
+          'Needs inbox:conversation:read somewhere in the operator.',
         querystring: InboxConversationListQuerySchema,
         response: { 200: InboxConversationListSchema },
       },

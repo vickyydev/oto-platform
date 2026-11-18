@@ -1192,6 +1192,32 @@ export async function settlePaidAttempt(
       log.error({ err, requestId: outcome.partyDepositPaid.requestId }, 'after a party deposit was paid');
     }
   }
+  /**
+   * SCRUM-996 — a pre-booking birthday deposit this money paid: the family's
+   * "received" line and the birthday manager's bell, AFTER the commit and
+   * only from the settlement that made the attempt approved, so a replayed
+   * notification reaches neither. Nothing here may undo or fail the payment.
+   * Loaded at the call: `inbox/prebooking.ts` imports this file.
+   */
+  const prebookingDraftId = (input.attempt.payload as { prebookingDraftId?: unknown } | null)?.prebookingDraftId;
+  if (
+    outcome.outcome === 'settled' &&
+    !outcome.bookingPaid &&
+    !outcome.partyDepositPaid &&
+    !input.attempt.saleId &&
+    typeof prebookingDraftId === 'string'
+  ) {
+    try {
+      const { afterPrebookingDepositPaid } = await import('../inbox/prebooking');
+      await afterPrebookingDepositPaid(db, log, {
+        attemptId: outcome.attemptId,
+        source: input.source,
+        requestId: input.requestId ?? null,
+      });
+    } catch (err) {
+      log.error({ err, attemptId: outcome.attemptId }, 'after a pre-booking deposit was paid');
+    }
+  }
   // SCRUM-732 — a pass this money closed goes to the OTO App now, till or no till.
   if (outcome.finalisedSale && input.attempt.saleId) {
     await writeBackSalePass(db, log, input.attempt.saleId);

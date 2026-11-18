@@ -97982,7 +97982,7 @@
     },
     "/inbox/conversations": {
       "get": {
-        "description": "The conversations the caller can see — operator-wide reading sees all; a branch grant that branch; a team member (a department-scoped grant) the team's; anyone the conversations they hold a slot on — newest activity first, keyset-paged by `cursor`. `tab` applies the ported rule: mine = active and on it; team = every active one visible (the viewer’s own included); handled = handled. Filters: category, branch (that branch's and the operator-wide ones — a park's inbox; SCRUM-789: never a conversation held in the General inbox), `inbox=general` (SCRUM-789: only the general conversations held out of the park inboxes — routed, on no team, a general question the assistant is answering), status, language, `q` (customer, intent, last message), `unanswered=true` (a customer message or a routing after the last staff reply; AI lines do not count), the handled date range, and `resolvedBy` (on the handled tab only). `tabCounts` counts the viewer’s tabs over everything visible, before filters. Needs inbox:conversation:read somewhere in the operator.",
+        "description": "The conversations the caller can see — operator-wide reading sees all; a branch grant that branch; a team member (a department-scoped grant) the team's; anyone the conversations they hold a slot on — newest activity first, keyset-paged by `cursor`. `tab` applies the ported rule: mine = active and on it; team = every active one visible (the viewer’s own included); handled = handled. Filters: category, branch (that branch's and the operator-wide ones — a park's inbox; SCRUM-789: never a conversation held in the General inbox), `inbox=general` (SCRUM-789: only the general conversations held out of the park inboxes — routed, on no team, a general question the assistant is answering), status, language, `q` (customer, intent, last message), `unanswered=true` (a customer message or a routing after the last staff reply; AI lines do not count), the handled date range, and `resolvedBy` (on the handled tab only). `tabCounts` counts the viewer’s tabs over everything visible, before filters. (SCRUM-996) Each row’s `depositSignal` says where a pre-booking birthday deposit stands — `paid`, `paid_date_passed` or `needs_checking`, words only, never an amount — to whoever sees the row; the first page also carries `readyToBook`, the tab’s rows (same filters) whose deposit is paid and not yet booked, newest activity first, which the shell pins above the list. Needs inbox:conversation:read somewhere in the operator.",
         "parameters": [
           {
             "schema": {
@@ -98297,8 +98297,18 @@
                               "ai_sent",
                               "waiting_customer",
                               "shadow_preview",
-                              "handled"
+                              "handled",
+                              "staff_action_needed"
                             ]
+                          },
+                          "depositSignal": {
+                            "type": "string",
+                            "enum": [
+                              "paid",
+                              "paid_date_passed",
+                              "needs_checking"
+                            ],
+                            "nullable": true
                           },
                           "unread": {
                             "type": "integer",
@@ -98447,6 +98457,272 @@
                     "nextCursor": {
                       "type": "string",
                       "nullable": true
+                    },
+                    "readyToBook": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "channel": {
+                            "type": "string",
+                            "enum": [
+                              "whatsapp",
+                              "instagram",
+                              "facebook",
+                              "line",
+                              "telegram",
+                              "webform"
+                            ]
+                          },
+                          "channelAccountId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "channelAccountName": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "canReply": {
+                            "type": "boolean"
+                          },
+                          "contact": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "channel": {
+                                "type": "string",
+                                "enum": [
+                                  "whatsapp",
+                                  "instagram",
+                                  "facebook",
+                                  "line",
+                                  "telegram",
+                                  "webform"
+                                ]
+                              },
+                              "handle": {
+                                "type": "string"
+                              },
+                              "displayName": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "phone": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "language": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "erased": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "channel",
+                              "handle",
+                              "displayName",
+                              "phone",
+                              "language",
+                              "erased"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "category": {
+                            "type": "string",
+                            "enum": [
+                              "birthdays",
+                              "general",
+                              "marketing",
+                              "gm"
+                            ]
+                          },
+                          "intent": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "language": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "branchId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "teamId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "active",
+                              "handled"
+                            ]
+                          },
+                          "handledAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "handledByKind": {
+                            "type": "string",
+                            "enum": [
+                              "account",
+                              "ai"
+                            ],
+                            "nullable": true
+                          },
+                          "lastMessageAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "lastMessagePreview": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "unanswered": {
+                            "type": "boolean"
+                          },
+                          "nextAction": {
+                            "type": "string",
+                            "enum": [
+                              "staff_reply_needed",
+                              "ai_replying",
+                              "ai_previewing",
+                              "ai_sent",
+                              "waiting_customer",
+                              "shadow_preview",
+                              "handled",
+                              "staff_action_needed"
+                            ]
+                          },
+                          "depositSignal": {
+                            "type": "string",
+                            "enum": [
+                              "paid",
+                              "paid_date_passed",
+                              "needs_checking"
+                            ],
+                            "nullable": true
+                          },
+                          "unread": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "mine": {
+                            "type": "boolean"
+                          },
+                          "assignments": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "assignmentId": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "slot": {
+                                  "type": "string",
+                                  "enum": [
+                                    "primary",
+                                    "support"
+                                  ]
+                                },
+                                "slotIndex": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 2
+                                },
+                                "assigneeKind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "account",
+                                    "team",
+                                    "ai"
+                                  ]
+                                },
+                                "accountId": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "nullable": true
+                                },
+                                "teamId": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "nullable": true
+                                },
+                                "name": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "reason": {
+                                  "type": "string",
+                                  "enum": [
+                                    "auto",
+                                    "manual",
+                                    "divert",
+                                    "move",
+                                    "reopen"
+                                  ]
+                                },
+                                "assignedAt": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "assignmentId",
+                                "slot",
+                                "slotIndex",
+                                "assigneeKind",
+                                "accountId",
+                                "teamId",
+                                "name",
+                                "reason",
+                                "assignedAt"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "createdAt": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "channel",
+                          "channelAccountId",
+                          "channelAccountName",
+                          "canReply",
+                          "contact",
+                          "category",
+                          "intent",
+                          "language",
+                          "branchId",
+                          "teamId",
+                          "status",
+                          "handledAt",
+                          "handledByKind",
+                          "lastMessageAt",
+                          "lastMessagePreview",
+                          "unanswered",
+                          "unread",
+                          "mine",
+                          "assignments",
+                          "createdAt"
+                        ],
+                        "additionalProperties": false
+                      }
                     },
                     "tabCounts": {
                       "type": "object",
@@ -98642,8 +98918,18 @@
                         "ai_sent",
                         "waiting_customer",
                         "shadow_preview",
-                        "handled"
+                        "handled",
+                        "staff_action_needed"
                       ]
+                    },
+                    "depositSignal": {
+                      "type": "string",
+                      "enum": [
+                        "paid",
+                        "paid_date_passed",
+                        "needs_checking"
+                      ],
+                      "nullable": true
                     },
                     "unread": {
                       "type": "integer",

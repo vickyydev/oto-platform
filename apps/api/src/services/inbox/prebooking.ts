@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import {
   auditLog,
   branch,
@@ -16,6 +16,7 @@ import {
   isoDateInTz,
   parseDayStart,
   type InboxBookDateBody,
+  type InboxDepositSignal,
   type InboxPrebooking,
   type InboxPrebookingRequest,
   type PartyDepositRequestView,
@@ -28,14 +29,21 @@ import { hasPermission } from '../permissions';
 import { audit } from '../audit';
 import { openAttempt, type AttemptRow } from '../payments/attempt';
 import { gatewayProviderOf, mintWebInvoiceNo, requestHostedPayment } from '../payments/gateway';
-import { partyDepositLinkOf, partyDepositReturnUrlOf } from '../party-deposit';
+import {
+  partyDepositLinkOf,
+  partyDepositNoticeDeps,
+  partyDepositReturnUrlOf,
+  ringBirthdayManager,
+} from '../party-deposit';
 import { withTx, type Exec, type OpContext } from '../tx';
 import type { ActionCtx } from './actions';
 import { authorizePrebooking, eventStandingOf, isRemovedStanding } from './book-date';
 import {
+  lockedConversation,
   partyAmountWords,
   partyClockWords,
   partyDateWords,
+  partyMessageId,
   partyMessageLanguageOf,
   postPartyMessage,
   sendPartyMessages,
@@ -75,6 +83,21 @@ export function verifiedPrebookingAttempt(
   );
 }
 
+/** An actual refund allocation against the attempt: the money went back. */
+async function refundedAttempt(db: Exec, operatorId: string, attemptId: string): Promise<boolean> {
+  const [returned] = await db
+    .select({ id: refund.id })
+    .from(refund)
+    .where(
+      and(
+        eq(refund.operatorId, operatorId),
+        sql`exists (select 1 from jsonb_array_elements(${refund.tenderAllocation}) allocation where allocation->>'attemptId' = ${attemptId} and (allocation->>'amountSatang')::numeric > 0)`,
+      ),
+    )
+    .limit(1);
+  return returned !== undefined;
+}
+
 /** Refund allocations, rather than caller-supplied flags, determine whether money is still available. */
 async function eligibleAttempts(
   db: Exec,
@@ -96,17 +119,7 @@ async function eligibleAttempts(
         ),
       )
       .limit(1);
-    const [returned] = await db
-      .select({ id: refund.id })
-      .from(refund)
-      .where(
-        and(
-          eq(refund.operatorId, draft.operatorId),
-          sql`exists (select 1 from jsonb_array_elements(${refund.tenderAllocation}) allocation where allocation->>'attemptId' = ${attempt.id} and (allocation->>'amountSatang')::numeric > 0)`,
-        ),
-      )
-      .limit(1);
-    if (receipt && !returned) eligible.push(attempt);
+    if (receipt && !(await refundedAttempt(db, draft.operatorId, attempt.id))) eligible.push(attempt);
   }
   return eligible;
 }
@@ -191,11 +204,12 @@ export async function prebookingPartyDepositView(
   };
 }
 
-async function view(db: Exec, draft: Draft): Promise<InboxPrebooking> {
+/** THE rule of what a draft's money is: `view()` says it, and SCRUM-996's signals read it from here. */
+async function standingOf(db: Exec, draft: Draft) {
   const attempts = await attemptsOf(db, draft.id);
   const paid = await eligibleAttempts(db, draft, attempts);
   const latest = attempts[0];
-  const state = draft.bookedAt
+  const state: NonNullable<InboxPrebooking['draft']>['state'] = draft.bookedAt
     ? 'booked'
     : paid.length === 1 &&
         attempts.every((a) => a.id === paid[0]!.id || TERMINAL_UNPAID.has(a.status))
@@ -214,6 +228,11 @@ async function view(db: Exec, draft: Draft): Promise<InboxPrebooking> {
               Date.now() - latest.createdAt.getTime() > 60_000
             ? 'needs_review'
             : 'requested';
+  return { attempts, paid, latest, state };
+}
+
+async function view(db: Exec, draft: Draft): Promise<InboxPrebooking> {
+  const { paid, latest, state } = await standingOf(db, draft);
   const p = latest ? payloadOf(latest) : {};
   return {
     draft: {
@@ -545,4 +564,169 @@ export async function requestPrebookingDeposit(
     actorAccountId: ctx.viewer.accountId,
   });
   return view(db, prepared.draft);
+}
+
+// --- SCRUM-996: a paid deposit shows on the chat ------------------------------------------
+
+type Standing = Awaited<ReturnType<typeof standingOf>>;
+
+/**
+ * Money that arrived on the draft, does not count as its deposit and was not
+ * given back: a payment the gateway put to a person (part-paid, a wrong amount
+ * or currency, paid after the link ran out), the same after a person recorded
+ * it as taken, or a second full payment. A refunded or reversed receipt is
+ * not one. Read from `standingOf`; the money rule itself is not restated.
+ */
+async function moneyToCheck(db: Exec, draft: Draft, standing: Standing): Promise<boolean> {
+  if (standing.paid.length > 1) return true;
+  for (const a of standing.attempts) {
+    if (a.status === 'awaiting_staff_confirmation') return true;
+    if (a.status !== 'approved' || standing.paid.some((p) => p.id === a.id)) continue;
+    if (isPaymentReversalPending(a.payload)) continue;
+    if (!(await refundedAttempt(db, draft.operatorId, a.id))) return true;
+  }
+  return false;
+}
+
+/**
+ * Each open draft's signal for the list's rows (owner choices 1, 3 and 4):
+ * `paid` is exactly `view()`'s paid; `paid_date_passed` the same once the
+ * booking's day is behind the park's today, when Book Date refuses it
+ * (`EVENT_DATE_PASSED`); `needs_checking` is `moneyToCheck`. A booked draft,
+ * an unpaid one and a returned receipt have none. Words only, never money.
+ */
+export async function prebookingSignals(
+  db: Exec,
+  operatorId: string,
+  conversationIds: readonly string[],
+  now: Date = new Date(),
+): Promise<Map<string, InboxDepositSignal>> {
+  const out = new Map<string, InboxDepositSignal>();
+  if (conversationIds.length === 0) return out;
+  const rows = await db
+    .select({ draft: prebookingDraft, timezone: branch.timezone })
+    .from(prebookingDraft)
+    .innerJoin(branch, eq(branch.id, prebookingDraft.branchId))
+    .where(
+      and(
+        eq(prebookingDraft.operatorId, operatorId),
+        inArray(prebookingDraft.conversationId, [...new Set(conversationIds)]),
+        isNull(prebookingDraft.bookedAt),
+      ),
+    );
+  for (const { draft, timezone } of rows) {
+    const standing = await standingOf(db, draft);
+    if (standing.state === 'paid') {
+      const { date } = InboxBookDateBodySchema.parse(draft.bookingClaim?.booking ?? draft.booking);
+      out.set(draft.conversationId, date < isoDateInTz(now, timezone) ? 'paid_date_passed' : 'paid');
+    } else if (standing.state === 'needs_review' && (await moneyToCheck(db, draft, standing))) {
+      out.set(draft.conversationId, 'needs_checking');
+    }
+  }
+  return out;
+}
+
+/**
+ * WHAT FOLLOWS A PAID PRE-BOOKING DEPOSIT, after the gateway's settlement
+ * committed (`payments/gateway.ts` `settlePaidAttempt`; owner choices 2 and 6):
+ * the family's "deposit received" line — the after-booking deposit's words,
+ * send path and `deposit_paid` pill (SCRUM-825) — then the park's birthday
+ * manager's bell in the HR app. Only when the one rule says THIS attempt paid
+ * the deposit; a payment that went wrong gets neither.
+ *
+ * It can never undo or fail the payment: the money is already committed, and
+ * nothing here throws. A line that cannot be posted is logged; one posted and
+ * not sent waits for the send job (`job:inbox.send`), which retries it; a bell
+ * that cannot ring is recorded as such. Once per paid deposit: the line's id
+ * is derived from the attempt, and the bell rings with the line posted now —
+ * never again on a replay, which finds the line already there.
+ */
+export async function afterPrebookingDepositPaid(
+  db: Db,
+  log: FastifyBaseLogger,
+  input: { attemptId: string; source: string; requestId?: string | null },
+): Promise<void> {
+  try {
+    const [found] = await db
+      .select({ draft: prebookingDraft })
+      .from(prebookingDepositRequest)
+      .innerJoin(prebookingDraft, eq(prebookingDraft.id, prebookingDepositRequest.draftId))
+      .where(eq(prebookingDepositRequest.paymentAttemptId, input.attemptId))
+      .limit(1);
+    if (!found || found.draft.bookedAt) return;
+    const { draft } = found;
+    const standing = await standingOf(db, draft);
+    const receipt = standing.paid[0];
+    if (standing.state !== 'paid' || !receipt || receipt.id !== input.attemptId) return;
+    const booking = InboxBookDateBodySchema.parse(draft.bookingClaim?.booking ?? draft.booking);
+    const simulator = receipt.provider === 'simulator';
+    const { sender, directory } = partyDepositNoticeDeps();
+    const scope = {
+      operatorId: draft.operatorId,
+      branchId: draft.branchId,
+      actorAccountId: null,
+      requestId: input.requestId ?? undefined,
+      log,
+    };
+    let ring = true;
+    try {
+      const posted = await withTx(db, scope, 'inbox.prebooking.received', async (tx) => {
+        const conv = await lockedConversation(tx, draft.operatorId, draft.conversationId);
+        return postPartyMessage(tx, draft.operatorId, {
+          messageId: partyMessageId(receipt.id, 'prebooking-received'),
+          conversationId: draft.conversationId,
+          key: 'party_deposit_received',
+          variables: {
+            amount: partyAmountWords(draft.amountSatang),
+            date: partyDateWords(booking.date, partyMessageLanguageOf(conv.language)),
+          },
+          event: {
+            kind: 'deposit_paid',
+            payload: {
+              draftId: draft.id,
+              paymentAttemptId: receipt.id,
+              amountSatang: draft.amountSatang,
+              currency: draft.currency,
+              source: input.source,
+              simulator,
+              prebooking: true,
+            },
+          },
+          audit: {
+            action: 'inbox.prebooking.received',
+            entityType: 'prebooking_draft',
+            entityId: draft.id,
+            detail: { paymentAttemptId: receipt.id },
+          },
+          actorAccountId: null,
+          requestId: input.requestId ?? null,
+          now: new Date(),
+        });
+      });
+      ring = !posted.replayed;
+      await sendPartyMessages(db, sender, log, posted.replayed ? [] : [posted.messageId], {
+        requestId: input.requestId ?? null,
+      });
+    } catch (err) {
+      log.error(
+        { err, draftId: draft.id, attemptId: receipt.id },
+        "a pre-booking deposit was paid; the family's received line could not be posted",
+      );
+    }
+    if (!ring) return;
+    await ringBirthdayManager(db, log, directory, {
+      requestId: draft.id,
+      operatorId: draft.operatorId,
+      branchId: draft.branchId,
+      conversationId: draft.conversationId,
+      name: `prebooking-paid:${receipt.id}`,
+      title: simulator ? 'A birthday deposit was paid (simulator test)' : 'A birthday deposit was paid',
+      body:
+        `A deposit of ${partyAmountWords(draft.amountSatang)} for a birthday on ${booking.date} was paid through the chat ` +
+        `and its date is not booked yet. Open the conversation in the Inbox, check capacity, then press Book Date.`,
+      audit: { action: 'inbox.prebooking.notify', entityType: 'prebooking_draft' },
+    });
+  } catch (err) {
+    log.error({ err, attemptId: input.attemptId }, 'after a pre-booking deposit was paid');
+  }
 }

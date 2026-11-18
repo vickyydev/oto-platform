@@ -33,3 +33,16 @@ export const nextActionColumns = {
       and nt.state in ('pending', 'deciding') and tm.created_at >= ${episodeFloor}
   )`,
 };
+
+/**
+ * SCRUM-996: the cheap first look for each row — an open pre-booking draft
+ * with money on one of its attempts. Never the answer: for these few rows
+ * `prebookingSignals` (`prebooking.ts`) applies the one rule of what is paid.
+ */
+export const depositCandidateSql = sql<boolean>`exists (
+  select 1 from ${s.prebookingDraft} dd
+    join ${s.prebookingDepositRequest} dr on dr.draft_id = dd.id
+    join ${s.paymentAttempt} da on da.id = dr.payment_attempt_id
+  where dd.operator_id = ${s.conversation.operatorId} and dd.conversation_id = ${s.conversation.id}
+    and dd.booked_at is null and da.status in ('approved', 'awaiting_staff_confirmation')
+)`;

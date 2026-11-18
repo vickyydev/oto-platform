@@ -2,6 +2,7 @@ import { and, asc, desc, eq, gte, inArray, isNull, lte, ne, sql, type SQL } from
 import { schema as s, type Db, type InboxCategory, type InboxTeamKey } from '@oto/db';
 import {
   INBOX_DAY_TIMEZONE,
+  INBOX_PAGE_MAX,
   isUnanswered,
   inboxNextAction,
   isoDateInTz,
@@ -13,6 +14,7 @@ import {
   type InboxConversationListQuery,
   type InboxConversationRow,
   type InboxDashboard,
+  type InboxDepositSignal,
   type InboxMe,
   type InboxMessage,
   type InboxTab,
@@ -29,7 +31,8 @@ import { handoverNoticesOf } from './handover-notice';
 import { openQuestionsOf } from './open-question';
 import { generalPoolSql } from './placement';
 import { testLinesOf } from './test-line';
-import { nextActionColumns } from './next-action';
+import { depositCandidateSql, nextActionColumns } from './next-action';
+import { prebookingSignals } from './prebooking';
 import { inboxChannelAllowsSql, inboxPolicyAllowsSql, inboxVisibilityLimits } from './access';
 import {
   INBOX_READ,
@@ -195,6 +198,7 @@ function selectRows(db: Db | Tx, viewer: InboxViewer) {
     .select({
       ...rowColumns,
       ...nextActionColumns,
+      depositCandidate: depositCandidateSql,
       unread: unreadSql(viewer),
       mine: sql<boolean>`${heldByViewerSql(viewer)}`,
     })
@@ -259,7 +263,11 @@ async function assignmentsFor(
   return out;
 }
 
-function toRow(r: RawRow, assignments: InboxConversationRow['assignments']): InboxConversationRow {
+function toRow(
+  r: RawRow,
+  assignments: InboxConversationRow['assignments'],
+  deposit: InboxDepositSignal | null = null,
+): InboxConversationRow {
   return {
     id: r.id,
     channel: r.channel,
@@ -287,7 +295,8 @@ function toRow(r: RawRow, assignments: InboxConversationRow['assignments']): Inb
     lastMessagePreview: r.lastMessagePreview,
     unanswered: isUnanswered(r),
     nextAction: inboxNextAction({ status: r.status, aiMode: r.nextActionAiMode,
-      pendingAi: Boolean(r.nextActionPendingAi), aiHeld: Boolean(r.nextActionHeld), outbound: r.nextActionOutbound }),
+      pendingAi: Boolean(r.nextActionPendingAi), aiHeld: Boolean(r.nextActionHeld), outbound: r.nextActionOutbound, deposit }),
+    depositSignal: deposit,
     unread: Number(r.unread),
     mine: Boolean(r.mine),
     assignments,
@@ -356,14 +365,39 @@ async function tabCountsOf(db: Db, viewer: InboxViewer, tabs: InboxTab[]): Promi
   return counts;
 }
 
+/** SCRUM-996: the deposit signals of the rows the cheap look picked, by the one rule. */
+async function signalsOf(db: Db, operatorId: string, rows: RawRow[]): Promise<Map<string, InboxDepositSignal>> {
+  return prebookingSignals(db, operatorId, rows.filter((r) => Boolean(r.depositCandidate)).map((r) => r.id));
+}
+const readyToBookSignal = (signal: InboxDepositSignal | undefined): boolean =>
+  signal === 'paid' || signal === 'paid_date_passed';
+
+/**
+ * SCRUM-996, owner choice 1: the "Ready to book" group pinned above the list —
+ * the conversations of this tab and these filters, as visible to the viewer,
+ * whose deposit is paid and not yet booked; newest activity first, as the
+ * list is. "Needs checking" is not in it. The list's own order is untouched.
+ */
+async function readyToBookOf(db: Db, viewer: InboxViewer, scope: SQL[]): Promise<InboxConversationRow[]> {
+  const candidates = await selectRows(db, viewer)
+    .where(and(...scope, depositCandidateSql))
+    .orderBy(desc(sortKeySql), desc(s.conversation.id))
+    .limit(INBOX_PAGE_MAX);
+  const signals = await signalsOf(db, viewer.operatorId, candidates);
+  const paid = candidates.filter((r) => readyToBookSignal(signals.get(r.id)));
+  const assignments = await assignmentsFor(db, viewer.operatorId, paid.map((r) => r.id));
+  return paid.map((r) => toRow(r, assignments.get(r.id) ?? [], signals.get(r.id) ?? null));
+}
+
 export async function listConversations(
   db: Db,
   viewer: InboxViewer,
   tabs: InboxTab[],
   q: InboxConversationListQuery,
 ): Promise<InboxConversationList> {
-  const where: SQL[] = [visibleConversationsSql(viewer), ...filterSql(q)];
-  if (q.tab) where.push(inTabSql(q.tab, viewer));
+  const scope: SQL[] = [visibleConversationsSql(viewer), ...filterSql(q)];
+  if (q.tab) scope.push(inTabSql(q.tab, viewer));
+  const where: SQL[] = [...scope];
   if (q.cursor) {
     const c = decodeCursor(q.cursor);
     where.push(sql`(${sortKeySql}, ${s.conversation.id}) < (${new Date(c.t)}::timestamptz, ${c.id}::uuid)`);
@@ -383,11 +417,14 @@ export async function listConversations(
     viewer.operatorId,
     page.map((r) => r.id),
   );
+  const signals = await signalsOf(db, viewer.operatorId, page);
   return {
-    conversations: page.map((r) => toRow(r, assignments.get(r.id) ?? [])),
+    conversations: page.map((r) => toRow(r, assignments.get(r.id) ?? [], signals.get(r.id) ?? null)),
     access: await inboxVisibilityLimits(db, viewer),
     nextCursor,
     tabCounts: await tabCountsOf(db, viewer, tabs),
+    // The group rides on the first page; a later page is the list's own.
+    ...(q.cursor ? {} : { readyToBook: await readyToBookOf(db, viewer, scope) }),
   };
 }
 
@@ -404,6 +441,7 @@ export async function conversationDetail(
     .limit(1));
   if (!raw) throw errors.notFound('Conversation not found');
   const assignments = (await assignmentsFor(db, viewer.operatorId, [conv.id])).get(conv.id) ?? [];
+  const deposit = (await signalsOf(db, viewer.operatorId, [raw])).get(conv.id) ?? null;
 
   let teamName: string | null = null;
   if (conv.teamId) {
@@ -465,7 +503,7 @@ export async function conversationDetail(
     .limit(1);
 
   return {
-    ...toRow(raw, assignments),
+    ...toRow(raw, assignments, deposit),
     teamName,
     firstResponseAt: iso(raw.firstResponseAt),
     reopenedAt: iso(raw.reopenedAt),

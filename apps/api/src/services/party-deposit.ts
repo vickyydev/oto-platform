@@ -170,6 +170,11 @@ export function configurePartyDeposit(next: PartyDepositHooks | null): void {
 const directoryNow = (): OtoAppDirectory | null => hooks?.directory() ?? null;
 const senderNow = (): PartyMessageSender | null => hooks?.sender() ?? null;
 
+/** SCRUM-996: the same send path and bell for the pre-booking deposit's notices (`inbox/prebooking.ts`). */
+export function partyDepositNoticeDeps(): { directory: OtoAppDirectory | null; sender: PartyMessageSender | null } {
+  return { directory: directoryNow(), sender: senderNow() };
+}
+
 // --- Reading ---------------------------------------------------------------------------
 
 /** The request's id from the operator and the app's Idempotency-Key: derived, never minted. */
@@ -1101,13 +1106,23 @@ export async function afterPartyDepositPaid(db: Db, log: FastifyBaseLogger, outc
  * door): the park's `birthday_manager_contact`, when it names an app user.
  * The notice's id is derived from the request and the moment, so a retry is
  * a replay in the app. No customer's name or number in it. Recorded as an
- * audit row whatever the app answered; never thrown.
+ * audit row whatever the app answered (SCRUM-996: under the caller's own
+ * action and entity when it names them); never thrown.
  */
-async function ringBirthdayManager(
+export async function ringBirthdayManager(
   db: Db,
   log: FastifyBaseLogger | undefined,
   directory: BellDirectory | null,
-  notice: { requestId: string; operatorId: string; branchId: string; conversationId: string; name: string; title: string; body: string },
+  notice: {
+    requestId: string;
+    operatorId: string;
+    branchId: string;
+    conversationId: string;
+    name: string;
+    title: string;
+    body: string;
+    audit?: { action: string; entityType: string };
+  },
 ): Promise<void> {
   const [park] = await db
     .select({ contact: branch.birthdayManagerContact })
@@ -1134,13 +1149,14 @@ async function ringBirthdayManager(
     }
   }
   try {
-    await withTx(db, { operatorId: notice.operatorId, branchId: notice.branchId, actorAccountId: null, ...(log ? { log } : {}) }, 'party_deposit.notify', (tx) =>
+    const recorded = notice.audit ?? { action: 'party_deposit.notify', entityType: 'party_deposit_request' };
+    await withTx(db, { operatorId: notice.operatorId, branchId: notice.branchId, actorAccountId: null, ...(log ? { log } : {}) }, recorded.action, (tx) =>
       audit.record(tx, {
         actorAccountId: null,
         operatorId: notice.operatorId,
         branchId: notice.branchId,
-        action: 'party_deposit.notify',
-        entityType: 'party_deposit_request',
+        action: recorded.action,
+        entityType: recorded.entityType,
         entityId: notice.requestId,
         after: { notice: notice.name, conversationId: notice.conversationId, appUserId: contact?.appUserId ?? null, ...outcome },
       }),
