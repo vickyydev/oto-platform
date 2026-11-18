@@ -16,7 +16,7 @@ import { ChildReviewPromptSchema, childReviewAge, ConsentActionSchema, ConsentPr
 import { familyReviewChange, familyReviewChangeLine } from '@/lib/familyReviewChange';
 import { useCustomerTheme } from '@/lib/themePref';
 import { computeLineTotal, computeLineBreakdown, priceForTier, unpricedCartLines } from '@/lib/pricing';
-import { resolveRateToday } from '@/lib/pricingMode';
+import { branchTradingDate, resolveRateToday } from '@/lib/pricingMode';
 import { makeDropOffLine, normalizeDropOffFees, resolveDropOffPricing } from '@/lib/dropoff';
 import { resolveGroupRequirements, resolveSupervisionOutcome, sortedConfirmations } from '@/lib/supervision';
 import { gateChildPatch, saveGateChildren } from '@/lib/gateChildren';
@@ -1656,7 +1656,10 @@ export default function Till() {
       );
       return;
     }
-    const today = new Date().toISOString().slice(0, 10);
+    // The park's business date (its own clock and day start, SCRUM-1010),
+    // as food and shop read it: never the UTC date, which in Bangkok turns
+    // at 07:00. The platform re-checks the code at payment either way.
+    const today = branchTradingDate();
     const custKey = customerPhone || member?.phone || undefined;
     const result = validatePromoCode(promo, lines, today, custKey, discounts);
     if (!result.ok) {

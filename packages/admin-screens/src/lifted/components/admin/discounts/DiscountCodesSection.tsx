@@ -66,7 +66,7 @@ export function DiscountCodesSection() {
     if (originalCode && originalCode.toUpperCase() !== payload.code.toUpperCase()) mutators.deleteDiscount(originalCode);
     return mutators.upsertDiscount(payload);
   };
-  return <DiscountCodesSectionWithPorts ports={{ discounts, menuItems, merchItems, targetOptions: { ticketTypes, addOns, menuItems, menuCategories }, formatDiscountTargetLabel: runtime.domain.discountTarget.formatDiscountTargetLabel, formatWWPrice: runtime.domain.pricingMode.formatWWPrice, deleteDiscount: mutators.deleteDiscount, upsertDiscount, canManage: scope.canManageDiscounts, authorityMessage: scope.authorityMessage }} />;
+  return <DiscountCodesSectionWithPorts ports={{ discounts, menuItems, merchItems, targetOptions: { ticketTypes, addOns, menuItems, menuCategories }, formatDiscountTargetLabel: runtime.domain.discountTarget.formatDiscountTargetLabel, formatWWPrice: runtime.domain.pricingMode.formatWWPrice, parkToday: () => runtime.domain.pricingMode.branchTradingDate(), deleteDiscount: mutators.deleteDiscount, upsertDiscount, canManage: scope.canManageDiscounts, authorityMessage: scope.authorityMessage }} />;
 }
 
 export function DiscountCodesSectionWithPorts({ ports }: { ports: DiscountCodesSectionPorts }) {
@@ -502,14 +502,11 @@ export function DiscountCodesSectionWithPorts({ ports }: { ports: DiscountCodesS
           </p>
         )}
         {discounts.map((d) => {
+          const today = ports.parkToday();
           const usedCount = d.usedCount ?? 0;
           const hasLimit = d.usageLimit != null;
-          const isExpired = d.validUntil
-            ? new Date().toISOString().slice(0, 10) > d.validUntil
-            : false;
-          const isNotYetValid = d.validFrom
-            ? new Date().toISOString().slice(0, 10) < d.validFrom
-            : false;
+          const isExpired = d.validUntil ? today > d.validUntil : false;
+          const isNotYetValid = d.validFrom ? today < d.validFrom : false;
           const isInactive = d.active === false;
 
           return (
