@@ -173,6 +173,19 @@ const CATEGORY_ROW =
 const SUB_CATEGORY_GRID =
   'mb-3 grid grid-cols-[repeat(auto-fill,minmax(5.75rem,1fr))] gap-1.5 @md/menu:grid-cols-[repeat(auto-fill,minmax(6.75rem,1fr))] @md/menu:gap-2';
 
+/**
+ * SCRUM-994 — THE CHOSEN SUB-CATEGORY ON THE LIGHT THEME. The chosen chip was
+ * drawn for the dark theme only: a 20% amber wash, amber-400 text and an
+ * amber-500 outline. On the light theme that is amber on cream, about 1.4:1,
+ * and the chosen one hardly stood out among the white chips ("Make it
+ * stronger", 18 November). On the light theme it is now solid amber-500 with
+ * amber-950 text (7:1) and an amber-700 outline (4.7:1 on the page); the dark
+ * theme keeps its own classes through `dark:`. Colour only: the border stays
+ * 1px, so size, corners and rows are as they were.
+ */
+const SUB_CHIP_CHOSEN =
+  'bg-amber-500 text-amber-950 border border-amber-700 dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500';
+
 // Pseudo-id for the "Other" sub-chip that gathers items assigned directly to a
 // top-level category (i.e. not placed in any of its sub-categories).
 const OTHER = '__other__';
@@ -349,7 +362,7 @@ export function MenuGrid({ items, quantities, onAdd }: MenuGridProps) {
                       className={cn(
                         'min-h-10 px-1.5 rounded-[1.25rem] flex items-center justify-center text-center text-sm font-semibold leading-tight transition-all active:scale-95',
                         isActive
-                          ? 'bg-amber-500/20 text-amber-400 border border-amber-500'
+                          ? SUB_CHIP_CHOSEN
                           : 'bg-card border text-muted-foreground hover:text-amber-400 hover:border-amber-500/50'
                       )}
                     >
