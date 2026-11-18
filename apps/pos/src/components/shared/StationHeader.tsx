@@ -347,8 +347,11 @@ export function StationHeader({ active, leftExtra, rightExtra }: StationHeaderPr
       <div
         role="status"
         className={`shrink-0 flex items-center gap-2 px-6 py-1.5 text-sm font-semibold border-b ${
+          // SCRUM-997 — on the dark theme the strip's own red (`--destructive`, a deep
+          // red) read about 1.7:1 on its wash; its writing is red-300 there (9:1, the
+          // names at 80% 6.2:1). The light theme and the shared token are unchanged.
           outCount > 0
-            ? 'bg-destructive/15 text-destructive border-destructive/30'
+            ? 'bg-destructive/15 text-destructive dark:text-red-300 border-destructive/30'
             : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
         }`}
       >

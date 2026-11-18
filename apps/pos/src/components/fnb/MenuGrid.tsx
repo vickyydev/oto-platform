@@ -186,6 +186,15 @@ const SUB_CATEGORY_GRID =
 const SUB_CHIP_CHOSEN =
   'bg-amber-500 text-amber-950 border border-amber-700 dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500';
 
+/**
+ * SCRUM-997 — a sub-category not chosen, under the mouse. Its writing turned
+ * amber-400 on the white chip, about 1.7:1 on the light theme; it now turns
+ * amber-800 there (7:1). The dark theme keeps amber-400 through `dark:hover:`.
+ * Colour only: the resting colours and the hover outline are as they were.
+ */
+const SUB_CHIP_IDLE =
+  'bg-card border text-muted-foreground hover:text-amber-800 dark:hover:text-amber-400 hover:border-amber-500/50';
+
 // Pseudo-id for the "Other" sub-chip that gathers items assigned directly to a
 // top-level category (i.e. not placed in any of its sub-categories).
 const OTHER = '__other__';
@@ -363,7 +372,7 @@ export function MenuGrid({ items, quantities, onAdd }: MenuGridProps) {
                         'min-h-10 px-1.5 rounded-[1.25rem] flex items-center justify-center text-center text-sm font-semibold leading-tight transition-all active:scale-95',
                         isActive
                           ? SUB_CHIP_CHOSEN
-                          : 'bg-card border text-muted-foreground hover:text-amber-400 hover:border-amber-500/50'
+                          : SUB_CHIP_IDLE
                       )}
                     >
                       {chip.name}

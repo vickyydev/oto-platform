@@ -157,3 +157,99 @@ describe('SCRUM-994 — the chosen chip reads on the light theme', () => {
     }
   });
 });
+
+// --- SCRUM-997: three more places where writing was hard to read ------------
+
+/**
+ * SCRUM-997 — found while the chosen chip above was made stronger, and fixed
+ * on the owner's "Fix them" (18 November). Colours only, from inks the till
+ * already uses, each with its dark (or light) side kept exactly as it was:
+ *   - light, F&B and Shop: the split view's top line ("Test harness — …") and
+ *     its Hide/Show button, pale amber-300 on the amber wash; now the pair the
+ *     Tickets screen got in SCRUM-879 (`text-amber-800 dark:text-amber-300`);
+ *   - light, F&B: a sub-category not chosen, under the mouse, turned amber-400
+ *     on its white chip; now amber-800 (`SUB_CHIP_IDLE`);
+ *   - dark: the "out of stock" strip under the header wrote in the theme's own
+ *     deep red (`--destructive`) on its red wash; now red-300 there, the
+ *     shared token untouched.
+ */
+
+const order = src('pages/OrderStation.tsx');
+const merch = src('pages/MerchStation.tsx');
+const header = src('components/shared/StationHeader.tsx');
+
+function lineWith(source: string, marker: string): string {
+  const lines = source.split('\n').filter((l) => l.includes(marker));
+  if (lines.length !== 1) throw new Error(`expected one line with ${marker}, found ${lines.length}`);
+  return lines[0]!;
+}
+
+function palette(name: string, shade: number): Rgb {
+  const m = tailwind.match(new RegExp(`--color-${name}-${shade}: oklch\\(([\\d.]+)% ([\\d.]+) ([\\d.]+)\\)`));
+  if (!m) throw new Error(`${name}-${shade} not in tailwindcss/theme.css`);
+  return oklchToRgb(Number(m[1]) / 100, Number(m[2]), Number(m[3]));
+}
+
+describe('SCRUM-997 — each place carries a readable ink and keeps its other theme', () => {
+  for (const [name, source] of [['F&B (OrderStation)', order], ['Shop (MerchStation)', merch]] as const) {
+    it(`${name}: the top line and its Hide/Show button`, () => {
+      const banner = lineWith(source, 'bg-amber-500/10 border-b border-amber-500/30');
+      expect(banner).toContain('text-amber-800 dark:text-amber-300');
+      const button = lineWith(source, 'hover:bg-amber-500/20');
+      expect(button).toContain('text-amber-800 hover:text-amber-900 dark:text-amber-300 dark:hover:text-amber-200');
+      // The pale inks only behind dark:.
+      expect(banner + button).not.toMatch(/(?<!dark:(hover:)?)text-amber-(200|300)/);
+      // Colour only: the line's size and spacing are as they were.
+      expect(banner).toContain('shrink-0 flex items-center justify-between gap-4 px-4 py-2');
+      expect(button).toContain('h-7 shrink-0');
+    });
+  }
+
+  it('F&B: a sub-category not chosen, under the mouse', () => {
+    const m = grid.match(/const SUB_CHIP_IDLE =\s*'([^']+)';/);
+    expect(m).not.toBeNull();
+    expect(m![1]!.split(/\s+/)).toEqual([
+      'bg-card', 'border', 'text-muted-foreground', 'hover:text-amber-800', 'dark:hover:text-amber-400', 'hover:border-amber-500/50',
+    ]);
+    expect(grid).toMatch(/isActive\s*\?\s*SUB_CHIP_CHOSEN\s*:\s*SUB_CHIP_IDLE/);
+    expect(grid).not.toMatch(/(?<!dark:)hover:text-amber-400/);
+  });
+
+  it('dark: the out-of-stock strip, without touching the shared red', () => {
+    const strip = lineWith(header, 'bg-destructive/15');
+    expect(strip).toContain("'bg-destructive/15 text-destructive dark:text-red-300 border-destructive/30'");
+    // The theme's --destructive is shared by every button and badge: unchanged on both themes.
+    expect(css.slice(css.indexOf(':root,'), css.indexOf('.dark {'))).toContain('--destructive: 0 72% 47%;');
+    expect(css.slice(css.indexOf('.dark {'))).toContain('--destructive: 0 62.8% 30.6%;');
+    // The names beside the count stay at 80%, as they were.
+    expect(header).toContain('min-w-0 truncate font-normal opacity-80');
+  });
+});
+
+describe('SCRUM-997 — the three reach AA (4.5:1) where they were hard to read', () => {
+  const light = { page: token(':root,', 'background'), card: token(':root,', 'card') };
+  const dark = { page: token('.dark {', 'background'), card: token('.dark {', 'card'), red: token('.dark {', 'destructive') };
+
+  it('light: the top line on its amber wash (1.24:1 before, about 6.1:1 now), its button under the mouse (about 6.9:1)', () => {
+    const wash = over(amber(500), light.page, 0.1);
+    expect(contrast(amber(300), wash)).toBeLessThan(1.5);
+    expect(contrast(amber(800), wash)).toBeGreaterThanOrEqual(4.5);
+    const pressed = over(amber(500), wash, 0.2);
+    expect(contrast(amber(900), pressed)).toBeGreaterThanOrEqual(4.5);
+    // The dark side keeps amber-300, which reads there.
+    expect(contrast(amber(300), over(amber(500), dark.page, 0.1))).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('light: the chip’s writing under the mouse on its white face (1.69:1 before, about 7.0:1 now)', () => {
+    expect(contrast(amber(400), light.card)).toBeLessThan(2);
+    expect(contrast(amber(800), light.card)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(amber(400), dark.card)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('dark: the strip’s count and names on its red wash (1.72:1 and 1.50:1 before, about 9.0:1 and 6.2:1 now)', () => {
+    const wash = over(dark.red, dark.page, 0.15);
+    expect(contrast(dark.red, wash)).toBeLessThan(2);
+    expect(contrast(palette('red', 300), wash)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(over(palette('red', 300), wash, 0.8), wash)).toBeGreaterThanOrEqual(4.5);
+  });
+});
