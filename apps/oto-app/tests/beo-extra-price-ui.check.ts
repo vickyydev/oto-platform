@@ -27,7 +27,10 @@
 //      the party is settled is still a line the additional bill counts;
 //   9. SCRUM-998: "Different for adults" switched on and an item added to the
 //      adults' list, the item goes with the list the screen shows, and the BEO
-//      closed without Save and opened again in the same tab is read afresh.
+//      closed without Save and opened again in the same tab is read afresh;
+//  10. SCRUM-1002 ruling 3: a billed and paid line's minus at its paid count,
+//      its delete, a lower count typed and the adults' switch off are answered
+//      in the rule's words; a raise and an unpaid line still change.
 //
 // Run from apps/oto-app:
 //   TSX_TSCONFIG_PATH=tests/tsconfig.jsx.json npx tsx tests/beo-extra-price-ui.check.ts
@@ -37,6 +40,8 @@ import { fileURLToPath } from "node:url";
 import { buildSync } from "esbuild";
 import { JSDOM } from "jsdom";
 import { approvedBeoBillingSources } from "../shared/beoBillingSource";
+import { BEO_PAID_LINE_REFUSAL } from "../shared/beoPaidLines";
+import { saleAnswer } from "./fixtures/till-billing";
 
 const APP = fileURLToPath(new URL("../", import.meta.url));
 const dom = new JSDOM("<!doctype html><html><body></body></html>", { url: "http://localhost/studio/events", pretendToBeVisual: true });
@@ -84,6 +89,8 @@ const built = buildSync({
       export { QueryClientProvider } from '@tanstack/react-query';
       export { queryClient } from './client/src/lib/queryClient';
       export { AuthContext } from './client/src/hooks/use-auth';
+      export { Toaster } from './client/src/components/ui/toaster';
+      export { toast } from './client/src/hooks/use-toast';
       export { BeoEventEditor } from './client/src/components/beo/beo-event-editor';
     `,
   },
@@ -93,7 +100,7 @@ const compiled = new Module(APP + "tests/beo-extra-price-ui.native.cjs") as any;
 compiled.filename = APP + "tests/beo-extra-price-ui.native.cjs";
 compiled.paths = nativeRequire.resolve.paths("react");
 compiled._compile(built.outputFiles[0].text, compiled.filename);
-const { React, act, createRoot, QueryClientProvider, queryClient, AuthContext, BeoEventEditor } = compiled.exports;
+const { React, act, createRoot, QueryClientProvider, queryClient, AuthContext, Toaster, toast, BeoEventEditor } = compiled.exports;
 
 // ─── The server, as the screen sees it ───────────────────────────────────────
 
@@ -117,6 +124,10 @@ type Held = { date: string; kids: Line[]; adults?: Line[]; adultsDiffer?: boolea
 
 type Asked = { method: string; path: string; body: Record<string, unknown> };
 const asked: Asked[] = [];
+/** SCRUM-1002: what the till says it billed and was paid for, line by line, per party; none: the till not read. */
+const TILL_LINES = new Map<string, Array<{ lineId: string; billedQuantity: number; paidQuantity: number }>>();
+/** What the BEO's Save answers. */
+let putAnswer: (eventId: string) => Record<string, unknown> = () => ({ ok: true });
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 const BEOS = new Map<string, Held>();
 const beoOf = (eventId: string) => {
@@ -141,8 +152,12 @@ g.fetch = async (input: string | URL | Request, init?: RequestInit) => {
   if (url.pathname === "/api/beo/till-menu" && method === "GET") return json(tillAnswer(url.searchParams.get("parkId")));
   const beo = /^\/api\/events\/([^/]+)\/beo$/.exec(url.pathname);
   if (beo && method === "GET") return json(beoOf(beo[1]!));
-  if (beo && method === "PUT") return json({ ok: true });
-  if (/\/beo\/till-billing$/.test(url.pathname)) return json({ status: "not_reachable", message: "The till did not answer." });
+  if (beo && method === "PUT") return json(putAnswer(beo[1]!));
+  const till = /^\/api\/events\/([^/]+)\/beo\/till-billing$/.exec(url.pathname);
+  if (till) {
+    const beoLines = TILL_LINES.get(till[1]!);
+    return json(beoLines ? { status: "ok", billing: { ...saleAnswer(till[1]!), beoLines }, readAt: "2026-12-02T07:00:00.000Z" } : { status: "not_reachable", message: "The till did not answer." });
+  }
   // SCRUM-998: a new item, written as the route writes it (tests/party-menu-item.check.ts pins the route).
   const made = /^\/api\/events\/([^/]+)\/beo\/party-menu-items$/.exec(url.pathname);
   if (made && method === "POST") {
@@ -197,11 +212,15 @@ const root = createRoot(host);
 let mounted = "";
 const openBeo = async (eventId: string) => {
   mounted = eventId;
+  // The words of the BEO before are taken down: each check reads its own.
+  await act(async () => { toast({ title: "ZZ TEST" }).dismiss(); });
   await act(async () => {
     root.render(
       React.createElement(QueryClientProvider, { client: queryClient },
         React.createElement(AuthContext.Provider, { value: auth },
-          React.createElement(BeoEventEditor, { key: eventId, eventId, onClose: () => undefined }))),
+          React.createElement(React.Fragment, null,
+            React.createElement(BeoEventEditor, { key: eventId, eventId, onClose: () => undefined }),
+            React.createElement(Toaster)))),
     );
   });
   await settle(10);
@@ -358,6 +377,8 @@ await check("a billed EXTRA keeps its billing marks through a reload and a Save,
 });
 
 const adultsNames = () => [...doc.querySelectorAll('[data-testid^="input-menu-name-adults-"]')].map((el) => el.textContent?.trim() ?? "");
+const said = (words: string) => doc.body.textContent?.includes(words) ?? false;
+const wordsDown = async () => { await act(async () => { toast({ title: "ZZ TEST" }).dismiss(); }); await settle(); };
 
 // SCRUM-998: turning "Different for adults" on copies the kids' dishes on screen only, and the BEO's
 // first read was kept for the tab's life, so the BEO closed without Save and opened again showed the
@@ -396,6 +417,72 @@ await check("SCRUM-998: switched on and an item added to the adults' list, close
   assert.deepEqual(BEOS.get(E6)!.adults!.map((l) => l.id), [...sent.map((l) => l.id), `party_${post.body.actionId}`]);
 });
 
+// SCRUM-1002, ruling 3: a line already billed and paid is neither lowered below its paid count nor
+// deleted. The screen answers the press with the rule's words; the Save's server enforces it and
+// says which line it kept (tests/beo-paid-lines.check.ts).
+await check("SCRUM-1002: a paid line's minus at its paid count, its delete, a lower count typed and the adults' switch off are answered and change nothing; a raise and an unpaid line still change; a kept line is said", async () => {
+  const E7 = "77777777-7777-4777-8777-777777777949";
+  const billed = { chargeApproved: true, billingSync: "synced" };
+  BEOS.set(E7, {
+    date: WEEKDAY,
+    kids: [line("k1", "ZZ TEST paid pizza", { quantity: 2, price: 100, source: "additional", ...billed }), line("k2", "ZZ TEST open fries", { quantity: 2, price: 50, source: "additional", ...billed })],
+    adults: [line("a1", "ZZ TEST paid satay", { price: 220, source: "additional", ...billed })],
+    adultsDiffer: true,
+    bar: [line("b1", "ZZ TEST paid cola", { quantity: 2, price: 30, ...billed })],
+  });
+  TILL_LINES.set(E7, [
+    { lineId: "k1", billedQuantity: 2, paidQuantity: 2 },
+    { lineId: "k2", billedQuantity: 2, paidQuantity: 0 },
+    { lineId: "a1", billedQuantity: 1, paidQuantity: 1 },
+    { lineId: "b1", billedQuantity: 2, paidQuantity: 2 },
+  ]);
+  await openBeo(E7);
+  await click("button-qty-minus-kids-0");
+  assert.equal(text("text-menu-qty-kids-0"), "2", "not below its paid count");
+  assert.ok(said(BEO_PAID_LINE_REFUSAL) && said("ZZ TEST paid pizza: 2 billed and paid at the till."), "the press is answered in the rule's words");
+  await wordsDown();
+  await click("button-remove-menu-item-kids-0");
+  assert.equal(text("input-menu-name-kids-0"), "ZZ TEST paid pizza", "not deleted");
+  assert.ok(said(BEO_PAID_LINE_REFUSAL));
+  await wordsDown();
+  await click("button-qty-plus-kids-0");
+  assert.equal(text("text-menu-qty-kids-0"), "3", "a raise goes through");
+  await click("button-qty-minus-kids-0");
+  assert.equal(text("text-menu-qty-kids-0"), "2", "back to its paid count");
+  assert.ok(!said(BEO_PAID_LINE_REFUSAL), "nothing refused");
+  // The fries are on a bill not yet paid: lowered and removed as before.
+  await click("button-qty-minus-kids-1");
+  assert.equal(text("text-menu-qty-kids-1"), "1");
+  await click("button-remove-menu-item-kids-1");
+  absent("menu-item-kids-1", "the unpaid fries removed");
+  // The bar: a lower count typed, and the delete.
+  await typeInto("bar-item-qty-0", "1");
+  assert.equal(text("bar-item-qty-0"), "2", "the paid cola's count stays");
+  assert.ok(said("ZZ TEST paid cola: 2 billed and paid at the till."));
+  await wordsDown();
+  await click("bar-item-delete-0");
+  assert.ok(byTestId("bar-item-0"), "the paid cola stays");
+  assert.ok(said(BEO_PAID_LINE_REFUSAL));
+  await wordsDown();
+  // The adults' own list holds a paid line: the switch stays on.
+  await click("button-menu-tab-adults");
+  await click("switch-adults-differ");
+  assert.equal(required("switch-adults-differ").getAttribute("aria-checked"), "true");
+  assert.ok(said("ZZ TEST paid satay: 1 billed and paid at the till."));
+  await wordsDown();
+  // The Save sends the paid lines as they stand; a line the server kept is said.
+  putAnswer = (eventId) => (eventId === E7 ? { ok: true, paidLinesKept: [{ id: "k1", itemName: "ZZ TEST paid pizza", list: "kids", paidQuantity: 2 }] } : { ok: true });
+  try {
+    const body = await saved();
+    assert.deepEqual(body.kitchenPlan.menus.kids.map((l) => [l.id, l.quantity]), [["k1", 2]]);
+    assert.deepEqual(body.kitchenPlan.menus.adults.map((l) => [l.id, l.quantity]), [["a1", 1]]);
+    assert.deepEqual(body.barPlan.items.map((l) => [l.id, l.quantity]), [["b1", 2]]);
+    assert.ok(said(BEO_PAID_LINE_REFUSAL) && said("Kept as billed: ZZ TEST paid pizza (2 paid). Everything else was saved."), "the Save's kept line is said");
+  } finally {
+    putAnswer = () => ({ ok: true });
+  }
+});
+
 await act(async () => { root.unmount(); });
 console.log(`beo-extra-price-ui.check: ${checks} checks passed`);
-process.exit(checks === 8 ? 0 : 1);
+process.exit(checks === 9 ? 0 : 1);

@@ -8359,6 +8359,11 @@ export interface paths {
                                     attemptId: string;
                                 }[];
                             };
+                            beoLines?: {
+                                lineId: string;
+                                billedQuantity: number;
+                                paidQuantity: number;
+                            }[];
                             eventId: string;
                             /** @enum {string} */
                             state: "quote" | "sale" | "no_quote";

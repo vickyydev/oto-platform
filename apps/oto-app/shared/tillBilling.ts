@@ -46,6 +46,12 @@ export const TillBillingSchema = z.object({
     payments: z.array(z.object({ id: z.string(), amountSatang: Int, method: z.string(), takenAt: z.string() })),
   })).optional(),
   unassignedTab: z.object({ charges: z.array(z.object({ id: z.string(), totalSatang: Int })), payments: z.array(z.object({ id: z.string(), amountSatang: Int })) }).optional(),
+  /**
+   * SCRUM-1002 ruling 3: once the party is settled, each BEO line the till has billed, by its id:
+   * how many, and how many of those are paid. The BEO keeps a paid line from going below that
+   * count (shared/beoPaidLines.ts). A platform from before the field answers none.
+   */
+  beoLines: z.array(z.object({ lineId: z.string(), billedQuantity: Int, paidQuantity: Int })).optional(),
   eventId: z.string(),
   state: z.enum(["quote", "sale", "no_quote"]),
   park: z.object({ name: z.string(), branchName: z.string(), address: z.string().nullable() }),

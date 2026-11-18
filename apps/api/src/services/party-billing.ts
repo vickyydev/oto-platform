@@ -14,6 +14,7 @@ import {
   type PartySettlementView,
 } from '@oto/shared';
 import { AppError, errors } from '../lib/errors';
+import { beoBilledLinesOf } from './beo-additional-charges';
 import { eventPackagesNotGranted, getEventAtBranches } from './otoapp-events';
 import { seamRead } from './parties';
 import { readPartyPlan } from './party-plan';
@@ -138,6 +139,8 @@ export async function partyBillingForOtoApp(
   const base = {
     eventId: found.id,
     additionalBills: ledgers.additionalBills ?? [],
+    // SCRUM-1002 ruling 3: what of each BEO line is billed and paid, so the BEO keeps a paid line.
+    beoLines: await beoBilledLinesOf(db, q.operatorId, found.id, ledgers),
     unassignedTab: { charges: ledgers.charges.filter((row) => !row.additionalBillId), payments: ledgers.payments.filter((row) => !row.additionalBillId) },
     park: { name: op.name, branchName: park.name, address: park.address?.trim() ? park.address.trim() : null },
   };

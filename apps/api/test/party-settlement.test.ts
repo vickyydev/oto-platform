@@ -48,6 +48,7 @@ import type {
 } from '../src/services/otoapp-directory';
 import { createPartyMenuProduct } from '../src/services/party-menu';
 import { salePrintSnapshotOf } from '../src/services/sale-printing';
+import { partyBillingForOtoApp } from '../src/services/party-billing';
 import { simulateGatewayEvent } from '../src/services/payments/gateway';
 import {
   ADMIN,
@@ -1538,6 +1539,40 @@ describe('SCRUM-990 HIGH: independent additional bills after a paid main receipt
     await expect(sync({ ...line, quantity: 2 })).rejects.toMatchObject({ code: 'BEO_BILLED_QUANTITY_CHANGED' });
     await expect(sync({ ...line, quantity: 3, unitSatang: 99999 })).rejects.toMatchObject({ code: 'BEO_BILLED_PRICE_CHANGED' });
     expect((await detail(main.id)).body.event.party!.additionalBills![0]!.charges).toHaveLength(2);
+  });
+
+  it('SCRUM-1002 ruling 3: says each BEO line billed and paid, the main receipt once paid and each additional bill by its state', async () => {
+    const id = newId();
+    await appParty(id, 'ZZ TEST 1002 billed and paid', WEEKDAY, 16900, 0);
+    await appPlan(id, WEEKDAY, FLORESTA, { depositSatang: 0, setMenu: [] });
+    const main = { lineId: 'ZZ-TEST-1002-main', name: 'ZZ TEST 1002 main food', productCode: null, area: 'food' as const, quantity: 2, unitSatang: 10000, included: false };
+    await ctx.db.execute(sql`update zz_party_contract.event_packages set kitchen_plan = ${JSON.stringify({ version: 1, lines: [{ line_id: main.lineId, source: 'extra', name: main.name, product_code: null, qty: 2, unit_price_satang: 10000 }], bar_lines: [] })}::jsonb where event_id=${id}`);
+    const said = async () => (await partyBillingForOtoApp(ctx.db, { operatorId, eventId: id })).beoLines;
+    expect(await said(), 'before settlement nothing is billed').toEqual([]);
+    const settled = await settle(id, { kids: 10, adults: 4, socksGiven: 0 });
+    expect(settled.status, JSON.stringify(settled.body)).toBe(200);
+    expect(settled.body.settlement.state).toBe('open');
+    expect(await said(), 'rung up and not paid: nothing paid').toEqual([]);
+    expect((await finalise(settled.body.sale.id, { method: 'cash', tenderedSatang: settled.body.sale.outstandingSatang })).status).toBe(200);
+    expect(await said(), 'the main receipt paid').toEqual([{ lineId: main.lineId, billedQuantity: 2, paidQuantity: 2 }]);
+    const later = { lineId: 'ZZ-TEST-1002-later', name: 'ZZ TEST 1002 later drink', productCode: null, area: 'bar' as const, quantity: 2, unitSatang: 5000, included: false };
+    const sync = (quantity: number) => syncBeoAdditionalCharges(ctx.db, { operatorId }, operatorId, id, { actorAppUserId: 'zz-test-staff', lines: [main, { ...later, quantity }] });
+    expect((await sync(2)).added).toBe(1);
+    expect(await said(), 'on an open additional bill: billed, not paid').toEqual([
+      { lineId: main.lineId, billedQuantity: 2, paidQuantity: 2 },
+      { lineId: later.lineId, billedQuantity: 2, paidQuantity: 0 },
+    ]);
+    const bill = (await detail(id)).body.event.party!.additionalBills![0]!;
+    expect((await pay(id, bill.id, newId(), bill.outstandingSatang, bill.outstandingSatang)).status).toBe(200);
+    expect(await said(), 'the additional bill paid').toEqual([
+      { lineId: main.lineId, billedQuantity: 2, paidQuantity: 2 },
+      { lineId: later.lineId, billedQuantity: 2, paidQuantity: 2 },
+    ]);
+    expect((await sync(3)).added).toBe(1);
+    expect(await said(), 'raised by one: the difference billed on a new bill, not paid yet').toEqual([
+      { lineId: main.lineId, billedQuantity: 2, paidQuantity: 2 },
+      { lineId: later.lineId, billedQuantity: 3, paidQuantity: 2 },
+    ]);
   });
 
   it('retains the explicit bill through QR payment, confirmation and recovery, and refuses retargeted retry', async () => {

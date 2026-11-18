@@ -4,17 +4,50 @@ import { itemTaxCategory, type TaxableCategory } from "@oto/shared";
 import type { Exec } from "./tx";
 import { and, eq, isNull, or } from 'drizzle-orm';
 import { branch, partyAdditionalBill, partyCharge, partySettlement, product, type Db } from '@oto/db';
-import { deriveId, type BeoAdditionalChargesBody } from '@oto/shared';
+import { deriveId, type BeoAdditionalChargesBody, type BeoBilledLine } from '@oto/shared';
 import { errors } from '../lib/errors';
 import { getEventAtBranches } from './otoapp-events';
 import { seamRead } from './parties';
-import { lockParty, partyLedgersOf } from './party-tab';
+import { lockParty, partyLedgersOf, type PartyLedgers } from './party-tab';
 import { billForNewCharge } from './party-additional-bills';
 import { audit } from './audit';
 import { withTx, type OpContext } from './tx';
 
 type Source = { lineId: string; quantity: number; unitSatang: number; productCode: string | null; area: "food" | "bar"; name: string };
 const sources = (items: unknown): Source[] => Array.isArray(items) ? items.flatMap((item: { beo?: Source }) => item?.beo ? [item.beo] : []) : [];
+
+/** The BEO sources the additional bills of one main settlement hold, each with its bill. */
+async function billedBeoSourcesOf(db: Exec, operatorId: string, eventId: string, mainSettlementId: string): Promise<{ billId: string | null; source: Source }[]> {
+  const stored = await db.select({ items: partyCharge.items, billId: partyCharge.additionalBillId }).from(partyCharge).innerJoin(partyAdditionalBill, eq(partyAdditionalBill.id, partyCharge.additionalBillId)).where(and(eq(partyCharge.operatorId, operatorId), eq(partyCharge.otoappEventId, eventId), eq(partyAdditionalBill.mainSettlementId, mainSettlementId)));
+  return stored.flatMap((row) => sources(row.items).map((source) => ({ billId: row.billId, source })));
+}
+
+/** The main receipt's count of each BEO line, as the settlement recorded it. */
+async function settledBeoQuantitiesOf(db: Exec, mainSettlementId: string): Promise<Record<string, number>> {
+  const [settlement] = await db.select({ plan: partySettlement.plan }).from(partySettlement).where(eq(partySettlement.id, mainSettlementId));
+  return (settlement?.plan as { beoLineQuantities?: Record<string, number> } | null)?.beoLineQuantities ?? {};
+}
+
+/**
+ * SCRUM-1002 ruling 3 (the owner, 18 November 2026: a billed and paid item can be neither reduced
+ * nor removed). Each BEO line billed since the party was settled, read from the same records the
+ * additional bill is made from: the main receipt's count at settlement (paid, the settlement being
+ * settled) plus every additional bill's, and how many of those are paid. Before settlement, none.
+ */
+export async function beoBilledLinesOf(db: Exec, operatorId: string, eventId: string, ledger: PartyLedgers): Promise<BeoBilledLine[]> {
+  const main = ledger.settlement;
+  if (main?.state !== 'settled') return [];
+  const paidBills = new Set((ledger.additionalBills ?? []).filter((bill) => bill.mainSettlementId === main.id && bill.state === 'paid').map((bill) => bill.id));
+  const lines = new Map<string, { billed: number; paid: number }>();
+  const add = (lineId: string, quantity: number, paid: boolean) => {
+    if (!Number.isFinite(quantity) || quantity <= 0) return;
+    const held = lines.get(lineId) ?? { billed: 0, paid: 0 };
+    lines.set(lineId, { billed: held.billed + quantity, paid: held.paid + (paid ? quantity : 0) });
+  };
+  for (const [lineId, quantity] of Object.entries(await settledBeoQuantitiesOf(db, main.id))) add(lineId, Number(quantity), true);
+  for (const { billId, source } of await billedBeoSourcesOf(db, operatorId, eventId, main.id)) add(source.lineId, source.quantity, !!billId && paidBills.has(billId));
+  return [...lines].map(([lineId, held]) => ({ lineId, billedQuantity: held.billed, paidQuantity: held.paid }));
+}
 /** Same party-add-on engine path as settlement, preserving VAT/service and entered-price semantics. */
 export async function priceBeoAddition(db: Exec, operatorId: string, branchId: string, eventId: string, line: BeoAdditionalChargesBody['lines'][number], quantity: number, unitSatang: number, id: string, now: Date) {
   let taxCategory: TaxableCategory = line.area === 'bar' ? 'bar' : 'fnb';
@@ -46,10 +79,8 @@ export async function syncBeoAdditionalCharges(db: Db, ctx: OpContext, operatorI
     let ledger = (await partyLedgersOf(tx, { branchId: event.branchId, eventIds: [event.id] })).get(event.id)!;
     if (ledger.settlement?.state !== 'settled') return { status: 'plan_only' as const, added: 0, billIds: [] };
     const mainSettlementId = ledger.settlement.id;
-    const [settlement] = await tx.select({ plan: partySettlement.plan }).from(partySettlement).where(eq(partySettlement.id, mainSettlementId));
-    const baseline = (settlement?.plan as { beoLineQuantities?: Record<string, number> } | null)?.beoLineQuantities ?? {};
-    const stored = await tx.select({ items: partyCharge.items }).from(partyCharge).innerJoin(partyAdditionalBill, eq(partyAdditionalBill.id, partyCharge.additionalBillId)).where(and(eq(partyCharge.operatorId, operatorId), eq(partyCharge.otoappEventId, event.id), eq(partyAdditionalBill.mainSettlementId, mainSettlementId)));
-    const billed = stored.flatMap((row) => sources(row.items));
+    const baseline = await settledBeoQuantitiesOf(tx, mainSettlementId);
+    const billed = (await billedBeoSourcesOf(tx, operatorId, event.id, mainSettlementId)).map((row) => row.source);
     const billIds = new Set<string>();
     let added = 0;
     for (const line of body.lines) {

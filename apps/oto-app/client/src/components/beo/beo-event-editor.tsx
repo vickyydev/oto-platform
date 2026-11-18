@@ -106,6 +106,7 @@ import { isTemplateSetMenuLine, lineWithTillItem, lineWithoutTillItem } from "@s
 import { TillCodeMark, TillMenuContext, TillMenuPick, tillCodeTitle, useTillMenu, useTillMenuIndex, tillMenuQueryKey } from "./till-menu-picker";
 import { isStartTime, needsStartTimeLine } from "@shared/eventStartTime";
 import { ADULTS_SAME_AS_KIDS, adultsDifferOf, kitchenListsEqual, sameKitchenDishNames } from "@shared/kitchenAdults";
+import { BEO_PAID_LINE_REFUSAL, paidLinesKeptWords, paidLinesOf, paidQuantitiesOf, type BeoPaidLineKept } from "@shared/beoPaidLines";
 import { beoExtraChargeOf, beoKitchenChargesOf, type BeoExtraCharge } from "@shared/beoExtras";
 import { BeoExtrasTotal, BeoPartyDateContext, ExtraPriceBox } from "./beo-extra-price";
 import { ONE_OFF_EVENT_COLOR_OPTIONS } from "@/lib/event-types";
@@ -420,14 +421,23 @@ function PackageLineItemRow({ item, idx, packageItems, setPackageItems }: {
   );
 }
 
-function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab, charge, disabled = false }: {
+function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab, charge, paid, disabled = false }: {
   item: MenuLine; idx: number; menuItems: MenuLine[]; setMenuItems: React.Dispatch<React.SetStateAction<MenuLine[]>>; menuTab: string;
   /** SCRUM-949: the line's charge as its list decides it (the adults' copy of a kids' line). */
   charge?: BeoExtraCharge;
+  /** SCRUM-1002 ruling 3: how many of this line the till has billed and paid; none when not paid. */
+  paid?: number;
   disabled?: boolean;
 }) {
   const tillMenu = useTillMenuIndex();
+  const { toast } = useToast();
   const changeMenu: typeof setMenuItems = (next) => { if (!disabled) setMenuItems(next); };
+  /** A paid line is neither lowered below its paid count nor deleted: the press is answered, nothing changes. */
+  const refusedAsPaid = (lowerTo: number | null): boolean => {
+    if (!paid || (lowerTo !== null && lowerTo >= paid)) return false;
+    toast({ title: BEO_PAID_LINE_REFUSAL, description: `${item.itemName.trim() || "This item"}: ${paid} billed and paid at the till.`, variant: "destructive" });
+    return true;
+  };
   return (
     <div className="space-y-0.5" data-testid={`menu-item-${menuTab}-${idx}`}>
       <div className="flex items-center gap-1">
@@ -454,6 +464,7 @@ function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab, charge, 
           size="icon"
           className="h-7 w-7 shrink-0"
           onClick={() => {
+            if (refusedAsPaid(stepBeoQuantity(item.quantity, -1))) return;
             changeMenu(prev => {
               const updated = [...prev];
               updated[idx] = { ...updated[idx], quantity: stepBeoQuantity(updated[idx].quantity, -1) };
@@ -575,7 +586,7 @@ function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab, charge, 
           variant="ghost"
           size="icon"
           className="h-7 w-7 shrink-0 text-destructive hover:text-destructive"
-          onClick={() => changeMenu(menuItems.filter((_, i) => i !== idx))}
+          onClick={() => { if (!refusedAsPaid(null)) changeMenu(menuItems.filter((_, i) => i !== idx)); }}
           data-testid={`button-remove-menu-item-${menuTab}-${idx}`}
         >
           <Trash2 className="h-3 w-3" />
@@ -1213,7 +1224,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
       if (!res.ok) throw new Error("Failed to save BEO data");
       return res.json();
     },
-    onSuccess: (saved: { additionalBilling?: { status: string; message: string }; oneDeposit?: OneDeposit; depositSave?: DepositSaveNote } | null) => {
+    onSuccess: (saved: { additionalBilling?: { status: string; message: string }; oneDeposit?: OneDeposit; depositSave?: DepositSaveNote; paidLinesKept?: BeoPaidLineKept[] } | null) => {
       // The deposit as it stands after the Save: the field shows it at once, and the read that
       // follows brings the rest of the form.
       if (saved?.oneDeposit) {
@@ -1223,7 +1234,9 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
       }
       queryClient.invalidateQueries({ queryKey: ["/api/events", eventId, "beo"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/events"] });
-      if (saved?.additionalBilling?.status === "pending") toast({ title: "Plan saved; additional bill needs resolution", description: saved.additionalBilling.message, variant: "destructive" });
+      // SCRUM-1002 ruling 3: a paid line the Save lowered or deleted was kept as billed; the BEO's read shows it.
+      if (saved?.paidLinesKept?.length) toast({ title: BEO_PAID_LINE_REFUSAL, description: paidLinesKeptWords(saved.paidLinesKept), variant: "destructive" });
+      else if (saved?.additionalBilling?.status === "pending") toast({ title: "Plan saved; additional bill needs resolution", description: saved.additionalBilling.message, variant: "destructive" });
       else if (saved?.depositSave) toast({ title: "BEO saved. The deposit was not changed", description: saved.depositSave.message });
       else toast({ title: "BEO data saved successfully" });
       onSave?.();
@@ -1340,6 +1353,17 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
     const ctx = { till: tillMenu.index, partyDate: eventData.eventDate ?? null };
     return { kitchen: beoKitchenChargesOf(kidsMenu, adultsMenu, adultsDiffer, ctx), bar: barItems.map((line) => beoExtraChargeOf(line, "bar", ctx)) };
   }, [tillMenu.index, eventData.eventDate, kidsMenu, adultsMenu, adultsDiffer, barItems]);
+
+  // SCRUM-1002 ruling 3: the lines the till has billed and paid, by id, each with its paid count
+  // (shared/beoPaidLines.ts). Their minus stops at that count and their delete is answered.
+  const paidLines = useMemo(
+    () => paidLinesOf({ kids: kidsMenu, adults: adultsMenu, adultsDiffer }, barItems, paidQuantitiesOf(tillBilling.data?.status === "ok" ? tillBilling.data.billing.beoLines : undefined)),
+    [kidsMenu, adultsMenu, adultsDiffer, barItems, tillBilling.data],
+  );
+  /** A paid line's press answered with the rule's words: nothing on screen changes. */
+  const refusePaidLine = (line: MenuLine) => {
+    toast({ title: BEO_PAID_LINE_REFUSAL, description: `${line.itemName.trim() || "This item"}: ${paidLines.get(line.id) ?? 0} billed and paid at the till.`, variant: "destructive" });
+  };
 
   const kitchenTotal = useMemo(() => {
     // SCRUM-829: the adults' list counts only while it is the adults' own.
@@ -3461,6 +3485,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                                 menuItems={currentMenu}
                                                 setMenuItems={setCurrentMenu}
                                                 menuTab="kids"
+                                                paid={paidLines.get(item.id)}
                                               />
                                             );
                                           })}
@@ -3516,6 +3541,12 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                           if (on) {
                             setAdultsMenu(kidsMenu.map((line, index) => ({ ...line, id: `menu_${Date.now()}_${index}_${Math.random().toString(36).slice(2, 6)}` })));
                             setAdultsDiffer(true);
+                            return;
+                          }
+                          // SCRUM-1002 ruling 3: off drops the adults' own list, and a paid line in it stays.
+                          const paidAdults = adultsMenu.find((line) => paidLines.has(line.id));
+                          if (paidAdults) {
+                            refusePaidLine(paidAdults);
                             return;
                           }
                           if (
@@ -3601,6 +3632,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                         setMenuItems={setCurrentMenu}
                                         menuTab="adults"
                                         charge={extraCharges.kitchen.adults[index]}
+                                        paid={paidLines.get(item.id)}
                                       />
                                     ))}
                                   </>
@@ -3919,7 +3951,11 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                           className="w-16 text-xs font-mono shrink-0"
                           placeholder="Qty"
                           value={String(item.quantity || 1)}
-                          onChange={(v) => setBarItems(prev => { const u = [...prev]; u[idx] = { ...u[idx], quantity: parseInt(v) || 1 }; return u; })}
+                          onChange={(v) => {
+                            // SCRUM-1002 ruling 3: never below what the till has billed and paid.
+                            if ((parseInt(v) || 1) < (paidLines.get(item.id) ?? 0)) return refusePaidLine(item);
+                            setBarItems(prev => { const u = [...prev]; u[idx] = { ...u[idx], quantity: parseInt(v) || 1 }; return u; });
+                          }}
                           disabled={readOnly}
                           data-testid={`bar-item-qty-${idx}`}
                         />
@@ -3938,7 +3974,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                           variant="ghost"
                           size="icon"
                           className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
-                          onClick={() => setBarItems(prev => prev.filter((_, i) => i !== idx))}
+                          onClick={() => (paidLines.has(item.id) ? refusePaidLine(item) : setBarItems(prev => prev.filter((_, i) => i !== idx)))}
                           disabled={readOnly}
                           data-testid={`bar-item-delete-${idx}`}
                         >

@@ -1120,6 +1120,16 @@ jobs:
         env:
           TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
         run: npx tsx tests/party-menu-item-ui.check.ts
+      # SCRUM-1002 ruling 3: a BEO line already billed and paid is neither
+      # lowered below its paid count nor deleted — the till's billed and paid
+      # counts read line by line, the Save from any client (and the day-of
+      # view's kitchen plan write) keeping such a line as stored on the
+      # kitchen's lists and the bar's and saying so, the rest of the Save
+      # written; a raise, an unpaid line and the till not answering go as
+      # before.
+      - name: The app's billed and paid BEO line checks
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/beo-paid-lines.check.ts
       # SCRUM-905: the till's menu inside the BEO — the platform asked with
       # the provision key for the park's branch, never a session, one park's
       # answer held a minute and a refusal never held; the route's park group

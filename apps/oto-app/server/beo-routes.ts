@@ -43,6 +43,8 @@ import { isTillPartyEventType } from "@shared/tillBilling";
 import { isPartyItemCode } from "@shared/beoExtras";
 import { partyPackageTotal } from "@shared/partyPackageTotal";
 import { syncApprovedBeoAdditions } from "./lib/beoAdditionalBilling";
+import { keepPaidBeoLines, mayHoldPaidLines, paidQuantitiesOf, type BeoPaidLineKept } from "@shared/beoPaidLines";
+import { log } from "./lib/logger";
 import { currentDeposit, depositOfBillingColumns, sameDeposit, writePartyDeposit } from "./lib/partyDeposit";
 import {
   decideDepositSave,
@@ -348,6 +350,39 @@ export async function writeKitchenPlanRow(
     await tx.insert(beoKitchenPlans)
       .values({ ...kitchenDbData, menus, eventId });
   }
+}
+
+/**
+ * SCRUM-1002 ruling 3 (shared/beoPaidLines.ts): each line's billed and paid count, as the till
+ * holds it. Asked only of a party whose plan holds a line the till may have billed; when the till
+ * cannot say, none is known and the Save is written as sent, as before the rule.
+ */
+async function paidBeoQuantitiesOf(
+  event: { id: string; tenantId: string; branchId: string | null; eventType: string },
+  requestId: string | undefined,
+): Promise<ReadonlyMap<string, number>> {
+  const [kitchen] = await db.select({ menus: beoKitchenPlans.menus }).from(beoKitchenPlans).where(eq(beoKitchenPlans.eventId, event.id));
+  const [bar] = await db.select({ items: beoBarPlans.items }).from(beoBarPlans).where(eq(beoBarPlans.eventId, event.id));
+  if (!mayHoldPaidLines(kitchen?.menus, bar?.items)) return new Map();
+  const reading = await readingFor(event, requestId);
+  if (reading.status !== "ok") {
+    if (reading.status === "not_reachable") log().warn({ eventId: event.id }, "the till could not say which BEO lines are billed and paid; the Save is written as sent");
+    return new Map();
+  }
+  return paidQuantitiesOf(reading.billing.beoLines);
+}
+
+/** A Save's lists with every billed and paid line kept, against the plan as stored now. */
+async function keepPaidLinesOnSave(
+  tx: any,
+  eventId: string,
+  incoming: { menus?: Record<string, unknown>; barItems?: unknown },
+  paid: ReadonlyMap<string, number>,
+): Promise<ReturnType<typeof keepPaidBeoLines>> {
+  if (paid.size === 0) return { ...incoming, kept: [] };
+  const [kitchen] = await tx.select({ menus: beoKitchenPlans.menus }).from(beoKitchenPlans).where(eq(beoKitchenPlans.eventId, eventId));
+  const [bar] = await tx.select({ items: beoBarPlans.items }).from(beoBarPlans).where(eq(beoBarPlans.eventId, eventId));
+  return keepPaidBeoLines({ menus: kitchen?.menus, barItems: bar?.items }, incoming, paid);
 }
 
 /** The bar plan's columns as the BEO's Save maps the form's fields. */
@@ -1409,6 +1444,13 @@ export function registerBeoRoutes(app: Express) {
       const checked = kitchenPlanPutBodySchema.safeParse(req.body ?? {});
       if (!checked.success) return res.status(400).json({ error: kitchenPlanBodyRefusal(checked.error) });
       const body = checked.data;
+      // SCRUM-1002 ruling 3: as on the BEO's Save, a billed and paid line is neither lowered below its
+      // paid count nor deleted here; it stays as stored, and the answer names it.
+      const [party] = body.menus !== undefined
+        ? await db.select({ id: coreEvents.id, tenantId: coreEvents.tenantId, branchId: coreEvents.branchId, eventType: coreEvents.eventType }).from(coreEvents).where(eq(coreEvents.id, eventId))
+        : [];
+      const paid = party ? await paidBeoQuantitiesOf(party, req.requestId) : new Map<string, number>();
+      let paidLinesKept: BeoPaidLineKept[] = [];
 
       const result = await db.transaction(async (tx) => {
         await lockKitchenPlanMutation(tx, eventId);
@@ -1417,6 +1459,12 @@ export function registerBeoRoutes(app: Express) {
 
         if (existing) {
           const { setMenuSelectionSubmittedAt, ...updates } = body;
+          const held = await keepPaidLinesOnSave(tx, eventId, { menus: updates.menus }, paid);
+          if (held.kept.length > 0) {
+            paidLinesKept = held.kept;
+            updates.menus = held.menus as typeof updates.menus;
+            if (updates.simplifiedMenus) updates.simplifiedMenus = { ...updates.simplifiedMenus, kids: held.menus?.kids, adults: held.menus?.adults } as typeof updates.simplifiedMenus;
+          }
           const [selection] = await tx.select({
             isSubmitted: beoSetMenuSelections.isSubmitted,
             submittedAt: beoSetMenuSelections.submittedAt,
@@ -1457,7 +1505,7 @@ export function registerBeoRoutes(app: Express) {
         const [created] = await tx.insert(beoKitchenPlans).values(parsed).returning();
         return { status: 201, kitchenPlan: created };
       });
-      res.status(result.status).json(result.kitchenPlan);
+      res.status(result.status).json(paidLinesKept.length > 0 ? { ...result.kitchenPlan, paidLinesKept } : result.kitchenPlan);
     } catch (error) {
       next(error);
     }
@@ -1907,19 +1955,37 @@ export function registerBeoRoutes(app: Express) {
         }
       }
       
+      // SCRUM-1002 ruling 3: a line already billed and paid is neither lowered below its paid count
+      // nor deleted. The till says which; such a line stays as stored, the rest of the Save is
+      // written, and the answer names it (shared/beoPaidLines.ts).
+      const paid = kitchenPlan !== undefined || barPlan !== undefined ? await paidBeoQuantitiesOf(existingEvent, req.requestId) : new Map<string, number>();
+      const paidLinesKept: BeoPaidLineKept[] = [];
+
       // Upsert kitchen plan - map frontend fields to valid DB columns (SCRUM-907: one code path with the till's door)
       if (kitchenPlan !== undefined) {
         const kp = kitchenPlan as Record<string, any>;
         const kitchenDbData = kitchenPlanDbDataOf(kp);
         await db.transaction(async (tx) => {
           await lockKitchenPlanMutation(tx, eventId);
+          const held = await keepPaidLinesOnSave(tx, eventId, { menus: kitchenDbData.menus }, paid);
+          if (held.kept.length > 0) {
+            paidLinesKept.push(...held.kept);
+            kitchenDbData.menus = held.menus;
+            kitchenDbData.simplifiedMenus = { ...kitchenDbData.simplifiedMenus, kids: held.menus?.kids, adults: held.menus?.adults };
+          }
           await writeKitchenPlanRow(tx, eventId, kitchenDbData, kp.setMenuSelectionSubmittedAt);
         });
       }
 
       // Upsert bar plan
       if (barPlan !== undefined) {
-        await writeBarPlanRow(db, eventId, barPlanDbDataOf(barPlan as Record<string, any>));
+        const barDbData = barPlanDbDataOf(barPlan as Record<string, any>);
+        const held = await keepPaidLinesOnSave(db, eventId, { barItems: barDbData.items }, paid);
+        if (held.kept.length > 0) {
+          paidLinesKept.push(...held.kept);
+          barDbData.items = held.barItems;
+        }
+        await writeBarPlanRow(db, eventId, barDbData);
       }
 
       // Upsert billing (also stores partyDetails in addOns)
@@ -2045,6 +2111,7 @@ export function registerBeoRoutes(app: Express) {
         additionalBilling,
         oneDeposit: oneDeposit ?? oneDepositOf(currentDeposit(bl, event)),
         ...(depositSave ? { depositSave } : {}),
+        ...(paidLinesKept.length > 0 ? { paidLinesKept } : {}),
       });
     } catch (error) {
       next(error);

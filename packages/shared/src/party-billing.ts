@@ -113,10 +113,25 @@ export const PartyBillingSaleSchema = z.object({
 });
 export type PartyBillingSale = z.infer<typeof PartyBillingSaleSchema>;
 
+/**
+ * SCRUM-1002 ruling 3 — one BEO line the till has billed since the party was settled, by the
+ * line's id: the count billed (the main receipt's at settlement, plus every additional bill's) and
+ * the count of those paid (the main receipt's once settled, plus the paid additional bills'). The
+ * OTO App keeps a paid line from being lowered below that count or deleted.
+ */
+export const BeoBilledLineSchema = z.object({
+  lineId: z.string(),
+  billedQuantity: z.number().int(),
+  paidQuantity: z.number().int(),
+});
+export type BeoBilledLine = z.infer<typeof BeoBilledLineSchema>;
+
 /** `GET /otoapp/parties/:eventId/billing` — the party's money as the till holds it. */
 export const PartyBillingAnswerSchema = z.object({
   additionalBills: z.array(PartyAdditionalBillSchema).optional(),
   unassignedTab: z.object({ charges: z.array(PartyChargeViewSchema), payments: z.array(PartyPaymentViewSchema) }).optional(),
+  /** The BEO lines billed since the party was settled; empty before. */
+  beoLines: z.array(BeoBilledLineSchema).optional(),
   eventId: z.string(),
   state: z.enum(PARTY_BILLING_STATES),
   /** The park: the operator's name, the branch's, and the branch's address. */

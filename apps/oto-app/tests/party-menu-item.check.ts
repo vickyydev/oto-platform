@@ -106,6 +106,13 @@ const platform = createServer((req, res) => {
   req.on("data", (c) => (raw += c));
   req.on("end", () => {
     const body = JSON.parse(raw || "{}") as Record<string, unknown>;
+    // SCRUM-1002: a BEO Save of a plan with billed lines asks the party's billing first; this
+    // stand-in knows no party's money, so the Save is written as sent and the ask counts nowhere.
+    if (/^\/otoapp\/parties\/[^/]+\/billing$/.test(req.url ?? "")) {
+      res.writeHead(404, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: { code: "NOT_FOUND", message: "Party not found" } }));
+      return;
+    }
     if (ADDITIONS.test(req.url ?? "")) {
       additions.push({ url: req.url ?? "", headers: req.headers, body });
       res.writeHead(200, { "content-type": "application/json" });

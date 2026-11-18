@@ -17295,6 +17295,29 @@
                       ],
                       "additionalProperties": false
                     },
+                    "beoLines": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "lineId": {
+                            "type": "string"
+                          },
+                          "billedQuantity": {
+                            "type": "integer"
+                          },
+                          "paidQuantity": {
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "lineId",
+                          "billedQuantity",
+                          "paidQuantity"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
                     "eventId": {
                       "type": "string"
                     },
