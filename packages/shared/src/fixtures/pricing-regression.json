@@ -1975,7 +1975,7 @@
     },
     {
       "id": "TD-2",
-      "title": "Saturday 00:30 — still FRIDAY's trading day, so still Friday's prices and Friday's codes",
+      "title": "05:00 day start (retired for the park), Saturday 00:30 — still FRIDAY's trading day, so still Friday's prices and Friday's codes",
       "rules": ["R-10", "R-29"],
       "instant": "2026-09-25T17:30:00Z",
       "timeZone": "Asia/Bangkok",
@@ -2099,7 +2099,7 @@
     },
     {
       "id": "TD-9",
-      "title": "A branch with no late night — a 00:00 day start puts the calendar day and the trading day back together",
+      "title": "The park's own day since SCRUM-1010 — a 00:00 day start puts the calendar day and the trading day back together",
       "rules": ["R-10", "R-29"],
       "instant": "2026-09-25T17:30:00Z",
       "timeZone": "Asia/Bangkok",
@@ -2113,7 +2113,44 @@
         "reason": "Weekend pricing",
         "promoAccepted": false
       },
-      "note": "The same instant as TD-2 under a branch that closes at midnight. business_day_start is per branch, so the ruling is 'the business date decides' and not '05:00 decides': set the start to midnight and the answers are the calendar day's again. Kept so a second branch in another country inherits the rule rather than the hour."
+      "note": "The same instant as TD-2 under a midnight day start, which every park holds since the owner's ruling of 19 November 2026 (SCRUM-1010: the day runs midnight to midnight). business_day_start is per branch, so the ruling is 'the business date decides' and not 'an hour decides': at midnight the answers are the calendar day's. TD-1 to TD-8 keep the retired 05:00 start as data, so a park abroad that sets another hour inherits the rule rather than the hour."
+    },
+    {
+      "id": "TD-10",
+      "title": "Midnight day start, Friday 23:59 — the last minute of Friday: Friday's prices and Friday's codes",
+      "rules": ["R-10", "R-29"],
+      "instant": "2026-09-25T16:59:00Z",
+      "timeZone": "Asia/Bangkok",
+      "dayStart": "00:00",
+      "promo": { "validUntil": "2026-09-25" },
+      "expect": {
+        "branchDate": "2026-09-25",
+        "businessDate": "2026-09-25",
+        "utcDate": "2026-09-25",
+        "mode": "weekday",
+        "reason": "Weekday pricing",
+        "promoAccepted": true
+      },
+      "note": "SCRUM-1010. One minute before the park's midnight every date still agrees on Friday."
+    },
+    {
+      "id": "TD-11",
+      "title": "Midnight day start, Saturday 00:00 — the day turns at midnight, not at 05:00 and not at the UTC date change",
+      "rules": ["R-10", "R-29"],
+      "instant": "2026-09-25T17:00:00Z",
+      "timeZone": "Asia/Bangkok",
+      "dayStart": "00:00",
+      "promo": { "validUntil": "2026-09-25" },
+      "expect": {
+        "branchDate": "2026-09-26",
+        "businessDate": "2026-09-26",
+        "utcDate": "2026-09-25",
+        "mode": "weekend",
+        "reason": "Weekend pricing",
+        "promoAccepted": false,
+        "promoAcceptedUnderUtc": true
+      },
+      "note": "SCRUM-1010. One minute after TD-10: weekend pricing starts and Friday's code is refused, at the park's midnight. The UTC date is still Friday until 07:00 Bangkok, which is why the till and the Console now read the park's date and never the UTC one."
     }
   ]
 }

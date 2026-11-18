@@ -136,16 +136,16 @@ export const PRICING_ENGINE_VERSION = '2026.10.06-1';
  *   - RULING 3 — A SALE IS PRICED BY THE BUSINESS DATE. A DECISION.
  *     `rateModeToday` resolves the rate mode from `businessDate` rather than
  *     `branchToday`, and takes the branch's `business_day_start`. A cart rung
- *     up at 00:30 on Saturday while Friday's session is still open is charged
- *     Friday's prices. No guest sale falls in the window where the two rules
- *     disagree — the park trades 10:00–20:00 and the day starts at 05:00.
+ *     up at 00:30 on Saturday was charged Friday's prices while the day
+ *     started at 05:00. Since SCRUM-1010 (19 November 2026) the day runs
+ *     midnight to midnight, so the business date is the calendar date.
  *
  *   - RULING 4 — A PROMO CODE IS VALIDATED AGAINST THE BUSINESS DATE. A
  *     DECISION, and it also corrects a plain bug: the prototype compares
  *     against the UTC date (`pages/Till.tsx:560`) while pricing the same cart
  *     from local midnight — one engine, two day boundaries, seven hours apart.
- *     Measured, the UTC date is a day behind the business date between 05:00
- *     and 06:59 local, so a code valid FROM Friday was refused at 06:00 on
+ *     Measured, the UTC date is a day behind the business date until 06:59
+ *     local, so a code valid FROM Friday was refused at 06:00 on
  *     Friday and a code valid UNTIL Friday was still accepted at 06:00 on
  *     Saturday. `promoValidityDate` is the one right answer to pass.
  *     No fixture's money moves; TD-* pin the boundaries.

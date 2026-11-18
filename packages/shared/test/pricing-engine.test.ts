@@ -458,17 +458,21 @@ describe('rateModeToday — the clock seam', () => {
     expect(rateModeToday('America/Los_Angeles', [], saturdayOpen).mode).toBe('weekday');
   });
 
-  it('prices by the BUSINESS day, so Saturday 00:30 is still Friday (ruling 3)', () => {
-    // The change ruling 3 made, at the instant it bites: 00:30 on Saturday, a
-    // cart rung up while Friday's session is still being closed. It used to
-    // read branchToday and charge the WEEKEND price.
+  it('prices by the BUSINESS day, which turns at midnight: Saturday 00:30 is Saturday (ruling 3, SCRUM-1010)', () => {
+    // 00:30 on Saturday Bangkok. The day runs midnight to midnight (the
+    // owner's ruling of 19 November 2026), so the business day is the
+    // calendar day and the cart takes the WEEKEND price.
     const afterMidnight = new Date('2026-09-25T17:30:00Z');
+    const beforeMidnight = new Date('2026-09-25T16:59:00Z'); // Friday 23:59
     expect(branchToday(BANGKOK, afterMidnight)).toBe('2026-09-26');
-    expect(businessDate(afterMidnight, BANGKOK)).toBe('2026-09-25');
-    expect(rateModeToday(BANGKOK, [], afterMidnight).mode).toBe('weekday');
-    // And the day start is the branch's, not a constant: a branch that closes
-    // at midnight gets the calendar day's answer back.
+    expect(businessDate(afterMidnight, BANGKOK)).toBe('2026-09-26');
+    expect(rateModeToday(BANGKOK, [], afterMidnight).mode).toBe('weekend');
     expect(rateModeToday(BANGKOK, [], afterMidnight, 0).mode).toBe('weekend');
+    expect(businessDate(beforeMidnight, BANGKOK)).toBe('2026-09-25');
+    expect(rateModeToday(BANGKOK, [], beforeMidnight).mode).toBe('weekday');
+    // And the day start is the branch's, not a constant: a park that sets
+    // 05:00 still gets Friday's answer at 00:30.
+    expect(rateModeToday(BANGKOK, [], afterMidnight, 5 * 60).mode).toBe('weekday');
   });
 
   it('applies a holiday range at the same seam, with its name for the POS indicator', () => {

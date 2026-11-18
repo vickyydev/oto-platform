@@ -48,9 +48,9 @@ import { withTx, type Exec, type OpContext } from './tx';
  * session is at (`businessDate`, the branch's own clock and day start) —
  * the day a sale at that till is priced on. A session at no branch takes the
  * operator's first branch, and an operator with none takes Asia/Bangkok at
- * the default 05:00 start. Whether a benefit's period turns over at that hour
- * or at midnight is the owner's (plan Q6); this is only the day a change
- * starts counting from.
+ * the default start. A benefit's period turns over at the park's midnight:
+ * the owner's ruling of 19 November 2026 (SCRUM-1010, "normal 24 hour day")
+ * answers plan Q6, and every park's day start is 00:00.
  *
  * The employees are `core.employee` rows, read only: the OTO App is the
  * employee master (C13), and `job:otoapp.employee_sync` (S2-17b round 2,

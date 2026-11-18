@@ -13,37 +13,36 @@ import { isoDateInTz } from './dates';
  * `mockApi.ts:3182`). In Bangkok those disagree for seven hours of every day.
  *
  * So the plan owns this rule, and states it: every ledger row stores
- * `business_date` computed from `branch.business_day_start` (default 05:00
- * Asia/Bangkok) plus `occurred_at` (SPRINT_2_PLAN.md "Money and time", and
- * `branch.business_day_start` (time, default 05:00) in the S2-04 table list).
- * The park closes after midnight, so a sale at 00:30 belongs to the day that
- * started the previous morning.
+ * `business_date` computed from `branch.business_day_start` plus
+ * `occurred_at` (SPRINT_2_PLAN.md "Money and time", and the S2-04 table list).
+ *
+ * THE DAY RUNS MIDNIGHT TO MIDNIGHT (the owner's ruling of 19 November 2026,
+ * SCRUM-1010: "lets keep it midnight like normal 24 hour day and count
+ * according to that"). Every park's `business_day_start` is 00:00 and so is
+ * the default below, so the business date IS the park's calendar date. The
+ * earlier 05:00 start, which put a 00:30 sale on the day that started the
+ * previous morning, is retired. The setting itself stays: a park in another
+ * country may need another hour, and every reader passes it here rather than
+ * assuming one. Rows stored under 05:00 keep the date they were stored with.
  *
  * WHAT IT GOVERNS, SINCE 2026-09-20: everything with a date on it — the ledger,
  * the rate mode a sale is PRICED at (`rateModeToday`, ruling 3) and the date a
  * promo code's validity window is compared against (`promoValidityDate`, ruling
- * 4). Both of those are DECISIONS OF OURS rather than rules found in the
- * repository, and each carries its reasoning where it is applied. The short
- * form: the park trades 10:00–20:00 and the day starts at 05:00, so no guest
- * sale falls in the window where the candidate rules disagree, and one sentence
- * then covers pricing, promo expiry, the till roll and the cash-up —
+ * 4). One sentence covers pricing, promo expiry, the till roll and the cash-up:
  * everything answers to the day printed on your receipt.
  *
- * It replaces a calendar-day rule the prototype had and the plan did not
- * contradict: `todayRateMode()` → `getRateModeForDate(new Date())` priced a
- * 01:00 Saturday sale at weekend rates while the ledger put it on Friday.
- * `branchToday` is still the branch's CALENDAR date and is still right for
- * anything a person would call "what is today's date" — a visit date, a
- * booking, a report's default range endpoint. It is no longer what prices a
- * sale.
+ * It replaced a mix in the prototype: `todayRateMode()` →
+ * `getRateModeForDate(new Date())` read the local calendar date while the
+ * ledger read another clock. `branchToday` is the branch's CALENDAR date; with
+ * a midnight start the two agree.
  */
 
-/** 05:00, the plan's default `branch.business_day_start`. */
-export const DEFAULT_BUSINESS_DAY_START_MINUTES = 5 * 60;
+/** 00:00, the default `branch.business_day_start` (SCRUM-1010: the day runs midnight to midnight). */
+export const DEFAULT_BUSINESS_DAY_START_MINUTES = 0;
 
 const HHMM = /^(\d{2}):(\d{2})(?::\d{2})?$/;
 
-/** Parse a `branch.business_day_start` time ("05:00", or "05:00:00" from PG) to minutes. */
+/** Parse a `branch.business_day_start` time ("00:00", or "00:00:00" from PG) to minutes. */
 export function parseDayStart(time: string): number {
   const match = HHMM.exec(time);
   const hour = match?.[1];
@@ -150,9 +149,9 @@ export function addDaysToIsoDate(isoDate: string, days: number): string {
  * changed number in a diff someone reads.
  *
  * None of it arises at HKT Central: Asia/Bangkok has no DST, and even in a DST
- * zone the plan's default 05:00 start sits clear of both US and EU transition
- * hours. It is recorded because a second branch in another country would
- * inherit this function unchanged.
+ * zone the default 00:00 start sits clear of both US and EU transition hours
+ * (01:00-03:00). It is recorded because a second branch in another country
+ * would inherit this function unchanged.
  */
 export function businessDate(
   instant: Date,

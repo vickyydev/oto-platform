@@ -104,28 +104,24 @@ export function promoNotApplicableReason(code: string): string {
  * this stays pure. Take it from `promoValidityDate`, which is `businessDate`
  * under another name so that a call site reads as the rule it is applying.
  *
- * RULING 4, 2026-09-20, AND IT IS A DECISION OF OURS, NOT A RULE WE FOUND.
- * Nothing in this repository said which date validates a code. The park trades
- * 10:00–20:00 (its own SOP, and Radar has watched the live tills against a
- * 20:00 close for months) and the business day starts at 05:00, so NO GUEST
- * SALE falls in the window where the candidate rules disagree — only staff
- * actions do: a cash count, a late party settling, a correction. That makes one
- * sentence cover pricing, promo expiry, the till roll and the cash-up:
- * EVERYTHING ANSWERS TO THE DAY PRINTED ON YOUR RECEIPT. And "until Friday"
- * then means Friday works all day, including the part of it that happens after
- * midnight.
+ * RULING 4, 2026-09-20: a code is validated on the business date, so one
+ * sentence covers pricing, promo expiry, the till roll and the cash-up:
+ * EVERYTHING ANSWERS TO THE DAY PRINTED ON YOUR RECEIPT. Since the owner's
+ * ruling of 19 November 2026 (SCRUM-1010) the day runs midnight to midnight,
+ * so "until Friday" means Friday on the park's calendar and the code is
+ * refused from 00:00 on Saturday park time (under the retired 05:00 start it
+ * still worked until 05:00).
  *
- * IT ALSO FIXES A PLAIN BUG, whichever date had won. The prototype passes
+ * IT ALSO FIXES A PLAIN BUG. The prototype passes
  * `new Date().toISOString().slice(0,10)` — the UTC date (`pages/Till.tsx:560`)
  * — while pricing the same cart from LOCAL midnight (`lib/pricingMode.ts:19-24`
  * via `todayRateMode`): one engine, two day boundaries, seven hours apart in
- * Bangkok. Measured against the business date, the UTC date is a day behind
- * between 05:00 and 06:59 local, so under it:
+ * Bangkok. Measured against the park's date, the UTC date is a day behind
+ * between 00:00 and 06:59 local, so under it:
  *   - a code valid FROM Friday is refused to anyone at 06:00 on Friday, which
  *     is Friday;
- *   - a code valid UNTIL Friday is still accepted at 06:00 on SATURDAY, an hour
- *     into the next trading day.
- * Both are wrong in the same two-hour window, in opposite directions.
+ *   - a code valid UNTIL Friday is still accepted at 06:00 on SATURDAY.
+ * Both are wrong in the same window, in opposite directions.
  */
 export function validatePromoCode(
   promo: PromoDiscount,
