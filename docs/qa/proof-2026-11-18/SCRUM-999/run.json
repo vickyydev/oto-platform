@@ -1,0 +1,403 @@
+{
+  "steps": [
+    {
+      "stage": "parties_created",
+      "at": "2026-11-18T15:13:05.670Z",
+      "a": {
+        "letter": "A",
+        "eventId": "6a59ed9d-240d-40f3-947e-18a502a718e4",
+        "title": "ZZ TEST 999 party A 20261118",
+        "snapStatus": 201,
+        "setMenu": "87e49b75-754f-4e5a-9336-995d5307b135"
+      },
+      "b": {
+        "letter": "B",
+        "eventId": "2b05d3ff-32c8-4c12-8d90-d23bc68cbc02",
+        "title": "ZZ TEST 999 party B 20261118",
+        "snapStatus": 201,
+        "setMenu": "87e49b75-754f-4e5a-9336-995d5307b135"
+      },
+      "via": "OTO App route POST /api/admin/events (session entered through the launcher tile), package After School Birthday Package, Central (10 kids)"
+    },
+    {
+      "stage": "a_settled_cash",
+      "at": "2026-11-18T15:14:01.269Z",
+      "status": "PASSED",
+      "saleId": "01a1ef38-7c5b-7687-bea7-fa59c157f246",
+      "receiptNumber": "T1-000090",
+      "grossSatang": 1090000,
+      "payments": [
+        {
+          "method": "cash",
+          "status": "approved",
+          "amountSatang": 1090000
+        }
+      ],
+      "fingerprint": "2e95d030913d033a646bcfb523c7fce6826d1948e58d49003de980d453782f1e",
+      "tillState": "sale",
+      "additionalBills": 0,
+      "evidence": [
+        "a1-settle-preview.png",
+        "a1-main-paid.png"
+      ]
+    },
+    {
+      "stage": "a_dish_added_after_settlement",
+      "at": "2026-11-18T15:14:17.302Z",
+      "saveStatus": 200,
+      "additionalBilling": {
+        "status": "synced",
+        "message": "New approved items are linked to the party's additional bill; the original paid receipt is unchanged."
+      },
+      "confirmShown": true,
+      "line": {
+        "id": "menu_1795014851555_ewd1",
+        "itemName": "ZZ TEST 999 after-settle dish A",
+        "quantity": 1,
+        "price": 25.03,
+        "included": false,
+        "source": "additional",
+        "chargeApproved": true,
+        "billingSync": "synced"
+      },
+      "billsBefore": 0,
+      "billsAfter": 1,
+      "newBill": {
+        "id": "6a59ed9d-240d-783b-9e30-fbce41f9fe34",
+        "state": "open",
+        "totalSatang": 2503,
+        "paidSatang": 0,
+        "outstandingSatang": 2503,
+        "charges": [
+          {
+            "id": "6a59ed9d-240d-7ff9-9220-1832d4fe90f5",
+            "totalSatang": 2503,
+            "items": [
+              {
+                "name": "ZZ TEST 999 after-settle dish A",
+                "qty": 1,
+                "lineTotalSatang": 2503
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "stage": "a_dish_raised_1_to_2",
+      "at": "2026-11-18T15:16:11.592Z",
+      "heldOnReopen": {
+        "id": "menu_1795014851555_ewd1",
+        "quantity": 1,
+        "price": 25.03,
+        "chargeApproved": true,
+        "billingSync": "synced"
+      },
+      "saveStatus": 200,
+      "additionalBilling": {
+        "status": "synced",
+        "message": "New approved items are linked to the party's additional bill; the original paid receipt is unchanged."
+      },
+      "confirmShown": true,
+      "lineAfter": {
+        "id": "menu_1795014851555_ewd1",
+        "quantity": 2,
+        "price": 25.03,
+        "chargeApproved": true,
+        "billingSync": "synced"
+      },
+      "billsBefore": 1,
+      "billsAfter": 2,
+      "newBills": [
+        {
+          "id": "6a59ed9d-240d-7c78-a1f5-c44d0a7f0ba0",
+          "state": "open",
+          "totalSatang": 2503,
+          "paidSatang": 0,
+          "outstandingSatang": 2503,
+          "charges": [
+            {
+              "id": "6a59ed9d-240d-7d65-aa54-8c0bfe511137",
+              "totalSatang": 2503,
+              "items": [
+                {
+                  "name": "ZZ TEST 999 after-settle dish A",
+                  "qty": 1,
+                  "lineTotalSatang": 2503
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "extrasTotalOnScreen": "Extras charged at the till: ฿50.06",
+      "firstReceiptUnchanged": true
+    },
+    {
+      "stage": "b_saved_switch_off",
+      "at": "2026-11-18T15:17:40.175Z",
+      "saveStatus": 200,
+      "switchOnScreen": "false",
+      "stored": {
+        "adultsDiffer": false,
+        "kids": 0,
+        "adults": 0
+      }
+    },
+    {
+      "stage": "b_adults_item_added_no_save",
+      "at": "2026-11-18T15:17:49.991Z",
+      "switchOnScreen": "true",
+      "postStatus": 200,
+      "answeredLine": {
+        "id": "party_7560009b-2dd8-47da-a3e8-fb058ee5d751",
+        "itemName": "ZZ TEST 999 adults dish",
+        "quantity": 1,
+        "price": 33.03,
+        "included": false,
+        "productCode": "PARTY-3DED4090",
+        "chargeApproved": true,
+        "billingSync": "plan_only"
+      },
+      "additionalBilling": {
+        "status": "plan_only",
+        "message": "Items remain in the plan until the main party is settled."
+      },
+      "savedBeo": {
+        "adultsDiffer": true,
+        "adultsLines": 1,
+        "line": {
+          "id": "party_7560009b-2dd8-47da-a3e8-fb058ee5d751",
+          "itemName": "ZZ TEST 999 adults dish",
+          "quantity": 1,
+          "price": 33.03,
+          "included": false,
+          "productCode": "PARTY-3DED4090",
+          "chargeApproved": true,
+          "billingSync": "plan_only"
+        }
+      },
+      "screenAdultsRows": 1
+    },
+    {
+      "stage": "b_reopened_in_page_no_save",
+      "at": "2026-11-18T15:18:06.501Z",
+      "drawerClosed": true,
+      "beoReadsOnReopen": 0,
+      "switchOnScreen": "false",
+      "adultsRowsOnScreen": [],
+      "sameAsKidsShown": true,
+      "savedBeo": {
+        "adultsDiffer": true,
+        "adultsLines": [
+          "ZZ TEST 999 adults dish"
+        ]
+      }
+    },
+    {
+      "stage": "b_reopened_fresh_no_save",
+      "at": "2026-11-18T15:18:26.625Z",
+      "switchOnScreen": "true",
+      "adultsRowsOnScreen": [
+        "EXTRA | 1 | 33.03 | till price 33.03 (made for this party) | ZZ TEST 999 adults dish | PARTY-3DED4090"
+      ],
+      "savedBeo": {
+        "adultsDiffer": true,
+        "line": {
+          "id": "party_7560009b-2dd8-47da-a3e8-fb058ee5d751",
+          "itemName": "ZZ TEST 999 adults dish",
+          "quantity": 1,
+          "price": 33.03,
+          "productCode": "PARTY-3DED4090",
+          "chargeApproved": true,
+          "billingSync": "plan_only"
+        }
+      }
+    },
+    {
+      "stage": "verdict_scrum_999",
+      "at": "2026-11-18T15:19:23.825Z",
+      "status": "PASSED",
+      "did": "Party A settled in cash (receipt T1-000090, 10,900); kitchen EXTRA ZZ TEST 999 after-settle dish A (25.03) added after settlement and saved -> Additional bill 1 (25.03), paid in cash at Reception Till 1; BEO opened again (fresh read), the dish raised 1 -> 2, saved -> Additional bill 2 for exactly 1 x 25.03; paid in cash",
+      "lineOnReopen": {
+        "chargeApproved": true,
+        "billingSync": "synced"
+      },
+      "lineAfterRaise": {
+        "quantity": 2,
+        "chargeApproved": true,
+        "billingSync": "synced"
+      },
+      "beoExtrasCharged": "50.06",
+      "tillExtraCharges": "+50.06 (bill 1 25.03 paid + bill 2 25.03)",
+      "firstReceiptUnchangedThroughout": true,
+      "evidence": [
+        "a3-beo-dish-raised-to-2-before-save.png",
+        "a4-beo-billing-two-additional-bills.png",
+        "a4-till-party-two-additional-bills.png"
+      ]
+    },
+    {
+      "stage": "verdict_scrum_998",
+      "at": "2026-11-18T15:19:23.826Z",
+      "status": "PASSED_SAVED_BEO_AND_FRESH_REOPEN__NOT_MET_IN_PAGE_REOPEN",
+      "did": "Party B (not settled) BEO saved with the adults switch off; switch turned on; NEW ITEM ZZ TEST 999 adults dish 33.03 added to the adults list (product PARTY-3DED4090); no Save",
+      "savedBeoAfterAdd": {
+        "adultsDiffer": true,
+        "line": {
+          "chargeApproved": true,
+          "billingSync": "plan_only"
+        }
+      },
+      "inPageReopen": {
+        "beoReadsOnReopen": 0,
+        "switchOnScreen": false,
+        "adultsLineShown": false,
+        "note": "the editor reopened on the read cached before the add; nothing saved"
+      },
+      "freshReopen": {
+        "switchOnScreen": true,
+        "adultsLineShown": true
+      },
+      "evidence": [
+        "b2-adults-list-after-add-no-save.png",
+        "b3-reopened-in-page-no-save.png",
+        "b4-reopened-fresh-no-save.png"
+      ]
+    },
+    {
+      "stage": "cleanup",
+      "at": "2026-11-18T15:19:50.173Z",
+      "productStillInMenu": false,
+      "partyA": {
+        "status": 200,
+        "archived": true
+      },
+      "partyB": {
+        "status": 200,
+        "archived": true
+      },
+      "firstReceipt": {
+        "receiptNumber": "T1-000090",
+        "grossSatang": 1090000,
+        "unchanged": true
+      },
+      "partyABills": [
+        {
+          "state": "paid",
+          "totalSatang": 2503,
+          "paidSatang": 2503
+        },
+        {
+          "state": "paid",
+          "totalSatang": 2503,
+          "paidSatang": 2503
+        }
+      ]
+    },
+    {
+      "stage": "own_sessions_signed_out",
+      "at": "2026-11-18T15:19:58.038Z",
+      "desk": {
+        "signOutStatus": 200,
+        "oldCookieMeStatus": 401
+      },
+      "phone": "absent",
+      "launcher-admin": {
+        "signOutStatus": 200,
+        "oldCookieMeStatus": 401
+      },
+      "app": {
+        "logoutStatus": 200,
+        "oldCookieUserStatus": 401
+      }
+    }
+  ],
+  "receiptReads": [
+    {
+      "label": "a_after_settlement",
+      "at": "2026-11-18T15:14:00.993Z",
+      "httpStatus": 200,
+      "receiptNumber": "T1-000090",
+      "status": "finalised",
+      "grossSatang": 1090000,
+      "lineCount": 9,
+      "payments": [
+        {
+          "method": "cash",
+          "status": "approved",
+          "amountSatang": 1090000
+        }
+      ],
+      "fingerprint": "2e95d030913d033a646bcfb523c7fce6826d1948e58d49003de980d453782f1e"
+    },
+    {
+      "label": "after_a2-bill1",
+      "at": "2026-11-18T15:15:56.857Z",
+      "httpStatus": 200,
+      "receiptNumber": "T1-000090",
+      "status": "finalised",
+      "grossSatang": 1090000,
+      "lineCount": 9,
+      "payments": [
+        {
+          "method": "cash",
+          "status": "approved",
+          "amountSatang": 1090000
+        }
+      ],
+      "fingerprint": "2e95d030913d033a646bcfb523c7fce6826d1948e58d49003de980d453782f1e"
+    },
+    {
+      "label": "a_after_raise",
+      "at": "2026-11-18T15:16:11.591Z",
+      "httpStatus": 200,
+      "receiptNumber": "T1-000090",
+      "status": "finalised",
+      "grossSatang": 1090000,
+      "lineCount": 9,
+      "payments": [
+        {
+          "method": "cash",
+          "status": "approved",
+          "amountSatang": 1090000
+        }
+      ],
+      "fingerprint": "2e95d030913d033a646bcfb523c7fce6826d1948e58d49003de980d453782f1e"
+    },
+    {
+      "label": "after_a5-bill2",
+      "at": "2026-11-18T15:17:25.893Z",
+      "httpStatus": 200,
+      "receiptNumber": "T1-000090",
+      "status": "finalised",
+      "grossSatang": 1090000,
+      "lineCount": 9,
+      "payments": [
+        {
+          "method": "cash",
+          "status": "approved",
+          "amountSatang": 1090000
+        }
+      ],
+      "fingerprint": "2e95d030913d033a646bcfb523c7fce6826d1948e58d49003de980d453782f1e"
+    },
+    {
+      "label": "a_after_cleanup",
+      "at": "2026-11-18T15:19:50.026Z",
+      "httpStatus": 200,
+      "receiptNumber": "T1-000090",
+      "status": "finalised",
+      "grossSatang": 1090000,
+      "lineCount": 9,
+      "payments": [
+        {
+          "method": "cash",
+          "status": "approved",
+          "amountSatang": 1090000
+        }
+      ],
+      "fingerprint": "2e95d030913d033a646bcfb523c7fce6826d1948e58d49003de980d453782f1e"
+    }
+  ]
+}
