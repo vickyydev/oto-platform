@@ -1,0 +1,443 @@
+{
+  "run": {
+    "what": "SCRUM-998 and SCRUM-1002 ruling 3 staging proof",
+    "platform": "oto-api-staging dep-dbut24m8bjmc739ra6qg live 2026-11-18T16:29:43Z",
+    "app": "oto-app-staging dep-dbut255ckfvc73d6eku0 live 2026-11-18T16:27:08Z",
+    "sha": "e4584582efe0c499f96c9cf232f443612fac2ea1",
+    "pictures": "the Events board behind the BEO drawer painted over (mask-board.cjs)"
+  },
+  "steps": [
+    {
+      "stage": "station",
+      "at": "2026-11-18T16:26:10.576Z",
+      "chosen": "ZZ TEST setup traps 20261102",
+      "clicked": true,
+      "tillOneUsed": false
+    },
+    {
+      "stage": "parties_created",
+      "at": "2026-11-18T16:26:19.210Z",
+      "a": {
+        "letter": "A",
+        "eventId": "19fbcafb-bd4c-4066-a620-e83d69468bda",
+        "title": "ZZ TEST 1002 party A 20261118",
+        "snapStatus": 201,
+        "setMenu": "87e49b75-754f-4e5a-9336-995d5307b135"
+      },
+      "b": {
+        "letter": "B",
+        "eventId": "96204537-b160-4a4b-bed9-ab7188ad1fdf",
+        "title": "ZZ TEST 1002 party B 20261118",
+        "snapStatus": 201,
+        "setMenu": "87e49b75-754f-4e5a-9336-995d5307b135"
+      },
+      "via": "OTO App route POST /api/admin/events (session entered through the launcher tile), package After School Birthday Package, Central (10 kids)"
+    },
+    {
+      "stage": "b_kids_dish_saved_switch_off",
+      "at": "2026-11-18T16:27:35.385Z",
+      "saveStatus": 200,
+      "switchOnScreen": "false",
+      "stored": {
+        "adultsDiffer": false,
+        "kids": [
+          {
+            "id": "menu_1795019249246_naut",
+            "itemName": "ZZ TEST 1002 kids pasta",
+            "quantity": 1,
+            "price": 41.02,
+            "source": "additional"
+          }
+        ],
+        "adults": []
+      }
+    },
+    {
+      "stage": "b_adults_item_added_no_save",
+      "at": "2026-11-18T16:27:46.089Z",
+      "switchOnScreen": "true",
+      "sentAdultsShown": [
+        {
+          "id": "menu_1795019259814_0_o944",
+          "itemName": "ZZ TEST 1002 kids pasta",
+          "quantity": 1,
+          "price": 41.02
+        }
+      ],
+      "postStatus": 200,
+      "answeredLine": {
+        "id": "party_7f8bdfe9-2562-4cbf-b509-dfc7c7a7e716",
+        "itemName": "ZZ TEST 1002 adults satay",
+        "quantity": 1,
+        "price": 52.05,
+        "productCode": "PARTY-C86E2DC6",
+        "chargeApproved": true,
+        "billingSync": "plan_only"
+      },
+      "screenAdultsRows": [
+        "EXTRA | 1 | 41.02 | charged once, with the kids' line | ZZ TEST 1002 kids pasta",
+        "EXTRA | 1 | 52.05 | till price 52.05 (made for this party) | ZZ TEST 1002 adults satay | PARTY-C86E2DC6"
+      ],
+      "savedBeo": {
+        "adultsDiffer": true,
+        "adults": [
+          {
+            "id": "menu_1795019259814_0_o944",
+            "itemName": "ZZ TEST 1002 kids pasta",
+            "quantity": 1,
+            "price": 41.02,
+            "productCode": null,
+            "chargeApproved": true,
+            "billingSync": "plan_only"
+          },
+          {
+            "id": "party_7f8bdfe9-2562-4cbf-b509-dfc7c7a7e716",
+            "itemName": "ZZ TEST 1002 adults satay",
+            "quantity": 1,
+            "price": 52.05,
+            "productCode": "PARTY-C86E2DC6",
+            "chargeApproved": true,
+            "billingSync": "plan_only"
+          }
+        ],
+        "kids": [
+          {
+            "id": "menu_1795019249246_naut",
+            "itemName": "ZZ TEST 1002 kids pasta",
+            "quantity": 1,
+            "price": 41.02,
+            "productCode": null,
+            "chargeApproved": true,
+            "billingSync": "plan_only"
+          }
+        ]
+      }
+    },
+    {
+      "stage": "b_reopened_in_page_no_save",
+      "at": "2026-11-18T16:28:01.321Z",
+      "drawerClosed": true,
+      "beoReadsOnReopen": 1,
+      "switchOnScreen": "true",
+      "adultsRowsOnScreen": [
+        "EXTRA | 1 | 41.02 | charged once, with the kids' line | ZZ TEST 1002 kids pasta",
+        "EXTRA | 1 | 52.05 | till price 52.05 (made for this party) | ZZ TEST 1002 adults satay | PARTY-C86E2DC6"
+      ],
+      "screenBeforeClose": [
+        "EXTRA | 1 | 41.02 | charged once, with the kids' line | ZZ TEST 1002 kids pasta",
+        "EXTRA | 1 | 52.05 | till price 52.05 (made for this party) | ZZ TEST 1002 adults satay | PARTY-C86E2DC6"
+      ],
+      "savedBeo": {
+        "adultsDiffer": true,
+        "adults": [
+          {
+            "id": "menu_1795019259814_0_o944",
+            "itemName": "ZZ TEST 1002 kids pasta",
+            "quantity": 1,
+            "price": 41.02,
+            "productCode": null,
+            "chargeApproved": true,
+            "billingSync": "plan_only"
+          },
+          {
+            "id": "party_7f8bdfe9-2562-4cbf-b509-dfc7c7a7e716",
+            "itemName": "ZZ TEST 1002 adults satay",
+            "quantity": 1,
+            "price": 52.05,
+            "productCode": "PARTY-C86E2DC6",
+            "chargeApproved": true,
+            "billingSync": "plan_only"
+          }
+        ]
+      },
+      "savedUnchangedSinceAdd": true
+    },
+    {
+      "stage": "a_settled_cash",
+      "at": "2026-11-18T16:31:05.340Z",
+      "status": "PASSED",
+      "saleId": "01a1ef7f-0ab9-79bd-bf83-f4f5e24b1feb",
+      "receiptNumber": "Z703-000002",
+      "grossSatang": 1090000,
+      "payments": [
+        {
+          "method": "cash",
+          "status": "approved",
+          "amountSatang": 1090000
+        }
+      ],
+      "fingerprint": "aca44be200f3342a4c8443ec038ac2cf3b073684b30ff64d421ac8b98442ae05",
+      "tillState": "sale",
+      "additionalBills": 0,
+      "evidence": [
+        "a1-settle-preview.png",
+        "a1-main-paid.png"
+      ]
+    },
+    {
+      "stage": "a_extra_added_after_settlement",
+      "at": "2026-11-18T16:31:21.920Z",
+      "saveStatus": 200,
+      "additionalBilling": {
+        "status": "synced",
+        "message": "New approved items are linked to the party's additional bill; the original paid receipt is unchanged."
+      },
+      "confirmShown": true,
+      "line": {
+        "id": "menu_1795019475788_30c5",
+        "itemName": "ZZ TEST 1002 after-settle dish",
+        "quantity": 2,
+        "price": 30.07,
+        "included": false,
+        "source": "additional",
+        "chargeApproved": true,
+        "billingSync": "synced"
+      },
+      "billsBefore": 0,
+      "billsAfter": 1,
+      "newBill": {
+        "id": "19fbcafb-bd4c-7246-9de2-b0a9b38e09c7",
+        "state": "open",
+        "totalSatang": 6014,
+        "paidSatang": 0,
+        "outstandingSatang": 6014,
+        "charges": [
+          {
+            "id": "19fbcafb-bd4c-76cd-b5de-0182fd71d85b",
+            "totalSatang": 6014,
+            "items": [
+              {
+                "name": "ZZ TEST 1002 after-settle dish",
+                "qty": 2,
+                "lineTotalSatang": 6014
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "stage": "a_till_lines_bill_open",
+      "at": "2026-11-18T16:31:28.368Z",
+      "status": "ok",
+      "state": "sale",
+      "beoLines": [
+        {
+          "lineId": "menu_1795019475788_30c5",
+          "billedQuantity": 2,
+          "paidQuantity": 0
+        }
+      ],
+      "lineId": "menu_1795019475788_30c5"
+    },
+    {
+      "stage": "a_till_lines_bill_paid",
+      "at": "2026-11-18T16:32:06.705Z",
+      "status": "ok",
+      "state": "sale",
+      "beoLines": [
+        {
+          "lineId": "menu_1795019475788_30c5",
+          "billedQuantity": 2,
+          "paidQuantity": 2
+        }
+      ],
+      "lineId": "menu_1795019475788_30c5"
+    },
+    {
+      "stage": "a_screen_lower_delete",
+      "at": "2026-11-18T16:32:21.460Z",
+      "qtyBefore": "2",
+      "qtyAfterMinus": "2",
+      "toastAfterMinus": [
+        "Already billed and paid: this item cannot be reduced or removed. | ZZ TEST 1002 after-settle dish: 2 billed and paid at the till."
+      ],
+      "stillOnScreenAfterDelete": true,
+      "toastAfterDelete": [
+        "Already billed and paid: this item cannot be reduced or removed. | ZZ TEST 1002 after-settle dish: 2 billed and paid at the till."
+      ],
+      "savedLine": {
+        "id": "menu_1795019475788_30c5",
+        "quantity": 2,
+        "price": 30.07,
+        "billingSync": "synced"
+      },
+      "bills": [
+        {
+          "id": "19fbcafb-bd4c-7246-9de2-b0a9b38e09c7",
+          "state": "paid",
+          "totalSatang": 6014,
+          "paidSatang": 6014
+        }
+      ]
+    },
+    {
+      "stage": "a_api_lower_delete_refused",
+      "at": "2026-11-18T16:32:33.229Z",
+      "lowered": {
+        "status": 200,
+        "paidLinesKept": [
+          {
+            "id": "menu_1795019475788_30c5",
+            "itemName": "ZZ TEST 1002 after-settle dish",
+            "list": "kids",
+            "paidQuantity": 2
+          }
+        ],
+        "additionalBilling": {
+          "status": "synced",
+          "message": "New approved items are linked to the party's additional bill; the original paid receipt is unchanged."
+        },
+        "savedLine": {
+          "id": "menu_1795019475788_30c5",
+          "itemName": "ZZ TEST 1002 after-settle dish",
+          "quantity": 2,
+          "price": 30.07,
+          "billingSync": "synced"
+        }
+      },
+      "deleted": {
+        "status": 200,
+        "paidLinesKept": [
+          {
+            "id": "menu_1795019475788_30c5",
+            "itemName": "ZZ TEST 1002 after-settle dish",
+            "list": "kids",
+            "paidQuantity": 2
+          }
+        ],
+        "additionalBilling": {
+          "status": "synced",
+          "message": "New approved items are linked to the party's additional bill; the original paid receipt is unchanged."
+        },
+        "savedLine": {
+          "id": "menu_1795019475788_30c5",
+          "itemName": "ZZ TEST 1002 after-settle dish",
+          "quantity": 2,
+          "price": 30.07,
+          "billingSync": "synced"
+        }
+      },
+      "billsUnchanged": true,
+      "bills": [
+        {
+          "id": "19fbcafb-bd4c-7246-9de2-b0a9b38e09c7",
+          "state": "paid",
+          "totalSatang": 6014,
+          "paidSatang": 6014,
+          "outstandingSatang": 0
+        }
+      ],
+      "firstReceiptUnchanged": true
+    },
+    {
+      "stage": "a_raised_2_to_3",
+      "at": "2026-11-18T16:32:53.458Z",
+      "qtyOnScreen": "3",
+      "saveStatus": 200,
+      "paidLinesKept": null,
+      "additionalBilling": {
+        "status": "synced",
+        "message": "New approved items are linked to the party's additional bill; the original paid receipt is unchanged."
+      },
+      "confirmShown": true,
+      "line": {
+        "id": "menu_1795019475788_30c5",
+        "quantity": 3,
+        "price": 30.07,
+        "billingSync": "synced"
+      },
+      "billsBefore": 1,
+      "newBills": [
+        {
+          "id": "19fbcafb-bd4c-78e0-b03d-51fa242a30ad",
+          "state": "open",
+          "totalSatang": 3007,
+          "paidSatang": 0,
+          "outstandingSatang": 3007,
+          "charges": [
+            {
+              "id": "19fbcafb-bd4c-7718-b708-a1baee4208b4",
+              "totalSatang": 3007,
+              "items": [
+                {
+                  "name": "ZZ TEST 1002 after-settle dish",
+                  "qty": 1,
+                  "lineTotalSatang": 3007
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "firstReceiptUnchanged": true
+    },
+    {
+      "stage": "a_till_lines_after_bill2_paid",
+      "at": "2026-11-18T16:33:39.020Z",
+      "state": "sale",
+      "beoLines": [
+        {
+          "lineId": "menu_1795019475788_30c5",
+          "billedQuantity": 3,
+          "paidQuantity": 3
+        }
+      ]
+    },
+    {
+      "stage": "cleanup",
+      "at": "2026-11-18T16:33:47.596Z",
+      "product": {
+        "found": true,
+        "code": "PARTY-C86E2DC6",
+        "name": "ZZ TEST 1002 adults satay",
+        "deleteStatus": 200,
+        "stillInMenu": false
+      },
+      "archived": {
+        "partyA": 200,
+        "partyB": 200
+      },
+      "readBack": {
+        "partyA": true,
+        "partyB": true
+      },
+      "firstReceipt": {
+        "receiptNumber": "Z703-000002",
+        "grossSatang": 1090000,
+        "unchanged": true
+      },
+      "partyABills": [
+        {
+          "state": "paid",
+          "totalSatang": 6014,
+          "paidSatang": 6014,
+          "outstandingSatang": 0
+        },
+        {
+          "state": "paid",
+          "totalSatang": 3007,
+          "paidSatang": 3007,
+          "outstandingSatang": 0
+        }
+      ]
+    },
+    {
+      "stage": "own_sessions_signed_out",
+      "at": "2026-11-18T16:33:53.267Z",
+      "desk": {
+        "signOutStatus": 200,
+        "oldCookieMeStatus": 401
+      },
+      "phone": "absent",
+      "launcher-admin": {
+        "signOutStatus": 200,
+        "oldCookieMeStatus": 401
+      },
+      "app": {
+        "logoutStatus": 200,
+        "oldCookieUserStatus": 401
+      }
+    }
+  ]
+}
