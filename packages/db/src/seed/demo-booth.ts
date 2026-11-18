@@ -115,7 +115,8 @@ export type DemoBoothPrizeCode = (typeof DEMO_BOOTH_PRIZES)[number]['definition'
 const HOUR = 60;
 
 /**
- * THE BOOTH'S DAY, in minutes after the branch's day start (05:00): a family
+ * THE BOOTH'S DAY, in minutes after the park's midnight on its own wall clock
+ * (SCRUM-1010; it used to count from the 05:00 day start): a family
  * at the wheel every hour or two across the mall's afternoon. None of these
  * vouchers is redeemed the same day — the one that is belongs to the
  * `voucher-discount` sale, which wins it here at 11:10 and spends it at 13:55.
@@ -124,11 +125,11 @@ const HOUR = 60;
  * a press on every database this has already run against.
  */
 const DEMO_BOOTH_DAY: ReadonlyArray<{ key: string; atMinutes: number; prize: DemoBoothPrizeCode }> = [
-  { key: 'press-1', atMinutes: 5 * HOUR + 35, prize: 'spin-voucher-150' }, // 10:35
-  { key: 'press-2', atMinutes: 6 * HOUR + 50, prize: 'spin-voucher-100' }, // 11:50
-  { key: 'press-3', atMinutes: 7 * HOUR + 40, prize: 'spin-voucher-200' }, // 12:40
-  { key: 'press-4', atMinutes: 9 * HOUR + 25, prize: 'spin-voucher-100' }, // 14:25
-  { key: 'press-5', atMinutes: 11 * HOUR + 15, prize: 'spin-voucher-150' }, // 16:15
+  { key: 'press-1', atMinutes: 10 * HOUR + 35, prize: 'spin-voucher-150' }, // 10:35
+  { key: 'press-2', atMinutes: 11 * HOUR + 50, prize: 'spin-voucher-100' }, // 11:50
+  { key: 'press-3', atMinutes: 12 * HOUR + 40, prize: 'spin-voucher-200' }, // 12:40
+  { key: 'press-4', atMinutes: 14 * HOUR + 25, prize: 'spin-voucher-100' }, // 14:25
+  { key: 'press-5', atMinutes: 16 * HOUR + 15, prize: 'spin-voucher-150' }, // 16:15
 ];
 
 interface DemoBoothPrize {
@@ -650,7 +651,8 @@ export async function seedDemoBoothDay(
     on: string;
     /** The day's keys (`demoDayRef` in demo-day.ts): `key` names ids, `action` the action ids. */
     ref: { key: (scenario: string) => string; action: (scenario: string) => string };
-    instantAt: (minutesIntoDay: number) => Date;
+    /** Minutes after the park's midnight on `on`, on its wall clock. */
+    instantAt: (minutesAfterMidnight: number) => Date;
     staff: DemoBoothStaff;
   },
 ): Promise<DemoBoothDayCounts> {

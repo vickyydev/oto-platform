@@ -176,7 +176,12 @@ interface DemoTender {
 interface DemoSale {
   /** Stable, and it is what makes the run idempotent. Never renumber one. */
   key: string;
-  /** Minutes after the branch's day start. The park trades 10:00-20:00. */
+  /**
+   * Minutes after midnight on the park's own wall clock (10 * HOUR is 10:00).
+   * The park trades 10:00-20:00. Not "after the day start": SCRUM-1010 moved
+   * the day start to midnight, and a demo placed after the day start put the
+   * 10:00 sale at 05:00.
+   */
   atMinutes: number;
   /** Which of the seeded members bought it, by nickname. Absent = a walk-in. */
   memberNickname?: string;
@@ -196,7 +201,7 @@ interface DemoSale {
    * and spent here, and its discount is the sale's promo discount.
    */
   voucherDefinitionCode?: DemoBoothPrizeCode;
-  /** When, in minutes after the day start, that voucher was won at the booth. Before `atMinutes`. */
+  /** When, in minutes after the park's midnight, that voucher was won at the booth. Before `atMinutes`. */
   voucherWonAtMinutes?: number;
   tenders: DemoTender[];
   /** What the day looks like on the Sale list. `tendering` is a sale still owed money. */
@@ -218,7 +223,7 @@ const HOUR = 60;
 const DAY: DemoSale[] = [
   {
     key: 'open-cash',
-    atMinutes: 5 * HOUR, // 10:00
+    atMinutes: 10 * HOUR, // 10:00
     tier: 'tourist',
     lines: [
       {
@@ -239,7 +244,7 @@ const DAY: DemoSale[] = [
   },
   {
     key: 'card-nexgo',
-    atMinutes: 5 * HOUR + 40,
+    atMinutes: 10 * HOUR + 40,
     memberNickname: 'Ploy',
     tier: 'thai',
     lines: [
@@ -274,7 +279,7 @@ const DAY: DemoSale[] = [
   },
   {
     key: 'qr-gateway',
-    atMinutes: 6 * HOUR + 15,
+    atMinutes: 11 * HOUR + 15,
     tier: 'tourist',
     lines: [
       {
@@ -306,7 +311,7 @@ const DAY: DemoSale[] = [
   },
   {
     key: 'card-declined-then-cash',
-    atMinutes: 7 * HOUR,
+    atMinutes: 12 * HOUR,
     tier: 'tourist',
     lines: [
       {
@@ -343,7 +348,7 @@ const DAY: DemoSale[] = [
   },
   {
     key: 'split-cash-card',
-    atMinutes: 7 * HOUR + 50,
+    atMinutes: 12 * HOUR + 50,
     memberNickname: 'Nok',
     tier: 'expat',
     lines: [
@@ -383,7 +388,7 @@ const DAY: DemoSale[] = [
   },
   {
     key: 'card-pax',
-    atMinutes: 8 * HOUR + 30,
+    atMinutes: 13 * HOUR + 30,
     tier: 'tourist',
     lines: [
       {
@@ -417,7 +422,7 @@ const DAY: DemoSale[] = [
   },
   {
     key: 'merch-wallet',
-    atMinutes: 8 * HOUR + 40,
+    atMinutes: 13 * HOUR + 40,
     tier: 'tourist',
     lines: [{ kind: 'socks', label: 'Regular Socks', taxableCategory: 'addons', quantity: 1, unitSatang: b(80) }],
     tenders: [{ method: 'wallet', methodCode: 'wallet_credit', provider: 'manual', status: 'approved' }],
@@ -426,20 +431,20 @@ const DAY: DemoSale[] = [
   },
   {
     key: 'voucher-discount',
-    atMinutes: 8 * HOUR + 55,
+    atMinutes: 13 * HOUR + 55,
     tier: 'tourist',
     lines: [{ kind: 'kids', label: '2 Hours Play — Kids', taxableCategory: 'tickets', quantity: 1,
       unitSatang: b(450), kidCount: 1, adultCount: 1, freeAdultCount: 1,
       stayHours: 2, stayDurationLabel: '2 Hours' }],
     discountSatang: b(100),
     voucherDefinitionCode: 'spin-voucher-100',
-    voucherWonAtMinutes: 6 * HOUR + 10, // won at the booth at 11:10, spent here at 13:55
+    voucherWonAtMinutes: 11 * HOUR + 10, // won at the booth at 11:10, spent here at 13:55
     tenders: [{ method: 'cash', methodCode: 'cash', provider: 'manual', status: 'approved' }],
     status: 'finalised',
   },
   {
     key: 'card-staff-confirmed',
-    atMinutes: 9 * HOUR + 10,
+    atMinutes: 14 * HOUR + 10,
     tier: 'tourist',
     lines: [
       {
@@ -477,7 +482,7 @@ const DAY: DemoSale[] = [
   },
   {
     key: 'qr-unresolved',
-    atMinutes: 9 * HOUR + 45,
+    atMinutes: 14 * HOUR + 45,
     tier: 'tourist',
     lines: [
       {
@@ -510,7 +515,7 @@ const DAY: DemoSale[] = [
   },
   {
     key: 'qr-terminal-offline',
-    atMinutes: 10 * HOUR,
+    atMinutes: 15 * HOUR,
     tier: 'tourist',
     lines: [
       {
@@ -725,8 +730,10 @@ export async function seedDemoDay(
   // opened somewhere with a different one.
   const midnightUtc = Date.parse(`${on}T00:00:00Z`);
   const offsetMin = tzOffsetMinutes(new Date(midnightUtc), timezone);
-  const instantAt = (minutesIntoDay: number): Date =>
-    new Date(midnightUtc + (dayStartMinutes + minutesIntoDay - offsetMin) * 60_000);
+  // Minutes after the park's midnight on `on`, on its wall clock: a demo
+  // time is a time of day, whatever hour the park's business day starts at.
+  const instantAt = (minutesAfterMidnight: number): Date =>
+    new Date(midnightUtc + (minutesAfterMidnight - offsetMin) * 60_000);
 
   const counts: DemoDayCounts = {
     branchName,
@@ -980,8 +987,9 @@ export async function seedDemoDay(
         await seedDemoWalletSpend(writer, { on, ref, saleId, operatorId, branchId, stationId: station.id,
           occurredAt,
           sourceSaleId: (await demoSaleAt(writer, station.id, ref, 'card-pax'))
-            ?? stableId(ref.key('card-pax'), instantAt(8 * HOUR + 30)),
-          expiresAt: instantAt(24 * HOUR), spentSatang: money.gross });
+            ?? stableId(ref.key('card-pax'), instantAt(13 * HOUR + 30)),
+          // The end of the business day `on`: a same-day grant's expiry.
+          expiresAt: instantAt(dayStartMinutes + 24 * HOUR), spentSatang: money.gross });
       }
       if (scenario.voucherDefinitionCode) {
         await seedDemoVoucherDiscount(writer, { on, saleId, operatorId, branchId,
@@ -994,7 +1002,7 @@ export async function seedDemoDay(
   }
 
   await seedDemoCashRefund(db, { ref, operatorId, branchId, stationId: station.id,
-    series: stationCodePrefix, occurredAt: instantAt(10 * HOUR + 30), createdByAccountId: cashier.id });
+    series: stationCodePrefix, occurredAt: instantAt(15 * HOUR + 30), createdByAccountId: cashier.id });
 
   // The booth's own day: the presses whose vouchers nobody spent today.
   counts.boothSpins += (await seedDemoBoothDay(db, booth, { on, ref, instantAt, staff: boothStaff })).written;
@@ -1012,7 +1020,11 @@ export async function seedDemoDay(
   counts.events = await seedDemoEvents(
     db,
     { id: branchId, name: branchName, operatorId, timezone },
-    { on, at: instantAt(0) },
+    // The events' id anchor, a fixed 05:00 on the park's clock: where the
+    // 05:00 day start used to put it, kept so a day seeded before SCRUM-1010
+    // converges on the same event ids instead of filing them twice. An id
+    // anchor only; it decides no day.
+    { on, at: instantAt(5 * HOUR) },
   );
 
   return counts;
