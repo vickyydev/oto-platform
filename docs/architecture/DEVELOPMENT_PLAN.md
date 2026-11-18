@@ -1049,7 +1049,8 @@ Digio sends satang integers.
 
 **Time, business date and clock trust.** All timestamps are `timestamptz` in
 UTC; each branch has a timezone. Every ledger row stores `business_date`
-computed from `branch.business_day_start` (default 05:00 Asia/Bangkok) plus
+computed from `branch.business_day_start` (00:00 Asia/Bangkok since SCRUM-1010:
+the park's day runs midnight to midnight; it was 05:00 before) plus
 `occurred_at`, alongside `received_at` and `clock_trust`. When
 `clock_trust=low` the cloud recomputes the business date from `received_at`,
 keeps the original and records a `sync_anomaly`. Rollups never redo timezone

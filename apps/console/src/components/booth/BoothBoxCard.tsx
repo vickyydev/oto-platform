@@ -3,7 +3,7 @@ import { Link } from 'wouter';
 import { Loading, RouteUnavailable, StaleNote, Unreadable } from '@/components/Panel';
 import { StatusMark } from '@/components/Status';
 import { StatusChip, TONE_INK } from '@/components/redesign/chips';
-import { CardShell, FactLine, FactList, RailNote } from '@/components/redesign/layout';
+import { CardShell, FactLine, FactList } from '@/components/redesign/layout';
 import { toneForPaper, toneForReachability } from '@/lib/fleetWords';
 import { formatWhen, timeAgo } from '@/lib/time';
 import { cn } from '@/lib/utils';
@@ -129,19 +129,6 @@ export function BoothBoxCard({
             </FactLine>
           </FactList>
           <TemplatesLink />
-          {/*
-            The tiles above say "Spins today", and this says which day that is.
-            The count is filed by TRADING day, which starts at the branch's day
-            start rather than at midnight, while a slip prints the calendar
-            date it was won on — so between midnight and the day start the two
-            disagree, and a manager reading one against the other needs to
-            know why.
-          */}
-          <RailNote>
-            Today means the trading day ({s.today.businessDate}), which starts at the branch’s day
-            start, not at midnight: after midnight the count and the date stay on the day before
-            until then, while a slip is dated with the calendar day it was won.
-          </RailNote>
         </>
       )}
     </CardShell>

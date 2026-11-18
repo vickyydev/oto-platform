@@ -353,8 +353,9 @@ export interface PrintJobStore {
  *
  * `businessDate` rather than a timestamp because every question asked of these
  * — how many spins today, how many of this prize today — is asked about the
- * park's trading day, which starts at `branch.business_day_start` and is not
- * midnight. The caller resolves the date; the store only counts.
+ * park's trading day, which starts at `branch.business_day_start` (midnight
+ * since SCRUM-1010, but the park's setting decides). The caller resolves the
+ * date; the store only counts.
  */
 export interface CounterKey {
   scope: string;

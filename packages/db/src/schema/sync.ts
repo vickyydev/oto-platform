@@ -190,7 +190,7 @@ export const syncEvent = edge.table(
      * Which trading day this belongs to, resolved once on receipt from
      * `branch.business_day_start` (see `businessDate` in `@oto/shared`).
      * Stored rather than derived because every reconciliation and rollup reads
-     * it and none of them should re-derive a park's 05:00 boundary.
+     * it and none of them should re-derive a park's day boundary.
      */
     businessDate: date('business_date').notNull(),
     /**

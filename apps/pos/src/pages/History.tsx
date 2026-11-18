@@ -156,9 +156,9 @@ export default function History() {
     if (!selected) setRefundRequests(readRefundRequests());
   }, [selected]);
 
-  // The day the park is on, from the branch's own clock and 05:00 boundary —
-  // not the browser's calendar, which between midnight and five belongs to
-  // tomorrow while the till is still ringing up today.
+  // The day the park is on, from the branch's own clock and day start
+  // (midnight since SCRUM-1010) — not the browser's calendar, which may sit in
+  // another timezone than the park.
   useEffect(() => {
     let cancelled = false;
     if (!branchApiId) {

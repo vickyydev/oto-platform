@@ -362,7 +362,7 @@ export interface ApiBranch {
   name: string;
   code: string;
   timezone: string;
-  /** When the trading day starts, "05:00:00" (SCRUM-308). Absent on an older api. */
+  /** When the trading day starts, "00:00:00" since SCRUM-1010 (SCRUM-308). Absent on an older api. */
   businessDayStart?: string;
   country: string | null;
   archived: boolean;
