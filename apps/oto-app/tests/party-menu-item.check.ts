@@ -359,6 +359,7 @@ try {
 
   await check("a refusal is said in words and writes nothing: the platform's own, its key refused, no answer at all", async () => {
     const before = JSON.stringify(await kitchenOf(partyA));
+    const additionsBefore = additions.length;
     reply = refuse(409, "PARTY_MENU_CODE_TAKEN", "Every code this item could take is already on another product.");
     const taken = await add(keyed, admin, partyA, { name: "ZZ TEST refused" });
     assert.equal(taken.status, 409);
@@ -373,10 +374,13 @@ try {
     assert.equal(gone.body.code, "PLATFORM_UNREACHABLE");
     reply = succeed;
     assert.equal(JSON.stringify(await kitchenOf(partyA)), before, "the kitchen plan as it was");
+    // SCRUM-995: a refused item never asks the platform to bill the party's additions.
+    assert.equal(additions.length, additionsBefore, "the platform was never asked to bill");
   });
 
   await check("refused before the platform is asked: staff, another park group's party, a park not linked, no key here, a form that does not read", async () => {
     const before = asked.length;
+    const additionsBefore = additions.length;
     assert.equal((await add(keyed, staff, partyA)).status, 403, "staff cannot create a BEO, so cannot add to one");
     assert.equal((await add(keyed, admin, partyB)).status, 404, "another park group's party is not found");
     const otherAdmin = await signIn(keyed, adminU.email);
@@ -400,6 +404,8 @@ try {
       assert.ok(typeof res.body.message === "string" && res.body.message.length > 0);
     }
     assert.equal(asked.length, before, "the platform was never asked");
+    // SCRUM-995: nor asked to bill the party's additions.
+    assert.equal(additions.length, additionsBefore, "the platform was never asked to bill");
     assert.equal((await kitchenOf(partyB)), null);
     assert.equal((await kitchenOf(partyU)), null);
   });

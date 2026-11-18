@@ -55,7 +55,7 @@ export function ExtraPriceBox({ line, area, charge, onPrice, testId, disabled = 
         placeholder="Price ฿"
         data-testid={`input-menu-price-${testId}`}
       />
-      {line.billingSync === "pending" && <span className="text-xs text-destructive" role="status">Additional bill pending ? Save again to resolve</span>}
+      {line.billingSync === "pending" && <span className="text-xs text-destructive" role="status">Additional bill pending - Save again to resolve</span>}
       {hint && (
         <span className="text-[10px] text-muted-foreground shrink-0 whitespace-nowrap" data-testid={`text-menu-price-hint-${testId}`}>
           {hint}

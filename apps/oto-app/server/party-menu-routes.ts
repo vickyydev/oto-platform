@@ -7,6 +7,7 @@ import {
   partyMenuItemProblem,
   partyMenuLineOf,
   satangOfBaht,
+  type PartyMenuItemBody,
   type PartyMenuLine,
 } from "@shared/partyMenuItem";
 import { requireAuth } from "./auth";
@@ -49,6 +50,16 @@ const asLines = (v: unknown): KitchenLine[] =>
   Array.isArray(v) ? (v.filter((l) => l && typeof l === "object" && !Array.isArray(l)) as KitchenLine[]) : [];
 const asCollection = (v: unknown): Record<string, unknown> =>
   v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
+
+/** The line as the plan holds it now, by its id: the bar plan's list, or the kitchen plan's kids' or adults'. */
+async function savedLineOf(eventId: string, menu: PartyMenuItemBody["menu"], id: string): Promise<PartyMenuLine | undefined> {
+  if (menu === "bar") {
+    const [plan] = await db.select({ items: beoBarPlans.items }).from(beoBarPlans).where(eq(beoBarPlans.eventId, eventId));
+    return asLines(plan?.items).find((l) => l.id === id) as PartyMenuLine | undefined;
+  }
+  const [plan] = await db.select({ menus: beoKitchenPlans.menus }).from(beoKitchenPlans).where(eq(beoKitchenPlans.eventId, eventId));
+  return asLines(asCollection(plan?.menus)[menu]).find((l) => l.id === id) as PartyMenuLine | undefined;
+}
 
 export const PARTY_MENU_PARK_NOT_LINKED =
   "This party's park is not linked to the till yet, so a new item cannot be made there. The line was not added.";
@@ -153,7 +164,11 @@ export function registerPartyMenuRoutes(app: Express): void {
       );
       forgetTillMenu(coreBranchId);
       const additionalBilling = await syncApprovedBeoAdditions(event.id, userId);
-      res.json({ line: { ...line, billingSync: additionalBilling.status }, additionalBilling, productId: made.productId, productCode: made.code, replayed: made.replayed });
+      // SCRUM-995: the answered line is the line as saved. The sync writes a billing state only onto
+      // a line the additional bill counts (shared/beoBillingSource.ts); an adults' line while
+      // "Different for adults" is off is none, so it is answered with none, never the party's state.
+      const saved = await savedLineOf(event.id, body.menu, String(line.id));
+      res.json({ line: saved ?? line, additionalBilling, productId: made.productId, productCode: made.code, replayed: made.replayed });
     } catch (error) {
       next(error);
     }
