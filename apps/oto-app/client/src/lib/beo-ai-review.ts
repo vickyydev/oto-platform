@@ -17,6 +17,7 @@ import {
   type BeoAiReview,
   type BeoAiSetMenuItem,
 } from "@shared/beoAiFill";
+import { paidLinesKeptWords, type BeoPaidLineKept } from "@shared/beoPaidLines";
 import { aiFillDateLine, type AiFillDateLine } from "./beo-ai-date";
 
 /**
@@ -548,6 +549,8 @@ export interface ApproveAnswer {
     timeline?: { message: string; steps: Array<{ time: string; label: string }> };
     deposit?: { reason?: string; message: string; amountThb?: number; date?: string | null };
   };
+  /** SCRUM-1002 ruling 3: billed and paid lines the review would have lowered, kept as stored. */
+  paidLinesKept?: BeoPaidLineKept[];
 }
 
 /**
@@ -593,7 +596,9 @@ export function approvalResultWords(answer: ApproveAnswer): string {
   const foldWords = answer.written?.adultsMenuOwn === true ? adultsFoldedOnOwnMenuWords(folded) : adultsFoldedWords(folded);
   // SCRUM-978: a repeat of a kids' line that is no set-menu dish, on the adults' own menu as that line.
   const copied = Number(answer.written?.adultsKidsLinesCopied) || 0;
-  return `${answer.additionalBilling?.status === "pending" ? `${answer.additionalBilling.message} ` : ""}Saved: ${saved}.${folded > 0 ? ` ${foldWords}` : ""}${copied > 0 ? ` ${adultsFoldedAsKidsLineWords(copied)}` : ""}${steps}${deposit}`;
+  // SCRUM-1002 ruling 3: a paid line kept as billed is said, as after the BEO's Save.
+  const paidKept = answer.paidLinesKept?.length ? ` ${paidLinesKeptWords(answer.paidLinesKept)}` : "";
+  return `${answer.additionalBilling?.status === "pending" ? `${answer.additionalBilling.message} ` : ""}Saved: ${saved}.${folded > 0 ? ` ${foldWords}` : ""}${copied > 0 ? ` ${adultsFoldedAsKidsLineWords(copied)}` : ""}${steps}${deposit}${paidKept}`;
 }
 
 /**

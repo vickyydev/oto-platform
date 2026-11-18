@@ -3,6 +3,7 @@ import { z } from "zod";
 import { and, eq, like } from "drizzle-orm";
 import { activityLog, beoBarPlans, beoKitchenPlans, beoSetMenuSelections, beoSetMenuTemplates, coreEvents } from "@shared/schema";
 import { adultsCopiesOf, adultsDifferOf, kitchenLinesOf, sameKitchenDish } from "@shared/kitchenAdults";
+import { keepPaidBeoLines, paidLinesKeptWords, type BeoPaidLineKept } from "@shared/beoPaidLines";
 
 /**
  * A MANAGER CHANGES A PARTY'S KITCHEN PLAN ON THE TILL, AND THE BEO IS CHANGED
@@ -371,6 +372,8 @@ export function tillKitchenEditHash(body: Pick<KitchenPlanEditBody, "changes" | 
 export interface TillKitchenEditResult {
   edit: { id: string; eventId: string; changes: number };
   replayed: boolean;
+  /** SCRUM-1002 ruling 3: the billed and paid lines the edit would have lowered or removed, kept as stored. */
+  paidLinesKept?: BeoPaidLineKept[];
 }
 
 export type TillKitchenEditOutcome = { ok: true; status: 200; body: TillKitchenEditResult; wrote: boolean } | Refusal;
@@ -388,12 +391,19 @@ export interface BeoSaveWriters {
  * Apply one till edit to one party's BEO, once. The party is the key's park
  * group's (the route found it so); everything is read and written under the
  * kitchen plan's lock, the one the BEO's Save and the parent's submit take.
+ *
+ * SCRUM-1002 ruling 3 (shared/beoPaidLines.ts), as on the BEO's Save: a line
+ * the till has billed and the family paid (`paid`, the till's counts read
+ * before the lock: server/lib/beoPaidLinesRead.ts) is neither lowered below
+ * its paid count nor removed; it stays as stored, the rest of the edit is
+ * written, and the answer and the BEO's activity name it.
  */
 export async function applyTillKitchenEdit(
   db: any,
   writers: BeoSaveWriters,
   event: { id: string; tenantId: string },
   body: KitchenPlanEditBody,
+  paid: ReadonlyMap<string, number> = new Map(),
 ): Promise<TillKitchenEditOutcome> {
   const hash = tillKitchenEditHash(body);
   return db.transaction(async (tx: any): Promise<TillKitchenEditOutcome> => {
@@ -410,7 +420,7 @@ export async function applyTillKitchenEdit(
       )
       .limit(1);
     if (seen) {
-      let held: { eventId?: unknown; requestHash?: unknown } = {};
+      let held: { eventId?: unknown; requestHash?: unknown; paidLinesKept?: unknown } = {};
       try {
         held = JSON.parse(seen.metadataJson ?? "{}");
       } catch {
@@ -419,7 +429,9 @@ export async function applyTillKitchenEdit(
       if (held.eventId !== event.id || held.requestHash !== hash) {
         return refuse(409, "id_in_use", "That edit id already belongs to another change of the kitchen plan.");
       }
-      return { ok: true, status: 200, body: { edit: { id: body.id, eventId: event.id, changes: body.changes.length }, replayed: true }, wrote: false };
+      // The replay answers what the edit did, the lines it kept among it.
+      const keptBefore = Array.isArray(held.paidLinesKept) && held.paidLinesKept.length > 0 ? { paidLinesKept: held.paidLinesKept as BeoPaidLineKept[] } : {};
+      return { ok: true, status: 200, body: { edit: { id: body.id, eventId: event.id, changes: body.changes.length }, replayed: true, ...keptBefore }, wrote: false };
     }
 
     const [ev] = await tx
@@ -445,6 +457,18 @@ export async function applyTillKitchenEdit(
     );
     if (!planned.ok) return planned;
 
+    // SCRUM-1002 ruling 3: a billed and paid line this edit lowers below its paid count or removes stays as stored.
+    const held = keepPaidBeoLines(
+      { menus: kitchen?.menus, barItems: bar?.items },
+      { ...(planned.kitchen ? { menus: planned.kitchen.menus } : {}), ...(planned.bar ? { barItems: planned.bar.items } : {}) },
+      paid,
+    );
+    const kept = held.kept;
+    if (kept.length > 0) {
+      if (planned.kitchen && held.menus) planned.kitchen.menus = held.menus;
+      if (planned.bar && held.barItems !== undefined) planned.bar.items = held.barItems as Line[];
+    }
+
     if (planned.kitchen) {
       // The till's change is made on the plan as it stands under the lock: a set menu the parent
       // submitted is the plan's own here, never a stale form's (the Save's own check reads it so).
@@ -461,7 +485,7 @@ export async function applyTillKitchenEdit(
       tenantId: event.tenantId,
       branchId: ev.branchId,
       activityType: TILL_KITCHEN_EDIT_ACTIVITY,
-      summaryText: `Kitchen plan of "${ev.title}" changed on the till by ${body.by.name} (${body.by.role}): ${planned.said.join("; ")}`.slice(0, 2000),
+      summaryText: `Kitchen plan of "${ev.title}" changed on the till by ${body.by.name} (${body.by.role}): ${planned.said.join("; ")}${kept.length > 0 ? `. ${paidLinesKeptWords(kept)}` : ""}`.slice(0, 2000),
       metadataJson: JSON.stringify({
         tillEditId: body.id.toLowerCase(),
         eventId: event.id,
@@ -469,9 +493,15 @@ export async function applyTillKitchenEdit(
         editedAt: body.editedAt,
         by: body.by,
         changes: body.changes,
+        ...(kept.length > 0 ? { paidLinesKept: kept } : {}),
       }),
       createdBy: null,
     });
-    return { ok: true, status: 200, body: { edit: { id: body.id, eventId: event.id, changes: body.changes.length }, replayed: false }, wrote: true };
+    return {
+      ok: true,
+      status: 200,
+      body: { edit: { id: body.id, eventId: event.id, changes: body.changes.length }, replayed: false, ...(kept.length > 0 ? { paidLinesKept: kept } : {}) },
+      wrote: true,
+    };
   });
 }

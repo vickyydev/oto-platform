@@ -17,6 +17,13 @@
 //     turning "Different for adults" off with a paid adults' line keeps the
 //     switch and that list; the day-of view's kitchen plan write
 //     (PUT /api/events/:eventId/beo/kitchen-plan) keeps such a line too;
+//   - the two other doors keep it the same way, with the same answer
+//     (`paidLinesKept`): the till's own kitchen-plan edit
+//     (POST /api/directory/events/:id/kitchen-plan), a lowered or removed paid
+//     line kept, the rest of the edit written, a replay answering the same;
+//     and the AI fill's approval (POST /api/events/:eventId/beo/ai-fill/approve),
+//     a reviewed line lowering a paid one kept while the rest of the approval
+//     is written — never the whole approval refused;
 //   - a raise goes through and reaches the till at its new count; a line
 //     billed on a bill not yet paid, or not billed, is lowered and removed as
 //     before; the till not answering leaves the Save as sent.
@@ -25,7 +32,7 @@
 //   npx tsx tests/beo-paid-lines.check.ts
 import assert from "node:assert/strict";
 import { spawn, type ChildProcess } from "node:child_process";
-import { randomBytes, randomUUID, scryptSync } from "node:crypto";
+import { createHash, randomBytes, randomUUID, scryptSync } from "node:crypto";
 import { createServer, type IncomingMessage } from "node:http";
 import type { AddressInfo } from "node:net";
 import { dirname, join } from "node:path";
@@ -39,6 +46,15 @@ if (!DATABASE_URL) {
   console.error("beo-paid-lines.check: DATABASE_URL is not set");
   process.exit(2);
 }
+process.env.APP_ENV ??= "dev";
+process.env.STORAGE_ENV_PREFIX ??= "zz-test-1002";
+process.env.OBJECT_STORAGE ??= "local";
+process.env.DEPLOY_ENV ??= "local";
+process.env.SESSION_SECRET ??= randomBytes(24).toString("hex");
+process.env.LOG_LEVEL ??= "warn";
+// The AI fill's approval is sent against the plan as saved, as the review reads it.
+const { beoReviewState } = await import("../server/lib/beoReviewState");
+const { db: appDb, pool: appDbPool } = await import("../server/db");
 
 let checks = 0;
 const check = async (title: string, fn: () => Promise<void> | void) => {
@@ -162,6 +178,11 @@ await q(
   [adminId, adminEmail, `${scryptSync(PASSWORD, salt, 64).toString("hex")}.${salt}`],
 );
 await q("insert into user_branch_access (tenant_id, user_id, branch_id, access_scope) values ($1, $2, null, 'all_branches')", [tenant, adminId]);
+// The platform's tenant-bound directory key the till's kitchen-plan door answers (server/directory/clientAuth.ts).
+const DIRECTORY_KEY = `odk_${randomBytes(32).toString("base64url")}`;
+await q("insert into directory_clients (tenant_id, name, key_hash, scopes, is_active) values ($1, $2, $3, $4, true)", [
+  tenant, `ZZ TEST 1002 ${run} events:write`, createHash("sha256").update(DIRECTORY_KEY).digest("hex"), ["events:write"],
+]);
 async function party(title: string) {
   const id = randomUUID();
   await q(
@@ -344,6 +365,75 @@ try {
     assert.equal(stored.kidsFoodTime, "16:00", "the rest of the write stands");
   });
 
+  /** The till's own kitchen-plan edit, as the platform sends it under its directory key. */
+  const tillEdit = async (eventId: string, changes: unknown[], id: string = randomUUID()) => {
+    const res = await fetch(`${origin}/api/directory/events/${eventId}/kitchen-plan`, {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${DIRECTORY_KEY}` },
+      body: JSON.stringify({ id, editedAt: new Date().toISOString(), by: { name: "ZZ TEST Noi", role: "Manager" }, changes }),
+    });
+    return { status: res.status, body: await res.json().catch(() => null) };
+  };
+
+  await check("the till's own kitchen-plan edit keeps a paid line it lowers or removes, as the Save does, says so, writes the rest, and a replay answers the same", async () => {
+    const id = await settledParty("till door");
+    const reads = billingReads.length;
+    const editId = randomUUID();
+    const changes = [{ op: "set", lineId: "k1", qty: 1 }, { op: "remove", lineId: "b1" }, { op: "set", lineId: "k3", qty: 4 }, { op: "set", lineId: "b2", qty: 1 }];
+    const res = await tillEdit(id, changes, editId);
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    assert.ok(billingReads.length > reads, "the till was asked which lines are paid");
+    assert.deepEqual(res.body.paidLinesKept, [
+      { id: "k1", itemName: "ZZ TEST paid pizza", list: "kids", paidQuantity: 2 },
+      { id: "b1", itemName: "ZZ TEST paid cola", list: "bar", paidQuantity: 2 },
+    ]);
+    assert.equal(res.body.replayed, false);
+    const stored = await storedOf(id);
+    assert.deepEqual(counts(stored.kids), [["k1", 2], ["k2", 2], ["k3", 4], ["k4", 1], ["s1", 10]], "the paid pizza as stored; the juice raised as asked");
+    assert.deepEqual(counts(stored.bar), [["b1", 2], ["b2", 1]], "the paid cola back where it stood; the unpaid tea lowered");
+    const [activity] = await q<{ summary_text: string }>("select summary_text from activity_log where activity_type = 'beo_kitchen_plan_till_edit' and metadata_json like $1", [`%"tillEditId":"${editId}"%`]);
+    assert.match(activity!.summary_text, /Kept as billed: ZZ TEST paid pizza \(2 paid\), ZZ TEST paid cola \(2 paid\)\./, "the BEO's activity says what was kept");
+    const again = await tillEdit(id, changes, editId);
+    assert.equal(again.status, 200, JSON.stringify(again.body));
+    assert.equal(again.body.replayed, true);
+    assert.deepEqual(again.body.paidLinesKept, res.body.paidLinesKept, "the replay answers what the edit did");
+    // A raise from the till goes through.
+    const raised = await tillEdit(id, [{ op: "set", lineId: "k1", qty: 3 }]);
+    assert.equal(raised.status, 200, JSON.stringify(raised.body));
+    assert.equal(raised.body.paidLinesKept, undefined);
+    assert.deepEqual(counts((await storedOf(id)).kids).slice(0, 1), [["k1", 3]]);
+  });
+
+  await check("the AI fill's approval keeps a paid line its review lowers, writes the rest of the approval, and says which", async () => {
+    const id = await settledParty("ai approve");
+    const approve = async () =>
+      call("POST", `/api/events/${id}/beo/ai-fill/approve`, {
+        expectedState: (await beoReviewState(appDb, id)).version,
+        conversationId: null, messageId: null, package: null, setMenu: null,
+        menuLines: [
+          { menu: "kids", itemName: "ZZ TEST paid pizza", quantity: 1, productCode: null, notes: null, price: 100 },
+          { menu: "kids", itemName: "ZZ TEST new nachos", quantity: 2, productCode: null, notes: null, price: 90 },
+          { menu: "bar", itemName: "ZZ TEST paid cola", quantity: 1, productCode: null, notes: null, price: 100 },
+          { menu: "bar", itemName: "ZZ TEST open-bill tea", quantity: 1, productCode: null, notes: null, price: 100 },
+        ],
+        entertainment: [], otherLines: [], event: {}, details: { specialRequests: "ZZ TEST 1002 approved with the rest" }, cake: null, deposit: null, sources: [],
+      });
+    const before = await storedOf(id);
+    const res = await approve();
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    assert.deepEqual(res.body.paidLinesKept, [
+      { id: "k1", itemName: "ZZ TEST paid pizza", list: "kids", paidQuantity: 2 },
+      { id: "b1", itemName: "ZZ TEST paid cola", list: "bar", paidQuantity: 2 },
+    ]);
+    const stored = await storedOf(id);
+    assert.deepEqual(stored.kids.find((l) => l.id === "k1"), before.kids.find((l) => l.id === "k1"), "the paid pizza exactly as stored");
+    assert.equal(stored.kids.find((l) => l.itemName === "ZZ TEST new nachos")?.quantity, 2, "the review's new dish written");
+    assert.deepEqual(stored.bar.find((l) => l.id === "b1"), before.bar.find((l) => l.id === "b1"), "the paid cola exactly as stored");
+    assert.equal(stored.bar.find((l) => l.id === "b2")?.quantity, 1, "the unpaid tea lowered as reviewed");
+    const read = await call("GET", `/api/events/${id}/beo`);
+    assert.equal(read.body.specialRequests, "ZZ TEST 1002 approved with the rest", "the rest of the approval written");
+  });
+
   await check("the till not answering: the Save is written as sent, as before the rule", async () => {
     const id = await settledParty("till down");
     tillDown = true;
@@ -362,5 +452,6 @@ try {
   for (const child of children) child.kill();
   platform.close();
   await pool.end();
+  await appDbPool.end();
 }
-process.exit(checks === 8 ? 0 : 1);
+process.exit(checks === 10 ? 0 : 1);

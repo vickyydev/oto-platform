@@ -20,6 +20,7 @@ import {
 } from "@shared/schema";
 import { adultsLinesRepeatKids, CHOICE_FROM_CHAT, codedLineNameOf, foodNameFor, foodNamesFor, foodOptionNamed, setMenuOptionOf, sharedFoodLabel, tillItemOf, type BeoAiApproveBody, type BeoAiTillItem, type BeoAiSetMenuChoices, type BeoAiSetMenuItem } from "@shared/beoAiFill";
 import { adultsCopiesOf, adultsDifferOf, foldDishName } from "@shared/kitchenAdults";
+import { keepPaidBeoLines, type BeoPaidLineKept } from "@shared/beoPaidLines";
 import type { DepositSaveReason } from "@shared/partyDeposit";
 import type { db as appDb } from "../db";
 import { normalizeThaiPhone, validatePhoneInput } from "../phone-utils";
@@ -116,7 +117,8 @@ export interface NotWritten {
 }
 
 export type ApproveOutcome =
-  | { ok: true; written: Record<string, number | boolean>; notWritten: NotWritten }
+  /** `paidLinesKept`: SCRUM-1002 ruling 3, the billed and paid lines the review would have lowered, kept as stored. */
+  | { ok: true; written: Record<string, number | boolean>; notWritten: NotWritten; paidLinesKept: BeoPaidLineKept[] }
   | { ok: false; status: 400 | 409; message: string };
 
 type KitchenLine = Record<string, unknown> & { source?: string };
@@ -380,6 +382,11 @@ export async function approveBeoAiFill(
      * asked only when a line carries a till code, to check it and to name the line by the till.
      */
     tillMenu?: () => Promise<TillMenuItem[] | null>;
+    /**
+     * SCRUM-1002 ruling 3: each BEO line's paid count, as the till holds it (server/lib/beoPaidLinesRead.ts),
+     * asked only when the approval writes the kitchen or the bar's lines; none known, nothing is held.
+     */
+    paidLines?: () => Promise<ReadonlyMap<string, number>>;
   },
 ): Promise<ApproveOutcome> {
   const { event, body } = input;
@@ -387,6 +394,11 @@ export async function approveBeoAiFill(
   // SCRUM-944: the till's menu, when a line carries a code (asked before anything is held).
   const till: BeoAiTillItem[] | null | undefined =
     input.tillMenu && body.menuLines.some((l) => l.productCode) ? await input.tillMenu().then((items) => (items ? tillItemsForFill(items) : null)) : undefined;
+  // SCRUM-1002 ruling 3, as on the BEO's Save: the till's paid counts, read before anything is held. A
+  // billed and paid line the review would lower below its paid count stays as stored; the rest is written.
+  const writesLines = !!body.setMenu || body.menuLines.length > 0 || !!body.cake || !!body.service?.kidsFoodTime || !!body.service?.adultsFoodTime;
+  const paid: ReadonlyMap<string, number> = writesLines && input.paidLines ? await input.paidLines() : new Map();
+  const paidLinesKept: BeoPaidLineKept[] = [];
   const [current] = await db
     .select({ startTime: coreEvents.startTime, endTime: coreEvents.endTime })
     .from(coreEvents)
@@ -693,10 +705,17 @@ export async function approveBeoAiFill(
         ...(body.cake && body.cake.included === undefined && body.cake.mode !== "NONE" && typeof menus.cakeIncluded !== "boolean" ? { cakeIncluded: false } : {}),
         ...(body.cake?.price !== undefined ? { cakePrice: body.cake.price } : {}),
       };
+      // SCRUM-1002 ruling 3: a billed and paid line the review lowers below its paid count stays as stored.
+      const held = keepPaidBeoLines({ menus: plan?.menus, barItems: undefined }, { menus: nextMenus }, paid);
+      if (held.kept.length > 0) {
+        paidLinesKept.push(...held.kept);
+        kids = asLines(held.menus?.kids);
+        adults = asLines(held.menus?.adults);
+      }
       const values = {
         setMenuEnabled,
         setMenuTemplateId,
-        menus: nextMenus,
+        menus: held.kept.length > 0 ? { ...nextMenus, ...held.menus, kids, adults } : nextMenus,
         simplifiedMenus: { kids, adults },
         // SCRUM-787: a cake whose type the chat does not say keeps the BEO's own type.
         ...(body.cake ? { ...(body.cake.mode ? { cakeMode: body.cake.mode } : {}), cakeNotes: body.cake.notes, cakeTime: body.cake.time } : {}),
@@ -736,7 +755,13 @@ export async function approveBeoAiFill(
         };
       });
       const [bar] = await tx.select().from(beoBarPlans).where(eq(beoBarPlans.eventId, event.id));
-      const mergedItems = mergeReviewedLines(asLines(bar?.items), items);
+      let mergedItems = mergeReviewedLines(asLines(bar?.items), items);
+      // SCRUM-1002 ruling 3: as the kitchen's, a billed and paid drink the review lowers stays as stored.
+      const heldBar = keepPaidBeoLines({ menus: undefined, barItems: bar?.items }, { barItems: mergedItems }, paid);
+      if (heldBar.kept.length > 0) {
+        paidLinesKept.push(...heldBar.kept);
+        mergedItems = asLines(heldBar.barItems);
+      }
       const serviceTime = service.barServiceTime ? { serviceTime: service.barServiceTime } : {};
       if (bar) await tx.update(beoBarPlans).set({ items: mergedItems, ...serviceTime, updatedAt: input.now }).where(eq(beoBarPlans.id, bar.id));
       else await tx.insert(beoBarPlans).values({ eventId: event.id, items: mergedItems, ...serviceTime });
@@ -964,5 +989,5 @@ export async function approveBeoAiFill(
   });
 
   if (!accepted) return { ok: false, status: 409, message: "This BEO changed after the review opened. Read the chat again to compare the latest saved plan. Nothing was written." };
-  return { ok: true, written, notWritten };
+  return { ok: true, written, notWritten, paidLinesKept };
 }

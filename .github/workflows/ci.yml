@@ -1123,10 +1123,10 @@ jobs:
       # SCRUM-1002 ruling 3: a BEO line already billed and paid is neither
       # lowered below its paid count nor deleted — the till's billed and paid
       # counts read line by line, the Save from any client (and the day-of
-      # view's kitchen plan write) keeping such a line as stored on the
-      # kitchen's lists and the bar's and saying so, the rest of the Save
-      # written; a raise, an unpaid line and the till not answering go as
-      # before.
+      # view's kitchen plan write, the till's own kitchen-plan edit and the
+      # AI fill's approval) keeping such a line as stored on the kitchen's
+      # lists and the bar's and saying so, the rest written; a raise, an
+      # unpaid line and the till not answering go as before.
       - name: The app's billed and paid BEO line checks
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/beo-paid-lines.check.ts

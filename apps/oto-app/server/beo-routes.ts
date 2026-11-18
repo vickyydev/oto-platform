@@ -43,8 +43,8 @@ import { isTillPartyEventType } from "@shared/tillBilling";
 import { isPartyItemCode } from "@shared/beoExtras";
 import { partyPackageTotal } from "@shared/partyPackageTotal";
 import { syncApprovedBeoAdditions } from "./lib/beoAdditionalBilling";
-import { keepPaidBeoLines, mayHoldPaidLines, paidQuantitiesOf, type BeoPaidLineKept } from "@shared/beoPaidLines";
-import { log } from "./lib/logger";
+import { keepPaidBeoLines, type BeoPaidLineKept } from "@shared/beoPaidLines";
+import { paidBeoQuantitiesOf } from "./lib/beoPaidLinesRead";
 import { currentDeposit, depositOfBillingColumns, sameDeposit, writePartyDeposit } from "./lib/partyDeposit";
 import {
   decideDepositSave,
@@ -352,27 +352,7 @@ export async function writeKitchenPlanRow(
   }
 }
 
-/**
- * SCRUM-1002 ruling 3 (shared/beoPaidLines.ts): each line's billed and paid count, as the till
- * holds it. Asked only of a party whose plan holds a line the till may have billed; when the till
- * cannot say, none is known and the Save is written as sent, as before the rule.
- */
-async function paidBeoQuantitiesOf(
-  event: { id: string; tenantId: string; branchId: string | null; eventType: string },
-  requestId: string | undefined,
-): Promise<ReadonlyMap<string, number>> {
-  const [kitchen] = await db.select({ menus: beoKitchenPlans.menus }).from(beoKitchenPlans).where(eq(beoKitchenPlans.eventId, event.id));
-  const [bar] = await db.select({ items: beoBarPlans.items }).from(beoBarPlans).where(eq(beoBarPlans.eventId, event.id));
-  if (!mayHoldPaidLines(kitchen?.menus, bar?.items)) return new Map();
-  const reading = await readingFor(event, requestId);
-  if (reading.status !== "ok") {
-    if (reading.status === "not_reachable") log().warn({ eventId: event.id }, "the till could not say which BEO lines are billed and paid; the Save is written as sent");
-    return new Map();
-  }
-  return paidQuantitiesOf(reading.billing.beoLines);
-}
-
-/** A Save's lists with every billed and paid line kept, against the plan as stored now. */
+/** A Save's lists with every billed and paid line kept, against the plan as stored now (SCRUM-1002 ruling 3; the till's counts: server/lib/beoPaidLinesRead.ts). */
 async function keepPaidLinesOnSave(
   tx: any,
   eventId: string,

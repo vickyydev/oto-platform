@@ -565,7 +565,10 @@ describe('A. fences and seams', () => {
       // SCRUM-1002 (ruling 3): the BEO's Save and the kitchen-plan route keep a billed and paid line as
       // stored (paidBeoQuantitiesOf, keepPaidLinesOnSave, shared/beoPaidLines.ts) and answer which; no
       // PDF, file, bucket or public-folder door is added; where the BEO's documents live is unchanged.
-      'beo-routes.ts': 'e8f53a93b8e81f9d5ed73e62cfbf378ef38b4472f3d751228d2f2105a44c9372',
+      // SCRUM-1002 (ruling 3, the two other doors): paidBeoQuantitiesOf moved unchanged to
+      // server/lib/beoPaidLinesRead.ts, so the till's kitchen-plan edit and the AI fill's approval read
+      // the till's paid counts as the Save does; where the BEO's documents live is unchanged.
+      'beo-routes.ts': 'ea6c33c242cbb0e729fe299e4b31c2c9261abddd5e888530cf1436e036116b18',
       'orgChartRoutes.ts': 'eff8d4478165e8b0157ef07d37891222104f751b49932e70f525f06366fe9d90',
     };
     for (const [file, hash] of Object.entries(main)) expect(sha256(committed(join(APP_SERVER, file))), file).toBe(hash);

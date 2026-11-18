@@ -47,6 +47,7 @@ import {
   type TranscriptRef,
 } from "./lib/beoCatalogueFill";
 import { syncApprovedBeoAdditions } from "./lib/beoAdditionalBilling";
+import { paidBeoQuantitiesOf } from "./lib/beoPaidLinesRead";
 import { beoReviewState } from "./lib/beoReviewState";
 import { approveBeoAiFill, depositHeld, parentSelectionOf, sectionsHeld } from "./lib/beoAiApprove";
 import { oneDepositOf, type GatewayFloor } from "./lib/depositSaveGuard";
@@ -128,6 +129,11 @@ export interface AiRouteDeps {
    * till code against; never throws.
    */
   tillMenu: (event: BeoFillEvent, requestId?: string) => Promise<FillTillMenu>;
+  /**
+   * SCRUM-1002 ruling 3: each BEO line's billed and paid count, as the till holds it
+   * (server/lib/beoPaidLinesRead.ts), which an approval may not lower; none when it cannot say.
+   */
+  paidLines: (event: BeoFillEvent, requestId?: string) => Promise<ReadonlyMap<string, number>>;
 }
 
 const PARKS_ZONE: ParkPlace = { name: null, timeZone: DEFAULT_PARK_TIME_ZONE };
@@ -241,6 +247,11 @@ export const defaultAiRouteDeps: AiRouteDeps = {
       ? gatewayDepositFloor({ id: event.id, tenantId: event.tenantId, branchId: event.branchId, eventType: event.eventType }, requestId)
       : { known: false },
   tillMenu: (event, requestId) => readFillTillMenu(db, event, requestId),
+  // An event whose kind is not known here holds no line the till settles.
+  paidLines: async (event, requestId) =>
+    event.eventType
+      ? paidBeoQuantitiesOf({ id: event.id, tenantId: event.tenantId, branchId: event.branchId, eventType: event.eventType }, requestId)
+      : new Map(),
 };
 
 /** The run's schema with the catalogue section the model adds when it is handed the catalogue (read apart, leniently). */
@@ -928,6 +939,8 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
           const till = await deps.tillMenu(event, req.requestId);
           return till.status === "ok" ? till.items : null;
         },
+        // SCRUM-1002 ruling 3: a billed and paid line is kept as stored, never the approval refused.
+        paidLines: () => deps.paidLines(event, req.requestId),
       });
       if (!outcome.ok) return res.status(outcome.status).json({ message: outcome.message });
       try {
@@ -943,7 +956,13 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
         "ai fill approved",
       );
       const additionalBilling = await syncApprovedBeoAdditions(event.id, req.user!.id);
-      res.json({ written: outcome.written, additionalBilling, ...(notWritten ? { notWritten } : {}) });
+      res.json({
+        written: outcome.written,
+        additionalBilling,
+        ...(notWritten ? { notWritten } : {}),
+        // SCRUM-1002 ruling 3: the paid lines kept as stored, named as the BEO's Save names them.
+        ...(outcome.paidLinesKept.length > 0 ? { paidLinesKept: outcome.paidLinesKept } : {}),
+      });
     } catch (error: any) {
       log().warn({ err: error?.message ?? String(error) }, "the AI fill approval failed");
       next(error);

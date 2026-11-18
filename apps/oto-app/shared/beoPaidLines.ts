@@ -18,9 +18,13 @@ import { adultsDifferOf } from "./kitchenAdults";
  * Only the lines the additional bill counts are held (shared/beoBillingSource.ts:
  * staff-approved extras, never a set-menu dish or the adults' copy of a kids'
  * line), and not one included in the package (it is billed at nothing). The
- * editor answers the same rule on the screen (beo-event-editor.tsx); the BEO's
- * Save and the day-of view's kitchen plan write enforce it (beo-routes.ts), so
- * a client that skips the screen is refused too.
+ * editor answers the same rule on the screen (beo-event-editor.tsx); every door
+ * that writes the lines enforces it, from this module, with the same answer
+ * (`paidLinesKept`): the BEO's Save and the day-of view's kitchen plan write
+ * (beo-routes.ts), the till's own kitchen-plan edit (server/lib/tillKitchenEdit.ts)
+ * and the AI fill's approval (server/lib/beoAiApprove.ts), so a client that
+ * skips the screen is refused too. The till's counts are read for all four by
+ * server/lib/beoPaidLinesRead.ts.
  */
 
 export const BEO_PAID_LINE_REFUSAL = "Already billed and paid: this item cannot be reduced or removed.";

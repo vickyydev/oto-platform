@@ -1,8 +1,9 @@
 import { syncApprovedBeoAdditions } from "../lib/beoAdditionalBilling";
+import { paidBeoQuantitiesOf } from "../lib/beoPaidLinesRead";
 import { Router, type NextFunction, type Request, type Response } from "express";
 import type { Pool } from "pg";
 import { and, eq } from "drizzle-orm";
-import { beoKitchenPlans, beoSetMenuTemplates } from "@shared/schema";
+import { beoKitchenPlans, beoSetMenuTemplates, coreEvents } from "@shared/schema";
 import { directoryClientOf, requireDirectoryClient } from "./clientAuth";
 import { findTenantEvent } from "./eventWrites";
 import { applyTillKitchenEdit, choiceGroupsOf, kitchenPlanEditBodySchema, type BeoSaveWriters } from "../lib/tillKitchenEdit";
@@ -88,7 +89,14 @@ export function directoryKitchenPlanRouter(pool: Pool, deps: KitchenPlanRouteDep
       const event = await findTenantEvent(pool, client.tenantId, req.params.id ?? "");
       if (!event) return eventNotFound(res);
       if (!event.isParty) return res.status(409).json({ error: "not_a_party", message: "Only a party's kitchen plan is changed from a till" });
-      const outcome = await applyTillKitchenEdit(deps.db, deps.writers, { id: event.id, tenantId: event.tenantId }, parsed.data);
+      // SCRUM-1002 ruling 3: as on the BEO's Save, the till's billed and paid counts are read before
+      // the plan's lock; a paid line the edit lowers or removes stays as stored, and the answer names it.
+      const [party] = await deps.db
+        .select({ id: coreEvents.id, tenantId: coreEvents.tenantId, branchId: coreEvents.branchId, eventType: coreEvents.eventType })
+        .from(coreEvents)
+        .where(and(eq(coreEvents.id, event.id), eq(coreEvents.tenantId, event.tenantId)));
+      const paid = party ? await paidBeoQuantitiesOf(party, req.requestId) : new Map<string, number>();
+      const outcome = await applyTillKitchenEdit(deps.db, deps.writers, { id: event.id, tenantId: event.tenantId }, parsed.data, paid);
       if (!outcome.ok) return res.status(outcome.status).json({ error: outcome.error, message: outcome.message });
       if (outcome.wrote && deps.afterWrite) await deps.afterWrite(event.id);
       const additionalBilling = await syncApprovedBeoAdditions(event.id, "till-kitchen-editor");
