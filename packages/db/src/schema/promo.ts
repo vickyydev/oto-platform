@@ -466,6 +466,17 @@ export const voucher = promo.table(
     issuedByAccountId: uuid('issued_by_account_id').references(() => account.id, {
       onDelete: 'restrict',
     }),
+    /**
+     * SCRUM-482 — the manager who approved a CREDIT voucher (kind
+     * `wallet_credit`) issued at a till by somebody without
+     * `pos:voucher:issue_credit`: their own phone and password, typed on the
+     * same till and checked by the platform (`services/voucher-credit-approval.ts`
+     * in the api). Null for every other voucher, and for a credit voucher a
+     * manager issued alone — `issued_by_account_id` names them.
+     */
+    approvedByAccountId: uuid('approved_by_account_id').references(() => account.id, {
+      onDelete: 'restrict',
+    }),
     issuedAt: timestamp('issued_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
     /** Resolved from `voucher_definition.expiry_days` at issue. Null never expires. */
     expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }),
@@ -543,6 +554,7 @@ export const voucher = promo.table(
     index('voucher_branch_issued_idx').on(t.branchId, t.issuedAt),
     index('voucher_operator_status_idx').on(t.operatorId, t.status),
     index('voucher_issued_by_idx').on(t.issuedByAccountId),
+    index('voucher_approved_by_idx').on(t.approvedByAccountId),
     index('voucher_member_idx').on(t.memberId),
     index('voucher_redeemed_by_idx').on(t.redeemedByAccountId),
     index('voucher_redeemed_branch_idx').on(t.redeemedBranchId),

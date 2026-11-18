@@ -1,0 +1,3 @@
+ALTER TABLE "promo"."voucher" ADD COLUMN "approved_by_account_id" uuid;--> statement-breakpoint
+ALTER TABLE "promo"."voucher" ADD CONSTRAINT "voucher_approved_by_account_id_account_id_fk" FOREIGN KEY ("approved_by_account_id") REFERENCES "core"."account"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "voucher_approved_by_idx" ON "promo"."voucher" USING btree ("approved_by_account_id");
