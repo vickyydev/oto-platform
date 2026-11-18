@@ -27,6 +27,45 @@ import type { Tx } from './tx';
 export const REGISTER_PAGE_DEFAULT = 50;
 export const REGISTER_PAGE_MAX = 200;
 
+/**
+ * What a box holds a copy of (S2-05).
+ *
+ * A member edited at reception has to reach the boxes that cache members, and
+ * the delta is written in the SAME transaction as the edit — so a member who
+ * exists and a feed that says so commit together. What travels is only what a
+ * till reads at the identify step: never the staff notes, never the email,
+ * never the tier evidence. See the cache bundle in `services/sync.ts` for the
+ * full account of what a box is and is not given.
+ *
+ * Here rather than in `routes/members.ts` since SCRUM-1011: the family's own
+ * changes from the booking site publish the same two shapes.
+ */
+export function memberCacheView(row: typeof member.$inferSelect): Record<string, unknown> {
+  return {
+    id: row.id,
+    phone: row.phone,
+    nickname: row.nickname,
+    name: row.name,
+    tierCode: row.tierCode,
+    preferredChannel: row.preferredChannel,
+  };
+}
+
+export function childCacheView(row: typeof child.$inferSelect): Record<string, unknown> {
+  return {
+    id: row.id,
+    memberId: row.memberId,
+    name: row.name,
+    dateOfBirth: row.dateOfBirth,
+    ageYears: row.ageYears,
+    allergies: row.allergies,
+    medicalNotes: row.medicalNotes,
+    medicalAlert: row.medicalAlert,
+    dietary: row.dietary,
+    foodRestrictions: row.foodRestrictions,
+  };
+}
+
 /** The document stays valid through the whole expiry DAY it names. */
 export function isEvidenceExpired(expiresAt: Date | null): boolean {
   if (!expiresAt) return false;
@@ -34,7 +73,8 @@ export function isEvidenceExpired(expiresAt: Date | null): boolean {
 }
 
 export interface ChildArchiveActor {
-  accountId: string;
+  /** Null only for the family's own press on the booking site (`fromBookingSite`), where nobody is signed in. */
+  accountId: string | null;
   operatorId: string;
   branchId: string | null;
   requestId?: string;
@@ -44,10 +84,18 @@ export interface ChildArchiveActor {
    * and the audit row says where it came from.
    */
   fromDisplay?: { stationId: string };
+  /**
+   * SCRUM-1011 — the family pressed "Remove from saved" on the booking site,
+   * holding the family pass of a code sent to their phone. No staff actor.
+   */
+  fromBookingSite?: boolean;
 }
 
 /** SCRUM-1014 — how an audit row names a change the family made on a station's customer display. */
 export const CUSTOMER_DISPLAY_SOURCE = 'customer_display';
+
+/** SCRUM-1011 — how an audit row names a change the family made to its record on the booking site. */
+export const BOOKING_SITE_SOURCE = 'booking_site';
 
 export interface ChildArchiveResult {
   ok: true;
@@ -120,9 +168,15 @@ export async function archiveChild(
     before,
     after: actor.fromDisplay
       ? { ...after, source: CUSTOMER_DISPLAY_SOURCE, stationId: actor.fromDisplay.stationId }
-      : after,
+      : actor.fromBookingSite
+        ? { ...after, source: BOOKING_SITE_SOURCE }
+        : after,
     requestId: actor.requestId,
-    ...(actor.fromDisplay ? { origin: CUSTOMER_DISPLAY_SOURCE } : {}),
+    ...(actor.fromDisplay
+      ? { origin: CUSTOMER_DISPLAY_SOURCE }
+      : actor.fromBookingSite
+        ? { origin: BOOKING_SITE_SOURCE }
+        : {}),
   });
   return { ok: true, alreadyArchived: false };
 }

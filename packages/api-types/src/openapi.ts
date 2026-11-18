@@ -44673,6 +44673,77 @@ export interface paths {
                                 allergies: string | null;
                                 foodRestrictions: string | null;
                             }[];
+                            familyPass: string;
+                            familyPassExpiresAt: string;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/public/saved-children/save": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Save a returning family's own changes to its record from the booking site: the children confirmed (changed fields of a saved child, or a new child under the id the site minted), the children removed (archived), and the contact app picked. Needs the family pass of a passed code check for this phone; answers the family's saved children after the save. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        phone: string;
+                        branch: string;
+                        pass: string;
+                        children: {
+                            /** Format: uuid */
+                            savedChildId?: string;
+                            /** Format: uuid */
+                            newChildId?: string;
+                            name: string;
+                            dateOfBirth?: string | null;
+                            ageYears: number;
+                            allergies?: string;
+                            foodRestrictions?: string;
+                        }[];
+                        /** @default [] */
+                        remove?: string[];
+                        /** @enum {string} */
+                        contactChannel?: "whatsapp" | "telegram" | "line";
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            children: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                                dateOfBirth: string | null;
+                                ageYears: number | null;
+                                allergies: string | null;
+                                foodRestrictions: string | null;
+                            }[];
                         };
                     };
                 };
@@ -44733,6 +44804,8 @@ export interface paths {
                                     }[];
                                 } | null;
                                 nannyStartTime?: string;
+                                /** Format: uuid */
+                                savedChildId?: string;
                             };
                             /** Format: uuid */
                             packageId: string;
@@ -44769,6 +44842,7 @@ export interface paths {
                         acknowledgedConfirmationIds?: string[];
                         /** @enum {string} */
                         contactChannel?: "whatsapp" | "telegram" | "line";
+                        familyPass?: string;
                         locale?: string;
                         clientSnapshot?: unknown;
                         displayedTotalSatang?: number;

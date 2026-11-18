@@ -1029,6 +1029,16 @@ const OPEN_WITHOUT_A_KEY = [
    *     same code deletes nothing and is refused (SCRUM-357).
    */
   'POST /public/saved-children/code',
+  /**
+   *   - **its own values and the site's own ids** —
+   *     `POST /public/saved-children/save` (SCRUM-1011): a saved child already
+   *     holding what was sent is not touched, a new child is created under the
+   *     id the booking site minted (a second send finds it on the family and
+   *     changes nothing), a removed child is already archived, and an
+   *     unchanged contact app is not written; nothing at all without the
+   *     family pass. `s1011-family-record-online.test.ts` pins the replay.
+   */
+  'POST /public/saved-children/save',
   'POST /public/saved-children/verify',
   'POST /webhooks/2c2p/hosted/:attemptId',
   /**

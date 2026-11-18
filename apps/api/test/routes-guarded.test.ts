@@ -554,6 +554,13 @@ describe('route guards (S2-01b)', () => {
        * notes or photo.
        */
       'POST /public/saved-children/code',
+      /**
+       * SCRUM-1011 — the family's own changes saved to their record (the
+       * children confirmed, removed, the contact app), only with the family
+       * pass the code check answered for that phone's member; per-address cap
+       * as the booking route's.
+       */
+      'POST /public/saved-children/save',
       'POST /public/saved-children/verify',
       /** S2-12 — a press of pay / fail on the simulated hosted page. Simulator only. */
       'POST /webhooks/2c2p/hosted/:attemptId',

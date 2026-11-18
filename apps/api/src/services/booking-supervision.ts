@@ -1,5 +1,5 @@
 import { and, eq, inArray, isNull, or, sql } from 'drizzle-orm';
-import { booking, branch, checkin, product, registration, type FoodProvisionRow } from '@oto/db';
+import { booking, branch, checkin, child as savedChild, product, registration, type FoodProvisionRow } from '@oto/db';
 import {
   BookingSupervisionInputSchema,
   BookingSupervisionSnapshotSchema,
@@ -142,6 +142,21 @@ export async function registerPaidBookingChildren(tx: Tx, row: BookingRow, now: 
     consentRecordedAt: consentAt, acknowledgedConfirmations: acknowledgements ?? [], source: 'booking',
   });
   const [br] = await tx.select({ timezone: branch.timezone }).from(branch).where(eq(branch.id, row.branchId)).limit(1);
+  // SCRUM-1011 — a stay is linked to the saved child the booking named, while
+  // that child is still one of the booking member's live children (checked
+  // when the booking was made; read again here, as a child may have been
+  // removed since). A correction on the board then reaches the record.
+  const named = lines.flatMap((l) => {
+    const id = (l.supervision as { savedChildId?: unknown } | undefined)?.savedChildId;
+    return typeof id === 'string' ? [id] : [];
+  });
+  const linkable = new Set(
+    named.length > 0 && row.memberId
+      ? (await tx.select({ id: savedChild.id }).from(savedChild).where(and(
+        inArray(savedChild.id, named), eq(savedChild.memberId, row.memberId), isNull(savedChild.archivedAt),
+      ))).map((c) => c.id)
+      : [],
+  );
   const saved = [];
   for (const line of lines) {
     if (!line.supervision) { saved.push(line); continue; }
@@ -153,6 +168,7 @@ export async function registerPaidBookingChildren(tx: Tx, row: BookingRow, now: 
       : null;
     await tx.insert(checkin).values({
       id: checkinId, operatorId: row.operatorId, branchId: row.branchId, registrationId: regId,
+      childId: child.savedChildId && linkable.has(child.savedChildId) ? child.savedChildId : null,
       childName: child.childName, childAgeYears: child.ageYears, dateOfBirth: child.dateOfBirth ?? null,
       allergies: child.allergies || null, foodRestrictions: child.foodRestrictions || null,
       foodProvision: child.foodProvision ?? { mode: 'none', paidSatang: 0 },
@@ -161,7 +177,8 @@ export async function registerPaidBookingChildren(tx: Tx, row: BookingRow, now: 
     });
     await audit.record(tx, { actorAccountId: null, operatorId: row.operatorId, branchId: row.branchId,
       action: 'checkin.create', entityType: 'checkin', entityId: checkinId, requestId,
-      after: { registrationId: regId, bookingId: row.id, service: child.service, status: 'registered', bookedMinutes: child.minutes },
+      after: { registrationId: regId, bookingId: row.id, service: child.service, status: 'registered', bookedMinutes: child.minutes,
+        ...(child.savedChildId && linkable.has(child.savedChildId) ? { childId: child.savedChildId } : {}) },
     });
     saved.push({ ...line, supervision: { ...child, checkinId } });
   }

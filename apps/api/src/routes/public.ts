@@ -12,6 +12,9 @@ import {
   BookingEventPassInputSchema,
   BookingEventPassSchema,
   BookingSupervisionInputSchema,
+  FAMILY_CONTACT_CHANNELS,
+  FAMILY_ONLINE_SAVE_MAX,
+  FamilyOnlineChildSchema,
   PublicEventPassesAnswerSchema,
   PublicSupervisionConfigSchema,
   TaxConfigSchema,
@@ -41,6 +44,7 @@ import {
 } from '../services/booking-checkout';
 import { supervisionConfigOf } from '../services/checkin';
 import { eventPassesFor } from '../services/events';
+import { saveFamilyOnline } from '../services/family-online';
 import { startMemberCode, verifyMemberCode } from '../services/member-code';
 import { limitPrincipal } from '../services/throttle';
 import { opCtx } from '../services/tx';
@@ -54,7 +58,9 @@ import { opCtx } from '../services/tx';
  *     prototype's "members are recognised automatically" UX; a phone number
  *     alone never shows saved children)
  *   - saved-children: a member's saved children, ONLY after a six-digit code
- *     sent to that phone is typed back (SCRUM-357, `services/member-code.ts`)
+ *     sent to that phone is typed back (SCRUM-357, `services/member-code.ts`);
+ *     the family's own changes saved to their record, ONLY with the family
+ *     pass that check answered (SCRUM-1011, `services/family-online.ts`)
  *   - bookings: creates a PENDING booking + attendees; the TOTAL IS COMPUTED
  *     SERVER-SIDE through the S2-09a engine — the client figure is never
  *     charged (S2-12, `services/booking-checkout.ts`)
@@ -396,6 +402,17 @@ export async function publicRoutes(app: App): Promise<void> {
    * top of the per-address bucket); wrong guesses `CODE_MAX_ATTEMPTS`.
    */
   const SavedChildrenScope = z.object({ phone: z.string().min(6).max(32), branch: z.string().min(1).max(64) });
+  /** A saved child as the booking site's review step reads it — the code check's and the save's answer. */
+  const PublicSavedChildrenSchema = z.array(
+    z.object({
+      id: z.string().uuid(),
+      name: z.string(),
+      dateOfBirth: z.string().nullable(),
+      ageYears: z.number().int().nullable(),
+      allergies: z.string().nullable(),
+      foodRestrictions: z.string().nullable(),
+    }),
+  );
 
   app.post(
     '/public/saved-children/code',
@@ -439,16 +456,15 @@ export async function publicRoutes(app: App): Promise<void> {
         body: SavedChildrenScope.extend({ code: z.string().regex(/^\d{6}$/) }),
         response: {
           200: z.object({
-            children: z.array(
-              z.object({
-                id: z.string().uuid(),
-                name: z.string(),
-                dateOfBirth: z.string().nullable(),
-                ageYears: z.number().int().nullable(),
-                allergies: z.string().nullable(),
-                foodRestrictions: z.string().nullable(),
-              }),
-            ),
+            children: PublicSavedChildrenSchema,
+            /**
+             * SCRUM-1011 — the family pass: what lets the family's own changes
+             * reach their record (`POST /public/saved-children/save`, and the
+             * saved-child links on `POST /public/bookings`). For this member
+             * only, good for sixty minutes; only its sha256 is kept.
+             */
+            familyPass: z.string(),
+            familyPassExpiresAt: z.string(),
           }),
         },
       },
@@ -457,14 +473,63 @@ export async function publicRoutes(app: App): Promise<void> {
       const br = await loadBranchByCode(req.body.branch);
       const phone = normalizePhone(req.body.phone);
       if (!phone) throw errors.badRequest('Invalid phone number');
-      const children = await verifyMemberCode(app.db, app.sms, opCtx(req), {
+      return verifyMemberCode(app.db, app.sms, opCtx(req), {
         operatorId: br.operatorId,
         branchId: br.id,
         phone,
         code: req.body.code,
         maxAttempts: app.env.CODE_MAX_ATTEMPTS,
       });
-      return { children };
+    },
+  );
+
+  /**
+   * SCRUM-1011 — A RETURNING FAMILY'S CHANGES ARE SAVED TO THEIR RECORD.
+   *
+   * The booking site sends this when the parent confirms the children's
+   * details and goes on to payment (paid or not, the owner's decision 9 B),
+   * and when the parent presses "Remove from saved" (decision 10 B). It
+   * carries the family pass the code check answered: without a live pass for
+   * the member holding this phone, nothing is written. Each child confirmed is
+   * saved where it changed, a child added is added, a child removed is
+   * archived, and the contact app picked becomes the member's (decision 11 B);
+   * each change is audited with before and after, source `booking_site`, no
+   * staff actor (`services/family-online.ts`).
+   *
+   * Open, with the booking route's own per-address cap (it writes rows), and
+   * safe to send twice: a child already saved as sent is not touched, a new
+   * child is the id the site minted, a removed child is already archived, an
+   * unchanged contact app is not written (route-write-conformance's list).
+   */
+  app.post(
+    '/public/saved-children/save',
+    {
+      config: { public: true, rateLimit: { max: 20, timeWindow: 60_000 } },
+      schema: {
+        description:
+          "Save a returning family's own changes to its record from the booking site: the children confirmed (changed fields of a saved child, or a new child under the id the site minted), the children removed (archived), and the contact app picked. Needs the family pass of a passed code check for this phone; answers the family's saved children after the save.",
+        body: SavedChildrenScope.extend({
+          pass: z.string().min(16).max(128),
+          children: z.array(FamilyOnlineChildSchema).max(FAMILY_ONLINE_SAVE_MAX),
+          remove: z.array(z.string().uuid()).max(FAMILY_ONLINE_SAVE_MAX).default([]),
+          contactChannel: z.enum(FAMILY_CONTACT_CHANNELS).optional(),
+        }),
+        response: { 200: z.object({ children: PublicSavedChildrenSchema }) },
+      },
+    },
+    async (req) => {
+      const br = await loadBranchByCode(req.body.branch);
+      const phone = normalizePhone(req.body.phone);
+      if (!phone) throw errors.badRequest('Invalid phone number');
+      return saveFamilyOnline(app.db, opCtx(req), {
+        operatorId: br.operatorId,
+        branchId: br.id,
+        phone,
+        pass: req.body.pass,
+        children: req.body.children,
+        remove: req.body.remove,
+        ...(req.body.contactChannel ? { contactChannel: req.body.contactChannel } : {}),
+      });
     },
   );
 
@@ -531,6 +596,12 @@ export async function publicRoutes(app: App): Promise<void> {
           consentAck: z.boolean().optional(),
           acknowledgedConfirmationIds: z.array(z.string().max(100)).max(100).optional(),
           contactChannel: z.enum(['whatsapp', 'telegram', 'line']).optional(),
+          /**
+           * SCRUM-1011 — the family pass of a passed code check, which a
+           * supervised line's `savedChildId` needs: the booking is then
+           * "family checked" and its paid stays link to the saved children.
+           */
+          familyPass: z.string().min(16).max(128).optional(),
           locale: z.string().max(8).optional(),
           /** Client-side extras snapshot (drop-off, passes) — stored, not priced here. */
           clientSnapshot: z.unknown().optional(),

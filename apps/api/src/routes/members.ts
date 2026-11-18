@@ -28,8 +28,10 @@ import {
   REGISTER_PAGE_DEFAULT,
   REGISTER_PAGE_MAX,
   archiveChild,
+  childCacheView,
   isEvidenceExpired,
   listRegister,
+  memberCacheView,
 } from '../services/members';
 import {
   REVOKE_REASON_MAX,
@@ -40,42 +42,6 @@ import {
 } from '../services/member-tier';
 import { recordChange } from '../services/sync';
 import { opCtx, withTx } from '../services/tx';
-
-/**
- * What a box holds a copy of (S2-05).
- *
- * A member edited at reception has to reach the boxes that cache members, and
- * the delta is written in the SAME transaction as the edit — so a member who
- * exists and a feed that says so commit together. What travels is only what a
- * till reads at the identify step: never the staff notes, never the email,
- * never the tier evidence. See the cache bundle in `services/sync.ts` for the
- * full account of what a box is and is not given.
- */
-function memberCacheView(row: typeof member.$inferSelect): Record<string, unknown> {
-  return {
-    id: row.id,
-    phone: row.phone,
-    nickname: row.nickname,
-    name: row.name,
-    tierCode: row.tierCode,
-    preferredChannel: row.preferredChannel,
-  };
-}
-
-function childCacheView(row: typeof child.$inferSelect): Record<string, unknown> {
-  return {
-    id: row.id,
-    memberId: row.memberId,
-    name: row.name,
-    dateOfBirth: row.dateOfBirth,
-    ageYears: row.ageYears,
-    allergies: row.allergies,
-    medicalNotes: row.medicalNotes,
-    medicalAlert: row.medicalAlert,
-    dietary: row.dietary,
-    foodRestrictions: row.foodRestrictions,
-  };
-}
 
 const ChildBody = z.object({
   name: z.string().min(1),

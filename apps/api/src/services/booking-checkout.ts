@@ -45,6 +45,7 @@ import type { Env } from '../env';
 import { errors } from '../lib/errors';
 import { supervisionConfigOf } from './checkin';
 import { quoteBookingChild } from './booking-supervision';
+import { checkBookingFamilyLinks } from './family-online';
 import { audit } from './audit';
 import { bookingQrOf, holdIsOpen, type BookingRow } from './booking-payment';
 import { resolveItemTaxCategories } from './menu';
@@ -85,9 +86,13 @@ import { withTx, type Exec, type OpContext } from './tx';
  *      `confirmBookingPaid` marks the booking and signs its QR in that same
  *      transaction.
  *
- * OD-A14 — no saved children on the public site. Nothing here reads a member's
- * children or writes any: a phone links the booking to a member record by id
- * and the attendees are the names typed on this booking, matched at reception.
+ * OD-A14 — a phone links the booking to a member record by id and the
+ * attendees are the names typed on this booking, matched at reception.
+ * SCRUM-1011: a supervised child may also name the saved child it is, but only
+ * with the family pass of a passed code check (`checkBookingFamilyLinks`);
+ * the family's own changes to their record are saved elsewhere, when the
+ * parent confirms the children (`services/family-online.ts`). Nothing here
+ * writes a child.
  */
 
 // --- The quote ------------------------------------------------------------------
@@ -482,6 +487,8 @@ export interface CreateBookingInput {
   /** S2-20 E5 — event passes, each with the attendee id the site minted and the child. */
   eventPasses?: BookingEventPassInput[];
   contactChannel?: 'whatsapp' | 'telegram' | 'line';
+  /** SCRUM-1011 — the family pass a passed code check answered; a line's `savedChildId` needs it. */
+  familyPass?: string;
   consentAck?: boolean;
   acknowledgedConfirmationIds?: string[];
   locale?: string;
@@ -642,6 +649,20 @@ export async function createPublicBooking(
       .limit(1);
     memberId = m?.id ?? null;
   }
+  /**
+   * SCRUM-1011 — the booking says which saved child each supervised child is.
+   * A `savedChildId` is taken only with the family pass of the live member
+   * holding this phone, and only for that member's live children; anything
+   * else is refused here, before a row is written. A live pass makes the
+   * booking "family checked", on the member the pass proves.
+   */
+  const links = await checkBookingFamilyLinks(db, {
+    operatorId: br.operatorId,
+    phone,
+    ...(input.familyPass ? { pass: input.familyPass } : {}),
+    savedChildIds: input.lines.flatMap((l) => (l.supervision?.savedChildId ? [l.supervision.savedChildId] : [])),
+  });
+  if (links.checkedMemberId) memberId = links.checkedMemberId;
 
   const id = input.id ?? newId();
   const reference = `OTO-${randomInt(0, 36 ** 4).toString(36).padStart(4, '0').toUpperCase()}-${randomInt(0, 36 ** 4).toString(36).padStart(4, '0').toUpperCase()}`;
@@ -689,6 +710,8 @@ export async function createPublicBooking(
           // S2-20 E5 — registered with the OTO App when the booking is paid.
           ...(quote.eventPasses.length > 0 ? { eventPasses: quote.eventPasses } : {}),
           ...(supervised ? { consentRecordedAt: consentAt, acknowledgedConfirmations: acknowledged } : {}),
+          // SCRUM-1011 — a live family pass for this member came with the booking.
+          ...(links.checkedMemberId ? { familyChecked: true } : {}),
           clientSnapshot: input.clientSnapshot ?? null,
         },
       })

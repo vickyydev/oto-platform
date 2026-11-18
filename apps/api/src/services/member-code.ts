@@ -3,11 +3,12 @@ import { randomInt } from 'node:crypto';
 import { and, asc, desc, eq, gt, isNull, like, lte } from 'drizzle-orm';
 import { authThrottle, child, member, type Db } from '@oto/db';
 import { AppError, errors } from '../lib/errors';
+import { hashToken, newSessionToken } from '../plugins/session';
 import { audit } from './audit';
 import { throttleClear } from './auth';
 import type { SmsSender } from './sms';
 import { bumpWindow } from './throttle';
-import { withTx, type OpContext } from './tx';
+import { withTx, type Exec, type OpContext } from './tx';
 
 /**
  * THE BOOKING SITE'S SAVED CHILDREN, BEHIND A CODE TO THE PHONE (SCRUM-357).
@@ -22,8 +23,20 @@ import { withTx, type OpContext } from './tx';
  *
  * What a passed check hands back is the children's details the booking site's
  * review step pre-fills from, and nothing else: no member id, no phone, no
- * email, no notes, no medical notes, no photo. It grants no session and writes
- * nothing to the member; edits made on the booking stay on that booking.
+ * email, no notes, no medical notes, no photo. It grants no session.
+ *
+ * THE FAMILY PASS (SCRUM-1011, the owner's ruling of 18 and 19 November:
+ * "Save it to the family record"). Beside the children, a passed check answers
+ * a pass: 32 random bytes, good for `FAMILY_PASS_TTL_MS`, for that member and
+ * nothing else. It is what lets the family's own changes reach their record
+ * (`services/family-online.ts`): without it nothing is saved, so a person who
+ * only knows the phone changes nothing. It is held like the code, as a row in
+ * `core.auth_throttle` keyed `mpass:<memberId>:<sha256 of the pass>` with
+ * `locked_until` as its expiry — sha256, as a session token is held
+ * (`plugins/session.ts`), because the pass is a 256-bit random secret where
+ * the code is six digits; the key carries the member, so a pass shown with
+ * another family's phone matches no row. It lives its sixty minutes and is
+ * not spent by use: the family may remove a child, go back, and confirm again.
  *
  * WHERE THE CODE LIVES. `core.verification_code` belongs to staff accounts (an
  * `account_id` it cannot be without), and this round adds no table. The code is
@@ -46,6 +59,12 @@ import { withTx, type OpContext } from './tx';
 
 export const MEMBER_CODE_TTL_MS = 10 * 60_000;
 
+/** SCRUM-1011 — how long a family pass from a passed code check lets the family's changes be saved. */
+export const FAMILY_PASS_TTL_MS = 60 * 60_000;
+
+const familyPassPrefix = (memberId: string): string => `mpass:${memberId}:`;
+const familyPassKey = (memberId: string, pass: string): string => familyPassPrefix(memberId) + hashToken(pass);
+
 /** How many outstanding codes one guess is checked against (each is an argon2 verify). */
 const CANDIDATES = 5;
 
@@ -67,6 +86,69 @@ export interface PublicSavedChild {
   ageYears: number | null;
   allergies: string | null;
   foodRestrictions: string | null;
+}
+
+/** What a passed code check answers: the saved children, and the family pass (SCRUM-1011). */
+export interface VerifiedFamily {
+  children: PublicSavedChild[];
+  /** The pass itself, shown once, here; only its sha256 is kept. */
+  familyPass: string;
+  familyPassExpiresAt: string;
+}
+
+/**
+ * The member's live saved children as the booking site reads them — the
+ * fields its review step pre-fills, and nothing else (SCRUM-357). Shared by
+ * the code check and the family's save (SCRUM-1011), so both answer one shape.
+ */
+export async function publicSavedChildrenOf(exec: Exec, memberId: string): Promise<PublicSavedChild[]> {
+  const rows = await exec
+    .select({
+      id: child.id,
+      name: child.name,
+      dateOfBirth: child.dateOfBirth,
+      ageYears: child.ageYears,
+      allergies: child.allergies,
+      foodRestrictions: child.foodRestrictions,
+      dietary: child.dietary,
+    })
+    .from(child)
+    .where(and(eq(child.memberId, memberId), isNull(child.archivedAt)))
+    .orderBy(asc(child.createdAt), asc(child.id));
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    dateOfBirth: r.dateOfBirth,
+    ageYears: r.ageYears,
+    allergies: r.allergies,
+    // The till's own mapping reads food restrictions, then dietary.
+    foodRestrictions: r.foodRestrictions ?? r.dietary,
+  }));
+}
+
+/**
+ * SCRUM-1011 — the live member a family pass was minted for, or null.
+ *
+ * The phone picks the member (live, in the park's operator); the pass must
+ * then be a live `mpass:` row FOR THAT MEMBER. A pass minted for another
+ * family, an expired one and a made-up one all answer null alike.
+ */
+export async function familyPassMember(
+  exec: Exec,
+  scope: { operatorId: string; phone: string; pass: string },
+): Promise<{ memberId: string } | null> {
+  const [m] = await exec
+    .select({ id: member.id })
+    .from(member)
+    .where(and(eq(member.operatorId, scope.operatorId), eq(member.phone, scope.phone), isNull(member.archivedAt)))
+    .limit(1);
+  if (!m) return null;
+  const [live] = await exec
+    .select({ key: authThrottle.key })
+    .from(authThrottle)
+    .where(and(eq(authThrottle.key, familyPassKey(m.id, scope.pass)), gt(authThrottle.lockedUntil, new Date())))
+    .limit(1);
+  return live ? { memberId: m.id } : null;
 }
 
 async function findMember(db: Db, operatorId: string, phone: string) {
@@ -151,16 +233,16 @@ async function argonMatches(stored: string, code: string): Promise<boolean> {
 
 /**
  * Check a typed code and, when it is right, spend it and answer the member's
- * saved children. Throws "Invalid code" (or, at the limit, "Too many wrong
- * codes") for a wrong code, an expired one, a spent one, and a phone with no
- * member alike.
+ * saved children and a family pass (SCRUM-1011). Throws "Invalid code" (or,
+ * at the limit, "Too many wrong codes") for a wrong code, an expired one, a
+ * spent one, and a phone with no member alike.
  */
 export async function verifyMemberCode(
   db: Db,
   sms: SmsSender,
   ctx: OpContext,
   scope: MemberCodeScope & { code: string; maxAttempts: number },
-): Promise<PublicSavedChild[]> {
+): Promise<VerifiedFamily> {
   const m = await findMember(db, scope.operatorId, scope.phone);
   if (!m) {
     const { current } = await bumpWindow(db, unknownPhoneKey(scope.phone), MEMBER_CODE_TTL_MS);
@@ -220,19 +302,18 @@ export async function verifyMemberCode(
         .returning({ key: authThrottle.key });
       if (!spent) throw errors.badRequest('Invalid code');
       await throttleClear(tx, [attemptKey(m.id)]);
-      const rows = await tx
-        .select({
-          id: child.id,
-          name: child.name,
-          dateOfBirth: child.dateOfBirth,
-          ageYears: child.ageYears,
-          allergies: child.allergies,
-          foodRestrictions: child.foodRestrictions,
-          dietary: child.dietary,
-        })
-        .from(child)
-        .where(and(eq(child.memberId, m.id), isNull(child.archivedAt)))
-        .orderBy(asc(child.createdAt), asc(child.id));
+      const children = await publicSavedChildrenOf(tx, m.id);
+      // SCRUM-1011 — the family pass. This member's spent-by-time passes go
+      // first, so they never accumulate between sweeps.
+      const now = new Date();
+      const familyPass = newSessionToken();
+      const expiresAt = new Date(now.getTime() + FAMILY_PASS_TTL_MS);
+      await tx
+        .delete(authThrottle)
+        .where(and(like(authThrottle.key, `${familyPassPrefix(m.id)}%`), lte(authThrottle.lockedUntil, now)));
+      await tx
+        .insert(authThrottle)
+        .values({ key: familyPassKey(m.id, familyPass), failures: 0, lockedUntil: expiresAt, updatedAt: now });
       await audit.record(tx, {
         actorAccountId: null,
         operatorId: scope.operatorId,
@@ -240,18 +321,10 @@ export async function verifyMemberCode(
         action: 'member.saved_children_read',
         entityType: 'member',
         entityId: m.id,
-        after: { childCount: rows.length, via: 'booking_site_code' },
+        after: { childCount: children.length, via: 'booking_site_code', familyPassExpiresAt: expiresAt.toISOString() },
         requestId: ctx.requestId,
       });
-      return rows.map((r) => ({
-        id: r.id,
-        name: r.name,
-        dateOfBirth: r.dateOfBirth,
-        ageYears: r.ageYears,
-        allergies: r.allergies,
-        // The till's own mapping reads food restrictions, then dietary.
-        foodRestrictions: r.foodRestrictions ?? r.dietary,
-      }));
+      return { children, familyPass, familyPassExpiresAt: expiresAt.toISOString() };
     },
   );
 }

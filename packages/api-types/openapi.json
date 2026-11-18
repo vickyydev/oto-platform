@@ -114590,6 +114590,173 @@
                         ],
                         "additionalProperties": false
                       }
+                    },
+                    "familyPass": {
+                      "type": "string"
+                    },
+                    "familyPassExpiresAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "children",
+                    "familyPass",
+                    "familyPassExpiresAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/public/saved-children/save": {
+      "post": {
+        "description": "Save a returning family's own changes to its record from the booking site: the children confirmed (changed fields of a saved child, or a new child under the id the site minted), the children removed (archived), and the contact app picked. Needs the family pass of a passed code check for this phone; answers the family's saved children after the save.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "phone": {
+                    "type": "string",
+                    "minLength": 6,
+                    "maxLength": 32
+                  },
+                  "branch": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "pass": {
+                    "type": "string",
+                    "minLength": 16,
+                    "maxLength": 128
+                  },
+                  "children": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "savedChildId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "newChildId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 120
+                        },
+                        "dateOfBirth": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                          "nullable": true
+                        },
+                        "ageYears": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 17
+                        },
+                        "allergies": {
+                          "type": "string",
+                          "maxLength": 2000
+                        },
+                        "foodRestrictions": {
+                          "type": "string",
+                          "maxLength": 2000
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "ageYears"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "maxItems": 20
+                  },
+                  "remove": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "maxItems": 20,
+                    "default": []
+                  },
+                  "contactChannel": {
+                    "type": "string",
+                    "enum": [
+                      "whatsapp",
+                      "telegram",
+                      "line"
+                    ]
+                  }
+                },
+                "required": [
+                  "phone",
+                  "branch",
+                  "pass",
+                  "children"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "children": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "dateOfBirth": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "ageYears": {
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "allergies": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "foodRestrictions": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "dateOfBirth",
+                          "ageYears",
+                          "allergies",
+                          "foodRestrictions"
+                        ],
+                        "additionalProperties": false
+                      }
                     }
                   },
                   "required": [
@@ -114736,6 +114903,10 @@
                             "nannyStartTime": {
                               "type": "string",
                               "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                            },
+                            "savedChildId": {
+                              "type": "string",
+                              "format": "uuid"
                             }
                           },
                           "required": [
@@ -114900,6 +115071,11 @@
                       "telegram",
                       "line"
                     ]
+                  },
+                  "familyPass": {
+                    "type": "string",
+                    "minLength": 16,
+                    "maxLength": 128
                   },
                   "locale": {
                     "type": "string",

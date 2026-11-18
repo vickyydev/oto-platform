@@ -290,7 +290,9 @@ describe('public saved children behind a code to the phone', () => {
     const ok = await verifyWith('+66811111111', code);
     expect(ok.statusCode).toBe(200);
     const { children } = ok.json() as { children: Array<Record<string, unknown>> };
-    expect(Object.keys(ok.json())).toEqual(['children']);
+    // SCRUM-1011 — beside the children, the family pass that lets the
+    // family's own changes reach their record, and when it runs out.
+    expect(Object.keys(ok.json())).toEqual(['children', 'familyPass', 'familyPassExpiresAt']);
     expect(children.map((c) => c.name).sort()).toEqual(['Nong Ploy', 'Nong Tan']);
     for (const c of children) {
       expect(Object.keys(c).sort()).toEqual(

@@ -10,8 +10,40 @@ export const BookingSupervisionInputSchema = z.object({
   foodRestrictions: z.string().max(2000).optional(),
   foodProvision: FoodProvisionSchema.nullable().optional(),
   nannyStartTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).optional(),
+  /**
+   * SCRUM-1011 — the child on the family's saved record this place is, when it
+   * came from one (or was saved to it from this booking). Accepted only with
+   * the family pass of the booking's member, and only for that member's
+   * children; the paid booking's stay is then linked to it.
+   */
+  savedChildId: z.string().uuid().optional(),
 }).strict();
 export type BookingSupervisionInput = z.infer<typeof BookingSupervisionInputSchema>;
+
+/** SCRUM-1011 — the contact apps a family may pick online, as the member record holds them. */
+export const FAMILY_CONTACT_CHANNELS = ['whatsapp', 'telegram', 'line'] as const;
+
+/**
+ * SCRUM-1011 — ONE CHILD AS THE FAMILY CONFIRMED IT ONLINE, to be saved to its
+ * record. Exactly one of the two ids: `savedChildId` for a child already on
+ * the record, `newChildId` (minted by the booking site, so a second send is
+ * the same child) for one the family adds.
+ */
+export const FamilyOnlineChildSchema = z.object({
+  savedChildId: z.string().uuid().optional(),
+  newChildId: z.string().uuid().optional(),
+  name: z.string().trim().min(1).max(120),
+  dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  ageYears: z.number().int().min(0).max(17),
+  allergies: z.string().max(2000).optional(),
+  foodRestrictions: z.string().max(2000).optional(),
+}).strict().refine((c) => Boolean(c.savedChildId) !== Boolean(c.newChildId), {
+  message: 'Each child names exactly one of savedChildId or newChildId',
+});
+export type FamilyOnlineChild = z.infer<typeof FamilyOnlineChildSchema>;
+
+/** The most children one family save may name (the booking site's own ceiling is 20 kids per line). */
+export const FAMILY_ONLINE_SAVE_MAX = 20;
 
 /** Frozen by the public quote; checkinId is added only after verified payment. */
 export const BookingSupervisionSnapshotSchema = BookingSupervisionInputSchema.extend({
