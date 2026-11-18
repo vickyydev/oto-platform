@@ -118,7 +118,7 @@ async function landed(p: Passage): Promise<void> {
 
 const DAY = '2032-05-04';
 const count = async (hhmm: string) => {
-  const c = await countAt(db, centralId, bkk(DAY, '05:00'), bkk(DAY, hhmm));
+  const c = await countAt(db, centralId, bkk(DAY, '00:00'), bkk(DAY, hhmm)); // from the park's day start: midnight (SCRUM-1010)
   return { adults: c.adults, kids: c.kids };
 };
 

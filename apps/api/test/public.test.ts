@@ -187,7 +187,7 @@ describe('public catalogue exposure (SCRUM-252)', () => {
     expect(fullDay.durationLabel).toBe('All Day');
     expect(fullDay.hours).toBe(8);
     expect(body.branch.timezone).toBe('Asia/Bangkok');
-    expect(body.branch.businessDayStart).toMatch(/^05:00/);
+    expect(body.branch.businessDayStart).toMatch(/^00:00/); // the park's midnight day (SCRUM-1010)
   });
 });
 

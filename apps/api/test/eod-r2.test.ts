@@ -36,7 +36,8 @@ import { buildPrintDocument } from '../src/services/sale-printing';
  */
 
 const TZ = 'Asia/Bangkok';
-const DAY_START = 5 * 60;
+/** The seeded park's day start: midnight (SCRUM-1010). */
+const DAY_START = 0;
 const D = businessDate(new Date(), TZ, DAY_START);
 const Y = addDaysToIsoDate(D, -1);
 const bkk = (date: string, hhmm: string): Date => new Date(`${date}T${hhmm}:00+07:00`);
@@ -92,7 +93,7 @@ async function soldGroup(at: Date): Promise<{ saleId: string; adult: string; kid
     branchId: central,
     stationId: till1.id,
     businessDate: businessDate(at, TZ, DAY_START),
-    businessDayStart: '05:00',
+    businessDayStart: '00:00',
     timezone: TZ,
     occurredAt: at,
     createdByAccountId: receptionId,

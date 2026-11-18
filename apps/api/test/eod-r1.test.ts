@@ -42,7 +42,8 @@ import { resetDemoData } from '../src/services/demo-reset';
  */
 
 const TZ = 'Asia/Bangkok';
-const DAY_START = 5 * 60;
+/** The seeded park's day start: midnight (SCRUM-1010). */
+const DAY_START = 0;
 
 let ctx: TestContext;
 let operatorId: string;
@@ -116,7 +117,7 @@ async function ringUp(opts: {
     branchId: opts.branchId,
     stationId: opts.stationId,
     businessDate: day,
-    businessDayStart: '05:00',
+    businessDayStart: '00:00',
     timezone: TZ,
     occurredAt: opts.at,
     createdByAccountId: receptionId,
@@ -320,9 +321,11 @@ describe('today: a scripted day across two stations, summed by hand', () => {
     const early = await ringUp({ branchId: central, stationId: till1, at: bkk(D, '06:30'), attempts: [{ method: 'cash', methodCode: 'cash', amountSatang: 60_00 }] });
     expect(early.businessDate).toBe(D);
     expect(bkk(D, '06:30').toISOString().slice(0, 10)).toBe(Y);
-    // 01:30 the next calendar morning is still this trading day (day start 05:00).
-    const late = await ringUp({ branchId: central, stationId: counter2, at: bkk(addDaysToIsoDate(D, 1), '01:30'), attempts: [{ method: 'cash', methodCode: 'cash', amountSatang: 100_00 }] });
+    // 23:30 is still this trading day; 01:30 the next morning is the next
+    // one (SCRUM-1010: the park's day runs midnight to midnight).
+    const late = await ringUp({ branchId: central, stationId: counter2, at: bkk(D, '23:30'), attempts: [{ method: 'cash', methodCode: 'cash', amountSatang: 100_00 }] });
     expect(late.businessDate).toBe(D);
+    expect(businessDate(bkk(addDaysToIsoDate(D, 1), '01:30'), TZ, DAY_START)).toBe(addDaysToIsoDate(D, 1));
     // QR.
     await ringUp({ branchId: central, stationId: counter2, at: bkk(D, '13:00'), attempts: [{ method: 'qr', methodCode: 'promptpay', provider: '2c2p', invoiceNo: `EODQR${Date.now()}`.slice(0, 20), amountSatang: 450_00 }] });
     // Card on two TIDs, and one keyed in with no TID.

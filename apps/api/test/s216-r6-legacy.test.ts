@@ -513,12 +513,12 @@ describe('S2-15b round 6 — the merge’s day starts, and no member data (H1, H
       const both = await summary(admin, `branches=${hkt},${demo}&from=${T}&to=${T}`);
       const now = new Date();
       const byId = Object.fromEntries(both.branches.map((b) => [b.branchId, b]));
-      expect(byId[hkt]).toMatchObject({ timezone: 'Asia/Bangkok', businessDayStart: '05:00' });
+      expect(byId[hkt]).toMatchObject({ timezone: 'Asia/Bangkok', businessDayStart: '00:00' });
       expect(byId[demo]).toMatchObject({ timezone: 'Asia/Bangkok', businessDayStart: '06:00' });
-      expect(byId[hkt]!.today).toBe(businessDate(now, 'Asia/Bangkok', parseDayStart('05:00')));
+      expect(byId[hkt]!.today).toBe(businessDate(now, 'Asia/Bangkok', parseDayStart('00:00'))); // SCRUM-1010
       expect(byId[demo]!.today).toBe(businessDate(now, 'Asia/Bangkok', parseDayStart('06:00')));
     } finally {
-      await ctx.db.update(branch).set({ businessDayStart: '05:00:00' }).where(eq(branch.id, demo));
+      await ctx.db.update(branch).set({ businessDayStart: '00:00:00' }).where(eq(branch.id, demo));
     }
   });
 
