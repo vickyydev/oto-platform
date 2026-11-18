@@ -38,6 +38,11 @@ export interface VoucherLedgerRow {
   staffLabel?: string | null;
   /** The account that issued it at a counter, or was signed in at an older booth. */
   issuedBy: LedgerPerson | null;
+  /**
+   * SCRUM-482 — the manager who approved a credit voucher on the spot, on the
+   * same till. Null otherwise; optional so an older api still reads.
+   */
+  approvedBy?: LedgerPerson | null;
   codeLast4: string;
   source: string;
   status: VoucherLedgerStatus;

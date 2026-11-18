@@ -364,8 +364,21 @@ export function Vouchers() {
   );
 }
 
+/**
+ * Who issued it — a booth slip's roster names, the counter account, or
+ * nobody — and, SCRUM-482, the manager who approved a credit voucher on the
+ * spot, beside it.
+ */
+export function ledgerIssuedBy(r: VoucherLedgerRow): { issuedBy: string; approvedBy: string | null } {
+  return {
+    issuedBy: r.staffLabel ?? (r.issuedBy ? `${r.issuedBy.name ?? 'Staff'} (${r.issuedBy.code})` : 'Unattributed'),
+    approvedBy: r.approvedBy ? `Approved by ${r.approvedBy.name ?? 'Staff'} (${r.approvedBy.code})` : null,
+  };
+}
+
 /** One voucher: every fact the ledger holds about it, in the artboard's six columns. */
-function LedgerRow({ row: r, timezone }: { row: VoucherLedgerRow; timezone?: string | null }) {
+export function LedgerRow({ row: r, timezone }: { row: VoucherLedgerRow; timezone?: string | null }) {
+  const people = ledgerIssuedBy(r);
   const finished = r.status === 'expired' || r.status === 'void';
   return (
     <div
@@ -400,9 +413,12 @@ function LedgerRow({ row: r, timezone }: { row: VoucherLedgerRow; timezone?: str
         <span className="text-muted-foreground">
           {formatWhen(r.issuedAt, timezone)} · {r.place.name}
         </span>
-        <span className="block text-xs text-muted-foreground">
-          {r.staffLabel ?? (r.issuedBy ? `${r.issuedBy.name ?? 'Staff'} (${r.issuedBy.code})` : 'Unattributed')}
-        </span>
+        <span className="block text-xs text-muted-foreground">{people.issuedBy}</span>
+        {people.approvedBy && (
+          <span className="block text-xs text-muted-foreground" data-testid="ledger-approved-by">
+            {people.approvedBy}
+          </span>
+        )}
       </Cell>
       <Cell label="Expires" className="text-muted-foreground">
         {r.expiresAt ? formatWhen(r.expiresAt, timezone) : '—'}
