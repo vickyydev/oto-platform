@@ -1283,7 +1283,9 @@ describe('attack 5 — the kiosk reuses the till’s redemption and keeps no cop
   const source = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'services', 'kiosk.ts'), 'utf8');
 
   it('calls the shared services by name', () => {
-    expect(source).toMatch(/import \{ redeemBookingAtCounter \} from '\.\/booking-redemption'/);
+    // SCRUM-1013 — beside it, the same module's manager alert for a booking
+    // filed under the tax it was booked with.
+    expect(source).toMatch(/import \{[^}]*\bredeemBookingAtCounter\b[^}]*\} from '\.\/booking-redemption'/);
     expect(source).toMatch(/loadBookingByQr/);
     expect(source).toMatch(/import \{ buildPrintDocument \} from '\.\/sale-printing'/);
     expect(source).toMatch(/redeemBookingAtCounter\(tx, \{/);
