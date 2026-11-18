@@ -6,12 +6,14 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { publicApi } from '@/api/platform';
 import { publicChildToSavedChild } from '@/api/mappers';
 import { storedPhoneHint } from '@/lib/phoneUtils';
+import type { FamilyPass } from '@/lib/bookFamilyRecord';
 import type { SavedChild } from '@/types';
 
 interface BookVerifyFamilyProps {
   phone: string;
   branchCode: string;
-  onVerified: (children: SavedChild[]) => void;
+  /** The saved children, and the family pass that lets this family's changes reach their record (SCRUM-1011). */
+  onVerified: (children: SavedChild[], pass: FamilyPass) => void;
   onSkip: () => void;
   onBack: () => void;
 }
@@ -55,7 +57,10 @@ export function BookVerifyFamily({ phone, branchCode, onVerified, onSkip, onBack
     publicApi.savedChildrenVerify(phone, branchCode, code).then(
       (res) => {
         setBusy(false);
-        onVerified(res.children.map(publicChildToSavedChild));
+        onVerified(res.children.map(publicChildToSavedChild), {
+          pass: res.familyPass,
+          expiresAt: res.familyPassExpiresAt,
+        });
       },
       (err: unknown) => {
         setError(err instanceof Error ? err.message : t('book.verify.failed'));

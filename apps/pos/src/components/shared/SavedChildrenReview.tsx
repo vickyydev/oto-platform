@@ -48,22 +48,23 @@ interface SavedChildrenReviewProps<Child extends SavedChildrenReviewChoice> {
    * SCRUM-338 — which store the details typed on this screen go to, which is
    * what the note at the bottom has to tell the person reading it.
    *
-   * The component is shared by two flows that no longer answer the same way.
+   * The component is shared by two flows that do not answer the same way.
    * On the till, Confirm writes to the member's record through the member API
-   * (SCRUM-233) and Remove archives the child there (SCRUM-337), both audited;
-   * on the booking site the same buttons write nothing: the saved children are
-   * read from the family's record once the code sent to the phone is typed
-   * back (SCRUM-357), and an edit stays on that booking — the site has no
-   * route that writes a member (S2-09b). One note cannot be true for both, and
-   * the one it carried — "a prototype convenience held in memory only" — was
-   * false exactly where staff read it most.
+   * (SCRUM-233) and Remove archives the child there (SCRUM-337), both audited.
+   * On the booking site (SCRUM-1011, the owner's ruling of 18 and 19
+   * November) the saved children are read from the family's record once the
+   * code sent to the phone is typed back (SCRUM-357), "Remove from saved"
+   * takes the child off the record at once, and the family's other changes
+   * are saved to it when the parent goes on to payment, paid or not — so its
+   * note says when. One note cannot be true for both, and the one it carried
+   * — "a prototype convenience held in memory only" — was false exactly where
+   * staff read it most.
    *
    * The caller names its store rather than passing wording, so the sentence
    * stays here with the screen that shows it. Left out it reads as the
-   * member's record: both of the till's uses are on the API, and the booking
-   * site says its edits are this booking's only.
+   * member's record: both of the till's uses are on the API.
    */
-  detailsStore?: 'member-record' | 'booking-only';
+  detailsStore?: 'member-record' | 'family-record-online';
   /**
    * The paired customer display. SCRUM-1014 — the family adds and removes
    * children there as on the prototype's customer screen ("+ A new child",
@@ -298,7 +299,7 @@ export function SavedChildrenReview<Child extends SavedChildrenReviewChoice>({
           <Lock className="mt-0.5 h-4 w-4 shrink-0 text-foreground/40" />
           {publicMode ? (
             <p>{t('childReview.notePublic')}</p>
-          ) : detailsStore === 'booking-only' ? (
+          ) : detailsStore === 'family-record-online' ? (
             <p>{t('childReview.noteBooking')}</p>
           ) : (
             <p>{t('childReview.noteMember')}</p>

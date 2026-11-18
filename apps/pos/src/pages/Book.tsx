@@ -41,6 +41,15 @@ import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { paymentPageHref, publicApi, type PublicBookingStatus } from '@/api/platform';
+import { ApiError } from '@/api/client';
+import { publicChildToSavedChild } from '@/api/mappers';
+import {
+  bookingLineSavedChildId,
+  familySaveChildren,
+  linkSavedChildren,
+  livePass,
+  type FamilyPass,
+} from '@/lib/bookFamilyRecord';
 import { loadPublicCatalog } from '@/api/catalogBridge';
 import { foodProvisionToWire } from '@/api/checkin';
 import { buildCreditGrants } from '@/lib/sale';
@@ -488,9 +497,9 @@ export default function Book() {
   }, []);
 
   // The channel picked here goes to the platform with the booking
-  // (`publicApi.createBooking`), not onto the member's profile: this page has
-  // no session, and the open member route only reads (S2-09b). The fixture
-  // write that stood here matched no platform member's id.
+  // (`publicApi.createBooking`), and — SCRUM-1011, decision 11 B — onto the
+  // family's record too when a returning family who passed the code check
+  // confirms (`saveFamilyThen`), as the approved design saved it to the member.
   const handleContactChannelChange = (channel: ContactChannel) => {
     setContactChannel(channel);
   };
@@ -586,6 +595,26 @@ export default function Book() {
   const [acknowledgedConfirmationIds, setAcknowledgedConfirmationIds] = useState<string[]>([]);
   // Slot ids the parent re-confirmed on the saved-children review stage.
   const [confirmedSavedIds, setConfirmedSavedIds] = useState<string[]>([]);
+  /**
+   * SCRUM-1011 — the family pass a passed code check answered: while it is
+   * live, the family's own changes are saved to their record when the parent
+   * confirms (and "Remove from saved" takes a child off it). `newChildIds` is
+   * the id this page minted for each place holding a child the family added,
+   * so a second confirm is the same child; `savingFamily` holds the buttons
+   * while a save is out.
+   */
+  const [familyPass, setFamilyPass] = useState<FamilyPass | null>(null);
+  const newChildIds = useRef<Record<string, string>>({});
+  const [savingFamily, setSavingFamily] = useState(false);
+  /**
+   * Saved children taken off the record on this page. Held beside the member
+   * rather than written into it: a change to the member re-runs the pre-fill
+   * below, which would put another saved child into the place the parent has
+   * just emptied.
+   */
+  const removedSaved = useRef<Set<string>>(new Set());
+  const liveSavedChildren = (m: Member | null): SavedChild[] =>
+    (m?.savedChildren ?? []).filter((c) => !removedSaved.current.has(c.id));
 
   const dropOffPricing = resolveDropOffPricing(getDropOffPricing());
   const tier = useMemo(() => resolveAutoTier(member), [member]);
@@ -599,7 +628,8 @@ export default function Book() {
   // photo. Existing slots (already edited / confirmed / explicitly marked new) are
   // preserved by reconcileSlots and never re-stamped, so inline edits stick.
   useEffect(() => {
-    const saved = member?.savedChildren ?? [];
+    // Never a child the parent took off the record here (SCRUM-1011).
+    const saved = (member?.savedChildren ?? []).filter((c) => !removedSaved.current.has(c.id));
     setSuperSlots((prev) => {
       const reconciled = reconcileSlots(prev, lines, hasAdults);
       if (saved.length === 0) return reconciled;
@@ -718,6 +748,10 @@ export default function Book() {
         }
       }
       setMember(found);
+      // A pass is one family's: a new lookup starts without one.
+      setFamilyPass(null);
+      newChildIds.current = {};
+      removedSaved.current = new Set();
       const resolvedName = found?.nickname ?? nick.trim();
       setNickname(resolvedName);
       setParentName(resolvedName);
@@ -735,9 +769,69 @@ export default function Book() {
   // The children saved on the family's record, answered by the platform for
   // the code typed back. They pre-fill the per-child forms and the review step
   // exactly as the prototype's member lookup did (text only, never a photo).
-  const handleFamilyVerified = (children: SavedChild[]) => {
+  // The pass that came with them lets the family's changes reach the record.
+  const handleFamilyVerified = (children: SavedChild[], pass: FamilyPass) => {
+    removedSaved.current = new Set();
     setMember((m) => (m ? { ...m, savedChildren: children } : m));
+    setFamilyPass(pass);
     setStage('tickets');
+  };
+
+  /**
+   * SCRUM-1011 — SAVE THE FAMILY'S CHANGES TO THEIR RECORD, then go on.
+   *
+   * The owner's decision 9 B: the record changes when the parent confirms
+   * online, paid or not — here, the press that finishes the children's details
+   * and goes on to payment ("Continue to payment" on the consent step; the
+   * basket's "Continue" when no child needs the consent step, which then
+   * carries the contact app only). Every child on the booking that is named
+   * and aged is sent, and the contact app picked (decision 11 B); the platform
+   * writes only what changed. With no live pass nothing is sent, as before. A
+   * pass that ran out on the way is said plainly and the booking goes on with
+   * its details; any other failure keeps the parent here to try again.
+   */
+  const saveFamilyThen = (next: () => void) => {
+    const pass = livePass(familyPass);
+    if (!member || !pass) {
+      next();
+      return;
+    }
+    if (savingFamily) return;
+    const { children, minted } = familySaveChildren(superSlots, newChildIds.current);
+    newChildIds.current = minted;
+    setSavingFamily(true);
+    publicApi
+      .savedChildrenSave({ phone, branch: park, pass, children, contactChannel })
+      .then(
+        (res) => {
+          const saved = new Set(res.children.map((c) => c.id));
+          const links = linkSavedChildren(superSlots, minted, saved);
+          setSuperSlots((prev) =>
+            prev.map((s) => {
+              const link = links.find((l) => l.slotId === s.id);
+              return link ? { ...s, savedChildId: link.savedChildId } : s;
+            }),
+          );
+          setConfirmedSavedIds((prev) => [...new Set([...prev, ...links.map((l) => l.slotId)])]);
+          setMember((m) => (m ? { ...m, savedChildren: res.children.map(publicChildToSavedChild), preferredChannel: contactChannel } : m));
+          setSavingFamily(false);
+          next();
+        },
+        (err: unknown) => {
+          setSavingFamily(false);
+          if (err instanceof ApiError && err.code === 'FAMILY_CHECK_EXPIRED') {
+            setFamilyPass(null);
+            toast({ title: t('book.family.checkExpired'), description: err.message });
+            next();
+            return;
+          }
+          toast({
+            title: t('book.family.saveFailed'),
+            description: err instanceof Error ? err.message : t('book.verify.failed'),
+            variant: 'destructive',
+          });
+        },
+      );
   };
 
   // A different park is a different catalogue: the basket starts again.
@@ -798,19 +892,27 @@ export default function Book() {
     setConfirmedSavedIds((prev) => prev.filter((x) => x !== id));
   };
 
-  // "Still correct?" → mark done. Edits stay on this booking's slot: the
-  // saved children come from the open, code-gated read (SCRUM-357), and the
-  // booking site has no route that writes a member (S2-09b).
+  // "Still correct?" → mark done. The details reach the family's record when
+  // the parent confirms the children and goes on to payment (`saveFamilyThen`,
+  // SCRUM-1011), with the allergies and food restrictions of the next step.
   const handleConfirmSlot = (id: string) => {
     setConfirmedSavedIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
   };
 
+  /** A place pointed at another child forgets the id minted for the child it held. */
+  const forgetMintedChild = (slotId: string) => {
+    const { [slotId]: _gone, ...rest } = newChildIds.current;
+    newChildIds.current = rest;
+  };
+
   const handleAssignSaved = (slotId: string, child: SavedChild) => {
+    forgetMintedChild(slotId);
     handleUpdateSlot(slotId, slotPatchFromSavedChild(child));
     setConfirmedSavedIds((prev) => prev.filter((x) => x !== slotId));
   };
 
   const handleMarkNew = (slotId: string) => {
+    forgetMintedChild(slotId);
     handleUpdateSlot(slotId, {
       savedChildId: undefined,
       name: '',
@@ -822,8 +924,37 @@ export default function Book() {
     setConfirmedSavedIds((prev) => prev.filter((x) => x !== slotId));
   };
 
-  const handleRemoveSaved = (slotId: string, _childId: string) => {
-    handleMarkNew(slotId);
+  /**
+   * SCRUM-1011, decision 10 B — "Remove from saved" takes the child off the
+   * family's record (archived, never deleted), as the approved design and the
+   * till do, and empties the place. Only with a live family pass; otherwise
+   * the record is not touched and the parent is told.
+   */
+  const handleRemoveSaved = (slotId: string, childId: string) => {
+    const pass = livePass(familyPass);
+    if (!pass) {
+      setFamilyPass(null);
+      toast({ title: t('book.family.checkExpired'), description: t('book.family.removeNeedsCheck') });
+      return;
+    }
+    if (savingFamily) return;
+    setSavingFamily(true);
+    publicApi.savedChildrenSave({ phone, branch: park, pass, children: [], remove: [childId] }).then(
+      () => {
+        removedSaved.current.add(childId);
+        handleMarkNew(slotId);
+        setSavingFamily(false);
+      },
+      (err: unknown) => {
+        setSavingFamily(false);
+        if (err instanceof ApiError && err.code === 'FAMILY_CHECK_EXPIRED') setFamilyPass(null);
+        toast({
+          title: t('book.family.saveFailed'),
+          description: err instanceof Error ? err.message : t('book.verify.failed'),
+          variant: 'destructive',
+        });
+      },
+    );
   };
 
   // Every slot must be named + aged; every still-linked saved child re-confirmed.
@@ -841,10 +972,12 @@ export default function Book() {
   // with no supervision needed skip straight on.
   const handleContinueFromTickets = () => {
     if (superSlots.length === 0) {
-      setStage('pay');
+      // No child details to confirm: the contact app is what a returning
+      // family's record takes from this press (SCRUM-1011).
+      saveFamilyThen(() => setStage('pay'));
       return;
     }
-    const saved = member?.savedChildren ?? [];
+    const saved = liveSavedChildren(member);
     if (saved.length > 0) {
       // Slots are already pre-filled at creation by the reconcile effect (which
       // preserves any inline edits); just open the per-child re-confirm step.
@@ -909,6 +1042,9 @@ export default function Book() {
       // payment partner's page. The figure this page showed goes with it, and
       // the platform refuses rather than charge a different one.
       const isUuid = (v: string) => /^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(v);
+      // SCRUM-1011 — with a live family pass, each supervised child names the
+      // saved child it is (a supervised line's id is its place's id).
+      const pass = livePass(familyPass);
       const serverLines = normalizedLines
         .filter((l) => !l.promoItem && isUuid(l.ticketType.id) && (l.kids > 0 || l.adults > 0))
         .map((l) => ({
@@ -917,6 +1053,7 @@ export default function Book() {
             dateOfBirth: l.dropOff.dateOfBirth, allergies: l.dropOff.allergiesMedical,
             foodRestrictions: l.dropOff.foodRestrictions, foodProvision: foodProvisionToWire(l.dropOff.foodProvision),
             nannyStartTime: l.dropOff.nannyStartTime,
+            ...bookingLineSavedChildId(superSlots.find((s) => s.id === l.id), pass),
           } } : {}),
           packageId: l.ticketType.id,
           kids: l.kids,
@@ -955,6 +1092,7 @@ export default function Book() {
           lines: serverLines,
           ...(serverPasses.length > 0 ? { eventPasses: serverPasses } : {}),
           contactChannel,
+          ...(pass ? { familyPass: pass } : {}),
           consentAck,
           acknowledgedConfirmationIds,
           locale: lang,
@@ -963,9 +1101,8 @@ export default function Book() {
         });
         const pay = await publicApi.checkoutBooking(res.id, paymentMethod, lang);
         // What the confirmation page will show about this basket, kept for the
-        // round trip. Children named on this booking are not saved to the
-        // member's profile: the open route this page uses reads a member and
-        // cannot write one (S2-09b, OD-A14).
+        // round trip. A returning family's changes already reached their
+        // record when the parent confirmed the children (SCRUM-1011).
         const made: Booking = {
           id: res.id, reference: res.reference, memberId: member?.id, tier,
           lines: normalizedLines, total: res.totalSatang / 100, paymentMethod,
@@ -1038,6 +1175,9 @@ export default function Book() {
     setConsentAck(false);
     setAcknowledgedConfirmationIds([]);
     setConfirmedSavedIds([]);
+    setFamilyPass(null);
+    newChildIds.current = {};
+    removedSaved.current = new Set();
     setBooking(null);
     setCheckingId(null);
     setReturnHint('unknown');
@@ -1100,7 +1240,7 @@ export default function Book() {
             onAddPass={handleAddPass}
             onEditPass={handleEditPass}
             onRemovePass={handleRemovePass}
-            canContinue={(lines.length > 0 || passes.length > 0) && entryOk}
+            canContinue={(lines.length > 0 || passes.length > 0) && entryOk && !savingFamily}
             onUpdateSlot={handleUpdateSlot}
             onAcceptSlot={handleAcceptSlot}
             onAddLine={handleAddLine}
@@ -1128,7 +1268,7 @@ export default function Book() {
           <div className="flex-1 min-h-0 animate-in fade-in duration-300">
             <SavedChildrenReview
               slots={superSlots}
-              savedChildren={member?.savedChildren ?? []}
+              savedChildren={liveSavedChildren(member)}
               confirmedIds={confirmedSavedIds}
               onUpdateSlot={handleReviewUpdateSlot}
               onConfirmSlot={handleConfirmSlot}
@@ -1138,12 +1278,14 @@ export default function Book() {
               onBack={() => setStage('tickets')}
               onContinue={() => setStage('supervise')}
               canContinue={reviewCanContinue}
-              // SCRUM-338 / SCRUM-357: on /book, Confirm and Remove write
-              // nothing — handleConfirmSlot and handleRemoveSaved above touch
-              // no store. The saved children come from the family's record once
-              // the phone's code is typed back; edits here stay on this booking,
-              // and the note says so.
-              detailsStore="booking-only"
+              // SCRUM-1011: the saved children come from the family's record
+              // once the phone's code is typed back, and the family's changes
+              // go back to it — "Remove from saved" at once, the rest when the
+              // parent confirms and goes on to payment. The note says so.
+              detailsStore="family-record-online"
+              busy={savingFamily}
+              // SCRUM-729: the family's own screen, in the family's language.
+              lang={lang}
             />
           </div>
         )}
@@ -1175,16 +1317,18 @@ export default function Book() {
                   size="lg"
                   className="h-14 rounded-2xl border-slate-300 bg-white px-5 text-slate-900 hover:bg-slate-50"
                   onClick={() =>
-                    setStage((member?.savedChildren?.length ?? 0) > 0 ? 'savedChildren' : 'tickets')
+                    setStage(liveSavedChildren(member).length > 0 ? 'savedChildren' : 'tickets')
                   }
                 >
                   <ArrowLeft className="mr-2 h-5 w-5" /> {t('common.back')}
                 </Button>
                 <Button
                   size="lg"
-                  disabled={!consentOk}
+                  disabled={!consentOk || savingFamily}
                   className="h-14 flex-1 rounded-2xl text-lg font-bold gap-2"
-                  onClick={() => setStage('pay')}
+                  // SCRUM-1011 — the parent's confirm: a returning family's
+                  // changes are saved to their record here, paid or not.
+                  onClick={() => saveFamilyThen(() => setStage('pay'))}
                 >
                   {t('book.supervise.continueToPayment')}
                   <ArrowRight className="h-5 w-5" />

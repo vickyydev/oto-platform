@@ -1,5 +1,5 @@
 import type { ApiBody, ApiResponse } from '@oto/api-types';
-import type { BookingEventPass, BookingEventPassInput, BookingSupervisionInput, PublicEventPassesAnswer, PublicSupervisionConfig } from '@oto/shared';
+import type { BookingEventPass, BookingEventPassInput, BookingSupervisionInput, FamilyOnlineChild, PublicEventPassesAnswer, PublicSupervisionConfig } from '@oto/shared';
 // Typed calls to the Sprint 1 API surface, with mapping between the API's
 // satang integers and the prototype UI's whole-baht numbers done in mappers.ts.
 import { newId as newRecordId } from '@oto/shared';
@@ -525,13 +525,25 @@ export const publicApi = {
    */
   savedChildrenCode: (phone: string, branchCode: string) =>
     api.post<{ ok: true }>('/public/saved-children/code', { phone, branch: branchCode }),
-  /** The code typed back: right, it is spent and the family's saved children come back. */
+  /**
+   * The code typed back: right, it is spent and the family's saved children
+   * come back, with the family pass that lets the family's own changes reach
+   * their record (SCRUM-1011): for this member, for sixty minutes.
+   */
   savedChildrenVerify: (phone: string, branchCode: string, code: string) =>
-    api.post<{ children: PublicSavedChild[] }>('/public/saved-children/verify', {
-      phone,
-      branch: branchCode,
-      code,
-    }),
+    api.post<{ children: PublicSavedChild[]; familyPass: string; familyPassExpiresAt: string }>(
+      '/public/saved-children/verify',
+      { phone, branch: branchCode, code },
+    ),
+  /**
+   * SCRUM-1011 — save the family's own changes to their record: the children
+   * the parent confirmed (changed fields of a saved child, or a new child under
+   * the id this page minted), the children removed with "Remove from saved",
+   * and the contact app picked. Nothing is written without a live pass for this
+   * phone's family; the answer is the family's saved children after the save.
+   */
+  savedChildrenSave: (body: ApiBody<'/public/saved-children/save', 'post'> & { children: FamilyOnlineChild[] }) =>
+    api.post<ApiResponse<'/public/saved-children/save', 'post'>>('/public/saved-children/save', body),
   /** `branchCode` scopes the lookup to one operator — required by the API. */
   memberTier: (phone: string, branchCode: string) =>
     api.get<
@@ -576,6 +588,8 @@ export const publicApi = {
      */
     eventPasses?: BookingEventPassInput[];
     contactChannel?: 'whatsapp' | 'telegram' | 'line';
+    /** SCRUM-1011 — the family pass, which a supervised line's `savedChildId` needs. */
+    familyPass?: string;
     locale?: string;
     clientSnapshot?: unknown;
     displayedTotalSatang?: number;
