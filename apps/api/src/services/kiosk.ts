@@ -41,7 +41,7 @@ import { pgErrorOf } from '../lib/scrub';
 import { audit } from './audit';
 import { recordRun } from './ops';
 import { inProcessBox } from './box';
-import { redeemBookingAtCounter } from './booking-redemption';
+import { raiseBookingTaxDriftAlert, redeemBookingAtCounter, type BookingTaxDrift } from './booking-redemption';
 import { bookingPassDirectory, sendBookingPassCheckins, storedEventPassesOf } from './booking-event-passes';
 import {
   kioskPressedAtOf,
@@ -840,6 +840,8 @@ export async function redeemAtKiosk(
   const track: { sheet: PaperOut | null; stop: KioskStop | null } = { sheet: null, stop: null };
   /** S2-20 E5 — the event check-ins the redemption made, written back to the OTO App once it commits. */
   const owedCheckins: { ids: string[] } = { ids: [] };
+  /** SCRUM-1013 — a booking filed under its booked tax rule: the manager's alert, once it commits. */
+  const owedTaxDrift: { value: BookingTaxDrift | null } = { value: null };
   const stopPrint = (stop: KioskStop): KioskStop => {
     track.stop = stop;
     return stop;
@@ -1095,6 +1097,7 @@ export async function redeemAtKiosk(
         eventPassesForDesk: passesForDesk,
       };
       owedCheckins.ids = passes.checkinIds;
+      owedTaxDrift.value = done.taxDrift;
       const [row] = await tx
         .update(kioskSession)
         .set({
@@ -1165,6 +1168,7 @@ export async function redeemAtKiosk(
     // The connection is back in the pool, which listens on it from here.
     watch.detach();
     await recordKioskPrintRun(db, ctx, device, session, input.actionId, printRun, true);
+    if (owedTaxDrift.value) await raiseBookingTaxDriftAlert(db, owedTaxDrift.value, ctx.log);
     // S2-20 E5 — the OTO App is told of the passes this redemption checked in,
     // after the commit (E3's write-back): what fails waits on Failures.
     const directory = bookingPassDirectory();

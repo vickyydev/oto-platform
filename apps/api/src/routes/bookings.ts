@@ -21,7 +21,11 @@ import {
   viewBookings,
 } from '../services/bookings';
 import { BOOKING_LEDGER_MAX, bookingLedger } from '../services/booking-checkout';
-import { redeemBookingAtCounter } from '../services/booking-redemption';
+import {
+  raiseBookingTaxDriftAlert,
+  redeemBookingAtCounter,
+  type BookingTaxDrift,
+} from '../services/booking-redemption';
 import { sendBookingPassCheckins } from '../services/booking-event-passes';
 import { opCtx, withTx } from '../services/tx';
 
@@ -334,7 +338,7 @@ export async function bookingRoutes(app: App): Promise<void> {
         if (!stationId) throw errors.badRequest('That station is not at this booking’s branch');
       }
 
-      const owed: { checkinIds: string[] } = { checkinIds: [] };
+      const owed: { checkinIds: string[]; taxDrift: BookingTaxDrift | null } = { checkinIds: [], taxDrift: null };
       const answer = await withTx(app.db, opCtx(req), 'booking.redeem', async (tx) => {
         const done = await redeemBookingAtCounter(tx, {
           bookingId: found.id,
@@ -348,6 +352,7 @@ export async function bookingRoutes(app: App): Promise<void> {
           },
         });
         owed.checkinIds = done.eventPasses.checkinIds;
+        owed.taxDrift = done.taxDrift;
         // Read back inside the transaction that wrote it, so the answer carries
         // the redemption row — and its bands — this claim just made.
         return {
@@ -362,6 +367,9 @@ export async function bookingRoutes(app: App): Promise<void> {
           eventPasses: done.eventPasses.checkins,
         };
       });
+      // SCRUM-1013 — filed under the tax rule it was booked with: a manager is
+      // told on the Console, once the redemption has committed.
+      if (owed.taxDrift) await raiseBookingTaxDriftAlert(app.db, owed.taxDrift, req.log);
       // S2-20 E5 — the OTO App is told of the passes checked in, after the
       // commit (E3's write-back): what fails waits on Failures, `pending`.
       if (owed.checkinIds.length > 0) {

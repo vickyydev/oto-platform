@@ -163,6 +163,15 @@ export interface BookingQuote {
   taxSatang: number;
   totalSatang: number;
   engineVersion: string;
+  /**
+   * SCRUM-1013 — the park's tax rule this quote was priced under, as it stood
+   * at that moment. The park keeps one rule per branch and edits it in place
+   * (`branch_tax_config`), so without this copy a booking could not say what
+   * it was taxed under once the rule moved. Stored in the booking's pricing
+   * snapshot; redemption files the sale under it when the rule has changed
+   * since (`services/booking-redemption.ts`).
+   */
+  taxConfig: TaxConfigShape;
 }
 
 type BranchRow = typeof branch.$inferSelect;
@@ -470,6 +479,7 @@ export async function quoteBooking(
     taxSatang: totals.taxTotal,
     totalSatang: totals.total,
     engineVersion: totals.engineVersion,
+    taxConfig: cfg.config as TaxConfigShape,
   };
 }
 

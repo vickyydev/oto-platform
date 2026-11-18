@@ -1,10 +1,14 @@
 import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
-import { checkin, bookingRedemption, paymentAttempt, product } from '@oto/db';
+import type { FastifyBaseLogger } from 'fastify';
+import { branchTaxConfig, checkin, bookingRedemption, paymentAttempt, product, type Db } from '@oto/db';
 import {
+  formatTHB,
   newId,
   PAYMENT_ATTEMPT_TAKEN_STATUSES,
+  TaxConfigSchema,
   type OfflinePriceBasis,
   type PaymentAttemptView,
+  type TaxConfigShape,
   type WalletGrantView,
 } from '@oto/shared';
 import { leaveAsBooked } from './checkin';
@@ -18,6 +22,7 @@ import {
 import { errors } from '../lib/errors';
 import { audit } from './audit';
 import type { BandView } from './bands';
+import { raiseAlert } from './ops';
 import {
   BOOKING_CLAIM_WAIT_MS,
   linesOf,
@@ -30,6 +35,7 @@ import {
 import {
   commitSale,
   finaliseSale,
+  priceCart,
   type CartLineInput,
   type CommitSaleInput,
   type SaleActor,
@@ -57,10 +63,21 @@ import type { Tx } from './tx';
  * each line's kid unit, adult unit, free adults, socks and extras as the
  * booking site computed them — laid over the catalogue through the same OD-8
  * price basis an offline replay uses, at the booking's own rate mode and tier.
- * The sale's total must then equal the booking's paid total to the satang; if
- * the park's tax configuration has moved since (the one input the booking does
- * not store), the redemption is refused and nothing is written, rather than
- * filing a sale for a different sum than the money that paid for it.
+ * The sale's total must then equal the booking's paid total to the satang.
+ *
+ * THE TAX RULE IT WAS BOOKED UNDER (SCRUM-1013, the owner's ruling of 19
+ * November: "Let them in at what they paid, and flag it for a manager"). A
+ * booking made since this change keeps the park's tax rule in its pricing
+ * snapshot (`quoteBooking`). When the park's rule has changed since, the sale
+ * is filed under the BOOKED rule at exactly the paid total — the bands are
+ * issued, nothing is charged or owed — and the difference is flagged for a
+ * manager: an audit row on the booking with both sums and both rules, a note
+ * on the sale that History shows, and an open alert on the Console's health
+ * page (`raiseBookingTaxDriftAlert`, raised by the caller once the redemption
+ * has committed). A booking made before this change stores no rule, and is
+ * refused exactly as before when the sum would differ: nothing is written,
+ * rather than filing a sale for a different sum than the money that paid for
+ * it.
  *
  * SETTLED BY THE PAID-ONLINE TENDER (`PAID_ONLINE_TENDER_CODE`), recorded as
  * `transfer` money: no drawer opens, and the till's cash-up leaves it out —
@@ -140,6 +157,26 @@ export interface RedeemAtCounterResult {
    * writes back to the OTO App once this transaction has committed.
    */
   eventPasses: BookingPassCheckinResult;
+  /**
+   * SCRUM-1013 — set when the park's tax rule had changed since the booking
+   * and the sale was filed under the booked one; the caller raises the
+   * manager's alert from it once the transaction has committed.
+   */
+  taxDrift: BookingTaxDrift | null;
+}
+
+/** SCRUM-1013 — what a manager is told about a booking redeemed under the tax rule it was booked with. */
+export interface BookingTaxDrift {
+  bookingId: string;
+  reference: string;
+  operatorId: string;
+  branchId: string;
+  saleId: string;
+  receiptNumber: string | null;
+  /** What the family paid, and what the sale was filed at. */
+  paidTotalSatang: number;
+  /** What the park's rule today would make of the same lines; null when it could not be worked out. */
+  currentRuleTotalSatang: number | null;
 }
 
 /** The socks add-on's catalogue code, as the booking site priced the `socks` integer (`booking-checkout.ts`). */
@@ -166,6 +203,12 @@ export function priceBasisOfBooking(
   rateMode: 'weekday' | 'weekend',
   lines: readonly BookingLineView[],
   socksProductId: string | null,
+  /**
+   * SCRUM-1013 — the tax rule to file under: the booking's own when the park's
+   * has changed since it was booked; null (the park's rule as it stands) for
+   * every other redemption, and for the box's replay.
+   */
+  taxConfig: TaxConfigShape | null = null,
 ): OfflinePriceBasis {
   const packages = new Map<string, OfflinePriceBasis['packages'][number]>();
   const products = new Map<string, OfflinePriceBasis['products'][number]>();
@@ -207,11 +250,99 @@ export function priceBasisOfBooking(
     catalogueVersion: null,
     pricingMode: rateMode,
     tier,
-    taxConfig: null,
+    taxConfig,
     packages: [...packages.values()],
     products: [...products.values()],
     options: [],
   } as OfflinePriceBasis;
+}
+
+/**
+ * SCRUM-1013 — the park's tax rule a booking was priced under, from its
+ * pricing snapshot; null for a booking made before the snapshot carried one
+ * (or a snapshot that does not read as a rule), which keeps today's refusal.
+ */
+export function bookedTaxRuleOf(row: Pick<BookingRow, 'pricingSnapshot'>): TaxConfigShape | null {
+  const stored = (row.pricingSnapshot as { taxConfig?: unknown } | null)?.taxConfig;
+  if (stored === undefined || stored === null) return null;
+  const parsed = TaxConfigSchema.safeParse(stored);
+  return parsed.success ? parsed.data : null;
+}
+
+/** A rule written out in one order: rates by id, category rules by category, keys sorted. */
+function canonicalTaxRule(rule: TaxConfigShape): string {
+  const sorted = (value: unknown): unknown =>
+    Array.isArray(value)
+      ? value.map(sorted)
+      : value && typeof value === 'object'
+        ? Object.fromEntries(Object.keys(value).sort().map((k) => [k, sorted((value as Record<string, unknown>)[k])]))
+        : value;
+  return JSON.stringify(sorted({
+    ...rule,
+    rates: [...rule.rates].sort((a, b) => a.id.localeCompare(b.id)),
+    categoryRules: [...rule.categoryRules].sort((a, b) => a.category.localeCompare(b.category)),
+  }));
+}
+
+/**
+ * Whether two tax rules tax alike. jsonb keeps an object's keys in its own
+ * order, and a Console save may list the same rates or category rules in
+ * another order, so neither counts as a change.
+ */
+export function sameTaxRule(a: TaxConfigShape, b: TaxConfigShape): boolean {
+  return canonicalTaxRule(a) === canonicalTaxRule(b);
+}
+
+/** The words a sale and an alert give a booking redeemed under its booked rule. */
+function driftSentence(drift: Pick<BookingTaxDrift, 'paidTotalSatang' | 'currentRuleTotalSatang'>): string {
+  const today =
+    drift.currentRuleTotalSatang === null
+      ? "today's set-up could not be worked out for it"
+      : drift.currentRuleTotalSatang === drift.paidTotalSatang
+        ? `today's set-up makes the same ${formatTHB(drift.paidTotalSatang)}, with the tax split differently`
+        : `today's set-up would make ${formatTHB(drift.currentRuleTotalSatang)}`;
+  return `The park's tax set-up changed after this was booked: filed under the tax it was booked with, at the ${formatTHB(drift.paidTotalSatang)} paid; ${today}. For a manager to check.`;
+}
+
+/**
+ * SCRUM-1013 — the manager's alert for a booking redeemed under its booked
+ * tax rule, on the Console's health page with the late-payment alerts
+ * (`bookings.late_payment`, the same kind of per-booking note). Raised by the
+ * caller after the redemption has committed, on the pool: a rolled-back
+ * redemption raises nothing, and an alert that cannot be written does not
+ * undo bands already in a family's hands — the audit row and the sale's note
+ * hold the same facts. One key per booking, redeemed once, so no flap window.
+ */
+export async function raiseBookingTaxDriftAlert(
+  db: Db,
+  drift: BookingTaxDrift,
+  log?: Pick<FastifyBaseLogger, 'error'>,
+): Promise<void> {
+  try {
+    await raiseAlert(
+      db,
+      {
+        key: `bookings.tax_drift:${drift.bookingId}`,
+        category: 'bookings.tax_drift',
+        severity: 'warning',
+        subject: `Booking ${drift.reference}`,
+        summary: `Booking ${drift.reference}${drift.receiptNumber ? `, sale ${drift.receiptNumber}` : ''}: ${driftSentence(drift)}`,
+        detail: {
+          bookingId: drift.bookingId,
+          reference: drift.reference,
+          saleId: drift.saleId,
+          receiptNumber: drift.receiptNumber,
+          paidTotalSatang: drift.paidTotalSatang,
+          currentRuleTotalSatang: drift.currentRuleTotalSatang,
+        },
+        operatorId: drift.operatorId,
+        branchId: drift.branchId,
+      },
+      { flapWindowSeconds: 0 },
+    );
+  } catch (err) {
+    log?.error({ err, bookingId: drift.bookingId }, 'a booking redeemed under its booked tax could not be alerted; its audit row and sale note name it');
+  }
 }
 
 /** The cart the booking's lines make — ids minted here, figures from the booking. */
@@ -346,10 +477,36 @@ export async function redeemBookingAtCounter(
     ...(args.actionId ? { actionId: args.actionId } : {}),
   };
 
+  // SCRUM-1013 — the tax rule the booking was priced under, against the
+  // park's rule now. Changed: the sale is filed under the booked rule, and
+  // what today's rule would make of the same lines is worked out (priced, not
+  // written) for the manager's flag. Unchanged, or a booking that stored no
+  // rule: exactly as before.
+  const bookedRule = bookedTaxRuleOf(claimed);
+  const [currentCfg] = await tx
+    .select({ config: branchTaxConfig.config })
+    .from(branchTaxConfig)
+    .where(eq(branchTaxConfig.branchId, claimed.branchId))
+    .limit(1);
+  const currentRule = currentCfg ? (currentCfg.config as TaxConfigShape) : null;
+  const taxChanged = bookedRule !== null && currentRule !== null && !sameTaxRule(bookedRule, currentRule);
+  let currentRuleTotalSatang: number | null = null;
+  if (taxChanged) {
+    try {
+      const today = await priceCart(tx, actor, input, now, { mode: 'quote', stationId }, 'definition',
+        priceBasisOfBooking(tier, rateMode, lines, socksProductId));
+      currentRuleTotalSatang = today.money.grossSatang;
+    } catch {
+      // The flag says it could not be worked out; the redemption goes on.
+      currentRuleTotalSatang = null;
+    }
+    input.note = `Online booking ${claimed.reference}. ${driftSentence({ paidTotalSatang: claimed.totalSatang, currentRuleTotalSatang })}`;
+  }
+
   let committed;
   try {
     committed = await commitSale(tx, actor, input, now, {
-      priceBasis: priceBasisOfBooking(tier, rateMode, lines, socksProductId),
+      priceBasis: priceBasisOfBooking(tier, rateMode, lines, socksProductId, taxChanged ? bookedRule : null),
     });
   } catch (err) {
     // The one refusal worth rewording: the platform would file a different
@@ -460,10 +617,49 @@ export async function redeemBookingAtCounter(
       // S2-20 K1 — which surface: the counter, or the kiosk and its credential.
       surface: args.deviceCredentialId ? 'kiosk' : 'counter',
       ...(args.deviceCredentialId ? { stationId, deviceCredentialId: args.deviceCredentialId } : {}),
+      // SCRUM-1013 — filed under the tax rule it was booked with.
+      ...(taxChanged ? { taxRule: 'booked' } : {}),
     },
     requestId: args.requestId ?? null,
     actionId: args.actionId ?? null,
   });
+
+  // SCRUM-1013 — THE MANAGER'S FLAG: both sums and both rules, on the booking.
+  let taxDrift: BookingTaxDrift | null = null;
+  if (taxChanged) {
+    taxDrift = {
+      bookingId: claimed.id,
+      reference: claimed.reference,
+      operatorId: args.operatorId,
+      branchId: claimed.branchId,
+      saleId,
+      receiptNumber: finalised.sale.receiptNumber ?? null,
+      paidTotalSatang: claimed.totalSatang,
+      currentRuleTotalSatang,
+    };
+    await audit.record(tx, {
+      actorAccountId: args.actorAccountId,
+      operatorId: args.operatorId,
+      branchId: claimed.branchId,
+      action: 'booking.redeem.tax_drift',
+      entityType: 'booking',
+      entityId: claimed.id,
+      after: {
+        reference: claimed.reference,
+        saleId,
+        receiptNumber: taxDrift.receiptNumber,
+        filedUnder: 'booked_tax_rule',
+        paidTotalSatang: claimed.totalSatang,
+        filedTotalSatang: committed.sale.totals.grossSatang,
+        currentRuleTotalSatang,
+        bookedTaxConfig: bookedRule,
+        currentTaxConfig: currentRule,
+        surface: args.deviceCredentialId ? 'kiosk' : 'counter',
+      },
+      requestId: args.requestId ?? null,
+      actionId: args.actionId ?? null,
+    });
+  }
 
   return {
     booking: claimed,
@@ -473,5 +669,6 @@ export async function redeemBookingAtCounter(
     bands,
     grants: finalised.grants,
     eventPasses,
+    taxDrift,
   };
 }
