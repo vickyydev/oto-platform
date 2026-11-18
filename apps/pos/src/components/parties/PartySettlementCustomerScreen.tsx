@@ -7,6 +7,8 @@ import {
   partyPaymentsTotal,
 } from '@/lib/party';
 import { paymentMethodIcon, paymentMethodKind } from '@/lib/payments';
+import { bahtText } from '@/lib/bahtText';
+import { satangFromBaht } from '@oto/shared';
 import { customerPaymentMethod } from '@/lib/customerDisplayCopy';
 import { PromptPayCustomerScreen } from '@/components/shared/PromptPayCustomerScreen';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
@@ -130,7 +132,7 @@ export function PartySettlementCustomerScreen({
           </div>
 
           <div className="rounded-2xl bg-foreground/5 border border-foreground/10 p-6 space-y-3">
-            <BillRow label={party.packageName ?? t('party.review.partyPackage')} value={`฿${party.basePrice}`} />
+            <BillRow label={party.packageName ?? t('party.review.partyPackage')} value={`฿${bahtText(party.basePrice)}`} />
             {party.lineItems.map((li) => (
               <BillRow
                 key={li.id}
@@ -140,14 +142,14 @@ export function PartySettlementCustomerScreen({
                     {li.qty > 1 ? <span className="text-foreground/40"> ×{li.qty}</span> : null}
                   </span>
                 }
-                value={`฿${li.qty * li.price}`}
+                value={`฿${bahtText(li.qty * li.price)}`}
                 muted
               />
             ))}
             {party.lineItems.length > 0 && (
               <BillRow
                 label={<span className="text-foreground/55">{t('party.review.addOnsSubtotal')}</span>}
-                value={`฿${lineItemsTotal}`}
+                value={`฿${bahtText(lineItemsTotal)}`}
                 muted
               />
             )}
@@ -169,7 +171,7 @@ export function PartySettlementCustomerScreen({
                             {it.qty > 1 ? <span className="text-foreground/40"> ×{it.qty}</span> : null}
                           </span>
                         }
-                        value={`฿${it.lineTotal}`}
+                        value={`฿${bahtText(it.lineTotal)}`}
                         muted
                       />
                     ))}
@@ -180,13 +182,13 @@ export function PartySettlementCustomerScreen({
                             {g.adjustment < 0 ? t('party.review.discount') : t('party.review.adjustment')}
                           </span>
                         }
-                        value={`${g.adjustment < 0 ? '−' : '+'}฿${Math.abs(g.adjustment)}`}
+                        value={`${g.adjustment < 0 ? '−' : '+'}฿${bahtText(Math.abs(g.adjustment))}`}
                         muted
                       />
                     )}
                     <BillRow
                       label={<span className="text-foreground/55">{t('party.review.subtotal', { label: t(g.kind === 'ticket' ? 'party.review.extraTickets' : 'party.review.extraFnb') })}</span>}
-                      value={`+฿${g.total}`}
+                      value={`+฿${bahtText(g.total)}`}
                       muted
                     />
                   </div>
@@ -195,10 +197,10 @@ export function PartySettlementCustomerScreen({
             )}
 
             <div className="border-t border-foreground/10 pt-3 space-y-2">
-              <BillRow label={t('party.review.total')} value={`฿${total}`} strong />
-              <BillRow label={t('party.review.lessDeposit')} value={`−฿${party.availableDeposit ?? party.deposit}`} muted />
+              <BillRow label={t('party.review.total')} value={`฿${bahtText(total)}`} strong />
+              <BillRow label={t('party.review.lessDeposit')} value={`−฿${bahtText(party.availableDeposit ?? party.deposit)}`} muted />
               {prior > 0 && (
-                <BillRow label={t('party.review.lessPayments')} value={`−฿${prior}`} muted />
+                <BillRow label={t('party.review.lessPayments')} value={`−฿${bahtText(prior)}`} muted />
               )}
             </div>
           </div>
@@ -211,7 +213,7 @@ export function PartySettlementCustomerScreen({
               outstanding > 0 ? 'text-primary' : 'text-(--cd-success)'
             }`}
           >
-            ฿{outstanding}
+            ฿{bahtText(outstanding)}
           </span>
         </div>
       </Shell>
@@ -219,7 +221,7 @@ export function PartySettlementCustomerScreen({
   }
 
   if (stage === 'payment') {
-    const remainingAfter = Math.max(0, outstanding - amount);
+    const remainingAfter = Math.max(0, satangFromBaht(outstanding) - satangFromBaht(amount)) / 100;
     const isPartial = amount < outstanding;
 
     if (method && paymentMethodKind(method) === 'qr') {
@@ -229,7 +231,7 @@ export function PartySettlementCustomerScreen({
           qrPayload={qr?.qrPayload ?? null}
           qrImageUrl={qr?.qrImageUrl ?? null}
           expiresAt={qr?.expiresAt ?? null}
-          note={isPartial ? t('party.payment.partPayment', { remaining: remainingAfter }) : undefined}
+          note={isPartial ? t('party.payment.partPayment', { remaining: bahtText(remainingAfter) }) : undefined}
         />
       );
     }
@@ -243,15 +245,15 @@ export function PartySettlementCustomerScreen({
             <Icon className="w-12 h-12" />
           </div>
           <div className="text-2xl text-foreground/70 mb-2">{t('party.payment.pleasePay')}</div>
-          <div className="text-7xl font-black tabular-nums mb-3">฿{amount}</div>
+          <div className="text-7xl font-black tabular-nums mb-3">฿{bahtText(amount)}</div>
           <div className="text-2xl text-foreground/70 mb-6">{t('party.payment.by', { method: label })}</div>
           {isPartial && (
             <div className="rounded-2xl bg-foreground/5 border border-foreground/10 px-8 py-5 text-lg">
               <span className="text-foreground/60">{t('party.payment.payingNow')} </span>
-              <span className="font-bold tabular-nums">฿{amount}</span>
+              <span className="font-bold tabular-nums">฿{bahtText(amount)}</span>
               <span className="text-foreground/40"> · </span>
               <span className="text-foreground/60">{t('party.payment.remainingAfter')} </span>
-              <span className="font-bold tabular-nums text-primary">฿{remainingAfter}</span>
+              <span className="font-bold tabular-nums text-primary">฿{bahtText(remainingAfter)}</span>
             </div>
           )}
           <div className="flex items-center gap-3 mt-8 text-foreground/50 text-lg">
@@ -282,7 +284,7 @@ export function PartySettlementCustomerScreen({
         <div className="rounded-3xl bg-foreground/5 border border-foreground/10 px-12 py-8 space-y-3">
           <div>
             <div className="text-lg text-foreground/60">{t('party.thankyou.paidNow')}</div>
-            <div className="text-5xl font-black tabular-nums text-(--cd-success)">฿{amount}</div>
+            <div className="text-5xl font-black tabular-nums text-(--cd-success)">฿{bahtText(amount)}</div>
           </div>
           <div className="border-t border-foreground/10 pt-3">
             <div className="text-lg text-foreground/60">{t('party.thankyou.outstanding')}</div>
@@ -291,7 +293,7 @@ export function PartySettlementCustomerScreen({
                 settled ? 'text-(--cd-success)' : 'text-primary'
               }`}
             >
-              ฿{outstanding}
+              ฿{bahtText(outstanding)}
             </div>
           </div>
         </div>

@@ -66,7 +66,8 @@ describe('SCRUM-990 additional-bill payment component review', () => {
     source.additionalBills![0]!.charges = [{ id: 'new-charge' } as PartyAdditionalBill['charges'][number]];
     const shown = additionalBillParty(source, 'bill-one');
     expect(shown.lineItems).toEqual([]);
-    expect(shown.packageName).toBe('Additional bill bill-one');
+    // SCRUM-1000 — named by its number, as the counter's list names it, not by the start of its reference.
+    expect(shown.packageName).toBe('Additional bill 1');
     expect(computePartyTotal(shown)).toBe(0.01);
     expect(source.lineItems).toHaveLength(1);
   });

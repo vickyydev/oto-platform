@@ -32,7 +32,7 @@ import {
   PartyPopper,
 } from 'lucide-react';
 import { bahtText } from '@/lib/bahtText';
-import { additionalBillParty, openAdditionalBillId } from '@/lib/partyAdditionalBills';
+import { additionalBillChoices, additionalBillParty, openAdditionalBillId } from '@/lib/partyAdditionalBills';
 
 interface PartyBalanceModalProps {
   displayHandoff?: StationDisplayHandoff;
@@ -257,8 +257,7 @@ export function PartyBalanceModal({
                     {party.additionalBills && party.additionalBills.length > 0 && <div className="mb-4 space-y-2">
                       <label className="block text-sm font-medium" htmlFor="additional-party-bill">Additional bill linked to {party.title}</label>
                       <select id="additional-party-bill" className="w-full rounded border p-2 bg-background" value={selectedBillId} onChange={(event) => setSelectedBillId(event.target.value)}>
-                        <option value="" disabled={party.additionalBills.some((bill) => bill.state === 'open')}>Older unassigned tab balance</option>
-                        {party.additionalBills.map((bill, index) => <option key={bill.id} value={bill.id} disabled={bill.state === 'paid'}>Additional bill {index + 1} - {bill.state} - THB {bahtText(bill.outstandingSatang / 100)} outstanding</option>)}
+                        {additionalBillChoices(party.additionalBills).map((choice) => <option key={choice.value || 'tab'} value={choice.value} disabled={choice.disabled}>{choice.label}</option>)}
                       </select>
                       <p className="text-xs text-muted-foreground">The original paid receipt stays unchanged. This payment applies only to the selected bill.</p>
                     </div>}

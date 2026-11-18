@@ -25,7 +25,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ArrowLeft, Check, Wallet } from 'lucide-react';
 import { bahtText } from '@/lib/bahtText';
-import { additionalBillParty, openAdditionalBillId } from '@/lib/partyAdditionalBills';
+import { additionalBillChoices, additionalBillParty, openAdditionalBillId } from '@/lib/partyAdditionalBills';
 
 type Step = 'pick' | 'bill-review' | 'collect' | 'done';
 
@@ -345,8 +345,7 @@ export function MobilePartyPayment({
             <label className="block space-y-2 text-sm">
               <span>Bill to collect</span>
               <select id="additional-party-bill" className="w-full rounded border bg-background p-3" value={selectedBillId} onChange={(event) => { setSelectedBillId(event.target.value); setPartialText(''); }}>
-                <option value="">Older unassigned tab</option>
-                {party.additionalBills?.filter((bill) => bill.state === 'open').map((bill) => <option key={bill.id} value={bill.id}>Additional bill {bill.id.slice(0, 8)} - THB {bahtText(bill.outstandingSatang / 100)}</option>)}
+                {additionalBillChoices(party.additionalBills).map((choice) => <option key={choice.value || 'tab'} value={choice.value} disabled={choice.disabled}>{choice.label}</option>)}
               </select>
             </label>
           )}

@@ -1,14 +1,22 @@
+import { satangFromBaht } from '@oto/shared';
 import { PartyBooking, PartyStatus } from '@/types';
 
 // total = basePrice + Σ lineItems + Σ partyExtraCharges
 // outstanding = total − deposit − Σ partyPayments
 // (Booking core fields are READ-ONLY from Events; extra charges/payments are POS-owned.)
+//
+// SCRUM-1000 — every sum is taken in satang and handed back in baht. Summed
+// as baht floats, a tab of ฿32.08 less ฿25.03 paid came to 7.049999999999997,
+// and the customer's bill printed it so.
+
+const sumBaht = <T>(rows: readonly T[], baht: (row: T) => number): number =>
+  rows.reduce((sum, row) => sum + satangFromBaht(baht(row)), 0) / 100;
 
 export const partyLineItemsTotal = (party: PartyBooking): number =>
-  party.lineItems.reduce((sum, li) => sum + li.qty * li.price, 0);
+  sumBaht(party.lineItems, (li) => li.qty * li.price);
 
 export const partyExtraChargesTotal = (party: PartyBooking): number =>
-  party.partyExtraCharges.reduce((sum, c) => sum + c.total, 0);
+  sumBaht(party.partyExtraCharges, (c) => c.total);
 
 export type PartyExtraKind = 'ticket' | 'fnb';
 
@@ -41,8 +49,8 @@ export const partyExtraChargeGroups = (party: PartyBooking): PartyExtraGroup[] =
     const charges = party.partyExtraCharges.filter((c) => c.kind === kind);
     if (charges.length === 0) return [];
     const items = charges.flatMap((c) => c.items);
-    const itemsTotal = items.reduce((s, it) => s + it.lineTotal, 0);
-    const total = charges.reduce((s, c) => s + c.total, 0);
+    const itemsTotal = sumBaht(items, (it) => it.lineTotal);
+    const total = sumBaht(charges, (c) => c.total);
     return [
       {
         kind,
@@ -50,20 +58,25 @@ export const partyExtraChargeGroups = (party: PartyBooking): PartyExtraGroup[] =
         items,
         itemsTotal,
         total,
-        adjustment: total - itemsTotal,
+        adjustment: (satangFromBaht(total) - satangFromBaht(itemsTotal)) / 100,
       },
     ];
   });
 };
 
 export const partyPaymentsTotal = (party: PartyBooking): number =>
-  party.partyPayments.reduce((sum, p) => sum + p.amount, 0);
+  sumBaht(party.partyPayments, (p) => p.amount);
 
 export const computePartyTotal = (party: PartyBooking): number =>
-  party.basePrice + partyLineItemsTotal(party) + partyExtraChargesTotal(party);
+  sumBaht([party.basePrice, partyLineItemsTotal(party), partyExtraChargesTotal(party)], (baht) => baht);
 
 export const computePartyOutstanding = (party: PartyBooking): number =>
-  Math.max(0, computePartyTotal(party) - (party.availableDeposit ?? party.deposit) - partyPaymentsTotal(party));
+  Math.max(
+    0,
+    satangFromBaht(computePartyTotal(party)) -
+      satangFromBaht(party.availableDeposit ?? party.deposit) -
+      satangFromBaht(partyPaymentsTotal(party)),
+  ) / 100;
 
 export const PARTY_STATUS_LABELS: Record<PartyStatus, string> = {
   upcoming: 'Upcoming',
