@@ -547,11 +547,11 @@ export function storedBookingAnswer(row: BookingRow): BookingAnswer {
  * THE BOOKING SITE'S "TODAY" — the branch's TRADING day (S2-12, SCRUM-209 fix
  * round 2).
  *
- * `businessDate` with the branch's own `business_day_start` (05:00 by default),
- * the rule the till's `GET /branches/:id/pricing-mode` and every sale already
- * price by. It was the CALENDAR date here and in the public catalogue, while
- * the booking site read its rate on the trading date; between 00:00 and 05:00
- * the two named different days, so on a Saturday (and a Monday, and either
+ * `businessDate` with the branch's own `business_day_start` (midnight since
+ * SCRUM-1010), the rule the till's `GET /branches/:id/pricing-mode` and every
+ * sale already price by. It was the CALENDAR date here and in the public
+ * catalogue, while the booking site read its rate on the trading date; under
+ * the earlier 05:00 start, between 00:00 and 05:00 the two named different days, so on a Saturday (and a Monday, and either
  * side of a holiday range) every booking made in those hours was refused as
  * `BOOKING_TOTAL_CHANGED`. One definition, used by the public catalogue's
  * `rateMode` and by the quote when no visit date is sent, so the two cannot

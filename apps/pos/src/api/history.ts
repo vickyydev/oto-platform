@@ -622,10 +622,10 @@ export function saleCountLabel(shown: number, limit = SALES_PAGE_LIMIT): string 
 /**
  * The branch's sales for one trading day, newest first.
  *
- * The date is the BUSINESS date, not the calendar one: the park's day starts at
- * 05:00, so a sale rung at 03:00 belongs to the day that is finishing, and
- * asking for it by the wall-clock date would answer with somebody else's
- * takings. `businessDateToday` below gets that date from the branch itself.
+ * The date is the BUSINESS date, from the park's own day start. Since
+ * SCRUM-1010 the day runs midnight to midnight, so it is the park's calendar
+ * date; `businessDateToday` below still gets it from the branch itself, so a
+ * park that sets another start is answered by its own rule.
  *
  * It answers at most `SALES_PAGE_LIMIT` rows; `saleCountLabel` is how a caller
  * tells the reader when that is what they are looking at.
@@ -665,7 +665,7 @@ export function getSale(id: string): Promise<ApiSaleDetail> {
 /**
  * The trading day the branch is on right now, from the branch's own clock and
  * day boundary. Falls back to the calendar date in the branch timezone when the
- * deployment has no such route, which is right except between midnight and 05:00.
+ * deployment has no such route, which agrees with a midnight day start (SCRUM-1010).
  */
 export async function businessDateToday(
   branchId: string,

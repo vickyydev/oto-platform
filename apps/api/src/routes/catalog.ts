@@ -946,13 +946,12 @@ export async function catalogRoutes(app: App): Promise<void> {
    * holiday ranges treated as weekend (prototype pricingMode.ts, tz-aware).
    * Drives the POS header's "Weekday pricing" indicator.
    *
-   * The default date is the branch's TRADING day, not the calendar day
-   * (SCRUM-308). A sale is priced on `business_day_start` — 05:00 by default —
-   * through `resolvePricingScope`, so between midnight and five the calendar
-   * has moved on and the till has not. Seen on staging: the chip said Weekday
-   * at 00:20 while the same basket was priced Weekend for a holiday on the
-   * 22nd, which was still the trading day. Same helper, same holiday filter
-   * (a withdrawn range prices nothing), so the two cannot drift again.
+   * The default date is the branch's TRADING day (SCRUM-308): a sale is
+   * priced on `business_day_start` through `resolvePricingScope`, and this
+   * reads the same helper and the same holiday filter (a withdrawn range
+   * prices nothing), so the chip and the basket cannot drift apart. Since
+   * SCRUM-1010 the day starts at midnight, so the trading day is the park's
+   * calendar day and the chip turns at 00:00.
    */
   app.get(
     '/branches/:branchId/pricing-mode',

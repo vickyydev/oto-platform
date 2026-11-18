@@ -1141,7 +1141,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
    * that lets HTTPS out but blocks NTP never puts it right. The box used to
    * believe that clock: its heartbeats were refused as skewed and it showed
    * offline without the Console ever naming the clock, spins were filed on the
-   * wrong trading day once the lag crossed 05:00, slips printed a stale issue
+   * wrong trading day once the lag crossed the day start, slips printed a stale issue
    * time with the expiry counted from it, and every event said `trusted`.
    *
    * So the box measures itself against the platform on every heartbeat:
