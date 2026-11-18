@@ -42,7 +42,7 @@ import {
  * `band.gate_event` sync handler writes them (kind, station, box, the box's
  * `occurredAt` as `created_at`); `occupancy-freshness.test.ts` drives the same
  * rows through the real outbox and push. Each scenario runs on its own trading
- * day at HKT Central (Asia/Bangkok, day start 05:00), so none sees another's
+ * day at HKT Central (Asia/Bangkok, day start 00:00 since SCRUM-1010), so none sees another's
  * passages.
  */
 
@@ -242,22 +242,24 @@ describe('the projection over scripted passages (S2-12 round 4)', () => {
 });
 
 describe('the trading day and the day-end clear (S2-12 round 4)', () => {
-  it('a group inside at 05:00 is not carried into the next day, and the clear audits it once', async () => {
+  it('SCRUM-1010: a group inside at midnight is not carried into the next day, and the clear audits it once', async () => {
     const day = '2030-01-14';
     const next = '2030-01-15';
     const s = await sell(1, 2);
     await pass(s.adults[0]!, 'entry', bkk(day, '19:00'));
-    // 00:30 the next calendar day is still `day`'s trading day.
-    expect(await count(bkk(next, '00:30'))).toEqual({ adults: 1, kids: 1, total: 2 });
-    // 05:00 starts `next`: the stranded group is gone from the count.
-    expect(await count(bkk(next, '05:00'))).toEqual({ adults: 0, kids: 0, total: 0 });
+    // 23:59 is still `day`'s trading day.
+    expect(await count(bkk(day, '23:59'))).toEqual({ adults: 1, kids: 1, total: 2 });
+    // Midnight starts `next`: the stranded group is gone from the count, at
+    // 00:00 and at 00:30 (no longer held to 05:00).
+    expect(await count(bkk(next, '00:00'))).toEqual({ adults: 0, kids: 0, total: 0 });
+    expect(await count(bkk(next, '00:30'))).toEqual({ adults: 0, kids: 0, total: 0 });
 
     const c = await clock();
     // Not ended yet → nothing.
-    const early = await clearTradingDay(db, c, day, bkk(next, '04:59'));
+    const early = await clearTradingDay(db, c, day, bkk(day, '23:59'));
     expect(early.cleared).toBe(false);
 
-    const first = await clearTradingDay(db, c, day, bkk(next, '06:00'));
+    const first = await clearTradingDay(db, c, day, bkk(next, '00:01'));
     expect(first).toEqual({ cleared: true, count: { adults: 1, kids: 1, total: 2 } });
     const again = await clearTradingDay(db, c, day, bkk(next, '06:05'));
     expect(again.cleared).toBe(false);

@@ -34,9 +34,10 @@ import {
  * the plain case of the rule, with no till edit in the way — and read the
  * lines again:
  *
- *   1. the 05:00 boundary under a move: money taken at 04:30 and 04:59 the
- *      next calendar morning is the finishing day's, money taken at 05:00 the
- *      next day's, and each follows its party's CURRENT date;
+ *   1. the midnight boundary under a move (SCRUM-1010: the park's day runs
+ *      midnight to midnight): money taken at 23:30 and 23:59 is that day's,
+ *      money taken at 00:00 the next morning the next day's, and each follows
+ *      its party's CURRENT date;
  *   2. what the read finds: an archived party still counts on its day, a party
  *      the OTO App moved to another branch counts at neither;
  *   3. a replay after the move answers the payment first given;
@@ -63,9 +64,9 @@ const appCentral = newId();
 const appChalong = newId();
 
 const ev = {
-  at0430: newId(),
-  at0500: newId(),
-  at0459: newId(),
+  at2330: newId(),
+  at0000: newId(),
+  at2359: newId(),
   archived: newId(),
   rebranched: newId(),
   replayed: newId(),
@@ -163,7 +164,7 @@ beforeAll(async () => {
   operatorId = hkt!.operatorId;
   T = businessDate(new Date(), hkt!.timezone, parseDayStart(hkt!.businessDayStart));
   d1 = addDaysToIsoDate(T, 1);
-  expect(hkt!.businessDayStart.startsWith('05:00')).toBe(true);
+  expect(hkt!.businessDayStart.startsWith('00:00')).toBe(true);
   const [som] = await ctx.db
     .select({ id: account.id })
     .from(account)
@@ -178,9 +179,9 @@ beforeAll(async () => {
     insert into otoapp.branches (id, tenant_id, name, address, core_branch_id)
     values (${appCentral}, ${appTenant}, 'Central Floresta', 'Phuket', ${central}),
            (${appChalong}, ${appTenant}, 'Chalong', 'Phuket', ${chalong})`);
-  await appEvent(ev.at0430, 'Paid at 04:30', T);
-  await appEvent(ev.at0500, 'Paid at 05:00', T);
-  await appEvent(ev.at0459, 'Paid at 04:59', d1);
+  await appEvent(ev.at2330, 'Paid at 23:30', T);
+  await appEvent(ev.at0000, 'Paid at 00:00', T);
+  await appEvent(ev.at2359, 'Paid at 23:59', d1);
   await appEvent(ev.archived, 'Archived after', T);
   await appEvent(ev.rebranched, 'Moved branch after', T);
   await appEvent(ev.replayed, 'Replayed after', T);
@@ -196,43 +197,43 @@ afterAll(async () => {
 });
 
 // =============================================================================
-// 1. The 05:00 boundary under a move made in the OTO App
+// 1. The midnight boundary under a move made in the OTO App
 // =============================================================================
 
 describe('1 — the boundary and a move the OTO App makes after the money was taken', () => {
-  it("04:30 the next calendar morning, today's party: on today's line; moved to tomorrow, off it — and on no line of tomorrow", async () => {
+  it("23:30 today, today's party: on today's line; moved to tomorrow, off it — and on no line of tomorrow", async () => {
     const today = await prepay(T);
     const tomorrow = await prepay(d1);
-    const { answer } = await payAt(ev.at0430, 10_000, at(d1, '04:30'));
+    const { answer } = await payAt(ev.at2330, 10_000, at(T, '23:30'));
     expect(answer.payment).toMatchObject({ businessDate: T, amountSatang: 10_000 });
     expect(await prepay(T)).toBe(today + 10_000);
 
-    await moveInApp(ev.at0430, d1);
+    await moveInApp(ev.at2330, d1);
     expect(await prepay(T)).toBe(today);
     expect(await prepay(d1)).toBe(tomorrow);
   });
 
-  it("05:00 the next morning is tomorrow's money: today's party on no line; moved to tomorrow, on tomorrow's line", async () => {
+  it("00:00 the next morning is tomorrow's money: today's party on no line; moved to tomorrow, on tomorrow's line", async () => {
     const today = await prepay(T);
     const tomorrow = await prepay(d1);
-    const { answer } = await payAt(ev.at0500, 20_000, at(d1, '05:00'));
+    const { answer } = await payAt(ev.at0000, 20_000, at(d1, '00:00'));
     expect(answer.payment).toMatchObject({ businessDate: d1, amountSatang: 20_000 });
     expect(await prepay(T)).toBe(today);
     expect(await prepay(d1)).toBe(tomorrow);
 
-    await moveInApp(ev.at0500, d1);
+    await moveInApp(ev.at0000, d1);
     expect(await prepay(T)).toBe(today);
     expect(await prepay(d1)).toBe(tomorrow + 20_000);
   });
 
-  it("04:59 the next morning, tomorrow's party: on no line; pulled in to today by the OTO App, on today's line", async () => {
+  it("23:59 today, tomorrow's party: on no line; pulled in to today by the OTO App, on today's line", async () => {
     const today = await prepay(T);
     const tomorrow = await prepay(d1);
-    const { answer } = await payAt(ev.at0459, 30_000, at(d1, '04:59'));
+    const { answer } = await payAt(ev.at2359, 30_000, at(T, '23:59'));
     expect(answer.payment).toMatchObject({ businessDate: T });
     expect(await prepay(T)).toBe(today);
 
-    await moveInApp(ev.at0459, T);
+    await moveInApp(ev.at2359, T);
     expect(await prepay(T)).toBe(today + 30_000);
     expect(await prepay(d1)).toBe(tomorrow);
   });

@@ -55,7 +55,8 @@ describe('SCRUM-620 independent Organisation review', () => {
       expect((await patch(id, { openingHours })).statusCode).toBe(200);
       expect((await stored(id)).openingHours).toEqual(openingHours);
     }
-    expect((await stored(id)).businessDayStart).toBe('05:00:00');
+    // A new park takes the column default: midnight since SCRUM-1010.
+    expect((await stored(id)).businessDayStart).toBe('00:00:00');
   });
 
   it('R3 [critical] targets the named park rather than the seated one; fix: retain path-branch permission and operator ownership before updating', async () => {
@@ -65,7 +66,7 @@ describe('SCRUM-620 independent Organisation review', () => {
     expect((await patch(sibling, { businessDayStart: '03:15' }, managerCookie)).statusCode).toBe(403);
     expect((await patch(foreign, { businessDayStart: '03:15' })).statusCode).toBe(404);
     expect((await stored(own)).businessDayStart).toBe('03:15:00');
-    for (const id of [sibling, foreign]) { expect((await stored(id)).businessDayStart).toBe('05:00:00'); expect(await trail(id)).toHaveLength(0); }
+    for (const id of [sibling, foreign]) { expect((await stored(id)).businessDayStart).toBe('00:00:00'); expect(await trail(id)).toHaveLength(0); }
   });
 
   it('R4 [high] changes the trading fields once under an exact retry; fix: retain idempotency and the branch audit in the same mutation', async () => {
@@ -82,7 +83,7 @@ describe('SCRUM-620 independent Organisation review', () => {
     for (const body of [{ businessDayStart: '25:00' }, { openingHours: { mon: { open: '10:00', close: '25:00' } } }, { openingHours: { monday: { open: '10:00', close: '20:00' } } }]) {
       expect((await patch(id, body)).statusCode).toBe(400);
     }
-    expect(await stored(id)).toMatchObject({ openingHours: null, businessDayStart: '05:00:00' });
+    expect(await stored(id)).toMatchObject({ openingHours: null, businessDayStart: '00:00:00' });
     expect(await trail(id)).toHaveLength(0);
   });
 

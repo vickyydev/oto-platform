@@ -27,8 +27,8 @@ import { BRANCH_MANAGER, RECEPTION, createTestContext, signInAs, teardownAll, ty
  *
  * One scripted week at Central Floresta (X0..X6, X6 = today), with three
  * cross-day movements in it:
- *   - a spend in the LAST half hour of X1 (after midnight, before the 05:00
- *     day start) — filed under X1;
+ *   - a spend in the LAST half hour of X1 (23:30 to midnight, the park's
+ *     day start since SCRUM-1010) — filed under X1;
  *   - a tab rung on X1, paid from credit in the FIRST minute of X2 — filed X2;
  *   - a wallet granted TODAY paying a tab rung YESTERDAY through the real
  *     finalise route, then refunded in part — filed under today, in today's
@@ -117,6 +117,11 @@ beforeAll(async () => {
   const today = businessDateOf(new Date(), tz, dayStart);
   for (let i = 6; i >= 0; i -= 1) X.push(addDaysToIsoDate(today, -i));
   const [X0, X1, X2, X3, X4, X5, X6] = X as [string, string, string, string, string, string, string];
+
+  // SCRUM-1010: the park's day runs midnight to midnight, so same-day credit
+  // stops at the park's midnight: X0's ends at 00:00 Bangkok on X1.
+  expect(dayStart).toBe(0);
+  expect(endOf(X0).toISOString()).toBe(new Date(`${X1}T00:00:00+07:00`).toISOString());
 
   // X0: A ฿300 same-day, ฿100 at F&B; day end takes ฿200.
   const A = await grant(X0, 30_000, at(X0, 7));

@@ -313,19 +313,21 @@ describe('the server quotes the booking itself', () => {
     expect(refused.statusCode).toBe(400);
   });
 
-  it("quotes the branch's TRADING day when no date is sent, and the catalogue answers for the same day (fix round 2)", async () => {
-    // Saturday 2026-10-03, 02:30 in Bangkok: the calendar says Saturday, the
-    // trading day (05:00 start) is still Friday. Both public answers say Friday.
+  it("quotes the branch's TRADING day when no date is sent, and the catalogue answers for the same day (fix round 2, SCRUM-1010)", async () => {
+    // Saturday 2026-10-03, 02:30 in Bangkok. The park's day runs midnight to
+    // midnight, so the trading day is Saturday too: both public answers say
+    // Saturday, at Saturday's weekend price (under the retired 05:00 start
+    // the family was offered Friday, which had already ended).
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-10-02T19:30:00Z'));
     const cat = await ctx.app.inject({ method: 'GET', url: `/public/branches/${CENTRAL_BRANCH_CODE}/catalog` });
     expect(cat.statusCode, cat.body).toBe(200);
-    expect(cat.json().rateMode).toMatchObject({ date: '2026-10-02', mode: 'weekday' });
+    expect(cat.json().rateMode).toMatchObject({ date: '2026-10-03', mode: 'weekend' });
     const made = await bookOk({ visitDate: undefined });
     expect(made.status).toBe('pending');
-    expect((await bookingRow(made.id)).bookingDate).toBe('2026-10-02');
-    // 2 × 420 + 2 × 350 + 2 × 50 = ฿1,640, Friday's weekday rate.
-    expect(made.totalSatang).toBe(164_000);
+    expect((await bookingRow(made.id)).bookingDate).toBe('2026-10-03');
+    // 2 × 520 + 2 × 500 + 2 × 50 = ฿2,140, Saturday's weekend rate.
+    expect(made.totalSatang).toBe(214_000);
   });
 
   it('honours a date the site sends, on the catalogue and on the quote alike (fix round 2)', async () => {

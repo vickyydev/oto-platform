@@ -516,7 +516,7 @@ describe('a code’s window, on the sale’s trading day at its branch', () => {
 
   it('judges the window on the branch’s trading day, not the UTC day', async () => {
     // 05:30 in Phuket on the 15th: the park has been trading on the 15th since
-    // 05:00, and it is still the 14th in UTC.
+    // midnight (SCRUM-1010), and it is still the 14th in UTC.
     const trading = '2026-10-15';
     const instant = new Date(`${trading}T05:30:00+07:00`);
     expect(instant.toISOString().slice(0, 10)).toBe('2026-10-14');
@@ -569,15 +569,19 @@ describe('a code’s window, on the sale’s trading day at its branch', () => {
     expect(refusedAtCommit.sale.totals.promoDiscountSatang).toBe(0);
   });
 
-  it('judges the window on the trading day, not the branch’s calendar date', async () => {
-    // 00:30 in Phuket on the 16th: the calendar there says the 16th, but the
-    // park's trading day runs to 05:00, so this sale is still the 15th's.
-    const trading = '2026-10-15';
-    const instant = new Date('2026-10-16T00:30:00+07:00');
+  it('SCRUM-1010: a code’s window turns at the park’s midnight, not at 05:00 and not at the UTC date change', async () => {
+    // 00:10 in Phuket on the 16th. The park's day runs midnight to midnight,
+    // so this sale is the 16th's (under the retired 05:00 start it was the
+    // 15th's), while the UTC day is still the 15th.
+    const trading = '2026-10-16';
+    const instant = new Date('2026-10-16T00:10:00+07:00');
+    const lastMinute = new Date('2026-10-15T23:59:00+07:00');
+    expect(parseDayStart(dayStart)).toBe(0);
     expect(businessDate(instant, timezone, parseDayStart(dayStart))).toBe(trading);
+    expect(instant.toISOString().slice(0, 10)).toBe('2026-10-15');
 
-    await define('CALUNTIL', { validUntil: trading });
-    await define('CALFROM', { validFrom: '2026-10-16' });
+    await define('CALUNTIL', { validUntil: '2026-10-15' });
+    await define('CALFROM', { validFrom: trading });
     const actor: ActorContext = { accountId: receptionAccountId, operatorId, branchId: hktId };
     const cartOf = (code: string) => ({
       branchId: hktId,
@@ -585,41 +589,45 @@ describe('a code’s window, on the sale’s trading day at its branch', () => {
       lines: [kidLine()],
       promos: [described(code) as never],
     });
+    const quoteAt = async (code: string, at: Date) =>
+      (await quoteSale(ctx.db, actor, cartOf(code), at)) as unknown as QuoteBody;
 
-    // Valid until the 15th: taken, although the branch's calendar says the 16th.
-    const until = (await quoteSale(
-      ctx.db,
-      actor,
-      cartOf('CALUNTIL'),
-      instant,
-    )) as unknown as QuoteBody;
+    // Valid until the 15th: refused at 00:10 on the 16th.
+    const until = await quoteAt('CALUNTIL', instant);
     expect(until.businessDate).toBe(trading);
-    expect(until.rejectedPromoCodes).toEqual([]);
-    expect(until.appliedPromos).toEqual([
+    expect(until.rejectedPromoCodes).toEqual([
+      { code: 'CALUNTIL', reason: 'Code "CALUNTIL" expired on 15 Oct 2026.' },
+    ]);
+    // Valid from the 16th: taken at 00:10 on the 16th.
+    const from = await quoteAt('CALFROM', instant);
+    expect(from.rejectedPromoCodes).toEqual([]);
+    expect(from.appliedPromos).toEqual([
+      expect.objectContaining({ code: 'CALFROM', amountSatang: b(89) }),
+    ]);
+
+    // One minute before midnight, the reverse: still the 15th.
+    const lastUntil = await quoteAt('CALUNTIL', lastMinute);
+    expect(lastUntil.businessDate).toBe('2026-10-15');
+    expect(lastUntil.rejectedPromoCodes).toEqual([]);
+    expect(lastUntil.appliedPromos).toEqual([
       expect.objectContaining({ code: 'CALUNTIL', amountSatang: b(89) }),
     ]);
-    // Valid from the 16th: not yet, although the branch's calendar says the 16th.
-    const from = (await quoteSale(
-      ctx.db,
-      actor,
-      cartOf('CALFROM'),
-      instant,
-    )) as unknown as QuoteBody;
-    expect(from.rejectedPromoCodes).toEqual([
+    const lastFrom = await quoteAt('CALFROM', lastMinute);
+    expect(lastFrom.rejectedPromoCodes).toEqual([
       { code: 'CALFROM', reason: 'Code "CALFROM" is not valid until 16 Oct 2026.' },
     ]);
 
-    // The commit at the same instant agrees, to the satang.
+    // The commit at 00:10 agrees, to the satang.
     const taken = await ctx.db.transaction((tx) =>
-      commitSale(tx, actor, { id: newId(), ...cartOf('CALUNTIL') }, instant),
-    );
-    expect(taken.sale.businessDate).toBe(trading);
-    expect(taken.sale.totals.promoDiscountSatang).toBe(until.totals.promoDiscountSatang);
-    expect(taken.sale.totals.grossSatang).toBe(until.totals.grossSatang);
-    const refused = await ctx.db.transaction((tx) =>
       commitSale(tx, actor, { id: newId(), ...cartOf('CALFROM') }, instant),
     );
-    expect(refused.rejectedPromoCodes).toEqual(from.rejectedPromoCodes);
+    expect(taken.sale.businessDate).toBe(trading);
+    expect(taken.sale.totals.promoDiscountSatang).toBe(from.totals.promoDiscountSatang);
+    expect(taken.sale.totals.grossSatang).toBe(from.totals.grossSatang);
+    const refused = await ctx.db.transaction((tx) =>
+      commitSale(tx, actor, { id: newId(), ...cartOf('CALUNTIL') }, instant),
+    );
+    expect(refused.rejectedPromoCodes).toEqual(until.rejectedPromoCodes);
     expect(refused.sale.totals.promoDiscountSatang).toBe(0);
   });
 });
@@ -1883,5 +1891,77 @@ describe('the record of an accepted code', () => {
         { code: typed, reason: `Code "${typed}" is used up — its one use has been taken.` },
       ]);
     }
+  });
+});
+
+describe('SCRUM-1010 — the park’s day turns at midnight: price, date and the sale', () => {
+  it('a sale at 00:10 on Saturday is Saturday’s at the weekend price; 23:59 on Friday is Friday’s at the weekday price', async () => {
+    const friday = '2026-10-16';
+    const saturday = '2026-10-17';
+    const lastMinute = new Date(`${friday}T23:59:00+07:00`);
+    const afterMidnight = new Date(`${saturday}T00:10:00+07:00`);
+    // The UTC date is still Friday at 00:10 Bangkok; 05:00 is five hours off.
+    expect(afterMidnight.toISOString().slice(0, 10)).toBe(friday);
+    expect(parseDayStart(dayStart)).toBe(0);
+
+    const actor: ActorContext = { accountId: receptionAccountId, operatorId, branchId: hktId };
+    const cart = () => ({ branchId: hktId, stationId: t1.id, lines: [kidLine()], promos: [] as never[] });
+    type Priced = QuoteBody & { pricingMode: 'weekday' | 'weekend' };
+
+    const late = (await quoteSale(ctx.db, actor, cart(), lastMinute)) as unknown as Priced;
+    expect(late).toMatchObject({ businessDate: friday, pricingMode: 'weekday' });
+    const early = (await quoteSale(ctx.db, actor, cart(), afterMidnight)) as unknown as Priced;
+    expect(early).toMatchObject({ businessDate: saturday, pricingMode: 'weekend' });
+    // (The tourist 2 Hours ticket has one price for both modes, so the mode
+    // the sale is priced at is what is pinned here; the weekend amounts are
+    // pinned by the booking test's Saturday 02:30 quote.)
+
+    // The sale itself carries Saturday's date, the weekend price and the
+    // park's midnight day start as its frozen copy.
+    const saleId = newId();
+    const rung = await ctx.db.transaction((tx) => commitSale(tx, actor, { id: saleId, ...cart() }, afterMidnight));
+    expect(rung.sale.businessDate).toBe(saturday);
+    expect(rung.sale.totals.grossSatang).toBe(early.totals.grossSatang);
+    const row = (await saleRow(saleId))!;
+    expect(row.businessDate).toBe(saturday);
+    expect(row.pricingMode).toBe('weekend');
+    expect(row.businessDayStart).toBe('00:00:00');
+  });
+
+  it('decision 1 A: after Close Day a sale at 23:55 still lands on the closed day; at 00:10 it is the next, open day’s', async () => {
+    // A past Thursday and Friday, so the platform lets the day be closed.
+    const closedDay = '2026-10-22';
+    const nextDay = '2026-10-23';
+    const admin = await signInAs(ctx.app, ADMIN.phone, ADMIN.password);
+    const close = await ctx.app.inject({
+      method: 'POST',
+      url: `/branches/${hktId}/end-of-day/close`,
+      headers: { cookie: admin, 'idempotency-key': `s1010-close-${closedDay}` },
+      payload: { date: closedDay, countedSatang: null, floatLeftSatang: null },
+    });
+    expect(close.statusCode, close.body).toBe(200);
+    const readDay = async (date: string) => {
+      const res = await ctx.app.inject({ method: 'GET', url: `/branches/${hktId}/end-of-day?date=${date}`, headers: { cookie: admin } });
+      expect(res.statusCode, res.body).toBe(200);
+      return res.json() as { status: string; businessDate?: string };
+    };
+    const closedBefore = await readDay(closedDay);
+    expect(closedBefore.status).toBe('closed');
+
+    const actor: ActorContext = { accountId: receptionAccountId, operatorId, branchId: hktId };
+    const cart = () => ({ branchId: hktId, stationId: t1.id, lines: [kidLine()], promos: [] as never[] });
+    // 23:55 after Close Day: dated to the closed day, no warning, and the
+    // closed record keeps the lines it was closed with (SCRUM-513 stays apart).
+    const lateSale = await ctx.db.transaction((tx) =>
+      commitSale(tx, actor, { id: newId(), ...cart() }, new Date(`${closedDay}T23:55:00+07:00`)),
+    );
+    expect(lateSale.sale.businessDate).toBe(closedDay);
+    expect(await readDay(closedDay)).toEqual(closedBefore);
+    // 00:10 the next morning: the next day's, which is open.
+    const nextSale = await ctx.db.transaction((tx) =>
+      commitSale(tx, actor, { id: newId(), ...cart() }, new Date(`${nextDay}T00:10:00+07:00`)),
+    );
+    expect(nextSale.sale.businessDate).toBe(nextDay);
+    expect((await readDay(nextDay)).status).toBe('open');
   });
 });

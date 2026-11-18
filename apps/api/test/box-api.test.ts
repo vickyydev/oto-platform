@@ -636,7 +636,7 @@ describe('box config bundle (S2-04)', () => {
 
     expect(bundle.box.id).toBe(boxId);
     expect(bundle.branch.code).toBe('hkt-central');
-    expect(bundle.branch.businessDayStart).toMatch(/^05:00/);
+    expect(bundle.branch.businessDayStart).toMatch(/^00:00/); // SCRUM-1010: the park's midnight day
     expect(bundle.stations.map((s) => s.name).sort()).toEqual(['Booth 1', 'Reception Till 1']);
     const till = bundle.stations.find((s) => s.name === 'Reception Till 1')!;
     expect(till.devices.map((d) => d.role).sort()).toEqual([
