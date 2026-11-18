@@ -925,6 +925,13 @@
       "when": 1795034699727,
       "tag": "0131_branch_day_start_default",
       "breakpoints": true
+    },
+    {
+      "idx": 132,
+      "version": "7",
+      "when": 1795034737590,
+      "tag": "0132_branch_day_start_midnight",
+      "breakpoints": true
     }
   ]
 }
