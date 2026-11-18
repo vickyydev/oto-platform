@@ -78,10 +78,22 @@ export function familyCheckRefusal(): AppError {
   );
 }
 
+/**
+ * The same refusal when it stops a booking: nothing was booked, so the words
+ * say that rather than that the details "still go on this booking".
+ */
+export function bookingFamilyCheckRefusal(): AppError {
+  return new AppError(
+    403,
+    FAMILY_CHECK_EXPIRED,
+    'This booking names children saved on your family\'s record, but your family check has run out, or is not for this phone, so nothing was booked. Go back to the start and ask for a new code, or book without the saved children.',
+  );
+}
+
 /** The refusal for a child the family's record does not hold — never says whose it is. */
-export function notThisFamilysChild(): AppError {
+export function notThisFamilysChild(stopped: 'saved' | 'booked' = 'saved'): AppError {
   return errors.badRequest(
-    "A child on this booking is not on your family's saved record, so nothing was saved. Go back and choose again.",
+    `A child on this booking is not on your family's saved record, so nothing was ${stopped}. Go back and choose again.`,
   );
 }
 
@@ -339,12 +351,12 @@ export async function checkBookingFamilyLinks(
     ? await familyPassMember(exec, { operatorId: input.operatorId, phone: input.phone, pass: input.pass })
     : null;
   if (input.savedChildIds.length === 0) return { checkedMemberId: holder?.memberId ?? null };
-  if (!holder) throw familyCheckRefusal();
+  if (!holder) throw bookingFamilyCheckRefusal();
   const ids = [...new Set(input.savedChildIds)];
   const rows = await exec
     .select({ id: child.id })
     .from(child)
     .where(and(inArray(child.id, ids), eq(child.memberId, holder.memberId), isNull(child.archivedAt)));
-  if (rows.length !== ids.length) throw notThisFamilysChild();
+  if (rows.length !== ids.length) throw notThisFamilysChild('booked');
   return { checkedMemberId: holder.memberId };
 }

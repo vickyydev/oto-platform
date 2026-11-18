@@ -337,8 +337,12 @@ describe('SCRUM-1011 — the booking says which saved child each child is', () =
   it("is refused with another family's child, or with no pass", async () => {
     const foreign = await book({ familyPass: familyA.pass, lines: [supervisedLine(familyB.childIds[0]!)] });
     expect(foreign.statusCode, foreign.body).toBe(400);
+    expect(foreign.json().error.message).toContain('nothing was booked');
     const noPass = await book({ lines: [supervisedLine(familyA.childIds[0]!)] });
     expect(noPass.statusCode, noPass.body).toBe(403);
+    // The family is told nothing was booked, not that the details "still go on this booking".
+    expect(noPass.json().error.message).toContain('nothing was booked');
+    expect(noPass.json().error.message).not.toContain('still go on this booking');
     const otherPass = await book({ familyPass: familyB.pass, lines: [supervisedLine(familyA.childIds[0]!)] });
     expect(otherPass.statusCode, otherPass.body).toBe(403);
   });
