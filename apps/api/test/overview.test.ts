@@ -35,8 +35,11 @@ afterAll(async () => {
 });
 
 describe('Overview existing-source figures', () => {
-  const now = new Date('2026-07-15T12:00:00Z');
-  const computed = new Date('2026-07-15T11:58:00Z');
+  // 22:00 on 14 July in Honolulu: park A's business day is the 14th. The
+  // park's day runs midnight to midnight (SCRUM-1010); this used to be 02:00
+  // on the 15th, the 14th's only under the retired 05:00 start.
+  const now = new Date('2026-07-15T08:00:00Z');
+  const computed = new Date('2026-07-15T07:58:00Z');
   const parkA = newId();
   const parkB = newId();
   let operatorId: string;
@@ -97,7 +100,7 @@ describe('Overview existing-source figures', () => {
     await ctx.db.insert(schema.station).values({ id: stationId, operatorId, branchId: parkA, boxId, name: 'ZZ TEST gate', kind: 'gate', codePrefix: 'ZZOV' });
     await ctx.db.insert(schema.sale).values({
       id: saleId, operatorId, branchId: parkA, stationId, createdByAccountId: actor!.id,
-      businessDate: '2026-07-14', businessDayStart: '05:00', timezone: 'Pacific/Honolulu', occurredAt: computed,
+      businessDate: '2026-07-14', businessDayStart: '00:00', timezone: 'Pacific/Honolulu', occurredAt: computed,
       pricingMode: 'weekday', pricingModeReason: 'ZZ TEST', customerTier: 'tourist', engineVersion: 'ZZ TEST', taxConfig: {}, taxBreakdown: {},
     });
     await ctx.db.insert(schema.band).values([
@@ -144,7 +147,7 @@ describe('Overview existing-source figures', () => {
   });
 
   it('resolves branch reach and archives before any figures are loaded', () => {
-    const live = { id: parkA, name: 'ZZ TEST live', timezone: 'Pacific/Honolulu', businessDayStart: '05:00', archivedAt: null, createdAt: computed };
+    const live = { id: parkA, name: 'ZZ TEST live', timezone: 'Pacific/Honolulu', businessDayStart: '00:00', archivedAt: null, createdAt: computed };
     const archived = { ...live, id: parkB, archivedAt: computed };
     const branchGrant: EffectivePermission[] = [{ permission: 'console:overview:read', scopeType: 'branch', scopeId: parkA, roleName: 'ZZ TEST branch' }];
     expect(overviewScopeOf({ branches: [live, archived], operatorId, effective: branchGrant })).toEqual({ available: [live], selected: [live] });

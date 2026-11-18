@@ -40,7 +40,8 @@ import {
  */
 
 const TZ = 'Asia/Bangkok';
-const DAY_START = 5 * 60;
+/** The seeded park's day start: midnight (SCRUM-1010). */
+const DAY_START = 0;
 const D = businessDate(new Date(), TZ, DAY_START);
 /** Any key will do: the short code is read from the code, never checked against its signature here. */
 const KEY = 'zz-test-scrum-971-band-key-0123456789';
@@ -116,7 +117,7 @@ describe('SCRUM-971 — a stranded band is named by its short code, never its cr
       branchId: central,
       stationId: till1.id,
       businessDate: D,
-      businessDayStart: '05:00',
+      businessDayStart: '00:00',
       timezone: TZ,
       occurredAt: entered,
       createdByAccountId: receptionId,

@@ -126,7 +126,8 @@ const HAZARDS: Record<string, Named[]> = {
     ['r3Review', 'a record from an older engine is quarantined, not repriced: no sale, no application'],
   ],
   H13: [
-    ['r4', 'the keys follow the branch’s trading day, never the calendar midnight (Q6’s default: the sale’s business date)'],
+    // Renamed by SCRUM-1010: the trading day now turns at the park's midnight.
+    ['r4', 'the keys follow the branch’s trading day, which turns at the park’s midnight (Q6 answered by SCRUM-1010)'],
     ['r4', 'the period keys a sale claims are its own trading day’s'],
     ['boxCredential', 'the agent checks a benefit QR against the scope in its own store, on its branch’s trading day'],
   ],

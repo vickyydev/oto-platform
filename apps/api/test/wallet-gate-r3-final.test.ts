@@ -129,8 +129,8 @@ beforeAll(async () => {
   await spend(A.id, 10_000, at(X0, 8));
   await expireWalletsForDay(ctx.db, branchId, X0, afterEnd(X0));
 
-  // X1: A reactivated (฿200); B ฿500 days_n 3; B ฿50 at 13:00; B ฿30 at 04:30 the next
-  // calendar morning — still X1's trading day. The X1 job crashes and reruns.
+  // X1: A reactivated (฿200); B ฿500 days_n 3; B ฿50 at 13:00; B ฿30 at 23:30,
+  // the last half hour of X1's trading day. The X1 job crashes and reruns.
   await reactivate(A.id, at(X1, 7));
   const B = await grant(X1, 50_000, at(X1, 7.5), { expiry: 'days_n', expiryDays: 3 });
   ids.B = B.id;

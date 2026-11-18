@@ -415,7 +415,7 @@ describe('review — H10: the frozen legacy days never move', () => {
     expect(figuresOf(pisellRow!)).toEqual(figuresOf(PISELL.figures));
     expect(figuresOf(papayaRow!)).toEqual(figuresOf(PAPAYA.figures));
 
-    const clock: RollupBranchClock = { id: demo, operatorId, timezone: 'Asia/Bangkok', dayStartMinutes: parseDayStart('05:00'), live: true };
+    const clock: RollupBranchClock = { id: demo, operatorId, timezone: 'Asia/Bangkok', dayStartMinutes: parseDayStart('00:00'), live: true }; // the demo park's midnight day (SCRUM-1010)
     const adjacent = [addDaysToIsoDate(PISELL.businessDate, -1), addDaysToIsoDate(PAPAYA.businessDate, 1)];
     const rounds: string[][] = [adjacent, [PISELL.businessDate, PAPAYA.businessDate]];
 
