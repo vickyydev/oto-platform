@@ -136,7 +136,8 @@ export function tillBundle(extra: Partial<BoxConfigBundle> = {}): BoxConfigBundl
       operatorId: OPERATOR_ID,
       timezone: 'Asia/Bangkok',
       openingHours: null,
-      businessDayStart: '05:00',
+      // The park's day runs midnight to midnight (SCRUM-1010).
+      businessDayStart: '00:00',
     },
     stations: [
       {

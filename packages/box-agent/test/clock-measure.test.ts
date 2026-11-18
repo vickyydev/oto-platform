@@ -46,9 +46,9 @@ const HOUR = 3_600_000;
 const quiet = { info() {}, warn() {}, error() {} };
 
 /**
- * 06:30 on 25 September 2026 at the park, which is 23:30 UTC on the 24th: an
- * hour and a half into the trading day that starts at 05:00. A Pi twelve
- * hours behind believes it is 18:30 on the 24th.
+ * 06:30 on 25 September 2026 at the park, which is 23:30 UTC on the 24th:
+ * the 25th's trading day (the park's day runs midnight to midnight,
+ * SCRUM-1010). A Pi twelve hours behind believes it is 18:30 on the 24th.
  */
 const PINNED_AT = Date.parse('2026-09-24T23:30:00.000Z');
 
@@ -310,7 +310,7 @@ function configBundle() {
       operatorId: OPERATOR_ID,
       timezone: TIME_ZONE,
       openingHours: null,
-      businessDayStart: '05:00',
+      businessDayStart: '00:00',
     },
     stations: [
       {
@@ -1345,7 +1345,7 @@ test('twelve hours behind at 06:30: the trading day, the slip and the daily cap 
     const measured = box.agent.state.clockOffsetMs;
     assert.ok(measured !== null && Math.abs(measured + 12 * HOUR) < 5_000, `measured ${measured}`);
 
-    // 06:30 on the 25th, inside the trading day that began at 05:00.
+    // 06:30 on the 25th, inside the 25th's trading day.
     const pressed = await box.booth.spin({ idempotencyKey: 'on-the-platform-clock' });
     assert.equal(pressed.clockSuspect, true, 'twelve hours out and the spin was not flagged');
     const spinFact = factOf(db, pressed, 'booth.spin_recorded');
@@ -1373,18 +1373,19 @@ test('twelve hours behind at 06:30: the trading day, the slip and the daily cap 
  * The same hour on a box AHEAD, which pressed before it measured itself
  * (SCRUM-402, gate round 3).
  *
- * 03:30 on the 25th at the park, still the 24th's trading day; a Pi three
- * hours ahead believes it is 06:30, the 25th's. Its press before the
- * measurement is stamped by that clock, untrusted — and must not be
- * remembered as a time lived through, because only a corrected time is
- * (`believable` in the booth). Remembered, it would hold every press after
- * the measurement at 06:30: the slip printing a time three hours ahead, and
- * the box's own trading day and daily cap the 25th's, while the platform
- * files the spin on the 24th.
+ * 23:30 on the 24th at the park, still the 24th's trading day; a Pi three
+ * hours ahead believes it is 02:30 on the 25th, the 25th's (the day turns at
+ * the park's midnight, SCRUM-1010). Its press before the measurement is
+ * stamped by that clock, untrusted — and must not be remembered as a time
+ * lived through, because only a corrected time is (`believable` in the
+ * booth). Remembered, it would hold every press after the measurement at
+ * 02:30: the slip printing a time three hours ahead, and the box's own
+ * trading day and daily cap the 25th's, while the platform files the spin on
+ * the 24th.
  */
-test('three hours AHEAD at 03:30: a press before the measurement does not hold later slips, days or caps ahead', async () => {
+test('three hours AHEAD at 23:30: a press before the measurement does not hold later slips, days or caps ahead', async () => {
   const startedAt = Date.now();
-  const platform = (): number => Date.parse('2026-09-24T20:30:00.000Z') + (Date.now() - startedAt);
+  const platform = (): number => Date.parse('2026-09-24T16:30:00.000Z') + (Date.now() - startedAt);
   const db = newDb();
   const cloud = fakeCloud({ now: platform, dailySpinCap: 1 });
   const box = await openBox(db, cloud, memoryCredentialStore(), {
@@ -1393,18 +1394,18 @@ test('three hours AHEAD at 03:30: a press before the measurement does not hold l
     bootId: 'boot-ahead-before-the-measurement',
   });
   try {
-    // Before the platform has answered: the Pi's own 06:30 on the 25th.
+    // Before the platform has answered: the Pi's own 02:30 on the 25th.
     const early = await box.booth.spin({ idempotencyKey: 'ahead-on-the-pi-clock' });
     const earlyFact = factOf(db, early, 'booth.spin_recorded');
     assert.equal(earlyFact.clockTrust, 'untrusted');
     assert.equal(earlyFact.payload.businessDate, '2026-09-25');
-    assertSlipSays(await slipText(box.store, early), /^25 Sept? 2026 06:3\d$/, 'the slip before the measurement');
+    assertSlipSays(await slipText(box.store, early), /^25 Sept? 2026 02:3\d$/, 'the slip before the measurement');
 
     assert.equal(await box.agent.heartbeat(), null, 'three hours ahead was not refused');
     const measured = box.agent.state.clockOffsetMs;
     assert.ok(measured !== null && Math.abs(measured - 3 * HOUR) < 5_000, `measured ${measured}`);
 
-    // 03:30 on the 25th, the 24th's trading day — and the 24th's first spin,
+    // 23:30 on the 24th, the 24th's trading day — and the 24th's first spin,
     // so the cap of one does not refuse it.
     const pressed = await box.booth.spin({ idempotencyKey: 'ahead-on-the-platform-clock' });
     const spinFact = factOf(db, pressed, 'booth.spin_recorded');
@@ -1413,7 +1414,7 @@ test('three hours AHEAD at 03:30: a press before the measurement does not hold l
     assert.equal(spinFact.payload.businessDate, '2026-09-24', 'held on the unmeasured trading day');
     assertSlipSays(
       await slipText(box.store, pressed),
-      /^25 Sept? 2026 03:3\d$/,
+      /^24 Sept? 2026 23:3\d$/,
       'the slip after the measurement',
     );
     assert.equal(pressed.clockSuspect, true, 'three hours out and the spin was not flagged');

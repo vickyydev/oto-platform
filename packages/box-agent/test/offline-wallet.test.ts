@@ -89,7 +89,7 @@ function snapshot(over: Partial<WalletSnapshotItem> = {}, balance = 50_000): Wal
     version: 'w-v1',
     generatedAt: new Date().toISOString(),
     branchId: tillBundle().branch.id,
-    businessDate: businessDate(new Date(), 'Asia/Bangkok', 5 * 60),
+    businessDate: businessDate(new Date(), 'Asia/Bangkok', 0),
     capSatang: 30_000,
     truncated: false,
     wallets: [
@@ -235,7 +235,7 @@ async function dayCount(box: WalletBox, walletId = WALLET): Promise<number> {
   return box.harness.store.readCounter(BOX_ID, {
     scope: WALLET_SPEND_COUNTER_SCOPE,
     key: walletId,
-    businessDate: businessDate(new Date(), 'Asia/Bangkok', 5 * 60),
+    businessDate: businessDate(new Date(), 'Asia/Bangkok', 0),
   });
 }
 
