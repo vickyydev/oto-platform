@@ -45,6 +45,21 @@ const codes = new Set<DigestCode>(['snapshot', 'intent-write', 'transport-timeou
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const hash = /^[0-9a-f]{64}$/;
 
+/**
+ * SCRUM-1010 — the morning digest's own send time, 05:00 on the park's wall
+ * clock. It used to post at the park's business-day start, which was 05:00;
+ * the day now starts at midnight, and a "morning" digest posted at 00:00
+ * would summarise an empty day. So the send time is decoupled from the day
+ * start: never before 05:00, and never before the day start either (a park
+ * that sets a later start still waits for its own day).
+ */
+export const DIGEST_SEND_MINUTES = 5 * 60;
+
+/** The minute of the park's wall clock from which today's digest may post. */
+export function digestSendFrom(dayStartMinutes: number): number {
+  return Math.max(DIGEST_SEND_MINUTES, dayStartMinutes);
+}
+
 function failed(detail: DigestDetail): JobFailedError {
   return new JobFailedError('CONSOLE_DIGEST_FAILED', 'The morning digest was not confirmed for every due branch', { ...detail });
 }
@@ -74,9 +89,9 @@ export async function runConsoleDigest(db: Db, options: DigestOptions): Promise<
       let date: string;
       try {
         const start = parseDayStart(selected.businessDayStart);
-        // Before today's local boundary the native date still names yesterday;
-        // that is not a reason to send yesterday's missed morning.
-        if (wallClockMinutesInTz(options.now, selected.timezone) < start) continue;
+        // Before today's send time (05:00, or a later day start) nothing is
+        // posted; and a missed morning is never sent for yesterday.
+        if (wallClockMinutesInTz(options.now, selected.timezone) < digestSendFrom(start)) continue;
         date = businessDate(options.now, selected.timezone, start);
       } catch {
         // Invalid source clock metadata is unavailable, never a fabricated date.
@@ -107,7 +122,7 @@ export async function runConsoleDigest(db: Db, options: DigestOptions): Promise<
           throw new Error('Digest scope changed');
         }
         const currentStart = parseDayStart(current.businessDayStart);
-        if (wallClockMinutesInTz(options.now, current.timezone) < currentStart
+        if (wallClockMinutesInTz(options.now, current.timezone) < digestSendFrom(currentStart)
           || businessDate(options.now, current.timezone, currentStart) !== date) throw new Error('Digest clock changed');
       } catch { group.code = 'snapshot'; continue; }
       group.intentId = newId();
