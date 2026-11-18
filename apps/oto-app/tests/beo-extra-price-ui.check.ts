@@ -21,7 +21,10 @@
 //   6. a till whose menu cannot be read: a coded line's price is said
 //      unresolved (SCRUM-991), and no total (never a wrong figure);
 //   7. SCRUM-940 point 2: the first line made from "Nothing on the kids' menu
-//      yet" is saved as the EXTRA it shows.
+//      yet" is saved as the EXTRA it shows;
+//   8. SCRUM-999: a billed EXTRA keeps its billing marks through a reload and
+//      a Save, on the kitchen's lists as on the bar's, so a count raised after
+//      the party is settled is still a line the additional bill counts.
 //
 // Run from apps/oto-app:
 //   TSX_TSCONFIG_PATH=tests/tsconfig.jsx.json npx tsx tests/beo-extra-price-ui.check.ts
@@ -30,6 +33,7 @@ import { createRequire, Module } from "node:module";
 import { fileURLToPath } from "node:url";
 import { buildSync } from "esbuild";
 import { JSDOM } from "jsdom";
+import { approvedBeoBillingSources } from "../shared/beoBillingSource";
 
 const APP = fileURLToPath(new URL("../", import.meta.url));
 const dom = new JSDOM("<!doctype html><html><body></body></html>", { url: "http://localhost/studio/events", pretendToBeVisual: true });
@@ -104,7 +108,7 @@ let tillAnswer: (parkId: string | null) => Reading = (parkId) => ({
   parks: [{ parkId: parkId ?? PARK, parkName: "ZZ TEST Floresta", status: "ok", message: null, items: TILL, readAt: "2026-11-12T07:00:00.000Z" }],
 });
 
-type Line = { id: string; itemName: string; quantity: number; notes: string; included: boolean; price: number; source?: string; groupId?: string; productCode?: string };
+type Line = { id: string; itemName: string; quantity: number; notes: string; included: boolean; price: number; source?: string; groupId?: string; productCode?: string; chargeApproved?: boolean; billingSync?: string };
 const line = (id: string, itemName: string, over: Partial<Line> = {}): Line => ({ id, itemName, quantity: 1, notes: "", included: false, price: 0, ...over });
 type Held = { date: string; kids: Line[]; adults?: Line[]; adultsDiffer?: boolean; bar: Line[] };
 
@@ -194,7 +198,7 @@ const saved = async () => {
   await click("button-save-beo");
   const put = asked.slice(before).find((a) => a.method === "PUT" && a.path === `/api/events/${mounted}/beo`);
   assert.ok(put, "Save sent the BEO");
-  return put.body as { kitchenPlan: { menus: { kids: Line[]; adults: Line[] } }; barPlan: { items: Line[] } };
+  return put.body as { kitchenPlan: { menus: { kids: Line[]; adults: Line[]; adultsDiffer?: boolean } }; barPlan: { items: Line[] } };
 };
 
 let checks = 0;
@@ -306,6 +310,37 @@ await check("the first line made from Nothing on the kids' menu yet is the EXTRA
   assert.deepEqual(body.kitchenPlan.menus.kids.map((l) => [l.itemName, l.included, l.source ?? null, l.price]), [["Durian pizza", false, "additional", 250]]);
 });
 
+// SCRUM-999: a kitchen EXTRA billed after the party was settled lost its billing marks when the BEO
+// was opened again (the bar's kept theirs), so the next Save stored it unmarked and a count raised
+// then was billed for nothing. Each list now opens its lines with their marks, as the bar always did.
+await check("a billed EXTRA keeps its billing marks through a reload and a Save, kitchen and bar alike; raised, it is still billed", async () => {
+  const E5 = "55555555-5555-4555-8555-555555555949";
+  const billed = { chargeApproved: true, billingSync: "synced" };
+  BEOS.set(E5, {
+    date: WEEKDAY,
+    kids: [
+      line("k1", "ZZ TEST dish A", { price: 25.03, source: "additional", productCode: "PARTY-ZZ999A", ...billed }),
+      // A line saved before its mark existed, or saved without it: opened and saved as it is, never marked.
+      line("k2", "ZZ TEST dish B", { price: 10, source: "additional" }),
+    ],
+    adults: [line("a1", "ZZ TEST adults' own dish", { price: 40, source: "additional", ...billed })],
+    adultsDiffer: true,
+    bar: [line("b1", "ZZ TEST drink B", { price: 30, productCode: "PARTY-ZZ999B", ...billed })],
+  });
+  await openBeo(E5);
+  await click("button-qty-plus-kids-0");
+  await typeInto("bar-item-qty-0", "2");
+  const body = await saved();
+  const marks = (l: Line) => [l.id, l.quantity, l.chargeApproved ?? null, l.billingSync ?? null];
+  assert.deepEqual(body.kitchenPlan.menus.kids.map(marks), [["k1", 2, true, "synced"], ["k2", 1, null, null]], "the kids' list keeps its marks");
+  assert.deepEqual(body.kitchenPlan.menus.adults.map(marks), [["a1", 1, true, "synced"]], "the adults' own list keeps its marks");
+  assert.deepEqual(body.barPlan.items.map(marks), [["b1", 2, true, "synced"]], "the bar keeps its marks, as it always did");
+  // What the additional bill counts once this Save is stored (shared/beoBillingSource.ts): the raised
+  // kitchen line and the raised drink, each at its new count, and the adults' own line.
+  const counted = approvedBeoBillingSources(body.kitchenPlan.menus, body.barPlan.items).map((l) => [l.id, l.quantity, l.billingArea]);
+  assert.deepEqual(counted, [["k1", 2, "food"], ["a1", 1, "food"], ["b1", 2, "bar"]]);
+});
+
 await act(async () => { root.unmount(); });
 console.log(`beo-extra-price-ui.check: ${checks} checks passed`);
-process.exit(checks === 6 ? 0 : 1);
+process.exit(checks === 7 ? 0 : 1);

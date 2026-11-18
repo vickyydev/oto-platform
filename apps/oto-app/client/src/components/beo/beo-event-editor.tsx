@@ -1079,6 +1079,9 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
             price: m.price || 0,
             source: m.source,
             groupId: m.groupId,
+            // SCRUM-999: a line's billing marks ride with it through every Save, as the bar's do, so an
+            // extra billed after the party was settled is still billed when its count is raised.
+            ...(m.chargeApproved === true ? { chargeApproved: true, billingSync: m.billingSync } : {}),
             // SCRUM-828: a new item's till code rides with its line through every Save.
             ...(typeof m.productCode === "string" && m.productCode.trim() ? { productCode: m.productCode.trim() } : {}),
           });
