@@ -64,6 +64,7 @@ footers.
 | A second drive that mirrors the box's store (`--mirror-uuid`) | SCRUM-708, SCRUM-710, SCRUM-712 |
 | Pricing and check-in rules the box applies offline (free items, a child already paid for, tier proof documents) | SCRUM-740, SCRUM-762, SCRUM-764, SCRUM-768, SCRUM-772, SCRUM-773 |
 | Cash drawer pulse recorded as a drawer kick, not a printout | SCRUM-952 |
+| The family adds and removes saved children on the customer display (landed 19 November). Until the Pi has this release its box refuses a review with an empty place, and the till shows the review on its own customer half instead | SCRUM-1014 |
 
 ## What the visit can prove (tickets waiting at Testing for the real device)
 
