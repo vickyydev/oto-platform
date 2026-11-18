@@ -177,6 +177,10 @@ export function MobileParties() {
       ...(tender?.slip ? { slip: tender.slip } : {}),
     });
     settled('payment', outcome, 'Payment not recorded', PARTY_PAYMENT_NOT_CONFIRMED);
+    // SCRUM-1002 — the paid-off bill's receipt: what its printing noted, or why none was issued.
+    if (outcome.ok && outcome.answer.receiptNotes?.length) {
+      toast({ title: 'Additional bill receipt', description: outcome.answer.receiptNotes.join(' ') });
+    }
     return partyPaymentConfirmationOf(outcome, amount);
   };
 

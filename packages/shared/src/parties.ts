@@ -232,6 +232,12 @@ export const PartyWriteAnswerSchema = z.object({
   party: EventViewSchema,
   charge: PartyChargeViewSchema.optional(),
   payment: PartyPaymentViewSchema.optional(),
+  /**
+   * SCRUM-1002 — a payment that paid an additional bill off: what its receipt's
+   * printing noted ("Receipt not printed — …"), or why no receipt was issued.
+   * The receipt itself is on the bill (`party.additionalBills[].receipt`).
+   */
+  receiptNotes: z.array(z.string()).optional(),
   edit: z
     .object({
       id: z.string(),

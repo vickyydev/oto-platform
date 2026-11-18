@@ -48,17 +48,30 @@ export async function beoBilledLinesOf(db: Exec, operatorId: string, eventId: st
   for (const { billId, source } of await billedBeoSourcesOf(db, operatorId, eventId, main.id)) add(source.lineId, source.quantity, !!billId && paidBills.has(billId));
   return [...lines].map(([lineId, held]) => ({ lineId, billedQuantity: held.billed, paidQuantity: held.paid }));
 }
+/**
+ * The tax category a BEO line is billed under: its till product's, else the bar's for a bar line and
+ * the menu's food for a food line. `missing: 'area'` (SCRUM-1002, the bill's receipt) falls back to
+ * the area when the product has been retired since the line was billed; billing itself refuses.
+ */
+export async function beoTaxCategoryOf(db: Exec, operatorId: string, branchId: string, line: { area: 'food' | 'bar'; productCode: string | null }, missing: 'refuse' | 'area' = 'refuse'): Promise<TaxableCategory> {
+  const byArea: TaxableCategory = line.area === 'bar' ? 'bar' : 'fnb';
+  if (!line.productCode) return byArea;
+  const [held] = await db.select().from(product).where(and(eq(product.operatorId, operatorId), or(eq(product.branchId, branchId), isNull(product.branchId)), eq(product.code, line.productCode), isNull(product.archivedAt)));
+  if (!held) {
+    if (missing === 'area') return byArea;
+    throw errors.conflict('BEO_PRODUCT_UNRESOLVED', 'This new BEO item is no longer available at this park. Choose it again before billing.');
+  }
+  const areas = await resolveItemTaxCategories(db, [held]);
+  return itemTaxCategory(held.kind === 'merch' ? 'merch' : 'menu', areas.get(held.id));
+}
+
+/** The cart line and add-on key one billed BEO line is priced under — its bill's receipt prices it under the same. */
+export const beoAdditionKeysOf = (chargeId: string) => ({ componentKey: `beo-addition:${chargeId}`, cartLineId: deriveId(chargeId, 'beo-addition-cart-line') });
+
 /** Same party-add-on engine path as settlement, preserving VAT/service and entered-price semantics. */
 export async function priceBeoAddition(db: Exec, operatorId: string, branchId: string, eventId: string, line: BeoAdditionalChargesBody['lines'][number], quantity: number, unitSatang: number, id: string, now: Date) {
-  let taxCategory: TaxableCategory = line.area === 'bar' ? 'bar' : 'fnb';
-  if (line.productCode) {
-    const [held] = await db.select().from(product).where(and(eq(product.operatorId, operatorId), or(eq(product.branchId, branchId), isNull(product.branchId)), eq(product.code, line.productCode), isNull(product.archivedAt)));
-    if (!held) throw errors.conflict('BEO_PRODUCT_UNRESOLVED', 'This new BEO item is no longer available at this park. Choose it again before billing.');
-    const areas = await resolveItemTaxCategories(db, [held]);
-    taxCategory = itemTaxCategory(held.kind === 'merch' ? 'merch' : 'menu', areas.get(held.id));
-  }
-  const componentKey = `beo-addition:${id}`;
-  const cartLineId = deriveId(id, 'beo-addition-cart-line');
+  const taxCategory = await beoTaxCategoryOf(db, operatorId, branchId, line);
+  const { componentKey, cartLineId } = beoAdditionKeysOf(id);
   const priced = await priceCart(db, { accountId: null, operatorId, branchId }, { branchId,
     partySettlement: { eventId, settlementId: id, hours: null, lines: [{ id: cartLineId, role: 'add_on', ticket: false, kids: 0, kidUnitSatang: 0, adults: 0, adultsFree: 0, adultUnitSatang: 0, socks: 0, freeSocks: 0,
       addOns: [{ id: componentKey, name: line.name, quantity, unitSatang, taxCategory, role: 'add_on' }] }] },

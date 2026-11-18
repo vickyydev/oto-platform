@@ -2111,6 +2111,8 @@ export async function recordTerminalResult(
         before: { status: current.status },
         after: { status: settled.status, source: 'terminal', amountSatang: settled.amountSatang, saleId: null },
       });
+      // SCRUM-1002 — an additional bill this paid off gets its own receipt with the money.
+      await (await import('../party-additional-bill-receipt')).issueReceiptForPaidAttempt(tx, settled.id, ctx.requestId);
     }
     await closeHeldPass(tx, settled, ctx.requestId, ctx.log);
     return { attempt: attemptView(settled), replayed: false, phase, run };
@@ -2508,6 +2510,10 @@ export async function confirmAttempt(
     },
   });
   if (input.took) await closeHeldPass(tx, row, actor.requestId, log);
+  // SCRUM-1002 — a slip confirmed by hand that paid an additional bill off gets its own receipt now.
+  if (input.took && !row.saleId) {
+    await (await import('../party-additional-bill-receipt')).issueReceiptForPaidAttempt(tx, row.id, actor.requestId);
+  }
   return attemptView(row);
 }
 

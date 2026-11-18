@@ -1,4 +1,4 @@
-import { and, eq, inArray, sql } from 'drizzle-orm';
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { partyPayment, paymentAttempt } from '@oto/db';
 import { PAYMENT_ATTEMPT_TAKEN_STATUSES } from '@oto/shared';
 import { listBranchEvents } from './otoapp-events';
@@ -9,7 +9,9 @@ import type { Exec } from './tx';
  * count only money taken on this business day for those parties. Charges and
  * the app's recorded deposit are not additional takings. As in End of Day,
  * the app's confirmed event date governs money, not a pending till edit or
- * the historical party_date captured when a payment was taken.
+ * the historical party_date captured when a payment was taken. SCRUM-1002:
+ * an additional bill's payments are not party takings here: the bill is a
+ * receipted sale of its own, in the day's sales like the main settlement.
  */
 export async function partyFactsOf(
   db: Exec,
@@ -30,6 +32,10 @@ export async function partyFactsOf(
       eq(paymentAttempt.operatorId, clock.operatorId),
       eq(paymentAttempt.branchId, clock.id),
       inArray(partyPayment.otoappEventId, parties.map((event) => event.id)),
+      // SCRUM-1002 — an additional bill's money is its own receipt's sale, counted
+      // with the day's sales once the bill is paid; counting it here too would
+      // count it twice.
+      isNull(partyPayment.additionalBillId),
       eq(paymentAttempt.businessDate, date),
       inArray(paymentAttempt.status, [...PAYMENT_ATTEMPT_TAKEN_STATUSES]),
     ));

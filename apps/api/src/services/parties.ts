@@ -1,4 +1,5 @@
 import { billForNewCharge, paymentBillOf } from "./party-additional-bills";
+import { issueAdditionalBillReceipt, type AdditionalBillReceiptOutcome } from './party-additional-bill-receipt';
 import { assertPartyDepositHistory } from './party-deposit-balance';
 import { and, asc, eq, inArray, ne, or, sql } from 'drizzle-orm';
 import type { FastifyBaseLogger } from 'fastify';
@@ -391,7 +392,10 @@ export interface PartyPaymentResult {
  * The money is a `pos.payment_attempt` opened and settled as the counter's
  * tender always is, with no sale — so it is in the trading day's money, the
  * card terminal's batch reconciliation and the drawer, but in no sale, no
- * receipt and no VAT line (Q3). Its trading day is the branch's business day
+ * receipt and no VAT line (Q3). SCRUM-1002 ruling 1: a payment that pays an
+ * ADDITIONAL bill off gives that bill its own receipt — its payments become
+ * the tenders of a sale of its lines (`party-additional-bill-receipt.ts`).
+ * Its trading day is the branch's business day
  * when it is taken. WHICH PARTY'S DAY it counts on is End of Day's to work
  * out when the day is read (`end-of-day.ts`, the prototype's
  * `getPartiesForDate`): the party's date as the OTO App holds it then, so a
@@ -436,10 +440,32 @@ export async function payParty(
         status: attempt?.status ?? null,
       });
     }
+    // SCRUM-1002 — a QR or a card answered later may have paid an additional bill
+    // off: its receipt is issued now if nothing issued it when the money landed.
+    // Once only, whichever gets there first (`issueAdditionalBillReceipt`).
+    const receipt = row.additionalBillId
+      ? await withTx(db, { ...ctx, idempotency: undefined }, 'party.additional_bill_receipt', async (tx) => {
+          await lockParty(tx, event.id);
+          return issueAdditionalBillReceipt(tx, {
+            operatorId: actor.operatorId,
+            branchId: row.branchId,
+            eventId: event.id,
+            billId: row.additionalBillId!,
+            accountId: row.accountId ?? actor.accountId,
+            stationId: row.stationId ?? body.stationId,
+            title: event.title,
+            ...(actor.requestId ? { requestId: actor.requestId } : {}),
+            now: new Date(),
+          });
+        })
+      : null;
     const party = await partyNow(db, actor, row.branchId, event.id);
     const payment = party.party?.payments?.find((p) => p.id === row.id);
     // The drawer opened on the first answer; a retry must not open it again.
-    return { answer: { replayed: true, party, ...(payment ? { payment } : {}) }, drawerKick: null };
+    return {
+      answer: { replayed: true, party, ...(payment ? { payment } : {}), ...receiptNotesOf(receipt) },
+      drawerKick: null,
+    };
   };
 
   const [prior] = await db.select().from(partyPayment).where(eq(partyPayment.id, body.paymentId)).limit(1);
@@ -450,9 +476,14 @@ export async function payParty(
   const tradingDay = businessDate(now, clock.timezone, clock.dayStartMinutes);
   const actionId = body.actionId ?? null;
 
-  const done: { raced: typeof partyPayment.$inferSelect | null; drawerKick: DrawerKick | null } = {
+  const done: {
+    raced: typeof partyPayment.$inferSelect | null;
+    drawerKick: DrawerKick | null;
+    receipt: AdditionalBillReceiptOutcome | null;
+  } = {
     raced: null,
     drawerKick: null,
+    receipt: null,
   };
   await withTx(db, ctx, 'party.payment', async (tx) => {
     await lockParty(tx, event.id);
@@ -583,13 +614,37 @@ export async function payParty(
         actionId,
       });
     }
+    // SCRUM-1002 ruling 1 — the press that pays an additional bill off gives it
+    // its own receipt, in this transaction, at this counter. A part payment
+    // leaves it open and spends no number; the money stands either way.
+    if (body.additionalBillId) {
+      done.receipt = await issueAdditionalBillReceipt(tx, {
+        operatorId: actor.operatorId,
+        branchId: clock.id,
+        eventId: event.id,
+        billId: body.additionalBillId,
+        accountId: actor.accountId,
+        stationId: counter.id,
+        title: event.title,
+        ...(actor.requestId ? { requestId: actor.requestId } : {}),
+        now,
+      });
+    }
     return undefined;
   });
   if (done.raced) return replay(done.raced);
 
   const party = await partyNow(db, actor, clock.id, event.id);
   const payment = party.party?.payments?.find((p) => p.id === body.paymentId);
-  return { answer: { replayed: false, party, ...(payment ? { payment } : {}) }, drawerKick: done.drawerKick };
+  return {
+    answer: { replayed: false, party, ...(payment ? { payment } : {}), ...receiptNotesOf(done.receipt) },
+    drawerKick: done.drawerKick,
+  };
+}
+
+/** SCRUM-1002 — what the till says beside "Payment recorded": the receipt's printing notes, or why there is none. */
+function receiptNotesOf(receipt: AdditionalBillReceiptOutcome | null): { receiptNotes?: string[] } {
+  return receipt && receipt.notes.length > 0 ? { receiptNotes: receipt.notes } : {};
 }
 
 /** What opening a tender for a party needs beyond the party's own write. */

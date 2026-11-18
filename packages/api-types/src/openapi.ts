@@ -8329,6 +8329,37 @@ export interface paths {
                                     businessDate: string;
                                     attemptId: string;
                                 }[];
+                                receipt?: {
+                                    saleId: string;
+                                    receiptNumber: string | null;
+                                    saleStatus: string;
+                                    document: {
+                                        title: string;
+                                        taxInvoiceLines?: string[];
+                                        receiptNumber?: string;
+                                        dateTime?: string;
+                                        staffName?: string;
+                                        lines: {
+                                            qty: number;
+                                            name: string;
+                                            price?: string;
+                                            note?: string;
+                                        }[];
+                                        subtotal?: string;
+                                        service?: string;
+                                        vat?: string;
+                                        total: string;
+                                        tenders?: {
+                                            label: string;
+                                            amount: string;
+                                        }[];
+                                        taxRows?: {
+                                            label: string;
+                                            amount: string;
+                                            kind: string;
+                                        }[];
+                                    };
+                                } | null;
                             }[];
                             unassignedTab?: {
                                 charges: {
@@ -25352,6 +25383,37 @@ export interface paths {
                                             businessDate: string;
                                             attemptId: string;
                                         }[];
+                                        receipt?: {
+                                            saleId: string;
+                                            receiptNumber: string | null;
+                                            saleStatus: string;
+                                            document: {
+                                                title: string;
+                                                taxInvoiceLines?: string[];
+                                                receiptNumber?: string;
+                                                dateTime?: string;
+                                                staffName?: string;
+                                                lines: {
+                                                    qty: number;
+                                                    name: string;
+                                                    price?: string;
+                                                    note?: string;
+                                                }[];
+                                                subtotal?: string;
+                                                service?: string;
+                                                vat?: string;
+                                                total: string;
+                                                tenders?: {
+                                                    label: string;
+                                                    amount: string;
+                                                }[];
+                                                taxRows?: {
+                                                    label: string;
+                                                    amount: string;
+                                                    kind: string;
+                                                }[];
+                                            };
+                                        } | null;
                                     }[];
                                 } | null;
                                 attendeeCount: number | null;
@@ -25591,6 +25653,37 @@ export interface paths {
                                             businessDate: string;
                                             attemptId: string;
                                         }[];
+                                        receipt?: {
+                                            saleId: string;
+                                            receiptNumber: string | null;
+                                            saleStatus: string;
+                                            document: {
+                                                title: string;
+                                                taxInvoiceLines?: string[];
+                                                receiptNumber?: string;
+                                                dateTime?: string;
+                                                staffName?: string;
+                                                lines: {
+                                                    qty: number;
+                                                    name: string;
+                                                    price?: string;
+                                                    note?: string;
+                                                }[];
+                                                subtotal?: string;
+                                                service?: string;
+                                                vat?: string;
+                                                total: string;
+                                                tenders?: {
+                                                    label: string;
+                                                    amount: string;
+                                                }[];
+                                                taxRows?: {
+                                                    label: string;
+                                                    amount: string;
+                                                    kind: string;
+                                                }[];
+                                            };
+                                        } | null;
                                     }[];
                                 } | null;
                                 attendeeCount: number | null;
@@ -25832,6 +25925,37 @@ export interface paths {
                                             businessDate: string;
                                             attemptId: string;
                                         }[];
+                                        receipt?: {
+                                            saleId: string;
+                                            receiptNumber: string | null;
+                                            saleStatus: string;
+                                            document: {
+                                                title: string;
+                                                taxInvoiceLines?: string[];
+                                                receiptNumber?: string;
+                                                dateTime?: string;
+                                                staffName?: string;
+                                                lines: {
+                                                    qty: number;
+                                                    name: string;
+                                                    price?: string;
+                                                    note?: string;
+                                                }[];
+                                                subtotal?: string;
+                                                service?: string;
+                                                vat?: string;
+                                                total: string;
+                                                tenders?: {
+                                                    label: string;
+                                                    amount: string;
+                                                }[];
+                                                taxRows?: {
+                                                    label: string;
+                                                    amount: string;
+                                                    kind: string;
+                                                }[];
+                                            };
+                                        } | null;
                                     }[];
                                 } | null;
                                 attendeeCount: number | null;
@@ -26073,6 +26197,37 @@ export interface paths {
                                             businessDate: string;
                                             attemptId: string;
                                         }[];
+                                        receipt?: {
+                                            saleId: string;
+                                            receiptNumber: string | null;
+                                            saleStatus: string;
+                                            document: {
+                                                title: string;
+                                                taxInvoiceLines?: string[];
+                                                receiptNumber?: string;
+                                                dateTime?: string;
+                                                staffName?: string;
+                                                lines: {
+                                                    qty: number;
+                                                    name: string;
+                                                    price?: string;
+                                                    note?: string;
+                                                }[];
+                                                subtotal?: string;
+                                                service?: string;
+                                                vat?: string;
+                                                total: string;
+                                                tenders?: {
+                                                    label: string;
+                                                    amount: string;
+                                                }[];
+                                                taxRows?: {
+                                                    label: string;
+                                                    amount: string;
+                                                    kind: string;
+                                                }[];
+                                            };
+                                        } | null;
                                     }[];
                                 } | null;
                                 attendeeCount: number | null;
@@ -26440,6 +26595,37 @@ export interface paths {
                                             businessDate: string;
                                             attemptId: string;
                                         }[];
+                                        receipt?: {
+                                            saleId: string;
+                                            receiptNumber: string | null;
+                                            saleStatus: string;
+                                            document: {
+                                                title: string;
+                                                taxInvoiceLines?: string[];
+                                                receiptNumber?: string;
+                                                dateTime?: string;
+                                                staffName?: string;
+                                                lines: {
+                                                    qty: number;
+                                                    name: string;
+                                                    price?: string;
+                                                    note?: string;
+                                                }[];
+                                                subtotal?: string;
+                                                service?: string;
+                                                vat?: string;
+                                                total: string;
+                                                tenders?: {
+                                                    label: string;
+                                                    amount: string;
+                                                }[];
+                                                taxRows?: {
+                                                    label: string;
+                                                    amount: string;
+                                                    kind: string;
+                                                }[];
+                                            };
+                                        } | null;
                                     }[];
                                 } | null;
                                 attendeeCount: number | null;
@@ -26912,6 +27098,37 @@ export interface paths {
                                             businessDate: string;
                                             attemptId: string;
                                         }[];
+                                        receipt?: {
+                                            saleId: string;
+                                            receiptNumber: string | null;
+                                            saleStatus: string;
+                                            document: {
+                                                title: string;
+                                                taxInvoiceLines?: string[];
+                                                receiptNumber?: string;
+                                                dateTime?: string;
+                                                staffName?: string;
+                                                lines: {
+                                                    qty: number;
+                                                    name: string;
+                                                    price?: string;
+                                                    note?: string;
+                                                }[];
+                                                subtotal?: string;
+                                                service?: string;
+                                                vat?: string;
+                                                total: string;
+                                                tenders?: {
+                                                    label: string;
+                                                    amount: string;
+                                                }[];
+                                                taxRows?: {
+                                                    label: string;
+                                                    amount: string;
+                                                    kind: string;
+                                                }[];
+                                            };
+                                        } | null;
                                     }[];
                                 } | null;
                                 attendeeCount: number | null;
@@ -26990,6 +27207,7 @@ export interface paths {
                                 businessDate: string;
                                 attemptId: string;
                             };
+                            receiptNotes?: string[];
                             edit?: {
                                 id: string;
                                 /** @enum {string} */
@@ -27285,6 +27503,37 @@ export interface paths {
                                             businessDate: string;
                                             attemptId: string;
                                         }[];
+                                        receipt?: {
+                                            saleId: string;
+                                            receiptNumber: string | null;
+                                            saleStatus: string;
+                                            document: {
+                                                title: string;
+                                                taxInvoiceLines?: string[];
+                                                receiptNumber?: string;
+                                                dateTime?: string;
+                                                staffName?: string;
+                                                lines: {
+                                                    qty: number;
+                                                    name: string;
+                                                    price?: string;
+                                                    note?: string;
+                                                }[];
+                                                subtotal?: string;
+                                                service?: string;
+                                                vat?: string;
+                                                total: string;
+                                                tenders?: {
+                                                    label: string;
+                                                    amount: string;
+                                                }[];
+                                                taxRows?: {
+                                                    label: string;
+                                                    amount: string;
+                                                    kind: string;
+                                                }[];
+                                            };
+                                        } | null;
                                     }[];
                                 } | null;
                                 attendeeCount: number | null;
@@ -27982,6 +28231,37 @@ export interface paths {
                                             businessDate: string;
                                             attemptId: string;
                                         }[];
+                                        receipt?: {
+                                            saleId: string;
+                                            receiptNumber: string | null;
+                                            saleStatus: string;
+                                            document: {
+                                                title: string;
+                                                taxInvoiceLines?: string[];
+                                                receiptNumber?: string;
+                                                dateTime?: string;
+                                                staffName?: string;
+                                                lines: {
+                                                    qty: number;
+                                                    name: string;
+                                                    price?: string;
+                                                    note?: string;
+                                                }[];
+                                                subtotal?: string;
+                                                service?: string;
+                                                vat?: string;
+                                                total: string;
+                                                tenders?: {
+                                                    label: string;
+                                                    amount: string;
+                                                }[];
+                                                taxRows?: {
+                                                    label: string;
+                                                    amount: string;
+                                                    kind: string;
+                                                }[];
+                                            };
+                                        } | null;
                                     }[];
                                 } | null;
                                 attendeeCount: number | null;
@@ -28060,6 +28340,7 @@ export interface paths {
                                 businessDate: string;
                                 attemptId: string;
                             };
+                            receiptNotes?: string[];
                             edit?: {
                                 id: string;
                                 /** @enum {string} */
@@ -28087,7 +28368,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Take money against a party's balance (`addPartyPayment`): whole baht, capped at what is outstanding, refused when nothing is. Recorded through the tender machine as a real tender at the counter (a cash one opens the drawer) with no sale behind it — not a sale of goods — and counted by End of Day on the party prepayments line on the day it is taken, for that day's party, never on the cash, card or QR line. A balance that moved since the till showed it (`expectedOutstandingSatang`) is refused 409 PARTY_BALANCE_CHANGED with nothing taken. This call counts as confirmation that the money was taken, so a QR, or a card with no approval code off its slip, is refused 409 PARTY_TENDER_ROUTED: those go by /payments/tender. The same payment id again answers what it took, under x-oto-replay, and takes nothing; one whose tender has not been paid is refused 409 PARTY_PAYMENT_NOT_TAKEN. */
+        /** @description Take money against a party's balance (`addPartyPayment`): whole baht, capped at what is outstanding, refused when nothing is. Recorded through the tender machine as a real tender at the counter (a cash one opens the drawer) with no sale behind it — not a sale of goods — and counted by End of Day on the party prepayments line on the day it is taken, for that day's party, never on the cash, card or QR line. A payment of an additional bill (`additionalBillId`) that pays the bill off gives the bill its own receipt — a sale of that bill's lines in this station's receipt series, printed here — shown on the bill as `receipt`; `receiptNotes` says what its printing noted, or why none was issued (the payment stands either way). A balance that moved since the till showed it (`expectedOutstandingSatang`) is refused 409 PARTY_BALANCE_CHANGED with nothing taken. This call counts as confirmation that the money was taken, so a QR, or a card with no approval code off its slip, is refused 409 PARTY_TENDER_ROUTED: those go by /payments/tender. The same payment id again answers what it took, under x-oto-replay, and takes nothing; one whose tender has not been paid is refused 409 PARTY_PAYMENT_NOT_TAKEN. */
         post: {
             parameters: {
                 query?: never;
@@ -28278,6 +28559,37 @@ export interface paths {
                                             businessDate: string;
                                             attemptId: string;
                                         }[];
+                                        receipt?: {
+                                            saleId: string;
+                                            receiptNumber: string | null;
+                                            saleStatus: string;
+                                            document: {
+                                                title: string;
+                                                taxInvoiceLines?: string[];
+                                                receiptNumber?: string;
+                                                dateTime?: string;
+                                                staffName?: string;
+                                                lines: {
+                                                    qty: number;
+                                                    name: string;
+                                                    price?: string;
+                                                    note?: string;
+                                                }[];
+                                                subtotal?: string;
+                                                service?: string;
+                                                vat?: string;
+                                                total: string;
+                                                tenders?: {
+                                                    label: string;
+                                                    amount: string;
+                                                }[];
+                                                taxRows?: {
+                                                    label: string;
+                                                    amount: string;
+                                                    kind: string;
+                                                }[];
+                                            };
+                                        } | null;
                                     }[];
                                 } | null;
                                 attendeeCount: number | null;
@@ -28356,6 +28668,7 @@ export interface paths {
                                 businessDate: string;
                                 attemptId: string;
                             };
+                            receiptNotes?: string[];
                             edit?: {
                                 id: string;
                                 /** @enum {string} */

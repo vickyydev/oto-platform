@@ -1,4 +1,5 @@
 import { additionalBillsOf } from "./party-additional-bills";
+import { receiptsOfBills } from './party-additional-bill-receipt';
 import { partyDepositHistoriesOf, type PartyDepositHistory } from './party-deposit-balance';
 import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 import { account, employee, partyAdditionalBill, partyCharge, partyEdit, partyPayment, partySettlement, paymentAttempt, sale } from '@oto/db';
@@ -226,9 +227,11 @@ export async function partyLedgersOf(
     if (entry) entry.depositHistory = history;
   }
   const billRows = await db.select().from(partyAdditionalBill).where(and(eq(partyAdditionalBill.branchId, q.branchId), inArray(partyAdditionalBill.otoappEventId, ids))).orderBy(asc(partyAdditionalBill.createdAt), asc(partyAdditionalBill.id));
+  // SCRUM-1002 — each paid bill's own receipt, read once for all of them.
+  const receipts = await receiptsOfBills(db, billRows.map((row) => row.id));
   for (const eventId of ids) {
     const held = out.get(eventId)!;
-    held.additionalBills = await additionalBillsOf(db, q.branchId, eventId, held.charges, held.payments, billRows.filter((row) => row.otoappEventId === eventId));
+    held.additionalBills = await additionalBillsOf(db, q.branchId, eventId, held.charges, held.payments, billRows.filter((row) => row.otoappEventId === eventId), receipts);
   }
 
   return out;

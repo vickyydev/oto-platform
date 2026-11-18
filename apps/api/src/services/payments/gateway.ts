@@ -1378,6 +1378,15 @@ async function settleWithin(
             source: input.source,
             requestId: input.requestId ?? null,
           });
+      /**
+       * SCRUM-1002 — A PARTY'S ADDITIONAL BILL PAID OFF BY THIS QR gets its own
+       * receipt with the money, as a sale's QR closes its sale here: numbered on
+       * the paying counter's series and printed there. Under its own savepoint;
+       * nothing for any other attempt, and never a reason to refuse the money.
+       */
+      if (!bookingPaid && !partyDepositPaid) {
+        await (await import('../party-additional-bill-receipt')).issueReceiptForPaidAttempt(tx, settled.id, input.requestId);
+      }
       // Otherwise a QR minted before the cart was committed. The money is
       // recorded; the sale attaches to it when it is committed (Slice F's flow).
       return {

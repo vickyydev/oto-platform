@@ -260,6 +260,7 @@ export function MobilePartyDetail({
                 <InfoRow label="Total" value={`THB ${satangText(additional.totalSatang)}`} />
                 <InfoRow label="Paid" value={`THB ${satangText(additional.paidSatang)}`} />
                 <InfoRow label="Outstanding" value={`THB ${satangText(additional.outstandingSatang)}`} />
+                {additional.receipt && <InfoRow label="Receipt" value={additional.receipt.receiptNumber ?? '—'} />}
                 <p className="text-muted-foreground">Original receipt unchanged. Bill reference {additional.id}</p>
               </div>
             </SectionCard>

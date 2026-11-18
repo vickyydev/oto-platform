@@ -309,6 +309,10 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
       ...(tender?.slip ? { slip: tender.slip } : {}),
     });
     settled('payment', outcome, 'Payment not recorded', PARTY_PAYMENT_NOT_CONFIRMED);
+    // SCRUM-1002 — the paid-off bill's receipt: what its printing noted, or why none was issued.
+    if (outcome.ok && outcome.answer.receiptNotes?.length) {
+      toast({ title: 'Additional bill receipt', description: outcome.answer.receiptNotes.join(' ') });
+    }
     return partyPaymentConfirmationOf(outcome, amount);
   };
 
@@ -546,6 +550,7 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
         {party.additionalBills?.map((additional, index) => <div key={additional.id} className="my-3 rounded border p-3 text-sm" data-testid={`party-additional-bill-${index}`}>
           <p className="font-medium">Additional bill {index + 1} - {additional.state}</p>
           <p>Total THB {satangText(additional.totalSatang)} - Paid THB {satangText(additional.paidSatang)} - Outstanding THB {satangText(additional.outstandingSatang)}</p>
+          {additional.receipt && <p data-testid={`party-additional-bill-${index}-receipt`}>Receipt {additional.receipt.receiptNumber ?? '—'}</p>}
           <p className="text-xs text-muted-foreground">Linked to this party. Original receipt unchanged. Reference {additional.id}</p>
         </div>)}
         {party.lineItems.map((li) => (

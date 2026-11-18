@@ -34,6 +34,7 @@ import {
 import { bahtText } from '@/lib/bahtText';
 import { additionalBillChoices, additionalBillName, additionalBillParty, openAdditionalBillId } from '@/lib/partyAdditionalBills';
 import { AdditionalBillSummary } from './AdditionalBillSummary';
+import { AdditionalBillReceipt } from './AdditionalBillReceipt';
 
 interface PartyBalanceModalProps {
   displayHandoff?: StationDisplayHandoff;
@@ -98,6 +99,8 @@ export function PartyBalanceModal({
   const extraGroups = partyExtraChargeGroups(billingParty);
   const paid = selectedBill ? selectedBill.paidSatang / 100 : partyPaymentsTotal(party);
   const [collectBillId, setCollectBillId] = useState<string | undefined>();
+  // SCRUM-1002 — the bill this payment went to, as the platform now reads it.
+  const doneBill = collectBillId ? party.additionalBills?.find((bill) => bill.id === collectBillId) : undefined;
 
   // Tenders come from the store (admin-configurable); disabled ones never render.
   const methods = getEnabledPaymentMethods();
@@ -486,6 +489,14 @@ export function PartyBalanceModal({
                         </span>
                       </div>
                     </div>
+                    {/* SCRUM-1002 — the bill paid in full: its own receipt, as it printed. */}
+                    {doneBill?.receipt && (
+                      <AdditionalBillReceipt
+                        receipt={doneBill.receipt}
+                        name={additionalBillName(party.additionalBills, doneBill.id) ?? 'Additional bill'}
+                        className="w-full max-w-sm mb-8"
+                      />
+                    )}
                     <Button
                       size="lg"
                       className="w-full max-w-md h-14 text-lg"

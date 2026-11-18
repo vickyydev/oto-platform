@@ -27,6 +27,7 @@ import { ArrowLeft, Check, Wallet } from 'lucide-react';
 import { bahtText } from '@/lib/bahtText';
 import { additionalBillChoices, additionalBillName, additionalBillParty, openAdditionalBillId } from '@/lib/partyAdditionalBills';
 import { AdditionalBillSummary } from '@/components/parties/AdditionalBillSummary';
+import { AdditionalBillReceipt } from '@/components/parties/AdditionalBillReceipt';
 
 type Step = 'pick' | 'bill-review' | 'collect' | 'done';
 
@@ -289,10 +290,11 @@ export function MobilePartyPayment({
   }
 
   if (step === 'done') {
-    const newOutstanding = collectBillId ? (party.additionalBills?.find((bill) => bill.id === collectBillId)?.outstandingSatang ?? 0) / 100 : computePartyOutstanding(party);
+    const doneBill = collectBillId ? party.additionalBills?.find((bill) => bill.id === collectBillId) : undefined;
+    const newOutstanding = collectBillId ? (doneBill?.outstandingSatang ?? 0) / 100 : computePartyOutstanding(party);
     return (
       <div className="h-full flex flex-col overflow-hidden">
-        <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
+        <div className={`flex-1 flex flex-col items-center px-6 text-center overflow-y-auto ${doneBill?.receipt ? 'justify-start py-6' : 'justify-center'}`}>
           <div className="w-20 h-20 rounded-full bg-emerald-500/15 text-emerald-400 flex items-center justify-center mb-6">
             <Check className="w-10 h-10" />
           </div>
@@ -314,6 +316,14 @@ export function MobilePartyPayment({
               </span>
             </div>
           </div>
+          {/* SCRUM-1002 — the bill paid in full: its own receipt, as it printed. */}
+          {doneBill?.receipt && (
+            <AdditionalBillReceipt
+              receipt={doneBill.receipt}
+              name={additionalBillName(party.additionalBills, doneBill.id) ?? 'Additional bill'}
+              className="w-full max-w-sm mb-8"
+            />
+          )}
         </div>
         <div className="shrink-0 p-4 border-t">
           <Button size="lg" className="w-full h-14 text-lg" onClick={onBack}>

@@ -408,12 +408,42 @@ export const PartyPaymentViewSchema = z.object({
 });
 export type PartyPaymentView = z.infer<typeof PartyPaymentViewSchema>;
 
-/** A separately payable linked bill, not a replacement fiscal receipt. */
+/**
+ * SCRUM-1002 ruling 1 — an additional bill's own receipt, once the bill is
+ * paid in full: a sale of that bill's lines in the paying station's receipt
+ * series, closed by the sale engine as the main settlement's is, and `document`
+ * the paper exactly as the printer gets it (`saleReceiptDocument`). It carries
+ * that bill only: never the party's main bill, its package or a party total.
+ */
+export const PartyAdditionalBillReceiptSchema = z.object({
+  saleId: z.string(),
+  receiptNumber: z.string().nullable(),
+  saleStatus: z.string(),
+  document: z.object({
+    title: z.string(),
+    taxInvoiceLines: z.array(z.string()).optional(),
+    receiptNumber: z.string().optional(),
+    dateTime: z.string().optional(),
+    staffName: z.string().optional(),
+    lines: z.array(z.object({ qty: z.number(), name: z.string(), price: z.string().optional(), note: z.string().optional() })),
+    subtotal: z.string().optional(),
+    service: z.string().optional(),
+    vat: z.string().optional(),
+    total: z.string(),
+    tenders: z.array(z.object({ label: z.string(), amount: z.string() })).optional(),
+    taxRows: z.array(z.object({ label: z.string(), amount: z.string(), kind: z.string() })).optional(),
+  }),
+});
+export type PartyAdditionalBillReceipt = z.infer<typeof PartyAdditionalBillReceiptSchema>;
+
+/** A separately payable linked bill; the main receipt is never replaced. Paid in full, it has its own receipt. */
 export const PartyAdditionalBillSchema = z.object({
   id: z.string(), eventId: z.string(), mainSettlementId: z.string(),
   state: z.enum(['open', 'paid']), totalSatang: z.number().int(), paidSatang: z.number().int(), outstandingSatang: z.number().int(),
   createdAt: z.string(), paidAt: z.string().nullable(),
   charges: z.array(PartyChargeViewSchema), payments: z.array(PartyPaymentViewSchema),
+  /** SCRUM-1002 — the bill's own receipt; null while the bill is open (or none could be issued). */
+  receipt: PartyAdditionalBillReceiptSchema.nullable().optional(),
 });
 export type PartyAdditionalBill = z.infer<typeof PartyAdditionalBillSchema>;
 

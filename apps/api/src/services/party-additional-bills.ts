@@ -1,6 +1,6 @@
 import { and, asc, eq } from 'drizzle-orm';
 import { partyAdditionalBill } from '@oto/db';
-import { deriveId, type PartyAdditionalBill, type PartyChargeView, type PartyPaymentView } from '@oto/shared';
+import { deriveId, type PartyAdditionalBill, type PartyAdditionalBillReceipt, type PartyChargeView, type PartyPaymentView } from '@oto/shared';
 import { errors } from '../lib/errors';
 import type { Exec } from './tx';
 
@@ -12,12 +12,13 @@ export function additionalBillFigures(charges: readonly Pick<PartyChargeView, 't
     paidAt: outstandingSatang === 0 ? [...payments].map((row) => row.takenAt).sort().at(-1) ?? null : null };
 }
 
-export async function additionalBillsOf(db: Exec, branchId: string, eventId: string, charges: PartyChargeView[], payments: PartyPaymentView[], heldRows?: typeof partyAdditionalBill.$inferSelect[]): Promise<PartyAdditionalBill[]> {
+export async function additionalBillsOf(db: Exec, branchId: string, eventId: string, charges: PartyChargeView[], payments: PartyPaymentView[], heldRows?: typeof partyAdditionalBill.$inferSelect[], receipts?: ReadonlyMap<string, PartyAdditionalBillReceipt>): Promise<PartyAdditionalBill[]> {
   const rows = heldRows ?? await db.select().from(partyAdditionalBill).where(and(eq(partyAdditionalBill.branchId, branchId), eq(partyAdditionalBill.otoappEventId, eventId))).orderBy(asc(partyAdditionalBill.createdAt), asc(partyAdditionalBill.id));
   return rows.map((row) => {
     const billed = charges.filter((charge) => charge.additionalBillId === row.id);
     const taken = payments.filter((payment) => payment.additionalBillId === row.id);
-    return { id: row.id, eventId: row.otoappEventId, mainSettlementId: row.mainSettlementId, createdAt: row.createdAt.toISOString(), charges: billed, payments: taken, ...additionalBillFigures(billed, taken) };
+    // SCRUM-1002 — the bill's own receipt once it is paid in full; null until then.
+    return { id: row.id, eventId: row.otoappEventId, mainSettlementId: row.mainSettlementId, createdAt: row.createdAt.toISOString(), charges: billed, payments: taken, ...additionalBillFigures(billed, taken), receipt: receipts?.get(row.id) ?? null };
   });
 }
 
