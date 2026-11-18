@@ -585,7 +585,7 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
     : undefined;
   const digestJobs: JobDefinition[] = digestSender ? [{
     name: CONSOLE_DIGEST_JOB,
-    description: 'Posts the shared status summary for each live park after its business-day start; ambiguous delivery is held for review',
+    description: 'Posts the shared status summary for each live park from 05:00 park time (never before its business-day start); ambiguous delivery is held for review',
     intervalSeconds: deps.env.ROLLUP_INTERVAL_S,
     exclusive: true,
     run: async ({ db, env, now }) => ({ detail: { ...await runConsoleDigest(db, {
@@ -719,8 +719,9 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
      * `job:sales.held_midnight` — A HELD SALE NOBODY CAME BACK FOR (SCRUM-774).
      *
      * Every five minutes: each held sale whose calendar day has ended in its
-     * branch's timezone — midnight, the owner's day end for Held sales, not
-     * the 05:00 business-day boundary — is voided as "not collected" when no
+     * branch's timezone — calendar midnight, the owner's day end for Held
+     * sales (since SCRUM-1010 also the moment the business day turns) — is
+     * voided as "not collected" when no
      * money was taken on it, and flagged for the manager (an alert per
      * branch, and the End of Day's refusal) when part of it was paid. A
      * part-paid sale is never voided by the platform (`services/sale-holds.ts`).
