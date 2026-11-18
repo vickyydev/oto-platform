@@ -1,0 +1,625 @@
+{
+  "unit": "SCRUM-996 staging proof (simulator only)",
+  "liveSource": "6fc5ea51237e17a1d3188d057de0c684542a62ea",
+  "deploys": {
+    "sha": "6fc5ea51237e17a1d3188d057de0c684542a62ea",
+    "api": {
+      "id": "dep-dbuui061egvs739n05m0",
+      "live": "2026-11-18T18:10:59Z"
+    },
+    "inbox": {
+      "id": "dep-dbuui0gm7kps73e79ipg",
+      "live": "2026-11-18T18:07:02Z"
+    }
+  },
+  "line": {
+    "id": "01a156bb-6778-72b0-8237-6028f8874503",
+    "name": "Demo WhatsApp · Central Floresta",
+    "channel": "whatsapp",
+    "provider": "simulator (listed by GET /inbox/me simulator.channelAccounts, which holds provider=simulator only)"
+  },
+  "parks": [
+    {
+      "name": "Oto Play Park, Central Floresta",
+      "birthdayManagerNamed": false
+    },
+    {
+      "name": "Oto Play Park, Robinson Chalong",
+      "birthdayManagerNamed": false
+    }
+  ],
+  "viewers": {
+    "bookers": "Demo Anya (Birthdays EN/RU), a birthdays-team agent; the staging admin requested the deposits",
+    "nonBooker": "Demo Mila (Marketing), put on chat A as support so she sees it"
+  },
+  "chats": {
+    "A": {
+      "name": "ZZ TEST 996 4875 A",
+      "conversationId": "01a1efdb-852d-7f17-acba-d7352347a6a1",
+      "draftId": "506b682b-9b34-41bf-b436-d495903f7e0f",
+      "paymentAttemptId": "01a1efdb-d792-78e9-850f-9424ba5a4796",
+      "requested": {
+        "state": "requested",
+        "simulator": true,
+        "amountSatang": 100
+      },
+      "payment": {
+        "status": 200,
+        "at": "2026-11-18T18:12:33.314Z"
+      },
+      "afterPayment": {
+        "state": "paid",
+        "simulator": true,
+        "paidAt": "2026-11-18T18:12:34.022Z"
+      },
+      "support": {
+        "status": 200,
+        "who": "Demo Mila (Marketing)"
+      },
+      "nonBookerDepositRead": [
+        {
+          "who": "mila",
+          "status": 403
+        }
+      ],
+      "booked": {
+        "status": 200,
+        "eventId": "506b682b-9b34-41bf-b436-d495903f7e0f",
+        "title": "ZZ TEST child's 6th Birthday"
+      },
+      "replayOfGatewayMessage": {
+        "webhookOutcome": "duplicate",
+        "status": 200,
+        "receivedLines": 1,
+        "paidPills": 1,
+        "notifyRows": 1
+      },
+      "bellAudit": [
+        {
+          "code": "NO_CONTACT",
+          "state": "skipped",
+          "notice": "prebooking-paid:01a1efdb-d792-78e9-850f-9424ba5a4796",
+          "appUserId": null,
+          "conversationId": "01a1efdb-852d-7f17-acba-d7352347a6a1"
+        }
+      ],
+      "pills": [
+        {
+          "kind": "deposit_requested",
+          "payload": {
+            "draftId": "506b682b-9b34-41bf-b436-d495903f7e0f",
+            "currency": "THB",
+            "language": "en",
+            "messageId": "01a0bbdc-8c41-77af-8170-35b2017bc1c9",
+            "requestId": "01a0bbdc-8c41-716b-aca4-fb88df8e8c18",
+            "templateKey": "party_deposit_request",
+            "amountSatang": 100
+          },
+          "at": "2026-11-18T18:12:04.608Z"
+        },
+        {
+          "kind": "deposit_paid",
+          "payload": {
+            "source": "webhook",
+            "draftId": "506b682b-9b34-41bf-b436-d495903f7e0f",
+            "currency": "THB",
+            "language": "en",
+            "messageId": "01a1efdb-d792-7da2-b3c3-37a7ac499aad",
+            "simulator": true,
+            "prebooking": true,
+            "templateKey": "party_deposit_received",
+            "amountSatang": 100,
+            "paymentAttemptId": "01a1efdb-d792-78e9-850f-9424ba5a4796"
+          },
+          "at": "2026-11-18T18:12:34.045Z"
+        }
+      ]
+    },
+    "B": {
+      "name": "ZZ TEST 996 4875 B",
+      "conversationId": "01a1efdb-8990-7653-bb09-7b0859e1dd0b",
+      "draftId": "76891c69-3eeb-4b4e-9df3-26a36ff48401",
+      "paymentAttemptId": "01a1efdb-d992-7c8d-a528-b482ec3f6343",
+      "requested": {
+        "state": "requested",
+        "simulator": true,
+        "amountSatang": 100
+      },
+      "payment": {
+        "part": 50,
+        "status": 200,
+        "webhookOutcome": "amount_mismatch",
+        "gatewayState": "paid"
+      },
+      "afterPayment": {
+        "state": "needs_review",
+        "simulator": true,
+        "paidAt": null
+      },
+      "receivedLines": 0,
+      "bellAudit": []
+    },
+    "C": {
+      "name": "ZZ TEST 996 4875 C",
+      "conversationId": "01a1efdb-8b94-79f3-9a7d-58be129afb5c",
+      "draftId": "ed9c84c6-be69-4f32-9a9f-09912e54e6a6",
+      "paymentAttemptId": "01a1efdb-db97-7d17-8009-0cb62f6b414e",
+      "requested": {
+        "state": "requested",
+        "simulator": true,
+        "amountSatang": 100
+      },
+      "payment": {
+        "status": 200,
+        "at": "2026-11-18T18:16:07.160Z"
+      },
+      "afterPayment": {
+        "state": "paid",
+        "simulator": true,
+        "paidAt": "2026-11-18T18:16:07.830Z"
+      },
+      "handledBeforePayment": true,
+      "receivedLines": 1,
+      "bellAudit": [
+        {
+          "code": "NO_CONTACT",
+          "state": "skipped",
+          "notice": "prebooking-paid:01a1efdb-db97-7d17-8009-0cb62f6b414e",
+          "appUserId": null,
+          "conversationId": "01a1efdb-8b94-79f3-9a7d-58be129afb5c"
+        }
+      ]
+    }
+  },
+  "reads": [
+    {
+      "at": "2026-11-18T18:11:52.128Z",
+      "who": "anya",
+      "rows": {
+        "A": {
+          "team": {
+            "shown": true,
+            "depositSignal": null,
+            "nextAction": "ai_replying",
+            "readyToBook": false
+          },
+          "handled": {
+            "shown": false,
+            "depositSignal": null,
+            "nextAction": null,
+            "readyToBook": false
+          }
+        },
+        "B": {
+          "team": {
+            "shown": true,
+            "depositSignal": null,
+            "nextAction": "ai_replying",
+            "readyToBook": false
+          },
+          "handled": {
+            "shown": false,
+            "depositSignal": null,
+            "nextAction": null,
+            "readyToBook": false
+          }
+        },
+        "C": {
+          "team": {
+            "shown": true,
+            "depositSignal": null,
+            "nextAction": "ai_replying",
+            "readyToBook": false
+          },
+          "handled": {
+            "shown": false,
+            "depositSignal": null,
+            "nextAction": null,
+            "readyToBook": false
+          }
+        }
+      }
+    },
+    {
+      "at": "2026-11-18T18:12:07.975Z",
+      "who": "anya",
+      "rows": {
+        "A": {
+          "team": {
+            "shown": true,
+            "depositSignal": null,
+            "nextAction": "ai_sent",
+            "readyToBook": false
+          },
+          "handled": {
+            "shown": false,
+            "depositSignal": null,
+            "nextAction": null,
+            "readyToBook": false
+          }
+        },
+        "B": {
+          "team": {
+            "shown": true,
+            "depositSignal": null,
+            "nextAction": "ai_sent",
+            "readyToBook": false
+          },
+          "handled": {
+            "shown": false,
+            "depositSignal": null,
+            "nextAction": null,
+            "readyToBook": false
+          }
+        },
+        "C": {
+          "team": {
+            "shown": true,
+            "depositSignal": null,
+            "nextAction": "ai_sent",
+            "readyToBook": false
+          },
+          "handled": {
+            "shown": false,
+            "depositSignal": null,
+            "nextAction": null,
+            "readyToBook": false
+          }
+        }
+      }
+    },
+    {
+      "at": "2026-11-18T18:12:37.551Z",
+      "who": "anya",
+      "rows": {
+        "A": {
+          "team": {
+            "shown": true,
+            "depositSignal": "paid",
+            "nextAction": "staff_action_needed",
+            "readyToBook": true
+          },
+          "handled": {
+            "shown": false,
+            "depositSignal": null,
+            "nextAction": null,
+            "readyToBook": false
+          }
+        },
+        "B": {
+          "team": {
+            "shown": true,
+            "depositSignal": null,
+            "nextAction": "ai_sent",
+            "readyToBook": false
+          },
+          "handled": {
+            "shown": false,
+            "depositSignal": null,
+            "nextAction": null,
+            "readyToBook": false
+          }
+        },
+        "C": {
+          "team": {
+            "shown": true,
+            "depositSignal": null,
+            "nextAction": "ai_sent",
+            "readyToBook": false
+          },
+          "handled": {
+            "shown": false,
+            "depositSignal": null,
+            "nextAction": null,
+            "readyToBook": false
+          }
+        }
+      }
+    },
+    {
+      "at": "2026-11-18T18:15:15.586Z",
+      "who": "mila",
+      "rows": {
+        "A": {
+          "team": {
+            "shown": true,
+            "depositSignal": "paid",
+            "nextAction": "staff_action_needed",
+            "readyToBook": true
+          },
+          "handled": {
+            "shown": false,
+            "depositSignal": null,
+            "nextAction": null,
+            "readyToBook": false
+          }
+        },
+        "B": {
+          "team": {
+            "shown": false,
+            "depositSignal": null,
+            "nextAction": null,
+            "readyToBook": false
+          },
+          "handled": {
+            "shown": false,
+            "depositSignal": null,
+            "nextAction": null,
+            "readyToBook": false
+          }
+        },
+        "C": {
+          "team": {
+            "shown": false,
+            "depositSignal": null,
+            "nextAction": null,
+            "readyToBook": false
+          },
+          "handled": {
+            "shown": false,
+            "depositSignal": null,
+            "nextAction": null,
+            "readyToBook": false
+          }
+        }
+      }
+    },
+    {
+      "at": "2026-11-18T18:15:56.695Z",
+      "who": "anya",
+      "rows": {
+        "A": {
+          "team": {
+            "shown": true,
+            "depositSignal": "paid",
+            "nextAction": "staff_action_needed",
+            "readyToBook": true
+          },
+          "handled": {
+            "shown": false,
+            "depositSignal": null,
+            "nextAction": null,
+            "readyToBook": false
+          }
+        },
+        "B": {
+          "team": {
+            "shown": true,
+            "depositSignal": "needs_checking",
+            "nextAction": "staff_action_needed",
+            "readyToBook": false
+          },
+          "handled": {
+            "shown": false,
+            "depositSignal": null,
+            "nextAction": null,
+            "readyToBook": false
+          }
+        },
+        "C": {
+          "team": {
+            "shown": true,
+            "depositSignal": null,
+            "nextAction": "ai_sent",
+            "readyToBook": false
+          },
+          "handled": {
+            "shown": false,
+            "depositSignal": null,
+            "nextAction": null,
+            "readyToBook": false
+          }
+        }
+      }
+    },
+    {
+      "at": "2026-11-18T18:16:11.466Z",
+      "who": "anya",
+      "rows": {
+        "A": {
+          "team": {
+            "shown": true,
+            "depositSignal": "paid",
+            "nextAction": "staff_action_needed",
+            "readyToBook": true
+          },
+          "handled": {
+            "shown": false,
+            "depositSignal": null,
+            "nextAction": null,
+            "readyToBook": false
+          }
+        },
+        "B": {
+          "team": {
+            "shown": true,
+            "depositSignal": "needs_checking",
+            "nextAction": "staff_action_needed",
+            "readyToBook": false
+          },
+          "handled": {
+            "shown": false,
+            "depositSignal": null,
+            "nextAction": null,
+            "readyToBook": false
+          }
+        },
+        "C": {
+          "team": {
+            "shown": false,
+            "depositSignal": null,
+            "nextAction": null,
+            "readyToBook": false
+          },
+          "handled": {
+            "shown": true,
+            "depositSignal": "paid",
+            "nextAction": "handled",
+            "readyToBook": true
+          }
+        }
+      }
+    },
+    {
+      "at": "2026-11-18T18:21:43.674Z",
+      "who": "anya",
+      "rows": {
+        "A": {
+          "team": {
+            "shown": true,
+            "depositSignal": null,
+            "nextAction": "ai_sent",
+            "readyToBook": false
+          },
+          "handled": {
+            "shown": false,
+            "depositSignal": null,
+            "nextAction": null,
+            "readyToBook": false
+          }
+        },
+        "B": {
+          "team": {
+            "shown": true,
+            "depositSignal": "needs_checking",
+            "nextAction": "staff_action_needed",
+            "readyToBook": false
+          },
+          "handled": {
+            "shown": false,
+            "depositSignal": null,
+            "nextAction": null,
+            "readyToBook": false
+          }
+        },
+        "C": {
+          "team": {
+            "shown": false,
+            "depositSignal": null,
+            "nextAction": null,
+            "readyToBook": false
+          },
+          "handled": {
+            "shown": true,
+            "depositSignal": "paid",
+            "nextAction": "handled",
+            "readyToBook": true
+          }
+        }
+      }
+    }
+  ],
+  "pictures": [
+    {
+      "file": "01-requested-no-label.png",
+      "who": "anya",
+      "tab": "team",
+      "open": null,
+      "maskedRuns": 2
+    },
+    {
+      "file": "02-paid-ready-to-book-group.png",
+      "who": "anya",
+      "tab": "team",
+      "open": null,
+      "maskedRuns": 2
+    },
+    {
+      "file": "03-paid-chat-line-and-received.png",
+      "who": "anya",
+      "tab": "team",
+      "open": "A",
+      "maskedRuns": 6
+    },
+    {
+      "file": "03-paid-chat-line-and-received.png",
+      "who": "anya",
+      "tab": "team",
+      "open": "A",
+      "maskedRuns": 6
+    },
+    {
+      "file": "03-paid-chat-line-and-received.png",
+      "who": "anya",
+      "tab": "team",
+      "open": "A",
+      "maskedRuns": 9
+    },
+    {
+      "file": "03-paid-chat-line-and-received.png",
+      "who": "anya",
+      "tab": "team",
+      "open": "A",
+      "maskedRuns": 9
+    },
+    {
+      "file": "04-non-booker-label-only.png",
+      "who": "mila",
+      "tab": "team",
+      "open": "A",
+      "maskedRuns": 1
+    },
+    {
+      "file": "05-part-payment-needs-checking.png",
+      "who": "anya",
+      "tab": "team",
+      "open": "B",
+      "maskedRuns": 9
+    },
+    {
+      "file": "06-handled-stays-handled-in-group.png",
+      "who": "anya",
+      "tab": "handled",
+      "open": "C",
+      "maskedRuns": 5
+    },
+    {
+      "file": "08-line-opens-book-date.png"
+    },
+    {
+      "file": "08-line-opens-book-date.png"
+    },
+    {
+      "file": "08-line-opens-book-date.png"
+    },
+    {
+      "file": "09-booked-label-and-group-gone.png",
+      "who": "anya",
+      "tab": "team",
+      "open": "A",
+      "maskedRuns": 10
+    }
+  ],
+  "cleanup": {
+    "event": {
+      "id": "506b682b-9b34-41bf-b436-d495903f7e0f",
+      "title": "ZZ TEST child's 6th Birthday",
+      "archiveStatus": 200,
+      "isArchived": true,
+      "archivedAt": "2026-11-18T18:22:46.710Z"
+    },
+    "appSignOut": {
+      "logout": 200,
+      "readAfter": 401,
+      "launcherSignOut": 200
+    },
+    "conversations": "archived 3 (render job job-dbuuq8ff3r2c73fqhkh0, guarded by ids, ZZ TEST 996 4875 names and provider=simulator)",
+    "readBack": {
+      "admin": {
+        "stillVisible": [],
+        "signOut": 200,
+        "oldCookieAfter": 401
+      },
+      "anya": {
+        "stillVisible": [],
+        "signOut": 200,
+        "oldCookieAfter": 401
+      },
+      "mila": {
+        "stillVisible": [],
+        "signOut": 200,
+        "oldCookieAfter": 401
+      }
+    }
+  }
+}
