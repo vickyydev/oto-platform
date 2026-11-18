@@ -250,12 +250,15 @@ update: (id: string, patch: Record<string, unknown>) =>
       () => cloudMembersApi.update(id, patch),
       (stationId) => onBox<{ member: ApiMember }>(stationId, 'member.update', { memberId: id, ...patch }),
     ),
-addChild: (memberId: string, body: Record<string, unknown>, id: string = newRecordId()) => {
+addChild: (memberId: string, body: Record<string, unknown>, id: string = newRecordId(), fromDisplay = false) => {
     // `id` given: the till's own, re-sent on a retry (SCRUM-871), so the
     // platform answers with the child that exists rather than a second one.
+    // SCRUM-1014 — `fromDisplay`: the family added this child on the
+    // customer display; the platform's audit row names it. The box lane's
+    // fact carries no source.
     return viaLane(
       () =>
-        cloudMembersApi.addChild(memberId, body, id),
+        cloudMembersApi.addChild(memberId, fromDisplay ? { ...body, source: 'customer_display' } : body, id),
       (stationId) => onBox<{ child: ApiChild }>(stationId, 'child.create', { childId: id, memberId, ...body }),
     );
   },

@@ -64,7 +64,12 @@ interface SavedChildrenReviewProps<Child extends SavedChildrenReviewChoice> {
    * site says its edits are this booking's only.
    */
   detailsStore?: 'member-record' | 'booking-only';
-  /** The separate display reviews saved names and ages; other changes use staff. */
+  /**
+   * The paired customer display. SCRUM-1014 — the family adds and removes
+   * children there as on the prototype's customer screen ("+ A new child",
+   * "Remove from saved", a new child's name and age up to 12); the till
+   * carries each change out. Allergies stay off this screen.
+   */
   publicMode?: boolean;
   busy?: boolean;
   onStaffHelp?: () => void;
@@ -124,7 +129,7 @@ export function SavedChildrenReview<Child extends SavedChildrenReviewChoice>({
           {slots.length === 1 ? t('childReview.titleOne') : t('childReview.titleMany')}
         </h2>
         <p className="mt-1 text-lg text-foreground/60">
-          {publicMode ? t('childReview.subtitlePublic') : t('childReview.subtitle')}
+          {t('childReview.subtitle')}
         </p>
       </div>
 
@@ -169,7 +174,7 @@ export function SavedChildrenReview<Child extends SavedChildrenReviewChoice>({
                   )
                 ) : (
                   <Badge variant="outline" className="gap-1.5 px-3 py-1.5 text-base text-(--cd-badge-new)">
-                    <UserPlus className="h-4 w-4" /> {publicMode ? t('childReview.chooseOrAsk') : t('childReview.newWillSave')}
+                    <UserPlus className="h-4 w-4" /> {t('childReview.newWillSave')}
                   </Badge>
                 )}
               </div>
@@ -180,7 +185,7 @@ export function SavedChildrenReview<Child extends SavedChildrenReviewChoice>({
                   <Input
                     aria-label={t('childReview.nameAria', { n: idx + 1 })}
                     value={slot.name}
-                    disabled={busy || publicMode && !prefilled}
+                    disabled={busy}
                     maxLength={publicMode ? 100 : undefined}
                     onChange={(e) => onUpdateSlot(slot.id, { name: e.target.value })}
                     placeholder={t('superviseConsent.fullName')}
@@ -191,9 +196,8 @@ export function SavedChildrenReview<Child extends SavedChildrenReviewChoice>({
                   <label className="text-lg text-foreground/70">{t('superviseConsent.age')}</label>
                   <ChildDobPicker
                     lang={lang}
-                    disabled={busy || publicMode && !prefilled}
+                    disabled={busy}
                     referenceDate={publicMode ? publicReferenceDate : undefined}
-                    maxAge={publicMode ? 17 : undefined}
                     dateOfBirth={slot.dateOfBirth}
                     age={effectiveAge}
                     childName={slot.name}
@@ -250,8 +254,7 @@ export function SavedChildrenReview<Child extends SavedChildrenReviewChoice>({
                     onChange={(e) => {
                       const v = e.target.value;
                       if (v === '__new__') {
-                        if (publicMode) onStaffHelp?.();
-                        else onMarkNew(slot.id);
+                        onMarkNew(slot.id);
                         return;
                       }
                       const child = savedChildren.find((c) => c.id === v);
@@ -269,7 +272,7 @@ export function SavedChildrenReview<Child extends SavedChildrenReviewChoice>({
                         })}
                       </option>
                     ))}
-                    <option value="__new__">{publicMode ? t('childReview.newChildAsk') : t('childReview.newChild')}</option>
+                    <option value="__new__">{t('childReview.newChild')}</option>
                   </select>
                 )}
 
@@ -279,10 +282,10 @@ export function SavedChildrenReview<Child extends SavedChildrenReviewChoice>({
                     size="lg"
                     // SCRUM-975 — readable on a dark screen, the same red on a light one (`--cd-remove`).
                     className="h-12 rounded-2xl px-4 text-base text-(--cd-remove) hover:text-(--cd-remove)"
-                    disabled={!publicMode && busy}
-                    onClick={() => publicMode ? onStaffHelp?.() : onRemoveSaved(slot.id, slot.savedChildId!)}
+                    disabled={busy}
+                    onClick={() => onRemoveSaved(slot.id, slot.savedChildId!)}
                   >
-                    <Trash2 className="mr-2 h-5 w-5" /> {publicMode ? t('childReview.askRemove') : t('childReview.removeSaved')}
+                    <Trash2 className="mr-2 h-5 w-5" /> {t('childReview.removeSaved')}
                   </Button>
                 )}
               </div>

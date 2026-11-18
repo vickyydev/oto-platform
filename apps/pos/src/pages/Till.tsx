@@ -13,6 +13,7 @@ import { useCustomerDisplayPref } from '@/lib/customerDisplayPref';
 import { childReviewPatch, useChildReviewSave, useTicketDisplay } from '@/lib/displaySession';
 import { ChildReviewPromptSchema, childReviewAge, ConsentActionSchema, ConsentPromptSchema, consentSlotsComplete, consentActionAllowed,
   newId, type ChildReviewPrompt, type ConsentFormStep, type ConsentPrompt } from '@oto/shared';
+import { familyReviewChange, familyReviewChangeLine } from '@/lib/familyReviewChange';
 import { useCustomerTheme } from '@/lib/themePref';
 import { computeLineTotal, computeLineBreakdown, priceForTier, unpricedCartLines } from '@/lib/pricing';
 import { resolveRateToday } from '@/lib/pricingMode';
@@ -621,6 +622,14 @@ export default function Till() {
    */
   const [displayAnswerRevision, setDisplayAnswerRevision] = useState(0);
   const [reviewStaffOnly, setReviewStaffOnly] = useState(false);
+  /**
+   * SCRUM-1014 — the last change the family made to who is saved on the
+   * paired display (a child removed, a new child named), said to the cashier
+   * above the review; and the places whose new child the family named there,
+   * so the record the gate writes for it says it came from the display.
+   */
+  const [reviewDisplayChange, setReviewDisplayChange] = useState<string | null>(null);
+  const reviewDisplaySlotsRef = useRef(new Set<string>());
   const [consentStaffOnly, setConsentStaffOnly] = useState(false);
   const [consentPrivateOpen, setConsentPrivateOpen] = useState(false);
   const [consentCompletedScope, setConsentCompletedScope] = useState<string | null>(null);
@@ -957,6 +966,8 @@ export default function Till() {
     setReviewReferenceDate(reviewDate());
     setReviewRevision(0);
     setReviewStaffOnly(false);
+    setReviewDisplayChange(null);
+    reviewDisplaySlotsRef.current = new Set();
     setConsentStaffOnly(false);
     setConsentPrivateOpen(false);
     setConsentCompletedScope(null);
@@ -2168,6 +2179,8 @@ export default function Till() {
     setReviewReferenceDate(reviewDate());
     setReviewRevision(0);
     setReviewStaffOnly(false);
+    setReviewDisplayChange(null);
+    reviewDisplaySlotsRef.current = new Set();
     setConsentStaffOnly(false);
     setConsentPrivateOpen(false);
     setConsentCompletedScope(null);
@@ -2297,9 +2310,7 @@ export default function Till() {
   };
 
   // Drop the saved-profile link and blank the slot — entered fresh as a new child.
-  const handleMarkNew = (slotId: string) => {
-    if (reviewSave.save.status !== 'idle') return;
-    setReviewStaffOnly(true);
+  const markSlotNew = (slotId: string) => {
     setReviewRevision(previous => previous + 1);
     handleUpdateSlot(slotId, {
       savedChildId: undefined,
@@ -2310,6 +2321,12 @@ export default function Till() {
       foodRestrictions: '',
     });
     setConfirmedSavedIds((prev) => prev.filter((x) => x !== slotId));
+  };
+  // Pressed here, on the till: staff take the review over from the display.
+  const handleMarkNew = (slotId: string) => {
+    if (reviewSave.save.status !== 'idle') return;
+    setReviewStaffOnly(true);
+    markSlotNew(slotId);
   };
 
   /**
@@ -2356,6 +2373,44 @@ export default function Till() {
           variant: 'destructive',
         });
       });
+  };
+
+  /**
+   * SCRUM-1014 — THE FAMILY'S OWN "REMOVE FROM SAVED", PRESSED ON THE PAIRED
+   * CUSTOMER DISPLAY (the owner's ruling of 19 November). As the prototype's
+   * customer screen does it: the saved child comes off the family's record
+   * and the place is emptied for a new child. Carried out here, by the same
+   * audited archive as the button above, with the audit row naming the
+   * customer display of this station; the cashier is told on this screen.
+   * A removal that did not land changes nothing: the child stays, the toast
+   * says so, and the review comes back to staff (the display then asks the
+   * family to follow the staff screen).
+   */
+  const removeSavedFromDisplay = async (slotId: string, saved: SavedChild): Promise<boolean> => {
+    const scope = reviewContext.current.scope;
+    const memberId = reviewContext.current.member?.id;
+    const currentRemoval = () => reviewEpoch === saleEpochRef.current && reviewContext.current.scope === scope
+      && reviewContext.current.member?.id === memberId
+      && reviewContext.current.slots.some(slot => slot.id === slotId && slot.savedChildId === saved.id);
+    if (!memberId || !currentRemoval()) return false;
+    try {
+      await childrenApi.archive(saved.id, { fromDisplay: true });
+    } catch (err) {
+      if (!currentRemoval()) return false;
+      toast({
+        title: "Couldn't remove this child",
+        description: `${err instanceof Error ? err.message : 'Unknown error'} The family asked on the customer display; ${saved.childName} is still on the member's saved list. Finish the review here.`,
+        variant: 'destructive',
+      });
+      setReviewStaffOnly(true);
+      setReviewRevision(previous => previous + 1);
+      return false;
+    }
+    if (!currentRemoval()) return false;
+    setMember((m) => m?.id === memberId
+      ? { ...m, savedChildren: (m.savedChildren ?? []).filter((c) => c.id !== saved.id) } : m);
+    markSlotNew(slotId);
+    return true;
   };
 
   // Every slot must be named + aged; every still-linked saved child re-confirmed.
@@ -2512,7 +2567,10 @@ export default function Till() {
           }),
           childIdFor: (slotId) => gateIdFor(gateChildIdsRef.current, slotId),
           matchedSlots: gateMatchedChildrenRef.current,
-          addChild: (memberId, body, id) => membersApi.addChild(memberId, body, id),
+          // SCRUM-1014 — a new child the family named on the customer display is
+          // written with that source, so its audit row names the display.
+          addChild: (memberId, body, id) => membersApi.addChild(memberId, body, id,
+            [...reviewDisplaySlotsRef.current].some((slotId) => gateChildIdsRef.current.get(slotId) === id)),
           updateChild: (childId, patch) => membersApi.updateChild(childId, patch),
           onSaved: (slotId, child, guardianId) => {
             if (!ownSale()) return;
@@ -3793,8 +3851,9 @@ export default function Till() {
   const consentScope = `${reviewScope}:${consentSignature}`;
   const consentContext = useRef({ scope: consentScope, signature: consentSignature, consent, online: displayOnline, step });
   consentContext.current = { scope: consentScope, signature: consentSignature, consent, online: displayOnline, step };
+  // SCRUM-1014 — a place with no saved child in it goes to the display too:
+  // the family names the new child there, as on the prototype's customer screen.
   const childReview = step === 8 && displayOnline && !reviewStaffOnly && !!member && superSlots.length > 0
-    && superSlots.every(slot => !!slot.savedChildId)
     && ChildReviewPromptSchema.safeParse({ ...reviewCandidate, kind: 'child_review', requestId: 'validation' }).success
     ? reviewCandidate : undefined;
   reviewContext.current.eligible = !!childReview;
@@ -3919,21 +3978,36 @@ export default function Till() {
         if (action.action === 'back') { handleSupervisionBack(); return true; }
         const slot = current.slots.find(item => item.id === action.slotId);
         if (!slot) return false;
-        if (action.action === 'select') {
-          if (action.choiceId === null) { setReviewStaffOnly(true); setReviewRevision(previous => previous + 1); return true; }
+        // SCRUM-1014 — the family adds and removes children on the display
+        // ("+ A new child", "Remove from saved", a new child's name and age):
+        // what each means here is `lib/familyReviewChange`.
+        if (action.action === 'remove' || action.action === 'new_child' || action.action === 'select' && action.choiceId === null) {
+          const change = familyReviewChange(action, { slots: current.slots,
+            savedChildren: current.member?.savedChildren ?? [], referenceDate: reviewReferenceDate });
+          if (!change) return false;
+          if (change.kind === 'mark_new') { markSlotNew(change.slotId); return true; }
+          if (change.kind === 'remove') {
+            if (await removeSavedFromDisplay(change.slotId, change.child)) setReviewDisplayChange(familyReviewChangeLine(change));
+          } else {
+            handleUpdateSlot(change.slotId, change.patch);
+            reviewDisplaySlotsRef.current.add(change.slotId);
+            setReviewDisplayChange(familyReviewChangeLine(change));
+          }
+        } else if (action.action === 'select') {
           const saved = current.member?.savedChildren?.find(child => child.id === action.choiceId);
           if (!saved || current.slots.some(item => item.id !== slot.id && item.savedChildId === saved.id)) return false;
           handleAssignSaved(slot.id, saved);
           return true;
+        } else {
+          if (action.savedChildId !== slot.savedChildId) return false;
+          const saved = current.member?.savedChildren?.find(child => child.id === slot.savedChildId);
+          if (!saved || !slot.savedChildId || !action.name.trim() || action.ageYears === null || action.ageYears > 17
+            || action.dateOfBirth !== null && childReviewAge(action.dateOfBirth, reviewReferenceDate) !== action.ageYears) return false;
+          const patch = childReviewPatch(action, saved);
+          handleUpdateSlot(slot.id, { name: action.name.trim(), dateOfBirth: action.dateOfBirth ?? undefined, age: String(action.ageYears) });
+          setConfirmedSavedIds(previous => previous.filter(id => id !== slot.id));
+          await reviewSave.confirm(slot.id, slot.savedChildId, patch, answer.actionId);
         }
-        if (action.savedChildId !== slot.savedChildId) return false;
-        const saved = current.member?.savedChildren?.find(child => child.id === slot.savedChildId);
-        if (!saved || !slot.savedChildId || !action.name.trim() || action.ageYears === null || action.ageYears > 17
-          || action.dateOfBirth !== null && childReviewAge(action.dateOfBirth, reviewReferenceDate) !== action.ageYears) return false;
-        const patch = childReviewPatch(action, saved);
-        handleUpdateSlot(slot.id, { name: action.name.trim(), dateOfBirth: action.dateOfBirth ?? undefined, age: String(action.ageYears) });
-        setConfirmedSavedIds(previous => previous.filter(id => id !== slot.id));
-        await reviewSave.confirm(slot.id, slot.savedChildId, patch, answer.actionId);
       }
       if (reviewEpoch !== saleEpochRef.current || reviewContext.current.scope !== current.scope) return false;
       setReviewRevision(previous => previous + 1);
@@ -4143,7 +4217,9 @@ export default function Till() {
             )}
           </>)}
           {step === 8 && tier && (
-            <>{reviewSaveNotice(tFor('en'))}<SavedChildrenReview
+            <>{reviewDisplayChange && <p className="mx-6 mt-3 text-sm text-muted-foreground" role="status"
+              data-testid="review-display-change">{reviewDisplayChange}</p>}
+            {reviewSaveNotice(tFor('en'))}<SavedChildrenReview
               slots={superSlots}
               savedChildren={member?.savedChildren ?? []}
               confirmedIds={confirmedSavedIds}

@@ -465,6 +465,17 @@ export default function Display() {
   const consentDoneWaiting = actionOf((answer as { payload?: unknown } | undefined)?.payload) === 'done'
     || pending.current?.type === 'display.consent' && actionOf(pending.current.payload) === 'done';
   /**
+   * SCRUM-1014 — the returning family's review never locks for a new child's
+   * name and age, which travel as they are typed: the family keeps typing
+   * while the till takes the last one. It locks, as before, for everything
+   * else it sent (a confirm, a remove, Done, Ask the team).
+   */
+  const reviewAnswerPending = busy || !!answer || !!pending.current;
+  const isNewChild = (value: unknown): boolean => actionOf(value) === 'new_child';
+  const reviewLocked = reviewAnswerPending
+    && !((!pending.current || languageOut || pending.current.type === 'display.child_review' && isNewChild(pending.current.payload))
+      && (!answer || isNewChild((answer as { payload?: unknown }).payload)));
+  /**
    * SCRUM-943 — on the family's form a dropped connection is said in one line
    * laid over the top of the form, so nothing under the family's finger moves
    * as it appears. What they type is kept and sent by itself when the line
@@ -521,7 +532,7 @@ export default function Display() {
 
   return <div className={`${theme} h-[100dvh] w-full min-w-0 overflow-hidden bg-background text-foreground flex flex-col`} data-testid="separate-display">
     {session && reconnecting && !onConsentForm && <p role="status" className="shrink-0 px-4 py-2 text-sm">{t('display.reconnecting')}</p>}
-    {error && (!(session && connection !== 'connected') || pending.current) && !(onConsentForm && goesByItself) && <div role="alert" className="shrink-0 bg-amber-100 px-4 py-3 text-sm text-amber-950 flex items-center justify-between gap-3">
+    {error && (!(session && connection !== 'connected') || pending.current) && !((onConsentForm || !!childReview) && goesByItself) && <div role="alert" className="shrink-0 bg-amber-100 px-4 py-3 text-sm text-amber-950 flex items-center justify-between gap-3">
       <span>{session ? displayErrorText(error, lang, t) : error}</span>
       <Button size="sm" onClick={() => { if (pairingMode === 'expiry-error') { void expirePairing(); return; } const intent = pending.current; if (intent) void send(intent.type, intent.payload); else setRestart(value => value + 1); }}>{session ? t('display.retry') : 'Retry'}</Button>
     </div>}
@@ -552,12 +563,12 @@ export default function Display() {
       </div>
     </> : childReview ? <>
       <div className="sr-only" data-testid="display-station">{session.station.name} · {session.device.name}</div>
-      <div className="flex-1 min-h-0" inert={busy || !!answer || !!pending.current}>
+      <div className="flex-1 min-h-0" inert={reviewLocked}>
         <PublicSavedChildrenReview key={childReview.visitorId} prompt={childReview}
-          busy={busy || !!answer || !!pending.current}
-          onAction={action => { void send('display.child_review', action); }} />
+          busy={reviewLocked} answerPending={reviewAnswerPending}
+          onAction={action => { void send('display.child_review', action, action.action === 'new_child'); }} />
       </div>
-      {(busy || !!answer) && <p role="status" className="shrink-0 text-center py-3">
+      {reviewLocked && (busy || !!answer) && <p role="status" className="shrink-0 text-center py-3">
         {busy ? t('display.sending') : t('display.waitForConfirm')}
       </p>}
     </> : view?.consent ? <>

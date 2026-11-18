@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { STATION_LEASE_TTL_S, stationLeaseLive } from '../src/station-session';
 import { projectDisplayDiagnosticDocument } from '../src/display-presentation';
-import { ChildReviewActionSchema, ChildReviewPromptSchema, childReviewAge } from '../src/display-child-review';
+import { ChildReviewActionSchema, ChildReviewPromptSchema, DISPLAY_CHILD_MAX_AGE, childReviewAge, childReviewSlotReady } from '../src/display-child-review';
 import { DisplayFnbCartSchema, readDisplayFnbCart } from '../src/display-fnb';
 import { ConsentActionSchema, ConsentPromptSchema, consentActionAllowed } from '../src/display-consent';
 import { DisplayMerchCartSchema, readDisplayMerchCart } from '../src/display-merch';
@@ -120,6 +120,34 @@ describe('finite saved-child review contract (SCRUM-201)', () => {
     const projected = ChildReviewPromptSchema.parse({ ...prompt, slots: [{ ...prompt.slots[0], medicalNotes: 'private', childPhotoUrl: 'private' }],
       choices: [{ ...prompt.choices[0], medicalNotes: 'private' }] });
     expect(JSON.stringify(projected)).not.toContain('private');
+  });
+
+  /**
+   * SCRUM-1014 — the family adds and removes children on the display, as the
+   * prototype's review lets them: an empty place for a new child, named and
+   * aged, lets them go on; a saved child comes off their record by name.
+   */
+  it('lets a new child with a name and an age continue, and only then', () => {
+    const fresh = { id: 'new', savedChildId: null, name: 'Mali', dateOfBirth: null, ageYears: 4, confirmed: false };
+    const both = { ...prompt, slots: [{ ...prompt.slots[0], confirmed: true }, fresh], canContinue: true };
+    expect(ChildReviewPromptSchema.safeParse(both).success).toBe(true);
+    expect(ChildReviewPromptSchema.safeParse({ ...both, slots: [both.slots[0], { ...fresh, name: '' }] }).success).toBe(false);
+    expect(ChildReviewPromptSchema.safeParse({ ...both, slots: [both.slots[0], { ...fresh, ageYears: null }] }).success).toBe(false);
+    expect(ChildReviewPromptSchema.safeParse({ ...both, slots: [both.slots[0], { ...fresh, name: '' }], canContinue: false }).success).toBe(true);
+    expect(childReviewSlotReady(fresh)).toBe(true);
+    expect(childReviewSlotReady({ ...fresh, name: '  ' })).toBe(false);
+  });
+  it('takes a removal by the saved child it names, and a new child aged up to 12 only', () => {
+    const fence = { requestId: 'request', visitorId: 'visitor', slotId: 'slot' };
+    expect(ChildReviewActionSchema.safeParse({ ...fence, action: 'remove', savedChildId: 'child' }).success).toBe(true);
+    expect(ChildReviewActionSchema.safeParse({ ...fence, action: 'remove', savedChildId: null }).success).toBe(false);
+    const added = { ...fence, action: 'new_child', name: ' Mali ', dateOfBirth: '2022-01-01', ageYears: 4 };
+    expect(ChildReviewActionSchema.parse(added)).toEqual({ ...added, name: 'Mali' });
+    expect(DISPLAY_CHILD_MAX_AGE).toBe(12);
+    for (const invalid of [{ ...added, ageYears: 13 }, { ...added, ageYears: null }, { ...added, name: ' ' },
+      { ...added, allergies: 'private' }, { ...added, dateOfBirth: '2022-02-30' }]) {
+      expect(ChildReviewActionSchema.safeParse(invalid).success).toBe(false);
+    }
   });
 });
 

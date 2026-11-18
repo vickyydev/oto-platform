@@ -10,6 +10,14 @@ const birthDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(value => {
 const age = z.number().int().min(0).max(120);
 const childAge = z.number().int().min(0).max(17);
 
+/**
+ * SCRUM-1014 — the oldest age the paired display offers for a child: the
+ * till's own picker's (`MAX_CHILD_AGE` in the till's `lib/childDob.ts`, the
+ * prototype's). A new child the family adds on the display is never older.
+ */
+export const DISPLAY_CHILD_MAX_AGE = 12;
+const newChildAge = z.number().int().min(0).max(DISPLAY_CHILD_MAX_AGE);
+
 /** A strict whole-years age against the staff-selected visit date, never host time. */
 export function childReviewAge(dateOfBirth: string, referenceDate: string): number | null {
   if (!birthDate.safeParse(dateOfBirth).success || !birthDate.safeParse(referenceDate).success
@@ -26,6 +34,17 @@ const promptObject = z.object({
   save: z.object({ status: z.enum(['idle', 'saving', 'failed']), slotId: id.nullable(), actionId: requestId.nullable() }),
   canContinue: z.boolean(),
 });
+
+type PromptSlot = z.infer<typeof promptObject>['slots'][number];
+
+/**
+ * SCRUM-1014 — a place the family may go on from: a saved child they
+ * confirmed, or a new child (no saved record) with a name and an age, as the
+ * prototype's review lets them continue (`reviewCanContinue`).
+ */
+export function childReviewSlotReady(slot: Pick<PromptSlot, 'savedChildId' | 'name' | 'ageYears' | 'confirmed'>): boolean {
+  return slot.savedChildId ? slot.confirmed : slot.name.trim().length > 0 && slot.ageYears !== null;
+}
 
 function validatePrompt(value: z.infer<typeof promptObject>, ctx: z.RefinementCtx): void {
   const slotIds = new Set(value.slots.map(slot => slot.id));
@@ -45,7 +64,7 @@ function validatePrompt(value: z.infer<typeof promptObject>, ctx: z.RefinementCt
     : !value.save.slotId || !slotIds.has(value.save.slotId) || !value.save.actionId) {
     issue(['save'], 'The child save status is not valid');
   }
-  if (value.canContinue !== (value.save.status === 'idle' && value.slots.every(slot => slot.confirmed))) {
+  if (value.canContinue !== (value.save.status === 'idle' && value.slots.every(childReviewSlotReady))) {
     issue(['canContinue'], 'Continue requires every child to be confirmed');
   }
 }
@@ -62,6 +81,18 @@ export const ChildReviewActionSchema = z.discriminatedUnion('action', [
   fence.extend({ action: z.literal('back') }).strict(),
   fence.extend({ action: z.literal('retry'), slotId: id, retryActionId: requestId }).strict(),
   fence.extend({ action: z.literal('staff_help') }).strict(),
+  /**
+   * SCRUM-1014 — the family's own changes to who is saved, as the prototype's
+   * review makes them (`SavedChildrenReview.tsx`). `select` with no choice
+   * already says "+ A new child": the place is emptied for a new child.
+   * `remove` is "Remove from saved": the saved child comes off the family's
+   * record (archived, never deleted) and the place is emptied the same way.
+   * `new_child` is the name and age the family types into an empty place,
+   * sent as they type it; the till holds it as a new child and saves it to
+   * the family's record with the rest of the visit's children.
+   */
+  fence.extend({ action: z.literal('remove'), slotId: id, savedChildId: id }).strict(),
+  fence.extend({ action: z.literal('new_child'), slotId: id, name: name.min(1), dateOfBirth: birthDate.nullable(), ageYears: newChildAge }).strict(),
 ]);
 export type ChildReviewAction = z.infer<typeof ChildReviewActionSchema>;
 

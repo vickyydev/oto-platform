@@ -18,8 +18,9 @@ import { startFamilyFormHarness } from './support/family-form-harness/server';
  * 2. On a phone held sideways the family's form had 140 of 360 pixels: it now
  *    has at least half, every word of "Still needed" whole beside Done; the
  *    upright phone keeps its bars as they were.
- * 7. The returning family's "Ask the team to remove a child" reads on a dark
- *    display (it was about 1.9 to 1) and is the red it was on a light one;
+ * 7. The returning family's remove line ("Remove from saved" since
+ *    SCRUM-1014) reads on a dark display (it was about 1.9 to 1) and is
+ *    the red it was on a light one;
  *    the "new child" badge reads on a light display (about 3 to 1) and is the
  *    primary it was on a dark one.
  * 8. The form's first line never runs under the language button, in any of
@@ -224,16 +225,16 @@ async function reviewInks(page: Page, removeWords: string, newWords: string) {
 }
 
 describe.skipIf(!harness)('SCRUM-975 (7): the returning family’s remove line and new badge read on both looks', () => {
-  const remove = word('childReview.askRemove');
-  const fresh = word('childReview.chooseOrAsk');
-  it('dark: "Ask the team to remove a child" reads (4.5 to 1 or more); the new badge is the primary it was', async () => {
+  const remove = word('childReview.removeSaved');
+  const fresh = word('childReview.newWillSave');
+  it('dark: "Remove from saved" reads (4.5 to 1 or more); the new badge is the primary it was', async () => {
     const page = await harness!.open('screen=review&theme=dark&newChild=1', { width: 600, height: 1024 });
     const seen = await reviewInks(page, remove, fresh);
     expect(seen.removeRatio, JSON.stringify(seen)).toBeGreaterThanOrEqual(4.5);
     expect(seen.fresh.colour).toBe(seen.primary);
   }, TAPS);
 
-  it('light: the new badge reads (4.5 to 1 or more); "Ask the team to remove a child" is the red it was', async () => {
+  it('light: the new badge reads (4.5 to 1 or more); "Remove from saved" is the red it was', async () => {
     const page = await harness!.open('screen=review&theme=light&newChild=1', { width: 600, height: 1024 });
     const seen = await reviewInks(page, remove, fresh);
     expect(seen.newRatio, JSON.stringify(seen)).toBeGreaterThanOrEqual(4.5);

@@ -18,9 +18,15 @@ export const childrenApi = {
    * No Idempotency-Key: the route is idempotent in itself — archiving a child
    * that is already archived answers success again and writes nothing — so a
    * second press or a retry needs no replayed body to be safe.
+   *
+   * SCRUM-1014 — `fromDisplay` when the family pressed "Remove from saved" on
+   * this till's customer display: the audit row names the display and the
+   * till's station.
    */
-  archive: (childId: string) =>
-    api.delete<{ ok: true; alreadyArchived: boolean }>(`/members/children/${childId}`),
+  archive: (childId: string, options: { fromDisplay?: boolean } = {}) =>
+    api.delete<{ ok: true; alreadyArchived: boolean }>(
+      `/members/children/${childId}${options.fromDisplay ? '?source=customer_display' : ''}`,
+    ),
 };
 
 /**

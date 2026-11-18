@@ -372,7 +372,8 @@ describe.each(['ru', 'th'] as const)('the supervised-child screens on the custom
       save: { status: 'failed', slotId: 's1', actionId: 'a' },
     } as never;
     const html = under(lang, createElement(PublicSavedChildrenReview, { prompt, busy: false, onAction: () => undefined }));
-    for (const key of ['childReview.saveFailed', 'childReview.retrySave', 'childReview.subtitlePublic', 'childReview.notePublic', 'childReview.continueOnStaff', 'common.done']) {
+    for (const key of ['childReview.saveFailed', 'childReview.retrySave', 'childReview.subtitle', 'childReview.notePublic', 'childReview.continueOnStaff', 'common.done',
+      'childReview.removeSaved', 'childReview.newChild']) {
       expect(html, key).toContain(t(key));
     }
   });

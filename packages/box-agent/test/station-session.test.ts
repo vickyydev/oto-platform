@@ -471,6 +471,65 @@ test('saved-child saves freeze edits and require the original failed action, whi
   } finally { h.close(); }
 });
 
+/**
+ * SCRUM-1014 — the family adds and removes children on the display: a saved
+ * child taken off their record only while it is the one in the place, a new
+ * child named only in an empty place and never older than the till's picker
+ * offers, and Done once that new child has a name and an age.
+ */
+type AnsweredReview = { payload?: { action?: string; name?: string } };
+test('saved-child review takes the family\'s remove and new child only where they fit', async () => {
+  const h = await openChildReview();
+  try {
+    const fence = { requestId: 'review-1', visitorId: 'visitor-1' };
+    for (const payload of [
+      { ...fence, action: 'remove', slotId: 'slot-1', savedChildId: 'child-2' },
+      { ...fence, action: 'remove', slotId: 'other-slot', savedChildId: 'child-1' },
+      { ...fence, action: 'new_child', slotId: 'slot-1', name: 'Mali', dateOfBirth: null, ageYears: 4 },
+    ]) {
+      const result = await h.manager.applyIntent(STATION_ID, { type: 'display.child_review', actionId: 'refused',
+        lastSeenSequence: h.published.document.sequence, payload }, { source: 'display' });
+      assert.equal(result.ok, false, JSON.stringify(payload));
+    }
+    const removed = await h.manager.applyIntent(STATION_ID, { type: 'display.child_review', actionId: 'remove-1',
+      lastSeenSequence: h.published.document.sequence,
+      payload: { ...fence, action: 'remove', slotId: 'slot-1', savedChildId: 'child-1' } }, { source: 'display' });
+    assert.ok(removed.ok);
+    assert.equal((removed.document.prompt?.answer as AnsweredReview | undefined)?.payload?.action, 'remove');
+
+    const empty = { id: 'slot-1', savedChildId: null, name: '', dateOfBirth: null, ageYears: null, confirmed: false };
+    const opened = await h.publish(childReviewPrompt({ requestId: 'review-2', slots: [empty] }));
+    assert.ok(opened.ok);
+    const fence2 = { requestId: 'review-2', visitorId: 'visitor-1' };
+    for (const payload of [
+      { ...fence2, action: 'new_child', slotId: 'slot-1', name: 'Mali', dateOfBirth: null, ageYears: 13 },
+      { ...fence2, action: 'new_child', slotId: 'slot-1', name: 'Mali', dateOfBirth: '2022-01-01', ageYears: 7 },
+      { ...fence2, action: 'done' },
+    ]) {
+      const result = await h.manager.applyIntent(STATION_ID, { type: 'display.child_review', actionId: 'refused-2',
+        lastSeenSequence: opened.document.sequence, payload }, { source: 'display' });
+      assert.equal(result.ok, false, JSON.stringify(payload));
+    }
+    const named = await h.manager.applyIntent(STATION_ID, { type: 'display.child_review', actionId: 'new-1',
+      lastSeenSequence: opened.document.sequence,
+      payload: { ...fence2, action: 'new_child', slotId: 'slot-1', name: ' Mali ', dateOfBirth: '2022-01-01', ageYears: 4 } },
+    { source: 'display' });
+    assert.ok(named.ok);
+    assert.equal((h.manager.snapshotFor(named.document, 'customer', null).document.prompt?.answer as AnsweredReview | undefined)
+      ?.payload?.name, 'Mali');
+
+    const ready = childReviewPrompt({ requestId: 'review-3', canContinue: true,
+      slots: [{ ...empty, name: 'Mali', dateOfBirth: '2022-01-01', ageYears: 4 }] });
+    const shown = await h.publish(ready);
+    assert.ok(shown.ok);
+    const done = await h.manager.applyIntent(STATION_ID, { type: 'display.child_review', actionId: 'done-3',
+      lastSeenSequence: shown.document.sequence, payload: { action: 'done', requestId: 'review-3', visitorId: 'visitor-1' } },
+    { source: 'display' });
+    assert.ok(done.ok);
+    assert.equal(h.facts.length, 0, 'the review registers nothing itself: the till writes the family record');
+  } finally { h.close(); }
+});
+
 test('saved-child publication fails closed for wrong step, stale dates, duplicate assignment and excessive drafts', async () => {
   const h = await openChildReview();
   try {

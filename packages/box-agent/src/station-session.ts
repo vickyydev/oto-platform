@@ -1109,6 +1109,21 @@ function childReviewAnswer({ document, intent, serverTime }: IntentContext): Int
       return notPermitted('Enter a valid child date of birth and matching age.');
     }
   }
+  // SCRUM-1014 — the family takes a saved child off their record only while
+  // that child is the one in the place, and names a new child only in a place
+  // with no saved child in it.
+  if (payload.action === 'remove'
+    && prompt.data.slots.find(slot => slot.id === payload.slotId)?.savedChildId !== payload.savedChildId) {
+    return notPermitted('That saved child is no longer assigned to this slot.');
+  }
+  if (payload.action === 'new_child') {
+    if (prompt.data.slots.find(slot => slot.id === payload.slotId)?.savedChildId !== null) {
+      return notPermitted('Choose "+ A new child" for this slot first.');
+    }
+    if (payload.dateOfBirth !== null && childReviewAge(payload.dateOfBirth, prompt.data.referenceDate) !== payload.ageYears) {
+      return notPermitted('Enter a valid child date of birth and matching age.');
+    }
+  }
   if (payload.action === 'done' && !prompt.data.canContinue) return notPermitted('Confirm every child before continuing.');
   if (payload.action === 'retry' && (prompt.data.save.status !== 'failed'
     || payload.slotId !== prompt.data.save.slotId || payload.retryActionId !== prompt.data.save.actionId)) {

@@ -39,7 +39,10 @@ export function goesAgainByItself(intent: Pick<StationIntent, 'type' | 'payload'
   if (!intent) return false;
   if (intent.type === 'display.set_language') return true;
   const action = (intent.payload as { action?: unknown } | undefined)?.action;
-  return intent.type === 'display.consent' && (action === 'fill' || action === 'photo');
+  // SCRUM-1014 — a new child's name and age on the returning family's review
+  // travel as they are typed, as the form's `fill` does.
+  return intent.type === 'display.consent' && (action === 'fill' || action === 'photo')
+    || intent.type === 'display.child_review' && action === 'new_child';
 }
 
 /** The display's answers that are sent again by themselves once the box is heard from again (SCRUM-975). */

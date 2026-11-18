@@ -318,7 +318,8 @@ describe('SCRUM-872: a guardian found at the form who already has saved children
     expect(gate).toMatch(/saveGateChildren\(/);
     // The old direct create inside the loop is gone; the port hands the id in.
     expect(gate).not.toMatch(/membersApi\.addChild\(guardian\.id/);
-    expect(gate).toMatch(/addChild: \(memberId, body, id\) => membersApi\.addChild\(memberId, body, id\)/);
+    // SCRUM-1014 — and, after the id, whether the family named it on the customer display.
+    expect(gate).toMatch(/addChild: \(memberId, body, id\) => membersApi\.addChild\(memberId, body, id[,)]/);
     expect(gate).toMatch(/childIdFor: \(slotId\) => gateIdFor\(gateChildIdsRef\.current, slotId\)/);
     expect(gate).toMatch(/applySavedChild\(child, guardianId\)/);
     // The child ids are minted once per gate, with the stay and waiver ids.
