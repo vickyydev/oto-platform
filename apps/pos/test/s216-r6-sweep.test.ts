@@ -68,10 +68,15 @@ describe('the reports open on the branch’s trading month, not a UTC slice', ()
       endDate: '2026-10-07',
       branchId: 'all',
     });
-    // 02:00 on the 1st is still the last trading day of September (day start 05:00).
-    expect(defaultReportFilters(new Date('2026-10-01T02:00:00+07:00'))).toMatchObject({
+    // 23:59 on the 30th is still September's last trading day; 02:00 on the
+    // 1st is already October's (SCRUM-1010: the day runs midnight to midnight).
+    expect(defaultReportFilters(new Date('2026-09-30T23:59:00+07:00'))).toMatchObject({
       startDate: '2026-09-01',
       endDate: '2026-09-30',
+    });
+    expect(defaultReportFilters(new Date('2026-10-01T02:00:00+07:00'))).toMatchObject({
+      startDate: '2026-10-01',
+      endDate: '2026-10-01',
     });
     // A month's first trading day starts that month, never the one before.
     expect(defaultReportFilters(new Date('2026-10-01T09:00:00+07:00'))).toMatchObject({

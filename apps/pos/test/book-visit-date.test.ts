@@ -31,7 +31,7 @@ const WW = { weekday: 100, weekend: 150 };
 
 beforeEach(() => {
   setBranchTimezone('Asia/Bangkok');
-  setBranchDayStart('05:00:00');
+  setBranchDayStart('00:00:00'); // the park's day runs midnight to midnight (SCRUM-1010)
   // The catalogue's holiday ranges, as `loadPublicCatalog` hydrates them.
   hydrateFromApi({
     perBranch: {},
@@ -114,17 +114,17 @@ describe('every price on /book is the chosen day’s', () => {
 describe('the platform’s answer goes stale only when its day is behind this device’s', () => {
   it('an answer from before the trading day rolled is ignored', () => {
     vi.useFakeTimers({ toFake: ['Date'] });
-    vi.setSystemTime(new Date('2026-10-02T21:55:00Z')); // Sat 04:55 Bangkok: trading day Friday
+    vi.setSystemTime(new Date('2026-10-02T16:55:00Z')); // Fri 23:55 Bangkok: trading day Friday
     setBranchRateMode({ date: '2026-10-02', mode: 'weekday', reason: 'Weekday pricing' });
     expect(todayRateMode().mode).toBe('weekday');
-    vi.setSystemTime(new Date('2026-10-02T22:05:00Z')); // Sat 05:05: trading day Saturday
+    vi.setSystemTime(new Date('2026-10-02T17:05:00Z')); // Sat 00:05: trading day Saturday
     expect(branchTradingDate()).toBe('2026-10-03');
     expect(todayRateMode().mode).toBe('weekend');
   });
 
   it('an answer dated ahead of a slow device is the platform’s, and is used', () => {
     vi.useFakeTimers({ toFake: ['Date'] });
-    vi.setSystemTime(new Date('2026-10-02T21:58:00Z')); // this device: Sat 04:58, trading day Friday
+    vi.setSystemTime(new Date('2026-10-02T16:58:00Z')); // this device: Fri 23:58, trading day Friday
     setBranchRateMode({ date: '2026-10-03', mode: 'weekend', reason: 'Weekend pricing' });
     expect(branchTradingDate()).toBe('2026-10-02');
     expect(todayRateMode().mode).toBe('weekend');
