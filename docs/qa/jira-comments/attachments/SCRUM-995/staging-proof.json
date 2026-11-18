@@ -1,0 +1,185 @@
+{
+  "unit": "SCRUM-995 staging proof: a new party item on the adults list is answered as it was saved",
+  "service": "oto-app-staging",
+  "deploy": "dep-dbuoplkipgvc739ir7pg",
+  "liveCommit": "a6877cccfd149a795fd2eee735a10f8de77c0b36",
+  "liveAt": "2026-11-18T11:36:28Z",
+  "signedInAs": "the seeded staging administrator through the launcher (role global_admin)",
+  "park": {
+    "name": "Oto Play Park, Central Floresta",
+    "linkedToTill": true
+  },
+  "party": {
+    "title": "ZZ TEST 995 adults item",
+    "date": "2026-12-02",
+    "created": {
+      "route": "POST /api/admin/events",
+      "status": 201
+    }
+  },
+  "steps": [
+    {
+      "step": "1. Save with Different for adults OFF",
+      "putStatus": 200,
+      "additionalBilling": {
+        "status": "plan_only",
+        "message": "No newly approved priced additions."
+      },
+      "savedAdultsDiffer": false
+    },
+    {
+      "step": "2. On screen: the switch turned on (not saved), + NEW ITEM on the adults list",
+      "savedBefore": {
+        "adultsDiffer": false,
+        "kids": 0,
+        "adults": 0
+      },
+      "request": {
+        "route": "POST /api/events/:id/beo/party-menu-items",
+        "sent": {
+          "menu": "adults",
+          "name": "ZZ TEST 995 adults lemonade",
+          "station": "kitchen",
+          "price": 95,
+          "free": false
+        }
+      },
+      "answer": {
+        "status": 200,
+        "line": {
+          "id": "party_f7de93e8-7a0d-4d8b-9fa7-a091cbccfc10",
+          "notes": "",
+          "price": 95,
+          "included": false,
+          "itemName": "ZZ TEST 995 adults lemonade",
+          "quantity": 1,
+          "productCode": "PARTY-90EA732F",
+          "chargeApproved": true
+        },
+        "lineHasBillingSync": false,
+        "additionalBilling": {
+          "status": "plan_only",
+          "message": "No newly approved priced additions."
+        },
+        "productCode": "PARTY-90EA732F",
+        "replayed": false
+      },
+      "savedAfter": {
+        "adultsDiffer": false,
+        "line": {
+          "id": "party_f7de93e8-7a0d-4d8b-9fa7-a091cbccfc10",
+          "itemName": "ZZ TEST 995 adults lemonade",
+          "quantity": 1,
+          "price": 95,
+          "included": false,
+          "productCode": "PARTY-90EA732F",
+          "chargeApproved": true,
+          "source": null,
+          "billingSync": null,
+          "notes": null
+        },
+        "lineHasBillingSync": false
+      },
+      "answeredEqualsSaved": true,
+      "pendingNoticesOnScreen": 0,
+      "toasts": [
+        "New item added ZZ TEST 995 adults lemonade is available in this park's BEO menu as PARTY-90EA732F."
+      ],
+      "picture": "SCRUM-995-adults-new-item-as-saved.png"
+    },
+    {
+      "step": "3. First Save press: the Save asks before billing; the browser answered No by default, nothing was sent",
+      "pageError": {
+        "page": "app-admin",
+        "at": "2026-11-18T11:38:18.829Z",
+        "kind": "pageerror",
+        "text": "Save cancelled before billing."
+      }
+    },
+    {
+      "step": "4. Save again, its question answered Yes (the party is unpaid, so nothing is billed)",
+      "putStatus": 200,
+      "dialogs": [
+        {
+          "type": "confirm",
+          "message": "Save the BEO and bill newly added priced items to this same party if its main receipt is already paid? Included/free items stay included. The original receipt stays unchanged.",
+          "answered": "accept"
+        }
+      ],
+      "additionalBilling": {
+        "status": "plan_only",
+        "message": "Items remain in the plan until the main party is settled."
+      },
+      "pendingNoticesOnScreen": 0,
+      "saved": {
+        "adultsDiffer": true,
+        "kids": [],
+        "adults": [
+          {
+            "id": "party_f7de93e8-7a0d-4d8b-9fa7-a091cbccfc10",
+            "itemName": "ZZ TEST 995 adults lemonade",
+            "quantity": 1,
+            "price": 95,
+            "included": false,
+            "productCode": "PARTY-90EA732F",
+            "chargeApproved": true,
+            "source": null,
+            "billingSync": "plan_only",
+            "notes": null
+          }
+        ]
+      },
+      "picture": "SCRUM-995-adults-item-after-save-again.png"
+    }
+  ],
+  "cleanup": {
+    "at": "2026-11-18T11:41:27.365Z",
+    "party": {
+      "id": "d1aec69d-5d74-4c4d-86a5-b4809af2379c",
+      "title": "ZZ TEST 995 adults item",
+      "delete": {
+        "route": "DELETE /api/admin/events/:id",
+        "status": 204,
+        "error": null
+      }
+    },
+    "readBack": {
+      "appEvent": {
+        "route": "GET /api/admin/events/:id",
+        "status": 404
+      },
+      "appBeo": {
+        "route": "GET /api/events/:id/beo",
+        "status": 404
+      },
+      "zzTest995AtCentralFloresta": [],
+      "listStatus": 200
+    }
+  },
+  "signOut": {
+    "at": "2026-11-18T11:41:30.506Z",
+    "app": {
+      "appLogout": 200,
+      "launcherSignOut": 200,
+      "appUserAfter": 401,
+      "launcherMeAfter": 401
+    }
+  },
+  "images": [
+    {
+      "file": "SCRUM-995-adults-new-item-as-saved.png",
+      "at": "2026-11-18T11:37:58.844Z",
+      "shows": "The BEO kitchen plan, adults tab: the new priced ZZ TEST item as saved, no Additional bill pending notice",
+      "namesMasked": 65,
+      "masks": 0
+    },
+    {
+      "file": "SCRUM-995-adults-item-after-save-again.png",
+      "at": "2026-11-18T11:41:18.114Z",
+      "shows": "The same BEO reopened after saving again: the line as saved, no Additional bill pending notice",
+      "namesMasked": 65,
+      "masks": 0
+    }
+  ],
+  "leftOnStaging": "the till product PARTY-90EA732F named ZZ TEST 995 adults lemonade (a BEO-only party item made by the new-item press); no route removes it, it is left marked ZZ TEST"
+}
