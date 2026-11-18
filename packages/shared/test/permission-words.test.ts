@@ -103,6 +103,22 @@ describe('plain permission sentences (SCRUM-612)', () => {
   });
 });
 
+describe('a credit voucher is a manager’s to issue (SCRUM-482)', () => {
+  it('gives the credit voucher to branch managers and administrators, never to reception or staff', () => {
+    const key = 'pos:voucher:issue_credit' as const;
+    expect((PERMISSIONS as readonly string[]).filter((entry) => entry === key)).toEqual([key]);
+    for (const role of ['platform_admin', 'operator_admin', 'branch_manager'] as const) {
+      expect(ROLE_BUNDLES[role], role).toContain(key);
+    }
+    for (const role of ['reception', 'staff', 'support'] as const) {
+      expect(ROLE_BUNDLES[role], role).not.toContain(key);
+    }
+    // Reception still prints every other voucher.
+    expect(ROLE_BUNDLES.reception).toContain('pos:print:voucher');
+    expect(PERMISSION_WORDS[key]).toMatch(/credit voucher.*approve one for reception/i);
+  });
+});
+
 describe('suite controls permission boundaries (SCRUM-643)', () => {
   const entries = [
     ['console:app_registry:read', /read.*app.*directory.*maintenance/i],

@@ -688,7 +688,14 @@ describe('issue at the till, and minted for a campaign', () => {
 describe('a wallet-credit voucher loads a wallet — exactly once — through the wallet service', () => {
   it('rung up on its own at ฿0, the close loads ฿100 onto a new wallet: a promo_voucher grant, action-keyed, no takings, no drawer', async () => {
     const def = await define({ nameEn: '฿100 food credit', kind: 'wallet_credit', valueType: 'amount', valueSatang: b(100) });
-    const issued = await ctx.app.inject({ method: 'POST', url: '/vouchers/issue', headers: { cookie: tillA }, payload: { definitionId: def } });
+    // SCRUM-482 — a credit voucher is a manager's: reception issues it with the
+    // branch manager approving on the same till (s482-credit-voucher-review).
+    const issued = await ctx.app.inject({
+      method: 'POST',
+      url: '/vouchers/issue',
+      headers: { cookie: tillA },
+      payload: { definitionId: def, approval: { phone: BRANCH_MANAGER.phone, password: BRANCH_MANAGER.password } },
+    });
     expect(issued.statusCode, issued.body).toBe(200);
     const v = issued.json().voucher as { id: string; code: string };
     const looked = await lookup(tillA, v.code);

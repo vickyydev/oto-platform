@@ -3725,6 +3725,7 @@
                 "pos:refund:create",
                 "pos:refund:approve",
                 "pos:voucher:redeem",
+                "pos:voucher:issue_credit",
                 "pos:print:read",
                 "pos:print:receipt",
                 "pos:print:band",
@@ -36397,7 +36398,7 @@
     },
     "/vouchers": {
       "get": {
-        "description": "Every voucher issued at a branch, whatever made it — a booth spin, a counter issue, the import of the old system’s codes — newest first and paged: when, its type and the prize it was won as, what it hands over (and, once used, what the till took off for it), the booth or counter, the names the slip printed (`staffLabel`, today’s roster) or the account that issued it at a counter (`issuedBy`; both null: unattributed), the last four characters of its code and never the whole code, its status, and where, when, by whom and on which sale it was redeemed. Filtered by trading day (from, to — today when absent, at most 366 days), voucher type, booth, who issued it and status. Status is read from the whole row: redeemed, void, held on a till’s cart, expired once its date has passed, printed once paper exists, issued otherwise. `totals` has one line per voucher type over all filters: issued, redeemed, the redemption rate, expired, and the money the tills took off for the redeemed ones.",
+        "description": "Every voucher issued at a branch, whatever made it — a booth spin, a counter issue, the import of the old system’s codes — newest first and paged: when, its type and the prize it was won as, what it hands over (and, once used, what the till took off for it), the booth or counter, the names the slip printed (`staffLabel`, today’s roster) or the account that issued it at a counter (`issuedBy`; both null: unattributed), the manager who approved a credit voucher on the spot (`approvedBy`), the last four characters of its code and never the whole code, its status, and where, when, by whom and on which sale it was redeemed. Filtered by trading day (from, to — today when absent, at most 366 days), voucher type, booth, who issued it and status. Status is read from the whole row: redeemed, void, held on a till’s cart, expired once its date has passed, printed once paper exists, issued otherwise. `totals` has one line per voucher type over all filters: issued, redeemed, the redemption rate, expired, and the money the tills took off for the redeemed ones.",
         "parameters": [
           {
             "schema": {
@@ -36683,6 +36684,29 @@
                             "additionalProperties": false,
                             "nullable": true
                           },
+                          "approvedBy": {
+                            "type": "object",
+                            "properties": {
+                              "accountId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "accountId",
+                              "name",
+                              "code"
+                            ],
+                            "additionalProperties": false,
+                            "nullable": true
+                          },
                           "codeLast4": {
                             "type": "string"
                           },
@@ -36776,6 +36800,7 @@
                           "place",
                           "staffLabel",
                           "issuedBy",
+                          "approvedBy",
                           "codeLast4",
                           "source",
                           "status",
@@ -37384,7 +37409,7 @@
     },
     "/vouchers/issuable": {
       "get": {
-        "description": "What the till this session stands at may issue today: the operator’s switched-on, unarchived voucher definitions whose promotion has not ended on the branch’s trading day, with their window, global limit and how many are used — never one the park sells as a shop item, which its sale issues. Needs pos:print:voucher at the till’s branch.",
+        "description": "What the till this session stands at may issue today: the operator’s switched-on, unarchived voucher definitions whose promotion has not ended on the branch’s trading day, with their window, global limit and how many are used — never one the park sells as a shop item, which its sale issues. `needsManager` marks a credit voucher (kind wallet_credit) this account may issue only with a manager’s approval on the spot (it does not hold pos:voucher:issue_credit here). Needs pos:print:voucher at the till’s branch.",
         "responses": {
           "200": {
             "description": "Default Response"
@@ -37394,7 +37419,7 @@
     },
     "/vouchers/issue": {
       "post": {
-        "description": "Issue one voucher of a definition at the till this session stands at, and print it on the till’s receipt printer as a voucher slip. The code is minted on the platform on the till’s prefix (the booth scheme, with its check character), recorded as issued by the person at the till, and audited. `print.status` is queued, skipped (no receipt printer at this till) or none (no box). Refused for a switched-off or archived definition, for a promotion that has ended, and for a voucher type the park sells as a shop item (VOUCHER_SOLD_AS_ITEM: its sale issues it). Needs pos:print:voucher at the till’s branch.",
+        "description": "Issue one voucher of a definition at the till this session stands at, and print it on the till’s receipt printer as a voucher slip. The code is minted on the platform on the till’s prefix (the booth scheme, with its check character), recorded as issued by the person at the till, and audited. `print.status` is queued, skipped (no receipt printer at this till) or none (no box). Refused for a switched-off or archived definition, for a promotion that has ended, and for a voucher type the park sells as a shop item (VOUCHER_SOLD_AS_ITEM: its sale issues it). Needs pos:print:voucher at the till’s branch. A credit voucher (kind wallet_credit) also needs pos:voucher:issue_credit there, or `approval`: a manager’s own phone and password typed on the same till, checked as a sign-in is (throttled per phone) and never kept — the manager must be active, not on a temporary password, hold pos:voucher:issue_credit at this branch and not be the person at the till; they are recorded as its approver. Refused 403 VOUCHER_CREDIT_NEEDS_MANAGER without one, VOUCHER_APPROVAL_INCORRECT for a wrong phone or password, VOUCHER_APPROVER_IS_ASKER, VOUCHER_APPROVER_MUST_CHANGE_PASSWORD or VOUCHER_APPROVER_NOT_MANAGER; 429 once the phone is throttled.",
         "requestBody": {
           "required": true,
           "content": {
@@ -37410,6 +37435,26 @@
                     "type": "string",
                     "format": "uuid",
                     "nullable": true
+                  },
+                  "approval": {
+                    "type": "object",
+                    "properties": {
+                      "phone": {
+                        "type": "string",
+                        "minLength": 6,
+                        "maxLength": 32
+                      },
+                      "password": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 256
+                      }
+                    },
+                    "required": [
+                      "phone",
+                      "password"
+                    ],
+                    "additionalProperties": false
                   }
                 },
                 "required": [

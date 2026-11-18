@@ -56,6 +56,7 @@ import { audit } from './audit';
 import { SPIN_LABEL_JOINS, SPIN_STAFF_LABEL } from './booth-attribution';
 import { raiseAlert } from './ops';
 import type { Exec, Tx } from './tx';
+import { CREDIT_VOUCHER_KIND, creditVoucherErrors } from './voucher-credit-approval';
 import {
   assertPromoLimits,
   hasPromoRules,
@@ -1508,6 +1509,13 @@ export interface RedemptionActor {
   accountId: string;
   operatorId: string;
   requestId?: string;
+  /**
+   * SCRUM-482 — whether this account holds `pos:voucher:issue_credit` at the
+   * till's branch. Typing the shared fixed code of a CREDIT type mints a
+   * credit voucher on the spot, so it is refused to anyone without it, in the
+   * words the Issue picker uses. Absent is no.
+   */
+  mayIssueCredit?: boolean;
 }
 
 /**
@@ -1595,6 +1603,7 @@ async function fixedRedemptionRow(
     status: 'issued' as const,
     costSatang: def.costSatang,
     issuedByAccountId: actor.accountId,
+    approvedByAccountId: null,
     issuedAt: now,
     expiresAt: null,
   };
@@ -1700,6 +1709,12 @@ async function findForRedemption(
     // A fixed-code type's shared code: redeemed against that type.
     const fixedDef = await fixedCodeDefinition(tx, actor.operatorId, rawCode);
     if (fixedDef) {
+      // SCRUM-482 — the shared code of a credit type mints a credit voucher, so
+      // it is a manager's, like the Issue picker's: refused unchecked and
+      // uncounted, before anything is written. The code was right, not a miss.
+      if (fixedDef.kind === CREDIT_VOUCHER_KIND && actor.mayIssueCredit !== true) {
+        return { kind: 'refused', refusal: creditVoucherErrors.needsManager() };
+      }
       const v = await fixedRedemptionRow(tx, actor, at, fixedDef, mintFixed, now);
       return { kind: 'found', v, def: fixedDef, legacyFormat: false };
     }

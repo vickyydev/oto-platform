@@ -26,6 +26,13 @@ import {
   voucherCreditOf,
 } from '../services/voucher-promotions';
 import {
+  CREDIT_VOUCHER_KIND,
+  creditVoucherErrors,
+  definitionKindOf,
+  mayIssueCredit,
+  verifyCreditApproval,
+} from '../services/voucher-credit-approval';
+import {
   VOUCHER_LEDGER_STATUSES,
   listVoucherLedger,
   voucherLedgerCsv,
@@ -155,6 +162,8 @@ const LedgerResponse = z.object({
       /** The names a booth slip printed (today's roster); null for a counter voucher or nobody rostered. */
       staffLabel: z.string().nullable(),
       issuedBy: LedgerPersonSchema.nullable(),
+      /** SCRUM-482 — the manager who approved a credit voucher on the spot; null otherwise. */
+      approvedBy: LedgerPersonSchema.nullable(),
       codeLast4: z.string(),
       source: z.string(),
       status: z.enum(VOUCHER_LEDGER_STATUSES),
@@ -229,7 +238,7 @@ export async function voucherRoutes(app: App): Promise<void> {
       config: { permission: 'admin:booth:read', target: { branchId: 'query.branchId' } },
       schema: {
         description:
-          'Every voucher issued at a branch, whatever made it — a booth spin, a counter issue, the import of the old system’s codes — newest first and paged: when, its type and the prize it was won as, what it hands over (and, once used, what the till took off for it), the booth or counter, the names the slip printed (`staffLabel`, today’s roster) or the account that issued it at a counter (`issuedBy`; both null: unattributed), the last four characters of its code and never the whole code, its status, and where, when, by whom and on which sale it was redeemed. Filtered by trading day (from, to — today when absent, at most 366 days), voucher type, booth, who issued it and status. Status is read from the whole row: redeemed, void, held on a till’s cart, expired once its date has passed, printed once paper exists, issued otherwise. `totals` has one line per voucher type over all filters: issued, redeemed, the redemption rate, expired, and the money the tills took off for the redeemed ones.',
+          'Every voucher issued at a branch, whatever made it — a booth spin, a counter issue, the import of the old system’s codes — newest first and paged: when, its type and the prize it was won as, what it hands over (and, once used, what the till took off for it), the booth or counter, the names the slip printed (`staffLabel`, today’s roster) or the account that issued it at a counter (`issuedBy`; both null: unattributed), the manager who approved a credit voucher on the spot (`approvedBy`), the last four characters of its code and never the whole code, its status, and where, when, by whom and on which sale it was redeemed. Filtered by trading day (from, to — today when absent, at most 366 days), voucher type, booth, who issued it and status. Status is read from the whole row: redeemed, void, held on a till’s cart, expired once its date has passed, printed once paper exists, issued otherwise. `totals` has one line per voucher type over all filters: issued, redeemed, the redemption rate, expired, and the money the tills took off for the redeemed ones.',
         querystring: LedgerQuery.extend({
           limit: z.coerce.number().int().min(1).max(200).default(50),
           offset: z.coerce.number().int().min(0).default(0),
@@ -304,7 +313,13 @@ export async function voucherRoutes(app: App): Promise<void> {
     const at = await loadRedemptionStation(app.db, auth.operatorId, auth.stationId);
     await req.requirePermission('pos:voucher:redeem', { branchId: at.branchId });
     return {
-      actor: { accountId: auth.accountId, operatorId: auth.operatorId, requestId: req.id },
+      actor: {
+        accountId: auth.accountId,
+        operatorId: auth.operatorId,
+        requestId: req.id,
+        // SCRUM-482 — the shared fixed code of a credit type is a manager's.
+        mayIssueCredit: mayIssueCredit(await req.effectivePermissions(), auth.operatorId, at.branchId),
+      },
       at,
     };
   };
@@ -370,15 +385,17 @@ export async function voucherRoutes(app: App): Promise<void> {
         description:
           'What the till this session stands at may issue today: the operator’s switched-on, unarchived voucher ' +
           'definitions whose promotion has not ended on the branch’s trading day, with their window, global limit ' +
-          'and how many are used — never one the park sells as a shop item, which its sale issues. Needs ' +
-          'pos:print:voucher at the till’s branch.',
+          'and how many are used — never one the park sells as a shop item, which its sale issues. `needsManager` ' +
+          'marks a credit voucher (kind wallet_credit) this account may issue only with a manager’s approval on the ' +
+          'spot (it does not hold pos:voucher:issue_credit here). Needs pos:print:voucher at the till’s branch.',
       },
     },
     async (req) => {
       const auth = req.requireAuth();
       const at = await loadRedemptionStation(app.db, auth.operatorId, auth.stationId);
       await req.requirePermission('pos:print:voucher', { branchId: at.branchId });
-      return issuableDefinitionsAt(app.db, auth.operatorId, at.branchId);
+      const alone = mayIssueCredit(await req.effectivePermissions(), auth.operatorId, at.branchId);
+      return issuableDefinitionsAt(app.db, auth.operatorId, at.branchId, alone);
     },
   );
 
@@ -389,6 +406,9 @@ export async function voucherRoutes(app: App): Promise<void> {
         dynamicPermission: true,
         stationTrading: true,
         stationOfflineMessage: VOUCHER_OFFLINE_MESSAGE,
+        // SCRUM-482 — the body may carry a manager's password: the replay
+        // store hashes the request without it (`plugins/idempotency.ts`).
+        credentialInBody: true,
       },
       schema: {
         description:
@@ -397,7 +417,13 @@ export async function voucherRoutes(app: App): Promise<void> {
           'its check character), recorded as issued by the person at the till, and audited. `print.status` is queued, ' +
           'skipped (no receipt printer at this till) or none (no box). Refused for a switched-off or archived ' +
           'definition, for a promotion that has ended, and for a voucher type the park sells as a shop item ' +
-          '(VOUCHER_SOLD_AS_ITEM: its sale issues it). Needs pos:print:voucher at the till’s branch.',
+          '(VOUCHER_SOLD_AS_ITEM: its sale issues it). Needs pos:print:voucher at the till’s branch. A credit voucher ' +
+          '(kind wallet_credit) also needs pos:voucher:issue_credit there, or `approval`: a manager’s own phone and ' +
+          'password typed on the same till, checked as a sign-in is (throttled per phone) and never kept — the ' +
+          'manager must be active, not on a temporary password, hold pos:voucher:issue_credit at this branch and not ' +
+          'be the person at the till; they are recorded as its approver. Refused 403 VOUCHER_CREDIT_NEEDS_MANAGER ' +
+          'without one, VOUCHER_APPROVAL_INCORRECT for a wrong phone or password, VOUCHER_APPROVER_IS_ASKER, ' +
+          'VOUCHER_APPROVER_MUST_CHANGE_PASSWORD or VOUCHER_APPROVER_NOT_MANAGER; 429 once the phone is throttled.',
         body: VoucherIssueBodySchema,
       },
     },
@@ -405,12 +431,36 @@ export async function voucherRoutes(app: App): Promise<void> {
       const auth = req.requireAuth();
       const at = await loadRedemptionStation(app.db, auth.operatorId, auth.stationId);
       await req.requirePermission('pos:print:voucher', { branchId: at.branchId });
+      // The approval is taken off the body here: the issue never receives it.
+      const { approval, ...input } = req.body;
+      const alone = mayIssueCredit(await req.effectivePermissions(), auth.operatorId, at.branchId);
+      let approvedByAccountId: string | null = null;
+      if (!alone && (await definitionKindOf(app.db, auth.operatorId, input.definitionId)) === CREDIT_VOUCHER_KIND) {
+        if (!approval) throw creditVoucherErrors.needsManager();
+        // On the pool, before the issue's transaction: a refused attempt is
+        // counted and recorded whatever becomes of the issue, as sign-in's are.
+        approvedByAccountId = await verifyCreditApproval(app.db, {
+          operatorId: auth.operatorId,
+          branchId: at.branchId,
+          stationId: at.id,
+          definitionId: input.definitionId,
+          askerAccountId: auth.accountId,
+          approval,
+          ip: req.ip,
+          maxFailures: app.env.AUTH_MAX_FAILURES,
+          maxFailuresPerAddress: app.env.AUTH_MAX_FAILURES_PER_ADDRESS,
+          cooldownSeconds: app.env.AUTH_COOLDOWN_SECONDS,
+          requestId: req.id,
+          log: req.log,
+        });
+      }
       return withTx(app.db, opCtx(req), 'voucher.issue', (tx) =>
         issueVoucherAtTill(
           tx,
           { accountId: auth.accountId, operatorId: auth.operatorId, requestId: req.id },
           at,
-          req.body,
+          input,
+          { mayIssueCredit: alone, approvedByAccountId },
         ),
       );
     },

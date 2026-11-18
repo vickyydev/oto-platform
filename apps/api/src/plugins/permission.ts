@@ -144,6 +144,16 @@ export interface PermissionConfig {
    * decided one after the other under the route's own locks.
    */
   replaysByOwnId?: true;
+  /**
+   * SCRUM-482 — this route's REQUEST body may carry a person's password: a
+   * manager approving a credit voucher on the same till sends their own phone
+   * and password with the issue. The route keeps its key and its replay — a
+   * retried press must still be one voucher — but the idempotency request
+   * hash is taken over the body with every credential-named field replaced
+   * (`isSecretFieldName`), so no derivative of the password is kept in the
+   * store for a day. A retry differing only in the password is the same press.
+   */
+  credentialInBody?: true;
   /** Cloud trading calls that a station's forced-offline test must refuse. */
   stationTrading?: true;
   /**

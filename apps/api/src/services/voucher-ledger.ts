@@ -52,6 +52,11 @@ export interface VoucherLedgerRow {
   staffLabel: string | null;
   /** The account that issued it at a counter, or that was signed in at a booth older than SCRUM-694. */
   issuedBy: LedgerPerson | null;
+  /**
+   * SCRUM-482 — the manager who approved a credit voucher on the spot, on the
+   * same till, for somebody who may not issue one alone. Null otherwise.
+   */
+  approvedBy: LedgerPerson | null;
   codeLast4: string;
   source: string;
   status: VoucherLedgerStatus;
@@ -110,6 +115,8 @@ const LEDGER_FROM = sql`
   left join core.station bs on bs.id = s.station_id
   left join core.account ia on ia.id = v.issued_by_account_id
   left join core.employee ie on ie.id = ia.employee_id
+  left join core.account aa on aa.id = v.approved_by_account_id
+  left join core.employee ae on ae.id = aa.employee_id
   left join core.account ra on ra.id = v.redeemed_by_account_id
   left join core.employee re on re.id = ra.employee_id
   left join core.branch rb on rb.id = v.redeemed_branch_id
@@ -235,6 +242,8 @@ interface RawLedgerRow extends Record<string, unknown> {
   staff_label: string | null;
   issued_by: string | null;
   issuer_name: string | null;
+  approved_by: string | null;
+  approver_name: string | null;
   redeemed_by: string | null;
   redeemer_name: string | null;
   redeemed_branch_name: string | null;
@@ -251,6 +260,7 @@ const ROW_COLUMNS = sql`
   bp.id as prize_id, bp.name_en as prize_name_en, bs.id as booth_id, bs.name as booth_name,
   ${SPIN_STAFF_LABEL} as staff_label,
   v.issued_by_account_id as issued_by, coalesce(ie.nickname, ie.name) as issuer_name,
+  v.approved_by_account_id as approved_by, coalesce(ae.nickname, ae.name) as approver_name,
   v.redeemed_by_account_id as redeemed_by, coalesce(re.nickname, re.name) as redeemer_name,
   rb.name as redeemed_branch_name, rs.name as redeemed_station_name, sa.receipt_number,
   rd.amount_satang::text as redeemed_amount`;
@@ -371,6 +381,7 @@ function rowOf(r: RawLedgerRow): VoucherLedgerRow {
     place: placeOf(r),
     staffLabel: r.staff_label,
     issuedBy: personOf(r.issued_by, r.issuer_name),
+    approvedBy: personOf(r.approved_by, r.approver_name),
     codeLast4: r.code.slice(-4),
     source: r.source,
     status: r.status,
@@ -524,6 +535,7 @@ export async function voucherLedgerCsv(
     'Booth or counter',
     'Issued by',
     'Staff code',
+    'Approved by',
     'Code (last 4)',
     'Status',
     'Copies printed',
@@ -549,6 +561,8 @@ export async function voucherLedgerCsv(
         // The names the slip printed, or the issuer at a counter (SCRUM-694).
         r.staffLabel ?? (r.issuedBy ? (r.issuedBy.name ?? 'Unnamed account') : 'Unattributed'),
         r.issuedBy?.code ?? '',
+        // SCRUM-482 — the manager who approved a credit voucher on the spot.
+        r.approvedBy ? `${r.approvedBy.name ?? 'Unnamed account'} (${r.approvedBy.code})` : '',
         r.codeLast4,
         STATUS_WORDS[r.status],
         r.printCount,

@@ -90,6 +90,7 @@ export const PERMISSION_WORDS: Record<Permission, string> = {
   'pos:refund:create': 'Request a refund for a sale.',
   'pos:refund:approve': 'Approve refunds and voids after payment.',
   'pos:voucher:redeem': 'Redeem a voucher presented at the counter.',
+  'pos:voucher:issue_credit': 'Issue a credit voucher at the till, or approve one for reception on the same till.',
   'pos:print:read': 'Read print jobs and their status.',
   'pos:print:receipt': 'Print a receipt for a sale.',
   'pos:print:band': 'Print a wristband for a visit.',

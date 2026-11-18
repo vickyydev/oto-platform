@@ -19,6 +19,7 @@ import { AppError } from '../lib/errors';
 import { pgErrorOf } from '../lib/scrub';
 import { audit } from './audit';
 import { withTx, type Exec, type OpContext } from './tx';
+import { CREDIT_VOUCHER_KIND } from './voucher-credit-approval';
 import {
   redemptionsByDefinition,
   settlePromoRules,
@@ -776,6 +777,24 @@ async function settleCodeMode(
   return { codeMode: 'fixed', fixedCode };
 }
 
+/**
+ * SCRUM-482 — a credit voucher type never carries a fixed code. Typing a
+ * shared code at a till mints a credit voucher on the spot, which would be a
+ * credit voucher issued with no manager; each one is issued at the till
+ * instead, by a manager or with one approving. Checked on the type as it will
+ * be after the save, so neither the kind nor the code mode can be changed
+ * into the pair.
+ */
+function refuseFixedCodeCredit(kind: string, codeMode: VoucherCodeMode): void {
+  if (kind === CREDIT_VOUCHER_KIND && codeMode === 'fixed') {
+    throw new AppError(
+      422,
+      'VOUCHER_FIXED_CODE_CREDIT',
+      'A credit voucher type cannot have a fixed code — each credit voucher is issued at the till by a manager',
+    );
+  }
+}
+
 export async function createVoucherDefinition(
   db: Db,
   ctx: OpContext,
@@ -808,6 +827,7 @@ export async function createVoucherDefinition(
     input.codeMode ?? 'generated',
     input.fixedCode ?? null,
   );
+  refuseFixedCodeCredit(value.kind, codes.codeMode);
   const id = newId();
   try {
     return await withTx(db, ctx, 'voucher_definition.create', async (tx) => {
@@ -900,7 +920,7 @@ export async function updateVoucherDefinition(
     promoRulesAfter(before, patch),
     patch.target !== undefined,
   );
-  const codes =
+  const settledCodes =
     patch.codeMode !== undefined || patch.fixedCode !== undefined
       ? await settleCodeMode(
           db,
@@ -908,7 +928,9 @@ export async function updateVoucherDefinition(
           patch.codeMode ?? before.codeMode,
           patch.fixedCode !== undefined ? patch.fixedCode : before.fixedCode,
         )
-      : {};
+      : null;
+  const codes = settledCodes ?? {};
+  refuseFixedCodeCredit(value.kind, settledCodes?.codeMode ?? before.codeMode);
   try {
     return await withTx(db, ctx, 'voucher_definition.update', async (tx) => {
       const set: Partial<typeof voucherDefinition.$inferInsert> = {

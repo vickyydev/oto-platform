@@ -187,6 +187,21 @@ export function carriesSecret(value: unknown, depth = 0): boolean {
   return false;
 }
 
+/**
+ * SCRUM-482 — a request body with every credential-named field's value
+ * replaced by one fixed marker, for the request hash of a route declaring
+ * `credentialInBody`. Exported so a test can pin it.
+ */
+export function withoutCredentials(value: unknown, depth = 0): unknown {
+  if (depth > 6 || value === null || typeof value !== 'object') return value;
+  if (Array.isArray(value)) return value.map((v) => withoutCredentials(v, depth + 1));
+  const out: Record<string, unknown> = {};
+  for (const [key, v] of Object.entries(value as Record<string, unknown>)) {
+    out[key] = isSecretFieldName(key) && typeof v === 'string' ? '[credential]' : withoutCredentials(v, depth + 1);
+  }
+  return out;
+}
+
 /** Give the key back, so the next attempt does the work rather than replaying a hole. */
 async function release(db: Db, accountId: string, key: string): Promise<void> {
   await db
@@ -292,12 +307,17 @@ export const idempotencyPlugin = fp(async (app: FastifyInstance) => {
     const accountId = req.auth.accountId;
     const operatorSelection = isOperatorSelection(req);
 
+    // SCRUM-482 — a route whose body may carry a password hashes the body
+    // without it (`credentialInBody`): nothing derived from it enters the store.
+    const hashedBody = (req.routeOptions?.config as PermissionConfig | undefined)?.credentialInBody
+      ? withoutCredentials(req.body ?? null)
+      : (req.body ?? null);
     const legacyHash = createHash('sha256')
       .update(req.method)
       .update('\n')
       .update(req.url)
       .update('\n')
-      .update(JSON.stringify(req.body ?? null))
+      .update(JSON.stringify(hashedBody))
       .digest('hex');
     const requestHash = createHash('sha256')
       .update(legacyHash)

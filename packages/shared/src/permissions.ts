@@ -221,6 +221,14 @@ export const PERMISSIONS = [
   /** Manager gate on refunds and on voids after payment. */
   'pos:refund:approve',
   'pos:voucher:redeem',
+  /**
+   * SCRUM-482 — manager gate on a CREDIT voucher (kind `wallet_credit`): the
+   * owner's ruling of 18 November, "Managers only". A manager holding it
+   * issues one at the till alone, named on the record; reception, who print
+   * every other voucher with `pos:print:voucher`, need a manager holding it to
+   * approve on the spot, on the same till (`services/voucher-credit-approval.ts`).
+   */
+  'pos:voucher:issue_credit',
   'pos:print:read',
   'pos:print:receipt',
   'pos:print:band',
@@ -558,6 +566,9 @@ export const ROLE_BUNDLES: Record<SystemRole, Permission[]> = {
     'pos:station:takeover',
     'pos:payment:settle',
     'pos:refund:approve',
+    // SCRUM-482 — a credit voucher is a manager's to issue, or to approve for
+    // reception on the spot. Deliberately not in `reception` or `staff`.
+    'pos:voucher:issue_credit',
     'pos:cash:session_open',
     'pos:cash:session_close',
     'pos:cash:movement',

@@ -44,6 +44,7 @@ import { audit } from './audit';
 import { boxSettings } from './box';
 import { routeOnBox, templateTypeFor } from './print';
 import type { Exec, Tx } from './tx';
+import { CREDIT_VOUCHER_KIND, creditVoucherErrors } from './voucher-credit-approval';
 import {
   VOUCHER_HOLD_LAPSE_MS,
   formatVoucherDate,
@@ -513,6 +514,17 @@ export interface IssuedVoucherView {
 }
 
 /**
+ * SCRUM-482 — who may issue a CREDIT voucher here (`services/voucher-credit-approval.ts`):
+ * whether the person at the till holds `pos:voucher:issue_credit` at its
+ * branch, and the manager whose approval the route has already verified, if
+ * any. Required, so no caller can issue without saying.
+ */
+export interface CreditIssueGate {
+  mayIssueCredit: boolean;
+  approvedByAccountId: string | null;
+}
+
+/**
  * ISSUE ONE AT THE TILL: a voucher of a definition, minted here on the till's
  * own prefix (`mintBoothCode`, the booth's code scheme — eleven characters with
  * a check character, so every till classifies it as it classifies a booth's),
@@ -520,15 +532,25 @@ export interface IssuedVoucherView {
  * and queued to print on the till's receipt printer as a voucher slip (the
  * booth voucher's template, `booth_voucher`). A collision on the code is drawn
  * again inside a savepoint, at most `BOOTH_CODE_MINT_ATTEMPTS` times.
+ *
+ * SCRUM-482 — a credit voucher (kind `wallet_credit`) is refused here to an
+ * account without `pos:voucher:issue_credit` unless a manager's approval was
+ * verified for it, decided against the type as this transaction reads it; the
+ * approver is stored on the voucher and in its audit row. The approval itself
+ * never reaches this function — only the approver's account id.
  */
 export async function issueVoucherAtTill(
   tx: Tx,
   actor: { accountId: string; operatorId: string; requestId?: string },
   at: RedemptionStation,
-  input: VoucherIssueBody,
+  input: Omit<VoucherIssueBody, 'approval'>,
+  credit: CreditIssueGate,
   now: Date = new Date(),
 ): Promise<IssuedVoucherView> {
   const def = await issuableDefinition(tx, actor.operatorId, input.definitionId, at.branchId, now);
+  const needsApproval = def.kind === CREDIT_VOUCHER_KIND && !credit.mayIssueCredit;
+  if (needsApproval && !credit.approvedByAccountId) throw creditVoucherErrors.needsManager();
+  const approvedByAccountId = needsApproval ? credit.approvedByAccountId : null;
   // Staging F4 — a promotion whose redemptions are all taken is not issued: the
   // slip would be refused at the first scan (`assertPromoLimits`), so the till
   // says so here, in the same words, before any code is minted or printed.
@@ -568,6 +590,7 @@ export async function issueVoucherAtTill(
           status: 'issued',
           costSatang: def.costSatang,
           issuedByAccountId: actor.accountId,
+          approvedByAccountId,
           issuedAt: now,
           expiresAt,
           memberId,
@@ -600,6 +623,8 @@ export async function issueVoucherAtTill(
       codeLast4: code.slice(-4),
       memberId,
       expiresAt: expiresAt?.toISOString() ?? null,
+      // SCRUM-482 — the manager who approved a credit voucher on the spot; null otherwise.
+      approvedByAccountId,
     },
   });
   const print = await queueVoucherPrint(tx, {
@@ -645,6 +670,13 @@ export interface IssuableDefinitionView {
   validUntil: string | null;
   usageLimit: number | null;
   redeemed: number;
+  /**
+   * SCRUM-482 — a credit voucher this account may issue only with a manager's
+   * approval on the spot: the picker names it "(needs a manager)" and asks for
+   * one. False for every other kind, and for an account holding
+   * `pos:voucher:issue_credit` here.
+   */
+  needsManager: boolean;
 }
 
 /**
@@ -652,11 +684,13 @@ export interface IssuableDefinitionView {
  * unarchived definitions whose promotion has not ended on the branch's
  * trading day. Read with the till's own permission (`pos:print:voucher`), so
  * reception picks from the park's list without the booth admin's read.
+ * `mayIssueCredit` is whether the person asking issues credit vouchers alone.
  */
 export async function issuableDefinitionsAt(
   db: Exec,
   operatorId: string,
   branchId: string,
+  mayIssueCredit: boolean,
   now: Date = new Date(),
 ): Promise<{ definitions: IssuableDefinitionView[] }> {
   const day = await tradingDayAt(db, branchId, now);
@@ -690,6 +724,7 @@ export async function issuableDefinitionsAt(
       validUntil: r.validUntil,
       usageLimit: r.usageLimit,
       redeemed: used.get(r.id) ?? 0,
+      needsManager: r.kind === CREDIT_VOUCHER_KIND && !mayIssueCredit,
     })),
   };
 }

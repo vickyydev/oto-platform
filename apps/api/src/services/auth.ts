@@ -759,9 +759,10 @@ void DUMMY_VERIFY_HASH.catch(() => {});
  * Both password screens leave by it: `signIn` (SCRUM-325) and `unlockSession`
  * (SCRUM-348), each on the refusal paths where no real verification was
  * spent — an unknown phone, a status refused before the check, an account
- * with no stored hash.
+ * with no stored hash. So does a manager's approval of a credit voucher on
+ * the same till (SCRUM-482, `services/voucher-credit-approval.ts`).
  */
-async function equalizeVerifyCost(password: string): Promise<void> {
+export async function equalizeVerifyCost(password: string): Promise<void> {
   try {
     await verify(await DUMMY_VERIFY_HASH, password);
   } catch {

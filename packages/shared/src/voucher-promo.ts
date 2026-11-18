@@ -121,11 +121,49 @@ export const PROMO_VOUCHER_MESSAGES = {
  * per-customer limit is later counted against when the redeeming sale names
  * nobody.
  */
+/**
+ * SCRUM-482 — A MANAGER APPROVING A CREDIT VOUCHER ON THE SPOT, on the same
+ * till: their own phone and password, sent with the issue and checked by the
+ * platform as a sign-in is (throttled per phone), without signing anybody in
+ * or out. Used for that one request and then dropped: never logged, never
+ * stored, never echoed, and the till clears the field once it has answered.
+ */
+export const VoucherCreditApprovalSchema = z.object({
+  phone: z.string().min(6).max(32),
+  password: z.string().min(1).max(256),
+});
+export type VoucherCreditApproval = z.infer<typeof VoucherCreditApprovalSchema>;
+
 export const VoucherIssueBodySchema = z.object({
   definitionId: z.string().uuid(),
   memberId: z.string().uuid().nullable().optional(),
+  /**
+   * SCRUM-482 — read only for a credit voucher (kind `wallet_credit`) issued by
+   * an account without `pos:voucher:issue_credit`; ignored, and never checked,
+   * for every other voucher and for a manager issuing one alone.
+   */
+  approval: VoucherCreditApprovalSchema.optional(),
 });
 export type VoucherIssueBody = z.infer<typeof VoucherIssueBodySchema>;
+
+/**
+ * SCRUM-482 — the counter's words for a credit voucher that needs a manager,
+ * and for an approval the platform refused. One place, so the till, the tests
+ * and the platform say the same sentence.
+ */
+export const VOUCHER_CREDIT_MESSAGES = {
+  /** No approval came with it, or the shared fixed code of a credit type was typed. */
+  needsManager: 'A credit voucher needs a manager’s approval.',
+  /** Unknown phone, wrong password, or an account that cannot sign in — one answer for all. */
+  approvalIncorrect: 'The manager’s phone number or password is incorrect.',
+  /** The person at the till typed their own phone. */
+  approverIsAsker: 'Another person approves it: the manager types their own phone number and password.',
+  /** The right password, on an account that does not hold the permission at this park. */
+  approverNotManager: 'This account cannot approve a credit voucher at this park.',
+  /** The right password, on an account still holding a temporary one. */
+  approverMustChangePassword:
+    'This manager has a temporary password: they sign in once to set their own, then approve.',
+} as const;
 
 /** The most codes one campaign mints in one press. */
 export const VOUCHER_CAMPAIGN_MAX = 5_000;
