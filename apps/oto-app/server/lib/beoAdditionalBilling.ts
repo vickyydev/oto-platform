@@ -1,4 +1,4 @@
-import { approvedBeoBillingSources, billingSourceSetMatches, beoBillingFingerprint, billingSyncAfterAttempt } from "@shared/beoBillingSource";
+import { additionalBillingResultOf, approvedBeoBillingSources, billingSourceSetMatches, beoBillingFingerprint, billingSyncAfterAttempt, type AdditionalBillingResult } from "@shared/beoBillingSource";
 import { eq, sql } from "drizzle-orm";
 import { beoBarPlans, beoEventBilling, beoKitchenPlans } from "@shared/schema";
 import { db } from "../db";
@@ -7,7 +7,7 @@ import { suiteProvisionConfig } from "./suiteSignIn";
 type Line = Record<string, unknown>;
 const rows = (value: unknown): Line[] => Array.isArray(value) ? value.filter((line) => line && typeof line === "object") : [];
 const object = (value: unknown): Line => value && typeof value === "object" ? value as Line : {};
-export type AdditionalBillingResult = { status: "synced" | "plan_only" | "pending"; message: string };
+export type { AdditionalBillingResult };
 
 /** The plan is durable first; unresolved cross-service work stays visible and retries on the same Save. */
 export async function syncApprovedBeoAdditions(eventId: string, userId: string): Promise<AdditionalBillingResult> {
@@ -71,9 +71,10 @@ export async function syncApprovedBeoAdditions(eventId: string, userId: string):
   if (!config) return pending("The till connection is not configured.");
   try {
     const response = await fetch(`${config.apiUrl}/otoapp/parties/${encodeURIComponent(eventId)}/beo-additions`, { method: "POST", headers: { authorization: `Bearer ${config.key}`, "content-type": "application/json" }, signal: AbortSignal.timeout(10_000), body: JSON.stringify({ actorAppUserId: userId, lines: initial.lines.map((line) => ({ lineId: line.id, productCode: typeof line.productCode === "string" && line.productCode.trim() ? line.productCode.trim() : null, area: line.billingArea, name: line.itemName, quantity: typeof line.quantity === "number" && line.quantity > 0 ? Math.floor(line.quantity) : 1, unitSatang: typeof line.price === "number" && line.price > 0 ? Math.round(line.price * 100) : null, included: line.included === true })) }) });
-    const answer = await response.json().catch(() => null) as { status?: string; error?: { message?: string } } | null;
+    const answer = await response.json().catch(() => null) as { status?: string; added?: unknown; error?: { message?: string } } | null;
     if (!response.ok || (answer?.status !== "synced" && answer?.status !== "plan_only")) return pending(answer?.error?.message ?? "The till did not confirm the additional bill.");
-    const result: AdditionalBillingResult = { status: answer.status, message: answer.status === "synced" ? "New approved items are linked to the party's additional bill; the original paid receipt is unchanged." : "Items remain in the plan until the main party is settled." };
+    // SCRUM-1001: "linked to the party's additional bill" only when the till made a charge (its `added`).
+    const result = additionalBillingResultOf(answer);
     if (!(await mark(answer.status, result))) return { status: "pending", message: "The plan changed while the till processed its earlier saved items. Review that bill and save the current plan again." };
     return result;
   } catch {

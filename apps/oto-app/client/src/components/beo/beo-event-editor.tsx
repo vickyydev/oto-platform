@@ -100,7 +100,8 @@ import { BeoBillingSection, PartyDetailsTillTiles, tillBillingKey, useTillBillin
 import { DEPOSIT_READ_AGAIN_MS, billingNamesDeposit, depositChangedIn, eventDepositOf, loadedDepositOf, sameOneDeposit, type EventDeposit } from "@/lib/beo-deposit-buffer";
 import { depositMovedWords, type DepositSaveNote, type OneDeposit } from "@shared/partyDeposit";
 import { beoBillingMutationScope } from "@/lib/beo-deposit-buffer";
-import { bahtOfSatang, tillFiguresOf } from "@shared/tillBilling";
+import { bahtOfSatang, openAdditionalBillsOf, partyBillStateOf, tillFiguresOf } from "@shared/tillBilling";
+import { additionalBillingToastOf, mayBillAtSave, type AdditionalBillingResult } from "@shared/beoBillingSource";
 import type { PartyMenuLine } from "@shared/partyMenuItem";
 import { isTemplateSetMenuLine, lineWithTillItem, lineWithoutTillItem } from "@shared/tillMenu";
 import { TillCodeMark, TillMenuContext, TillMenuPick, tillCodeTitle, useTillMenu, useTillMenuIndex, tillMenuQueryKey } from "./till-menu-picker";
@@ -791,6 +792,9 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
   // Read live: afresh when the BEO opens or the window comes back, and every minute while it is open.
   const tillBilling = useTillBilling(eventId);
   const tillFigures = tillFiguresOf(tillBilling.data);
+  // SCRUM-1001: the badges say "Paid" only when the main bill and every additional bill are paid.
+  const partyBill = partyBillStateOf(tillBilling.data);
+  const additionalOpen = openAdditionalBillsOf(tillBilling.data);
   const canManageBilling = !readOnly && ["global_admin", "operator_admin", "admin", "manager"].includes(user?.role ?? "");
   const billingKey = ["/api/events", eventId, "beo", "billing"] as const;
   const { data: billingRow = null } = useQuery<BeoEventBilling | null>({ queryKey: billingKey, enabled: !!eventId });
@@ -1170,7 +1174,8 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
   const saveMutation = useMutation({
     mutationFn: async () => {
       const approved = [...kidsMenu, ...(adultsDiffer ? adultsMenu : []), ...barItems].filter((line) => line.chargeApproved && line.source !== "set_menu");
-      if (approved.length > 0 && !window.confirm("Save the BEO and bill newly added priced items to this same party if its main receipt is already paid? Included/free items stay included. The original receipt stays unchanged.")) throw new Error("Save cancelled before billing.");
+      // SCRUM-1001: asked only when this Save may put something new on the party's bills at the till.
+      if (mayBillAtSave(approved, tillBilling.data) && !window.confirm("Save the BEO and bill newly added priced items to this same party if its main receipt is already paid? Included/free items stay included. The original receipt stays unchanged.")) throw new Error("Save cancelled before billing.");
       const payload = {
         event: { ...eventData, locationText },
         partyHost,
@@ -1224,7 +1229,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
       if (!res.ok) throw new Error("Failed to save BEO data");
       return res.json();
     },
-    onSuccess: (saved: { additionalBilling?: { status: string; message: string }; oneDeposit?: OneDeposit; depositSave?: DepositSaveNote; paidLinesKept?: BeoPaidLineKept[] } | null) => {
+    onSuccess: (saved: { additionalBilling?: AdditionalBillingResult; oneDeposit?: OneDeposit; depositSave?: DepositSaveNote; paidLinesKept?: BeoPaidLineKept[] } | null) => {
       // The deposit as it stands after the Save: the field shows it at once, and the read that
       // follows brings the rest of the form.
       if (saved?.oneDeposit) {
@@ -1238,7 +1243,8 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
       if (saved?.paidLinesKept?.length) toast({ title: BEO_PAID_LINE_REFUSAL, description: paidLinesKeptWords(saved.paidLinesKept), variant: "destructive" });
       else if (saved?.additionalBilling?.status === "pending") toast({ title: "Plan saved; additional bill needs resolution", description: saved.additionalBilling.message, variant: "destructive" });
       else if (saved?.depositSave) toast({ title: "BEO saved. The deposit was not changed", description: saved.depositSave.message });
-      else toast({ title: "BEO data saved successfully" });
+      // SCRUM-1001: "linked to the additional bill" only when the till made a charge; else "nothing new to bill".
+      else toast(additionalBillingToastOf(saved?.additionalBilling) ?? { title: "BEO data saved successfully" });
       onSave?.();
     },
     onError: (error: Error) => {
@@ -2068,20 +2074,20 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                   From the inbox
                 </Badge>
               ) : null}
-              {/* SCRUM-822: from the till's figures, never the app's own. */}
+              {/* SCRUM-822: from the till's figures, never the app's own. SCRUM-1001: an additional bill still open is said, never "Paid". */}
               {tillFigures && tillFigures.expectedSatang > 0 && (
                 <Badge
-                  variant={tillFigures.depositSatang <= 0 && tillFigures.outstandingSatang > 0 ? "destructive" : tillFigures.outstandingSatang > 0 ? "outline" : "default"}
+                  variant={tillFigures.depositSatang <= 0 && tillFigures.outstandingSatang > 0 ? "destructive" : tillFigures.outstandingSatang > 0 || additionalOpen.words ? "outline" : "default"}
                   className={cn(
                     "text-xs font-mono",
                     tillFigures.depositSatang <= 0 && tillFigures.outstandingSatang > 0 && "bg-red-500",
-                    tillFigures.depositSatang > 0 && tillFigures.outstandingSatang > 0 && "border-orange-500 text-orange-600 dark:text-orange-400",
-                    tillFigures.outstandingSatang <= 0 && "bg-green-600",
+                    ((tillFigures.depositSatang > 0 && tillFigures.outstandingSatang > 0) || (tillFigures.outstandingSatang <= 0 && additionalOpen.words)) && "border-orange-500 text-orange-600 dark:text-orange-400",
+                    tillFigures.outstandingSatang <= 0 && !additionalOpen.words && "bg-green-600",
                   )}
                   data-testid="badge-payment-status"
                 >
                   {tillFigures.outstandingSatang <= 0
-                    ? "Paid"
+                    ? (additionalOpen.words ?? "Paid")
                     : tillFigures.depositSatang <= 0
                       ? "No Deposit"
                       : `${bahtOfSatang(tillFigures.outstandingSatang)} Due`}
@@ -2834,9 +2840,9 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
               <div className="flex items-center gap-2 w-full">
                 <DollarSign className="h-4 w-4 text-emerald-500" />
                 <span>Billing</span>
-                {tillFigures && (
+                {partyBill && (
                   <Badge variant="outline" className="ml-1 text-xs font-mono" data-testid="badge-billing-outstanding">
-                    {tillFigures.outstandingSatang > 0 ? `${bahtOfSatang(tillFigures.outstandingSatang)} outstanding` : "Paid"}
+                    {partyBill.words}
                   </Badge>
                 )}
               </div>

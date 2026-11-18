@@ -49,6 +49,7 @@ import {
 } from "@shared/vat-utils";
 import { DatePicker } from "@/components/ui/date-picker";
 import { depositHeldWordsOf } from "@/lib/beo-deposit-buffer";
+import { bahtOfSatang } from "@shared/tillBilling";
 import type { EventLineItem, EventLineItemTemplate, BeoEventBilling } from "@shared/schema";
 
 interface BeoBillingModuleProps {
@@ -56,6 +57,11 @@ interface BeoBillingModuleProps {
   billing: BeoEventBilling | null;
   onBillingChange: (billing: Partial<BeoEventBilling>) => void;
   isManager: boolean;
+  /**
+   * SCRUM-1001: once the till holds the party's sale, its state as the Billing badge says it
+   * (shared/tillBilling.ts partyBillStateOf); null before the party is settled or without the till.
+   */
+  tillSale?: { words: string; paid: boolean; outstandingSatang: number } | null;
 }
 
 const CATEGORIES = [
@@ -82,6 +88,7 @@ export function BeoBillingModule({
   billing,
   onBillingChange,
   isManager,
+  tillSale = null,
 }: BeoBillingModuleProps) {
   const additionalBilling = (billing?.addOns as { additionalBilling?: { status?: string; message?: string } } | null)?.additionalBilling;
   const { toast } = useToast();
@@ -286,8 +293,19 @@ export function BeoBillingModule({
 
   // SCRUM-841: a deposit with no invoice lines is held, not "paid" against a total of nothing.
   const depositHeld = depositHeldWordsOf(lineItems.length, billing, formatThb);
+  // SCRUM-1001: once the till holds the sale, what is paid and outstanding is the till's (the Billing
+  // section's), never NOT PAID beside a settled bill; the totals stay the app's own invoice rows'.
+  const outstandingWords = tillSale ? bahtOfSatang(tillSale.outstandingSatang) : formatThb(billingTotals.outstandingAmount);
+  const owed = tillSale ? tillSale.outstandingSatang > 0 : billingTotals.outstandingAmount > 0;
 
   const getPaymentStatusBadge = () => {
+    if (tillSale) {
+      return (
+        <Badge className={tillSale.paid ? "bg-green-600" : "bg-amber-600"} data-testid="badge-summary-till">
+          {tillSale.words}
+        </Badge>
+      );
+    }
     if (depositHeld) {
       return (
         <Badge variant="secondary" data-testid="badge-deposit-held">
@@ -332,10 +350,14 @@ export function BeoBillingModule({
             </div>
             <div className="space-y-1">
               <p className="text-muted-foreground">Outstanding</p>
-              <p className={`text-xl font-bold ${billingTotals.outstandingAmount > 0 ? "text-destructive" : "text-green-600"}`}>
-                {formatThb(billingTotals.outstandingAmount)}
+              <p className={`text-xl font-bold ${owed ? "text-destructive" : "text-green-600"}`} data-testid="text-summary-outstanding">
+                {outstandingWords}
               </p>
-              {depositHeld ? (
+              {tillSale ? (
+                <p className="text-xs text-muted-foreground" data-testid="text-summary-from-till">
+                  Settled at the till: what is paid and outstanding is the till's, as above. The totals here are the app's own invoice rows.
+                </p>
+              ) : depositHeld ? (
                 <p className="text-xs text-muted-foreground" data-testid="text-deposit-held">
                   {depositHeld}
                 </p>
@@ -550,8 +572,8 @@ export function BeoBillingModule({
                   </div>
                   <div>
                     <span className="text-muted-foreground">Outstanding:</span>
-                    <span className={`ml-2 ${billingTotals.outstandingAmount > 0 ? "text-destructive" : "text-green-600"}`}>
-                      {formatThb(billingTotals.outstandingAmount)}
+                    <span className={`ml-2 ${owed ? "text-destructive" : "text-green-600"}`}>
+                      {outstandingWords}
                     </span>
                   </div>
                 </div>

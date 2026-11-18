@@ -11,6 +11,7 @@ import { AlertTriangle, FileText, Link2, Loader2, MessageCircle, RefreshCw, Send
 import {
   TILL_NOT_REACHABLE,
   bahtOfSatang,
+  partyBillStateOf,
   tillFiguresOf,
   tillProblemOf,
   type TillBillingReading,
@@ -80,10 +81,13 @@ function readAtOf(reading: TillBillingReading | undefined): string | null {
   return at.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Bangkok" });
 }
 
-/** Additional bills are separate ledger documents; the original fiscal receipt stays as recorded. */
+/**
+ * Additional bills are separate ledger documents; the original fiscal receipt stays as recorded.
+ * SCRUM-1001: each says whether it is open or paid, apart from the main bill.
+ */
 export function AdditionalPartyBills({ reading }: { reading: TillBillingReading | undefined }) {
   return <div className="space-y-2">{reading?.status === "ok" && reading.billing.additionalBills?.map((bill, index) => <div key={bill.id} className="rounded border p-2 text-xs" data-testid={`additional-bill-${index}`}>
-        <p className="font-medium">Additional bill {index + 1} - {bill.state}</p>
+        <p className="font-medium">Additional bill {index + 1} · <span className={bill.state === "open" ? "text-amber-600" : "text-emerald-600"} data-testid={`additional-bill-state-${index}`}>{bill.state === "open" ? "Open" : "Paid"}</span></p>
         {bill.charges.flatMap((charge) => charge.items).map((item, at) => <p key={at}>{item.name} x {item.qty} - {bahtOfSatang(item.lineTotalSatang)}</p>)}
         <p>Total {bahtOfSatang(bill.totalSatang)} - Paid {bahtOfSatang(bill.paidSatang)} - Outstanding {bahtOfSatang(bill.outstandingSatang)}</p>
         <p className="text-muted-foreground">Linked to the main party; the original receipt is unchanged. Bill reference {bill.id}</p>
@@ -256,6 +260,9 @@ export function TillBillingPanel({
   const problem = figures ? null : tillProblemOf(reading);
   const readAt = readAtOf(reading);
   const sale = reading?.status === "ok" ? reading.billing.sale : null;
+  // SCRUM-1001: with additional bills beside it, the sale is called the main bill, so its "Settled"
+  // and its figures are never read as every bill's.
+  const mainBill = figures?.kind === "sale" && reading?.status === "ok" && (reading.billing.additionalBills?.length ?? 0) > 0;
   return (
     <Card className="border-2 border-emerald-500/30" data-testid="panel-from-the-till">
       <CardHeader className="pb-2">
@@ -264,7 +271,7 @@ export function TillBillingPanel({
           <span className="flex items-center gap-2">
             {figures?.kind === "sale" && (
               <Badge className={figures.saleState === "settled" ? "bg-green-600" : "bg-amber-600"} data-testid="badge-till-sale-state">
-                {figures.saleState === "settled" ? "Settled" : "Open at the till"}
+                {figures.saleState === "settled" ? (mainBill ? "Main bill settled" : "Settled") : "Open at the till"}
               </Badge>
             )}
             {figures?.kind === "quote" && <Badge variant="outline" data-testid="badge-till-quote">Quote</Badge>}
@@ -294,7 +301,7 @@ export function TillBillingPanel({
           <>
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1 p-3 rounded-md bg-primary/5 border">
-                <p className="text-xs text-muted-foreground">{figures.kind === "sale" ? "Total" : "Expected total"}</p>
+                <p className="text-xs text-muted-foreground">{figures.kind === "sale" ? (mainBill ? "Main bill" : "Total") : "Expected total"}</p>
                 <p className="text-lg font-bold font-mono" data-testid="text-till-panel-expected">{bahtOfSatang(figures.expectedSatang)}</p>
               </div>
               <div className="space-y-1 p-3 rounded-md border">
@@ -302,7 +309,7 @@ export function TillBillingPanel({
                 <p className="text-lg font-bold font-mono text-emerald-600" data-testid="text-till-panel-deposit">{bahtOfSatang(figures.depositSatang)}</p>
               </div>
               <div className="space-y-1 p-3 rounded-md border">
-                <p className="text-xs text-muted-foreground">Outstanding</p>
+                <p className="text-xs text-muted-foreground">{mainBill ? "Main bill outstanding" : "Outstanding"}</p>
                 <p
                   className={`text-lg font-bold font-mono ${figures.outstandingSatang > 0 ? "text-amber-600" : "text-emerald-600"}`}
                   data-testid="text-till-panel-outstanding"
@@ -311,7 +318,6 @@ export function TillBillingPanel({
                 </p>
               </div>
             </div>
-            <AdditionalPartyBills reading={reading} />
             {sale && (
               <div className="text-sm space-y-0.5" data-testid="text-till-receipt">
                 <p>
@@ -326,6 +332,8 @@ export function TillBillingPanel({
                 )}
               </div>
             )}
+            {/* SCRUM-1001: the main bill's receipt first, then each additional bill apart from it. */}
+            <AdditionalPartyBills reading={reading} />
             <div className="border rounded-md p-3 bg-muted/30">
               <p className="text-xs font-medium text-muted-foreground mb-1">{figures.kind === "sale" ? "The sale" : "What the party comes to"}</p>
               <TillBreakdown figures={figures} />
@@ -700,6 +708,8 @@ export function BeoBillingSection({
 }) {
   // The editor around it reads the till every minute; this one reads afresh when the section opens.
   const till = useTillBilling(eventId, { refetchInterval: false });
+  // SCRUM-1001: once the till holds the party's sale, the Financial Summary says what the Billing badge says.
+  const tillSale = tillFiguresOf(till.data)?.kind === "sale" ? partyBillStateOf(till.data) : null;
   const depositRequest = useDepositRequest(eventId);
   const queryClient = useQueryClient();
   const summaryBilling = summaryBillingOf(billing, eventDeposit);
@@ -749,7 +759,7 @@ export function BeoBillingSection({
         </p>
       </div>
       <div onChangeCapture={deposit.onChangeCapture} onBlur={deposit.onBlur} onKeyDown={deposit.onKeyDown}>
-        <BeoBillingModule eventId={eventId} billing={deposit.billing} onBillingChange={deposit.onBillingChange} isManager={isManager} />
+        <BeoBillingModule eventId={eventId} billing={deposit.billing} onBillingChange={deposit.onBillingChange} isManager={isManager} tillSale={tillSale} />
       </div>
     </div>
   );

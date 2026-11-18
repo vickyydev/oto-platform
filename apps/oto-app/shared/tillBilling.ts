@@ -205,6 +205,35 @@ export function tillProblemOf(reading: TillBillingReading | null | undefined): {
   return tillFiguresOf(reading) ? null : { headline: TILL_NOT_REACHABLE, detail: "The till's answer could not be read." };
 }
 
+/**
+ * SCRUM-1001: the party's additional bills still open at the till (items added in the BEO after
+ * the main bill was settled, each on a bill of its own): how many, what is left to take on them
+ * (each bill's own outstanding, as the till says it), and the words for them. None when the till
+ * gave no figures.
+ */
+export function openAdditionalBillsOf(reading: TillBillingReading | null | undefined): { count: number; outstandingSatang: number; words: string | null } {
+  const open = reading?.status === "ok" ? (reading.billing.additionalBills ?? []).filter((bill) => bill.state === "open") : [];
+  const words = open.length === 0 ? null : open.length === 1 ? "Additional bill open" : `${open.length} additional bills open`;
+  return { count: open.length, outstandingSatang: open.reduce((sum, bill) => sum + bill.outstandingSatang, 0), words };
+}
+
+/**
+ * SCRUM-1001: what the BEO says of the party's bills, in one place for the Billing section's badge
+ * and the Financial Summary. While the main bill is owed, what is left on it (as before). Once it is
+ * paid, an additional bill still open at the till is said with what is left on it, so "Paid" is
+ * said only when the main bill and every additional bill are paid. Null when the till gave no figures.
+ */
+export function partyBillStateOf(reading: TillBillingReading | null | undefined): { words: string; paid: boolean; outstandingSatang: number } | null {
+  const figures = tillFiguresOf(reading);
+  if (!figures) return null;
+  if (figures.outstandingSatang > 0) {
+    return { words: `${bahtOfSatang(figures.outstandingSatang)} outstanding`, paid: false, outstandingSatang: figures.outstandingSatang };
+  }
+  const open = openAdditionalBillsOf(reading);
+  if (open.words) return { words: `${open.words} · ${bahtOfSatang(open.outstandingSatang)} outstanding`, paid: false, outstandingSatang: open.outstandingSatang };
+  return { words: "Paid", paid: true, outstandingSatang: 0 };
+}
+
 /** Satang in baht, as the till writes money: "฿16,900", "฿125.50", "-฿3,000". */
 export function bahtOfSatang(satang: number): string {
   const sign = satang < 0 ? "-" : "";

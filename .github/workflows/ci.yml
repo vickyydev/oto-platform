@@ -1130,6 +1130,17 @@ jobs:
       - name: The app's billed and paid BEO line checks
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/beo-paid-lines.check.ts
+      # SCRUM-1001: once a party's main bill is settled, the BEO's Billing
+      # section says the main bill settled and each additional bill open or
+      # paid with its amount, never "Paid" while one is open; the Financial
+      # Summary says the till's state beside a settled bill, never NOT PAID;
+      # the Save asks to bill only when it may bill something new and says
+      # "nothing new to bill" when the till made no charge. No database.
+      - name: The app's additional bill checks
+        if: steps.changes.outputs.app == 'true'
+        env:
+          TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
+        run: npx tsx tests/beo-additional-bill-ui.check.ts
       # SCRUM-905: the till's menu inside the BEO — the platform asked with
       # the provision key for the park's branch, never a session, one park's
       # answer held a minute and a refusal never held; the route's park group
