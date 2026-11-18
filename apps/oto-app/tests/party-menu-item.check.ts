@@ -23,7 +23,10 @@
 //   - SCRUM-998: an item added to the adults' list is added with "Different
 //     for adults" on (the list offers "New item" only then), so the saved BEO
 //     turns the switch on at once and the line is billed as any adults' line;
-//     an item added to the kids' list leaves the switch as it was.
+//     an item added to the kids' list leaves the switch as it was. With the
+//     switch turned on in the editor and not saved yet, the adults' list the
+//     editor shows (its copy of the kids' dishes) is written with the item, so
+//     the saved list is the screen's; once saved on, the stored list is added to.
 //
 // Usage, from apps/oto-app, with DATABASE_URL set:
 //   npx tsx tests/party-menu-item.check.ts
@@ -390,6 +393,44 @@ try {
     assert.deepEqual((plan?.menus?.adults as Array<{ id: string }>).map((l) => l.id), ["zz_adults_own"], "the adults' list as it was");
   });
 
+  await check("SCRUM-998: the switch turned on and not saved, an adults' item is written with the list the editor shows; saved on, the stored list is added to", async () => {
+    const partyS = await party(A, "adults shown");
+    const kidsDish = { id: "zz_kids_pasta", itemName: "ZZ TEST kids pasta", quantity: 2, notes: "", included: false, price: 120, source: "additional", chargeApproved: true };
+    const saved = await call(keyed, "PUT", `/api/events/${partyS}/beo`, admin, {
+      kitchenPlan: {
+        foodRequired: true, cakeMode: "NONE", setMenuEnabled: false, setMenuTemplateId: null,
+        menus: { kids: [kidsDish], adults: [], adultsDiffer: false, kidsFoodTime: "", adultsFoodTime: "" },
+        serviceSchedule: [],
+      },
+    });
+    assert.equal(saved.status, 200, JSON.stringify(saved.body));
+    // On screen "Different for adults" is turned on: the kids' dish copied for the adults under an id of the editor's.
+    const copy = { ...kidsDish, id: "menu_zz998_0_copy" };
+    const actionId = randomUUID();
+    const res = await add(keyed, admin, partyS, { actionId, menu: "adults", name: "ZZ TEST adults satay", price: 220, free: false, adultsShown: [copy] });
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    let plan = await kitchenOf(partyS);
+    assert.equal(plan?.menus?.adultsDiffer, true, "the switch saved on");
+    const adults = plan?.menus?.adults as Array<Record<string, unknown>>;
+    assert.deepEqual(adults.map((l) => l.id), [copy.id, res.body.line.id], "the saved adults' list is the screen's: the copied dish and the new item");
+    assert.deepEqual(adults[0], copy, "the copy as the screen holds it");
+    assert.deepEqual(plan?.simplified_menus?.adults, plan?.menus?.adults);
+    assert.deepEqual(plan?.menus?.kids, [{ ...kidsDish, billingSync: "plan_only" }], "the kids' list as saved, its billing state the sync's");
+    // The copy is the kids' line again, billed once with it; the new item is the adults' own and billed.
+    const sources = approvedBeoBillingSources(plan?.menus, null).map((l) => l.id);
+    assert.deepEqual(sources, [kidsDish.id, res.body.line.id]);
+    // The same press again: the same line, the list as written, whatever the screen sends now.
+    const again = await add(keyed, admin, partyS, { actionId, menu: "adults", name: "ZZ TEST adults satay", price: 220, free: false, adultsShown: [{ id: "zz_screen_only" }] });
+    assert.equal(again.status, 200, JSON.stringify(again.body));
+    plan = await kitchenOf(partyS);
+    assert.deepEqual((plan?.menus?.adults as Array<{ id: string }>).map((l) => l.id), [copy.id, res.body.line.id]);
+    // Saved on: a later item joins the stored list; the editor's list is not written over it.
+    const later = await add(keyed, admin, partyS, { menu: "adults", name: "ZZ TEST adults tea", price: 60, free: false, adultsShown: [{ id: "zz_screen_only" }] });
+    assert.equal(later.status, 200, JSON.stringify(later.body));
+    plan = await kitchenOf(partyS);
+    assert.deepEqual((plan?.menus?.adults as Array<{ id: string }>).map((l) => l.id), [copy.id, res.body.line.id, later.body.line.id]);
+  });
+
   await check("the same press again is the same item and the same line, never a second", async () => {
     const res = await add(keyed, admin, partyA, { actionId: cake.actionId });
     assert.equal(res.status, 200, JSON.stringify(res.body));
@@ -491,4 +532,4 @@ try {
   platform.close();
   await pool.end();
 }
-process.exit(checks === 10 ? 0 : 1);
+process.exit(checks === 11 ? 0 : 1);

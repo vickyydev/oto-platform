@@ -23,7 +23,7 @@ import { forgetTillMenu } from "./lib/tillMenu";
  * "New item" on the BEO's food lines (SCRUM-828).
  *
  *   POST /api/events/:eventId/beo/party-menu-items
- *        { actionId, menu: kids|adults, name, station: kitchen|bar, price|null, free }
+ *        { actionId, menu: kids|adults, name, station: kitchen|bar, price|null, free, adultsShown? }
  *
  * Staff add an item the till's catalogue does not have yet. In this order,
  * and nothing is written before the till has made the product:
@@ -132,7 +132,11 @@ export function registerPartyMenuRoutes(app: Express): void {
         const [plan] = await tx.select().from(beoKitchenPlans).where(eq(beoKitchenPlans.eventId, event.id));
         const menus = asCollection(plan?.menus);
         const fresh = partyMenuLineOf(body, made.code, plan?.setMenuEnabled ?? false);
-        const held = asLines(menus[body.menu]);
+        // SCRUM-998: "Different for adults" turned on in the editor and not saved yet: its copy of the
+        // kids' dishes is on screen only, so the adults' list is written as the screen shows it, with
+        // the new item. Once the switch is saved on, the stored list is the one added to.
+        const fromScreen = body.menu === "adults" && body.adultsShown && !adultsDifferOf(menus);
+        const held = fromScreen ? asLines(body.adultsShown).filter((l) => l.id !== fresh.id) : asLines(menus[body.menu]);
         const at = held.findIndex((l) => l.id === fresh.id);
         // A retry of the same press finds its line and gives it the code again; nothing is added twice.
         const written = (at < 0 ? fresh : { ...held[at], productCode: made.code }) as PartyMenuLine;

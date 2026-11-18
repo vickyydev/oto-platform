@@ -1272,11 +1272,24 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
   };
 
   /**
+   * SCRUM-998: a new item is written to the BEO at once, past the read this editor opened with,
+   * which the app keeps and never counts as out of date (lib/queryClient.ts). Once an item is
+   * added, that read is let go when the editor closes, so the BEO opened again in this tab is
+   * read afresh, with the item and the adults' switch as stored, and a Save there never sends
+   * the older copy back over them.
+   */
+  const addedSinceRead = useRef(false);
+  useEffect(() => () => {
+    if (addedSinceRead.current) queryClient.removeQueries({ queryKey: ["/api/events", eventId, "beo"], exact: true });
+  }, [eventId]);
+
+  /**
    * SCRUM-828: a new item the server has already written to the kitchen plan
    * with its till code. It joins the list on screen as written (the same id,
    * so a retried press replaces its own line), and the next Save keeps it.
    */
   const addPartyMenuLine = (menu: "kids" | "adults" | "bar", line: PartyMenuLine) => {
+    addedSinceRead.current = true;
     const setMenu = menu === "bar" ? setBarItems : menu === "adults" ? setAdultsMenu : setKidsMenu;
     const shown: MenuLine = {
       id: line.id,
@@ -4413,6 +4426,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
         open={newItemMenu !== null}
         onClose={() => setNewItemMenu(null)}
         onCreated={(line) => addPartyMenuLine(newItemMenu ?? "kids", line)}
+        adultsShown={newItemMenu === "adults" && adultsDiffer ? adultsMenu.map((line) => ({ ...line })) : undefined}
       />
 
       {/* Parent Link Dialog */}

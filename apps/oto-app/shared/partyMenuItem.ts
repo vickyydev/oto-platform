@@ -33,6 +33,13 @@ export const PartyMenuItemBodySchema = z
     price: z.number().min(0).max(PARTY_MENU_ITEM_PRICE_MAX_THB).nullable(),
     /** Free / included / alternate item: no price, part of the package. */
     free: z.boolean(),
+    /**
+     * SCRUM-998: with an item for the adults' list, that list as the editor shows it. Turning
+     * "Different for adults" on copies the kids' dishes into it on screen only; while the BEO
+     * still holds the switch off, the server writes this list with the new item, so the saved
+     * adults' list is the one on screen and never the new item alone.
+     */
+    adultsShown: z.array(z.object({ id: z.string().min(1).max(200) }).passthrough()).max(200).optional(),
   })
   .strict();
 export type PartyMenuItemBody = z.infer<typeof PartyMenuItemBodySchema>;

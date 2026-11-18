@@ -24,7 +24,10 @@
 //      yet" is saved as the EXTRA it shows;
 //   8. SCRUM-999: a billed EXTRA keeps its billing marks through a reload and
 //      a Save, on the kitchen's lists as on the bar's, so a count raised after
-//      the party is settled is still a line the additional bill counts.
+//      the party is settled is still a line the additional bill counts;
+//   9. SCRUM-998: "Different for adults" switched on and an item added to the
+//      adults' list, the item goes with the list the screen shows, and the BEO
+//      closed without Save and opened again in the same tab is read afresh.
 //
 // Run from apps/oto-app:
 //   TSX_TSCONFIG_PATH=tests/tsconfig.jsx.json npx tsx tests/beo-extra-price-ui.check.ts
@@ -140,6 +143,19 @@ g.fetch = async (input: string | URL | Request, init?: RequestInit) => {
   if (beo && method === "GET") return json(beoOf(beo[1]!));
   if (beo && method === "PUT") return json({ ok: true });
   if (/\/beo\/till-billing$/.test(url.pathname)) return json({ status: "not_reachable", message: "The till did not answer." });
+  // SCRUM-998: a new item, written as the route writes it (tests/party-menu-item.check.ts pins the route).
+  const made = /^\/api\/events\/([^/]+)\/beo\/party-menu-items$/.exec(url.pathname);
+  if (made && method === "POST") {
+    const held = BEOS.get(made[1]!)!;
+    const added: Line = { id: `party_${body.actionId}`, itemName: String(body.name), quantity: 1, notes: "", included: body.free === true, price: body.free ? 0 : Number(body.price), productCode: "PARTY-ZZ998A", chargeApproved: true, billingSync: "plan_only" };
+    if (body.menu === "adults") {
+      const base = held.adultsDiffer !== true && Array.isArray(body.adultsShown) ? (body.adultsShown as Line[]) : (held.adults ?? []);
+      held.adults = [...base, added];
+      held.adultsDiffer = true;
+    } else if (body.menu === "kids") held.kids = [...held.kids, added];
+    else held.bar = [...held.bar, added];
+    return json({ line: added, additionalBilling: { status: "plan_only", message: "" }, productId: "99999999-9999-4999-8999-999999999998", productCode: added.productCode, replayed: false });
+  }
   if (url.pathname === "/api/beo/party-hosts") return json({ source: "employee", items: [] });
   if (url.pathname === "/api/user") return json(USER);
   if (/\/beo\/billing$/.test(url.pathname)) return json(null);
@@ -341,6 +357,45 @@ await check("a billed EXTRA keeps its billing marks through a reload and a Save,
   assert.deepEqual(counted, [["k1", 2, "food"], ["a1", 1, "food"], ["b1", 2, "bar"]]);
 });
 
+const adultsNames = () => [...doc.querySelectorAll('[data-testid^="input-menu-name-adults-"]')].map((el) => el.textContent?.trim() ?? "");
+
+// SCRUM-998: turning "Different for adults" on copies the kids' dishes on screen only, and the BEO's
+// first read was kept for the tab's life, so the BEO closed without Save and opened again showed the
+// switch off and no adults' list: a Save there dropped the item. The item now goes with the list the
+// screen shows, and the BEO opened again is read afresh.
+await check("SCRUM-998: switched on and an item added to the adults' list, closed without Save and opened again in this tab: the switch on, the copied dish and the item; the saved list is the screen's", async () => {
+  const E6 = "66666666-6666-4666-8666-666666666949";
+  BEOS.set(E6, { date: WEEKDAY, kids: [line("k1", "ZZ TEST kids pasta", { quantity: 2, price: 120, source: "additional", chargeApproved: true })], adults: [], adultsDiffer: false, bar: [] });
+  await openBeo(E6);
+  await click("button-menu-tab-adults");
+  assert.equal(required("switch-adults-differ").getAttribute("aria-checked"), "false", "saved off");
+  await click("switch-adults-differ");
+  assert.deepEqual(adultsNames(), ["ZZ TEST kids pasta"], "the kids' dish copied on screen");
+  await click("button-add-party-menu-item-adults");
+  await setValue(required("input-party-menu-item-name") as HTMLInputElement, "ZZ TEST adults satay");
+  await setValue(required("input-party-menu-item-price") as HTMLInputElement, "220");
+  const before = asked.length;
+  await click("button-party-menu-item-create");
+  const post = asked.slice(before).find((a) => a.method === "POST" && a.path === `/api/events/${E6}/beo/party-menu-items`);
+  assert.ok(post, "the item was asked for");
+  const screen = adultsNames();
+  assert.deepEqual(screen, ["ZZ TEST kids pasta", "ZZ TEST adults satay"]);
+  const sent = (post.body.adultsShown ?? []) as Line[];
+  assert.deepEqual(sent.map((l) => [l.itemName, l.quantity, l.price]), [["ZZ TEST kids pasta", 2, 120]], "the adults' list as the screen showed it went with the item");
+  // Closed without Save, then opened again in the same tab.
+  await act(async () => { root.render(React.createElement("div")); });
+  await settle();
+  const reads = () => asked.filter((a) => a.method === "GET" && a.path === `/api/events/${E6}/beo`).length;
+  const readsBefore = reads();
+  await openBeo(E6);
+  assert.equal(reads(), readsBefore + 1, "read afresh, not the copy the editor first opened with");
+  await click("button-menu-tab-adults");
+  assert.equal(required("switch-adults-differ").getAttribute("aria-checked"), "true", "the switch on");
+  assert.deepEqual(adultsNames(), screen, "the copied dish and the item, as the screen showed them");
+  // The saved list (written as the route writes it) is the screen's, line for line.
+  assert.deepEqual(BEOS.get(E6)!.adults!.map((l) => l.id), [...sent.map((l) => l.id), `party_${post.body.actionId}`]);
+});
+
 await act(async () => { root.unmount(); });
 console.log(`beo-extra-price-ui.check: ${checks} checks passed`);
-process.exit(checks === 7 ? 0 : 1);
+process.exit(checks === 8 ? 0 : 1);

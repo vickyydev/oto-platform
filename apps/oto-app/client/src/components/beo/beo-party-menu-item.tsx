@@ -78,6 +78,7 @@ export function PartyMenuItemDialog({
   open,
   onClose,
   onCreated,
+  adultsShown,
 }: {
   eventId: string;
   menu: "kids" | "adults" | "bar";
@@ -85,6 +86,11 @@ export function PartyMenuItemDialog({
   onClose: () => void;
   /** The line as the server wrote it, with the till's code. */
   onCreated: (line: PartyMenuLine) => void;
+  /**
+   * SCRUM-998: the adults' list as the editor shows it, sent with an item for that list, so a
+   * list the "Different for adults" switch copied and no Save stored yet is saved with the item.
+   */
+  adultsShown?: NonNullable<PartyMenuItemBody["adultsShown"]>;
 }) {
   const [name, setName] = useState("");
   const [station, setStation] = useState<PartyMenuItemStation>("kitchen");
@@ -108,7 +114,10 @@ export function PartyMenuItemDialog({
 
   const create = async () => {
     if (saving) return;
-    const body = partyMenuItemBodyOf({ actionId, menu, name, station, price, free });
+    const body: PartyMenuItemBody = {
+      ...partyMenuItemBodyOf({ actionId, menu, name, station, price, free }),
+      ...(menu === "adults" && adultsShown ? { adultsShown } : {}),
+    };
     const problem = partyMenuItemProblem(body);
     if (problem) {
       setError(problem);
