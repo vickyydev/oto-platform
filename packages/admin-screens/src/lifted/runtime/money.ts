@@ -39,6 +39,12 @@ export interface DiscountCodesSectionPorts extends MoneyAuthorityPorts {
   targetOptions: DiscountTargetOptions;
   formatWWPrice: CataloguePriceFormatter;
   formatDiscountTargetLabel: DiscountTargetHelpers['formatDiscountTargetLabel'];
+  /**
+   * The park's business date now, yyyy-mm-dd (SCRUM-1010: its own clock and
+   * day start, midnight to midnight). The Expired and Not yet valid badges
+   * compare against it, as the till does, never against the UTC date.
+   */
+  parkToday: () => string;
   canEditDiscount?: (discount: Discount) => boolean;
   upsertDiscount: (discount: Discount, originalCode?: string) => void | Promise<void>;
   deleteDiscount: CatalogueMutation<string>;

@@ -2,7 +2,7 @@ import { createMoneyAdminApi } from '@oto/admin-screens/lifted/api/money';
 import { apiUrl } from '@/api/client';
 import { useWorkingAuthority } from '@/lib/workingAuthority';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { EventDropInPricing } from '@oto/shared';
+import { businessDate, parseDayStart, type EventDropInPricing } from '@oto/shared';
 import type { Permission } from '@oto/shared/permissions';
 import { AdminNotifications, adminToast } from '@oto/admin-screens';
 import { DiscountCodesSectionWithPorts } from '@oto/admin-screens/lifted/admin/discounts/DiscountCodesSection';
@@ -27,7 +27,7 @@ import { SelectChip } from '@/components/redesign/chips';
 import { EmptyNote } from '@/components/redesign/StatTile';
 
 export type MoneyPage = 'discounts' | 'tenders' | 'tax' | 'voucher-campaigns' | 'event-pricing';
-type Park = { id: string; name: string; code: string };
+type Park = { id: string; name: string; code: string; timezone?: string; businessDayStart?: string };
 const readPermission: Record<MoneyPage, Permission> = {
   discounts: 'catalog:menu:read', tenders: 'catalog:menu:read', tax: 'catalog:tax:read',
   'voucher-campaigns': 'admin:booth:read', 'event-pricing': 'pos:event:read',
@@ -51,6 +51,14 @@ interface Snapshot {
 }
 const taxEngine = { toSatang, engineTaxConfig, breakdownToBaht };
 const messageOf = (failure: unknown) => failure instanceof Error ? failure.message : 'The money settings could not be read.';
+
+/**
+ * The picked park's business date now (SCRUM-1010: its own clock, midnight
+ * to midnight unless the park sets another start). The discount badges read
+ * it; the UTC date would call a code expired from 00:00 to 07:00 a day late.
+ */
+const parkTodayOf = (park: Park | undefined) => businessDate(new Date(), park?.timezone ?? 'Asia/Bangkok',
+  park?.businessDayStart ? parseDayStart(park.businessDayStart) : undefined);
 
 /** Native money controls bound to one authenticated snapshot and its canonical reads. */
 export function Money({ page }: { page: MoneyPage }) {
@@ -183,6 +191,7 @@ export function Money({ page }: { page: MoneyPage }) {
         {page === 'discounts' && <>
           <DiscountCodesSectionWithPorts ports={{ discounts: snapshot.discounts, menuItems: snapshot.targets.menuItems, merchItems: snapshot.merchItems,
             targetOptions: snapshot.targets, formatWWPrice, formatDiscountTargetLabel, canManage: canManageGlobal, canEditDiscount,
+            parkToday: () => parkTodayOf(parks?.find(park => park.id === parkId)),
             authorityMessage: canManageGlobal ? undefined : sharedMessage,
             upsertDiscount: (discount, originalCode) => mutate(() => snapshot.api.saveDiscount(discount, originalCode)),
             deleteDiscount: code => mutate(() => { const id = snapshot.discountIds.get(code); if (!id) throw new Error('The discount code is no longer in this snapshot. Refresh the page.'); return snapshot.api.menu.menuApi.archiveDiscount(id); }),

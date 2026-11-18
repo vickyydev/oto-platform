@@ -24,6 +24,7 @@ import { resolveGroupRequirements, resolveSupervisionOutcome, sortedConfirmation
 import { consentFormPhone, contactChangeWithdraws, contactConfirmationStands, messagingPhoneProblem, type ContactConfirmation } from '@/lib/consentForm';
 import { consentMissing } from '@/lib/consentFinish';
 import { buildSale } from '@/lib/sale';
+import { branchTradingDate } from '@/lib/pricingMode';
 import { withPlatformCredit } from '@/lib/saleCredit';
 import { taxRowsOf, ticketTotals } from '@/lib/cartWire';
 import { dropOrphanedDiscounts } from '@/lib/manualDiscount';
@@ -1007,7 +1008,10 @@ export default function MobileTill() {
       setPromoError(`Code "${code.toUpperCase()}" was not found.`);
       return;
     }
-    const today = new Date().toISOString().slice(0, 10);
+    // The park's business date (its own clock and day start, SCRUM-1010),
+    // as food and shop read it: never the UTC date, which in Bangkok turns
+    // at 07:00. The platform re-checks the code at payment either way.
+    const today = branchTradingDate();
     const custKey = customerPhone || member?.phone || undefined;
     const result = validatePromoCode(promo, lines, today, custKey, discounts);
     if (!result.ok) {
