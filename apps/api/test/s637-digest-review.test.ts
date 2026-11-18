@@ -4,7 +4,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { branch, operator, opsLast, opsRun } from '@oto/db';
 import { newId } from '@oto/shared';
 import {
-  createConsoleDigestSender, runConsoleDigest, type DigestOptions, type DigestSender,
+  createConsoleDigestSender, DIGEST_SEND_MINUTES, digestSendFrom, runConsoleDigest, type DigestOptions, type DigestSender,
 } from '../src/services/console-digest';
 import { createJobRunner, type JobDefinition } from '../src/services/jobs';
 import { JobFailedError } from '../src/services/job-failure';
@@ -13,7 +13,7 @@ import { overviewForScopeOf } from '../src/services/console';
 import { createTestContext, teardownAll, type TestContext } from './helpers';
 
 const names = ['console.digest.intent', 'console.digest.delivery', 'job:console.digest'];
-const now = new Date('2026-10-25T00:30:00.000Z'); // Bangkok 07:30, after the actual 05:00 start.
+const now = new Date('2026-10-25T00:30:00.000Z'); // Bangkok 07:30, after the 05:00 send time.
 const summary = 'ZZ TEST Park\nBusiness date: 2026-10-25\nRevenue unavailable\nUSD estimate unavailable: no_rate_configured';
 const summaryHash = createHash('sha256').update(summary).digest('hex');
 let ctx: TestContext;
@@ -59,9 +59,9 @@ beforeAll(async () => {
     { id: archivedOp, name: 'ZZ TEST Digest archived', archivedAt: now },
   ]);
   await ctx.db.insert(branch).values([
-    { id: parkA, operatorId: opA, name: 'ZZ TEST Digest A1', code: 'zz-digest-a1', timezone: 'Asia/Bangkok', businessDayStart: '05:00' },
-    { id: parkA2, operatorId: opA, name: 'ZZ TEST Digest A2', code: 'zz-digest-a2', timezone: 'America/New_York', businessDayStart: '05:00' },
-    { id: parkB, operatorId: opB, name: 'ZZ TEST Digest B1', code: 'zz-digest-b1', timezone: 'Asia/Bangkok', businessDayStart: '05:00' },
+    { id: parkA, operatorId: opA, name: 'ZZ TEST Digest A1', code: 'zz-digest-a1', timezone: 'Asia/Bangkok', businessDayStart: '00:00' },
+    { id: parkA2, operatorId: opA, name: 'ZZ TEST Digest A2', code: 'zz-digest-a2', timezone: 'America/New_York', businessDayStart: '00:00' },
+    { id: parkB, operatorId: opB, name: 'ZZ TEST Digest B1', code: 'zz-digest-b1', timezone: 'Asia/Bangkok', businessDayStart: '00:00' },
     { id: archivedOpPark, operatorId: archivedOp, name: 'ZZ TEST Digest archived parent', code: 'zz-digest-archived' },
   ]);
 });
@@ -83,8 +83,11 @@ describe('SCRUM-637 branch morning digest — real receipts, injected transport 
     expect(send).not.toHaveBeenCalled(); expect(read).not.toHaveBeenCalled(); expect(await rows()).toEqual([]);
   });
 
-  it('R2: before the actual local start sends nothing; the boundary and later startup catch up the current day only', async () => {
+  it('R2 (SCRUM-1010): the day starts at midnight but the digest waits for 05:00; the send time and later startup catch up the current day only', async () => {
     const send = accepted();
+    // 00:30 Bangkok: the park's new day has started, the morning digest has not.
+    await run(send, { now: new Date('2026-10-24T17:30:00Z') });
+    // 04:59:59 Bangkok: still nothing.
     await run(send, { now: new Date('2026-10-24T21:59:59Z') });
     expect(send).not.toHaveBeenCalled();
     const result = await run(send, { now: new Date('2026-10-24T22:00:00Z') });
@@ -227,7 +230,7 @@ describe('SCRUM-637 branch morning digest — real receipts, injected transport 
       expect(failure).toBeInstanceOf(JobFailedError);
       expect((failure as JobFailedError).detail).toMatchObject({ groups: [expect.objectContaining({ state: 'failed', code: 'snapshot' })] });
     } finally {
-      await ctx.db.update(branch).set({ businessDayStart: '05:00' }).where(eq(branch.id, parkA));
+      await ctx.db.update(branch).set({ businessDayStart: '00:00' }).where(eq(branch.id, parkA));
     }
   });
 
@@ -293,5 +296,14 @@ describe('SCRUM-637 generic private HTTPS adapter — fake fetch only', () => {
     expect(fetcher.mock.calls[0]![1]!.signal!.aborted).toBe(true);
     expect(JSON.stringify(result)).not.toContain('example.invalid');
     expect(JSON.stringify(result)).not.toContain('private transport diagnostic');
+  });
+});
+
+describe('SCRUM-1010 — the digest keeps its morning send time when the day starts at midnight', () => {
+  it('posts from 05:00 for a midnight park, and never before a later day start', () => {
+    expect(DIGEST_SEND_MINUTES).toBe(5 * 60);
+    expect(digestSendFrom(0)).toBe(5 * 60);
+    expect(digestSendFrom(5 * 60)).toBe(5 * 60);
+    expect(digestSendFrom(8 * 60)).toBe(8 * 60);
   });
 });
