@@ -1,0 +1,38 @@
+{
+  "liveSha": "api 45399de089582486986ea7fbe9d872044a251f97; till and booking site f27cfb0652da80b1d1b597309ed1a16d9ab24c9c",
+  "capturedAt": "2026-11-18T23:18:29.727Z",
+  "result": {
+    "bundle": {
+      "scripts": 1,
+      "saveRoute": true,
+      "note": {
+        "en": true,
+        "zh": true,
+        "th": true,
+        "ru": true,
+        "fr": true
+      },
+      "oldNoteGone": true
+    },
+    "save": {
+      "status": 403,
+      "body": {
+        "error": {
+          "code": "FAMILY_CHECK_EXPIRED",
+          "message": "Your family check has run out, or is not for this phone, so nothing was saved to your family's record. Ask for a new code to save changes; the details still go on this booking."
+        }
+      }
+    },
+    "booking": {
+      "status": 403,
+      "body": {
+        "error": {
+          "code": "FAMILY_CHECK_EXPIRED",
+          "message": "This booking names children saved on your family's record, but your family check has run out, or is not for this phone, so nothing was booked. Go back to the start and ask for a new code, or book without the saved children."
+        }
+      },
+      "branch": "hkt-central",
+      "package": "1 Hour Play"
+    }
+  }
+}
