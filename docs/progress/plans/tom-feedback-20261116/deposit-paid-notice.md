@@ -1,7 +1,8 @@
 # A paid birthday deposit shows on the chat (SCRUM-996)
 
-**State, 18 November 2026: planned, not built.** Six choices (section 4) are
-with the owner; nothing is built before his answers.
+**State, 19 November 2026: built with the owner's six answers (section 7).**
+On 18 November 2026 the owner ticked 1(c) with the label, 2(b), 3(b), 4(b),
+5(a) and 6(b).
 
 Asked for by the owner on 18 November 2026 in his review of SCRUM-987 (a
 birthday booking needs a gateway-confirmed deposit): "keep it but add some
@@ -142,3 +143,41 @@ Booking by itself, any change to the deposit rule, sound or browser notices
 About two days with the smallest choices (build, tests, staging proof). Each
 larger choice adds a quarter to half a day; a bell that opens the chat adds
 about a day in the HR app.
+
+## 7. As built (19 November 2026)
+
+- Row label for everyone the list already shows the chat to: "Deposit paid ·
+  book the date", "Deposit paid · date passed, needs staff" or "Deposit needs
+  checking" (`depositSignal`, words only), in the row's spoken label too.
+  "Paid" is `view()`'s paid (`standingOf` in `prebooking.ts`); "needs
+  checking" is money on the draft that does not count and was not given back
+  (flagged by the gateway, recorded by a person, or a second payment).
+- The next action reads "Staff action needed" while a deposit is to book or
+  to check, in place of any "wait" state; "Staff reply needed" and Handled
+  stay as they are.
+- "Ready to book": the first page carries the tab's paid chats (same filters)
+  in last-activity order; the Inbox pins them above the list. Not "needs
+  checking". A chat Handled before the money stays Handled, with the label,
+  in the Handled tab's group.
+- After the settlement commits (`settlePaidAttempt`), only from the
+  settlement that approved the attempt: the family's `party_deposit_received`
+  line with its `deposit_paid` pill, then the park's birthday manager's bell
+  (`inbox.prebooking.notify` audit). Never throws; the line's id is derived
+  from the attempt, the bell rings with the line posted now.
+- Beside Book Date, for people who may book: "Deposit ฿X paid and gateway
+  verified at <time>. Check capacity, then Book Date." (a simulator payment
+  says so first); it opens the dialog.
+- No migration. Tests: `apps/api/test/prebooking-notice-996-review.test.ts`,
+  `apps/inbox/test/deposit-notice-996.test.ts`,
+  `packages/shared/test/inbox-next-action.test.ts`.
+
+Found while building, kept as built (owner questions, not changed):
+
+- The family's own lines name the amount to everyone who sees the chat, the
+  row's preview included: the request line since SCRUM-987, now the received
+  line. The label itself carries none.
+- The reused received line says "your party on <date> is confirmed" when the
+  money is verified, as the request line promises ("Your booking is confirmed
+  as soon as the deposit arrives"), while the calendar booking waits for
+  Book Date. Pinned as an `it.fails` FINDING in the review test; a
+  pre-booking wording would be a new template key in three languages.
