@@ -1,0 +1,16 @@
+-- SCRUM-1010 (the park's day runs midnight to midnight) - 0132, step 2 of 2:
+-- THE SWITCH. Every park's business_day_start becomes 00:00, on the owner's
+-- ruling of 19 November 2026 ("we dont need this 5 am figure. lets keep it
+-- midnight like normal 24 hour day and count according to that").
+--
+-- Only the setting moves. No stored business date is rewritten: every sale
+-- keeps its business_date and its frozen copy of the day start it was dated
+-- with, every End of Day row, cash movement, wallet entry (and its stored
+-- expires_at), booth spin and analytics row stays as stored. The boxes take
+-- the new value from the cloud's config bundle at their next heartbeat.
+--
+-- DEPLOY BETWEEN 06:00 AND 23:00 PARK TIME, never between midnight and 05:00:
+-- applied then, the day in progress would be split across two dates.
+--
+-- TO REVERSE: UPDATE "core"."branch" SET "business_day_start" = '05:00';
+UPDATE "core"."branch" SET "business_day_start" = '00:00' WHERE "business_day_start" <> '00:00';
