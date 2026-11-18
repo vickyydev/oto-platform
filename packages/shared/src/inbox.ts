@@ -344,8 +344,18 @@ export const InboxContactSchema = z.object({
   erased: z.boolean(),
 });
 
-export const INBOX_NEXT_ACTIONS = ['staff_reply_needed', 'ai_replying', 'ai_previewing', 'ai_sent', 'waiting_customer', 'shadow_preview', 'handled'] as const;
+export const INBOX_NEXT_ACTIONS = ['staff_reply_needed', 'ai_replying', 'ai_previewing', 'ai_sent', 'waiting_customer', 'shadow_preview', 'handled', 'staff_action_needed'] as const;
 export type InboxNextAction = (typeof INBOX_NEXT_ACTIONS)[number];
+
+/**
+ * SCRUM-996: where a pre-booking birthday deposit stands, as the list says it
+ * on the row. `paid` and `paid_date_passed` are the paid deposit of the one
+ * rule that decides it (`inbox/prebooking.ts`); `needs_checking` is money that
+ * arrived and does not count (part-paid, wrong amount, paid after the link ran
+ * out). Never an amount: the amount stays with the people who may book.
+ */
+export const INBOX_DEPOSIT_SIGNALS = ['paid', 'paid_date_passed', 'needs_checking'] as const;
+export type InboxDepositSignal = (typeof INBOX_DEPOSIT_SIGNALS)[number];
 
 /** SCRUM-992: delivery truth is separate from both a person's unread count and AI eligibility. */
 export function inboxNextAction(facts: {
@@ -355,8 +365,17 @@ export function inboxNextAction(facts: {
   aiHeld: boolean;
   /** Latest outbound after the latest customer message or routing; never its body. */
   outbound: { authorKind: string; providerStatus: string | null } | null;
+  /** SCRUM-996: the row's deposit signal; a deposit to book or to check waits on a person. */
+  deposit?: InboxDepositSignal | null;
 }): InboxNextAction {
   if (facts.status === 'handled') return 'handled';
+  const action = deliveryAction(facts);
+  // The family's "deposit received" line is a sent assistant line: by delivery
+  // alone it would read "waiting for customer" exactly when staff must act.
+  return facts.deposit && action !== 'staff_reply_needed' ? 'staff_action_needed' : action;
+}
+
+function deliveryAction(facts: Parameters<typeof inboxNextAction>[0]): InboxNextAction {
   const message = facts.outbound;
   const sent = ['sent', 'delivered', 'read'].includes(message?.providerStatus ?? '');
   // A person's newer action outranks a turn that has not yet been cancelled.
@@ -397,6 +416,13 @@ export const InboxConversationRowSchema = z.object({
   unanswered: z.boolean(),
   /** The next action, confirmed from current delivery/turn facts; independent of unread. */
   nextAction: z.enum(INBOX_NEXT_ACTIONS).optional(),
+  /**
+   * SCRUM-996: the pre-booking deposit's signal for whoever sees the row —
+   * paid and waiting for Book Date, paid for a date that has passed, or money
+   * that needs checking; null when there is none. The words only: no amount,
+   * no time, no payment detail. Optional: an api from before it sends none.
+   */
+  depositSignal: z.enum(INBOX_DEPOSIT_SIGNALS).nullable().optional(),
   /** Customer messages after the viewer's last read one (`participant`). */
   unread: z.number().int().min(0),
   /** The viewer holds a slot on it — My Inbox. */
@@ -422,6 +448,13 @@ export const InboxConversationListSchema = z.object({
   access: InboxVisibilityLimitsSchema.optional(),
   /** Pass back as `cursor` for the next page; null on the last one. */
   nextCursor: z.string().nullable(),
+  /**
+   * SCRUM-996: the "Ready to book" group pinned above the list — this tab's
+   * conversations (with the same filters) whose deposit is paid and not yet
+   * booked, newest activity first. Sent with the first page only; the same
+   * rows may also come in `conversations`, where they keep their place.
+   */
+  readyToBook: z.array(InboxConversationRowSchema).optional(),
   /** The viewer's tabs, counted over everything they can see, before filters (:1088-1097). */
   tabCounts: InboxTabCountsSchema,
 });
