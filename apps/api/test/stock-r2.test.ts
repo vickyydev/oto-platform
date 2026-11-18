@@ -297,9 +297,11 @@ describe('purchase orders: to order → ordered → received', () => {
     expect(order.state).toBe('ordered');
     expect(order.orderedBy).toBeTruthy();
     expect(order.notes).toBe('PO-1001');
-    // Bangkok Merch Co. items carry a 7-day lead time.
+    // Bangkok Merch Co. items carry a 7-day lead time, from the park's
+    // business date: its calendar date, the day running midnight to
+    // midnight (SCRUM-1010).
     const { rows } = await ctx.db.execute(
-      sql`select ((now() at time zone 'Asia/Bangkok' - interval '5 hours')::date + 7)::text as d`,
+      sql`select ((now() at time zone 'Asia/Bangkok')::date + 7)::text as d`,
     );
     expect(order.expectedArrivalDate).toBe((rows[0] as { d: string }).d);
     const late = await call('PATCH', `${base()}/purchase-orders/${capOrderId}/lines/${capLineId}`, manager, { quantity: 5 });

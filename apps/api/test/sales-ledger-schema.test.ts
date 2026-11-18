@@ -131,20 +131,21 @@ describe('the sale record (S2-09a)', () => {
     expect(stored!.receiptNumber).toBe('HKT1-000001');
   });
 
-  it('stamps the business date the branch day start gives, not the calendar date', async () => {
-    // 00:30 the morning after, while the previous day is still being closed.
+  it('stamps the business date the branch day start gives: midnight to midnight since SCRUM-1010', async () => {
+    // 00:30 the morning after is the new calendar day's; 23:59 the evening
+    // before is still the 19th's.
     const lateNight = new Date('2026-09-20T00:30:00+07:00');
-    const resolved = businessDate(
-      lateNight,
-      branchRow.timezone,
-      parseDayStart(branchRow.businessDayStart),
-    );
-    expect(resolved).toBe('2026-09-19');
+    const dayStart = parseDayStart(branchRow.businessDayStart);
+    expect(dayStart).toBe(0);
+    const resolved = businessDate(lateNight, branchRow.timezone, dayStart);
+    expect(resolved).toBe('2026-09-20');
+    expect(businessDate(new Date('2026-09-19T23:59:00+07:00'), branchRow.timezone, dayStart)).toBe('2026-09-19');
 
     const row = aSale({ occurredAt: lateNight, businessDate: resolved });
     await ctx.db.insert(sale).values(row);
     const [stored] = await ctx.db.select().from(sale).where(eq(sale.id, row.id!));
-    expect(stored!.businessDate).toBe('2026-09-19');
+    expect(stored!.businessDate).toBe('2026-09-20');
+    expect(stored!.businessDayStart).toBe('00:00:00');
   });
 
   it('refuses totals that do not add up', async () => {

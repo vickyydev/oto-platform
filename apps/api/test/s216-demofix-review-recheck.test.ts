@@ -146,7 +146,9 @@ beforeAll(async () => {
   chalong = await branchIdByCode(ctx.db, CHALONG_BRANCH_CODE);
   const [som] = await ctx.db.select().from(account).where(eq(account.phone, RECEPTION.phone));
   somId = som!.id;
-  T = businessDate(new Date(), 'Asia/Bangkok', parseDayStart('05:00'));
+  // Today at the demo park, which the seed creates with the column default:
+  // midnight since SCRUM-1010.
+  T = businessDate(new Date(), 'Asia/Bangkok', parseDayStart('00:00'));
   // The very first presses on this database, at once: nothing exists yet —
   // no demo branch, no demo booth, no box, no wheel.
   firstRun = await Promise.all([seedDemoDay(ctx.db), seedDemoDay(ctx.db)]);

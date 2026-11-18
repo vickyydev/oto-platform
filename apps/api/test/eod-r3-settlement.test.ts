@@ -58,7 +58,7 @@ describe('S2-15a settlement ledger', () => {
   let ctx: TestContext;
   let operatorId: string, branchId: string, stationId: string, boxId: string, deviceId: string;
   let managerCookie: string, receptionCookie: string, attemptId: string, gatewayAttemptId: string;
-  const date = businessDate(new Date(), 'Asia/Bangkok', 5 * 60);
+  const date = businessDate(new Date(), 'Asia/Bangkok', 0); // the park's midnight day (SCRUM-1010)
   const paidAt = new Date('2026-09-20T08:30:00.000Z');
 
   beforeAll(async () => {

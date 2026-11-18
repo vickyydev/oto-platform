@@ -172,7 +172,9 @@ beforeAll(async () => {
   chalong = await branchIdByCode(ctx.db, CHALONG_BRANCH_CODE);
   const [som] = await ctx.db.select({ id: account.id }).from(account).where(eq(account.phone, RECEPTION.phone));
   somId = som!.id;
-  T = businessDate(new Date(), 'Asia/Bangkok', parseDayStart('05:00'));
+  // Today at the demo park, which the seed creates with the column default:
+  // midnight since SCRUM-1010.
+  T = businessDate(new Date(), 'Asia/Bangkok', parseDayStart('00:00'));
   liveBefore = await liveBoothState();
 
   // The Health page's demo control, then the rollup's "Run now".

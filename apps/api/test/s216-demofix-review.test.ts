@@ -4,6 +4,7 @@ import {
   account,
   auditLog,
   boothConfigVersion,
+  branch,
   boothDutyAssignment,
   boothPrize,
   box,
@@ -182,9 +183,12 @@ beforeAll(async () => {
   const [som] = await ctx.db.select().from(account).where(eq(account.phone, RECEPTION.phone));
   somId = som!.id;
   operatorId = som!.operatorId;
-  T = businessDate(new Date(), 'Asia/Bangkok', parseDayStart('05:00'));
   firstMessage = await pressDemoDay();
   demo = await branchIdByCode(ctx.db, DEMO_BRANCH_CODE);
+  // The demo park's own day, from its own clock and day start (midnight
+  // since SCRUM-1010), as the demo seed reads it: never an assumed 05:00.
+  const [demoClock] = await ctx.db.select({ timezone: branch.timezone, dayStart: branch.businessDayStart }).from(branch).where(eq(branch.id, demo));
+  T = businessDate(new Date(), demoClock!.timezone, parseDayStart(demoClock!.dayStart));
   await rollUp();
 }, 300_000);
 

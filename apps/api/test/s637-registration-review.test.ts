@@ -14,7 +14,9 @@ const JOB = 'job:console.digest', OTHER = 'job:zz-test-637-unrelated';
 const names = [JOB, 'console.digest.intent', 'console.digest.delivery'];
 const keys = [`ops.missing:${JOB}`, `ops.failing:${JOB}`, `ops.missing:${OTHER}`];
 const destination = 'https://example.invalid/zz-test-digest?synthetic=zz-test-private-destination';
-const now = new Date('2026-10-26T02:30:00.000Z');
+// 05:30 at the UTC park: past the digest's own 05:00 send time (SCRUM-1010
+// decoupled it from the day start, which is midnight here).
+const now = new Date('2026-10-26T05:30:00.000Z');
 const owner = newId(), park = newId(), till = newId();
 const forbiddenFetch = vi.fn<typeof fetch>().mockRejectedValue(new Error('ZZ_TEST_EXTERNAL_FETCH_REFUSED'));
 let ctx: TestContext;

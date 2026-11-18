@@ -24,7 +24,7 @@ import {
  */
 
 const TZ = 'Asia/Bangkok';
-const D = businessDate(new Date(), TZ, 5 * 60);
+const D = businessDate(new Date(), TZ, 0); // the park's midnight day (SCRUM-1010)
 const day = (n: number) => addDaysToIsoDate(D, -n);
 
 let ctx: TestContext;
