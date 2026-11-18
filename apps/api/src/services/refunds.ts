@@ -1,7 +1,7 @@
 import { and, asc, eq } from 'drizzle-orm';
 import { assertPartyDepositHistory, partyRefundBalanceOf } from './party-deposit-balance';
 import { assertNoPendingExtensions, assertExtensionRefund, cancelSaleExtension } from './sale-extension-lifecycle';
-import { device, paymentAttempt, refund, sale, saleLine, station } from '@oto/db';
+import { branch, device, paymentAttempt, refund, sale, saleLine, station } from '@oto/db';
 import {
   PAYMENT_ATTEMPT_TAKEN_STATUSES,
   PAYMENT_ATTEMPT_TERMINAL_STATUSES,
@@ -587,14 +587,26 @@ export async function refundSale(
    * a line, it is put back once. A line sold before the ledger existed took
    * nothing off a shelf and puts nothing back (OD-S5).
    */
+  // SCRUM-1010: the trading day the refund falls on is the park's day NOW,
+  // read from the park's current setting. The sale's frozen copy of the day
+  // start answers which day the SALE was on; a refund made after the park's
+  // day start changed (05:00 to midnight) must not be dated by the old rule.
+  const [park] = await tx
+    .select({ timezone: branch.timezone, dayStart: branch.businessDayStart })
+    .from(branch)
+    .where(and(eq(branch.id, row.branchId), eq(branch.operatorId, row.operatorId)))
+    .limit(1);
   const restockedMovements = await restockForRefund(tx, {
     operatorId: row.operatorId,
     branchId: row.branchId,
     saleId,
     refundId,
     saleLineIds: lineEntries.filter((l) => l.restock).map((l) => l.saleLineId),
-    // The trading day the refund falls on, on the sale's own frozen calendar.
-    businessDate: businessDate(now, row.timezone, parseDayStart(row.businessDayStart)),
+    businessDate: businessDate(
+      now,
+      park?.timezone ?? row.timezone,
+      parseDayStart(park?.dayStart ?? row.businessDayStart),
+    ),
     stationId: series.id,
     actorAccountId: actor.accountId,
     requestId: actor.requestId ?? null,
