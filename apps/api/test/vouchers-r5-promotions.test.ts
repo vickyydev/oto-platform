@@ -517,10 +517,12 @@ describe('a per-customer limit is keyed by the member; a walk-in is not held to 
 });
 
 describe('the window is judged on the branch’s trading day', () => {
-  it('the boundary is the day start (05:00), not midnight: 04:59 on the next calendar day is still the last day', async () => {
+  it('the boundary is the park’s day start, midnight since SCRUM-1010: 23:59 is the last day, 00:00 the next is ended', async () => {
     const last = '2026-10-01';
     const def = { validFrom: null, validUntil: last };
     const endOfLast = businessDayEndsAt(last, tz, dayStart);
+    // 00:00 on 2 October in Bangkok — not 05:00, and not the UTC date change.
+    expect(endOfLast.toISOString()).toBe('2026-10-01T17:00:00.000Z');
     expect(await promoWindowRefusal(ctx.db, def, hktId, new Date(endOfLast.getTime() - 60_000))).toBeNull();
     const after = await promoWindowRefusal(ctx.db, def, hktId, endOfLast);
     expect(after).toMatchObject({ code: 'VOUCHER_PROMOTION_ENDED', message: 'This promotion ended on 1 Oct 2026' });

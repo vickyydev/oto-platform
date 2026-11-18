@@ -429,11 +429,12 @@ interface Built {
 let built: Built;
 
 describe('lane G review: the figures, the business day and double counting', () => {
-  it('H1, H5 — a box sale synced two days late, and one rung up at 01:30, mark the day they were sold and nothing else', async () => {
+  it('H1, H5 — a box sale synced two days late, and one rung up at 23:30, mark the day they were sold and nothing else', async () => {
     expect(await salesMarks()).toEqual([]);
     const O1 = await boxSale(new Date(`${O}T14:30:00+07:00`), { packageId: twoHoursId, kids: 1, adults: 1 });
-    // 01:30 the morning after O is still O's trading day (day start 05:00).
-    const O2 = await boxSale(new Date(`${addDaysToIsoDate(O, 1)}T01:30:00+07:00`), { packageId: oneHourId, kids: 1, adults: 1 });
+    // 23:30 is the last half hour of O's trading day (SCRUM-1010: the day runs
+    // midnight to midnight; 01:30 the next morning would be the next day's).
+    const O2 = await boxSale(new Date(`${O}T23:30:00+07:00`), { packageId: oneHourId, kids: 1, adults: 1 });
     expect((await saleOf(O1)).businessDate).toBe(O);
     expect((await saleOf(O2)).businessDate).toBe(O);
     expect(await salesMarks()).toEqual([O]);
@@ -643,7 +644,7 @@ describe('lane G review: the figures, the business day and double counting', () 
     expect(sum('guests')).toBe(day.guestsKids + day.guestsAdults);
   });
 
-  it('O carries its 01:30 sale and the refund made today; each lands in the hour it was rung up', async () => {
+  it('O carries its 23:30 sale and the refund made today; each lands in the hour it was rung up', async () => {
     const gO1 = (await saleOf(built.O1)).grossSatang;
     const gO2 = (await saleOf(built.O2)).grossSatang;
     expect(await dayRow(O)).toMatchObject({
@@ -658,8 +659,8 @@ describe('lane G review: the figures, the business day and double counting', () 
       mix2h: 2,
     });
     expect((await hourRows(O)).map((h) => [h.hour, h.revenueSatang, h.txnCount, h.guests])).toEqual([
-      [1, gO2, 1, 2],
       [14, gO1 - built.refundO1, 1, 2],
+      [23, gO2, 1, 2],
     ]);
     // Nothing of O's reached today.
     const today = (await dayRow(T))!;

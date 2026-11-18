@@ -165,25 +165,28 @@ describe('SCRUM-36 — pricing-mode resolver (prototype pricingMode.ts rules)', 
   /**
    * SCRUM-308. Seen on staging just after midnight: the header chip said
    * Weekday while the platform priced the same basket as Weekend for a holiday
-   * on the trading day, which was still the 22nd. The chip's default date was
-   * the calendar day; a sale's is the trading day (`business_day_start`,
-   * 05:00). Between midnight and five they disagreed.
+   * on the trading day. The chip now answers for the trading day a sale is
+   * priced on (`business_day_start`). Since SCRUM-1010 the park's day runs
+   * midnight to midnight, so at 00:30 that trading day is the new calendar
+   * day: a holiday on it turns the chip at midnight, not at 05:00.
    *
    * Only `Date` is faked, so the database calls underneath still run on real
    * time. The clock lands up to a day ahead, past the 12-hour session made
    * above, so this signs in again under the faked clock and uses that cookie.
    */
-  it('at 00:30 the chip prices the trading day a sale would be priced on, not the calendar day', async () => {
+  it('at 00:30 the chip prices the trading day a sale would be priced on: the new calendar day (SCRUM-1010)', async () => {
     // The next 00:30 Asia/Bangkok (UTC+7) after real now: 17:30 UTC today or tomorrow.
     const real = new Date();
     const at = new Date(Date.UTC(real.getUTCFullYear(), real.getUTCMonth(), real.getUTCDate(), 17, 30));
     if (at.getTime() <= real.getTime()) at.setUTCDate(at.getUTCDate() + 1);
     const calendarDay = new Date(at.getTime() + 7 * 3600_000).toISOString().slice(0, 10);
-    const tradingDay = new Date(at.getTime() + 7 * 3600_000 - 86_400_000).toISOString().slice(0, 10);
-    expect(tradingDay).not.toBe(calendarDay);
+    const dayBefore = new Date(at.getTime() + 7 * 3600_000 - 86_400_000).toISOString().slice(0, 10);
+    expect(dayBefore).not.toBe(calendarDay);
+    // The trading day at 00:30 is the calendar day: the park's day starts at midnight.
+    const tradingDay = calendarDay;
 
-    // A holiday on the trading day only, so the two days answer differently
-    // whatever weekday they fall on.
+    // A holiday on the trading day only, so the trading day and the day before
+    // answer differently whatever weekday they fall on.
     const made = await ctx.app.inject({
       method: 'POST',
       url: `/branches/${branchId}/holidays`,
@@ -201,7 +204,7 @@ describe('SCRUM-36 — pricing-mode resolver (prototype pricingMode.ts rules)', 
         headers: { cookie: lateCookie },
       });
       expect(res.statusCode, res.body).toBe(200);
-      expect(res.json().date, 'the chip answered for the calendar day').toBe(tradingDay);
+      expect(res.json().date, 'the chip answered for the day before, as under a 05:00 start').toBe(tradingDay);
       expect(res.json()).toMatchObject({
         mode: 'weekend',
         overrideName: 'Trading-day holiday (SCRUM-308)',
