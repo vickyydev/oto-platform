@@ -812,6 +812,16 @@ jobs:
       - name: The app's leave type checks
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/leave-types.check.ts
+      # SCRUM-1037: who a leave type is for (migration 0053) — staff are not
+      # shown a managers-only type and only a manager records one, Training
+      # and Other refused to everyone, a person's own history and balances
+      # unchanged, 0053 replayed twice to the same result touching only the
+      # built-in codes; and the setting on the leave types screen.
+      - name: The app's leave type audience checks
+        if: steps.changes.outputs.app == 'true'
+        run: |
+          npx tsx tests/leave-type-audience.check.ts
+          TSX_TSCONFIG_PATH=tests/tsconfig.jsx.json npx tsx tests/leave-types-manager-ui.check.ts
       # SCRUM-597: a task the Ops board assigns to several employees is in
       # each one's Today and nobody else's, through the create route and the
       # task sheet's edit; a single-assignee task unchanged; and the date rule
