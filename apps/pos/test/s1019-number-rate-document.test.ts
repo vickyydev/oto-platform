@@ -18,8 +18,9 @@ import type { Member, TierVerification } from '@/types';
  *
  * - A number the system does not know creates the customer by itself, with
  *   the name the family gave on the first screen: no "New member?" box for it.
- *   With no name known the box still asks staff for one (a member's name
- *   cannot be empty), and a sale with no number stays a walk-in.
+ *   With no name given the number itself is the name until one is given (R1,
+ *   `s1019-r1-number-as-name.test.ts`), and a sale with no number stays a
+ *   walk-in.
  * - A member with a valid Expat rate skips the rate step and goes straight to
  *   tickets; the rate shows on the order with a "change" link.
  * - The expiry date is required on every document kind, Other included.
@@ -182,12 +183,12 @@ describe('the till wires it', () => {
   const till = src('pages/Till.tsx');
   const identify = till.slice(till.indexOf('const identifyPhone = ('), till.indexOf('const handleIdentify = '));
 
-  it('creates the member by itself when the family gave a name, and asks staff only when none is known', () => {
-    expect(identify).toContain('const name = !mapped && phone ? newMemberName(nickname) : null;');
+  it('creates the member by itself, by the name the family gave or else by the number (R1)', () => {
+    expect(identify).toContain('const name = !mapped && phone ? nameForNewMember(nickname, phone) : null;');
     expect(identify).toContain('mapped = await createMemberForNumber({ phone, name, channel });');
     // Greeted as a first visit, as the box's create is (SCRUM-885).
     expect(identify).toMatch(/if \(mapped && createdHere\) \{\n[^}]*setCreatedMemberId\(mapped\.id\);/);
-    // The box only for a number with no name to create with; a sale with no number stays a walk-in.
+    // The box only when that create failed (or the number reads as none); a sale with no number stays a walk-in.
     expect(identify).toMatch(/\} else if \(phone\) \{\n[^}]*setOfferCreateMember\(true\);/);
     expect(till).toContain('New member?');
     // The separate display's answer brings its own nickname and channel.

@@ -68,6 +68,32 @@ export function formatDisplayPhone(e164: string): string {
   return e164;
 }
 
+/**
+ * SCRUM-1019 — A NUMBER GIVEN WITH NO NAME (the owner's answer of 19
+ * November, R1): the customer is created with the number itself as the name
+ * until a name is given, in the form the till shows a number
+ * ("+66 81 895 3926"). Null when the input does not read as a number.
+ */
+export function phoneAsName(input: string): string | null {
+  const e164 = normalizePhone(input);
+  return e164 ? formatDisplayPhone(e164) : null;
+}
+
+/** Only the characters a phone number is written with: digits, a leading "+", spaces, brackets, dots and dashes. */
+const PHONE_WRITING = /^\+?[\d\s().-]+$/;
+
+/**
+ * SCRUM-1019 — is this name a phone number standing where a name would be?
+ * True for a member still held under their number (`phoneAsName`) and for any
+ * other name written only as a number; false for every name with a letter in
+ * it. Screens and paper that would read the name out to the family, or print
+ * it, take such a name as no name known.
+ */
+export function nameIsPhoneNumber(name: string | null | undefined): boolean {
+  const text = (name ?? '').trim();
+  return PHONE_WRITING.test(text) && normalizePhone(text) !== null;
+}
+
 /** True when two raw inputs refer to the same normalised number. */
 export function samePhone(a: string, b: string): boolean {
   const na = normalizePhone(a);

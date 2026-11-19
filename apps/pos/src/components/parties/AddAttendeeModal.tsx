@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, type MutableRefObject } from 'react';
-import { newId } from '@oto/shared';
+import { nameIsPhoneNumber, newId } from '@oto/shared';
 import { useOperator } from '@/auth/OperatorContext';
 import { ApiError } from '@/api/client';
 import { openPassOnPlatform, readPaidPass, type EventWriteIds } from '@/api/events';
@@ -101,7 +101,10 @@ const PASS_LEFT_UNPAID = 'Event pass left unpaid at the till';
 function buildPrefillForm(member: Member, child?: SavedChild | null): Partial<AttendeeForm> {
   const derivedAge = child?.dateOfBirth ? ageFromDob(child.dateOfBirth) : null;
   return {
-    parentName: member.nickname || '',
+    // SCRUM-1019 (R1) — a member still held under their number has no name
+    // yet: staff type the parent's, so the pass and its paper never carry the
+    // number as a name.
+    parentName: nameIsPhoneNumber(member.nickname) ? '' : member.nickname || '',
     parentPhone: member.phone || '',
     ...(child
       ? {

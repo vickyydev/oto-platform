@@ -1,3 +1,4 @@
+import { phoneAsName } from '@oto/shared';
 import { ApiError } from '@/api/client';
 import { membersApi } from '@/api/platform';
 import { apiMemberToMember } from '@/api/mappers';
@@ -20,15 +21,27 @@ const NEW_MEMBER_NAME_MAX = 100;
  * name the family gave on the first screen (the customer display's nickname).
  * No "New member?" choice is put to staff for it.
  *
- * Null when no name is known yet. A member's name cannot be empty — the
- * record, the platform's create and the box's offline copy all require one,
- * and nothing in the system yet stands for "name not known" — so a number
- * given with no name still meets the "New member?" box, where staff type the
- * name, exactly as before, until the owner rules how such a member is held.
+ * Null when no name was given: `nameForNewMember` then names the member by
+ * the number itself.
  */
 export function newMemberName(nickname: string | null | undefined): string | null {
   const name = (nickname ?? '').trim().slice(0, NEW_MEMBER_NAME_MAX).trim();
   return name || null;
+}
+
+/**
+ * THE NAME A NEW MEMBER IS CREATED WITH (the owner's answer of 19 November,
+ * R1): the name the family gave, else the number itself, in the form the till
+ * shows a number ("+66 81 895 3926"), until a name is given. A member's name
+ * cannot be empty (the record, the platform's create and the box's offline
+ * copy all require one), and this needs no new field: whoever next gives a
+ * name where a member's name is edited replaces it as any name. So a number
+ * with no name meets no "New member?" box either. Null only for a number that
+ * does not read as one and a name not given: the platform would refuse that
+ * number, so the till goes on as it did before for it.
+ */
+export function nameForNewMember(nickname: string | null | undefined, phone: string): string | null {
+  return newMemberName(nickname) ?? phoneAsName(phone);
 }
 
 /**
