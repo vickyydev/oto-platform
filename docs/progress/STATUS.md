@@ -1,3 +1,31 @@
+## 19 November 2026, night: the till's smaller requests are on staging; production holds every old file
+
+- **SCRUM-1039 "Menu options editor: a wider name and one price" and
+  SCRUM-1040 "Mystery Box: a stock item, and scanning its voucher takes one
+  off the shelf": Deployed.** Main c5f33c5af (9 commits), proof pictures
+  c6485425e (`docs/qa/proof-2026-11-19/SCRUM-1039/` and `SCRUM-1040/`).
+  Deployed by name: oto-api-staging (migration 0135 ran), oto-console-staging,
+  oto-pos-staging, oto-pos-web-staging. All local gates passed; hosted CI for
+  c5f33c5af was still running when this was written.
+- **Seen on staging with ZZ TEST records:** the option editor's wide name and
+  one price; a hand-over prize taking one off its stock item; at a count of
+  zero the till's warning and the hand-over still completing, with one short
+  recorded and an alert. Left on staging: a retired ZZ TEST stock item with
+  three movements, an archived ZZ TEST voucher type, two zero-baht ZZ TEST
+  sales and one voided one.
+- **For the owner (on his page, R19):** staging's own "Mystery Box" voucher is
+  a free-product voucher for a product no longer sold, so it takes no stock
+  until it is switched in the Console to a hand-over prize and linked to a
+  stock item per park. A setting; not changed.
+- **Not shown on staging:** an option holding two different stored prices
+  (none of the 258 options has one; tests cover it). A completed hand-over
+  cannot be undone on a screen; a manager corrects the count with Adjust.
+- **Old stored files (SCRUM-1046):** production's folder holds all 10,285
+  files at the right sizes, none failed. Staging is being brought to its
+  smaller set (about 4.5 GB). The pictures are not yet checked in the apps.
+- **Laptop:** 53 test databases left running by lanes that ended on 12 to 14
+  November were stopped; committed memory free went from 13 to 20 GB.
+
 ## 19 November 2026, night: where every lane stands; 18 decisions on the owner's page
 
 - **Till smaller requests (SCRUM-1039, 1040):** built, reviewed (seven major
