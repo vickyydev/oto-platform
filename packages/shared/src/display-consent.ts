@@ -53,6 +53,15 @@ const promptObject = z.object({
     /** SCRUM-1020 — the till holds the family's word that this child has no allergies or medical needs. */
     allergiesNone: z.boolean().optional(),
     /**
+     * SCRUM-1020 fix round — the saved child's medical notes (the record's own
+     * field beside the allergy line), sent with `careShown` for the family to
+     * see and update, and the medical alert staff set, shown, not changed.
+     * Optional for the reason above: a till or station from before them shows
+     * the allergy line alone.
+     */
+    medicalNotes: allergiesMedical.optional(),
+    medicalAlert: z.boolean().optional(),
+    /**
      * SCRUM-1021 — THE FOOD CREDIT ON THE FORM (the owner's answers of 19
      * November). `includedCreditTHB`: the credit this child's ticket puts on
      * their band (Eat & Play), shown as included with no extra charge.
@@ -223,6 +232,8 @@ const FilledSlotSchema = z.object({
    * prompt carries `careShown`, so a station from before it never sees one.
    */
   allergiesNone: z.literal(true).optional(),
+  /** SCRUM-1020 fix round — the saved child's medical notes as the family left them; only where the prompt sent them. */
+  medicalNotes: allergiesMedical.optional(),
   /**
    * SCRUM-1021 — the extra prepaid food credit the family chose for this
    * child, in whole baht (0 for none). Sent only for a child whose prompt
@@ -300,6 +311,9 @@ export function consentActionAllowed(prompt: ConsentPrompt, action: ConsentActio
     // SCRUM-1020 — "no allergies" only for a saved child whose care notes the form shows.
     if (action.action === 'fill' && !action.slots.every(slot => !slot.allergiesNone
       || prompt.slots.some(item => item.id === slot.id && item.saved === true && item.careShown === true))) return false;
+    // SCRUM-1020 fix round — medical notes likewise, only where the form sent them.
+    if (action.action === 'fill' && !action.slots.every(slot => slot.medicalNotes === undefined
+      || prompt.slots.some(item => item.id === slot.id && item.saved === true && item.careShown === true && item.medicalNotes !== undefined))) return false;
     // SCRUM-1021 — extra food credit only for a child whose form asks the family to choose it.
     if (action.action === 'fill' && !action.slots.every(slot => slot.extraCreditTHB === undefined
       || prompt.slots.some(item => item.id === slot.id && item.extraCreditTHB !== undefined))) return false;

@@ -38,6 +38,12 @@ export interface SupervisedSlot {
   waived: boolean;
   // Consent fields (captured on the customer screen, mirrored here).
   allergiesMedical: string;
+  /**
+   * SCRUM-1020 fix round — a saved child's medical notes (the record's own
+   * field beside the allergy line), for the family's display to show and
+   * update. Set from the profile; written back only when the family changed it.
+   */
+  medicalNotes?: string;
   foodRestrictions: string;
   mayOrderFood: boolean;
   // Prepaid food provision chosen by the parent on the customer consent screen.

@@ -275,10 +275,17 @@ updateChild: (childId: string, patch: Record<string, unknown>, idempotencyKey?: 
  * (`confirmedNone`). The box lane's fact carries no source, as SCRUM-1014's
  * new child: it is the same `child.update` the box has always taken.
  */
-updateChildCareFromDisplay: (childId: string, care: { memberId: string; allergies: string | null; confirmedNone?: true }) =>
+updateChildCareFromDisplay: (
+  childId: string,
+  care: { memberId: string; allergies?: string | null; medicalNotes?: string | null; confirmedNone?: true },
+) =>
     viaLane(
       () => cloudMembersApi.updateChild(childId, { source: 'customer_display', ...care }),
-      (stationId) => onBox<{ child: ApiChild }>(stationId, 'child.update', { childId, allergies: care.allergies }),
+      (stationId) => onBox<{ child: ApiChild }>(stationId, 'child.update', {
+        childId,
+        ...(care.allergies !== undefined ? { allergies: care.allergies } : {}),
+        ...(care.medicalNotes !== undefined ? { medicalNotes: care.medicalNotes } : {}),
+      }),
     ),
 verifyTier: (memberId: string, body: { toTier: string; evidenceType: string; evidenceExpiresAt?: string; note?: string }) => {
     const verificationId = newRecordId();

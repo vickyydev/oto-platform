@@ -118,6 +118,8 @@ interface ChildDraft {
   foodRestrictions: string;
   /** SCRUM-1020 — a saved child whose care notes the form shows: the family's tick that there are none. */
   allergiesNone?: boolean;
+  /** SCRUM-1020 fix round — that child's medical notes, where the till sent them. */
+  medicalNotes?: string;
   /** SCRUM-1021 — the extra prepaid food credit the family chose, in baht, where the form asks them. */
   extraCreditTHB?: number;
 }
@@ -138,11 +140,19 @@ type PromptSlot = ConsentPrompt['slots'][number];
  * keeps the note (this screen sends it the till's note) and Done waits.
  */
 const careShown = (slot: PromptSlot): boolean => slot.saved === true && slot.careShown === true;
-/** The box is empty where the till holds a note, or the family's "none": the tick is asked. */
-export const careNeedsTick = (slot: PromptSlot, child: Pick<ChildDraft, 'allergiesMedical'>): boolean =>
-  careShown(slot) && !child.allergiesMedical.trim() && (!!(slot.allergiesMedical ?? '').trim() || slot.allergiesNone === true);
+/** SCRUM-1020 fix round — the medical notes box, emptied where the till holds a note. */
+const medicalEmptied = (slot: PromptSlot, child: Pick<ChildDraft, 'medicalNotes'>): boolean =>
+  child.medicalNotes !== undefined && !child.medicalNotes.trim() && !!(slot.medicalNotes ?? '').trim();
+/**
+ * A box is empty where the till holds a note (the allergy line, or the
+ * medical notes), or the till holds the family's "none": the tick is asked.
+ */
+export const careNeedsTick = (slot: PromptSlot, child: Pick<ChildDraft, 'allergiesMedical' | 'medicalNotes'>): boolean =>
+  careShown(slot) && ((!child.allergiesMedical.trim() && (!!(slot.allergiesMedical ?? '').trim() || slot.allergiesNone === true))
+    || (child.medicalNotes !== undefined && !child.medicalNotes.trim()
+      && (!!(slot.medicalNotes ?? '').trim() || slot.allergiesNone === true)));
 /** Emptied without the tick: the note is kept, and Done waits. */
-export const carePending = (slot: PromptSlot, child: Pick<ChildDraft, 'allergiesMedical' | 'allergiesNone'>): boolean =>
+export const carePending = (slot: PromptSlot, child: Pick<ChildDraft, 'allergiesMedical' | 'allergiesNone' | 'medicalNotes'>): boolean =>
   careNeedsTick(slot, child) && child.allergiesNone !== true;
 interface FormDraft {
   slots: Record<string, ChildDraft>;
@@ -162,6 +172,7 @@ function draftOf(prompt: ConsentPrompt): FormDraft {
       name: slot.name, dateOfBirth: slot.dateOfBirth ?? null, ageYears: slot.ageYears,
       allergiesMedical: slot.allergiesMedical ?? '', foodRestrictions: slot.foodRestrictions ?? '',
       ...(careShown(slot) ? { allergiesNone: slot.allergiesNone === true } : {}),
+      ...(careShown(slot) && slot.medicalNotes !== undefined ? { medicalNotes: slot.medicalNotes } : {}),
       ...(slot.extraCreditTHB !== undefined ? { extraCreditTHB: slot.extraCreditTHB } : {}),
     }])),
     guardianName: prompt.guardianName,
@@ -195,6 +206,7 @@ function isFormDraft(value: unknown): value is FormDraft {
     return !!child && typeof child === 'object' && isText(child.name) && (child.dateOfBirth === null || isText(child.dateOfBirth))
       && (child.ageYears === null || typeof child.ageYears === 'number') && isText(child.allergiesMedical) && isText(child.foodRestrictions)
       && (child.allergiesNone === undefined || typeof child.allergiesNone === 'boolean')
+      && (child.medicalNotes === undefined || isText(child.medicalNotes))
       && (child.extraCreditTHB === undefined || (typeof child.extraCreditTHB === 'number' && Number.isInteger(child.extraCreditTHB)));
   }) && isText(form.guardianName) && isText(form.guardianPhone)
     && (form.contactChannel === undefined || form.contactChannel === 'whatsapp' || form.contactChannel === 'telegram' || form.contactChannel === 'line')
@@ -220,6 +232,7 @@ const trimmed = (draft: FormDraft): FormDraft => ({
   confirmations: [...draft.confirmations].sort(),
   slots: Object.fromEntries(Object.entries(draft.slots).map(([id, child]) => [id, { ...child,
     name: child.name.trim().slice(0, 100), allergiesMedical: child.allergiesMedical.slice(0, 500),
+    ...(child.medicalNotes !== undefined ? { medicalNotes: child.medicalNotes.slice(0, 500) } : {}),
     foodRestrictions: child.foodRestrictions.slice(0, 200) }])),
 });
 
@@ -270,6 +283,9 @@ export function mergeConsentDraft(local: FormDraft, base: FormDraft, next: FormD
       // SCRUM-1020 — the family's "no allergies", on a child whose care notes the till shows.
       ...(theirs.allergiesNone !== undefined ? { allergiesNone: pick(mine.allergiesNone === true, was.allergiesNone === true,
         theirs.allergiesNone, gone.map((child) => child?.allergiesNone === undefined ? undefined : child.allergiesNone)) } : {}),
+      // SCRUM-1020 fix round — the medical notes, on a child whose form shows them.
+      ...(theirs.medicalNotes !== undefined ? { medicalNotes: pick(mine.medicalNotes ?? '', was.medicalNotes ?? '',
+        theirs.medicalNotes, gone.map((child) => child?.medicalNotes)) } : {}),
       // SCRUM-1021 — the family's extra food credit, on a child whose form asks them.
       ...(theirs.extraCreditTHB !== undefined ? { extraCreditTHB: pick(mine.extraCreditTHB ?? 0, was.extraCreditTHB ?? 0,
         theirs.extraCreditTHB, gone.map((child) => child?.extraCreditTHB)) } : {}),
@@ -505,7 +521,10 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
   const outgoing = (form: FormDraft): FormDraft => ({ ...form, slots: Object.fromEntries(Object.entries(form.slots).map(([id, child]) => {
     const slot = prompt.slots.find((item) => item.id === id);
     if (!slot || !careShown(slot)) return [id, child];
-    if (carePending(slot, child)) return [id, { ...child, allergiesMedical: slot.allergiesMedical ?? '', allergiesNone: false }];
+    if (carePending(slot, child)) {
+      return [id, { ...child, ...(child.allergiesMedical.trim() ? {} : { allergiesMedical: slot.allergiesMedical ?? '' }),
+        ...(medicalEmptied(slot, child) ? { medicalNotes: slot.medicalNotes ?? '' } : {}), allergiesNone: false }];
+    }
     return [id, { ...child, allergiesNone: careNeedsTick(slot, child) && child.allergiesNone === true }];
   })) });
   const saved = same(trimmed(outgoing(draft)), trimmed(draftOf(prompt)));
@@ -555,6 +574,8 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
         allergiesMedical: child.allergiesMedical.slice(0, 500), foodRestrictions: child.foodRestrictions.slice(0, 200),
         // SCRUM-1020 — the family's "no allergies", only where the form shows the notes.
         ...(careShown(slot) && child.allergiesNone ? { allergiesNone: true as const } : {}),
+        // SCRUM-1020 fix round — the medical notes, only where the form shows them.
+        ...(careShown(slot) && child.medicalNotes !== undefined ? { medicalNotes: child.medicalNotes.slice(0, 500) } : {}),
         // SCRUM-1021 — the extra food credit, only where the form asks for it.
         ...(slot.extraCreditTHB !== undefined ? { extraCreditTHB: Math.max(0, Math.min(EXTRA_CREDIT_MAX_THB, child.extraCreditTHB ?? 0)) } : {}),
       };
@@ -676,6 +697,16 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
         onChange={(allergiesMedical) => setChild(slot.id, { allergiesMedical, ...(allergiesMedical.trim() ? { allergiesNone: false } : {}) })}
         placeholder={t('superviseConsent.allergiesPlaceholder')}
         className="mt-2 min-h-[88px] border-foreground/10 bg-foreground/5 text-lg text-foreground placeholder:text-foreground/30" />
+      {/* SCRUM-1020 fix round — the record's medical notes, and the medical alert staff set (shown, not changed). */}
+      {slot.medicalAlert === true && <p className="mt-3 text-base font-semibold text-(--cd-amber)" data-testid="consent-saved-medical-alert">
+        {t('superviseConsent.medicalAlertOn')}</p>}
+      {child.medicalNotes !== undefined && <>
+        <label className="mt-4 flex items-center gap-2 text-lg text-foreground/70"><HeartPulse className="h-5 w-5" /> {t('superviseConsent.medicalNotes')}</label>
+        <TouchText multiline value={child.medicalNotes} maxLength={500} disabled={locked} testId="consent-saved-medical"
+          onChange={(medicalNotes) => setChild(slot.id, { medicalNotes })}
+          placeholder={t('superviseConsent.medicalNotesPlaceholder')}
+          className="mt-2 min-h-[88px] border-foreground/10 bg-foreground/5 text-lg text-foreground placeholder:text-foreground/30" />
+      </>}
       {careNeedsTick(slot, child) && <label className="mt-3 flex w-full items-start gap-4 rounded-2xl border border-foreground/10 bg-foreground/5 p-4 text-left">
         <Checkbox checked={child.allergiesNone === true} disabled={locked} data-testid="public-consent-allergies-none"
           onCheckedChange={(value) => choose((current) => ({ ...current,

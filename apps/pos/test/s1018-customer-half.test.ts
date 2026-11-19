@@ -71,9 +71,12 @@ describe('the till’s own customer half', () => {
     expect(html).not.toContain('data-testid="consent-guardian"');
     expect(html).toContain('data-testid="consent-child-shown"');
     expect(html).not.toContain('data-testid="consent-child-name"');
-    // The care notes stay on the profile (the screen says to tell the team).
-    expect(html).toContain('data-testid="consent-care-saved"');
-    expect(html).not.toContain('ZZ TEST peanuts');
+    // SCRUM-1020 fix round — the family sees and may update the saved child's
+    // care notes on this half too, as it could before the agreements-only form
+    // (pinned before as hidden behind "Saved on your profile").
+    expect(html).not.toContain('data-testid="consent-care-saved"');
+    expect(html).toContain('data-testid="consent-allergies"');
+    expect(html).toContain('ZZ TEST peanuts');
     // The agreements are asked.
     expect(html).toContain('data-testid="consent-ack"');
     expect(html).toContain('ZZ TEST rule');
