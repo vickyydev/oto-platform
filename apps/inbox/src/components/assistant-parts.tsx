@@ -2,19 +2,33 @@
 // inbox-redesign/SETTINGS.md): what Numbers, Knowledge, Examples, Rules and
 // Teach share beyond the settings frame's parts (`settings-parts.tsx`), in a
 // module of their own so the pages import them without importing each other.
-import type { ReactNode } from 'react';
+import { createContext, useContext, type ReactNode } from 'react';
 import type { KbLanguage, KbStatus } from '@/api/assistant';
 import { PageHeader } from '@/components/settings-parts';
 import { BADGE, TONE } from '@/components/ui';
 import { KB_LANGUAGES, KB_STATUS_LABEL, intentLabel, ruleIntentLabel } from '@/lib/assistant';
+import type { AssistantTab } from '@/lib/url';
 
 /** The assistant's line at the head of each of its pages, as the page has said it since SCRUM-590. */
 export const ASSISTANT_HELP =
   'The assistant answers simple questions from the approved knowledge base and hands everything else to the team. A person replying always takes over.';
 
-/** The head of an assistant page: "Assistant" over its name, the assistant's line, its main action on the right. */
-export function AssistantHeader({ title, actions }: { title: string; actions?: ReactNode }) {
-  return <PageHeader eyebrow="Assistant" title={title} help={ASSISTANT_HELP} actions={actions} />;
+/**
+ * The first of the assistant's pages this viewer may open (Numbers; Knowledge
+ * for someone without the numbers' right): the one page that says the
+ * assistant's line. Every page has its own note under it, so the line said on
+ * all five pushed a phone's list below the fold (SCRUM-1044 review). Null, a
+ * page shown on its own, says it.
+ */
+export const AssistantFirstPage = createContext<AssistantTab | null>(null);
+
+/**
+ * The head of an assistant page: "Assistant" over its name, its main action on
+ * the right, and the assistant's line on the first page only.
+ */
+export function AssistantHeader({ section, title, actions }: { section: AssistantTab; title: string; actions?: ReactNode }) {
+  const first = useContext(AssistantFirstPage);
+  return <PageHeader eyebrow="Assistant" title={title} help={first === null || first === section ? ASSISTANT_HELP : undefined} actions={actions} />;
 }
 
 /** A draft, an approval or the archive as a row's one badge, in the tones the template rows wear. */

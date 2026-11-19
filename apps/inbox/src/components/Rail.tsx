@@ -2,6 +2,7 @@ import { useRef, type KeyboardEvent, type ReactNode } from 'react';
 import type { InboxTab } from '@oto/shared/inbox';
 import type { ConversationList, InboxMe } from '@/api/inbox';
 import { FilterChip } from '@/components/atoms';
+import { SEGMENT_BAND_LOOK } from '@/components/ui';
 import { channelChoices, sourceLabel, toggleChip, topicChoices, type ChipDim, type SourceOption } from '@/lib/inboxes';
 import { HELD_TOPIC_HINT, HELD_TOPIC_LABEL, topicOf, topicPatch, type Filters, type TopicChoice } from '@/lib/query';
 import { CATEGORY_DOT, CATEGORY_LABEL, CHANNEL_LABEL, CHANNEL_TINT, LANGUAGE_OPTIONS, TAB_LABEL, branchOptions } from '@/lib/view';
@@ -48,7 +49,7 @@ export function ScopeTabs({
       role="tablist"
       aria-label="Which conversations"
       onKeyDown={onKeyDown}
-      className="grid gap-1 rounded-[14px] bg-band p-1"
+      className={`grid ${SEGMENT_BAND_LOOK}`}
       style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}
     >
       {tabs.map((t) => {
@@ -66,7 +67,7 @@ export function ScopeTabs({
             tabIndex={active ? 0 : -1}
             onClick={() => onTab(t)}
             className={`hit flex min-h-ctl min-w-0 items-center justify-center gap-1.5 rounded-[10px] px-2 text-ui transition focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-coral ${
-              active ? 'bg-segment font-bold text-ink shadow-[0_1px_2px_var(--oto-shadow)]' : 'font-semibold text-ink-soft hover:bg-wash'
+              active ? 'bg-segment font-bold text-ink shadow-[0_1px_2px_var(--oto-shadow)] ring-1 ring-segment-edge' : 'font-semibold text-ink-soft hover:bg-wash'
             }`}
           >
             <span className="truncate">{TAB_LABEL[t]}</span>

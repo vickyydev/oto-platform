@@ -137,6 +137,47 @@ describe('SCRUM-1044: Numbers offers what it did', () => {
   });
 });
 
+// SCRUM-1044 (review): every page said the assistant's line and then its own
+// note, so on a 390 px phone the Rules list began about 490 px down. The line
+// is said once, on the first of the assistant's pages the viewer may open;
+// each page keeps its own note.
+describe('SCRUM-1044: the assistant’s line, said once', () => {
+  const mockReads = () => {
+    vi.spyOn(assistantApi, 'channelAccounts').mockResolvedValue({ channelAccounts: [] });
+    vi.spyOn(assistantApi, 'kb').mockResolvedValue({ entries: [] });
+    vi.spyOn(assistantApi, 'examples').mockResolvedValue({ examples: [], intents: [] });
+    vi.spyOn(assistantApi, 'rules').mockResolvedValue({ rules: [] });
+  };
+  const at = (who: InboxMe, tab: AssistantTab) => mount(createElement(AssistantSettings, { me: who, tab, onTab: noop }));
+  const helpOf = (el: Element) => el.querySelector('header')?.textContent ?? '';
+  const away = async () => {
+    await act(async () => root!.unmount());
+    host!.remove();
+    root = null;
+    host = null;
+  };
+
+  it('on Numbers, the first page, and on no other; each page keeps its own note', async () => {
+    mockReads();
+    const notes: Record<AssistantTab, string | null> = { numbers: NUMBERS_NOTE_LEAD, knowledge: KNOWLEDGE_NOTE, examples: EXAMPLES_NOTE, rules: RULES_NOTE, teach: null };
+    for (const tab of ['numbers', 'knowledge', 'examples', 'rules', 'teach'] as const) {
+      const el = await at(me, tab);
+      expect(el.querySelector('h2')?.textContent, tab).toBe(tab.charAt(0).toUpperCase() + tab.slice(1));
+      expect(helpOf(el).includes(ASSISTANT_HELP), tab).toBe(tab === 'numbers');
+      if (notes[tab]) expect(el.textContent, tab).toContain(notes[tab]);
+      await away();
+    }
+  });
+
+  it('on Knowledge for a viewer without the numbers’ right, for whom it is the first page', async () => {
+    mockReads();
+    const kbOnly: InboxMe = { ...me, capabilities: { ...me.capabilities, ai: false } };
+    expect(helpOf(await at(kbOnly, 'knowledge'))).toContain(ASSISTANT_HELP);
+    await away();
+    expect(helpOf(await at(kbOnly, 'rules'))).not.toContain(ASSISTANT_HELP);
+  });
+});
+
 describe('SCRUM-1044: Knowledge offers what it did', () => {
   const draft = entry({ status: 'draft', question: 'ZZ TEST draft?', key: 'faq.zz-draft', needsTranslation: true, language: 'th' });
   const live = entry({ question: 'ZZ TEST live?', topic: 'about_oto', branchId: CENTRAL });

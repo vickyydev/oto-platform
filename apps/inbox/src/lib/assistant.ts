@@ -62,13 +62,6 @@ export function aiModeOption(mode: AiMode): AiModeOption {
   return AI_MODE_OPTIONS.find((o) => o.value === mode) ?? AI_MODE_OPTIONS[0]!;
 }
 
-export const AI_MODE_TINT: Record<AiMode, string> = {
-  off: 'bg-band text-ink-soft ring-line',
-  // SCRUM-1016: on the tokens — Shadow the amber of a thing still to decide, Live the assistant's mint.
-  shadow: 'bg-ask text-ask-ink ring-ask-line',
-  live: 'bg-mint text-teal ring-mint-edge',
-};
-
 /** Turning a number live is a decision (§C.2): it always asks first. Any other move does not. */
 export function modeChangeNeedsConfirm(from: AiMode, to: AiMode): boolean {
   return to === 'live' && from !== 'live';

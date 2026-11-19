@@ -19,7 +19,6 @@ import { ApiError } from '@/api/client';
 import { inboxApi, type InboxMe, type ManagedTemplate } from '@/api/inbox';
 import { BACK_TO_INBOX, SettingsFrame, settingsCurrent, settingsNav, type SettingsKey } from '@/components/SettingsFrame';
 import {
-  ActionBar,
   EmptyNote,
   Field,
   InlineError,
@@ -208,6 +207,38 @@ describe('SCRUM-1044: the Templates page, as rows', () => {
     const lis = [...root.querySelectorAll('li')];
     expect(lis).toHaveLength(templates.length);
     for (const li of lis) expect(li.querySelectorAll('span.rounded-lg.font-semibold').length, li.textContent ?? '').toBeLessThanOrEqual(1);
+  });
+
+  // SCRUM-1044 (review): the meta's dot kept to the part before it, so a
+  // wrapped line ended "Every channel · Every park ·"; and the row showed the
+  // body on one line cut at two, less than the old card's four with its line
+  // breaks. Now each part carries its dot before it, drawn in a frame that
+  // clips the dot of a part starting a line (12 px to the left); the body
+  // keeps its line breaks, three lines of it.
+  it('a meta line never ends or starts a line with a dot; the body shows three lines with its breaks', () => {
+    const root = document.createElement('div');
+    root.innerHTML = rows();
+    const li = [...root.querySelectorAll('li')].find((l) => l.textContent!.includes('Every channel'))!;
+    const parts = [...li.querySelectorAll<HTMLElement>('[data-meta-part]')];
+    expect(parts.length).toBeGreaterThanOrEqual(2);
+    // No separator of its own between the parts: each part's dot is its `before:`, empty to a screen reader.
+    expect(li.textContent).not.toContain('·');
+    for (const p of parts) {
+      expect(p.className).toContain("before:content-['·'_/_'']");
+      expect(p.className.split(/\s+/)).toEqual(expect.arrayContaining(['before:inline-block', 'before:w-3', 'truncate']));
+      expect(p.getAttribute('title')).toBe(p.textContent);
+    }
+    const flow = parts[0]!.parentElement!;
+    expect(flow.className.split(/\s+/)).toEqual(expect.arrayContaining(['-ml-3', 'flex', 'flex-wrap']));
+    expect(flow.parentElement!.className.split(/\s+/)).toContain('overflow-hidden');
+    // After the badge, the first part's dot is kept as space but not drawn; the badge makes up the frame's 12 px.
+    if (li.querySelector('span.rounded-lg.font-semibold')) {
+      expect(parts[0]!.className.split(/\s+/)).toContain('before:invisible');
+      expect(flow.firstElementChild!.className.split(/\s+/)).toContain('ml-3');
+    }
+    // The body: its own lines, three of them, at a reading measure.
+    const preview = li.querySelector('p')!;
+    expect(preview.className.split(/\s+/)).toEqual(expect.arrayContaining(['line-clamp-3', 'whitespace-pre-line']));
   });
 
   it('offers Edit and Archive on every live row, at its end and in its phone menu, and none on an archived one', () => {
@@ -500,11 +531,10 @@ describe('SCRUM-1044: the shared parts on the one scale and the tested tokens', 
         aside: 2,
         help: 'ZZ TEST help',
         children: createElement('ul', null,
-          createElement(SettingsRow, { title: 'ZZ TEST row', name: 'ZZ TEST row', preview: 'ZZ TEST words', meta: 'ZZ TEST meta', actions: [{ label: 'Edit', onSelect: noop }] }),
+          createElement(SettingsRow, { title: 'ZZ TEST row', name: 'ZZ TEST row', preview: 'ZZ TEST words', meta: [{ text: 'ZZ TEST meta' }], actions: [{ label: 'Edit', onSelect: noop }] }),
         ),
       }),
       createElement(Field, { label: 'ZZ TEST field', help: 'ZZ TEST help', error: 'ZZ TEST error', children: createElement('input', { className: INPUT }) }),
-      createElement(ActionBar, { status: 'ZZ TEST status', children: main }),
       createElement(EmptyNote, { icon: FileText, title: 'ZZ TEST empty' }),
       createElement(LoadingNote, { label: 'ZZ TEST loading' }),
       createElement(InlineNote, { tone: 'success', children: 'ZZ TEST saved' }),

@@ -24,6 +24,10 @@
      settings' sections): the card in light, a lighter navy than the band in
      dark (Dark.dc.html), so the chosen one stands up rather than sinks. */
   --oto-segment: #fefdfb;
+  /* The chosen segment's 1 px edge: what says which one is chosen, so 3 : 1
+     against the band it stands on and against its own fill, in both themes
+     (tokens-1016); the fill alone is only 1.2 : 1 (SCRUM-1044). */
+  --oto-segment-edge: #918071;
   --oto-line: #eae0d7;
   --oto-line-soft: #efe6dc;
   /* A dashed frame around what is not a control (a withdrawn line, a refused
@@ -100,6 +104,7 @@ html.dark {
   --oto-wash: #18233d;
   --oto-band: #1f2b45;
   --oto-segment: #2a3a5c;
+  --oto-segment-edge: #7a8aab;
   --oto-line: #24304a;
   --oto-line-soft: #1c2740;
   --oto-line-deep: #34425f;
@@ -338,6 +343,7 @@ html.dark {
   --color-wash: var(--oto-wash);
   --color-band: var(--oto-band);
   --color-segment: var(--oto-segment);
+  --color-segment-edge: var(--oto-segment-edge);
   --color-line: var(--oto-line);
   --color-line-soft: var(--oto-line-soft);
   --color-line-deep: var(--oto-line-deep);

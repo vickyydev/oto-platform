@@ -85,8 +85,21 @@ export const BADGE = 'inline-flex items-center rounded-lg px-2 py-0.5 text-capti
 export const FOCUS_WITHIN =
   'has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-coral';
 
+/**
+ * The band a switch's segments sit on: the band's ground, 14 px corners, the
+ * segments 4 px apart and in. The one look of every switch (Mine / Team /
+ * Handled, the settings' pages on a phone, a list's statuses, a number's mode);
+ * each sets its own flow (`flex`, `grid`) and width.
+ */
+export const SEGMENT_BAND_LOOK = 'gap-1 rounded-[14px] bg-band p-1';
+
 /** A segment of a switch (the assistant's sections, the queues, a number's mode): 44 px on a phone. */
 export const SEGMENT = `hit inline-flex min-h-ctl items-center rounded-lg px-3 text-ui font-semibold transition disabled:opacity-60 md:px-2.5 ${FOCUS}`;
-/** The chosen segment: lighter than the band in both themes (`--oto-segment`, Dark.dc.html). */
-export const SEGMENT_ON = 'bg-segment text-ink shadow-sm ring-1 ring-line';
+/**
+ * The chosen segment: lighter than the band in both themes (`--oto-segment`,
+ * Dark.dc.html), and drawn round by a 1 px edge that is 3 : 1 against the
+ * band and the fill (`--oto-segment-edge`, tokens-1016), so whether a number
+ * is in Off or Shadow reads without telling two light fills apart (SCRUM-1044).
+ */
+export const SEGMENT_ON = 'bg-segment text-ink shadow-sm ring-1 ring-segment-edge';
 export const SEGMENT_OFF = 'text-ink-soft hover:text-ink';

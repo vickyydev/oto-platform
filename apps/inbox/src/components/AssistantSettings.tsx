@@ -32,7 +32,7 @@ import {
 import type { InboxMe } from '@/api/inbox';
 import type { AssistantTab } from '@/lib/url';
 import { KbConfirm } from '@/components/AssistantConfirms';
-import { ASSISTANT_HELP, AssistantHeader, StatusBadge, countWords, intentTitle, kbLanguageName, quoteFor } from '@/components/assistant-parts';
+import { ASSISTANT_HELP, AssistantFirstPage, AssistantHeader, StatusBadge, countWords, intentTitle, kbLanguageName, quoteFor } from '@/components/assistant-parts';
 import { Dialog } from '@/components/Dialog';
 import {
   ControlRow,
@@ -42,7 +42,6 @@ import {
   InlineError,
   InlineNote,
   LoadingNote,
-  MetaLine,
   PAGE_COLUMN,
   PageHeader,
   SECTION_CARD,
@@ -58,7 +57,6 @@ import { RulesPanel } from '@/components/RulesPanel';
 import { TeachPanel } from '@/components/TeachPanel';
 import {
   AI_MODE_OPTIONS,
-  AI_MODE_TINT,
   EXAMPLE_CUSTOMER_MAX,
   EXAMPLE_REPLY_MAX,
   INTENTS,
@@ -163,25 +161,27 @@ export function AssistantSettings({
   const teaching = on('teach') && caps.kb;
 
   return (
-    <div className={!shown ? 'contents' : teaching ? 'flex min-w-0 flex-1 flex-col' : 'flex min-w-0 flex-col gap-5'}>
-      {shown && !label && <PageHeader title="Assistant" help="You do not manage the assistant." />}
-      {on('numbers') && caps.ai && <ChannelModes me={me} />}
-      {on('knowledge') && caps.kb && <KnowledgeBase me={me} />}
-      {on('examples') && caps.kb && <ExamplesQueue me={me} />}
-      {on('rules') && caps.kb && <RulesPanel me={me} />}
-      {teaching && (
-        <div className={`${PAGE_COLUMN} pt-4 md:pt-6`}>
-          <AssistantHeader title="Teach" />
-        </div>
-      )}
-      {/* The teach chat stays mounted, hidden, while another page shows, so a
-          card's "Open in Rules" and the way back keep the conversation. */}
-      {caps.kb && (
-        <div className={teaching ? 'flex min-w-0 flex-1 flex-col' : 'hidden'} data-teach-chat>
-          <TeachPanel me={me} active={on('teach')} onTab={onTab} />
-        </div>
-      )}
-    </div>
+    <AssistantFirstPage.Provider value={sections[0]?.[0] ?? null}>
+      <div className={!shown ? 'contents' : teaching ? 'flex min-w-0 flex-1 flex-col' : 'flex min-w-0 flex-col gap-5'}>
+        {shown && !label && <PageHeader title="Assistant" help="You do not manage the assistant." />}
+        {on('numbers') && caps.ai && <ChannelModes me={me} />}
+        {on('knowledge') && caps.kb && <KnowledgeBase me={me} />}
+        {on('examples') && caps.kb && <ExamplesQueue me={me} />}
+        {on('rules') && caps.kb && <RulesPanel me={me} />}
+        {teaching && (
+          <div className={`${PAGE_COLUMN} pt-4 md:pt-6`}>
+            <AssistantHeader section="teach" title="Teach" />
+          </div>
+        )}
+        {/* The teach chat stays mounted, hidden, while another page shows, so a
+            card's "Open in Rules" and the way back keep the conversation. */}
+        {caps.kb && (
+          <div className={teaching ? 'flex min-w-0 flex-1 flex-col' : 'hidden'} data-teach-chat>
+            <TeachPanel me={me} active={on('teach')} onTab={onTab} />
+          </div>
+        )}
+      </div>
+    </AssistantFirstPage.Provider>
   );
 }
 
@@ -230,7 +230,7 @@ function ChannelModes({ me }: { me: InboxMe }) {
 
   return (
     <>
-      <AssistantHeader title="Numbers" />
+      <AssistantHeader section="numbers" title="Numbers" />
       <InlineNote tone="assistant" live={false}>
         <span className="font-semibold">{NUMBERS_NOTE_LEAD}</span> Run a number in Shadow first: the assistant records what
         it would have said, and nobody sees it.
@@ -246,11 +246,7 @@ function ChannelModes({ me }: { me: InboxMe }) {
               <ControlRow
                 key={a.id}
                 title={a.displayName}
-                meta={
-                  <MetaLine
-                    parts={[{ text: CHANNEL_LABEL[a.channel] }, { text: a.branchId ? branchLabel(a.branchId, me.teams) : 'Both parks' }]}
-                  />
-                }
+                meta={[{ text: CHANNEL_LABEL[a.channel] }, { text: a.branchId ? branchLabel(a.branchId, me.teams) : 'Both parks' }]}
                 help={
                   busyId === a.id ? (
                     <span role="status" className="inline-flex items-center gap-1.5 text-ink-muted">
@@ -290,17 +286,18 @@ function ChannelModes({ me }: { me: InboxMe }) {
         </SectionCard>
       )}
 
-      {/* Off, Shadow and Live, explained once, under the numbers: side by side from 768 px, one under another on a phone. */}
+      {/* Off, Shadow and Live, explained once, under the numbers: side by side where the page area is 640 px
+          wide or more (a desktop, a tablet on its side), one under another below (a phone, a tablet held upright),
+          so no explanation is squeezed into a column of a few words. Each is named as a plain term: the switch,
+          not a colour here, says which one a number is in. */}
       <SectionCard title="What each mode does">
-        <dl className="grid grid-cols-1 md:grid-cols-3">
+        <dl className="grid grid-cols-1 @min-[40rem]/settings:grid-cols-3">
           {AI_MODE_OPTIONS.map((o) => (
             <div
               key={o.value}
-              className="flex min-w-0 flex-col items-start gap-1.5 border-b border-line-soft px-pane py-row last:border-b-0 md:border-b-0 md:border-r md:last:border-r-0"
+              className="flex min-w-0 flex-col items-start gap-1 border-b border-line-soft px-pane py-row last:border-b-0 @min-[40rem]/settings:border-b-0 @min-[40rem]/settings:border-r @min-[40rem]/settings:last:border-r-0"
             >
-              <dt>
-                <span className={`${BADGE} ring-1 ${AI_MODE_TINT[o.value]}`}>{o.label}</span>
-              </dt>
+              <dt className="text-ui font-bold text-ink">{o.label}</dt>
               <dd className="text-note leading-relaxed text-ink-soft">{o.description}</dd>
             </div>
           ))}
@@ -385,6 +382,7 @@ function KnowledgeBase({ me }: { me: InboxMe }) {
   return (
     <>
       <AssistantHeader
+        section="knowledge"
         title="Knowledge"
         actions={
           <button type="button" onClick={() => setEditing('new')} className={BTN_MAIN}>
@@ -491,7 +489,7 @@ export function KbRow({
       previewLines={4}
       keepBreaks
       badge={<StatusBadge status={e.status} />}
-      meta={<MetaLine parts={meta} />}
+      meta={meta}
       actions={actions}
     />
   );
@@ -700,7 +698,7 @@ function ExamplesQueue({ me }: { me: InboxMe }) {
   const shownLabel = EXAMPLE_TABS.find(([s]) => s === status)?.[1] ?? '';
   return (
     <>
-      <AssistantHeader title="Examples" />
+      <AssistantHeader section="examples" title="Examples" />
       <InlineNote tone="assistant" live={false}>
         {EXAMPLES_NOTE}
       </InlineNote>
@@ -798,7 +796,7 @@ export function ExampleCard({
         ) : undefined
       }
       badge={<span className={`${BADGE} ${TONE.assistant}`}>{VERDICT_LABEL[x.verdict]}</span>}
-      meta={<MetaLine parts={[{ text: kbLanguageName(x.language) }, ...(proposer ? [{ text: `by ${proposer}` }] : [])]} />}
+      meta={[{ text: kbLanguageName(x.language) }, ...(proposer ? [{ text: `by ${proposer}` }] : [])]}
       actions={actions}
     />
   );
