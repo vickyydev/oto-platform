@@ -518,18 +518,29 @@ describe("SCRUM-1024 — the booking site's save", () => {
     expect(await familyAudit([familyId])).toHaveLength(1);
   });
 
-  it('a member with no family yet gets one from the booking site, made with no staff actor', async () => {
+  it('a member with no family yet gets one from the booking site, made with no staff actor, for both children it adds', async () => {
     const { memberId, phone } = await newMember('ZZ TEST 1024 Online First');
     const pass = await passFor(phone);
-    const added = newId();
-    const res = await save({ phone, pass, children: [{ newChildId: added, name: 'ZZ TEST 1024 Online First Kid', ageYears: 4 }] });
+    const first = newId();
+    const second = newId();
+    const res = await save({
+      phone,
+      pass,
+      children: [
+        { newChildId: first, name: 'ZZ TEST 1024 Online First Kid', ageYears: 4 },
+        { newChildId: second, name: 'ZZ TEST 1024 Online Second Kid', ageYears: 2 },
+      ],
+    });
     expect(res.statusCode, res.body).toBe(200);
     const families = await familiesOf(memberId);
     expect(families.map((f) => [f.source, f.createdByAccountId])).toEqual([['booking', null]]);
     expect((await guardiansOf(memberId)).map((g) => [g.source, g.addedByAccountId, g.stationId])).toEqual([['booking', null, null]]);
-    expect((await childRow(added)).familyId).toBe(families[0]!.id);
-    const [row] = await familyAudit([families[0]!.id]);
-    expect(row).toMatchObject({ actorAccountId: null, origin: 'booking_site' });
+    expect((await childRow(first)).familyId).toBe(families[0]!.id);
+    expect((await childRow(second)).familyId).toBe(families[0]!.id);
+    const audits = await familyAudit([families[0]!.id]);
+    expect(audits).toHaveLength(1);
+    expect(audits[0]).toMatchObject({ actorAccountId: null, origin: 'booking_site' });
+    expect((audits[0]!.after as { childId: string }).childId).toBe(first);
   });
 });
 
