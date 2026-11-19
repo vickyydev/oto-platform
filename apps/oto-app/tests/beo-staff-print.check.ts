@@ -112,6 +112,10 @@ await check("the header's package box: the package, what it includes as its snap
   const pkg = part(html, "package");
   assert.ok(pkg.includes("<h2>POS: ZZ TEST Weekend Birthday</h2>"));
   assert.ok(textOf(pkg).includes("Included: 10 kids + 4 adults, play, basic program, cake (ice cream)"));
+  // SCRUM-1029: the BEO editor's Event Info says the same words from the same snapshot (shared/beoPackageLine.ts).
+  const { beoPackageIncludedOf } = await import("../shared/beoPackageLine");
+  assert.ok(textOf(pkg).includes(`Included: ${beoPackageIncludedOf(normalParty.packageSnapshot)}`), "the editor's line is the print's");
+  assert.ok(textOf(part(await beoPdfHtml({ ...normalParty, packageSnapshot: { packageName: "x", kidsIncluded: null, adultsIncluded: 3, includedSummary: " ZZ TEST play " } }), "package")).includes(`Included: ${beoPackageIncludedOf({ kidsIncluded: null, adultsIncluded: 3, includedSummary: " ZZ TEST play " })}`));
   assert.deepEqual(rowsOf(pkg).slice(0, 2), ["ZZ TEST Kids' table INCL", "ZZ TEST Photo zone (PRO) EXTRA"], "the lines as written, no price");
   assert.ok(pkg.includes("Till not reachable"), "no till: the reason, no figure");
   assert.ok(!/฿|\d,\d{3}/.test(textOf(pkg)), "no money of the app's own");

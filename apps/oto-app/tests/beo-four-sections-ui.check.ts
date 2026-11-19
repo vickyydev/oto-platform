@@ -9,6 +9,20 @@
 // on that editor (tests/fixtures/beo-four-sections-save.json; recorded with
 // BEO_SECTIONS_RECORD=1 on the commit before the regrouping, never since).
 //
+// Then the regrouped editor itself:
+//   1. Event Info, Food & Drinks, Entertainment & Program and Internal Notes, in
+//      that order, then Billing and Parent Experience; four marks above them,
+//      each opening its section; Event Info open on start; several open at once;
+//   2. every field of the editor before in its new section (FIELD_HOMES);
+//   3. Event Info: the package's name and "Included: ..." in the Staff BEO's
+//      words, from the same snapshot; the add-ons bought listed with no price;
+//   4. the kitchen and bar slips' time in Food & Drinks, written as before;
+//   5. "No food for this party": the menus and the cake hidden, never deleted,
+//      the kitchen stored as not needed; a party stored so opens ticked;
+//   6. SCRUM-1034: the deposit typed by a manager only; anyone else reads it
+//      with the reason, and their Save sends it unchanged;
+//   7. SCRUM-1050: the Other timed steps badge, "1 step" and "2 steps".
+//
 // Run from apps/oto-app:
 //   TSX_TSCONFIG_PATH=tests/tsconfig.jsx.json npx tsx tests/beo-four-sections-ui.check.ts
 import assert from "node:assert/strict";
@@ -18,6 +32,7 @@ import { fileURLToPath } from "node:url";
 import { buildSync } from "esbuild";
 import { JSDOM } from "jsdom";
 import { FOUR_SECTIONS_EVENT, fourSectionsBeo, fourSectionsSnapshot } from "./fixtures/beo-four-sections";
+import { beoPackageIncludedOf } from "../shared/beoPackageLine";
 
 const APP = fileURLToPath(new URL("../", import.meta.url));
 const GOLDEN = APP + "tests/fixtures/beo-four-sections-save.json";
@@ -85,6 +100,9 @@ const { React, act, createRoot, QueryClientProvider, queryClient, AuthContext, T
 type Asked = { method: string; path: string; body: Record<string, unknown> };
 const asked: Asked[] = [];
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
+/** A party other than the fixture's: the fixture with these fields over it. */
+const OVER = new Map<string, Record<string, unknown>>();
+const beoOf = (id: string) => fourSectionsBeo(id, OVER.get(id) ?? {});
 
 g.fetch = async (input: string | URL | Request, init?: RequestInit) => {
   const url = new URL(input instanceof Request ? input.url : String(input), "http://localhost");
@@ -93,20 +111,24 @@ g.fetch = async (input: string | URL | Request, init?: RequestInit) => {
   const body = typeof init?.body === "string" ? (JSON.parse(init.body) as Record<string, unknown>) : {};
   asked.push({ method, path: url.pathname, body });
   const beo = /^\/api\/events\/([^/]+)\/beo$/.exec(url.pathname);
-  if (beo && method === "GET") return json(fourSectionsBeo(beo[1]!));
+  if (beo && method === "GET") return json(beoOf(beo[1]!));
   if (beo && method === "PUT") return json({ id: beo[1], oneDeposit: { amountThb: 3000, date: "2099-05-01" } });
   if (/\/beo\/till-billing$/.test(url.pathname)) return json({ status: "not_reachable", message: "The till did not answer." });
-  if (/\/package-snapshot$/.test(url.pathname)) return json(fourSectionsSnapshot());
+  const snapshot = /^\/api\/beo\/events\/([^/]+)\/package-snapshot$/.exec(url.pathname);
+  if (snapshot && method === "PATCH") return json({ ...fourSectionsSnapshot(snapshot[1]!), ...body });
+  if (snapshot) return json(fourSectionsSnapshot(snapshot[1]!));
   if (/\/beo\/billing$/.test(url.pathname)) return json(null);
   if (/\/beo\/timeline\/built$/.test(url.pathname)) return json({ steps: [], untimed: [] });
-  if (/\/beo\/timeline$/.test(url.pathname)) return json(fourSectionsBeo().timeline);
+  const rows = /^\/api\/events\/([^/]+)\/beo\/timeline$/.exec(url.pathname);
+  if (rows) return json(beoOf(rows[1]!).timeline);
   if (url.pathname === "/api/beo/party-hosts") return json({ source: "employee", items: [] });
-  if (url.pathname === "/api/user") return json(USER);
+  if (url.pathname === "/api/user") return json(MANAGER);
   if (/\/set-menu-selections\//.test(url.pathname)) return json(null, 404);
   return json([]);
 };
-const USER = { id: "44444444-4444-4444-8444-444444444444", role: "manager", fullName: "ZZ TEST manager", tenantId: "t", isActive: true, hasAllBranchesAccess: true, allowedBranchIds: [] };
-const auth = { user: USER, isLoading: false, error: null, loginMutation: {}, logoutMutation: {}, registerMutation: {} };
+const MANAGER = { id: "44444444-4444-4444-8444-444444444444", role: "manager", fullName: "ZZ TEST manager", tenantId: "t", isActive: true, hasAllBranchesAccess: true, allowedBranchIds: [] };
+const authOf = (user: Record<string, unknown>) => ({ user, isLoading: false, error: null, loginMutation: {}, logoutMutation: {}, registerMutation: {} });
+let auth = authOf(MANAGER);
 
 // ─── Rendering ───────────────────────────────────────────────────────────────
 
@@ -128,7 +150,10 @@ const typeInto = async (id: string, value: string) => {
   await act(async () => { box.dispatchEvent(new dom.window.FocusEvent("focusout", { bubbles: true })); });
   await settle();
 };
-const saves = () => asked.filter((a) => a.method === "PUT" && a.path === `/api/events/${FOUR_SECTIONS_EVENT}/beo`);
+const saves = (eventId = FOUR_SECTIONS_EVENT) => asked.filter((a) => a.method === "PUT" && a.path === `/api/events/${eventId}/beo`);
+const text = (id: string) => byTestId(id)?.textContent?.replace(/\s+/g, " ").trim() ?? null;
+const sectionOf = (id: string) => required(id).closest("[data-section]")?.getAttribute("data-section") ?? null;
+const isOpen = (section: string) => doc.querySelector(`[data-testid="accordion-${section}"]`)?.getAttribute("data-state") === "open";
 /** Every section of the form opened, whatever the form calls them. */
 const openEverySection = async () => {
   for (let round = 0; round < 3; round++) {
@@ -142,20 +167,20 @@ const openEverySection = async () => {
 const host = doc.createElement("div");
 doc.body.appendChild(host);
 const root = createRoot(host);
-const open = async () => {
+const open = async (eventId = FOUR_SECTIONS_EVENT, o: { everySection?: boolean } = {}) => {
   queryClient.clear();
   await act(async () => {
     root.render(
       React.createElement(QueryClientProvider, { client: queryClient },
         React.createElement(AuthContext.Provider, { value: auth },
           React.createElement(React.Fragment, null,
-            React.createElement(BeoEventEditor, { key: String(Math.random()), eventId: FOUR_SECTIONS_EVENT, autoFill: null, onClose: () => undefined }),
+            React.createElement(BeoEventEditor, { key: String(Math.random()), eventId, autoFill: null, onClose: () => undefined }),
             React.createElement(Toaster)))),
     );
   });
   await settle(12);
   assert.ok(byTestId("accordion-event-info"), "the BEO is open");
-  await openEverySection();
+  if (o.everySection !== false) await openEverySection();
   asked.length = 0;
 };
 
@@ -208,6 +233,184 @@ if (RECORD) {
   console.log(`  recorded ${GOLDEN}`);
 }
 
+/**
+ * SCRUM-1029: where every field of the editor before the regrouping sits now, by its test id: the
+ * section ("Event Info: Decoration" now under Food & Drinks' Setup / Table, and so on). Its
+ * old section is named beside it. The table in the lane's summary is this one.
+ */
+const FIELD_HOMES: ReadonlyArray<[string, string, string]> = [
+  ["Event Info: Title", "input-event-title", "event-info"],
+  ["Event Info: Date", "input-event-date", "event-info"],
+  ["Event Info: Start Time", "button-start-time-edit", "event-info"],
+  ["Event Info: End Time", "button-end-time-edit", "event-info"],
+  ["Event Info: Child / Guest of Honor Name", "input-child-name", "event-info"],
+  ["Event Info: Kid Turning Age", "input-kid-turning-age", "event-info"],
+  ["Event Info: Location", "input-location-text", "event-info"],
+  ["Event Info: Expected Kids", "input-num-children", "event-info"],
+  ["Event Info: Expected Adults", "input-num-adults", "event-info"],
+  ["Event Info: Parent / Booking Name", "input-booking-name", "event-info"],
+  ["Event Info: WhatsApp Number", "input-whatsapp-phone", "event-info"],
+  ["Event Info: Activities", "input-event-activities", "entertainment"],
+  ["Event Info: Decoration", "input-event-decoration", "food-drinks"],
+  ["Event Info: Special Requests", "textarea-special-requests", "internal-notes"],
+  ["Event Info: Final Message to Parent", "textarea-internal-notes", "internal-notes"],
+  ["Party Host: Assigned Party Host", "part-party-host", "event-info"],
+  ["Party Host: Entertainment Host", "part-activities", "entertainment"],
+  ["Party Host: Entertainment Acts", "button-add-entertainment-act", "entertainment"],
+  ["Birthday Package: the package and what it includes", "beo-package-info", "event-info"],
+  ["Birthday Package: Kitchen & bar slips at", "input-package-slips-time", "food-drinks"],
+  ["POS: POS Name", "input-package-name", "event-info"],
+  ["POS: Line Items", "package-item-row-0", "event-info"],
+  ["POS: the till's Total and Outstanding", "party-details-till", "event-info"],
+  ["POS: Deposit", "input-prepayment", "event-info"],
+  ["POS: Deposit date", "datepicker-deposit-date", "event-info"],
+  ["POS: POS Notes", "textarea-package-notes", "internal-notes"],
+  ["Setup Plan: Ready by", "button-ready-by-edit", "food-drinks"],
+  ["Setup Plan: Who", "input-setup-responsible", "food-drinks"],
+  ["Setup Plan: Tasks", "setup-task-row-0", "food-drinks"],
+  ["Setup Plan: General Setup Notes", "textarea-setup-notes", "food-drinks"],
+  ["Kitchen Plan: Not Needed / Needed", "checkbox-no-food", "food-drinks"],
+  ["Kitchen Plan: Kids Menu", "button-menu-tab-kids", "food-drinks"],
+  ["Kitchen Plan: Adults Menu", "button-menu-tab-adults", "food-drinks"],
+  ["Kitchen Plan: the kids' lines", "menu-item-kids-0", "food-drinks"],
+  ["Kitchen Plan: Service time", "button-food-time-edit-kids", "food-drinks"],
+  ["Kitchen Plan: Cake", "button-cake-internal", "food-drinks"],
+  ["Kitchen Plan: Cake Time", "button-cake-time-edit", "food-drinks"],
+  ["Kitchen Plan: Cake notes", "input-cake-notes", "food-drinks"],
+  ["Bar Plan: Service Time", "button-bar-time-edit", "food-drinks"],
+  ["Bar Plan: the drinks", "bar-item-0", "food-drinks"],
+  ["Other timed steps: the typed steps", "timeline-item-0", "entertainment"],
+  ["Other timed steps: The timeline as saved", "editor-built-timeline", "entertainment"],
+];
+
+if (!RECORD) {
+  await check("four sections in the brief's order and words, then Billing and Parent Experience as they were", async () => {
+    await open(FOUR_SECTIONS_EVENT, { everySection: false });
+    const triggers = [...doc.querySelectorAll('[data-testid^="accordion-"]')].map((el) => el.getAttribute("data-testid"));
+    assert.deepEqual(triggers, ["accordion-event-info", "accordion-food-drinks", "accordion-entertainment", "accordion-internal-notes", "accordion-billing", "accordion-parent-experience"]);
+    assert.deepEqual(
+      ["event-info", "food-drinks", "entertainment", "internal-notes"].map((k) => text(`section-mark-${k}`)),
+      ["Event Info", "Food & Drinks", "Entertainment & Program", "Internal Notes"],
+      "the four marks above them",
+    );
+    assert.equal(isOpen("event-info"), true, "Event Info open as the BEO opens, as before");
+    assert.equal(isOpen("food-drinks"), false);
+    // A mark pressed opens its section; the others stay as they are.
+    await click("section-mark-internal-notes");
+    assert.equal(isOpen("internal-notes"), true);
+    assert.equal(isOpen("event-info"), true, "several open at once, as before");
+    await click("accordion-internal-notes");
+    assert.equal(isOpen("internal-notes"), false, "a section still folds");
+  });
+
+  await check("every field of the editor before has its home in the four sections", async () => {
+    await open();
+    for (const [field, id, section] of FIELD_HOMES) assert.equal(sectionOf(id), section, field);
+    assert.ok(byTestId("accordion-billing") && byTestId("section-billing"), "the Billing section stays as it is");
+    assert.ok(byTestId("accordion-parent-experience"), "Parent Experience stays as it is");
+    const order = ["part-setup", "part-food", "part-bar"].map((id) => [...doc.querySelectorAll("[data-testid]")].indexOf(required(id)));
+    assert.deepEqual([...order].sort((a, b) => a - b), order, "Food & Drinks: Setup / Table, then the food, then the bar");
+  });
+
+  await check("Event Info shows the package's name and what it includes in the print's words; the add-ons bought read-only, no price", async () => {
+    await open();
+    const pkg = fourSectionsSnapshot();
+    assert.equal(text("text-package-name"), "ZZ TEST Weekend Birthday");
+    assert.equal(text("text-package-included"), `Included: ${beoPackageIncludedOf(pkg)}`);
+    assert.equal(text("text-package-included"), "Included: 10 kids + 4 adults, ZZ TEST play, basic program, cake");
+    assert.ok(byTestId("package-addon-si_zz_2"), "the add-on bought");
+    assert.equal(byTestId("package-addon-si_zz_3"), null, "an add-on with no quantity was not bought");
+    assert.equal(byTestId("package-addon-si_zz_1"), null, "an included item is the package's, not an add-on");
+    const box = required("beo-package-info").textContent ?? "";
+    assert.ok(!box.includes("฿"), `no price in the package part: ${box}`);
+    assert.equal(byTestId("input-qty-si_zz_2"), null, "nothing to price or count here: add-ons are the till's");
+    assert.equal(byTestId("package-total-breakdown"), null, "no app-made package total in the editor");
+  });
+
+  await check("the slips' time sits in Food & Drinks and writes the same stored field as before", async () => {
+    await open();
+    const input = required("input-package-slips-time") as HTMLInputElement;
+    assert.equal(input.value, "10:45");
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, "value")!.set!.call(input, "11:15");
+      input.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
+      input.dispatchEvent(new dom.window.FocusEvent("focusout", { bubbles: true }));
+    });
+    await settle();
+    const patch = asked.find((a) => a.method === "PATCH" && a.path === `/api/beo/events/${FOUR_SECTIONS_EVENT}/package-snapshot`);
+    assert.deepEqual(patch?.body, { slipsTime: "11:15" }, "the package snapshot's slips time, as the Birthday Package section wrote it");
+    assert.equal(saves().length, 0, "written by its own press, not by Save");
+  });
+
+  await check("No food for this party: ticked, the menus and the cake are hidden, never deleted; Save stores the kitchen not needed", async () => {
+    await open();
+    const box = required("checkbox-no-food");
+    assert.equal(box.getAttribute("aria-checked"), "false", "the party has food");
+    assert.ok(byTestId("menu-item-kids-0") && byTestId("button-cake-internal"));
+    await click("checkbox-no-food");
+    assert.equal(required("checkbox-no-food").getAttribute("aria-checked"), "true");
+    assert.equal(byTestId("menu-item-kids-0"), null, "the menus are hidden");
+    assert.equal(byTestId("button-cake-internal"), null, "the cake is hidden");
+    assert.ok(text("text-no-food")?.startsWith("The kitchen is not needed for this party."));
+    assert.ok(byTestId("bar-item-0"), "the bar stays");
+    await click("button-save-beo");
+    const kitchen = saves()[0]!.body.kitchenPlan as Record<string, unknown>;
+    const before = golden!.untouched.kitchenPlan as Record<string, unknown>;
+    assert.equal(kitchen.foodRequired, false, "the stored fact the print reads as Not Needed");
+    assert.deepEqual({ ...kitchen, foodRequired: true }, before, "nothing else of the kitchen plan changes: the menus and the cake are kept");
+    // Unticked again: everything back as it was.
+    await click("checkbox-no-food");
+    assert.ok(byTestId("menu-item-kids-0") && byTestId("button-cake-internal"));
+  });
+
+  await check("a party stored with the kitchen not needed opens with No food ticked", async () => {
+    const id = "11111111-1111-4111-8111-000000010292";
+    const stored = fourSectionsBeo(id);
+    OVER.set(id, { kitchenPlan: { ...stored.kitchenPlan, foodRequired: false } });
+    await open(id);
+    assert.equal(required("checkbox-no-food").getAttribute("aria-checked"), "true");
+    assert.equal(byTestId("menu-item-kids-0"), null);
+  });
+
+  await check("SCRUM-1034: a manager types the deposit; anyone else reads it with the reason, and their Save sends it unchanged", async () => {
+    await open();
+    assert.ok(byTestId("input-prepayment"), "a manager's field");
+    assert.equal(byTestId("text-deposit-managers-only"), null);
+    auth = authOf({ ...MANAGER, role: "staff", fullName: "ZZ TEST staff" });
+    try {
+      await open();
+      assert.equal(byTestId("input-prepayment"), null, "no field to type in");
+      assert.equal(byTestId("datepicker-deposit-date"), null);
+      assert.equal(text("text-prepayment"), "฿3,000");
+      assert.equal(text("text-deposit-date"), "1 May 2099");
+      assert.equal(text("text-deposit-managers-only"), "Only a manager can type or change the deposit.");
+      await click("button-save-beo");
+      const body = saves()[0]!.body;
+      assert.equal(body.depositChanged, false);
+      assert.deepEqual(
+        [(body.partyDetails as Record<string, unknown>).prepaymentReceived, (body.partyDetails as Record<string, unknown>).depositDate],
+        [3000, "2099-05-01"],
+      );
+    } finally {
+      auth = authOf(MANAGER);
+    }
+  });
+
+  await check("SCRUM-1050: the Other timed steps badge says 1 step, 2 steps, 0 steps", async () => {
+    await open();
+    assert.equal(text("badge-other-steps"), "1 step");
+    const two = "11111111-1111-4111-8111-000000010293";
+    const row = fourSectionsBeo().timeline[0]!;
+    OVER.set(two, { timeline: [row, { ...row, id: "88888888-8888-4888-8888-000000000002", label: "ZZ TEST bubbles", offsetFromStartMinutes: 120 }] });
+    await open(two);
+    assert.equal(text("badge-other-steps"), "2 steps");
+    const none = "11111111-1111-4111-8111-000000010294";
+    OVER.set(none, { timeline: [] });
+    await open(none);
+    assert.equal(text("badge-other-steps"), "0 steps");
+  });
+}
+
 await act(async () => { root.unmount(); });
 console.log(`beo-four-sections-ui.check: ${checks} checks passed`);
-process.exit(checks === 2 ? 0 : 1);
+process.exit(checks === (RECORD ? 2 : 10) ? 0 : 1);
