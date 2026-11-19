@@ -1,3 +1,31 @@
+## 19 November 2026, evening: the inbox redesign is on staging (SCRUM-1016, Deployed)
+
+- **Landed** at main 7547eace2 (22 commits), proof pictures at b9cde6bd6
+  (`docs/qa/proof-2026-11-19/SCRUM-1016/`, 23 pictures and `run.json`).
+  Deployed by name: oto-api-staging and oto-inbox-staging, both live.
+- **Gates:** the inbox suite 614 of 614, the api's inbox files, typechecks,
+  the build and eslint all passed locally. Hosted CI for 7547eace2 was still
+  running when this was written.
+- **The review** found one blocker (the desktop right panel cut names off),
+  three major and ten minor points; all were repaired before landing and no
+  function of the old page was lost.
+- **Seen on staging** as a birthdays agent and as the GM, at phone, tablet
+  and desktop widths, light and dark. The page never scrolls; the reply box
+  is always on screen; five to seven rows show in the first window (one
+  before). Two chats were opened; the pages wrote nothing.
+- **Not shown:** the paid-deposit card, because staging has no "Ready to
+  book" chat now. Book the date was shown from People and actions instead.
+- **For the owner:** (1) the drawn field and button borders are fainter than
+  the 3 to 1 contrast guideline; darker borders would change the approved
+  look; (2) three differences from the mock-up were left: no right panel
+  between 1024 and 1279 pixels wide, the assistant shown as a line rather
+  than a header chip, and "waiting 7 minutes" not built; (3) at tablet width
+  the "Avg reply" figure can wrap onto two lines.
+- **Still to come:** the settings pages' own redesign (they wear the new
+  colours only).
+- Four build lanes remain: the drop-off counter flow, the BEO timeline and
+  print, the HR app's smaller requests, the till's smaller requests.
+
 ## 19 November 2026, evening: five build lanes run; family profiles are being planned
 
 - The owner freed memory on the laptop (5.3 GB free), so the till's smaller
