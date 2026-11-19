@@ -21,8 +21,8 @@ const row: ConversationRow = { id: 'conversation', channel: 'whatsapp', channelA
 const noop = () => undefined;
 function render(over: Partial<ConversationRow> = {}, selected = false) {
   return renderToStaticMarkup(createElement(ConversationList, { me, tab: 'team', page: null, rows: [{ ...row, ...over }],
-    loading: false, loadingMore: false, error: null, filters: EMPTY_FILTERS, search: '', selectedId: selected ? row.id : null,
-    now: new Date('2026-11-16T12:00:00Z'), onSearch: noop, onFilters: noop, onTab: noop, onOpenFilters: noop,
+    loading: false, loadingMore: false, error: null, filters: EMPTY_FILTERS, selectedId: selected ? row.id : null,
+    now: new Date('2026-11-16T12:00:00Z'), onFilters: noop, onTab: noop, onOpenFilters: noop,
     onSelect: noop, onAskHandle: noop, onMore: noop }));
 }
 describe('SCRUM-992: unread and next action remain separate in the actual list markup', () => {

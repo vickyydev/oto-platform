@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Archive, Bot, FileText, FlaskConical, LogOut, MessageSquare, Monitor, Moon, Settings as SettingsGear, Sparkles, Sun } from 'lucide-react';
-import type { InboxCategoryKey, InboxTab } from '@oto/shared/inbox';
+import { MessageSquare } from 'lucide-react';
+import type { InboxTab } from '@oto/shared/inbox';
 import { ApiError } from '@/api/client';
 import { assistantApi, assistantCapabilities } from '@/api/assistant';
 import { inboxApi, type ConversationList as ListPage, type ConversationRow, type Dashboard as DashboardData, type InboxMe, type Message } from '@/api/inbox';
 import { useSession } from '@/auth/SessionContext';
+import { AccountMenu, AppBar } from '@/components/AppBar';
 import { AssistantSettings } from '@/components/AssistantSettings';
 import { EmptyState } from '@/components/atoms';
 import { ChatPanel, type Thread } from '@/components/ChatPanel';
@@ -12,17 +13,17 @@ import { composerTemplate, type InsertedTemplate } from '@/components/Composer';
 import { HandleConfirm } from '@/components/confirms';
 import { NewContactDialog } from '@/components/ContactDialogs';
 import { ConversationList } from '@/components/ConversationList';
-import { Dashboard, DashboardStrip } from '@/components/Dashboard';
 import { FiltersDialog, TemplatesDialog } from '@/components/dialogs';
-import { Rail, viewerRoleLabel } from '@/components/Rail';
+import { Rail } from '@/components/Rail';
 import { SimulatorBody, SimulatorDialog } from '@/components/Simulator';
+import { StatsRow } from '@/components/StatsRow';
 import { TemplateSettings } from '@/components/TemplateSettings';
 import { inboxAccessSignature, inboxFiltersWithinAccess, inboxItemWithinAccess, inboxMeWithinAccess, inboxSourcesWithinAccess, mergeSources, sourcesOfRows, type SourceOption } from '@/lib/inboxes';
 import { useInboxAccess } from '@/hooks/useInboxAccess';
 import { withReadyToBook } from '@/lib/list-state';
 import { EMPTY_FILTERS, listQuery, type Filters } from '@/lib/query';
 import { fastInboxRefresh, startFastInboxRefresh } from '@/lib/refresh';
-import { nextTheme, themeTitle, useTheme, type Theme } from '@/lib/theme';
+import { useTheme } from '@/lib/theme';
 import { inboxSearch, readInboxUrl, viewFromUrl, type AssistantTab, type SettingsPage } from '@/lib/url';
 import { defaultTab, landingTab, writeMode } from '@/lib/view';
 
@@ -39,17 +40,21 @@ function message(err: unknown, fallback: string): string {
   return err instanceof ApiError ? err.message : fallback;
 }
 
-/** The three columns collapse to list-then-thread below `lg` (the prototype's `showChatMobile`, :1047). */
-function useIsDesktop(): boolean {
-  const query = '(min-width: 1024px)';
-  const [desktop, setDesktop] = useState(() => window.matchMedia(query).matches);
+/**
+ * The list and the chat stand side by side from 768 px (tablet and desktop,
+ * SCRUM-1016); below that a phone shows one of them, the prototype's
+ * `showChatMobile` (:1047). An open chat counts as on screen only when it is.
+ */
+function useIsSideBySide(): boolean {
+  const query = '(min-width: 768px)';
+  const [wide, setWide] = useState(() => window.matchMedia(query).matches);
   useEffect(() => {
     const mq = window.matchMedia(query);
-    const on = () => setDesktop(mq.matches);
+    const on = () => setWide(mq.matches);
     mq.addEventListener('change', on);
     return () => mq.removeEventListener('change', on);
   }, []);
-  return desktop;
+  return wide;
 }
 
 /**
@@ -64,121 +69,21 @@ function mergeNewest(loaded: Message[], newest: Message[], loadedCursor: string 
   return { messages: [...loaded.slice(0, at), ...newest], olderCursor: loadedCursor };
 }
 
-/** What the one Settings control offers this viewer (owner UI round 2026-10-22, F2). */
-export type SettingsEntryKey = SettingsPage | 'simulator';
-
-export function settingsMenuEntries(me: InboxMe): { key: SettingsEntryKey; label: string }[] {
-  const caps = assistantCapabilities(me);
-  return [
-    ...(me.capabilities.templates ? [{ key: 'templates' as const, label: 'Templates' }] : []),
-    ...(caps.kb || caps.ai ? [{ key: 'assistant' as const, label: 'Assistant' }] : []),
-    ...(me.simulator ? [{ key: 'simulator' as const, label: 'Simulator · test only' }] : []),
-  ];
-}
-
-const ENTRY_ICON: Record<SettingsEntryKey, typeof FileText> = { templates: FileText, assistant: Bot, simulator: FlaskConical };
-
-/** The menu's list, on its own so the markup tests read it opened. */
-export function SettingsMenuItems({ me, onChoose }: { me: InboxMe; onChoose: (key: SettingsEntryKey) => void }) {
-  return (
-    <div
-      role="menu"
-      aria-label="Settings"
-      className="absolute right-0 top-full z-20 mt-1 w-48 overflow-hidden rounded-xl border border-line bg-card py-1 shadow-[0_12px_40px_-16px_rgba(15,23,42,0.28)]"
-    >
-      {settingsMenuEntries(me).map(({ key, label }) => {
-        const Icon = ENTRY_ICON[key];
-        return (
-          <button
-            key={key}
-            type="button"
-            role="menuitem"
-            onClick={() => onChoose(key)}
-            className="flex w-full items-center gap-2 px-3 py-2 text-left text-[12.5px] font-medium text-ink-soft hover:bg-wash hover:text-ink"
-          >
-            <Icon className="h-3.5 w-3.5 text-ink-muted" />
-            {label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-const THEME_ICON: Record<Theme, typeof Sun> = { light: Sun, dark: Moon, system: Monitor };
-
 /**
- * The theme switch (SCRUM-653): one compact control beside Settings, for every
- * signed-in viewer — a sun, moon or monitor cycling light → dark → system,
- * the title naming what is set and what one press does.
- */
-export function ThemeToggle({ theme, onTheme }: { theme: Theme; onTheme: (t: Theme) => void }) {
-  const Icon = THEME_ICON[theme];
-  return (
-    <button
-      type="button"
-      onClick={() => onTheme(nextTheme(theme))}
-      title={themeTitle(theme)}
-      aria-label={themeTitle(theme)}
-      className="inline-flex items-center rounded-xl border border-line bg-card p-2 text-ink-soft transition hover:border-field hover:text-ink"
-    >
-      <Icon className="h-4 w-4" />
-    </button>
-  );
-}
-
-/**
- * The header's one Settings control (owner UI round 2026-10-22, F2): a gear
- * with the visible word, opening a small menu of what the viewer's
- * capabilities allow — Templates, Assistant, the Simulator. Each entry routes
- * exactly where the three separate buttons did.
- */
-function SettingsMenu({ me, active, onChoose }: { me: InboxMe; active: SettingsPage | null; onChoose: (key: SettingsEntryKey) => void }) {
-  const [open, setOpen] = useState(false);
-  if (settingsMenuEntries(me).length === 0) return null;
-  return (
-    <div className="relative" onKeyDown={(e) => e.key === 'Escape' && setOpen(false)}>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-[12px] font-medium transition ${
-          active !== null
-            ? 'border-ink bg-ink text-on-ink shadow-sm'
-            : 'border-line bg-card text-ink-soft hover:border-field hover:text-ink'
-        }`}
-      >
-        <SettingsGear className="h-3.5 w-3.5" />
-        Settings
-      </button>
-      {open && (
-        <>
-          <div className="fixed inset-0 z-10" aria-hidden onClick={() => setOpen(false)} />
-          <SettingsMenuItems
-            me={me}
-            onChoose={(key) => {
-              setOpen(false);
-              onChoose(key);
-            }}
-          />
-        </>
-      )}
-    </div>
-  );
-}
-
-/**
- * The Inbox page: the header card with the dashboard, then the one rounded
- * workspace card in three columns (WhatsAppDemo.tsx :1300-1673), every figure
- * and line from the platform api. The prototype's own state — its role
+ * The Inbox page (SCRUM-1016): the compact app bar, then the work filling the
+ * rest of the screen — on a phone the list or the chat; from 768 px the list
+ * and the chat side by side; from 1024 px the views column beside them; from
+ * 1280 px a region for the customer and the next step. The page itself never
+ * scrolls: only the list, the thread and a settings page do. The prototype's
+ * three columns (WhatsAppDemo.tsx :1300-1673) are the parts, every figure and
+ * line from the platform api. The prototype's own state — its role
  * switcher, phone preview, availability toggles and in-memory conversations —
  * is gone: the viewer is the signed-in account (`GET /inbox/me`).
  */
 export function Workspace({ me }: { me: InboxMe }) {
   const { signOut, reload } = useSession();
   const { theme, setTheme } = useTheme();
-  const desktop = useIsDesktop();
+  const sideBySide = useIsSideBySide();
   const [now, setNow] = useState(() => new Date());
 
   // The URL's view (P2, `lib/url.ts`), read once as the workspace opens: a
@@ -384,7 +289,7 @@ export function Workspace({ me }: { me: InboxMe }) {
   const pinnedRow = pinned && thread.detail?.id === pinned.id ? thread.detail : pinned;
   const selected = rows.find((c) => c.id === selectedId) ?? (pinnedRow && pinnedRow.id === selectedId ? pinnedRow : null);
   const selectedKey = selected?.id ?? null;
-  const visible = selected !== null && (desktop || showChatMobile);
+  const visible = selected !== null && (sideBySide || showChatMobile);
 
   const threadSeq = useRef(0);
   const loadThread = useCallback(async (id: string, refresh: boolean) => {
@@ -634,131 +539,80 @@ export function Workspace({ me }: { me: InboxMe }) {
     setShowChatMobile(false);
   };
 
-  // The header's Handled toggle (:1350-1360): into the archive and back.
-  const toggleHandled = () =>
-    chooseTab(tab === 'handled' ? (me.tabs.find((t) => t !== 'handled') ?? 'team') : 'handled');
-
-  // The Unanswered card's toggle (:1367-1375), shared with the phone strip (F3).
+  // The "Needs reply" figure's toggle (the prototype's Unanswered card,
+  // :1367-1375): the list's one unanswered control (SCRUM-1016). From the
+  // archive it brings the open list back, as the card did.
   const toggleUnanswered = () => {
     if (tab === 'handled') chooseTab(defaultTab(me.tabs.filter((t) => t !== 'handled')));
     patchFilters({ unanswered: !filters.unanswered });
   };
 
-  // The tiles the prototype did not have (owner, demo day 2026-10-27): each
-  // opens the list it counts. The dashboard counts open threads, so Active and
-  // a category bring the list back from the archive, as Unanswered does.
-  const openTab = () => defaultTab(me.tabs.filter((t) => t !== 'handled'));
-  const activeOnly = tab !== 'handled' && filters.status === 'active' && !filters.unanswered;
-  const toggleActive = () => {
-    if (tab === 'handled') chooseTab(openTab());
-    patchFilters(activeOnly ? { status: '' } : { status: 'active', unanswered: false });
-  };
-  const handledTodayShown = tab === 'handled' && filters.archiveRange === 'today';
-  const toggleHandledToday = () => {
-    if (handledTodayShown) {
-      chooseTab(openTab());
-      return;
-    }
-    chooseTab('handled');
-    patchFilters({ archiveRange: 'today' });
-  };
-  const pickCategory = (category: InboxCategoryKey) => {
-    if (tab === 'handled') chooseTab(openTab());
-    patchFilters({ category: filters.category === category ? '' : category });
-  };
+  const stats = (variant: 'bar' | 'card') => (
+    <StatsRow
+      variant={variant}
+      data={dashboard}
+      error={dashboardError}
+      figures={me.capabilities.dashboard}
+      unansweredOnly={filters.unanswered}
+      onToggleUnanswered={toggleUnanswered}
+    />
+  );
+
+  // A chat open on a phone is its own full screen (Chat.dc.html): its header
+  // has the way back, so the app bar steps aside below 768 px.
+  const phoneChat = showChatMobile && selected !== null;
+  // The region for the customer and the next step (Desktop.dc.html), reserved
+  // from 1280 px while a chat is open; the simulator panel takes that width,
+  // so beside it the region waits for a wider screen.
+  const simulatorShown = Boolean(currentMe.simulator) && simPane;
+  const customerPanel = selected !== null;
+  const columns = !customerPanel
+    ? 'lg:grid-cols-[216px_minmax(300px,360px)_minmax(0,1fr)]'
+    : simulatorShown
+      ? 'lg:grid-cols-[216px_minmax(300px,360px)_minmax(0,1fr)] min-[1760px]:grid-cols-[216px_360px_minmax(0,1fr)_300px]'
+      : 'lg:grid-cols-[216px_minmax(300px,360px)_minmax(0,1fr)] xl:grid-cols-[216px_360px_minmax(0,1fr)_300px]';
 
   return (
-    <div className="flex items-start gap-0 xl:gap-4 xl:px-4">
-    <div className="mx-auto min-w-0 max-w-[1400px] flex-1 space-y-5 px-4 py-5 sm:px-6">
-      {/* HEADER */}
-      <header className="rounded-2xl border border-line bg-card p-5">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-ink-muted">
-              <Sparkles className="h-3.5 w-3.5" />
-              Unified Customer Inbox
-            </div>
-            {/* Below lg the eyebrow is the whole title line (F3): the list must be on screen. */}
-            <h1 className="mt-1 hidden text-xl font-semibold tracking-tight text-ink lg:block">All channels, one queue, role-based access</h1>
-            <p className="mt-1 hidden text-[13px] text-ink-muted lg:block">
-              WhatsApp · Instagram · Facebook, routed to the right team. {me.name ?? 'You'} · {viewerRoleLabel(me)}
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {me.tabs.includes('handled') && (
-              <button
-                type="button"
-                onClick={toggleHandled}
-                aria-pressed={tab === 'handled'}
-                className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-[12px] font-medium transition ${
-                  tab === 'handled'
-                    ? 'border-ink bg-ink text-on-ink shadow-sm'
-                    : 'border-line bg-card text-ink-soft hover:border-field hover:text-ink'
-                }`}
-              >
-                <Archive className="h-3.5 w-3.5" />
-                Handled
-              </button>
-            )}
-            {/* The side panel's way back, in the bar with the other controls: floating over the page it covered the end of the composer (SCRUM-837). */}
-            {me.simulator && !simPane && (
-              <button
-                type="button"
-                onClick={() => toggleSimPane(true)}
-                className="hidden items-center gap-1.5 rounded-xl border border-indigo-200 dark:border-indigo-500/40 bg-indigo-50 dark:bg-indigo-500/15 px-3 py-2 text-[12px] font-medium text-indigo-700 dark:text-indigo-200 hover:border-indigo-300 dark:hover:border-indigo-400 xl:inline-flex"
-              >
-                <FlaskConical className="h-3.5 w-3.5" />
-                Show simulator
-              </button>
-            )}
-            <SettingsMenu
-              me={currentMe}
-              active={settings}
-              onChoose={(key) => (key === 'simulator' ? setSimulatorOpen(true) : chooseSettings(key))}
-            />
-            <ThemeToggle theme={theme} onTheme={setTheme} />
-            {LAUNCHER_URL && (
-              <a
-                href={LAUNCHER_URL}
-                className="inline-flex items-center rounded-xl border border-line bg-card px-3 py-2 text-[12px] font-medium text-ink-soft hover:border-field hover:text-ink"
-              >
-                Back to the suite
-              </a>
-            )}
-            <button
-              type="button"
-              onClick={() => void signOut()}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-line bg-card px-3 py-2 text-[12px] font-medium text-ink-soft hover:border-field hover:text-ink"
-            >
-              <LogOut className="h-3.5 w-3.5" />
-              Sign out
-            </button>
-          </div>
+    <div className="flex h-[100dvh] overflow-hidden">
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className={phoneChat ? 'hidden md:block' : undefined}>
+          <AppBar
+            search={search}
+            onSearch={setSearch}
+            onNewContact={currentMe.contactChannels && currentMe.contactChannels.length > 0 ? () => setNewContactOpen(true) : undefined}
+            account={
+              <AccountMenu
+                me={currentMe}
+                theme={theme}
+                onTheme={setTheme}
+                settings={settings}
+                onSettings={(key) => (key === 'simulator' ? setSimulatorOpen(true) : chooseSettings(key))}
+                showSimulator={!simPane}
+                onShowSimulator={() => toggleSimPane(true)}
+                launcherUrl={LAUNCHER_URL || undefined}
+                onSignOut={() => void signOut()}
+              />
+            }
+          >
+            {stats('bar')}
+          </AppBar>
         </div>
-        {me.capabilities.dashboard && (
-          <Dashboard
-            data={dashboard}
-            error={dashboardError}
-            unansweredOnly={filters.unanswered}
-            onToggleUnanswered={toggleUnanswered}
-            activeOnly={activeOnly}
-            onToggleActive={toggleActive}
-            handledTodayShown={handledTodayShown}
-            {...(me.tabs.includes('handled') ? { onToggleHandledToday: toggleHandledToday } : {})}
-            category={tab === 'handled' ? '' : filters.category}
-            onPickCategory={pickCategory}
-          />
+
+        {settings !== null && (
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <div className="mx-auto max-w-[1400px] px-4 py-5 sm:px-6">
+              {settings === 'templates' && <TemplateSettings me={currentMe} onBack={() => chooseSettings(null)} />}
+              {settings === 'assistant' && (
+                <AssistantSettings key={accessSignature} me={currentMe} tab={assistantTab} onBack={() => chooseSettings(null)} onTab={setAssistantTab} />
+              )}
+            </div>
+          </div>
         )}
-      </header>
 
-      {settings === 'templates' && <TemplateSettings me={currentMe} onBack={() => chooseSettings(null)} />}
-      {settings === 'assistant' && (
-        <AssistantSettings key={accessSignature} me={currentMe} tab={assistantTab} onBack={() => chooseSettings(null)} onTab={setAssistantTab} />
-      )}
-
-      {/* WORKSPACE */}
-      <div className={`${settings !== null ? 'hidden ' : ''}overflow-hidden rounded-2xl border border-line bg-card shadow-[0_12px_40px_-16px_rgba(15,23,42,0.18)]`}>
-        <div className="grid h-[calc(100dvh-2rem)] min-h-[520px] grid-cols-1 lg:h-[min(82vh,860px)] lg:grid-cols-[220px_360px_minmax(0,1fr)]">
+        {/* The work: kept mounted under a settings page, as the card was. */}
+        <main
+          className={`${settings !== null ? 'hidden ' : ''}grid min-h-0 flex-1 grid-cols-1 overflow-hidden md:grid-cols-[minmax(300px,360px)_minmax(0,1fr)] ${columns}`}
+        >
           <Rail
             me={currentMe}
             tab={tab}
@@ -770,45 +624,33 @@ export function Workspace({ me }: { me: InboxMe }) {
           />
 
           <section
-            className={`min-h-0 min-w-0 flex-col border-r border-line ${showChatMobile ? 'hidden lg:flex' : 'flex'}`}
+            className={`min-h-0 min-w-0 flex-col border-line md:border-r ${showChatMobile ? 'hidden md:flex' : 'flex'}`}
             aria-label="Conversations"
           >
             <ConversationList
               me={currentMe}
               tab={tab}
-              strip={
-                me.capabilities.dashboard ? (
-                  <DashboardStrip
-                    data={dashboard}
-                    error={dashboardError}
-                    unansweredOnly={filters.unanswered}
-                    onToggleUnanswered={toggleUnanswered}
-                  />
-                ) : undefined
-              }
+              strip={stats('card')}
               page={page}
               rows={rows}
               loading={listLoading}
               loadingMore={loadingMore}
               error={listError}
               filters={filters}
-              search={search}
               selectedId={selected?.id ?? null}
               now={now}
               sources={visibleSources}
-              onSearch={setSearch}
               onFilters={patchFilters}
               onTab={chooseTab}
               onOpenFilters={() => setFiltersOpen(true)}
               onSelect={select}
               onAskHandle={askHandle}
               onMore={() => void loadMore()}
-              onNewContact={currentMe.contactChannels && currentMe.contactChannels.length > 0 ? () => setNewContactOpen(true) : undefined}
             />
           </section>
 
           <section
-            className={`min-h-0 min-w-0 flex-col bg-ground ${showChatMobile ? 'flex' : 'hidden lg:flex'}`}
+            className={`min-h-0 min-w-0 flex-col bg-ground ${showChatMobile ? 'flex' : 'hidden md:flex'}`}
             aria-label="Conversation"
           >
             {selected ? (
@@ -831,7 +673,15 @@ export function Workspace({ me }: { me: InboxMe }) {
               <EmptyState icon={MessageSquare} title="Pick a conversation" subtitle="Choose one from the list to read it." />
             )}
           </section>
-        </div>
+
+          {customerPanel && (
+            <aside
+              aria-label="About this conversation"
+              data-region="customer-panel"
+              className={`hidden min-h-0 overflow-y-auto border-l border-line ${simulatorShown ? 'min-[1760px]:block' : 'xl:block'}`}
+            />
+          )}
+        </main>
       </div>
 
       <TemplatesDialog
@@ -887,10 +737,10 @@ export function Workspace({ me }: { me: InboxMe }) {
         onChange={patchFilters}
         onClear={() => setFilters((f) => ({ ...EMPTY_FILTERS, q: f.q, archiveRange: f.archiveRange, resolvedBy: f.resolvedBy }))}
       />
-    </div>
-      {currentMe.simulator && simPane && (
-        <aside className="sticky top-0 hidden h-screen w-[420px] shrink-0 overflow-y-auto border-l border-line bg-card p-4 xl:block">
-          <div className="mb-3 flex items-center justify-between">
+
+      {simulatorShown && (
+        <aside className="hidden w-[420px] shrink-0 overflow-y-auto border-l border-line bg-card p-4 xl:block">
+          <div className="mb-3 flex items-center justify-between gap-3">
             <div>
               <div className="text-[13px] font-bold text-ink">Simulator · test only</div>
               <div className="text-[11.5px] text-ink-muted">Temporary side panel for testing. Nothing reaches a real customer.</div>
@@ -898,7 +748,7 @@ export function Workspace({ me }: { me: InboxMe }) {
             <button
               type="button"
               onClick={() => toggleSimPane(false)}
-              className="rounded-full border border-line px-3 py-1 text-[12px] font-semibold text-ink-soft hover:bg-wash dark:border-field"
+              className="min-h-11 shrink-0 rounded-full border border-field px-4 text-[13px] font-semibold text-ink-soft hover:bg-wash"
             >
               Hide
             </button>

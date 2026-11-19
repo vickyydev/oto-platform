@@ -9,11 +9,11 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import type { ConversationDetail, ConversationRow, InboxMe } from '@/api/inbox';
-import { CategoryMixCard } from '@/components/atoms';
 import { ChatPanel, type Thread } from '@/components/ChatPanel';
 import { ConversationList } from '@/components/ConversationList';
 import { DetailsDialog, FiltersDialog } from '@/components/dialogs';
 import { FilterFields, InboxViews, Rail } from '@/components/Rail';
+import { StatsMore } from '@/components/StatsRow';
 import {
   applyView,
   currentView,
@@ -133,11 +133,9 @@ function list(rows: ConversationRow[], filters: Filters = EMPTY_FILTERS, withSou
       loadingMore: false,
       error: null,
       filters,
-      search: '',
       selectedId: null,
       now,
       sources: withSources,
-      onSearch: noop,
       onFilters: noop,
       onTab: noop,
       onOpenFilters: noop,
@@ -412,14 +410,22 @@ describe('the GM queue’s label and colour wherever a category shows', () => {
     expect(html).toMatch(/bg-amber-50[^"]*text-amber-700[^"]*"[^>]*>GM</);
   });
 
-  it('the dashboard legend: the amber bar segment, the amber icon, GM named in the bar’s label', () => {
+  // SCRUM-1016: the dashboard's legend became "By topic" under More figures:
+  // a read-out with the topic's dot (the GM queue's amber token), the filter
+  // by topic staying under Filters (the chip pinned in the next test).
+  it('the statistics legend: GM named in the bar’s label, its amber dot in the bar and the list', () => {
     const html = renderToStaticMarkup(
-      createElement(CategoryMixCard, { data: { birthdays: 1, general: 2, marketing: 0, gm: 3 }, onPick: noop }),
+      createElement(StatsMore, {
+        data: {
+          scope: 'all', newToday: 0, unanswered: 0, handledToday: 0, active: 6, averageFirstResponseSeconds: null,
+          population: 'active', day: '2026-10-28', beosThisWeek: 0, weekStart: '2026-10-26',
+          byCategory: { birthdays: 1, general: 2, marketing: 0, gm: 3 },
+        },
+      }),
     );
     expect(html).toContain('GM 3');
-    expect(html).toContain('bg-amber-500');
-    expect(html).toContain('text-amber-500');
-    expect(html).toContain('title="Show GM only"');
+    expect(html).toMatch(/<span class="bg-topic-gm" style="width:50%"><\/span>/);
+    expect(html).toMatch(/data-topic="gm"[^>]*><span aria-hidden="true" class="[^"]*bg-topic-gm"><\/span><span[^>]*>GM<\/span><span[^>]*>3</);
   });
 
   it('the applied-filter pill and the topic chip: GM, with the amber mark', () => {

@@ -8,9 +8,9 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import type { Dashboard as DashboardData, InboxMe } from '@/api/inbox';
 import { AssistantSettings, assistantSections } from '@/components/AssistantSettings';
+import { AccountMenuItems, AppBar, settingsMenuEntries, type AccountMenuProps } from '@/components/AppBar';
 import { ConversationList } from '@/components/ConversationList';
-import { Dashboard, DashboardStrip } from '@/components/Dashboard';
-import { SettingsMenuItems, settingsMenuEntries } from '@/components/Workspace';
+import { StatsMore, StatsRow } from '@/components/StatsRow';
 import { EMPTY_FILTERS, filterPills, type Filters } from '@/lib/query';
 import type { AssistantTab } from '@/lib/url';
 
@@ -65,10 +65,8 @@ function list(filters: Filters, me: InboxMe = hana): string {
       loadingMore: false,
       error: null,
       filters,
-      search: '',
       selectedId: null,
       now: new Date('2026-10-22T03:00:00.000Z'),
-      onSearch: noop,
       onFilters: noop,
       onTab: noop,
       onOpenFilters: noop,
@@ -141,17 +139,47 @@ describe('F2 — one Settings control, listing only what the viewer may open', (
     expect(settingsMenuEntries({ ...hana, capabilities: caps(), simulator }).map((e) => e.key)).toEqual(['simulator']);
   });
 
+  // SCRUM-1016: the entries live in the one account menu now, beside the
+  // theme and Sign out; the settings part keeps its "Settings" group name.
+  const menu = (over: Partial<AccountMenuProps> = {}) =>
+    renderToStaticMarkup(
+      createElement(AccountMenuItems, {
+        me: hana,
+        theme: 'light',
+        onTheme: noop,
+        settings: null,
+        onSettings: noop,
+        showSimulator: false,
+        onShowSimulator: noop,
+        onSignOut: noop,
+        ...over,
+      }),
+    );
+
   it('renders the permitted entries as a menu, and nothing it may not', () => {
-    const html = renderToStaticMarkup(createElement(SettingsMenuItems, { me: { ...hana, simulator }, onChoose: noop }));
+    const html = menu({ me: { ...hana, simulator } });
     expect(html).toContain('role="menu"');
+    expect(html).toContain('role="group" aria-label="Settings"');
     for (const label of ['Templates', 'Assistant', 'Simulator · test only']) expect(html).toContain(label);
 
-    const kbOnly = renderToStaticMarkup(
-      createElement(SettingsMenuItems, { me: { ...hana, capabilities: caps({ kb: true }) }, onChoose: noop }),
-    );
+    const kbOnly = menu({ me: { ...hana, capabilities: caps({ kb: true }) } });
     expect(kbOnly).toContain('Assistant');
     expect(kbOnly).not.toContain('Templates');
     expect(kbOnly).not.toContain('Simulator');
+  });
+
+  it('says the viewer’s name and view once, and holds Sign out for everyone; an agent sees no settings group', () => {
+    const agent = menu({ me: { ...hana, roles: ['events'], capabilities: caps() } });
+    expect(agent.match(/Demo Hana \(GM\)/g)).toHaveLength(1);
+    expect(agent).toContain('Sign out');
+    expect(agent).not.toContain('aria-label="Settings"');
+    expect(menu()).toContain('Owner view');
+  });
+
+  it('marks the settings page that is open, and offers Back to the suite only with its address', () => {
+    expect(menu({ settings: 'templates' })).toMatch(/aria-current="page"[^>]*>(?:<svg[\s\S]*?<\/svg>)?<span[^>]*>Templates</);
+    expect(menu()).not.toContain('Back to the suite');
+    expect(menu({ launcherUrl: 'https://suite.example.invalid/' })).toMatch(/<a role="menuitem" href="https:\/\/suite\.example\.invalid\/"/);
   });
 });
 
@@ -189,7 +217,12 @@ describe("F2 — the assistant page's three tabs", () => {
   });
 });
 
-describe('F3 — the phone shows the list first', () => {
+// SCRUM-1016 replaced F3's seven-tile grid and the phone's compact strip
+// with one slim row of four figures, as the owner approved: Needs reply, New
+// today, Avg reply, Handled today. "Needs reply" is the list's one unanswered
+// control; the rest (active, by topic, BEOs this week) is one tap away. The
+// phone still sees the list first: the row is one line under the tabs.
+describe('SCRUM-1016 — the statistics in one slim row', () => {
   const data: DashboardData = {
     scope: 'all',
     newToday: 4,
@@ -204,84 +237,63 @@ describe('F3 — the phone shows the list first', () => {
     weekStart: '2026-10-19',
   };
 
-  function grid(unansweredOnly = false): string {
+  function row(over: Partial<Parameters<typeof StatsRow>[0]> = {}): string {
     return renderToStaticMarkup(
-      createElement(Dashboard, { data, error: null, unansweredOnly, onToggleUnanswered: noop }),
-    );
-  }
-  function strip(unansweredOnly = false): string {
-    return renderToStaticMarkup(
-      createElement(DashboardStrip, { data, error: null, unansweredOnly, onToggleUnanswered: noop }),
+      createElement(StatsRow, { variant: 'card', data, error: null, unansweredOnly: false, onToggleUnanswered: noop, ...over }),
     );
   }
 
-  it('keeps the card grid for lg and up, unchanged, and off the phone', () => {
-    const html = grid();
-    // The grid renders only at lg: `hidden` below, `lg:grid` above.
-    expect(/class="[^"]*\bhidden\b[^"]*\blg:grid\b[^"]*"/.test(html)).toBe(true);
-    // The lg cards are all still there, with their figures.
-    for (const label of ['New today', 'Unanswered', 'Active', 'Handled today', 'Avg response', 'By category']) {
-      expect(html).toContain(label);
-    }
+  it('shows the four figures, and Needs reply is the only toggle', () => {
+    const html = row();
+    for (const label of ['Needs reply', 'New today', 'Avg reply', 'Handled today']) expect(html).toContain(label);
+    expect(html).toContain('>3<');
+    expect(html).toContain('>4<');
+    expect(html).toContain('>5<');
     expect(html).toContain('12m 34s');
-    expect(grid(true)).toContain('aria-pressed="true"');
+    // One pressed-state control in the row: the filter itself.
+    expect(html.match(/aria-pressed=/g)).toHaveLength(1);
+    expect(html).toMatch(/<button[^>]*aria-pressed="false"[^>]*>(?:(?!<\/button>)[\s\S])*Needs reply/);
+    expect(row({ unansweredOnly: true })).toContain('aria-pressed="true"');
+    // The rest of the dashboard is not on the page.
+    expect(html).not.toContain('Active');
+    expect(html).not.toContain('By topic');
+    expect(html).not.toContain('BEOs');
   });
 
-  it('opens the list behind every tile that has one: Active, Handled today, each category (demo day 2026-10-27)', () => {
-    const wired = (over: Record<string, unknown> = {}) =>
-      renderToStaticMarkup(
-        createElement(Dashboard, {
-          data,
-          error: null,
-          unansweredOnly: false,
-          onToggleUnanswered: noop,
-          onToggleActive: noop,
-          onToggleHandledToday: noop,
-          onPickCategory: noop,
-          ...over,
-        }),
-      );
-    const html = wired();
-    // Unanswered, Active and Handled today are buttons; New today and Avg response stay read-outs.
-    const buttons = html.match(/<button[^>]*>[\s\S]*?<\/button>/g) ?? [];
-    const labelled = (label: string) => buttons.some((b) => b.includes(label));
-    expect(labelled('Unanswered')).toBe(true);
-    expect(labelled('Active')).toBe(true);
-    expect(labelled('Handled today')).toBe(true);
-    expect(labelled('New today')).toBe(false);
-    expect(labelled('Avg response')).toBe(false);
-    // Each category in the legend is its own button, named for the list it opens.
-    for (const name of ['Birthdays &amp; Events', 'General', 'Marketing']) expect(html).toContain(`Show ${name} only`);
-    // Pressed states read back.
-    expect(wired({ activeOnly: true })).toContain('Click to clear filter');
-    expect(wired({ handledTodayShown: true })).toContain('Click to go back');
-    expect(wired({ category: 'birthdays' })).toContain('Showing Birthdays &amp; Events only');
+  it('opens the other figures from the row, one tap away', () => {
+    const html = row();
+    expect(html).toMatch(/<button[^>]*aria-haspopup="dialog"[^>]*aria-expanded="false"[^>]*aria-label="4 new today, average reply 12m 34s, 5 handled today\. More figures"/);
+    const more = renderToStaticMarkup(createElement(StatsMore, { data }));
+    expect(more).toMatch(/Active<\/dt><dd[^>]*>12</);
+    expect(more).toContain('By topic');
+    for (const name of ['Birthdays &amp; Events', 'General', 'Marketing', 'GM']) expect(more).toContain(name);
+    expect(more).toMatch(/data-topic="birthdays"[\s\S]*?>5</);
+    expect(more).toContain('BEOs created · week');
+    // Read-outs only: a topic is filtered under Filters, never from here.
+    expect(more).not.toContain('<button');
   });
 
-  it('without the new handlers the tiles render exactly as before: only Unanswered is a button', () => {
-    const buttons = grid().match(/<button[^>]*>[\s\S]*?<\/button>/g) ?? [];
-    expect(buttons).toHaveLength(1);
-    expect(buttons[0]).toContain('Unanswered');
+  it('shows "—" while the read is out, and a refused read in words, keeping the filter', () => {
+    const loading = row({ data: null });
+    expect(loading).toContain('aria-busy="true"');
+    expect(loading.match(/>—</g)?.length).toBeGreaterThanOrEqual(4);
+    const failed = row({ data: null, error: 'The dashboard could not be read.' });
+    expect(failed).toContain('role="alert"');
+    expect(failed).toContain('The dashboard could not be read.');
+    expect(failed).toContain('aria-pressed="false"');
+    expect(failed).not.toContain('aria-haspopup');
   });
 
-  it('gives the phone one compact line: the unanswered chip, active, avg response', () => {
-    const html = strip();
-    expect(html).toContain('lg:hidden');
-    expect(html).toContain('Unanswered 3');
-    expect(html).toContain('Active');
-    expect(html).toContain('>12<');
-    expect(html).toContain('Avg response');
-    expect(html).toContain('12m 34s');
-    // The chip toggles the unanswered filter, like the card.
+  it('gives a viewer without the dashboard the filter alone, without figures', () => {
+    const html = row({ figures: false, data: null });
+    expect(html).toContain('Needs reply');
     expect(html).toContain('aria-pressed="false"');
-    expect(strip(true)).toContain('aria-pressed="true"');
-    // It is the compact line, not the card grid.
+    expect(html).not.toContain('—');
     expect(html).not.toContain('New today');
-    expect(html).not.toContain('By category');
   });
 
-  it('renders the strip inside the list header, above the search line', () => {
-    const el = createElement(DashboardStrip, { data, error: null, unansweredOnly: false, onToggleUnanswered: noop });
+  it('renders the row inside the list header below 1024 px, above the count and Filters', () => {
+    const el = createElement(StatsRow, { variant: 'card', data, error: null, unansweredOnly: false, onToggleUnanswered: noop });
     const html = renderToStaticMarkup(
       createElement(ConversationList, {
         me: hana,
@@ -293,10 +305,8 @@ describe('F3 — the phone shows the list first', () => {
         loadingMore: false,
         error: null,
         filters: EMPTY_FILTERS,
-        search: '',
         selectedId: null,
         now: new Date('2026-10-22T03:00:00.000Z'),
-        onSearch: noop,
         onFilters: noop,
         onTab: noop,
         onOpenFilters: noop,
@@ -305,9 +315,23 @@ describe('F3 — the phone shows the list first', () => {
         onMore: noop,
       }),
     );
-    expect(html).toContain('Unanswered 3');
-    expect(html.indexOf('Unanswered 3')).toBeLessThan(html.indexOf('aria-label="Search"'));
-    // The card grid stays out of the list.
-    expect(html).not.toContain('New today');
+    expect(html).toMatch(/<div class="mb-2 lg:hidden"><section aria-label="Today"/);
+    expect(html.indexOf('Needs reply')).toBeLessThan(html.indexOf('aria-label="Filters"'));
+    // The old second control is gone from the list.
+    expect(html).not.toContain('Unanswered only');
+  });
+
+  it('runs the same figures inline in the app bar from 1024 px', () => {
+    const html = renderToStaticMarkup(
+      createElement(
+        AppBar,
+        { search: '', onSearch: noop, account: null },
+        createElement(StatsRow, { variant: 'bar', data, error: null, unansweredOnly: false, onToggleUnanswered: noop }),
+      ),
+    );
+    expect(html).toMatch(/<div class="ml-auto hidden min-w-0 lg:flex"><section aria-label="Today"/);
+    expect(html).toContain('aria-label="Search"');
+    expect(html).toContain('alt="OTO"');
+    expect(html).toContain('>Inbox</h1>');
   });
 });

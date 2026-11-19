@@ -10,7 +10,7 @@ import type { ConversationDetail, ConversationEvent, ConversationRow, Dashboard 
 import { OTO_APP_UNREACHABLE, checkedLaunchUrl, openConversationBeo } from '@/api/otoApp';
 import { BookDateDialog, readDraft } from '@/components/BookDateDialog';
 import { ChatPanel, type Thread } from '@/components/ChatPanel';
-import { Dashboard } from '@/components/Dashboard';
+import { StatsMore } from '@/components/StatsRow';
 import {
   DEFAULT_START_TIME,
   PARTY_REMOVED_LABEL,
@@ -447,7 +447,9 @@ describe('Create BEO goes only to a hand-off address the api answered', () => {
   });
 });
 
-describe("the dashboard's BEO card", () => {
+// SCRUM-1016: the BEO figure moved from its dashboard card into the
+// statistics row's "More figures", one tap away; the same words and count.
+describe("the dashboard's BEO figure", () => {
   it('counts the week’s booked birthdays', () => {
     const data: DashboardData = {
       scope: 'all',
@@ -462,10 +464,10 @@ describe("the dashboard's BEO card", () => {
       beosThisWeek: 3,
       weekStart: '2026-11-02',
     };
-    const html = renderToStaticMarkup(createElement(Dashboard, { data, error: null, unansweredOnly: false, onToggleUnanswered: noop }));
+    const html = renderToStaticMarkup(createElement(StatsMore, { data }));
     expect(html).toContain('BEOs created · week');
     expect(html).toContain('Since Monday 2026-11-02');
-    expect(html).toMatch(/BEOs created · week<\/div><\/div><div[^>]*><div[^>]*>3<\/div>/);
+    expect(html).toMatch(/BEOs created · week<span[^>]*>Since Monday 2026-11-02<\/span><\/dt><dd[^>]*>3<\/dd>/);
   });
 });
 

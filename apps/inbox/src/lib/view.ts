@@ -51,7 +51,19 @@ export const CATEGORY_TINT: Record<InboxCategoryKey, string> = {
   gm: 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 ring-amber-200 dark:ring-amber-500/30',
 };
 
-/** The stacked bar's segments (`CategoryMixCard`, :1825-1827). */
+/**
+ * The topic as an 8 px dot in the OTO look (SCRUM-1016): the same colour code
+ * (violet, sky, pink, amber), carried by the topic tokens in src/index.css,
+ * so a topic never colours a whole chip.
+ */
+export const CATEGORY_DOT: Record<InboxCategoryKey, string> = {
+  birthdays: 'bg-topic-birthdays',
+  general: 'bg-topic-general',
+  marketing: 'bg-topic-marketing',
+  gm: 'bg-topic-gm',
+};
+
+/** The filter chips' and pills' topic marks (SCRUM-220). */
 export const CATEGORY_BAR: Record<InboxCategoryKey, string> = {
   birthdays: 'bg-violet-500',
   general: 'bg-sky-500',

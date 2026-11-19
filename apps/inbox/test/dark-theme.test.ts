@@ -11,19 +11,19 @@
 // in the dark theme, which is exactly the regression these pins once caught
 // with `dark:` variants. Accent hues not yet moved to tokens keep their
 // `dark:` pins. Covered: the shell's rail and header menu, a conversation
-// row with its search and pills, the bubbles (customer, staff, AI, shadow),
-// the composer with its send, the dashboard cards, and a dialog.
+// row with its pills, the bubbles (customer, staff, AI, shadow), the
+// composer with its send, the statistics row, and a dialog.
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import type { ConversationRow, Dashboard as DashboardData, InboxMe, Message } from '@/api/inbox';
 import { Composer } from '@/components/Composer';
 import { ConversationList } from '@/components/ConversationList';
-import { Dashboard } from '@/components/Dashboard';
 import { Dialog } from '@/components/Dialog';
 import { MessageBubble, ShadowBubble } from '@/components/MessageBubble';
 import { Rail } from '@/components/Rail';
-import { SettingsMenuItems } from '@/components/Workspace';
+import { AccountMenuItems } from '@/components/AppBar';
+import { StatsRow } from '@/components/StatsRow';
 import { MessagesSquare } from 'lucide-react';
 import { EMPTY_FILTERS } from '@/lib/query';
 
@@ -113,15 +113,19 @@ describe('the dark palette on the key surfaces', () => {
     expect(html).not.toMatch(RAW_NEUTRAL);
   });
 
-  it('the header: the settings menu card is a token card', () => {
-    const html = renderToStaticMarkup(createElement(SettingsMenuItems, { me, onChoose: noop }));
+  it('the app bar: the account menu card is a token card', () => {
+    const html = renderToStaticMarkup(
+      createElement(AccountMenuItems, {
+        me, theme: 'dark', onTheme: noop, settings: null, onSettings: noop, showSimulator: false, onShowSimulator: noop, onSignOut: noop,
+      }),
+    );
     expect(html).toContain('bg-card');
     expect(html).toContain('border-line');
     expect(html).toContain('hover:bg-wash');
     expect(html).not.toMatch(RAW_NEUTRAL);
   });
 
-  it('a list row: name ink and the search on tokens; selection and the staff-needed label keep their dark variants', () => {
+  it('a list row: name ink and the pills on tokens; selection and the staff-needed label keep their dark variants', () => {
     const html = renderToStaticMarkup(
       createElement(ConversationList, {
         me,
@@ -132,10 +136,8 @@ describe('the dark palette on the key surfaces', () => {
         loadingMore: false,
         error: null,
         filters: EMPTY_FILTERS,
-        search: '',
         selectedId: row.id,
         now,
-        onSearch: noop,
         onFilters: noop,
         onTab: noop,
         onOpenFilters: noop,
@@ -145,7 +147,7 @@ describe('the dark palette on the key surfaces', () => {
       }),
     );
     expect(html).toContain('text-ink'); // the contact's name
-    expect(html).toContain('border-line'); // search and pills
+    expect(html).toContain('border-line'); // the list head and its pills
     expect(html).toContain('dark:bg-emerald-950'); // selection stays distinct from unread
     expect(html).toContain('dark:bg-amber-950'); // staff-needed label uses the accessible palette
     expect(html).toContain('dark:text-amber-100');
@@ -181,7 +183,7 @@ describe('the dark palette on the key surfaces', () => {
     expect(html).not.toMatch(RAW_NEUTRAL);
   });
 
-  it('the dashboard: the cards on tokens, their accent tints still inverting', () => {
+  it('the statistics row: a token card, the Needs reply figure in coral ink and its pressed state on tokens', () => {
     const data: DashboardData = {
       newToday: 1,
       unanswered: 2,
@@ -195,13 +197,14 @@ describe('the dark palette on the key surfaces', () => {
       beosThisWeek: 0,
       weekStart: '2026-10-19',
     };
-    const html = renderToStaticMarkup(
-      createElement(Dashboard, { data, error: null, unansweredOnly: false, onToggleUnanswered: noop }),
-    );
-    expect(html).toContain('bg-card'); // the card ground
-    expect(html).toContain('dark:bg-rose-500/15'); // the unanswered tint
-    expect(html).toContain('dark:bg-emerald-500/15'); // handled today
-    expect(html).not.toMatch(RAW_NEUTRAL);
+    const row = (unansweredOnly: boolean) =>
+      renderToStaticMarkup(createElement(StatsRow, { variant: 'card', data, error: null, unansweredOnly, onToggleUnanswered: noop }));
+    expect(row(false)).toContain('border-line bg-card'); // the card ground
+    expect(row(false)).toContain('text-coral-ink'); // the figure that is the filter
+    expect(row(true)).toContain('bg-needs text-needs-ink'); // pressed
+    expect(row(false)).toContain('text-ink-muted'); // the figures' words
+    expect(row(false)).not.toMatch(RAW_NEUTRAL);
+    expect(row(true)).not.toMatch(RAW_NEUTRAL);
   });
 
   it('a dialog: the scrim, the card, the header rule and the close control on tokens', () => {

@@ -1,10 +1,9 @@
 import type { ReactNode } from 'react';
-import { Archive, CalendarRange, CheckCircle2, Download, Filter, Inbox, Loader2, Search, UserPlus, X } from 'lucide-react';
+import { Archive, CalendarRange, CheckCircle2, Download, Filter, Inbox, Loader2, X } from 'lucide-react';
 import type { InboxTab } from '@oto/shared/inbox';
 import type { ConversationList as ListPage, ConversationRow, InboxMe } from '@/api/inbox';
 import { Avatar, CategoryBadge, ChannelDot, ChipView, EmptyState, PILL, PILL_OFF, PILL_ON, StatusBadge } from '@/components/atoms';
 import { PendingControl } from '@/components/writes';
-import { NEW_CONTACT_LABEL } from '@/lib/contacts';
 import { sourceLabel, type SourceOption } from '@/lib/inboxes';
 import { activeFilterCount, filterPills, type Filters } from '@/lib/query';
 import {
@@ -37,8 +36,10 @@ import {
 } from '@/lib/view';
 
 /**
- * The 360 px conversation list (WhatsAppDemo.tsx :1463-1630): the search,
- * "n conversations", the archive filters on the Handled tab, then the rows.
+ * The conversation list (WhatsAppDemo.tsx :1463-1630): "n conversations", the
+ * archive filters on the Handled tab, then the rows. The search and New
+ * contact sit in the app bar, and the unanswered filter is the "Needs reply"
+ * figure of the statistics row, its only control (SCRUM-1016).
  *
  * At phone width the rail is hidden (as in the prototype, :1406), so its tabs
  * come here as a segmented row and its filters behind a Filters button — the
@@ -54,22 +55,19 @@ export function ConversationList({
   loadingMore,
   error,
   filters,
-  search,
   selectedId,
   now,
   sources = [],
-  onSearch,
   onFilters,
   onTab,
   onOpenFilters,
   onSelect,
   onAskHandle,
   onMore,
-  onNewContact,
 }: {
   me: InboxMe;
   tab: InboxTab;
-  /** The phone's compact dashboard line (F3), rendered under the tabs; the lg dashboard is the header's card grid. */
+  /** The statistics row below 1024 px (SCRUM-1016), under the tabs; at 1024 and up the figures sit in the app bar. */
   strip?: ReactNode;
   page: ListPage | null;
   rows: ConversationRow[];
@@ -77,12 +75,10 @@ export function ConversationList({
   loadingMore: boolean;
   error: string | null;
   filters: Filters;
-  search: string;
   selectedId: string | null;
   now: Date;
   /** The numbers known so far, so the Source pill names its number (SCRUM-220 playbook). */
   sources?: readonly SourceOption[];
-  onSearch: (q: string) => void;
   onFilters: (next: Partial<Filters>) => void;
   onTab: (t: InboxTab) => void;
   onOpenFilters: () => void;
@@ -90,8 +86,6 @@ export function ConversationList({
   /** The row's hover "Mark handled" (:1610-1620): opens the confirmation. */
   onAskHandle: (id: string) => void;
   onMore: () => void;
-  /** SCRUM-860: "New contact" beside the search, for a viewer the api lets create one; absent otherwise. */
-  onNewContact?: () => void;
 }) {
   const filterCount = activeFilterCount(filters);
   const hasStrip = strip !== undefined && strip !== null;
@@ -133,39 +127,21 @@ export function ConversationList({
           })}
         </div>
         {hasStrip && <div className="mb-2 lg:hidden">{strip}</div>}
-        <div className="flex items-center gap-2">
-          <div className="relative min-w-0 flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-muted" />
-            <input
-              value={search}
-              onChange={(e) => onSearch(e.target.value)}
-              aria-label="Search"
-              placeholder="Search customers, intents…"
-              className="w-full rounded-lg border border-line bg-card py-2 pl-8 pr-3 text-[13px] placeholder:text-ink-muted focus:border-field focus:outline-none focus:ring-2 focus:ring-field"
-            />
-          </div>
-          {onNewContact && (
-            <button
-              type="button"
-              onClick={onNewContact}
-              aria-label={NEW_CONTACT_LABEL}
-              title={NEW_CONTACT_LABEL}
-              className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-line bg-card px-2.5 py-2 text-[12px] font-medium text-ink-soft hover:bg-wash"
-            >
-              <UserPlus className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">New</span>
-            </button>
-          )}
+        <div className="flex min-h-11 items-center justify-between gap-2">
+          <span className="text-[12px] text-ink-muted">
+            {rows.length}
+            {page?.nextCursor ? '+' : ''} conversation{rows.length === 1 ? '' : 's'}
+          </span>
           <button
             type="button"
             onClick={onOpenFilters}
             aria-label="Filters"
-            className="relative inline-flex shrink-0 items-center gap-1 rounded-lg border border-line bg-card px-2.5 py-2 text-[12px] font-medium text-ink-soft hover:bg-wash lg:hidden"
+            className="relative inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border border-field bg-card px-3.5 text-[13px] font-semibold text-ink hover:bg-wash lg:hidden"
           >
-            <Filter className="h-3.5 w-3.5" />
+            <Filter aria-hidden className="h-4 w-4" />
             Filters
             {filterCount > 0 && (
-              <span className="rounded-full bg-ink px-1.5 text-[10px] font-semibold text-on-ink">{filterCount}</span>
+              <span className="rounded-full bg-ink px-1.5 text-[11px] font-semibold text-on-ink">{filterCount}</span>
             )}
           </button>
         </div>
@@ -174,7 +150,7 @@ export function ConversationList({
             applied says so here; at lg the rail's chips stay as they are. A
             topic's pill wears its colour, as its badge does (SCRUM-220). */}
         {pills.length > 0 && (
-          <div className="mt-2 flex flex-wrap items-center gap-1">
+          <div className="mb-1 flex flex-wrap items-center gap-1">
             {pills.map((p) => (
               <span
                 key={p.key}
@@ -195,30 +171,6 @@ export function ConversationList({
             ))}
           </div>
         )}
-        <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-ink-muted">
-          <span>
-            {rows.length}
-            {page?.nextCursor ? '+' : ''} conversation{rows.length === 1 ? '' : 's'}
-          </span>
-          {/* The unanswered toggle. The prototype's is the dashboard card
-              (:1367-1375), which stays; this one is for a reader without the
-              dashboard, and on a phone, where the card is far above. When the
-              phone strip (F3) renders, its rose chip is the phone's toggle,
-              so this pill steps back to lg and up (SCRUM-652 polish): one
-              unanswered control per width. */}
-          {tab !== 'handled' && (
-            <button
-              type="button"
-              aria-pressed={filters.unanswered}
-              onClick={() => onFilters({ unanswered: !filters.unanswered })}
-              className={`${hasStrip ? 'hidden lg:inline-flex ' : ''}rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 transition ${
-                filters.unanswered ? 'bg-rose-50 dark:bg-rose-500/15 text-rose-700 dark:text-rose-300 ring-rose-200 dark:ring-rose-500/30' : 'bg-card text-ink-muted ring-line hover:bg-wash'
-              }`}
-            >
-              Unanswered only
-            </button>
-          )}
-        </div>
         {tab === 'handled' && (
           <div className="mt-3 space-y-2 rounded-lg bg-ground p-2.5 ring-1 ring-line">
             <div className="flex items-center justify-between">
