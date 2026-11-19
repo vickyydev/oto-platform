@@ -85,6 +85,34 @@ describe('SCRUM-1016: "Hide till notices" in the workspace', () => {
     expect(stored['oto.hideTillNotices']).toBe('1');
   });
 
+  it('turned on with a notices-only number chosen under Channel, lets the number go rather than show an empty list', async () => {
+    // SCRUM-1016 (review): Channel offered "Check-in notices (WhatsApp)" with
+    // the switch on, and the list it asked for (that number, replyable only)
+    // was always empty, with no reason said.
+    stored['oto.hideTillNotices'] = '0';
+    const NOTICES = '0192f0a0-1234-7abc-8def-0000000000b9';
+    const notice: ConversationRow = { ...row(9), channelAccountId: NOTICES, channelAccountName: 'ZZ TEST check-in notices', canReply: false };
+    calls.conversations.mockResolvedValue(listPage({ conversations: [row(1), notice] }));
+    const hook = renderHook(Workspace, { me }); cleanup = hook.unmount; await flush();
+    // The number is learned with what it can do.
+    expect(find(hook.result.current, Rail).props.sources).toContainEqual({ id: NOTICES, channel: 'whatsapp', name: 'ZZ TEST check-in notices', canReply: false });
+    const change = find(hook.result.current, FiltersDialog).props.onChange as (p: Partial<Filters>) => void;
+    change({ channelAccountId: NOTICES });
+    await flush();
+    expect(calls.conversations.mock.calls.at(-1)![0]).toMatchObject({ channelAccountId: NOTICES });
+    change({ hideNotices: true });
+    await flush();
+    expect((find(hook.result.current, ConversationList).props.filters as Filters)).toMatchObject({ hideNotices: true, channelAccountId: '' });
+    expect(calls.conversations.mock.calls.at(-1)![0]).toMatchObject({ replyable: 'true' });
+    expect(calls.conversations.mock.calls.at(-1)![0]).not.toHaveProperty('channelAccountId');
+    // A number that can reply stays chosen when the switch goes on.
+    change({ hideNotices: false });
+    change({ channelAccountId: row(1).channelAccountId });
+    change({ hideNotices: true });
+    await flush();
+    expect((find(hook.result.current, ConversationList).props.filters as Filters).channelAccountId).toBe(row(1).channelAccountId);
+  });
+
   it('a storage that refuses reads as on', async () => {
     vi.stubGlobal('localStorage', { getItem: () => { throw new Error('ZZ TEST blocked'); }, setItem: () => { throw new Error('ZZ TEST blocked'); } });
     const hook = renderHook(Workspace, { me }); cleanup = hook.unmount; await flush();

@@ -32,9 +32,22 @@ export const UNREAD_FILTER_LABEL = 'Unread';
 /** The row's badge for a thread of the till's check-in notices (`canReply` false), shown when they are not hidden. */
 export const TILL_NOTICE_LABEL = 'Till notice';
 
-/** "12 conversations", "50+ conversations": the rows read, "+" while the next page waits. */
-function countLabel(n: number, more: boolean): string {
-  return `${n}${more ? '+' : ''} conversation${n === 1 && !more ? '' : 's'}`;
+/**
+ * "12 conversations", "50+ conversations": the rows read, "+" while the next
+ * page waits. While the list is narrowed (a search, Needs reply, Unread, a
+ * filter) and the tab has a count, the count says what it is out of — "3 of
+ * 12 conversations" — so it reads with the tab's own count, which is before
+ * those filters (SCRUM-1016 review, inventory §3 item 11).
+ */
+export function countLabel(n: number, more: boolean, of?: number): string {
+  const shown = `${n}${more ? '+' : ''}`;
+  if (of !== undefined) return `${shown} of ${of} conversation${of === 1 ? '' : 's'}`;
+  return `${shown} conversation${n === 1 && !more ? '' : 's'}`;
+}
+
+/** The list is narrowed past its tab: by a search, the Needs reply or Unread toggle, or a filter. */
+function narrowed(f: Filters): boolean {
+  return f.q.trim() !== '' || f.unanswered || f.unread || activeFilterCount(f) > 0;
 }
 
 /**
@@ -181,7 +194,7 @@ export function ConversationList({
               </section>
             )}
             <h3 className="px-4 pb-1.5 pt-3.5 text-[12px] font-bold text-ink-muted">
-              {countLabel(rows.length, Boolean(page?.nextCursor))} · newest first
+              {countLabel(rows.length, Boolean(page?.nextCursor), narrowed(filters) && tab !== 'handled' ? page?.tabCounts[tab] : undefined)} · newest first
             </h3>
             {rest.map(rowOf(false))}
             {page?.nextCursor && (

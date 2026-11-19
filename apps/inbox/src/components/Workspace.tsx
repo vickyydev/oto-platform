@@ -18,7 +18,7 @@ import { Rail } from '@/components/Rail';
 import { SimulatorBody, SimulatorDialog } from '@/components/Simulator';
 import { StatsRow } from '@/components/StatsRow';
 import { TemplateSettings } from '@/components/TemplateSettings';
-import { inboxAccessSignature, inboxFiltersWithinAccess, inboxItemWithinAccess, inboxMeWithinAccess, inboxSourcesWithinAccess, mergeSources, sourcesOfRows, type SourceOption } from '@/lib/inboxes';
+import { inboxAccessSignature, inboxFiltersWithinAccess, inboxItemWithinAccess, inboxMeWithinAccess, inboxSourcesWithinAccess, mergeSources, sourcesOfRows, withoutHiddenChannel, type SourceOption } from '@/lib/inboxes';
 import { useInboxAccess } from '@/hooks/useInboxAccess';
 import { withReadyToBook } from '@/lib/list-state';
 import { EMPTY_FILTERS, listQuery, type Filters } from '@/lib/query';
@@ -170,7 +170,13 @@ export function Workspace({ me }: { me: InboxMe }) {
   const [handling, setHandling] = useState(false);
   const [handleError, setHandleError] = useState<string | null>(null);
 
-  const patchFilters = useCallback((next: Partial<Filters>) => setFilters((f) => ({ ...f, ...next })), []);
+  // A notices-only number chosen under Channel is let go of when "Hide till
+  // notices" goes on: its list could only be empty (SCRUM-1016 review).
+  const sourcesRef = useRef<readonly SourceOption[]>([]);
+  const patchFilters = useCallback(
+    (next: Partial<Filters>) => setFilters((f) => withoutHiddenChannel({ ...f, ...next }, sourcesRef.current)),
+    [],
+  );
   useEffect(() => {
     try {
       localStorage.setItem(HIDE_NOTICES_KEY, filters.hideNotices ? '1' : '0');
@@ -192,6 +198,7 @@ export function Workspace({ me }: { me: InboxMe }) {
   const learnSources = useCallback((more: SourceOption[]) => setSources((s) => inboxSourcesWithinAccess(mergeSources(s, more), accessRef.current)), []);
   const accessSignature = inboxAccessSignature(currentAccess);
   const visibleSources = inboxSourcesWithinAccess(sources, currentAccess);
+  sourcesRef.current = visibleSources;
   const currentMe = inboxMeWithinAccess(me, currentAccess);
   useEffect(() => {
     setSources(known => inboxSourcesWithinAccess(known, currentAccess));
@@ -214,7 +221,7 @@ export function Workspace({ me }: { me: InboxMe }) {
     assistantApi
       .channelAccounts()
       .then((r) => {
-        if (!cancelled) learnSources(r.channelAccounts.map((a) => ({ id: a.id, channel: a.channel, name: a.displayName })));
+        if (!cancelled) learnSources(r.channelAccounts.map((a) => ({ id: a.id, channel: a.channel, name: a.displayName, canReply: a.canReply })));
       })
       .catch(() => {
         // The chips are a convenience: without the list, the rows still name their numbers.
