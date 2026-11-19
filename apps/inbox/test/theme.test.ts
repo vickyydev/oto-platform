@@ -11,7 +11,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { ApiError } from '@/api/client';
 import { AccountMenuItems } from '@/components/AppBar';
-import { createThemeController, nextTheme, resolvedDark, themeFromMe, type Theme, type ThemeEnv } from '@/lib/theme';
+import { createThemeController, resolvedDark, themeFromMe, type Theme, type ThemeEnv } from '@/lib/theme';
 
 /** A fake `<html>` + `(prefers-color-scheme: dark)` + api, all observable. */
 function env(overrides: Partial<ThemeEnv> & { systemDark?: boolean } = {}) {
@@ -127,13 +127,10 @@ describe('system', () => {
   });
 });
 
-describe('the cycle and its words', () => {
-  it('cycles light → dark → system → light', () => {
-    expect(nextTheme('light')).toBe('dark');
-    expect(nextTheme('dark')).toBe('system');
-    expect(nextTheme('system')).toBe('light');
-  });
-
+describe('what shows', () => {
+  // SCRUM-1016: the cycling theme button became the account menu's three
+  // named themes, so the cycle (`nextTheme`) and its pin went with it; the
+  // menu's choices are pinned in app-bar-1016.test.ts.
   it('resolves what shows', () => {
     expect(resolvedDark('light', true)).toBe(false);
     expect(resolvedDark('dark', false)).toBe(true);

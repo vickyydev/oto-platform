@@ -140,6 +140,12 @@ describe('SCRUM-1016: each filter is offered once', () => {
     expect(list).toMatch(/<button type="button" aria-pressed="false" class="[^"]*">Unread<\/button>/);
   });
 
+  it('the figures’ labels keep one line on a tablet’s list column and in the app bar', () => {
+    // SCRUM-1016 (review): "Handled today" broke over two lines at 768 px.
+    expect(list).toContain('md:whitespace-nowrap md:tracking-[-0.01em]">Handled today</span>');
+    expect(bar).toContain('leading-tight text-ink-muted whitespace-nowrap">Handled today</span>');
+  });
+
   it('Hide till notices: in the views column, and in the sheet; never twice on one screen', () => {
     expect(count(screen, 'data-switch="hide-notices"')).toBe(1);
     const sheet = markup(createElement(FiltersDialog, { open: true, onClose: noop, me, filters: EMPTY_FILTERS, onChange: noop, onClear: noop }));

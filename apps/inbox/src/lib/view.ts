@@ -94,15 +94,13 @@ export const LANGUAGE_OPTIONS: [string, string][] = [
 ];
 
 /**
- * The filter's categories and statuses (`FilterSelect` options, :1447-1455),
- * from the colour code's labels; every category the api names, the GM queue
- * (SCRUM-220 playbook) among them.
+ * The filter's categories (`FilterSelect` options, :1447-1455), from the
+ * colour code's labels; every category the api names, the GM queue
+ * (SCRUM-220 playbook) among them. (The statuses' options went with the
+ * Status filter row, SCRUM-1016.)
  */
 export const CATEGORY_OPTIONS: [InboxCategoryKey, string][] = INBOX_CATEGORY_KEYS.map(
   (k): [InboxCategoryKey, string] => [k, CATEGORY_LABEL[k]],
-);
-export const STATUS_OPTIONS: [InboxStatusKey, string][] = (['active', 'handled'] as const).map(
-  (k): [InboxStatusKey, string] => [k, STATUS_LABEL[k]],
 );
 
 /** `LANG_LABEL` (:207): the code, upper case. */

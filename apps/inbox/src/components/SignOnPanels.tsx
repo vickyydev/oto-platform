@@ -14,7 +14,7 @@ const SECONDARY = BTN_OUTLINE;
 function Card({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-[100dvh] items-center justify-center px-4 py-10">
-      <div className="w-full max-w-md rounded-2xl border border-line bg-card p-6 shadow-[0_12px_40px_-16px_rgba(15,23,42,0.18)] sm:p-8">
+      <div className="w-full max-w-md rounded-2xl border border-line bg-card p-6 shadow-pop sm:p-8">
         {children}
       </div>
     </div>

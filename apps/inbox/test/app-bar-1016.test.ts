@@ -78,6 +78,12 @@ describe('the account menu', () => {
   it('opens on the first entry, moves with the arrows, Home and End, and wraps', async () => {
     await mount(createElement(AccountMenu, menuProps()));
     expect(accountButton().getAttribute('aria-label')).toBe('Your account: ZZ TEST viewer, Owner view');
+    // SCRUM-1016 (review): from 1280 px the name stands beside the initials, as Desktop.dc.html draws it.
+    const shown = accountButton().querySelector('[data-account-name]')!;
+    expect(shown.textContent).toBe('ZZ TEST viewer');
+    expect(shown.className).toContain('hidden');
+    expect(shown.className).toContain('xl:inline');
+    expect(accountButton().className).toContain('xl:w-auto');
     expect(menu()).toBeNull();
     await click(accountButton());
     expect(accountButton().getAttribute('aria-expanded')).toBe('true');
@@ -131,6 +137,8 @@ describe('the account menu', () => {
     const props = menuProps();
     await mount(createElement(AccountMenu, props));
     await click(accountButton());
+    // The three themes by name, in the order the old cycle went (theme.test.ts's cycle pin moved here, SCRUM-1016).
+    expect([...host.querySelectorAll('[role="menuitemradio"]')].map((b) => b.textContent)).toEqual(['Light', 'Dark', 'System']);
     await click([...host.querySelectorAll('[role="menuitemradio"]')].find((b) => b.textContent === 'Dark')!);
     expect(props.onTheme).toHaveBeenCalledWith('dark');
     expect(menu()).not.toBeNull();
