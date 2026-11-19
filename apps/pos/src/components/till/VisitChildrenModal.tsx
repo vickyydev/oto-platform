@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AlertTriangle, Baby, ChevronDown, ChevronRight, Loader2, ShieldAlert } from 'lucide-react';
 import {
   Dialog,
@@ -12,14 +12,14 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
 import type { Member, SavedChild } from '@/types';
 import { confirmVisitChildren, membersApi, type ApiChild } from '@/api/platform';
-import { apiChildToSavedChild } from '@/api/mappers';
 import {
   ChildDetailsFields,
   childDetailsDraft,
-  childDetailsPatch,
   childDetailsSummary,
   type ChildDetailsDraft,
 } from '@/components/shared/ChildDetailsFields';
+import type { HeldWriteKey } from '@/lib/gateChildren';
+import { saveVisitChildren } from '@/lib/visitChildren';
 
 interface VisitChildrenModalProps {
   open: boolean;
@@ -68,9 +68,12 @@ export function VisitChildrenModal({ open, member, openVisitId = null, onClose, 
   const [drafts, setDrafts] = useState<Record<string, ChildDetailsDraft>>({});
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [busy, setBusy] = useState(false);
+  /** SCRUM-1059 — the key each child's change goes under, while the window is open for this family. */
+  const writeKeys = useRef(new Map<string, HeldWriteKey>());
 
   useEffect(() => {
     if (open) {
+      writeKeys.current = new Map();
       setSelected(Object.fromEntries(children.map((c) => [c.id, true])));
       setAllergyDrafts(Object.fromEntries(children.map((c) => [c.id, c.allergiesMedical ?? ''])));
       setRecords(null);
@@ -122,31 +125,12 @@ export function VisitChildrenModal({ open, member, openVisitId = null, onClose, 
       // Persist the edits first (each one is audited server-side), then open
       // the visit — a visit confirmed against details that did not save would
       // be the counter believing something the record does not say.
-      const updated: SavedChild[] = [];
-      for (const c of children) {
-        const record = recordById.get(c.id);
-        const draft = drafts[c.id];
-        if (record && draft) {
-          const patch = childDetailsPatch(childDetailsDraft(record), draft);
-          if (patch) {
-            const res = await membersApi.updateChild(c.id, patch);
-            updated.push(apiChildToSavedChild(res.child));
-            continue;
-          }
-          updated.push(c);
-          continue;
-        }
-        // No full record for this child (the detail read did not land): the
-        // allergy line is the only thing on screen and the only thing sent.
-        const allergyDraft = (allergyDrafts[c.id] ?? '').trim();
-        const original = (c.allergiesMedical ?? '').trim();
-        if (allergyDraft !== original) {
-          const res = await membersApi.updateChild(c.id, { allergies: allergyDraft || null });
-          updated.push(apiChildToSavedChild(res.child));
-        } else {
-          updated.push(c);
-        }
-      }
+      // SCRUM-1059 — each change under the key this window holds for it, so a
+      // Confirm pressed again after a lost reply writes it once.
+      const updated: SavedChild[] = await saveVisitChildren({
+        children, records: recordById, drafts, allergyDrafts, writeKeys: writeKeys.current,
+        updateChild: (childId, patch, key) => membersApi.updateChild(childId, patch, key),
+      });
       const visitId = await confirmVisitChildren(openVisitId, { memberId: member.id, childIds: selectedIds });
       toast({
         title: 'Visit confirmed',
