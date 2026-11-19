@@ -35,6 +35,7 @@ import type { BeoEventWithDetails } from "@shared/schema";
 import { timelineStepLine, untimedBesideTimeline } from "@shared/beoTimeline";
 import { bahtOfSatang, tillFiguresOf } from "@shared/tillBilling";
 import { ADULTS_SAME_AS_KIDS, adultsDifferOf } from "@shared/kitchenAdults";
+import { beoDishNameOf } from "@shared/beoAdultWaffles";
 import { BeoPackageModule } from "./beo-package-module";
 import { TillMoneyRows, useTillBilling } from "./beo-till-billing";
 import { useBuiltTimeline } from "./beo-built-timeline";
@@ -70,7 +71,7 @@ function MenuItemList({ items }: { items: MenuItem[] }) {
     <ul className="space-y-0.5">
       {items.map((item, index) => (
         <li key={item.id || index} className="text-sm flex items-center gap-2">
-          <span>{item.quantity && item.quantity > 1 ? `${item.quantity}× ` : ""}{item.itemName}</span>
+          <span>{item.quantity && item.quantity > 1 ? `${item.quantity}× ` : ""}{beoDishNameOf(item)}</span>
           <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${item.source === "set_menu" ? "bg-blue-500/10 text-blue-600 border-blue-500/30" : "bg-amber-500/10 text-amber-600 border-amber-500/30"}`}>
             {item.source === "set_menu" ? "SET" : "EXTRA"}
           </Badge>
@@ -170,7 +171,7 @@ function ReadOnlySetMenuChoices({
             {group.qty != null && <span className="font-medium ml-1">×{group.qty}</span>}
             {isSubmitted && choices.length > 0 ? (
               <span className="text-emerald-600 ml-1" data-testid={`view-set-menu-choice-options-${group.id}`}>
-                → {choices.map((item) => item.itemName).join(", ")}
+                → {choices.map((item) => beoDishNameOf(item)).join(", ")}
               </span>
             ) : (
               <span className="text-muted-foreground ml-1 italic">pending parent selection</span>
@@ -734,7 +735,7 @@ export function BeoViewOnly({ eventId, showHeader = true }: BeoViewOnlyProps) {
                         {item.source === "set_menu" ? "SET" : "EXTRA"}
                       </span>
                       <span className="font-mono text-muted-foreground shrink-0">{item.quantity || 1}x</span>
-                      <span>{item.itemName}</span>
+                      <span>{beoDishNameOf(item)}</span>
                     </div>
                     {item.notes && <p className="text-xs text-muted-foreground ml-16">{item.notes}</p>}
                   </div>
