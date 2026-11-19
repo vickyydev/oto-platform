@@ -37,9 +37,17 @@
  * its allocation's home at month end (the roster branch). A profile that
  * cannot be placed — no joining date, no allocation by month end, a home
  * branch without payroll details or rules — is left out and LISTED in
- * `excluded`, so nobody silently goes unpaid. So is every single shift a
- * former employee was invited to in the month (SCRUM-1038), which payroll
- * does not pay yet.
+ * `excluded`, so nobody silently goes unpaid.
+ *
+ * Single shifts (SCRUM-1038, SCRUM-1055): a former employee invited to a
+ * shift of the month is paid for it in this month's run, on the old contract
+ * (the owner's answers of 19 November 2026). Only the PAY readers ask for
+ * them (`singleShifts: true`: the month-end view, its preview and attendance
+ * decisions, and the lifecycle's confirm, lock, overtime and third-party
+ * steps). The other readers of the month's people (the feeds' OT bank, the
+ * statutory documents, the month inputs) do not, so a former employee is
+ * never one of their employees of the month. A shift paid on a casual day
+ * rate, or one that cannot be paid, is LISTED in `excluded` with why.
  */
 import { createHash } from "node:crypto";
 import { and, asc, eq, gte, inArray, lt, lte } from "drizzle-orm";
@@ -182,7 +190,16 @@ export function parkToday(timeZone = "Asia/Bangkok"): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
 }
 
-export async function loadPayrollWorld(tenantId: string, month: string, options: { today?: string } = {}): Promise<LoadedWorld> {
+export interface LoadOptions {
+  today?: string;
+  /** SCRUM-1055: true for the readers that compute and show pay; former employees' single shifts join the month. */
+  singleShifts?: boolean;
+}
+
+/** The pay readers' load: the month with its single shifts (SCRUM-1055). */
+export const PAY_READER: LoadOptions = { singleShifts: true };
+
+export async function loadPayrollWorld(tenantId: string, month: string, options: LoadOptions = {}): Promise<LoadedWorld> {
   if (!MONTH.test(month)) throw new WorldRefusal(400, "Choose a payroll month (YYYY-MM).");
   const prev = previousMonth(month);
   const monthEnd = `${month}-${String(monthDays(month)).padStart(2, "0")}`;
@@ -301,6 +318,19 @@ export async function loadPayrollWorld(tenantId: string, month: string, options:
 
   // ── People ──
   const roster = new Map<string, string>();
+  const staffOf = (employee: (typeof profileRows)[number]["employee"], p: EmployeePayrollProfile, name: string): StaffMember => {
+    const weeklyOff = employee.weeklyOffDays ?? [];
+    return {
+      id: employee.id, employeeNumber: employee.id, taxId: p.taxId, name, role: p.jobTitle,
+      employmentType: "local", nationality: p.nationality ?? employee.nationality ?? "",
+      monthlySalary: p.workerType === "day-rate" ? null : p.workerType === "contractor" ? p.fixedFee : p.monthlySalary,
+      dayRate: p.workerType === "day-rate" ? p.dayRate : null,
+      joinedOn: p.joinedOn, leftOn: p.lastWorkingDay, probationEndsOn: p.joinedOn,
+      scheduledDaysPerWeek: Math.max(1, 7 - weeklyOff.length), otEligible: p.otEligible, serviceChargeEligible: p.serviceChargeEligible,
+      serviceRoleWeight: 1, ewfMembership: null, statutoryIds: p.ssoNumber ? { ssoNumber: p.ssoNumber } : {},
+      ...(p.department ? { department: p.department } : {}), payrollProfile: p,
+    };
+  };
   for (const { profile: row, employee } of profileRows) {
     const p = profileOut(row, allocRows, advanceRows, paymentRows) as EmployeePayrollProfile;
     const name = getEmployeeDisplayName(employee);
@@ -311,55 +341,71 @@ export async function loadPayrollWorld(tenantId: string, month: string, options:
     if (!home) { excluded.push({ employeeId: employee.id, name, reason: `No allocation is effective on ${anchor}.` }); continue; }
     const branch = world.branches[home];
     if (!branch) { excluded.push({ employeeId: employee.id, name, reason: `Home branch ${names.get(home) ?? home} has no payroll details or rules for ${month}.` }); continue; }
-    const weeklyOff = employee.weeklyOffDays ?? [];
-    const staff: StaffMember = {
-      id: employee.id, employeeNumber: employee.id, taxId: p.taxId, name, role: p.jobTitle,
-      employmentType: "local", nationality: p.nationality ?? employee.nationality ?? "",
-      monthlySalary: p.workerType === "day-rate" ? null : p.workerType === "contractor" ? p.fixedFee : p.monthlySalary,
-      dayRate: p.workerType === "day-rate" ? p.dayRate : null,
-      joinedOn: p.joinedOn, leftOn: p.lastWorkingDay, probationEndsOn: p.joinedOn,
-      scheduledDaysPerWeek: Math.max(1, 7 - weeklyOff.length), otEligible: p.otEligible, serviceChargeEligible: p.serviceChargeEligible,
-      serviceRoleWeight: 1, ewfMembership: null, statutoryIds: p.ssoNumber ? { ssoNumber: p.ssoNumber } : {},
-      ...(p.department ? { department: p.department } : {}), payrollProfile: p,
-    };
-    branch.staff.push(staff);
+    branch.staff.push(staffOf(employee, p, name));
     roster.set(employee.id, home);
   }
-  // ── Single shifts (SCRUM-1038) ──
-  // A former employee invited to one shift is paid on the old contract or on
-  // a casual day rate, and company payroll does not pay either way yet: the
-  // owner has not ruled which run pays it, what it carries (social security,
-  // tax, allowances, overtime, service charge) or how a day of a monthly
-  // contract is counted. Until then every single shift still on the schedule
-  // in the month is LISTED here with how it is to be paid, so none goes
-  // unpaid silently (a person outside the run, or inside it with the shift
-  // after their last working day, which the engine does not pay).
-  const singleShiftRows = await q(db.select({ invitation: singleShiftInvitations, employee: employees })
-    .from(singleShiftInvitations)
-    .innerJoin(employees, and(eq(employees.id, singleShiftInvitations.employeeId), eq(employees.tenantId, tenantId)))
-    .innerJoin(scheduleAssignments, and(
-      eq(scheduleAssignments.id, singleShiftInvitations.assignmentId),
-      eq(scheduleAssignments.employeeId, singleShiftInvitations.employeeId),
-      eq(scheduleAssignments.shiftDate, singleShiftInvitations.shiftDate),
-    ))
-    .where(and(
-      eq(singleShiftInvitations.tenantId, tenantId),
-      gte(singleShiftInvitations.shiftDate, `${month}-01`),
-      lte(singleShiftInvitations.shiftDate, monthEnd),
-    ))
-    .orderBy(asc(singleShiftInvitations.employeeId), asc(singleShiftInvitations.shiftDate), asc(singleShiftInvitations.createdAt)));
-  const singleShiftsByPerson = new Map<string, { name: string; shifts: string[] }>();
-  for (const { invitation: i, employee } of singleShiftRows) {
-    const entry = singleShiftsByPerson.get(i.employeeId) ?? { name: getEmployeeDisplayName(employee), shifts: [] };
-    entry.shifts.push(`${iso(i.shiftDate)} (${singleShiftPayLabel(i.payBasis, i.casualDayRate).toLowerCase()})`);
-    singleShiftsByPerson.set(i.employeeId, entry);
-  }
-  for (const [employeeId, { name, shifts }] of singleShiftsByPerson) {
-    const reason = `${shifts.length === 1 ? "Single shift" : "Single shifts"} on ${shifts.join(", ")} ` +
-      `${shifts.length === 1 ? "is" : "are"} not paid by this run: company payroll does not take single shifts yet.`;
-    const listed = excluded.find((x) => x.employeeId === employeeId);
-    if (listed) listed.reason = `${listed.reason} ${reason}`;
-    else excluded.push({ employeeId, name, reason });
+
+  // ── Single shifts (SCRUM-1038, SCRUM-1055), for the pay readers only ──
+  // A former employee invited to one shift of the month is paid for it in
+  // this run on the old contract: the shift goes on the person's own record
+  // (already in the month, as a leaver of last month or this one is, or put in
+  // the branch of the allocation's home at month end, as anybody is placed),
+  // and the engine pays it (company-calculations.ts singleShiftPays). Such a
+  // person is NOT on the roster: leave valuations, OT-bank bookings and
+  // offboarding records stay those of the month's employees. A casual day
+  // rate is not paid here (company payroll has no pay for casual workers),
+  // and a shift that cannot be paid is listed in `excluded` with why.
+  const singleShiftHome = new Map<string, string>();
+  const singleShiftDates = new Map<string, Set<string>>();
+  if (options.singleShifts) {
+    const singleShiftRows = await q(db.select({ invitation: singleShiftInvitations, employee: employees })
+      .from(singleShiftInvitations)
+      .innerJoin(employees, and(eq(employees.id, singleShiftInvitations.employeeId), eq(employees.tenantId, tenantId)))
+      .innerJoin(scheduleAssignments, and(
+        eq(scheduleAssignments.id, singleShiftInvitations.assignmentId),
+        eq(scheduleAssignments.employeeId, singleShiftInvitations.employeeId),
+        eq(scheduleAssignments.shiftDate, singleShiftInvitations.shiftDate),
+      ))
+      .where(and(
+        eq(singleShiftInvitations.tenantId, tenantId),
+        gte(singleShiftInvitations.shiftDate, `${month}-01`),
+        lte(singleShiftInvitations.shiftDate, monthEnd),
+      ))
+      .orderBy(asc(singleShiftInvitations.employeeId), asc(singleShiftInvitations.shiftDate), asc(singleShiftInvitations.createdAt)));
+    const notPaid = new Map<string, { name: string; reasons: string[] }>();
+    const refuse = (employeeId: string, name: string, shift: string, why: string) => {
+      const entry = notPaid.get(employeeId) ?? { name, reasons: [] };
+      entry.reasons.push(`Single shift on ${shift} is not paid by this run: ${why}.`);
+      notPaid.set(employeeId, entry);
+    };
+    for (const { invitation: i, employee } of singleShiftRows) {
+      const name = getEmployeeDisplayName(employee), date = iso(i.shiftDate);
+      const shift = `${date} (${singleShiftPayLabel(i.payBasis, i.casualDayRate).toLowerCase()})`;
+      if (i.payBasis !== "old_contract") { refuse(employee.id, name, shift, "company payroll has no pay for casual workers, who are outside it"); continue; }
+      const row = profileRows.find((r) => r.employee.id === employee.id);
+      if (!row) { refuse(employee.id, name, shift, "there is no payroll profile to pay the old contract from"); continue; }
+      if (excluded.some((x) => x.employeeId === employee.id)) { refuse(employee.id, name, shift, "the payroll profile cannot be paid this month"); continue; }
+      const p = profileOut(row.profile, allocRows, advanceRows, paymentRows) as EmployeePayrollProfile;
+      if (!allocationAt(p, date)) { refuse(employee.id, name, shift, `no allocation is effective on ${date}`); continue; }
+      const placed = roster.get(employee.id) ?? singleShiftHome.get(employee.id);
+      let staff = placed ? world.branches[placed]?.staff.find((s) => s.id === employee.id) : undefined;
+      if (!staff) {
+        const home = allocationAt(p, monthEnd)?.homeBranchId;
+        if (!home) { refuse(employee.id, name, shift, `no allocation is effective on ${monthEnd}`); continue; }
+        const branch = world.branches[home];
+        if (!branch) { refuse(employee.id, name, shift, `home branch ${names.get(home) ?? home} has no payroll details or rules for ${month}`); continue; }
+        staff = staffOf(employee, p, name);
+        branch.staff.push(staff);
+        singleShiftHome.set(employee.id, home);
+      }
+      (staff.singleShifts ??= []).push({ invitationId: i.id, date });
+      singleShiftDates.set(employee.id, (singleShiftDates.get(employee.id) ?? new Set<string>()).add(date));
+    }
+    for (const [employeeId, { name, reasons }] of Array.from(notPaid)) {
+      const listed = excluded.find((x) => x.employeeId === employeeId);
+      if (listed) listed.reason = `${listed.reason} ${reasons.join(" ")}`;
+      else excluded.push({ employeeId, name, reason: reasons.join(" ") });
+    }
   }
 
   const people = profileRows.filter((r) => roster.has(r.employee.id)).map((r) => ({
@@ -368,8 +414,18 @@ export async function loadPayrollWorld(tenantId: string, month: string, options:
 
   // ── Attendance (two months: the service-charge earning month and this one) ──
   const timezones = new Map(branchRows.map((b) => [b.id, b.timezone]));
-  const feed = await loadAttendanceFeed(tenantId, people, { from: windowFrom, to: monthEnd, today: options.today ?? parkToday(), timezones, defaultTimezone: "Asia/Bangkok" });
+  const attendanceWindow = { from: windowFrom, to: monthEnd, today: options.today ?? parkToday(), timezones, defaultTimezone: "Asia/Bangkok" };
+  const feed = await loadAttendanceFeed(tenantId, people, attendanceWindow);
   queries += feed.queries;
+  // A single shift's person who is not on the roster: that shift's day only, at the branch they were placed in.
+  const shiftPeople = profileRows.filter((r) => singleShiftHome.has(r.employee.id)).map((r) => ({
+    id: r.employee.id, rosterBranchId: singleShiftHome.get(r.employee.id)!, weeklyOffDays: r.employee.weeklyOffDays ?? [],
+  }));
+  if (shiftPeople.length) {
+    const shiftFeed = await loadAttendanceFeed(tenantId, shiftPeople, attendanceWindow);
+    queries += shiftFeed.queries;
+    feed.days.push(...shiftFeed.days.filter((d) => singleShiftDates.get(d.staffId)?.has(d.date)));
+  }
   world.attendance = feed.days.map(({ workedAtBranchId: _shown, ...day }) => day);
 
   // ── Leave valuations, OT bookings, offboarding (payroll's own feeds) ──
@@ -440,7 +496,7 @@ export async function loadPayrollWorld(tenantId: string, month: string, options:
     // (company-calculations.ts:72, run-calculations.ts:772): one per roster
     // branch and month, as the prototype kept them (data.runDrafts).
     for (const o of overtimeRows.filter((x) => x.runVersionId === version.id)) {
-      const branchId = roster.get(o.employeeId);
+      const branchId = roster.get(o.employeeId) ?? singleShiftHome.get(o.employeeId);
       if (!branchId) continue;
       const legacy = (world.runDrafts[`${branchId}:${month}`] ??= { overtimeDecisions: [] } as unknown as RunDraft);
       (legacy.overtimeDecisions ??= []).push({ attendanceId: o.attendanceDayKey, exceptionIndex: o.exceptionIndex, outcome: o.outcome, reason: o.reason,
