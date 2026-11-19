@@ -29,6 +29,9 @@ export function slotPatchFromSavedChild(child: SavedChild): Partial<SupervisedSl
     // SCRUM-1018 — staff's answer on the last photo belongs to the child it
     // was given for, never to the one swapped in.
     lastPhotoChoice: undefined,
+    // SCRUM-1020 — and so does a change the family made to the care notes.
+    careSource: undefined,
+    careNoneConfirmed: undefined,
   };
 }
 

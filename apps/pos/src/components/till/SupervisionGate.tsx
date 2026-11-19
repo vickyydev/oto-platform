@@ -64,6 +64,14 @@ export interface SupervisedSlot {
    * child it was given for: a place that changes child drops it.
    */
   lastPhotoChoice?: { childId: string; fromCheckinId: string; choice: 'matches' | 'new' };
+  /**
+   * SCRUM-1020 — the saved child's allergy and medical notes in this place
+   * were last changed by the family on the paired customer display (the
+   * audit row of the write names it); a change on the till clears it.
+   */
+  careSource?: 'display';
+  /** SCRUM-1020 — the family said plainly, on the display, that this child has no allergies or medical needs. */
+  careNoneConfirmed?: boolean;
 }
 
 // Parse the raw age input to a non-negative integer, or null if not yet valid.

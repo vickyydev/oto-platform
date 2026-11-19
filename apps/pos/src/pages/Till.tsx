@@ -14,6 +14,8 @@ import { childReviewPatch, useChildReviewSave, useTicketDisplay } from '@/lib/di
 import { ChildReviewPromptSchema, childReviewAge, ConsentActionSchema, ConsentPromptSchema, consentSlotsComplete, consentActionAllowed,
   newId, type ChildReviewPrompt, type ConsentFormStep, type ConsentPrompt } from '@oto/shared';
 import { familyReviewChange, familyReviewChangeLine } from '@/lib/familyReviewChange';
+import { careShownFor, displayCareLine, profileCareNote } from '@/lib/displayCareNotes';
+import { addedGatePlace, emptyGatePlace, gateTicketLines, savedChildrenOffForm } from '@/lib/editDetails';
 import { useCustomerTheme } from '@/lib/themePref';
 import { computeLineTotal, computeLineBreakdown, priceForTier, unpricedCartLines } from '@/lib/pricing';
 import { branchTradingDate, resolveRateToday } from '@/lib/pricingMode';
@@ -663,6 +665,8 @@ export default function Till() {
   const reviewDisplaySlotsRef = useRef(new Set<string>());
   const [consentStaffOnly, setConsentStaffOnly] = useState(false);
   const [consentPrivateOpen, setConsentPrivateOpen] = useState(false);
+  /** SCRUM-1020 — reception's "Edit details" on the drop-off form: add a child, correct details, ticks kept. */
+  const [editDetailsOpen, setEditDetailsOpen] = useState(false);
   const [consentCompletedScope, setConsentCompletedScope] = useState<string | null>(null);
   /**
    * SCRUM-857 — THE FAMILY'S DONE MOVES THE SALE ON (the owner's ruling of 8
@@ -1004,6 +1008,7 @@ export default function Till() {
     reviewDisplaySlotsRef.current = new Set();
     setConsentStaffOnly(false);
     setConsentPrivateOpen(false);
+    setEditDetailsOpen(false);
     setConsentCompletedScope(null);
     setConsentFinishing(null);
     setConsentNotSaved(null);
@@ -2216,29 +2221,11 @@ export default function Till() {
     for (const l of only?.lines ?? lines) {
       if (l.dropOff) continue;
       if (only && l.id !== only.lineId) continue;
+      // One place per kid, the full drop-off safety flow for each (the place
+      // itself, and why, is `lib/editDetails` emptyGatePlace: SCRUM-1020's
+      // "Edit details" adds the same place to an open form).
       for (let i = 0; i < l.kids; i++) {
-        slots.push({
-          id: `slot-${Math.random().toString(36).substring(2, 9)}`,
-          sourceLineId: l.id,
-          ticketType: l.ticketType,
-          name: '',
-          age: only ? String(only.age) : '',
-          waived: false,
-          // Unaccompanied kids always run the full drop-off safety flow. For a
-          // no-fee ('none') child this auto-enrolls them at ฿0 (no opt-in
-          // button) so the "Tell us about your child" consent form appears
-          // automatically; nanny/drop_off ignore this, waived-down kids stay
-          // plain (resolveSupervisionOutcome keys opt-in off the BASE 'none').
-          optIn: true,
-          allergiesMedical: '',
-          foodRestrictions: '',
-          // Default: food not authorized until the parent explicitly chooses a
-          // prepaid mode. The ConsentCapture picker enforces this on the customer
-          // screen; mayOrderFood is derived from foodProvision.mode at registration.
-          mayOrderFood: false,
-          foodProvision: { mode: 'none', paidTHB: 0 },
-          childPhotoUrl: undefined,
-        });
+        slots.push(emptyGatePlace(l, { age: only ? String(only.age) : '' }));
       }
     }
     // SCRUM-1018 — the parent's name comes from the family's profile when the
@@ -2273,6 +2260,7 @@ export default function Till() {
     reviewDisplaySlotsRef.current = new Set();
     setConsentStaffOnly(false);
     setConsentPrivateOpen(false);
+    setEditDetailsOpen(false);
     setConsentCompletedScope(null);
     setConsentFinishing(null);
     setConsentNotSaved(null);
@@ -2342,7 +2330,12 @@ export default function Till() {
 
   const handleUpdateSlot = (id: string, patch: Partial<SupervisedSlot>) =>
     setSuperSlots((prev) => {
-      const next = prev.map((s) => (s.id === id ? { ...s, ...patch } : s));
+      // SCRUM-1020 — a care note changed anywhere but the family's display
+      // (staff, or the till's own customer half) is the till's change: the
+      // family's mark and their "no allergies" go with it.
+      const own = 'allergiesMedical' in patch && !('careSource' in patch)
+        ? { ...patch, careSource: undefined, careNoneConfirmed: undefined } : patch;
+      const next = prev.map((s) => (s.id === id ? { ...s, ...own } : s));
       // A waiver only holds while the child stays waiver-eligible. An age edit
       // (e.g. 6 → 3, which makes the child nanny-required) or losing the covering
       // sibling must auto-clear a now-stale waiver, or effectiveRequirement would
@@ -2366,6 +2359,27 @@ export default function Till() {
     setSuperSlots((prev) => withCoveringSiblingsPlain(
       prev.map((s) => (s.id === id ? { ...s, waived: !s.waived } : s)), getSupervisionPolicy()));
 
+  /**
+   * SCRUM-1020 — "EDIT DETAILS": A CHILD ADDED WHERE THE FORM STANDS (the
+   * owner's answer of 19 November). One more place on the open form and one
+   * more kid on the ticket line it came from, priced as the ticket grid
+   * prices it. Nothing else moves: the places, the family's agreement ticks,
+   * their consent and the photos stay (`lib/editDetails`); Back still
+   * returns to the cart as before. A saved child only of the family
+   * identified here, and only once on the form. Never while the form is
+   * being written.
+   */
+  const handleAddGateChild = (lineId: string, saved?: SavedChild) => {
+    if (gateRunningRef.current || orderFrozen()) return;
+    const line = gateTicketLines(lines, superSlots).find((l) => l.id === lineId);
+    if (!line) return;
+    if (saved && (!member?.savedChildren?.some((c) => c.id === saved.id)
+      || superSlots.some((s) => s.savedChildId === saved.id))) return;
+    handleUpdateLine(line.id, { kids: line.kids + 1 });
+    setSuperSlots((prev) => withCoveringSiblingsPlain([...prev, addedGatePlace(line, saved)], getSupervisionPolicy()));
+    // As the form's own saved children: staff compare the last visit's photo.
+    if (saved) readLastPhotos([saved.id], lastPhotos);
+  };
 
   const handleSupervisionBack = () => {
     if (reviewSave.save.status !== 'idle') return;
@@ -2719,6 +2733,10 @@ export default function Till() {
           addChild: (memberId, body, id) => membersApi.addChild(memberId, body, id,
             [...reviewDisplaySlotsRef.current].some((slotId) => gateChildIdsRef.current.get(slotId) === id)),
           updateChild: (childId, patch) => membersApi.updateChild(childId, patch),
+          // SCRUM-1020 — a saved child's care notes the family changed on the
+          // customer display go on their own, so the audit row names it.
+          updateChildCareFromDisplay: (childId, care, memberId) =>
+            membersApi.updateChildCareFromDisplay(childId, { ...care, memberId }),
           onSaved: (slotId, child, guardianId) => {
             if (!ownSale()) return;
             gateOnline.noteWrite();
@@ -3913,6 +3931,16 @@ export default function Till() {
     return age === null || age > 17 ? null : age;
   };
   const consentRequired = consentRows.some(row => row.outcome.needsConsent);
+  // SCRUM-1020 — what the family changed of a saved child's care notes on the
+  // display, for the cashier, as it happens (as SCRUM-1014 tells a removal).
+  const displayCareLines = superSlots.flatMap((slot) => {
+    const line = displayCareLine(slot, profileCareNote(slot, member?.savedChildren ?? []));
+    return line ? [{ id: slot.id, line }] : [];
+  });
+  // SCRUM-1020 — the ticket lines "Edit details" adds a child to, and this
+  // family's saved children not on the form yet.
+  const editTicketLines = gateTicketLines(lines, superSlots);
+  const editSavedOffForm = savedChildrenOffForm(member?.savedChildren ?? [], superSlots);
   const consentStaffReady = !gateSaving && consentRows.every(row => !row.outcome.needsConsent || !!row.slot.childPhotoUrl);
   /**
    * SCRUM-1018 — AFTER A WAIVER, NO FORM. When every child is aged and none
@@ -3952,6 +3980,10 @@ export default function Till() {
    * public screen: the profile holds them, and the screen says to tell the team
    * if anything has changed. The photo, the food choice and the waivers stay
    * with staff, and the agreement ticks are the family's alone.
+   *
+   * SCRUM-1020 — a saved child in care is the exception now: the family sees
+   * that child's allergy and medical notes and may update them on the display
+   * (`lib/displayCareNotes`).
    */
   const consentBase: Omit<ConsentPrompt, 'kind' | 'requestId' | 'completed'> = {
     visitorId: reviewVisitorId,
@@ -3963,7 +3995,13 @@ export default function Till() {
       // SCRUM-1018 — not for a photo staff compare or reuse on the till.
       ...consentSlotPhoto({ needsConsent: outcome.needsConsent && photoStateOf(slot) === 'today', hasPhoto: !!slot.childPhotoUrl,
         stationId: station?.stationId, throughCounterBox: hasBridgeOrigin() }),
-      ...(slot.savedChildId ? { saved: true } : {
+      // SCRUM-1020 — a saved child in care: the family sees the allergy and
+      // medical notes the till holds and may update them (`careShown`); the
+      // food notes stay the profile's. Any other saved child, as before.
+      ...(slot.savedChildId ? { saved: true, ...(careShownFor(slot, outcome.needsConsent) ? {
+        careShown: true, allergiesMedical: slot.allergiesMedical.slice(0, 500),
+        ...(slot.careNoneConfirmed && !slot.allergiesMedical.trim() ? { allergiesNone: true } : {}),
+      } : {}) } : {
         allergiesMedical: slot.allergiesMedical.slice(0, 500), foodRestrictions: slot.foodRestrictions.slice(0, 200),
       }) })),
     guardianName: superParentName, consentRequired, consentAcknowledged: superConsentAck,
@@ -4063,6 +4101,10 @@ export default function Till() {
       // their screen on to a new request, even one that changed nothing.
       takeConsentAction(action.data, {
         slots: superSlots, guardianPhone: superParentPhone, signature: current.signature,
+        // SCRUM-1020 — the saved children whose care notes the form showed the
+        // family, as published, and each one's note on the profile.
+        care: { shown: prompt.data.slots.flatMap((slot) => (slot.saved && slot.careShown ? [slot.id] : [])),
+          profileNote: (slot) => profileCareNote(slot, member?.savedChildren ?? []) },
         updateSlot: handleUpdateSlot, setGuardianName: setSuperParentName, setGuardianPhone: setSuperParentPhone,
         setContactChannel: setSuperParentContactMethod,
         contactChannel: superParentContactMethod,
@@ -4401,9 +4443,22 @@ export default function Till() {
                   : consentStaffOnly
                     ? 'The family asked for help: fill the form here with them. The agreement ticks stay theirs, on the display.'
                     : 'The family is filling in the form on the display; it appears here as they go. Help with the details here if they ask.'}</p>
-                <Button size="sm" variant="outline" disabled={gateSaving} onClick={() => setConsentPrivateOpen(true)}>Private child details</Button>
+                <div className="flex flex-wrap gap-2">
+                  {/* SCRUM-1020 — reception's "Edit details", beside the private details. */}
+                  <Button size="sm" variant="outline" disabled={gateSaving} data-testid="edit-details-open"
+                    onClick={() => setEditDetailsOpen(true)}>Edit details</Button>
+                  <Button size="sm" variant="outline" disabled={gateSaving} onClick={() => setConsentPrivateOpen(true)}>Private child details</Button>
+                </div>
                 {consentCameraLine && <p className="w-full text-sm text-muted-foreground" data-testid="consent-staff-camera">{consentCameraLine}</p>}
               </div>}
+              {/* SCRUM-1020 — the till's own customer half (no display paired): "Edit details" all the same. */}
+              {linkedDisplay.connected.length === 0 && <div className="mb-3 flex justify-end">
+                <Button size="sm" variant="outline" disabled={gateSaving} data-testid="edit-details-open"
+                  onClick={() => setEditDetailsOpen(true)}>Edit details</Button>
+              </div>}
+              {/* SCRUM-1020 — each change the family makes to a saved child's care notes on the display, as it happens. */}
+              {displayCareLines.map(({ id, line }) => <p key={id} className="mb-3 text-sm text-muted-foreground" role="status"
+                data-testid="consent-display-care">{line}</p>)}
               <ConsentTicksStatus consentRequired={consentRequired} consentAcknowledged={superConsentAck}
                 confirmations={consentConfirmations} />
               <div className="flex-1 min-h-0"><SupervisionGate
@@ -4730,6 +4785,41 @@ export default function Till() {
               onParentNameChange={setSuperParentName} onParentPhoneChange={changeGuardianPhone}
               // SCRUM-1018 — staff change the number and correct the profile's
               // name here; no confirmation tick is asked (the number is shown).
+              onParentContactMethodChange={changeGuardianChannel} onConsentAckChange={setSuperConsentAck}
+              onUpdateChild={handleUpdateSlot} acknowledgedConfirmationIds={superAcknowledgedConfirmationIds}
+              onToggleConfirmation={handleToggleConfirmation} />
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* SCRUM-1020 — reception's "Edit details" in the middle of a check-in
+          (the owner's answer of 19 November): add a child, or correct a
+          child's or the guardian's details, without clearing anything already
+          chosen. The family's ticks are shown, never changed, here. */}
+      <Dialog open={step === 7 && editDetailsOpen} onOpenChange={setEditDetailsOpen}>
+        <DialogContent className="max-w-4xl h-[90dvh] min-h-0 flex flex-col p-0 overflow-hidden" data-testid="edit-details">
+          <DialogHeader className="px-6 pt-6 shrink-0">
+            <DialogTitle>Edit details</DialogTitle>
+            <DialogDescription>Add a child, or correct a child's or the guardian's details. What the family has ticked stays ticked.</DialogDescription>
+          </DialogHeader>
+          {editTicketLines.length > 0 && <div className="shrink-0 space-y-2 px-6 pb-3" data-testid="edit-details-add">
+            {editTicketLines.map((line) => (
+              <div key={line.id} className="flex flex-wrap items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  {editTicketLines.length > 1 ? `Add a child on ${line.ticketType.name}:` : 'Add a child:'}</span>
+                {editSavedOffForm.map((child) => (
+                  <Button key={child.id} size="sm" variant="outline" disabled={gateSaving}
+                    onClick={() => handleAddGateChild(line.id, child)}>+ {child.childName}</Button>
+                ))}
+                <Button size="sm" variant="outline" disabled={gateSaving} data-testid="edit-details-add-new"
+                  onClick={() => handleAddGateChild(line.id)}>+ A new child</Button>
+              </div>
+            ))}
+          </div>}
+          <div className="flex-1 min-h-0 dark" inert={gateSaving}>
+            <ConsentCapture staffScreen ticksReadOnly slots={superSlots} parentName={superParentName} consentAck={superConsentAck} policy={supervisionPolicy}
+              parentPhone={superParentPhone} parentContactMethod={superParentContactMethod}
+              onParentNameChange={setSuperParentName} onParentPhoneChange={changeGuardianPhone}
               onParentContactMethodChange={changeGuardianChannel} onConsentAckChange={setSuperConsentAck}
               onUpdateChild={handleUpdateSlot} acknowledgedConfirmationIds={superAcknowledgedConfirmationIds}
               onToggleConfirmation={handleToggleConfirmation} />

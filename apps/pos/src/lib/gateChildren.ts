@@ -2,6 +2,7 @@ import type { ApiChild } from '@/api/platform';
 import { apiChildToSavedChild } from '@/api/mappers';
 import type { SupervisedSlot } from '@/components/till/SupervisionGate';
 import { ageFromDob } from '@/lib/childDob';
+import { displayCareWrite, type DisplayCare } from '@/lib/displayCareNotes';
 import type { Member, SavedChild } from '@/types';
 
 /**
@@ -233,6 +234,13 @@ export interface SaveGateChildrenInput {
   addChild: (memberId: string, body: Record<string, unknown>, id: string) => Promise<{ child: ApiChild }>;
   updateChild: (childId: string, patch: Record<string, unknown>) => Promise<{ child: ApiChild }>;
   /**
+   * SCRUM-1020 — a saved child's care notes the family changed on the
+   * customer display, written on their own before the rest of the patch so
+   * the audit row names the display (`displayCareWrite`), for the family
+   * the child is saved on. Absent, the whole patch goes through `updateChild`.
+   */
+  updateChildCareFromDisplay?: (childId: string, care: DisplayCare, memberId: string) => Promise<{ child: ApiChild }>;
+  /**
    * A child the API has answered with, one at a time: the till puts it on the
    * member in hand (named by `guardianId`, never whatever its state holds)
    * and links the slot to it, so a failure on the NEXT child leaves this one
@@ -272,7 +280,12 @@ export async function saveGateChildren(input: SaveGateChildrenInput): Promise<Sa
         input.matchedSlots.get(slot.id) === linkedId
           ? gateChildMergePatch(slot, age, saved)
           : gateChildPatch(slot, age, saved);
-      child = patch ? apiChildToSavedChild((await input.updateChild(linkedId, patch)).child) : saved;
+      const split = patch && input.updateChildCareFromDisplay ? displayCareWrite(slot, patch) : { care: null, rest: patch };
+      child = saved;
+      if (split.care) {
+        child = apiChildToSavedChild((await input.updateChildCareFromDisplay!(linkedId, split.care, guardian.id)).child);
+      }
+      if (split.rest) child = apiChildToSavedChild((await input.updateChild(linkedId, split.rest)).child);
     } else {
       // The photo is deliberately NOT saved (re-taken each visit). The same
       // id again answers with the record as it was first written — so what

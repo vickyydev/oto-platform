@@ -39,6 +39,20 @@ const promptObject = z.object({
      */
     saved: z.boolean().optional(),
     /**
+     * SCRUM-1020 — THE FAMILY SEES AND UPDATES A SAVED CHILD'S CARE NOTES (the
+     * owner's answer of 19 November: a saved child's allergy and medical notes
+     * are shown to the parent on the customer display, and the parent may
+     * update them there). Sent with `saved` and the notes the till holds
+     * (`allergiesMedical`) for a saved child in care. A note that had text is
+     * emptied only with the family's plain "no allergies" (`allergiesNone`).
+     * Optional: a till from before it keeps the notes off the screen, and a
+     * station from before it drops the field, so the display then says "Saved
+     * on your profile" as before and sends nothing new.
+     */
+    careShown: z.boolean().optional(),
+    /** SCRUM-1020 — the till holds the family's word that this child has no allergies or medical needs. */
+    allergiesNone: z.boolean().optional(),
+    /**
      * SCRUM-857 — the family takes the child's photo on their own screen (the
      * owner's ruling of 8 November). Sent by a till that takes a photo from
      * the display, only for a child the photo is asked for: `needed` until
@@ -191,6 +205,12 @@ const acknowledgedConfirmationIds = z.array(id).max(50).refine(value => new Set(
 const FilledSlotSchema = z.object({
   id, name: z.string().trim().max(100), dateOfBirth: isoDate.nullable(), ageYears: age.nullable(),
   allergiesMedical, foodRestrictions,
+  /**
+   * SCRUM-1020 — the family ticked that this saved child has no allergies or
+   * medical needs, emptying a note that had text. Sent only for a child whose
+   * prompt carries `careShown`, so a station from before it never sees one.
+   */
+  allergiesNone: z.literal(true).optional(),
 }).strict();
 export type FilledConsentSlot = z.infer<typeof FilledSlotSchema>;
 
@@ -259,6 +279,9 @@ export function consentActionAllowed(prompt: ConsentPrompt, action: ConsentActio
       return false;
     }
     if (action.action === 'fill' && !action.slots.every(slot => prompt.slots.some(item => item.id === slot.id))) return false;
+    // SCRUM-1020 — "no allergies" only for a saved child whose care notes the form shows.
+    if (action.action === 'fill' && !action.slots.every(slot => !slot.allergiesNone
+      || prompt.slots.some(item => item.id === slot.id && item.saved === true && item.careShown === true))) return false;
     return action.acknowledgedConfirmationIds.every(id => prompt.confirmations.some(item => item.id === id));
   }
   return true;

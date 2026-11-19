@@ -241,9 +241,12 @@ describe('what the till does with it', () => {
     expect(till).toMatch(/setSuperParentContactMethod\(customerContactChannel\);\s*setConsentFamilyStep\('children'\);/);
   });
 
-  it('both copies of the form still write the registration’s contact; the family’s copy shows the number, staff change it', () => {
-    expect(till.match(/onParentPhoneChange=\{changeGuardianPhone\}/g)).toHaveLength(2);
-    expect(till.match(/onParentContactMethodChange=\{changeGuardianChannel\}/g)).toHaveLength(2);
+  it('every copy of the form still writes the registration’s contact; the family’s copy shows the number, staff change it', () => {
+    // SCRUM-1020 — a third copy, reception's "Edit details", where staff
+    // correct the guardian's details mid check-in: the family's half, Private
+    // child details and Edit details all write the same number and channel.
+    expect(till.match(/onParentPhoneChange=\{changeGuardianPhone\}/g)).toHaveLength(3);
+    expect(till.match(/onParentContactMethodChange=\{changeGuardianChannel\}/g)).toHaveLength(3);
     expect(till).toContain('parentPhoneFixed={!!superParentPhone.trim()}');
   });
 

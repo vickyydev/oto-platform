@@ -85,9 +85,10 @@ describe('a change withdraws the confirmation until the family ticks again', () 
 
   it('every till screen that changes the number or channel goes through the rule', () => {
     const till = src('pages/Till.tsx');
-    // The customer half and staff's Private child details, both.
-    expect(till.match(/onParentPhoneChange=\{changeGuardianPhone\}/g)).toHaveLength(2);
-    expect(till.match(/onParentContactMethodChange=\{changeGuardianChannel\}/g)).toHaveLength(2);
+    // The customer half and staff's Private child details, and (SCRUM-1020)
+    // staff's "Edit details": all three.
+    expect(till.match(/onParentPhoneChange=\{changeGuardianPhone\}/g)).toHaveLength(3);
+    expect(till.match(/onParentContactMethodChange=\{changeGuardianChannel\}/g)).toHaveLength(3);
     expect(till).not.toContain('onParentPhoneChange={setSuperParentPhone}');
     expect(till).not.toContain('onParentContactMethodChange={setSuperParentContactMethod}');
     const phone = src('components/mobile/MobileTill.tsx');
