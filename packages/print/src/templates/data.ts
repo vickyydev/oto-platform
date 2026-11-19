@@ -67,6 +67,13 @@ export interface ReceiptData {
    * every receipt a box composed offline.
    */
   creditVouchers?: CreditVoucherData[];
+  /**
+   * SCRUM-1021 — the credit left on each band a food or shop sale was paid
+   * from, printed under the tenders: the words (English and Thai), the figure
+   * the band held right after the sale, and whose band it is. Absent prints
+   * nothing, as every receipt did before it.
+   */
+  creditLeft?: { label: string; amount: string; detail?: string }[];
 }
 
 export interface PrepTicketData {

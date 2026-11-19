@@ -1,6 +1,6 @@
 {
   "widthDots": 576,
-  "heightDots": 1436,
+  "heightDots": 1494,
   "overflow": [],
   "items": [
     {
@@ -399,16 +399,43 @@
       "text": "฿9.50"
     },
     {
+      "k": "text",
+      "x": 8,
+      "baselineY": 802,
+      "w": 160,
+      "sizeDots": 32,
+      "weight": "bold",
+      "text": "Credit left"
+    },
+    {
+      "k": "text",
+      "x": 513,
+      "baselineY": 802,
+      "w": 55,
+      "sizeDots": 32,
+      "weight": "bold",
+      "text": "฿60"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 827,
+      "w": 371,
+      "sizeDots": 24,
+      "weight": "bold",
+      "text": "  เครดิตคงเหลือ · Band HKT1-4822"
+    },
+    {
       "k": "dashes",
       "x": 8,
-      "y": 773,
+      "y": 831,
       "w": 560,
       "t": 2
     },
     {
       "k": "text",
       "x": 8,
-      "baselineY": 797,
+      "baselineY": 855,
       "w": 165,
       "sizeDots": 24,
       "weight": "bold",
@@ -417,7 +444,7 @@
     {
       "k": "text",
       "x": 8,
-      "baselineY": 819,
+      "baselineY": 877,
       "w": 140,
       "sizeDots": 24,
       "weight": "bold",
@@ -426,7 +453,7 @@
     {
       "k": "text",
       "x": 8,
-      "baselineY": 841,
+      "baselineY": 899,
       "w": 140,
       "sizeDots": 24,
       "weight": "bold",
@@ -435,14 +462,14 @@
     {
       "k": "dashes",
       "x": 8,
-      "y": 845,
+      "y": 903,
       "w": 560,
       "t": 2
     },
     {
       "k": "text",
       "x": 8,
-      "baselineY": 869,
+      "baselineY": 927,
       "w": 165,
       "sizeDots": 24,
       "weight": "bold",
@@ -451,7 +478,7 @@
     {
       "k": "text",
       "x": 8,
-      "baselineY": 892,
+      "baselineY": 950,
       "w": 146,
       "sizeDots": 24,
       "weight": "bold",
@@ -460,7 +487,7 @@
     {
       "k": "text",
       "x": 8,
-      "baselineY": 916,
+      "baselineY": 974,
       "w": 289,
       "sizeDots": 24,
       "weight": "bold",
@@ -469,14 +496,14 @@
     {
       "k": "dashes",
       "x": 8,
-      "y": 933,
+      "y": 991,
       "w": 560,
       "t": 2
     },
     {
       "k": "text",
       "x": 173,
-      "baselineY": 956,
+      "baselineY": 1014,
       "w": 229,
       "sizeDots": 24,
       "weight": "bold",
@@ -485,14 +512,14 @@
     {
       "k": "dashes",
       "x": 8,
-      "y": 960,
+      "y": 1018,
       "w": 560,
       "t": 2
     },
     {
       "k": "text",
       "x": 181,
-      "baselineY": 990,
+      "baselineY": 1048,
       "w": 214,
       "sizeDots": 32,
       "weight": "bold",
@@ -501,7 +528,7 @@
     {
       "k": "text",
       "x": 237,
-      "baselineY": 1028,
+      "baselineY": 1086,
       "w": 101,
       "sizeDots": 44,
       "weight": "bold",
@@ -510,7 +537,7 @@
     {
       "k": "text",
       "x": 29,
-      "baselineY": 1053,
+      "baselineY": 1111,
       "w": 519,
       "sizeDots": 24,
       "weight": "bold",
@@ -519,7 +546,7 @@
     {
       "k": "text",
       "x": 248,
-      "baselineY": 1080,
+      "baselineY": 1138,
       "w": 79,
       "sizeDots": 24,
       "weight": "bold",
@@ -528,7 +555,7 @@
     {
       "k": "text",
       "x": 149,
-      "baselineY": 1116,
+      "baselineY": 1174,
       "w": 278,
       "sizeDots": 32,
       "weight": "bold",
@@ -537,7 +564,7 @@
     {
       "k": "text",
       "x": 160,
-      "baselineY": 1152,
+      "baselineY": 1210,
       "w": 256,
       "sizeDots": 32,
       "weight": "bold",
@@ -546,14 +573,14 @@
     {
       "k": "dashes",
       "x": 8,
-      "y": 1156,
+      "y": 1214,
       "w": 560,
       "t": 2
     },
     {
       "k": "qr",
       "x": 213,
-      "y": 1161,
+      "y": 1219,
       "moduleDots": 6,
       "modules": 25,
       "version": 2,
@@ -562,7 +589,7 @@
     {
       "k": "text",
       "x": 104,
-      "baselineY": 1332,
+      "baselineY": 1390,
       "w": 367,
       "sizeDots": 24,
       "weight": "bold",
@@ -571,7 +598,7 @@
     {
       "k": "text",
       "x": 37,
-      "baselineY": 1359,
+      "baselineY": 1417,
       "w": 501,
       "sizeDots": 24,
       "weight": "bold",
@@ -580,7 +607,7 @@
     {
       "k": "text",
       "x": 182,
-      "baselineY": 1386,
+      "baselineY": 1444,
       "w": 211,
       "sizeDots": 24,
       "weight": "bold",
@@ -589,14 +616,14 @@
     {
       "k": "dashes",
       "x": 8,
-      "y": 1395,
+      "y": 1453,
       "w": 560,
       "t": 2
     },
     {
       "k": "text",
       "x": 16,
-      "baselineY": 1419,
+      "baselineY": 1477,
       "w": 545,
       "sizeDots": 24,
       "weight": "bold",

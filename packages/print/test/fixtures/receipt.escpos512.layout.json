@@ -1,6 +1,6 @@
 {
   "widthDots": 512,
-  "heightDots": 1487,
+  "heightDots": 1545,
   "overflow": [],
   "items": [
     {
@@ -408,16 +408,43 @@
       "text": "฿9.50"
     },
     {
+      "k": "text",
+      "x": 8,
+      "baselineY": 831,
+      "w": 160,
+      "sizeDots": 32,
+      "weight": "bold",
+      "text": "Credit left"
+    },
+    {
+      "k": "text",
+      "x": 449,
+      "baselineY": 831,
+      "w": 55,
+      "sizeDots": 32,
+      "weight": "bold",
+      "text": "฿60"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 856,
+      "w": 371,
+      "sizeDots": 24,
+      "weight": "bold",
+      "text": "  เครดิตคงเหลือ · Band HKT1-4822"
+    },
+    {
       "k": "dashes",
       "x": 8,
-      "y": 802,
+      "y": 860,
       "w": 496,
       "t": 2
     },
     {
       "k": "text",
       "x": 8,
-      "baselineY": 826,
+      "baselineY": 884,
       "w": 165,
       "sizeDots": 24,
       "weight": "bold",
@@ -426,7 +453,7 @@
     {
       "k": "text",
       "x": 8,
-      "baselineY": 848,
+      "baselineY": 906,
       "w": 140,
       "sizeDots": 24,
       "weight": "bold",
@@ -435,7 +462,7 @@
     {
       "k": "text",
       "x": 8,
-      "baselineY": 870,
+      "baselineY": 928,
       "w": 140,
       "sizeDots": 24,
       "weight": "bold",
@@ -444,14 +471,14 @@
     {
       "k": "dashes",
       "x": 8,
-      "y": 874,
+      "y": 932,
       "w": 496,
       "t": 2
     },
     {
       "k": "text",
       "x": 8,
-      "baselineY": 898,
+      "baselineY": 956,
       "w": 165,
       "sizeDots": 24,
       "weight": "bold",
@@ -460,7 +487,7 @@
     {
       "k": "text",
       "x": 8,
-      "baselineY": 921,
+      "baselineY": 979,
       "w": 146,
       "sizeDots": 24,
       "weight": "bold",
@@ -469,7 +496,7 @@
     {
       "k": "text",
       "x": 8,
-      "baselineY": 945,
+      "baselineY": 1003,
       "w": 289,
       "sizeDots": 24,
       "weight": "bold",
@@ -478,14 +505,14 @@
     {
       "k": "dashes",
       "x": 8,
-      "y": 962,
+      "y": 1020,
       "w": 496,
       "t": 2
     },
     {
       "k": "text",
       "x": 141,
-      "baselineY": 985,
+      "baselineY": 1043,
       "w": 229,
       "sizeDots": 24,
       "weight": "bold",
@@ -494,14 +521,14 @@
     {
       "k": "dashes",
       "x": 8,
-      "y": 989,
+      "y": 1047,
       "w": 496,
       "t": 2
     },
     {
       "k": "text",
       "x": 149,
-      "baselineY": 1019,
+      "baselineY": 1077,
       "w": 214,
       "sizeDots": 32,
       "weight": "bold",
@@ -510,7 +537,7 @@
     {
       "k": "text",
       "x": 205,
-      "baselineY": 1057,
+      "baselineY": 1115,
       "w": 101,
       "sizeDots": 44,
       "weight": "bold",
@@ -519,7 +546,7 @@
     {
       "k": "text",
       "x": 12,
-      "baselineY": 1082,
+      "baselineY": 1140,
       "w": 487,
       "sizeDots": 24,
       "weight": "bold",
@@ -528,7 +555,7 @@
     {
       "k": "text",
       "x": 201,
-      "baselineY": 1109,
+      "baselineY": 1167,
       "w": 111,
       "sizeDots": 24,
       "weight": "bold",
@@ -537,7 +564,7 @@
     {
       "k": "text",
       "x": 117,
-      "baselineY": 1145,
+      "baselineY": 1203,
       "w": 278,
       "sizeDots": 32,
       "weight": "bold",
@@ -546,7 +573,7 @@
     {
       "k": "text",
       "x": 128,
-      "baselineY": 1181,
+      "baselineY": 1239,
       "w": 256,
       "sizeDots": 32,
       "weight": "bold",
@@ -555,14 +582,14 @@
     {
       "k": "dashes",
       "x": 8,
-      "y": 1185,
+      "y": 1243,
       "w": 496,
       "t": 2
     },
     {
       "k": "qr",
       "x": 181,
-      "y": 1190,
+      "y": 1248,
       "moduleDots": 6,
       "modules": 25,
       "version": 2,
@@ -571,7 +598,7 @@
     {
       "k": "text",
       "x": 72,
-      "baselineY": 1361,
+      "baselineY": 1419,
       "w": 367,
       "sizeDots": 24,
       "weight": "bold",
@@ -580,7 +607,7 @@
     {
       "k": "text",
       "x": 47,
-      "baselineY": 1388,
+      "baselineY": 1446,
       "w": 419,
       "sizeDots": 24,
       "weight": "bold",
@@ -589,7 +616,7 @@
     {
       "k": "text",
       "x": 109,
-      "baselineY": 1415,
+      "baselineY": 1473,
       "w": 293,
       "sizeDots": 24,
       "weight": "bold",
@@ -598,14 +625,14 @@
     {
       "k": "dashes",
       "x": 8,
-      "y": 1424,
+      "y": 1482,
       "w": 496,
       "t": 2
     },
     {
       "k": "text",
       "x": 76,
-      "baselineY": 1448,
+      "baselineY": 1506,
       "w": 360,
       "sizeDots": 24,
       "weight": "bold",
@@ -614,7 +641,7 @@
     {
       "k": "text",
       "x": 167,
-      "baselineY": 1475,
+      "baselineY": 1533,
       "w": 178,
       "sizeDots": 24,
       "weight": "bold",

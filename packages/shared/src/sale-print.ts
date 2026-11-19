@@ -173,6 +173,23 @@ export interface SalePrintSnapshot {
    * offline snapshot grants no wallets, and its receipt prints none.
    */
   credits?: SalePrintCredit[];
+  /**
+   * SCRUM-1021 — every wallet a food or shop sale was paid from, in whole or
+   * in part, with what it held right after this sale (the owner's answer of
+   * 19 November: the credit left is printed on every food and shop receipt
+   * paid from a band). Optional: a snapshot from before it, and a box's
+   * offline one, print as they did.
+   */
+  walletsLeft?: SalePrintWalletLeft[];
+}
+
+/** SCRUM-1021 — one wallet a sale spent from, and what it held after the sale. */
+export interface SalePrintWalletLeft {
+  /** The wallet's balance right after this sale's spend, not what it holds now. */
+  balanceAfterSatang: number;
+  /** The band it is on, as its short code; null for a wallet on no band. */
+  bandShortCode: string | null;
+  holderName: string | null;
 }
 
 /** One wallet the sale granted, as its credit section prints it. */
@@ -237,6 +254,8 @@ export interface SaleReceiptDocument {
   orderNote?: string;
   /** One section per wallet the sale granted: `CreditVoucherData` in `@oto/print`. */
   creditVouchers?: SaleReceiptCreditVoucher[];
+  /** SCRUM-1021 — the credit left on each band the sale was paid from, under the tenders. */
+  creditLeft?: SaleReceiptCreditLeftRow[];
   /** Each row of `summarizeTax(sale.tax_breakdown)`: service, VAT included, VAT added. */
   taxRows?: { label: string; amount: string; kind: string }[];
   /** True on a copy History (or the box's reprint) asked for. */
@@ -249,6 +268,33 @@ export interface SaleReceiptCreditVoucher {
   qrCode?: string;
   holderName?: string;
   bandCode?: string;
+}
+
+/** SCRUM-1021 — a band's credit left on paper: the words in English and Thai, "฿500", and whose band. */
+export interface SaleReceiptCreditLeftRow {
+  label: string;
+  amount: string;
+  detail?: string;
+}
+
+/** SCRUM-1021 — the receipt's words for the credit left on a band: English on the row, Thai under it. */
+export const RECEIPT_CREDIT_LEFT_LABEL = 'Credit left';
+export const RECEIPT_CREDIT_LEFT_LABEL_TH = 'เครดิตคงเหลือ';
+
+/**
+ * SCRUM-1021 — one band's credit left as the receipt prints it: the figure
+ * the wallet held right after the sale on the row, and under it the Thai
+ * words and the band it is on (its short code, never the signed one), else
+ * the holder's name. Two lines rather than one long label, which the receipt
+ * head would break inside the Thai word.
+ */
+export function receiptCreditLeftRow(left: SalePrintWalletLeft): SaleReceiptCreditLeftRow {
+  const whose = left.bandShortCode ? `Band ${left.bandShortCode}` : left.holderName?.trim() || null;
+  return {
+    label: RECEIPT_CREDIT_LEFT_LABEL,
+    amount: formatTHB(Math.max(0, left.balanceAfterSatang)),
+    detail: whose ? `${RECEIPT_CREDIT_LEFT_LABEL_TH} · ${whose}` : RECEIPT_CREDIT_LEFT_LABEL_TH,
+  };
 }
 
 /** A discount on paper: its words, "−฿100", and the small line under it when there is one. */
@@ -490,6 +536,7 @@ export function saleReceiptDocument(snapshot: SalePrintSnapshot, copy = false): 
       .filter((c): c is string => c !== null),
     creditGrants: vouchers.map((v) => `${v.quantity}× ${v.label} to collect`),
     ...(snapshot.credits?.length ? { creditVouchers: snapshot.credits.map(receiptCreditVoucher) } : {}),
+    ...(snapshot.walletsLeft?.length ? { creditLeft: snapshot.walletsLeft.map(receiptCreditLeftRow) } : {}),
     orderNote: hasFnb && snapshot.note ? snapshot.note : undefined,
     taxRows: rows.map((r) => ({ label: r.label, amount: formatTHB(r.amount), kind: r.kind })),
     copy,

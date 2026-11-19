@@ -34,6 +34,7 @@ import {
   partyLineCreditSatang,
   supervisedLineCreditSatang,
   type SalePrintCredit,
+  type SalePrintWalletLeft,
   type WalletEntryKind,
   type WalletEntrySource,
   type WalletEntryView,
@@ -1097,6 +1098,49 @@ export async function saleCreditsOf(db: Exec, saleId: string): Promise<SalePrint
     holderName: g.holderName,
     bandShortCode: g.bandShortCode,
   }));
+}
+
+/**
+ * SCRUM-1021 — THE CREDIT LEFT ON EACH BAND A FOOD OR SHOP SALE WAS PAID FROM,
+ * as its receipt prints it (the owner's answer of 19 November: every food and
+ * shop receipt paid from a band, in whole or in part, prints the credit left).
+ * One row per wallet the sale spent from at a counter, in the order they were
+ * spent: the balance right after this sale's spend (its last `spend` entry's
+ * `balance_after`), so a reprint says what the guest was told then, not what
+ * the band holds now; the band by its short code, never its signed one.
+ */
+export async function saleWalletsLeftOf(db: Exec, saleId: string): Promise<SalePrintWalletLeft[]> {
+  const spends = await db
+    .select({ walletId: walletEntry.walletId, balanceAfter: walletEntry.balanceAfter, holderName: wallet.holderName })
+    .from(walletEntry)
+    .innerJoin(wallet, eq(wallet.id, walletEntry.walletId))
+    .where(
+      and(
+        eq(walletEntry.saleId, saleId),
+        eq(walletEntry.kind, 'spend'),
+        inArray(walletEntry.source, ['fnb_order', 'merch_order']),
+      ),
+    )
+    .orderBy(asc(walletEntry.createdAt), asc(walletEntry.id));
+  if (spends.length === 0) return [];
+  const last = new Map<string, (typeof spends)[number]>();
+  for (const row of spends) {
+    last.delete(row.walletId);
+    last.set(row.walletId, row);
+  }
+  const bands = await db
+    .select({ walletId: walletKey.walletId, value: walletKey.value })
+    .from(walletKey)
+    .where(and(inArray(walletKey.walletId, [...last.keys()]), eq(walletKey.kind, 'band')))
+    .orderBy(asc(walletKey.createdAt));
+  return [...last.values()].map((row) => {
+    const onBand = bands.filter((b) => b.walletId === row.walletId).at(-1);
+    return {
+      balanceAfterSatang: row.balanceAfter,
+      bandShortCode: onBand ? bandShortCode(onBand.value) : null,
+      holderName: row.holderName,
+    };
+  });
 }
 
 /**
