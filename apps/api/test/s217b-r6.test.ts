@@ -715,7 +715,9 @@ describe('D. read off the code', () => {
       /storage\.updateEmployeeOffboarding\(offboarding\.id, updates, tx\)/,
       /storage\.updateEmployee\(employeeId, \{[\s\S]*?\}, tx\);/,
       /storage\.updateAssetsExpectedReturnBy\(employeeId, newLastDay, tx\)/,
-      /storage\.deleteAssignmentsByEmployeeAndDateRange\(\s*employeeId, startDateStr, farFuture, tx\s*\)/,
+      // SCRUM-1038: the delete also asks to keep a former employee's single
+      // shifts (as the 03:00 batch does); it still runs on the same tx.
+      /storage\.deleteAssignmentsByEmployeeAndDateRange\(\s*employeeId, startDateStr, farFuture, tx, undefined, \{ keepSingleShifts: true \}\s*\)/,
     ]) {
       expect(inside, String(write)).toMatch(write);
     }
