@@ -93,6 +93,13 @@ export interface ReleaseContext {
   pickups: PickupView[];
   reconciliation: PrepaidReconciliation | null;
   prepaidPolicy: 'refund' | 'forfeit';
+  /**
+   * SCRUM-1021 — what the child's band can still spend, in satang: the pickup
+   * screen's "You still have X baht remaining". The platform's answer; a box's
+   * offline copy does not carry it, and the screen then falls back to the
+   * unused prepaid figure.
+   */
+  bandCreditSatang?: number | null;
   release: ReleaseView | null;
   /**
    * The BOX's answer only (gate r4, finding 2): `false` while

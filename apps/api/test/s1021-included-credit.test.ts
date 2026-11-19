@@ -154,6 +154,9 @@ describe('SCRUM-1021 — the ticket credit of a dropped-off child', () => {
     // The sale's person grants do not take it in: it has no voucher of its own on the receipt.
     const detail = (await ctx.app.inject({ method: 'GET', url: `/sales/${family.saleId}`, headers: { cookie: reception } })).json();
     expect(detail.grants).toEqual([]);
+    // The pickup screen's "You still have X baht remaining" reads the band.
+    const context = (await ctx.app.inject({ method: 'GET', url: `/checkin/pickups/stays/${family.checkinId}`, headers: { cookie: reception } })).json();
+    expect(context).toMatchObject({ reconciliation: null, bandCreditSatang: 130_000 });
     await assertLedgerTruth();
   });
 
@@ -175,6 +178,9 @@ describe('SCRUM-1021 — the ticket credit of a dropped-off child', () => {
     const family = await droppedOff(twoHoursId, null);
     await checkInNow(family.saleId, family.checkinId);
     expect(await includedEntries(family.checkinId)).toHaveLength(0);
+    // No wallet on the band: the pickup screen has no figure to show.
+    const context = (await ctx.app.inject({ method: 'GET', url: `/checkin/pickups/stays/${family.checkinId}`, headers: { cookie: reception } })).json();
+    expect(context.bandCreditSatang).toBeNull();
   });
 
   it('with prepaid food beside it: one wallet on the band, and pickup hands back exactly what it did before', async () => {
@@ -192,6 +198,8 @@ describe('SCRUM-1021 — the ticket credit of a dropped-off child', () => {
     );
     const context = (await ctx.app.inject({ method: 'GET', url: `/checkin/pickups/stays/${family.checkinId}`, headers: { cookie: reception } })).json();
     expect(context.reconciliation).toMatchObject({ mode: 'prepaid_credit', paidSatang: 20_000, totalUnusedSatang: 15_000 });
+    // What the band can still spend: the prepaid food left and the ticket's credit.
+    expect(context.bandCreditSatang).toBe(145_000);
 
     const photoId = newId();
     const file = await ctx.app.inject({

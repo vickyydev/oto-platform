@@ -1,5 +1,5 @@
 import { and, asc, eq, ne } from 'drizzle-orm';
-import { checkin, fileObject, guardian, refund, registration, release, sale, station } from '@oto/db';
+import { band, checkin, fileObject, guardian, refund, registration, release, sale, station } from '@oto/db';
 import {
   DROPPER_OFF_PICKUP_ID,
   RELEASE_REFUSALS,
@@ -22,7 +22,7 @@ import { supervisionConfigOf } from './checkin';
 import { accountNames } from './refund-slices';
 import { refundSale, type RefundSaleResult } from './refunds';
 import type { Exec, Tx } from './tx';
-import { debitWallet, prepaidBalanceOf } from './wallet';
+import { debitWallet, lapsedCreditOf, prepaidBalanceOf, walletByKey } from './wallet';
 
 /**
  * S2-13 round 3 — PICKUPS AND RELEASE, online (plan docs/progress/plans/
@@ -443,6 +443,25 @@ export async function reconciliationOf(db: Exec, stay: CheckinRow): Promise<Prep
   return prepaidReconciliationOf(fp, await remainingCreditOf(db, stay));
 }
 
+/**
+ * SCRUM-1021 — WHAT THE CHILD'S BAND CAN STILL SPEND, for the pickup screen's
+ * "You still have X baht remaining" (the owner's answer of 19 November: for
+ * staff to tell the parent; not printed, not sent). The wallet on the stay's
+ * band as it stands — its prepaid food, a ticket's included credit, an
+ * earlier visit's leftover — less what has lapsed by the clock. Read only:
+ * the money is settled by the park's refund-or-forfeit setting as before.
+ * Null when the stay has no band or the band carries no wallet.
+ */
+export async function bandCreditOf(db: Exec, stay: CheckinRow, now: Date = new Date()): Promise<number | null> {
+  if (!stay.bandId) return null;
+  const [b] = await db.select({ code: band.code }).from(band).where(eq(band.id, stay.bandId)).limit(1);
+  if (!b) return null;
+  const held = await walletByKey(db, stay.operatorId, 'band', b.code);
+  if (!held) return null;
+  if (held.status !== 'active') return 0;
+  return Math.max(0, held.balanceSatang - (await lapsedCreditOf(db, held, now)));
+}
+
 export interface ReleaseContext {
   checkinId: string;
   registrationId: string;
@@ -456,6 +475,8 @@ export interface ReleaseContext {
   pickups: PickupView[];
   reconciliation: PrepaidReconciliation | null;
   prepaidPolicy: 'refund' | 'forfeit';
+  /** SCRUM-1021 — what the child's band can still spend (`bandCreditOf`); null with no band wallet. */
+  bandCreditSatang: number | null;
   /** Set once the child has been released. */
   release: ReleaseView | null;
 }
@@ -479,6 +500,7 @@ export async function releaseContextOf(db: Exec, stay: CheckinRow): Promise<Rele
     pickups: await pickupsOf(db, reg, signUp),
     reconciliation: await reconciliationOf(db, stay),
     prepaidPolicy: config.pricing.prepaidFoodUnused,
+    bandCreditSatang: await bandCreditOf(db, stay),
     release: existing ? await releaseViewOf(db, existing) : null,
   };
 }

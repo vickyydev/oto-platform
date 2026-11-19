@@ -1,9 +1,40 @@
-import { Check, UtensilsCrossed, Undo2, Ban } from 'lucide-react';
+import { Check, UtensilsCrossed, Undo2, Ban, Wallet } from 'lucide-react';
 import { type PrepaidFoodReconciliation } from '@/lib/dropoff';
 
 interface FoodReconciliationSummaryProps {
   reconciliation: PrepaidFoodReconciliation;
   policy: 'refund' | 'forfeit';
+  /**
+   * SCRUM-1021 — what the child's band can still spend, from the platform
+   * (`bandCreditSatang` on the release context, in baht here). Absent where
+   * nobody answered it (the box's offline copy): the unused prepaid figure
+   * stands in for it.
+   */
+  bandCreditTHB?: number | null;
+}
+
+/** SCRUM-1021 — the owner's words for the credit left on the band, for staff to tell the parent. */
+export const BAND_CREDIT_REMAINING_NOTE = "Usable for a take-away until the end of the park's day.";
+
+/**
+ * SCRUM-1021 — "You still have X baht remaining" (the owner's answer of 19
+ * November), for staff to tell the parent at pickup. Wording and one figure:
+ * nothing is printed or sent, and what happens to the money is the park's
+ * refund-or-forfeit setting, unchanged. Shown on its own for a child whose
+ * band holds credit but who prepaid no food (an Eat & Play ticket's credit).
+ */
+export function BandCreditRemaining({ remainingTHB }: { remainingTHB: number }) {
+  return (
+    <div className="rounded-xl border bg-muted/30 px-4 py-3 space-y-2">
+      <div className="rounded-lg px-3 py-2.5 flex items-center justify-between bg-sky-500/10 border border-sky-500/20">
+        <span className="flex items-center gap-2 text-sm font-semibold text-sky-800 dark:text-sky-200">
+          <Wallet className="w-4 h-4 text-sky-700 dark:text-sky-300 shrink-0" />
+          You still have ฿{remainingTHB} remaining
+        </span>
+      </div>
+      <p className="text-xs text-muted-foreground">{BAND_CREDIT_REMAINING_NOTE}</p>
+    </div>
+  );
 }
 
 /**
@@ -17,9 +48,14 @@ interface FoodReconciliationSummaryProps {
 export function FoodReconciliationSummary({
   reconciliation,
   policy,
+  bandCreditTHB,
 }: FoodReconciliationSummaryProps) {
   const isRefund = policy === 'refund';
   const hasUnused = reconciliation.totalUnusedTHB > 0;
+  // SCRUM-1021 — where the park does not refund, the credit stays on the
+  // band: staff say what is left, in place of "Forfeited".
+  const remainingTHB = bandCreditTHB ?? reconciliation.totalUnusedTHB;
+  const showRemaining = !isRefund && remainingTHB > 0;
 
   return (
     <div className="rounded-xl border bg-muted/30 overflow-hidden">
@@ -68,7 +104,14 @@ export function FoodReconciliationSummary({
         </div>
 
         {/* Unused amount + outcome */}
-        {hasUnused ? (
+        {showRemaining ? (
+          <div className="rounded-lg px-3 py-2.5 flex items-center justify-between bg-amber-500/10 border border-amber-500/20">
+            <span className="flex items-center gap-2 text-sm font-semibold text-amber-800 dark:text-amber-200">
+              <Wallet className="w-4 h-4 text-amber-700 dark:text-amber-300 shrink-0" />
+              You still have ฿{remainingTHB} remaining
+            </span>
+          </div>
+        ) : hasUnused ? (
           <div
             className={`rounded-lg px-3 py-2.5 flex items-center justify-between ${
               isRefund
@@ -100,12 +143,16 @@ export function FoodReconciliationSummary({
         )}
 
         {/* Policy note */}
-        {hasUnused && (
-          <p className="text-xs text-muted-foreground">
-            {isRefund
-              ? 'A refund will be recorded in Order History and returned to the original payment method.'
-              : 'The unused amount is forfeited per venue policy and recorded for the end-of-day report.'}
-          </p>
+        {showRemaining ? (
+          <p className="text-xs text-muted-foreground">{BAND_CREDIT_REMAINING_NOTE}</p>
+        ) : (
+          hasUnused && (
+            <p className="text-xs text-muted-foreground">
+              {isRefund
+                ? 'A refund will be recorded in Order History and returned to the original payment method.'
+                : 'The unused amount is forfeited per venue policy and recorded for the end-of-day report.'}
+            </p>
+          )
         )}
       </div>
     </div>
