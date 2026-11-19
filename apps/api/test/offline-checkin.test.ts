@@ -17,6 +17,8 @@ import {
   station,
   syncQuarantine,
   ticketPackage,
+  walletEntry,
+  walletKey,
 } from '@oto/db';
 import {
   createBoxAgent,
@@ -30,6 +32,7 @@ import { RECEPTION, boxBySlot, createTestContext, signInAs, teardownAll, type Te
 import { boxStoreFor } from '../src/lib/box-store';
 import { currentBandKey } from '../src/services/bands';
 import { attachInProcessBox, detachInProcessBox, issueClaimCode } from '../src/services/box';
+import { includedCreditActionId } from '../src/services/wallet';
 import type { FileStorage } from '../src/services/files';
 import { injectedTransport, type CuttableLink } from './box-link';
 
@@ -567,5 +570,75 @@ describe('a release that conflicts with one recorded online meanwhile', () => {
     // Its photo never links to a release that was not applied.
     await agent.uploadPhotos();
     expect(await ctx.db.select().from(fileObject).where(eq(fileObject.id, photoId))).toEqual([]);
+  });
+});
+
+/**
+ * SCRUM-1021 fix round — THE TICKET'S OWN FOOD CREDIT, CHECKED IN ON THE BOX.
+ * The drop-off form tells the family an Eat & Play child's food credit is
+ * included. Online it loads at "Check in now"; a check-in the counter box
+ * made with the link down loads it when its fact lands on the platform, once.
+ */
+describe('an Eat & Play drop-off child checked in on the box', () => {
+  it('gets the ticket’s credit on their band when the check-in lands, once', async () => {
+    const [eatPlay] = await ctx.db
+      .select()
+      .from(ticketPackage)
+      .where(and(eq(ticketPackage.branchId, branchId), eq(ticketPackage.name, 'Eat & Play Kids Pass')));
+    const registrationId = newId();
+    const checkinId = newId();
+    const saleId = newId();
+    const photoId = newId();
+    const cart = (expectedTotalSatang?: number) => ({
+      lines: [{ id: checkinId, packageId: eatPlay!.id, kids: 1, adults: 0, serviceFee: { label: 'Drop-off service', amountSatang: 22_500 } }],
+      ...(expectedTotalSatang !== undefined ? { expectedTotalSatang } : {}),
+    });
+
+    await agent.syncCache();
+    await agent.setOffline(true, { reason: 'offline included credit' });
+    link.cut = true;
+    expect((await onBox('photo.capture', { photoId, registrationId, purpose: 'consent', dataUrl: jpeg(11) })).statusCode).toBe(200);
+    const created = await onBox('checkin.create', {
+      registrationId,
+      guardianName: 'ZZ TEST Parent',
+      guardianPhone: '0812345678',
+      contactChannel: 'whatsapp',
+      consentAcknowledged: true,
+      acknowledgedConfirmationIds: ALL_CONFIRMATIONS,
+      children: [{ checkinId, name: 'ZZ TEST Pim', ageYears: 6, service: 'drop_off', allergies: null }],
+      photoId,
+    });
+    expect(created.statusCode, JSON.stringify(created.body)).toBe(200);
+    const quote = await onBox('cart.quote', cart());
+    expect(quote.statusCode, JSON.stringify(quote.body)).toBe(200);
+    const gross = quote.body.result.quote.totals.grossSatang as number;
+    const paid = await onBox('sale.finalise', {
+      saleId,
+      actionId: `pay-${saleId.slice(-8)}`,
+      staffName: 'Nok',
+      cart: cart(gross),
+      tender: { actionId: `cash-${saleId.slice(-8)}`, method: 'cash', kind: 'cash', amountSatang: gross, tenderedSatang: gross },
+    });
+    expect(paid.statusCode, JSON.stringify(paid.body)).toBe(200);
+    const now = await onBox('checkin.update', { event: 'check_in_now', saleId, entries: [{ checkinId }], staffName: 'Nok' });
+    expect(now.statusCode, JSON.stringify(now.body)).toBe(200);
+    const bandId = now.body.result.bands[0].id as string;
+
+    link.cut = false;
+    await agent.setOffline(false);
+    await flushAll();
+    // Only the release conflict the describe above left open on this box.
+    expect((await openQuarantine()).map((q) => q.errorCode).filter((code) => code !== 'SYNC_RELEASE_CONFLICT')).toEqual([]);
+
+    const included = await ctx.db.select().from(walletEntry).where(eq(walletEntry.actionId, includedCreditActionId(checkinId)));
+    expect(included).toHaveLength(1);
+    expect(included[0]).toMatchObject({ kind: 'grant', source: 'ticket_sale', amountSatang: 130_000, saleId });
+    const [childBand] = await ctx.db.select().from(band).where(eq(band.id, bandId));
+    const keys = await ctx.db.select().from(walletKey).where(eq(walletKey.walletId, included[0]!.walletId));
+    expect(keys.find((k) => k.kind === 'band')!.value).toBe(childBand!.code);
+
+    // Flushed again: nothing more is loaded.
+    await flushAll();
+    expect(await ctx.db.select().from(walletEntry).where(eq(walletEntry.actionId, includedCreditActionId(checkinId)))).toHaveLength(1);
   });
 });

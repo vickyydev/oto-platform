@@ -56,6 +56,7 @@ import { autoSendRegistrationContact, boardOf, supervisionConfigOf } from './che
 import { buildNoticeSender } from './sms';
 import type { FileStorage } from './files';
 import { raiseAlert } from './ops';
+import { loadChildIncludedCredit } from './wallet';
 import type { Exec, OpContext, Tx } from './tx';
 import type { BatchScope, EventHandler, PreparedEvent } from './sync';
 
@@ -636,6 +637,23 @@ async function applyCheckinUpdated(
         ...extra,
       },
     });
+    // SCRUM-1021 — the ticket's own food credit (Eat & Play), which the form
+    // told the family is included, loads on the child's band when the box's
+    // check-in lands, as at an online "Check in now" (`checkInNow`). Keyed
+    // `checkin:<id>:included`, so it is never loaded twice; dated from the
+    // press, as the online load is. The box's offline copy of the wallet does
+    // not hold it until then; prepaid food is unchanged here (still loaded
+    // only online, as before).
+    await loadChildIncludedCredit(
+      tx,
+      { accountId: actorOf(event), operatorId: scope.auth.operatorId, requestId: null },
+      {
+        stay: { ...stay, status: 'in_park', saleId: saleRow.id, bandId: issued?.bandId ?? stay.bandId },
+        saleRow,
+        bandCode: payload.band ? normaliseBandCode(payload.band.code) : null,
+        now: at,
+      },
+    );
     return done;
   }
 
