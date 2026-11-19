@@ -8654,8 +8654,10 @@ OTO Company Limited`,
           const farFuture = planned ? dayBefore(planned.startDate) : '2099-12-31';
           const startDateStr = dayAfterLastDay.toISOString().split('T')[0];
 
+          // SCRUM-1038: a single shift the person was invited to after they
+          // left stays, as the 03:00 batch keeps it.
           const removedAssignments = startDateStr > farFuture ? [] : await storage.deleteAssignmentsByEmployeeAndDateRange(
-            employeeId, startDateStr, farFuture, tx
+            employeeId, startDateStr, farFuture, tx, undefined, { keepSingleShifts: true }
           );
 
           if (removedAssignments.length > 0) {
@@ -10985,7 +10987,8 @@ OTO Company Limited`,
         return refuseKiosk(res);
       }
       // SCRUM-769: an ended employment clocks neither in nor out; nothing is written.
-      if (await kioskEmploymentEnded(employee, undefined, branchId)) {
+      // SCRUM-1038: a single shift opens this door for its own day only, not the day sent.
+      if (await kioskEmploymentEnded(employee, undefined, branchId, shiftDate)) {
         return refuseEndedEmployment(res, { employeeId: employee.id, branchId, kioskDeviceId, method: "FACE" });
       }
 
@@ -11123,7 +11126,8 @@ OTO Company Limited`,
         return refuseKiosk(res);
       }
       // SCRUM-769: an ended employment clocks neither in nor out; nothing is written.
-      if (await kioskEmploymentEnded(employee, undefined, branchId)) {
+      // SCRUM-1038: a single shift opens this door for its own day only, not the day sent.
+      if (await kioskEmploymentEnded(employee, undefined, branchId, shiftDate)) {
         return refuseEndedEmployment(res, { employeeId: employee.id, branchId, kioskDeviceId, method: "FACE" });
       }
 

@@ -38,12 +38,16 @@ export const KIOSK_EMPLOYMENT_ENDED_REFUSAL = {
  * employments read. With the kiosk's branch (`atBranchId`), a single shift the
  * former employee was invited to today at that branch (SCRUM-1038,
  * `./singleShift.ts`) lets them clock in and out for that day: the kiosk then
- * treats them as anybody rostered, and from the next day refuses them again.
+ * treats them as anybody employed that day, and from the next day refuses
+ * them again. A door that files a time entry for a day the caller names (the
+ * face road's missed-clock doors) passes it as `forShiftDate`: a single shift
+ * opens it for that shift's own day only, never for another.
  */
 export async function kioskEmploymentEnded(
   profile: Pick<Employee, "id" | "status" | "employmentState" | "lastWorkingDay">,
   now: Date = new Date(),
   atBranchId?: string,
+  forShiftDate?: string,
 ): Promise<boolean> {
   const today = bangkokToday(now);
   if (!employmentEndedOn(profile, today)) return false;
@@ -55,6 +59,7 @@ export async function kioskEmploymentEnded(
     lte(employeeEngagements.startDate, today),
   )).limit(1);
   if (!employmentEndedOn(profile, today, !!due)) return false;
+  if (forShiftDate !== undefined && forShiftDate !== today) return true;
   return !(atBranchId && await singleShiftOpenOn(profile.id, atBranchId, today));
 }
 

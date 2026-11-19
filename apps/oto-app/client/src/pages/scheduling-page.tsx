@@ -2512,7 +2512,11 @@ function SchedulingPageInner() {
     }
     if ((employee.employmentState === 'LEAVING' || employee.employmentState === 'LEFT') && employee.lastWorkingDay) {
       const dateStr = format(day, 'yyyy-MM-dd');
-      if (dateStr > employee.lastWorkingDay) return false;
+      // SCRUM-1038: a day the former employee was invited to a single shift
+      // shows that shift in this view as in the shift view.
+      if (dateStr > employee.lastWorkingDay) {
+        return getEmployeeAssignmentsForDate(employee.id, day).some(({ assignment }) => singleShiftAssignmentIds.has(assignment.id));
+      }
     }
 
     const transferInfo = employee.schedulingTransferInfo;
