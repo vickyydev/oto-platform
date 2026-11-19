@@ -21,7 +21,7 @@ import {
 } from '@/lib/pricing';
 import { makeDropOffLine, normalizeDropOffFees, resolveDropOffPricing } from '@/lib/dropoff';
 import { resolveGroupRequirements, resolveSupervisionOutcome, sortedConfirmations } from '@/lib/supervision';
-import { consentFormPhone, contactChangeWithdraws, contactConfirmationStands, messagingPhoneProblem, type ContactConfirmation } from '@/lib/consentForm';
+import { messagingPhoneProblem } from '@/lib/consentForm';
 import { consentMissing } from '@/lib/consentFinish';
 import { buildSale } from '@/lib/sale';
 import { branchTradingDate } from '@/lib/pricingMode';
@@ -450,13 +450,6 @@ export default function MobileTill() {
   const [superConsentAck, setSuperConsentAck] = useState(false);
   const [superAcknowledgedConfirmationIds, setSuperAcknowledgedConfirmationIds] = useState<string[]>([]);
   const [supervisionResolved, setSupervisionResolved] = useState(false);
-  /**
-   * SCRUM-915 — the family's confirmation that the number is the one for the
-   * channel, given on the form on this phone (the counter's tick, SCRUM-857):
-   * it stands for the number and channel it was given for, and any change of
-   * either withdraws it until they tick again (SCRUM-914).
-   */
-  const [mobileContactConfirmation, setMobileContactConfirmation] = useState<ContactConfirmation | null>(null);
   /** SCRUM-915 — the family's Done on this phone could not be saved: their form says the team will check it. */
   const [familyDoneNotSaved, setFamilyDoneNotSaved] = useState(false);
 
@@ -1301,7 +1294,6 @@ export default function MobileTill() {
     refreshNannyRoster();
     setSuperConsentAck(false);
     setSuperAcknowledgedConfirmationIds([]);
-    setMobileContactConfirmation(null);
     setFamilyDoneNotSaved(false);
     setMStep('supervision');
   };
@@ -1339,7 +1331,9 @@ export default function MobileTill() {
    * named and aged, the name and consent, the confirmations, the number
    * confirmed for its channel, a photo of each child in care.
    */
-  const mobileContactConfirmed = contactConfirmationStands(mobileContactConfirmation, customerPhone, customerContactChannel);
+  // SCRUM-1018 — the number is shown, not confirmed (the owner's answer of 19
+  // November replaced the tick of SCRUM-857 / SCRUM-915): it must still be
+  // one that can take the child's messages.
   const mobileContactProblem = messagingPhoneProblem(customerPhone);
   const mobileFamilyMissing = () => {
     const known = superSlots.filter((s) => slotAge(s) !== null);
@@ -1354,20 +1348,14 @@ export default function MobileTill() {
       consentAcknowledged: superConsentAck,
       confirmations: sortedConfirmations(supervisionPolicy).map((c) => ({ required: c.required,
         acknowledged: superAcknowledgedConfirmationIds.includes(c.id) })),
-      contact: { confirmed: mobileContactConfirmed, problem: mobileContactProblem },
+      contact: { confirmed: true, problem: mobileContactProblem },
       photosTaken: rows.every((r) => !r.needsConsent || !!r.slot.childPhotoUrl),
     });
   };
-  // SCRUM-914 — a change of the number or the channel on the form withdraws the family's tick.
-  const formContact = { phone: customerPhone, channel: customerContactChannel };
-  const changeFormPhone = (next: string) => {
-    if (contactChangeWithdraws(formContact, { ...formContact, phone: next })) setMobileContactConfirmation(null);
-    setCustomerPhone(next);
-  };
-  const changeFormChannel = (next: ContactChannel) => {
-    if (contactChangeWithdraws(formContact, { ...formContact, channel: next })) setMobileContactConfirmation(null);
-    handleCustomerContactChannelChange(next);
-  };
+  // SCRUM-1018 — the number and the channel on the form write the sale's
+  // contact, as before; no tick is withdrawn (none is asked).
+  const changeFormPhone = (next: string) => setCustomerPhone(next);
+  const changeFormChannel = (next: ContactChannel) => handleCustomerContactChannelChange(next);
 
   /**
    * Mobile-specific supervision continue: opens the family's form on the
@@ -1479,11 +1467,8 @@ export default function MobileTill() {
           guardianName: superParentName.trim(),
           guardianPhone: customerPhone.trim() || null,
           contactChannel: customerContactChannel,
-          // SCRUM-915 — the family's tick on the form on this phone, when it
-          // stands for the number and channel sent above.
-          contactConfirmation: mobileContactConfirmation && contactConfirmationStands(mobileContactConfirmation, customerPhone, customerContactChannel)
-            ? { confirmedAt: mobileContactConfirmation.at, by: mobileContactConfirmation.by }
-            : null,
+          // SCRUM-1018 — no confirmation of the number is taken any more.
+          contactConfirmation: null,
           consentAcknowledged: superConsentAck,
           acknowledgedConfirmationIds: superAcknowledgedConfirmationIds,
           children: supervised.map(({ slot, service }, i) => ({
@@ -2566,7 +2551,6 @@ export default function MobileTill() {
               busy={gateSaving}
               // SCRUM-915 — Continue opens the family's form on this phone.
               continueOpensForm
-              contactConfirmed={mobileContactConfirmed}
               contactPhoneProblem={mobileContactProblem}
             />
           </div>
@@ -2715,12 +2699,8 @@ export default function MobileTill() {
             onUpdateChild={handleUpdateSlot}
             acknowledgedConfirmationIds={superAcknowledgedConfirmationIds}
             onToggleConfirmation={handleToggleConfirmation}
-            // SCRUM-915 — the counter's customer half, on the phone: the number
-            // confirmation, the "Still needed" line and the family's Done.
-            contactConfirmed={mobileContactConfirmed}
-            onContactConfirmedChange={(confirmed) => setMobileContactConfirmation(confirmed
-              ? { at: new Date().toISOString(), by: 'family', phone: consentFormPhone(customerPhone), channel: customerContactChannel }
-              : null)}
+            // SCRUM-915 — the counter's customer half, on the phone: the "Still
+            // needed" line and the family's Done. SCRUM-1018 — no number tick.
             onDone={handleFamilyDone}
             doneReady={mobileFamilyMissing().length === 0 && !gateSaving}
             doneBusy={gateSaving}

@@ -105,12 +105,14 @@ describe('the phone till’s wiring', () => {
     expect(phone).toContain('continueOpensForm\n');
   });
 
-  it('the form on the phone is the counter’s customer half: the tick, the Still needed line and Done', () => {
+  it('the form on the phone is the counter’s customer half: the Still needed line and Done (SCRUM-1018: no number tick)', () => {
     const form = phone.slice(phone.indexOf("case 'consent':"), phone.indexOf("case 'qr':"));
     expect(form).toContain('<ConsentCapture');
-    expect(form).toContain('contactConfirmed={mobileContactConfirmed}');
-    expect(form).toContain('onContactConfirmedChange={(confirmed) => setMobileContactConfirmation(confirmed');
-    expect(form).toContain("by: 'family', phone: consentFormPhone(customerPhone), channel: customerContactChannel");
+    // SCRUM-1018 — the owner's answer of 19 November replaced the tick: the
+    // number is shown, not confirmed, so the phone's form asks none.
+    expect(form).not.toContain('contactConfirmed=');
+    expect(form).not.toContain('onContactConfirmedChange');
+    expect(phone).not.toMatch(/mobileContactConfirmation|contactConfirmationStands/);
     expect(form).toContain('onDone={handleFamilyDone}');
     expect(form).toContain('doneReady={mobileFamilyMissing().length === 0 && !gateSaving}');
     expect(form).toContain('doneBusy={gateSaving}');
@@ -129,11 +131,11 @@ describe('the phone till’s wiring', () => {
     expect(resolve).toContain('return true;\n  };');
   });
 
-  it('the registration carries the tick given on the phone, for the number and channel it was given for', () => {
-    expect(phone).toContain('contactConfirmation: mobileContactConfirmation && contactConfirmationStands(mobileContactConfirmation, customerPhone, customerContactChannel)');
-    // Every gate starts unconfirmed.
+  it('the registration carries no confirmation of the number (SCRUM-1018), and the number must still take messages', () => {
+    expect(phone).toContain('contactConfirmation: null,');
+    expect(phone).toContain('contact: { confirmed: true, problem: mobileContactProblem },');
+    expect(phone).toMatch(/continueOpensForm\n\s*contactPhoneProblem=\{mobileContactProblem\}/);
     const open = phone.slice(phone.indexOf('const openSupervisionGate = () => {'), phone.indexOf('const handleUpdateSlot'));
-    expect(open).toContain('setMobileContactConfirmation(null);');
     expect(open).toContain('setFamilyDoneNotSaved(false);');
   });
 
