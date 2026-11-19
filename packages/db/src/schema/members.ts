@@ -3,13 +3,16 @@ import {
   boolean,
   check,
   date,
+  foreignKey,
   index,
   integer,
   primaryKey,
   text,
   timestamp,
+  unique,
   uniqueIndex,
   uuid,
+  type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import { archivedAt, crm, idPk, timestamps } from './helpers';
 import { account, branch, operator } from './tenancy';
@@ -180,6 +183,109 @@ export const memberTierVerification = crm.table(
 );
 
 /**
+ * How a family or a guardian row came to be (SCRUM-1024, plan
+ * `docs/progress/plans/dropoff-beo-20261119/FAMILY_PROFILES_PLAN.md` §2.2):
+ * `backfill` for records saved before families existed (and the demo seed,
+ * which stands for them), `till` for a child added at a counter, `sync` for a
+ * child a counter box recorded, `booking` for one the family added on the
+ * booking site, `link` for a parent or guardian reception adds later.
+ */
+export const FAMILY_SOURCES = ['backfill', 'till', 'sync', 'booking', 'link'] as const;
+export type FamilySource = (typeof FAMILY_SOURCES)[number];
+
+/**
+ * A family: the children several parents or guardians share (SCRUM-1024).
+ *
+ * Not to be confused with `crm.guardian` (schema `checkin.ts`), which is an
+ * authorised collector on ONE drop-off registration. A family is the lasting
+ * record: its parents and guardians are `crm.family_guardian` rows, and each
+ * child names its family in `crm.child.family_id`. A member may be a guardian
+ * in several families (a blended household); a child is in one.
+ *
+ * `(operator_id, id)` is the tenant fence, the inbox pattern: the guardian
+ * rows reach their family by a composite foreign key onto it, so a guardian
+ * row can never name another operator's family.
+ *
+ * Expand only (plan §3): the till, the box and the booking site still read a
+ * child through `child.member_id`; nothing reads a family until the readers
+ * are switched behind the `crm.family_profiles` switch.
+ */
+export const family = crm.table(
+  'family',
+  {
+    id: idPk(),
+    operatorId: uuid('operator_id')
+      .notNull()
+      .references(() => operator.id, { onDelete: 'restrict' }),
+    source: text('source').$type<FamilySource>().notNull(),
+    /** The signed-in staff member whose action made it; null for the box, the booking site and the backfill. */
+    createdByAccountId: uuid('created_by_account_id').references(() => account.id, { onDelete: 'restrict' }),
+    ...timestamps,
+    ...archivedAt,
+  },
+  (t) => [
+    unique('family_tenant_key').on(t.operatorId, t.id),
+    index('family_created_by_idx').on(t.createdByAccountId),
+    check('family_source_check', sql`${t.source} in ('backfill','till','sync','booking','link')`),
+  ],
+);
+
+/**
+ * A parent or guardian of a family (SCRUM-1024): one row per member per
+ * family, with who added them, where and when (`created_at`).
+ *
+ * One LIVE row per family and member (`family_guardian_live_unique`); an
+ * archived row is the record of a guardian who was taken off, which the plan
+ * leaves for a later step. The member reference is a plain foreign key: the
+ * member's operator is checked by the service that writes the row
+ * (`apps/api/src/services/family.ts`), because `crm.member` carries no
+ * `(operator_id, id)` key to fence onto and building one would lock the
+ * member register while it is built.
+ */
+export const familyGuardian = crm.table(
+  'family_guardian',
+  {
+    id: idPk(),
+    operatorId: uuid('operator_id')
+      .notNull()
+      .references(() => operator.id, { onDelete: 'restrict' }),
+    familyId: uuid('family_id').notNull(),
+    memberId: uuid('member_id')
+      .notNull()
+      .references(() => member.id, { onDelete: 'restrict' }),
+    source: text('source').$type<FamilySource>().notNull(),
+    addedByAccountId: uuid('added_by_account_id').references(() => account.id, { onDelete: 'restrict' }),
+    branchId: uuid('branch_id').references(() => branch.id, { onDelete: 'restrict' }),
+    stationId: uuid('station_id').references(() => station.id, { onDelete: 'restrict' }),
+    ...timestamps,
+    ...archivedAt,
+  },
+  (t) => [
+    foreignKey({
+      columns: [t.operatorId, t.familyId],
+      foreignColumns: [family.operatorId, family.id],
+      name: 'family_guardian_family_fk',
+    }).onDelete('restrict'),
+    uniqueIndex('family_guardian_live_unique')
+      .on(t.familyId, t.memberId)
+      .where(sql`archived_at is null`),
+    /** "Which families is this member a live guardian of" — every lookup by a parent's number. */
+    index('family_guardian_member_live_idx')
+      .on(t.memberId)
+      .where(sql`archived_at is null`),
+    // Every foreign key leads an index of its own, archived rows included, so
+    // a RESTRICT check never scans the table.
+    index('family_guardian_operator_idx').on(t.operatorId),
+    index('family_guardian_family_idx').on(t.familyId),
+    index('family_guardian_member_idx').on(t.memberId),
+    index('family_guardian_added_by_idx').on(t.addedByAccountId),
+    index('family_guardian_branch_idx').on(t.branchId),
+    index('family_guardian_station_idx').on(t.stationId),
+    check('family_guardian_source_check', sql`${t.source} in ('backfill','till','sync','booking','link')`),
+  ],
+);
+
+/**
  * Child linked to a guardian member (prototype `SavedChild`; photo is NEVER
  * stored — re-taken each visit). `consent_recorded_at` is the minimum privacy
  * marker adopted pending the client's answer to Q3 (BACKEND_REQUIREMENTS.md).
@@ -187,6 +293,12 @@ export const memberTierVerification = crm.table(
  * The member reference is RESTRICT, not CASCADE (S2-01b): a child record
  * carries allergies and medical notes, and deleting a guardian must never
  * silently take those with it. Members are archived, not deleted.
+ *
+ * SCRUM-1024: `member_id` keeps its meaning, "first saved under", and every
+ * reader still uses it. `family_id` is the family the child belongs to, set on
+ * every child written from now on and by the backfill on the ones before;
+ * null until then, which nothing may trip on. `merged_into_child_id` is set
+ * only on a duplicate reception says is the same child (a later step).
  */
 export const child = crm.table(
   'child',
@@ -210,8 +322,18 @@ export const child = crm.table(
     consentRecordedAt: timestamp('consent_recorded_at', { withTimezone: true, mode: 'date' }),
     ...timestamps,
     ...archivedAt,
+    /** SCRUM-1024 — the child's family; null only on a child saved before it was set (the backfill's work). */
+    familyId: uuid('family_id').references(() => family.id, { onDelete: 'restrict' }),
+    /** SCRUM-1024 — on a duplicate only: the child reception said it is the same as. */
+    mergedIntoChildId: uuid('merged_into_child_id').references((): AnyPgColumn => child.id, {
+      onDelete: 'restrict',
+    }),
   },
-  (t) => [index('child_member_idx').on(t.memberId)],
+  (t) => [
+    index('child_member_idx').on(t.memberId),
+    index('child_family_idx').on(t.familyId),
+    index('child_merged_into_idx').on(t.mergedIntoChildId),
+  ],
 );
 
 export const VISIT_STATUSES = ['draft', 'active', 'closed'] as const;

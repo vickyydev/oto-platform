@@ -116,7 +116,7 @@ One database holds the whole suite. The boundary between its parts is a Postgres
 | Schema | What lives there |
 |---|---|
 | `core` | Tenancy and fleet — `operator`, `branch`, `department`, `employee`, `account`, `role`, `role_permission`, `role_assignment`, `session`, `verification_code`, `station` — and the platform's own records: `audit_log`, `idempotency_key`, `file_object`, `auth_throttle`. |
-| `crm` | The customer: `tier`, `member`, `member_tier_verification`, `child`, `visit`, `visit_child`. |
+| `crm` | The customer: `tier`, `member`, `member_tier_verification`, `child`, `visit`, `visit_child`, and (SCRUM-1024, migration `0136`) `family` and `family_guardian`: the family a child belongs to and the members who are its parents or guardians, fenced by a composite `(operator_id, family_id)` foreign key. Not `guardian`, which is a collector on one drop-off registration. |
 | `pos` | What the till sells and the money it takes: the catalogue (`ticket_package`, `branch_holiday`, `branch_tax_config`, `product_category`, `product`, `tax_override`), `booking` and `attendee`, `sale` and `sale_line`, `payment_attempt`, `wallet` and `wallet_entry`, `band`, `stock_item`, `stock_location`, `stock_level`. |
 | `promo` | Vouchers, redemptions, campaigns. Empty until the tickets that fill it. |
 | `booth` | The Lucky Wheel. Empty. |
@@ -158,6 +158,10 @@ erDiagram
     "core.account" ||--o{ "core.session" : ""
     "core.account" ||--o{ "core.verification_code" : ""
     "crm.member" ||--o{ "crm.child" : "guardian of"
+    "core.operator" ||--o{ "crm.family" : ""
+    "crm.family" ||--o{ "crm.family_guardian" : "parents and guardians"
+    "crm.member" ||--o{ "crm.family_guardian" : "guardian in"
+    "crm.family" |o--o{ "crm.child" : "children"
     "crm.member" ||--o{ "crm.member_tier_verification" : "evidence"
     "crm.member" |o--o{ "crm.visit" : ""
     "core.branch" ||--o{ "crm.visit" : ""
