@@ -79,7 +79,7 @@ async function check(name: string, fn: () => Promise<void> | void) {
     failures[name] = error instanceof Error ? `${error.message}\n${error.stack?.split("\n").slice(1, 4).join("\n")}` : String(error);
   }
 }
-const CHECKS = 15;
+const CHECKS = 16;
 
 const run = randomUUID().slice(0, 8);
 const tenant = randomUUID();
@@ -471,6 +471,20 @@ try {
     const res = await post("/api/ai/parse-beo", { text: two, existingData: { event: { title: "ZZ TEST" } }, eventId: ev.pasted });
     assert.equal(res.status, 200, JSON.stringify(res.body));
     assert.equal((res.body.review.proposal as BeoAiProposal).entertainment.length, 1, "the show the family said yes to stays");
+  });
+
+  // SCRUM-1030 (the review asked): the editor's pasted AI Fill reads a park's pasted text as a
+  // one-line conversation, with the conversation's own keys, so it proposes Kitchen Notes too.
+  await check("aPastedMessagesKitchenNotesReachTheReview", async () => {
+    const pasted = "Mum: Please, no chilli in any of the food, and cut everything small. (ZZ TEST pasted notes)";
+    conversationAnswers.set("(ZZ TEST pasted notes)", {
+      catalogue: { kitchenNotes: { value: "no chilli in any of the food, and cut everything small", said: "no chilli in any of the food", line: 1, source: "family" } },
+    });
+    const res = await post("/api/ai/parse-beo", { text: pasted, existingData: { event: { title: "ZZ TEST" } }, eventId: ev.notes });
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    const notes = (res.body.review.proposal as BeoAiProposal).details.kitchenNotes;
+    assert.equal(notes?.value, "no chilli in any of the food, and cut everything small");
+    assert.ok(modelCalls.some((c) => c.system.includes("THE CONVERSATION") && c.user.includes("(ZZ TEST pasted notes)")), "read with the conversation's keys");
   });
 
   await check("onTheRouteTheReviewTeamAndActivityRowHoldNoQuestion", async () => {
