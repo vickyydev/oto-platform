@@ -35,12 +35,13 @@ describe('SCRUM-802/783 adversarial review', () => {
   });
 
   it('LOW FINDING fixed: every reported label, including the paired agreements, formats the stored number', () => {
-    // SCRUM-863 — the till's own drop-off and nanny form (ConsentCapture.tsx)
-    // has no read-only number any more: it asks for the number again, and the
-    // field shows the stored form beside what is typed (storedPhoneHint).
-    for (const file of ['pages/Till.tsx', 'components/till/CustomerDisplay.tsx', 'components/till/PublicConsentCapture.tsx'])
+    // SCRUM-1018 (the owner's answer of 19 November, replacing SCRUM-863's
+    // field) — the till's own drop-off and nanny form (ConsentCapture.tsx)
+    // shows the number again, read-only, with no tick: that line is a
+    // reported label too, so it must show the stored number formatted.
+    for (const file of ['pages/Till.tsx', 'components/till/CustomerDisplay.tsx', 'components/till/PublicConsentCapture.tsx', 'components/till/ConsentCapture.tsx'])
       expect(pos(file)).toContain('formatStoredPhone(');
-    expect(pos('components/till/ConsentCapture.tsx')).not.toContain('consent-kept-phone');
+    expect(pos('components/till/ConsentCapture.tsx')).toMatch(/data-testid="consent-kept-phone">\s*<div[^>]*>\{formatStoredPhone\(parentPhone\)\}<\/div>/);
     expect(pos('components/shared/PhoneInput.tsx')).toContain('{storedPhoneHint(value)}');
     expect(pos('lib/phoneUtils.ts')).toContain('return formatSharedPhone(storedPhoneHint(value));');
     // Display only: composition keeps the edited digits; normalization stays on the existing write path.
