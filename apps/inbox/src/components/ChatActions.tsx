@@ -7,6 +7,7 @@ import type { ReactNode } from 'react';
 import { Calendar, CheckCircle2, ChevronRight, Loader2, X } from 'lucide-react';
 import type { ConversationDetail, ConversationRow } from '@/api/inbox';
 import { sourceLabel } from '@/lib/inboxes';
+import { FOCUS_WITHIN } from '@/components/ui';
 import type { DepositPaidCard } from '@/lib/list-state';
 import { CATEGORY_LABEL, CHANNEL_LABEL, bubbleTime, contactName, handleLabel, langLabel, type Chip } from '@/lib/view';
 
@@ -36,13 +37,21 @@ export function ActionRow({
   title?: string;
 }) {
   return (
-    <div title={title} className="relative flex min-h-[52px] items-center gap-3 border-t border-line-soft py-1 pl-3.5 pr-2 first:border-t-0">
+    <div title={title} className={`relative flex min-h-[52px] items-center gap-3 border-t border-line-soft py-1 pl-3.5 pr-2 first:border-t-0 ${ROW_FOCUS}`}>
       <span className="w-20 shrink-0 text-[13.5px] text-ink-muted">{label}</span>
       <span className="flex min-w-0 flex-1 items-center gap-2 text-[14.5px] font-semibold text-ink">{children}</span>
       {action}
     </div>
   );
 }
+
+/**
+ * A row whose choice is a native select laid over it (`SelectOver` with
+ * `cover`): the select is invisible, so the row wears the focus ring while
+ * the select holds keyboard focus (SCRUM-1016, inventory §7 item 22).
+ */
+const ROW_FOCUS =
+  'has-[select:focus-visible]:rounded-xl has-[select:focus-visible]:outline-2 has-[select:focus-visible]:-outline-offset-2 has-[select:focus-visible]:outline-coral';
 
 /** A person's round face on their chip's tint (ChatActions.dc.html, 32 px). */
 export function PersonFace({ chip }: { chip: Chip }) {
@@ -79,7 +88,8 @@ export const ACTION_WORD =
  * the badge, :950-958): the visible part is `children`, the select covers it,
  * so the phone's own list opens and the accessible name is the select's.
  * `cover` lays the select over the whole row it sits in (an `ActionRow`), so
- * the row is the target, as ChatActions.dc.html draws it.
+ * the row is the target, as ChatActions.dc.html draws it. The select is
+ * invisible, so the part a person sees wears the focus ring for it.
  */
 export function SelectOver({
   label,
@@ -101,7 +111,7 @@ export function SelectOver({
   cover?: boolean;
 }) {
   return (
-    <span className={`${cover ? '' : 'relative '}${className}`}>
+    <span className={`${cover ? '' : `relative ${FOCUS_WITHIN} `}${className}`}>
       {children}
       <select
         value={value}

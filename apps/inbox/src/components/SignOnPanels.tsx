@@ -2,15 +2,14 @@ import { useState, type FormEvent, type ReactNode } from 'react';
 import { KeyRound, Loader2, Lock, LogIn, MessagesSquare, ShieldOff } from 'lucide-react';
 import { useSession } from '@/auth/SessionContext';
 import { Eyebrow } from '@/components/atoms';
+import { BTN_MAIN, BTN_OUTLINE, INPUT } from '@/components/ui';
 
 const LAUNCHER_URL = import.meta.env.VITE_LAUNCHER_URL?.trim();
 
-const FIELD =
-  'w-full rounded-xl border border-line bg-card px-3.5 py-2.5 text-[14px] placeholder:text-ink-muted focus:border-field focus:outline-none focus:ring-2 focus:ring-field';
-const PRIMARY =
-  'inline-flex w-full items-center justify-center gap-2 rounded-xl bg-ink px-4 py-2.5 text-[14px] font-medium text-on-ink hover:bg-ink/90 disabled:opacity-60';
-const SECONDARY =
-  'inline-flex items-center justify-center rounded-xl border border-line bg-card px-4 py-2 text-[13px] font-medium text-ink hover:bg-wash';
+// The house controls (SCRUM-1016, components/ui.ts): the coral main button, the 48 px field.
+const FIELD = INPUT;
+const PRIMARY = `${BTN_MAIN} w-full`;
+const SECONDARY = BTN_OUTLINE;
 
 function Card({ children }: { children: ReactNode }) {
   return (
@@ -96,7 +95,7 @@ export function SignInPanel() {
             className={FIELD}
           />
         </label>
-        {error && <p className="text-[13px] text-rose-600 dark:text-rose-400">{error}</p>}
+        {error && <p role="alert" className="text-[13px] text-danger-ink">{error}</p>}
         <button type="submit" className={`${PRIMARY} mt-1`} disabled={busy || !phone.trim() || !password}>
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogIn className="h-4 w-4" />}
           {busy ? 'Signing in…' : 'Sign in'}
@@ -142,7 +141,7 @@ export function LockedPanel() {
 
   return (
     <Card>
-      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400">
+      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-ask text-ask-ink">
         <Lock className="h-5 w-5" />
       </span>
       <h1 className="mt-3 text-xl font-semibold tracking-tight text-ink">This session is locked</h1>
@@ -159,7 +158,7 @@ export function LockedPanel() {
           placeholder="Password"
           className={FIELD}
         />
-        {error && <p className="text-[13px] text-rose-600 dark:text-rose-400">{error}</p>}
+        {error && <p role="alert" className="text-[13px] text-danger-ink">{error}</p>}
         <button type="submit" className={PRIMARY} disabled={busy || !password}>
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
           Unlock
