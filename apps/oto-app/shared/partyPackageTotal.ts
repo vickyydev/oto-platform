@@ -78,6 +78,11 @@ export function partyDayOf(eventDate: string | null | undefined): { day: string;
 
 const count = (v: number | null | undefined) => (typeof v === "number" && Number.isFinite(v) && v > 0 ? Math.floor(v) : 0);
 
+/** The add-ons a party bought: a line the package does not include, kept billable, with a quantity. */
+export function addOnsBoughtOf<T extends { included: boolean; billable: boolean; qty: number }>(items: ReadonlyArray<T>): T[] {
+  return items.filter((i) => !i.included && i.billable && i.qty > 0);
+}
+
 export function partyPackageTotal(pkg: PartyPackagePrices, party: PartyForPricing): PartyPackageTotal {
   const read = partyDayOf(party.eventDate);
   const mode: PartyRateMode = read?.mode ?? "weekday";
@@ -90,8 +95,7 @@ export function partyPackageTotal(pkg: PartyPackagePrices, party: PartyForPricin
   const extraAdultUnitSatang = mode === "weekend" ? pkg.extraAdultWeekend : pkg.extraAdultWeekday;
   const extraChildrenSatang = extraChildren * (extraChildUnitSatang ?? 0);
   const extraAdultsSatang = extraAdults * (extraAdultUnitSatang ?? 0);
-  const addOns = pkg.items
-    .filter((i) => !i.included && i.billable && i.qty > 0)
+  const addOns = addOnsBoughtOf(pkg.items)
     .map((i) => ({ label: i.label, qty: i.qty, unitSatang: i.unitPrice, satang: i.qty * i.unitPrice }));
   const addOnsSatang = addOns.reduce((sum, a) => sum + a.satang, 0);
   return {
