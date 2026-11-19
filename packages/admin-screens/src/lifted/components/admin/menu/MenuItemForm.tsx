@@ -14,6 +14,7 @@ import { Switch } from "../../ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/select";
 import { ToggleGroup, ToggleGroupItem } from "../../ui/toggle-group";
 import { randomId, slugId } from "./menuItem";
+import { OptionRowFields } from "../modifiers/OptionPriceFields";
 
 // Sentinel for the "Use category default" choice in the override selects (Radix
 // Select can't use an empty-string value).
@@ -798,90 +799,17 @@ export function MenuItemFormWithPorts({ open, item, onClose, onSave, ports }: Me
                     {/* Options */}
                     <div className="flex flex-col gap-2">
                       {g.options.map((o) => (
-                        <div key={o.id} className="flex flex-col gap-1.5">
-                          <div className="flex items-center gap-2">
-                            <Input
-                              value={o.name}
-                              onChange={(e) =>
-                                updateOption(g.id, o.id, {
-                                  name: e.target.value,
-                                })
-                              }
-                              placeholder="Option, e.g. Ketchup"
-                              aria-label="Option name"
-                              className="flex-1"
-                            />
-                            <div className="flex items-center gap-1">
-                              <span className="text-xs text-foreground/40">+฿wkdy</span>
-                              <Input
-                                type="number"
-                                inputMode="numeric"
-                                min={0}
-                                step="0.01"
-                                className="w-16"
-                                value={o.price.weekday}
-                                onChange={(e) =>
-                                  updateOption(g.id, o.id, {
-                                    price: { ...o.price, weekday: Number(e.target.value) || 0 },
-                                  })
-                                }
-                                placeholder="0"
-                                aria-label="Option weekday price delta"
-                              />
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <span className="text-xs text-foreground/40">+฿wknd</span>
-                              <Input
-                                type="number"
-                                inputMode="numeric"
-                                min={0}
-                                step="0.01"
-                                className="w-16"
-                                value={o.price.weekend}
-                                onChange={(e) =>
-                                  updateOption(g.id, o.id, {
-                                    price: { ...o.price, weekend: Number(e.target.value) || 0 },
-                                  })
-                                }
-                                placeholder="0"
-                                aria-label="Option weekend price delta"
-                              />
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <span className="text-xs text-foreground/40">cost ฿</span>
-                              <Input
-                                type="number"
-                                inputMode="numeric"
-                                min={0}
-                                step="0.01"
-                                className="w-16"
-                                value={o.cost}
-                                onChange={(e) =>
-                                  updateOption(g.id, o.id, {
-                                    cost: e.target.value,
-                                  })
-                                }
-                                placeholder="—"
-                                aria-label="Option cost"
-                              />
-                            </div>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="shrink-0 text-destructive"
-                              aria-label="Remove option"
-                              onClick={() => removeOption(g.id, o.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                          {ge?.options?.[o.id] && (
-                            <p className="text-xs text-destructive">
-                              {ge.options[o.id]}
-                            </p>
-                          )}
-                        </div>
+                        <OptionRowFields
+                          key={o.id}
+                          name={o.name}
+                          price={o.price}
+                          cost={o.cost}
+                          error={ge?.options?.[o.id]}
+                          onName={(name) => updateOption(g.id, o.id, { name })}
+                          onPrice={(price) => updateOption(g.id, o.id, { price })}
+                          onCost={(cost) => updateOption(g.id, o.id, { cost })}
+                          onRemove={() => removeOption(g.id, o.id)}
+                        />
                       ))}
 
                       {ge?.options?.__group && (
