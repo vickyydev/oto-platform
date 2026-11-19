@@ -426,6 +426,40 @@ export function readDisplayAnswer(document: StationSessionDocument, requestId: s
 }
 
 interface ConnectedDisplay { id: string; name: string; connected: boolean }
+/** SCRUM-1041 — a display paired to this station, for the till's list of them. */
+export interface PairedDisplay extends ConnectedDisplay {
+  /** When it last called; null when the platform or box does not say. */
+  lastSeenAt: string | null;
+}
+
+/**
+ * SCRUM-1041 — up to three displays on one till, each named so staff can tell
+ * them apart: two paired under the same name are numbered in the order they
+ * were paired ("Customer display 1", "Customer display 2"). A name used once
+ * is shown as it is, so a till with one display reads exactly as before.
+ */
+export function labelDisplays<T extends { id: string; name: string }>(displays: readonly T[]): T[] {
+  const ordered = [...displays].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  const count = new Map<string, number>();
+  for (const display of ordered) count.set(display.name, (count.get(display.name) ?? 0) + 1);
+  const seen = new Map<string, number>();
+  const labelled = new Map(ordered.map((display) => {
+    if (count.get(display.name)! < 2) return [display.id, display];
+    const place = (seen.get(display.name) ?? 0) + 1;
+    seen.set(display.name, place);
+    return [display.id, { ...display, name: `${display.name} ${place}` }];
+  }));
+  return displays.map((display) => labelled.get(display.id)!);
+}
+
+/**
+ * SCRUM-1041 — displays this till removed in this tab. A counter box drops a
+ * removed display at its next copy of the station's settings (within a
+ * minute); until then the till no longer names it or lists it.
+ */
+const removedDisplays = new Set<string>();
+export function noteDisplayRemoved(id: string): void { removedDisplays.add(id); }
+
 const POLL_MS = 1_500;
 /** A refused claim waits this long, doubling to the cap, unless the till itself changes. */
 const CLAIM_WAIT_FIRST_MS = 1_000;
@@ -654,6 +688,8 @@ export function useStationDisplay(stationId: string | null, state: StationDispla
   const presentationSignature = JSON.stringify({ key: shown.key, presentation: shown.presentation(''), theme: displayTheme });
   useEffect(() => { wake.current?.(true); }, [presentationSignature]);
   const [connected, setConnected] = useState<ConnectedDisplay[]>([]);
+  /** SCRUM-1041 — every display paired here, connected or not; null while the list cannot be read. */
+  const [paired, setPaired] = useState<PairedDisplay[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   // SCRUM-780 — on a counter box a lock ends the box session and the unlock
   // makes a new one. What the box said to the ended session is not news about
@@ -661,6 +697,7 @@ export function useStationDisplay(stationId: string | null, state: StationDispla
   useEffect(() => { if (!active && hasBridgeOrigin()) setError(null); }, [active]);
   useEffect(() => {
     setConnected([]);
+    setPaired(null);
     setError(null);
     if (!stationId) return;
     const channel: DisplayPublisher = {
@@ -694,22 +731,34 @@ export function useStationDisplay(stationId: string | null, state: StationDispla
      * display follows, publishing to it is local and cheap, and the till never
      * waits on a display either way.
      */
+    /**
+     * SCRUM-1041 — the whole list is kept for the till's list of its displays
+     * (each named apart, a removed one left out); the connected ones answer
+     * whether any display is watching, as before.
+     */
+    const listed = (displays: readonly (ConnectedDisplay & { lastSeenAt?: string | null })[]): ConnectedDisplay[] => {
+      const shown = labelDisplays(displays.filter(display => !removedDisplays.has(display.id))
+        .map(({ id, name, connected, lastSeenAt }) => ({ id, name, connected, lastSeenAt: lastSeenAt ?? null })));
+      if (!paused()) setPaired(shown);
+      return shown.filter(display => display.connected).map(({ id, name, connected }) => ({ id, name, connected }));
+    };
     const watching = async (): Promise<ConnectedDisplay[] | 'unknown'> => {
       if (hasBridgeOrigin()) {
-        try { return (await bridgeApi.displays(stationId)).displays.filter(display => display.connected); }
+        try { return listed((await bridgeApi.displays(stationId)).displays); }
         catch (failure) {
           // Older bundles have no presence read; keep their existing publisher.
-          if (failure instanceof ApiError && failure.status === 404 && failure.code === 'NOT_FOUND') return 'unknown';
+          if (failure instanceof ApiError && failure.status === 404 && failure.code === 'NOT_FOUND') { setPaired(null); return 'unknown'; }
           throw failure;
         }
       }
-      if (currentLane() === 'box') return 'unknown';
+      if (currentLane() === 'box') { setPaired(null); return 'unknown'; }
       try {
-        const list = await api.get<{ displays: ConnectedDisplay[] }>(`${base}/displays`);
-        return list.displays.filter(display => display.connected);
+        const list = await api.get<{ displays: (ConnectedDisplay & { lastSeenAt?: string | null })[] }>(`${base}/displays`);
+        return listed(list.displays);
       } catch (failure) {
         if (!isBoxLaneTrigger(failure)) throw failure;
         noteLaneFailure(failure);
+        setPaired(null);
         return 'unknown';
       }
     };
@@ -964,5 +1013,5 @@ export function useStationDisplay(stationId: string | null, state: StationDispla
       clearTimeout(timer);
     };
   }, [stationId, publishing]);
-  return { connected, error, supported: shown.supported, handover };
+  return { connected, paired, error, supported: shown.supported, handover };
 }
