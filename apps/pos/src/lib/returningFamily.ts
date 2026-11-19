@@ -97,8 +97,8 @@ export function profileGuardianName(member: Pick<Member, 'id' | 'nickname'> | nu
  * did before 19 November: with no adult on the sale, that registration is
  * what lets the platform take the sale (SALE_KIDS_WITHOUT_REGISTRATION) and
  * what gives the park the guardian's contact, the agreements and the pickup
- * check. Whether that form is dropped after a waiver is the owner's choice
- * on his page; until then the till keeps it.
+ * check. The owner chose to keep this short no-fee form after a waiver
+ * (19 November, R25), replacing his earlier answer of no form.
  */
 export function waiverCovers<Slot extends Pick<SupervisedSlot, 'id' | 'age' | 'dateOfBirth' | 'waived'>>(
   slots: readonly Slot[],
@@ -119,7 +119,6 @@ export function waiverCovers<Slot extends Pick<SupervisedSlot, 'id' | 'age' | 'd
   }
   return covers;
 }
-
 
 /** The last visit's photo of a saved child, as the till found it. */
 export type LastPhotoState =

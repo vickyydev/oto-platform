@@ -31,7 +31,8 @@ import { renderHook } from './support/hooks';
  * - SCRUM-1052 — after a waiver the covering sibling is registered at no
  *   fee, as the counter did before 19 November (the answer's "straight to
  *   payment" left two children with no adult and no registration, and the
- *   platform refused the sale; the owner chooses on his page).
+ *   platform refused the sale). The owner then chose to keep that short
+ *   no-fee form (19 November, R25).
  */
 
 vi.mock('react', async () => ({ ...await vi.importActual<typeof import('react')>('react'), ...await import('./support/hooks') }));
