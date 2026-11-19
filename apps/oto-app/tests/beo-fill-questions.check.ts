@@ -79,7 +79,7 @@ async function check(name: string, fn: () => Promise<void> | void) {
     failures[name] = error instanceof Error ? `${error.message}\n${error.stack?.split("\n").slice(1, 4).join("\n")}` : String(error);
   }
 }
-const CHECKS = 10;
+const CHECKS = 15;
 
 const run = randomUUID().slice(0, 8);
 const tenant = randomUUID();
@@ -378,10 +378,99 @@ try {
     );
     assert.equal(withoutUnansweredQuestions(fromFamily, refs), 0);
     assert.deepEqual([fromFamily.event.numChildren?.value, fromFamily.entertainment.length], [12, 1]);
-    // Given from the team's question instead, the code takes nothing from the question.
+    // Given from the team's read-back instead (the review): the family's own earlier line says it, so it stays.
     const fromQuestion = resolveCatalogueAnswer({ event: { numChildren: { value: 12, line: 2 } } }, catalogue, refs);
-    withoutUnansweredQuestions(fromQuestion, refs);
-    assert.equal(fromQuestion.event.numChildren, undefined);
+    assert.equal(withoutUnansweredQuestions(fromQuestion, refs), 0);
+    assert.equal(fromQuestion.event.numChildren?.value, 12);
+    // The review's read-back: "So it's Saturday 21 March at 14:00 for 15 kids, right?" sent last, after the family's own line.
+    const backRefs = refsOf([
+      ["family", "Hi! A party on Saturday 21 March at 14:00 for 15 kids please. (ZZ TEST)"],
+      ["team", "So it's Saturday 21 March at 14:00 for 15 kids, right? (ZZ TEST)"],
+    ]);
+    const back = resolveCatalogueAnswer({ event: { startTime: { value: "14:00", line: 2 }, numChildren: { value: 15, line: 2 } } }, catalogue, backRefs);
+    assert.equal(withoutUnansweredQuestions(back, backRefs), 0);
+    assert.deepEqual([back.event.startTime?.value, back.event.numChildren?.value], ["14:00", 15], "a read-back of what the family said is never dropped");
+    // A read-back of what the family never said is the team's question, unanswered: left out.
+    const unsaidRefs = refsOf([["family", "Hi, a party for our son please. (ZZ TEST)"], ["team", readBack]]);
+    const unsaid = resolveCatalogueAnswer({ event: { numChildren: { value: 12, line: 2 } } }, catalogue, unsaidRefs);
+    assert.equal(withoutUnansweredQuestions(unsaid, unsaidRefs), 1);
+    assert.equal(unsaid.event.numChildren, undefined);
+  });
+
+  // --- The review of 20 November: the code check, tightened and loosened -------------------------
+  await check("onlyTheFamilysFirstTurnAfterAQuestionAnswersIt", () => {
+    const offer = "Would you like to add the bubble show at 15:00 for 1,500 baht? (ZZ TEST)";
+    const after = (...lines: Array<["family" | "team", string]>) => refsOf([["family", FAMILY_ASKS], ["team", offer], ...lines]);
+    const asked = (refs: TranscriptRef[]) => unansweredQuestion(team(2), refs, null, ["the bubble show"]);
+    assert.equal(asked(after(["family", "(ZZ TEST) Can you send me the address please?"])), true, "a reply that only asks back is no answer");
+    assert.equal(
+      asked(after(["family", "Can you send me the address please?"], ["team", "ZZ TEST road 1, Phuket."], ["family", "Thanks!"])),
+      true,
+      "a later turn of the family's is not the answer",
+    );
+    assert.equal(asked(after(["family", "Yes please! (ZZ TEST)"])), false, "the first turn answers");
+    assert.equal(asked(after(["family", "Can you send me the address?"], ["family", "And yes to the show. (ZZ TEST)"])), false, "a turn of two lines, one answering");
+    assert.equal(asked(after(["team", "It is 40 minutes. (ZZ TEST)"], ["family", "Perfect, thank you. (ZZ TEST)"])), false, "the family's first turn, after more of the team's lines");
+  });
+
+  await check("aThaiConfirmationAsksOnlyInItsLastClause", () => {
+    const thai = "ยืนยันงานวันเสาร์ เวลา 14:00 เด็ก 15 คน รับเค้กเพิ่มไหมคะ";
+    assert.equal(saidAsQuestion(thai, ["14:00"]), false, "the confirmed time");
+    assert.equal(saidAsQuestion(thai, ["15 คน"]), false, "the confirmed children");
+    assert.equal(saidAsQuestion(thai, ["เค้ก"]), true, "the cake it asks about");
+    assert.equal(saidAsQuestion(`${thai}?`, ["14:00"]), false, "with a question mark too");
+    const refs = refsOf([["family", "สวัสดีค่ะ (ZZ TEST)"], ["team", thai]]);
+    const p = resolveCatalogueAnswer(
+      { event: { startTime: { value: "14:00", line: 2 }, numChildren: { value: 15, said: "เด็ก 15 คน", line: 2 } }, cake: { mode: "INTERNAL", notes: "รับเค้กเพิ่ม", line: 2 } },
+      catalogue,
+      refs,
+    );
+    assert.equal(withoutUnansweredQuestions(p, refs), 1);
+    assert.deepEqual([p.event.startTime?.value, p.event.numChildren?.value, p.cake], ["14:00", 15, null]);
+  });
+
+  await check("theFormsReadAsksTheCakeByItsOwnWords", () => {
+    const message = "Confirmed: 12 kids at 14:00. Would you like us to make the birthday cake? (ZZ TEST)";
+    for (const cake of [{ cakeMode: "INTERNAL" }, { cakeQuantity: 1 }, { cakePrice: 500 }, { cakeIncluded: true }]) {
+      const read = { event: { numChildren: 12 }, kitchenPlan: { ...cake } };
+      assert.equal(fillWithoutUnansweredQuestions(read as never, message), 1, JSON.stringify(cake));
+      assert.deepEqual(read.kitchenPlan, {}, `${JSON.stringify(cake)}: the cake it only asks about goes`);
+      assert.deepEqual(read.event, { numChildren: 12 });
+    }
+    const said = { kitchenPlan: { cakeMode: "INTERNAL" } };
+    assert.equal(fillWithoutUnansweredQuestions(said as never, "Confirmed: the chocolate cake from the park. Would you like extra candles? (ZZ TEST)"), 0);
+    assert.deepEqual(said.kitchenPlan, { cakeMode: "INTERNAL" }, "a cake the message confirms stays");
+    const cupcakes = { kitchenPlan: { cakeMode: "INTERNAL" } };
+    assert.equal(fillWithoutUnansweredQuestions(cupcakes as never, "Cupcakes for the kids are ready. Would you like a cake as well? (ZZ TEST)"), 1, "cupcakes are not the cake");
+  });
+
+  await check("aDishsCountOrPriceTheTeamOnlyAskedIsNotAgreed", () => {
+    const refs = refsOf([["family", "We'd like pizza for the kids please. (ZZ TEST)"], ["team", "Shall we make it 3 pizzas at 450 each? (ZZ TEST)"]]);
+    const line = { productCode: null, notInMenu: true, itemName: "pizza", menu: "kids", quantity: 3, chatPrice: 450, line: 1 };
+    const p = resolveCatalogueAnswer({ menuLines: [line] }, catalogue, refs);
+    assert.equal(withoutUnansweredQuestions(p, refs), 2);
+    assert.deepEqual(p.menuLines.map((l) => [l.itemName, l.quantity, l.chatPrice]), [["pizza", 1, null]], "the dish the family asked for, with no count or price of the question's");
+    const yes = refsOf([["family", "We'd like pizza for the kids please. (ZZ TEST)"], ["team", "Shall we make it 3 pizzas at 450 each? (ZZ TEST)"], ["family", "Yes, perfect. (ZZ TEST)"]]);
+    const agreed = resolveCatalogueAnswer({ menuLines: [line] }, catalogue, yes);
+    assert.equal(withoutUnansweredQuestions(agreed, yes), 0);
+    assert.deepEqual(agreed.menuLines.map((l) => [l.quantity, l.chatPrice]), [[3, 450]], "answered: as before");
+    const own = refsOf([["family", "3 pizzas for the kids please. (ZZ TEST)"], ["team", "Shall we make it 3 pizzas at 450 each? (ZZ TEST)"]]);
+    const said = resolveCatalogueAnswer({ menuLines: [{ ...line, chatPrice: null }] }, catalogue, own);
+    assert.equal(withoutUnansweredQuestions(said, own), 0);
+    assert.equal(said.menuLines[0]?.quantity, 3, "a count the family's own line says");
+  });
+
+  await check("aPastedExchangeHoldsItsOwnAnswer", async () => {
+    const two = "Team: Would you like the bubble show at 15:00? (ZZ TEST)\nMum: Yes please! (ZZ TEST)";
+    const pastedRef = (text: string): TranscriptRef[] => [{ line: 1, id: "pasted", source: "team", at: at(0), ruling: true, text }];
+    assert.equal(unansweredQuestion(team(1), pastedRef(two), null, ["the bubble show"]), false, "the other speaker said yes");
+    assert.equal(unansweredQuestion(team(1), pastedRef("Team: Would you like the bubble show at 15:00? (ZZ TEST)\nMum: (ZZ TEST) Can you send the address?"), null, ["the bubble show"]), true);
+    assert.equal(unansweredQuestion(team(1), pastedRef("Date: Saturday\nTime: 14:00\nWould you like the bubble show at 15:00? (ZZ TEST)"), null, ["the bubble show"]), true, "a confirmation's own labels answer nothing");
+    // Keyed by the reply's own words: the transcript the model reads indents the paste's second line.
+    conversationAnswers.set("Mum: Yes please! (ZZ TEST)", { catalogue: { entertainment: [{ templateId: cat.bubble, said: "the bubble show at 15:00", time: "15:00", line: 1 }] } });
+    const res = await post("/api/ai/parse-beo", { text: two, existingData: { event: { title: "ZZ TEST" } }, eventId: ev.pasted });
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    assert.equal((res.body.review.proposal as BeoAiProposal).entertainment.length, 1, "the show the family said yes to stays");
   });
 
   await check("onTheRouteTheReviewTeamAndActivityRowHoldNoQuestion", async () => {
@@ -581,11 +670,14 @@ try {
       catalogue,
       refs,
     );
-    assert.deepEqual(p.details.timeline.map((t) => [t.time, t.label]), [["13:45", "Piñata"]], "only the moment of its own");
-    assert.equal(p.entertainment[0]?.time, "15:10", "the show takes the step's time");
-    // A step the team only asked about gives an untimed show no time.
+    // The review: a show with no time makes no step of its own, so the chat's step for it stays a
+    // typed step; nothing moves into the show.
+    assert.deepEqual(p.details.timeline.map((t) => [t.time, t.label]), [["13:45", "Piñata"], ["15:10", "Bubble show"]], "the moments the Timeline does not make");
+    assert.equal(p.entertainment[0]?.time, undefined, "the show keeps no time the chat gave only to a step");
+    // A step the team only asked about is not proposed at all.
     const askedRefs = refsOf([["family", "The bubble show please. (ZZ TEST)"], ["team", "Shall we do the bubble show at 15:10? (ZZ TEST)"]]);
     const asked = resolveCatalogueAnswer({ entertainment: [{ templateId: cat.bubble, said: "The bubble show", line: 1 }], timeline: [{ time: "15:10", label: "Bubble show", line: 2 }] }, catalogue, askedRefs);
+    withoutUnansweredQuestions(asked, askedRefs);
     assert.deepEqual([asked.entertainment[0]?.time, asked.details.timeline.length], [undefined, 0]);
     // The ruling message's own read, against what the BEO already holds (its start, ready-by and cake).
     const empty: BeoAiProposal = { package: null, addOns: [], setMenu: null, menuLines: [], entertainment: [], otherLines: [], event: {}, cake: null, deposit: null, details: emptyBeoAiDetails() };
