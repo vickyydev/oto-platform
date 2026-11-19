@@ -73,6 +73,13 @@ export interface FlagCatalogueEntry {
   defaultValue: FlagValue;
   scopes: readonly FlagScopeType[];
   supported: boolean;
+  /**
+   * The values a write may set today, when a supported switch takes only some
+   * of its `values` so far; absent means all of them. The others are still
+   * values of the switch (an override holding one resolves to it), but every
+   * write path and the preview refuse them until their consumer is built.
+   */
+  settableValues?: readonly string[];
 }
 
 const SIGN_IN_APP_NAMES: Record<SuiteAppKey, string> = {
@@ -91,9 +98,10 @@ export const MESSAGING_PAUSE_KEY = 'messaging.outbound_paused';
  * and camp offers. Set at operator scope and kept without an expiry, because
  * an expired override falls back to `off`.
  *
- * `supported: false` until its readers are switched (plan step F3): the
- * catalogue lists it, and no write path accepts it before then, so it stays
- * `off` everywhere.
+ * Supported from plan step F3, which switched the platform's readers: `read`
+ * may be set for a park group, and clearing it returns to `off` (the default
+ * for every park group). `on` is listed and still refused by every write path
+ * (`settableValues`) until adding a second parent is built (step F4).
  */
 export const FAMILY_PROFILES_KEY = 'crm.family_profiles';
 export const FAMILY_PROFILES_MODES = ['off', 'read', 'on'] as const;
@@ -142,8 +150,11 @@ export const FLAG_CATALOGUE: readonly FlagCatalogueEntry[] = [
   },
   {
     key: FAMILY_PROFILES_KEY, kind: 'feature', targetApp: 'pos', label: 'Family profiles',
-    effect: 'Not integrated: the till, the counter box and the booking site do not read this switch yet.',
-    valueType: 'enum', values: FAMILY_PROFILES_MODES, defaultValue: 'off', scopes: ['operator'], supported: false,
+    effect: 'Read: the till, check-in, the booking site, the kitchen slip and the Console find a member\'s children '
+      + 'through the family instead of through the member they were first saved under. While every family has one '
+      + 'parent the answers are the same. On (adding a second parent) is not available yet.',
+    valueType: 'enum', values: FAMILY_PROFILES_MODES, defaultValue: 'off', scopes: ['operator'], supported: true,
+    settableValues: ['read'],
   },
 ];
 

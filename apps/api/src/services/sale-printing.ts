@@ -52,6 +52,7 @@ import type { PrintJob as RenderJob } from '@oto/print';
 import { AppError } from '../lib/errors';
 import { audit } from './audit';
 import { boxSettings } from './box';
+import { childOfMember, familyProfilesMode } from './family';
 import {
   BandKeyMissingError,
   bandsOfSale,
@@ -1285,10 +1286,18 @@ async function orderChildren(db: Exec, saleRow: SaleRow) {
       .orderBy(asc(child.name));
   }
   if (!saleRow.memberId) return [];
+  // SCRUM-1024 (step F3) — the member's children by the switch, read once for
+  // this slip: the same scope as the counter's lookup, and no wider. The
+  // member's own state not asked, as before: a reprint of an old sale keeps
+  // its allergy line.
+  const familyMode = await familyProfilesMode(db, saleRow.operatorId);
   return db
     .select({ name: child.name, allergies: child.allergies, medicalNotes: child.medicalNotes })
     .from(child)
-    .where(and(eq(child.memberId, saleRow.memberId), isNull(child.archivedAt)))
+    .where(and(
+      childOfMember(familyMode, { operatorId: saleRow.operatorId, memberId: saleRow.memberId, memberLive: false }),
+      isNull(child.archivedAt),
+    ))
     .orderBy(asc(child.name));
 }
 

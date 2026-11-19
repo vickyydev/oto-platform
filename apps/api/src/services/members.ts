@@ -2,7 +2,13 @@ import { and, asc, desc, eq, ilike, inArray, isNull, or, sql, type SQL } from 'd
 import { account, child, employee, member, memberTierVerification, type Db } from '@oto/db';
 import { errors } from '../lib/errors';
 import { audit } from './audit';
-import { childAuditView } from './family';
+import {
+  childAuditView,
+  childGuardedInOperator,
+  familyChildrenOfMembers,
+  familyProfilesMode,
+  type FamilyProfilesMode,
+} from './family';
 import { isTierRevocation } from './member-tier';
 import { recordChange } from './sync';
 import type { Tx } from './tx';
@@ -79,6 +85,8 @@ export interface ChildArchiveActor {
   operatorId: string;
   branchId: string | null;
   requestId?: string;
+  /** SCRUM-1024 — `crm.family_profiles` as the caller's request read it once: how the owner is checked. */
+  familyMode: FamilyProfilesMode;
   /**
    * SCRUM-1014 — the family pressed "Remove from saved" on the customer
    * display of this station: the till carries it out under its own session,
@@ -133,11 +141,20 @@ export function displayCareRefusal(input: {
   fields: readonly string[];
   patch: Partial<Record<DisplayCareField, string | null | undefined>>;
   confirmedNone: boolean;
+  /**
+   * SCRUM-1024 — given only when `crm.family_profiles` reads through the
+   * family: whether the family named is a live guardian of this child's
+   * family. Absent at `off`, where `before.memberId` decides, as before.
+   */
+  heldByFamily?: boolean;
 }): DisplayCareRefusal | null {
   if (!input.memberId) {
     return { status: 400, code: 'BAD_REQUEST', message: 'A change from the customer display names the family identified at this till' };
   }
-  if (input.before.memberId !== input.memberId) return { status: 404, code: 'NOT_FOUND', message: 'Child not found' };
+  // SCRUM-1024 (step F3) — the caller answers `heldByFamily` when the switch
+  // reads through the family; at `off` the child's own member decides.
+  const theirs = input.heldByFamily ?? input.before.memberId === input.memberId;
+  if (!theirs) return { status: 404, code: 'NOT_FOUND', message: 'Child not found' };
   const careFields: readonly string[] = DISPLAY_CARE_FIELDS;
   if (input.fields.length === 0 || input.fields.some((field) => !careFields.includes(field))) {
     return { status: 400, code: 'DISPLAY_CARE_ONLY', message: 'Only the allergy and medical notes are changed from the customer display' };
@@ -195,12 +212,20 @@ export async function archiveChild(
   const [before] = await tx.select().from(child).where(eq(child.id, childId)).for('update').limit(1);
   if (!before) throw errors.notFound('Child not found');
   // A child id carries no operator of its own, so the guardian is what proves
-  // the caller may touch this record.
-  const [owner] = await tx
-    .select({ id: member.id })
-    .from(member)
-    .where(and(eq(member.id, before.memberId), eq(member.operatorId, actor.operatorId)))
-    .limit(1);
+  // the caller may touch this record. SCRUM-1024 (step F3): the child's own
+  // member at `off`; otherwise a live guardian row on its family, inside the
+  // operator (the member's own state not asked, as it was not before).
+  const [owner] = actor.familyMode === 'off'
+    ? await tx
+      .select({ id: member.id })
+      .from(member)
+      .where(and(eq(member.id, before.memberId), eq(member.operatorId, actor.operatorId)))
+      .limit(1)
+    : await tx
+      .select({ id: child.id })
+      .from(child)
+      .where(and(eq(child.id, before.id), childGuardedInOperator({ operatorId: actor.operatorId, memberLive: false })))
+      .limit(1);
   if (!owner) throw errors.notFound('Child not found');
 
   if (before.archivedAt) return { ok: true, alreadyArchived: true };
@@ -296,6 +321,24 @@ function likeTerm(term: string): string {
   return `%${term.replace(/[\\%_]/g, (ch) => `\\${ch}`)}%`;
 }
 
+/**
+ * The register page's children through the family: each pair of member and
+ * child the read rule gives (`familyChildrenOfMembers`, live members only, as
+ * the register lists), then the children themselves by id, live, by name.
+ */
+async function registerChildrenThroughFamilies(db: Db, operatorId: string, memberIds: string[]) {
+  const pairs = await familyChildrenOfMembers(db, { operatorId, memberIds, memberLive: true });
+  if (pairs.length === 0) return [];
+  const rows = await db
+    .select({ id: child.id, name: child.name, dateOfBirth: child.dateOfBirth, ageYears: child.ageYears })
+    .from(child)
+    .where(and(inArray(child.id, [...new Set(pairs.map((p) => p.childId))]), isNull(child.archivedAt)))
+    .orderBy(asc(child.name));
+  const seenBy = new Map<string, string[]>();
+  for (const p of pairs) seenBy.set(p.childId, [...(seenBy.get(p.childId) ?? []), p.memberId]);
+  return rows.flatMap((r) => (seenBy.get(r.id) ?? []).map((memberId) => ({ ...r, memberId })));
+}
+
 export async function listRegister(
   db: Db,
   input: { operatorId: string; q?: string | undefined; limit: number; offset: number },
@@ -345,17 +388,25 @@ export async function listRegister(
 
   // Identity only. The medical columns are not in this select and must not be:
   // see the note at the top of the file.
-  const children = await db
-    .select({
-      id: child.id,
-      memberId: child.memberId,
-      name: child.name,
-      dateOfBirth: child.dateOfBirth,
-      ageYears: child.ageYears,
-    })
-    .from(child)
-    .where(and(inArray(child.memberId, ids), isNull(child.archivedAt)))
-    .orderBy(asc(child.name));
+  //
+  // SCRUM-1024 (step F3) — by the switch, read once for this page: at `off`
+  // the children saved under each member, as before; otherwise each member's
+  // family children (a child of two members' family is on both rows), read by
+  // id in the same order with the same columns.
+  const familyMode = await familyProfilesMode(db, input.operatorId);
+  const children = familyMode === 'off'
+    ? await db
+      .select({
+        id: child.id,
+        memberId: child.memberId,
+        name: child.name,
+        dateOfBirth: child.dateOfBirth,
+        ageYears: child.ageYears,
+      })
+      .from(child)
+      .where(and(inArray(child.memberId, ids), isNull(child.archivedAt)))
+      .orderBy(asc(child.name))
+    : await registerChildrenThroughFamilies(db, input.operatorId, ids);
 
   const verifications = await db
     .select({

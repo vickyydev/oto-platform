@@ -816,18 +816,20 @@ describe('SCRUM-1024 — the audit of a child edit or removal reads as it did be
 // --- The switch ---------------------------------------------------------------------------
 
 describe('SCRUM-1024 — the crm.family_profiles switch', () => {
-  it('is catalogued off, read, on at operator scope, defaults off, and is not yet settable', () => {
+  // Step F3 made the switch settable at `read` (its readers are switched): s1024-family-readers.test.ts.
+  it('is catalogued off, read, on at operator scope, defaults off, and only read can be set', () => {
     expect(flagCatalogueEntry(FAMILY_PROFILES_KEY)).toEqual({
       key: 'crm.family_profiles',
       kind: 'feature',
       targetApp: 'pos',
       label: 'Family profiles',
-      effect: 'Not integrated: the till, the counter box and the booking site do not read this switch yet.',
+      effect: expect.any(String),
       valueType: 'enum',
       values: ['off', 'read', 'on'],
       defaultValue: 'off',
       scopes: ['operator'],
-      supported: false,
+      supported: true,
+      settableValues: ['read'],
     });
   });
 

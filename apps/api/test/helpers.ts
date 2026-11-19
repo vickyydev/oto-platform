@@ -1,7 +1,8 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 import pg from 'pg';
-import { schema, type Db } from '@oto/db';
+import { FAMILY_PROFILES_KEY, schema, type Db } from '@oto/db';
+import { newId } from '@oto/shared';
 import { TestSetupError, createTestDatabase, setupStep, stopTestServer } from '@oto/db/testing';
 import { seed } from '@oto/db/seed';
 import { buildApp, type App } from '../src/app';
@@ -77,6 +78,22 @@ export async function createTestContext(
   // Throttle counters live in Postgres now (S2-01a), so the reset needs the
   // database and each test gets a fresh one anyway — this is belt and braces.
   await releaseOnFailure(() => setupStep(`reset the auth throttle in ${dbName}`, () => _resetThrottle(db)));
+  // SCRUM-1024 (family profiles, plan step F3): OTO_TEST_FAMILY_PROFILES=read
+  // runs a suite with the family profiles switch at `read` for every park
+  // group, so the suites of the readers can be run again that way unchanged.
+  // Unset (every normal run), nothing is written and the switch is `off`.
+  const familyProfiles = process.env.OTO_TEST_FAMILY_PROFILES;
+  if (familyProfiles) {
+    await releaseOnFailure(() => setupStep(`family profiles at ${familyProfiles} in ${dbName}`, async () => {
+      if (familyProfiles !== 'read') throw new Error(`OTO_TEST_FAMILY_PROFILES takes only "read", not "${familyProfiles}"`);
+      for (const op of await db.select({ id: schema.operator.id }).from(schema.operator)) {
+        await db.insert(schema.featureFlag).values({
+          id: newId(), key: FAMILY_PROFILES_KEY, kind: 'feature', targetApp: 'pos', scopeType: 'operator', scopeId: op.id,
+          operatorId: op.id, value: familyProfiles, defaultValue: 'off', reason: 'ZZ TEST family profiles suite run',
+        });
+      }
+    }));
+  }
 
   const smsLog: string[] = [];
   const sms: SmsSender = {
