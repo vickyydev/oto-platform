@@ -152,18 +152,32 @@ async function handOver(cookie: string, stationId: string, code: string, finalis
   return saleId;
 }
 
+/** The body the Console's inventory form sends for a one-size item counted with no product. */
+const unlinkedItemBody = (name: string) => ({
+  name,
+  productId: null,
+  unitCostSatang: 15_000,
+  reorder: null,
+  units: [],
+  sizes: [{ variantId: null, label: 'Default', lowStockThreshold: null, parByLocation: {} }],
+});
+
 /** A ZZ TEST Mystery Box stock item made in the Console at a park, with this many received at its sell point. */
 async function mysteryBoxAt(branchId: string, sellPoint: string, received: number): Promise<string> {
-  const made = await call('POST', `/branches/${branchId}/stock/items`, admin, {
-    name: 'ZZ TEST Mystery Box',
-    productId: null,
-    unitCostSatang: 15_000,
-    reorder: null,
-    units: [],
-    sizes: [{ variantId: null, label: 'Default', lowStockThreshold: null, parByLocation: {} }],
-  });
+  return (await madeMysteryBox(branchId, sellPoint, received, 'ZZ TEST Mystery Box')).itemId;
+}
+
+/** The same, under its own name, answering the item and the group the Console edits it by. */
+async function madeMysteryBox(
+  branchId: string,
+  sellPoint: string,
+  received: number,
+  name: string,
+): Promise<{ itemId: string; groupId: string }> {
+  const made = await call('POST', `/branches/${branchId}/stock/items`, admin, unlinkedItemBody(name));
   expect(made.statusCode, made.body).toBe(200);
-  const [itemId] = (made.json() as { stockItemIds: string[] }).stockItemIds;
+  const { groupId, stockItemIds } = made.json() as { groupId: string; stockItemIds: string[] };
+  const [itemId] = stockItemIds;
   if (received > 0) {
     const got = await call('POST', `/branches/${branchId}/stock/receipts`, admin, {
       stockItemId: itemId,
@@ -173,7 +187,7 @@ async function mysteryBoxAt(branchId: string, sellPoint: string, received: numbe
     });
     expect(got.statusCode, got.body).toBe(200);
   }
-  return itemId!;
+  return { itemId: itemId!, groupId };
 }
 
 /** The park's sell point; a park with no place yet gets its FOH in the Console, as a manager would add it. */
@@ -628,5 +642,110 @@ describe('a link cleared in the Console', () => {
     expect(audits.map((a) => (a.after as { stockItemId: string | null }).stockItemId)).toEqual([hktBox, null]);
     // The stock item itself is untouched by the link going.
     expect((await ctx.db.select().from(stockItem).where(eq(stockItem.id, hktBox)))[0]).toMatchObject({ active: true, archivedAt: null });
+  });
+});
+
+/*
+ * The cases below each use a voucher type and a Mystery Box of their own, so
+ * the links above are left as those tests set them.
+ */
+describe('the other close, a retired shelf, and two tills on the last unit', () => {
+  it('a slip rung up and closed in the one press (commit with finalise) takes exactly one unit, and its replay none', async () => {
+    const def = await define({ nameEn: 'ZZ TEST Mystery Box (one press)' });
+    const { itemId } = await madeMysteryBox(hktId, hktSellPoint, 3, 'ZZ TEST Mystery Box one press');
+    expect((await setParkStock(admin, def, hktId, itemId)).statusCode).toBe(200);
+    const v = await issue(def);
+    const saleId = newId();
+    expect((await hold(tillA, saleId, v.code)).statusCode).toBe(200);
+    const press = { id: saleId, stationId: t1.id, lines: [], items: [], promoCodes: [v.code], expectedTotalSatang: 0, finalise: true };
+    const closed = await commit(tillA, press);
+    expect(closed.statusCode, closed.body).toBe(200);
+    expect((await ctx.db.select().from(sale).where(eq(sale.id, saleId)))[0]).toMatchObject({ grossSatang: 0, status: 'finalised' });
+    expect((await ctx.db.select().from(voucher).where(eq(voucher.id, v.id)))[0]!.status).toBe('redeemed');
+    expect(await held(itemId)).toBe(2);
+    expect(await prizeMovements(v.id)).toEqual([
+      expect.objectContaining({ stockItemId: itemId, kind: 'sale', quantity: -1, shortfall: 0, saleId, saleLineId: null }),
+    ]);
+
+    // The same press again (a retry of the commit): the recorded sale, nothing taken twice.
+    const again = await commit(tillA, press);
+    expect(again.statusCode, again.body).toBe(200);
+    expect(await held(itemId)).toBe(2);
+    expect(await prizeMovements(v.id)).toHaveLength(1);
+    expect(await prizeAudits(v.id)).toHaveLength(1);
+    await expectLedgerAddsUp();
+  });
+
+  it('a linked item retired after it was linked takes nothing; the scan names no stock, and the Console still shows the link', async () => {
+    const def = await define({ nameEn: 'ZZ TEST Mystery Box (retired shelf)' });
+    const { itemId, groupId } = await madeMysteryBox(hktId, hktSellPoint, 2, 'ZZ TEST Mystery Box retired');
+    expect((await setParkStock(admin, def, hktId, itemId)).statusCode).toBe(200);
+    const retired = await call('PUT', `/branches/${hktId}/stock/items/${groupId}`, admin, {
+      ...unlinkedItemBody('ZZ TEST Mystery Box retired'),
+      active: false,
+      sizes: [{ stockItemId: itemId, variantId: null, label: 'Default', lowStockThreshold: null, parByLocation: {} }],
+    });
+    expect(retired.statusCode, retired.body).toBe(200);
+    expect((await ctx.db.select().from(stockItem).where(eq(stockItem.id, itemId)))[0]).toMatchObject({ active: false });
+
+    const levelsBefore = await everyLevel();
+    const v = await issue(def);
+    const looked = await lookup(tillA, v.code);
+    expect(looked.statusCode, looked.body).toBe(200);
+    expect(looked.json().voucher).toMatchObject({ effect: { type: 'hand_over' }, prizeStock: null });
+    await handOver(tillA, t1.id, v.code);
+    expect((await ctx.db.select().from(voucher).where(eq(voucher.id, v.id)))[0]!.status).toBe('redeemed');
+    expect(await held(itemId)).toBe(2);
+    expect(await everyLevel()).toBe(levelsBefore);
+    expect(await prizeMovements(v.id)).toEqual([]);
+    expect(await prizeAudits(v.id)).toEqual([]);
+
+    const list = await call('GET', '/voucher-definitions', admin);
+    const row = (list.json() as { definitions: Array<{ id: string; parkStock: unknown[] }> }).definitions.find((d) => d.id === def);
+    expect(row!.parkStock).toEqual([expect.objectContaining({ branchId: hktId, stockItemId: itemId, live: false })]);
+  });
+
+  it('two tills close a prize each on the last unit at the same moment: one unit leaves, the other is recorded short, neither refused', async () => {
+    const def = await define({ nameEn: 'ZZ TEST Mystery Box (last one)' });
+    const { itemId } = await madeMysteryBox(hktId, hktSellPoint, 1, 'ZZ TEST Mystery Box last one');
+    expect((await setParkStock(admin, def, hktId, itemId)).statusCode).toBe(200);
+    const [t2] = await ctx.db
+      .select()
+      .from(station)
+      .where(and(eq(station.branchId, hktId), eq(station.codePrefix, 'T2')));
+    const tillB = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
+    await takeStation(ctx.app, tillB, t2!.id);
+
+    const first = await issue(def);
+    const second = await issue(def);
+    const ringUp = async (cookie: string, stationId: string, code: string) => {
+      const saleId = newId();
+      expect((await hold(cookie, saleId, code)).statusCode).toBe(200);
+      const rung = await commit(cookie, { id: saleId, stationId, lines: [], items: [], promoCodes: [code], expectedTotalSatang: 0 });
+      expect(rung.statusCode, rung.body).toBe(200);
+      return saleId;
+    };
+    const saleA = await ringUp(tillA, t1.id, first.code);
+    const saleB = await ringUp(tillB, t2!.id, second.code);
+
+    const [closedA, closedB] = await Promise.all([finalise(tillA, saleA), finalise(tillB, saleB)]);
+    expect([closedA.statusCode, closedB.statusCode], `${closedA.body} | ${closedB.body}`).toEqual([200, 200]);
+    expect([closedA.json().finalised, closedB.json().finalised]).toEqual([true, true]);
+
+    expect(await held(itemId)).toBe(0);
+    const moved = [...(await prizeMovements(first.id)), ...(await prizeMovements(second.id))];
+    expect(moved.map((m) => [m.quantity, m.shortfall]).sort()).toEqual(
+      [
+        [-1, 0],
+        [0, 1],
+      ].sort(),
+    );
+    const shortRows = await ctx.db
+      .select()
+      .from(stockAttention)
+      .where(and(eq(stockAttention.stockItemId, itemId), like(stockAttention.dedupeKey, 'shortfall:prize:%')));
+    expect(shortRows).toHaveLength(1);
+    expect(shortRows[0]).toMatchObject({ kind: 'stock_shortfall', quantity: 1 });
+    await expectLedgerAddsUp();
   });
 });
