@@ -33,7 +33,8 @@ import {
   Check,
   RefreshCw,
 } from "lucide-react";
-import { partyPackageTotal, partyPackageTotalLines, type PartyForPricing } from "@shared/partyPackageTotal";
+import { addOnsBoughtOf, partyPackageTotal, partyPackageTotalLines, type PartyForPricing } from "@shared/partyPackageTotal";
+import { beoPackageIncludedOf } from "@shared/beoPackageLine";
 
 interface BeoPackageModuleProps {
   eventId: string;
@@ -931,6 +932,222 @@ export function BeoPackageModule({ eventId, readOnly, section = "all", onPackage
       {packageContent}
       <Separator />
       {entertainmentContent}
+    </div>
+  );
+}
+
+const snapshotKey = (eventId: string) => ["/api/beo/events", eventId, "package-snapshot"] as const;
+
+/**
+ * SCRUM-1029: the party's package in the BEO editor's Event Info. The package is chosen, changed,
+ * re-applied or removed as the Birthday Package section did it (the same routes); beside its name
+ * the screen says what it includes in the Staff BEO's own words, from the same snapshot the print
+ * reads (shared/beoPackageLine.ts). The add-ons bought are listed read-only: add-ons are handled
+ * at the till, so the editor neither adds nor prices them. The kitchen and bar slips' time is
+ * Food & Drinks' (BeoSlipsTime). No price is typed here.
+ */
+export function BeoPackageInfo({ eventId, readOnly, onPackageApplied }: Pick<BeoPackageModuleProps, "eventId" | "readOnly" | "onPackageApplied">) {
+  const { toast } = useToast();
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
+  const { data: packageTemplates = [], isLoading: loadingTemplates } = useQuery<PackageTemplate[]>({
+    queryKey: ["/api/beo/birthday-packages"],
+  });
+  const { data: snapshot, isLoading: loadingSnapshot } = useQuery<PackageSnapshot | null>({
+    queryKey: snapshotKey(eventId),
+  });
+
+  const applyPackageMutation = useMutation({
+    mutationFn: (templateId: string) =>
+      apiRequest("POST", `/api/beo/events/${eventId}/package-snapshot`, { templateId }),
+    onSuccess: async (res) => {
+      const applied = (await res.json().catch(() => null)) as { setMenuTemplateId?: string | null } | null;
+      queryClient.invalidateQueries({ queryKey: snapshotKey(eventId) });
+      setSelectedTemplateId("");
+      onPackageApplied?.({ setMenuTemplateId: applied?.setMenuTemplateId ?? null });
+      toast({ title: "Package applied" });
+    },
+    onError: () => toast({ title: "Failed to apply package", variant: "destructive" }),
+  });
+
+  const removePackageMutation = useMutation({
+    mutationFn: () => apiRequest("DELETE", `/api/beo/events/${eventId}/package-snapshot`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: snapshotKey(eventId) });
+      toast({ title: "Package removed" });
+    },
+    onError: () => toast({ title: "Failed to remove package", variant: "destructive" }),
+  });
+
+  const activeTemplates = packageTemplates.filter((t) => t.isActive);
+  const templateUpdateAvailable = useMemo(() => {
+    if (!snapshot?.templateId || !snapshot?.templateUpdatedAtAtApply) return false;
+    const sourceTemplate = packageTemplates.find((t) => t.id === snapshot.templateId);
+    if (!sourceTemplate) return false;
+    return new Date(sourceTemplate.updatedAt) > new Date(snapshot.templateUpdatedAtAtApply);
+  }, [snapshot, packageTemplates]);
+
+  if (loadingSnapshot || loadingTemplates) {
+    return (
+      <div className="flex items-center gap-2 py-1 text-sm text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        Reading the package…
+      </div>
+    );
+  }
+
+  if (!snapshot) {
+    return (
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center" data-testid="beo-package-info">
+        <p className="text-sm text-muted-foreground sm:flex-1" data-testid="text-no-package">No package selected</p>
+        {!readOnly && (
+          <div className="flex min-w-0 items-center gap-2">
+            <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
+              <SelectTrigger className="h-9 min-w-0 flex-1 sm:w-64 sm:flex-none" data-testid="select-package-template">
+                <SelectValue placeholder="Choose a package…" />
+              </SelectTrigger>
+              <SelectContent>
+                {activeTemplates.map((t) => (
+                  <SelectItem key={t.id} value={t.id} data-testid={`select-package-${t.id}`}>
+                    {t.name} — {templatePrice(t)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              size="sm"
+              className="h-9 shrink-0"
+              onClick={() => {
+                if (selectedTemplateId) applyPackageMutation.mutate(selectedTemplateId);
+              }}
+              disabled={!selectedTemplateId || applyPackageMutation.isPending}
+              data-testid="button-apply-package"
+            >
+              {applyPackageMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Apply Package
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  const included = beoPackageIncludedOf(snapshot);
+  const addOns = addOnsBoughtOf(snapshot.items ?? []);
+  return (
+    <div className="space-y-2" data-testid="beo-package-info">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-sm font-medium" data-testid="text-package-name">{snapshot.packageName}</span>
+        <Badge variant="secondary" className="text-xs" data-testid="badge-package-applied">
+          <Check className="h-3 w-3 mr-1" /> Applied
+        </Badge>
+        {templateUpdateAvailable && (
+          <Badge variant="outline" className="text-xs text-amber-600 border-amber-300 dark:text-amber-400 dark:border-amber-600" data-testid="badge-template-update-available">
+            <RefreshCw className="h-3 w-3 mr-1" /> Update Available
+          </Badge>
+        )}
+        {!readOnly && (
+          <div className="ml-auto flex items-center gap-2">
+            <Select
+              value=""
+              onValueChange={(templateId) => {
+                if (templateId) applyPackageMutation.mutate(templateId);
+              }}
+            >
+              <SelectTrigger className="h-9 w-auto gap-1 text-sm" data-testid="select-change-package">
+                <SelectValue placeholder="Change Package" />
+              </SelectTrigger>
+              <SelectContent>
+                {activeTemplates.map((t) => (
+                  <SelectItem key={t.id} value={t.id} data-testid={`select-change-pkg-${t.id}`}>
+                    {t.name} — {templatePrice(t)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {templateUpdateAvailable && snapshot.templateId && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => applyPackageMutation.mutate(snapshot.templateId!)}
+                disabled={applyPackageMutation.isPending}
+                data-testid="button-reapply-package"
+                className="h-9 text-amber-600 border-amber-300 dark:text-amber-400 dark:border-amber-600"
+              >
+                {applyPackageMutation.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1" />}
+                Re-apply
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9"
+              onClick={() => removePackageMutation.mutate()}
+              disabled={removePackageMutation.isPending}
+              title="Remove the package"
+              aria-label="Remove the package"
+              data-testid="button-remove-package"
+            >
+              {removePackageMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+            </Button>
+          </div>
+        )}
+      </div>
+      {included && (
+        <p className="rounded-md bg-muted/60 px-2.5 py-1.5 text-xs text-muted-foreground" data-testid="text-package-included">
+          Included: {included}
+        </p>
+      )}
+      {addOns.length > 0 && (
+        <div className="space-y-1" data-testid="package-addons">
+          <p className="text-xs text-muted-foreground">Add-ons, handled at the till</p>
+          <ul className="space-y-0.5">
+            {addOns.map((item) => (
+              <li key={item.id} className="flex items-baseline gap-2 text-sm" data-testid={`package-addon-${item.id}`}>
+                <span className="min-w-0">{item.label}</span>
+                <span className="shrink-0 text-xs text-muted-foreground">×{item.qty}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * SCRUM-1029: the time the party's kitchen and bar slips print, in the BEO editor's Food & Drinks.
+ * The same stored field the Birthday Package section showed (the package snapshot's slips time,
+ * written by its own PATCH as before); a party with no package has none to set.
+ */
+export function BeoSlipsTime({ eventId, readOnly }: { eventId: string; readOnly?: boolean }) {
+  const { toast } = useToast();
+  const { data: snapshot } = useQuery<PackageSnapshot | null>({ queryKey: snapshotKey(eventId) });
+  const updateSlipsTimeMutation = useMutation({
+    mutationFn: (slipsTime: string) =>
+      apiRequest("PATCH", `/api/beo/events/${eventId}/package-snapshot`, { slipsTime }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: snapshotKey(eventId) });
+    },
+    onError: () => toast({ title: "Failed to update slip time", variant: "destructive" }),
+  });
+  if (!snapshot) return null;
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1" data-testid="beo-slips-time">
+      <Label htmlFor={`slips-time-${eventId}`} className="text-sm text-muted-foreground">Kitchen &amp; bar slips at</Label>
+      <Input
+        id={`slips-time-${eventId}`}
+        key={snapshot.slipsTime ?? "default"}
+        type="time"
+        defaultValue={(snapshot.slipsTime ?? "11:00").slice(0, 5)}
+        onBlur={(e) => {
+          if (readOnly || !e.target.value) return;
+          if (e.target.value === (snapshot.slipsTime ?? "").slice(0, 5)) return;
+          updateSlipsTimeMutation.mutate(e.target.value);
+        }}
+        className="h-9 w-28 text-sm"
+        disabled={readOnly}
+        data-testid="input-package-slips-time"
+      />
     </div>
   );
 }

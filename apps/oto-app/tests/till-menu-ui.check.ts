@@ -218,7 +218,7 @@ const openBeo = async (eventId: string, readOnly = false) => {
     );
   });
   await settle(10);
-  assert.ok(byTestId("accordion-kitchen-plan"), `the BEO ${eventId} is open`);
+  assert.ok(byTestId("accordion-food-drinks"), `the BEO ${eventId} is open`);
 };
 const saved = async () => {
   const before = asked.length;
@@ -250,14 +250,15 @@ BEOS.set(E1, {
   bar: [line("b1", "juice", { quantity: 10 }), line("b2", "Old soda", { productCode: "CF-77" })],
 });
 
-await check("nothing is asked of the till until the kitchen or bar plan opens; then the party's park's menu, once", async () => {
+await check("nothing is asked of the till until Food & Drinks opens; then the party's park's menu, once", async () => {
   await openBeo(E1);
-  assert.equal(tillAsks().length, 0, "a closed kitchen plan asks nothing");
-  await click("accordion-kitchen-plan");
+  assert.equal(tillAsks().length, 0, "a closed Food & Drinks asks nothing");
+  // SCRUM-1029: the kitchen and the bar are parts of Food & Drinks.
+  await click("accordion-food-drinks");
   assert.equal(tillAsks().length, 1);
   assert.equal(tillAsks()[0]!.search, `?parkId=${PARK}`, "the party's park");
-  await click("accordion-bar-plan");
-  assert.equal(tillAsks().length, 1, "the bar plan reads the same answer");
+  assert.ok(byTestId("button-till-menu-bar-0"), "the bar's search is on the same section");
+  assert.equal(tillAsks().length, 1, "the bar reads the same answer");
 });
 
 await check("a kitchen line whose code the till no longer has says so; a hand-typed line and a live code say nothing", () => {
@@ -322,7 +323,7 @@ await check("a till that does not answer: the search says so and no line is mark
   tillAnswer = (parkId) => ({ parks: [{ parkId: parkId ?? PARK, parkName: "ZZ TEST Floresta", status: "not_reachable", message: "The till did not answer, so its menu cannot be offered. Type the item, or try again in a moment.", items: [], readAt: null }] });
   BEOS.set(E2, { kids: [line("k1", "Old nuggets", { productCode: "CF-99" })], bar: [] });
   await openBeo(E2);
-  await click("accordion-kitchen-plan");
+  await click("accordion-food-drinks");
   absent("text-menu-code-dead-kids-0", "an unknown menu marks nothing");
   await click("button-till-menu-kids-0");
   assert.equal(text("button-till-menu-kids-0-unavailable"), "The till did not answer, so its menu cannot be offered. Type the item, or try again in a moment.");
@@ -331,7 +332,7 @@ await check("a till that does not answer: the search says so and no line is mark
   queryClient.clear();
   tillAnswer = (parkId) => okReading(parkId ?? PARK);
   await openBeo(E2, true);
-  await click("accordion-kitchen-plan");
+  await click("accordion-food-drinks");
   absent("button-till-menu-kids-0", "read-only: no search");
   assert.equal(text("text-menu-code-dead-kids-0"), "No longer on the till");
 });
@@ -361,7 +362,7 @@ await check("a set menu the parent chose: no search on a dish the template resol
     bar: [],
   });
   await openBeo(E3);
-  await click("accordion-kitchen-plan");
+  await click("accordion-food-drinks");
   for (const i of [0, 1]) {
     assert.ok(byTestId(`menu-item-kids-${i}`), `the template's dish ${i} is on the screen, editable`);
     absent(`button-till-menu-kids-${i}`, `no search on the template's dish ${i}`);
@@ -452,7 +453,7 @@ await check("two listed items of one name each show their category beside it; a 
     }],
   });
   await openBeo(E1);
-  await click("accordion-bar-plan");
+  await click("accordion-food-drinks");
   await click("button-till-menu-bar-0");
   await setValue(required("button-till-menu-bar-0-search") as HTMLInputElement, "latte");
   assert.deepEqual(options("button-till-menu-bar-0"), ["CF-58-4", "CF-FREE-58-4"]);

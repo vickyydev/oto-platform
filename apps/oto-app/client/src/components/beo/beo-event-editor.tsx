@@ -75,7 +75,9 @@ import {
   ListChecks,
   RefreshCw,
   Download,
+  Receipt,
 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { BeoTimelineEditor } from "./beo-timeline-editor";
 import { builtTimelineKey } from "./beo-built-timeline";
 import { BeoAiReviewDialog, SourceMark, type BeoAiPending } from "./beo-ai-review";
@@ -94,7 +96,8 @@ import {
   type ReviewTeamProposal,
 } from "@/lib/beo-ai-review";
 import { BEO_AI_FROM_THE_CHAT, SET_MENU_CHOSEN_FROM_CHAT, choicesFromChatOnly } from "@shared/beoAiFill";
-import { BeoPackageModule } from "./beo-package-module";
+import { BeoPackageInfo, BeoSlipsTime } from "./beo-package-module";
+import { BEO_DEPOSIT_MANAGERS_ONLY, mayChangeBeoDeposit } from "@shared/beoDepositManager";
 import { BeoParentExperienceModule } from "./beo-parent-experience-module";
 import { PartyMenuItemDialog } from "./beo-party-menu-item";
 import { BeoBillingSection, PartyDetailsTillTiles, tillBillingKey, useTillBilling } from "./beo-till-billing";
@@ -170,6 +173,70 @@ type AiFillInboxSource = {
   /** Load into Editor also puts this message, as read, in Final Message to Parent (it was empty). */
   fillsFinalMessage?: boolean;
 };
+
+/**
+ * SCRUM-1029: the BEO editor's four sections, in the operations brief's order and words. Under
+ * them the Billing section and Parent Experience stay as they were. Every field of the editor
+ * before keeps its stored home; only where it sits on the screen moved.
+ */
+export const BEO_SECTIONS = [
+  { key: "event-info", label: "Event Info" },
+  { key: "food-drinks", label: "Food & Drinks" },
+  { key: "entertainment", label: "Entertainment & Program" },
+  { key: "internal-notes", label: "Internal Notes" },
+] as const;
+export type BeoSectionKey = (typeof BEO_SECTIONS)[number]["key"];
+
+/**
+ * The parts the editor's marks and AI Fill's chips name (the sections before SCRUM-1029), and the
+ * sections their fields now sit in: what the review's approval opens.
+ */
+export const BEO_SECTIONS_OF_PART: Record<string, readonly BeoSectionKey[]> = {
+  "event-info": ["event-info", "food-drinks", "entertainment", "internal-notes"],
+  "party-host": ["event-info", "entertainment"],
+  "birthday-package": ["event-info"],
+  "party-details": ["event-info", "internal-notes"],
+  "setup-plan": ["food-drinks"],
+  "kitchen-plan": ["food-drinks"],
+  timeline: ["entertainment"],
+};
+
+/** SCRUM-1050: the "Other timed steps" badge: "1 step", "2 steps" (and "0 steps"). */
+export function otherStepsWords(count: number): string {
+  return `${count} ${count === 1 ? "step" : "steps"}`;
+}
+
+/** A deposit's day as the read-only deposit says it ("1 May 2099"); as stored when it is no day. */
+function depositDayWords(day: string): string {
+  const at = parseISO(day);
+  return Number.isNaN(at.getTime()) ? day : format(at, "d MMM yyyy");
+}
+
+/**
+ * SCRUM-1029: one part of a section: its heading row (a title, its icon and what sits beside it:
+ * the part's mark, AI Fill's chip, counts) and its fields, set off from the part before by a 1px
+ * line. A part with no title shows its fields alone.
+ */
+function SectionPart({ title, icon, aside, children, testId }: {
+  title?: string;
+  icon?: React.ReactNode;
+  aside?: React.ReactNode;
+  children: React.ReactNode;
+  testId: string;
+}) {
+  return (
+    <section className="mt-4 space-y-3 border-t border-border/60 pt-4 first:mt-0 first:border-t-0 first:pt-0" data-testid={testId}>
+      {title && (
+        <div className="flex min-h-7 flex-wrap items-center gap-2">
+          {icon}
+          <h3 className="text-sm font-semibold leading-none">{title}</h3>
+          {aside}
+        </div>
+      )}
+      {children}
+    </section>
+  );
+}
 
 type SetupTask = {
   id: string;
@@ -803,6 +870,9 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
   const partyBill = partyBillStateOf(tillBilling.data);
   const additionalOpen = openAdditionalBillsOf(tillBilling.data);
   const canManageBilling = !readOnly && ["global_admin", "operator_admin", "admin", "manager"].includes(user?.role ?? "");
+  // SCRUM-1034: the deposit typed by hand (a deposit taken in cash) is a manager's to type or change;
+  // anyone else reads it. The BEO's Save refuses a change from anyone else (server/beo-routes.ts).
+  const canChangeDeposit = !readOnly && mayChangeBeoDeposit(user?.role);
   const billingKey = ["/api/events", eventId, "beo", "billing"] as const;
   const { data: billingRow = null } = useQuery<BeoEventBilling | null>({ queryKey: billingKey, enabled: !!eventId });
   /**
@@ -944,7 +1014,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
   // SCRUM-905: the till's menu at the party's park, for the kitchen and bar plan pickers and
   // their "No longer on the till" marks; asked once either section is open.
   const tillMenu = useTillMenu(beoData?.branchId, {
-    enabled: expandedSections.includes("kitchen-plan") || expandedSections.includes("bar-plan"),
+    enabled: expandedSections.includes("food-drinks"),
     editable: !readOnly,
   });
 
@@ -1489,6 +1559,34 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
     }
   };
 
+  /**
+   * SCRUM-1029: a section's mark, from the marks of the parts it holds (the editor's marks before
+   * the regrouping): any part incomplete, then any part warned, else complete; a part with nothing
+   * to check (the kitchen with no food) counts for nothing, and a section with nothing to check
+   * (Internal Notes) shows the plain circle.
+   */
+  const sectionStatus = (section: BeoSectionKey): "complete" | "incomplete" | "warning" | "pending" => {
+    const parts: Record<BeoSectionKey, string[]> = {
+      "event-info": ["event-info", "party-host", "party-details"],
+      "food-drinks": ["setup-plan", "kitchen-plan"],
+      entertainment: ["timeline"],
+      "internal-notes": [],
+    };
+    const marks = parts[section].map(getSectionStatus).filter((s) => s !== "pending");
+    if (marks.length === 0) return "pending";
+    if (marks.includes("incomplete")) return "incomplete";
+    if (marks.includes("warning")) return "warning";
+    return "complete";
+  };
+
+  /** SCRUM-1029: a section's mark pressed: the section opens (the others stay as they are) and comes into view. */
+  const openSection = (section: BeoSectionKey) => {
+    setExpandedSections((prev) => (prev.includes(section) ? prev : [...prev, section]));
+    setTimeout(() => {
+      document.querySelector(`[data-section="${section}"]`)?.scrollIntoView({ block: "start", behavior: "smooth" });
+    }, 50);
+  };
+
   const StatusIcon = ({ status }: { status: "complete" | "incomplete" | "warning" | "pending" }) => {
     if (status === "complete") return <Check className="h-4 w-4 text-green-500" />;
     if (status === "pending") return <Circle className="h-4 w-4 text-muted-foreground" />;
@@ -1553,7 +1651,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
   }, [partyHostSource]);
 
   const MandatoryLabel = ({ children }: { children: React.ReactNode }) => (
-    <Label className="flex items-center gap-1">
+    <Label className="flex items-center gap-1 text-xs text-muted-foreground">
       {children}
       <span className="text-destructive">*</span>
     </Label>
@@ -2207,357 +2305,1862 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
           </div>
         )}
 
-        <div className="flex gap-2 flex-wrap mb-4">
-          {[
-            { key: "event-info", label: "Info" },
-            { key: "party-host", label: "Host" },
-            { key: "party-details", label: "POS" },
-            { key: "setup-plan", label: "Setup" },
-            { key: "kitchen-plan", label: "Kitchen" },
-            { key: "timeline", label: "Timeline" },
-          ].map(({ key, label }) => (
-            <div key={key} className="flex items-center gap-1 text-sm">
-              <StatusIcon status={getSectionStatus(key)} />
-              <span>{label}</span>
-            </div>
+        {/* SCRUM-1029: the four sections the operations brief draws, each with its mark; a press opens it. */}
+        <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4" data-testid="beo-section-marks">
+          {BEO_SECTIONS.map(({ key, label }) => (
+            <button
+              type="button"
+              key={key}
+              onClick={() => openSection(key)}
+              title={label}
+              className="flex min-h-9 min-w-0 items-center gap-2 rounded-md border bg-background px-3 py-1.5 text-left text-sm transition-colors hover:bg-accent/50"
+              data-testid={`section-mark-${key}`}
+            >
+              <StatusIcon status={sectionStatus(key)} />
+              <span className="truncate">{label}</span>
+            </button>
           ))}
         </div>
 
         <TillMenuContext.Provider value={tillMenu}>
         {/* SCRUM-949: the party's date, for the till's weekend price an EXTRA line's hint and the totals read. */}
         <BeoPartyDateContext.Provider value={eventData.eventDate ?? null}>
-        <Accordion 
-          type="multiple" 
+        <Accordion
+          type="multiple"
           value={expandedSections}
           onValueChange={setExpandedSections}
           className="space-y-2"
         >
-          {/* 1. Event Info */}
-          <AccordionItem value="event-info" className="border rounded-lg">
+          {/* 1. Event Info: the party's own details, its host, its package and the POS box (SCRUM-1029). */}
+          <AccordionItem value="event-info" data-section="event-info" className="border rounded-lg border-l-4 border-l-pink-500 bg-pink-500/5 overflow-visible [&>[data-state=open]]:overflow-visible">
             <AccordionTrigger className="px-4 hover:no-underline" data-testid="accordion-event-info">
               <div className="flex items-center gap-2">
-                <CalendarDays className="h-4 w-4" />
+                <CalendarDays className="h-4 w-4 text-pink-500" />
                 <span>Event Info</span>
-                <StatusIcon status={getSectionStatus("event-info")} />
+                <StatusIcon status={sectionStatus("event-info")} />
                 {aiSectionMark("event-info")}
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className={`px-4 pb-4 overflow-visible ${readOnly ? "opacity-75 cursor-not-allowed" : ""}`}>
+              <div>
+                <SectionPart testId="part-event">
+                  <div className="grid gap-4">
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground flex items-center gap-1">Title{aiMark("title")}</Label>
+                      <EditableText
+                        value={eventData.title || ""}
+                        onChange={(v) => { setEventData({ ...eventData, title: v }); aiTouched("title"); }}
+                        placeholder="Event title..."
+                        data-testid="input-event-title"
+                      />
+                    </div>
+                    <div className="grid sm:grid-cols-3 gap-4">
+                      <div className="space-y-1">
+                        <MandatoryLabel>Date{aiMark("eventDate")}</MandatoryLabel>
+                        <DatePicker
+                          value={eventData.eventDate ? parseISO(eventData.eventDate) : undefined}
+                          onChange={(date) => { setEventData({ ...eventData, eventDate: date ? format(date, "yyyy-MM-dd") : undefined }); aiTouched("eventDate"); }}
+                          data-testid="input-event-date"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <MandatoryLabel>Start Time{aiMark("startTime")}</MandatoryLabel>
+                        <div className="flex items-center gap-1">
+                          {eventData.startTime ? (
+                            <>
+                              <span className="text-sm font-mono bg-muted px-2 py-1 rounded">{eventData.startTime}</span>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-muted-foreground"
+                                onClick={() => { setTempStartTime(eventData.startTime || "10:00"); setShowStartTimePicker(true); }}
+                                data-testid="button-start-time-edit"
+                              >
+                                <Settings className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                onClick={() => { setEventData({ ...eventData, startTime: undefined }); aiTouched("startTime"); }}
+                                data-testid="button-start-time-clear"
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </Button>
+                            </>
+                          ) : (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-xs"
+                              onClick={() => { setTempStartTime("10:00"); setShowStartTimePicker(true); }}
+                              data-testid="button-start-time"
+                            >
+                              <Clock className="h-3 w-3 mr-1" />
+                              Set Time
+                            </Button>
+                          )}
+                        </div>
+                        {startTimeMissing && (
+                          <p className="text-xs text-destructive" data-testid="text-start-time-needed">
+                            {startTimeLine}. It was {beoData?.startTime}: nothing is saved until a time is set.
+                          </p>
+                        )}
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground flex items-center gap-1">End Time{aiMark("endTime")}</Label>
+                        <div className="flex items-center gap-1">
+                          {eventData.endTime ? (
+                            <>
+                              <span className="text-sm font-mono bg-muted px-2 py-1 rounded">{eventData.endTime}</span>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-muted-foreground"
+                                onClick={() => { setTempEndTime(eventData.endTime || "17:00"); setShowEndTimePicker(true); }}
+                                data-testid="button-end-time-edit"
+                              >
+                                <Settings className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                onClick={() => { setEventData({ ...eventData, endTime: undefined }); setTimeError(null); aiTouched("endTime"); }}
+                                data-testid="button-end-time-clear"
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </Button>
+                            </>
+                          ) : (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-xs"
+                              onClick={() => {
+                                if (eventData.startTime) {
+                                  const sm = timeToMinutes(eventData.startTime);
+                                  const em = Math.min(sm + 180, 23 * 60 + 59);
+                                  setTempEndTime(`${Math.floor(em / 60).toString().padStart(2, '0')}:${(em % 60).toString().padStart(2, '0')}`);
+                                } else {
+                                  setTempEndTime("17:00");
+                                }
+                                setShowEndTimePicker(true);
+                              }}
+                              data-testid="button-end-time"
+                            >
+                              <Clock className="h-3 w-3 mr-1" />
+                              Set Time
+                            </Button>
+                          )}
+                        </div>
+                        {timeError && <p className="text-xs text-destructive">{timeError}</p>}
+                      </div>
+                    </div>
+
+                    {showStartTimePicker && (
+                      <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/30">
+                        <input
+                          type="time"
+                          className="text-sm border rounded px-2 py-1 bg-background"
+                          value={tempStartTime}
+                          onChange={(e) => setTempStartTime(e.target.value)}
+                          data-testid="input-start-time"
+                        />
+                        <Button type="button" size="sm" className="h-7 text-xs" disabled={!isStartTime(tempStartTime)} onClick={() => {
+                          const updates: any = { startTime: tempStartTime };
+                          if (!eventData.endTime) {
+                            const startMins = timeToMinutes(tempStartTime);
+                            const endMins = Math.min(startMins + 180, 23 * 60 + 59);
+                            const endH = Math.floor(endMins / 60).toString().padStart(2, '0');
+                            const endM = (endMins % 60).toString().padStart(2, '0');
+                            updates.endTime = `${endH}:${endM}`;
+                          }
+                          setEventData({ ...eventData, ...updates });
+                          setTimeError(null);
+                          setShowStartTimePicker(false);
+                          aiTouched("startTime");
+                          if (updates.endTime) aiTouched("endTime");
+                        }} data-testid="button-confirm-start-time">Confirm</Button>
+                        <Button type="button" size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowStartTimePicker(false)}>Cancel</Button>
+                      </div>
+                    )}
+
+                    {showEndTimePicker && (
+                      <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/30">
+                        <input
+                          type="time"
+                          className="text-sm border rounded px-2 py-1 bg-background"
+                          value={tempEndTime}
+                          onChange={(e) => setTempEndTime(e.target.value)}
+                          data-testid="input-end-time"
+                        />
+                        <Button type="button" size="sm" className="h-7 text-xs" onClick={() => {
+                          const startTime = eventData.startTime || "10:00";
+                          const startMinutes = timeToMinutes(startTime);
+                          const endMinutes = timeToMinutes(tempEndTime);
+                          if (endMinutes <= startMinutes) {
+                            setTimeError("End time must be after start time");
+                            setShowEndTimePicker(false);
+                            return;
+                          }
+                          setEventData({ ...eventData, endTime: tempEndTime });
+                          setTimeError(null);
+                          setShowEndTimePicker(false);
+                          aiTouched("endTime");
+                        }} data-testid="button-confirm-end-time">Confirm</Button>
+                        <Button type="button" size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowEndTimePicker(false)}>Cancel</Button>
+                      </div>
+                    )}
+
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <MandatoryLabel>Child / Guest of Honor Name{aiMark("childName")}</MandatoryLabel>
+                        <EditableText
+                          value={eventData.childName || ""}
+                          onChange={(v) => { setEventData({ ...eventData, childName: v }); aiTouched("childName"); }}
+                          placeholder="Birthday child or guest name"
+                          data-testid="input-child-name"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <MandatoryLabel>Kid Turning Age</MandatoryLabel>
+                        <input
+                          type="number"
+                          min={1}
+                          value={(eventData as any).kidTurningAge ?? ""}
+                          onChange={(e) => setEventData({ ...eventData, kidTurningAge: e.target.value === "" ? undefined : parseInt(e.target.value, 10) } as any)}
+                          placeholder="e.g., 5"
+                          className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                          data-testid="input-kid-turning-age"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid sm:grid-cols-3 gap-4">
+                      <div className="space-y-1">
+                        <MandatoryLabel>Location{aiMark("locationText")}</MandatoryLabel>
+                        <EditableText
+                          value={locationText}
+                          onChange={(v) => { setLocationText(v); aiTouched("locationText"); }}
+                          placeholder="e.g., Party Room A, Outdoor Area..."
+                          data-testid="input-location-text"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <MandatoryLabel>Expected Kids{aiMark("numChildren")}</MandatoryLabel>
+                        <EditableText
+                          type="number"
+                          value={String(eventData.numChildren || "")}
+                          onChange={(v) => { setEventData({ ...eventData, numChildren: parseInt(v) || 0 }); aiTouched("numChildren"); }}
+                          placeholder="0"
+                          data-testid="input-num-children"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <MandatoryLabel>Expected Adults{aiMark("numAdults")}</MandatoryLabel>
+                        <EditableText
+                          type="number"
+                          value={String(eventData.numAdults || "")}
+                          onChange={(v) => { setEventData({ ...eventData, numAdults: parseInt(v) || 0 }); aiTouched("numAdults"); }}
+                          placeholder="0"
+                          data-testid="input-num-adults"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <MandatoryLabel>Parent / Booking Name{aiMark("bookingName")}</MandatoryLabel>
+                        <EditableText
+                          value={eventData.bookingName || ""}
+                          onChange={(v) => { setEventData({ ...eventData, bookingName: v }); aiTouched("bookingName"); }}
+                          placeholder="Parent or booking contact"
+                          data-testid="input-booking-name"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">WhatsApp Number</Label>
+                        <div className="flex items-center gap-2">
+                          <EditableText
+                            value={eventData.whatsappPhoneRaw || ""}
+                            onChange={(v) => setEventData({ ...eventData, whatsappPhoneRaw: v })}
+                            placeholder="e.g., +1234567890"
+                            data-testid="input-whatsapp-phone"
+                          />
+                          {eventData.whatsappPhoneRaw && eventData.whatsappPhoneRaw.replace(/[^0-9]/g, '').length > 0 && (
+                            <a
+                              href={`https://wa.me/${eventData.whatsappPhoneRaw.replace(/[^0-9]/g, '')}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center justify-center h-8 w-8 rounded-md text-green-600 hover:text-green-700 hover:bg-green-50 shrink-0"
+                              data-testid="link-whatsapp-beo"
+                            >
+                              <Phone className="h-4 w-4" />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    {(eventData as any).eventType === "studio_event" && (
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">Calendar Color</Label>
+                        <div className="flex flex-wrap gap-2" data-testid="picker-event-color">
+                          {ONE_OFF_EVENT_COLOR_OPTIONS.map((c) => (
+                            <button
+                              key={c.value}
+                              type="button"
+                              title={c.label}
+                              aria-label={c.label}
+                              onClick={() => setEventData({ ...eventData, color: c.value } as any)}
+                              className={`h-7 w-7 rounded-full border-2 transition-transform ${
+                                (eventData as any).color === c.value ? "border-foreground scale-110" : "border-transparent"
+                              }`}
+                              style={{ backgroundColor: c.value }}
+                              data-testid={`button-event-color-${c.label.toLowerCase()}`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </SectionPart>
+
+                <SectionPart
+                  testId="part-party-host"
+                  title="Party Host"
+                  icon={<User className="h-4 w-4 text-pink-500" />}
+                  aside={<><StatusIcon status={getSectionStatus("party-host")} />{aiSectionMark("party-host")}</>}
+                >
+                  <div className="space-y-1">
+                    <MandatoryLabel>Assigned Party Host{aiMark("team:partyHost")}</MandatoryLabel>
+                    <AssignmentSearchBar
+                      value={partyHostAssignmentValue}
+                      onChange={(values) => { handlePartyHostChange(values); aiTouched("team:partyHost"); }}
+                      employees={allEmployees || []}
+                      roles={allRoles || []}
+                      placeholder="Search employees or roles..."
+                      showEveryone={false}
+                    />
+                  </div>
+                </SectionPart>
+
+                {beoData.eventType === "birthday" && (
+                  <SectionPart
+                    testId="part-package"
+                    title="Package"
+                    icon={<Gift className="h-4 w-4 text-pink-500" />}
+                    aside={<>{aiSectionMark("birthday-package")}</>}
+                  >
+                    <BeoPackageInfo
+                      eventId={eventId}
+                      readOnly={readOnly}
+                      onPackageApplied={({ setMenuTemplateId: packageSetMenuId }) => {
+                        // The package's set menu starts the kitchen plan's, as the
+                        // server did; a set menu already chosen here stays.
+                        if (packageSetMenuId && !setMenuTemplateId) {
+                          setSetMenuEnabled(true);
+                          setSetMenuTemplateId(packageSetMenuId);
+                        }
+                      }}
+                    />
+                  </SectionPart>
+                )}
+
+                <SectionPart
+                  testId="part-pos"
+                  title="POS"
+                  icon={<Receipt className="h-4 w-4 text-pink-500" />}
+                  aside={
+                    <>
+                      <StatusIcon status={getSectionStatus("party-details")} />
+                      {aiSectionMark("party-details")}
+                      {tillFigures && tillFigures.expectedSatang > 0 && (
+                        <Badge variant="outline" className="text-xs font-mono" data-testid="badge-party-details-total">
+                          {bahtOfSatang(tillFigures.expectedSatang)}
+                        </Badge>
+                      )}
+                      <BeoTaskBadge prefix="💰 POS Setup:" label="Mark POS Done" />
+                    </>
+                  }
+                >
+                  <div className="space-y-4">
+                    {/* SCRUM-822: no price is typed here: the package's price for the party's day and every
+                        charge are the till's (the tiles below and the Billing section). */}
+                    <div className="flex items-end gap-3">
+                      <div className="flex-1 space-y-1">
+                        <Label className="text-xs text-muted-foreground flex items-center gap-1">POS Name{aiMark("posName")}</Label>
+                        <EditableText
+                          value={packageName}
+                          onChange={(v) => { setPackageName(v); aiTouched("posName"); }}
+                          placeholder="e.g., Platinum POS"
+                          data-testid="input-package-name"
+                        />
+                      </div>
+                    </div>
+
+                    <Separator />
+
+                    <div className="space-y-2">
+                      <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Line Items</Label>
+                      <p className="text-xs text-muted-foreground" data-testid="text-party-details-lines-note">
+                        What the POS team should know is included or extra. The prices are the till's.
+                      </p>
+
+                      {packageItems.length === 0 ? (
+                        <div
+                          className="text-sm text-muted-foreground text-center py-4 border border-dashed rounded-md cursor-pointer hover:bg-accent/30 hover:border-border transition-colors"
+                          onClick={() => addPackageItem("included")}
+                          data-testid="button-add-first-package-item"
+                        >
+                          No line items yet. Click to add the first.
+                        </div>
+                      ) : (
+                        <>
+                          {packageItems.map((item, idx) => (
+                            <PackageLineItemRow
+                              key={item.id}
+                              item={item}
+                              idx={idx}
+                              packageItems={packageItems}
+                              setPackageItems={setPackageItems}
+                            />
+                          ))}
+                          <div className="flex gap-2 pt-1">
+                            <button
+                              className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-emerald-500/15 text-emerald-600 border-emerald-500/30 dark:text-emerald-400 hover:bg-emerald-500/25 transition-colors"
+                              onClick={() => addPackageItem("included")}
+                              data-testid="button-add-included-item"
+                            >
+                              + INCL
+                            </button>
+                            <button
+                              className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-amber-500/15 text-amber-600 border-amber-500/30 dark:text-amber-400 hover:bg-amber-500/25 transition-colors"
+                              onClick={() => addPackageItem("extra")}
+                              data-testid="button-add-extra-item"
+                            >
+                              + EXTRA
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    <Separator />
+
+                    {/* SCRUM-822: Total and Outstanding are the till's; the deposit stays the BEO's one figure (SCRUM-813).
+                        SCRUM-1034: the deposit typed by hand (a deposit taken in cash) is a manager's to type or change. */}
+                    <PartyDetailsTillTiles
+                      reading={tillBilling.data}
+                      loading={tillBilling.isLoading}
+                      depositUnsaved={depositUnsaved}
+                      deposit={
+                        canChangeDeposit ? (
+                          <>
+                            <Label className="text-xs text-muted-foreground flex items-center gap-1">Deposit{aiMark("deposit")}</Label>
+                            <EditableText
+                              type="number"
+                              className="font-mono text-lg font-bold"
+                              value={String(prepaymentReceived || "")}
+                              onChange={(v) => { setPrepaymentReceived(Number(v) || 0); aiTouched("deposit"); }}
+                              placeholder="0"
+                              data-testid="input-prepayment"
+                            />
+                            <DatePicker
+                              value={depositDate}
+                              onChange={setDepositDate}
+                              placeholder="Deposit date"
+                              className="h-7 text-xs"
+                              data-testid="datepicker-deposit-date"
+                            />
+                          </>
+                        ) : (
+                          <>
+                            <Label className="text-xs text-muted-foreground flex items-center gap-1">Deposit{aiMark("deposit")}</Label>
+                            <p className="font-mono text-lg font-bold" data-testid="text-prepayment">
+                              {prepaymentReceived > 0 ? bahtOfSatang(Math.round(prepaymentReceived * 100)) : "No deposit"}
+                            </p>
+                            {depositDate && (
+                              <p className="text-xs text-muted-foreground" data-testid="text-deposit-date">{depositDayWords(depositDate)}</p>
+                            )}
+                            <p className="text-xs text-muted-foreground" data-testid="text-deposit-managers-only">{BEO_DEPOSIT_MANAGERS_ONLY}</p>
+                          </>
+                        )
+                      }
+                    />
+                  </div>
+                </SectionPart>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* 2. Food & Drinks: setup and table, the food, the bar (SCRUM-1029). */}
+          <AccordionItem value="food-drinks" data-section="food-drinks" className="border rounded-lg border-l-4 border-l-blue-500 bg-blue-500/5 overflow-visible [&>[data-state=open]]:overflow-visible">
+            <AccordionTrigger className="px-4 hover:no-underline" data-testid="accordion-food-drinks">
+              <div className="flex items-center gap-2">
+                <UtensilsCrossed className="h-4 w-4 text-blue-500" />
+                <span>Food &amp; Drinks</span>
+                <StatusIcon status={sectionStatus("food-drinks")} />
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className={`px-4 pb-4 overflow-visible ${readOnly ? "opacity-75 cursor-not-allowed" : ""}`}>
+              <div>
+                {/* The time the party's kitchen and bar slips print: the package snapshot's own field, moved here. */}
+                {beoData.eventType === "birthday" && <BeoSlipsTime eventId={eventId} readOnly={readOnly} />}
+
+                <SectionPart
+                  testId="part-setup"
+                  title="Setup / Table"
+                  icon={<Settings className="h-4 w-4 text-blue-500" />}
+                  aside={
+                    <>
+                      <StatusIcon status={getSectionStatus("setup-plan")} />
+                      {aiSectionMark("setup-plan")}
+                      {setupTasks.length > 0 && (
+                        <Badge variant="secondary" className="text-xs">{setupTasks.length} tasks</Badge>
+                      )}
+                      <BeoTaskBadge prefix="🔧 Setup:" label="Mark Setup Done" />
+                    </>
+                  }
+                >
+                  <div className="space-y-4">
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      <div className="flex items-center gap-2">
+                        <Label className="text-sm text-muted-foreground whitespace-nowrap flex items-center gap-1">Ready by{aiMark("setupReadyBy")}</Label>
+                        <div className="flex items-center gap-1">
+                          {setupReadyBy ? (
+                            <>
+                              <span className="text-sm font-mono bg-muted px-2 py-1 rounded">{setupReadyBy}</span>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-muted-foreground"
+                                onClick={() => { setTempReadyByTime(setupReadyBy); setShowReadyByTimePicker(true); }}
+                                data-testid="button-ready-by-edit"
+                              >
+                                <Settings className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                onClick={() => setSetupReadyBy("")}
+                                data-testid="button-ready-by-clear"
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </Button>
+                            </>
+                          ) : (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-xs"
+                              onClick={() => { setTempReadyByTime("09:00"); setShowReadyByTimePicker(true); }}
+                              data-testid="input-setup-ready-by"
+                            >
+                              <Clock className="h-3 w-3 mr-1" />
+                              Set Time
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 relative">
+                        <Label className="text-sm text-muted-foreground whitespace-nowrap flex items-center gap-1">Who{aiMark(aiMarks["team:setupResponsible"] ? "team:setupResponsible" : "setupResponsible")}</Label>
+                        <div className="flex-1 relative">
+                          {setupResponsible && !showResponsibleDropdown ? (
+                            <div
+                              role="button"
+                              tabIndex={0}
+                              onClick={() => {
+                                setSetupResponsibleSearch("");
+                                setShowResponsibleDropdown(true);
+                                setTimeout(() => responsibleSearchRef.current?.focus(), 0);
+                              }}
+                              className="w-full rounded-md px-3 py-1.5 text-sm cursor-text transition-colors min-h-[32px] flex items-center hover:bg-accent/50 border border-transparent hover:border-border"
+                              data-testid="input-setup-responsible"
+                            >
+                              {setupResponsible}
+                            </div>
+                          ) : (
+                            <div className="relative">
+                              <Search className="absolute left-2.5 top-2 h-4 w-4 text-muted-foreground" />
+                              <input
+                                ref={responsibleSearchRef}
+                                type="text"
+                                className="w-full rounded-md border border-input bg-background pl-8 pr-3 py-1.5 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring h-8"
+                                value={showResponsibleDropdown ? setupResponsibleSearch : setupResponsible}
+                                onChange={(e) => {
+                                  setSetupResponsibleSearch(e.target.value);
+                                  setShowResponsibleDropdown(true);
+                                }}
+                                onFocus={() => setShowResponsibleDropdown(true)}
+                                onBlur={() => {
+                                  setTimeout(() => {
+                                    setShowResponsibleDropdown(false);
+                                    if (setupResponsibleSearch && !setupResponsible) {
+                                      setSetupResponsible(setupResponsibleSearch);
+                                      aiTouchedSetupWho();
+                                    }
+                                  }, 200);
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Escape") {
+                                    setShowResponsibleDropdown(false);
+                                    (e.target as HTMLInputElement).blur();
+                                  }
+                                  if (e.key === "Enter" && setupResponsibleSearch) {
+                                    setSetupResponsible(setupResponsibleSearch);
+                                    setShowResponsibleDropdown(false);
+                                    (e.target as HTMLInputElement).blur();
+                                    aiTouchedSetupWho();
+                                  }
+                                }}
+                                placeholder="Search employee, dept..."
+                                data-testid="input-setup-responsible-search"
+                              />
+                              {showResponsibleDropdown && responsibleSearchResults.length > 0 && (
+                                <div className="absolute z-50 top-full mt-1 w-full bg-popover border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                                  {responsibleSearchResults.map((r) => (
+                                    <button
+                                      key={`${r.type}-${r.id}`}
+                                      type="button"
+                                      className="w-full text-left px-3 py-2 text-sm hover:bg-accent flex items-center gap-2"
+                                      onMouseDown={(e) => {
+                                        e.preventDefault();
+                                        setSetupResponsible(r.label);
+                                        setSetupResponsibleId(r.id);
+                                        setSetupResponsibleType(r.type);
+                                        setSetupResponsibleSearch("");
+                                        setShowResponsibleDropdown(false);
+                                        aiTouchedSetupWho();
+                                      }}
+                                      data-testid={`responsible-option-${r.type}-${r.id}`}
+                                    >
+                                      {r.type === "employee" ? (
+                                        <Users className="h-3.5 w-3.5 text-emerald-500" />
+                                      ) : (
+                                        <Building2 className="h-3.5 w-3.5 text-indigo-500" />
+                                      )}
+                                      {r.label}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {setupResponsible && (
+                            <button
+                              className="absolute right-2 top-1.5 text-muted-foreground hover:text-foreground"
+                              onClick={() => {
+                                setSetupResponsible("");
+                                setSetupResponsibleId(null);
+                                setSetupResponsibleType(null);
+                                setSetupResponsibleSearch("");
+                                setShowResponsibleDropdown(true);
+                                setTimeout(() => responsibleSearchRef.current?.focus(), 0);
+                                aiTouchedSetupWho();
+                              }}
+                              data-testid="button-clear-responsible"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {showReadyByTimePicker && (
+                      <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/30">
+                        <input
+                          type="time"
+                          className="text-sm border rounded px-2 py-1 bg-background"
+                          value={tempReadyByTime}
+                          onChange={(e) => setTempReadyByTime(e.target.value)}
+                          data-testid="input-ready-by-time"
+                        />
+                        <Button type="button" size="sm" className="h-7 text-xs" onClick={() => { setSetupReadyBy(tempReadyByTime); setShowReadyByTimePicker(false); aiTouched("setupReadyBy"); }} data-testid="button-confirm-ready-by-time">Confirm</Button>
+                        <Button type="button" size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowReadyByTimePicker(false)}>Cancel</Button>
+                      </div>
+                    )}
+
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground flex items-center gap-1">Decoration{aiMark("decoration")}</Label>
+                      <EditableText
+                        value={eventData.decoration || ""}
+                        onChange={(v) => { setEventData({ ...eventData, decoration: v }); aiTouched("decoration"); }}
+                        placeholder="e.g., Balloons, Streamers, Table Setup"
+                        data-testid="input-event-decoration"
+                      />
+                    </div>
+
+                    {setupTasks.length === 0 ? (
+                      <div
+                        className="text-sm text-muted-foreground text-center py-4 border border-dashed rounded-md cursor-pointer hover:bg-accent/30 hover:border-border transition-colors"
+                        onClick={addSetupTask}
+                        data-testid="button-add-first-setup-task"
+                      >
+                        No setup tasks yet. Click to add the first.
+                      </div>
+                    ) : (
+                      <>
+                        {setupTasks.map((task, idx) => (
+                          <div key={task.id} className="border rounded-md px-3 py-2 space-y-1.5" data-testid={`setup-task-row-${idx}`}>
+                            <div className="flex items-center gap-2">
+                              <EditableText
+                                className="flex-1 text-sm"
+                                value={task.itemLabel}
+                                onChange={(v) => updateSetupTask(task.id, { itemLabel: v })}
+                                onEnter={() => {
+                                  addSetupTask();
+                                  setTimeout(() => {
+                                    const el = document.querySelector(`[data-testid="input-setup-item-${idx + 1}"]`) as HTMLElement;
+                                    if (el) el.click();
+                                  }, 50);
+                                }}
+                                placeholder="What needs to be set up..."
+                                data-testid={`input-setup-item-${idx}`}
+                              />
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 shrink-0"
+                                onClick={() => {
+                                  const updated = [...setupTasks];
+                                  updated[idx] = { ...task, notes: task.notes ? "" : " " };
+                                  setSetupTasks(updated);
+                                }}
+                                data-testid={`button-toggle-task-notes-${idx}`}
+                              >
+                                <MessageSquare className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 shrink-0 text-destructive hover:text-destructive"
+                                onClick={() => removeSetupTask(task.id)}
+                                data-testid={`button-remove-task-${idx}`}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                            {task.notes !== undefined && task.notes !== "" && (
+                              <EditableText
+                                className="text-xs"
+                                value={task.notes.trim()}
+                                onChange={(v) => updateSetupTask(task.id, { notes: v })}
+                                placeholder="Notes (optional)"
+                                data-testid={`input-setup-notes-${idx}`}
+                              />
+                            )}
+                          </div>
+                        ))}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={addSetupTask}
+                          className="w-full mt-2"
+                          data-testid="button-add-setup-task"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Task
+                        </Button>
+                      </>
+                    )}
+
+                    <details className="mt-2">
+                      <summary className="text-sm text-muted-foreground cursor-pointer">General Setup Notes</summary>
+                      <EditableText
+                        value={setupNotes}
+                        onChange={setSetupNotes}
+                        placeholder="General setup notes..."
+                        multiline
+                        className="mt-2"
+                        data-testid="textarea-setup-notes"
+                      />
+                    </details>
+                  </div>
+                </SectionPart>
+
+                <SectionPart
+                  testId="part-food"
+                  title="Food"
+                  icon={<Cake className="h-4 w-4 text-blue-500" />}
+                  aside={
+                    <>
+                      <StatusIcon status={getSectionStatus("kitchen-plan")} />
+                      {aiSectionMark("kitchen-plan")}
+                      <BeoTaskBadge prefix="🍽️ Kitchen:" label="Mark Kitchen Done" />
+                    </>
+                  }
+                >
+                  <div className="grid gap-4">
+                    {/* SCRUM-1029: the kitchen plan's "food required", ticked off as "No food for this party". The menus
+                        and the cake are hidden while it is ticked, never deleted; the print says the kitchen is Not Needed. */}
+                    <label className="flex min-h-9 w-fit cursor-pointer items-center gap-2 text-sm" data-testid="label-no-food">
+                      <Checkbox
+                        checked={!kitchenRequired}
+                        onCheckedChange={(ticked) => setKitchenRequired(ticked !== true)}
+                        disabled={readOnly}
+                        data-testid="checkbox-no-food"
+                      />
+                      No food for this party
+                    </label>
+                    {kitchenRequired ? (
+                      <>
+                        <div className="space-y-2">
+                          <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Menus</Label>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <div className="flex gap-1">
+                              <Button
+                                variant={menuTab === "kids" ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setMenuTab("kids")}
+                                data-testid="button-menu-tab-kids"
+                              >
+                                Kids Menu ({kidsMenu.length})
+                              </Button>
+                              <Button
+                                variant={menuTab === "adults" ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setMenuTab("adults")}
+                                data-testid="button-menu-tab-adults"
+                              >
+                                Adults Menu ({adultsDiffer ? adultsMenu.length : kidsMenu.length})
+                              </Button>
+                            </div>
+                            <div className="flex items-center gap-2 ml-auto">
+                              <span className="text-xs text-muted-foreground">Service:</span>
+                              {(menuTab === "kids" ? kidsFoodTime : adultsFoodTime) ? (
+                                <div className="flex items-center gap-1">
+                                  <span className="text-sm font-mono bg-muted px-2 py-1 rounded">{menuTab === "kids" ? kidsFoodTime : adultsFoodTime}</span>
+                                  <Button disabled={readOnly}
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 text-muted-foreground"
+                                    onClick={() => { setFoodTimeTarget(menuTab); setTempFoodTime((menuTab === "kids" ? kidsFoodTime : adultsFoodTime) || "12:00"); setShowFoodTimePicker(true); }}
+                                    data-testid={`button-food-time-edit-${menuTab}`}
+                                  >
+                                    <Settings className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button disabled={readOnly}
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                    onClick={() => menuTab === "kids" ? setKidsFoodTime("") : setAdultsFoodTime("")}
+                                    data-testid={`button-food-time-clear-${menuTab}`}
+                                  >
+                                    <X className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <Button disabled={readOnly}
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 text-xs"
+                                  onClick={() => { setFoodTimeTarget(menuTab); setTempFoodTime("12:00"); setShowFoodTimePicker(true); }}
+                                  data-testid={`input-food-service-time-${menuTab}`}
+                                >
+                                  <Clock className="h-3 w-3 mr-1" />
+                                  Set Time
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+
+                          {showFoodTimePicker && foodTimeTarget === menuTab && (
+                            <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/30">
+                              <input
+                                type="time"
+                                className="text-sm border rounded px-2 py-1 bg-background"
+                                value={tempFoodTime}
+                                onChange={(e) => setTempFoodTime(e.target.value)}
+                                data-testid="input-food-time"
+                              />
+                              <Button disabled={readOnly} type="button" size="sm" className="h-7 text-xs" onClick={() => { if (foodTimeTarget === "kids") setKidsFoodTime(tempFoodTime); else setAdultsFoodTime(tempFoodTime); setShowFoodTimePicker(false); }} data-testid="button-confirm-food-time">Confirm</Button>
+                              <Button disabled={readOnly} type="button" size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowFoodTimePicker(false)}>Cancel</Button>
+                            </div>
+                          )}
+
+                          {(() => {
+                            const isKids = menuTab === "kids";
+                            const currentMenu = isKids ? kidsMenu : adultsMenu;
+                            const setCurrentMenu = isKids ? setKidsMenu : setAdultsMenu;
+
+                            if (isKids) {
+                              const activeTemplates = setMenuTemplates.filter(t => t.isActive);
+                              const selectedTemplate = setMenuTemplates.find(t => t.id === setMenuTemplateId);
+
+                              return (
+                                <div className="space-y-3">
+                                  {/* Set Menu Toggle */}
+                                  <div className="flex items-center gap-3 p-3 border rounded-md bg-muted/30">
+                                    <Switch disabled={readOnly}
+                                      checked={setMenuEnabled}
+                                      onCheckedChange={(v) => {
+                                        if (!v) {
+                                          const hasSetMenuItems = [...kidsMenu, ...adultsMenu].some(m => m.source === "set_menu");
+                                          if (hasSetMenuItems && !window.confirm("Disabling Set Menu will keep existing set-menu items in the menu. To clear them, use Reset Selections beside the parent link first; that also clears the parent's submitted choices and replaces the parent link with a new one. Continue?")) {
+                                            return;
+                                          }
+                                          setSetMenuTemplateId("");
+                                        }
+                                        setSetMenuEnabled(v);
+                                      }}
+                                      data-testid="switch-set-menu-enabled"
+                                    />
+                                    <div>
+                                      <Label className="text-sm font-medium">Set Menu</Label>
+                                      <p className="text-xs text-muted-foreground">Attach a birthday package set menu and send a link to parents for their choices</p>
+                                    </div>
+                                  </div>
+
+                                  {setMenuEnabled && (
+                                    <>
+                                      {/* Template Picker */}
+                                      <div className="space-y-1">
+                                        <Label className="text-xs text-muted-foreground">Set Menu Template</Label>
+                                        <Select disabled={readOnly} value={setMenuTemplateId} onValueChange={setSetMenuTemplateId}>
+                                          <SelectTrigger disabled={readOnly} className="text-sm" data-testid="select-set-menu-template">
+                                            <SelectValue placeholder="Pick a template..." />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            {activeTemplates.length === 0 ? (
+                                              <SelectItem value="__none__" disabled>No templates — add one in Event Settings</SelectItem>
+                                            ) : (
+                                              activeTemplates.map(t => (
+                                                <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                                              ))
+                                            )}
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+
+                                      {selectedTemplate && (
+                                        <>
+                                          {/* SET MENU block */}
+                                          {(() => {
+                                            const resolvedMenu = kidsMenu.some((item) => item.source === "set_menu")
+                                              ? kidsMenu
+                                              : adultsMenu;
+                                            const resolvedMenuTab = resolvedMenu === kidsMenu ? "kids" : "adults";
+                                            const setResolvedMenu = resolvedMenuTab === "kids" ? setKidsMenu : setAdultsMenu;
+                                            const resolvedSetMenuItems = resolvedMenu.filter(m => m.source === "set_menu");
+                                            const hasResolved = setMenuSelection?.isSubmitted === true;
+                                            return (
+                                              <div className="border-2 border-emerald-500/40 rounded-lg overflow-hidden">
+                                                <div className="bg-emerald-500/15 px-3 py-1.5 flex items-center gap-2">
+                                                  <ListChecks className="h-3.5 w-3.5 text-emerald-600" />
+                                                  <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">Set Menu</span>
+                                                  <Badge variant="outline" className="text-[10px] px-1.5 bg-emerald-500/10 text-emerald-600 border-emerald-500/30 ml-1">{selectedTemplate.name}</Badge>
+                                                  {/* SCRUM-927: choices read from the chat are not a parent's: no "Selections received". */}
+                                                  {setMenuSelection?.isSubmitted && (
+                                                    <Badge className="text-[10px] px-1.5 bg-emerald-500 text-white ml-auto" data-testid="badge-set-menu-selection">
+                                                      {choicesFromChatOnly(setMenuSelection.selections) ? SET_MENU_CHOSEN_FROM_CHAT : "Selections received"}
+                                                    </Badge>
+                                                  )}
+                                                  {setMenuSelection && !setMenuSelection.isSubmitted && (
+                                                    <Badge variant="outline" className="text-[10px] px-1.5 ml-auto text-amber-600 border-amber-500/30 bg-amber-500/10">Awaiting parent</Badge>
+                                                  )}
+                                                </div>
+
+                                                <SetMenuChoiceGroups
+                                                  template={selectedTemplate}
+                                                  resolvedItems={resolvedSetMenuItems}
+                                                  hasResolved={hasResolved}
+                                                />
+
+                                                {/* Manager override: editable resolved items */}
+                                                <div className="p-3 space-y-1.5">
+                                                  <div className="flex items-center gap-2">
+                                                    <p className="text-[10px] font-semibold uppercase text-muted-foreground tracking-wide">
+                                                      {hasResolved ? "Resolved Items (editable)" : "Manual Override"}
+                                                    </p>
+                                                  </div>
+                                                  {hasResolved ? (
+                                                    <>
+                                                      {resolvedSetMenuItems.map((item, idx) => {
+                                                        const absIdx = resolvedMenu.findIndex(m => m === item);
+                                                        return (
+                                                          <MenuLineItemRow disabled={readOnly}
+                                                            key={item.id}
+                                                            item={item}
+                                                            idx={absIdx >= 0 ? absIdx : idx}
+                                                            menuItems={resolvedMenu}
+                                                            setMenuItems={setResolvedMenu}
+                                                            menuTab={resolvedMenuTab}
+                                                          />
+                                                        );
+                                                      })}
+                                                    </>
+                                                  ) : (
+                                                    <p className="text-xs text-muted-foreground italic">Parent selections appear here after submission. You can also add items manually below.</p>
+                                                  )}
+                                                  <button disabled={readOnly}
+                                                    className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-emerald-500/15 text-emerald-600 border-emerald-500/30 dark:text-emerald-400 hover:bg-emerald-500/25 transition-colors"
+                                                    onClick={() => {
+                                                      const newItem: MenuLine = {
+                                                        id: `menu_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+                                                        itemName: "",
+                                                        quantity: 1,
+                                                        notes: "",
+                                                        included: true,
+                                                        price: 0,
+                                                        source: "set_menu",
+                                                      };
+                                                      setResolvedMenu(prev => [...prev, newItem]);
+                                                    }}
+                                                    data-testid="button-add-set-menu-item"
+                                                  >
+                                                    + Add item
+                                                  </button>
+                                                </div>
+                                              </div>
+                                            );
+                                          })()}
+
+                                          {/* Parent link controls */}
+                                          <div className="flex items-center gap-2 flex-wrap">
+                                            <Button
+                                              variant="outline"
+                                              size="sm"
+                                              className="text-xs h-8"
+                                              onClick={() => {
+                                                if (setMenuSelection && setMenuSelection.templateId === setMenuTemplateId) {
+                                                  setShowParentLinkDialog(true);
+                                                } else {
+                                                  generateLinkMutation.mutate();
+                                                }
+                                              }}
+                                              disabled={!setMenuTemplateId || generateLinkMutation.isPending}
+                                              data-testid="button-get-parent-link"
+                                            >
+                                              {generateLinkMutation.isPending ? (
+                                                <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                                              ) : (
+                                                <Link2 className="h-3.5 w-3.5 mr-1.5" />
+                                              )}
+                                              Get Parent Link
+                                            </Button>
+                                            {setMenuSelection && (
+                                              <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="text-xs h-8 text-muted-foreground"
+                                                onClick={() => resetSelectionMutation.mutate()}
+                                                disabled={resetSelectionMutation.isPending}
+                                                data-testid="button-reset-selections"
+                                              >
+                                                {resetSelectionMutation.isPending ? (
+                                                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                                                ) : (
+                                                  <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                                                )}
+                                                Reset Selections
+                                              </Button>
+                                            )}
+                                            {setMenuSelection?.isSubmitted && setMenuSelection.submittedAt && (
+                                              <span className="text-xs text-muted-foreground" data-testid="text-set-menu-selection-date">
+                                                {choicesFromChatOnly(setMenuSelection.selections) ? "Chosen from the chat" : "Received"} {parkDayOf(setMenuSelection.submittedAt)}
+                                              </span>
+                                            )}
+                                          </div>
+                                        </>
+                                      )}
+                                    </>
+                                  )}
+
+                                  {/* Additional Items section */}
+                                  <div className="space-y-2">
+                                    {setMenuEnabled && (
+                                      <div className="flex items-center gap-2">
+                                        <Label className="text-xs text-muted-foreground uppercase tracking-wide">Additional Items</Label>
+                                      </div>
+                                    )}
+                                    {(() => {
+                                      const additionalItems = setMenuEnabled
+                                        ? currentMenu.filter(m => m.source !== "set_menu")
+                                        : currentMenu;
+                                      const setAdditionalItems = (updater: (prev: MenuLine[]) => MenuLine[]) => {
+                                        if (setMenuEnabled) {
+                                          setKidsMenu(prev => {
+                                            const setMenuItems = prev.filter(m => m.source === "set_menu");
+                                            const additional = prev.filter(m => m.source !== "set_menu");
+                                            const updatedAdditional = updater(additional);
+                                            return [...setMenuItems, ...updatedAdditional];
+                                          });
+                                        } else {
+                                          setKidsMenu(updater);
+                                        }
+                                      };
+                                      return (
+                                        <>
+                                          {additionalItems.length === 0 && !setMenuEnabled ? (
+                                            <div
+                                              className="text-sm text-muted-foreground text-center py-4 border border-dashed rounded-md cursor-pointer hover:bg-accent/30 hover:border-border transition-colors"
+                                              onClick={() => {
+                                                if (readOnly) return;
+                                                // SCRUM-958 (SCRUM-940 point 2): the first line shows the EXTRA badge, so it is saved as one.
+                                                setCurrentMenu([{
+                                                  id: `menu_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+                                                  itemName: "",
+                                                  quantity: 1,
+                                                  notes: "",
+                                                  included: false,
+                                                  chargeApproved: true,
+                                                  price: 0,
+                                                  source: "additional",
+                                                }]);
+                                                setTimeout(() => {
+                                                  const el = document.querySelector(`[data-testid="input-menu-name-kids-0"]`) as HTMLElement;
+                                                  if (el) el.click();
+                                                }, 50);
+                                              }}
+                                              data-testid="button-add-first-menu-kids"
+                                            >
+                                              Nothing on the kids' menu yet. Click to add the first item.
+                                            </div>
+                                          ) : (
+                                            <>
+                                              {additionalItems.map((item, idx) => {
+                                                const absIdx = setMenuEnabled
+                                                  ? currentMenu.findIndex(m => m === item)
+                                                  : idx;
+                                                return (
+                                                  <MenuLineItemRow disabled={readOnly}
+                                                    key={item.id}
+                                                    item={item}
+                                                    idx={absIdx >= 0 ? absIdx : idx}
+                                                    menuItems={currentMenu}
+                                                    setMenuItems={setCurrentMenu}
+                                                    menuTab="kids"
+                                                    paid={paidLines.get(item.id)}
+                                                  />
+                                                );
+                                              })}
+                                            </>
+                                          )}
+                                          <div className={`flex gap-2 pt-1 ${additionalItems.length === 0 && !setMenuEnabled ? "hidden" : ""}`}>
+                                            <button disabled={readOnly}
+                                              className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-amber-500/15 text-amber-600 border-amber-500/30 dark:text-amber-400 hover:bg-amber-500/25 transition-colors"
+                                              onClick={() => {
+                                                const newItem: MenuLine = {
+                                                  id: `menu_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+                                                  itemName: "",
+                                                  quantity: 1,
+                                                  notes: "",
+                                                  included: false,
+                                                  chargeApproved: true,
+                                                  price: 0,
+                                                  source: "additional",
+                                                };
+                                                setCurrentMenu(prev => [...prev, newItem]);
+                                              }}
+                                              data-testid="button-add-menu-extra-kids"
+                                            >
+                                              + EXTRA
+                                            </button>
+                                          </div>
+                                          {!readOnly && (
+                                            <div className="flex gap-2 pt-1">
+                                              <button disabled={readOnly}
+                                                type="button"
+                                                className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-violet-500/15 text-violet-600 border-violet-500/30 dark:text-violet-400 hover:bg-violet-500/25 transition-colors"
+                                                onClick={() => setNewItemMenu("kids")}
+                                                title="An item the till's menu does not have yet: it is added to the till for this party only"
+                                                data-testid="button-add-party-menu-item-kids"
+                                              >
+                                                + NEW ITEM (not in the menu)
+                                              </button>
+                                            </div>
+                                          )}
+                                        </>
+                                      );
+                                    })()}
+                                  </div>
+                                </div>
+                              );
+                            }
+
+                            // SCRUM-829: the adults' section starts from the kids' menu. With "Different
+                            // for adults" off it IS the kids' list (shown as such, no option list of its
+                            // own and nothing to type); on, it is the adults' own list, started as a copy
+                            // of the kids' and changed here.
+                            const switchAdults = (on: boolean) => {
+                              if (on) {
+                                setAdultsMenu(kidsMenu.map((line, index) => ({ ...line, id: `menu_${Date.now()}_${index}_${Math.random().toString(36).slice(2, 6)}` })));
+                                setAdultsDiffer(true);
+                                return;
+                              }
+                              // SCRUM-1002 ruling 3: off drops the adults' own list, and a paid line in it stays.
+                              const paidAdults = adultsMenu.find((line) => paidLines.has(line.id));
+                              if (paidAdults) {
+                                refusePaidLine(paidAdults);
+                                return;
+                              }
+                              if (
+                                adultsMenu.length > 0 &&
+                                !kitchenListsEqual(kidsMenu, adultsMenu) &&
+                                !window.confirm("Turning this off makes the adults' menu the kids' menu again: the adults' own changes are dropped. Continue?")
+                              ) {
+                                return;
+                              }
+                              setAdultsMenu([]);
+                              setAdultsDiffer(false);
+                            };
+
+                            return (
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-3 p-3 border rounded-md bg-muted/30">
+                                  <Switch
+                                    checked={adultsDiffer}
+                                    onCheckedChange={switchAdults}
+                                    disabled={readOnly}
+                                    data-testid="switch-adults-differ"
+                                  />
+                                  <div>
+                                    <Label className="text-sm font-medium">Different for adults</Label>
+                                    <p className="text-xs text-muted-foreground">Off: the adults eat what was chosen for the kids. On: start from the kids' menu and change it for the adults.</p>
+                                  </div>
+                                </div>
+
+                                {!adultsDiffer ? (
+                                  <div className="space-y-1" data-testid="adults-menu-mirror">
+                                    <p className="text-xs text-muted-foreground italic" data-testid="text-adults-same-as-kids">{ADULTS_SAME_AS_KIDS}</p>
+                                    {kidsMenu.length === 0 ? (
+                                      <p className="text-sm text-muted-foreground text-center py-4 border border-dashed rounded-md">Nothing on the kids' menu yet</p>
+                                    ) : (
+                                      kidsMenu.map((item, index) => (
+                                        <div key={item.id} className="flex items-center gap-2 text-sm py-0.5" data-testid={`adults-mirror-item-${index}`}>
+                                          <span className="w-6 text-center text-xs font-medium shrink-0">{beoQuantityOf(item.quantity)}</span>
+                                          <span className="text-xs">{item.itemName}</span>
+                                          {item.notes?.trim() && <span className="text-xs text-muted-foreground shrink-0">{item.notes.trim()}</span>}
+                                          {item.productCode && (
+                                            <span className="text-[10px] font-mono text-muted-foreground shrink-0" title={tillCodeTitle(tillMenu.index, item.productCode)}>{item.productCode}</span>
+                                          )}
+                                          <TillCodeMark code={item.productCode} testId={`adults-mirror-code-dead-${index}`} />
+                                        </div>
+                                      ))
+                                    )}
+                                  </div>
+                                ) : (
+                                  <>
+                                    {currentMenu.length === 0 ? (
+                                      <div
+                                        className="text-sm text-muted-foreground text-center py-4 border border-dashed rounded-md cursor-pointer hover:bg-accent/30 hover:border-border transition-colors"
+                                        onClick={() => {
+                                                if (readOnly) return;
+                                          // SCRUM-958 (SCRUM-940 point 2): the first line shows the EXTRA badge, so it is saved as one.
+                                          setCurrentMenu([{
+                                            id: `menu_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+                                            itemName: "",
+                                            quantity: 1,
+                                            notes: "",
+                                            included: false,
+                                            chargeApproved: true,
+                                            price: 0,
+                                            source: "additional",
+                                          }]);
+                                          setTimeout(() => {
+                                            const el = document.querySelector(`[data-testid="input-menu-name-adults-0"]`) as HTMLElement;
+                                            if (el) el.click();
+                                          }, 50);
+                                        }}
+                                        data-testid="button-add-first-menu-adults"
+                                      >
+                                        Nothing on the adults' menu yet. Click to add the first item.
+                                      </div>
+                                    ) : (
+                                      <>
+                                        {currentMenu.map((item, index) => (
+                                          <MenuLineItemRow disabled={readOnly}
+                                            key={item.id}
+                                            item={item}
+                                            idx={index}
+                                            menuItems={currentMenu}
+                                            setMenuItems={setCurrentMenu}
+                                            menuTab="adults"
+                                            charge={extraCharges.kitchen.adults[index]}
+                                            paid={paidLines.get(item.id)}
+                                          />
+                                        ))}
+                                      </>
+                                    )}
+                                    <div className={`flex gap-2 pt-1 ${currentMenu.length === 0 ? "hidden" : ""}`}>
+                                      <button disabled={readOnly}
+                                        className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-amber-500/15 text-amber-600 border-amber-500/30 dark:text-amber-400 hover:bg-amber-500/25 transition-colors"
+                                        onClick={() => {
+                                          setCurrentMenu([...currentMenu, {
+                                            id: `menu_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+                                            itemName: "",
+                                            quantity: 1,
+                                            notes: "",
+                                            included: false,
+                                            chargeApproved: true,
+                                            price: 0,
+                                            source: "additional",
+                                          }]);
+                                        }}
+                                        data-testid="button-add-menu-extra-adults"
+                                      >
+                                        + EXTRA
+                                      </button>
+                                    </div>
+                                    {!readOnly && (
+                                      <div className="flex gap-2 pt-1">
+                                        <button disabled={readOnly}
+                                          type="button"
+                                          className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-violet-500/15 text-violet-600 border-violet-500/30 dark:text-violet-400 hover:bg-violet-500/25 transition-colors"
+                                          onClick={() => setNewItemMenu("adults")}
+                                          title="An item the till's menu does not have yet: it is added to the till for this party only"
+                                          data-testid="button-add-party-menu-item-adults"
+                                        >
+                                          + NEW ITEM (not in the menu)
+                                        </button>
+                                      </div>
+                                    )}
+                                  </>
+                                )}
+                              </div>
+                            );
+                          })()}
+                          {/* SCRUM-949: the kitchen's EXTRA lines as the till will charge them (the kids', and the adults' own). */}
+                          <BeoExtrasTotal charges={[...extraCharges.kitchen.kids, ...extraCharges.kitchen.adults]} testId="text-kitchen-extras-total" />
+                        </div>
+
+                        <Separator />
+
+                        <div className="space-y-2">
+                          <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground flex items-center gap-1">Cake{aiMark("cake")}</Label>
+                          <div className="flex gap-2 flex-wrap">
+                            {["NONE", "INTERNAL", "EXTERNAL"].map((mode) => (
+                              <Button disabled={readOnly}
+                                key={mode}
+                                variant={cakeMode === mode ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => { setCakeMode(mode); aiTouched("cake"); }}
+                                data-testid={`button-cake-${mode.toLowerCase()}`}
+                              >
+                                {mode === "NONE" ? "No Cake" : mode === "INTERNAL" ? "Our Cake" : "Own Cake"}
+                              </Button>
+                            ))}
+                          </div>
+                          {/* SCRUM-787: a cake time or notes held under No Cake stays in sight, with what to choose to keep it. */}
+                          <CakeUnderNoCake
+                            cakeMode={cakeMode}
+                            cakeTime={cakeTime}
+                            cakeNotes={cakeNotes}
+                            onClear={() => { setCakeTime(""); setCakeNotes(""); aiTouched("cake"); }}
+                            disabled={readOnly}
+                          />
+                          {cakeMode !== "NONE" && (
+                            <div className="space-y-2 mt-2">
+                              <div className="flex gap-2 items-center flex-wrap">
+                                <div className="flex items-center gap-1">
+                                  <Label className="text-xs text-muted-foreground whitespace-nowrap">Qty</Label>
+                                  <div className="flex items-center border rounded-md overflow-hidden">
+                                    {[1, 2, 3].map((q) => (
+                                      <button disabled={readOnly}
+                                        key={q}
+                                        type="button"
+                                        onClick={() => setCakeQuantity(q)}
+                                        data-testid={`button-cake-qty-${q}`}
+                                        className={`px-2 py-0.5 text-xs font-semibold transition-colors ${cakeQuantity === q ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted text-foreground"}`}
+                                      >
+                                        {q}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                                <button disabled={readOnly}
+                                  type="button"
+                                  className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer transition-colors ${
+                                    cakeIncluded
+                                      ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30 dark:text-emerald-400"
+                                      : "bg-amber-500/15 text-amber-600 border-amber-500/30 dark:text-amber-400"
+                                  }`}
+                                  onClick={() => setCakeIncluded(!cakeIncluded)}
+                                  data-testid="button-cake-incl-toggle"
+                                >
+                                  {cakeIncluded ? "INCL" : "EXTRA"}
+                                </button>
+                                <div className="flex items-center gap-1">
+                                  <Label className="text-xs text-muted-foreground whitespace-nowrap">Cake Time</Label>
+                                  {cakeTime ? (
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-sm font-mono bg-muted px-2 py-1 rounded">{cakeTime}</span>
+                                      <Button disabled={readOnly}
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6 text-muted-foreground"
+                                        onClick={() => { setTempCakeTime(cakeTime); setShowCakeTimePicker(true); }}
+                                        data-testid="button-cake-time-edit"
+                                      >
+                                        <Settings className="h-3 w-3" />
+                                      </Button>
+                                      <Button disabled={readOnly}
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                                        onClick={() => { setCakeTime(""); aiTouched("cake"); }}
+                                        data-testid="button-cake-time-clear"
+                                      >
+                                        <X className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  ) : (
+                                    <Button disabled={readOnly}
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-7 text-xs"
+                                      onClick={() => { setTempCakeTime("14:00"); setShowCakeTimePicker(true); }}
+                                      data-testid="input-cake-time"
+                                    >
+                                      <Clock className="h-3 w-3 mr-1" />
+                                      Set Time
+                                    </Button>
+                                  )}
+                                </div>
+                                {!cakeIncluded && (
+                                  <EditableText disabled={readOnly}
+                                    type="number"
+                                    className="w-24 text-xs font-mono"
+                                    value={String(cakePrice || "")}
+                                    onChange={(v) => setCakePrice(Number(v) || 0)}
+                                    placeholder="Price ฿"
+                                    data-testid="input-cake-price"
+                                  />
+                                )}
+                              </div>
+                              {showCakeTimePicker && (
+                                <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/30">
+                                  <input
+                                    type="time"
+                                    className="text-sm border rounded px-2 py-1 bg-background"
+                                    value={tempCakeTime}
+                                    onChange={(e) => setTempCakeTime(e.target.value)}
+                                    data-testid="input-cake-time-picker"
+                                  />
+                                  <Button disabled={readOnly} type="button" size="sm" className="h-7 text-xs" onClick={() => { setCakeTime(tempCakeTime); setShowCakeTimePicker(false); aiTouched("cake"); }} data-testid="button-confirm-cake-time">Confirm</Button>
+                                  <Button disabled={readOnly} type="button" size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowCakeTimePicker(false)}>Cancel</Button>
+                                </div>
+                              )}
+                              <EditableText disabled={readOnly}
+                                className="flex-1 min-w-[150px] text-sm"
+                                value={cakeNotes}
+                                onChange={(v) => { setCakeNotes(v); aiTouched("cake"); }}
+                                placeholder="e.g., Dairy Queen (ordered on event day)"
+                                data-testid="input-cake-notes"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    ) : (
+                      <p className="text-sm text-muted-foreground" data-testid="text-no-food">
+                        The kitchen is not needed for this party. Its menus and cake are kept and show again when the tick is taken off.
+                      </p>
+                    )}
+                  </div>
+                </SectionPart>
+
+                <SectionPart
+                  testId="part-bar"
+                  title="Bar"
+                  icon={<Wine className="h-4 w-4 text-blue-500" />}
+                  aside={
+                    <>
+                      <StatusIcon status={barItems.length > 0 ? "complete" : "empty"} />
+                      {barItems.length > 0 && (
+                        <Badge variant="secondary" className="text-xs">{barItems.length} item{barItems.length !== 1 ? "s" : ""}</Badge>
+                      )}
+                    </>
+                  }
+                >
+                  <div className="space-y-4">
+                    {/* Service Time */}
+                    <div className="flex items-center gap-3">
+                      <Label className="text-xs text-muted-foreground shrink-0">Service Time</Label>
+                      <div className="flex items-center gap-2">
+                        {barServiceTime ? (
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-mono bg-muted px-2 py-1 rounded">{barServiceTime}</span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-muted-foreground"
+                              onClick={() => { setTempBarTime(barServiceTime || "12:00"); setShowBarTimePicker(true); }}
+                              disabled={readOnly}
+                              data-testid="button-bar-time-edit"
+                            >
+                              <Settings className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                              onClick={() => setBarServiceTime("")}
+                              disabled={readOnly}
+                              data-testid="button-bar-time-clear"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-xs"
+                            onClick={() => { setTempBarTime("12:00"); setShowBarTimePicker(true); }}
+                            disabled={readOnly}
+                            data-testid="button-bar-time-set"
+                          >
+                            <Clock className="h-3 w-3 mr-1" />
+                            Set Time
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Time picker dialog */}
+                    {showBarTimePicker && (
+                      <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/30">
+                        <input
+                          type="time"
+                          className="text-sm border rounded px-2 py-1 bg-background"
+                          value={tempBarTime}
+                          onChange={(e) => setTempBarTime(e.target.value)}
+                          data-testid="input-bar-time"
+                        />
+                        <Button type="button" size="sm" className="h-7 text-xs" onClick={() => { setBarServiceTime(tempBarTime); setShowBarTimePicker(false); }}>
+                          Confirm
+                        </Button>
+                        <Button type="button" size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowBarTimePicker(false)}>
+                          Cancel
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* Bar Items */}
+                    <div className="space-y-2">
+                      {barItems.map((item, idx) => (
+                        <div key={item.id} className="space-y-0.5" data-testid={`bar-item-${idx}`}>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-colors ${
+                                item.source === "set_menu"
+                                  ? "bg-blue-500/15 text-blue-600 border-blue-500/30 dark:text-blue-400 cursor-pointer"
+                                  : "bg-amber-500/15 text-amber-600 border-amber-500/30 dark:text-amber-400 cursor-pointer"
+                              }`}
+                              onClick={() => {
+                                if (readOnly) return;
+                                setBarItems(prev => {
+                                  const u = [...prev];
+                                  u[idx] = { ...u[idx], source: u[idx].source === "set_menu" ? undefined : "set_menu" };
+                                  return u;
+                                });
+                              }}
+                              data-testid={`bar-item-badge-${idx}`}
+                            >
+                              {item.source === "set_menu" ? "SET" : "EXTRA"}
+                            </button>
+                            <EditableText
+                              className="min-w-[40px] flex-1 text-xs"
+                              placeholder="Item name…"
+                              value={item.itemName}
+                              onChange={(v) => setBarItems(prev => { const u = [...prev]; u[idx] = { ...u[idx], itemName: v }; return u; })}
+                              disabled={readOnly}
+                              data-testid={`bar-item-name-${idx}`}
+                            />
+                            {/* SCRUM-905: the till's own drink for this line, its name and code written on. */}
+                            <TillMenuPick
+                              code={item.productCode}
+                              prefer="bar"
+                              onPick={(picked) => setBarItems(prev => prev.map((line, i) => (i === idx ? lineWithTillItem(line, picked) : line)))}
+                              onClear={() => setBarItems(prev => prev.map((line, i) => (i === idx ? lineWithoutTillItem(line) : line)))}
+                              testId={`button-till-menu-bar-${idx}`}
+                            />
+                            {item.productCode && (
+                              <span
+                                className="text-[10px] font-mono text-muted-foreground shrink-0"
+                                title={tillCodeTitle(tillMenu.index, item.productCode)}
+                                data-testid={`text-bar-code-${idx}`}
+                              >
+                                {item.productCode}
+                              </span>
+                            )}
+                            <TillCodeMark code={item.productCode} testId={`text-bar-code-dead-${idx}`} />
+                            <EditableText
+                              type="number"
+                              className="w-16 text-xs font-mono shrink-0"
+                              placeholder="Qty"
+                              value={String(item.quantity || 1)}
+                              onChange={(v) => {
+                                // SCRUM-1002 ruling 3: never below what the till has billed and paid.
+                                if ((parseInt(v) || 1) < (paidLines.get(item.id) ?? 0)) return refusePaidLine(item);
+                                setBarItems(prev => { const u = [...prev]; u[idx] = { ...u[idx], quantity: parseInt(v) || 1 }; return u; });
+                              }}
+                              disabled={readOnly}
+                              data-testid={`bar-item-qty-${idx}`}
+                            />
+                            {/* SCRUM-949: an EXTRA drink's price for each item, beside its count; never on a SET line. */}
+                            {item.source !== "set_menu" && (
+                              <ExtraPriceBox disabled={readOnly}
+                                line={item}
+                                area="bar"
+                                charge={extraCharges.bar[idx]}
+                                onPrice={(price) => setBarItems(prev => prev.map((line, i) => (i === idx ? { ...line, price } : line)))}
+                                testId={`bar-${idx}`}
+                              />
+                            )}
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                              onClick={() => (paidLines.has(item.id) ? refusePaidLine(item) : setBarItems(prev => prev.filter((_, i) => i !== idx)))}
+                              disabled={readOnly}
+                              data-testid={`bar-item-delete-${idx}`}
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                          <EditableText
+                            className="ml-14 text-xs text-muted-foreground"
+                            placeholder="Notes (optional)…"
+                            value={item.notes || ""}
+                            onChange={(v) => setBarItems(prev => { const u = [...prev]; u[idx] = { ...u[idx], notes: v }; return u; })}
+                            disabled={readOnly}
+                            data-testid={`bar-item-notes-${idx}`}
+                          />
+                        </div>
+                      ))}
+                      <div className="flex gap-2 pt-1">
+                        <button type="button" disabled={readOnly} onClick={() => setNewItemMenu("bar")} className="text-xs border rounded-full px-2" data-testid="button-new-bar-item">+ CUSTOM DISH</button>
+                        <button
+                          className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-blue-500/15 text-blue-600 border-blue-500/30 dark:text-blue-400 hover:bg-blue-500/25 transition-colors"
+                          onClick={() => setBarItems(prev => [...prev, {
+                            id: `bar_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+                            itemName: "",
+                            quantity: 1,
+                            notes: "",
+                            included: false,
+                            chargeApproved: true,
+                            price: 0,
+                            source: "set_menu",
+                          }])}
+                          disabled={readOnly}
+                          data-testid="button-add-bar-set"
+                        >
+                          + SET
+                        </button>
+                        <button
+                          className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-amber-500/15 text-amber-600 border-amber-500/30 dark:text-amber-400 hover:bg-amber-500/25 transition-colors"
+                          onClick={() => setBarItems(prev => [...prev, {
+                            id: `bar_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+                            itemName: "",
+                            quantity: 1,
+                            notes: "",
+                            included: false,
+                            chargeApproved: true,
+                            price: 0,
+                          }])}
+                          disabled={readOnly}
+                          data-testid="button-add-bar-extra"
+                        >
+                          + EXTRA
+                        </button>
+                      </div>
+                      {/* SCRUM-949: the bar's EXTRA lines as the till will charge them. */}
+                      <BeoExtrasTotal charges={extraCharges.bar} testId="text-bar-extras-total" />
+                    </div>
+                  </div>
+                </SectionPart>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* 3. Entertainment & Program: the activities and the other timed steps (SCRUM-1029). */}
+          <AccordionItem value="entertainment" data-section="entertainment" className="border rounded-lg border-l-4 border-l-violet-500 bg-violet-500/5 overflow-visible [&>[data-state=open]]:overflow-visible">
+            <AccordionTrigger className="px-4 hover:no-underline" data-testid="accordion-entertainment">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-violet-500" />
+                <span>Entertainment &amp; Program</span>
+                <StatusIcon status={sectionStatus("entertainment")} />
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className={`px-4 pb-4 overflow-visible ${readOnly ? "opacity-75 cursor-not-allowed" : ""}`}>
+              <div>
+                <SectionPart testId="part-activities">
+                  <div className="grid gap-4">
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground flex items-center gap-1">Activities{aiMark("activities")}</Label>
+                      <EditableText
+                        value={eventData.activities || ""}
+                        onChange={(v) => { setEventData({ ...eventData, activities: v }); aiTouched("activities"); }}
+                        placeholder="e.g., Games, Face Painting"
+                        data-testid="input-event-activities"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground flex items-center gap-1">Entertainment Host (Optional){aiMark("team:entertainmentHost")}</Label>
+                      <AssignmentSearchBar
+                        value={entertainmentHostAssignmentValue}
+                        onChange={(values) => { handleEntertainmentHostChange(values); aiTouched("team:entertainmentHost"); }}
+                        employees={(allEmployees || []).filter(e => e.id !== partyHost.assignedEmployeeId)}
+                        placeholder="Search employees to assign as entertainment host..."
+                        showEveryone={false}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Entertainment Acts</Label>
+                        {!readOnly && (
+                          <button
+                            type="button"
+                            className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-pink-500/15 text-pink-600 border-pink-500/30 dark:text-pink-400 hover:bg-pink-500/25 transition-colors"
+                            onClick={() => addEntItemMutation.mutate({ customName: "" })}
+                            disabled={addEntItemMutation.isPending}
+                            data-testid="button-add-entertainment-act"
+                          >
+                            + Add Act
+                          </button>
+                        )}
+                      </div>
+                      {entertainmentItems.length === 0 ? (
+                        <p className="text-xs text-muted-foreground italic" data-testid="text-no-entertainment-acts">
+                          No entertainment acts yet. Add one and give it a time to put it on the Timeline.
+                        </p>
+                      ) : (
+                        <div className="space-y-2">
+                          {entertainmentItems.map((act: any, idx: number) => (
+                            <div
+                              key={act.id}
+                              className="flex items-center gap-2 p-2 rounded-lg border bg-background"
+                              data-testid={`entertainment-act-${idx}`}
+                            >
+                              <EditableText
+                                className="flex-1 text-sm min-w-0"
+                                value={act.customName || ""}
+                                onChange={(v) => updateEntItemMutation.mutate({ id: act.id, data: { customName: v } })}
+                                placeholder="Act name (e.g. Spiderman Show)..."
+                                disabled={readOnly}
+                                data-testid={`input-entertainment-act-name-${idx}`}
+                              />
+                              <div className="flex items-center gap-1 shrink-0">
+                                {act.startTime ? (
+                                  <span className="text-xs font-mono bg-muted px-2 py-0.5 rounded flex items-center gap-1">
+                                    <Clock className="h-2.5 w-2.5" />
+                                    {act.startTime}
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] text-muted-foreground/60">no time</span>
+                                )}
+                                {!readOnly && (
+                                  <input
+                                    type="time"
+                                    className="text-xs border rounded px-1.5 py-0.5 bg-background w-[88px]"
+                                    value={act.startTime || ""}
+                                    onChange={(e) => updateEntItemMutation.mutate({ id: act.id, data: { startTime: e.target.value || null } })}
+                                    title="Start time — auto-adds this act to the Timeline"
+                                    data-testid={`input-entertainment-act-time-${idx}`}
+                                  />
+                                )}
+                              </div>
+                              {!readOnly && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                                  onClick={() => deleteEntItemMutation.mutate(act.id)}
+                                  data-testid={`button-delete-entertainment-act-${idx}`}
+                                >
+                                  <X className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
+                            </div>
+                          ))}
+                          <p className="text-[10px] text-muted-foreground/70">
+                            Set a start time to auto-add the act to the Timeline. Changes sync when you save the BEO.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </SectionPart>
+
+                {/* SCRUM-1027: the timeline itself is made by the system; these are the steps it does not make. */}
+                <SectionPart
+                  testId="part-other-steps"
+                  title="Other timed steps"
+                  icon={<ListTodo className="h-4 w-4 text-violet-500" />}
+                  aside={
+                    <>
+                      <StatusIcon status={getSectionStatus("timeline")} />
+                      {aiSectionMark("timeline")}
+                      <Badge variant="secondary" className="text-xs" data-testid="badge-other-steps">{otherStepsWords(beoData?.timeline?.filter((t) => !t.isSystemGenerated).length || 0)}</Badge>
+                    </>
+                  }
+                >
+                  {beoData && (
+                    <BeoTimelineEditor
+                      eventId={eventId}
+                      startTime={beoData.startTime}
+                    />
+                  )}
+                </SectionPart>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* 4. Internal Notes: the notes the team keeps for itself (SCRUM-1029). */}
+          <AccordionItem value="internal-notes" data-section="internal-notes" className="border rounded-lg border-l-4 border-l-amber-500 bg-amber-500/5">
+            <AccordionTrigger className="px-4 hover:no-underline" data-testid="accordion-internal-notes">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="h-4 w-4 text-amber-500" />
+                <span>Internal Notes</span>
               </div>
             </AccordionTrigger>
             <AccordionContent className={`px-4 pb-4 ${readOnly ? "opacity-75 cursor-not-allowed" : ""}`}>
               <div className="grid gap-4">
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <Label className="text-xs text-muted-foreground flex items-center gap-1">Title{aiMark("title")}</Label>
-                    <EditableText
-                      value={eventData.title || ""}
-                      onChange={(v) => { setEventData({ ...eventData, title: v }); aiTouched("title"); }}
-                      placeholder="Event title..."
-                      data-testid="input-event-title"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs text-muted-foreground flex items-center gap-1">Activities{aiMark("activities")}</Label>
-                    <EditableText
-                      value={eventData.activities || ""}
-                      onChange={(v) => { setEventData({ ...eventData, activities: v }); aiTouched("activities"); }}
-                      placeholder="e.g., Games, Face Painting"
-                      data-testid="input-event-activities"
-                    />
-                  </div>
+                {/* SCRUM-827: the special requests the chat gave (and anything typed here), saved with the BEO. */}
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground flex items-center gap-1">Special Requests{aiMark("specialRequests")}</Label>
+                  <EditableText
+                    value={eventData.specialRequests || ""}
+                    onChange={(v) => { setEventData({ ...eventData, specialRequests: v }); aiTouched("specialRequests"); }}
+                    placeholder="e.g., Nut allergy, a quiet corner for grandma"
+                    multiline
+                    data-testid="textarea-special-requests"
+                  />
                 </div>
-                <div className="grid sm:grid-cols-1 gap-4">
-                  <div className="space-y-1">
-                    <Label className="text-xs text-muted-foreground flex items-center gap-1">Decoration{aiMark("decoration")}</Label>
-                    <EditableText
-                      value={eventData.decoration || ""}
-                      onChange={(v) => { setEventData({ ...eventData, decoration: v }); aiTouched("decoration"); }}
-                      placeholder="e.g., Balloons, Streamers, Table Setup"
-                      data-testid="input-event-decoration"
-                    />
-                  </div>
-                  {/* SCRUM-827: the special requests the chat gave (and anything typed here), saved with the BEO. */}
-                  <div className="space-y-1">
-                    <Label className="text-xs text-muted-foreground flex items-center gap-1">Special Requests{aiMark("specialRequests")}</Label>
-                    <EditableText
-                      value={eventData.specialRequests || ""}
-                      onChange={(v) => { setEventData({ ...eventData, specialRequests: v }); aiTouched("specialRequests"); }}
-                      placeholder="e.g., Nut allergy, a quiet corner for grandma"
-                      multiline
-                      data-testid="textarea-special-requests"
-                    />
-                  </div>
-                </div>
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <MandatoryLabel>Child / Guest of Honor Name{aiMark("childName")}</MandatoryLabel>
-                    <EditableText
-                      value={eventData.childName || ""}
-                      onChange={(v) => { setEventData({ ...eventData, childName: v }); aiTouched("childName"); }}
-                      placeholder="Birthday child or guest name"
-                      data-testid="input-child-name"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <MandatoryLabel>Parent / Booking Name{aiMark("bookingName")}</MandatoryLabel>
-                    <EditableText
-                      value={eventData.bookingName || ""}
-                      onChange={(v) => { setEventData({ ...eventData, bookingName: v }); aiTouched("bookingName"); }}
-                      placeholder="Parent or booking contact"
-                      data-testid="input-booking-name"
-                    />
-                  </div>
-                </div>
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <Label className="text-xs text-muted-foreground">WhatsApp Number</Label>
-                    <div className="flex items-center gap-2">
-                      <EditableText
-                        value={eventData.whatsappPhoneRaw || ""}
-                        onChange={(v) => setEventData({ ...eventData, whatsappPhoneRaw: v })}
-                        placeholder="e.g., +1234567890"
-                        data-testid="input-whatsapp-phone"
-                      />
-                      {eventData.whatsappPhoneRaw && eventData.whatsappPhoneRaw.replace(/[^0-9]/g, '').length > 0 && (
-                        <a
-                          href={`https://wa.me/${eventData.whatsappPhoneRaw.replace(/[^0-9]/g, '')}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center justify-center h-8 w-8 rounded-md text-green-600 hover:text-green-700 hover:bg-green-50 shrink-0"
-                          data-testid="link-whatsapp-beo"
-                        >
-                          <Phone className="h-4 w-4" />
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <MandatoryLabel>Kid Turning Age</MandatoryLabel>
-                    <input
-                      type="number"
-                      min={1}
-                      value={(eventData as any).kidTurningAge ?? ""}
-                      onChange={(e) => setEventData({ ...eventData, kidTurningAge: e.target.value === "" ? undefined : parseInt(e.target.value, 10) } as any)}
-                      placeholder="e.g., 5"
-                      className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                      data-testid="input-kid-turning-age"
-                    />
-                  </div>
-                </div>
-                {(eventData as any).eventType === "studio_event" && (
-                  <div className="space-y-2">
-                    <Label className="text-xs text-muted-foreground">Calendar Color</Label>
-                    <div className="flex flex-wrap gap-2" data-testid="picker-event-color">
-                      {ONE_OFF_EVENT_COLOR_OPTIONS.map((c) => (
-                        <button
-                          key={c.value}
-                          type="button"
-                          title={c.label}
-                          aria-label={c.label}
-                          onClick={() => setEventData({ ...eventData, color: c.value } as any)}
-                          className={`h-7 w-7 rounded-full border-2 transition-transform ${
-                            (eventData as any).color === c.value ? "border-foreground scale-110" : "border-transparent"
-                          }`}
-                          style={{ backgroundColor: c.value }}
-                          data-testid={`button-event-color-${c.label.toLowerCase()}`}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-                <div className="grid sm:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <MandatoryLabel>Date{aiMark("eventDate")}</MandatoryLabel>
-                    <DatePicker
-                      value={eventData.eventDate ? parseISO(eventData.eventDate) : undefined}
-                      onChange={(date) => { setEventData({ ...eventData, eventDate: date ? format(date, "yyyy-MM-dd") : undefined }); aiTouched("eventDate"); }}
-                      data-testid="input-event-date"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <MandatoryLabel>Start Time{aiMark("startTime")}</MandatoryLabel>
-                    <div className="flex items-center gap-1">
-                      {eventData.startTime ? (
-                        <>
-                          <span className="text-sm font-mono bg-muted px-2 py-1 rounded">{eventData.startTime}</span>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-muted-foreground"
-                            onClick={() => { setTempStartTime(eventData.startTime || "10:00"); setShowStartTimePicker(true); }}
-                            data-testid="button-start-time-edit"
-                          >
-                            <Settings className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                            onClick={() => { setEventData({ ...eventData, startTime: undefined }); aiTouched("startTime"); }}
-                            data-testid="button-start-time-clear"
-                          >
-                            <X className="h-3.5 w-3.5" />
-                          </Button>
-                        </>
-                      ) : (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="h-7 text-xs"
-                          onClick={() => { setTempStartTime("10:00"); setShowStartTimePicker(true); }}
-                          data-testid="button-start-time"
-                        >
-                          <Clock className="h-3 w-3 mr-1" />
-                          Set Time
-                        </Button>
-                      )}
-                    </div>
-                    {startTimeMissing && (
-                      <p className="text-xs text-destructive" data-testid="text-start-time-needed">
-                        {startTimeLine}. It was {beoData?.startTime}: nothing is saved until a time is set.
-                      </p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-1">End Time{aiMark("endTime")}</Label>
-                    <div className="flex items-center gap-1">
-                      {eventData.endTime ? (
-                        <>
-                          <span className="text-sm font-mono bg-muted px-2 py-1 rounded">{eventData.endTime}</span>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-muted-foreground"
-                            onClick={() => { setTempEndTime(eventData.endTime || "17:00"); setShowEndTimePicker(true); }}
-                            data-testid="button-end-time-edit"
-                          >
-                            <Settings className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                            onClick={() => { setEventData({ ...eventData, endTime: undefined }); setTimeError(null); aiTouched("endTime"); }}
-                            data-testid="button-end-time-clear"
-                          >
-                            <X className="h-3.5 w-3.5" />
-                          </Button>
-                        </>
-                      ) : (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="h-7 text-xs"
-                          onClick={() => {
-                            if (eventData.startTime) {
-                              const sm = timeToMinutes(eventData.startTime);
-                              const em = Math.min(sm + 180, 23 * 60 + 59);
-                              setTempEndTime(`${Math.floor(em / 60).toString().padStart(2, '0')}:${(em % 60).toString().padStart(2, '0')}`);
-                            } else {
-                              setTempEndTime("17:00");
-                            }
-                            setShowEndTimePicker(true);
-                          }}
-                          data-testid="button-end-time"
-                        >
-                          <Clock className="h-3 w-3 mr-1" />
-                          Set Time
-                        </Button>
-                      )}
-                    </div>
-                    {timeError && <p className="text-xs text-destructive">{timeError}</p>}
-                  </div>
-                </div>
-
-                {showStartTimePicker && (
-                  <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/30">
-                    <input
-                      type="time"
-                      className="text-sm border rounded px-2 py-1 bg-background"
-                      value={tempStartTime}
-                      onChange={(e) => setTempStartTime(e.target.value)}
-                      data-testid="input-start-time"
-                    />
-                    <Button type="button" size="sm" className="h-7 text-xs" disabled={!isStartTime(tempStartTime)} onClick={() => {
-                      const updates: any = { startTime: tempStartTime };
-                      if (!eventData.endTime) {
-                        const startMins = timeToMinutes(tempStartTime);
-                        const endMins = Math.min(startMins + 180, 23 * 60 + 59);
-                        const endH = Math.floor(endMins / 60).toString().padStart(2, '0');
-                        const endM = (endMins % 60).toString().padStart(2, '0');
-                        updates.endTime = `${endH}:${endM}`;
-                      }
-                      setEventData({ ...eventData, ...updates });
-                      setTimeError(null);
-                      setShowStartTimePicker(false);
-                      aiTouched("startTime");
-                      if (updates.endTime) aiTouched("endTime");
-                    }} data-testid="button-confirm-start-time">Confirm</Button>
-                    <Button type="button" size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowStartTimePicker(false)}>Cancel</Button>
-                  </div>
-                )}
-
-                {showEndTimePicker && (
-                  <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/30">
-                    <input
-                      type="time"
-                      className="text-sm border rounded px-2 py-1 bg-background"
-                      value={tempEndTime}
-                      onChange={(e) => setTempEndTime(e.target.value)}
-                      data-testid="input-end-time"
-                    />
-                    <Button type="button" size="sm" className="h-7 text-xs" onClick={() => {
-                      const startTime = eventData.startTime || "10:00";
-                      const startMinutes = timeToMinutes(startTime);
-                      const endMinutes = timeToMinutes(tempEndTime);
-                      if (endMinutes <= startMinutes) {
-                        setTimeError("End time must be after start time");
-                        setShowEndTimePicker(false);
-                        return;
-                      }
-                      setEventData({ ...eventData, endTime: tempEndTime });
-                      setTimeError(null);
-                      setShowEndTimePicker(false);
-                      aiTouched("endTime");
-                    }} data-testid="button-confirm-end-time">Confirm</Button>
-                    <Button type="button" size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowEndTimePicker(false)}>Cancel</Button>
-                  </div>
-                )}
-
-                <div className="grid sm:grid-cols-3 gap-4">
-                  <div className="space-y-1">
-                    <MandatoryLabel>Location{aiMark("locationText")}</MandatoryLabel>
-                    <EditableText
-                      value={locationText}
-                      onChange={(v) => { setLocationText(v); aiTouched("locationText"); }}
-                      placeholder="e.g., Party Room A, Outdoor Area..."
-                      data-testid="input-location-text"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <MandatoryLabel>Expected Kids{aiMark("numChildren")}</MandatoryLabel>
-                    <EditableText
-                      type="number"
-                      value={String(eventData.numChildren || "")}
-                      onChange={(v) => { setEventData({ ...eventData, numChildren: parseInt(v) || 0 }); aiTouched("numChildren"); }}
-                      placeholder="0"
-                      data-testid="input-num-children"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <MandatoryLabel>Expected Adults{aiMark("numAdults")}</MandatoryLabel>
-                    <EditableText
-                      type="number"
-                      value={String(eventData.numAdults || "")}
-                      onChange={(v) => { setEventData({ ...eventData, numAdults: parseInt(v) || 0 }); aiTouched("numAdults"); }}
-                      placeholder="0"
-                      data-testid="input-num-adults"
-                    />
-                  </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground flex items-center gap-1">POS Notes{aiMark("posNotes")}</Label>
+                  <EditableText
+                    value={packageNotes}
+                    onChange={(v) => { setPackageNotes(v); aiTouched("posNotes"); }}
+                    placeholder="Any notes about the POS, billing, or special arrangements..."
+                    multiline
+                    data-testid="textarea-package-notes"
+                  />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Final Message to Parent <span className="text-[10px] font-normal opacity-60 ml-1">— staff only, not printed</span></Label>
@@ -2567,274 +4170,6 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                     placeholder="Paste the final message sent to the parent..."
                     multiline
                     data-testid="textarea-internal-notes"
-                  />
-                </div>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-
-          {/* 2. Party Host (overflow overrides let search dropdowns escape accordion bounds) */}
-          <AccordionItem value="party-host" className="border rounded-lg border-l-4 border-l-pink-500 bg-pink-500/5 overflow-visible [&>[data-state=open]]:overflow-visible">
-            <AccordionTrigger className="px-4 hover:no-underline" data-testid="accordion-party-host">
-              <div className="flex items-center gap-2">
-                <User className="h-4 w-4 text-pink-500" />
-                <span>Party Host</span>
-                <StatusIcon status={getSectionStatus("party-host")} />
-                {aiSectionMark("party-host")}
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className={`px-4 pb-4 overflow-visible ${readOnly ? "opacity-75 cursor-not-allowed" : ""}`}>
-              <div className="grid gap-4">
-                <div className="space-y-2">
-                  <MandatoryLabel>Assigned Party Host{aiMark("team:partyHost")}</MandatoryLabel>
-                  <AssignmentSearchBar
-                    value={partyHostAssignmentValue}
-                    onChange={(values) => { handlePartyHostChange(values); aiTouched("team:partyHost"); }}
-                    employees={allEmployees || []}
-                    roles={allRoles || []}
-                    placeholder="Search employees or roles..."
-                    showEveryone={false}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-1">Entertainment Host (Optional){aiMark("team:entertainmentHost")}</Label>
-                  <AssignmentSearchBar
-                    value={entertainmentHostAssignmentValue}
-                    onChange={(values) => { handleEntertainmentHostChange(values); aiTouched("team:entertainmentHost"); }}
-                    employees={(allEmployees || []).filter(e => e.id !== partyHost.assignedEmployeeId)}
-                    placeholder="Search employees to assign as entertainment host..."
-                    showEveryone={false}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-sm font-medium">Entertainment Acts</Label>
-                    {!readOnly && (
-                      <button
-                        type="button"
-                        className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-pink-500/15 text-pink-600 border-pink-500/30 dark:text-pink-400 hover:bg-pink-500/25 transition-colors"
-                        onClick={() => addEntItemMutation.mutate({ customName: "" })}
-                        disabled={addEntItemMutation.isPending}
-                        data-testid="button-add-entertainment-act"
-                      >
-                        + Add Act
-                      </button>
-                    )}
-                  </div>
-                  {entertainmentItems.length === 0 ? (
-                    <p className="text-xs text-muted-foreground italic" data-testid="text-no-entertainment-acts">
-                      No entertainment acts yet. Add one and give it a time to put it on the Timeline.
-                    </p>
-                  ) : (
-                    <div className="space-y-2">
-                      {entertainmentItems.map((act: any, idx: number) => (
-                        <div
-                          key={act.id}
-                          className="flex items-center gap-2 p-2 rounded-lg border bg-background"
-                          data-testid={`entertainment-act-${idx}`}
-                        >
-                          <EditableText
-                            className="flex-1 text-sm min-w-0"
-                            value={act.customName || ""}
-                            onChange={(v) => updateEntItemMutation.mutate({ id: act.id, data: { customName: v } })}
-                            placeholder="Act name (e.g. Spiderman Show)..."
-                            disabled={readOnly}
-                            data-testid={`input-entertainment-act-name-${idx}`}
-                          />
-                          <div className="flex items-center gap-1 shrink-0">
-                            {act.startTime ? (
-                              <span className="text-xs font-mono bg-muted px-2 py-0.5 rounded flex items-center gap-1">
-                                <Clock className="h-2.5 w-2.5" />
-                                {act.startTime}
-                              </span>
-                            ) : (
-                              <span className="text-[10px] text-muted-foreground/60">no time</span>
-                            )}
-                            {!readOnly && (
-                              <input
-                                type="time"
-                                className="text-xs border rounded px-1.5 py-0.5 bg-background w-[88px]"
-                                value={act.startTime || ""}
-                                onChange={(e) => updateEntItemMutation.mutate({ id: act.id, data: { startTime: e.target.value || null } })}
-                                title="Start time — auto-adds this act to the Timeline"
-                                data-testid={`input-entertainment-act-time-${idx}`}
-                              />
-                            )}
-                          </div>
-                          {!readOnly && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
-                              onClick={() => deleteEntItemMutation.mutate(act.id)}
-                              data-testid={`button-delete-entertainment-act-${idx}`}
-                            >
-                              <X className="h-3.5 w-3.5" />
-                            </Button>
-                          )}
-                        </div>
-                      ))}
-                      <p className="text-[10px] text-muted-foreground/70">
-                        Set a start time to auto-add the act to the Timeline. Changes sync when you save the BEO.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-
-          {beoData.eventType === "birthday" && (
-            <AccordionItem value="birthday-package" className="border rounded-lg border-l-4 border-l-indigo-500 bg-indigo-500/5">
-              <AccordionTrigger className="px-4 hover:no-underline" data-testid="accordion-birthday-package">
-                <div className="flex min-w-0 items-center gap-2">
-                  <Gift className="h-4 w-4 shrink-0 text-indigo-500" />
-                  <span>Birthday Package</span>
-                  {aiSectionMark("birthday-package")}
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="px-4 pb-4">
-                <BeoPackageModule
-                  eventId={eventId}
-                  readOnly={readOnly}
-                  section="package"
-                  party={{ eventDate: eventData.eventDate ?? null, numChildren: eventData.numChildren ?? null, numAdults: eventData.numAdults ?? null }}
-                  onPackageApplied={({ setMenuTemplateId: packageSetMenuId }) => {
-                    // The package's set menu starts the kitchen plan's, as the
-                    // server did; a set menu already chosen here stays.
-                    if (packageSetMenuId && !setMenuTemplateId) {
-                      setSetMenuEnabled(true);
-                      setSetMenuTemplateId(packageSetMenuId);
-                    }
-                  }}
-                />
-              </AccordionContent>
-            </AccordionItem>
-          )}
-
-          {/* 3. POS */}
-          <AccordionItem value="party-details" className="border rounded-lg border-l-4 border-l-indigo-500 bg-indigo-500/5">
-            <AccordionTrigger className="px-4 hover:no-underline" data-testid="accordion-party-details">
-              <div className="flex items-center gap-2 w-full">
-                <Gift className="h-4 w-4 text-indigo-500" />
-                <span>POS</span>
-                <StatusIcon status={getSectionStatus("party-details")} />
-                {aiSectionMark("party-details")}
-                {packageName && (
-                  <Badge variant="secondary" className="ml-1 text-xs">{packageName}</Badge>
-                )}
-                {tillFigures && tillFigures.expectedSatang > 0 && (
-                  <Badge variant="outline" className="ml-1 text-xs font-mono" data-testid="badge-party-details-total">
-                    {bahtOfSatang(tillFigures.expectedSatang)}
-                  </Badge>
-                )}
-                <BeoTaskBadge prefix="💰 POS Setup:" label="Mark POS Done" />
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className={`px-4 pb-4 ${readOnly ? "opacity-75 cursor-not-allowed" : ""}`}>
-              <div className="space-y-4">
-                {/* SCRUM-822: no price is typed here: the package's price for the party's day and every
-                    charge are the till's (the tiles below and the Billing section). */}
-                <div className="flex items-end gap-3">
-                  <div className="flex-1 space-y-1">
-                    <Label className="text-xs text-muted-foreground flex items-center gap-1">POS Name{aiMark("posName")}</Label>
-                    <EditableText
-                      value={packageName}
-                      onChange={(v) => { setPackageName(v); aiTouched("posName"); }}
-                      placeholder="e.g., Platinum POS"
-                      data-testid="input-package-name"
-                    />
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Line Items</Label>
-                  <p className="text-xs text-muted-foreground" data-testid="text-party-details-lines-note">
-                    What the POS team should know is included or extra. The prices are the till's.
-                  </p>
-
-                  {packageItems.length === 0 ? (
-                    <div
-                      className="text-sm text-muted-foreground text-center py-4 border border-dashed rounded-md cursor-pointer hover:bg-accent/30 hover:border-border transition-colors"
-                      onClick={() => addPackageItem("included")}
-                      data-testid="button-add-first-package-item"
-                    >
-                      No line items yet. Click to add the first.
-                    </div>
-                  ) : (
-                    <>
-                      {packageItems.map((item, idx) => (
-                        <PackageLineItemRow
-                          key={item.id}
-                          item={item}
-                          idx={idx}
-                          packageItems={packageItems}
-                          setPackageItems={setPackageItems}
-                        />
-                      ))}
-                      <div className="flex gap-2 pt-1">
-                        <button
-                          className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-emerald-500/15 text-emerald-600 border-emerald-500/30 dark:text-emerald-400 hover:bg-emerald-500/25 transition-colors"
-                          onClick={() => addPackageItem("included")}
-                          data-testid="button-add-included-item"
-                        >
-                          + INCL
-                        </button>
-                        <button
-                          className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-amber-500/15 text-amber-600 border-amber-500/30 dark:text-amber-400 hover:bg-amber-500/25 transition-colors"
-                          onClick={() => addPackageItem("extra")}
-                          data-testid="button-add-extra-item"
-                        >
-                          + EXTRA
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                <Separator />
-
-                {/* SCRUM-822: Total and Outstanding are the till's; the deposit stays the BEO's one figure (SCRUM-813). */}
-                <PartyDetailsTillTiles
-                  reading={tillBilling.data}
-                  loading={tillBilling.isLoading}
-                  depositUnsaved={depositUnsaved}
-                  deposit={
-                    <>
-                      <Label className="text-xs text-muted-foreground flex items-center gap-1">Deposit{aiMark("deposit")}</Label>
-                      <EditableText
-                        type="number"
-                        className="font-mono text-lg font-bold"
-                        value={String(prepaymentReceived || "")}
-                        onChange={(v) => { setPrepaymentReceived(Number(v) || 0); aiTouched("deposit"); }}
-                        placeholder="0"
-                        data-testid="input-prepayment"
-                      />
-                      <DatePicker
-                        value={depositDate}
-                        onChange={setDepositDate}
-                        placeholder="Deposit date"
-                        className="h-7 text-xs"
-                        data-testid="datepicker-deposit-date"
-                      />
-                    </>
-                  }
-                />
-
-                <Separator />
-
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground flex items-center gap-1">POS Notes{aiMark("posNotes")}</Label>
-                  <EditableText
-                    value={packageNotes}
-                    onChange={(v) => { setPackageNotes(v); aiTouched("posNotes"); }}
-                    placeholder="Any notes about the POS, billing, or special arrangements..."
-                    multiline
-                    data-testid="textarea-package-notes"
                   />
                 </div>
               </div>
@@ -2866,1208 +4201,6 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
             </AccordionContent>
           </AccordionItem>
 
-          {/* 4. Setup Plan */}
-          <AccordionItem value="setup-plan" className="border rounded-lg border-l-4 border-l-orange-500 bg-orange-500/5">
-            <AccordionTrigger className="px-4 hover:no-underline" data-testid="accordion-setup-plan">
-              <div className="flex items-center gap-2 w-full">
-                <Settings className="h-4 w-4 text-orange-500" />
-                <span>Setup Plan</span>
-                <StatusIcon status={getSectionStatus("setup-plan")} />
-                {aiSectionMark("setup-plan")}
-                {setupTasks.length > 0 && (
-                  <Badge variant="secondary" className="ml-1 text-xs">{setupTasks.length} tasks</Badge>
-                )}
-                <BeoTaskBadge prefix="🔧 Setup:" label="Mark Setup Done" />
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className={`px-4 pb-4 ${readOnly ? "opacity-75 cursor-not-allowed" : ""}`}>
-              <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">What needs to be set up, by when, and who's responsible.</p>
-
-                <div className="grid sm:grid-cols-2 gap-3">
-                  <div className="flex items-center gap-2">
-                    <Label className="text-sm text-muted-foreground whitespace-nowrap flex items-center gap-1">Ready by{aiMark("setupReadyBy")}</Label>
-                    <div className="flex items-center gap-1">
-                      {setupReadyBy ? (
-                        <>
-                          <span className="text-sm font-mono bg-muted px-2 py-1 rounded">{setupReadyBy}</span>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-muted-foreground"
-                            onClick={() => { setTempReadyByTime(setupReadyBy); setShowReadyByTimePicker(true); }}
-                            data-testid="button-ready-by-edit"
-                          >
-                            <Settings className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                            onClick={() => setSetupReadyBy("")}
-                            data-testid="button-ready-by-clear"
-                          >
-                            <X className="h-3.5 w-3.5" />
-                          </Button>
-                        </>
-                      ) : (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="h-7 text-xs"
-                          onClick={() => { setTempReadyByTime("09:00"); setShowReadyByTimePicker(true); }}
-                          data-testid="input-setup-ready-by"
-                        >
-                          <Clock className="h-3 w-3 mr-1" />
-                          Set Time
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 relative">
-                    <Label className="text-sm text-muted-foreground whitespace-nowrap flex items-center gap-1">Who{aiMark(aiMarks["team:setupResponsible"] ? "team:setupResponsible" : "setupResponsible")}</Label>
-                    <div className="flex-1 relative">
-                      {setupResponsible && !showResponsibleDropdown ? (
-                        <div
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => {
-                            setSetupResponsibleSearch("");
-                            setShowResponsibleDropdown(true);
-                            setTimeout(() => responsibleSearchRef.current?.focus(), 0);
-                          }}
-                          className="w-full rounded-md px-3 py-1.5 text-sm cursor-text transition-colors min-h-[32px] flex items-center hover:bg-accent/50 border border-transparent hover:border-border"
-                          data-testid="input-setup-responsible"
-                        >
-                          {setupResponsible}
-                        </div>
-                      ) : (
-                        <div className="relative">
-                          <Search className="absolute left-2.5 top-2 h-4 w-4 text-muted-foreground" />
-                          <input
-                            ref={responsibleSearchRef}
-                            type="text"
-                            className="w-full rounded-md border border-input bg-background pl-8 pr-3 py-1.5 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring h-8"
-                            value={showResponsibleDropdown ? setupResponsibleSearch : setupResponsible}
-                            onChange={(e) => {
-                              setSetupResponsibleSearch(e.target.value);
-                              setShowResponsibleDropdown(true);
-                            }}
-                            onFocus={() => setShowResponsibleDropdown(true)}
-                            onBlur={() => {
-                              setTimeout(() => {
-                                setShowResponsibleDropdown(false);
-                                if (setupResponsibleSearch && !setupResponsible) {
-                                  setSetupResponsible(setupResponsibleSearch);
-                                  aiTouchedSetupWho();
-                                }
-                              }, 200);
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === "Escape") {
-                                setShowResponsibleDropdown(false);
-                                (e.target as HTMLInputElement).blur();
-                              }
-                              if (e.key === "Enter" && setupResponsibleSearch) {
-                                setSetupResponsible(setupResponsibleSearch);
-                                setShowResponsibleDropdown(false);
-                                (e.target as HTMLInputElement).blur();
-                                aiTouchedSetupWho();
-                              }
-                            }}
-                            placeholder="Search employee, dept..."
-                            data-testid="input-setup-responsible-search"
-                          />
-                          {showResponsibleDropdown && responsibleSearchResults.length > 0 && (
-                            <div className="absolute z-50 top-full mt-1 w-full bg-popover border rounded-md shadow-lg max-h-48 overflow-y-auto">
-                              {responsibleSearchResults.map((r) => (
-                                <button
-                                  key={`${r.type}-${r.id}`}
-                                  type="button"
-                                  className="w-full text-left px-3 py-2 text-sm hover:bg-accent flex items-center gap-2"
-                                  onMouseDown={(e) => {
-                                    e.preventDefault();
-                                    setSetupResponsible(r.label);
-                                    setSetupResponsibleId(r.id);
-                                    setSetupResponsibleType(r.type);
-                                    setSetupResponsibleSearch("");
-                                    setShowResponsibleDropdown(false);
-                                    aiTouchedSetupWho();
-                                  }}
-                                  data-testid={`responsible-option-${r.type}-${r.id}`}
-                                >
-                                  {r.type === "employee" ? (
-                                    <Users className="h-3.5 w-3.5 text-emerald-500" />
-                                  ) : (
-                                    <Building2 className="h-3.5 w-3.5 text-indigo-500" />
-                                  )}
-                                  {r.label}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                      {setupResponsible && (
-                        <button
-                          className="absolute right-2 top-1.5 text-muted-foreground hover:text-foreground"
-                          onClick={() => {
-                            setSetupResponsible("");
-                            setSetupResponsibleId(null);
-                            setSetupResponsibleType(null);
-                            setSetupResponsibleSearch("");
-                            setShowResponsibleDropdown(true);
-                            setTimeout(() => responsibleSearchRef.current?.focus(), 0);
-                            aiTouchedSetupWho();
-                          }}
-                          data-testid="button-clear-responsible"
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {showReadyByTimePicker && (
-                  <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/30">
-                    <input
-                      type="time"
-                      className="text-sm border rounded px-2 py-1 bg-background"
-                      value={tempReadyByTime}
-                      onChange={(e) => setTempReadyByTime(e.target.value)}
-                      data-testid="input-ready-by-time"
-                    />
-                    <Button type="button" size="sm" className="h-7 text-xs" onClick={() => { setSetupReadyBy(tempReadyByTime); setShowReadyByTimePicker(false); aiTouched("setupReadyBy"); }} data-testid="button-confirm-ready-by-time">Confirm</Button>
-                    <Button type="button" size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowReadyByTimePicker(false)}>Cancel</Button>
-                  </div>
-                )}
-
-                {setupTasks.length === 0 ? (
-                  <div
-                    className="text-sm text-muted-foreground text-center py-4 border border-dashed rounded-md cursor-pointer hover:bg-accent/30 hover:border-border transition-colors"
-                    onClick={addSetupTask}
-                    data-testid="button-add-first-setup-task"
-                  >
-                    No setup tasks yet. Click to add the first.
-                  </div>
-                ) : (
-                  <>
-                    {setupTasks.map((task, idx) => (
-                      <div key={task.id} className="border rounded-md px-3 py-2 space-y-1.5" data-testid={`setup-task-row-${idx}`}>
-                        <div className="flex items-center gap-2">
-                          <EditableText
-                            className="flex-1 text-sm"
-                            value={task.itemLabel}
-                            onChange={(v) => updateSetupTask(task.id, { itemLabel: v })}
-                            onEnter={() => {
-                              addSetupTask();
-                              setTimeout(() => {
-                                const el = document.querySelector(`[data-testid="input-setup-item-${idx + 1}"]`) as HTMLElement;
-                                if (el) el.click();
-                              }, 50);
-                            }}
-                            placeholder="What needs to be set up..."
-                            data-testid={`input-setup-item-${idx}`}
-                          />
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 shrink-0"
-                            onClick={() => {
-                              const updated = [...setupTasks];
-                              updated[idx] = { ...task, notes: task.notes ? "" : " " };
-                              setSetupTasks(updated);
-                            }}
-                            data-testid={`button-toggle-task-notes-${idx}`}
-                          >
-                            <MessageSquare className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 shrink-0 text-destructive hover:text-destructive"
-                            onClick={() => removeSetupTask(task.id)}
-                            data-testid={`button-remove-task-${idx}`}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                        {task.notes !== undefined && task.notes !== "" && (
-                          <EditableText
-                            className="text-xs"
-                            value={task.notes.trim()}
-                            onChange={(v) => updateSetupTask(task.id, { notes: v })}
-                            placeholder="Notes (optional)"
-                            data-testid={`input-setup-notes-${idx}`}
-                          />
-                        )}
-                      </div>
-                    ))}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={addSetupTask}
-                      className="w-full mt-2"
-                      data-testid="button-add-setup-task"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Task
-                    </Button>
-                  </>
-                )}
-
-                <details className="mt-2">
-                  <summary className="text-sm text-muted-foreground cursor-pointer">General Setup Notes</summary>
-                  <EditableText
-                    value={setupNotes}
-                    onChange={setSetupNotes}
-                    placeholder="General setup notes..."
-                    multiline
-                    className="mt-2"
-                    data-testid="textarea-setup-notes"
-                  />
-                </details>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-
-          {/* 5. Kitchen Plan (items marked included or extra, no costs) */}
-          <AccordionItem value="kitchen-plan" className="border rounded-lg border-l-4 border-l-blue-500 bg-blue-500/5">
-            <AccordionTrigger className="px-4 hover:no-underline" data-testid="accordion-kitchen-plan">
-              <div className="flex items-center gap-2 w-full">
-                <UtensilsCrossed className="h-4 w-4 text-blue-500" />
-                <span>Kitchen Plan</span>
-                <StatusIcon status={getSectionStatus("kitchen-plan")} />
-                {aiSectionMark("kitchen-plan")}
-                <BeoTaskBadge prefix="🍽️ Kitchen:" label="Mark Kitchen Done" />
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className={`px-4 pb-4 ${readOnly ? "opacity-75 cursor-not-allowed" : ""}`}>
-              <div className="grid gap-4">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button disabled={readOnly}
-                    variant={!kitchenRequired ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setKitchenRequired(false)}
-                    data-testid="button-food-not-needed"
-                  >
-                    Not Needed
-                  </Button>
-                  <Button disabled={readOnly}
-                    variant={kitchenRequired ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setKitchenRequired(true)}
-                    data-testid="button-food-needed"
-                  >
-                    Needed
-                  </Button>
-                </div>
-
-                {kitchenRequired && (
-                  <>
-                    <div className="space-y-2">
-                      <Label>Menus</Label>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <div className="flex gap-1">
-                          <Button
-                            variant={menuTab === "kids" ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setMenuTab("kids")}
-                            data-testid="button-menu-tab-kids"
-                          >
-                            Kids Menu ({kidsMenu.length})
-                          </Button>
-                          <Button
-                            variant={menuTab === "adults" ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setMenuTab("adults")}
-                            data-testid="button-menu-tab-adults"
-                          >
-                            Adults Menu ({adultsDiffer ? adultsMenu.length : kidsMenu.length})
-                          </Button>
-                        </div>
-                        <div className="flex items-center gap-2 ml-auto">
-                          <span className="text-xs text-muted-foreground">Service:</span>
-                          {(menuTab === "kids" ? kidsFoodTime : adultsFoodTime) ? (
-                            <div className="flex items-center gap-1">
-                              <span className="text-sm font-mono bg-muted px-2 py-1 rounded">{menuTab === "kids" ? kidsFoodTime : adultsFoodTime}</span>
-                              <Button disabled={readOnly}
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 text-muted-foreground"
-                                onClick={() => { setFoodTimeTarget(menuTab); setTempFoodTime((menuTab === "kids" ? kidsFoodTime : adultsFoodTime) || "12:00"); setShowFoodTimePicker(true); }}
-                                data-testid={`button-food-time-edit-${menuTab}`}
-                              >
-                                <Settings className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button disabled={readOnly}
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                                onClick={() => menuTab === "kids" ? setKidsFoodTime("") : setAdultsFoodTime("")}
-                                data-testid={`button-food-time-clear-${menuTab}`}
-                              >
-                                <X className="h-3.5 w-3.5" />
-                              </Button>
-                            </div>
-                          ) : (
-                            <Button disabled={readOnly}
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="h-7 text-xs"
-                              onClick={() => { setFoodTimeTarget(menuTab); setTempFoodTime("12:00"); setShowFoodTimePicker(true); }}
-                              data-testid={`input-food-service-time-${menuTab}`}
-                            >
-                              <Clock className="h-3 w-3 mr-1" />
-                              Set Time
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-
-                      {showFoodTimePicker && foodTimeTarget === menuTab && (
-                        <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/30">
-                          <input
-                            type="time"
-                            className="text-sm border rounded px-2 py-1 bg-background"
-                            value={tempFoodTime}
-                            onChange={(e) => setTempFoodTime(e.target.value)}
-                            data-testid="input-food-time"
-                          />
-                          <Button disabled={readOnly} type="button" size="sm" className="h-7 text-xs" onClick={() => { if (foodTimeTarget === "kids") setKidsFoodTime(tempFoodTime); else setAdultsFoodTime(tempFoodTime); setShowFoodTimePicker(false); }} data-testid="button-confirm-food-time">Confirm</Button>
-                          <Button disabled={readOnly} type="button" size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowFoodTimePicker(false)}>Cancel</Button>
-                        </div>
-                      )}
-
-                      {(() => {
-                        const isKids = menuTab === "kids";
-                        const currentMenu = isKids ? kidsMenu : adultsMenu;
-                        const setCurrentMenu = isKids ? setKidsMenu : setAdultsMenu;
-
-                        if (isKids) {
-                          const activeTemplates = setMenuTemplates.filter(t => t.isActive);
-                          const selectedTemplate = setMenuTemplates.find(t => t.id === setMenuTemplateId);
-
-                          return (
-                            <div className="space-y-3">
-                              {/* Set Menu Toggle */}
-                              <div className="flex items-center gap-3 p-3 border rounded-md bg-muted/30">
-                                <Switch disabled={readOnly}
-                                  checked={setMenuEnabled}
-                                  onCheckedChange={(v) => {
-                                    if (!v) {
-                                      const hasSetMenuItems = [...kidsMenu, ...adultsMenu].some(m => m.source === "set_menu");
-                                      if (hasSetMenuItems && !window.confirm("Disabling Set Menu will keep existing set-menu items in the menu. To clear them, use Reset Selections beside the parent link first; that also clears the parent's submitted choices and replaces the parent link with a new one. Continue?")) {
-                                        return;
-                                      }
-                                      setSetMenuTemplateId("");
-                                    }
-                                    setSetMenuEnabled(v);
-                                  }}
-                                  data-testid="switch-set-menu-enabled"
-                                />
-                                <div>
-                                  <Label className="text-sm font-medium">Set Menu</Label>
-                                  <p className="text-xs text-muted-foreground">Attach a birthday package set menu and send a link to parents for their choices</p>
-                                </div>
-                              </div>
-
-                              {setMenuEnabled && (
-                                <>
-                                  {/* Template Picker */}
-                                  <div className="space-y-1">
-                                    <Label className="text-xs text-muted-foreground">Set Menu Template</Label>
-                                    <Select disabled={readOnly} value={setMenuTemplateId} onValueChange={setSetMenuTemplateId}>
-                                      <SelectTrigger disabled={readOnly} className="text-sm" data-testid="select-set-menu-template">
-                                        <SelectValue placeholder="Pick a template..." />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        {activeTemplates.length === 0 ? (
-                                          <SelectItem value="__none__" disabled>No templates — add one in Event Settings</SelectItem>
-                                        ) : (
-                                          activeTemplates.map(t => (
-                                            <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                                          ))
-                                        )}
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
-
-                                  {selectedTemplate && (
-                                    <>
-                                      {/* SET MENU block */}
-                                      {(() => {
-                                        const resolvedMenu = kidsMenu.some((item) => item.source === "set_menu")
-                                          ? kidsMenu
-                                          : adultsMenu;
-                                        const resolvedMenuTab = resolvedMenu === kidsMenu ? "kids" : "adults";
-                                        const setResolvedMenu = resolvedMenuTab === "kids" ? setKidsMenu : setAdultsMenu;
-                                        const resolvedSetMenuItems = resolvedMenu.filter(m => m.source === "set_menu");
-                                        const hasResolved = setMenuSelection?.isSubmitted === true;
-                                        return (
-                                          <div className="border-2 border-emerald-500/40 rounded-lg overflow-hidden">
-                                            <div className="bg-emerald-500/15 px-3 py-1.5 flex items-center gap-2">
-                                              <ListChecks className="h-3.5 w-3.5 text-emerald-600" />
-                                              <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">Set Menu</span>
-                                              <Badge variant="outline" className="text-[10px] px-1.5 bg-emerald-500/10 text-emerald-600 border-emerald-500/30 ml-1">{selectedTemplate.name}</Badge>
-                                              {/* SCRUM-927: choices read from the chat are not a parent's: no "Selections received". */}
-                                              {setMenuSelection?.isSubmitted && (
-                                                <Badge className="text-[10px] px-1.5 bg-emerald-500 text-white ml-auto" data-testid="badge-set-menu-selection">
-                                                  {choicesFromChatOnly(setMenuSelection.selections) ? SET_MENU_CHOSEN_FROM_CHAT : "Selections received"}
-                                                </Badge>
-                                              )}
-                                              {setMenuSelection && !setMenuSelection.isSubmitted && (
-                                                <Badge variant="outline" className="text-[10px] px-1.5 ml-auto text-amber-600 border-amber-500/30 bg-amber-500/10">Awaiting parent</Badge>
-                                              )}
-                                            </div>
-
-                                            <SetMenuChoiceGroups
-                                              template={selectedTemplate}
-                                              resolvedItems={resolvedSetMenuItems}
-                                              hasResolved={hasResolved}
-                                            />
-
-                                            {/* Manager override: editable resolved items */}
-                                            <div className="p-3 space-y-1.5">
-                                              <div className="flex items-center gap-2">
-                                                <p className="text-[10px] font-semibold uppercase text-muted-foreground tracking-wide">
-                                                  {hasResolved ? "Resolved Items (editable)" : "Manual Override"}
-                                                </p>
-                                              </div>
-                                              {hasResolved ? (
-                                                <>
-                                                  {resolvedSetMenuItems.map((item, idx) => {
-                                                    const absIdx = resolvedMenu.findIndex(m => m === item);
-                                                    return (
-                                                      <MenuLineItemRow disabled={readOnly}
-                                                        key={item.id}
-                                                        item={item}
-                                                        idx={absIdx >= 0 ? absIdx : idx}
-                                                        menuItems={resolvedMenu}
-                                                        setMenuItems={setResolvedMenu}
-                                                        menuTab={resolvedMenuTab}
-                                                      />
-                                                    );
-                                                  })}
-                                                </>
-                                              ) : (
-                                                <p className="text-xs text-muted-foreground italic">Parent selections appear here after submission. You can also add items manually below.</p>
-                                              )}
-                                              <button disabled={readOnly}
-                                                className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-emerald-500/15 text-emerald-600 border-emerald-500/30 dark:text-emerald-400 hover:bg-emerald-500/25 transition-colors"
-                                                onClick={() => {
-                                                  const newItem: MenuLine = {
-                                                    id: `menu_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-                                                    itemName: "",
-                                                    quantity: 1,
-                                                    notes: "",
-                                                    included: true,
-                                                    price: 0,
-                                                    source: "set_menu",
-                                                  };
-                                                  setResolvedMenu(prev => [...prev, newItem]);
-                                                }}
-                                                data-testid="button-add-set-menu-item"
-                                              >
-                                                + Add item
-                                              </button>
-                                            </div>
-                                          </div>
-                                        );
-                                      })()}
-
-                                      {/* Parent link controls */}
-                                      <div className="flex items-center gap-2 flex-wrap">
-                                        <Button
-                                          variant="outline"
-                                          size="sm"
-                                          className="text-xs h-8"
-                                          onClick={() => {
-                                            if (setMenuSelection && setMenuSelection.templateId === setMenuTemplateId) {
-                                              setShowParentLinkDialog(true);
-                                            } else {
-                                              generateLinkMutation.mutate();
-                                            }
-                                          }}
-                                          disabled={!setMenuTemplateId || generateLinkMutation.isPending}
-                                          data-testid="button-get-parent-link"
-                                        >
-                                          {generateLinkMutation.isPending ? (
-                                            <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                                          ) : (
-                                            <Link2 className="h-3.5 w-3.5 mr-1.5" />
-                                          )}
-                                          Get Parent Link
-                                        </Button>
-                                        {setMenuSelection && (
-                                          <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="text-xs h-8 text-muted-foreground"
-                                            onClick={() => resetSelectionMutation.mutate()}
-                                            disabled={resetSelectionMutation.isPending}
-                                            data-testid="button-reset-selections"
-                                          >
-                                            {resetSelectionMutation.isPending ? (
-                                              <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                                            ) : (
-                                              <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
-                                            )}
-                                            Reset Selections
-                                          </Button>
-                                        )}
-                                        {setMenuSelection?.isSubmitted && setMenuSelection.submittedAt && (
-                                          <span className="text-xs text-muted-foreground" data-testid="text-set-menu-selection-date">
-                                            {choicesFromChatOnly(setMenuSelection.selections) ? "Chosen from the chat" : "Received"} {parkDayOf(setMenuSelection.submittedAt)}
-                                          </span>
-                                        )}
-                                      </div>
-                                    </>
-                                  )}
-                                </>
-                              )}
-
-                              {/* Additional Items section */}
-                              <div className="space-y-2">
-                                {setMenuEnabled && (
-                                  <div className="flex items-center gap-2">
-                                    <Label className="text-xs text-muted-foreground uppercase tracking-wide">Additional Items</Label>
-                                  </div>
-                                )}
-                                {(() => {
-                                  const additionalItems = setMenuEnabled
-                                    ? currentMenu.filter(m => m.source !== "set_menu")
-                                    : currentMenu;
-                                  const setAdditionalItems = (updater: (prev: MenuLine[]) => MenuLine[]) => {
-                                    if (setMenuEnabled) {
-                                      setKidsMenu(prev => {
-                                        const setMenuItems = prev.filter(m => m.source === "set_menu");
-                                        const additional = prev.filter(m => m.source !== "set_menu");
-                                        const updatedAdditional = updater(additional);
-                                        return [...setMenuItems, ...updatedAdditional];
-                                      });
-                                    } else {
-                                      setKidsMenu(updater);
-                                    }
-                                  };
-                                  return (
-                                    <>
-                                      {additionalItems.length === 0 && !setMenuEnabled ? (
-                                        <div
-                                          className="text-sm text-muted-foreground text-center py-4 border border-dashed rounded-md cursor-pointer hover:bg-accent/30 hover:border-border transition-colors"
-                                          onClick={() => {
-                                            if (readOnly) return;
-                                            // SCRUM-958 (SCRUM-940 point 2): the first line shows the EXTRA badge, so it is saved as one.
-                                            setCurrentMenu([{
-                                              id: `menu_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-                                              itemName: "",
-                                              quantity: 1,
-                                              notes: "",
-                                              included: false,
-                                              chargeApproved: true,
-                                              price: 0,
-                                              source: "additional",
-                                            }]);
-                                            setTimeout(() => {
-                                              const el = document.querySelector(`[data-testid="input-menu-name-kids-0"]`) as HTMLElement;
-                                              if (el) el.click();
-                                            }, 50);
-                                          }}
-                                          data-testid="button-add-first-menu-kids"
-                                        >
-                                          Nothing on the kids' menu yet. Click to add the first item.
-                                        </div>
-                                      ) : (
-                                        <>
-                                          {additionalItems.map((item, idx) => {
-                                            const absIdx = setMenuEnabled
-                                              ? currentMenu.findIndex(m => m === item)
-                                              : idx;
-                                            return (
-                                              <MenuLineItemRow disabled={readOnly}
-                                                key={item.id}
-                                                item={item}
-                                                idx={absIdx >= 0 ? absIdx : idx}
-                                                menuItems={currentMenu}
-                                                setMenuItems={setCurrentMenu}
-                                                menuTab="kids"
-                                                paid={paidLines.get(item.id)}
-                                              />
-                                            );
-                                          })}
-                                        </>
-                                      )}
-                                      <div className={`flex gap-2 pt-1 ${additionalItems.length === 0 && !setMenuEnabled ? "hidden" : ""}`}>
-                                        <button disabled={readOnly}
-                                          className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-amber-500/15 text-amber-600 border-amber-500/30 dark:text-amber-400 hover:bg-amber-500/25 transition-colors"
-                                          onClick={() => {
-                                            const newItem: MenuLine = {
-                                              id: `menu_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-                                              itemName: "",
-                                              quantity: 1,
-                                              notes: "",
-                                              included: false,
-                                              chargeApproved: true,
-                                              price: 0,
-                                              source: "additional",
-                                            };
-                                            setCurrentMenu(prev => [...prev, newItem]);
-                                          }}
-                                          data-testid="button-add-menu-extra-kids"
-                                        >
-                                          + EXTRA
-                                        </button>
-                                      </div>
-                                      {!readOnly && (
-                                        <div className="flex gap-2 pt-1">
-                                          <button disabled={readOnly}
-                                            type="button"
-                                            className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-violet-500/15 text-violet-600 border-violet-500/30 dark:text-violet-400 hover:bg-violet-500/25 transition-colors"
-                                            onClick={() => setNewItemMenu("kids")}
-                                            title="An item the till's menu does not have yet: it is added to the till for this party only"
-                                            data-testid="button-add-party-menu-item-kids"
-                                          >
-                                            + NEW ITEM (not in the menu)
-                                          </button>
-                                        </div>
-                                      )}
-                                    </>
-                                  );
-                                })()}
-                              </div>
-                            </div>
-                          );
-                        }
-
-                        // SCRUM-829: the adults' section starts from the kids' menu. With "Different
-                        // for adults" off it IS the kids' list (shown as such, no option list of its
-                        // own and nothing to type); on, it is the adults' own list, started as a copy
-                        // of the kids' and changed here.
-                        const switchAdults = (on: boolean) => {
-                          if (on) {
-                            setAdultsMenu(kidsMenu.map((line, index) => ({ ...line, id: `menu_${Date.now()}_${index}_${Math.random().toString(36).slice(2, 6)}` })));
-                            setAdultsDiffer(true);
-                            return;
-                          }
-                          // SCRUM-1002 ruling 3: off drops the adults' own list, and a paid line in it stays.
-                          const paidAdults = adultsMenu.find((line) => paidLines.has(line.id));
-                          if (paidAdults) {
-                            refusePaidLine(paidAdults);
-                            return;
-                          }
-                          if (
-                            adultsMenu.length > 0 &&
-                            !kitchenListsEqual(kidsMenu, adultsMenu) &&
-                            !window.confirm("Turning this off makes the adults' menu the kids' menu again: the adults' own changes are dropped. Continue?")
-                          ) {
-                            return;
-                          }
-                          setAdultsMenu([]);
-                          setAdultsDiffer(false);
-                        };
-
-                        return (
-                          <div className="space-y-3">
-                            <div className="flex items-center gap-3 p-3 border rounded-md bg-muted/30">
-                              <Switch
-                                checked={adultsDiffer}
-                                onCheckedChange={switchAdults}
-                                disabled={readOnly}
-                                data-testid="switch-adults-differ"
-                              />
-                              <div>
-                                <Label className="text-sm font-medium">Different for adults</Label>
-                                <p className="text-xs text-muted-foreground">Off: the adults eat what was chosen for the kids. On: start from the kids' menu and change it for the adults.</p>
-                              </div>
-                            </div>
-
-                            {!adultsDiffer ? (
-                              <div className="space-y-1" data-testid="adults-menu-mirror">
-                                <p className="text-xs text-muted-foreground italic" data-testid="text-adults-same-as-kids">{ADULTS_SAME_AS_KIDS}</p>
-                                {kidsMenu.length === 0 ? (
-                                  <p className="text-sm text-muted-foreground text-center py-4 border border-dashed rounded-md">Nothing on the kids' menu yet</p>
-                                ) : (
-                                  kidsMenu.map((item, index) => (
-                                    <div key={item.id} className="flex items-center gap-2 text-sm py-0.5" data-testid={`adults-mirror-item-${index}`}>
-                                      <span className="w-6 text-center text-xs font-medium shrink-0">{beoQuantityOf(item.quantity)}</span>
-                                      <span className="text-xs">{item.itemName}</span>
-                                      {item.notes?.trim() && <span className="text-xs text-muted-foreground shrink-0">{item.notes.trim()}</span>}
-                                      {item.productCode && (
-                                        <span className="text-[10px] font-mono text-muted-foreground shrink-0" title={tillCodeTitle(tillMenu.index, item.productCode)}>{item.productCode}</span>
-                                      )}
-                                      <TillCodeMark code={item.productCode} testId={`adults-mirror-code-dead-${index}`} />
-                                    </div>
-                                  ))
-                                )}
-                              </div>
-                            ) : (
-                              <>
-                                {currentMenu.length === 0 ? (
-                                  <div
-                                    className="text-sm text-muted-foreground text-center py-4 border border-dashed rounded-md cursor-pointer hover:bg-accent/30 hover:border-border transition-colors"
-                                    onClick={() => {
-                                            if (readOnly) return;
-                                      // SCRUM-958 (SCRUM-940 point 2): the first line shows the EXTRA badge, so it is saved as one.
-                                      setCurrentMenu([{
-                                        id: `menu_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-                                        itemName: "",
-                                        quantity: 1,
-                                        notes: "",
-                                        included: false,
-                                        chargeApproved: true,
-                                        price: 0,
-                                        source: "additional",
-                                      }]);
-                                      setTimeout(() => {
-                                        const el = document.querySelector(`[data-testid="input-menu-name-adults-0"]`) as HTMLElement;
-                                        if (el) el.click();
-                                      }, 50);
-                                    }}
-                                    data-testid="button-add-first-menu-adults"
-                                  >
-                                    Nothing on the adults' menu yet. Click to add the first item.
-                                  </div>
-                                ) : (
-                                  <>
-                                    {currentMenu.map((item, index) => (
-                                      <MenuLineItemRow disabled={readOnly}
-                                        key={item.id}
-                                        item={item}
-                                        idx={index}
-                                        menuItems={currentMenu}
-                                        setMenuItems={setCurrentMenu}
-                                        menuTab="adults"
-                                        charge={extraCharges.kitchen.adults[index]}
-                                        paid={paidLines.get(item.id)}
-                                      />
-                                    ))}
-                                  </>
-                                )}
-                                <div className={`flex gap-2 pt-1 ${currentMenu.length === 0 ? "hidden" : ""}`}>
-                                  <button disabled={readOnly}
-                                    className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-amber-500/15 text-amber-600 border-amber-500/30 dark:text-amber-400 hover:bg-amber-500/25 transition-colors"
-                                    onClick={() => {
-                                      setCurrentMenu([...currentMenu, {
-                                        id: `menu_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-                                        itemName: "",
-                                        quantity: 1,
-                                        notes: "",
-                                        included: false,
-                                        chargeApproved: true,
-                                        price: 0,
-                                        source: "additional",
-                                      }]);
-                                    }}
-                                    data-testid="button-add-menu-extra-adults"
-                                  >
-                                    + EXTRA
-                                  </button>
-                                </div>
-                                {!readOnly && (
-                                  <div className="flex gap-2 pt-1">
-                                    <button disabled={readOnly}
-                                      type="button"
-                                      className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-violet-500/15 text-violet-600 border-violet-500/30 dark:text-violet-400 hover:bg-violet-500/25 transition-colors"
-                                      onClick={() => setNewItemMenu("adults")}
-                                      title="An item the till's menu does not have yet: it is added to the till for this party only"
-                                      data-testid="button-add-party-menu-item-adults"
-                                    >
-                                      + NEW ITEM (not in the menu)
-                                    </button>
-                                  </div>
-                                )}
-                              </>
-                            )}
-                          </div>
-                        );
-                      })()}
-                      {/* SCRUM-949: the kitchen's EXTRA lines as the till will charge them (the kids', and the adults' own). */}
-                      <BeoExtrasTotal charges={[...extraCharges.kitchen.kids, ...extraCharges.kitchen.adults]} testId="text-kitchen-extras-total" />
-                    </div>
-
-                    <Separator />
-
-                    <div className="space-y-2">
-                      <Label className="flex items-center gap-1">Cake{aiMark("cake")}</Label>
-                      <div className="flex gap-2 flex-wrap">
-                        {["NONE", "INTERNAL", "EXTERNAL"].map((mode) => (
-                          <Button disabled={readOnly}
-                            key={mode}
-                            variant={cakeMode === mode ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => { setCakeMode(mode); aiTouched("cake"); }}
-                            data-testid={`button-cake-${mode.toLowerCase()}`}
-                          >
-                            {mode === "NONE" ? "No Cake" : mode === "INTERNAL" ? "Our Cake" : "Own Cake"}
-                          </Button>
-                        ))}
-                      </div>
-                      {/* SCRUM-787: a cake time or notes held under No Cake stays in sight, with what to choose to keep it. */}
-                      <CakeUnderNoCake
-                        cakeMode={cakeMode}
-                        cakeTime={cakeTime}
-                        cakeNotes={cakeNotes}
-                        onClear={() => { setCakeTime(""); setCakeNotes(""); aiTouched("cake"); }}
-                        disabled={readOnly}
-                      />
-                      {cakeMode !== "NONE" && (
-                        <div className="space-y-2 mt-2">
-                          <div className="flex gap-2 items-center flex-wrap">
-                            <div className="flex items-center gap-1">
-                              <Label className="text-xs text-muted-foreground whitespace-nowrap">Qty</Label>
-                              <div className="flex items-center border rounded-md overflow-hidden">
-                                {[1, 2, 3].map((q) => (
-                                  <button disabled={readOnly}
-                                    key={q}
-                                    type="button"
-                                    onClick={() => setCakeQuantity(q)}
-                                    data-testid={`button-cake-qty-${q}`}
-                                    className={`px-2 py-0.5 text-xs font-semibold transition-colors ${cakeQuantity === q ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted text-foreground"}`}
-                                  >
-                                    {q}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                            <button disabled={readOnly}
-                              type="button"
-                              className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer transition-colors ${
-                                cakeIncluded
-                                  ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30 dark:text-emerald-400"
-                                  : "bg-amber-500/15 text-amber-600 border-amber-500/30 dark:text-amber-400"
-                              }`}
-                              onClick={() => setCakeIncluded(!cakeIncluded)}
-                              data-testid="button-cake-incl-toggle"
-                            >
-                              {cakeIncluded ? "INCL" : "EXTRA"}
-                            </button>
-                            <div className="flex items-center gap-1">
-                              <Label className="text-xs text-muted-foreground whitespace-nowrap">Cake Time</Label>
-                              {cakeTime ? (
-                                <div className="flex items-center gap-1">
-                                  <span className="text-sm font-mono bg-muted px-2 py-1 rounded">{cakeTime}</span>
-                                  <Button disabled={readOnly}
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6 text-muted-foreground"
-                                    onClick={() => { setTempCakeTime(cakeTime); setShowCakeTimePicker(true); }}
-                                    data-testid="button-cake-time-edit"
-                                  >
-                                    <Settings className="h-3 w-3" />
-                                  </Button>
-                                  <Button disabled={readOnly}
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                                    onClick={() => { setCakeTime(""); aiTouched("cake"); }}
-                                    data-testid="button-cake-time-clear"
-                                  >
-                                    <X className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                              ) : (
-                                <Button disabled={readOnly}
-                                  type="button"
-                                  variant="outline"
-                                  size="sm"
-                                  className="h-7 text-xs"
-                                  onClick={() => { setTempCakeTime("14:00"); setShowCakeTimePicker(true); }}
-                                  data-testid="input-cake-time"
-                                >
-                                  <Clock className="h-3 w-3 mr-1" />
-                                  Set Time
-                                </Button>
-                              )}
-                            </div>
-                            {!cakeIncluded && (
-                              <EditableText disabled={readOnly}
-                                type="number"
-                                className="w-24 text-xs font-mono"
-                                value={String(cakePrice || "")}
-                                onChange={(v) => setCakePrice(Number(v) || 0)}
-                                placeholder="Price ฿"
-                                data-testid="input-cake-price"
-                              />
-                            )}
-                          </div>
-                          {showCakeTimePicker && (
-                            <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/30">
-                              <input
-                                type="time"
-                                className="text-sm border rounded px-2 py-1 bg-background"
-                                value={tempCakeTime}
-                                onChange={(e) => setTempCakeTime(e.target.value)}
-                                data-testid="input-cake-time-picker"
-                              />
-                              <Button disabled={readOnly} type="button" size="sm" className="h-7 text-xs" onClick={() => { setCakeTime(tempCakeTime); setShowCakeTimePicker(false); aiTouched("cake"); }} data-testid="button-confirm-cake-time">Confirm</Button>
-                              <Button disabled={readOnly} type="button" size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowCakeTimePicker(false)}>Cancel</Button>
-                            </div>
-                          )}
-                          <EditableText disabled={readOnly}
-                            className="flex-1 min-w-[150px] text-sm"
-                            value={cakeNotes}
-                            onChange={(v) => { setCakeNotes(v); aiTouched("cake"); }}
-                            placeholder="e.g., Dairy Queen (ordered on event day)"
-                            data-testid="input-cake-notes"
-                          />
-                        </div>
-                      )}
-                    </div>
-
-                  </>
-                )}
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-
-          {/* 6. Bar Plan */}
-          <AccordionItem value="bar-plan" className="border rounded-lg border-l-4 border-l-teal-500 bg-teal-500/5">
-            <AccordionTrigger className="px-4 hover:no-underline" data-testid="accordion-bar-plan">
-              <div className="flex items-center gap-2">
-                <Wine className="h-4 w-4 text-teal-500" />
-                <span>Bar Plan</span>
-                <StatusIcon status={barItems.length > 0 ? "complete" : "empty"} />
-                {barItems.length > 0 && (
-                  <Badge variant="secondary" className="ml-2 text-xs">{barItems.length} item{barItems.length !== 1 ? "s" : ""}</Badge>
-                )}
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className={`px-4 pb-4 ${readOnly ? "opacity-75 cursor-not-allowed" : ""}`}>
-              <div className="space-y-4">
-                {/* Service Time */}
-                <div className="flex items-center gap-3">
-                  <Label className="text-sm font-medium w-28 shrink-0">Service Time</Label>
-                  <div className="flex items-center gap-2">
-                    {barServiceTime ? (
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-mono bg-muted px-2 py-1 rounded">{barServiceTime}</span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-muted-foreground"
-                          onClick={() => { setTempBarTime(barServiceTime || "12:00"); setShowBarTimePicker(true); }}
-                          disabled={readOnly}
-                          data-testid="button-bar-time-edit"
-                        >
-                          <Settings className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                          onClick={() => setBarServiceTime("")}
-                          disabled={readOnly}
-                          data-testid="button-bar-time-clear"
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="h-7 text-xs"
-                        onClick={() => { setTempBarTime("12:00"); setShowBarTimePicker(true); }}
-                        disabled={readOnly}
-                        data-testid="button-bar-time-set"
-                      >
-                        <Clock className="h-3 w-3 mr-1" />
-                        Set Time
-                      </Button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Time picker dialog */}
-                {showBarTimePicker && (
-                  <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/30">
-                    <input
-                      type="time"
-                      className="text-sm border rounded px-2 py-1 bg-background"
-                      value={tempBarTime}
-                      onChange={(e) => setTempBarTime(e.target.value)}
-                      data-testid="input-bar-time"
-                    />
-                    <Button type="button" size="sm" className="h-7 text-xs" onClick={() => { setBarServiceTime(tempBarTime); setShowBarTimePicker(false); }}>
-                      Confirm
-                    </Button>
-                    <Button type="button" size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowBarTimePicker(false)}>
-                      Cancel
-                    </Button>
-                  </div>
-                )}
-
-                {/* Bar Items */}
-                <div className="space-y-2">
-                  {barItems.map((item, idx) => (
-                    <div key={item.id} className="space-y-0.5" data-testid={`bar-item-${idx}`}>
-                      <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-colors ${
-                            item.source === "set_menu"
-                              ? "bg-blue-500/15 text-blue-600 border-blue-500/30 dark:text-blue-400 cursor-pointer"
-                              : "bg-amber-500/15 text-amber-600 border-amber-500/30 dark:text-amber-400 cursor-pointer"
-                          }`}
-                          onClick={() => {
-                            if (readOnly) return;
-                            setBarItems(prev => {
-                              const u = [...prev];
-                              u[idx] = { ...u[idx], source: u[idx].source === "set_menu" ? undefined : "set_menu" };
-                              return u;
-                            });
-                          }}
-                          data-testid={`bar-item-badge-${idx}`}
-                        >
-                          {item.source === "set_menu" ? "SET" : "EXTRA"}
-                        </button>
-                        <EditableText
-                          className="min-w-[40px] flex-1 text-xs"
-                          placeholder="Item name…"
-                          value={item.itemName}
-                          onChange={(v) => setBarItems(prev => { const u = [...prev]; u[idx] = { ...u[idx], itemName: v }; return u; })}
-                          disabled={readOnly}
-                          data-testid={`bar-item-name-${idx}`}
-                        />
-                        {/* SCRUM-905: the till's own drink for this line, its name and code written on. */}
-                        <TillMenuPick
-                          code={item.productCode}
-                          prefer="bar"
-                          onPick={(picked) => setBarItems(prev => prev.map((line, i) => (i === idx ? lineWithTillItem(line, picked) : line)))}
-                          onClear={() => setBarItems(prev => prev.map((line, i) => (i === idx ? lineWithoutTillItem(line) : line)))}
-                          testId={`button-till-menu-bar-${idx}`}
-                        />
-                        {item.productCode && (
-                          <span
-                            className="text-[10px] font-mono text-muted-foreground shrink-0"
-                            title={tillCodeTitle(tillMenu.index, item.productCode)}
-                            data-testid={`text-bar-code-${idx}`}
-                          >
-                            {item.productCode}
-                          </span>
-                        )}
-                        <TillCodeMark code={item.productCode} testId={`text-bar-code-dead-${idx}`} />
-                        <EditableText
-                          type="number"
-                          className="w-16 text-xs font-mono shrink-0"
-                          placeholder="Qty"
-                          value={String(item.quantity || 1)}
-                          onChange={(v) => {
-                            // SCRUM-1002 ruling 3: never below what the till has billed and paid.
-                            if ((parseInt(v) || 1) < (paidLines.get(item.id) ?? 0)) return refusePaidLine(item);
-                            setBarItems(prev => { const u = [...prev]; u[idx] = { ...u[idx], quantity: parseInt(v) || 1 }; return u; });
-                          }}
-                          disabled={readOnly}
-                          data-testid={`bar-item-qty-${idx}`}
-                        />
-                        {/* SCRUM-949: an EXTRA drink's price for each item, beside its count; never on a SET line. */}
-                        {item.source !== "set_menu" && (
-                          <ExtraPriceBox disabled={readOnly}
-                            line={item}
-                            area="bar"
-                            charge={extraCharges.bar[idx]}
-                            onPrice={(price) => setBarItems(prev => prev.map((line, i) => (i === idx ? { ...line, price } : line)))}
-                            testId={`bar-${idx}`}
-                          />
-                        )}
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
-                          onClick={() => (paidLines.has(item.id) ? refusePaidLine(item) : setBarItems(prev => prev.filter((_, i) => i !== idx)))}
-                          disabled={readOnly}
-                          data-testid={`bar-item-delete-${idx}`}
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                      <EditableText
-                        className="ml-14 text-xs text-muted-foreground"
-                        placeholder="Notes (optional)…"
-                        value={item.notes || ""}
-                        onChange={(v) => setBarItems(prev => { const u = [...prev]; u[idx] = { ...u[idx], notes: v }; return u; })}
-                        disabled={readOnly}
-                        data-testid={`bar-item-notes-${idx}`}
-                      />
-                    </div>
-                  ))}
-                  <div className="flex gap-2 pt-1">
-                    <button type="button" disabled={readOnly} onClick={() => setNewItemMenu("bar")} className="text-xs border rounded-full px-2" data-testid="button-new-bar-item">+ CUSTOM DISH</button>
-                    <button
-                      className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-blue-500/15 text-blue-600 border-blue-500/30 dark:text-blue-400 hover:bg-blue-500/25 transition-colors"
-                      onClick={() => setBarItems(prev => [...prev, {
-                        id: `bar_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-                        itemName: "",
-                        quantity: 1,
-                        notes: "",
-                        included: false,
-                        chargeApproved: true,
-                        price: 0,
-                        source: "set_menu",
-                      }])}
-                      disabled={readOnly}
-                      data-testid="button-add-bar-set"
-                    >
-                      + SET
-                    </button>
-                    <button
-                      className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-amber-500/15 text-amber-600 border-amber-500/30 dark:text-amber-400 hover:bg-amber-500/25 transition-colors"
-                      onClick={() => setBarItems(prev => [...prev, {
-                        id: `bar_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-                        itemName: "",
-                        quantity: 1,
-                        notes: "",
-                        included: false,
-                        chargeApproved: true,
-                        price: 0,
-                      }])}
-                      disabled={readOnly}
-                      data-testid="button-add-bar-extra"
-                    >
-                      + EXTRA
-                    </button>
-                  </div>
-                  {/* SCRUM-949: the bar's EXTRA lines as the till will charge them. */}
-                  <BeoExtrasTotal charges={extraCharges.bar} testId="text-bar-extras-total" />
-                </div>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-
-          {/* 7. Other timed steps (SCRUM-1027: the timeline itself is made by the system) */}
-          <AccordionItem value="timeline" className="border rounded-lg border-l-4 border-l-cyan-500 bg-cyan-500/5">
-            <AccordionTrigger className="px-4 hover:no-underline" data-testid="accordion-timeline">
-              <div className="flex items-center gap-2">
-                <ListTodo className="h-4 w-4 text-cyan-500" />
-                <span>Other timed steps</span>
-                <StatusIcon status={getSectionStatus("timeline")} />
-                {aiSectionMark("timeline")}
-                <Badge variant="secondary" className="ml-2 text-xs">{beoData?.timeline?.filter((t) => !t.isSystemGenerated).length || 0} steps</Badge>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className={`px-4 pb-4 ${readOnly ? "opacity-75 cursor-not-allowed" : ""}`}>
-              {beoData && (
-                <BeoTimelineEditor
-                  eventId={eventId}
-                  startTime={beoData.startTime}
-                />
-              )}
-            </AccordionContent>
-          </AccordionItem>
-
           {/* 7. Parent Experience */}
           <AccordionItem value="parent-experience" className="border rounded-lg border-l-4 border-l-rose-500 bg-rose-500/5">
             <AccordionTrigger className="px-4 hover:no-underline" data-testid="accordion-parent-experience">
@@ -4086,6 +4219,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
             </AccordionContent>
           </AccordionItem>
         </Accordion>
+
         </BeoPartyDateContext.Provider>
         </TillMenuContext.Provider>
       </div>
@@ -4453,7 +4587,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
           // field's mark, and opens the sections the chat filled. Nothing opens after this.
           setAiReview(null);
           setAiMarks(marks);
-          setExpandedSections((prev) => [...new Set([...prev, ...approvedSectionsOf(marks)])]);
+          setExpandedSections((prev) => [...new Set([...prev, ...approvedSectionsOf(marks).flatMap((part) => BEO_SECTIONS_OF_PART[part] ?? [])])]);
         }}
       />
 
