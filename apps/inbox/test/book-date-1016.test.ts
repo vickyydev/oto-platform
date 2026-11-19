@@ -92,8 +92,11 @@ describe('SCRUM-1016: Book the date, laid out as drawn', () => {
     const fieldset = /<fieldset data-choice="startTime"[^]*?<\/fieldset>/.exec(html)?.[0] ?? '';
     expect(fieldset).toContain('<legend');
     expect(fieldset).toContain('Which start time is right?');
-    const options = fieldset.match(/<button[^>]*aria-pressed="false"[^>]*>[^]*?<\/button>/g) ?? [];
+    const options = fieldset.match(/<button type="button"[^>]*>[^]*?<\/button>/g) ?? [];
     expect(options.map((b) => b.replace(/<[^>]+>/g, ''))).toEqual(['15:00“at 3pm” · from the team', '14:00“at 2pm” · from the chat']);
+    // SCRUM-1016 (review): a press picks the reading and the question goes;
+    // the options act, they do not toggle, so none says "not pressed".
+    expect(fieldset).not.toContain('aria-pressed');
     // The field wears the amber edge and the window's words; Save waits and says why.
     expect(html).toMatch(/aria-label="Start time" class="[^"]*border-2 border-ask-edge/);
     expect(html).toContain('The chat reads two ways: choose one');
