@@ -199,6 +199,17 @@ export interface FlagSetInput {
 export interface FlagSettings { maxTtlMinutes: number }
 export const KILL_SWITCH_DEFAULT_TTL_MIN = 60;
 
+/**
+ * A value the switch takes but whose consumer is not built yet (the
+ * catalogue's `settableValues`): refused on every write and the preview, the
+ * same way an unsupported switch is (SCRUM-1024: `on` of family profiles).
+ */
+function refuseUnsettableValue(entry: FlagCatalogueEntry, value: FlagValue): void {
+  if (entry.settableValues && !entry.settableValues.includes(String(value))) {
+    throw new AppError(409, 'FLAG_VALUE_UNSUPPORTED', 'This value of the switch is not connected to anything yet, so it cannot be set.');
+  }
+}
+
 /** Everything a set must satisfy, checked identically at request, approval apply and direct set. */
 export async function validateFlagSet(exec: Exec, input: FlagSetInput, settings: FlagSettings, now: Date, lock = false) {
   const entry = known(input.key);
@@ -209,6 +220,7 @@ export async function validateFlagSet(exec: Exec, input: FlagSetInput, settings:
   if (!isFlagValue(entry, input.value) || input.value === entry.defaultValue) {
     throw new AppError(400, 'FLAG_VALUE_INVALID', 'That value is not one this switch takes; clear the switch to return it to normal.');
   }
+  refuseUnsettableValue(entry, input.value);
   const lineage = await targetLineage(exec, input.scopeType, input.scopeId, lock);
   if (lineage.operatorId !== input.operatorId) throw scopeRefused();
   const reason = input.reason.trim();
@@ -327,6 +339,8 @@ export async function previewFlag(db: Db, input: Omit<FlagSetInput, 'expectedRev
   if (!entry.supported) throw new AppError(409, 'FLAG_UNSUPPORTED', 'This switch is not connected to anything yet, so it has no effect to preview.');
   if (!entry.scopes.includes(input.scopeType)) throw new AppError(400, 'FLAG_SCOPE_NOT_ALLOWED', 'This switch cannot be set at that scope.');
   if (!isFlagValue(entry, input.value)) throw new AppError(400, 'FLAG_VALUE_INVALID', 'That value is not one this switch takes.');
+  // The default (clearing the switch) may always be previewed; another value only when it can be set.
+  if (input.value !== entry.defaultValue) refuseUnsettableValue(entry, input.value);
   return db.transaction(async tx => {
     const lineage = await targetLineage(tx, input.scopeType, input.scopeId);
     if (lineage.operatorId !== input.operatorId) throw scopeRefused();

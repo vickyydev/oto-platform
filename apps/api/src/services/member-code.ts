@@ -6,6 +6,7 @@ import { AppError, errors } from '../lib/errors';
 import { hashToken, newSessionToken } from '../plugins/session';
 import { audit } from './audit';
 import { throttleClear } from './auth';
+import { childOfMember, familyProfilesMode, type FamilyProfilesMode } from './family';
 import type { SmsSender } from './sms';
 import { bumpWindow } from './throttle';
 import { withTx, type Exec, type OpContext } from './tx';
@@ -101,7 +102,10 @@ export interface VerifiedFamily {
  * fields its review step pre-fills, and nothing else (SCRUM-357). Shared by
  * the code check and the family's save (SCRUM-1011), so both answer one shape.
  */
-export async function publicSavedChildrenOf(exec: Exec, memberId: string): Promise<PublicSavedChild[]> {
+export async function publicSavedChildrenOf(
+  exec: Exec,
+  scope: { operatorId: string; memberId: string; familyMode: FamilyProfilesMode },
+): Promise<PublicSavedChild[]> {
   const rows = await exec
     .select({
       id: child.id,
@@ -113,7 +117,13 @@ export async function publicSavedChildrenOf(exec: Exec, memberId: string): Promi
       dietary: child.dietary,
     })
     .from(child)
-    .where(and(eq(child.memberId, memberId), isNull(child.archivedAt)))
+    // SCRUM-1024 (step F3) — by the switch the caller read once: the member's
+    // own at `off`, the member's families otherwise. Both callers have just
+    // found the member live by its phone.
+    .where(and(
+      childOfMember(scope.familyMode, { operatorId: scope.operatorId, memberId: scope.memberId, memberLive: true }),
+      isNull(child.archivedAt),
+    ))
     .orderBy(asc(child.createdAt), asc(child.id));
   return rows.map((r) => ({
     id: r.id,
@@ -302,7 +312,11 @@ export async function verifyMemberCode(
         .returning({ key: authThrottle.key });
       if (!spent) throw errors.badRequest('Invalid code');
       await throttleClear(tx, [attemptKey(m.id)]);
-      const children = await publicSavedChildrenOf(tx, m.id);
+      const children = await publicSavedChildrenOf(tx, {
+        operatorId: scope.operatorId,
+        memberId: m.id,
+        familyMode: await familyProfilesMode(tx, scope.operatorId),
+      });
       // SCRUM-1011 — the family pass. This member's spent-by-time passes go
       // first, so they never accumulate between sweeps.
       const now = new Date();

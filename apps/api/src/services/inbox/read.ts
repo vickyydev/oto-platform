@@ -24,6 +24,7 @@ import {
 } from '@oto/shared';
 import { errors } from '../../lib/errors';
 import { audit } from '../audit';
+import { childOfMember, familyProfilesMode } from '../family';
 import type { EffectivePermission } from '../permissions';
 import type { Tx } from '../tx';
 import { divertTarget } from './actions';
@@ -531,11 +532,16 @@ export async function conversationDetail(
   // how many children — no allergy or medical text here; the POS owns that.
   let member: InboxConversationDetail['member'] = null;
   if (conv.memberId) {
+    // SCRUM-1024 (step F3) — the count by the switch, read once here: the
+    // member's own children at `off`, the member's families' otherwise (the
+    // member's own state not asked, as before). A count only.
+    const familyMode = await familyProfilesMode(db, viewer.operatorId);
+    const theirs = childOfMember(familyMode, { operatorId: viewer.operatorId, memberId: s.member.id, memberLive: false });
     const [m] = await db
       .select({
         id: s.member.id,
         name: sql<string>`coalesce(${s.member.name}, ${s.member.nickname})`,
-        childCount: sql<number>`(select count(*)::int from ${s.child} where ${s.child.memberId} = ${s.member.id} and ${s.child.archivedAt} is null)`,
+        childCount: sql<number>`(select count(*)::int from ${s.child} where ${theirs} and ${s.child.archivedAt} is null)`,
       })
       .from(s.member)
       .where(and(eq(s.member.operatorId, viewer.operatorId), eq(s.member.id, conv.memberId)))
