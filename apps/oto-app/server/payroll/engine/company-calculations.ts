@@ -11,7 +11,7 @@ import { bankCode } from "./scb-upload-files";
 import { sanitizeFormula } from "./company-pay-explanation";
 import { ewfFilingIssues } from "./ewf-upload-file";
 import { SSO_TITLES } from "./statutory-upload-files";
-import { apportion, datesIn, employed, homeBranch, money, monthDays, previousMonth, splitEarning, workedUnits } from "./company-math";
+import { apportion, datesIn, employed, homeBranch, money, monthDays, previousMonth, SINGLE_SHIFT_COMPONENT, SINGLE_SHIFT_LABEL, splitEarning, workedOn, workedUnits } from "./company-math";
 import type { CompanyCalculation, CompanyPayLine, CompanyPayrollDocument, CompanyPerson, CompanyResult, CompanySummary, MoneyAllocation, PayrollException } from "./company-model";
 
 const emptyTotals = (): CompanySummary => ({ gross: 0, deductions: 0, net: 0, employer: 0, totalCost: 0 });
@@ -71,12 +71,16 @@ export function calculateCompanyEngine(data: PayrollWorld, doc: CompanyPayrollDo
   };
   const legacy = new Map((Object.keys(data.branches) as BranchId[]).map(id => [id, legacyCalculation(shadow, id, month, data.runDrafts[`${id}:${month}`] ?? {})]));
   const salaries = new Map<string, number>(), linesByPerson = new Map<string, CompanyPayLine[]>();
+  // SCRUM-1055: the day each single-shift line was earned, for the welfare fund's dated items.
+  const singleShiftDay = new Map<string, string>();
   for (const s of staff) {
     const p = s.payrollProfile!, employedDates = datesIn(month).filter(d => employed(p, d));
     const work = workedUnits(shadow, doc, s, month);
     const lines: CompanyPayLine[] = [];
     linesByPerson.set(s.id, lines);
-    if (!employedDates.length && !services.some(b => b.people.some(person => person.staffId === s.id && person.amount))) continue;
+    // SCRUM-1055: a former employee's single shifts on the old contract; none for anybody else.
+    const shiftDays = singleShiftPays(shadow, doc, s, month, exceptions), shifts = shiftDays.filter(shift => shift.amount || shift.food);
+    if (!employedDates.length && !shifts.length && !services.some(b => b.people.some(person => person.staffId === s.id && person.amount))) continue;
     const dayWeights = employedDates.map(date => ({ date, weight: 1 }));
     const homeBranchRecord = Object.values(data.branches).find(b => b.staff.some(member => member.id === s.id))!;
     const payRules = effectiveRulesForMonth(homeBranchRecord, month);
@@ -86,9 +90,9 @@ export function calculateCompanyEngine(data: PayrollWorld, doc: CompanyPayrollDo
     const salary = money(p.workerType === "day-rate" ? p.dayRate * work.total
       : (p.workerType === "contractor" ? p.fixedFee : p.monthlySalary) * monthlyFraction);
     salaries.set(s.id, salary);
-    const add = (component: string, label: string, amount: number, formula: string, weights = dayWeights, taxable = true, ssoWage = true) => {
+    const add = (component: string, label: string, amount: number, formula: string, weights = dayWeights, taxable = true, ssoWage = true, id = component) => {
       if (!weights.length && amount) throw new Error(`${s.name}: earning has no effective employment allocation.`);
-      lines.push({ id: component, component, label, category: "earning", amount: money(amount), formula, inputs: [formula], sourceMonth: month,
+      lines.push({ id, component, label, category: "earning", amount: money(amount), formula, inputs: [formula], sourceMonth: month,
         allocations: weights.length ? splitEarning(data, p, amount, weights) : [], taxable, ssoWage });
     };
     add("salary", p.workerType === "contractor" ? "Fixed fee" : p.workerType === "day-rate" ? "Day-rate pay" : "Salary", salary,
@@ -96,13 +100,23 @@ export function calculateCompanyEngine(data: PayrollWorld, doc: CompanyPayrollDo
       p.workerType === "day-rate" ? work.dates.map(date => ({ date, weight: work.perDate })) : dayWeights);
     if (p.foodAllowanceEligible) add("food", "Food allowance", p.foodAllowancePerDay * work.total, `${p.foodAllowancePerDay} × ${work.total} worked days`,
       work.dates.map(date => ({ date, weight: work.perDate })), false, false);
+    // SCRUM-1055: one "Single shift" line per invitation, taxed and an SSO wage as the old contract's salary,
+    // and the food allowance of that worked day on the food line's own flags.
+    for (const shift of shifts) {
+      const weights = [{ date: shift.date, weight: 1 }];
+      if (shift.amount) add(SINGLE_SHIFT_COMPONENT, SINGLE_SHIFT_LABEL, shift.amount, shift.formula, weights, true, true, `${SINGLE_SHIFT_COMPONENT}:${shift.invitationId}`);
+      if (shift.food) add("food", "Food allowance", shift.food, `${shift.food} × 1 worked day; single shift on ${shift.date}`, weights, false, false, `${SINGLE_SHIFT_COMPONENT}-food:${shift.invitationId}`);
+      for (const id of [`${SINGLE_SHIFT_COMPONENT}:${shift.invitationId}`, `${SINGLE_SHIFT_COMPONENT}-food:${shift.invitationId}`]) singleShiftDay.set(id, shift.date);
+    }
     const sourceBranch = Object.values(data.branches).find(b => b.staff.some(person => person.id === s.id))!;
     const rules = effectiveRulesForMonth(data.branches[homeBranch(p, month)], month);
     // PAYROLL-CONCERN-4 (SCRUM-564): fixed allowances prorate by actual days in the month, ignoring the configured divisor the older engine uses (run-calculations.ts:868, unpaid). This answer pays.
     if (p.workerType === "monthly" || p.workerType === "owner-household") for (const a of rules.allowances) add(`fixed:${a.id}`, a.name, a.amount * employedDates.length / monthDays(month), `${a.amount} × ${employedDates.length}/${monthDays(month)} calendar days`, dayWeights, a.taxable, a.socialSecurity);
     const old = legacy.get(sourceBranch.id)?.rows.find(r => r.staffId === s.id);
     const ot = old?.lines.filter(l => l.kind === "overtime").reduce((n, l) => n + l.amount, 0) ?? 0;
-    if (ot && p.otEligible) add("overtime", "Approved overtime / holiday premium", ot, old?.lines.find(l => l.kind === "overtime")?.formula ?? "Dated approved OT policy");
+    // SCRUM-1055: a single shift's day carries its overtime with the employed days.
+    if (ot && p.otEligible) add("overtime", "Approved overtime / holiday premium", ot, old?.lines.find(l => l.kind === "overtime")?.formula ?? "Dated approved OT policy",
+      shiftDays.length ? [...dayWeights, ...shiftDays.map(shift => ({ date: shift.date, weight: 1 }))] : dayWeights);
     // PAYROLL-FINDING-R3 (SCRUM-568): the older calculation already books unpaid leave NEGATIVE
     // (run-calculations.ts:1094, amount: -roundMoney(unpaid.amount)); negating it again here makes a
     // valued unpaid day a POSITIVE earning and raises the salary budget below. Prototype behaviour,
@@ -208,7 +222,7 @@ export function calculateCompanyEngine(data: PayrollWorld, doc: CompanyPayrollDo
         registeredBranchId: home, remittingEntityId: registeredEntity });
     };
     const budgets = {
-      salary: Math.max(0, earnings.filter(l => l.component === "salary").reduce((n, l) => n + l.amount, 0)),
+      salary: Math.max(0, earnings.filter(l => l.component === "salary" || l.component === SINGLE_SHIFT_COMPONENT).reduce((n, l) => n + l.amount, 0)),
       "service-charge": Math.max(0, earnings.filter(l => l.component === "sc").reduce((n, l) => n + l.amount, 0)),
     };
     const attendanceBranch = Object.values(shadow.branches).find(branch => branch.staff.some(person => person.id === s.id))!;
@@ -238,8 +252,9 @@ export function calculateCompanyEngine(data: PayrollWorld, doc: CompanyPayrollDo
       deduct("pnd1", "PND.1 PIT", tax.withholding, tax.steps.join(" "));
     } else {
       const source = Object.values(shadow.branches).find(b => b.staff.some(person => person.id === s.id))!;
+      const shiftPay = earnings.filter(l => l.component === SINGLE_SHIFT_COMPONENT).reduce((n, l) => n + l.amount, 0);
       const statutory = calculateStaffWithExtras(shadow, source.id, month, s.id, earnings.filter(l => l.component === "sc").reduce((n, l) => n + l.amount, 0), {
-        componentAmounts: { regularPay: p.workerType === "day-rate" ? 0 : salaries.get(s.id) ?? 0, casualDayPay: p.workerType === "day-rate" ? salaries.get(s.id) ?? 0 : 0,
+        componentAmounts: { regularPay: p.workerType === "day-rate" ? 0 : (salaries.get(s.id) ?? 0) + shiftPay, casualDayPay: p.workerType === "day-rate" ? (salaries.get(s.id) ?? 0) + shiftPay : 0,
           lunch: earnings.find(l => l.component === "food")?.amount ?? 0, overtime: earnings.find(l => l.component === "overtime")?.amount ?? 0,
           allowances: Object.fromEntries(rules.allowances.map(a => [a.id, earnings.find(l => l.component === `fixed:${a.id}`)?.amount ?? 0])) },
         incentives: earnings.filter(l => l.component.startsWith("incentive:")).map(l => ({ amount: l.amount, taxable: l.taxable, socialSecurity: l.ssoWage })),
@@ -249,7 +264,7 @@ export function calculateCompanyEngine(data: PayrollWorld, doc: CompanyPayrollDo
       deduct("my-employer", "Employer EPF / SOCSO / EIS / HRD", statutory.employerStatutory, "Existing Malaysia statutory rates", "employer");
     }
     const feeOnly = doc.months[month]?.staff[s.id]?.pnd3Basis === "fee-only";
-    const feeLines = earnings.filter(l => feeOnly ? l.component === "salary" : !l.component.startsWith("separate:"));
+    const feeLines = earnings.filter(l => feeOnly ? l.component === "salary" || l.component === SINGLE_SHIFT_COMPONENT : !l.component.startsWith("separate:"));
     if (p.workerType === "contractor" && p.pnd3WithholdingPercent) {
       const total = money(feeLines.reduce((n, l) => n + l.amount, 0) * p.pnd3WithholdingPercent / 100);
       const buckets = feeLines.flatMap(l => l.allocations), parts = apportion(total, buckets.map(a => a.amount));
@@ -291,11 +306,11 @@ export function calculateCompanyEngine(data: PayrollWorld, doc: CompanyPayrollDo
     if (rules.country === "TH" && p.workerType !== "contractor") {
       const dates = employedDatesFor(p, month);
       const ewf = computeEwf(shadow, source.id, month, s.id, earnings.filter(l => !l.component.startsWith("separate:")).map(l => {
-        const flag = rules.componentFlags[l.component === "salary" ? "baseSalary" : l.component === "sc" ? "serviceCharge" : l.component === "food" ? "lunch" : l.component];
+        const flag = rules.componentFlags[l.component === "salary" || l.component === SINGLE_SHIFT_COMPONENT ? "baseSalary" : l.component === "sc" ? "serviceCharge" : l.component === "food" ? "lunch" : l.component];
         return { id: l.id, name: l.label, amount: Math.max(0, l.amount),
-          countsAsWage: flag?.ewfWage ?? (l.component === "salary" || l.component.startsWith("fixed:")),
+          countsAsWage: flag?.ewfWage ?? (l.component === "salary" || l.component === SINGLE_SHIFT_COMPONENT || l.component.startsWith("fixed:")),
           reason: flag?.ewfReason ?? "Variable component classification requires accountant confirmation; prototype excludes by default.",
-          ...(dates.length && l.sourceMonth === month ? { coversFrom: dates[0], coversThrough: dates.at(-1)! } : {}) };
+          ...(singleShiftDay.has(l.id) ? { earnedOn: singleShiftDay.get(l.id)! } : dates.length && l.sourceMonth === month ? { coversFrom: dates[0], coversThrough: dates.at(-1)! } : {}) };
       }));
       deduct("ewf", "EWF employee", ewf.employeeAmount, `${ewf.wageBase} eligible wages × ${ewf.employeeRate * 100}%; ${ewf.membershipProrationMethod}`);
       deduct("employer-ewf", "EWF employer", ewf.employerAmount, `${ewf.wageBase} × ${ewf.employerRate * 100}%`, "employer");
@@ -396,3 +411,50 @@ export function calculateCompanyEngine(data: PayrollWorld, doc: CompanyPayrollDo
   return { month, entities, service: services, incentives, exceptions, signature: companySourceSignature(data, doc, month) };
 }
 const employedDatesFor = (p: NonNullable<StaffMember["payrollProfile"]>, month: string) => datesIn(month).filter(d => employed(p, d));
+
+interface SingleShiftPay { invitationId: string; date: string; amount: number; formula: string; food: number }
+
+/**
+ * SCRUM-1055 — a former employee's single shift, paid in the run of the month
+ * it is worked, on the old contract (the owner's answers of 19 November 2026,
+ * R8 to R11). The world loader attaches the month's single shifts to the
+ * person; nobody else has any, so for everyone else this answers nothing.
+ *
+ *  - The day's pay (R11): a monthly salary (an owner-household salary, a
+ *    contractor's fixed monthly fee) divided by the days in the month, in
+ *    payroll's own rounding. A day-rate contract is paid its day rate, as it
+ *    was.
+ *  - A shift with no clock-in: today's payroll pays a monthly contract by
+ *    the calendar whatever the clock says, and a day-rate contract only for
+ *    a worked day (a clock-in after the run's review, company-math.workedOn).
+ *    So an unclocked shift is paid on a monthly contract and not on a day-rate
+ *    one; the attendance feed's own no-show item asks for the day's review.
+ *  - The food allowance (R10): the profile's amount per worked day, on the
+ *    same flags as the food line (not taxed, not an SSO wage).
+ *  - Overtime (R10): the older engine's overtime of the person's fed days,
+ *    which include the shift's day, as for anybody (the caller's overtime line).
+ *  - Tax, social security and the rest of the statutory path (R9): the
+ *    caller's own, on this run's earnings; the shift's line is taxable and an
+ *    SSO wage, as the old contract's salary line.
+ *  - A day the payroll profile still counts as employed is already paid by
+ *    the ordinary pay; it is not paid twice, and the run says so.
+ */
+function singleShiftPays(data: PayrollWorld, doc: CompanyPayrollDocument, s: StaffMember, month: string, exceptions: PayrollException[]): SingleShiftPay[] {
+  const p = s.payrollProfile!, days = monthDays(month);
+  return (s.singleShifts ?? []).filter(shift => shift.date.startsWith(month)).flatMap((shift): SingleShiftPay[] => {
+    if (employed(p, shift.date)) {
+      exceptions.push({ id: `${s.id}-single-shift-${shift.invitationId}`, staffId: s.id, severity: "warning", kind: "single-shift",
+        message: `${s.name}: the single shift on ${shift.date} falls inside the employment on the payroll profile (joined ${p.joinedOn}, ${p.lastWorkingDay ? `last working day ${p.lastWorkingDay}` : "no last working day"}), so the day is paid as an employed day and not again.` });
+      return [];
+    }
+    const worked = workedOn(data, doc, s, shift.date);
+    const on = `single shift on ${shift.date}`;
+    const food = p.foodAllowanceEligible && worked ? p.foodAllowancePerDay : 0;
+    if (p.workerType === "day-rate") {
+      return [{ ...shift, amount: worked ? money(p.dayRate) : 0, food, formula: worked ? `${p.dayRate} day rate × 1 worked day; ${on}` : `${on}; no clock-in` }];
+    }
+    const monthly = p.workerType === "contractor" ? p.fixedFee : p.monthlySalary;
+    return [{ ...shift, amount: money(monthly / days), food,
+      formula: `${monthly} ${p.workerType === "contractor" ? "fixed fee" : "monthly salary"} ÷ ${days} days in ${month}; ${on}${worked ? "" : "; no clock-in recorded, a monthly contract is paid by the calendar"}` }];
+  });
+}

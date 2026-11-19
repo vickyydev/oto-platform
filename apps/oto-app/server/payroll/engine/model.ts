@@ -442,6 +442,12 @@ export interface StaffMember {
   serviceChargeEligible: boolean;
   serviceRoleWeight: number;
   ewfMembership?: { membershipJoinDate: string | null; beneficiaryMeta: { fileName: string; date: string } | null } | null;
+  /**
+   * SCRUM-1055: the single shifts of the month a former employee was invited
+   * to and is paid for on the old contract, one per invitation. Only the
+   * world loader of a pay reader sets it; it is absent for everyone else.
+   */
+  singleShifts?: { invitationId: string; date: string }[];
 }
 
 export interface EwfSettings {

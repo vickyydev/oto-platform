@@ -62,7 +62,7 @@ import { PayrollRefusal, requireReason, type PayrollActor } from "./setup";
 import { requireMonth } from "./inputs";
 import { currentVersion, editableVersion, entityOf, type Tx } from "./month-end";
 import { listRunAudit, recordRunAudit, runAuditOut } from "./run-audit";
-import { loadPayrollWorld, sourceSignature, WorldRefusal, type LoadedWorld } from "./world";
+import { loadPayrollWorld, PAY_READER, sourceSignature, WorldRefusal, type LoadedWorld } from "./world";
 import { approveCompanyRun, lockCompanyRun, markCompanyPaid, reopenCompanyRun } from "./engine/company-workflow";
 import { calculateCompanyEngine } from "./engine/company-calculations";
 import { thirdPartyApprovalSignature } from "./engine/company-issue-review";
@@ -96,7 +96,7 @@ async function userName(tx: Tx, userId: string | null): Promise<string> {
 }
 
 async function loadWorld(tenantId: string, month: string): Promise<LoadedWorld> {
-  return loadPayrollWorld(tenantId, month).catch(transitionRefusal);
+  return loadPayrollWorld(tenantId, month, PAY_READER).catch(transitionRefusal);
 }
 
 // ─── GM confirm ──────────────────────────────────────────────────────────────

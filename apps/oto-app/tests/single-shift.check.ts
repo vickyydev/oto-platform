@@ -30,8 +30,9 @@
 //      only, refused everywhere but My pay, before and after.
 //   6. The 03:00 batch ending an employment keeps a single shift already made
 //      for that person, and so does an edit of the last working day.
-//   7. Payroll does not pay a single shift yet: the month's payroll names each
-//      one still on the schedule, with how it is to be paid.
+//   7. Payroll names each single shift still on the schedule that it cannot
+//      pay, and why (SCRUM-1055: a casual day rate, no payroll profile, no
+//      allocation); the readers that do not pay take none.
 //   8. The record of how a shift is paid stays: an employee with a single
 //      shift is not deleted, in words, and the key refuses a direct delete.
 //
@@ -571,19 +572,30 @@ try {
 
   // ── 7. Payroll ─────────────────────────────────────────────────────────────
   console.log("7. payroll:");
-  await check("the month's payroll names every single shift it does not pay, with how it is to be paid; a removed one is not named", async () => {
-    const { loadPayrollWorld } = await import("../server/payroll/world");
+  await check("the month's payroll names every single shift it cannot pay and why; a removed one is not named; other readers name none", async () => {
+    // SCRUM-1055: an old-contract shift is paid where the old contract can be paid
+    // (tests/payroll-single-shift.check.ts); this park group has no payroll setup.
+    const { loadPayrollWorld, PAY_READER } = await import("../server/payroll/world");
     const reasons = new Map<string, string>();
-    for (const month of new Set([SHIFT_DAY, OTHER_DAY].map((d) => d.slice(0, 7)))) {
-      for (const x of (await loadPayrollWorld(TENANT, month)).excluded) reasons.set(x.employeeId, `${reasons.get(x.employeeId) ?? ""} ${x.reason}`);
+    const months = new Set([SHIFT_DAY, OTHER_DAY].map((d) => d.slice(0, 7)));
+    for (const month of months) {
+      for (const x of (await loadPayrollWorld(TENANT, month, PAY_READER)).excluded) reasons.set(x.employeeId, `${reasons.get(x.employeeId) ?? ""} ${x.reason}`);
     }
-    const NOT_PAID = "not paid by this run: company payroll does not take single shifts yet.";
-    assert.ok(reasons.get(former)!.includes(`Single shift on ${SHIFT_DAY} (on the old contract) is ${NOT_PAID}`), reasons.get(former));
+    const NOT_PAID = "is not paid by this run:";
+    // The profile (ZZ TEST terms, no allocation) ended within the payroll window, so the month already lists it as unpayable.
+    assert.ok(reasons.get(former)!.includes("No allocation is effective on"), reasons.get(former));
+    assert.ok(reasons.get(former)!.includes(`Single shift on ${SHIFT_DAY} (on the old contract) ${NOT_PAID} the payroll profile cannot be paid this month.`), reasons.get(former));
     assert.ok(reasons.get(noProfile)!.includes(
-      `Single shifts on ${SHIFT_DAY} (casual day rate ฿800 a day), ${SHIFT_DAY} (on the old contract) are ${NOT_PAID}`), reasons.get(noProfile));
-    assert.ok(reasons.get(leaving)!.includes(`Single shift on ${OTHER_DAY} (on the old contract) is ${NOT_PAID}`), reasons.get(leaving));
+      `Single shift on ${SHIFT_DAY} (casual day rate ฿800 a day) ${NOT_PAID} company payroll has no pay for casual workers, who are outside it.`), reasons.get(noProfile));
+    assert.ok(reasons.get(noProfile)!.includes(
+      `Single shift on ${SHIFT_DAY} (on the old contract) ${NOT_PAID} there is no payroll profile to pay the old contract from.`), reasons.get(noProfile));
+    assert.ok(reasons.get(leaving)!.includes(`Single shift on ${OTHER_DAY} (on the old contract) ${NOT_PAID} there is no payroll profile`), reasons.get(leaving));
     assert.ok(!(reasons.get(dayRater) ?? "").includes("Single shift"), "the removed shift is not named");
     assert.ok(!(reasons.get(stranger) ?? "").includes("Single shift"), "nobody without one is named for one");
+    for (const month of months) {
+      const other = await loadPayrollWorld(TENANT, month);
+      assert.ok(!other.excluded.some((x) => x.reason.includes("Single shift")), "a reader that does not pay takes no single shift");
+    }
   });
 
   // ── 8. The record ──────────────────────────────────────────────────────────
