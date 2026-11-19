@@ -1,6 +1,6 @@
 # Family profiles: several parents or guardians for the same children
 
-SCRUM-1024 and SCRUM-1025. **State, 19 November 2026, evening: APPROVED, the eight questions answered; nothing is built yet.** The owner answered section 10 on his plan page; his answers are at the end of that section and in section 4 of ANSWERS.md. A plan written from a read of the code at main 3231ee7e3. The build starts with steps F1 and F2 when the drop-off counter flow has landed. The specification is section 4 of `ANSWERS.md` beside this file. The code comparison is `DROPOFF_AND_TILL_COMPARISON.md`: rows D15 to D17 and its section 3. Nothing here is decided beyond those answers. Where a rule still belongs to the owner, it is a numbered question in section 10, with today's behaviour as the default until he answers.
+SCRUM-1024 and SCRUM-1025. **State, 19 November 2026, evening: APPROVED, the eight questions answered; step F1 built on a lane, not landed (section 11).** The owner answered section 10 on his plan page; his answers are at the end of that section and in section 4 of ANSWERS.md. A plan written from a read of the code at main 3231ee7e3. The build starts with steps F1 and F2 when the drop-off counter flow has landed. The specification is section 4 of `ANSWERS.md` beside this file. The code comparison is `DROPOFF_AND_TILL_COMPARISON.md`: rows D15 to D17 and its section 3. Nothing here is decided beyond those answers. Where a rule still belongs to the owner, it is a numbered question in section 10, with today's behaviour as the default until he answers.
 
 ## 1. Today's model
 
@@ -321,3 +321,25 @@ What the answers add to the plan:
 - **Answer 6** adds one message to F4 and F6, with the same once-only guard as the check-in copies.
 - **Answer 7** fixes the wording of F6.
 - **Answer 8** widens the camp view of F7a to numbers found in the free text of people allowed to collect; a number is taken only when it normalises to a valid phone number.
+
+## 11. Build progress
+
+### Step F1, the tables and the writers (19 November 2026, lane `lane/family1024-20261119`, not landed)
+
+Built and tested on the lane; nothing is on staging, the switch is off everywhere, and no reader uses a family.
+
+- **Migration `0136_family_profiles`** (0135 was taken by another lane; renumbered at landing if needed), with `undo/0136_family_profiles.sql`.
+  - `crm.family`: id, operator_id, source (backfill, till, sync, booking, link), created_by_account_id, timestamps, archived_at; the tenant fence `family_tenant_key` on (operator_id, id).
+  - `crm.family_guardian`: as section 2.2. The family is reached by a composite foreign key `(operator_id, family_id)` onto the fence, so a guardian row cannot name another operator's family. One live row per family and member (`family_guardian_live_unique`), the live member index, and an index leading on every foreign key.
+  - `crm.child.family_id` and `merged_into_child_id`: nullable, RESTRICT, indexed.
+- **The switch** `crm.family_profiles` is in `FLAG_CATALOGUE` as a feature switch (off, read, on; operator scope; default off; no expiry). It is listed as not supported, so no write path accepts it until step F3 makes it supported with its readers.
+- **`apps/api/src/services/family.ts`**: `ensureFamilyFor` (the rule of section 2.2, under a lock on the member row), the read rule `childrenSeenBy` and `memberSeesChild` (not called yet), and `familyProfilesMode`.
+- **Every insert into `crm.child`** now gives the child a family: `POST /members/:id/children`, the box's `child.created` in `services/sync.ts`, the booking site's save in `services/family-online.ts`, and the seed (the demo families, as source `backfill`). `services/demo-reset.ts` deletes guardian rows, then children, then families that nothing names. No other insert exists outside test fixtures.
+
+Where the code or the build differs from the text above:
+
+- **The member side of the fence is a service check, not a key.** `crm.member` has no `(operator_id, id)` key to fence onto, and building one would lock the member register while it is built, so `family_guardian.member_id` is a plain foreign key and `ensureFamilyFor` checks the member's operator.
+- **Several families and the review flag.** When a member is a live guardian in several families, `ensureFamilyFor` takes the oldest and reports `ambiguous`, but does not raise the member's review flag: until F4 a member cannot hold a second family, and the flag is published to the boxes, so it belongs with the step that makes the case possible.
+- **An archived member.** The box's `child.created` accepts a child under a member archived since it went offline, as it did before, so `ensureFamilyFor` does not refuse an archived member.
+- **Audit.** A new family writes one `family.create` row (its source, the member, the guardian row, the child it was made for, and the station). Further guardians will be `family_guardian.add` (section 4.1). `demo-reset` takes `family` audit rows with the other facts.
+- **What changed in what people see:** the Console's switch list shows one more switch, not settable. The audit rows that store the whole child row (`child.update` from the till and from the box, and `child.archive`) now carry `familyId` and `mergedIntoChildId` as well. No route answer, cache view, box bundle, receipt or report changed (`api-types --check` reports no change). The demo reset's answer keeps its fields: families are not counted in it.
