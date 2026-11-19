@@ -157,7 +157,11 @@ describe('SCRUM-637 native default-job registration and durable delivery; all tr
     const env = enabledEnv(); let release!: () => void;
     const held = new Promise<void>(resolve => { release = resolve; });
     const send = vi.fn<DigestSender>().mockImplementation(async () => { await held; return { state: 'accepted', status: 202 }; });
-    const job = digestJob(env, send), deps = { db: ctx.db, env, log: ctx.app.log, jobs: [job], channels: [] };
+    // The runner reads the real clock; the digest only sends from 05:00 park
+    // time, so hand the registered job this file's fixed 05:30 instead.
+    const registered = digestJob(env, send);
+    const job: JobDefinition = { ...registered, run: context => registered.run({ ...context, now }) };
+    const deps = { db: ctx.db, env, log: ctx.app.log, jobs: [job], channels: [] };
     const firstRunner = createJobRunner(deps), secondRunner = createJobRunner(deps);
     const first = firstRunner.runJob(JOB, { force: true });
     try {
