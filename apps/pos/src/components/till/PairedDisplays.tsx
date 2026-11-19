@@ -81,7 +81,7 @@ export function PairedDisplaysDialog({ open, onOpenChange, displays, timeZone }:
   return (
     <Dialog open={open} onOpenChange={(next) => { if (!next) { setConfirming(null); setFailed(null); } onOpenChange(next); }}>
       <DialogContent className="max-w-md" data-testid="paired-displays">
-        <DialogHeader>
+        <DialogHeader className="text-left">
           <DialogTitle className="flex items-center gap-2">
             <Monitor className="h-5 w-5 text-primary" />
             Customer displays
@@ -117,14 +117,16 @@ export function PairedDisplaysDialog({ open, onOpenChange, displays, timeZone }:
                       )}
                     </div>
                     {mayRemove && asking && (
-                      <div className="mt-3 flex flex-wrap items-center justify-end gap-2 border-t border-border pt-3">
+                      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-border pt-3">
                         <p className="mr-auto text-sm text-muted-foreground">It stops showing this till&apos;s sales.</p>
-                        <Button size="sm" variant="outline" disabled={working} onClick={() => setConfirming(null)}>Keep</Button>
-                        <Button size="sm" variant="destructive" disabled={working} onClick={() => { void remove(display); }}
-                          data-testid="paired-display-remove-confirm">
-                          {working && <Loader2 className="animate-spin" />}
-                          Remove
-                        </Button>
+                        <div className="ml-auto flex shrink-0 gap-2">
+                          <Button size="sm" variant="outline" disabled={working} onClick={() => setConfirming(null)}>Keep</Button>
+                          <Button size="sm" variant="destructive" disabled={working} onClick={() => { void remove(display); }}
+                            data-testid="paired-display-remove-confirm">
+                            {working && <Loader2 className="animate-spin" />}
+                            Remove
+                          </Button>
+                        </div>
                       </div>
                     )}
                   </li>
