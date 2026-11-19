@@ -1,7 +1,7 @@
 import { formatStoredPhone } from '@/lib/phoneUtils';
 import { useEffect, useRef, useState } from 'react';
 import { CONSENT_FORM_STEPS, type ConsentAction, type ConsentFormStep, type ConsentPrompt, type FilledConsentSlot } from '@oto/shared';
-import { ShieldCheck, ShieldAlert, UserCheck, ClipboardCheck, Baby, HeartPulse, UtensilsCrossed, Camera, Phone, Users, Eye } from 'lucide-react';
+import { ShieldCheck, ShieldAlert, UserCheck, ClipboardCheck, Baby, HeartPulse, UtensilsCrossed, Camera, Phone, Users, Eye, Wallet, Minus, Plus } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -118,7 +118,13 @@ interface ChildDraft {
   foodRestrictions: string;
   /** SCRUM-1020 — a saved child whose care notes the form shows: the family's tick that there are none. */
   allergiesNone?: boolean;
+  /** SCRUM-1021 — the extra prepaid food credit the family chose, in baht, where the form asks them. */
+  extraCreditTHB?: number;
 }
+
+/** SCRUM-1021 — one press of the extra food credit's − or +, in baht: the step of the till's own credit box. */
+export const EXTRA_CREDIT_STEP_THB = 50;
+const EXTRA_CREDIT_MAX_THB = 100_000;
 
 type PromptSlot = ConsentPrompt['slots'][number];
 
@@ -156,6 +162,7 @@ function draftOf(prompt: ConsentPrompt): FormDraft {
       name: slot.name, dateOfBirth: slot.dateOfBirth ?? null, ageYears: slot.ageYears,
       allergiesMedical: slot.allergiesMedical ?? '', foodRestrictions: slot.foodRestrictions ?? '',
       ...(careShown(slot) ? { allergiesNone: slot.allergiesNone === true } : {}),
+      ...(slot.extraCreditTHB !== undefined ? { extraCreditTHB: slot.extraCreditTHB } : {}),
     }])),
     guardianName: prompt.guardianName,
     guardianPhone: prompt.guardianPhone ?? '',
@@ -187,7 +194,8 @@ function isFormDraft(value: unknown): value is FormDraft {
     const child = entry as Record<string, unknown> | null;
     return !!child && typeof child === 'object' && isText(child.name) && (child.dateOfBirth === null || isText(child.dateOfBirth))
       && (child.ageYears === null || typeof child.ageYears === 'number') && isText(child.allergiesMedical) && isText(child.foodRestrictions)
-      && (child.allergiesNone === undefined || typeof child.allergiesNone === 'boolean');
+      && (child.allergiesNone === undefined || typeof child.allergiesNone === 'boolean')
+      && (child.extraCreditTHB === undefined || (typeof child.extraCreditTHB === 'number' && Number.isInteger(child.extraCreditTHB)));
   }) && isText(form.guardianName) && isText(form.guardianPhone)
     && (form.contactChannel === undefined || form.contactChannel === 'whatsapp' || form.contactChannel === 'telegram' || form.contactChannel === 'line')
     && (form.contactConfirmed === undefined || typeof form.contactConfirmed === 'boolean')
@@ -262,6 +270,9 @@ export function mergeConsentDraft(local: FormDraft, base: FormDraft, next: FormD
       // SCRUM-1020 — the family's "no allergies", on a child whose care notes the till shows.
       ...(theirs.allergiesNone !== undefined ? { allergiesNone: pick(mine.allergiesNone === true, was.allergiesNone === true,
         theirs.allergiesNone, gone.map((child) => child?.allergiesNone === undefined ? undefined : child.allergiesNone)) } : {}),
+      // SCRUM-1021 — the family's extra food credit, on a child whose form asks them.
+      ...(theirs.extraCreditTHB !== undefined ? { extraCreditTHB: pick(mine.extraCreditTHB ?? 0, was.extraCreditTHB ?? 0,
+        theirs.extraCreditTHB, gone.map((child) => child?.extraCreditTHB)) } : {}),
     };
   }
   // SCRUM-863 — a number is the same number typed with its leading zero or
@@ -544,6 +555,8 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
         allergiesMedical: child.allergiesMedical.slice(0, 500), foodRestrictions: child.foodRestrictions.slice(0, 200),
         // SCRUM-1020 — the family's "no allergies", only where the form shows the notes.
         ...(careShown(slot) && child.allergiesNone ? { allergiesNone: true as const } : {}),
+        // SCRUM-1021 — the extra food credit, only where the form asks for it.
+        ...(slot.extraCreditTHB !== undefined ? { extraCreditTHB: Math.max(0, Math.min(EXTRA_CREDIT_MAX_THB, child.extraCreditTHB ?? 0)) } : {}),
       };
     }),
     guardianName: form.guardianName.trim().slice(0, 100),
@@ -671,6 +684,37 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
         <span className="text-lg leading-snug text-foreground/80">{t('superviseConsent.noAllergiesConfirm', { name })}</span></label>}
     </div>;
   };
+  /**
+   * SCRUM-1021 — THE FOOD CREDIT ON THE FORM (the owner's answers of 19
+   * November): the ticket's own credit, included with no extra charge, and
+   * the extra prepaid credit the family chooses here, sent at once so the
+   * team sees it on the till before payment. Shown only where the till sends
+   * them; a form without them is the form as it was.
+   */
+  const foodField = (slot: PromptSlot) => {
+    const included = slot.includedCreditTHB ?? 0;
+    if (included <= 0 && slot.extraCreditTHB === undefined) return null;
+    const extra = draft.slots[slot.id]?.extraCreditTHB ?? 0;
+    const setExtra = (amount: number) => choose((current) => ({ ...current, slots: { ...current.slots,
+      [slot.id]: { ...current.slots[slot.id]!, extraCreditTHB: Math.max(0, Math.min(EXTRA_CREDIT_MAX_THB, amount)) } } }));
+    return <div data-testid="consent-food-credit" className="space-y-3">
+      {included > 0 && <p data-testid="consent-food-included" className="flex items-center gap-2 rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3 text-lg font-semibold text-primary">
+        <Wallet className="h-5 w-5 shrink-0" />{t('superviseConsent.foodIncluded', { amount: included })}</p>}
+      {slot.extraCreditTHB !== undefined && <div>
+        <label className="flex items-center gap-2 text-lg text-foreground/70"><Wallet className="h-5 w-5" /> {t('superviseConsent.extraFoodCredit')}</label>
+        <div className="mt-2 flex items-center gap-4">
+          <Button type="button" variant="outline" size="icon" disabled={locked || extra <= 0} data-testid="consent-extra-credit-less"
+            onClick={() => setExtra(extra - EXTRA_CREDIT_STEP_THB)} className={cn('h-14 w-14 rounded-xl border-foreground/10 bg-foreground/5 text-foreground', touch)}>
+            <Minus className="h-5 w-5" /></Button>
+          <span className="min-w-[7rem] text-center text-3xl font-black tabular-nums" data-testid="consent-extra-credit">฿{extra}</span>
+          <Button type="button" variant="outline" size="icon" disabled={locked || extra >= EXTRA_CREDIT_MAX_THB} data-testid="consent-extra-credit-more"
+            onClick={() => setExtra(extra + EXTRA_CREDIT_STEP_THB)} className={cn('h-14 w-14 rounded-xl border-foreground/10 bg-foreground/5 text-foreground', touch)}>
+            <Plus className="h-5 w-5" /></Button>
+        </div>
+        {extra > 0 && <p className="mt-2 text-base font-semibold text-primary">{t('food.creditAdded', { amount: extra })}</p>}
+      </div>}
+    </div>;
+  };
   const index = STEPS.indexOf(step);
   const next = () => {
     if (index < STEPS.length - 1) goTo(STEPS[index + 1]!);
@@ -774,6 +818,7 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
                   placeholder={t('superviseConsent.dietaryPlaceholder')} className="mt-2 h-12 border-foreground/10 bg-foreground/5 px-4 text-lg text-foreground placeholder:text-foreground/30" />
               </div>
             </>}
+            {foodField(slot)}
           </div>;
         })}
         {prompt.consentRequired && !(mirror ? marked : takesPhotos) && <p className="flex items-center gap-2 text-base text-foreground/70"><Camera className="h-5 w-5 shrink-0" />{t('superviseConsent.photoAtReception')}</p>}
@@ -791,6 +836,8 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
           {photoOf(slot)}
           {/* SCRUM-1020 — the saved child's allergy and medical notes, to update. */}
           {careShown(slot) && careField(slot)}
+          {/* SCRUM-1021 — the food credit: the ticket's own, and the extra to choose. */}
+          {foodField(slot)}
         </div>;
       })}
 

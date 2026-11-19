@@ -53,6 +53,18 @@ const promptObject = z.object({
     /** SCRUM-1020 — the till holds the family's word that this child has no allergies or medical needs. */
     allergiesNone: z.boolean().optional(),
     /**
+     * SCRUM-1021 — THE FOOD CREDIT ON THE FORM (the owner's answers of 19
+     * November). `includedCreditTHB`: the credit this child's ticket puts on
+     * their band (Eat & Play), shown as included with no extra charge.
+     * `extraCreditTHB`: the extra prepaid food credit the till holds for the
+     * child; sent, it asks the family to choose it on their screen, and their
+     * choice comes back with the step. Both optional: a till from before them
+     * sends neither, and a station from before them drops both, so the
+     * display then shows the form as it was and sends nothing new.
+     */
+    includedCreditTHB: z.number().int().nonnegative().max(1_000_000).optional(),
+    extraCreditTHB: z.number().int().nonnegative().max(100_000).optional(),
+    /**
      * SCRUM-857 — the family takes the child's photo on their own screen (the
      * owner's ruling of 8 November). Sent by a till that takes a photo from
      * the display, only for a child the photo is asked for: `needed` until
@@ -211,6 +223,12 @@ const FilledSlotSchema = z.object({
    * prompt carries `careShown`, so a station from before it never sees one.
    */
   allergiesNone: z.literal(true).optional(),
+  /**
+   * SCRUM-1021 — the extra prepaid food credit the family chose for this
+   * child, in whole baht (0 for none). Sent only for a child whose prompt
+   * carries `extraCreditTHB`, so a station from before it never sees one.
+   */
+  extraCreditTHB: z.number().int().nonnegative().max(100_000).optional(),
 }).strict();
 export type FilledConsentSlot = z.infer<typeof FilledSlotSchema>;
 
@@ -282,6 +300,9 @@ export function consentActionAllowed(prompt: ConsentPrompt, action: ConsentActio
     // SCRUM-1020 — "no allergies" only for a saved child whose care notes the form shows.
     if (action.action === 'fill' && !action.slots.every(slot => !slot.allergiesNone
       || prompt.slots.some(item => item.id === slot.id && item.saved === true && item.careShown === true))) return false;
+    // SCRUM-1021 — extra food credit only for a child whose form asks the family to choose it.
+    if (action.action === 'fill' && !action.slots.every(slot => slot.extraCreditTHB === undefined
+      || prompt.slots.some(item => item.id === slot.id && item.extraCreditTHB !== undefined))) return false;
     return action.acknowledgedConfirmationIds.every(id => prompt.confirmations.some(item => item.id === id));
   }
   return true;

@@ -1,6 +1,7 @@
 import { normalizePhone, validateMessagingPhone, type ConsentAction, type ConsentFormStep, type FilledConsentSlot } from '@oto/shared';
 import type { SupervisedSlot } from '@/components/till/SupervisionGate';
 import { displayCarePatch } from '@/lib/displayCareNotes';
+import { slotFoodFromFamily } from '@/lib/dropOffFoodCredit';
 import type { ContactChannel } from '@/types';
 
 /**
@@ -17,6 +18,9 @@ import type { ContactChannel } from '@/types';
  * SCRUM-1020 — except the allergy and medical notes of a saved child the form
  * shows them for (`care`): the owner's answer of 19 November lets the parent
  * update those on the display. Their food notes stay the profile's.
+ *
+ * SCRUM-1021 — and the extra prepaid food credit: the parent chooses it on
+ * their screen (the owner's answer of 19 November), and the till takes it.
  */
 export function consentSlotPatches(
   slots: readonly SupervisedSlot[],
@@ -31,11 +35,15 @@ export function consentSlotPatches(
     // their tick). Any other saved child keeps the profile's, as before.
     const savedCare = slot.savedChildId && care?.shown.includes(slot.id)
       ? displayCarePatch(slot, child, care.profileNote(slot)) ?? {} : {};
+    // SCRUM-1021 — the extra prepaid food credit the family chose on their
+    // screen, on a child whose form asked them (`consentActionAllowed`).
+    const food = child.extraCreditTHB !== undefined ? slotFoodFromFamily(slot, child.extraCreditTHB) ?? {} : {};
     const patch: Partial<SupervisedSlot> = {
       name: child.name,
       dateOfBirth: child.dateOfBirth ?? undefined,
       age: child.ageYears === null ? '' : String(child.ageYears),
       ...(slot.savedChildId ? savedCare : { allergiesMedical: child.allergiesMedical, foodRestrictions: child.foodRestrictions }),
+      ...food,
     };
     return [{ id: slot.id, patch }];
   });
