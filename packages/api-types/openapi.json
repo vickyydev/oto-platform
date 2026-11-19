@@ -55486,6 +55486,28 @@
                     },
                     "minItems": 1,
                     "maxItems": 20
+                  },
+                  "photoReuse": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "checkinId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "fromCheckinId": {
+                          "type": "string",
+                          "format": "uuid"
+                        }
+                      },
+                      "required": [
+                        "checkinId",
+                        "fromCheckinId"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "maxItems": 20
                   }
                 },
                 "required": [

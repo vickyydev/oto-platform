@@ -157,16 +157,13 @@ export function LastPhotoChoice({ slot, last, onChoice }: {
   }
   if (last?.status !== 'found') return null;
   const taken = SHORT_DATE.format(new Date(last.takenAt));
+  // The owner's two answers only: once "Take a new one" is pressed the
+  // photo is taken today, with no way back to the old one.
   if (state === 'today') {
     return (
       <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-muted-foreground" data-testid="last-photo-new">
         <Camera className="h-4 w-4 shrink-0" />
         <span>A new photo is taken today.</span>
-        {!slot.childPhotoUrl && (
-          <Button size="sm" variant="outline" className="h-8 text-sm" onClick={() => onChoice('matches')}>
-            Use the photo from {taken}
-          </Button>
-        )}
       </div>
     );
   }
@@ -287,10 +284,10 @@ export function SupervisionGate({
   // take them, and the family must have confirmed it is the one for the
   // channel (the owner's ruling of 8 November). Only when the till passes
   // these, and only for a registration that will be written (consent needed).
-  // SCRUM-1018 — the counter till no longer asks the confirmation (the number
-  // is shown, not asked): it passes the number's problem alone, and the
-  // number must still be one that can take messages. The phone till passes
-  // the confirmation as before.
+  // SCRUM-1018 — neither till asks the confirmation any more (the number is
+  // shown, not asked; on the phone till since c77cfa7a5): they pass the
+  // number's problem alone, and the number must still be one that can take
+  // messages. `contactConfirmed` stays for a caller that still asks it.
   const contactAsked = anyNeedsConsent && (contactConfirmed !== undefined || contactPhoneProblem !== undefined);
   const contactOk = !contactAsked || contactPhoneProblem == null && contactConfirmed !== false;
   if (contactAsked && contactPhoneProblem === 'empty') {

@@ -229,6 +229,8 @@ describe('the last visit’s photo', () => {
     const fresh = LastPhotoChoice({ slot: { ...child, lastPhotoChoice: { childId: MAI.id, fromCheckinId: 'zz-stay-1', choice: 'new' } },
       last: found, onChoice: () => undefined });
     expect(text(fresh)).toContain('A new photo is taken today.');
+    // The owner's two answers only: no way back to the old photo once a new one is asked.
+    expect(nodes(fresh).some((node) => typeof node.props.onClick === 'function')).toBe(false);
     expect(LastPhotoChoice({ slot: child, last: { status: 'none' }, onChoice: () => undefined })).toBeNull();
   });
 });
@@ -265,11 +267,17 @@ describe('the till wires it', () => {
     expect(resolve).toContain('resolveSupervisionOutcome(base, slot.waived, slot.optIn && !coveringIds.has(slot.id))');
   });
 
-  it('the registration reuses a photo only on staff’s word, for the same child, and says when it could not', () => {
+  it('the registration reuses a photo only on staff’s word, for the same child, in its own write', () => {
     const resolve = till.slice(till.indexOf('const resolveSupervisionGate = async'), till.indexOf('const gateRunningRef'));
     expect(resolve).toContain('const from = photoReuseFor(slot, childIdBySlot.get(slot.id));');
-    expect(resolve).toContain('await checkinApi.reusePhoto(reg.id,');
-    expect(resolve).toContain('take a new photo before pickup.');
+    // SCRUM-1018 fix round — the reuse rides in the registration's own write
+    // (it once followed it as a separate call that could fail after the
+    // registration was saved, leaving the stay without a photo).
+    expect(resolve).toMatch(/photoReuse: reuses\.map\(\(\{ checkinId, fromCheckinId \}\) => \(\{ checkinId, fromCheckinId \}\)\)/);
+    expect(resolve).not.toContain('checkinApi.reusePhoto');
+    // Refused, nothing is written: the old photo is let go, not offered again,
+    // and the gate stays shut until a new photo is taken.
+    expect(resolve).toMatch(/if \(photoReuseRefused\(err\) && reusedSlotIds\.length > 0\) \{[\s\S]{0,700}?\{ status: 'none' \}[\s\S]{0,300}?childPhotoUrl: undefined, lastPhotoChoice: undefined[\s\S]{0,300}?return \{ ok: false, message: err\.message \};/);
     // The display is not asked for a photo staff compare or reuse.
     expect(till).toContain("needsConsent: outcome.needsConsent && photoStateOf(slot) === 'today'");
     expect(till).toContain('photoAtTillFor={staffPhotoSlotIds}');

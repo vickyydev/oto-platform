@@ -132,6 +132,11 @@ export async function checkinRoutes(app: App): Promise<void> {
     },
     async (req, reply) => {
       const actor = actorOf(req);
+      // SCRUM-1018 — reusing a stored photo is a change to the stays' photo:
+      // the same permission the separate photo-reuse route asks.
+      if (req.body.photoReuse && req.body.photoReuse.length > 0) {
+        await req.requirePermission('pos:checkin:update', { branchId: req.body.branchId });
+      }
       const claim = await claimClientId(
         req.body.id,
         async (id) => (await app.db.select().from(registration).where(eq(registration.id, id)).limit(1))[0],

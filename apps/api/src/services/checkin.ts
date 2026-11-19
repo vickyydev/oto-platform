@@ -57,6 +57,7 @@ import { openTillSalesOfStays, paidAtTillStaysOf, refundedLineIdsOf, type PaidAt
 import { BandKeyMissingError, mintSaleBands } from './bands';
 import { idInUse } from './client-id';
 import { mirrorNotice } from './inbox/mirror';
+import { reuseRegistrationPhoto } from './photo-reuse';
 import { queueCheckinBandPrints, type SalePrintJobView } from './sale-printing';
 import type { SmsSender } from './sms';
 import type { Exec, Tx } from './tx';
@@ -787,6 +788,18 @@ export async function createRegistration(
     },
   });
   await insertStays(tx, actor, { id: input.id, branchId: input.branchId, visitId: input.visitId ?? null }, input.children);
+  // SCRUM-1018 — a returning child's last photo, reused on staff's word, in
+  // this same write: a reuse refused (another child's, another park's, past
+  // its retention date) refuses the registration, so no stay is left without
+  // its photo. Before any message goes out.
+  if (input.photoReuse && input.photoReuse.length > 0) {
+    const onForm = new Set(input.children.map((c) => c.checkinId));
+    if (input.photoReuse.some((item) => !onForm.has(item.checkinId))) {
+      throw errors.badRequest('A reused photo names a child who is not on this registration.');
+    }
+    const [written] = await tx.select().from(registration).where(eq(registration.id, input.id)).limit(1);
+    await reuseRegistrationPhoto(tx, actor, written!, { children: input.photoReuse }, now);
+  }
   await autoSendRegistrationContact(tx, actor, row, sms);
   return getRegistration(tx, actor.operatorId, input.id);
 }

@@ -55,7 +55,7 @@ import { refreshSellableStock } from '@/api/stock';
 import { cartStockShortfalls } from '@/lib/stockPrecheck';
 import { getDiscountReasons, recordSale, getTicketTypes, getDropOffPricing, getDefaultTier, getSupervisionPolicy, getDiscountByCode, incrementPromoUsage, ensureSaleGrantWallet, issueWalkInBands, type CheckInPaymentInput, type NewEventAttendeeInput } from '@/mockApi';
 import { useBranch } from '@/branch/BranchContext';
-import { apiCheckinToCheckIn, checkinApi, foodProvisionToWire, photoUrlOf, TILL_NOT_LINKED, waitingStaysOf, type ApiNanny } from '@/api/checkin';
+import { apiCheckinToCheckIn, checkinApi, foodProvisionToWire, photoReuseRefused, photoUrlOf, TILL_NOT_LINKED, waitingStaysOf, type ApiNanny } from '@/api/checkin';
 import { validatePromoCode, resolveFreeItem } from '@/lib/promoVoucher';
 import { SavedChildrenReview } from '@/components/shared/SavedChildrenReview';
 import { LanguageProvider, tFor, useLanguage, type TFunction } from '@/i18n/LanguageContext';
@@ -2799,11 +2799,23 @@ export default function Till() {
     if (!ownSale()) return { ok: false, message: SALE_MOVED_ON };
     let created: CheckIn[] = [];
     let registrationId: string | null = null;
+    let reusedSlotIds: string[] = [];
     try {
       if (supervised.length > 0) {
         const regId = gateRegistrationIdRef.current ?? checkinApi.newId();
         gateRegistrationIdRef.current = regId;
         const stayIds = supervised.map(({ slot }) => gateIdFor(gateStayIdsRef.current, slot.id));
+        // SCRUM-1018 — a returning child whose last photo staff said still
+        // matches: the new stay points at that stored photo, by reference, in
+        // the registration's own write (`photoReuse`). Only for the child the
+        // answer was given for (`photoReuseFor`). Refused (or asked on the
+        // counter box), nothing is written: the old photo is let go below and
+        // a new one is taken before Continue opens again.
+        const reuses = supervised.flatMap(({ slot }, i) => {
+          const from = photoReuseFor(slot, childIdBySlot.get(slot.id));
+          return from ? [{ checkinId: stayIds[i]!, fromCheckinId: from, slotId: slot.id }] : [];
+        });
+        reusedSlotIds = reuses.map((item) => item.slotId);
         const reg = await checkinApi.createRegistration({
           id: regId,
           branchId: platformBranchId,
@@ -2829,6 +2841,9 @@ export default function Till() {
             foodRestrictions: slot.foodRestrictions.trim() || null,
             foodProvision: foodProvisionToWire(slot.foodProvision),
           })),
+          ...(reuses.length > 0
+            ? { photoReuse: reuses.map(({ checkinId, fromCheckinId }) => ({ checkinId, fromCheckinId })) }
+            : {}),
         });
         registrationId = reg.id;
         if (ownSale()) gateOnline.noteWrite();
@@ -2863,28 +2878,6 @@ export default function Till() {
             });
           }
         }
-        // SCRUM-1018 — a returning child whose last photo staff said still
-        // matches: the new stay points at that stored photo, by reference,
-        // recorded on the registration with who confirmed it. Only for the
-        // child the answer was given for (`photoReuseFor`); a stay already
-        // holding a photo keeps it. Not kept is said, as an upload is.
-        const reuses = supervised.flatMap(({ slot }, i) => {
-          const from = photoReuseFor(slot, childIdBySlot.get(slot.id));
-          const stayId = stayIds[i]!;
-          if (!from || reg.children.find((c) => c.id === stayId)?.photoFileId) return [];
-          return [{ checkinId: stayId, fromCheckinId: from, name: slot.name.trim() || 'The child' }];
-        });
-        if (reuses.length > 0) {
-          try {
-            await checkinApi.reusePhoto(reg.id, reuses.map(({ checkinId, fromCheckinId }) => ({ checkinId, fromCheckinId })));
-          } catch (err) {
-            toast({
-              title: `${reuses.map((item) => item.name).join(', ')}: last photo not kept`,
-              description: `${err instanceof Error ? err.message : 'Unknown error'} The registration is saved; take a new photo before pickup.`,
-              variant: 'destructive',
-            });
-          }
-        }
       }
 
       // Each staff-accepted sibling waiver, audited on the platform. Only
@@ -2911,6 +2904,25 @@ export default function Till() {
       }
     } catch (err) {
       if (!ownSale()) return { ok: false, message: SALE_MOVED_ON };
+      // SCRUM-1018 — the last photo could not be reused (refused by the
+      // platform, or the till is on the counter box): nothing was written.
+      // The old photo is let go for these children and is not offered
+      // again this sale, so the photo check holds Continue until a new one
+      // is taken (the family on the display, or staff in Private child
+      // details).
+      if (photoReuseRefused(err) && reusedSlotIds.length > 0) {
+        const refused = new Set(reusedSlotIds);
+        const childIds = superSlots.flatMap((slot) => (refused.has(slot.id) && slot.savedChildId ? [slot.savedChildId] : []));
+        setLastPhotos((previous) => ({ ...previous, ...Object.fromEntries(childIds.map((id) => [id, { status: 'none' } as LastPhotoState])) }));
+        setSuperSlots((previous) => previous.map((slot) => (refused.has(slot.id)
+          ? { ...slot, childPhotoUrl: undefined, lastPhotoChoice: undefined } : slot)));
+        toast({
+          title: 'Take a new photo',
+          description: err.message,
+          variant: 'destructive',
+        });
+        return { ok: false, message: err.message };
+      }
       toast({
         title: "Couldn't register these children",
         description: gateFailureDescription(err, gateOnline.startedOnline),

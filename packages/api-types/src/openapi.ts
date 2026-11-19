@@ -22860,6 +22860,12 @@ export interface paths {
                                 }[];
                             } | null;
                         }[];
+                        photoReuse?: {
+                            /** Format: uuid */
+                            checkinId: string;
+                            /** Format: uuid */
+                            fromCheckinId: string;
+                        }[];
                     };
                 };
             };

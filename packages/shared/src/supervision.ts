@@ -500,9 +500,24 @@ export const CreateRegistrationSchema = z
       .nullable()
       .optional(),
     children: z.array(RegistrationChildSchema).min(1).max(20),
+    /**
+     * SCRUM-1018 — each returning child whose last photo staff said still
+     * matches, with the earlier stay of the same child it comes from. Applied
+     * in the registration's own write (`reuseRegistrationPhoto`): a reuse the
+     * platform refuses refuses the registration, so a stay is never written
+     * without its photo. Only the till sends it, and only online.
+     */
+    photoReuse: z
+      .array(z.object({ checkinId: uuid, fromCheckinId: uuid }).strict())
+      .max(20)
+      .refine((value) => new Set(value.map((item) => item.checkinId)).size === value.length, 'Each child once')
+      .optional(),
   })
   .strict();
 export type CreateRegistrationInput = z.infer<typeof CreateRegistrationSchema>;
+
+/** SCRUM-1018 — the code a refused photo reuse carries: the counter takes a new photo. */
+export const PHOTO_REUSE_REFUSED = 'PHOTO_REUSE_REFUSED';
 
 export const AddRegistrationChildrenSchema = z
   .object({ children: z.array(RegistrationChildSchema).min(1).max(20) })
@@ -593,8 +608,10 @@ export const AttachRegistrationPhotoSchema = z
  * when staff confirm it still matches. The till reads the child's last
  * stay that has a photo (`GET /checkin/children/:childId/last-photo`), shows
  * it to staff with "Still matches" and "Take a new one", and on "Still
- * matches" names that stay here once the registration is written
- * (`POST /checkin/registrations/:id/photo-reuse`): each child's new stay
+ * matches" names that stay in the registration's own write
+ * (`photoReuse` on `POST /checkin/registrations`; the separate
+ * `POST /checkin/registrations/:id/photo-reuse` does the same on a
+ * registration already written): each child's new stay
  * points at the same stored photo, by reference, and the registration's
  * audit row says who confirmed it. The photo stays owned by the
  * registration it was taken for, so it is read through the same
@@ -607,7 +624,7 @@ export const LastChildPhotoSchema = z.object({
       checkinId: uuid,
       registrationId: uuid,
       fileId: uuid,
-      /** When that stay was registered. */
+      /** When the photo itself was stored (its first capture, however often it was reused since). */
       takenAt: z.string(),
     })
     .nullable(),

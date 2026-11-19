@@ -1,7 +1,7 @@
 import { and, desc, eq, gt, inArray, isNotNull, isNull, ne, or } from 'drizzle-orm';
 import { checkin, child, fileObject, member, registration } from '@oto/db';
-import type { LastChildPhoto, ReuseRegistrationPhotoInput } from '@oto/shared';
-import { errors } from '../lib/errors';
+import { PHOTO_REUSE_REFUSED, type LastChildPhoto, type ReuseRegistrationPhotoInput } from '@oto/shared';
+import { AppError, errors } from '../lib/errors';
 import { audit } from './audit';
 import { getRegistration, type Actor, type RegistrationView } from './checkin';
 import type { Exec, Tx } from './tx';
@@ -47,7 +47,9 @@ export async function lastChildPhoto(
       checkinId: checkin.id,
       registrationId: checkin.registrationId,
       fileId: checkin.photoFileId,
-      takenAt: checkin.createdAt,
+      // When the photo was stored, not when the newest stay holding it was:
+      // a photo reused visit after visit still shows the day it was taken.
+      takenAt: fileObject.createdAt,
     })
     .from(checkin)
     .innerJoin(fileObject, eq(fileObject.id, checkin.photoFileId))
@@ -145,7 +147,11 @@ export async function reuseRegistrationPhoto(
       !source.contentType.startsWith('image/') ||
       !kept
     ) {
-      throw errors.badRequest(
+      // A 400 with its own code: the till lets the old photo go and has a
+      // new one taken (in the registration's own write, nothing is written).
+      throw new AppError(
+        400,
+        PHOTO_REUSE_REFUSED,
         `The last photo of ${target.childName} cannot be used for this stay — take a new photo of the child with the guardian.`,
       );
     }
