@@ -9,6 +9,7 @@ import { KbConfirm, RuleConfirm } from '@/components/AssistantConfirms';
 import { Eyebrow } from '@/components/atoms';
 import { Refusal } from '@/components/confirms';
 import { FIELD } from '@/components/CorrectAssistant';
+import { BADGE, BTN_MAIN, BTN_SMALL, HINT, TONE } from '@/components/ui';
 import {
   KB_STATUS_LABEL,
   KB_STATUS_TINT,
@@ -24,11 +25,11 @@ import {
 } from '@/lib/assistant';
 import { branchLabel, langLabel } from '@/lib/view';
 
-// The Assistant page's button styles (AssistantSettings.tsx keeps its own copy).
-const BUTTON =
-  'inline-flex items-center gap-1 rounded-md border border-line bg-card px-2 py-0.5 text-[11px] font-medium text-ink-soft hover:bg-wash hover:text-ink disabled:opacity-60';
-const PRIMARY =
-  'inline-flex items-center gap-1.5 rounded-lg bg-ink px-3 py-1.5 text-[13px] font-medium text-on-ink hover:bg-ink/90 disabled:opacity-60';
+// The house controls (SCRUM-1016, components/ui.ts): the page looks part of the Inbox, and does what it did.
+const BUTTON = BTN_SMALL;
+const PRIMARY = BTN_MAIN;
+/** The assistant's own words on its mint, as its lines are in a chat. */
+const ASSISTANT_LINE = 'rounded-xl bg-mint px-2.5 py-1.5 text-[13.5px] text-teal md:text-[13px]';
 
 /** "Not on your access" politely; every other refusal is the server's own sentence. */
 function said(err: unknown, fallback: string): string {
@@ -171,27 +172,27 @@ export function TeachPanel({ me, active = true, onTab }: { me: InboxMe; active?:
 
   return (
     <div className="mt-4">
-      <p className="text-[12.5px] text-ink-muted">{TEACH_INTRO}</p>
+      <p className="text-[13.5px] leading-relaxed text-ink-muted md:text-[13px]">{TEACH_INTRO}</p>
 
       <div
         ref={scrollRef}
         className="mt-3 max-h-[60vh] min-h-[12rem] space-y-3 overflow-y-auto overflow-x-hidden rounded-xl border border-line bg-ground p-3"
       >
         {lines.length === 0 && !busy && (
-          <p className="py-6 text-center text-[12.5px] text-ink-muted">
+          <p className="py-6 text-center text-[13.5px] text-ink-muted">
             For example: “If someone says they lost something, first ask which park they visited.”
           </p>
         )}
         {lines.map((l, i) =>
           l.role === 'user' ? (
             <div key={i} className="flex justify-end">
-              <p className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-br-md bg-ink px-3 py-2 text-[13px] text-on-ink">
+              <p className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-br-md bg-staff px-3 py-2 text-[14px] text-on-staff md:text-[13.5px]">
                 {l.text}
               </p>
             </div>
           ) : (
             <div key={i} className="flex flex-col items-start gap-1.5">
-              <p className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-bl-md bg-band px-3 py-2 text-[13px] text-ink ring-1 ring-line">
+              <p className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-bl-md bg-mint px-3 py-2 text-[14px] text-teal md:text-[13.5px]">
                 {l.text}
               </p>
               {l.cards?.map((c) => (
@@ -215,8 +216,8 @@ export function TeachPanel({ me, active = true, onTab }: { me: InboxMe; active?:
         )}
         {busy && (
           <div className="flex justify-start">
-            <p className="inline-flex items-center gap-1.5 rounded-2xl rounded-bl-md bg-band px-3 py-2 text-[12.5px] text-ink-muted ring-1 ring-line">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            <p className="inline-flex items-center gap-1.5 rounded-2xl rounded-bl-md bg-mint px-3 py-2 text-[13px] text-teal">
+              <Loader2 aria-hidden className="h-4 w-4 animate-spin" />
               Thinking…
             </p>
           </div>
@@ -237,11 +238,11 @@ export function TeachPanel({ me, active = true, onTab }: { me: InboxMe; active?:
           className={`${FIELD} min-w-0 flex-1 resize-y`}
         />
         <button type="button" onClick={() => void send()} disabled={busy || !draft.trim()} className={`${PRIMARY} justify-center`}>
-          {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+          {busy ? <Loader2 aria-hidden className="h-4 w-4 animate-spin" /> : <Send aria-hidden className="h-4 w-4" />}
           Send
         </button>
       </div>
-      <p className="mt-1 text-[11px] text-ink-muted">Enter sends; Shift+Enter starts a new line.</p>
+      <p className={`mt-1 ${HINT}`}>Enter sends; Shift+Enter starts a new line.</p>
 
       <TeachApproveConfirm
         me={me}
@@ -323,73 +324,73 @@ export function TeachCardView({
   const readable = content !== undefined && content.kind !== 'gone';
   const canApprove = !approved && readable && (content.kind === 'fact' ? content.entry.canManage : content.rule.canManage);
   return (
-    <div className="w-full max-w-[85%] min-w-0 rounded-xl border border-line bg-card p-2.5">
+    <div className="w-full max-w-[85%] min-w-0 rounded-2xl border border-line bg-card p-3">
       <div className="flex flex-wrap items-center gap-1.5">
-        <span className="rounded-full bg-band px-1.5 text-[10px] font-semibold text-ink-soft">
+        <span className={`${BADGE} ${TONE.neutral}`}>
           {card.kind === 'fact' ? 'Fact' : 'Rule'}
         </span>
         {content?.kind !== 'gone' && (
-          <span className={`rounded-full px-1.5 text-[10px] font-medium ring-1 ${KB_STATUS_TINT[approved ? 'approved' : 'draft']}`}>
+          <span className={`${BADGE} ring-1 ${KB_STATUS_TINT[approved ? 'approved' : 'draft']}`}>
             {KB_STATUS_LABEL[approved ? 'approved' : 'draft']}
           </span>
         )}
         {content?.kind === 'fact' && (
           <>
-            <span className="min-w-0 break-all font-mono text-[11px] text-ink">{content.entry.key}</span>
-            <span className="rounded-full bg-band px-1.5 text-[10px] font-semibold text-ink-soft">
+            <span className="min-w-0 break-all font-mono text-[12px] text-ink">{content.entry.key}</span>
+            <span className={`${BADGE} ${TONE.neutral}`}>
               {langLabel(content.entry.language)}
             </span>
-            <span className="text-[11px] text-ink-muted">{parkOf(content.entry.branchId, me)}</span>
+            <span className="text-[12px] text-ink-muted">{parkOf(content.entry.branchId, me)}</span>
           </>
         )}
         {content?.kind === 'rule' && (
           <>
-            <span className="text-[11.5px] font-semibold text-ink">{ruleIntentLabel(content.rule.intent)}</span>
-            <span className="text-[11px] text-ink-muted">{parkOf(content.rule.branchId, me)}</span>
+            <span className="text-[13px] font-bold text-ink">{ruleIntentLabel(content.rule.intent)}</span>
+            <span className="text-[12px] text-ink-muted">{parkOf(content.rule.branchId, me)}</span>
           </>
         )}
       </div>
 
       {content?.kind === 'fact' && (
         <>
-          <p className="mt-1.5 break-words text-[12.5px] font-medium text-ink">{content.entry.question}</p>
-          <p className="mt-1 whitespace-pre-line break-words text-[12.5px] text-ink-soft">{content.entry.body}</p>
+          <p className="mt-1.5 break-words text-[13.5px] font-semibold text-ink">{content.entry.question}</p>
+          <p className="mt-1 whitespace-pre-line break-words text-[13.5px] text-ink-soft">{content.entry.body}</p>
         </>
       )}
       {content?.kind === 'rule' && (
         <>
-          <p className="mt-1.5 whitespace-pre-line break-words text-[12.5px] text-ink">{content.rule.instruction}</p>
+          <p className="mt-1.5 whitespace-pre-line break-words text-[13.5px] text-ink">{content.rule.instruction}</p>
           {content.rule.askFirst ? (
-            <div className="mt-1 break-words rounded-lg bg-indigo-50/60 dark:bg-indigo-500/10 px-2 py-1 text-[12.5px] text-indigo-900 dark:text-indigo-200">
+            <div className={`mt-1.5 break-words ${ASSISTANT_LINE}`}>
               <p>
                 <span className="font-medium">Ask first</span>
-                <span className="text-[11px] text-indigo-700/80 dark:text-indigo-300/80"> · {RULE_CONDITION_LABEL[content.rule.askFirst.condition]}</span>
+                <span className="text-[12px]"> · {RULE_CONDITION_LABEL[content.rule.askFirst.condition]}</span>
               </p>
               {ruleQuestions(content.rule.askFirst).map(([language, question]) => (
                 <p key={language} className="mt-0.5">
-                  <span className="text-[11px] font-medium text-indigo-700/80 dark:text-indigo-300/80">{language}:</span>{' '}
-                  {question ?? <span className="italic text-indigo-700/70 dark:text-indigo-300/70">not written</span>}
+                  <span className="text-[12px] font-semibold">{language}:</span>{' '}
+                  {question ?? <span className="italic">not written</span>}
                 </p>
               ))}
             </div>
           ) : (
-            <p className="mt-1 text-[11.5px] text-ink-muted">Asks nothing first.</p>
+            <p className={`mt-1 ${HINT}`}>Asks nothing first.</p>
           )}
         </>
       )}
-      {!readable && <p className="mt-1 break-words text-[12.5px] text-ink">{card.title}</p>}
-      {content?.kind === 'gone' && <p className="mt-1 text-[11.5px] text-ink-muted">{TEACH_CARD_GONE}</p>}
+      {!readable && <p className="mt-1 break-words text-[13.5px] text-ink">{card.title}</p>}
+      {content?.kind === 'gone' && <p className={`mt-1 ${HINT}`}>{TEACH_CARD_GONE}</p>}
       {content === undefined && !readError && (
-        <p className="mt-1 inline-flex items-center gap-1 text-[11.5px] text-ink-muted">
-          <Loader2 className="h-3 w-3 animate-spin" /> Reading the whole draft…
+        <p className={`mt-1 inline-flex items-center gap-1 ${HINT}`}>
+          <Loader2 aria-hidden className="h-3.5 w-3.5 animate-spin" /> Reading the whole draft…
         </p>
       )}
       {content === undefined && readError && <Refusal text={readError} tone={readError === NOT_ON_YOUR_ACCESS ? 'ask' : 'danger'} />}
 
-      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+      <div className="mt-2 flex flex-wrap items-center gap-2">
         {canApprove && (
           <button type="button" onClick={onApprove} className={BUTTON}>
-            <CheckCircle2 className="h-3 w-3" />
+            <CheckCircle2 aria-hidden className="h-3.5 w-3.5" />
             Approve
           </button>
         )}
@@ -404,23 +405,23 @@ export function TeachCardView({
 /** A dry run: what the assistant would do now with one customer message (decision and checks), and what it leaves out. */
 export function DryRun({ run }: { run: TeachDryRun }) {
   return (
-    <div className="w-full max-w-[85%] min-w-0 rounded-xl border border-indigo-200 dark:border-indigo-500/30 bg-card p-2.5">
+    <div className="w-full max-w-[85%] min-w-0 rounded-2xl border border-mint-edge bg-card p-3">
       <Eyebrow className="flex items-center gap-1.5">
-        <FlaskConical className="h-3 w-3" />
+        <FlaskConical aria-hidden className="h-3.5 w-3.5" />
         Dry run · what the assistant would do now
       </Eyebrow>
-      <p className="mt-1.5 break-words text-[12.5px] italic text-ink-soft">“{run.message}”</p>
-      <p className="mt-1 text-[12.5px] text-ink">
+      <p className="mt-1.5 break-words text-[13.5px] italic text-ink-soft">“{run.message}”</p>
+      <p className="mt-1 text-[13.5px] text-ink">
         <span className="font-semibold">{TEACH_OUTCOME_LABEL[run.outcome]}</span>
         {run.intent && <span className="text-ink-muted"> · {ruleIntentLabel(run.intent)}</span>}
-        {run.ruleFired && <span className="text-indigo-700 dark:text-indigo-300"> · A rule fired</span>}
+        {run.ruleFired && <span className="font-semibold text-teal"> · A rule fired</span>}
       </p>
       {run.bubbles.map((b, i) => (
-        <p key={i} className="mt-1 whitespace-pre-wrap break-words rounded-lg bg-indigo-50/60 dark:bg-indigo-500/10 px-2 py-1 text-[12.5px] text-indigo-900 dark:text-indigo-200">
+        <p key={i} className={`mt-1 whitespace-pre-wrap break-words ${ASSISTANT_LINE}`}>
           {b}
         </p>
       ))}
-      <p className="mt-1.5 text-[11px] text-ink-muted">{TEACH_DRY_RUN_NOTE}</p>
+      <p className={`mt-1.5 ${HINT}`}>{TEACH_DRY_RUN_NOTE}</p>
     </div>
   );
 }

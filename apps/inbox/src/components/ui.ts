@@ -67,6 +67,25 @@ export type Tone = keyof typeof TONE;
 /** A small badge (a language, an approval, Draft): 8 px corners, a tone. */
 export const BADGE = 'inline-flex items-center rounded-lg px-2 py-0.5 text-[11.5px] font-semibold';
 
+/**
+ * The focus ring for a control whose real input is hidden inside it (a file
+ * picker in a label, a native select laid over a row): the ring is drawn on
+ * the part a person sees when the hidden control holds focus.
+ */
+export const FOCUS_WITHIN =
+  'has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-coral';
+
+/** A settings page's eyebrow ("Settings · Templates"). */
+export const PAGE_EYEBROW = 'flex items-center gap-2 text-[12px] font-bold uppercase tracking-[0.14em] text-ink-muted';
+
+/** A settings page's line under its eyebrow. */
+export const PAGE_LINE = 'mt-1 max-w-3xl text-[14px] leading-relaxed text-ink-soft md:text-[13.5px]';
+
+/** A segment of a switch (the assistant's sections, the queues, a number's mode): 44 px on a phone. */
+export const SEGMENT = `inline-flex min-h-11 items-center rounded-lg px-3 text-[13.5px] font-semibold transition disabled:opacity-60 md:min-h-8 md:px-2.5 md:text-[12.5px] ${FOCUS}`;
+export const SEGMENT_ON = 'bg-card text-ink shadow-sm ring-1 ring-line';
+export const SEGMENT_OFF = 'text-ink-soft hover:text-ink';
+
 /** A settings page's card: the card ground, the line, the 16 px corner. */
 export const PAGE_CARD = 'rounded-2xl border border-line bg-card p-4 sm:p-5';
 

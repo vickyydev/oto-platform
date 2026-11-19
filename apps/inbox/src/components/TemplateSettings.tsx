@@ -7,16 +7,33 @@ import { inboxApi, type InboxMe, type ManagedTemplate, type TemplateCreate } fro
 import { Eyebrow } from '@/components/atoms';
 import { Refusal } from '@/components/confirms';
 import { Dialog } from '@/components/Dialog';
+import {
+  BADGE,
+  BTN_MAIN,
+  BTN_OUTLINE,
+  BTN_QUIET,
+  BTN_SMALL,
+  CHECK_BOX,
+  CHECK_LINE,
+  FOCUS_WITHIN,
+  HINT,
+  INPUT,
+  ITEM_CARD,
+  LABEL,
+  PAGE_CARD,
+  PAGE_EYEBROW,
+  PAGE_LINE,
+  TONE,
+} from '@/components/ui';
 import { CHANNEL_LABEL, LANGUAGE_OPTIONS, branchLabel, branchOptions, langLabel } from '@/lib/view';
 
 type Channel = NonNullable<ManagedTemplate['channel']>;
 type Approval = (typeof INBOX_TEMPLATE_APPROVALS)[number];
 type Key = (typeof INBOX_TEMPLATE_KEY_NAMES)[number];
 
-const FIELD =
-  'w-full min-w-0 rounded-lg border border-line bg-card px-2.5 py-1.5 text-[12.5px] text-ink focus:border-field focus:outline-none focus:ring-2 focus:ring-field';
-const BUTTON =
-  'inline-flex items-center gap-1 rounded-md border border-line bg-card px-2 py-0.5 text-[11px] font-medium text-ink-soft hover:bg-wash hover:text-ink disabled:opacity-60';
+// The house controls (SCRUM-1016, components/ui.ts): the page looks part of the Inbox, and does what it did.
+const FIELD = `${INPUT} py-2`;
+const BUTTON = BTN_SMALL;
 
 const keyLabel = (key: string) => key.replace(/[_.]/g, ' ');
 
@@ -27,10 +44,10 @@ const APPROVAL_LABEL: Record<Approval, string> = {
   rejected: 'Rejected',
 };
 const APPROVAL_TINT: Record<Approval, string> = {
-  not_required: 'bg-band text-ink-soft ring-line',
-  pending: 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 ring-amber-200 dark:ring-amber-500/30',
-  approved: 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 ring-emerald-200 dark:ring-emerald-500/30',
-  rejected: 'bg-rose-50 dark:bg-rose-500/15 text-rose-700 dark:text-rose-300 ring-rose-200 dark:ring-rose-500/30',
+  not_required: TONE.neutral,
+  pending: TONE.ask,
+  approved: TONE.money,
+  rejected: TONE.danger,
 };
 
 function said(err: unknown, fallback: string): string {
@@ -93,30 +110,30 @@ export function TemplateSettings({ me, onBack }: { me: InboxMe; onBack: () => vo
   })).filter((g) => g.rows.length > 0);
 
   return (
-    <div className="rounded-2xl border border-line bg-card p-5">
+    <div className={PAGE_CARD}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-ink-muted">
-            <FileText className="h-3.5 w-3.5" />
+          <div className={PAGE_EYEBROW}>
+            <FileText aria-hidden className="h-4 w-4" />
             Settings · Templates
           </div>
-          <p className="mt-1 text-[13px] text-ink-muted">
+          <p className={PAGE_LINE}>
             The standard lines the composer offers, per language, channel and park. Outside a channel’s reply window
             only an approved template can be sent.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <BackToInbox onBack={onBack} />
-          <label className="inline-flex items-center gap-1.5 text-[12px] text-ink-soft">
-            <input type="checkbox" checked={archived} onChange={(e) => setArchived(e.target.checked)} />
+          <label className={CHECK_LINE}>
+            <input type="checkbox" checked={archived} onChange={(e) => setArchived(e.target.checked)} className={CHECK_BOX} />
             Show archived
           </label>
           <button
             type="button"
             onClick={() => setEditing('new')}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-ink px-3 py-2 text-[12px] font-medium text-on-ink hover:bg-ink/90"
+            className={BTN_MAIN}
           >
-            <Plus className="h-3.5 w-3.5" />
+            <Plus aria-hidden className="h-4 w-4" />
             New template
           </button>
         </div>
@@ -128,41 +145,41 @@ export function TemplateSettings({ me, onBack }: { me: InboxMe; onBack: () => vo
           <Loader2 className="h-5 w-5 animate-spin" />
         </div>
       )}
-      {templates?.length === 0 && <p className="mt-4 text-[12.5px] text-ink-muted">No templates yet.</p>}
+      {templates?.length === 0 && <p className="mt-4 text-[13.5px] text-ink-muted">No templates yet.</p>}
 
       <div className="mt-4 space-y-5">
         {byKey.map((g) => (
           <section key={g.key} className="min-w-0">
             <Eyebrow className="mb-2">{keyLabel(g.key)}</Eyebrow>
-            <ul className="grid grid-cols-1 gap-2 lg:grid-cols-2">
+            <ul className="grid grid-cols-1 gap-2.5 lg:grid-cols-2">
               {g.rows.map((t) => (
-                <li key={t.id} className={`min-w-0 rounded-xl border border-line p-3 ${t.archivedAt ? 'opacity-60' : ''}`}>
+                <li key={t.id} className={`${ITEM_CARD} ${t.archivedAt ? 'opacity-70' : ''}`}>
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="rounded-full bg-band px-1.5 text-[10px] font-semibold text-ink-soft">{langLabel(t.language)}</span>
-                    <span className="text-[11px] text-ink-muted">
+                    <span className={`${BADGE} ${TONE.neutral}`}>{langLabel(t.language)}</span>
+                    <span className="text-[12px] text-ink-muted">
                       {t.channel ? CHANNEL_LABEL[t.channel] : 'Every channel'} · {t.branchId ? branchLabel(t.branchId, me.teams) : 'Every park'}
                     </span>
-                    <span className={`rounded-full px-1.5 text-[10px] font-medium ring-1 ${APPROVAL_TINT[t.approvalStatus]}`}>
+                    <span className={`${BADGE} ${APPROVAL_TINT[t.approvalStatus]}`}>
                       {APPROVAL_LABEL[t.approvalStatus]}
                     </span>
                     {!t.active && (
-                      <span className="rounded-full bg-band px-1.5 text-[10px] font-medium text-ink-muted ring-1 ring-line">Inactive</span>
+                      <span className={`${BADGE} ${TONE.neutral}`}>Inactive</span>
                     )}
                     {t.archivedAt && (
-                      <span className="rounded-full bg-band px-1.5 text-[10px] font-medium text-ink-muted ring-1 ring-line">Archived</span>
+                      <span className={`${BADGE} ${TONE.neutral}`}>Archived</span>
                     )}
                     {t.needsTranslation && (
-                      <span className="rounded-full bg-amber-50 dark:bg-amber-500/15 px-1.5 text-[10px] font-medium text-amber-700 dark:text-amber-300 ring-1 ring-amber-200 dark:ring-amber-500/30">
+                      <span className={`${BADGE} ${TONE.ask}`}>
                         English source, to translate
                       </span>
                     )}
                   </div>
-                  <p className="mt-1.5 line-clamp-4 whitespace-pre-line break-words text-[12.5px] text-ink">{t.body}</p>
+                  <p className="mt-1.5 line-clamp-4 whitespace-pre-line break-words text-[14px] leading-relaxed text-ink md:text-[13px]">{t.body}</p>
                   {t.key === BROCHURE_KEY && <Brochure template={t} onChanged={load} />}
                   {!t.archivedAt && (
-                    <div className="mt-2 flex items-center gap-1.5">
+                    <div className="mt-2.5 flex flex-wrap items-center gap-2">
                       <button type="button" onClick={() => setEditing(t)} className={BUTTON}>
-                        <Pencil className="h-3 w-3" /> Edit
+                        <Pencil aria-hidden className="h-3.5 w-3.5" /> Edit
                       </button>
                       <button
                         type="button"
@@ -172,7 +189,7 @@ export function TemplateSettings({ me, onBack }: { me: InboxMe; onBack: () => vo
                         }}
                         className={BUTTON}
                       >
-                        <Archive className="h-3 w-3" /> Archive
+                        <Archive aria-hidden className="h-3.5 w-3.5" /> Archive
                       </button>
                     </div>
                   )}
@@ -207,7 +224,7 @@ export function TemplateSettings({ me, onBack }: { me: InboxMe; onBack: () => vo
               type="button"
               onClick={() => setArchiving(null)}
               disabled={busy}
-              className="rounded-lg border border-line px-3 py-1.5 text-[13px] font-medium text-ink hover:bg-wash"
+              className={BTN_QUIET}
             >
               Cancel
             </button>
@@ -215,15 +232,15 @@ export function TemplateSettings({ me, onBack }: { me: InboxMe; onBack: () => vo
               type="button"
               onClick={() => void archive()}
               disabled={busy}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-ink px-3 py-1.5 text-[13px] font-medium text-on-ink hover:bg-ink/90 disabled:opacity-60"
+              className={BTN_MAIN}
             >
-              {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              {busy && <Loader2 aria-hidden className="h-4 w-4 animate-spin" />}
               Yes, archive
             </button>
           </>
         }
       >
-        <p className="text-[12.5px] text-ink-muted">
+        <p className="text-[13.5px] leading-relaxed text-ink-muted md:text-[13px]">
           It leaves the composer and this list for good. The messages already sent from it keep naming it.
         </p>
         {archiveError && <Refusal text={archiveError} />}
@@ -241,9 +258,9 @@ export function BackToInbox({ onBack }: { onBack: () => void }) {
     <button
       type="button"
       onClick={onBack}
-      className="inline-flex items-center gap-1.5 rounded-xl border border-line bg-card px-3 py-2 text-[12px] font-medium text-ink-soft hover:border-field hover:text-ink"
+      className={BTN_OUTLINE}
     >
-      <ArrowLeft className="h-3.5 w-3.5" />
+      <ArrowLeft aria-hidden className="h-4 w-4" />
       Back to inbox
     </button>
   );
@@ -281,15 +298,15 @@ function Brochure({ template, onChanged }: { template: ManagedTemplate; onChange
   };
 
   return (
-    <div className="mt-2 rounded-lg bg-violet-50/60 dark:bg-violet-500/10 px-2.5 py-1.5 ring-1 ring-violet-100 dark:ring-violet-500/25">
-      <div className="flex flex-wrap items-center gap-2 text-[11.5px] text-violet-800 dark:text-violet-200">
-        <Paperclip className="h-3 w-3" />
+    <div className="mt-2.5 rounded-xl bg-band px-3 py-2 ring-1 ring-line">
+      <div className="flex flex-wrap items-center gap-2 text-[12.5px] text-ink-soft">
+        <Paperclip aria-hidden className="h-3.5 w-3.5" />
         <span className="min-w-0 flex-1">
           {count > 0 ? `Birthday brochure attached (${count} file${count === 1 ? '' : 's'})` : 'No birthday brochure yet'}
         </span>
         {!template.archivedAt && (
-          <label className={`${BUTTON} cursor-pointer`}>
-            {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+          <label className={`${BUTTON} cursor-pointer ${FOCUS_WITHIN}`}>
+            {busy ? <Loader2 aria-hidden className="h-3.5 w-3.5 animate-spin" /> : <Upload aria-hidden className="h-3.5 w-3.5" />}
             {count > 0 ? 'Replace brochure' : 'Upload brochure'}
             <input
               type="file"
@@ -376,7 +393,7 @@ function TemplateEditor({
             type="button"
             onClick={onClose}
             disabled={busy}
-            className="rounded-lg border border-line px-3 py-1.5 text-[13px] font-medium text-ink hover:bg-wash"
+            className={BTN_QUIET}
           >
             Cancel
           </button>
@@ -384,9 +401,9 @@ function TemplateEditor({
             type="submit"
             form={formId}
             disabled={busy || !body.trim() || !language.trim()}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-ink px-3 py-1.5 text-[13px] font-medium text-on-ink hover:bg-ink/90 disabled:opacity-60"
+            className={BTN_MAIN}
           >
-            {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            {busy && <Loader2 aria-hidden className="h-4 w-4 animate-spin" />}
             Save
           </button>
         </>
@@ -453,18 +470,18 @@ function TemplateEditor({
         </Field>
         <Field label="Words" wide>
           <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={5} className={`${FIELD} resize-y`} />
-          <span className="text-[11px] font-normal text-ink-muted">
+          <span className={HINT}>
             {variables.length > 0
               ? `Values asked for when sending: ${variables.join(', ')}`
               : 'Write {{name}} where a value is filled in when sending.'}
           </span>
         </Field>
-        <label className="inline-flex items-center gap-1.5 text-[12px] text-ink-soft">
-          <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />
+        <label className={CHECK_LINE}>
+          <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} className={CHECK_BOX} />
           Offered in the composer
         </label>
-        <label className="inline-flex items-center gap-1.5 text-[12px] text-ink-soft">
-          <input type="checkbox" checked={needsTranslation} onChange={(e) => setNeedsTranslation(e.target.checked)} />
+        <label className={CHECK_LINE}>
+          <input type="checkbox" checked={needsTranslation} onChange={(e) => setNeedsTranslation(e.target.checked)} className={CHECK_BOX} />
           English source, to translate
         </label>
       </form>
@@ -475,8 +492,8 @@ function TemplateEditor({
 
 function Field({ label, wide = false, children }: { label: string; wide?: boolean; children: ReactNode }) {
   return (
-    <label className={`flex min-w-0 flex-col gap-1 text-[11px] font-medium text-ink-muted ${wide ? 'sm:col-span-2' : ''}`}>
-      {label}
+    <label className={`flex min-w-0 flex-col gap-1.5 ${wide ? 'sm:col-span-2' : ''}`}>
+      <span className={LABEL}>{label}</span>
       {children}
     </label>
   );

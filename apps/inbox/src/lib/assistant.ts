@@ -64,8 +64,9 @@ export function aiModeOption(mode: AiMode): AiModeOption {
 
 export const AI_MODE_TINT: Record<AiMode, string> = {
   off: 'bg-band text-ink-soft ring-line',
-  shadow: 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 ring-amber-200 dark:ring-amber-500/30',
-  live: 'bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 ring-indigo-200 dark:ring-indigo-500/30',
+  // SCRUM-1016: on the tokens — Shadow the amber of a thing still to decide, Live the assistant's mint.
+  shadow: 'bg-ask text-ask-ink ring-ask-line',
+  live: 'bg-mint text-teal ring-mint-edge',
 };
 
 /** Turning a number live is a decision (§C.2): it always asks first. Any other move does not. */
@@ -106,8 +107,9 @@ export const KB_LANGUAGES: readonly [KbLanguage, string][] = [
 
 export const KB_STATUS_LABEL: Record<KbStatus, string> = { draft: 'Draft', approved: 'Approved', archived: 'Archived' };
 export const KB_STATUS_TINT: Record<KbStatus, string> = {
-  draft: 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 ring-amber-200 dark:ring-amber-500/30',
-  approved: 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 ring-emerald-200 dark:ring-emerald-500/30',
+  // SCRUM-1016: on the tokens — a draft waits on a person (amber), an approved entry is green.
+  draft: 'bg-ask text-ask-ink ring-ask-line',
+  approved: 'bg-money-badge text-money-ink ring-money-line',
   archived: 'bg-band text-ink-muted ring-line',
 };
 

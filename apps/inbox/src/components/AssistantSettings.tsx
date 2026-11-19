@@ -23,6 +23,23 @@ import { Eyebrow } from '@/components/atoms';
 import { Refusal } from '@/components/confirms';
 import { FIELD, Field } from '@/components/CorrectAssistant';
 import { Dialog } from '@/components/Dialog';
+import {
+  BADGE,
+  BTN_MAIN,
+  BTN_QUIET,
+  BTN_SMALL,
+  CHECK_BOX,
+  CHECK_LINE,
+  HINT,
+  ITEM_CARD,
+  PAGE_CARD,
+  PAGE_EYEBROW,
+  PAGE_LINE,
+  SEGMENT,
+  SEGMENT_OFF,
+  SEGMENT_ON,
+  TONE,
+} from '@/components/ui';
 import { RulesPanel } from '@/components/RulesPanel';
 import { TeachPanel } from '@/components/TeachPanel';
 import { BackToInbox } from '@/components/TemplateSettings';
@@ -54,11 +71,10 @@ import {
 } from '@/lib/assistant';
 import { CHANNEL_LABEL, branchLabel, branchOptions, langLabel } from '@/lib/view';
 
-const BUTTON =
-  'inline-flex items-center gap-1 rounded-md border border-line bg-card px-2 py-0.5 text-[11px] font-medium text-ink-soft hover:bg-wash hover:text-ink disabled:opacity-60';
-const PRIMARY =
-  'inline-flex items-center gap-1.5 rounded-lg bg-ink px-3 py-1.5 text-[13px] font-medium text-on-ink hover:bg-ink/90 disabled:opacity-60';
-const CANCEL = 'rounded-lg border border-line px-3 py-1.5 text-[13px] font-medium text-ink hover:bg-wash';
+// The house controls (SCRUM-1016, components/ui.ts): the page looks part of the Inbox, and does what it did.
+const BUTTON = BTN_SMALL;
+const PRIMARY = BTN_MAIN;
+const CANCEL = BTN_QUIET;
 
 /**
  * A part of the page the viewer's grant does not reach (a 403: the examples
@@ -120,14 +136,14 @@ export function AssistantSettings({
   const section: AssistantTab = tab !== null && sections.some(([s]) => s === tab) ? tab : (sections[0]?.[0] ?? 'knowledge');
 
   return (
-    <div className="min-w-0 rounded-2xl border border-line bg-card p-5">
+    <div className={`min-w-0 ${PAGE_CARD}`}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-ink-muted">
-            <Bot className="h-3.5 w-3.5" />
+          <div className={PAGE_EYEBROW}>
+            <Bot aria-hidden className="h-4 w-4" />
             Settings · Assistant
           </div>
-          <p className="mt-1 text-[13px] text-ink-muted">
+          <p className={PAGE_LINE}>
             The assistant answers simple questions from the approved knowledge base and hands everything else to the team.
             A person replying always takes over.
           </p>
@@ -142,9 +158,7 @@ export function AssistantSettings({
                 role="tab"
                 aria-selected={section === s}
                 onClick={() => onTab(s)}
-                className={`rounded-lg px-2.5 py-1 text-[12px] font-medium transition ${
-                  section === s ? 'bg-card text-ink shadow-sm ring-1 ring-line' : 'text-ink-soft hover:text-ink'
-                }`}
+                className={`${SEGMENT} ${section === s ? SEGMENT_ON : SEGMENT_OFF}`}
               >
                 {label}
               </button>
@@ -154,7 +168,7 @@ export function AssistantSettings({
       </div>
 
       {sections.length === 0 && (
-        <p className="mt-4 text-[12.5px] text-ink-muted">You do not manage the assistant.</p>
+        <p className="mt-4 text-[13.5px] text-ink-muted">You do not manage the assistant.</p>
       )}
       {section === 'numbers' && caps.ai && <ChannelModes me={me} />}
       {section === 'knowledge' && caps.kb && <KnowledgeBase me={me} />}
@@ -213,15 +227,15 @@ function ChannelModes({ me }: { me: InboxMe }) {
 
   return (
     <div className="mt-4 space-y-3">
-      <div className="rounded-xl bg-indigo-50 dark:bg-indigo-500/15 px-3 py-2 text-[12.5px] text-indigo-800 dark:text-indigo-200 ring-1 ring-indigo-100 dark:ring-indigo-500/25">
+      <div className="rounded-xl bg-mint px-3 py-2 text-[13.5px] text-teal ring-1 ring-mint-edge md:text-[13px]">
         <span className="font-semibold">Live means customers hear it.</span> Run a number in Shadow first: the assistant
         records what it would have said, and nobody sees it.
       </div>
       <dl className="grid grid-cols-1 gap-2 sm:grid-cols-3">
         {AI_MODE_OPTIONS.map((o) => (
-          <div key={o.value} className="min-w-0 rounded-xl border border-line p-3">
+          <div key={o.value} className={ITEM_CARD}>
             <dt>
-              <span className={`rounded-full px-1.5 text-[10px] font-semibold ring-1 ${AI_MODE_TINT[o.value]}`}>{o.label}</span>
+              <span className={`${BADGE} ring-1 ${AI_MODE_TINT[o.value]}`}>{o.label}</span>
             </dt>
             <dd className="mt-1.5 text-[12px] text-ink-soft">{o.description}</dd>
           </div>
@@ -230,14 +244,14 @@ function ChannelModes({ me }: { me: InboxMe }) {
 
       {error && <Refusal text={error} tone={error === NOT_ON_YOUR_ACCESS ? 'ask' : 'danger'} />}
       {!error && accounts === null && <Spinner />}
-      {accounts?.length === 0 && <p className="text-[12.5px] text-ink-muted">No channel numbers yet.</p>}
+      {accounts?.length === 0 && <p className="text-[13.5px] leading-relaxed text-ink-muted md:text-[13px]">No channel numbers yet.</p>}
       <ul className="space-y-2">
         {accounts?.map((a) => (
-          <li key={a.id} className="min-w-0 rounded-xl border border-line p-3">
+          <li key={a.id} className={ITEM_CARD}>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
                 <div className="truncate text-[13px] font-semibold text-ink">{a.displayName}</div>
-                <div className="text-[11px] text-ink-muted">
+                <div className="text-[12.5px] text-ink-muted">
                   {CHANNEL_LABEL[a.channel]} · {a.branchId ? branchLabel(a.branchId, me.teams) : 'Both parks'}
                 </div>
               </div>
@@ -250,12 +264,8 @@ function ChannelModes({ me }: { me: InboxMe }) {
                     aria-checked={a.aiMode === o.value}
                     disabled={busyId !== null}
                     onClick={() => choose(a, o.value)}
-                    className={`rounded-lg px-2.5 py-1 text-[12px] font-medium transition disabled:opacity-60 ${
-                      a.aiMode === o.value
-                        ? o.value === 'live'
-                          ? 'bg-indigo-600 text-white shadow-sm'
-                          : 'bg-card text-ink shadow-sm ring-1 ring-line'
-                        : 'text-ink-soft hover:text-ink'
+                    className={`${SEGMENT} ${
+                      a.aiMode === o.value ? (o.value === 'live' ? 'bg-teal text-mint shadow-sm' : SEGMENT_ON) : SEGMENT_OFF
                     }`}
                   >
                     {o.label}
@@ -263,8 +273,8 @@ function ChannelModes({ me }: { me: InboxMe }) {
                 ))}
               </div>
             </div>
-            <p className="mt-1.5 flex items-start gap-1.5 text-[11.5px] text-ink-muted">
-              {busyId === a.id && <Loader2 className="mt-0.5 h-3 w-3 shrink-0 animate-spin" />}
+            <p className="mt-1.5 flex items-start gap-1.5 text-[12.5px] text-ink-muted">
+              {busyId === a.id && <Loader2 aria-hidden className="mt-0.5 h-3.5 w-3.5 shrink-0 animate-spin" />}
               <span className="min-w-0">{aiModeOption(a.aiMode).description}</span>
             </p>
             {rowError?.id === a.id && <Refusal text={rowError.text} />}
@@ -288,9 +298,9 @@ function ChannelModes({ me }: { me: InboxMe }) {
               type="button"
               disabled={busyId !== null}
               onClick={() => confirm && void apply(confirm.account, confirm.to)}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-[13px] font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
+              className={BTN_MAIN}
             >
-              {busyId !== null && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              {busyId !== null && <Loader2 aria-hidden className="h-4 w-4 animate-spin" />}
               Yes, customers hear it
             </button>
           </>
@@ -352,14 +362,14 @@ function KnowledgeBase({ me }: { me: InboxMe }) {
           previous words stay in the archive.
         </p>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
-          <label className="inline-flex items-center gap-1.5 text-[12px] text-ink-soft">
-            <input type="checkbox" checked={archived} onChange={(e) => setArchived(e.target.checked)} />
+          <label className={CHECK_LINE}>
+            <input type="checkbox" checked={archived} onChange={(e) => setArchived(e.target.checked)} className={CHECK_BOX} />
             Show archived
           </label>
           <button
             type="button"
             onClick={() => setEditing('new')}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-ink px-3 py-2 text-[12px] font-medium text-on-ink hover:bg-ink/90"
+            className={BTN_MAIN}
           >
             <Plus className="h-3.5 w-3.5" />
             New entry
@@ -379,14 +389,14 @@ function KnowledgeBase({ me }: { me: InboxMe }) {
               {g.entries.map((e) => (
                 <li key={e.id} className={`min-w-0 rounded-xl border border-line p-3 ${e.status === 'archived' ? 'opacity-60' : ''}`}>
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="min-w-0 break-all font-mono text-[11px] text-ink">{e.key}</span>
-                    <span className="rounded-full bg-band px-1.5 text-[10px] font-semibold text-ink-soft">{langLabel(e.language)}</span>
-                    <span className="text-[11px] text-ink-muted">{e.branchId ? branchLabel(e.branchId, me.teams) : 'Both parks'}</span>
-                    <span className={`rounded-full px-1.5 text-[10px] font-medium ring-1 ${KB_STATUS_TINT[e.status]}`}>
+                    <span className="min-w-0 break-all font-mono text-[12px] text-ink">{e.key}</span>
+                    <span className={`${BADGE} ${TONE.neutral}`}>{langLabel(e.language)}</span>
+                    <span className="text-[12px] text-ink-muted">{e.branchId ? branchLabel(e.branchId, me.teams) : 'Both parks'}</span>
+                    <span className={`${BADGE} ring-1 ${KB_STATUS_TINT[e.status]}`}>
                       {KB_STATUS_LABEL[e.status]}
                     </span>
                     {e.needsTranslation && (
-                      <span className="rounded-full bg-amber-50 dark:bg-amber-500/15 px-1.5 text-[10px] font-medium text-amber-700 dark:text-amber-300 ring-1 ring-amber-200 dark:ring-amber-500/30">
+                      <span className={`${BADGE} ${TONE.ask}`}>
                         English source, to translate
                       </span>
                     )}
@@ -396,7 +406,7 @@ function KnowledgeBase({ me }: { me: InboxMe }) {
                   {e.status !== 'archived' && e.canManage && (
                     <div className="mt-2 flex flex-wrap items-center gap-1.5">
                       <button type="button" onClick={() => setEditing(e)} className={BUTTON}>
-                        <Pencil className="h-3 w-3" /> Edit
+                        <Pencil aria-hidden className="h-3.5 w-3.5" /> Edit
                       </button>
                       {e.status === 'draft' && (
                         <button
@@ -407,7 +417,7 @@ function KnowledgeBase({ me }: { me: InboxMe }) {
                           }}
                           className={BUTTON}
                         >
-                          <CheckCircle2 className="h-3 w-3" /> Approve
+                          <CheckCircle2 aria-hidden className="h-3.5 w-3.5" /> Approve
                         </button>
                       )}
                       <button
@@ -418,7 +428,7 @@ function KnowledgeBase({ me }: { me: InboxMe }) {
                         }}
                         className={BUTTON}
                       >
-                        <Archive className="h-3 w-3" /> Archive
+                        <Archive aria-hidden className="h-3.5 w-3.5" /> Archive
                       </button>
                     </div>
                   )}
@@ -528,7 +538,7 @@ function KbEditor({
             Cancel
           </button>
           <button type="submit" form={formId} disabled={busy || problem !== null} className={PRIMARY}>
-            {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            {busy && <Loader2 aria-hidden className="h-4 w-4 animate-spin" />}
             Save
           </button>
         </>
@@ -586,11 +596,11 @@ function KbEditor({
         <Field label={`The answer · ${body.length}/${KB_BODY_MAX}`} wide>
           <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={6} maxLength={KB_BODY_MAX} className={`${FIELD} resize-y`} />
         </Field>
-        <label className="inline-flex items-center gap-1.5 text-[12px] text-ink-soft sm:col-span-2">
-          <input type="checkbox" checked={needsTranslation} onChange={(e) => setNeedsTranslation(e.target.checked)} />
+        <label className={`${CHECK_LINE} sm:col-span-2`}>
+          <input type="checkbox" checked={needsTranslation} onChange={(e) => setNeedsTranslation(e.target.checked)} className={CHECK_BOX} />
           English source, to translate (the assistant uses the English entry until this one is translated)
         </label>
-        {problem && (key || question || body) && <p className="text-[11.5px] text-ink-muted sm:col-span-2">{problem}</p>}
+        {problem && (key || question || body) && <p className={`${HINT} sm:col-span-2`}>{problem}</p>}
       </form>
       {error && <Refusal text={error} tone={error === NOT_ON_YOUR_ACCESS ? 'ask' : 'danger'} />}
     </Dialog>
@@ -648,7 +658,7 @@ function ExamplesQueue({ me }: { me: InboxMe }) {
   return (
     <div className="mt-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <p className="min-w-0 text-[12.5px] text-ink-muted">
+        <p className="min-w-0 text-[13.5px] leading-relaxed text-ink-muted md:text-[13px]">
           Corrections staff proposed from the conversations. An approved example is what the assistant answers from next;
           approve only once it holds no names, numbers or children’s details.
         </p>
@@ -659,9 +669,7 @@ function ExamplesQueue({ me }: { me: InboxMe }) {
               type="button"
               aria-pressed={status === s}
               onClick={() => setStatus(s)}
-              className={`rounded-lg px-2.5 py-1 text-[12px] font-medium ${
-                status === s ? 'bg-card text-ink shadow-sm ring-1 ring-line' : 'text-ink-soft hover:text-ink'
-              }`}
+              className={`${SEGMENT} ${status === s ? SEGMENT_ON : SEGMENT_OFF}`}
             >
               {label}
             </button>
@@ -725,18 +733,18 @@ export function ExampleCard({
   onWithdraw: () => void;
 }) {
   return (
-    <li className="min-w-0 rounded-xl border border-line p-3">
+    <li className={ITEM_CARD}>
       <div className="flex flex-wrap items-center gap-1.5">
-        <span className="rounded-full bg-band px-1.5 text-[10px] font-semibold text-ink-soft">{langLabel(x.language)}</span>
-        <span className="text-[11px] text-ink-muted">{intentLabel(x.intent)}</span>
-        <span className="rounded-full bg-indigo-50 dark:bg-indigo-500/15 px-1.5 text-[10px] font-medium text-indigo-700 dark:text-indigo-300 ring-1 ring-indigo-200 dark:ring-indigo-500/30">
+        <span className={`${BADGE} ${TONE.neutral}`}>{langLabel(x.language)}</span>
+        <span className="text-[12px] text-ink-muted">{intentLabel(x.intent)}</span>
+        <span className={`${BADGE} ${TONE.assistant}`}>
           {VERDICT_LABEL[x.verdict]}
         </span>
-        {proposer && <span className="text-[11px] text-ink-muted">by {proposer}</span>}
+        {proposer && <span className="text-[12px] text-ink-muted">by {proposer}</span>}
       </div>
       <p className="mt-1.5 line-clamp-3 whitespace-pre-line break-words text-[12.5px] text-ink">{x.customerText}</p>
       {x.goodReply && (
-        <p className="mt-1 line-clamp-3 whitespace-pre-line break-words rounded-lg bg-indigo-50/60 dark:bg-indigo-500/10 px-2 py-1 text-[12.5px] text-indigo-900 dark:text-indigo-200">
+        <p className="mt-1 line-clamp-3 whitespace-pre-line break-words rounded-xl bg-mint px-2.5 py-1.5 text-[13.5px] text-teal md:text-[13px]">
           {x.goodReply}
         </p>
       )}
@@ -788,7 +796,7 @@ export function WithdrawExampleConfirm({
             Cancel
           </button>
           <button type="button" onClick={onConfirm} disabled={busy} className={PRIMARY}>
-            {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            {busy && <Loader2 aria-hidden className="h-4 w-4 animate-spin" />}
             Yes, withdraw
           </button>
         </>
@@ -797,7 +805,7 @@ export function WithdrawExampleConfirm({
       <p className="text-[12.5px] text-ink">{WITHDRAW_EXAMPLE_LINE}</p>
       <p className="mt-2 text-[12.5px] text-ink-muted">It moves to Rejected and stays there; propose a new one to replace it.</p>
       {example && (
-        <p className="mt-2 line-clamp-4 whitespace-pre-line break-words rounded-lg bg-ground px-3 py-2 text-[12.5px] text-ink">
+        <p className="mt-2 line-clamp-4 whitespace-pre-line break-words rounded-xl border border-line bg-card px-3 py-2 text-[13.5px] text-ink md:bg-ground md:text-[13px]">
           {example.customerText}
         </p>
       )}
@@ -883,9 +891,9 @@ export function ExampleReview({
             type="button"
             onClick={() => void run('reject')}
             disabled={busy !== null}
-            className="mr-auto inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-[13px] font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/15 disabled:opacity-60"
+            className={`${BTN_QUIET} mr-auto text-danger-ink hover:bg-danger`}
           >
-            {busy === 'reject' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <X className="h-3.5 w-3.5" />}
+            {busy === 'reject' ? <Loader2 aria-hidden className="h-4 w-4 animate-spin" /> : <X aria-hidden className="h-4 w-4" />}
             Reject
           </button>
           <button
@@ -893,9 +901,9 @@ export function ExampleReview({
             onClick={() => void run('delete')}
             disabled={busy !== null}
             title="Remove it for good: a proposal may still hold the conversation’s words"
-            className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-[13px] font-medium text-ink-muted hover:bg-wash disabled:opacity-60"
+            className={`${BTN_QUIET} text-ink-soft`}
           >
-            {busy === 'delete' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+            {busy === 'delete' ? <Loader2 aria-hidden className="h-4 w-4 animate-spin" /> : <Trash2 aria-hidden className="h-4 w-4" />}
             Delete
           </button>
           <button
@@ -907,7 +915,7 @@ export function ExampleReview({
             Save
           </button>
           <button type="button" onClick={() => void run('approve')} disabled={!approvable} className={PRIMARY}>
-            {busy === 'approve' && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            {busy === 'approve' && <Loader2 aria-hidden className="h-4 w-4 animate-spin" />}
             Approve
           </button>
         </>
@@ -959,13 +967,13 @@ export function ExampleReview({
             ))}
           </select>
         </Field>
-        {problem && <p className="text-[11.5px] text-ink-muted sm:col-span-2">{problem}</p>}
-        <label className="flex items-start gap-2 rounded-lg bg-amber-50 dark:bg-amber-500/15 px-3 py-2 text-[12.5px] text-amber-900 dark:text-amber-200 ring-1 ring-amber-200 dark:ring-amber-500/30 sm:col-span-2">
+        {problem && <p className={`${HINT} sm:col-span-2`}>{problem}</p>}
+        <label className="flex min-h-11 cursor-pointer items-start gap-2.5 rounded-xl bg-ask px-3 py-2.5 text-[13.5px] text-ask-ink ring-1 ring-ask-line sm:col-span-2 md:text-[13px]">
           <input
             type="checkbox"
             checked={deidentified}
             onChange={(e) => setDeidentified(e.target.checked)}
-            className="mt-0.5"
+            className={`${CHECK_BOX} mt-0.5`}
             aria-describedby="deidentified-help"
           />
           <span>
