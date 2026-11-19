@@ -123,7 +123,7 @@ export function RulesPanel({ me }: { me: InboxMe }) {
         </div>
       </div>
 
-      {error && <Refusal text={error} tone={error === NOT_ON_YOUR_ACCESS ? 'amber' : 'rose'} />}
+      {error && <Refusal text={error} tone={error === NOT_ON_YOUR_ACCESS ? 'ask' : 'danger'} />}
       {!error && rules === null && (
         <div className="flex justify-center py-8 text-ink-muted">
           <Loader2 className="h-5 w-5 animate-spin" />
@@ -251,7 +251,7 @@ export function RuleEditor({
       open
       onClose={onClose}
       icon={ListChecks}
-      iconTint="bg-indigo-50 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-400"
+      tone="assistant"
       title={rule ? 'Edit rule' : 'New rule'}
       subtitle={
         rule?.status === 'approved'
@@ -334,7 +334,7 @@ export function RuleEditor({
         )}
         {problem && (intent || instruction) && <p className="text-[11.5px] text-ink-muted sm:col-span-2">{problem}</p>}
       </form>
-      {error && <Refusal text={error} tone={error === NOT_ON_YOUR_ACCESS ? 'amber' : 'rose'} />}
+      {error && <Refusal text={error} tone={error === NOT_ON_YOUR_ACCESS ? 'ask' : 'danger'} />}
     </Dialog>
   );
 }

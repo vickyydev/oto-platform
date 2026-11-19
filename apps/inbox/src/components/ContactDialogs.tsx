@@ -3,6 +3,7 @@ import { Loader2, PenLine, UserPlus } from 'lucide-react';
 import { ApiError } from '@/api/client';
 import { inboxApi, type ContactChannel, type ContactCreated, type ContactView, type ConversationRow } from '@/api/inbox';
 import { Dialog } from '@/components/Dialog';
+import { BTN_MAIN, BTN_QUIET, HINT, INPUT, LABEL } from '@/components/ui';
 import {
   CREATED_OUT_OF_VIEW,
   EDIT_NAME_LABEL,
@@ -37,15 +38,10 @@ import { CHANNEL_LABEL, bubbleTime, contactName } from '@/lib/view';
  * Nothing here sends anything to the customer: both are records.
  */
 
-const CANCEL =
-  'rounded-lg border border-line px-3 py-1.5 text-[13px] font-medium text-ink hover:bg-wash disabled:opacity-60';
-const PRIMARY =
-  'inline-flex items-center gap-1.5 rounded-lg bg-ink px-3 py-1.5 text-[13px] font-medium text-on-ink hover:bg-ink/90 disabled:opacity-60';
-const INPUT =
-  'w-full min-w-0 rounded-lg border border-line bg-card px-2.5 py-1.5 text-[13px] text-ink placeholder:text-ink-muted focus:border-field focus:outline-none focus:ring-2 focus:ring-field disabled:opacity-60';
-const LABEL = 'text-[11px] font-semibold uppercase tracking-wide text-ink-muted';
-const HINT = 'text-[12px] text-ink-muted';
-const ERROR = 'text-[12.5px] text-rose-700 dark:text-rose-300';
+// The house controls (SCRUM-1016, components/ui.ts).
+const CANCEL = BTN_QUIET;
+const PRIMARY = BTN_MAIN;
+const ERROR = 'text-[13px] text-danger-ink';
 
 function messageOf(err: unknown, fallback: string): string {
   return err instanceof ApiError ? err.message : fallback;
@@ -136,14 +132,14 @@ export function ContactNameDialog({
             </button>
           )}
           <button type="submit" form="contact-name-form" disabled={busy || loading || name.trim() === ''} className={PRIMARY}>
-            {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <PenLine className="h-3.5 w-3.5" />}
+            {busy ? <Loader2 aria-hidden className="h-4 w-4 animate-spin" /> : <PenLine aria-hidden className="h-4 w-4" />}
             Save name
           </button>
         </>
       }
     >
       <form id="contact-name-form" onSubmit={submit} className="flex flex-col gap-3">
-        <label className="flex min-w-0 flex-col gap-1">
+        <label className="flex min-w-0 flex-col gap-1.5">
           <span className={LABEL}>Name</span>
           <input
             value={name}
@@ -273,7 +269,7 @@ export function NewContactDialog({
               Cancel
             </button>
             <button type="submit" form="new-contact-form" disabled={busy} className={PRIMARY}>
-              {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UserPlus className="h-3.5 w-3.5" />}
+              {busy ? <Loader2 aria-hidden className="h-4 w-4 animate-spin" /> : <UserPlus aria-hidden className="h-4 w-4" />}
               Create contact
             </button>
           </>
@@ -281,12 +277,12 @@ export function NewContactDialog({
       }
     >
       {done ? (
-        <p className="text-[13px] text-ink" data-testid="created-line">
+        <p className="text-[14px] text-ink md:text-[13px]" data-testid="created-line">
           {done}
         </p>
       ) : (
         <form id="new-contact-form" onSubmit={(e) => void submit(e)} className="flex flex-col gap-3">
-          <label className="flex min-w-0 flex-col gap-1">
+          <label className="flex min-w-0 flex-col gap-1.5">
             <span className={LABEL}>Name</span>
             <input
               value={draft.displayName}
@@ -298,7 +294,7 @@ export function NewContactDialog({
               className={INPUT}
             />
           </label>
-          <label className="flex min-w-0 flex-col gap-1">
+          <label className="flex min-w-0 flex-col gap-1.5">
             <span className={LABEL}>Channel</span>
             <select
               value={draft.channelAccountId}
@@ -315,7 +311,7 @@ export function NewContactDialog({
               ))}
             </select>
           </label>
-          <label className="flex min-w-0 flex-col gap-1">
+          <label className="flex min-w-0 flex-col gap-1.5">
             <span className={LABEL}>{identityLabel(channel)}</span>
             <input
               value={draft.identity}

@@ -228,7 +228,7 @@ function ChannelModes({ me }: { me: InboxMe }) {
         ))}
       </dl>
 
-      {error && <Refusal text={error} tone={error === NOT_ON_YOUR_ACCESS ? 'amber' : 'rose'} />}
+      {error && <Refusal text={error} tone={error === NOT_ON_YOUR_ACCESS ? 'ask' : 'danger'} />}
       {!error && accounts === null && <Spinner />}
       {accounts?.length === 0 && <p className="text-[12.5px] text-ink-muted">No channel numbers yet.</p>}
       <ul className="space-y-2">
@@ -276,7 +276,7 @@ function ChannelModes({ me }: { me: InboxMe }) {
         open={confirm !== null}
         onClose={() => setConfirm(null)}
         icon={Radio}
-        iconTint="bg-indigo-50 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-400"
+        tone="assistant"
         title="Put the assistant live on this number?"
         subtitle={confirm ? `${confirm.account.displayName} · ${CHANNEL_LABEL[confirm.account.channel]}` : undefined}
         footer={
@@ -367,7 +367,7 @@ function KnowledgeBase({ me }: { me: InboxMe }) {
         </div>
       </div>
 
-      {error && <Refusal text={error} tone={error === NOT_ON_YOUR_ACCESS ? 'amber' : 'rose'} />}
+      {error && <Refusal text={error} tone={error === NOT_ON_YOUR_ACCESS ? 'ask' : 'danger'} />}
       {!error && entries === null && <Spinner />}
       {entries?.length === 0 && <p className="mt-4 text-[12.5px] text-ink-muted">No entries yet.</p>}
 
@@ -510,7 +510,7 @@ function KbEditor({
       open
       onClose={onClose}
       icon={BookOpen}
-      iconTint="bg-indigo-50 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-400"
+      tone="assistant"
       title={entry ? 'Edit entry' : 'New entry'}
       subtitle={
         entry
@@ -592,7 +592,7 @@ function KbEditor({
         </label>
         {problem && (key || question || body) && <p className="text-[11.5px] text-ink-muted sm:col-span-2">{problem}</p>}
       </form>
-      {error && <Refusal text={error} tone={error === NOT_ON_YOUR_ACCESS ? 'amber' : 'rose'} />}
+      {error && <Refusal text={error} tone={error === NOT_ON_YOUR_ACCESS ? 'ask' : 'danger'} />}
     </Dialog>
   );
 }
@@ -669,7 +669,7 @@ function ExamplesQueue({ me }: { me: InboxMe }) {
         </div>
       </div>
 
-      {error && <Refusal text={error} tone={error === NOT_ON_YOUR_ACCESS ? 'amber' : 'rose'} />}
+      {error && <Refusal text={error} tone={error === NOT_ON_YOUR_ACCESS ? 'ask' : 'danger'} />}
       {!error && examples === null && <Spinner />}
       {examples?.length === 0 && <p className="mt-4 text-[12.5px] text-ink-muted">Nothing here.</p>}
       <ul className="mt-4 grid grid-cols-1 gap-2 lg:grid-cols-2">
@@ -779,7 +779,7 @@ export function WithdrawExampleConfirm({
       open={example !== null}
       onClose={onCancel}
       icon={Undo2}
-      iconTint="bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400"
+      tone="ask"
       title="Withdraw this example?"
       subtitle={example ? `${intentLabel(example.intent)} · ${langLabel(example.language)}` : undefined}
       footer={
@@ -873,7 +873,7 @@ export function ExampleReview({
       open
       onClose={onClose}
       icon={ShieldCheck}
-      iconTint="bg-indigo-50 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-400"
+      tone="assistant"
       title="Review the example"
       subtitle="Edit it until it holds no personal data, then approve it."
       wide
@@ -977,7 +977,7 @@ export function ExampleReview({
           </span>
         </label>
       </div>
-      {error && <Refusal text={error} tone={error === NOT_ON_YOUR_ACCESS ? 'amber' : 'rose'} />}
+      {error && <Refusal text={error} tone={error === NOT_ON_YOUR_ACCESS ? 'ask' : 'danger'} />}
     </Dialog>
   );
 }

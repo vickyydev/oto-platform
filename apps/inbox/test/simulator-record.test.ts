@@ -180,7 +180,8 @@ describe('the simulator’s microphone', () => {
       expect(byId<HTMLButtonElement>('simulator-record-stop')!.textContent).toContain('Stop');
       const recording = clock()!;
       expect(recording.getAttribute('role')).toBe('status');
-      expect(recording.querySelector('.bg-rose-500.animate-pulse')).not.toBeNull();
+      // SCRUM-1016: the pulsing dot wears the refusal's red token, not a palette rose.
+      expect(recording.querySelector('.bg-danger-ink.animate-pulse')).not.toBeNull();
       expect(recording.textContent).toContain('Recording · 0:00 / 1:00');
       // Neither the file picker nor Send while the clip is being spoken.
       expect(fileInput().disabled).toBe(true);

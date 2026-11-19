@@ -223,7 +223,7 @@ export function TeachPanel({ me, active = true, onTab }: { me: InboxMe; active?:
         )}
       </div>
 
-      {error && <Refusal text={error} tone={error === NOT_ON_YOUR_ACCESS ? 'amber' : 'rose'} />}
+      {error && <Refusal text={error} tone={error === NOT_ON_YOUR_ACCESS ? 'ask' : 'danger'} />}
 
       <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end">
         <textarea
@@ -384,7 +384,7 @@ export function TeachCardView({
           <Loader2 className="h-3 w-3 animate-spin" /> Reading the whole draft…
         </p>
       )}
-      {content === undefined && readError && <Refusal text={readError} tone={readError === NOT_ON_YOUR_ACCESS ? 'amber' : 'rose'} />}
+      {content === undefined && readError && <Refusal text={readError} tone={readError === NOT_ON_YOUR_ACCESS ? 'ask' : 'danger'} />}
 
       <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
         {canApprove && (
