@@ -1,0 +1,410 @@
+{
+  "ticket": "SCRUM-1017",
+  "sha": "a7630e73dccf44bc0d774ce251321167398bca38",
+  "startedAt": "2026-11-19T12:05:40.164Z",
+  "phase": "finished",
+  "passes": [
+    "a",
+    "f",
+    "p",
+    "r",
+    "w",
+    "x"
+  ],
+  "points": {
+    "1019-auto": {
+      "pass": true,
+      "pictures": [
+        "a1-display-new-number-and-name.png",
+        "a2-till-member-made-no-new-member-box.png"
+      ],
+      "shows": "An unknown number typed with a name on the display made the member by itself; no \"New member?\" box on the till",
+      "seen": {
+        "newMemberBox": 0,
+        "memberNickname": "ZZ TEST SCRUM-1017 family 17",
+        "visitingDialog": false
+      }
+    },
+    "1021-form": {
+      "pass": true,
+      "pictures": [
+        "a3-display-food-included-no-extra-charge.png"
+      ],
+      "shows": "Eat & Play child on the drop-off form: \"Food credit ฿1300 — included, no extra charge\"",
+      "seen": {
+        "included": "Food credit ฿1300 — included, no extra charge"
+      }
+    },
+    "1021-extra-display": {
+      "pass": true,
+      "pictures": [
+        "a4-display-extra-credit-chosen.png",
+        "a5-till-sees-extra-credit.png"
+      ],
+      "shows": "The parent chose extra food credit on the display; the till shows it as its own row on the order",
+      "seen": {
+        "extraShown": "฿100",
+        "tillSees": null,
+        "mirrorSays": "฿100"
+      }
+    },
+    "1019-expiry": {
+      "pass": true,
+      "pictures": [
+        "x1-expat-expiry-required-when-empty.png",
+        "x2-expat-expiry-given-verify-enabled.png"
+      ],
+      "shows": "The Expat document step refuses an empty expiry date (\"Enter the document's expiry date.\", Verify disabled) and accepts a date",
+      "seen": {
+        "empty": {
+          "needed": "Enter the document's expiry date.",
+          "verifyEnabled": false
+        },
+        "filled": {
+          "needed": 0,
+          "verifyEnabled": true
+        }
+      }
+    },
+    "1019-expat": {
+      "pass": true,
+      "pictures": [
+        "x3-expat-straight-to-tickets-change-link.png"
+      ],
+      "shows": "A member with a valid Expat rate goes straight to tickets; the rate shows on the order with a \"change\" link",
+      "seen": {
+        "rateStep": 0,
+        "changeLink": 1,
+        "pill": "EXPAT change"
+      }
+    },
+    "1019-thai": {
+      "pass": true,
+      "pictures": [
+        "x4-thai-rate-no-expiry-asked.png"
+      ],
+      "shows": "The Thai rate (the ID-card case) is confirmed with no document and no expiry date",
+      "seen": {
+        "dateFields": 0,
+        "confirm": 1
+      }
+    }
+  },
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/:id/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/:id/revoke",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    }
+  ],
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1f3b2-d019-7662-a3bf-ef4b5d80c31f",
+      "name": "ZZ TEST SCRUM-1017 proof till 1795089940172",
+      "prefix": "Z01709"
+    },
+    {
+      "kind": "display",
+      "id": "01a1f3b2-e32e-70d7-b955-452e4b59d0e0"
+    },
+    {
+      "kind": "member",
+      "id": "01a1f3b2-f920-772b-9db6-ed95f837a619"
+    }
+  ],
+  "checks": {
+    "expatVerified": true
+  },
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": "reception signs in at the own till",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": "a: guardian name, agreements, staff photo, Done",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/intents 409"
+    },
+    {
+      "page": "till",
+      "at": "clean up",
+      "kind": "http",
+      "text": "GET /api/stations/:id/displays 401"
+    }
+  ],
+  "cleanup": [
+    {
+      "kind": "display",
+      "id": "01a1f3b2-e32e-70d7-b955-452e4b59d0e0",
+      "revoked": true
+    },
+    {
+      "kind": "sales-read-back",
+      "sales": []
+    },
+    {
+      "kind": "station",
+      "id": "01a1f3b2-d019-7662-a3bf-ef4b5d80c31f",
+      "archived": true
+    },
+    {
+      "kind": "member",
+      "id": "01a1f3b2-f920-772b-9db6-ed95f837a619",
+      "archived": true
+    },
+    {
+      "kind": "member",
+      "id": "01a1f39d-98ff-7d87-8eb6-1ae4a86439a1",
+      "archived": true
+    },
+    {
+      "kind": "member",
+      "id": "01a1f39e-cab5-7ef5-bdfe-c2249de4a80b",
+      "archived": true
+    },
+    {
+      "kind": "member",
+      "id": "01a1f3a5-7ddd-774e-b467-c94eb2755b50",
+      "archived": true
+    },
+    {
+      "kind": "member",
+      "id": "01a1f3a8-9abf-7a6f-871a-b35fdb9a35cd",
+      "archived": true
+    },
+    {
+      "kind": "member",
+      "id": "01a1f3ab-4975-7664-b5e3-2f18555da0fa",
+      "archived": true
+    },
+    {
+      "kind": "member",
+      "id": "01a1f3af-23fe-7124-8aad-a16ebb85a634",
+      "archived": true
+    },
+    {
+      "kind": "till-session",
+      "signedOut": true
+    },
+    {
+      "kind": "admin-session",
+      "signedOut": true
+    }
+  ],
+  "deployments": {
+    "oto-api-staging": {
+      "id": "dep-dbvdsf6tlv9c738j89jg",
+      "status": "live",
+      "sha": "a7630e73dccf44bc0d774ce251321167398bca38",
+      "containsProvedSha": true
+    },
+    "oto-pos-staging": {
+      "id": "dep-dbvdv06tlv9c738jff7g",
+      "status": "live",
+      "sha": "a7630e73dccf44bc0d774ce251321167398bca38"
+    },
+    "oto-pos-web-staging": {
+      "id": "dep-dbvdv0etlv9c738jfftg",
+      "status": "live",
+      "sha": "a7630e73dccf44bc0d774ce251321167398bca38",
+      "containsProvedSha": true
+    }
+  },
+  "failures": [
+    {
+      "pass": "a",
+      "failedAt": "a: guardian name, agreements, staff photo, Done",
+      "failure": "Error: expect(locator).toBeEnabled() failed"
+    },
+    {
+      "pass": "f",
+      "failedAt": "a: guardian name, agreements, staff photo, Done",
+      "failure": "AssertionError: the band from pass a"
+    },
+    {
+      "pass": "p",
+      "failedAt": "a: guardian name, agreements, staff photo, Done",
+      "failure": "AssertionError: a registration of this run with the child in the park"
+    },
+    {
+      "pass": "r",
+      "failedAt": "r: the family types their number on the display",
+      "failure": "TimeoutError: locator.waitFor: Timeout 30000ms exceeded."
+    },
+    {
+      "pass": "w",
+      "failedAt": "w: the returning family with both children ticked",
+      "failure": "TimeoutError: locator.waitFor: Timeout 30000ms exceeded."
+    }
+  ],
+  "passed": false,
+  "finishedAt": "2026-11-19T12:09:20.247Z",
+  "reviewNotes": [
+    "This run started on api a7630e73 and the api moved to f223c08e (another change landed after) at 12:06 UTC during it; the display reset mid-form and pass a stopped. Its pictures are not kept; out-08 (all on a7630e73) and out-09 (pickup, on f223c08e which contains a7630e73) are the evidence."
+  ]
+}

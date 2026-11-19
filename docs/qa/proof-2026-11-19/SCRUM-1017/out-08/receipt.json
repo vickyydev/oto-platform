@@ -1,0 +1,888 @@
+{
+  "ticket": "SCRUM-1017",
+  "sha": "a7630e73dccf44bc0d774ce251321167398bca38",
+  "startedAt": "2026-11-19T12:01:29.145Z",
+  "phase": "finished",
+  "passes": [
+    "a",
+    "f",
+    "p",
+    "r",
+    "w",
+    "x"
+  ],
+  "points": {
+    "1019-auto": {
+      "pass": true,
+      "pictures": [
+        "a1-display-new-number-and-name.png",
+        "a2-till-member-made-no-new-member-box.png"
+      ],
+      "shows": "An unknown number typed with a name on the display made the member by itself; no \"New member?\" box on the till",
+      "seen": {
+        "newMemberBox": 0,
+        "memberNickname": "ZZ TEST SCRUM-1017 family 16",
+        "visitingDialog": false
+      }
+    },
+    "1021-form": {
+      "pass": true,
+      "pictures": [
+        "a3-display-food-included-no-extra-charge.png"
+      ],
+      "shows": "Eat & Play child on the drop-off form: \"Food credit ฿1300 — included, no extra charge\"",
+      "seen": {
+        "included": "Food credit ฿1300 — included, no extra charge"
+      }
+    },
+    "1021-extra-display": {
+      "pass": true,
+      "pictures": [
+        "a4-display-extra-credit-chosen.png",
+        "a5-till-sees-extra-credit.png"
+      ],
+      "shows": "The parent chose extra food credit on the display; the till shows it as its own row on the order",
+      "seen": {
+        "extraShown": "฿100",
+        "tillSees": null,
+        "mirrorSays": "฿100"
+      }
+    },
+    "1021-band": {
+      "pass": true,
+      "pictures": [
+        "a6-paid-cash-checked-in.png"
+      ],
+      "shows": "After the cash sale and check-in, the child's band holds the ticket's ฿1300 and the ฿100 extra",
+      "seen": {
+        "bands": 1,
+        "hasCode": true,
+        "balanceSatang": 140000,
+        "ledger": [
+          {
+            "kind": "grant",
+            "amountSatang": 10000,
+            "source": "prepaid_food"
+          },
+          {
+            "kind": "grant",
+            "amountSatang": 130000,
+            "source": "ticket_sale"
+          }
+        ]
+      }
+    },
+    "1021-receipt": {
+      "pass": true,
+      "pictures": [
+        "f4-food-receipt-credit-left.png",
+        "f2-fnb-payment-band-credit.png",
+        "f3-fnb-order-confirmed.png"
+      ],
+      "shows": "A food order paid from the band: the receipt prints the credit left (read the picture)",
+      "seen": {
+        "saleId": "01a1f3af-8983-7940-8bc0-6ef6d029bb97",
+        "balanceAfterSatang": 98000,
+        "printout": {
+          "seq": 11,
+          "at": "2026-11-19T12:02:15.132Z"
+        }
+      }
+    },
+    "1018-returning": {
+      "pass": true,
+      "pictures": [
+        "r1-till-who-is-visiting-ticked.png",
+        "r2-till-gate-ticked-child-last-photo-two-choices.png",
+        "r3-display-agreements-only-number-shown.png",
+        "r3b-display-number-shown-no-tick.png"
+      ],
+      "shows": "Returning family: the ticked child is on the form; the display asks only the agreements, shows the name and the number with no tick; staff see the last photo with \"Still matches\" and \"Take a new one\"",
+      "seen": {
+        "childOnGate": true,
+        "stillMatches": 1,
+        "takeNew": 1,
+        "stepPills": 0,
+        "keptGuardian": 1,
+        "keptPhone": 1,
+        "numberBoxes": 0,
+        "childShown": "ZZ TEST Mai 16 Drop-off supervision needed Required for this age — ฿225 one-time Allergies / medical From your profile. Update it if anything has changed. Medical alert on the profile — the team will check it with you. Medical notes Food credit ฿1300 — included, no extra charge Extra food credit ฿0",
+        "checkboxes": 4,
+        "savedCare": 1,
+        "included": "Food credit ฿1300 — included, no extra charge"
+      }
+    },
+    "1020-care": {
+      "pass": true,
+      "pictures": [
+        "r4-display-care-notes-from-profile.png",
+        "r5-display-care-notes-edited.png",
+        "r6-till-shows-care-change.png"
+      ],
+      "shows": "The saved child's allergy and medical notes are shown on the display; the parent edits them there and the till shows the change",
+      "seen": {
+        "shown": 1,
+        "before": "Allergies / medical From your profile. Update it if anything has changed. Medical alert on the profile — the team will check it with you. Medical notes",
+        "allergyBefore": "ZZ TEST peanuts",
+        "tillLines": [
+          "The family updated ZZ TEST Mai 16's allergies / medical notes on the customer display: now “ZZ TEST peanuts and sesame” (was “ZZ TEST peanuts”)."
+        ]
+      }
+    },
+    "1020-edit": {
+      "pass": true,
+      "pictures": [
+        "r8-edit-details-new-child-added.png",
+        "r9-display-after-edit-ticks-kept.png",
+        "r10-till-after-edit-two-children.png"
+      ],
+      "shows": "Edit details mid check-in added a child; the agreement ticks already made stay ticked",
+      "seen": {
+        "tillTickedBefore": 4,
+        "tillTickedAfter": 4,
+        "ticksBefore": [
+          "checked",
+          "checked",
+          "checked",
+          "checked"
+        ],
+        "editTicks": [
+          "checked",
+          "checked",
+          "checked",
+          "checked"
+        ],
+        "ticksAfter": [],
+        "gateHasNewChild": true
+      }
+    },
+    "1018-waiver": {
+      "pass": true,
+      "pictures": [
+        "w1-gate-waiver-offered.png",
+        "w2-gate-waived-continue.png",
+        "w3-straight-to-payment.png",
+        "w4-display-at-payment.png"
+      ],
+      "shows": "After the waiver, Continue goes straight to payment: no drop-off form, no registration written",
+      "seen": {
+        "registrationsPosted": 0,
+        "saleId": null
+      }
+    },
+    "1019-expiry": {
+      "pass": true,
+      "pictures": [
+        "x1-expat-expiry-required-when-empty.png",
+        "x2-expat-expiry-given-verify-enabled.png"
+      ],
+      "shows": "The Expat document step refuses an empty expiry date (\"Enter the document's expiry date.\", Verify disabled) and accepts a date",
+      "seen": {
+        "empty": {
+          "needed": "Enter the document's expiry date.",
+          "verifyEnabled": false
+        },
+        "filled": {
+          "needed": 0,
+          "verifyEnabled": true
+        }
+      }
+    },
+    "1019-expat": {
+      "pass": true,
+      "pictures": [
+        "x3-expat-straight-to-tickets-change-link.png"
+      ],
+      "shows": "A member with a valid Expat rate goes straight to tickets; the rate shows on the order with a \"change\" link",
+      "seen": {
+        "rateStep": 0,
+        "changeLink": 1,
+        "pill": "EXPAT change"
+      }
+    },
+    "1019-thai": {
+      "pass": true,
+      "pictures": [
+        "x4-thai-rate-no-expiry-asked.png"
+      ],
+      "shows": "The Thai rate (the ID-card case) is confirmed with no document and no expiry date",
+      "seen": {
+        "dateFields": 0,
+        "confirm": 1
+      }
+    }
+  },
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/:id/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/wallets/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/wallets/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts/11/preview.png",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/:id/revoke",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    }
+  ],
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1f3ae-fa59-7d93-acf6-8736562352e4",
+      "name": "ZZ TEST SCRUM-1017 proof till 1795089689151",
+      "prefix": "Z01708"
+    },
+    {
+      "kind": "display",
+      "id": "01a1f3af-0dfa-7c61-950d-3bb44d0ba9c3"
+    },
+    {
+      "kind": "member",
+      "id": "01a1f3af-23fe-7124-8aad-a16ebb85a634"
+    },
+    {
+      "kind": "registration",
+      "id": "01a1f3af-626d-7ba0-bfb2-df7c39173bfe"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1f3af-65c3-7b94-a399-51598eba9bbc"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1f3af-8983-7940-8bc0-6ef6d029bb97",
+      "note": "F&B paid from the band"
+    },
+    {
+      "kind": "registration",
+      "id": "01a1f3b1-0a64-7492-aaa7-afea7274ac1a",
+      "pass": "r"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1f3b1-0dbf-7f3b-a2be-5f0a912595d4"
+    }
+  ],
+  "checks": {
+    "firstRegistration": {
+      "id": "01a1f3af-626d-7ba0-bfb2-df7c39173bfe"
+    },
+    "bandAfterSale": {
+      "bands": 1,
+      "hasCode": true,
+      "balanceSatang": 140000,
+      "ledger": [
+        {
+          "kind": "grant",
+          "amountSatang": 10000,
+          "source": "prepaid_food"
+        },
+        {
+          "kind": "grant",
+          "amountSatang": 130000,
+          "source": "ticket_sale"
+        }
+      ]
+    },
+    "passA": {
+      "registrationId": "01a1f3af-626d-7ba0-bfb2-df7c39173bfe",
+      "saleId": "01a1f3af-65c3-7b94-a399-51598eba9bbc",
+      "extraTHB": 100
+    },
+    "passF": {
+      "saleId": "01a1f3af-8983-7940-8bc0-6ef6d029bb97",
+      "balanceAfterSatang": 98000,
+      "printout": {
+        "seq": 11,
+        "at": "2026-11-19T12:02:15.132Z"
+      }
+    },
+    "returningExtra": "฿50",
+    "returning": {
+      "registrationId": "01a1f3b1-0a64-7492-aaa7-afea7274ac1a",
+      "status": 200,
+      "photoReuseSent": 1,
+      "children": [
+        {
+          "name": "ZZ TEST Mai 16",
+          "status": "in_park",
+          "hasPhoto": true
+        },
+        {
+          "name": "ZZ TEST Noah 16",
+          "status": "in_park",
+          "hasPhoto": true
+        }
+      ],
+      "saleId": "01a1f3b1-0dbf-7f3b-a2be-5f0a912595d4",
+      "savedAfter": [
+        {
+          "name": "ZZ TEST Mai 16",
+          "allergies": "ZZ TEST peanuts and sesame",
+          "medicalNotes": "ZZ TEST inhaler in the bag"
+        },
+        {
+          "name": "ZZ TEST Noah 16",
+          "allergies": null,
+          "medicalNotes": null
+        }
+      ]
+    },
+    "returningOrderFoodRow": "Extra food credit ฿50",
+    "expatVerified": true
+  },
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": "reception signs in at the own till",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": "w: the returning family with both children ticked",
+      "kind": "http",
+      "text": "POST /api/sales 409"
+    }
+  ],
+  "cleanup": [
+    {
+      "kind": "released",
+      "id": "01a1f3b1-0a64-7492-aaa7-afea7274ac1a",
+      "children": [
+        "out",
+        "out"
+      ]
+    },
+    {
+      "kind": "display",
+      "id": "01a1f3af-0dfa-7c61-950d-3bb44d0ba9c3",
+      "revoked": true
+    },
+    {
+      "kind": "released",
+      "id": "01a1f3af-626d-7ba0-bfb2-df7c39173bfe",
+      "children": [
+        "out"
+      ]
+    },
+    {
+      "kind": "released",
+      "id": "01a1f3b1-0a64-7492-aaa7-afea7274ac1a",
+      "children": [
+        "out",
+        "out"
+      ]
+    },
+    {
+      "kind": "sales-read-back",
+      "sales": [
+        {
+          "id": "01a1f3b1-0dbf-7f3b-a2be-5f0a912595d4",
+          "status": "finalised",
+          "grossSatang": 287500
+        },
+        {
+          "id": "01a1f3af-8983-7940-8bc0-6ef6d029bb97",
+          "status": "finalised",
+          "grossSatang": 42000
+        },
+        {
+          "id": "01a1f3af-65c3-7b94-a399-51598eba9bbc",
+          "status": "finalised",
+          "grossSatang": 162500
+        }
+      ]
+    },
+    {
+      "kind": "station",
+      "id": "01a1f3ae-fa59-7d93-acf6-8736562352e4",
+      "archived": true
+    },
+    {
+      "kind": "till-session",
+      "signedOut": true
+    },
+    {
+      "kind": "admin-session",
+      "signedOut": true
+    }
+  ],
+  "deployments": {
+    "oto-api-staging": {
+      "id": "dep-dbvdsf6tlv9c738j89jg",
+      "status": "live",
+      "sha": "a7630e73dccf44bc0d774ce251321167398bca38",
+      "containsProvedSha": true
+    },
+    "oto-pos-staging": {
+      "id": "dep-dbvdv06tlv9c738jff7g",
+      "status": "live",
+      "sha": "a7630e73dccf44bc0d774ce251321167398bca38"
+    },
+    "oto-pos-web-staging": {
+      "id": "dep-dbvdv0etlv9c738jfftg",
+      "status": "live",
+      "sha": "a7630e73dccf44bc0d774ce251321167398bca38",
+      "containsProvedSha": true
+    }
+  },
+  "failures": [
+    {
+      "pass": "p",
+      "failedAt": "p: the check-in board, Check Out on the child",
+      "failure": "TimeoutError: locator.click: Timeout 30000ms exceeded."
+    }
+  ],
+  "passed": false,
+  "finishedAt": "2026-11-19T12:05:17.479Z",
+  "reviewNotes": [
+    "Point 1018-waiver: the script only checked that no registration was written. Picture w3-straight-to-payment.png shows the payment step with the platform refusing the sale: \"This sale has not been saved. Children can't be sold tickets on their own...\" (POST /api/sales 409). After a waiver the sale cannot be paid: the waiver part of SCRUM-1018 is BROKEN on staging.",
+    "Picture f4 (the receipt) is not kept here: it prints the band code. The masked receipt is out-09/f4-food-receipt-credit-left-masked.png."
+  ]
+}

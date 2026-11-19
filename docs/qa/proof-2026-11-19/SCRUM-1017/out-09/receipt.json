@@ -1,0 +1,423 @@
+{
+  "ticket": "SCRUM-1017",
+  "sha": "a7630e73dccf44bc0d774ce251321167398bca38",
+  "startedAt": "2026-11-19T12:09:46.697Z",
+  "phase": "finished",
+  "passes": [
+    "a",
+    "f",
+    "p"
+  ],
+  "points": {
+    "1019-auto": {
+      "pass": true,
+      "pictures": [
+        "a1-display-new-number-and-name.png",
+        "a2-till-member-made-no-new-member-box.png"
+      ],
+      "shows": "An unknown number typed with a name on the display made the member by itself; no \"New member?\" box on the till",
+      "seen": {
+        "newMemberBox": 0,
+        "memberNickname": "ZZ TEST SCRUM-1017 family 18",
+        "visitingDialog": false
+      }
+    },
+    "1021-form": {
+      "pass": true,
+      "pictures": [
+        "a3-display-food-included-no-extra-charge.png"
+      ],
+      "shows": "Eat & Play child on the drop-off form: \"Food credit ฿1300 — included, no extra charge\"",
+      "seen": {
+        "included": "Food credit ฿1300 — included, no extra charge"
+      }
+    },
+    "1021-extra-display": {
+      "pass": true,
+      "pictures": [
+        "a4-display-extra-credit-chosen.png",
+        "a5-till-sees-extra-credit.png"
+      ],
+      "shows": "The parent chose extra food credit on the display; the till shows it as its own row on the order",
+      "seen": {
+        "extraShown": "฿100",
+        "tillSees": null,
+        "mirrorSays": "฿100"
+      }
+    },
+    "1021-band": {
+      "pass": true,
+      "pictures": [
+        "a6-paid-cash-checked-in.png"
+      ],
+      "shows": "After the cash sale and check-in, the child's band holds the ticket's ฿1300 and the ฿100 extra",
+      "seen": {
+        "bands": 1,
+        "hasCode": true,
+        "balanceSatang": 140000,
+        "ledger": [
+          {
+            "kind": "grant",
+            "amountSatang": 10000,
+            "source": "prepaid_food"
+          },
+          {
+            "kind": "grant",
+            "amountSatang": 130000,
+            "source": "ticket_sale"
+          }
+        ]
+      }
+    },
+    "1021-receipt": {
+      "pass": true,
+      "pictures": [
+        "f4-food-receipt-credit-left.png",
+        "f2-fnb-payment-band-credit.png",
+        "f3-fnb-order-confirmed.png"
+      ],
+      "shows": "A food order paid from the band: the receipt prints the credit left (read the picture)",
+      "seen": {
+        "saleId": "01a1f3b7-21b8-7da2-90e2-a0ded41df724",
+        "balanceAfterSatang": 98000,
+        "printout": {
+          "seq": 2,
+          "at": "2026-11-19T12:10:31.275Z"
+        }
+      }
+    },
+    "1021-pickup": {
+      "pass": true,
+      "pictures": [
+        "p1-pickup-you-still-have-remaining.png"
+      ],
+      "shows": "The pickup screen says \"You still have ฿X remaining\" for staff to tell the parent",
+      "seen": {
+        "remaining": "You still have ฿980 remaining"
+      }
+    }
+  },
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/:id/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/wallets/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/wallets/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts/2/preview.png",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/:id/revoke",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    }
+  ],
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1f3b6-9229-7e85-910c-840af222a81b",
+      "name": "ZZ TEST SCRUM-1017 proof till 1795090186706",
+      "prefix": "Z01710"
+    },
+    {
+      "kind": "display",
+      "id": "01a1f3b6-a5a2-74c9-b1ea-1447b199966b"
+    },
+    {
+      "kind": "member",
+      "id": "01a1f3b6-bb92-70fd-8cf7-da5a6f93c0d0"
+    },
+    {
+      "kind": "registration",
+      "id": "01a1f3b6-fa19-7f4e-98f9-b39bc0edcd07"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1f3b6-fd51-79f6-9179-c11c96adc622"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1f3b7-21b8-7da2-90e2-a0ded41df724",
+      "note": "F&B paid from the band"
+    }
+  ],
+  "checks": {
+    "firstRegistration": {
+      "id": "01a1f3b6-fa19-7f4e-98f9-b39bc0edcd07"
+    },
+    "bandAfterSale": {
+      "bands": 1,
+      "hasCode": true,
+      "balanceSatang": 140000,
+      "ledger": [
+        {
+          "kind": "grant",
+          "amountSatang": 10000,
+          "source": "prepaid_food"
+        },
+        {
+          "kind": "grant",
+          "amountSatang": 130000,
+          "source": "ticket_sale"
+        }
+      ]
+    },
+    "passA": {
+      "registrationId": "01a1f3b6-fa19-7f4e-98f9-b39bc0edcd07",
+      "saleId": "01a1f3b6-fd51-79f6-9179-c11c96adc622",
+      "extraTHB": 100
+    },
+    "passF": {
+      "saleId": "01a1f3b7-21b8-7da2-90e2-a0ded41df724",
+      "balanceAfterSatang": 98000,
+      "printout": {
+        "seq": 2,
+        "at": "2026-11-19T12:10:31.275Z"
+      }
+    }
+  },
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": "reception signs in at the own till",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    }
+  ],
+  "cleanup": [
+    {
+      "kind": "released",
+      "id": "01a1f3b6-fa19-7f4e-98f9-b39bc0edcd07",
+      "children": [
+        "out"
+      ]
+    },
+    {
+      "kind": "display",
+      "id": "01a1f3b6-a5a2-74c9-b1ea-1447b199966b",
+      "revoked": true
+    },
+    {
+      "kind": "released",
+      "id": "01a1f3b6-fa19-7f4e-98f9-b39bc0edcd07",
+      "children": [
+        "out"
+      ]
+    },
+    {
+      "kind": "sales-read-back",
+      "sales": [
+        {
+          "id": "01a1f3b7-21b8-7da2-90e2-a0ded41df724",
+          "status": "finalised",
+          "grossSatang": 42000
+        },
+        {
+          "id": "01a1f3b6-fd51-79f6-9179-c11c96adc622",
+          "status": "finalised",
+          "grossSatang": 162500
+        }
+      ]
+    },
+    {
+      "kind": "station",
+      "id": "01a1f3b6-9229-7e85-910c-840af222a81b",
+      "archived": true
+    },
+    {
+      "kind": "member",
+      "id": "01a1f3b6-bb92-70fd-8cf7-da5a6f93c0d0",
+      "archived": true
+    },
+    {
+      "kind": "till-session",
+      "signedOut": true
+    },
+    {
+      "kind": "admin-session",
+      "signedOut": true
+    }
+  ],
+  "deployments": {
+    "oto-api-staging": {
+      "id": "dep-dbve9ne7bikc738cb0a0",
+      "status": "live",
+      "sha": "f223c08e548799e8d87ca3b76e2c6bc56016ca9b",
+      "containsProvedSha": true
+    },
+    "oto-pos-staging": {
+      "id": "dep-dbvdv06tlv9c738jff7g",
+      "status": "live",
+      "sha": "a7630e73dccf44bc0d774ce251321167398bca38"
+    },
+    "oto-pos-web-staging": {
+      "id": "dep-dbvdv0etlv9c738jfftg",
+      "status": "live",
+      "sha": "a7630e73dccf44bc0d774ce251321167398bca38",
+      "containsProvedSha": true
+    }
+  },
+  "passed": true,
+  "finishedAt": "2026-11-19T12:10:47.666Z",
+  "reviewNotes": [
+    "Picture f4 is kept only masked (out-09/f4-food-receipt-credit-left-masked.png): the printed receipt carries the band code."
+  ]
+}
