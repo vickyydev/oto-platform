@@ -6,7 +6,7 @@ import { setBridgeOrigin } from '@/api/bridge';
 import { checkinApi, type CreateRegistrationBody } from '@/api/checkin';
 import { confirmVisitChildren, membersApi } from '@/api/platform';
 import type { SupervisedSlot } from '@/components/till/SupervisionGate';
-import { saveGateChildren } from '@/lib/gateChildren';
+import { saveGateChildren, type HeldWriteKey } from '@/lib/gateChildren';
 import {
   GATE_BOX_NOT_SYNCED,
   GATE_CONNECTION_DROPPED,
@@ -181,6 +181,7 @@ class Gate {
   regId = '018f0000-0000-7000-8000-00000088701a';
   childIds = new Map([['a', '018f0000-0000-7000-8000-00000088702a'], ['b', '018f0000-0000-7000-8000-00000088702b']]);
   stayIds = ['018f0000-0000-7000-8000-00000088703a', '018f0000-0000-7000-8000-00000088703b'];
+  keys = new Map<string, HeldWriteKey>();
   guardian: Member | null = null;
   slots = [slot('a', 'ZZ TEST Bua', '6', 'ZZ TEST peanuts'), slot('b', 'ZZ TEST Nok', '9')];
   toasts: string[] = [];
@@ -204,8 +205,9 @@ class Gate {
           asOf: new Date('2026-11-12T03:00:00Z'),
           childIdFor: (slotId) => this.childIds.get(slotId)!,
           matchedSlots: new Map(),
+          writeKeys: this.keys,
           addChild: (memberId, body, id) => membersApi.addChild(memberId, body, id),
-          updateChild: (childId, patch) => membersApi.updateChild(childId, patch),
+          updateChild: (childId, patch, key) => membersApi.updateChild(childId, patch, key),
           onSaved: (slotId, child) => {
             this.hold.noteWrite();
             this.guardian = { ...this.guardian!, savedChildren: [...(this.guardian!.savedChildren ?? []).filter((c) => c.id !== child.id), child] };

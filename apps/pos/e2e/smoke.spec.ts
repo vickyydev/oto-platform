@@ -699,25 +699,14 @@ test('separate display care-note edit persists before Done and retries a lost up
 });
 
 /**
- * FINDING (SCRUM-1020, open; expected to fail until it is fixed) — THE RETRY
- * OF A CARE NOTE WHOSE REPLY WAS LOST IS A SECOND WRITE, NOT A REPLAY.
- *
- * The display's saved-child review that SCRUM-1018 removed sent its write
- * under a key and retried a lost reply under the same key
- * (`useChildReviewSave` in `lib/displaySession`), so the platform answered
- * from the first write and the record changed once. The care-note write that
- * took its place (`membersApi.updateChildCareFromDisplay`, `api/platform.ts`)
- * sends no Idempotency-Key; after a lost reply the gate works the change out
- * again from the member it holds (`saveGateChildren`, which never heard the
- * answer) and sends it as a new write. The note is not lost, but the platform
- * writes it twice and the child's audit trail shows two changes from the
- * customer display for the family's one edit (the second "from" the new note
- * "to" the same). Measured on 19 November: no key on either write, the same
- * body, two `child.update` rows. A fix gives the write a key held for the
- * form until it lands; then this test passes and loses its `test.fail`.
+ * SCRUM-1053 — THE RETRY OF A CARE NOTE WHOSE REPLY WAS LOST IS THE FIRST
+ * WRITE, NOT A SECOND ONE. The care-note write goes under the key the gate
+ * holds for that change (`gateWriteKey` in `lib/gateChildren`), as the
+ * display's saved-child review held its write: the next Done sends the same
+ * key and body, the platform answers from the first write, and the child's
+ * audit trail shows the family's one edit once.
  */
 test('separate display care-note retry after a lost reply is the same write, audited once', async ({ page, browser, baseURL }) => {
-  test.fail(true, 'FINDING SCRUM-1020: the care-note write carries no idempotency key, so its retry is written and audited twice');
   test.setTimeout(150_000);
   requireLocalFixture(baseURL);
   const retry = await careNoteLostReply(page, browser, baseURL);

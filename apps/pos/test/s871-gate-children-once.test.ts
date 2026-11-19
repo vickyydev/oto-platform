@@ -9,6 +9,7 @@ import {
   matchSlotsToSavedChildren,
   saveGateChildren,
   withSavedChild,
+  type HeldWriteKey,
   type SaveGateChildrenInput,
 } from '@/lib/gateChildren';
 import type { Member, SavedChild } from '@/types';
@@ -124,6 +125,7 @@ class FakeTill {
   slots: SupervisedSlot[];
   ids = new Map<string, string>();
   matched = new Map<string, string>();
+  keys = new Map<string, HeldWriteKey>();
   minted = 0;
 
   constructor(member: Member | null, slots: SupervisedSlot[]) {
@@ -154,6 +156,7 @@ class FakeTill {
       asOf: ASOF,
       childIdFor: this.childIdFor,
       matchedSlots: this.matched,
+      writeKeys: this.keys,
       addChild: store.addChild,
       updateChild: store.updateChild,
       onSaved: this.onSaved,

@@ -274,13 +274,17 @@ updateChild: (childId: string, patch: Record<string, unknown>, idempotencyKey?: 
  * (`memberId`), and an empty note goes only with the family's "no allergies"
  * (`confirmedNone`). The box lane's fact carries no source, as SCRUM-1014's
  * new child: it is the same `child.update` the box has always taken.
+ * SCRUM-1053 — sent under the key the gate holds for this change
+ * (`gateWriteKey`), so a retry after a lost reply is answered from the first
+ * write instead of writing and auditing it again.
  */
 updateChildCareFromDisplay: (
   childId: string,
   care: { memberId: string; allergies?: string | null; medicalNotes?: string | null; confirmedNone?: true },
+  idempotencyKey?: string,
 ) =>
     viaLane(
-      () => cloudMembersApi.updateChild(childId, { source: 'customer_display', ...care }),
+      () => cloudMembersApi.updateChild(childId, { source: 'customer_display', ...care }, idempotencyKey),
       (stationId) => onBox<{ child: ApiChild }>(stationId, 'child.update', {
         childId,
         ...(care.allergies !== undefined ? { allergies: care.allergies } : {}),

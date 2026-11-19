@@ -222,6 +222,41 @@ export function matchSlotsToSavedChildren(
   return { matched, unmatched };
 }
 
+/** One change to a child the gate has sent, and the key it went under. */
+export interface HeldWriteKey {
+  change: string;
+  key: string;
+}
+
+/**
+ * SCRUM-1053 — THE KEY A CHANGE TO A CHILD IS SENT UNDER.
+ *
+ * A change to a child is a PATCH, and one sent again after its reply was
+ * lost was a second write: the platform changed the record again, audited it
+ * again and published it to the boxes again (a family's one care-note edit
+ * on the display showed twice in the child's trail). The display's
+ * saved-child review held its write with a key and retried under it
+ * (`useChildReviewSave`); the gate holds its keys the way it holds its ids
+ * (OD-12): one per child and kind of write (`write`), for the life of the
+ * gate, kept while the change it was minted for is the change being sent. A
+ * different change is a different write and takes a new key; another child,
+ * or the next gate, never shares one. The platform answers a key it has
+ * seen, with the same body, with the first write's own answer.
+ */
+export function gateWriteKey(
+  held: Map<string, HeldWriteKey>,
+  write: string,
+  change: unknown,
+  mint: () => string = () => crypto.randomUUID(),
+): string {
+  const signature = JSON.stringify(change);
+  const known = held.get(write);
+  if (known?.change === signature) return known.key;
+  const key = `gate-child:${mint()}`;
+  held.set(write, { change: signature, key });
+  return key;
+}
+
 export interface SaveGateChildrenInput {
   /** The member the children belong to: on the sale, or found or created from the form's number. */
   guardian: Member;
@@ -239,15 +274,21 @@ export interface SaveGateChildrenInput {
    * a blank box typed afresh needs on every press, not only the first.
    */
   matchedSlots: Map<string, string>;
+  /**
+   * SCRUM-1053 — the key each change to a child is sent under, held by the
+   * till for the life of the gate (`gateWriteKey`): a retry of the same
+   * change re-sends the same key.
+   */
+  writeKeys: Map<string, HeldWriteKey>;
   addChild: (memberId: string, body: Record<string, unknown>, id: string) => Promise<{ child: ApiChild }>;
-  updateChild: (childId: string, patch: Record<string, unknown>) => Promise<{ child: ApiChild }>;
+  updateChild: (childId: string, patch: Record<string, unknown>, idempotencyKey: string) => Promise<{ child: ApiChild }>;
   /**
    * SCRUM-1020 — a saved child's care notes the family changed on the
    * customer display, written on their own before the rest of the patch so
    * the audit row names the display (`displayCareWrite`), for the family
    * the child is saved on. Absent, the whole patch goes through `updateChild`.
    */
-  updateChildCareFromDisplay?: (childId: string, care: DisplayCare, memberId: string) => Promise<{ child: ApiChild }>;
+  updateChildCareFromDisplay?: (childId: string, care: DisplayCare, memberId: string, idempotencyKey: string) => Promise<{ child: ApiChild }>;
   /**
    * A child the API has answered with, one at a time: the till puts it on the
    * member in hand (named by `guardianId`, never whatever its state holds)
@@ -291,9 +332,13 @@ export async function saveGateChildren(input: SaveGateChildrenInput): Promise<Sa
       const split = patch && input.updateChildCareFromDisplay ? displayCareWrite(slot, patch) : { care: null, rest: patch };
       child = saved;
       if (split.care) {
-        child = apiChildToSavedChild((await input.updateChildCareFromDisplay!(linkedId, split.care, guardian.id)).child);
+        const key = gateWriteKey(input.writeKeys, `care:${linkedId}`, { care: split.care, memberId: guardian.id });
+        child = apiChildToSavedChild((await input.updateChildCareFromDisplay!(linkedId, split.care, guardian.id, key)).child);
       }
-      if (split.rest) child = apiChildToSavedChild((await input.updateChild(linkedId, split.rest)).child);
+      if (split.rest) {
+        const key = gateWriteKey(input.writeKeys, `update:${linkedId}`, split.rest);
+        child = apiChildToSavedChild((await input.updateChild(linkedId, split.rest, key)).child);
+      }
     } else {
       // The photo is deliberately NOT saved (re-taken each visit). The same
       // id again answers with the record as it was first written — so what
@@ -302,7 +347,9 @@ export async function saveGateChildren(input: SaveGateChildrenInput): Promise<Sa
         (await input.addChild(guardian.id, gateChildBody(slot, age), input.childIdFor(slot.id))).child,
       );
       const patch = gateChildPatch(slot, age, created);
-      child = patch ? apiChildToSavedChild((await input.updateChild(created.id, patch)).child) : created;
+      child = patch
+        ? apiChildToSavedChild((await input.updateChild(created.id, patch, gateWriteKey(input.writeKeys, `update:${created.id}`, patch))).child)
+        : created;
     }
     guardian = withSavedChild(guardian, child);
     input.onSaved(slot.id, child, guardian.id);

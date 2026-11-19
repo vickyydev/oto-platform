@@ -22,7 +22,7 @@ import { computeLineTotal, computeLineBreakdown, priceForTier, unpricedCartLines
 import { branchTradingDate, resolveRateToday } from '@/lib/pricingMode';
 import { makeDropOffLine, normalizeDropOffFees, resolveDropOffPricing } from '@/lib/dropoff';
 import { resolveGroupRequirements, resolveSupervisionOutcome, sortedConfirmations } from '@/lib/supervision';
-import { gateChildPatch, saveGateChildren } from '@/lib/gateChildren';
+import { gateChildPatch, saveGateChildren, type HeldWriteKey } from '@/lib/gateChildren';
 import { gateFailureCause, gateFailureDescription, gateOnlineHold, gateSaleFailure } from '@/lib/gateOnline';
 import { buildSale } from '@/lib/sale';
 import { withPlatformCredit } from '@/lib/saleCredit';
@@ -722,6 +722,8 @@ export default function Till() {
   const gateChildIdsRef = useRef(new Map<string, string>());
   // SCRUM-872 — the slots matched to a saved child by name, for the life of the gate.
   const gateMatchedChildrenRef = useRef(new Map<string, string>());
+  // SCRUM-1053 — the key each change to a child goes under, for the life of the gate (`gateWriteKey`).
+  const gateWriteKeysRef = useRef(new Map<string, HeldWriteKey>());
   // SCRUM-887 — a gate that has written on the platform finishes there (lib/gateOnline).
   const [gateOnline] = useState(() => gateOnlineHold((words) => toast(words)));
   // Carried to the family's sale; released once it is written, and with the till.
@@ -2247,6 +2249,7 @@ export default function Till() {
     gateWaiverIdsRef.current = new Map();
     gateChildIdsRef.current = new Map();
     gateMatchedChildrenRef.current = new Map();
+    gateWriteKeysRef.current = new Map();
     gateOnline.reset();
     refreshNannyRoster();
     setSuperConsentAck(false);
@@ -2728,15 +2731,18 @@ export default function Till() {
           }),
           childIdFor: (slotId) => gateIdFor(gateChildIdsRef.current, slotId),
           matchedSlots: gateMatchedChildrenRef.current,
+          // SCRUM-1053 — each change goes under the key held for it: a press
+          // again after a lost reply is answered from the first write.
+          writeKeys: gateWriteKeysRef.current,
           // SCRUM-1014 — a new child the family named on the customer display is
           // written with that source, so its audit row names the display.
           addChild: (memberId, body, id) => membersApi.addChild(memberId, body, id,
             [...reviewDisplaySlotsRef.current].some((slotId) => gateChildIdsRef.current.get(slotId) === id)),
-          updateChild: (childId, patch) => membersApi.updateChild(childId, patch),
+          updateChild: (childId, patch, key) => membersApi.updateChild(childId, patch, key),
           // SCRUM-1020 — a saved child's care notes the family changed on the
           // customer display go on their own, so the audit row names it.
-          updateChildCareFromDisplay: (childId, care, memberId) =>
-            membersApi.updateChildCareFromDisplay(childId, { ...care, memberId }),
+          updateChildCareFromDisplay: (childId, care, memberId, key) =>
+            membersApi.updateChildCareFromDisplay(childId, { ...care, memberId }, key),
           onSaved: (slotId, child, guardianId) => {
             if (!ownSale()) return;
             gateOnline.noteWrite();

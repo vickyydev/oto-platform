@@ -285,9 +285,9 @@ describe('SCRUM-1020 (4): the write names the display and the family, apart from
     const care = vi.fn(async (_id: string, c: { allergies?: string | null }) => ({ child: apiChild(c.allergies ?? null) }));
     const update = vi.fn(async () => ({ child: apiChild(null) }));
     await saveGateChildren({ guardian, slots: [{ slot: slot({ allergiesMedical: '', careSource: 'display', careNoneConfirmed: true }), age: 6 }],
-      childIdFor: () => 'unused', matchedSlots: new Map(), addChild: vi.fn(), updateChild: update,
+      childIdFor: () => 'unused', matchedSlots: new Map(), writeKeys: new Map(), addChild: vi.fn(), updateChild: update,
       updateChildCareFromDisplay: care, onSaved: vi.fn() });
-    expect(care).toHaveBeenCalledWith('zz-child-mai', { allergies: null, confirmedNone: true }, 'zz-family');
+    expect(care).toHaveBeenCalledWith('zz-child-mai', { allergies: null, confirmedNone: true }, 'zz-family', expect.any(String));
     expect(update).not.toHaveBeenCalled();
   });
 
@@ -295,10 +295,10 @@ describe('SCRUM-1020 (4): the write names the display and the family, apart from
     const care = vi.fn();
     const update = vi.fn(async () => ({ child: apiChild('ZZ TEST eggs') }));
     await saveGateChildren({ guardian, slots: [{ slot: slot({ allergiesMedical: 'ZZ TEST eggs' }), age: 6 }],
-      childIdFor: () => 'unused', matchedSlots: new Map(), addChild: vi.fn(), updateChild: update,
+      childIdFor: () => 'unused', matchedSlots: new Map(), writeKeys: new Map(), addChild: vi.fn(), updateChild: update,
       updateChildCareFromDisplay: care, onSaved: vi.fn() });
     expect(care).not.toHaveBeenCalled();
-    expect(update).toHaveBeenCalledWith('zz-child-mai', { allergies: 'ZZ TEST eggs' });
+    expect(update).toHaveBeenCalledWith('zz-child-mai', { allergies: 'ZZ TEST eggs' }, expect.any(String));
   });
 });
 
@@ -325,9 +325,9 @@ describe('SCRUM-1020 (5): the till wires it', () => {
 
   it('tells the cashier as it happens, and writes the family\'s change naming the display', () => {
     expect(till).toContain('data-testid="consent-display-care">{line}</p>)}');
-    expect(till).toContain('membersApi.updateChildCareFromDisplay(childId, { ...care, memberId }),');
+    expect(till).toContain('membersApi.updateChildCareFromDisplay(childId, { ...care, memberId }, key),');
     const platform = readFileSync(path.resolve(import.meta.dirname, '..', 'src', 'api', 'platform.ts'), 'utf8');
-    expect(platform).toContain("cloudMembersApi.updateChild(childId, { source: 'customer_display', ...care })");
+    expect(platform).toContain("cloudMembersApi.updateChild(childId, { source: 'customer_display', ...care }, idempotencyKey)");
     // The box's fact stays the child.update it has always taken.
     expect(platform).toContain("...(care.allergies !== undefined ? { allergies: care.allergies } : {}),");
     expect(platform).toContain("...(care.medicalNotes !== undefined ? { medicalNotes: care.medicalNotes } : {}),");
@@ -407,15 +407,15 @@ describe('SCRUM-1020 (6): the medical notes beside the allergy line', () => {
     const update = vi.fn(async () => ({ child }));
     // The copy the gate took at its opening differs, but the family did not change it: nothing is written.
     await saveGateChildren({ guardian: guardianWith, slots: [{ slot: slot({ medicalNotes: INHALER }), age: 6 }],
-      childIdFor: () => 'unused', matchedSlots: new Map(), addChild: vi.fn(), updateChild: update,
+      childIdFor: () => 'unused', matchedSlots: new Map(), writeKeys: new Map(), addChild: vi.fn(), updateChild: update,
       updateChildCareFromDisplay: care, onSaved: vi.fn() });
     expect(care).not.toHaveBeenCalled();
     expect(update).not.toHaveBeenCalled();
     // The family's change goes on its own, naming the display.
     await saveGateChildren({ guardian: guardianWith,
       slots: [{ slot: slot({ medicalNotes: 'ZZ TEST inhaler, daily', careSource: 'display' }), age: 6 }],
-      childIdFor: () => 'unused', matchedSlots: new Map(), addChild: vi.fn(), updateChild: update,
+      childIdFor: () => 'unused', matchedSlots: new Map(), writeKeys: new Map(), addChild: vi.fn(), updateChild: update,
       updateChildCareFromDisplay: care, onSaved: vi.fn() });
-    expect(care).toHaveBeenCalledWith('zz-child-mai', { medicalNotes: 'ZZ TEST inhaler, daily' }, 'zz-family');
+    expect(care).toHaveBeenCalledWith('zz-child-mai', { medicalNotes: 'ZZ TEST inhaler, daily' }, 'zz-family', expect.any(String));
   });
 });
