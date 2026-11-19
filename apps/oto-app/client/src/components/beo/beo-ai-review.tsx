@@ -660,6 +660,8 @@ function ReviewSections({
       </Section>
 
       <Section title="Kitchen Plan" icon={<Utensils className="h-4 w-4" />}>
+        {/* SCRUM-1030: the Kitchen Notes, first as the Staff BEO prints them; held text never overwritten. */}
+        {(d.kitchenNotes.value || d.kitchenNotes.chat) && textRow("kitchenNotes", "Kitchen notes", { multiline: true })}
         <Row
           label="Set menu"
           field={state.setMenuId.value ? state.setMenuId : null}
