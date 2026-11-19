@@ -1,0 +1,571 @@
+{
+  "tickets": [
+    "SCRUM-1048",
+    "SCRUM-1019",
+    "SCRUM-1054",
+    "SCRUM-1041"
+  ],
+  "sha": "d048c9c0d4c43a0fd99904447a647a113af2ce2a",
+  "startedAt": "2026-11-19T18:49:23.211Z",
+  "phase": "finished",
+  "passes": [
+    "x"
+  ],
+  "points": {
+    "1048-line": {
+      "pass": true,
+      "pictures": [
+        "SCRUM-1048/x1-till-add-food-credit-300.png",
+        "SCRUM-1048/x2-till-order-extra-credit-line.png",
+        "SCRUM-1048/x3-display-extra-credit-line.png"
+      ],
+      "shows": "On an Eat & Play ticket for an adult and a child (no drop-off) staff add ฿300 extra food credit for the child: its own line on the order and on the display",
+      "seen": {
+        "saleId": "01a1f524-d843-7a33-955b-8f276de6b12c",
+        "receiptNumber": "Z04803-000001",
+        "amount": "฿300",
+        "tillLine": "Extra food credit Kid 1 · Eat & Play Kids Pass ฿300",
+        "displayLine": "Extra food credit ฿300",
+        "lines": [
+          {
+            "label": "Kids",
+            "amountSatang": null
+          },
+          {
+            "label": "Adults",
+            "amountSatang": null
+          },
+          {
+            "label": "Prepaid food",
+            "amountSatang": null
+          }
+        ],
+        "bands": [
+          "kid",
+          "adult"
+        ],
+        "balanceSatang": 160000,
+        "raw": "x1-sale-receipt.png"
+      }
+    },
+    "1048-band": {
+      "pass": true,
+      "pictures": [
+        "SCRUM-1048/x4-paid-cash.png"
+      ],
+      "shows": "Paid in cash: the child's band holds the ticket's ฿1,300 and the ฿300 extra, ฿1,600",
+      "seen": {
+        "balanceSatang": 160000,
+        "bands": [
+          "kid",
+          "adult"
+        ]
+      }
+    },
+    "1048-spend": {
+      "pass": true,
+      "pictures": [
+        "SCRUM-1048/x5-fnb-paid-from-band.png",
+        "SCRUM-1048/x6-fnb-order-confirmed.png"
+      ],
+      "shows": "A dish at F&B is paid from the child's band; the receipt prints the credit left (read the masked receipt picture)",
+      "seen": {
+        "saleId": "01a1f525-0167-7a61-8fb9-a6804defe7e5",
+        "balanceAfterSatang": 118000,
+        "raw": "x6-food-receipt.png"
+      }
+    },
+    "1048-refund": {
+      "pass": true,
+      "pictures": [
+        "SCRUM-1048/x7-history-refund-credit-line.png",
+        "SCRUM-1048/x8-history-credit-refunded.png"
+      ],
+      "shows": "A second sale's extra credit line refunded from History before any is spent: the band goes back from ฿1,600 to the ticket's ฿1,300",
+      "seen": {
+        "by": "the seeded manager at the till",
+        "refundButton": "Refund ฿300",
+        "balanceBeforeSatang": 160000,
+        "balanceAfterSatang": 130000
+      }
+    }
+  },
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/:id/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/wallets/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts/6/preview.png",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts/7/preview.png",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/wallets/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/wallets/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts/8/preview.png",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/wallets/lookup",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/:id/revoke",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    }
+  ],
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1f524-7156-746e-afcd-f921d5b3b923",
+      "name": "ZZ TEST SCRUM-1048 proof till 1795114163225",
+      "prefix": "Z04803"
+    },
+    {
+      "kind": "display",
+      "id": "01a1f524-8283-735c-b81a-9ee01c725f77",
+      "name": "ZZ TEST SCRUM-1041 display A"
+    },
+    {
+      "kind": "member",
+      "id": "01a1f524-9d2a-7b07-8436-e537b7340dc6"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1f524-d843-7a33-955b-8f276de6b12c"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1f525-0167-7a61-8fb9-a6804defe7e5",
+      "note": "F&B paid from the band"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1f525-646c-7388-87be-f63269dbe586"
+    }
+  ],
+  "checks": {
+    "x1": {
+      "saleId": "01a1f524-d843-7a33-955b-8f276de6b12c",
+      "receiptNumber": "Z04803-000001",
+      "amount": "฿300",
+      "tillLine": "Extra food credit Kid 1 · Eat & Play Kids Pass ฿300",
+      "displayLine": "Extra food credit ฿300",
+      "lines": [
+        {
+          "label": "Kids",
+          "amountSatang": null
+        },
+        {
+          "label": "Adults",
+          "amountSatang": null
+        },
+        {
+          "label": "Prepaid food",
+          "amountSatang": null
+        }
+      ],
+      "bands": [
+        "kid",
+        "adult"
+      ],
+      "balanceSatang": 160000,
+      "raw": "x1-sale-receipt.png"
+    },
+    "xFood": {
+      "saleId": "01a1f525-0167-7a61-8fb9-a6804defe7e5",
+      "balanceAfterSatang": 118000,
+      "raw": "x6-food-receipt.png"
+    },
+    "x2": {
+      "saleId": "01a1f525-646c-7388-87be-f63269dbe586",
+      "receiptNumber": "Z04803-000003",
+      "amount": "฿300",
+      "tillLine": "Extra food credit Kid 1 · Eat & Play Kids Pass ฿300",
+      "displayLine": "Extra food credit ฿300",
+      "lines": [
+        {
+          "label": "Kids",
+          "amountSatang": null
+        },
+        {
+          "label": "Adults",
+          "amountSatang": null
+        },
+        {
+          "label": "Prepaid food",
+          "amountSatang": null
+        }
+      ],
+      "bands": [
+        "kid",
+        "adult"
+      ],
+      "balanceSatang": 160000,
+      "raw": "x2-sale-receipt.png"
+    },
+    "handOvers": [
+      {
+        "to": "manager",
+        "at": "x2: Pay, cash"
+      },
+      {
+        "to": "reception",
+        "at": "x2: Pay, cash"
+      }
+    ],
+    "xRefund": {
+      "by": "the seeded manager at the till",
+      "refundButton": "Refund ฿300",
+      "balanceBeforeSatang": 160000,
+      "balanceAfterSatang": 130000
+    }
+  },
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": "reception signs in at the own till",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": "x2: Pay, cash",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "till",
+      "at": "x2: Pay, cash",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "till",
+      "at": "x2: Pay, cash",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "till",
+      "at": "x2: Pay, cash",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "till",
+      "at": "x2: Pay, cash",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "till",
+      "at": "x2: Pay, cash",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "till",
+      "at": "x2: Pay, cash",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "till",
+      "at": "x2: Pay, cash",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "till",
+      "at": "clean up",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "till",
+      "at": "clean up",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 401"
+    }
+  ],
+  "cleanup": [
+    {
+      "kind": "display",
+      "id": "01a1f524-8283-735c-b81a-9ee01c725f77",
+      "revoked": true
+    },
+    {
+      "kind": "sales-read-back",
+      "sales": [
+        {
+          "id": "01a1f525-646c-7388-87be-f63269dbe586",
+          "status": "finalised",
+          "grossSatang": 195000
+        },
+        {
+          "id": "01a1f525-0167-7a61-8fb9-a6804defe7e5",
+          "status": "finalised",
+          "grossSatang": 42000
+        },
+        {
+          "id": "01a1f524-d843-7a33-955b-8f276de6b12c",
+          "status": "finalised",
+          "grossSatang": 195000
+        }
+      ]
+    },
+    {
+      "kind": "station",
+      "id": "01a1f524-7156-746e-afcd-f921d5b3b923",
+      "archived": true
+    },
+    {
+      "kind": "member",
+      "key": "x",
+      "id": "01a1f524-9d2a-7b07-8436-e537b7340dc6",
+      "archived": true
+    },
+    {
+      "kind": "till-session",
+      "signedOut": true
+    },
+    {
+      "kind": "admin-session",
+      "signedOut": true
+    }
+  ],
+  "raw": [
+    {
+      "name": "x1-sale-receipt.png",
+      "seq": 6,
+      "at": "2026-11-19T18:50:00.017Z"
+    },
+    {
+      "name": "x6-food-receipt.png",
+      "seq": 7,
+      "at": "2026-11-19T18:50:09.654Z"
+    },
+    {
+      "name": "x2-sale-receipt.png",
+      "seq": 8,
+      "at": "2026-11-19T18:50:35.043Z"
+    }
+  ],
+  "deployments": {
+    "oto-api-staging": {
+      "id": "dep-dbvk1kuc6qcc739mgk9g",
+      "status": "live",
+      "sha": "d048c9c0d4c43a0fd99904447a647a113af2ce2a",
+      "containsProvedSha": true
+    },
+    "oto-pos-staging": {
+      "id": "dep-dbvk4fe0tbcc738oobk0",
+      "status": "live",
+      "sha": "d048c9c0d4c43a0fd99904447a647a113af2ce2a"
+    },
+    "oto-pos-web-staging": {
+      "id": "dep-dbvk4fu0tbcc738oocl0",
+      "status": "live",
+      "sha": "d048c9c0d4c43a0fd99904447a647a113af2ce2a",
+      "containsProvedSha": true
+    },
+    "oto-console-staging": {
+      "id": "dep-dbvk4g60tbcc738ood9g",
+      "status": "live",
+      "sha": "d048c9c0d4c43a0fd99904447a647a113af2ce2a",
+      "containsProvedSha": true
+    }
+  },
+  "passed": true,
+  "finishedAt": "2026-11-19T18:51:00.658Z"
+}

@@ -1,0 +1,659 @@
+{
+  "tickets": [
+    "SCRUM-1048",
+    "SCRUM-1019",
+    "SCRUM-1054",
+    "SCRUM-1041"
+  ],
+  "sha": "d048c9c0d4c43a0fd99904447a647a113af2ce2a",
+  "startedAt": "2026-11-19T19:35:34.341Z",
+  "phase": "finished",
+  "passes": [
+    "n"
+  ],
+  "points": {
+    "1019-r1-made": {
+      "pass": true,
+      "pictures": [
+        "SCRUM-1019/n1-display-number-no-name.png",
+        "SCRUM-1019/n2-till-order-number-as-name.png",
+        "SCRUM-1019/n3-display-no-number-in-header.png"
+      ],
+      "shows": "A new number typed with no name: no \"New member?\" box; the member is made with the number as the name; the order shows it where the name goes (masked); the display shows no number",
+      "seen": {
+        "newMemberBox": 0,
+        "nameIsTheNumber": true,
+        "displayShowsANumber": false
+      }
+    },
+    "1054-tick": {
+      "pass": true,
+      "pictures": [
+        "SCRUM-1054/n4-display-included-credit-tick.png",
+        "SCRUM-1054/n5-till-staff-copy-ticked-by-the-family.png",
+        "SCRUM-1054/n6-paid-cash-checked-in.png"
+      ],
+      "shows": "Two children dropped off on Eat & Play with no extra food: the parent ticks \"may order food with the included credit\" for one; staff's copy says \"ticked by the family\"; the registration carries the tick for that child only",
+      "seen": {
+        "tickWords": "ZZ TEST Nok 32 may order food with the included credit",
+        "mirrorWords": "ZZ TEST Nok 32 may order food with the included credit(ticked by the family) | ZZ TEST Pim 32 may order food with the included credit(the family ticks this on their screen)",
+        "sent": [
+          {
+            "name": "ZZ TEST Nok 32",
+            "orderWithIncludedCredit": true
+          },
+          {
+            "name": "ZZ TEST Pim 32",
+            "orderWithIncludedCredit": null
+          }
+        ],
+        "asksName": true
+      }
+    },
+    "1054-counter": {
+      "pass": true,
+      "pictures": [
+        "SCRUM-1054/n8-fnb-ticked-child-paid-from-band.png",
+        "SCRUM-1054/n9-fnb-unticked-child-asks-manager.png"
+      ],
+      "shows": "At F&B the ticked child's dish is paid from the included credit with no manager asked; the unticked child gets \"Food not authorized\" and the manager override, as before",
+      "seen": {
+        "askedA": false,
+        "askedB": true,
+        "saleA": "01a1f54f-9d2a-7645-8c3f-0f911b7d5643",
+        "balanceAfterA": 88000,
+        "balanceAfterB": 130000,
+        "rawFoodA": "n8-food-receipt.png"
+      }
+    },
+    "1019-r1-named": {
+      "pass": true,
+      "pictures": [
+        "SCRUM-1019/n10-display-welcome-no-name.png",
+        "SCRUM-1019/n11-console-name-given.png",
+        "SCRUM-1019/n12-display-welcome-back-by-name.png",
+        "SCRUM-1019/n13-till-order-by-name.png"
+      ],
+      "shows": "Before a name: the next visit is greeted \"Welcome to Oto\"; a name given in the Console then shows instead of the number on the display and the order",
+      "seen": {
+        "welcomeToOto": true,
+        "renamed": true,
+        "welcomeBackByName": true,
+        "tillShowsName": 1
+      }
+    }
+  },
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/:id/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts/20/preview.png",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/wallets/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/wallets/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts/21/preview.png",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/wallets/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/wallets/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/:id/revoke",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    }
+  ],
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1f54e-ba05-700f-a3b4-599b263e2088",
+      "name": "ZZ TEST SCRUM-1048 proof till 1795116934347",
+      "prefix": "Z04812"
+    },
+    {
+      "kind": "display",
+      "id": "01a1f54e-ca27-767e-ae18-131987487c7c",
+      "name": "ZZ TEST SCRUM-1041 display A"
+    },
+    {
+      "kind": "member",
+      "id": "01a1f54e-e2ba-7274-a625-54b5535cbd16"
+    },
+    {
+      "kind": "registration",
+      "id": "01a1f54f-4ad6-71f3-8ebb-04bfdedba9ec"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1f54f-5076-712d-9e68-39623cf3f5eb"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1f54f-9d2a-7645-8c3f-0f911b7d5643",
+      "note": "F&B paid from the band"
+    }
+  ],
+  "checks": {
+    "intents": [
+      {
+        "display": "A",
+        "at": "n: a new number with no name on the display",
+        "ms": 1795116950085,
+        "type": "display.identify",
+        "action": null,
+        "status": 200
+      },
+      {
+        "display": "A",
+        "at": "n: Eat & Play, two children, no adult",
+        "ms": 1795116966828,
+        "type": "display.consent",
+        "action": "fill",
+        "status": 200
+      },
+      {
+        "display": "A",
+        "at": "n: Eat & Play, two children, no adult",
+        "ms": 1795116968420,
+        "type": "display.consent",
+        "action": "fill",
+        "status": 200
+      },
+      {
+        "display": "A",
+        "at": "n: Eat & Play, two children, no adult",
+        "ms": 1795116968779,
+        "type": "display.consent",
+        "action": "fill",
+        "status": 200
+      },
+      {
+        "display": "A",
+        "at": "n: Eat & Play, two children, no adult",
+        "ms": 1795116970371,
+        "type": "display.consent",
+        "action": "fill",
+        "status": 200
+      },
+      {
+        "display": "A",
+        "at": "n: the included-credit tick: ticked for the first child only",
+        "ms": 1795116970728,
+        "type": "display.consent",
+        "action": "fill",
+        "status": 200
+      },
+      {
+        "display": "A",
+        "at": "n: the included-credit tick: ticked for the first child only",
+        "ms": 1795116971021,
+        "type": "display.consent",
+        "action": "fill",
+        "status": 200
+      },
+      {
+        "display": "A",
+        "at": "n: the parent's name (asked: the member has none yet), agreements, staff photos, Done",
+        "ms": 1795116972856,
+        "type": "display.consent",
+        "action": "fill",
+        "status": 200
+      },
+      {
+        "display": "A",
+        "at": "n: the parent's name (asked: the member has none yet), agreements, staff photos, Done",
+        "ms": 1795116973144,
+        "type": "display.consent",
+        "action": "fill",
+        "status": 200
+      },
+      {
+        "display": "A",
+        "at": "n: the parent's name (asked: the member has none yet), agreements, staff photos, Done",
+        "ms": 1795116976363,
+        "type": "display.consent",
+        "action": "done",
+        "status": 200
+      },
+      {
+        "display": "A",
+        "at": "n: the next visit, still no name: \"Welcome to Oto\"",
+        "ms": 1795117016269,
+        "type": "display.identify",
+        "action": null,
+        "status": 200
+      },
+      {
+        "display": "A",
+        "at": "n: the number again, now with the name",
+        "ms": 1795117039677,
+        "type": "display.identify",
+        "action": null,
+        "status": 200
+      }
+    ],
+    "n": {
+      "registrationId": "01a1f54f-4ad6-71f3-8ebb-04bfdedba9ec",
+      "saleId": "01a1f54f-5076-712d-9e68-39623cf3f5eb",
+      "asksName": true,
+      "tickWords": "ZZ TEST Nok 32 may order food with the included credit",
+      "mirrorWords": "ZZ TEST Nok 32 may order food with the included credit(ticked by the family) | ZZ TEST Pim 32 may order food with the included credit(the family ticks this on their screen)",
+      "sent": [
+        {
+          "name": "ZZ TEST Nok 32",
+          "orderWithIncludedCredit": true
+        },
+        {
+          "name": "ZZ TEST Pim 32",
+          "orderWithIncludedCredit": null
+        }
+      ],
+      "stays": [
+        {
+          "name": "ZZ TEST Nok 32",
+          "foodRestrictions": null,
+          "mayOrderFood": true,
+          "foodProvision": {
+            "mode": "none",
+            "paidSatang": 0
+          }
+        },
+        {
+          "name": "ZZ TEST Pim 32",
+          "foodRestrictions": null,
+          "mayOrderFood": false,
+          "foodProvision": {
+            "mode": "none",
+            "paidSatang": 0
+          }
+        }
+      ],
+      "balances": {
+        "a": 130000,
+        "b": 130000
+      },
+      "rawSale": "n6-sale-receipt.png"
+    },
+    "nBoard": {
+      "showsKidA": true,
+      "showsKidB": true,
+      "showsNumberAsText": true,
+      "mayOrder": {
+        "a": "true",
+        "b": "false"
+      }
+    },
+    "nFood": {
+      "askedA": false,
+      "askedB": true,
+      "saleA": "01a1f54f-9d2a-7645-8c3f-0f911b7d5643",
+      "balanceAfterA": 88000,
+      "balanceAfterB": 130000,
+      "rawFoodA": "n8-food-receipt.png"
+    },
+    "nName": {
+      "welcomeToOto": true,
+      "renamed": true,
+      "welcomeBackByName": true,
+      "tillShowsName": 1
+    }
+  },
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": "reception signs in at the own till",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "console",
+      "at": "n: a name given in the Console",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    }
+  ],
+  "cleanup": [
+    {
+      "kind": "released",
+      "id": "01a1f54f-4ad6-71f3-8ebb-04bfdedba9ec",
+      "children": [
+        "out",
+        "out"
+      ]
+    },
+    {
+      "kind": "display",
+      "id": "01a1f54e-ca27-767e-ae18-131987487c7c",
+      "revoked": true
+    },
+    {
+      "kind": "released",
+      "id": "01a1f54f-4ad6-71f3-8ebb-04bfdedba9ec",
+      "children": [
+        "out",
+        "out"
+      ]
+    },
+    {
+      "kind": "sales-read-back",
+      "sales": [
+        {
+          "id": "01a1f54f-9d2a-7645-8c3f-0f911b7d5643",
+          "status": "finalised",
+          "grossSatang": 42000
+        },
+        {
+          "id": "01a1f54f-5076-712d-9e68-39623cf3f5eb",
+          "status": "finalised",
+          "grossSatang": 305000
+        }
+      ]
+    },
+    {
+      "kind": "station",
+      "id": "01a1f54e-ba05-700f-a3b4-599b263e2088",
+      "archived": true
+    },
+    {
+      "kind": "member",
+      "key": "n",
+      "id": "01a1f54e-e2ba-7274-a625-54b5535cbd16",
+      "archived": true
+    },
+    {
+      "kind": "till-session",
+      "signedOut": true
+    },
+    {
+      "kind": "admin-session",
+      "signedOut": true
+    }
+  ],
+  "raw": [
+    {
+      "name": "n6-sale-receipt.png",
+      "seq": 20,
+      "at": "2026-11-19T19:36:25.284Z"
+    },
+    {
+      "name": "n8-food-receipt.png",
+      "seq": 21,
+      "at": "2026-11-19T19:36:45.145Z"
+    }
+  ],
+  "deployments": {
+    "oto-api-staging": {
+      "id": "dep-dbvk1kuc6qcc739mgk9g",
+      "status": "live",
+      "sha": "d048c9c0d4c43a0fd99904447a647a113af2ce2a",
+      "containsProvedSha": true
+    },
+    "oto-pos-staging": {
+      "id": "dep-dbvk4fe0tbcc738oobk0",
+      "status": "live",
+      "sha": "d048c9c0d4c43a0fd99904447a647a113af2ce2a"
+    },
+    "oto-pos-web-staging": {
+      "id": "dep-dbvk4fu0tbcc738oocl0",
+      "status": "live",
+      "sha": "d048c9c0d4c43a0fd99904447a647a113af2ce2a",
+      "containsProvedSha": true
+    },
+    "oto-console-staging": {
+      "id": "dep-dbvk4g60tbcc738ood9g",
+      "status": "live",
+      "sha": "d048c9c0d4c43a0fd99904447a647a113af2ce2a",
+      "containsProvedSha": true
+    }
+  },
+  "passed": true,
+  "finishedAt": "2026-11-19T19:37:29.382Z"
+}

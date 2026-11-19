@@ -1,0 +1,588 @@
+{
+  "tickets": [
+    "SCRUM-1048",
+    "SCRUM-1019",
+    "SCRUM-1054",
+    "SCRUM-1041"
+  ],
+  "sha": "d048c9c0d4c43a0fd99904447a647a113af2ce2a",
+  "startedAt": "2026-11-19T19:31:48.896Z",
+  "phase": "finished",
+  "passes": [
+    "m"
+  ],
+  "points": {
+    "1041-one-form": {
+      "pass": true,
+      "pictures": [
+        "SCRUM-1041/m1-till-two-displays.png",
+        "SCRUM-1041/m2-till-three-displays.png",
+        "SCRUM-1041/m3-display-B-ticks-an-agreement.png",
+        "SCRUM-1041/m4-display-A-shows-the-tick.png",
+        "SCRUM-1041/m5-display-C-shows-the-tick.png",
+        "SCRUM-1041/m6-till-shows-the-tick.png"
+      ],
+      "shows": "Two, then three displays on one till; the same sale on each; the child's name typed on A and an agreement ticked on B show on every display and on the till",
+      "seen": {
+        "listWithTwo": {
+          "rows": 2,
+          "removes": 0
+        },
+        "listWithThree": {
+          "rows": 3,
+          "removes": 0,
+          "words": "Customer displays Each display shows the sale on this till. A till can have up to three; a manager pairs one in the Console, under Devices. ZZ TEST SCRUM-1041 display A Connected ZZ TEST SCRUM-1041 display B Connected ZZ TEST SCRUM-1041 display C Connected A manager can remove a display. Close"
+        },
+        "namesSeen": [
+          true,
+          true,
+          true
+        ],
+        "careOn": [
+          true,
+          true,
+          true
+        ],
+        "tickedOn": [
+          true,
+          true,
+          true
+        ],
+        "tillTicked": true,
+        "languages": {
+          "A": "en",
+          "B": "en",
+          "C": "en"
+        },
+        "thaiOnA": true,
+        "backToEnglishOnA": true
+      }
+    },
+    "1041-language": {
+      "pass": true,
+      "pictures": [
+        "SCRUM-1041/m7-display-A-follows-thai.png"
+      ],
+      "shows": "Thai chosen on display C is followed on display A",
+      "seen": {
+        "languages": {
+          "A": "en",
+          "B": "en",
+          "C": "en"
+        },
+        "thaiOnA": true
+      }
+    },
+    "1041-fourth": {
+      "pass": true,
+      "pictures": [
+        "SCRUM-1041/m9-console-fourth-display-refused.png"
+      ],
+      "shows": "A fourth display is refused in the Console with its message",
+      "seen": {
+        "refusal": "This station already has three displays. Revoke one in Paired screens before pairing another.",
+        "displaysRead": 3
+      }
+    },
+    "1041-remove": {
+      "pass": true,
+      "pictures": [
+        "SCRUM-1041/m10-till-three-displays-manager-remove.png",
+        "SCRUM-1041/m11-till-remove-confirm.png",
+        "SCRUM-1041/m12-till-two-left.png",
+        "SCRUM-1041/m13-display-B-stopped.png",
+        "SCRUM-1041/m14-display-A-goes-on.png",
+        "SCRUM-1041/m15-display-C-goes-on.png",
+        "SCRUM-1041/m16-till-with-A-after-removal.png"
+      ],
+      "shows": "The manager's list at the till has a Remove on each display; display B is removed and returns to its pairing screen; A and C stay paired and A carries the next family to the till",
+      "seen": {
+        "managerRows": 3,
+        "managerRemoves": 3,
+        "rowsAfter": 2,
+        "displayBStopped": true,
+        "aGoesOn": true
+      }
+    }
+  },
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/:id/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/:id/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/:id/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/:id/displays",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/:id/revoke",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/:id/revoke",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    }
+  ],
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1f54b-4a79-7d3e-a07f-996e53a00b1f",
+      "name": "ZZ TEST SCRUM-1048 proof till 1795116708903",
+      "prefix": "Z04811"
+    },
+    {
+      "kind": "display",
+      "id": "01a1f54b-5a0e-74bd-be56-f1b0ab47e1d6",
+      "name": "ZZ TEST SCRUM-1041 display A"
+    },
+    {
+      "kind": "display",
+      "id": "01a1f54b-6c46-7811-a85f-e54d5553c92a",
+      "name": "ZZ TEST SCRUM-1041 display B"
+    },
+    {
+      "kind": "display",
+      "id": "01a1f54b-9972-7617-8b6a-6142893fd7b1",
+      "name": "ZZ TEST SCRUM-1041 display C"
+    },
+    {
+      "kind": "member",
+      "id": "01a1f54b-c97e-74b3-8bb9-c49aafc7be61"
+    },
+    {
+      "kind": "registration",
+      "id": "01a1f54c-5ee2-764c-8951-bf5b23cf9d47"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1f54c-622d-7e7f-9b9f-608fb6b0e68f"
+    }
+  ],
+  "checks": {
+    "intents": [
+      {
+        "display": "A",
+        "at": "m: the family types the number and a name on display A",
+        "ms": 1795116746898,
+        "type": "display.identify",
+        "action": null,
+        "status": 200
+      },
+      {
+        "display": "A",
+        "at": "m: the child's name typed on A shows on B and C",
+        "ms": 1795116759925,
+        "type": "display.consent",
+        "action": "fill",
+        "status": 200
+      },
+      {
+        "display": "A",
+        "at": "m: the child's name typed on A shows on B and C",
+        "ms": 1795116765260,
+        "type": "display.consent",
+        "action": "fill",
+        "status": 200
+      },
+      {
+        "display": "A",
+        "at": "m: the child's name typed on A shows on B and C",
+        "ms": 1795116765585,
+        "type": "display.consent",
+        "action": "fill",
+        "status": 200
+      },
+      {
+        "display": "B",
+        "at": "m: the parent's name typed and the consent ticked on B show on A, C and the till",
+        "ms": 1795116768605,
+        "type": "display.consent",
+        "action": "fill",
+        "status": 200
+      },
+      {
+        "display": "B",
+        "at": "m: the parent's name typed and the consent ticked on B show on A, C and the till",
+        "ms": 1795116768912,
+        "type": "display.consent",
+        "action": "fill",
+        "status": 200
+      },
+      {
+        "display": "B",
+        "at": "m: the parent's name typed and the consent ticked on B show on A, C and the till",
+        "ms": 1795116770146,
+        "type": "display.consent",
+        "action": "fill",
+        "status": 200
+      },
+      {
+        "display": "C",
+        "at": "m: the language chosen on C is followed on A and B",
+        "ms": 1795116772422,
+        "type": "display.set_language",
+        "action": null,
+        "status": 200
+      },
+      {
+        "display": "C",
+        "at": "m: the language chosen on C is followed on A and B",
+        "ms": 1795116778040,
+        "type": "display.set_language",
+        "action": null,
+        "status": 200
+      },
+      {
+        "display": "A",
+        "at": "m: the family finishes on A; staff photo; Done; cash; check-in; release",
+        "ms": 1795116783604,
+        "type": "display.consent",
+        "action": "fill",
+        "status": 200
+      },
+      {
+        "display": "A",
+        "at": "m: the family finishes on A; staff photo; Done; cash; check-in; release",
+        "ms": 1795116783924,
+        "type": "display.consent",
+        "action": "fill",
+        "status": 200
+      },
+      {
+        "display": "A",
+        "at": "m: the family finishes on A; staff photo; Done; cash; check-in; release",
+        "ms": 1795116785044,
+        "type": "display.consent",
+        "action": "done",
+        "status": 200
+      },
+      {
+        "display": "A",
+        "at": "m: A goes on: the family types the number on A",
+        "ms": 1795116883072,
+        "type": "display.identify",
+        "action": null,
+        "status": 200
+      }
+    ],
+    "mTickSeenAfterMs": {
+      "A": 1032,
+      "C": 1033,
+      "till": 1035
+    },
+    "mForm": {
+      "listWithTwo": {
+        "rows": 2,
+        "removes": 0
+      },
+      "listWithThree": {
+        "rows": 3,
+        "removes": 0,
+        "words": "Customer displays Each display shows the sale on this till. A till can have up to three; a manager pairs one in the Console, under Devices. ZZ TEST SCRUM-1041 display A Connected ZZ TEST SCRUM-1041 display B Connected ZZ TEST SCRUM-1041 display C Connected A manager can remove a display. Close"
+      },
+      "namesSeen": [
+        true,
+        true,
+        true
+      ],
+      "careOn": [
+        true,
+        true,
+        true
+      ],
+      "tickedOn": [
+        true,
+        true,
+        true
+      ],
+      "tillTicked": true,
+      "languages": {
+        "A": "en",
+        "B": "en",
+        "C": "en"
+      },
+      "thaiOnA": true,
+      "backToEnglishOnA": true
+    },
+    "mSale": {
+      "registrationId": "01a1f54c-5ee2-764c-8951-bf5b23cf9d47",
+      "saleId": "01a1f54c-622d-7e7f-9b9f-608fb6b0e68f"
+    },
+    "mFourth": {
+      "refusal": "This station already has three displays. Revoke one in Paired screens before pairing another."
+    },
+    "handOvers": [
+      {
+        "to": "manager",
+        "at": "m: the manager removes display B at the till; A and C go on"
+      }
+    ],
+    "mRemove": {
+      "managerRows": 3,
+      "managerRemoves": 3,
+      "rowsAfter": 2,
+      "displayBStopped": true,
+      "aGoesOn": true
+    }
+  },
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": "reception signs in at the own till",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "console",
+      "at": "m: a fourth display is refused in the Console",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "console",
+      "at": "m: a fourth display is refused in the Console",
+      "kind": "http",
+      "text": "POST /api/stations/:id/displays/claim 409"
+    },
+    {
+      "page": "display B",
+      "at": "m: the manager removes display B at the till; A and C go on",
+      "kind": "http",
+      "text": "GET /api/box/v1/station/:id/display/session 401"
+    }
+  ],
+  "cleanup": [
+    {
+      "kind": "released",
+      "id": "01a1f54c-5ee2-764c-8951-bf5b23cf9d47",
+      "children": [
+        "out"
+      ]
+    },
+    {
+      "kind": "display",
+      "id": "01a1f54b-6c46-7811-a85f-e54d5553c92a",
+      "revoked": true,
+      "by": "the manager at the till"
+    },
+    {
+      "kind": "display",
+      "id": "01a1f54b-5a0e-74bd-be56-f1b0ab47e1d6",
+      "revoked": true
+    },
+    {
+      "kind": "display",
+      "id": "01a1f54b-9972-7617-8b6a-6142893fd7b1",
+      "revoked": true
+    },
+    {
+      "kind": "released",
+      "id": "01a1f54c-5ee2-764c-8951-bf5b23cf9d47",
+      "children": [
+        "out"
+      ]
+    },
+    {
+      "kind": "sales-read-back",
+      "sales": [
+        {
+          "id": "01a1f54c-622d-7e7f-9b9f-608fb6b0e68f",
+          "status": "finalised",
+          "grossSatang": 91500
+        }
+      ]
+    },
+    {
+      "kind": "station",
+      "id": "01a1f54b-4a79-7d3e-a07f-996e53a00b1f",
+      "archived": true
+    },
+    {
+      "kind": "member",
+      "key": "m",
+      "id": "01a1f54b-c97e-74b3-8bb9-c49aafc7be61",
+      "archived": true
+    },
+    {
+      "kind": "till-session",
+      "signedOut": true
+    },
+    {
+      "kind": "admin-session",
+      "signedOut": true
+    }
+  ],
+  "raw": [],
+  "deployments": {
+    "oto-api-staging": {
+      "id": "dep-dbvk1kuc6qcc739mgk9g",
+      "status": "live",
+      "sha": "d048c9c0d4c43a0fd99904447a647a113af2ce2a",
+      "containsProvedSha": true
+    },
+    "oto-pos-staging": {
+      "id": "dep-dbvk4fe0tbcc738oobk0",
+      "status": "live",
+      "sha": "d048c9c0d4c43a0fd99904447a647a113af2ce2a"
+    },
+    "oto-pos-web-staging": {
+      "id": "dep-dbvk4fu0tbcc738oocl0",
+      "status": "live",
+      "sha": "d048c9c0d4c43a0fd99904447a647a113af2ce2a",
+      "containsProvedSha": true
+    },
+    "oto-console-staging": {
+      "id": "dep-dbvk4g60tbcc738ood9g",
+      "status": "live",
+      "sha": "d048c9c0d4c43a0fd99904447a647a113af2ce2a",
+      "containsProvedSha": true
+    }
+  },
+  "passed": true,
+  "finishedAt": "2026-11-19T19:34:52.430Z"
+}
