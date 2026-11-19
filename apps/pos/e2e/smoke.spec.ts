@@ -1,4 +1,4 @@
-import { expect, request, test, type Browser, type Page, type Request, type Response } from '@playwright/test';
+import { expect, request, test, type Browser, type Locator, type Page, type Request, type Response } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { chooseLanguageFirst } from './walk-in';
@@ -438,95 +438,175 @@ test('unknown phone offers the create-member path (SCRUM-31)', async ({ page, br
   }
 });
 
-test('separate display saved-child review persists before Done and retries a lost upstream save reply', async ({ page, browser, baseURL }) => {
-  test.setTimeout(120_000);
-  requireLocalFixture(baseURL);
+/**
+ * SCRUM-1018 — the children staff tick as visiting at the membership check
+ * fill the drop-off form, already confirmed there, so the display no longer
+ * asks the family "still correct?" about them (that review screen is gone).
+ * These cases keep the form to one child, as it had one before: Nong Ploy,
+ * whose saved allergy note the form now shows the family (SCRUM-1020).
+ */
+async function visitWithPloyAlone(page: Page): Promise<void> {
+  await expect(page.getByText("Who's visiting today?", { exact: true })).toBeVisible({ timeout: 20_000 });
+  const visiting = page.getByRole('dialog');
+  for (const button of await visiting.getByRole('button', { name: /^Details/ }).all()) {
+    if (await button.getAttribute('aria-expanded') === 'true') await button.click();
+  }
+  await visiting.locator('label').filter({ hasText: 'Nong Tan' }).getByRole('checkbox').uncheck();
+  await visiting.getByRole('button', { name: 'Confirm 1 child', exact: true }).click();
+}
+
+/**
+ * SCRUM-857 — the park's display has no webcam yet: this screen reports none,
+ * so its form says reception takes the photo, and staff take it on the till.
+ */
+async function displayWithoutCamera(display: Page): Promise<void> {
+  await display.evaluate(() => {
+    Object.defineProperty(navigator.mediaDevices, 'enumerateDevices', { configurable: true, value: async () => [] });
+  });
+}
+
+/** A deterministic local camera frame for the till's own staff-only capture component. */
+async function staffCamera(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const canvas = document.createElement('canvas'); canvas.width = 320; canvas.height = 240;
+    const context = canvas.getContext('2d')!; context.fillStyle = '#285646'; context.fillRect(0, 0, 320, 240);
+    Object.defineProperty(navigator.mediaDevices, 'getUserMedia', { configurable: true, value: async () => {
+      const stream = canvas.captureStream(5);
+      const repaint = window.setInterval(() => context.fillRect(0, 0, 320, 240), 100);
+      stream.getVideoTracks()[0].addEventListener('ended', () => window.clearInterval(repaint), { once: true });
+      return stream;
+    } });
+  });
+}
+
+/** Staff take the child's photo in Private child details and close it. */
+async function staffTakesPhoto(page: Page): Promise<void> {
+  await page.getByRole('button', { name: 'Private child details', exact: true }).click();
+  const privateForm = page.getByRole('dialog', { name: 'Private child details', exact: true });
+  await privateForm.getByRole('button', { name: 'Start camera', exact: true }).click();
+  await privateForm.getByRole('button', { name: 'Take photo', exact: true }).click();
+  await expect(privateForm.getByAltText('Captured', { exact: true })).toBeVisible();
+  await privateForm.getByRole('button', { name: 'Close', exact: true }).click();
+}
+
+/**
+ * SCRUM-1018 — a family new to the park still gets the whole form on their
+ * screen: the children named and aged there, their care, then the agreements
+ * with the parent's own name. (A returning family is asked the agreements
+ * alone.) A walk-in on a number nobody has: the till offers to make them a
+ * member, and they go on as a walk-in at the Tourist rate (SCRUM-762).
+ */
+function freshDigits(): string {
+  return `6${String(Math.floor(10_000_000 + Math.random() * 89_999_999))}`;
+}
+
+async function walkInOnDisplay(page: Page, display: Page, digits: string): Promise<void> {
+  await typePhone(display, digits);
+  await display.getByRole('button', { name: 'Continue', exact: true }).click();
+  await page.getByRole('button', { name: 'Continue as walk-in', exact: true }).click();
+  await page.getByRole('heading', { name: 'Tourist', exact: true }).click();
+}
+
+/** The family names a child and sets the age on their own screen's picker. */
+async function nameChildOnDisplay(display: Page, consent: Locator, name: string, years: number): Promise<void> {
+  await consent.getByTestId('consent-child-name').fill(name);
+  await consent.getByRole('button', { name: /Tap to set age/ }).click();
+  const picker = display.getByRole('dialog');
+  await picker.getByRole('button', { name: String(years), exact: true }).click();
+  await picker.getByRole('button', { name: 'Jan', exact: true }).click();
+  await picker.getByRole('button', { name: '15', exact: true }).click();
+  await picker.getByRole('button', { name: 'Confirm', exact: true }).click();
+  await expect(picker).toHaveCount(0);
+}
+
+/** What the care-note case saw of the family's write and its retry. */
+interface CareNoteRetry {
+  patchCount: number;
+  firstPatch: { key: string | undefined; body: Record<string, unknown> } | undefined;
+  retriedPatch: { key: string | undefined; body: Record<string, unknown> } | undefined;
+  /** The `child.update` audit rows of this child written from the family's first Done on. */
+  audited: unknown[];
+}
+
+/**
+ * SCRUM-1020 — A SAVED CHILD'S CARE NOTE, CHANGED BY THE FAMILY ON THE
+ * DISPLAY, IS ON THE CHILD'S RECORD BEFORE THE SALE MOVES ON, AND A REPLY
+ * LOST ON THE WAY BACK IS NOT LOST.
+ *
+ * The case at this place pinned the same guarantee on the display's
+ * saved-child review ("still correct?"): an edit there was saved before Done,
+ * and a save whose reply was lost was retried under the same key, so the
+ * platform answered from the first write. SCRUM-1018 removed that review; the
+ * care notes are where a family changes a saved child's record on the display
+ * now, written by the family's Done ahead of the registration
+ * (`lib/displayCareNotes`, `lib/gateChildren`). The two tests below run it.
+ */
+async function careNoteLostReply(page: Page, browser: Browser, baseURL: string): Promise<CareNoteRetry> {
   await page.goto('/');
   await signIn(page);
   const fixture = await pairedDisplay(browser, page, baseURL);
   let releaseLostReply: (() => void) | undefined;
-  let restoredChild: { id: string; name: string; dateOfBirth: string | null; ageYears: number | null } | undefined;
-  let unrelatedWrites = 0;
-  const observeReviewWrite = (request: Request) => {
-    if (request.method() !== 'POST') return;
+  let restore: { id: string; allergies: string | null } | undefined;
+  const writes: string[] = [];
+  const observeWrites = (request: Request) => {
     const pathname = new URL(request.url()).pathname;
-    if (/^\/api\/(sales?|payments|children|check-?ins?|visits|checkout)(\/|$)/.test(pathname)
-      || /^\/api\/members\/[^/]+\/children(\/|$)/.test(pathname)) unrelatedWrites += 1;
+    if (request.method() === 'PATCH' && restore && pathname === `/api/members/children/${restore.id}`) writes.push('care');
+    if (request.method() === 'POST' && pathname === '/api/checkin/registrations') writes.push('registration');
   };
   try {
     const lookup = page.waitForResponse(response => response.url().includes('/api/members/lookup?') && response.status() === 200);
     await typePhone(fixture.display, MEMBER_PHONE);
     await fixture.display.getByRole('button', { name: 'Continue', exact: true }).click();
     const original = (await (await lookup).json()).member;
-    expect(Array.isArray(original?.children) && original.children.length === 2).toBe(true);
-    await expect(page.getByText("Who's visiting today?", { exact: true })).toBeVisible({ timeout: 20_000 });
-    for (const button of await page.getByRole('dialog').getByRole('button', { name: /^Details/ }).all()) {
-      if (await button.getAttribute('aria-expanded') === 'true') await button.click();
-    }
-    await page.getByRole('button', { name: /Confirm 2 children/ }).click();
+    const saved = original?.children?.find((child: { name: string }) => child.name === 'Nong Ploy');
+    expect(typeof saved?.id === 'string' && typeof saved.allergies === 'string' && saved.allergies.trim().length > 0).toBe(true);
+    restore = { id: saved.id, allergies: saved.allergies };
+    await visitWithPloyAlone(page);
     await expect(page.getByText('Visit confirmed', { exact: true })).toBeVisible();
     await page.getByRole('heading', { name: 'Thai', exact: true }).click();
     await page.getByRole('heading', { name: '1 Hour Play', exact: true }).click();
     await page.getByRole('button', { name: 'Remove one Adults', exact: true }).first().click();
-    await page.getByRole('button', { name: 'Add one Kids', exact: true }).first().click();
-    const publishedReview = fixture.display.waitForResponse(async response => response.url().endsWith('/display/session')
-      && response.status() === 200 && (await response.json()).document?.prompt?.kind === 'child_review');
+    await displayWithoutCamera(fixture.display);
+    const published = fixture.display.waitForResponse(async response => response.url().endsWith('/display/session')
+      && response.status() === 200 && (await response.json()).document?.prompt?.kind === 'consent');
     await page.getByRole('button', { name: 'Continue', exact: true }).click();
-    const prompt = (await (await publishedReview).json()).document.prompt;
-    expect(prompt.slots?.length === 2 && prompt.choices?.length === 2 && prompt.save?.status === 'idle').toBe(true);
-    expect(prompt.slots.every((slot: Record<string, unknown>) => Object.keys(slot).every(key =>
-      ['id', 'savedChildId', 'name', 'dateOfBirth', 'ageYears', 'confirmed'].includes(key)))).toBe(true);
-    const review = fixture.display.getByTestId('display-child-review');
-    await expect(review).toBeVisible({ timeout: 20_000 });
-    page.on('request', observeReviewWrite);
-    fixture.display.on('request', observeReviewWrite);
+    const prompt = (await (await published).json()).document.prompt;
+    // SCRUM-1018 — the ticked child goes straight to the form: the agreements
+    // alone, the child shown from the profile. SCRUM-1020 — with her saved
+    // allergy note, for the family to update.
+    expect(prompt.agreementsOnly === true && prompt.slots.length === 1 && prompt.slots[0].saved === true
+      && prompt.slots[0].careShown === true && prompt.slots[0].allergiesMedical === saved.allergies).toBe(true);
+    const consent = fixture.display.getByTestId('display-consent');
+    await expect(consent).toBeVisible({ timeout: 20_000 });
+    await expect(fixture.display.getByTestId('display-child-review')).toHaveCount(0);
     for (const viewport of [{ width: 1024, height: 768 }, { width: 1280, height: 800 }]) {
       await fixture.display.setViewportSize(viewport);
       expect(await fixture.display.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     }
     await fixture.display.setViewportSize({ width: 1024, height: 768 });
-    await expect(review.getByText(/allergies|medical|dietary|food|photo|waiver/i)).toHaveCount(0);
-    await expect(review.locator('video, canvas, input[type="file"]')).toHaveCount(0);
-    const cards = review.getByTestId('saved-child-review-card');
-    const firstName = review.getByLabel('Child 1 name', { exact: true });
-    const secondName = review.getByLabel('Child 2 name', { exact: true });
-    const childId = prompt.slots[0].savedChildId;
-    const initialChild = original.children.find((child: { id: string }) => child.id === childId);
-    expect(typeof childId === 'string' && initialChild !== undefined).toBe(true);
-    restoredChild = { id: childId, name: initialChild.name, dateOfBirth: initialChild.dateOfBirth, ageYears: initialChild.ageYears };
+    const allergies = consent.getByTestId('consent-saved-allergies');
+    await expect(allergies).toHaveValue(saved.allergies);
 
-    // A declared saved profile is explicitly selected; the other slot's draft survives its acknowledgement.
-    await secondName.fill('Other child local draft');
-    const selected = fixture.display.waitForResponse(response => response.url().endsWith('/display/intents')
-      && response.request().postDataJSON()?.payload?.action === 'select');
-    await review.getByLabel('Child 1 saved profile', { exact: true }).selectOption(childId);
-    expect((await selected).status()).toBe(200);
-    await expect(firstName).toBeEnabled({ timeout: 20_000 });
-    await expect(secondName).toHaveValue('Other child local draft');
-    await firstName.fill('Local child correction');
-    await cards.first().getByRole('button', { name: /yrs/ }).click();
-    const picker = fixture.display.getByRole('dialog');
-    await picker.getByRole('button', { name: '8', exact: true }).click();
-    await picker.getByRole('button', { name: 'Jan', exact: true }).click();
-    await picker.getByRole('button', { name: '15', exact: true }).click();
-    await picker.getByRole('button', { name: 'Confirm', exact: true }).click();
-    await expect(review.getByRole('button', { name: 'Done', exact: true })).toBeDisabled();
+    // The family updates the note on their screen; the till tells staff as it happens.
+    const edited = `${saved.allergies.trim()} ZZ TEST sesame too`;
+    await allergies.fill(edited);
+    await expect(page.getByTestId('consent-display-care')).toContainText('ZZ TEST sesame too', { timeout: 20_000 });
+    for (const checkbox of await consent.getByRole('checkbox').all()) await checkbox.check();
+    await staffCamera(page);
+    await staffTakesPhoto(page);
+    const done = consent.getByRole('button', { name: 'Done', exact: true });
+    await expect(done).toBeEnabled({ timeout: 20_000 });
 
-    let firstPatchBody: unknown;
-    let firstPatchKey: string | undefined;
-    let patchCount = 0;
+    const seen: CareNoteRetry = { patchCount: 0, firstPatch: undefined, retriedPatch: undefined, audited: [] };
     let signalCommitted: (() => void) | undefined;
     const committed = new Promise<void>(resolve => { signalCommitted = resolve; });
     const lostReply = new Promise<void>(resolve => { releaseLostReply = resolve; });
-    await page.route(`**/api/members/children/${childId}`, async route => {
+    await page.route(`**/api/members/children/${saved.id}`, async route => {
       if (route.request().method() !== 'PATCH') { await route.continue(); return; }
-      patchCount += 1;
-      const body = route.request().postDataJSON();
-      const key = route.request().headers()['idempotency-key'];
-      expect(Object.keys(body).every(field => ['name', 'dateOfBirth', 'ageYears'].includes(field))).toBe(true);
-      if (patchCount === 1) {
-        firstPatchBody = body;
-        firstPatchKey = key;
+      seen.patchCount += 1;
+      const sent = { key: route.request().headers()['idempotency-key'], body: route.request().postDataJSON() };
+      if (seen.patchCount === 1) {
+        seen.firstPatch = sent;
         const actual = await route.fetch();
         expect(actual.status()).toBe(200);
         signalCommitted?.();
@@ -537,70 +617,111 @@ test('separate display saved-child review persists before Done and retries a los
         await route.fulfill({ status: 504, contentType: 'application/json',
           body: JSON.stringify({ error: { code: 'UPSTREAM_TIMEOUT', message: 'The upstream save reply was lost' } }) });
       } else {
-        expect(typeof key === 'string' && key === firstPatchKey && JSON.stringify(body) === JSON.stringify(firstPatchBody)).toBe(true);
+        seen.retriedPatch = sent;
         await route.continue();
       }
     });
-    await cards.first().getByRole('button', { name: 'Confirm', exact: true }).click();
+    const startedAt = new Date(Date.now() - 1_000).toISOString();
+    page.on('request', observeWrites);
+    await done.click();
     await committed;
-    await expect(fixture.display.getByText('Please wait for the team to confirm this change.', { exact: true })).toBeVisible({ timeout: 20_000 });
-    await expect(firstName).toBeDisabled();
-    await expect(secondName).toBeDisabled();
-    await expect(review.getByLabel('Child 1 saved profile', { exact: true })).toBeDisabled();
-    await expect(review.getByRole('button', { name: 'Done', exact: true })).toBeDisabled();
+    // The family's change alone, named as theirs, for the family identified here.
+    expect(seen.firstPatch?.body).toEqual({ source: 'customer_display', memberId: original.id, allergies: edited });
+    // On the child's record before anything is registered or the sale moves on.
     const profile = await fixture.admin.get(`/api/members/${original.id}`);
     expect(profile.status()).toBe(200);
-    const saved = (await profile.json()).member.children.find((child: { id: string }) => child.id === childId);
-    const submitted = firstPatchBody as { name: string; dateOfBirth: string; ageYears: number };
-    expect(saved?.name === submitted.name && saved?.dateOfBirth === submitted.dateOfBirth && saved?.ageYears === submitted.ageYears).toBe(true);
-    await captureLocalCheck(fixture.display, 'ticket-display-child-save-pending-local.png');
+    const written = (await profile.json()).member.children.find((child: { id: string }) => child.id === saved.id);
+    expect(written?.allergies).toBe(edited);
+    expect(writes).toEqual(['care']);
+    await captureLocalCheck(fixture.display, 'ticket-display-care-save-pending-local.png');
     releaseLostReply?.();
-    await expect(review.getByRole('button', { name: 'Retry child save', exact: true })).toBeVisible({ timeout: 20_000 });
-    await expect(firstName).toBeDisabled();
-    await expect(review.getByRole('button', { name: 'Done', exact: true })).toBeDisabled();
-    await captureLocalCheck(fixture.display, 'ticket-display-child-retry-local.png');
-    const replay = page.waitForResponse(response => response.url().endsWith(`/api/members/children/${childId}`)
-      && response.request().method() === 'PATCH' && response.status() === 200);
-    await review.getByRole('button', { name: 'Retry child save', exact: true }).click();
-    await replay;
-    await expect(cards.first().getByText('Confirmed', { exact: true })).toBeVisible({ timeout: 20_000 });
-    expect(patchCount === 2).toBe(true);
-    await expect(secondName).toHaveValue('Other child local draft');
-    await expect(review.getByRole('button', { name: 'Done', exact: true })).toBeDisabled();
-    await secondName.fill(prompt.slots[1].name);
-    await cards.nth(1).getByRole('button', { name: 'Confirm', exact: true }).click();
-    await expect(cards.nth(1).getByText('Confirmed', { exact: true })).toBeVisible({ timeout: 20_000 });
-    await expect(review.getByRole('button', { name: 'Done', exact: true })).toBeEnabled();
-    // Editing a confirmed record stays local and cannot use the old confirmation to continue.
-    await firstName.fill('Another unsaved draft');
-    await expect(review.getByRole('button', { name: 'Done', exact: true })).toBeDisabled();
-    await firstName.fill('Local child correction');
-    await expect(review.getByRole('button', { name: 'Done', exact: true })).toBeEnabled();
-    await captureLocalCheck(fixture.display, 'ticket-display-child-confirmed-local.png');
-    await review.getByRole('button', { name: 'Done', exact: true }).click();
-    await expect(page.getByRole('heading', { name: 'Children playing alone', exact: true })).toBeVisible({ timeout: 20_000 });
-    await expect(fixture.display.getByTestId('display-consent')).toBeVisible({ timeout: 20_000 });
-    await expect(fixture.display.getByTestId('display-child-review')).toHaveCount(0);
-    expect(unrelatedWrites === 0).toBe(true);
+    // The reply is lost: the Done could not be saved. Nothing is registered,
+    // the form and the family's note stay, and staff are told why.
+    await expect(consent.getByTestId('consent-not-saved')).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByTestId('consent-staff-status')).toContainText('could not be saved');
+    await expect(page.getByRole('heading', { name: 'Children playing alone', exact: true })).toBeVisible();
+    await expect(allergies).toHaveValue(edited);
+    expect(writes).toEqual(['care']);
+    await captureLocalCheck(fixture.display, 'ticket-display-care-retry-local.png');
+
+    // The family presses Done again: the change is sent again, the child
+    // registered once, and the sale moves on.
+    const movedOn = fixture.display.waitForResponse(async response => {
+      if (!response.url().endsWith('/display/session') || response.status() !== 200) return false;
+      const document = (await response.json().catch(() => null))?.document;
+      return document?.stage === (prompt.slots[0].requirement === 'nanny' ? 'order' : 'payment');
+    }, { timeout: 45_000 });
+    await expect(done).toBeEnabled({ timeout: 20_000 });
+    await done.click();
+    await movedOn;
+    await expect(page.getByRole('heading', { name: 'Children playing alone', exact: true })).toBeHidden({ timeout: 30_000 });
+    await expect(consent).toBeHidden({ timeout: 30_000 });
+    expect(writes).toEqual(['care', 'care', 'registration']);
+    const after = await fixture.admin.get(`/api/members/${original.id}`);
+    expect((await after.json()).member.children.find((child: { id: string }) => child.id === saved.id)?.allergies).toBe(edited);
+    const trail = await fixture.admin.get('/api/audit', {
+      params: { entityType: 'child', entityId: saved.id, action: 'child.update', from: startedAt },
+    });
+    expect(trail.status()).toBe(200);
+    seen.audited = (await trail.json()).entries;
+    // Leave the counter as the next case finds it.
+    await page.getByRole('button', { name: 'Cancel', exact: true }).first().click();
+    await expect(page.getByText('Membership Check', { exact: true })).toBeVisible({ timeout: 30_000 });
+    return seen;
   } finally {
     releaseLostReply?.();
-    page.off('request', observeReviewWrite);
-    fixture.display.off('request', observeReviewWrite);
+    page.off('request', observeWrites);
     try {
-      if (restoredChild) {
-        await page.unroute(`**/api/members/children/${restoredChild.id}`);
-        const restored = await fixture.admin.patch(`/api/members/children/${restoredChild.id}`, {
-          data: { name: restoredChild.name, dateOfBirth: restoredChild.dateOfBirth, ageYears: restoredChild.ageYears },
+      if (restore) {
+        await page.unroute(`**/api/members/children/${restore.id}`);
+        const restored = await fixture.admin.patch(`/api/members/children/${restore.id}`, {
+          data: { allergies: restore.allergies },
           headers: { 'Idempotency-Key': `display-smoke-child-cleanup-${crypto.randomUUID()}` },
         });
         expect(restored.status()).toBe(200);
       }
-      if (await page.getByRole('heading', { name: 'Locked', exact: true }).isVisible()) await unlock(page);
-      if (await page.getByLabel('Lock screen').isVisible()) { await fixture.releaseLease(); await signOut(page); }
+      await handOverTill(page, fixture);
     } finally {
       try { await fixture.cleanup(); } finally { await clearStaffPage(page); }
     }
   }
+}
+
+test('separate display care-note edit persists before Done and retries a lost upstream save reply', async ({ page, browser, baseURL }) => {
+  test.setTimeout(150_000);
+  requireLocalFixture(baseURL);
+  const retry = await careNoteLostReply(page, browser, baseURL);
+  // Retried, not lost: the same change sent again after the lost reply.
+  expect(retry.patchCount).toBe(2);
+  expect(retry.retriedPatch?.body).toEqual(retry.firstPatch?.body);
+});
+
+/**
+ * FINDING (SCRUM-1020, open; expected to fail until it is fixed) — THE RETRY
+ * OF A CARE NOTE WHOSE REPLY WAS LOST IS A SECOND WRITE, NOT A REPLAY.
+ *
+ * The display's saved-child review that SCRUM-1018 removed sent its write
+ * under a key and retried a lost reply under the same key
+ * (`useChildReviewSave` in `lib/displaySession`), so the platform answered
+ * from the first write and the record changed once. The care-note write that
+ * took its place (`membersApi.updateChildCareFromDisplay`, `api/platform.ts`)
+ * sends no Idempotency-Key; after a lost reply the gate works the change out
+ * again from the member it holds (`saveGateChildren`, which never heard the
+ * answer) and sends it as a new write. The note is not lost, but the platform
+ * writes it twice and the child's audit trail shows two changes from the
+ * customer display for the family's one edit (the second "from" the new note
+ * "to" the same). Measured on 19 November: no key on either write, the same
+ * body, two `child.update` rows. A fix gives the write a key held for the
+ * form until it lands; then this test passes and loses its `test.fail`.
+ */
+test('separate display care-note retry after a lost reply is the same write, audited once', async ({ page, browser, baseURL }) => {
+  test.fail(true, 'FINDING SCRUM-1020: the care-note write carries no idempotency key, so its retry is written and audited twice');
+  test.setTimeout(150_000);
+  requireLocalFixture(baseURL);
+  const retry = await careNoteLostReply(page, browser, baseURL);
+  expect(typeof retry.firstPatch?.key === 'string' && retry.retriedPatch?.key === retry.firstPatch.key,
+    'the retried care-note write carries the first write\'s idempotency key').toBe(true);
+  expect(retry.audited, 'one audited change for the family\'s one edit').toHaveLength(1);
 });
 
 test('separate display guest F&B uses the captured order through lock, cash payment and pickup', async ({ page, browser, baseURL }) => {
@@ -774,38 +895,38 @@ test('separate display guardian acknowledgement retains lock and retry, while st
     await typePhone(fixture.display, MEMBER_PHONE);
     await fixture.display.getByRole('button', { name: 'Continue', exact: true }).click();
     await lookup;
-    await expect(page.getByText("Who's visiting today?", { exact: true })).toBeVisible({ timeout: 20_000 });
-    for (const button of await page.getByRole('dialog').getByRole('button', { name: /^Details/ }).all()) {
-      if (await button.getAttribute('aria-expanded') === 'true') await button.click();
-    }
-    await page.getByRole('button', { name: /Confirm 2 children/ }).click();
+    await visitWithPloyAlone(page);
     await page.getByRole('heading', { name: 'Thai', exact: true }).click();
     await page.getByRole('heading', { name: '1 Hour Play', exact: true }).click();
     await page.getByRole('button', { name: 'Remove one Adults', exact: true }).first().click();
-    await page.getByRole('button', { name: 'Continue', exact: true }).click();
-    const review = fixture.display.getByTestId('display-child-review');
-    await expect(review).toBeVisible({ timeout: 20_000 });
-    await review.getByRole('button', { name: 'Confirm', exact: true }).click();
-    await expect(review.getByRole('button', { name: 'Done', exact: true })).toBeEnabled({ timeout: 20_000 });
     // SCRUM-857 — the park's display has no webcam yet: this screen reports
-    // none, so the care details say reception takes the photo, and staff take
-    // it on the till below, as the demo will.
-    await fixture.display.evaluate(() => {
-      Object.defineProperty(navigator.mediaDevices, 'enumerateDevices', { configurable: true, value: async () => [] });
-    });
+    // none, so the form says reception takes the photo, and staff take it on
+    // the till below, as the demo will.
+    await displayWithoutCamera(fixture.display);
+    // SCRUM-1018 — the till's Continue opens the form itself: the child ticked
+    // at the membership check was confirmed there (no "still correct?" review).
     const opened = readConsent(false);
-    await review.getByRole('button', { name: 'Done', exact: true }).click();
+    await page.getByRole('button', { name: 'Continue', exact: true }).click();
     const document = (await (await opened).json()).document;
     expect(document.step === null && document.prompt.slots.length === 1 && document.prompt.staffReady === false).toBe(true);
     const consent = fixture.display.getByTestId('display-consent');
     await expect(consent).toBeVisible({ timeout: 20_000 });
-    // SCRUM-764 — a saved child's care notes stay off the public form: the profile holds them.
+    await expect(fixture.display.getByTestId('display-child-review')).toHaveCount(0);
+    // SCRUM-1018 — a returning family: the agreements alone, the parent's name
+    // from the profile and the number shown, neither asked.
+    expect(document.prompt.agreementsOnly === true && document.prompt.guardianFixed === true
+      && document.prompt.phoneFixed === true).toBe(true);
     // SCRUM-857 — `photo` (needed or taken, never the picture) marks the child
-    // whose photo the family may take on this screen.
+    // whose photo the family may take on this screen. SCRUM-1020 — a saved
+    // child in care: the family sees the allergy and medical notes the till
+    // holds and may update them (SCRUM-764 kept them off the public form;
+    // SCRUM-1020 replaced that). SCRUM-1021 — the food credit, included and extra.
     expect(document.prompt.slots.every((slot: Record<string, unknown>) => Object.keys(slot).every(key =>
-      ['id', 'name', 'ageYears', 'requirement', 'dateOfBirth', 'saved', 'photo'].includes(key)))).toBe(true);
+      ['id', 'name', 'ageYears', 'requirement', 'dateOfBirth', 'saved', 'photo', 'careShown', 'allergiesMedical',
+        'medicalNotes', 'medicalAlert', 'allergiesNone', 'includedCreditTHB', 'extraCreditTHB'].includes(key)))).toBe(true);
     expect(document.prompt.slots.every((slot: Record<string, unknown>) => slot.photo === undefined || slot.photo === 'needed')).toBe(true);
-    expect(/allergies|medical|foodRestrictions|childPhotoUrl|waived|savedChildId|policy/.test(JSON.stringify(document))).toBe(false);
+    // Still never on the family's screen: food notes, the photo, waivers, the saved record's id, the policy.
+    expect(/foodRestrictions|childPhotoUrl|data:image|waived|savedChildId|policy/.test(JSON.stringify(document))).toBe(false);
     await expect(consent.locator('video, canvas, input[type="file"]')).toHaveCount(0);
     for (const viewport of [{ width: 1024, height: 768 }, { width: 1280, height: 800 }]) {
       await fixture.display.setViewportSize(viewport);
@@ -813,37 +934,37 @@ test('separate display guardian acknowledgement retains lock and retry, while st
     }
     await fixture.display.setViewportSize({ width: 1024, height: 768 });
     page.on('request', observe); fixture.display.on('request', observe);
-    // SCRUM-764 — the form is three steps on the family's screen: the children
-    // (already named from the saved profile), their care, then the agreements.
-    await expect(consent.getByTestId('consent-child')).toHaveCount(1);
-    await consent.getByRole('button', { name: 'Continue', exact: true }).click();
-    await expect(consent.getByText('Saved on your profile — tell the team if anything has changed.', { exact: true })).toBeVisible();
+    // SCRUM-1018 — one step on the family's screen (it was three, SCRUM-764):
+    // the child shown from the saved profile, with the care notes to update
+    // (SCRUM-1020), then the agreements.
+    await expect(consent.getByTestId('consent-steps')).toHaveCount(0);
+    await expect(consent.getByTestId('consent-child-shown')).toHaveCount(1);
+    await expect(consent.getByTestId('consent-saved-care')).toHaveCount(1);
     await expect(consent.getByTestId('consent-photo-fallback')).toHaveText(
       'No camera available · Reception will take the photo of you both at the counter instead.');
     await expect(consent.locator('video')).toHaveCount(0);
-    await consent.getByRole('button', { name: 'Continue', exact: true }).click();
-    // SCRUM-857 — the last letter goes in after the staff lock below, so one
-    // live fill is sent then: the one whose reply is lost and retried.
-    await consent.getByLabel('Parent / guardian name', { exact: true }).fill('Local guardia');
-    // SCRUM-863 — the parent's block asks for the number again, with the channel
-    // choice, starting from the number given at the start; the family changes both.
-    await expect(consent.getByTestId('consent-kept-phone')).toHaveCount(0);
-    // (as the family typed it there: the leading zero stays until it is stored.)
-    await expect(consent.locator('input[type="tel"]')).toHaveValue(new RegExp(`^0?${MEMBER_PHONE.slice(1)}$`));
+    await expect(consent.getByTestId('consent-kept-guardian')).toContainText('Mali');
+    // SCRUM-1018 — the number is shown filled in, with no box and no tick
+    // (replacing SCRUM-863's number asked again and SCRUM-857's tick); the app
+    // is still the family's to choose.
+    await expect(consent.getByTestId('consent-kept-phone')).toBeVisible();
+    await expect(consent.locator('input[type="tel"]')).toHaveCount(0);
+    await expect(consent.getByTestId('public-consent-contact-confirm')).toHaveCount(0);
     for (const channel of ['WhatsApp', 'Telegram', 'LINE']) await expect(consent.getByTitle(channel, { exact: true })).toBeVisible();
-    await consent.locator('input[type="tel"]').fill(FORM_PHONE.slice(1));
     await consent.getByTitle('Telegram', { exact: true }).click();
-    // SCRUM-857 — the family confirms that the number is the one for the channel
-    // they chose: the line names it, and the check-all below gives the tick.
-    await expect(consent.getByTestId('public-consent-contact-confirm')).not.toBeChecked();
-    await expect(consent.getByText('This is my Telegram number — send messages about my child here.', { exact: true })).toBeVisible();
-    for (const checkbox of await consent.getByRole('checkbox').all()) await checkbox.check();
+    // The confirmations are ticked now; the guardian's acknowledgement goes in
+    // after the staff lock below, so one live fill is sent then: the one whose
+    // reply is lost and retried.
+    const acknowledgement = consent.getByTestId('public-consent-ack');
+    for (const checkbox of await consent.getByRole('checkbox').all()) {
+      if (await checkbox.getAttribute('data-testid') !== 'public-consent-ack') await checkbox.check();
+    }
     // SCRUM-857 — the form travels as it is filled: with everything taken by
     // the till, the agreements step offers Done (not Continue) without a press.
     await expect(consent.getByRole('button', { name: 'Done', exact: true })).toBeVisible({ timeout: 20_000 });
     await page.getByLabel('Lock screen').click();
     await expect(page.getByRole('heading', { name: 'Locked', exact: true })).toBeVisible();
-    await expect(consent.getByLabel('Parent / guardian name', { exact: true })).toHaveValue('Local guardia');
+    await expect(consent.getByTestId('consent-kept-guardian')).toContainText('Mali');
     let originalGesture: { actionId: string; payload: unknown } | undefined;
     await fixture.display.route('**/display/session', async route => {
       if (blockRead) await route.abort('failed'); else await route.continue();
@@ -864,36 +985,31 @@ test('separate display guardian acknowledgement retains lock and retry, while st
         await route.continue();
       }
     });
-    // SCRUM-857 — no Continue press: the family's typing is sent by itself,
+    // SCRUM-857 — no Continue press: the family's tick is sent by itself,
     // and it is that fill whose reply is lost here.
-    await consent.getByLabel('Parent / guardian name', { exact: true }).fill('Local guardian');
+    await acknowledgement.check();
     await expect(fixture.display.getByRole('button', { name: 'Retry', exact: true })).toBeVisible({ timeout: 20_000 });
     await fixture.display.getByRole('button', { name: 'Retry', exact: true }).click();
     await expect.poll(() => publicWrites).toBe(2);
     await fixture.display.unroute('**/display/intents');
     await unlock(page);
-    await expect(consent.getByLabel('Parent / guardian name', { exact: true })).toHaveValue('Local guardian');
+    await expect(acknowledgement).toBeChecked();
     await expect(consent.getByRole('button', { name: 'Done', exact: true })).toBeDisabled();
     await captureLocalCheck(fixture.display, 'ticket-display-consent-pending-local.png');
 
-    // This deterministic local camera frame exercises the existing staff-only capture component.
-    await page.evaluate(() => {
-      const canvas = document.createElement('canvas'); canvas.width = 320; canvas.height = 240;
-      const context = canvas.getContext('2d')!; context.fillStyle = '#285646'; context.fillRect(0, 0, 320, 240);
-      Object.defineProperty(navigator.mediaDevices, 'getUserMedia', { configurable: true, value: async () => {
-        const stream = canvas.captureStream(5);
-        const repaint = window.setInterval(() => context.fillRect(0, 0, 320, 240), 100);
-        stream.getVideoTracks()[0].addEventListener('ended', () => window.clearInterval(repaint), { once: true });
-        return stream;
-      } });
-    });
+    await staffCamera(page);
     await page.getByRole('button', { name: 'Private child details', exact: true }).click();
     const privateForm = page.getByRole('dialog', { name: 'Private child details', exact: true });
-    await expect(privateForm.getByPlaceholder('Your full name', { exact: true })).toHaveValue('Local guardian', { timeout: 20_000 });
-    // SCRUM-863 — staff's copy holds the number and channel the family chose, to correct if needed.
-    await expect(privateForm.locator('input[type="tel"]')).toHaveValue(FORM_PHONE.slice(1));
+    // SCRUM-1018 — staff's copy holds the profile's name and the number the
+    // family started with: staff correct them here, the family cannot.
+    await expect(privateForm.getByPlaceholder('Your full name', { exact: true })).toHaveValue('Mali', { timeout: 20_000 });
+    await expect(privateForm.locator('input[type="tel"]')).toHaveValue(new RegExp(`^0?${MEMBER_PHONE.slice(1)}$`));
+    // SCRUM-863 — the channel the family chose on their screen.
     await expect(privateForm.getByTitle('Telegram', { exact: true })).toHaveClass(/bg-sky-500\/15/);
-    await privateForm.getByPlaceholder(/^e.g. peanut allergy/).fill('Private local health marker');
+    await privateForm.locator('input[type="tel"]').fill(FORM_PHONE.slice(1));
+    // The food notes of a saved child stay off the family's screen (SCRUM-1020
+    // shows the allergy and medical notes there now, so the private marker is here).
+    await privateForm.getByTestId('consent-dietary').fill('Private local health marker');
     await privateForm.getByRole('button', { name: 'Start camera', exact: true }).click();
     await privateForm.getByRole('button', { name: 'Take photo', exact: true }).click();
     await expect(privateForm.getByAltText('Captured', { exact: true })).toBeVisible();
@@ -902,11 +1018,13 @@ test('separate display guardian acknowledgement retains lock and retry, while st
     const valid = (await (await ready).json()).document;
     expect(valid.prompt.guardianPhone).toBe(`+66${FORM_PHONE.slice(1)}`);
     expect(valid.prompt.contactChannel).toBe('telegram');
-    // SCRUM-857 — the tick reached the till for this number and channel.
-    expect(valid.prompt.contactConfirmed).toBe(true);
+    // SCRUM-1018 — the number staff changed is shown, not confirmed: no tick is asked or sent.
+    expect(valid.prompt.phoneFixed).toBe(true);
+    expect(valid.prompt.contactConfirmed).toBeUndefined();
     expect(valid.prompt.staffReady === true && valid.prompt.consentAcknowledged === true
       && valid.prompt.confirmations.every((item: { required: boolean; acknowledged: boolean }) => !item.required || item.acknowledged)).toBe(true);
-    expect(/Private local health marker|childPhotoUrl|data:image|medical|foodRestrictions|waived/.test(JSON.stringify(valid))).toBe(false);
+    expect(/Private local health marker|childPhotoUrl|data:image|foodRestrictions|waived/.test(JSON.stringify(valid))).toBe(false);
+    await expect(consent.getByTestId('consent-kept-phone')).toContainText(FORM_PHONE.slice(-4));
     await expect(consent.getByRole('button', { name: 'Done', exact: true })).toBeEnabled({ timeout: 20_000 });
 
     // SCRUM-857 — staff's correction and the family's call for help come
@@ -914,9 +1032,9 @@ test('separate display guardian acknowledgement retains lock and retry, while st
     // form is no longer there to correct after it (the owner's ruling of 8
     // November). What these steps prove is unchanged.
     await page.getByRole('button', { name: 'Private child details', exact: true }).click();
-    await privateForm.getByPlaceholder('Your full name', { exact: true }).fill('Local guardian updated');
+    await privateForm.getByPlaceholder('Your full name', { exact: true }).fill('ZZ TEST Mali corrected');
     await privateForm.getByRole('button', { name: 'Close', exact: true }).click();
-    await expect(consent.getByLabel('Parent / guardian name', { exact: true })).toHaveValue('Local guardian updated', { timeout: 20_000 });
+    await expect(consent.getByTestId('consent-kept-guardian')).toContainText('ZZ TEST Mali corrected', { timeout: 20_000 });
     await expect(consent.getByRole('button', { name: 'Ask the team', exact: true })).toBeVisible({ timeout: 20_000 });
     await consent.getByRole('button', { name: 'Ask the team', exact: true }).click();
     // SCRUM-764 — the form stays on the family's screen (the ticks are theirs);
@@ -977,6 +1095,11 @@ test('separate display guardian acknowledgement retains lock and retry, while st
  * they type, without anyone pressing Continue. A display reloaded mid-form
  * (as after a dropped connection or a new pairing) opens on the same step
  * with what the till holds and what it had not sent yet.
+ *
+ * SCRUM-1018 — a returning family is asked the agreements alone (the children,
+ * the name and the number come from the profile), so this case follows a
+ * family new to the park through the whole form: a walk-in, who names the
+ * child, steps through the care and types the parent's name.
  */
 test('separate display drop-off form is mirrored live on the till and survives a reload mid-form', async ({ page, browser, baseURL }) => {
   test.setTimeout(150_000);
@@ -985,24 +1108,10 @@ test('separate display drop-off form is mirrored live on the till and survives a
   await signIn(page);
   const fixture = await pairedDisplay(browser, page, baseURL);
   try {
-    const lookup = page.waitForResponse(response => response.url().includes('/api/members/lookup?') && response.status() === 200);
-    await typePhone(fixture.display, MEMBER_PHONE);
-    await fixture.display.getByRole('button', { name: 'Continue', exact: true }).click();
-    await lookup;
-    await expect(page.getByText("Who's visiting today?", { exact: true })).toBeVisible({ timeout: 20_000 });
-    for (const button of await page.getByRole('dialog').getByRole('button', { name: /^Details/ }).all()) {
-      if (await button.getAttribute('aria-expanded') === 'true') await button.click();
-    }
-    await page.getByRole('button', { name: /Confirm 2 children/ }).click();
-    await page.getByRole('heading', { name: 'Thai', exact: true }).click();
+    await walkInOnDisplay(page, fixture.display, freshDigits());
     await page.getByRole('heading', { name: '1 Hour Play', exact: true }).click();
     await page.getByRole('button', { name: 'Remove one Adults', exact: true }).first().click();
     await page.getByRole('button', { name: 'Continue', exact: true }).click();
-    const review = fixture.display.getByTestId('display-child-review');
-    await expect(review).toBeVisible({ timeout: 20_000 });
-    await review.getByRole('button', { name: 'Confirm', exact: true }).click();
-    await expect(review.getByRole('button', { name: 'Done', exact: true })).toBeEnabled({ timeout: 20_000 });
-    await review.getByRole('button', { name: 'Done', exact: true }).click();
     const consent = fixture.display.getByTestId('display-consent');
     await expect(consent).toBeVisible({ timeout: 20_000 });
 
@@ -1012,6 +1121,9 @@ test('separate display drop-off form is mirrored live on the till and survives a
     await expect(mirror.getByTestId('consent-mirror-status')).toHaveText('The customer is filling this in');
     await expect(mirror.getByTestId('consent-child')).toHaveCount(1);
     expect(await mirror.evaluate(element => element.hasAttribute('inert'))).toBe(true);
+    // The family names the child on their screen; the till's copy follows.
+    await nameChildOnDisplay(fixture.display, consent, 'ZZ TEST Live child', 6);
+    await expect(mirror.getByTestId('consent-child-name')).toHaveValue('ZZ TEST Live child', { timeout: 3_000 });
     await captureLocalCheck(page, 's857-mirror-children-local.png');
 
     // The family moves on: the till follows them, step by step.
@@ -1085,6 +1197,12 @@ test('separate display drop-off form is mirrored live on the till and survives a
  * registers the child with that photo and moves the sale on with no staff
  * press (the owner's rulings of 8 and 12 November).
  *
+ * SCRUM-1018 — a returning family is asked the agreements alone and no new
+ * photo while staff decide on the last one, so each sale here is a family new
+ * to the park (a walk-in on a number nobody has): the whole form, the child
+ * named and photographed and the parent's name typed on their screen. The
+ * number they gave at the start is shown on the form, not asked again.
+ *
  * The local harness has no object storage (nor has CI), so the two photo
  * routes are answered here: the display's upload (POST
  * /api/display/consent-photos) and the till's collection of it (GET
@@ -1145,32 +1263,23 @@ test('separate display drop-off: the family takes the photo, a half-done form wr
 
     const consent = fixture.display.getByTestId('display-consent');
     const mirror = page.getByTestId('consent-mirror');
-    const openForm = async (): Promise<{ needsNanny: boolean }> => {
-      const lookup = page.waitForResponse(response => response.url().includes('/api/members/lookup?') && response.status() === 200);
-      await typePhone(fixture.display, MEMBER_PHONE);
-      await fixture.display.getByRole('button', { name: 'Continue', exact: true }).click();
-      await lookup;
-      await expect(page.getByText("Who's visiting today?", { exact: true })).toBeVisible({ timeout: 20_000 });
-      for (const button of await page.getByRole('dialog').getByRole('button', { name: /^Details/ }).all()) {
-        if (await button.getAttribute('aria-expanded') === 'true') await button.click();
-      }
-      await page.getByRole('button', { name: /Confirm 2 children/ }).click();
-      await page.getByRole('heading', { name: 'Thai', exact: true }).click();
+    const openForm = async (digits: string, child: string): Promise<{ needsNanny: boolean }> => {
+      await walkInOnDisplay(page, fixture.display, digits);
       await page.getByRole('heading', { name: '1 Hour Play', exact: true }).click();
       await page.getByRole('button', { name: 'Remove one Adults', exact: true }).first().click();
       await page.getByRole('button', { name: 'Continue', exact: true }).click();
-      const review = fixture.display.getByTestId('display-child-review');
-      await expect(review).toBeVisible({ timeout: 20_000 });
-      await review.getByRole('button', { name: 'Confirm', exact: true }).click();
-      await expect(review.getByRole('button', { name: 'Done', exact: true })).toBeEnabled({ timeout: 20_000 });
-      const opened = fixture.display.waitForResponse(async response => response.url().endsWith('/display/session')
-        && response.status() === 200 && (await response.json()).document?.prompt?.kind === 'consent');
-      await review.getByRole('button', { name: 'Done', exact: true }).click();
-      const prompt = (await (await opened).json()).document.prompt;
-      // The till asks this display for the photo of each child who needs the consent.
-      expect(prompt.slots.length === 1 && prompt.slots[0].photo === 'needed').toBe(true);
       await expect(consent).toBeVisible({ timeout: 20_000 });
       await expect(mirror).toBeVisible({ timeout: 20_000 });
+      // The family names the child; once aged, the till asks this display for
+      // the photo of each child who needs the consent.
+      const asked = fixture.display.waitForResponse(async response => {
+        if (!response.url().endsWith('/display/session') || response.status() !== 200) return false;
+        const prompt = (await response.json().catch(() => null))?.document?.prompt;
+        return prompt?.kind === 'consent' && prompt.slots?.[0]?.ageYears !== null && prompt.slots?.[0]?.photo !== undefined;
+      });
+      await nameChildOnDisplay(fixture.display, consent, child, 6);
+      const prompt = (await (await asked).json()).document.prompt;
+      expect(prompt.slots.length === 1 && prompt.slots[0].photo === 'needed').toBe(true);
       return { needsNanny: prompt.slots[0].requirement === 'nanny' };
     };
     /** On the care step: the family's own camera, as the till's customer half has it. */
@@ -1185,9 +1294,16 @@ test('separate display drop-off: the family takes the photo, a half-done form wr
         .toHaveAttribute('src', /^data:image\/jpeg;base64,/, { timeout: 20_000 });
       await expect(page.getByText(/needs a photo taken/)).toHaveCount(0);
     };
+    /** SCRUM-1018 — the number given at the start, shown on the form with no box and no tick. */
+    const numberShown = async () => {
+      await expect(consent.getByTestId('consent-kept-phone')).toBeVisible();
+      await expect(consent.locator('input[type="tel"]')).toHaveCount(0);
+      await expect(consent.getByTestId('public-consent-contact-confirm')).toHaveCount(0);
+    };
 
     // 1. A form left half-done writes nothing: staff go back and cancel the sale.
-    await openForm();
+    const halfDone = freshDigits();
+    await openForm(halfDone, 'ZZ TEST Half-done child');
     await consent.getByRole('button', { name: 'Continue', exact: true }).click();
     await takePhoto();
     await consent.getByRole('button', { name: 'Continue', exact: true }).click();
@@ -1201,9 +1317,13 @@ test('separate display drop-off: the family takes the photo, a half-done form wr
     await chooseLanguageFirst(fixture.display, 'en');
     expect(registrations).toEqual([]);
     expect(await fixture.display.evaluate(() => sessionStorage.getItem('oto.display.consentDraft.v1'))).toBeNull();
+    // Nobody was made a member from the half-done form either.
+    const nobody = await fixture.admin.get('/api/members/lookup', { params: { phone: `+66${halfDone}` } });
+    expect(nobody.status()).toBe(200);
+    expect((await nobody.json()).member).toBeNull();
 
     // 2. The next family: back and forward through the form, then their own Done.
-    const { needsNanny } = await openForm();
+    const { needsNanny } = await openForm(freshDigits(), 'ZZ TEST Photo child');
     await consent.getByRole('button', { name: 'Continue', exact: true }).click();
     await takePhoto();
     expect(uploads.length).toBe(2);
@@ -1215,7 +1335,7 @@ test('separate display drop-off: the family takes the photo, a half-done form wr
     await expect(consent.getByTestId('consent-photo-received')).toBeVisible();
     await consent.getByRole('button', { name: 'Continue', exact: true }).click();
     await consent.locator('#public-consent-guardian').fill('ZZ TEST Photo guardian');
-    await consent.locator('input[type="tel"]').fill(FORM_PHONE.slice(1));
+    await numberShown();
     await expect(consent.getByTestId('consent-missing')).toContainText('Still needed before Done:');
     for (const checkbox of await consent.getByRole('checkbox').all()) await checkbox.check();
     const done = consent.getByRole('button', { name: 'Done', exact: true });
@@ -1247,12 +1367,13 @@ test('separate display drop-off: the family takes the photo, a half-done form wr
     //    visit write held open): the cancelled sale registers nobody, and the
     //    next sale, which skips the children, carries no visit of theirs.
     await chooseLanguageFirst(fixture.display, 'en');
-    await openForm();
+    const cancelled = freshDigits();
+    await openForm(cancelled, 'ZZ TEST Cancelled child');
     await consent.getByRole('button', { name: 'Continue', exact: true }).click();
     await takePhoto();
     await consent.getByRole('button', { name: 'Continue', exact: true }).click();
     await consent.locator('#public-consent-guardian').fill('ZZ TEST Cancelled guardian');
-    await consent.locator('input[type="tel"]').fill(FORM_PHONE.slice(1));
+    await numberShown();
     for (const checkbox of await consent.getByRole('checkbox').all()) await checkbox.check();
     const cancelledDone = consent.getByRole('button', { name: 'Done', exact: true });
     await expect(cancelledDone).toBeEnabled({ timeout: 20_000 });
@@ -1277,10 +1398,11 @@ test('separate display drop-off: the family takes the photo, a half-done form wr
     await expect(page.getByRole('heading', { name: 'Children playing alone', exact: true })).toHaveCount(0);
     await page.getByRole('button', { name: 'Cancel', exact: true }).first().click();
     await expect(page.getByText('Membership Check', { exact: true })).toBeVisible({ timeout: 30_000 });
-    // The next family: the same member, the children skipped, so no visit is theirs.
+    // The next family: the same family again (the cancelled run made them a
+    // member before its visit write), the children skipped, so no visit is theirs.
     await chooseLanguageFirst(fixture.display, 'en');
     const nextLookup = page.waitForResponse(response => response.url().includes('/api/members/lookup?') && response.status() === 200);
-    await typePhone(fixture.display, MEMBER_PHONE);
+    await typePhone(fixture.display, cancelled);
     await fixture.display.getByRole('button', { name: 'Continue', exact: true }).click();
     await nextLookup;
     await expect(page.getByText("Who's visiting today?", { exact: true })).toBeVisible({ timeout: 20_000 });
@@ -1294,7 +1416,7 @@ test('separate display drop-off: the family takes the photo, a half-done form wr
     // Soft, so the next sale's visit is checked as well when this fails.
     expect.soft(registrations, 'a sale cancelled mid-save registers nobody').toHaveLength(1);
     await expect(page.getByRole('heading', { name: 'Children playing alone', exact: true })).toHaveCount(0);
-    await page.getByRole('heading', { name: 'Thai', exact: true }).click();
+    await page.getByRole('heading', { name: 'Tourist', exact: true }).click();
     await page.getByRole('heading', { name: '1 Hour Play', exact: true }).click();
     const nextSale = page.waitForRequest(request => new URL(request.url()).pathname === '/api/sales' && request.method() === 'POST',
       { timeout: 30_000 });
