@@ -3116,6 +3116,9 @@ export const leaveTypes = pgTable("leave_types", {
   code: text("code").notNull(),
   name: text("name").notNull(),
   isActive: boolean("is_active").notNull().default(true),
+  // SCRUM-1037 (migration 0053): a type staff do not see; a manager records
+  // it for them. False keeps a type as every type was before: seen by all.
+  managersOnly: boolean("managers_only").notNull().default(false),
   accrualMethod: text("accrual_method", { enum: leaveAccrualMethods }).notNull().default("YEARLY"),
   annualDays: real("annual_days").notNull().default(0),
   waitingMonths: integer("waiting_months").notNull().default(0),

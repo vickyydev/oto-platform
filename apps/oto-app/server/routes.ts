@@ -174,6 +174,7 @@ import {
   updateTenantLeaveType,
   upsertEmployeeLeaveOverride,
 } from "./leave-types";
+import { leaveTypeRefusal, leaveTypesShownTo } from "./lib/leaveTypeAudience";
 import { directoryEventRouter } from "./directory/eventRoutes";
 import { directoryKitchenPlanRouter } from "./directory/kitchenPlanRoutes";
 import { directoryJobRouter } from "./directory/jobRoutes";
@@ -213,7 +214,7 @@ import {
 import { tasks, taskQuestions, taskAssignments, taskAttachments, checklistRuns, checklistRunItems, checklistTemplateItems, checklistTemplates, checklistAttachments, locations, locationBranchAccess, beoPartyHostAssignments, beoEventBilling, beoSetupPlans, beoKitchenPlans, beoTimelineItems, beoPackageSnapshots, beoEntertainmentSelections, eventLineItems, coreEvents as coreEventsTable, studioEventBookings, campRegistrations, campAttendance, fixReports, fixComments, fixSupplierTokens } from "./db/coreSchema";
 import { eq, desc, and, asc, or, ne, isNull, isNotNull, inArray, gte, lte, sql } from "drizzle-orm";
 import { generateInstanceForDefinition } from "./core/taskGeneration";
-import { personFence, fenceAllows, fenceRows, EMPLOYEE_DENIED } from "./core/personScope";
+import { personFence, fenceAllows, fenceRows, isManagerRank, EMPLOYEE_DENIED } from "./core/personScope";
 import { resolveSelfEmployeeId } from "./core/selfEmployee";
 import { currentDeposit, dayOf, sameDeposit, wholeBahtOf, writePartyDeposit } from "./lib/partyDeposit";
 import { decideDepositSave, expectedDepositOf, lowersDeliberately, noDepositDay, type GatewayFloor } from "./lib/depositSaveGuard";
@@ -13580,10 +13581,12 @@ OTO Company Limited`,
       if (!branch || branch.tenantId !== user.tenantId) {
         return res.status(404).json({ message: "Branch not found" });
       }
-      // The type is one of the park group's active leave types, stored by its code.
+      // The type is one of the park group's active leave types, stored by its
+      // code; a managers-only type is a manager's to record (SCRUM-1037).
       const requestedLeaveType = await getTenantLeaveTypeByCode(branch.tenantId, requestedTimeOffType);
-      if (!requestedLeaveType || !requestedLeaveType.isActive) {
-        return res.status(400).json({ message: "Unknown or inactive leave type" });
+      const typeRefused = leaveTypeRefusal(requestedLeaveType, isManagerRank(user));
+      if (typeRefused || !requestedLeaveType) {
+        return res.status(typeRefused?.status ?? 400).json({ message: typeRefused?.message ?? "Unknown or inactive leave type" });
       }
       const timeOffType = requestedLeaveType.code;
 
@@ -13734,10 +13737,12 @@ OTO Company Limited`,
 
       const updateData: { type?: string; note?: string | null; startDate?: Date; endDate?: Date } = {};
       if (validationResult.data.timeOffType !== undefined) {
-        // One of the record's park group's active leave types (SCRUM-560).
+        // One of the record's park group's active leave types (SCRUM-560); a
+        // managers-only type is a manager's to record (SCRUM-1037).
         const requestedLeaveType = await getTenantLeaveTypeByCode(existing.tenantId, validationResult.data.timeOffType);
-        if (!requestedLeaveType || !requestedLeaveType.isActive) {
-          return res.status(400).json({ message: "Unknown or inactive leave type" });
+        const typeRefused = leaveTypeRefusal(requestedLeaveType, isManagerRank(user));
+        if (typeRefused || !requestedLeaveType) {
+          return res.status(typeRefused?.status ?? 400).json({ message: typeRefused?.message ?? "Unknown or inactive leave type" });
         }
         updateData.type = requestedLeaveType.code;
       }
@@ -14211,6 +14216,8 @@ OTO Company Limited`,
     code: z.string().trim().min(1).max(80).regex(/^[A-Za-z0-9_-]+$/).optional(),
     name: z.string().trim().min(1).max(120),
     isActive: z.boolean().optional().default(true),
+    // SCRUM-1037: staff do not see the type; a manager records it for them.
+    managersOnly: z.boolean().optional().default(false),
     accrualMethod: z.enum(["YEARLY", "WORKDAYS", "NONE"]).default("YEARLY"),
     annualDays: z.number().min(0).max(3650).default(0),
     waitingMonths: z.number().int().min(0).max(600).default(0),
@@ -14252,9 +14259,10 @@ OTO Company Limited`,
         (user.platformRoleMapping || (user.role !== "global_admin" && user.role !== "admin"))) {
         return res.status(403).json({ message: "Leave type access requires branch access" });
       }
-      const types = await listTenantLeaveTypes(tenantId);
-      res.json(types.map(({ id, code, name, isActive, accrualMethod, annualDays, waitingMonths, prorateByStartDate, daysWorkedRequired, daysOffEarned }) => ({
-        id, code, name, isActive, accrualMethod, annualDays, waitingMonths, prorateByStartDate, daysWorkedRequired, daysOffEarned,
+      // A managers-only type is left out of a staff member's list (SCRUM-1037).
+      const types = leaveTypesShownTo(await listTenantLeaveTypes(tenantId), isManagerRank(user));
+      res.json(types.map(({ id, code, name, isActive, managersOnly, accrualMethod, annualDays, waitingMonths, prorateByStartDate, daysWorkedRequired, daysOffEarned }) => ({
+        id, code, name, isActive, managersOnly, accrualMethod, annualDays, waitingMonths, prorateByStartDate, daysWorkedRequired, daysOffEarned,
       })));
     } catch (error) {
       next(error);
