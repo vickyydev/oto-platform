@@ -7,7 +7,7 @@
 //
 //   1. the expected extra guests and the socks arrangement in the brief's words;
 //      what a Save may store, and the refusal in words for anything else;
-//   2. they are stored on the party by app migration 0053, expand only, and
+//   2. they are stored on the party by app migration 0054, expand only, and
 //      named by nothing the till reads: no view of the app's, no file of the
 //      platform; the Save checks them before it writes anything; the print
 //      route hands them to the print;
@@ -88,12 +88,11 @@ await check("what a Save may store: counts 0 to 999 or empty, one of the options
 
 // ── 2. Where they are stored, and that the till never reads them ─────────────
 
-await check("app migration 0053 adds four nullable columns and two checks every existing row passes; nothing else", () => {
+await check("app migration 0054 adds four nullable columns and two checks every existing row passes; nothing else", () => {
   const journal = JSON.parse(read("migrations/meta/_journal.json")) as { entries: { idx: number; tag: string }[] };
-  const entry = journal.entries.find((e) => e.tag === "0053_otoapp_beo_extra_guests_socks");
-  assert.ok(entry && entry.idx === 53, "journalled as 53");
-  assert.equal(journal.entries.at(-1)!.tag, "0053_otoapp_beo_extra_guests_socks");
-  const sql = read("migrations/0053_otoapp_beo_extra_guests_socks.sql");
+  const entry = journal.entries.find((e) => e.tag === "0054_otoapp_beo_extra_guests_socks");
+  assert.ok(entry && entry.idx === 54, "journalled as 54");
+  const sql = read("migrations/0054_otoapp_beo_extra_guests_socks.sql");
   const statements = sql.split("--> statement-breakpoint").map((s) => s.replace(/--.*$/gm, "").replace(/\s+/g, " ").trim()).filter(Boolean);
   assert.deepEqual(statements, [
     'ALTER TABLE "core_events" ADD COLUMN "expected_extra_kids" integer;',
@@ -105,9 +104,9 @@ await check("app migration 0053 adds four nullable columns and two checks every 
   ]);
   assert.equal(/"public"\./.test(sql), false, "unqualified, as the migrator wants");
   assert.equal(/\b(DROP|RENAME|UPDATE|DELETE|NOT NULL|SET DATA TYPE)\b/i.test(sql.replace(/--.*$/gm, "")), false, "expand only; no stored row is changed");
-  const snapshot = JSON.parse(read("migrations/meta/0053_snapshot.json")) as { id: string; prevId: string; tables: Record<string, { columns: Record<string, { notNull: boolean }> }> };
-  const before = JSON.parse(read("migrations/meta/0052_snapshot.json")) as { id: string };
-  assert.equal(snapshot.prevId, before.id, "the snapshot follows 0052's");
+  const snapshot = JSON.parse(read("migrations/meta/0054_snapshot.json")) as { id: string; prevId: string; tables: Record<string, { columns: Record<string, { notNull: boolean }> }> };
+  const before = JSON.parse(read("migrations/meta/0053_snapshot.json")) as { id: string };
+  assert.equal(snapshot.prevId, before.id, "the snapshot follows 0053's (the leave types, landed first)");
   for (const c of ["expected_extra_kids", "expected_extra_adults", "socks_arrangement", "socks_note"]) {
     assert.equal(snapshot.tables["public.core_events"]!.columns[c]!.notNull, false, c);
   }
@@ -129,7 +128,7 @@ function filesUnder(dir: string): string[] {
 
 await check("nothing the till reads names them: no other app migration (its views), nothing of the platform", () => {
   const NAMES = /expected_extra_kids|expected_extra_adults|socks_arrangement|socks_note|expectedExtraKids|expectedExtraAdults|socksArrangement|socksNote/;
-  const migrations = readdirSync(join(APP, "migrations")).filter((f) => f.endsWith(".sql") && f !== "0053_otoapp_beo_extra_guests_socks.sql");
+  const migrations = readdirSync(join(APP, "migrations")).filter((f) => f.endsWith(".sql") && f !== "0054_otoapp_beo_extra_guests_socks.sql");
   for (const f of migrations) assert.equal(NAMES.test(read(`migrations/${f}`)), false, f);
   const platform = ["apps/api/src", "apps/pos/src", "packages"].flatMap((p) => filesUnder(join(REPO, p)));
   assert.ok(platform.length > 100, "the platform's sources were read");
