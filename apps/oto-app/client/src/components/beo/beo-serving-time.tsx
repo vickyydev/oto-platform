@@ -88,7 +88,7 @@ export function ServingTimeButton<T extends ServingLine>({
         <button
           type="button"
           disabled={disabled}
-          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-colors ${
+          className={`flex h-7 w-7 [@media(pointer:coarse)]:h-9 [@media(pointer:coarse)]:w-9 shrink-0 items-center justify-center rounded-md transition-colors ${
             tag ? "bg-sky-500/10 text-sky-700 hover:bg-sky-500/20 dark:text-sky-300" : "text-muted-foreground hover:bg-accent hover:text-foreground"
           }`}
           title={tag ? `Served at ${tag}` : menu ? `Served with the menu at ${menu}; set a time of its own` : "Set a serving time of its own"}
@@ -131,7 +131,7 @@ export function ServingTimeButton<T extends ServingLine>({
                 <button
                   key={g.name}
                   type="button"
-                  className="h-7 rounded-full border px-2 text-[11px] hover:bg-accent"
+                  className="h-7 rounded-full border px-2 text-[11px] hover:bg-accent [@media(pointer:coarse)]:h-9"
                   onClick={() => { setGroup(g.name); setTime(g.time); }}
                   data-testid={`${testId}-join`}
                 >
@@ -144,14 +144,14 @@ export function ServingTimeButton<T extends ServingLine>({
         </div>
         <div className="flex items-center justify-end gap-2">
           {own && (
-            <Button type="button" variant="ghost" size="sm" className="mr-auto h-8 text-xs" onClick={() => apply({ time: "", group: "" })} data-testid={`${testId}-clear`}>
+            <Button type="button" variant="ghost" size="sm" className="mr-auto h-8 text-xs [@media(pointer:coarse)]:h-9" onClick={() => apply({ time: "", group: "" })} data-testid={`${testId}-clear`}>
               Clear
             </Button>
           )}
-          <Button type="button" variant="outline" size="sm" className="h-8 text-xs" onClick={() => setOpen(false)}>
+          <Button type="button" variant="outline" size="sm" className="h-8 text-xs [@media(pointer:coarse)]:h-9" onClick={() => setOpen(false)}>
             Cancel
           </Button>
-          <Button type="button" size="sm" className="h-8 text-xs" onClick={() => apply({ time, group })} data-testid={`${testId}-done`}>
+          <Button type="button" size="sm" className="h-8 text-xs [@media(pointer:coarse)]:h-9" onClick={() => apply({ time, group })} data-testid={`${testId}-done`}>
             Done
           </Button>
         </div>
