@@ -85,6 +85,7 @@ export function VoucherTypeEditor({
   onArchive,
   onRestore,
   onSetParkProduct,
+  onSetParkStock,
   onClose,
 }: {
   /** Null for a new voucher type. */
@@ -101,6 +102,8 @@ export function VoucherTypeEditor({
   onRestore: (definition: VoucherDefinitionRow) => void;
   /** SCRUM-405 — set (or, with null, clear) the product a free product gives at one park. Saved at once. */
   onSetParkProduct: (definition: VoucherDefinitionRow, branchId: string, productId: string | null) => void;
+  /** SCRUM-1040 — set (or, with null, clear) the stock item a hand-over prize takes one from at one park. Saved at once. */
+  onSetParkStock?: (definition: VoucherDefinitionRow, branchId: string, stockItemId: string | null) => void;
   onClose: () => void;
 }) {
   const isNew = definition === null;
@@ -385,8 +388,19 @@ export function VoucherTypeEditor({
               onChange={(branchId, productId) => onSetParkProduct(definition, branchId, productId)}
             />
           )}
+          {form.choice === 'handover' && definition && definition.kind === 'manual' && linkOptions && onSetParkStock && (
+            <ParkStock
+              definition={definition}
+              linkOptions={linkOptions}
+              disabled={locked || saving}
+              onChange={(branchId, stockItemId) => onSetParkStock(definition, branchId, stockItemId)}
+            />
+          )}
           {linkOptionsFailed && (form.choice === 'product' || form.choice === 'ticket') && (
             <ErrorNote message={`The products and packages could not be read: ${linkOptionsFailed}`} />
+          )}
+          {linkOptionsFailed && form.choice === 'handover' && definition && (
+            <ErrorNote message={`The stock items could not be read: ${linkOptionsFailed}`} />
           )}
         </Section>
 
@@ -720,6 +734,76 @@ function ParkProducts({
                 disabled={disabled}
                 current={current ? { id: current.productId, name: current.productName, branchName } : null}
               />
+            </Field>
+          );
+        })}
+    </div>
+  );
+}
+
+/**
+ * SCRUM-1040 — WHAT A HAND-OVER PRIZE TAKES OFF THE SHELF AT EACH PARK (the
+ * Mystery Box). One picker per park, offering the stock items counted there; a
+ * park with one chosen takes one off that item's count each time a voucher of
+ * this type is used at its till, and a park left on "nothing" takes nothing,
+ * as before. The count itself is received and corrected under Inventory like
+ * any other item. Each change is saved at once, on its own.
+ */
+function ParkStock({
+  definition,
+  linkOptions,
+  disabled,
+  onChange,
+}: {
+  definition: VoucherDefinitionRow;
+  linkOptions: VoucherLinkOptions;
+  disabled: boolean;
+  onChange: (branchId: string, stockItemId: string | null) => void;
+}) {
+  const items = linkOptions.stockItems ?? [];
+  const parks = new Map<string, string>();
+  for (const row of items) parks.set(row.branchId, row.branchName);
+  const linked = new Map((definition.parkStock ?? []).map((p) => [p.branchId, p]));
+  // A park whose chosen item is no longer counted still shows the link, so a
+  // manager sees why the till takes nothing there.
+  for (const link of linked.values()) parks.set(link.branchId, link.branchName);
+  if (parks.size === 0) return null;
+  return (
+    <div className="flex flex-col gap-2" data-testid="voucher-type-park-stock">
+      <p className="text-xs text-muted-foreground">
+        At each park: the stock item one prize takes off the count when its voucher is used at the till. At zero
+        the till warns and the prize is still handed over. Left on “nothing”, a park takes nothing off a shelf.
+        Saved as soon as it is chosen.
+      </p>
+      {[...parks.entries()]
+        .sort((a, b) => a[1].localeCompare(b[1]))
+        .map(([branchId, branchName]) => {
+          const current = linked.get(branchId) ?? null;
+          const options = items.filter((i) => i.branchId === branchId);
+          const offered = current !== null && options.some((o) => o.id === current.stockItemId);
+          return (
+            <Field
+              key={branchId}
+              label={branchName}
+              hint={current && !current.live ? 'Not counted there any more — the till takes nothing off it.' : undefined}
+            >
+              <select
+                value={current?.stockItemId ?? ''}
+                disabled={disabled}
+                aria-label={`Stock item at ${branchName}`}
+                onChange={(e) => onChange(branchId, e.target.value === '' ? null : e.target.value)}
+                className={cn(CONTROL, 'disabled:opacity-60')}
+              >
+                <option value="">— nothing —</option>
+                {current && !offered && (
+                  <option value={current.stockItemId}>{current.stockItemName} — not counted</option>
+                )}
+                {options.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.name}
+                  </option>
+                ))}
+              </select>
             </Field>
           );
         })}
