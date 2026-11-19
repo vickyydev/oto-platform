@@ -79,6 +79,25 @@ export function consentMissingLine(
   return t('superviseConsent.stillNeeded', { list });
 }
 
+/**
+ * SCRUM-1059 — THE FAMILY HAS DONE EVERYTHING AND STAFF ARE DECIDING ON THE
+ * PHOTO. A returning child's last photo is staff's to compare on the till
+ * ("Still matches" or "Take a new one", SCRUM-1018), so the line above does
+ * not name it (`photoWithStaff`, SCRUM-1053); with the agreements ticked the
+ * line was then empty while Done stayed grey. The family is told the team is
+ * checking the photo and that nothing more is theirs to do. Null while
+ * anything of the family's is still missing (the line names that), and once
+ * staff decide: "Still matches" clears it, "Take a new one" brings the photo
+ * back into the line as before.
+ */
+export function photoWithTeamLine(
+  t: (key: string) => string,
+  input: { missing: readonly ConsentMissing[]; consentRequired: boolean; photoWithStaff: boolean },
+): string | null {
+  if (!input.consentRequired || !input.photoWithStaff || input.missing.length > 0) return null;
+  return t('superviseConsent.photoWithTeam');
+}
+
 export interface FamilyDoneInput {
   /** The till is on the drop-off and nanny form (the supervision step). */
   onForm: boolean;
