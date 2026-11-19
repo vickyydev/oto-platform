@@ -1,6 +1,6 @@
 # Family profiles: several parents or guardians for the same children
 
-SCRUM-1024 and SCRUM-1025. **State, 19 November 2026, evening: APPROVED, the eight questions answered; steps F1 and F2 built on a lane, not landed, and the backfill not run anywhere (section 11).** The owner answered section 10 on his plan page; his answers are at the end of that section and in section 4 of ANSWERS.md. A plan written from a read of the code at main 3231ee7e3. The build starts with steps F1 and F2 when the drop-off counter flow has landed. The specification is section 4 of `ANSWERS.md` beside this file. The code comparison is `DROPOFF_AND_TILL_COMPARISON.md`: rows D15 to D17 and its section 3. Nothing here is decided beyond those answers. Where a rule still belongs to the owner, it is a numbered question in section 10, with today's behaviour as the default until he answers.
+SCRUM-1024 and SCRUM-1025. **State, 19 November 2026, late evening: APPROVED, the eight questions answered; steps F1 and F2 landed and the backfill run clean on staging; step F3's platform readers built on lane `lane/family-f3-20261119`, behind the switch, which stays off everywhere (section 11).** The owner answered section 10 on his plan page; his answers are at the end of that section and in section 4 of ANSWERS.md. A plan written from a read of the code at main 3231ee7e3. The build starts with steps F1 and F2 when the drop-off counter flow has landed. The specification is section 4 of `ANSWERS.md` beside this file. The code comparison is `DROPOFF_AND_TILL_COMPARISON.md`: rows D15 to D17 and its section 3. Nothing here is decided beyond those answers. Where a rule still belongs to the owner, it is a numbered question in section 10, with today's behaviour as the default until he answers.
 
 ## 1. Today's model
 
@@ -372,3 +372,68 @@ Where the build differs from the text of section 3:
 - **`child.updated_at` is not changed** by the backfill: the family is not an edit of the child's details, and nothing reads that column.
 - **Check 2** counts live families only, because linking two records (F5) archives a family together with its guardian row.
 - **Check 5** is added to the plan's four: members who are a live guardian of more than one live family. A member with two families of their own, with the children split between them, passes checks 1 to 4. It must be zero until F4, when a member may rightly be in several families and the check is retired.
+
+### Step F3, first part: the platform's readers (19 November 2026, lane `lane/family-f3-20261119`, not landed)
+
+Built and tested on the lane. Nothing is on staging, and the switch is `off` for every park group. Turning it to `read` anywhere, staging included, is a setting change that waits for the owner's word.
+
+- **One way in.** `apps/api/src/services/family.ts` holds the switch and the read rule; no reader writes its own family join.
+  - `familyProfilesMode(exec, operatorId)`: the switch at operator scope. It is read once per request (or per box batch) and handed to every read that request makes, so one answer never mixes the two rules.
+  - `childOfMember(mode, { operatorId, memberId, memberLive })`: "a child of this member" as a condition on `crm.child`. At `off` it is `child.member_id = memberId`, word for word the condition each reader had, so its query is unchanged. Otherwise the member holds a live guardian row on the child's live family; the guardian row, the family and the member are all of the caller's operator; and the child is not merged.
+  - `childGuardedInOperator`: "this child has a live guardian in this operator", for the owner checks of an edit or a removal, which name a child and no member.
+  - `familyChildrenOfMembers`: which of several members sees which child, for the Console register.
+  - `childrenSeenBy` and `memberSeesChild`: the whole rule of section 2.2, the child's own state included (the shadow compare and the tests).
+- **What each reader keeps.** The child's own state (`archived_at`) and the member's own state are asked exactly where the reader asked them before.
+  - The counter's lookup, the member page, the register and the booking site serve live members only, as before.
+  - A visit opened before its member was archived, a drop-off naming saved children, a paid booking's stay links, the event walk-up check, the kitchen slip and the Inbox count never asked, and still do not. So an archived member gets the same answer at both settings (a reprint of an old sale keeps its allergy line).
+  - The guardian ROW must always be live: a parent taken off a family (F4) sees nothing of it.
+- **Ordering and paging** are unchanged: each reader keeps its own order, and the register still pages members and lists each row's children by name.
+- **The switch.** `crm.family_profiles` is supported.
+  - `read` is set for a park group through the Console's switch route (`PUT /console/flags`, permission `console:release:flag_manage` as every feature switch, audited `feature_flag.set`). Clearing it (`POST /console/flags/clear`, audited `feature_flag.clear`) returns to `off`.
+  - `on` is refused by every write and the preview with `FLAG_VALUE_UNSUPPORTED` (the catalogue's new `settableValues`) until step F4.
+  - The default stays `off` for every park group.
+- **No shapes changed.** No family field is in any route answer, box bundle or audit row; `api-types --check` reports no change.
+
+| Reader | File | Today (`off`) | At `read` | Pinned by |
+|---|---|---|---|---|
+| Counter lookup; member page; `POST /members` replay; tier verify and revoke answers; through them the support lookup and the assistant's member tools | `routes/members.ts` `memberWithChildren` | the live member's live children by `member_id` | the member's families' live children | `s1024-family-readers`: equivalence (lookup and page for every kind of member) and fence |
+| Edit a child (owner) | `routes/members.ts` PATCH | the child's member, live, same operator | a live guardian (live member) in the operator | equivalence (owner checks); fence (guardian rows taken off) |
+| Care note from the paired display | `routes/members.ts` PATCH; `services/members.ts` `displayCareRefusal` | `child.member_id` is the family named | the family named holds the child | equivalence; fence (second guardian, bystander) |
+| Remove from saved (till, display, booking site) | `routes/members.ts` DELETE; `services/members.ts` `archiveChild` | the child's member in the operator | a live guardian row in the operator | equivalence (incl. already removed, archived member); fence |
+| Console register | `services/members.ts` `listRegister` | children by `member_id`, by name | each member's family children, by name | equivalence (three pages); fence (second guardian on both rows) |
+| Open a visit | `routes/visits.ts` POST | the member's own live children | the member's families' live children | equivalence (visits); fence |
+| Add children to a visit (till; the box's `visit.children_added` reads its batch's switch) | `services/visit-children.ts` | the visit member's own live children | the visit member's families' | equivalence (visits) |
+| Drop-off registration's saved children | `services/checkin.ts` `assertChildrenOfMember` | the member's own live children | the member's families' | equivalence (registration) |
+| Booking site code check and save answer | `services/member-code.ts` `publicSavedChildrenOf` | the member's live children, in saved order | the member's families' | equivalence (booking site) |
+| Booking site save (own child, new id, removal) | `services/family-online.ts` `saveFamilyOnline` | `row.memberId` is the pass holder | the pass holder holds the child | equivalence (booking site) |
+| Booking's saved-child check | `services/family-online.ts` `checkBookingFamilyLinks` | the holder's live children | the holder's families' | equivalence (booking site) |
+| Paid booking's stay links | `services/booking-supervision.ts` `registerPaidBookingChildren` | the booking member's live children | the booking member's families' | condition equivalence; booking suites at `read` |
+| Event walk-up saved child | `services/event-writes.ts` `planAttendee` | `child.member_id` is the member | the member holds the child | condition equivalence; event suites at `read` |
+| Kitchen slip with no visit | `services/sale-printing.ts` `orderChildren` | the member's live children, by name | the member's families' | equivalence (kitchen slip for every kind of member) |
+| Inbox member child count | `services/inbox/read.ts` `conversationDetail` | a count by `member_id` | a count through the family | condition equivalence (the correlated count) |
+
+No platform reader was missing from section 1.2. The assistant's member tools and the support lookup read through the counter's routes and need nothing of their own.
+
+Joins of `crm.child` to `crm.member` that are NOT "this member's children", left as they are:
+- **Tenancy only.** A child id is proved to be the operator's through the member it was first saved under, which never changes and is always of the family's operator: `routes/files.ts` (a child's photo), `services/photo-reuse.ts`, `services/checkin.ts` `recordWaiver`, `services/sync-checkin.ts` `checkinCacheItemAt`.
+- **By child id, no member** (the stay, the band or the visit names the child): the board's edit of the saved child (`checkin.ts`), `band-food.ts`, `bands.ts`, `payments/offline.ts`, `GET /visits/:id`, the kitchen slip's visit branch.
+- **Writers' own identity checks:** the replay check of `POST /members/:id/children` (`row.memberId === m.id`, the same request sent again); the inserts in `members.ts`, `sync.ts`, `family-online.ts` and the seed; `demo-reset.ts`, which deletes by `member_id`.
+
+**The counter box is not switched in this part.** The bundle (`services/sync.ts`, `members` scope), `child.created`'s sibling check, `child.updated`'s owner check, `visit.created`'s saved-children check and the registration replay in `sync-checkin.ts` still read `child.member_id` at both settings; they are the next part of F3. A box on today's release, with the switch at `read` on its server:
+- pulls the same bundle as today: the children nested under the member they were first saved under, which, while each family has one guardian, is the family;
+- has every fact it replays accepted or refused exactly as today. `visit.children_added` reads the batch's switch and gives the same answer while each family has one guardian;
+- sends and receives nothing of a changed shape.
+
+**Tests.** `apps/api/test/s1024-family-readers.test.ts`:
+- every reader above at `off` and at `read`, over members with no child, several children, a removed child, an archived member, a merged member's alias and another park group's member, the answers compared whole;
+- the read condition for every member of a park group, by id and in the correlated form the Inbox count uses;
+- the fence: a hand-made second guardian sees exactly that family's live children besides their own and nothing else; a guardian row taken off; an archived family; another park group's member with a hand-made row; an archived member; an alias; a child not yet backfilled;
+- the switch through the Console route.
+
+`OTO_TEST_FAMILY_PROFILES=read` (test helper) runs any api suite with the switch at `read` for every park group. The shadow compare of section 3 (R1) is back on the lane: `apps/api/src/services/family-shadow.ts`, `apps/api/scripts/family-shadow-compare.ts`, and its test `s1024-family-shadow-compare.test.ts`.
+
+Where the build differs from the text above, or chose what the text left open:
+
+- **The member's own state, reader by reader** (above). The plan's rule says "the member is live". The readers that never asked it (a visit's member, a sale's member, a box's fact) still do not, so switching to `read` changes no answer for an archived member. For a removal the rule is "a live guardian row", without asking whether its member was archived since, as the removal never asked.
+- **`on` reads as `read`** wherever a reader meets it; it cannot be set before F4.
+- **The Console page has no control for a feature switch yet.** It lists the family switch as supported and says that changing a feature switch is not offered on that page. A platform administrator sets `read` through the page's own route (`PUT /console/flags`); a control on the page is not built in this part.
