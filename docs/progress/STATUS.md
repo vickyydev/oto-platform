@@ -1,3 +1,32 @@
+## 19 November 2026, night: where every lane stands; 18 decisions on the owner's page
+
+- **Till smaller requests (SCRUM-1039, 1040):** built, reviewed (seven major
+  points, repaired) and LANDED on main (380c58867 to c5f33c5af); its staging
+  deploy and proof are running.
+- **Drop-off counter flow (SCRUM-1018 to 1021):** all four build stages are
+  done on the branch; the independent review is running. Not built in this
+  lane: extra food credit on a plain child ticket (a plan is written); the
+  credit left on receipts the counter box prints offline; the no-name member
+  case (the owner's choice).
+- **BEO timeline and print (SCRUM-1027, 1028):** built; the review found 14
+  major points and no blocker; the fix stage is running.
+- **HR smaller requests (SCRUM-1036 to 1038):** built; the review found one
+  blocker and ten major points; the fix stage is running. The single shift
+  does not reach payroll until the owner gives four pay rules.
+- **Inbox follow-up (SCRUM-1045, 1043, 1044):** the responsive scale with the
+  draggable divider is built, and the border and layout repairs; the settings
+  frame and Templates are building.
+- **Family profiles, first steps (SCRUM-1024):** the tables and writers are
+  built; the backfill and verify scripts are building.
+- **Old stored files (SCRUM-1046):** the owner's change: production gets the
+  full set, staging about 4.5 GB. Production's copy is running (about 8,600
+  of 10,285 files there, none failed). Then staging is brought to its smaller
+  set and the pictures are checked in both apps.
+- **Domains (SCRUM-923):** the owner waits for delegate access to the GM's
+  registrar account to request the first transfer.
+- **The owner's plan page** (Version 3) has a new top section, "Decisions the
+  builds raised": 18 points (ids `r-*`), each built one way meanwhile.
+
 ## 19 November 2026, late: the domains and the old stored files (cutover)
 
 - **Domains (SCRUM-923, switch the domains):** the previous developer
