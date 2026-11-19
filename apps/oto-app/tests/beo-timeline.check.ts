@@ -4,10 +4,12 @@
 // (shared/beoTimeline.ts), never typed twice:
 //
 //   1. each source alone: the party's own times (setup ready-by, guests
-//      arrive, the end; an old plan's setup items at its stored offset), the
-//      kids' and the adults' menus with what is served, an old event's
-//      service blocks, the bar, the cake, each activity with its person, the
-//      rows typed by hand (the "other timed steps");
+//      arrive; an old plan's setup items at its stored offset; no step for
+//      the end), the kids' and the adults' menus and the bar as steps that
+//      say the food is served (the dishes and drinks are listed in the
+//      Kitchen and the Bar, not again on the step), an old event's service
+//      blocks with their first three dishes, the cake with what it is, each
+//      activity with its person, the rows typed by hand ("other timed steps");
 //   2. all together, in time order; at an equal time party, food, activity,
 //      other, each in the order it was made or stored;
 //   3. nothing is given a time the BEO does not store (a setup task, an
@@ -20,8 +22,9 @@
 //   6. every reader builds it here: the PDF route and the generator that
 //      stores the automatic rows (server/beo-routes.ts), the read route the
 //      editor's preview, the Day-of view and the view-only BEO ask
-//      (server/lib/beoTimelineRead.ts); the PDF prints what is served, the
-//      person and the steps with no time.
+//      (server/lib/beoTimelineRead.ts); the PDF prints each step's person,
+//      the cake's words, no order a second time, and a typed row with no
+//      time listed under the timeline.
 //
 // Run from apps/oto-app: npx tsx tests/beo-timeline.check.ts
 import assert from "node:assert/strict";
@@ -45,14 +48,12 @@ const {
   untimedBesideTimeline,
   timelineStepLine,
   STEP_GUESTS_ARRIVE,
-  STEP_PARTY_ENDS,
   STEP_SETUP_READY,
   STEP_KIDS_MENU,
   STEP_ADULTS_MENU,
   STEP_DRINKS,
   STEP_CAKE,
 } = await import("../shared/beoTimeline");
-const { ADULTS_SAME_AS_KIDS } = await import("../shared/kitchenAdults");
 const { beoPdfHtml, beoPdfTimelineOf } = await import("../server/pdf");
 type Source = import("../shared/beoTimeline").BeoTimelineSource;
 type Timeline = import("../shared/beoTimeline").BeoTimeline;
@@ -100,11 +101,12 @@ const party: Source = { startTime: "14:00", endTime: "17:00" };
 
 // ── 1. Each source alone ─────────────────────────────────────────────────────
 
-await check("the party's own times: guests arrive at the start, the party ends at the end", () => {
+await check("the party's own times: guests arrive at the start; the end time makes no step (the brief's timeline has none)", () => {
   const t = buildBeoTimeline(party);
-  assert.deepEqual(at(t), [["14:00", STEP_GUESTS_ARRIVE], ["17:00", STEP_PARTY_ENDS]]);
-  assert.deepEqual(t.steps.map((s) => [s.kind, s.key, s.generated]), [["party", "guests_arrive", true], ["party", "party_end", true]]);
+  assert.deepEqual(at(t), [["14:00", STEP_GUESTS_ARRIVE]]);
+  assert.deepEqual(t.steps.map((s) => [s.kind, s.key, s.generated]), [["party", "guests_arrive", true]]);
   assert.deepEqual(t.untimed, []);
+  assert.equal(beoTimedMadeSteps(party).some((s) => s.key === "party_end"), false, "no end step is stored either");
 });
 
 await check("the setup's ready-by is always a step; its tasks, with no time stored, are listed for the setup plan", () => {
@@ -112,11 +114,11 @@ await check("the setup's ready-by is always a step; its tasks, with no time stor
     ...party,
     setupPlan: { setupRequired: true, setupTasks: { readyBy: "13:30", simplifiedTasks: [{ id: "a", itemLabel: "ZZ balloon arch", notes: "" }, { id: "b", itemLabel: "ZZ table cloths" }] } },
   });
-  assert.deepEqual(at(t), [["13:30", STEP_SETUP_READY], ["14:00", STEP_GUESTS_ARRIVE], ["17:00", STEP_PARTY_ENDS]]);
+  assert.deepEqual(at(t), [["13:30", STEP_SETUP_READY], ["14:00", STEP_GUESTS_ARRIVE]]);
   assert.deepEqual(t.untimed.map((u) => [u.label, u.home]), [["ZZ balloon arch", "setup"], ["ZZ table cloths", "setup"]], "no task is placed 30 minutes before the start");
   // A plan of before without a ready-by: its tasks are still no timed step.
   const noReady = buildBeoTimeline({ ...party, setupPlan: { setupRequired: true, setupTasks: [{ itemLabel: "ZZ chairs" }] } });
-  assert.deepEqual(at(noReady), [["14:00", STEP_GUESTS_ARRIVE], ["17:00", STEP_PARTY_ENDS]]);
+  assert.deepEqual(at(noReady), [["14:00", STEP_GUESTS_ARRIVE]]);
   // A setup not required is not on the timeline.
   assert.deepEqual(at(buildBeoTimeline({ ...party, setupPlan: { setupRequired: false, setupTasks: { readyBy: "13:30" } } })), at(buildBeoTimeline(party)));
   // A task that stores its own deadline is timed by it.
@@ -129,19 +131,19 @@ await check("an old setup plan's items are placed at the offset the plan stores,
   assert.deepEqual(at(t)[0], ["13:40", "ZZ old balloons"]);
 });
 
-await check("the kids' menu at its service time with what is served; a dish with no count is one", () => {
+await check("the kids' menu at its service time: the step says it is served; the dishes are listed in the Kitchen, not on the step", () => {
   const t = buildBeoTimeline({ ...party, kitchenPlan: kitchen({}, { kids: [line("ZZ Margherita", 3), line("ZZ French fries"), line("ZZ Rice", "2")], kidsFoodTime: "15:00" }) });
   const kids = t.steps.find((s) => s.key === "kids_food")!;
-  assert.deepEqual([kids.time, kids.label, kids.detail, kids.kind], ["15:00", STEP_KIDS_MENU, "3x ZZ Margherita, 1x ZZ French fries, 2x ZZ Rice", "food"]);
+  assert.deepEqual([kids.time, kids.label, kids.detail, kids.kind], ["15:00", STEP_KIDS_MENU, null, "food"]);
   assert.equal(t.steps.filter((s) => s.kind === "food").length, 1, "the adults eat the kids' menu at no time of their own: no second step");
 });
 
-await check("the adults' own menu at its time; the kids' menu at a time of the adults' own says so; at the same time, one step", () => {
+await check("the adults' own menu at its time; the kids' menu at a time of the adults' own is a step too; at the same time, one step", () => {
   const own = buildBeoTimeline({ ...party, kitchenPlan: kitchen({}, { kids: [line("ZZ Margherita", 3)], adults: [line("ZZ Salmon pizza", 2)], adultsDiffer: true, kidsFoodTime: "15:00", adultsFoodTime: "15:30" }) });
   const adults = own.steps.find((s) => s.key === "adults_food")!;
-  assert.deepEqual([adults.time, adults.label, adults.detail], ["15:30", STEP_ADULTS_MENU, "2x ZZ Salmon pizza"]);
+  assert.deepEqual([adults.time, adults.label, adults.detail], ["15:30", STEP_ADULTS_MENU, null]);
   const sameMenu = buildBeoTimeline({ ...party, kitchenPlan: kitchen({}, { kids: [line("ZZ Margherita", 3)], kidsFoodTime: "15:00", adultsFoodTime: "15:30" }) });
-  assert.deepEqual(sameMenu.steps.filter((s) => s.kind === "food").map((s) => [s.time, s.label, s.detail]), [["15:00", STEP_KIDS_MENU, "3x ZZ Margherita"], ["15:30", STEP_ADULTS_MENU, ADULTS_SAME_AS_KIDS]]);
+  assert.deepEqual(sameMenu.steps.filter((s) => s.kind === "food").map((s) => [s.time, s.label, s.detail]), [["15:00", STEP_KIDS_MENU, null], ["15:30", STEP_ADULTS_MENU, null]]);
   const together = buildBeoTimeline({ ...party, kitchenPlan: kitchen({}, { kids: [line("ZZ Margherita", 3)], kidsFoodTime: "15:00", adultsFoodTime: "15:00" }) });
   assert.deepEqual(together.steps.filter((s) => s.kind === "food").map((s) => s.label), [STEP_KIDS_MENU]);
   // Different for adults at the kids' time: two steps, each its own list.
@@ -149,7 +151,7 @@ await check("the adults' own menu at its time; the kids' menu at a time of the a
   assert.deepEqual(both.steps.filter((s) => s.kind === "food").map((s) => [s.time, s.label]), [["15:00", STEP_KIDS_MENU], ["15:00", STEP_ADULTS_MENU]]);
 });
 
-await check("an old event's service blocks keep their time and what they serve; one with no time is given none", () => {
+await check("an old event's service blocks keep their time and their first three dishes, as they printed; one with no time is given none", () => {
   const t = buildBeoTimeline({
     ...party,
     kitchenPlan: kitchen({ serviceSchedule: [
@@ -158,18 +160,18 @@ await check("an old event's service blocks keep their time and what they serve; 
       { label: "ZZ Snack", items: [] },
     ] }),
   });
-  assert.deepEqual(t.steps.filter((s) => s.kind === "food").map((s) => [s.time, s.label, s.detail]), [["15:15", "ZZ Lunch", "4x ZZ Noodles, 1x ZZ Soup, 2x ZZ Rolls, 1x ZZ Fruit"]], "every dish, the repeat once");
+  assert.deepEqual(t.steps.filter((s) => s.kind === "food").map((s) => [s.time, s.label, s.detail]), [["15:15", "ZZ Lunch", "4x ZZ Noodles, 1x ZZ Soup, 2x ZZ Rolls"]], "the old generator's three dishes (they print nowhere else), the repeat once");
   assert.deepEqual(t.untimed.filter((u) => u.home === "kitchen").map((u) => u.label), ["ZZ Snack"], "not 15 minutes after the start");
 });
 
-await check("the bar at its service time with its drinks; the cake at its time with what it is", () => {
+await check("the bar at its service time (its drinks are listed in the Bar, not on the step); the cake at its time with what it is", () => {
   const t = buildBeoTimeline({
     ...party,
     barPlan: { serviceTime: "14:30", items: [line("ZZ Mors", 2), line("ZZ Lemonade")] },
     kitchenPlan: kitchen({ cakeMode: "INTERNAL", cakeTime: "16:00", cakeQuantity: 2, cakeNotes: "ZZ mix flavour" }),
   });
   const bar = t.steps.find((s) => s.key === "bar_service")!;
-  assert.deepEqual([bar.time, bar.label, bar.detail], ["14:30", STEP_DRINKS, "2x ZZ Mors, 1x ZZ Lemonade"]);
+  assert.deepEqual([bar.time, bar.label, bar.detail], ["14:30", STEP_DRINKS, null]);
   const cake = t.steps.find((s) => s.key === "cake")!;
   assert.deepEqual([cake.time, cake.label, cake.detail], ["16:00", STEP_CAKE, "Our cake x2: ZZ mix flavour"]);
   const own = buildBeoTimeline({ ...party, kitchenPlan: kitchen({ cakeMode: "EXTERNAL", cakeTime: "16:00" }) });
@@ -179,7 +181,7 @@ await check("the bar at its service time with its drinks; the cake at its time w
   assert.deepEqual(untimedBar.untimed.map((u) => [u.label, u.home]), [[STEP_DRINKS, "bar"]]);
 });
 
-await check("each activity with its time and its own person; one with no time is listed beside the timeline", () => {
+await check("each activity with its time and its own person; one with no time is left to where the acts are shown", () => {
   const t = buildBeoTimeline({
     ...party,
     activities: [
@@ -189,7 +191,8 @@ await check("each activity with its time and its own person; one with no time is
     ],
   });
   assert.deepEqual(t.steps.filter((s) => s.kind === "activity").map((s) => [s.time, s.label, s.person, s.key]), [["15:00", "ZZ Bubble show", "ZZ Host", "entertainment::act-1"], ["16:30", "Entertainment", null, "entertainment::act-3"]]);
-  assert.deepEqual(untimedBesideTimeline(t).map((u) => [u.label, u.home]), [["ZZ Magic", "entertainment"]]);
+  assert.deepEqual(t.untimed.map((u) => [u.label, u.home]), [["ZZ Magic", "entertainment"]]);
+  assert.deepEqual(untimedBesideTimeline(t), [], "the print's Entertainment part says it has no time; not a second time under the timeline");
 });
 
 await check("an old event with only typed rows keeps printing them, at the start plus their offset, in time order", () => {
@@ -220,7 +223,6 @@ await check("all together in time order; at an equal time party, food, activity,
     ["16:00", "ZZ Disco"],
     ["17:30", STEP_CAKE],
     ["17:45", "ZZ Goodbye"],
-    ["18:00", STEP_PARTY_ENDS],
   ]);
   assert.deepEqual(t.steps.filter((s) => s.time === "15:00").map((s) => s.kind), ["party", "food", "food", "activity", "other"]);
 });
@@ -240,7 +242,7 @@ await check("nothing is given a time the BEO does not store: no start, no guests
   const t = buildBeoTimeline({ startTime: null, endTime: null, activities: [{ id: "x", customName: "ZZ Clown" }], rows: [row("ZZ Speech", 30)], kitchenPlan: kitchen({}, { kids: [line("ZZ Margherita", 2)] }) });
   assert.deepEqual(t.steps, []);
   assert.deepEqual(t.untimed.map((u) => [u.label, u.home]), [[STEP_KIDS_MENU, "kitchen"], ["ZZ Clown", "entertainment"], ["ZZ Speech", "timeline"]]);
-  assert.deepEqual(untimedBesideTimeline(t).map((u) => u.label), ["ZZ Clown", "ZZ Speech"], "the kitchen lists its own menu");
+  assert.deepEqual(untimedBesideTimeline(t).map((u) => u.label), ["ZZ Speech"], "the kitchen lists its own menu, Entertainment its acts");
   // A start that is no clock time is none.
   assert.deepEqual(buildBeoTimeline({ startTime: "", rows: [row("ZZ Speech", 30)] }).steps, []);
 });
@@ -263,16 +265,16 @@ await check("a party with no food: no menu step, the bar and the cake as they ar
     kitchenPlan: kitchen({ foodRequired: false, cakeMode: "EXTERNAL", cakeTime: "16:00", serviceSchedule: [{ label: "ZZ Lunch", time: "15:00" }] }, { kids: [line("ZZ Margherita", 3)], kidsFoodTime: "15:00" }),
     barPlan: { serviceTime: "15:00", items: [] },
   });
-  assert.deepEqual(at(t), [["14:00", STEP_GUESTS_ARRIVE], ["15:00", STEP_DRINKS], ["16:00", STEP_CAKE], ["17:00", STEP_PARTY_ENDS]]);
+  assert.deepEqual(at(t), [["14:00", STEP_GUESTS_ARRIVE], ["15:00", STEP_DRINKS], ["16:00", STEP_CAKE]]);
   assert.equal(t.steps.find((s) => s.key === "bar_service")!.detail, null, "no drinks listed: nothing said");
-  assert.deepEqual(buildBeoTimeline({ ...party, kitchenPlan: null, barPlan: null }).steps.map((s) => s.key), ["guests_arrive", "party_end"]);
+  assert.deepEqual(buildBeoTimeline({ ...party, kitchenPlan: null, barPlan: null }).steps.map((s) => s.key), ["guests_arrive"]);
 });
 
 // ── 5. The same step once ────────────────────────────────────────────────────
 
 await check("a typed row that repeats a step the system makes (same minute, same words) is shown once", () => {
   const t = buildBeoTimeline({ ...party, kitchenPlan: kitchen({ cakeMode: "INTERNAL", cakeTime: "16:00" }), rows: [row("Guests arrive", 0), row("  guests ARRIVE! ", 0), row("cake moment", 120), row("Cake", 120), row("Guests arrive", 15)] });
-  assert.deepEqual(at(t), [["14:00", STEP_GUESTS_ARRIVE], ["14:15", "Guests arrive"], ["16:00", STEP_CAKE], ["16:00", "Cake"], ["17:00", STEP_PARTY_ENDS]], "other words or another minute: shown twice rather than dropped");
+  assert.deepEqual(at(t), [["14:00", STEP_GUESTS_ARRIVE], ["14:15", "Guests arrive"], ["16:00", STEP_CAKE], ["16:00", "Cake"]], "other words or another minute: shown twice rather than dropped");
   assert.equal(t.steps.find((s) => s.label === STEP_GUESTS_ARRIVE && s.time === "14:00")!.generated, true, "the system's own step is the one kept");
 });
 
@@ -286,7 +288,7 @@ await check("two typed rows that are the same step are shown once; the first sto
 await check("a step staff removed stays removed; a stored automatic row's tick and id are carried; a stored row of a step no longer made is not shown", () => {
   const ticked = row("Guests arrive", 0, { isSystemGenerated: true, sourceKey: "guests_arrive", isCompleted: true });
   const oldTask = row("ZZ old task", -30, { isSystemGenerated: true, sourceKey: "setup_task::0" });
-  const t = buildBeoTimeline({ ...party, suppressedSources: ["party_end"], rows: [ticked, oldTask] });
+  const t = buildBeoTimeline({ ...party, barPlan: { serviceTime: "15:00", items: [] }, suppressedSources: ["bar_service"], rows: [ticked, oldTask] });
   assert.deepEqual(at(t), [["14:00", STEP_GUESTS_ARRIVE]]);
   assert.deepEqual([t.steps[0]!.rowId, t.steps[0]!.isCompleted], [ticked.id, true]);
   // A step made but not stored yet (a BEO not saved since): shown, with no row to tick.
@@ -305,7 +307,6 @@ await check("the generator stores the timed steps the timeline makes, under the 
   assert.deepEqual(made.map((s) => [s.key, s.clock.time, s.label]), [
     ["setup_ready", "13:30", STEP_SETUP_READY],
     ["guests_arrive", "14:00", STEP_GUESTS_ARRIVE],
-    ["party_end", "17:00", STEP_PARTY_ENDS],
     ["kids_food", "15:00", STEP_KIDS_MENU],
     ["bar_service", "14:30", STEP_DRINKS],
     ["cake", "16:00", STEP_CAKE],
@@ -366,7 +367,7 @@ await check("the screens show the built timeline: the editor's preview, the Day-
   assert.doesNotMatch(viewOnly, /\/beo\/timeline`/, "no read of the stored rows");
 });
 
-await check("the PDF prints each step with what is served and its person, in the system's order, and the steps with no time", async () => {
+await check("the PDF prints each step with its person, in the system's order; no dish a second time; a typed row with no time listed", async () => {
   const t = buildBeoTimeline({
     startTime: "14:00",
     endTime: "17:00",
@@ -375,15 +376,19 @@ await check("the PDF prints each step with what is served and its person, in the
     rows: [row("ZZ Pinata", 0)],
   });
   const pdf = beoPdfTimelineOf(t);
-  assert.deepEqual(pdf.timelineUntimed, [{ description: "ZZ Clown" }]);
+  assert.deepEqual(pdf.timelineUntimed, [], "the act with no time is the Entertainment part's");
   const html = await beoPdfHtml({ eventTitle: "ZZ TEST party", eventDate: "2099-12-05", startTime: "14:00", endTime: "17:00", status: "confirmed", ...pdf });
   const section = html.slice(html.indexOf("<h2>Timeline</h2>"));
-  const order = ["Guests arrive", "menu served", "ZZ Pinata", "ZZ Bubble show", "Party ends"].map((w) => section.indexOf(w));
+  const order = ["Guests arrive", "menu served", "ZZ Pinata", "ZZ Bubble show"].map((w) => section.indexOf(w));
   assert.ok(order.every((i) => i > 0), JSON.stringify(order));
   assert.deepEqual([...order].sort((a, b) => a - b), order, "printed in the system's order");
-  assert.match(section, /3x ZZ Margherita, 1x ZZ Fries/);
+  assert.doesNotMatch(section.slice(0, section.indexOf('data-part="kitchen"')), /ZZ Margherita|ZZ Fries/, "the dishes print in the Kitchen, not again on the timeline");
   assert.match(section, /· ZZ Host/);
-  assert.match(section, /No time set: ZZ Clown/);
+  assert.doesNotMatch(section, /No time set/);
+  // A typed row on a party with no start: kept, listed under the timeline, never given a time.
+  const noStart = beoPdfTimelineOf(buildBeoTimeline({ startTime: null, rows: [row("ZZ Speech", 30)], activities: [{ id: "a3", customName: "ZZ Clown" }] }));
+  assert.deepEqual(noStart.timelineUntimed, [{ description: "ZZ Speech" }]);
+  assert.match(await beoPdfHtml({ eventTitle: "ZZ TEST no start", eventDate: "2099-12-05", startTime: "", status: "confirmed", ...noStart }), /No time set: ZZ Speech/);
   // An old event with only typed rows still prints them.
   const old = await beoPdfHtml({ eventTitle: "ZZ TEST old", eventDate: "2099-12-05", startTime: "14:00", status: "confirmed", ...beoPdfTimelineOf(buildBeoTimeline({ startTime: "14:00", rows: [row("ZZ Speech", 60)] })) });
   assert.match(old, /15:00<\/td>\s*<td>ZZ Speech/);

@@ -17,7 +17,10 @@ export function useBuiltTimeline(eventId: string, options: { refetchInterval?: n
   });
 }
 
-/** The timeline read-only: each step's time, what happens, what is served and its person; then the steps with no time. */
+/**
+ * The timeline read-only: each step's time, what happens, its few words (what the cake is) and its
+ * person; then a typed step with no time. The dishes and drinks are the Kitchen's and the Bar's.
+ */
 export function BeoBuiltTimelineList({ timeline, testId = "built-timeline" }: { timeline: BeoTimeline | undefined; testId?: string }) {
   const steps = timeline?.steps ?? [];
   const untimed = timeline?.untimed ? untimedBesideTimeline(timeline) : [];

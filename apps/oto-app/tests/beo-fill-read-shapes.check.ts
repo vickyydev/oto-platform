@@ -678,7 +678,8 @@ try {
       const open = page.indexOf('<td class="price-col">', at) + '<td class="price-col">'.length;
       return page.slice(open, page.indexOf("</td>", open)).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
     };
-    assert.equal(price(read, />Margherita \(Pizza\)/), "SET", "a SET line");
+    // SCRUM-1028: the set-menu choice prints by its name (its group's label left out); it is the first row.
+    assert.equal(price(read, /<td class="dish">Margherita<\/td>/), "SET", "a SET line");
     assert.equal(price(read, /2x<\/td>/), "EXTRA till price 450 (weekend)", "the till's weekend price, as the editor's hint");
     assert.equal(price(read, />Pepperoni(?:<| <span)/), "EXTRA 120฿ each", "the price entered, for each item");
     // SCRUM-991 (8a09885a2): the editor's hint says an unknown price, never free: so does the PDF.
