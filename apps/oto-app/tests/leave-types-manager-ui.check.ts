@@ -12,6 +12,9 @@
 //      nothing else about the type changes.
 //   3. A new type starts seen by staff, as every new type did; switched on
 //      before it is made, the POST carries managersOnly true.
+//   4. A switched-off type shows "Disabled" and no audience badge beside it
+//      (it is offered to nobody); switched on again, its audience is back,
+//      and a managers-only type keeps its setting meanwhile.
 //
 // Run from apps/oto-app:
 //   TSX_TSCONFIG_PATH=tests/tsconfig.jsx.json npx tsx tests/leave-types-manager-ui.check.ts
@@ -178,6 +181,26 @@ const cases: Record<string, () => Promise<void>> = {
     await click(button("Save changes"));
     assert.deepEqual([writes[0]!.path, writes[0]!.body.managersOnly], [`/api/leave-types/${SICK_ID}`, false]);
     assert.equal(required("leave-type-audience-SICK").textContent, "Staff can see");
+  },
+  "a switched-off type shows Disabled and no audience; switched on again, its audience is back": async () => {
+    await click(button("Disable Annual Leave"));
+    assert.deepEqual([writes[0]!.method, writes[0]!.path, writes[0]!.body], ["PATCH", `/api/leave-types/${ANNUAL_ID}`, { isActive: false }]);
+    const annualRow = required("leave-type-ANNUAL");
+    assert.ok(annualRow.textContent!.includes("Disabled"));
+    assert.equal(byTestId("leave-type-audience-ANNUAL"), null);
+    assert.ok(!annualRow.textContent!.includes("Staff can see"));
+    // The type still switched on is unchanged.
+    assert.equal(required("leave-type-audience-SICK").textContent, "Managers only");
+    await click(button("Enable Annual Leave"));
+    assert.equal(required("leave-type-audience-ANNUAL").textContent, "Staff can see");
+  },
+  "a switched-off managers-only type shows no audience either; its setting is kept for when it is switched on": async () => {
+    await click(button("Disable Sick Leave"));
+    assert.ok(required("leave-type-SICK").textContent!.includes("Disabled"));
+    assert.equal(byTestId("leave-type-audience-SICK"), null);
+    assert.ok(!required("leave-type-SICK").textContent!.includes("Managers only"));
+    await click(button("Edit Sick Leave"));
+    assert.equal(switchOn(), true);
   },
   "a new type starts seen by staff; switched on before it is made, the POST says managers only": async () => {
     await click(button("Add leave type"));
