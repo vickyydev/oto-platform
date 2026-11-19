@@ -39,6 +39,20 @@ export function isActionableSwitch(entry: CatalogueEntry): boolean {
   return entry.kind === 'kill_switch' && entry.supported && entry.valueType === 'boolean';
 }
 
+/**
+ * SCRUM-1024: a supported feature switch with named values (family profiles)
+ * is offered as a choice among its values other than the default, kept with
+ * no expiry until it is cleared. A value the server does not accept yet is
+ * refused at the preview (FLAG_VALUE_UNSUPPORTED), so its confirm never opens.
+ */
+export function featureValueChoices(entry: CatalogueEntry): string[] {
+  return (entry.values ?? []).filter(value => value !== String(entry.defaultValue));
+}
+
+export function isSettableFeature(entry: CatalogueEntry): boolean {
+  return entry.kind === 'feature' && entry.supported && entry.valueType === 'enum' && featureValueChoices(entry).length > 0;
+}
+
 /** One place, one value: what a switch-on would change, and what its preview must be for. */
 export interface SwitchChoice {
   key: string;
@@ -47,6 +61,18 @@ export interface SwitchChoice {
   operatorId: string | null;
   /** The value as the preview route takes it ('true' for a boolean switch turned on). */
   value: string;
+}
+
+/** The choice a drawer names: platform has no ids; a park group, park or station carries its own and its park group's. */
+export function choiceAt(input: {
+  key: string; scopeType: ScopeType; operatorId: string | null; branchId: string; stationId: string; value: string;
+}): SwitchChoice {
+  const at = (scopeId: string | null, owner: string | null) =>
+    ({ key: input.key, scopeType: input.scopeType, scopeId, operatorId: owner, value: input.value });
+  if (input.scopeType === 'platform') return at(null, null);
+  if (input.scopeType === 'operator') return at(input.operatorId, input.operatorId);
+  if (input.scopeType === 'branch') return at(input.branchId || null, input.operatorId);
+  return at(input.stationId || null, input.operatorId);
 }
 
 /** A choice names its place completely: platform has no ids; every other scope its own and its park group's. */
@@ -104,6 +130,24 @@ export function switchOnGate(input: {
     !complete && 'Choose where the switch applies.',
     complete && !previewMatches(input.preview, input.choice) && 'Preview the blast radius of exactly this choice.',
     expiryProblem(input.minutes, input.maxTtlMinutes),
+    reasoned(input.reason),
+    input.choice ? typed(input.confirmation, input.choice.key) : null,
+    input.busy && 'Sending…',
+  ]);
+}
+
+/** Setting a feature switch: place, one of its offered values, the preview of exactly that, reason, typed phrase; no expiry. */
+export function featureSetGate(input: {
+  entry: CatalogueEntry; choice: SwitchChoice | null; preview: SuiteFlagPreview | null;
+  reason: string; confirmation: string; busy: boolean;
+}): Gate {
+  const { choice } = input;
+  const complete = choiceComplete(choice);
+  const valued = complete && choice !== null && featureValueChoices(input.entry).includes(choice.value);
+  return gate([
+    !complete && 'Choose where the switch applies.',
+    complete && !valued && 'Choose a value.',
+    valued && !previewMatches(input.preview, input.choice) && 'Preview exactly what this choice changes.',
     reasoned(input.reason),
     input.choice ? typed(input.confirmation, input.choice.key) : null,
     input.busy && 'Sending…',

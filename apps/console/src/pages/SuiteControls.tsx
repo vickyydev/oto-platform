@@ -14,13 +14,13 @@ import { CardShell } from '@/components/redesign/layout';
 import { BarChip, StatusChip } from '@/components/redesign/chips';
 import { EmptyNote } from '@/components/redesign/StatTile';
 import {
-  FeatureFlagsCard, KillSwitchCard, MaintenanceClearForm, MaintenanceSetForm, ReviewForm, SwitchOffForm, SwitchOnForm,
+  FeatureFlagsCard, FeatureSetForm, KillSwitchCard, MaintenanceClearForm, MaintenanceSetForm, ReviewForm, SwitchOffForm, SwitchOnForm,
   WriteLocked, type PlaceOption,
 } from '@/components/suite/SuiteControlViews';
 import { Button } from '@/components/ui/button';
 import {
-  approvalStep, choiceOfOperation, maintenanceClearGate, maintenanceSetGate, operationOf, previewMatches, previewQuery,
-  revisionAt, reviewGate, switchOffGate, switchOnGate,
+  approvalStep, choiceAt, choiceOfOperation, featureSetGate, featureValueChoices, maintenanceClearGate, maintenanceSetGate,
+  operationOf, previewMatches, previewQuery, revisionAt, reviewGate, switchOffGate, switchOnGate,
   type CatalogueEntry, type FlagOverride, type PendingApproval, type ScopeType, type SwitchChoice,
 } from '@/lib/suiteControlRules';
 import { formatExact } from '@/lib/time';
@@ -28,7 +28,7 @@ import { useWorkingAuthority } from '@/lib/workingAuthority';
 
 type Page = 'apps' | 'releases';
 type ReadPermission = 'console:app_registry:read' | 'console:release:read';
-type WritePermission = 'console:app_registry:manage' | 'console:release:kill_switch';
+type WritePermission = 'console:app_registry:manage' | 'console:release:kill_switch' | 'console:release:flag_manage';
 const MAINTENANCE_DEFAULT_MINUTES = 60;
 
 /** A registry/history answer belongs to one confirmed working-session epoch. */
@@ -130,10 +130,13 @@ export function SuiteControls({ page }: { page: Page }) {
   const permission = page === 'apps' ? 'console:app_registry:read' : 'console:release:read';
   const authority = useSuiteAuthority(permission);
   const canWrite = useWriteGrant(page === 'apps' ? 'console:app_registry:manage' : 'console:release:kill_switch');
+  // SCRUM-1024: a feature flag is changed under its own grant, as the server's flag write checks it.
+  const canManageFlags = useWriteGrant('console:release:flag_manage');
   if (!authority.allowed) return <><CommandBar sectionId={page} /><PermissionRequired permission={permission} /></>;
   return page === 'apps'
     ? <Apps key={`${authority.key}:${canWrite}`} authority={authority} canManage={canWrite} />
-    : <Releases key={`${authority.key}:${canWrite}`} authority={authority} canWrite={canWrite} />;
+    : <Releases key={`${authority.key}:${canWrite}:${canManageFlags}`} authority={authority} canWrite={canWrite}
+      canManageFlags={canManageFlags} />;
 }
 
 function Stamp({ value }: { value: string | null }) {
@@ -267,9 +270,10 @@ function AppRecord({ app, actions }: { app: SuiteApps['apps'][number]; actions?:
 
 // --- Releases: switches, flags, history, agents -----------------------------------
 
-type SwitchOpen = { kind: 'on'; entry: CatalogueEntry } | { kind: 'off'; override: FlagOverride } | { kind: 'review'; approval: PendingApproval };
+type SwitchOpen = { kind: 'on'; entry: CatalogueEntry } | { kind: 'set'; entry: CatalogueEntry }
+  | { kind: 'off'; override: FlagOverride } | { kind: 'review'; approval: PendingApproval };
 
-function Releases({ authority, canWrite }: { authority: Authority; canWrite: boolean }) {
+function Releases({ authority, canWrite, canManageFlags }: { authority: Authority; canWrite: boolean; canManageFlags: boolean }) {
   const [offset, setOffset] = useState(0);
   const [agentOffset, setAgentOffset] = useState(0);
   const read = useCallback(() => suiteControlsApi.releases(offset), [offset]);
@@ -288,7 +292,7 @@ function Releases({ authority, canWrite }: { authority: Authority; canWrite: boo
   const done = (text: string) => { setOpen(null); setNotice(text); flags.refresh(); };
   const choose = (next: SwitchOpen) => { if (authority.isCurrent()) { setNotice(null); setOpen(next); } };
   return <>
-    <CommandBar sectionId="releases" badges={<BarChip>{canWrite ? 'Platform controls' : 'Read only'}</BarChip>} actions={
+    <CommandBar sectionId="releases" badges={<BarChip>{canWrite || canManageFlags ? 'Platform controls' : 'Read only'}</BarChip>} actions={
       <Button variant="outline" onClick={() => { refresh(); agents.refresh(); flags.refresh(); }}
         disabled={!answer && !error && !agents.answer && !agents.error && !flags.answer && !flags.error}>
         <RefreshCw className="h-4 w-4" />Refresh
@@ -300,7 +304,8 @@ function Releases({ authority, canWrite }: { authority: Authority; canWrite: boo
         <KillSwitchCard flags={flags.answer} me={authority.accountId} canWrite={canWrite} nowMs={now}
           onSwitchOn={entry => choose({ kind: 'on', entry })} onSwitchOff={override => choose({ kind: 'off', override })}
           onReview={approval => choose({ kind: 'review', approval })} />
-        <FeatureFlagsCard flags={flags.answer} />
+        <FeatureFlagsCard flags={flags.answer} me={authority.accountId} canWrite={canManageFlags} nowMs={now}
+          onSet={entry => choose({ kind: 'set', entry })} onSwitchOff={override => choose({ kind: 'off', override })} />
       </>}
     {error ? <ErrorNote message={error} onRetry={refresh} /> : !answer ? <Loading what="release history" /> :
       <CardShell title="Recorded releases" icon={History} note={<>Read at <Stamp value={answer.generatedAt} /></>} footer={
@@ -329,6 +334,7 @@ function Releases({ authority, canWrite }: { authority: Authority; canWrite: boo
 }
 
 const drawerKey = (open: SwitchOpen) => open.kind === 'on' ? `on:${open.entry.flagKey}`
+  : open.kind === 'set' ? `set:${open.entry.flagKey}`
   : open.kind === 'off' ? `off:${open.override.id}:${open.override.revision}` : `review:${open.approval.id}:${open.approval.state}`;
 
 /** The history, or an honest note that nothing has been recorded — never a table that implies zero deploys. */
@@ -344,6 +350,7 @@ function SwitchDrawer({ open, flags, authority, canWrite, onClose, onDone }: {
   open: SwitchOpen; flags: SuiteFlags; authority: Authority; canWrite: boolean; onClose: () => void; onDone: (notice: string) => void;
 }) {
   if (open.kind === 'on') return <SwitchOnDrawer entry={open.entry} flags={flags} authority={authority} onClose={onClose} onDone={onDone} />;
+  if (open.kind === 'set') return <FeatureSetDrawer entry={open.entry} flags={flags} authority={authority} onClose={onClose} onDone={onDone} />;
   if (open.kind === 'off') {
     const entry = flags.catalogue.find(row => row.flagKey === open.override.flagKey);
     return entry ? <SwitchOffDrawer entry={entry} override={open.override} authority={authority} onClose={onClose} onDone={onDone} /> : null;
@@ -419,13 +426,8 @@ function SwitchOnDrawer({ entry, flags, authority, onClose, onDone }: {
   const [error, setError] = useState<string | null>(null);
   const places = usePlaces(authority, scopeType === 'branch' || scopeType === 'station', branchId, scopeType === 'station');
   const operatorId = authority.operatorId ?? null;
-  const choice = useMemo<SwitchChoice>(() => {
-    const at = (scopeId: string | null, owner: string | null) => ({ key: entry.flagKey, scopeType, scopeId, operatorId: owner, value: 'true' });
-    if (scopeType === 'platform') return at(null, null);
-    if (scopeType === 'operator') return at(operatorId, operatorId);
-    if (scopeType === 'branch') return at(branchId || null, operatorId);
-    return at(stationId || null, operatorId);
-  }, [entry.flagKey, scopeType, branchId, stationId, operatorId]);
+  const choice = useMemo<SwitchChoice>(() => choiceAt({ key: entry.flagKey, scopeType, operatorId, branchId, stationId, value: 'true' }),
+    [entry.flagKey, scopeType, branchId, stationId, operatorId]);
   const gate = switchOnGate({ choice, preview: preview.preview, minutes, maxTtlMinutes: flags.maxTtlMinutes, reason, confirmation, busy });
   const submit = async () => {
     if (!gate.ready || busy || !authority.isCurrent()) return;
@@ -461,6 +463,59 @@ function SwitchOnDrawer({ entry, flags, authority, onClose, onDone }: {
   </Drawer>;
 }
 
+/**
+ * SCRUM-1024: set a supported feature switch at one place to one of its named
+ * values. No expiry and no second administrator (the server asks both only of
+ * kill switches); the preview of exactly this choice, a reason and the typed
+ * key come first. A value the server refuses at the preview never enables Set.
+ */
+function FeatureSetDrawer({ entry, flags, authority, onClose, onDone }: {
+  entry: CatalogueEntry; flags: SuiteFlags; authority: Authority; onClose: () => void; onDone: (notice: string) => void;
+}) {
+  const send = useKeyedSend();
+  const preview = usePreview(authority);
+  const offered = featureValueChoices(entry);
+  const [scopeType, setScopeType] = useState<ScopeType>(entry.scopes[0] ?? 'platform');
+  const [branchId, setBranchId] = useState('');
+  const [stationId, setStationId] = useState('');
+  const [value, setValue] = useState(offered.length === 1 ? offered[0] ?? '' : '');
+  const [reason, setReason] = useState('');
+  const [confirmation, setConfirmation] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const places = usePlaces(authority, scopeType === 'branch' || scopeType === 'station', branchId, scopeType === 'station');
+  const operatorId = authority.operatorId ?? null;
+  const choice = useMemo<SwitchChoice>(() => choiceAt({ key: entry.flagKey, scopeType, operatorId, branchId, stationId, value }),
+    [entry.flagKey, scopeType, branchId, stationId, operatorId, value]);
+  const gate = featureSetGate({ entry, choice, preview: preview.preview, reason, confirmation, busy });
+  const submit = async () => {
+    if (!gate.ready || busy || !authority.isCurrent()) return;
+    setBusy(true); setError(null);
+    try {
+      await send(JSON.stringify([choice, reason, confirmation]), () => ({
+        key: choice.key, scopeType: choice.scopeType, scopeId: choice.scopeId, operatorId: choice.operatorId, value: choice.value,
+        expiresAt: null, reason: reason.trim(), expectedRevision: revisionAt(flags.overrides, choice.key, choice.scopeType, choice.scopeId),
+        confirmation,
+      }), (body, key) => authority.run(() => suiteControlsApi.setSwitch(body, key)));
+      if (authority.isCurrent()) onDone(`${entry.label} is set to ${choice.value} there. It stays until it is switched off.`);
+    } catch (failure) {
+      if (authority.isCurrent()) setError(messageOf(failure));
+    } finally {
+      if (authority.isCurrent()) setBusy(false);
+    }
+  };
+  return <Drawer title={entry.label} subtitle="Set a value" onClose={onClose}>
+    <FeatureSetForm entry={entry} scopeType={scopeType}
+      onScopeType={next => { setScopeType(next); setStationId(''); if (next !== 'branch' && next !== 'station') setBranchId(''); }}
+      branches={places.branches.list} branchesError={places.branches.error} branchId={branchId}
+      onBranch={next => { setBranchId(next); setStationId(''); }}
+      stations={places.stations.list} stationsError={places.stations.error} stationId={stationId} onStation={setStationId}
+      value={value} onValue={setValue} choice={choice} preview={preview.preview} previewBusy={preview.busy}
+      previewError={preview.error} onPreview={() => preview.ask(choice)} reason={reason} onReason={setReason}
+      confirmation={confirmation} onConfirmation={setConfirmation} gate={gate} busy={busy} error={error} onSubmit={() => void submit()} />
+  </Drawer>;
+}
+
 function SwitchOffDrawer({ entry, override, authority, onClose, onDone }: {
   entry: CatalogueEntry; override: FlagOverride; authority: Authority; onClose: () => void; onDone: (notice: string) => void;
 }) {
@@ -478,7 +533,9 @@ function SwitchOffDrawer({ entry, override, authority, onClose, onDone }: {
         key: override.flagKey, scopeType: override.scopeType, scopeId: override.scopeId, operatorId: override.operatorId,
         expectedRevision: override.revision, reason: reason.trim(), confirmation,
       }), (body, key) => authority.run(() => suiteControlsApi.clearSwitch(body, key)));
-      if (authority.isCurrent()) onDone(`${entry.label} is off there; service is restored.`);
+      if (authority.isCurrent()) onDone(entry.kind === 'feature'
+        ? `${entry.label} is switched off there; the default (${String(entry.defaultValue)}) applies.`
+        : `${entry.label} is off there; service is restored.`);
     } catch (failure) {
       if (authority.isCurrent()) setError(messageOf(failure));
     } finally {
