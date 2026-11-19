@@ -1,3 +1,29 @@
+## 19 November 2026, late: six lanes; family profiles' first steps started
+
+- **Family profiles, steps F1 and F2 (SCRUM-1024):** started without waiting
+  for the counter flow, because the owner freed more memory. Workflow
+  wf_f910f57a-2bd, `C:/oto-lanes/codex-deposit-910-20261114`, branch
+  `lane/family1024-20261119`. It adds the tables, makes every new child get a
+  family, and writes the backfill, verify and shadow-compare scripts. The
+  switch stays off and the backfill is NOT run on staging: that data job
+  needs the owner's go.
+- **Lane states:** drop-off counter flow: returning family built; number,
+  rate and document built except one case (below); Edit details and care
+  notes building. BEO: timeline built, print building. HR smaller requests:
+  scheduling order and leave types built, single shift building. Till smaller
+  requests: options editor and Mystery Box built, in review. Inbox follow-up:
+  first stage (sizes and the draggable divider) building.
+- **Hosted CI** for the inbox redesign landing (7547eace2) finished green.
+- **Waiting for the owner:** (1) a number given with no name: the member
+  cannot be created without a name today (create it once a name is known,
+  make the name optional, or use the number as the name); (2) the phone
+  till's drop-off number field; (3) the leave types reading; (4) setup tasks
+  on the BEO timeline; (5) the family rate when two parents hold different
+  rates; (6) the go to run the family backfill on staging.
+- **To file after the lanes land:** the Console's member form does not mark
+  the rate document's expiry date as required (the server now refuses a
+  missing date and the form shows the server's sentence).
+
 ## 19 November 2026, night: the owner's tablet feedback leads the inbox follow-up
 
 - The owner tested the redesigned Inbox on iPad mini and iPad 13 layouts and
