@@ -1,5 +1,6 @@
 import { Trash2 } from "lucide-react";
 import type { WeekdayWeekendPrice } from "../../../model/types";
+import { formatWWPrice } from "../../../lib/pricingMode";
 import { Button } from "../../ui/button";
 import { Input } from "../../ui/input";
 
@@ -10,9 +11,9 @@ import { Input } from "../../ui/input";
  *
  * The stored shape is unchanged: an option still carries a weekday and a
  * weekend price. The one price field writes the same value to both. An option
- * that already holds two different prices is not flattened: both are shown in
- * plain words, the field stays empty, and the stored values change only when
- * a price is typed.
+ * that already holds two different prices is not flattened: both are shown
+ * under the row, the field stays empty, and the stored values change only
+ * when a price is typed.
  */
 
 /** True when the stored weekday and weekend prices differ. */
@@ -29,9 +30,12 @@ export const priceFromOneField = (raw: string): WeekdayWeekendPrice => {
   return { weekday: value, weekend: value };
 };
 
-/** The plain-words note for an option holding two different prices. */
-export const twoPricesNote = (price: WeekdayWeekendPrice): string =>
-  `weekday ฿${price.weekday}, weekend ฿${price.weekend}`;
+/**
+ * The note for an option holding two different prices, written as the admin
+ * lists write a price pair (`formatWWPrice`: "฿10 / ฿25 wknd", thousands
+ * grouped).
+ */
+export const twoPricesNote = (price: WeekdayWeekendPrice): string => formatWWPrice(price);
 
 interface OptionRowFieldsProps {
   name: string;
@@ -71,7 +75,7 @@ export function OptionRowFields({
             inputMode="numeric"
             min={0}
             step="0.01"
-            className="w-24"
+            className="w-16"
             value={onePriceFieldValue(price)}
             onChange={(e) => onPrice(priceFromOneField(e.target.value))}
             placeholder="0"
@@ -85,7 +89,7 @@ export function OptionRowFields({
             inputMode="numeric"
             min={0}
             step="0.01"
-            className="w-24"
+            className="w-16"
             value={cost}
             onChange={(e) => onCost(e.target.value)}
             placeholder="—"
