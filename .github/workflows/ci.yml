@@ -1152,6 +1152,33 @@ jobs:
         env:
           PUPPETEER_EXECUTABLE_PATH: /usr/bin/google-chrome
         run: npx tsx tests/beo-guests-socks-db.check.ts
+      # SCRUM-1032/1033: an activity's people (staff by name, one or several,
+      # a role with its number, the person of before) and its note; a dish's
+      # or a drink's own serving time and group; the timeline's steps for both
+      # and the Staff BEO's Entertainment, Kitchen and Bar; app migration 0055
+      # expand only; nothing of either named by the till's views or the
+      # platform. No database.
+      - name: The app's BEO activity people and serving times check
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/beo-activities-times.check.ts
+      # SCRUM-1032/1033: the same on the BEO editor under jsdom — one time box
+      # per activity, its people picked and stepped and written one change
+      # after the other, its note; a dish's serving time set from its row and
+      # saved with the line, a group's dishes moving together.
+      - name: The app's BEO activity people and serving times form check
+        if: steps.changes.outputs.app == 'true'
+        env:
+          TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
+        run: npx tsx tests/beo-activities-times-ui.check.ts
+      # SCRUM-1032/1033: through the app's real routes on the migrated
+      # database — the people route, its refusals, a member of staff who has
+      # left still named, the timeline and the print, the Save's serving
+      # times and its refusal, nothing sent to the platform.
+      - name: The app's BEO activity people routes check
+        if: steps.changes.outputs.app == 'true'
+        env:
+          PUPPETEER_EXECUTABLE_PATH: /usr/bin/google-chrome
+        run: npx tsx tests/beo-activity-people-db.check.ts
       # SCRUM-827: the BEO pre-filled in one pass, the form under jsdom: Create
       # BEO's review opens with every section proposed and marked (the chat's
       # lines, the park's default for the title), a value the form holds kept
