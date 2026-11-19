@@ -11,6 +11,7 @@ import { log } from "./lib/logger";
 import { aiComplete, aiConfigured, getAnthropic } from "./lib/anthropic";
 import {
   AI_TEXT_MAX,
+  BEO_QUESTION_NOT_AGREED,
   BeoFillSchema,
   DEFAULT_PARK_TIME_ZONE,
   EventExtractionSchema,
@@ -43,6 +44,8 @@ import {
   quoteOf,
   renderTranscript,
   resolveCatalogueAnswer,
+  unansweredQuestion,
+  withoutUnansweredQuestions,
   type BeoCatalogue,
   type TranscriptRef,
 } from "./lib/beoCatalogueFill";
@@ -395,7 +398,8 @@ export async function runBeoFill(
           helper: "beo_parsing",
           schema: (catalogue && !conversation ? BeoFillWithCatalogueSchema : BeoFillSchema) as typeof BeoFillWithCatalogueSchema,
           requiredShape: catalogue && !conversation ? BEO_FILL_WITH_CATALOGUE_SHAPE : BeoFillSchema,
-          systemExtra: (catalogue && !conversation ? beoCatalogueSystemBlock(catalogue, { conversation: false }) : "") + today,
+          // SCRUM-1035: a question nobody answered is never agreed, whatever a saved advice says.
+          systemExtra: (catalogue && !conversation ? beoCatalogueSystemBlock(catalogue, { conversation: false }) : "") + BEO_QUESTION_NOT_AGREED + today,
           user: beoParseUserMessage(ruling, input.existingData),
           inputChars: ruling.length,
         })
@@ -410,7 +414,7 @@ export async function runBeoFill(
           helper: "beo_parsing",
           schema: CatalogueOnlySchema,
           requiredShape: CONVERSATION_SHAPE,
-          systemExtra: beoCatalogueSystemBlock(catalogue, { conversation: true }) + today,
+          systemExtra: beoCatalogueSystemBlock(catalogue, { conversation: true }) + BEO_QUESTION_NOT_AGREED + today,
           user: beoParseUserMessage(conversation.text, undefined),
           inputChars: conversation.text.length,
           retryOnce: true,
@@ -429,11 +433,18 @@ export async function runBeoFill(
   let readAnswer: unknown = undefined;
   // SCRUM-904: the people the conversation names for the team, before the form's read joins them.
   let chatNamed: { partyHost?: BeoAiSourced<string>; entertainmentHost?: BeoAiSourced<string>; setupResponsible?: BeoAiSourced<string> } = {};
+  // SCRUM-1035: what was read (the conversation's lines, or the ruling message alone), for a value
+  // that is a question the team asked and the family never answered; how many were left out.
+  const readRefs = conversation?.refs ?? [];
+  const readAlone = conversation ? undefined : input.fallbackText;
+  let unanswered = 0;
   if (run.ok && catalogue) {
     const { catalogue: fromForm, ...fill } = run.value;
     run.value = fill;
     if (!conversation) proposal = resolveCatalogueAnswer((readAnswer = fromForm), catalogue, [], input.fallbackFrom, input.fallbackText);
     else if (catalogueRun?.ok) proposal = resolveCatalogueAnswer((readAnswer = catalogueRun.value.catalogue), catalogue, conversation.refs);
+    // SCRUM-1035: no value a question nobody answered, before anything reads the proposal.
+    if (proposal) unanswered += withoutUnansweredQuestions(proposal, readRefs, readAlone);
     // SCRUM-827: the rest of the BEO rides on the same proposal — the ruling's fields from the
     // form's read, the title from the app's own rule — so the review opens with everything at once.
     if (proposal) {
@@ -448,6 +459,8 @@ export async function runBeoFill(
         // SCRUM-904: each value read from the ruling message quotes its own words there.
         rulingText: ruling,
       });
+      // SCRUM-1035: and none of what the ruling message's own read adds.
+      unanswered += withoutUnansweredQuestions(proposal, readRefs, readAlone);
     }
   }
   if (catalogueRun && !catalogueRun.ok) {
@@ -478,6 +491,12 @@ export async function runBeoFill(
       return { source: input.fallbackFrom.source, at: input.fallbackFrom.at, line: input.fallbackFrom.line, ...(quote ? { quote } : {}) };
     };
     const from = chatNamed[field]?.value === p.asked ? chatNamed[field]?.from : fromRuling();
+    // SCRUM-1035: a person the team only asked about ("Shall Nok host?"), nobody answering, is not proposed.
+    if (from && unansweredQuestion(from, readRefs, readAlone ?? (conversation ? undefined : ruling), [p.asked])) {
+      proposals[field] = null;
+      unanswered += 1;
+      continue;
+    }
     if (from) proposals[field] = { ...p, from };
   }
   const purpose: BeoFillPurpose = input.purpose ?? "fill";
@@ -531,6 +550,8 @@ export async function runBeoFill(
         // SCRUM-903: no message of the team's confirmed the party: the conversation alone was read.
         ...(formRun ? {} : { ruling: false }),
         ...(proposal ? { catalogue: catalogueCounts(proposal, catalogue) } : {}),
+        // SCRUM-1035: how many values were questions the team asked that nobody answered, left out (a count).
+        ...(unanswered > 0 ? { unanswered } : {}),
         // SCRUM-970: the shape the conversation's read came back in, as counts.
         ...(proposal ? { answerShape: answerShapeOf(readAnswer, proposal) } : {}),
       }),
@@ -548,7 +569,11 @@ export async function runBeoFill(
     const said = typeof ruled.eventDateText === "string" && ruled.eventDateText.trim() ? ruled.eventDateText.trim() : null;
     const base = input.fallbackFrom ?? { source: "team" as const, at: null, line: null };
     const quote = quoteOf(said, ruling, [said]);
-    proposal.event.eventDate = { value: ruled.eventDate, said, from: { source: base.source, at: base.at, line: base.line, ...(quote ? { quote } : {}) } };
+    const from: BeoAiFrom = { source: base.source, at: base.at, line: base.line, ...(quote ? { quote } : {}) };
+    // SCRUM-1035: a date the team only asked about ("Would Saturday 21 March suit you?") is not proposed.
+    if (!unansweredQuestion(from, readRefs, readAlone ?? (conversation ? undefined : ruling), [said, ruled.eventDate])) {
+      proposal.event.eventDate = { value: ruled.eventDate, said, from };
+    }
   }
   return { run, proposals, proposal };
 }

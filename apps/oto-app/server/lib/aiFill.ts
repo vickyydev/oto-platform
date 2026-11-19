@@ -98,6 +98,7 @@ Parsing rules:
 - Menu items included in the package have included: true; extras have included: false, with their price when the message gives one
 - The adults eat what the kids eat unless the message says otherwise: put every dish in kidsMenu and leave adultsMenu out. When the message says the adults' food differs, adultsMenu is everything the adults eat — the dishes they share with the kids included, each in the adults' own count when the message gives one — and nothing the adults do not get: "nuggets for the kids, pasta for the adults" gives adultsMenu only the pasta; "nuggets for everyone, and a cheese platter for the adults" gives adultsMenu the nuggets and the cheese platter
 - Team: give a person or a role only when the message itself names them (for example "Host: Nok" or "our animator team"), written as the message writes the name itself: leave out a role word, a title or "the" before it ("Host: Nok" is "Nok", "พิธีกร พี่นก" is "พี่นก", "the Event Department" is "Event Department"). Never choose a person yourself
+- Timeline: only a timed moment the form has no time of its own for (a piñata at 13:30). The setup being ready, the guests arriving, the food or the drinks being served, the cake and a show are timed in their own fields, never as a timeline step
 
 When existing event data is provided: only update fields that are explicitly mentioned or corrected in the new text. Carry all other fields forward from the existing data unchanged. Never invent or clear a field just because it is not mentioned in the new text.`;
 
@@ -164,6 +165,24 @@ export const BUILT_IN_BEO_PARSING_OUTPUT_FORMAT = `Parse the message and return 
 }
 
 Omit any top-level key entirely if no relevant information was found for it. Within objects, omit keys that have no value rather than returning null.`;
+
+/**
+ * SCRUM-1035 — a question the team asked and the family never answered is
+ * never written as agreed, on any field. Every BEO fill's prompt carries it
+ * (`runBeoFill` in server/ai-routes.ts appends it to both reads, after the
+ * catalogue and before today), whatever a park group's saved advice and
+ * format say, as the deposit's own rule rides on every read. The code that
+ * accepts a proposal holds it too (`withoutUnansweredQuestions`,
+ * server/lib/beoCatalogueFill.ts).
+ */
+export const BEO_QUESTION_NOT_AGREED = `
+
+A QUESTION IS NOT AN AGREEMENT
+A question the park's team asks the family (an offer, an option, a quantity, a time or an add-on for the family to choose: "Would you like the bubble show at 15:00?", "Shall we add 2 more pizzas?", "Pizza or pasta for the kids?") is not something the family agreed. Until a line of the family's after it answers it, write nothing of it into any field as if it were agreed: no dish, drink, quantity, price, time, package, add-on, show, activity, setup task, person, timeline step, request or note saying it was agreed. Leave it out: the team asks the family again.
+- What the family answers is given from the family's own line, as the family answered it: "Yes please" to "Would you like the bubble show at 15:00?" agrees the bubble show at 15:00; "Just the pizza, thanks" agrees the pizza and nothing else the question offered.
+- A question that repeats what the family asked before ("So 15 kids at 14:00, right?") changes nothing: what the family asked stays the family's value, given from the family's own line, never from the team's question.
+- For example: the team writes "Would you like to add the bubble show at 15:00 for 1,500 baht?" and the family never answers it: no show, no 15:00 and no 1,500 anywhere. The team writes "Shall we serve the pizzas at 13:00?" and the family answers "Yes, 13:00 is perfect": the kids' food is at 13:00, from the family's line.
+- What the family clearly asked for or agreed is given as always: only what nobody agreed is left out.`;
 
 export type AiHelper = "event_extraction" | "beo_parsing";
 
