@@ -283,9 +283,6 @@ export function ConsentCapture({
   });
   const anyNeedsConsent = rows.some((r) => r.needsConsent);
   const allAged = rows.every((r) => r.aged);
-  // SCRUM-1018 — every child aged and none registered (a waived child and the
-  // sibling covering them, both on normal tickets): nothing to agree to.
-  const confirmationsAsked = anyNeedsConsent || !allAged;
   // SCRUM-875 — what is still missing before the family's Done, in their language.
   const missingLine = onDone
     ? consentMissingLine(t, consentMissing({
@@ -293,7 +290,7 @@ export function ConsentCapture({
       consentRequired: anyNeedsConsent,
       guardianName: parentName,
       consentAcknowledged: consentAck,
-      confirmations: confirmationsAsked ? confirmations.map((c) => ({ required: c.required, acknowledged: acknowledgedConfirmationIds.includes(c.id) })) : [],
+      confirmations: confirmations.map((c) => ({ required: c.required, acknowledged: acknowledgedConfirmationIds.includes(c.id) })),
       ...(onContactConfirmedChange ? { contact: { confirmed: contactConfirmed, problem: messagingPhoneProblem(parentPhone ?? '') } } : {}),
       photosTaken: rows.every((r) => !r.needsConsent || !!r.slot.childPhotoUrl),
     }), CHANNEL_LABEL[parentContactMethod])
@@ -606,7 +603,7 @@ export function ConsentCapture({
             of whether a paid service applies. Gated on `allAged` so it only
             appears once every child's age is entered (as part of the consent
             step below), not prematurely on the empty name/age entry. */}
-        {slots.length > 0 && allAged && confirmationsAsked && confirmations.length > 0 && (
+        {slots.length > 0 && allAged && confirmations.length > 0 && (
           <div className="rounded-3xl border border-foreground/10 bg-foreground/5 p-6 space-y-3">
             <label className="flex items-center gap-2 text-lg font-semibold text-foreground/80">
               <ClipboardCheck className="h-5 w-5 text-primary" />

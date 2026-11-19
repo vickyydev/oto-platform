@@ -262,12 +262,10 @@ export function SupervisionGate({
   const allIdentified = rows.every((r) => r.slot.name.trim().length > 0 && r.aged);
   // Confirmations must be ticked for ANY unaccompanied registration, even one
   // where every child ends up needing no service (e.g. an all-9+ group, each
-  // registered at no fee). SCRUM-1018 — once every child is aged and none is
-  // registered (a waived child and the sibling covering them, both on normal
-  // tickets) there is no form to agree to, and Continue goes on to payment.
-  const formNeeded = anyNeedsConsent || !rows.every((r) => r.aged);
+  // registered at no fee). SCRUM-1052 — after a waiver too: the covering
+  // sibling is registered at no fee, so the family agrees to the form.
   const confirmationsOk =
-    slots.length === 0 || !formNeeded || confirmationsSatisfied(policy, acknowledgedConfirmationIds);
+    slots.length === 0 || confirmationsSatisfied(policy, acknowledgedConfirmationIds);
 
   // Build a plain-language list of everything still blocking payment.
   const blockers: string[] = [];

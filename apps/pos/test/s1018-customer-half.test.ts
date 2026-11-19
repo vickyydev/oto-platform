@@ -88,7 +88,9 @@ describe('the till’s own customer half', () => {
     expect(under('en', half({ photoAtTillFor: [] }))).toContain(t('superviseConsent.photoTitle'));
   });
 
-  it('after a waiver, with nobody to register, nothing is asked: the family is told all is set', () => {
+  // SCRUM-1052 — after a waiver the covering sibling is registered at no fee
+  // (as before 19 November), so the family is asked the agreements for them.
+  it('after a waiver the covering sibling is registered at no fee: the agreements are asked, not "all set"', () => {
     const waiverPolicy = {
       bands: [
         { id: 'b5', label: '5–8', minAge: 5, maxAge: 8, requirement: 'drop_off' },
@@ -100,13 +102,13 @@ describe('the till’s own customer half', () => {
     const html = under('en', half({
       policy: waiverPolicy, parentPhoneFixed: undefined, parentNameFixed: undefined, agreementsOnly: undefined, photoAtTillFor: undefined,
       slots: [{ ...slot, id: 'mai', savedChildId: undefined, waived: true },
-        { ...slot, id: 'tom', name: 'ZZ TEST Tom', age: '10', savedChildId: undefined, optIn: false }],
-      doneReady: true,
+        { ...slot, id: 'tom', name: 'ZZ TEST Tom', age: '10', savedChildId: undefined, optIn: true }],
+      doneReady: false,
     }));
-    expect(html).not.toContain('ZZ TEST rule');
-    expect(html).not.toContain('data-testid="consent-ack"');
-    expect(html).toContain(tFor('en')('superviseConsent.allSetTitle').replace(/'/g, '&#x27;'));
-    expect(html).not.toContain('data-testid="consent-missing"');
+    expect(html).toContain(tFor('en')('superviseConsent.registeredNoFee'));
+    expect(html).toContain('ZZ TEST rule');
+    expect(html).not.toContain(tFor('en')('superviseConsent.allSetTitle').replace(/'/g, '&#x27;'));
+    expect(html).toContain('data-testid="consent-missing"');
   });
 
   it('staff’s own copy keeps every field to change, as before', () => {

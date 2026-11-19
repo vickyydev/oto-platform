@@ -86,13 +86,19 @@ export function profileGuardianName(member: Pick<Member, 'id' | 'nickname'> | nu
 }
 
 /**
- * AFTER A WAIVER (the owner's answer of 19 November). When staff waive a
- * younger child's supervision because an older sibling covers them, that
- * sibling plays on a normal ticket: no free drop-off form for them, and the
- * till goes on to payment. The waiver rule itself is unchanged: the covering
- * sibling is, as it always was, the oldest OTHER child old enough to act as
- * guardian (`siblingWaiver.guardianMinAge`), and only a child waived down from
- * a real requirement is covered. Answers each waived child's covering slot.
+ * THE SIBLING WHO COVERS A WAIVED CHILD. When staff waive a younger child's
+ * supervision because an older sibling covers them, the covering sibling is
+ * the oldest OTHER child old enough to act as guardian
+ * (`siblingWaiver.guardianMinAge`), and only a child waived down from a real
+ * requirement is covered. Answers each waived child's covering slot, for the
+ * waiver the till records.
+ *
+ * SCRUM-1052 — the covering sibling is registered at no fee, as the counter
+ * did before 19 November: with no adult on the sale, that registration is
+ * what lets the platform take the sale (SALE_KIDS_WITHOUT_REGISTRATION) and
+ * what gives the park the guardian's contact, the agreements and the pickup
+ * check. Whether that form is dropped after a waiver is the owner's choice
+ * on his page; until then the till keeps it.
  */
 export function waiverCovers<Slot extends Pick<SupervisedSlot, 'id' | 'age' | 'dateOfBirth' | 'waived'>>(
   slots: readonly Slot[],
@@ -114,22 +120,6 @@ export function waiverCovers<Slot extends Pick<SupervisedSlot, 'id' | 'age' | 'd
   return covers;
 }
 
-/**
- * The till's gate registers every child playing alone through the full
- * drop-off flow, free for one who needs no supervision (`optIn`). A sibling
- * covering a waived child is the exception: a plain ticket. Run after every
- * change of the gate's children, so the opt-in follows the waivers.
- */
-export function withCoveringSiblingsPlain<Slot extends Pick<SupervisedSlot, 'id' | 'age' | 'dateOfBirth' | 'waived' | 'optIn'>>(
-  slots: readonly Slot[],
-  policy: SupervisionPolicy,
-): Slot[] {
-  const covering = new Set([...waiverCovers(slots, policy).values()].map((slot) => slot.id));
-  return slots.map((slot) => {
-    const optIn = !covering.has(slot.id);
-    return slot.optIn === optIn ? slot : { ...slot, optIn };
-  });
-}
 
 /** The last visit's photo of a saved child, as the till found it. */
 export type LastPhotoState =
