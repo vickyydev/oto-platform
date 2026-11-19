@@ -7,6 +7,7 @@ import { registerTimekeepingReviewRoutes } from "./timekeeping-review-routes";
 import { registerPayrollRoutes } from "./payroll/routes";
 import { registerEmployeeActionRoutes } from "./employee-action-routes";
 import { registerEmployeeOnboardAgainRoutes } from "./employee-onboard-again-routes";
+import { activityForReader, activityTypesWithheldFrom } from "./lib/activityPay";
 import { bangkokToday, dayBefore, leaverStatusOf } from "./lib/engagementDates";
 import { linkContractToEngagement, planOfSignedContract, plannedEngagementForContract } from "./lib/onboardAgain";
 import { registerQaRoutes } from "./qa/routes";
@@ -7524,6 +7525,7 @@ OTO Company Limited`,
         employeeId?: string;
         contractInstanceId?: string;
         types?: ActivityType[]; 
+        withheldTypes?: readonly ActivityType[];
         limit?: number; 
         offset?: number;
         dateFrom?: Date;
@@ -7533,6 +7535,8 @@ OTO Company Limited`,
       
       // Apply branch filtering with RBAC scoping
       options.parkGroup = parkGroup;
+      // SCRUM-1058: pay entries reach the salary roles only (lib/activityPay.ts).
+      options.withheldTypes = activityTypesWithheldFrom(req.userWithAccess ?? req.user);
       if (branchId && typeof branchId === "string") {
         if (!parkGroupBranchIds.includes(branchId)) {
           return res.status(404).json({ message: "Branch not found" });
@@ -7586,7 +7590,7 @@ OTO Company Limited`,
         storage.getActivityLogCount(options)
       ]);
       
-      res.json({ logs, totalCount });
+      res.json({ logs: activityForReader(logs, req.userWithAccess ?? req.user), totalCount });
     } catch (error) {
       next(error);
     }
@@ -7600,7 +7604,9 @@ OTO Company Limited`,
       
       const { parkGroupBranchIds, accessibleBranchIds, parkGroup } =
         await activityParkGroupOf(user as UserWithBranchAccess & { tenantId: string });
-      const options: { branchId?: string; branchIds?: string[]; parkGroup?: ActivityParkGroup; sinceDays?: number } = { parkGroup };
+      // SCRUM-1058: a salary change is counted for the salary roles only.
+      const options: { branchId?: string; branchIds?: string[]; parkGroup?: ActivityParkGroup; sinceDays?: number; withheldTypes?: readonly ActivityType[] } =
+        { parkGroup, withheldTypes: activityTypesWithheldFrom(req.userWithAccess ?? req.user) };
       
       if (branchId && typeof branchId === "string") {
         if (!parkGroupBranchIds.includes(branchId)) {

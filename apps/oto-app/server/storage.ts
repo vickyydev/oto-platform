@@ -327,6 +327,7 @@ import {
         desc,
         or,
         inArray,
+        notInArray,
         gte,
         lte,
         lt,
@@ -612,6 +613,7 @@ export interface IStorage {
                 employeeId?: string;
                 contractInstanceId?: string;
                 types?: ActivityType[];
+                withheldTypes?: readonly ActivityType[];
                 limit?: number;
                 offset?: number;
                 dateFrom?: Date;
@@ -625,6 +627,7 @@ export interface IStorage {
                 employeeId?: string;
                 contractInstanceId?: string;
                 types?: ActivityType[];
+                withheldTypes?: readonly ActivityType[];
                 dateFrom?: Date;
                 dateTo?: Date;
                 search?: string;
@@ -634,6 +637,7 @@ export interface IStorage {
                 branchIds?: string[];
                 parkGroup?: ActivityParkGroup;
                 sinceDays?: number;
+                withheldTypes?: readonly ActivityType[];
         }): Promise<Record<string, number>>;
         createActivityLog(log: ActivityLogInput): Promise<ActivityLog>;
 
@@ -3761,6 +3765,7 @@ export class DatabaseStorage implements IStorage {
                 employeeId?: string;
                 contractInstanceId?: string;
                 types?: ActivityType[];
+                withheldTypes?: readonly ActivityType[];
                 limit?: number;
                 offset?: number;
                 dateFrom?: Date;
@@ -3797,6 +3802,7 @@ export class DatabaseStorage implements IStorage {
                 employeeId?: string;
                 contractInstanceId?: string;
                 types?: ActivityType[];
+                withheldTypes?: readonly ActivityType[];
                 dateFrom?: Date;
                 dateTo?: Date;
                 search?: string;
@@ -3818,6 +3824,7 @@ export class DatabaseStorage implements IStorage {
                 employeeId?: string;
                 contractInstanceId?: string;
                 types?: ActivityType[];
+                withheldTypes?: readonly ActivityType[];
                 dateFrom?: Date;
                 dateTo?: Date;
                 search?: string;
@@ -3826,6 +3833,12 @@ export class DatabaseStorage implements IStorage {
 
                 if (options?.branchId) {
                         conditions.push(eq(activityLog.branchId, options.branchId));
+                }
+
+                // SCRUM-1058: the entries a reader may not see (lib/activityPay.ts),
+                // left out of the list, its count and its filters alike.
+                if (options?.withheldTypes && options.withheldTypes.length > 0) {
+                        conditions.push(notInArray(activityLog.activityType, [...options.withheldTypes]));
                 }
 
                 if (options?.branchIds !== undefined) {
@@ -3874,6 +3887,7 @@ export class DatabaseStorage implements IStorage {
                 branchIds?: string[];
                 parkGroup?: ActivityParkGroup;
                 sinceDays?: number;
+                withheldTypes?: readonly ActivityType[];
         }): Promise<Record<string, number>> {
                 const days = options?.sinceDays ?? 30;
                 const sinceDate = new Date();
@@ -3892,6 +3906,7 @@ export class DatabaseStorage implements IStorage {
                         parkGroup: options?.parkGroup,
                         dateFrom: sinceDate,
                         types: employeeChangeTypes,
+                        withheldTypes: options?.withheldTypes,
                 });
 
                 const results = await db
