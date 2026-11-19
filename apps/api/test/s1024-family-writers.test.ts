@@ -1,5 +1,5 @@
 import { createHash, generateKeyPairSync, sign as signDetached, type KeyObject } from 'node:crypto';
-import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, like } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   account,
@@ -23,13 +23,8 @@ import {
 import { boxCredential } from '@oto/box-agent';
 import { issueClaimCode } from '../src/services/box';
 import { resetDemoData } from '../src/services/demo-reset';
-import {
-  childrenSeenBy,
-  ensureFamilyFor,
-  familyProfilesMode,
-  liveFamiliesOf,
-  memberSeesChild,
-} from '../src/services/family';
+import { ensureFamilyFor, liveFamiliesOf } from '../src/services/family';
+import { effectiveFlag } from '../src/services/suite-flags';
 import {
   CENTRAL_BRANCH_CODE,
   OTO_OPERATOR_NAME,
@@ -56,12 +51,18 @@ import {
  *     and the second child joins it;
  *   - a replayed create makes nothing new, and two first children saved at
  *     the same moment share one family;
- *   - the answers keep exactly the fields they had;
+ *   - the answers keep exactly the fields they had, no audit row names a
+ *     family, and the audit rows that keep a whole child row (an edit at the
+ *     till or on a box, a removal) carry no family column;
  *   - another operator's member, or a family the member does not hold, is
  *     refused and nothing is written;
+ *   - a member who already has a family is answered without a lock on the
+ *     member row; only a first family takes it;
+ *   - a box's first child under an account this server does not know is
+ *     still filed as an unknown actor;
  *   - a child with no family (saved before this release) breaks nothing.
- * Then the read rule written for step F3 (called from nowhere yet), the
- * switch and its three values, and the demo reset with families in it.
+ * Then the switch and its three values, and the demo reset with families in
+ * it. The read rule and the readers are step F3 and are not here.
  */
 
 let ctx: TestContext;
@@ -127,10 +128,32 @@ async function familiesOf(memberId: string) {
     : [];
 }
 
+/**
+ * Audit rows that name these families, or any `family.*` action: none in this
+ * step. The family and its guardian row keep who, where and when themselves,
+ * and the caller's `child.create` row is the audit of the act, as before.
+ */
 async function familyAudit(familyIds: string[]) {
-  return familyIds.length
-    ? ctx.db.select().from(auditLog).where(and(eq(auditLog.action, 'family.create'), inArray(auditLog.entityId, familyIds)))
-    : [];
+  const named = familyIds.length ? await ctx.db.select().from(auditLog).where(inArray(auditLog.entityId, familyIds)) : [];
+  const actions = await ctx.db.select().from(auditLog).where(like(auditLog.action, 'family.%'));
+  return [...named, ...actions];
+}
+
+/** The audit row of one act on one child. */
+async function childAudit(action: string, childId: string) {
+  return ctx.db
+    .select()
+    .from(auditLog)
+    .where(and(eq(auditLog.action, action), eq(auditLog.entityId, childId)))
+    .orderBy(asc(auditLog.createdAt), asc(auditLog.id));
+}
+
+/** The fields a whole child row had before this step: what `child.update` and `child.archive` rows keep. */
+function expectNoFamilyColumns(stored: unknown, label: string): void {
+  expect(stored, label).toBeTruthy();
+  expect(Object.keys(stored as object), label).not.toContain('familyId');
+  expect(Object.keys(stored as object), label).not.toContain('mergedIntoChildId');
+  expect(Object.keys(stored as object), label).toContain('memberId');
 }
 
 beforeAll(async () => {
@@ -207,10 +230,12 @@ describe('SCRUM-1024 — the till adds a child (POST /members/:id/children)', ()
       stationId: till!.id,
       archivedAt: null,
     });
-    const audits = await familyAudit([familyId]);
-    expect(audits).toHaveLength(1);
-    expect(audits[0]).toMatchObject({ actorAccountId: receptionAccountId, operatorId: otoId, branchId: till!.branchId, entityType: 'family' });
-    expect(audits[0]!.after).toEqual({ source: 'till', memberId, guardianId: guardians[0]!.id, childId: firstId, stationId: till!.id });
+    // Audited once, as before families: the child's own row, which names no family.
+    expect(await familyAudit([familyId])).toEqual([]);
+    const created = await childAudit('child.create', firstId);
+    expect(created).toHaveLength(1);
+    expect(created[0]).toMatchObject({ actorAccountId: receptionAccountId, operatorId: otoId, entityType: 'child' });
+    expect(JSON.stringify(created[0]!.after)).not.toContain(familyId);
   });
 
   it('the second child joins that family, and nothing new is made', async () => {
@@ -219,7 +244,7 @@ describe('SCRUM-1024 — the till adds a child (POST /members/:id/children)', ()
     expect((await childRow(res.json().child.id as string)).familyId).toBe(familyId);
     expect(await familiesOf(memberId)).toHaveLength(1);
     expect(await guardiansOf(memberId)).toHaveLength(1);
-    expect(await familyAudit([familyId])).toHaveLength(1);
+    expect(await familyAudit([familyId])).toEqual([]);
   });
 
   it('a replayed create (the same child id) answers the child and makes nothing new', async () => {
@@ -233,25 +258,25 @@ describe('SCRUM-1024 — the till adds a child (POST /members/:id/children)', ()
     expect((await childRow(id)).familyId).toBe(familyId);
     expect(await familiesOf(memberId)).toHaveLength(1);
     expect(await guardiansOf(memberId)).toHaveLength(1);
-    expect(await familyAudit([familyId])).toHaveLength(1);
+    expect(await childAudit('child.create', id)).toHaveLength(1);
+    expect(await familyAudit([familyId])).toEqual([]);
   });
 
   it('two first children saved at the same moment share one family: the second waits for the first to commit', async () => {
     const { memberId: twins } = await newMember('ZZ TEST 1024 Twins');
-    const input = (childId: string) => ({
+    const input = {
       operatorId: otoId,
       memberId: twins,
-      childId,
       source: 'till' as const,
       context: { accountId: null, branchId: null, stationId: null },
-    });
+    };
     // The first save holds its transaction open after making the family.
     let made!: (familyId: string) => void;
     const madeFamily = new Promise<string>((resolve) => (made = resolve));
     let commit!: () => void;
     const held = new Promise<void>((resolve) => (commit = resolve));
     const first = ctx.db.transaction(async (tx) => {
-      const out = await ensureFamilyFor(tx, input(newId()));
+      const out = await ensureFamilyFor(tx, input);
       made(out.familyId);
       await held;
       return out;
@@ -259,7 +284,7 @@ describe('SCRUM-1024 — the till adds a child (POST /members/:id/children)', ()
     const familyId = await madeFamily;
     // The second, at the same moment, cannot read past the member it waits on.
     let secondDone = false;
-    const second = ctx.db.transaction((tx) => ensureFamilyFor(tx, input(newId()))).finally(() => {
+    const second = ctx.db.transaction((tx) => ensureFamilyFor(tx, input)).finally(() => {
       secondDone = true;
     });
     await new Promise((resolve) => setTimeout(resolve, 400));
@@ -269,6 +294,75 @@ describe('SCRUM-1024 — the till adds a child (POST /members/:id/children)', ()
     expect(await second).toEqual({ familyId, created: false, ambiguous: false });
     expect(await familiesOf(twins)).toHaveLength(1);
     expect(await guardiansOf(twins)).toHaveLength(1);
+  });
+
+  it('a member who already has a family is answered without holding the member row: only a first family locks it', async () => {
+    // A box applies a whole batch in one transaction, so a lock taken here
+    // would be held to the end of the batch, and a till's edit of that member
+    // would wait for it.
+    const { memberId: busy } = await newMember('ZZ TEST 1024 No Lock');
+    const first = await addChild(busy, { name: 'ZZ TEST 1024 No Lock One' });
+    expect(first.statusCode, first.body).toBe(200);
+    const familyId = (await childRow(first.json().child.id as string)).familyId!;
+    const input = {
+      operatorId: otoId,
+      memberId: busy,
+      source: 'sync' as const,
+      context: { accountId: null, branchId: null, stationId: null },
+    };
+    /** Whether another transaction can take a member row this moment (NOWAIT: it fails at once if held). */
+    const memberIsFree = async (id: string): Promise<boolean> =>
+      ctx.db
+        .transaction((other) =>
+          other.select({ id: member.id }).from(member).where(eq(member.id, id)).for('no key update', { noWait: true }),
+        )
+        .then(
+          () => true,
+          (err: unknown) => {
+            const e = err as { code?: string; cause?: { code?: string } };
+            if ((e.code ?? e.cause?.code) !== '55P03') throw err;
+            return false;
+          },
+        );
+
+    /** ensureFamilyFor in a transaction held open until `release` is called; `answer` settles either way. */
+    const heldOpen = (memberId: string) => {
+      let release!: () => void;
+      const gate = new Promise<void>((resolve) => (release = resolve));
+      let settle!: { ok: (v: Awaited<ReturnType<typeof ensureFamilyFor>>) => void; fail: (e: unknown) => void };
+      const answer = new Promise<Awaited<ReturnType<typeof ensureFamilyFor>>>((ok, fail) => (settle = { ok, fail }));
+      const done = ctx.db.transaction(async (tx) => {
+        try {
+          settle.ok(await ensureFamilyFor(tx, { ...input, memberId }));
+        } catch (err) {
+          settle.fail(err);
+          throw err;
+        }
+        await gate;
+      });
+      return { answer, release, done };
+    };
+
+    const second = heldOpen(busy);
+    try {
+      expect(await second.answer).toEqual({ familyId, created: false, ambiguous: false });
+      expect(await memberIsFree(busy), 'the member row is free while the transaction is open').toBe(true);
+    } finally {
+      second.release();
+      await second.done;
+    }
+
+    // A member with no family yet: the row is held until the family is committed.
+    const { memberId: fresh } = await newMember('ZZ TEST 1024 First Lock');
+    const firstFamily = heldOpen(fresh);
+    try {
+      expect((await firstFamily.answer).created).toBe(true);
+      expect(await memberIsFree(fresh), 'a first family holds the member row until it commits').toBe(false);
+    } finally {
+      firstFamily.release();
+      await firstFamily.done;
+    }
+    expect(await memberIsFree(fresh)).toBe(true);
   });
 
   it('two children added through the till at once both land in the one family', async () => {
@@ -362,7 +456,12 @@ async function freshBox(): Promise<TestBox> {
 
 const sha256 = (v: string): string => createHash('sha256').update(v, 'utf8').digest('hex');
 
-function mint(b: TestBox, type: string, payload: Record<string, unknown>): SyncEventEnvelope {
+function mint(
+  b: TestBox,
+  type: string,
+  payload: Record<string, unknown>,
+  opts: { actorAccountId?: string | null } = {},
+): SyncEventEnvelope {
   const base = {
     eventId: newId(),
     journalEpoch: 1,
@@ -373,7 +472,7 @@ function mint(b: TestBox, type: string, payload: Record<string, unknown>): SyncE
     clockTrust: 'trusted' as const,
     stationId: null,
     actorKind: 'account' as const,
-    actorAccountId: null,
+    actorAccountId: opts.actorAccountId ?? null,
     actorCredentialId: null,
     actionId: `act-${Math.random().toString(36).slice(2, 10)}`,
     payload,
@@ -395,7 +494,7 @@ async function push(b: TestBox, events: SyncEventEnvelope[]) {
     payload: { events },
   });
   expect(res.statusCode, res.body).toBe(200);
-  return res.json() as { applied: number; duplicates?: number };
+  return res.json() as { applied: number; duplicates?: number; results: Array<{ result: string; reason?: string }> };
 }
 
 describe("SCRUM-1024 — the box's child.created", () => {
@@ -417,17 +516,35 @@ describe("SCRUM-1024 — the box's child.created", () => {
     expect(guardians.map((g) => [g.familyId, g.source, g.addedByAccountId, g.stationId])).toEqual([[families[0]!.id, 'sync', null, null]]);
     expect((await childRow(first)).familyId).toBe(families[0]!.id);
     expect((await childRow(second)).familyId).toBe(families[0]!.id);
-    const audits = await familyAudit([families[0]!.id]);
-    expect(audits).toHaveLength(1);
-    expect(audits[0]!.sourceEventId).toBe(batch[1]!.eventId);
-    expect(audits[0]!.actionId).toBe(batch[1]!.actionId);
+    expect(await familyAudit([families[0]!.id])).toEqual([]);
+    const created = await childAudit('child.create', first);
+    expect(created).toHaveLength(1);
+    expect(created[0]!.sourceEventId).toBe(batch[1]!.eventId);
 
     // The same batch again (the answer was lost): nothing new anywhere.
     const again = await push(b, batch);
     expect(again.applied).toBe(0);
     expect(await familiesOf(memberId)).toHaveLength(1);
     expect(await guardiansOf(memberId)).toHaveLength(1);
-    expect(await familyAudit([families[0]!.id])).toHaveLength(1);
+    expect(await childAudit('child.create', first)).toHaveLength(1);
+    expect(await familyAudit([families[0]!.id])).toEqual([]);
+  });
+
+  it('a first child under an account this server does not know is still filed as an unknown actor, and makes no family', async () => {
+    // Before families, this fact failed on the audit row's actor; now the
+    // family names the account first, and the answer to the box is the same.
+    const b = await freshBox();
+    const memberId = newId();
+    expect((await push(b, [mint(b, 'member.created', { memberId, phone: e164(nextPhone()), nickname: 'ZZ TEST 1024 Ghost', createdVia: 'pos' })])).applied).toBe(1);
+    const childId = newId();
+    const answer = await push(b, [
+      mint(b, 'child.created', { childId, memberId, name: 'ZZ TEST 1024 Ghost Kid' }, { actorAccountId: newId() }),
+    ]);
+    expect(answer.applied).toBe(0);
+    expect(answer.results[0]).toMatchObject({ result: 'quarantined', reason: 'actor_unknown' });
+    expect(await ctx.db.select().from(child).where(eq(child.id, childId))).toEqual([]);
+    expect(await familiesOf(memberId)).toEqual([]);
+    expect(await guardiansOf(memberId)).toEqual([]);
   });
 
   it("a child an old box recorded under a merged member id lands in the survivor's family", async () => {
@@ -515,7 +632,7 @@ describe("SCRUM-1024 — the booking site's save", () => {
     expect(again.statusCode, again.body).toBe(200);
     expect(await familiesOf(memberId)).toHaveLength(1);
     expect(await guardiansOf(memberId)).toHaveLength(1);
-    expect(await familyAudit([familyId])).toHaveLength(1);
+    expect(await familyAudit([familyId])).toEqual([]);
   });
 
   it('a member with no family yet gets one from the booking site, made with no staff actor, for both children it adds', async () => {
@@ -537,10 +654,10 @@ describe("SCRUM-1024 — the booking site's save", () => {
     expect((await guardiansOf(memberId)).map((g) => [g.source, g.addedByAccountId, g.stationId])).toEqual([['booking', null, null]]);
     expect((await childRow(first)).familyId).toBe(families[0]!.id);
     expect((await childRow(second)).familyId).toBe(families[0]!.id);
-    const audits = await familyAudit([families[0]!.id]);
-    expect(audits).toHaveLength(1);
-    expect(audits[0]).toMatchObject({ actorAccountId: null, origin: 'booking_site' });
-    expect((audits[0]!.after as { childId: string }).childId).toBe(first);
+    expect(await familyAudit([families[0]!.id])).toEqual([]);
+    const created = await childAudit('child.create', first);
+    expect(created).toHaveLength(1);
+    expect(created[0]).toMatchObject({ actorAccountId: null, origin: 'booking_site' });
   });
 });
 
@@ -555,7 +672,6 @@ describe('SCRUM-1024 — ensureFamilyFor refuses across operators and families',
         ensureFamilyFor(tx, {
           operatorId: otoId,
           memberId: foreign!.id,
-          childId: newId(),
           source: 'till',
           context: { accountId: null, branchId: null, stationId: null },
         }),
@@ -575,7 +691,6 @@ describe('SCRUM-1024 — ensureFamilyFor refuses across operators and families',
         ensureFamilyFor(tx, {
           operatorId: otoId,
           memberId: who,
-          childId: newId(),
           familyId,
           source: 'till',
           context: { accountId: null, branchId: null, stationId: null },
@@ -595,7 +710,6 @@ describe('SCRUM-1024 — ensureFamilyFor refuses across operators and families',
       ensureFamilyFor(tx, {
         operatorId: otoId,
         memberId,
-        childId: newId(),
         source: 'till',
         context: { accountId: null, branchId: foreignTill!.branchId, stationId: foreignTill!.id },
       }),
@@ -618,7 +732,6 @@ describe('SCRUM-1024 — ensureFamilyFor refuses across operators and families',
       ensureFamilyFor(tx, {
         operatorId: otoId,
         memberId,
-        childId: newId(),
         source: 'till',
         context: { accountId: null, branchId: null, stationId: null },
       }),
@@ -627,53 +740,58 @@ describe('SCRUM-1024 — ensureFamilyFor refuses across operators and families',
   });
 });
 
-// --- The read rule (for step F3; called from nowhere yet) ----------------------------
+// --- The audit rows that keep a whole child row ------------------------------------------
 
-describe('SCRUM-1024 — the read rule: a member sees a child through a live guardian row in its family', () => {
-  it('sees the live, unmerged children of their families, a second guardian sees them too, and nobody else does', async () => {
-    const { memberId: parent } = await newMember('ZZ TEST 1024 Parent');
-    const { memberId: other } = await newMember('ZZ TEST 1024 Other Parent');
-    const { memberId: outsider } = await newMember('ZZ TEST 1024 Outsider');
+describe('SCRUM-1024 — the audit of a child edit or removal reads as it did before families', () => {
+  it('the till edit, the box edit, the till removal and the booking site removal store no family column', async () => {
+    const { memberId, phone } = await newMember('ZZ TEST 1024 Audit Shape');
     const ids: string[] = [];
-    for (const name of ['ZZ TEST 1024 Kid A', 'ZZ TEST 1024 Kid B', 'ZZ TEST 1024 Kid C', 'ZZ TEST 1024 Kid D']) {
-      const res = await addChild(parent, { name });
+    for (const name of ['ZZ TEST 1024 Audit Till', 'ZZ TEST 1024 Audit Box', 'ZZ TEST 1024 Audit Gone', 'ZZ TEST 1024 Audit Online']) {
+      const res = await addChild(memberId, { name });
+      expect(res.statusCode, res.body).toBe(200);
       ids.push(res.json().child.id as string);
     }
-    const [a, b, c, d] = ids as [string, string, string, string];
-    const familyId = (await childRow(a)).familyId!;
-    // B archived; C merged into A (as a later step will mark a duplicate).
-    await ctx.db.update(child).set({ archivedAt: new Date() }).where(eq(child.id, b));
-    await ctx.db.update(child).set({ mergedIntoChildId: a }).where(eq(child.id, c));
-    const seen = async (memberId: string) =>
-      (await childrenSeenBy(ctx.db, { operatorId: otoId, memberId })).map((r) => r.id);
+    const [tillEdit, boxEdit, tillGone, onlineGone] = ids as [string, string, string, string];
+    expect((await childRow(tillEdit)).familyId).not.toBeNull();
 
-    expect(await seen(parent)).toEqual([a, d]);
-    expect(await seen(other)).toEqual([]);
-    expect(await memberSeesChild(ctx.db, { operatorId: otoId, memberId: other, childId: a })).toBe(false);
+    // The till's edit (PATCH /members/children/:childId).
+    const patched = await ctx.app.inject({
+      method: 'PATCH',
+      url: `/members/children/${tillEdit}`,
+      headers: { cookie: reception },
+      payload: { allergies: 'ZZ TEST sesame' },
+    });
+    expect(patched.statusCode, patched.body).toBe(200);
+    expect(Object.keys(patched.json().child).sort()).toEqual(CHILD_ANSWER_KEYS);
+    const [tillAudit] = await childAudit('child.update', tillEdit);
+    expectNoFamilyColumns(tillAudit!.before, 'till edit, before');
+    expectNoFamilyColumns(tillAudit!.after, 'till edit, after');
 
-    // A second guardian on the family sees the same children, and only those.
-    const second = newId();
-    await ctx.db.insert(familyGuardian).values({ id: second, operatorId: otoId, familyId, memberId: other, source: 'link' });
-    expect(await seen(other)).toEqual([a, d]);
-    expect(await memberSeesChild(ctx.db, { operatorId: otoId, memberId: other, childId: d })).toBe(true);
-    expect(await memberSeesChild(ctx.db, { operatorId: otoId, memberId: other, childId: b })).toBe(false);
-    expect(await memberSeesChild(ctx.db, { operatorId: otoId, memberId: other, childId: c })).toBe(false);
-    expect(await seen(outsider)).toEqual([]);
+    // The box's child.updated.
+    const b = await freshBox();
+    expect((await push(b, [mint(b, 'child.updated', { childId: boxEdit, allergies: 'ZZ TEST milk' })])).applied).toBe(1);
+    const [boxAudit] = await childAudit('child.update', boxEdit);
+    expectNoFamilyColumns(boxAudit!.before, 'box edit, before');
+    expectNoFamilyColumns(boxAudit!.after, 'box edit, after');
 
-    // Through another operator, never.
-    expect(await childrenSeenBy(ctx.db, { operatorId: secondId, memberId: parent })).toEqual([]);
+    // The till's "Remove from saved" (archiveChild).
+    const removed = await ctx.app.inject({ method: 'DELETE', url: `/members/children/${tillGone}`, headers: { cookie: reception } });
+    expect(removed.statusCode, removed.body).toBe(200);
+    const [goneAudit] = await childAudit('child.archive', tillGone);
+    expectNoFamilyColumns(goneAudit!.before, 'till removal, before');
+    expectNoFamilyColumns(goneAudit!.after, 'till removal, after');
 
-    // A guardian row taken off, or an archived member, sees nothing.
-    await ctx.db.update(familyGuardian).set({ archivedAt: new Date() }).where(eq(familyGuardian.id, second));
-    expect(await seen(other)).toEqual([]);
-    await ctx.db.update(member).set({ archivedAt: new Date() }).where(eq(member.id, parent));
-    expect(await seen(parent)).toEqual([]);
-    await ctx.db.update(member).set({ archivedAt: null }).where(eq(member.id, parent));
+    // The booking site's "Remove from saved" (archiveChild, from the family's own page).
+    const pass = await passFor(phone);
+    const online = await save({ phone, pass, remove: [onlineGone] });
+    expect(online.statusCode, online.body).toBe(200);
+    const [onlineAudit] = await childAudit('child.archive', onlineGone);
+    expectNoFamilyColumns(onlineAudit!.before, 'booking site removal, before');
+    expectNoFamilyColumns(onlineAudit!.after, 'booking site removal, after');
+    expect(onlineAudit!.after).toMatchObject({ source: 'booking_site' });
 
-    // A child with no family yet is seen by nobody through the rule: the backfill gives it one first.
-    const loose = newId();
-    await ctx.db.insert(child).values({ id: loose, memberId: parent, name: 'ZZ TEST 1024 Loose' });
-    expect(await memberSeesChild(ctx.db, { operatorId: otoId, memberId: parent, childId: loose })).toBe(false);
+    // The rows themselves keep their family: only the audit copy leaves it out.
+    for (const id of ids) expect((await childRow(id)).familyId, id).not.toBeNull();
   });
 });
 
@@ -695,9 +813,12 @@ describe('SCRUM-1024 — the crm.family_profiles switch', () => {
     });
   });
 
-  it('reads off with nothing set, then each of its three values at operator scope, and never another operator\'s', async () => {
-    expect(await familyProfilesMode(ctx.db, otoId)).toBe('off');
-    expect(await familyProfilesMode(ctx.db, secondId)).toBe('off');
+  it('resolves off with nothing set, then each of its three values at operator scope, and never another operator\'s', async () => {
+    // Through the suite's own resolver: nothing in this step reads the switch.
+    const mode = async (operatorId: string): Promise<unknown> =>
+      (await effectiveFlag(ctx.db, FAMILY_PROFILES_KEY, { operatorId, branchId: null, stationId: null })).value;
+    expect(await mode(otoId)).toBe('off');
+    expect(await mode(secondId)).toBe('off');
     const rowId = newId();
     await ctx.db.insert(featureFlag).values({
       id: rowId,
@@ -712,20 +833,20 @@ describe('SCRUM-1024 — the crm.family_profiles switch', () => {
       reason: 'ZZ TEST 1024',
     });
     try {
-      expect(await familyProfilesMode(ctx.db, otoId)).toBe('read');
-      expect(await familyProfilesMode(ctx.db, secondId)).toBe('off');
+      expect(await mode(otoId)).toBe('read');
+      expect(await mode(secondId)).toBe('off');
       await ctx.db.update(featureFlag).set({ value: 'on' }).where(eq(featureFlag.id, rowId));
-      expect(await familyProfilesMode(ctx.db, otoId)).toBe('on');
+      expect(await mode(otoId)).toBe('on');
       await ctx.db.update(featureFlag).set({ value: 'off' }).where(eq(featureFlag.id, rowId));
-      expect(await familyProfilesMode(ctx.db, otoId)).toBe('off');
+      expect(await mode(otoId)).toBe('off');
       // A value the switch does not take, or one past its expiry, is the default.
       await ctx.db.update(featureFlag).set({ value: 'everything' }).where(eq(featureFlag.id, rowId));
-      expect(await familyProfilesMode(ctx.db, otoId)).toBe('off');
+      expect(await mode(otoId)).toBe('off');
       await ctx.db
         .update(featureFlag)
         .set({ value: 'on', expiresAt: new Date(Date.now() - 1000) })
         .where(eq(featureFlag.id, rowId));
-      expect(await familyProfilesMode(ctx.db, otoId)).toBe('off');
+      expect(await mode(otoId)).toBe('off');
     } finally {
       await ctx.db.delete(featureFlag).where(eq(featureFlag.id, rowId));
     }
