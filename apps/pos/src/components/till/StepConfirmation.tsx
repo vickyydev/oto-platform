@@ -185,7 +185,40 @@ interface StepConfirmationProps {
    * this screen asks the platform for it once.
    */
   issue?: SaleIssue;
+  /**
+   * SCRUM-1059 — the bands "Check in now" issued on this screen, each named for
+   * the stay it was issued to (`checkinId`, the drop-off line's own). The
+   * sale's read was taken before the check-in, so without these a drop-off
+   * child's card went on reading "Prints at check-in" after the band printed.
+   */
+  checkedIn?: readonly CheckedInBand[];
 }
+
+/** One band "Check in now" issued: the stay, its code and the child it names. */
+export interface CheckedInBand {
+  id: string;
+  checkinId: string;
+  childName: string;
+  shortCode?: string | null;
+}
+
+/**
+ * SCRUM-1059 — the bands a bracelet row shows: those the sale's read placed on
+ * it, then those "Check in now" issued to its drop-off child, once each. A
+ * drop-off child's row says "Prints at check-in" until its bands are all here.
+ */
+export function rowBands(
+  onRow: readonly ShownBand[],
+  checkinId: string | null,
+  checkedIn: readonly CheckedInBand[],
+): ShownBand[] {
+  const shown = new Set(onRow.map((band) => band.id));
+  const issuedHere = checkinId ? checkedIn.filter((band) => band.checkinId === checkinId && !shown.has(band.id)) : [];
+  return [...onRow, ...issuedHere];
+}
+
+/** What a band's line shows: its code and the child it was issued to. */
+type ShownBand = Pick<ApiSaleBand, 'id' | 'childName'> & { shortCode?: string | null };
 
 /**
  * SCRUM-484 — WHY THE ROWS FIT THEIR COLUMN. Radix draws a scroll area's
@@ -253,7 +286,7 @@ const DURATION_BADGE = 'px-3 py-1 rounded-full text-xs font-bold uppercase track
  * the child it was issued to — what staff read out when a band does not print.
  * Never the signed code: that is the gate credential and no read carries it.
  */
-function BandCodes({ bands }: { bands: readonly ApiSaleBand[] }) {
+function BandCodes({ bands }: { bands: readonly ShownBand[] }) {
   if (bands.length === 0) return null;
   return (
     <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-sm" data-testid="band-codes">
@@ -299,7 +332,7 @@ function CreditGrantRow({ voucher: grant, index, qrCode }: { voucher: CreditGran
   );
 }
 
-export function StepConfirmation({ sale, onNewSale, saleNumber, note, boxIssue, issue: given }: StepConfirmationProps) {
+export function StepConfirmation({ sale, onNewSale, saleNumber, note, boxIssue, issue: given, checkedIn = [] }: StepConfirmationProps) {
   const asked = useSaleIssue(given ? '' : sale.id, saleNumber, given ? null : boxIssue);
   const issue = given ? (saleNumber ? { ...given, number: saleNumber } : given) : asked;
   // SCRUM-883 — the credit rows are the platform's grants, never the till's own list.
@@ -322,12 +355,12 @@ export function StepConfirmation({ sale, onNewSale, saleNumber, note, boxIssue, 
   // the till's own print rule holds back the drop-off kids alone (Till.tsx,
   // `nonDropOffKids`).
   const braceletRows = sale.lines.flatMap((line) => {
-    const rows: { id: string; lineId: string; kind: 'child' | 'adult'; count: number; duration: string; ticket: string; atCheckIn: boolean }[] = [];
+    const rows: { id: string; lineId: string; kind: 'child' | 'adult'; count: number; duration: string; ticket: string; atCheckIn: boolean; checkinId: string | null }[] = [];
     if (line.kids > 0) {
-      rows.push({ id: `${line.id}-c`, lineId: line.id, kind: 'child', count: line.kids, duration: line.ticketType.durationLabel, ticket: line.ticketType.name, atCheckIn: !!line.dropOff });
+      rows.push({ id: `${line.id}-c`, lineId: line.id, kind: 'child', count: line.kids, duration: line.ticketType.durationLabel, ticket: line.ticketType.name, atCheckIn: !!line.dropOff, checkinId: line.dropOff?.checkInId ?? null });
     }
     if (line.adults > 0) {
-      rows.push({ id: `${line.id}-a`, lineId: line.id, kind: 'adult', count: line.adults, duration: line.ticketType.durationLabel, ticket: line.ticketType.name, atCheckIn: false });
+      rows.push({ id: `${line.id}-a`, lineId: line.id, kind: 'adult', count: line.adults, duration: line.ticketType.durationLabel, ticket: line.ticketType.name, atCheckIn: false, checkinId: null });
     }
     return rows;
   });
@@ -414,7 +447,9 @@ export function StepConfirmation({ sale, onNewSale, saleNumber, note, boxIssue, 
           </div>
           <ScrollArea className={ROWS_SCROLL}>
             <div className="space-y-3">
-              {braceletRows.map((row) => (
+              {braceletRows.map((row) => {
+                const bands = rowBands(bandsOnRow(row.lineId, row.kind), row.checkinId, checkedIn);
+                return (
                 <div
                   key={row.id}
                   className="flex items-center gap-4 bg-background border rounded-xl p-4 shrink-0"
@@ -434,8 +469,8 @@ export function StepConfirmation({ sale, onNewSale, saleNumber, note, boxIssue, 
                     <div className={ROW_CAPTION} title={`${row.duration} • ${row.ticket}`}>
                       {row.duration} • {row.ticket}
                     </div>
-                    {row.atCheckIn && <div className="text-sm text-muted-foreground">Prints at check-in</div>}
-                    <BandCodes bands={bandsOnRow(row.lineId, row.kind)} />
+                    {row.atCheckIn && bands.length < row.count && <div className="text-sm text-muted-foreground">Prints at check-in</div>}
+                    <BandCodes bands={bands} />
                   </div>
                   <div
                     className={cn(
@@ -446,7 +481,8 @@ export function StepConfirmation({ sale, onNewSale, saleNumber, note, boxIssue, 
                     {row.duration}
                   </div>
                 </div>
-              ))}
+                );
+              })}
               {leftover.length > 0 && (
                 <div className="bg-background border rounded-xl p-4 shrink-0">
                   <div className="text-sm font-semibold text-muted-foreground">Band codes</div>

@@ -170,7 +170,7 @@ import { DropOffLineConfig, type DropOffLineUpdate } from '@/components/till/Dro
 import { AddDropOffModal } from '@/components/till/AddDropOffModal';
 import { StepAwaitCustomer } from '@/components/till/StepAwaitCustomer';
 import { StepPayment } from '@/components/till/StepPayment';
-import { StepConfirmation, paidLineOf, useSaleIssue } from '@/components/till/StepConfirmation';
+import { StepConfirmation, paidLineOf, useSaleIssue, type CheckedInBand } from '@/components/till/StepConfirmation';
 import { ManualDiscountModal } from '@/components/shared/ManualDiscountModal';
 import { VerifyTierModal } from '@/components/shared/VerifyTierModal';
 import { CustomerDisplay, CustomerStage } from '@/components/till/CustomerDisplay';
@@ -595,6 +595,8 @@ export default function Till() {
   // "check in now / leave as booked" decision. The booked play-start time chosen
   // at payment is held in a ref so each "leave as booked" entry records it.
   const [pendingCheckInChoices, setPendingCheckInChoices] = useState<DoorCheckInGroup[] | null>(null);
+  /** SCRUM-1059 — the bands "Check in now" issued for the sale on Payment Successful, for its bracelet cards. */
+  const [checkedInBands, setCheckedInBands] = useState<{ saleId: string; bands: CheckedInBand[] }>({ saleId: '', bands: [] });
   const bookedScheduledForRef = useRef<string>('');
 
   // Door-flow supervision gate (step 7): when a ticket sale is unaccompanied
@@ -3739,6 +3741,7 @@ export default function Till() {
   const handleCheckInGroupNow = (group: DoorCheckInGroup) => {
     if (!operator || !station || !saleResult || checkInChoiceBusy.current) return;
     checkInChoiceBusy.current = true;
+    const checkedInSaleId = saleResult.id;
     // SCRUM-887 — a family the gate wrote and sold online is checked in online.
     gateOnline.beginDoor();
     void checkinApi
@@ -3765,6 +3768,9 @@ export default function Till() {
             ...done.notes,
           ].join(' '),
         });
+        // SCRUM-1059 — the child's bracelet card shows the band issued, not "Prints at check-in".
+        setCheckedInBands((prev) => ({ saleId: checkedInSaleId,
+          bands: [...(prev.saleId === checkedInSaleId ? prev.bands : []), ...done.bands] }));
         resolveCheckInGroup(group.registrationId);
       })
       .catch((err: unknown) => {
@@ -4573,6 +4579,7 @@ export default function Till() {
                   note={voucherUsed ? <VoucherUsedNote held={voucherUsed} /> : undefined}
                   boxIssue={boxSaleIssue(shownResult.id)}
                   issue={saleIssue}
+                  checkedIn={checkedInBands.saleId === shownResult.id ? checkedInBands.bands : undefined}
                 />
               </div>
             </div>
