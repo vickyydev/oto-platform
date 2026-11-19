@@ -23,6 +23,7 @@ import {
   businessDate as businessDateOf,
   businessDayEndsAt,
   earningPersonsOf,
+  extraCreditForOf,
   formatTHB,
   grantExpiresAt,
   grantLinesOfLedger,
@@ -867,17 +868,23 @@ export async function grantSaleCredit(
 ): Promise<WalletGrantView[]> {
   const lines = await tx
     .select({
+      id: saleLine.id,
       cartLineId: saleLine.cartLineId,
       kind: saleLine.kind,
       ticketPackageId: saleLine.ticketPackageId,
       quantity: saleLine.quantity,
       unitSatang: saleLine.unitSatang,
+      grossSatang: saleLine.grossSatang,
       lineNo: saleLine.lineNo,
       label: saleLine.label,
       payload: saleLine.payload,
     })
     .from(saleLine)
     .where(eq(saleLine.saleId, saleRow.id));
+  // SCRUM-1048 — extra food credit staff added for one child on a ticket line.
+  const extraCredits = lines
+    .filter((l) => l.kind === 'food_provision' && l.quantity > 0 && l.grossSatang > 0 && extraCreditForOf(l.payload))
+    .sort((a, b) => a.lineNo - b.lineNo);
   const packageIds = [...new Set(lines.map((l) => l.ticketPackageId).filter((id): id is string => !!id))];
   /**
    * SCRUM-804 — a party add-on that is F&B credit in full (the reserved table,
@@ -915,7 +922,7 @@ export async function grantSaleCredit(
       gifted,
     ),
   );
-  if (persons.length === 0 && partyCredits.length === 0) return [];
+  if (persons.length === 0 && partyCredits.length === 0 && extraCredits.length === 0) return [];
   const { expiresAt } = await expiryFor(tx, saleRow.branchId, saleRow.occurredAt);
   for (const [personIndex, person] of persons.entries()) {
     const payload: WalletGrantEntryPayload = {
@@ -977,7 +984,83 @@ export async function grantSaleCredit(
       now,
     });
   }
+  for (const line of extraCredits) {
+    await loadExtraCredit(tx, actor, { saleRow, line, persons, expiresAt, now });
+  }
   return grantsOfSale(tx, saleRow.id);
+}
+
+export function extraCreditActionId(saleId: string, saleLineId: string): string {
+  return `sale:${saleId}:extra:${saleLineId}`;
+}
+
+/** What an extra food credit's load entry carries: its child's place, as a grant's does, and its line. */
+interface ExtraCreditEntryPayload {
+  cartLineId: string;
+  role: 'kid';
+  ordinal: number;
+  saleLineId: string;
+  extraCredit: true;
+}
+
+/**
+ * SCRUM-1048 — AN EXTRA FOOD CREDIT LINE LOADS ITS CHILD'S BAND, once, as the
+ * sale closes (the owner's answer of 19 November 2026: extra food credit on
+ * any child ticket, as its own line on the order).
+ *
+ * The money is the line's: what it charged (`grossSatang`), as a dropped-off
+ * child's prepaid food is (`loadChildPrepaid`), loaded as `prepaid_food`.
+ * Onto the child's own grant wallet when their ticket earns credit, so a band
+ * names one wallet; otherwise onto a wallet of the child's own, which carries
+ * the child's place the same way and so takes the child's band when it is
+ * minted (`attachSaleBandKeys`). Dated by the branch's wallet policy as the
+ * sale's grants are. Keyed `sale:<id>:extra:<sale line id>`: a retried or
+ * replayed close loads nothing twice.
+ */
+async function loadExtraCredit(
+  tx: Tx,
+  actor: WalletActor,
+  input: {
+    saleRow: SaleRow;
+    line: { id: string; grossSatang: number; payload: unknown };
+    persons: readonly { cartLineId: string; role: 'adult' | 'kid'; ordinal: number }[];
+    expiresAt: Date | null;
+    now: Date;
+  },
+): Promise<WalletWrite> {
+  const { saleRow, line } = input;
+  const target = extraCreditForOf(line.payload)!;
+  const payload: ExtraCreditEntryPayload = {
+    cartLineId: target.cartLineId,
+    role: 'kid',
+    ordinal: target.kidOrdinal,
+    saleLineId: line.id,
+    extraCredit: true,
+  };
+  const common = {
+    actionId: extraCreditActionId(saleRow.id, line.id),
+    amountSatang: line.grossSatang,
+    source: 'prepaid_food' as const,
+    branchId: saleRow.branchId,
+    saleId: saleRow.id,
+    stationId: saleRow.stationId,
+    boxId: saleRow.boxId,
+    businessDate: saleRow.businessDate,
+    expiresAt: input.expiresAt,
+    payload,
+    now: input.now,
+  };
+  const personIndex = input.persons.findIndex(
+    (p) => p.cartLineId === target.cartLineId && p.role === 'kid' && p.ordinal === target.kidOrdinal,
+  );
+  const granted = personIndex >= 0 ? await entryOfAction(tx, actor.operatorId, grantActionId(saleRow.id, personIndex)) : null;
+  if (granted) return loadWallet(tx, actor, { walletId: granted.walletId, ...common });
+  return createWalletWithGrant(tx, actor, {
+    ...common,
+    memberId: saleRow.memberId,
+    holderName: saleRow.bookingId ? 'Booking child' : 'Walk-in guest',
+    keys: [{ kind: 'voucher_qr', value: mintVoucherQr() }],
+  });
 }
 
 /** The wallets a sale's grants made, in person order, as the till and the display show them. */
@@ -1032,10 +1115,25 @@ export async function grantsOfSale(db: Exec, saleId: string): Promise<WalletGran
  */
 export async function attachSaleBandKeys(tx: Tx, saleRow: SaleRow, bands: readonly BandRow[], now: Date = new Date()): Promise<number> {
   if (bands.length === 0) return 0;
-  const grants = await tx
-    .select({ walletId: walletEntry.walletId, payload: walletEntry.payload })
+  const entries = await tx
+    .select({ walletId: walletEntry.walletId, source: walletEntry.source, payload: walletEntry.payload })
     .from(walletEntry)
-    .where(and(eq(walletEntry.saleId, saleRow.id), eq(walletEntry.kind, 'grant'), eq(walletEntry.source, 'ticket_sale')));
+    .where(
+      and(
+        eq(walletEntry.saleId, saleRow.id),
+        eq(walletEntry.kind, 'grant'),
+        inArray(walletEntry.source, ['ticket_sale', 'prepaid_food']),
+      ),
+    );
+  // SCRUM-1048 — an extra food credit's wallet carries its child's place as a
+  // grant's does; one loaded onto the child's grant wallet is that wallet.
+  const seenWallets = new Set<string>();
+  const grants = entries.filter((e) => {
+    if (e.source === 'prepaid_food' && !(e.payload as { extraCredit?: unknown } | null)?.extraCredit) return false;
+    if (seenWallets.has(e.walletId)) return false;
+    seenWallets.add(e.walletId);
+    return true;
+  });
   if (grants.length === 0) return 0;
   const lineIds = [...new Set(bands.map((b) => b.saleLineId).filter((id): id is string => !!id))];
   const cartOf = new Map(
@@ -1290,15 +1388,22 @@ export async function takeBackPrepaidForRefund(
   input: {
     refundId: string;
     saleId: string;
-    lines: readonly { id: string; kind: string; cartLineId: string | null; label: string }[];
+    lines: readonly { id: string; kind: string; cartLineId: string | null; label: string; payload?: unknown }[];
     branchId: string;
     stationId?: string | null;
     now?: Date;
   },
-): Promise<{ checkinId: string; walletId: string; amountSatang: number }[]> {
-  const taken: { checkinId: string; walletId: string; amountSatang: number }[] = [];
+): Promise<{ checkinId: string | null; saleLineId?: string; walletId: string; amountSatang: number }[]> {
+  const taken: { checkinId: string | null; saleLineId?: string; walletId: string; amountSatang: number }[] = [];
   for (const line of input.lines) {
-    if (line.kind !== 'food_provision' || !line.cartLineId) continue;
+    if (line.kind !== 'food_provision') continue;
+    // SCRUM-1048 — an extra food credit line takes its credit back the same way.
+    if (extraCreditForOf(line.payload)) {
+      const back = await takeBackExtraCredit(tx, actor, { ...input, line });
+      if (back) taken.push({ checkinId: null, saleLineId: line.id, ...back });
+      continue;
+    }
+    if (!line.cartLineId) continue;
     const checkinId = line.cartLineId;
     const loaded = await entryOfAction(tx, actor.operatorId, prepaidActionId(checkinId));
     const loadPayload = (loaded?.payload ?? {}) as { saleLineId?: string };
@@ -1331,6 +1436,61 @@ export async function takeBackPrepaidForRefund(
     taken.push({ checkinId, walletId: held.walletId, amountSatang: held.loadedSatang });
   }
   return taken;
+}
+
+export function extraCreditRefundActionId(refundId: string, saleLineId: string): string {
+  return `refund:${refundId}:extra:${saleLineId}`;
+}
+
+/**
+ * SCRUM-1048 — A REFUNDED EXTRA FOOD CREDIT LINE TAKES ITS CREDIT OFF THE
+ * BAND, as a dropped-off child's prepaid food line does (SCRUM-481): all of
+ * what the line loaded, in the refund's transaction, or the whole refund is
+ * refused once any of it has been spent. What was spent from the wallet since
+ * the load counts against this credit first: the credit the family paid for
+ * is spent first (the owner's answer R21, 19 November 2026). A line whose sale
+ * never closed loaded nothing and refunds as before.
+ */
+async function takeBackExtraCredit(
+  tx: Tx,
+  actor: WalletActor,
+  input: {
+    refundId: string;
+    saleId: string;
+    line: { id: string; label: string };
+    branchId: string;
+    stationId?: string | null;
+    now?: Date;
+  },
+): Promise<{ walletId: string; amountSatang: number } | null> {
+  const loaded = await entryOfAction(tx, actor.operatorId, extraCreditActionId(input.saleId, input.line.id));
+  if (!loaded) return null;
+  const held = await heldOfLoad(tx, loaded, sql`${walletEntry.payload}->>'extraCreditLineId' = ${input.line.id}`, {
+    lock: true,
+  });
+  if (!held) return null;
+  if (held.refundableSatang < held.loadedSatang) {
+    throw errors.conflict(
+      'PREPAID_CREDIT_SPENT',
+      `This extra food credit has already been used (${formatTHB(held.loadedSatang - held.refundableSatang)} of ${formatTHB(
+        held.loadedSatang,
+      )}), so this food line cannot be refunded.`,
+      { saleLineId: input.line.id, loadedSatang: held.loadedSatang, refundableSatang: held.refundableSatang },
+    );
+  }
+  await debitWallet(tx, actor, {
+    walletId: held.walletId,
+    actionId: extraCreditRefundActionId(input.refundId, input.line.id),
+    amountSatang: held.loadedSatang,
+    source: 'refund',
+    branchId: input.branchId,
+    refundId: input.refundId,
+    saleId: input.saleId,
+    stationId: input.stationId ?? null,
+    payload: { extraCreditLineId: input.line.id },
+    now: input.now,
+  });
+  return { walletId: held.walletId, amountSatang: held.loadedSatang };
 }
 
 /**
@@ -1573,6 +1733,32 @@ export async function prepaidBalanceOf(
 } | null> {
   const loaded = await entryOfAction(db, operatorId, prepaidActionId(checkinId));
   if (!loaded) return null;
+  // SCRUM-481 — what THIS stay's credit has already been handed back as money:
+  // its own release's cash-out, or a refund of its prepaid-food line. Each is a
+  // `spend` / `refund` entry naming the stay, so a second refund of the same
+  // credit finds nothing left to give.
+  return heldOfLoad(db, loaded, sql`${walletEntry.payload}->>'checkinId' = ${checkinId}`, options);
+}
+
+/**
+ * What is left of ONE load on its wallet: the load less the counter spending
+ * since it (the credit paid for is spent first) less what was already handed
+ * back as money (`handedBack` picks those `spend` / `refund` entries), never
+ * more than the wallet holds. `prepaidBalanceOf` for a stay's prepaid food;
+ * SCRUM-1048's extra food credit line the same way.
+ */
+async function heldOfLoad(
+  db: Exec,
+  loaded: EntryRow,
+  handedBack: SQL,
+  options: { lock?: boolean } = {},
+): Promise<{
+  walletId: string;
+  balanceSatang: number;
+  loadedSatang: number;
+  spentSatang: number;
+  refundableSatang: number;
+} | null> {
   const base = db.select().from(wallet).where(eq(wallet.id, loaded.walletId));
   // Locked inside the release's savepoint, so the figure refunded is the figure
   // a counter's spend cannot change before the debit lands.
@@ -1595,10 +1781,6 @@ export async function prepaidBalanceOf(
   const spentSatang = since
     .filter((e) => e.id !== loaded.id && (e.createdAt > loaded.createdAt || (e.createdAt.getTime() === loaded.createdAt.getTime() && e.id > loaded.id)))
     .reduce((sum, e) => sum - e.amount, 0);
-  // SCRUM-481 — what THIS stay's credit has already been handed back as money:
-  // its own release's cash-out, or a refund of its prepaid-food line. Each is a
-  // `spend` / `refund` entry naming the stay, so a second refund of the same
-  // credit finds nothing left to give.
   const [back] = await db
     .select({ total: sql<string>`coalesce(sum(-${walletEntry.amountSatang}), 0)` })
     .from(walletEntry)
@@ -1607,7 +1789,7 @@ export async function prepaidBalanceOf(
         eq(walletEntry.walletId, row.id),
         eq(walletEntry.kind, 'spend'),
         eq(walletEntry.source, 'refund'),
-        sql`${walletEntry.payload}->>'checkinId' = ${checkinId}`,
+        handedBack,
       ),
     );
   const handedBackSatang = Number(back?.total ?? 0);

@@ -7996,6 +7996,26 @@
                         },
                         "voucherGift": {
                           "type": "boolean"
+                        },
+                        "creditFor": {
+                          "type": "object",
+                          "properties": {
+                            "cartLineId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "kidOrdinal": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 49
+                            }
+                          },
+                          "required": [
+                            "cartLineId",
+                            "kidOrdinal"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true
                         }
                       },
                       "required": [
@@ -8658,6 +8678,26 @@
                         },
                         "voucherGift": {
                           "type": "boolean"
+                        },
+                        "creditFor": {
+                          "type": "object",
+                          "properties": {
+                            "cartLineId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "kidOrdinal": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 49
+                            }
+                          },
+                          "required": [
+                            "cartLineId",
+                            "kidOrdinal"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true
                         }
                       },
                       "required": [
@@ -9309,6 +9349,26 @@
                             },
                             "voucherGift": {
                               "type": "boolean"
+                            },
+                            "creditFor": {
+                              "type": "object",
+                              "properties": {
+                                "cartLineId": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "kidOrdinal": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 49
+                                }
+                              },
+                              "required": [
+                                "cartLineId",
+                                "kidOrdinal"
+                              ],
+                              "additionalProperties": false,
+                              "nullable": true
                             }
                           },
                           "required": [
@@ -10620,6 +10680,26 @@
                         },
                         "voucherGift": {
                           "type": "boolean"
+                        },
+                        "creditFor": {
+                          "type": "object",
+                          "properties": {
+                            "cartLineId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "kidOrdinal": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 49
+                            }
+                          },
+                          "required": [
+                            "cartLineId",
+                            "kidOrdinal"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true
                         }
                       },
                       "required": [

@@ -137,7 +137,7 @@ import { applyPartySettlementClose } from './party-settlement-close';
 import { assertCartStock, stockSharesForLines, takeStockForClose, type PrizeStockTake } from './stock';
 import { printJobsOfSale, routeSalePrinting, type SalePrintingResult } from './sale-printing';
 import { debitForSale, grantSaleCredit, grantsOfSale } from './wallet';
-import type { CartBandHolderInput, CartPrepaidInput, WalletGrantView, WalletTenderInstruction } from '@oto/shared';
+import type { CartBandHolderInput, CartPrepaidInput, ExtraCreditFor, WalletGrantView, WalletTenderInstruction } from '@oto/shared';
 import { BAND_FOOD_REFUSALS, normalizePhone } from '@oto/shared';
 import {
   BENEFIT_CHECKOUT_REFUSALS,
@@ -265,6 +265,13 @@ export interface CartLineInput {
    * platform's (`voucherPricing`), and it takes nothing without the voucher.
    */
   voucherGift?: boolean;
+  /**
+   * SCRUM-1048 — extra food credit for one child on a ticket line of this
+   * cart: this line carries the credit (`foodProvision`, prepaid credit) and
+   * nobody; `cartLineId` is the child's ticket line and `kidOrdinal` which of
+   * its children, 0 first. Checked by `extraCreditLinesOf`.
+   */
+  creditFor?: ExtraCreditFor | null;
   /**
    * WHAT THE SCREEN SHOWED FOR THIS LINE. Not an instruction to charge it: the
    * platform prices the line from its own catalogue and refuses the sale when
@@ -936,6 +943,12 @@ export interface SaleLinePayload {
    * item vouchers), and an add-on's F&B credit per unit.
    */
   party?: PartySaleLineTag;
+  /**
+   * SCRUM-1048 — on the `food_provision` line of an extra food credit line:
+   * the child's ticket line and place it loads on when the sale is paid
+   * (`grantSaleCredit`), and a refund of the line takes it back.
+   */
+  creditFor?: ExtraCreditFor;
 }
 
 /** A priced unit, ready to become a `pos.sale_line` row. */
@@ -1818,6 +1831,9 @@ export async function priceCart(
     },
   };
 
+  // SCRUM-1048 — an extra food credit line names a child on a ticket line of this cart.
+  const extraCredits = await extraCreditLinesOf(db, actor.operatorId, input.lines ?? []);
+
   const cartLines: TicketCartLine[] = [];
   for (const line of input.lines ?? []) {
     const pkg = catalogue.packages.get(line.packageId);
@@ -2335,6 +2351,7 @@ export async function priceCart(
     new Map(itemLines.map((item) => [item.cartLineId, item])),
     pickupCode,
     voucherLines,
+    extraCredits,
   );
   // S2-20 E2 — the pass's unit carries the prototype's ticket name, its svc id
   // and its "One-time" duration; it has no package, so it owes no band. E5 —
@@ -2480,6 +2497,8 @@ function buildPricedLines(
   pickupCode: string | null,
   /** S2-10b — the free item a voucher put on the bill, by cart line id. */
   voucherLines: ReadonlyMap<string, { id: string; code: string; productId: string }> = new Map(),
+  /** SCRUM-1048 — the extra food credit lines, by cart line id. See `extraCreditLinesOf`. */
+  extraCredits: ReadonlyMap<string, ExtraCreditFor> = new Map(),
 ): PricedLine[] {
   const units = cartUnits(cartLines, ctx);
   // Each unit's share of the money, split by the one function the box's
@@ -2531,6 +2550,9 @@ function buildPricedLines(
       (kind === 'socks' && snapshotPriced.has(ctx.socks.addOnId)) ||
       ((kind === 'service_fee' || kind === 'food_provision' || kind === 'promo_item') &&
         snapshotPriced.has(unit.lineId));
+    // SCRUM-1048 — the child an extra food credit line loads on, kept on its food row.
+    const creditFor = kind === 'food_provision' ? extraCredits.get(unit.lineId) : undefined;
+    const plain: SaleLinePayload | null = snapshot ? { priceSource: 'till_snapshot' as const, ...sized } : sized;
 
     return {
       lineNo: index + 1,
@@ -2571,9 +2593,9 @@ function buildPricedLines(
               // that route to it and has to print the code the guest holds.
               ...(item.kind === 'fnb_item' && pickupCode ? { pickupCode } : {}),
             }
-          : snapshot
-            ? { priceSource: 'till_snapshot' as const, ...sized }
-            : sized,
+          : creditFor
+            ? { ...plain, creditFor }
+            : plain,
     };
   });
 }
@@ -3452,6 +3474,78 @@ export function storedCartLineIds(
   }
   for (const item of input.items ?? []) ids.add(item.id.toLowerCase());
   return ids;
+}
+
+/**
+ * SCRUM-1048 — EXTRA FOOD CREDIT ON ANY CHILD TICKET, AS ITS OWN LINE (the
+ * owner's answer of 19 November 2026). Until now extra prepaid food credit
+ * rode only on a dropped-off or nanny child's line, chosen on their form.
+ *
+ * The line carries the credit and nobody: prepaid credit as its
+ * `foodProvision` (priced, taxed and filed exactly as that child's row is: a
+ * `food_provision` unit in stored value, "Prepaid food" on the receipt), no
+ * people, socks, add-ons or fee, under the child's own ticket package. Its
+ * `creditFor` names a ticket line of the same cart and which of its children;
+ * the credit loads on that child's band when the sale is paid
+ * (`grantSaleCredit`). A dropped-off or nanny child's extra credit stays on
+ * their form: their band is minted at check-in, not when the sale closes.
+ *
+ * Read-only, and checked before anything is priced, so a quote and a commit
+ * refuse the same cart in the same words. Returns the lines by their id.
+ */
+export async function extraCreditLinesOf(
+  db: Exec,
+  operatorId: string,
+  lines: readonly CartLineInput[],
+): Promise<Map<string, ExtraCreditFor>> {
+  const out = new Map<string, ExtraCreditFor>();
+  const extras = lines.filter((line) => line.creditFor);
+  if (extras.length === 0) return out;
+  const byId = new Map(lines.map((line) => [line.id.toLowerCase(), line]));
+  const targets: CartLineInput[] = [];
+  for (const line of extras) {
+    const creditFor = line.creditFor!;
+    if (line.foodProvision?.mode !== 'prepaid_credit' || line.foodProvision.paidSatang <= 0) {
+      throw errors.badRequest('Extra food credit needs an amount', { cartLineId: line.id });
+    }
+    const alone =
+      line.kids === 0 &&
+      line.adults === 0 &&
+      (line.socks ?? 0) === 0 &&
+      (line.addOns?.length ?? 0) === 0 &&
+      !line.serviceFee &&
+      !line.promoItem &&
+      !line.voucherGift;
+    if (!alone) {
+      throw errors.badRequest('Extra food credit is a line of its own, with nobody and nothing else on it', {
+        cartLineId: line.id,
+      });
+    }
+    const target = byId.get(creditFor.cartLineId.toLowerCase());
+    if (!target || target.creditFor || target.promoItem || target.packageId !== line.packageId) {
+      throw errors.badRequest('The ticket this food credit is for is not on the order', { cartLineId: line.id });
+    }
+    if (creditFor.kidOrdinal >= target.kids) {
+      throw errors.badRequest('That ticket has no child for this food credit', { cartLineId: line.id });
+    }
+    if (target.serviceFee || target.foodProvision) {
+      throw errors.badRequest(
+        "A dropped-off or nanny child's extra food credit is chosen on their drop-off form",
+        { cartLineId: line.id },
+      );
+    }
+    targets.push(target);
+    out.set(line.id, { cartLineId: target.id, kidOrdinal: creditFor.kidOrdinal });
+  }
+  const stays = await db
+    .select({ id: checkin.id })
+    .from(checkin)
+    .where(and(inArray(checkin.id, [...new Set(targets.map((t) => t.id))]), eq(checkin.operatorId, operatorId)))
+    .limit(1);
+  if (stays.length > 0) {
+    throw errors.badRequest("A dropped-off or nanny child's extra food credit is chosen on their drop-off form");
+  }
+  return out;
 }
 
 /**
