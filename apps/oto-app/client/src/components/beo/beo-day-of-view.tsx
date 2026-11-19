@@ -57,6 +57,7 @@ import {
 import type { BeoEventWithDetails } from "@shared/schema";
 import { beoClockOf, untimedBesideTimeline, timelineStepLine } from "@shared/beoTimeline";
 import { ADULTS_SAME_AS_KIDS, adultsDifferOf, kitchenListsEqual } from "@shared/kitchenAdults";
+import { beoDishNameOf } from "@shared/beoAdultWaffles";
 import { DayOfPosSection, type DayOfPartyDetails } from "./beo-day-of-pos";
 import { useTillBilling } from "./beo-till-billing";
 import { useBuiltTimeline } from "./beo-built-timeline";
@@ -185,7 +186,7 @@ function DayOfSetMenuChoices({ template, menuItems }: {
       {fixedItems.length > 0 && (
         <div data-testid="day-of-set-menu-fixed-items">
           <p className="text-xs font-medium text-muted-foreground">Included</p>
-          <p className="text-sm">{fixedItems.map((item) => item.itemName).join(", ")}</p>
+          <p className="text-sm">{fixedItems.map((item) => beoDishNameOf(item)).join(", ")}</p>
         </div>
       )}
       {choiceGroups.map((group) => {
@@ -194,7 +195,7 @@ function DayOfSetMenuChoices({ template, menuItems }: {
         return (
           <div key={group.id} data-testid={`day-of-set-menu-group-${group.id}`}>
             <p className="text-xs font-medium text-muted-foreground">{group.label}</p>
-            <p className="text-sm">{choices.map((item) => item.itemName).join(", ")}</p>
+            <p className="text-sm">{choices.map((item) => beoDishNameOf(item)).join(", ")}</p>
           </div>
         );
       })}
@@ -1575,7 +1576,7 @@ export function BeoDayOfView({ eventId, onClose }: BeoDayOfViewProps) {
                                     {localKidsMenu.filter((item) => item.source !== "set_menu").map((item, idx) => (
                                       <li key={item.id} className="text-sm flex items-center gap-2" data-testid={`adults-mirror-item-${idx}`}>
                                         <span className="w-6 text-center text-xs font-medium shrink-0">{beoQuantityOf(item.quantity)}</span>
-                                        <span>{item.itemName}</span>
+                                        <span>{beoDishNameOf(item)}</span>
                                         <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-amber-500/10 text-amber-600 border-amber-500/30">EXTRA</Badge>
                                         {item.notes && <span className="text-xs text-muted-foreground">({item.notes})</span>}
                                       </li>
@@ -1737,7 +1738,7 @@ export function BeoDayOfView({ eventId, onClose }: BeoDayOfViewProps) {
                                   {item.source === "set_menu" ? "SET" : "EXTRA"}
                                 </span>
                                 <span className="font-mono text-muted-foreground shrink-0">{beoQuantityOf(item.quantity)}x</span>
-                                <span>{item.itemName}</span>
+                                <span>{beoDishNameOf(item)}</span>
                               </div>
                               {item.notes && <p className="text-xs text-muted-foreground ml-16">{item.notes}</p>}
                             </div>
