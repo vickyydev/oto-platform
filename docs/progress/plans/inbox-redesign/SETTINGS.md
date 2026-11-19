@@ -55,13 +55,12 @@ the conversations stay mounted underneath, hidden, as before.
   Its actions sit at its end from 768 px and behind a three-dot menu on a
   phone, from one list so the two never drift apart.
 - **MetaLine:** the meta's parts joined by a dot, each kept whole, so a
-  narrow row wraps between parts and never strands one word.
+  narrow row wraps between parts and never strands one word; a wrapped
+  line neither ends nor starts with a dot, and the row's badge leads it.
 - **RowMenu:** a 44 px button; arrow keys, Escape, a press outside, focus
   back to the button; it opens upward when there is no room below.
 - **Field:** the label over the control, help under it, an error line in
   the refusal's red, both tied to the control for a screen reader.
-- **ActionBar:** a form's Cancel and Save, sticky at the foot of the page
-  area; on a phone the main button takes the bar's width.
 - **EmptyNote, LoadingNote, InlineNote, InlineError:** an empty state on a
   dashed frame; a three-row skeleton with its words for a screen reader; a
   note in money's green or the assistant's mint; an error in the refusal's
@@ -100,10 +99,11 @@ sheet with its own fixed Save than in a row growing inside a long list.
 
 ## The assistant pages (the second half)
 
-Each starts with PageHeader: eyebrow "Assistant", its name, the assistant's
-line as today, and its main action (New entry, New rule) on the right. Its
-own explanation, word for word, is a mint note under the header, read in
-place and never announced.
+Each starts with PageHeader: eyebrow "Assistant", its name, and its main
+action (New entry, New rule) on the right; the assistant's line as today,
+on the first of these pages the viewer may open only (Numbers, or Knowledge
+without the numbers' right). Its own explanation, word for word, is a mint
+note under the header, read in place and never announced.
 
 - **Numbers:** the "Live means customers hear it" note; a section
   "Channel numbers" with a row per number (its name, channel and park) and
@@ -149,7 +149,21 @@ Shared rules the second half added:
 - **Kinds of message in sentence case** on these pages ("Lost item",
   "FAQ", "Any message"); the value sent is the intent, as before.
 - **Switches** take the page's width on a phone and stop at 28 rem from
-  640 px.
+  640 px. The chosen segment has a 1 px edge at 3 : 1 against the band and
+  its fill (`segment-edge`), on every switch of the Inbox.
+
+The review of the second half (SCRUM-1043 to 1045, fix stage) added:
+
+- **44 px to a finger, for real.** A line in a stack (a page in the
+  settings column, a view in the views column, a menu item, a check line) is
+  44 px tall itself on a touch screen (`row-touch`); the Filters sheet's
+  pills stand 12 px apart there; the search and both message pills are 44
+  px tall. Measured with `elementFromPoint` at real tablet sizes.
+- **The divider to a finger:** a grip always drawn on the edge at mid
+  height, its own 44 by 64 px target; the full-height strip 16 px, centred.
+- **Numbers' modes** sit side by side where the page area is 640 px wide,
+  named as plain terms; Templates rows show three lines of the body with
+  its line breaks.
 
 **What stays exactly:** every control, state, message, confirmation and
 test id in sections 2.3 and 9 of `INVENTORY.md`; the R8 guarantee; every

@@ -1,0 +1,2228 @@
+{
+ "note": "SCRUM-1043/1044/1045 review fixes: local build, demo and ZZ TEST data, touch emulation (any-pointer: coarse) on tablets and phones. under44 = controls whose real tap area, found with elementFromPoint along both centre lines, is under 43 px; COVERED (a control scrolled under a sticky bar) left out.",
+ "screens": {
+  "390x844-light-inbox-list": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": 390,
+    "chat": null,
+    "panel": null,
+    "settings": null
+   }
+  },
+  "390x844-light-inbox-chat": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": 390,
+    "panel": null,
+    "settings": null
+   }
+  },
+  "390x844-light-filters": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": 390,
+    "chat": null,
+    "panel": null,
+    "settings": null
+   },
+   "retakenAfterPhoneGapKeptAt8px": true
+  },
+  "390x844-light-bookdate": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": 390,
+    "panel": null,
+    "settings": null
+   }
+  },
+  "390x844-light-templates": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 390
+   }
+  },
+  "390x844-light-templates-edit": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 390
+   }
+  },
+  "390x844-light-templates-empty": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 390
+   }
+  },
+  "390x844-light-numbers": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 390
+   }
+  },
+  "390x844-light-numbers-empty": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 390
+   }
+  },
+  "390x844-light-knowledge": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 390
+   }
+  },
+  "390x844-light-knowledge-edit": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 390
+   }
+  },
+  "390x844-light-knowledge-empty": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 390
+   }
+  },
+  "390x844-light-examples": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 390
+   }
+  },
+  "390x844-light-examples-review": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [
+    "1.48 \"Contains no personal data. I check\" fill 1.01"
+   ],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 390
+   }
+  },
+  "390x844-light-examples-empty": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 390
+   }
+  },
+  "390x844-light-rules": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 390
+   }
+  },
+  "390x844-light-rules-refused": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 390
+   }
+  },
+  "390x844-light-rules-empty": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 390
+   }
+  },
+  "390x844-light-teach-empty": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 390
+   }
+  },
+  "390x844-light-teach-chat": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 390
+   }
+  },
+  "744x1133-light-inbox-list": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": 744,
+    "chat": null,
+    "panel": null,
+    "settings": null
+   }
+  },
+  "744x1133-light-inbox-chat": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": 744,
+    "panel": null,
+    "settings": null
+   }
+  },
+  "744x1133-light-filters": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": 744,
+    "chat": null,
+    "panel": null,
+    "settings": null
+   }
+  },
+  "744x1133-light-bookdate": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": 744,
+    "panel": null,
+    "settings": null
+   }
+  },
+  "744x1133-light-templates": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 744
+   }
+  },
+  "744x1133-light-templates-edit": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 744
+   }
+  },
+  "744x1133-light-templates-empty": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 744
+   }
+  },
+  "744x1133-light-numbers": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 744
+   }
+  },
+  "744x1133-light-numbers-empty": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 744
+   }
+  },
+  "744x1133-light-knowledge": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 744
+   }
+  },
+  "744x1133-light-knowledge-edit": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 744
+   }
+  },
+  "744x1133-light-knowledge-empty": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 744
+   }
+  },
+  "744x1133-light-examples": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 744
+   }
+  },
+  "744x1133-light-examples-review": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [
+    "1.48 \"Contains no personal data. I check\" fill 1.01"
+   ],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 744
+   }
+  },
+  "744x1133-light-examples-empty": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 744
+   }
+  },
+  "744x1133-light-rules": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 744
+   }
+  },
+  "744x1133-light-rules-refused": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 744
+   }
+  },
+  "744x1133-light-rules-empty": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 744
+   }
+  },
+  "744x1133-light-teach-empty": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 744
+   }
+  },
+  "744x1133-light-teach-chat": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 744
+   }
+  },
+  "768x1024-light-inbox-split": {
+   "under44": [],
+   "under44InReviewRun": 3,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": 276,
+    "chat": 492,
+    "panel": null,
+    "settings": null
+   }
+  },
+  "768x1024-light-filters": {
+   "under44": [],
+   "under44InReviewRun": 6,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": 276,
+    "chat": 492,
+    "panel": null,
+    "settings": null
+   },
+   "retakenAfterPhoneGapKeptAt8px": true
+  },
+  "768x1024-light-bookdate": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": 276,
+    "chat": 492,
+    "panel": null,
+    "settings": null
+   }
+  },
+  "768x1024-light-templates": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 544
+   }
+  },
+  "768x1024-light-templates-edit": {
+   "under44": [],
+   "under44InReviewRun": 1,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 544
+   }
+  },
+  "768x1024-light-templates-empty": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 544
+   }
+  },
+  "768x1024-light-numbers": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 544
+   }
+  },
+  "768x1024-light-numbers-empty": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 544
+   }
+  },
+  "768x1024-light-knowledge": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 544
+   }
+  },
+  "768x1024-light-knowledge-edit": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 544
+   }
+  },
+  "768x1024-light-knowledge-empty": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 544
+   }
+  },
+  "768x1024-light-examples": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 544
+   }
+  },
+  "768x1024-light-examples-review": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [
+    "1.57 \"Contains no personal data. I check\" fill 1.08"
+   ],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 544
+   }
+  },
+  "768x1024-light-examples-empty": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 544
+   }
+  },
+  "768x1024-light-rules": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 544
+   }
+  },
+  "768x1024-light-rules-refused": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 544
+   }
+  },
+  "768x1024-light-rules-empty": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 544
+   }
+  },
+  "768x1024-light-teach-empty": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 544
+   }
+  },
+  "768x1024-light-teach-chat": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 544
+   }
+  },
+  "820x1180-light-inbox-split": {
+   "under44": [],
+   "under44InReviewRun": 3,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": 295,
+    "chat": 525,
+    "panel": null,
+    "settings": null
+   }
+  },
+  "820x1180-light-filters": {
+   "under44": [],
+   "under44InReviewRun": 6,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": 295,
+    "chat": 525,
+    "panel": null,
+    "settings": null
+   },
+   "retakenAfterPhoneGapKeptAt8px": true
+  },
+  "820x1180-light-bookdate": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": 295,
+    "chat": 525,
+    "panel": null,
+    "settings": null
+   }
+  },
+  "820x1180-light-templates": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 596
+   }
+  },
+  "820x1180-light-templates-edit": {
+   "under44": [],
+   "under44InReviewRun": 1,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 596
+   }
+  },
+  "820x1180-light-templates-empty": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 596
+   }
+  },
+  "820x1180-light-numbers": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 596
+   }
+  },
+  "820x1180-light-numbers-empty": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 596
+   }
+  },
+  "820x1180-light-knowledge": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 596
+   }
+  },
+  "820x1180-light-knowledge-edit": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 596
+   }
+  },
+  "820x1180-light-knowledge-empty": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 596
+   }
+  },
+  "820x1180-light-examples": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 596
+   }
+  },
+  "820x1180-light-examples-review": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [
+    "1.57 \"Contains no personal data. I check\" fill 1.08"
+   ],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 596
+   }
+  },
+  "820x1180-light-examples-empty": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 596
+   }
+  },
+  "820x1180-light-rules": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 596
+   }
+  },
+  "820x1180-light-rules-refused": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 596
+   }
+  },
+  "820x1180-light-rules-empty": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 596
+   }
+  },
+  "820x1180-light-teach-empty": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 596
+   }
+  },
+  "820x1180-light-teach-chat": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 596
+   }
+  },
+  "1024x1366-light-inbox-split": {
+   "under44": [],
+   "under44InReviewRun": 19,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": 224,
+    "list": 288,
+    "chat": 512,
+    "panel": null,
+    "settings": null
+   }
+  },
+  "1024x1366-light-filters": {
+   "failed": "no Filters button from 1024 px: the views column holds the filters"
+  },
+  "1024x1366-light-bookdate": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": 224,
+    "list": 288,
+    "chat": 512,
+    "panel": null,
+    "settings": null
+   }
+  },
+  "1024x1366-light-templates": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1024x1366-light-templates-edit": {
+   "under44": [],
+   "under44InReviewRun": 1,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1024x1366-light-templates-empty": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1024x1366-light-numbers": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1024x1366-light-numbers-empty": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1024x1366-light-knowledge": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1024x1366-light-knowledge-edit": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1024x1366-light-knowledge-empty": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1024x1366-light-examples": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1024x1366-light-examples-review": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [
+    "1.57 \"Contains no personal data. I check\" fill 1.08"
+   ],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1024x1366-light-examples-empty": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1024x1366-light-rules": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1024x1366-light-rules-refused": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1024x1366-light-rules-empty": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1024x1366-light-teach-empty": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 800
+   }
+  },
+  "1024x1366-light-teach-chat": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 800
+   }
+  },
+  "1133x744-light-inbox-split": {
+   "under44": [],
+   "under44InReviewRun": 13,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": 224,
+    "list": 327,
+    "chat": 582,
+    "panel": null,
+    "settings": null
+   }
+  },
+  "1133x744-light-filters": {
+   "failed": "no Filters button from 1024 px: the views column holds the filters"
+  },
+  "1133x744-light-bookdate": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": 224,
+    "list": 327,
+    "chat": 582,
+    "panel": null,
+    "settings": null
+   }
+  },
+  "1133x744-light-templates": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1133x744-light-templates-edit": {
+   "under44": [],
+   "under44InReviewRun": 2,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1133x744-light-templates-empty": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1133x744-light-numbers": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1133x744-light-numbers-empty": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1133x744-light-knowledge": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1133x744-light-knowledge-edit": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1133x744-light-knowledge-empty": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1133x744-light-examples": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1133x744-light-examples-review": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [
+    "1.57 \"Contains no personal data. I check\" fill 1.08"
+   ],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1133x744-light-examples-empty": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1133x744-light-rules": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1133x744-light-rules-refused": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1133x744-light-rules-empty": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1133x744-light-teach-empty": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 909
+   }
+  },
+  "1133x744-light-teach-chat": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 909
+   }
+  },
+  "1366x1024-light-inbox-split": {
+   "under44": [
+    "\"Correct the assistant\" drawn 129x30 taps 81x39"
+   ],
+   "under44InReviewRun": 20,
+   "lowEdge": [
+    "1.21 \"Divert to ZZ TEST Vera\" fill 1.00"
+   ],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": 224,
+    "list": 303,
+    "chat": 839,
+    "panel": 300,
+    "settings": null
+   }
+  },
+  "1366x1024-light-filters": {
+   "failed": "no Filters button from 1024 px: the views column holds the filters"
+  },
+  "1366x1024-light-bookdate": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": 224,
+    "list": 303,
+    "chat": 839,
+    "panel": 300,
+    "settings": null
+   }
+  },
+  "1366x1024-light-templates": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1366x1024-light-templates-edit": {
+   "under44": [],
+   "under44InReviewRun": 1,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1366x1024-light-templates-empty": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1366x1024-light-numbers": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1366x1024-light-numbers-empty": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1366x1024-light-knowledge": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1366x1024-light-knowledge-edit": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1366x1024-light-knowledge-empty": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1366x1024-light-examples": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1366x1024-light-examples-review": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [
+    "1.57 \"Contains no personal data. I check\" fill 1.08"
+   ],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1366x1024-light-examples-empty": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1366x1024-light-rules": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1366x1024-light-rules-refused": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1366x1024-light-rules-empty": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1366x1024-light-teach-empty": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 1142
+   }
+  },
+  "1366x1024-light-teach-chat": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 1142
+   }
+  },
+  "390x844-dark-inbox-list": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": 390,
+    "chat": null,
+    "panel": null,
+    "settings": null
+   }
+  },
+  "390x844-dark-filters": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": 390,
+    "chat": null,
+    "panel": null,
+    "settings": null
+   }
+  },
+  "390x844-dark-numbers": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 390
+   }
+  },
+  "390x844-dark-rules": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 390
+   }
+  },
+  "390x844-dark-templates": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 390
+   }
+  },
+  "390x844-dark-teach-chat": {
+   "under44": [],
+   "under44InReviewRun": 0,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 390
+   }
+  },
+  "768x1024-dark-inbox-split": {
+   "under44": [],
+   "under44InReviewRun": 3,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": 276,
+    "chat": 492,
+    "panel": null,
+    "settings": null
+   }
+  },
+  "768x1024-dark-filters": {
+   "under44": [],
+   "under44InReviewRun": 6,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": 276,
+    "chat": 492,
+    "panel": null,
+    "settings": null
+   }
+  },
+  "768x1024-dark-numbers": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 544
+   }
+  },
+  "768x1024-dark-rules": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 544
+   }
+  },
+  "768x1024-dark-templates": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 544
+   }
+  },
+  "768x1024-dark-teach-chat": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 544
+   }
+  },
+  "1024x1366-dark-inbox-split": {
+   "under44": [],
+   "under44InReviewRun": 19,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": 224,
+    "list": 288,
+    "chat": 512,
+    "panel": null,
+    "settings": null
+   }
+  },
+  "1024x1366-dark-filters": {
+   "failed": "no Filters button from 1024 px: the views column holds the filters"
+  },
+  "1024x1366-dark-numbers": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1024x1366-dark-rules": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1024x1366-dark-templates": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 768
+   }
+  },
+  "1024x1366-dark-teach-chat": {
+   "under44": [],
+   "under44InReviewRun": 4,
+   "lowEdge": [],
+   "lowText": [],
+   "overflowX": 0,
+   "panes": {
+    "rail": null,
+    "list": null,
+    "chat": null,
+    "panel": null,
+    "settings": 800
+   }
+  }
+ },
+ "totals": {
+  "under44Now": 1,
+  "under44InReviewRunSameScreens": 376,
+  "remaining": "1366x1024 inbox: the topmost Correct the assistant, scrolled half under the assistant line at the top of the thread (39 px of it shows); not an overlap of two controls"
+ },
+ "divider": {
+  "desk0": {
+   "win": 1440,
+   "list": 330,
+   "chat": 886,
+   "handle": [
+    550,
+    16
+   ],
+   "gripOpacity": "0"
+  },
+  "deskHover": {
+   "win": 1440,
+   "list": 330,
+   "chat": 886,
+   "handle": [
+    550,
+    16
+   ],
+   "gripOpacity": "1"
+  },
+  "t768": {
+   "win": 768,
+   "list": 276,
+   "chat": 492,
+   "handle": [
+    268,
+    16
+   ],
+   "gripOpacity": "1"
+  },
+  "t768-narrower": {
+   "win": 768,
+   "list": 264,
+   "chat": 504,
+   "handle": [
+    256,
+    16
+   ],
+   "gripOpacity": "1"
+  },
+  "t768-wider": {
+   "win": 768,
+   "list": 408,
+   "chat": 360,
+   "handle": [
+    400,
+    16
+   ],
+   "gripOpacity": "1"
+  },
+  "t768DoubleTap": {
+   "win": 768,
+   "list": 276,
+   "chat": 492,
+   "handle": [
+    268,
+    16
+   ],
+   "gripOpacity": "1"
+  },
+  "m1133": {
+   "win": 1133,
+   "list": 327,
+   "chat": 582,
+   "handle": [
+    543,
+    16
+   ],
+   "gripOpacity": "1"
+  },
+  "m744": {
+   "win": 744,
+   "list": 0,
+   "chat": 744,
+   "handle": null,
+   "gripOpacity": null
+  },
+  "p1024": {
+   "win": 1024,
+   "list": 288,
+   "chat": 512,
+   "handle": [
+    504,
+    16
+   ],
+   "gripOpacity": "1"
+  },
+  "p1024-narrower": {
+   "win": 1024,
+   "list": 264,
+   "chat": 536,
+   "handle": [
+    480,
+    16
+   ],
+   "gripOpacity": "1"
+  }
+ }
+}
