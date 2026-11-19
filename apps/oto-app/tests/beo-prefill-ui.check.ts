@@ -677,7 +677,7 @@ await check("D1: paid claims preserve stored2000 receipt through legacy and stru
     const sawUnconfirmed = doc.body.textContent?.includes("Deposit requested / not confirmed received");
     await click("button-ai-fill-confirm");
     await settle(6);
-    if (!byTestId("input-prepayment")) await click("accordion-party-details");
+    if (!byTestId("input-prepayment")) await click("accordion-event-info");
     assert.equal(text("input-prepayment")?.replace(/[.,\s]/g, ""), "2000", `${variant}: the actual Deposit field`);
     if (!variant.includes("RECEIVED")) assert.ok(sawUnconfirmed, `${variant}: the amount is visible as unconfirmed`);
     asked.length = 0;
@@ -695,6 +695,8 @@ await check("D1: paid claims preserve stored2000 receipt through legacy and stru
 
 await check("text typed before AI Fill survives the approval: the review keeps it, the one Save writes it, the read-back shows it", async () => {
   await open(E_TYPED);
+  // SCRUM-1029: Special Requests is a field of Internal Notes.
+  await click("accordion-internal-notes");
   await typeInto("textarea-special-requests", "ZZ typed: a quiet corner, please");
   assert.equal(text("textarea-special-requests"), "ZZ typed: a quiet corner, please");
   await click("button-ai-fill-beo");
@@ -750,7 +752,9 @@ await check("a time, the cake or the setup's who edited after the approval says 
 
 await check("an empty BEO's sections say plain words, never a placeholder", async () => {
   await open(E_EMPTY);
-  for (const section of ["party-host", "party-details", "setup-plan", "timeline"]) await click(`accordion-${section}`);
+  // SCRUM-1029: the host and the POS box are parts of Event Info (open as the BEO opens); the setup,
+  // the acts and the other timed steps are in Food & Drinks and Entertainment & Program.
+  for (const section of ["food-drinks", "entertainment"]) await click(`accordion-${section}`);
   assert.equal(text("text-no-entertainment-acts"), "No entertainment acts yet. Add one and give it a time to put it on the Timeline.");
   assert.equal(text("button-add-first-package-item"), "No line items yet. Click to add the first.");
   assert.equal(text("button-add-first-setup-task"), "No setup tasks yet. Click to add the first.");

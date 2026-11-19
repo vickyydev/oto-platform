@@ -188,8 +188,9 @@ const open = async (eventId: string) => {
     );
   });
   await settle(10);
-  assert.ok(byTestId("accordion-kitchen-plan"), `the BEO ${eventId} is open`);
-  await click("accordion-kitchen-plan");
+  assert.ok(byTestId("accordion-food-drinks"), `the BEO ${eventId} is open`);
+  // SCRUM-1029: the kitchen plan is part of Food & Drinks.
+  await click("accordion-food-drinks");
   await click("button-menu-tab-adults");
 };
 const savedMenus = async () => {
