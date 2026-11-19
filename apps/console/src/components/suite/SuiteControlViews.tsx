@@ -11,7 +11,8 @@ import { CONTROL } from '@/components/Filters';
 import { formatExact } from '@/lib/time';
 import { cn } from '@/lib/utils';
 import {
-  approvalStep, autoRevertAt, isActionableSwitch, operationOf, personWords, previewMatches, SCOPE_WORDS, SUITE_APP_NAMES,
+  approvalStep, autoRevertAt, featureValueChoices, isActionableSwitch, isSettableFeature, operationOf, personWords, previewMatches,
+  SCOPE_WORDS, SUITE_APP_NAMES,
   type ApprovalOperation, type ApprovalStep, type CatalogueEntry, type FlagOverride, type Gate,
   type PendingApproval, type ScopeType, type SwitchChoice,
 } from '@/lib/suiteControlRules';
@@ -64,9 +65,11 @@ export function ConfirmFields({ phrase, reason, onReason, confirmation, onConfir
 }
 
 /** Rule (b): the blast radius of exactly the pending choice, or an honest note that there is none on screen. */
-export function BlastRadius({ preview, choice, busy, error, onPreview, canPreview }: {
+export function BlastRadius({ preview, choice, busy, error, onPreview, canPreview, effectWords }: {
   preview: SuiteFlagPreview | null; choice: SwitchChoice | null; busy: boolean; error: string | null;
   onPreview: () => void; canPreview: boolean;
+  /** What the effect line is introduced as; a kill switch says what stops working. */
+  effectWords?: string;
 }) {
   const current = previewMatches(preview, choice);
   return <section className="flex min-w-0 flex-col gap-3 rounded-xl border border-card-border p-4" aria-label="Blast radius">
@@ -79,15 +82,15 @@ export function BlastRadius({ preview, choice, busy, error, onPreview, canPrevie
     {error && <ErrorNote message={error} />}
     {!preview ? <p className="text-sm text-muted-foreground">No preview yet. The confirm button stays off until one is shown for this exact choice.</p>
       : !current ? <p className="text-sm text-muted-foreground">The preview on record was for a different choice. Preview again for this one.</p>
-        : <PreviewFacts preview={preview} />}
+        : <PreviewFacts preview={preview} effectWords={effectWords ?? 'What stops working: '} />}
   </section>;
 }
 
-function PreviewFacts({ preview }: { preview: SuiteFlagPreview }) {
+function PreviewFacts({ preview, effectWords }: { preview: SuiteFlagPreview; effectWords: string }) {
   const branches = preview.branches.filter(row => row.current !== row.after);
   const stations = preview.stations.filter(row => row.current !== row.after);
   return <div className="flex min-w-0 flex-col gap-3">
-    <p className="text-sm break-words"><span className="font-semibold">What stops working: </span>{preview.effect}</p>
+    <p className="text-sm break-words"><span className="font-semibold">{effectWords}</span>{preview.effect}</p>
     <dl className="grid min-w-0 grid-cols-1 gap-x-6 gap-y-3 @xl:grid-cols-3">
       <Fact label="Places that change">{preview.changes}</Fact>
       <Fact label="Staff sessions open there">{preview.openSessions}</Fact>
@@ -107,6 +110,9 @@ function PreviewFacts({ preview }: { preview: SuiteFlagPreview }) {
     </div>
   </div>;
 }
+
+/** A feature switch is kept until it is cleared; a kill switch always carries its expiry. */
+const NO_EXPIRY = 'Never: it stays until it is cleared';
 
 function placeWords(scopeType: ScopeType, scopeId: string | null) {
   return <>{SCOPE_WORDS[scopeType]}{scopeId && <> · <code className="text-xs break-all">{scopeId}</code></>}</>;
@@ -179,7 +185,8 @@ function OverrideRow({ row, me, nowMs, action }: { row: FlagOverride; me: string
       <Fact label="Value">{valueWords(row.value)}</Fact>
       <Fact label="Set by">{personWords(row.updatedBy, me)}</Fact>
       <Fact label="Why">{row.reason ?? 'Not recorded'}</Fact>
-      <Fact label={lapsed ? 'Expired at' : 'Auto-reverts at'}><When value={row.expiresAt} /></Fact>
+      {row.expiresAt === null ? <Fact label="Expires">{NO_EXPIRY}</Fact>
+        : <Fact label={lapsed ? 'Expired at' : 'Auto-reverts at'}><When value={row.expiresAt} /></Fact>}
       <Fact label="Set at"><When value={row.updatedAt} /></Fact>
     </dl>
     {lapsed && <p className="mt-2 text-xs text-muted-foreground">Expired: it already reads as normal; the expiry job removes the record.</p>}
@@ -221,27 +228,62 @@ export function PendingApprovalCard({ approval, me, canWrite, nowMs, onReview, s
   </section>;
 }
 
-/** Feature flags: listed honestly; nothing is offered to change while no consumer reads one. */
-export function FeatureFlagsCard({ flags }: { flags: SuiteFlags }) {
+/**
+ * Feature flags: listed honestly. A supported flag with named values
+ * (SCRUM-1024, family profiles) is offered to a platform administrator holding
+ * `console:release:flag_manage` platform-wide: set it at a place, or switch it
+ * off there to return to its default. Nothing else is offered to change.
+ */
+export function FeatureFlagsCard({ flags, me = null, canWrite = false, nowMs = Date.now(), onSet, onSwitchOff }: {
+  flags: SuiteFlags; me?: string | null; canWrite?: boolean; nowMs?: number;
+  onSet?: (entry: CatalogueEntry) => void; onSwitchOff?: (override: FlagOverride) => void;
+}) {
   const features = flags.catalogue.filter(entry => entry.kind === 'feature');
   const supported = features.filter(entry => entry.supported);
+  const settable = supported.filter(isSettableFeature);
   return <CardShell title="Feature flags" icon={Flag}>
     {supported.length === 0 ? <EmptyNote title="No feature flag can be changed yet."
       detail="No app reads a feature flag yet, so nothing is offered to change. Flags will appear here once their consumer is built." />
-      : <p className="text-sm text-muted-foreground">Changing a feature flag is not offered on this page yet.</p>}
-    {features.map(entry => <article key={entry.flagKey} className="min-w-0 rounded-xl border border-card-border p-4">
-      <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
-        <h3 className="min-w-0 font-semibold break-words">{entry.label}</h3>
-        <StatusChip tone="idle">{entry.supported ? 'Supported' : 'Not wired to its consumer yet'}</StatusChip>
-      </div>
-      <p className="mt-2 text-sm break-words">{entry.effect}</p>
-      <dl className="mt-3 grid min-w-0 grid-cols-1 gap-x-6 gap-y-3 @xl:grid-cols-3">
-        <Fact label="Default">{valueWords(entry.defaultValue)}</Fact>
-        <Fact label="Can be set for">{entry.scopes.map(scope => SCOPE_WORDS[scope]).join(', ')}</Fact>
-        <Fact label="Key"><code className="text-xs break-all">{entry.flagKey}</code></Fact>
-      </dl>
-    </article>)}
+      : settable.length === 0 ? <p className="text-sm text-muted-foreground">Changing a feature flag is not offered on this page yet.</p>
+        : <p className="text-sm text-muted-foreground break-words">
+          A feature flag has no expiry: it stays as set until it is switched off, which returns that place to the default.
+          A preview of exactly what changes comes before every confirm.
+        </p>}
+    {settable.length > 0 && !canWrite && <WriteLocked permission="console:release:flag_manage" what="Changing a feature flag" />}
+    {features.map(entry => <FeatureRow key={entry.flagKey} entry={entry} me={me} nowMs={nowMs}
+      overrides={flags.overrides.filter(row => row.flagKey === entry.flagKey)}
+      canWrite={canWrite && isSettableFeature(entry)} onSet={onSet} onSwitchOff={onSwitchOff} />)}
   </CardShell>;
+}
+
+function FeatureRow({ entry, overrides, me, nowMs, canWrite, onSet, onSwitchOff }: {
+  entry: CatalogueEntry; overrides: FlagOverride[]; me: string | null; nowMs: number; canWrite: boolean;
+  onSet?: (entry: CatalogueEntry) => void; onSwitchOff?: (override: FlagOverride) => void;
+}) {
+  const live = overrides.filter(row => !row.expired && (row.expiresAt === null || Date.parse(row.expiresAt) > nowMs));
+  const settable = isSettableFeature(entry);
+  return <article className="min-w-0 rounded-xl border border-card-border p-4" data-flag={entry.flagKey}>
+    <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+      <h3 className="min-w-0 font-semibold break-words">{entry.label}</h3>
+      {settable && live.length > 0 ? <StatusChip tone="warn">{`Set at ${live.length} ${live.length === 1 ? 'place' : 'places'}`}</StatusChip>
+        : <StatusChip tone="idle">{entry.supported ? 'Supported' : 'Not wired to its consumer yet'}</StatusChip>}
+    </div>
+    <p className="mt-2 text-sm break-words">{entry.effect}</p>
+    <dl className="mt-3 grid min-w-0 grid-cols-1 gap-x-6 gap-y-3 @xl:grid-cols-3">
+      <Fact label="Default">{valueWords(entry.defaultValue)}</Fact>
+      <Fact label="Can be set for">{entry.scopes.map(scope => SCOPE_WORDS[scope]).join(', ')}</Fact>
+      <Fact label="Key"><code className="text-xs break-all">{entry.flagKey}</code></Fact>
+      {settable && <Fact label="Values offered">{featureValueChoices(entry).join(', ')}</Fact>}
+    </dl>
+    {settable && <>
+      {overrides.length > 0 && <ul className="mt-3 flex min-w-0 flex-col gap-2">
+        {overrides.map(row => <OverrideRow key={row.id} row={row} me={me} nowMs={nowMs}
+          action={canWrite && onSwitchOff && live.includes(row)
+            ? <Button type="button" variant="outline" size="sm" onClick={() => onSwitchOff(row)}>Switch off…</Button> : null} />)}
+      </ul>}
+      {canWrite && onSet && <div className="mt-3"><Button type="button" size="sm" onClick={() => onSet(entry)}>Set…</Button></div>}
+    </>}
+  </article>;
 }
 
 // --- Forms (drawer bodies) ------------------------------------------------------
@@ -320,6 +362,72 @@ export function SwitchOnForm(props: SwitchOnFormProps) {
   </div>;
 }
 
+export interface FeatureSetFormProps {
+  entry: CatalogueEntry;
+  scopeType: ScopeType;
+  onScopeType: (next: ScopeType) => void;
+  branches: PlaceOption[] | null;
+  branchesError: string | null;
+  branchId: string;
+  onBranch: (next: string) => void;
+  stations: PlaceOption[] | null;
+  stationsError: string | null;
+  stationId: string;
+  onStation: (next: string) => void;
+  value: string;
+  onValue: (next: string) => void;
+  choice: SwitchChoice | null;
+  preview: SuiteFlagPreview | null;
+  previewBusy: boolean;
+  previewError: string | null;
+  onPreview: () => void;
+  reason: string;
+  onReason: (next: string) => void;
+  confirmation: string;
+  onConfirmation: (next: string) => void;
+  gate: Gate;
+  busy: boolean;
+  error: string | null;
+  onSubmit: () => void;
+}
+
+/** SCRUM-1024: set a feature switch at one place to one of its named values; no expiry, one administrator. */
+export function FeatureSetForm(props: FeatureSetFormProps) {
+  const { entry, scopeType } = props;
+  const needsBranch = scopeType === 'branch' || scopeType === 'station';
+  return <div className="flex min-w-0 flex-col gap-5">
+    <p className="text-sm break-words">{entry.effect}</p>
+    <Field label="Where it applies">
+      <ChoiceRow value={scopeType} onChange={next => props.onScopeType(next as ScopeType)} disabled={props.busy}
+        options={entry.scopes.map(scope => ({ value: scope, label: SCOPE_WORDS[scope] }))} />
+    </Field>
+    {needsBranch && (props.branchesError ? <ErrorNote message={props.branchesError} />
+      : <Field label="Park"><Select value={props.branchId} onChange={props.onBranch} disabled={props.busy || !props.branches}
+        placeholder={props.branches ? 'Choose a park' : 'Loading parks…'}
+        options={(props.branches ?? []).map(branch => ({ value: branch.id, label: branch.name }))} /></Field>)}
+    {scopeType === 'station' && props.branchId && (props.stationsError ? <ErrorNote message={props.stationsError} />
+      : <Field label="Station"><Select value={props.stationId} onChange={props.onStation} disabled={props.busy || !props.stations}
+        placeholder={props.stations ? 'Choose a station' : 'Loading stations…'}
+        options={(props.stations ?? []).map(station => ({ value: station.id, label: station.name }))} /></Field>)}
+    <Field label="Value" hint={<>Default {valueWords(entry.defaultValue)}. A value the server does not accept yet is refused at the preview.</>}>
+      <ChoiceRow value={props.value} onChange={props.onValue} disabled={props.busy}
+        options={featureValueChoices(entry).map(value => ({ value, label: value }))} />
+    </Field>
+    <p className="text-xs text-muted-foreground break-words">
+      No expiry: it stays as set until it is switched off, which returns this place to the default.
+    </p>
+    <BlastRadius preview={props.preview} choice={props.choice} busy={props.previewBusy} error={props.previewError}
+      onPreview={props.onPreview} canPreview={props.choice !== null && props.value !== '' && !props.busy} effectWords="What changes: " />
+    <ConfirmFields phrase={entry.flagKey} reason={props.reason} onReason={props.onReason} confirmation={props.confirmation}
+      onConfirmation={props.onConfirmation} disabled={props.busy} />
+    {props.error && <ErrorNote message={props.error} />}
+    <Missing gate={props.gate} />
+    <div><Button type="button" onClick={props.onSubmit} disabled={!props.gate.ready} data-confirm="feature-set">
+      {props.busy ? 'Sending…' : 'Set'}
+    </Button></div>
+  </div>;
+}
+
 export function SwitchOffForm({ entry, override, reason, onReason, confirmation, onConfirmation, gate, busy, error, onSubmit }: {
   entry: CatalogueEntry; override: FlagOverride; reason: string; onReason: (next: string) => void; confirmation: string;
   onConfirmation: (next: string) => void; gate: Gate; busy: boolean; error: string | null; onSubmit: () => void;
@@ -329,11 +437,15 @@ export function SwitchOffForm({ entry, override, reason, onReason, confirmation,
       <Fact label="Switch">{entry.label}</Fact>
       <Fact label="Where">{placeWords(override.scopeType, override.scopeId)}</Fact>
       <Fact label="Why it was set">{override.reason ?? 'Not recorded'}</Fact>
-      <Fact label="Would auto-revert at"><When value={override.expiresAt} /></Fact>
+      {override.expiresAt === null ? <Fact label="Expires">{NO_EXPIRY}</Fact>
+        : <Fact label="Would auto-revert at"><When value={override.expiresAt} /></Fact>}
     </dl>
-    <p className="text-sm break-words">
+    {entry.kind === 'feature' ? <p className="text-sm break-words">
+      Switching off returns this place to the default ({valueWords(entry.defaultValue)}) now, or to whatever is set above it.
+      One administrator is enough.
+    </p> : <p className="text-sm break-words">
       Switching off restores service here now: whatever is set above this place, or normal, applies at once. One administrator is enough.
-    </p>
+    </p>}
     <ConfirmFields phrase={entry.flagKey} reason={reason} onReason={onReason} confirmation={confirmation}
       onConfirmation={onConfirmation} disabled={busy} />
     {error && <ErrorNote message={error} />}
