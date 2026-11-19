@@ -123,14 +123,33 @@ function Strip({ items, current, onOpen }: { items: readonly SettingsNavItem[]; 
     const after = el.scrollLeft + el.clientWidth < el.scrollWidth - 1;
     setMore((m) => (m.before === before && m.after === after ? m : { before, after }));
   }, []);
-  useEffect(() => {
-    chosen.current?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+  // The chosen page in the middle of the band, clear of either fade; again
+  // once the faces have loaded (the words' widths change) and on a resize.
+  // Only the band scrolls: nothing else on the page moves.
+  const centre = useCallback(() => {
+    const el = scroller.current;
+    const item = chosen.current;
+    if (el && item) {
+      const band = el.getBoundingClientRect();
+      const at = item.getBoundingClientRect();
+      el.scrollLeft += at.left + at.width / 2 - (band.left + band.width / 2);
+    }
     measure();
-  }, [current, measure]);
-  useEffect(() => {
-    window.addEventListener('resize', measure);
-    return () => window.removeEventListener('resize', measure);
   }, [measure]);
+  useEffect(() => {
+    centre();
+    let live = true;
+    void document.fonts?.ready.then(() => {
+      if (live) centre();
+    });
+    return () => {
+      live = false;
+    };
+  }, [current, centre]);
+  useEffect(() => {
+    window.addEventListener('resize', centre);
+    return () => window.removeEventListener('resize', centre);
+  }, [centre]);
   return (
     <nav
       ref={scroller}
