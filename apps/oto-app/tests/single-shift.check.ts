@@ -16,11 +16,15 @@
 //   2. A former employee is accepted by a manager: one assignment on that shift
 //      and day, its invitation, "On the old contract" by default, the activity
 //      log naming who and which way; the week shows the shift; the same shift
-//      twice is refused by the schedule's own check; and the ordinary
+//      twice is refused by the schedule's own check, sent twice at once too
+//      (SCRUM-1055: one invitation, one assignment); and the ordinary
 //      assignment route still refuses a former employee.
 //   3. The pay: no figure is worked out for anyone. Switched to a casual day
 //      rate of 1,200 and back, each switch in the activity log with who and
-//      from/to way, never the rate; two single shifts on one day are accepted.
+//      from/to way, never the rate; the rate read back by the salary roles
+//      only, a manager reads the way in words (SCRUM-1055); two single shifts
+//      on one day are accepted. The dialog's list marks a former employee
+//      payroll has no profile for.
 //   4. The kiosk: on the shift's day at its branch the former employee clocks
 //      in and out; at another branch that day, and on any other day, refused
 //      as before with nothing written; the next day it is closed again by
@@ -190,6 +194,8 @@ const elsewhere = await employee("elsewhere", { ...LEFT, branchId: BRANCH_2 });
 const leaving = await employee("leaving", { status: "resigned", state: "LEAVING", lastDay: plus(-1) });
 // SCRUM-1055: a former employee who clocks in for a single shift and not out.
 const lateOut = await employee("lateout", { ...LEFT, phone: PHONE.lateOut });
+// SCRUM-1055: a former employee whose invitation is sent twice at once.
+const twice = await employee("twice", LEFT);
 
 /** ZZ TEST pay terms on the payroll profile, the old contract's source. */
 async function payrollProfile(employeeId: string, workerType: string, amounts: { monthly?: number; day?: number; fee?: number }) {
@@ -373,6 +379,8 @@ try {
     const ids = (res.body as { id: string }[]).map((p) => p.id);
     for (const id of [former, dayRater, noProfile, stranger, leaving, comingBack]) assert.ok(ids.includes(id), `${id} listed`);
     for (const id of [current, elsewhere]) assert.ok(!ids.includes(id), `${id} not listed`);
+    const marked = Object.fromEntries((res.body as { id: string; payrollProfile: boolean }[]).map((p) => [p.id, p.payrollProfile]));
+    assert.deepEqual([marked[former], marked[dayRater], marked[noProfile]], [true, true, false], "who payroll has a profile for");
   });
 
   // ── 2. A former employee accepted ──────────────────────────────────────────
@@ -412,6 +420,15 @@ try {
     assert.equal((await assignmentsOf(former)).length, 1);
     assert.equal((await invitationsOf(former)).length, 1);
   });
+  await check("the same shift sent twice at once makes one assignment and one invitation; the second meets the schedule's own check", async () => {
+    const body = { employeeId: twice, shiftRowId: MORNING, shiftDate: SHIFT_DAY };
+    const answers = await Promise.all([invite(origin, asManager, body), invite(origin, asManager, body)]);
+    assert.deepEqual(answers.map((a) => a.status).sort(), [201, 400], answers.map(show).join(" | "));
+    assert.deepEqual(answers.find((a) => a.status === 400)!.body.reasonCode, "ALREADY_ASSIGNED");
+    assert.equal((await assignmentsOf(twice)).length, 1);
+    assert.equal((await invitationsOf(twice)).length, 1);
+    assert.equal((await activityOf(twice)).length, 1);
+  });
   await check("the ordinary assignment route still refuses a former employee", async () => {
     const res = await call(origin, "POST", "/api/schedule/assignments", asManager, { shiftRowId: EVENING, shiftDate: OTHER_DAY, employeeId: former });
     assert.deepEqual([res.status, res.body.reasonCode], [400, "EMPLOYMENT_ENDED"], show(res));
@@ -432,10 +449,16 @@ try {
       assert.equal(Object.hasOwn(mine, "pay"), false);
     }
   });
-  await check("switched to a casual day rate of ฿1,200: stored on the invitation and shown; the activity log has the way from/to, not the rate", async () => {
+  await check("switched to a casual day rate of ฿1,200 by the manager: stored on the invitation; the rate read back by the salary roles only; the activity log has the way from/to, not the rate", async () => {
     const res = await call(origin, "PATCH", `/api/schedule/single-shift/invitations/${invitationId}`, asManager, { payWay: "casual_day_rate", casualDayRate: 1200 });
     assert.equal(res.status, 200, show(res));
-    assert.deepEqual([res.body.payWay, res.body.casualDayRate, res.body.payLabel], ["casual_day_rate", 1200, "Casual day rate ฿1,200 a day"]);
+    // SCRUM-1055: a manager is below the roles that may see salaries (canViewHrSalary): the way in words, no rate.
+    assert.deepEqual([res.body.payWay, res.body.casualDayRate, res.body.payLabel], ["casual_day_rate", null, "Casual day rate"]);
+    const asManagerList = (await shiftsOn(origin, asManager, BRANCH, SHIFT_DAY, SHIFT_DAY)).body as { id: string; casualDayRate: number | null; payLabel: string }[];
+    assert.deepEqual(asManagerList.filter((x) => x.id === invitationId).map((x) => [x.casualDayRate, x.payLabel]), [[null, "Casual day rate"]]);
+    assert.doesNotMatch(JSON.stringify(asManagerList), /1,?200|฿/);
+    const asAdminList = (await shiftsOn(origin, asAdmin, BRANCH, SHIFT_DAY, SHIFT_DAY)).body as { id: string; casualDayRate: number | null; payLabel: string }[];
+    assert.deepEqual(asAdminList.filter((x) => x.id === invitationId).map((x) => [x.casualDayRate, x.payLabel]), [[1200, "Casual day rate ฿1,200 a day"]]);
     const [row] = await invitationsOf(former);
     assert.deepEqual([row!.pay_basis, row!.casual_day_rate, row!.updated_by], ["casual_day_rate", 1200, manager.id]);
     const entries = await activityOf(former);
@@ -466,7 +489,9 @@ try {
     const dr = await invite(origin, asManager, { employeeId: dayRater, shiftRowId: EVENING, shiftDate: SHIFT_DAY });
     assert.deepEqual([dr.status, dr.body.payLabel], [201, "On the old contract"], show(dr));
     const np = await invite(origin, asManager, { employeeId: noProfile, shiftRowId: EVENING, shiftDate: SHIFT_DAY, payWay: "casual_day_rate", casualDayRate: 800 });
-    assert.deepEqual([np.status, np.body.payLabel], [201, "Casual day rate ฿800 a day"], show(np));
+    assert.deepEqual([np.status, np.body.payLabel, np.body.casualDayRate], [201, "Casual day rate", null], show(np));
+    const read = (await shiftsOn(origin, asAdmin, BRANCH, SHIFT_DAY, SHIFT_DAY)).body as { id: string; payLabel: string }[];
+    assert.equal(read.find((x) => x.id === np.body.id)!.payLabel, "Casual day rate ฿800 a day", "the administrator reads the rate");
     const early = await invite(origin, asManager, { employeeId: noProfile, shiftRowId: EARLY, shiftDate: SHIFT_DAY });
     assert.deepEqual([early.status, early.body.payLabel], [201, "On the old contract"], show(early));
     assert.deepEqual((await invitationsOf(noProfile)).map((r) => [r.pay_basis, r.casual_day_rate]), [["casual_day_rate", 800], ["old_contract", null]]);

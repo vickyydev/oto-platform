@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import {
   CASUAL_DAY_RATE_LABEL,
+  NO_PAYROLL_PROFILE_HINT,
   OLD_CONTRACT_LABEL,
   SINGLE_SHIFT_MARK,
   type SingleShiftPayWay,
@@ -24,13 +25,17 @@ import {
  * contract (the default), or switched to a casual day rate they type. The
  * shift's single shifts already made are listed above, each with how it is
  * paid and a switch between the two ways. No figure is worked out here: what
- * a shift is worth is payroll's.
+ * a shift is worth is payroll's. A casual day rate comes back only to the
+ * roles that may see salaries (SCRUM-1055); anyone else reads the way in
+ * words and types a rate again to change it. A former employee payroll has no
+ * profile for is marked, as the old contract cannot be paid without one.
  */
 
 export interface FormerEmployee {
   id: string;
   name: string;
   lastWorkingDay: string | null;
+  payrollProfile: boolean;
 }
 
 export interface SingleShift {
@@ -213,6 +218,7 @@ export function SingleShiftInviteDialog({
 
   const rateMissing = way === "casual_day_rate" && rateOf(rate) === null;
   const canInvite = !!chosen && !rateMissing && !invite.isPending;
+  const chosenPerson = (former.data ?? []).find((person) => person.id === chosen);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -273,6 +279,7 @@ export function SingleShiftInviteDialog({
                     <span>{person.name}</span>
                     <span className="text-xs text-muted-foreground">
                       {person.lastWorkingDay ? `Left after ${person.lastWorkingDay}` : "Left"}
+                      {!person.payrollProfile && " · no payroll profile"}
                     </span>
                   </Button>
                 ))}
@@ -280,6 +287,9 @@ export function SingleShiftInviteDialog({
               <div className="space-y-1">
                 <h4 className="text-sm font-medium">How this shift is paid</h4>
                 <PayWayFields idPrefix="single-shift-invite" way={way} onWay={setWay} rate={rate} onRate={setRate} />
+                {chosenPerson && !chosenPerson.payrollProfile && way === "old_contract" && (
+                  <p className="text-xs text-amber-700 dark:text-amber-400" data-testid="single-shift-no-payroll-profile">{NO_PAYROLL_PROFILE_HINT}</p>
+                )}
               </div>
               <Button className="w-full" size="sm" disabled={!canInvite} onClick={() => invite.mutate()} data-testid="button-single-shift-invite">
                 {invite.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
