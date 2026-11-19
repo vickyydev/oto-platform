@@ -96,7 +96,7 @@ import { AppError } from '../lib/errors';
 import { pgErrorOf } from '../lib/scrub';
 import type { BranchReach } from './access-control';
 import { audit } from './audit';
-import { ensureFamilyFor } from './family';
+import { childAuditView, ensureFamilyFor } from './family';
 import { addVisitChildren } from './visit-children';
 import { readStationsSellingReadiness } from './payments/terminal';
 /**
@@ -1770,9 +1770,8 @@ const HANDLERS: Record<string, EventHandler> = {
       }
 
       // SCRUM-1024 — the child lands in the (surviving) member's family; nothing reads it yet.
-      const { familyId } = await ensureFamilyFor(tx, { operatorId: scope.auth.operatorId, memberId, childId: payload.childId,
-        source: 'sync', context: { accountId: event.envelope.actorAccountId ?? null, branchId: scope.auth.branchId,
-          stationId: event.envelope.stationId ?? null, actionId: event.envelope.actionId ?? null, sourceEventId: event.envelope.eventId } });
+      const { familyId } = await ensureFamilyFor(tx, { operatorId: scope.auth.operatorId, memberId, source: 'sync',
+        context: { accountId: event.envelope.actorAccountId ?? null, branchId: scope.auth.branchId, stationId: event.envelope.stationId ?? null } });
       const [created] = await tx
         .insert(child)
         .values({
@@ -1884,8 +1883,8 @@ const HANDLERS: Record<string, EventHandler> = {
         action: 'child.update',
         entityType: 'child',
         entityId: payload.childId,
-        before,
-        after: { ...after, ...freshMark(payload) },
+        before: childAuditView(before),
+        after: { ...childAuditView(after), ...freshMark(payload) },
         requestId: null,
         actionId: event.envelope.actionId ?? null,
         sourceEventId: event.envelope.eventId,
@@ -4202,11 +4201,14 @@ async function classifyReplay(
  * person has to look at; a unique violation on the journal means two facts
  * reached one position.
  */
+/** SCRUM-1024: a member's first family names the event's account before the audit row does. */
+const FAMILY_ACTOR_FKS = new Set(['family_created_by_account_id_account_id_fk', 'family_guardian_added_by_account_id_account_id_fk']);
+
 function classifyFailure(err: unknown): RefuseEvent {
   if (err instanceof RefuseEvent) return err;
   const pg = pgErrorOf(err);
   const constraint = typeof pg?.constraint === 'string' ? pg.constraint : '';
-  if (pg?.code === '23503' && constraint.includes('actor')) {
+  if (pg?.code === '23503' && (constraint.includes('actor') || FAMILY_ACTOR_FKS.has(constraint))) {
     return new RefuseEvent(
       'actor_unknown',
       'SYNC_ACTOR_UNKNOWN',
