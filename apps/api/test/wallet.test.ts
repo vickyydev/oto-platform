@@ -404,7 +404,8 @@ async function childInPark(food: { mode: 'prepaid_credit'; paidSatang: number; c
     lines: [
       {
         id: checkinId,
-        // Eat & Play pays kids too — and a drop-off child's line still earns nothing.
+        // Eat & Play pays kids too — the sale grants nothing for a drop-off
+        // child's line; SCRUM-1021 loads its ฿1,300 on the band at check-in.
         packageId: eatPlayId,
         kids: 1,
         adults: 0,
@@ -414,7 +415,7 @@ async function childInPark(food: { mode: 'prepaid_credit'; paidSatang: number; c
     ],
   });
   const fin = await finalise(saleId);
-  // A drop-off child's ticket earns nothing: their food is their own wallet.
+  // A drop-off child's ticket earns nothing at the sale: their band is minted at check-in.
   expect(fin.grants).toEqual([]);
   const now = await ctx.app.inject({
     method: 'POST',
@@ -430,7 +431,9 @@ describe("a prepaid-credit child's food money is their own wallet", () => {
   it('check-in-now loads it on the child’s band; release refunds what is really left and takes it off the wallet', async () => {
     const family = await childInPark({ mode: 'prepaid_credit', paidSatang: 20_000, creditSatang: 20_000 });
     const held = await prepaidBalanceOf(ctx.db, operatorId, family.checkinId);
-    expect(held).toMatchObject({ balanceSatang: 20_000 });
+    // SCRUM-1021 — the band also holds the Eat & Play ticket's ฿1,300 (the
+    // owner's answer of 19 November); the prepaid load is still ฿200.
+    expect(held).toMatchObject({ balanceSatang: 150_000, loadedSatang: 20_000 });
     const [load] = await ctx.db.select().from(walletEntry).where(eq(walletEntry.actionId, `checkin:${family.checkinId}:prepaid`));
     expect(load).toMatchObject({ kind: 'grant', source: 'prepaid_food', amountSatang: 20_000, saleId: family.saleId });
     const [childBand] = await ctx.db.select().from(band).where(eq(band.id, family.bandId));
@@ -448,7 +451,7 @@ describe("a prepaid-credit child's food money is their own wallet", () => {
       payload: { saleId: family.saleId, entries: [{ checkinId: family.checkinId, nannyId: null }] },
     });
     expect(retry.statusCode, retry.body).toBe(200);
-    expect((await prepaidBalanceOf(ctx.db, operatorId, family.checkinId))!.balanceSatang).toBe(20_000);
+    expect((await prepaidBalanceOf(ctx.db, operatorId, family.checkinId))!.balanceSatang).toBe(150_000);
 
     // ฿50 spent at the counter (round 2's tender writes exactly this entry).
     await ctx.db.transaction((tx) =>
@@ -481,13 +484,15 @@ describe("a prepaid-credit child's food money is their own wallet", () => {
     const [refunded] = await ctx.db.select().from(refund).where(eq(refund.saleId, family.saleId));
     expect(refunded!.amountSatang).toBe(15_000);
 
-    // The cash went back, so the credit came off: the band holds nothing now.
+    // The cash went back, so the prepaid credit came off: the band holds only
+    // the ticket's own ฿1,300 now (SCRUM-1021), spendable until the day ends.
     const after = await prepaidBalanceOf(ctx.db, operatorId, family.checkinId);
-    expect(after!.balanceSatang).toBe(0);
+    expect(after!.balanceSatang).toBe(130_000);
     const ledger = await ctx.db.select().from(walletEntry).where(eq(walletEntry.walletId, held!.walletId));
     expect(ledger.map((e) => [e.kind, e.source, e.amountSatang]).sort()).toEqual(
       [
         ['grant', 'prepaid_food', 20_000],
+        ['grant', 'ticket_sale', 130_000],
         ['spend', 'fnb_order', -5_000],
         ['spend', 'refund', -15_000],
       ].sort(),
@@ -516,7 +521,8 @@ describe("a prepaid-credit child's food money is their own wallet", () => {
     expect(res.statusCode, res.body).toBe(200);
     const refundId = res.json().refund.id as string;
     const held = await prepaidBalanceOf(ctx.db, operatorId, family.checkinId);
-    expect(held).toMatchObject({ balanceSatang: 0, refundableSatang: 0 });
+    // SCRUM-1021 — the ticket's ฿1,300 stays on the band; none of the prepaid food is left to hand back.
+    expect(held).toMatchObject({ balanceSatang: 130_000, refundableSatang: 0 });
     const [taken] = await ctx.db.select().from(walletEntry).where(eq(walletEntry.refundId, refundId));
     expect(taken).toMatchObject({ kind: 'spend', source: 'refund', amountSatang: -20_000, saleId: family.saleId });
     await assertLedgerTruth();
@@ -533,7 +539,8 @@ describe("a prepaid-credit child's food money is their own wallet", () => {
     expect(res.json().error).toMatchObject({ code: 'PREPAID_CREDIT_SPENT' });
     expect(res.json().error.message).toContain('Mint');
     expect(await ctx.db.select().from(refund).where(eq(refund.saleId, family.saleId))).toHaveLength(0);
-    expect((await prepaidBalanceOf(ctx.db, operatorId, family.checkinId))!.balanceSatang).toBe(15_000);
+    // ฿150 of the prepaid food and the ticket's ฿1,300 (SCRUM-1021).
+    expect((await prepaidBalanceOf(ctx.db, operatorId, family.checkinId))!.balanceSatang).toBe(145_000);
     await assertLedgerTruth();
   });
 });

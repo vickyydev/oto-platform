@@ -293,6 +293,34 @@ export function grantLinesOfLedger(
   return out;
 }
 
+/**
+ * SCRUM-1021 — THE TICKET CREDIT A SUPERVISED CHILD'S LINE INCLUDES (the
+ * owner's answer of 19 November: a dropped-off or nanny child on a ticket
+ * with food credit, Eat & Play, gets the ticket's credit on their band, as a
+ * child playing with a parent does, and the form shows it as included).
+ *
+ * The figure is the grant law's for the line's kids, read from the line's own
+ * ledger rows with the drop-off fee and the prepaid food left out: those two
+ * rows are what made `grantLinesOfLedger` skip the line, and neither changes
+ * what the ticket itself earns. A Golden Ticket's child earns nothing, as on
+ * any line (`giftCartLineIds`, SCRUM-798). The sale's own grant still passes
+ * the line by (`grantSaleCredit`); this credit loads with the child's band
+ * at check-in, beside their prepaid food, so it is granted once.
+ */
+export function supervisedLineCreditSatang(
+  rows: readonly GrantLedgerRow[],
+  packages: ReadonlyMap<string, { creditRule: unknown; gateAccess: boolean }>,
+  cartLineId: string,
+  giftCartLineIds: ReadonlySet<string> = new Set(),
+): number {
+  const own = rows.filter(
+    (r) => r.cartLineId === cartLineId && r.kind !== 'service_fee' && r.kind !== 'food_provision',
+  );
+  return personGrantsOf(grantLinesOfLedger(own, packages, new Set(), giftCartLineIds))
+    .filter((p) => p.role === 'kid')
+    .reduce((sum, p) => sum + p.creditSatang, 0);
+}
+
 // --- Keys -------------------------------------------------------------------------
 
 const QR_ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';

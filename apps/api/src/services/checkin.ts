@@ -60,7 +60,7 @@ import { mirrorNotice } from './inbox/mirror';
 import { queueCheckinBandPrints, type SalePrintJobView } from './sale-printing';
 import type { SmsSender } from './sms';
 import type { Exec, Tx } from './tx';
-import { loadChildPrepaid } from './wallet';
+import { loadChildIncludedCredit, loadChildPrepaid } from './wallet';
 
 /**
  * S2-13 round 1 — CHILD CHECK-IN AND SUPERVISION, online (plan
@@ -1381,11 +1381,11 @@ export async function checkInNow(
    */
   const codeOf = new Map(minted.map((b) => [b.id, b.code]));
   for (const s of stays) {
-    await loadChildPrepaid(
-      tx,
-      { accountId: actor.accountId, operatorId: actor.operatorId, requestId: actor.requestId ?? null },
-      { stay: s, saleRow, bandCode: codeOf.get(bandOf.get(s.id)!) ?? null, now },
-    );
+    const walletActor = { accountId: actor.accountId, operatorId: actor.operatorId, requestId: actor.requestId ?? null };
+    const bandCode = codeOf.get(bandOf.get(s.id)!) ?? null;
+    await loadChildPrepaid(tx, walletActor, { stay: s, saleRow, bandCode, now });
+    // SCRUM-1021 — and the ticket's own credit (Eat & Play), on the same band.
+    await loadChildIncludedCredit(tx, walletActor, { stay: s, saleRow, bandCode, now });
   }
 
   const printed = await queueCheckinBandPrints(tx, saleRow, stays.map((s) => bandOf.get(s.id)!), {

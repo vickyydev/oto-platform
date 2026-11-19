@@ -1,7 +1,7 @@
 import { cartUnits } from './cart-totals';
 import { ledgerUnitKindOf } from './ledger-lines';
 import type { PricingContext, TicketCartLine } from './pricing';
-import { grantLinesOfLedger, type GrantLedgerRow, type GrantLine } from './wallet';
+import { grantLinesOfLedger, supervisedLineCreditSatang, type GrantLedgerRow, type GrantLine } from './wallet';
 
 /**
  * SCRUM-883 — THE GRANT LAW, READ FROM A CART BEFORE THE SALE CLOSES.
@@ -49,4 +49,23 @@ export function grantLinesOfCart(
   giftLineIds: ReadonlySet<string> = new Set(),
 ): GrantLine[] {
   return grantLinesOfLedger(grantLedgerRowsOfCart(lines, ctx), packages, supervisedLineIds, giftLineIds);
+}
+
+/**
+ * SCRUM-1021 — the ticket credit a drop-off or nanny child's cart line will
+ * load on their band at check-in (`supervisedLineCreditSatang`), read from the
+ * rows this cart files, so the form says what the band will hold.
+ */
+export function supervisedLineCreditOfCart(
+  line: TicketCartLine,
+  ctx: PricingContext,
+  packages: ReadonlyMap<string, { creditRule: unknown; gateAccess: boolean }>,
+  gift = false,
+): number {
+  return supervisedLineCreditSatang(
+    grantLedgerRowsOfCart([line], ctx),
+    packages,
+    line.id,
+    gift ? new Set([line.id]) : new Set(),
+  );
 }
