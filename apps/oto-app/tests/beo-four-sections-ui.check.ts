@@ -258,6 +258,7 @@ const FIELD_HOMES: ReadonlyArray<[string, string, string]> = [
   ["Party Host: Entertainment Host", "part-activities", "entertainment"],
   ["Party Host: Entertainment Acts", "button-add-entertainment-act", "entertainment"],
   ["Birthday Package: the package and what it includes", "beo-package-info", "event-info"],
+  ["Birthday Package: Add-ons (folded)", "button-toggle-package-addons", "event-info"],
   ["Birthday Package: Kitchen & bar slips at", "input-package-slips-time", "food-drinks"],
   ["POS: POS Name", "input-package-name", "event-info"],
   ["POS: Line Items", "package-item-row-0", "event-info"],
@@ -317,7 +318,7 @@ if (!RECORD) {
     assert.deepEqual([...order].sort((a, b) => a - b), order, "Food & Drinks: Setup / Table, then the food, then the bar");
   });
 
-  await check("Event Info shows the package's name and what it includes in the print's words; the add-ons bought read-only, no price", async () => {
+  await check("Event Info shows the package's name and what it includes in the print's words; the add-ons bought folded, no price", async () => {
     await open();
     const pkg = fourSectionsSnapshot();
     assert.equal(text("text-package-name"), "ZZ TEST Weekend Birthday");
@@ -326,10 +327,47 @@ if (!RECORD) {
     assert.ok(byTestId("package-addon-si_zz_2"), "the add-on bought");
     assert.equal(byTestId("package-addon-si_zz_3"), null, "an add-on with no quantity was not bought");
     assert.equal(byTestId("package-addon-si_zz_1"), null, "an included item is the package's, not an add-on");
+    assert.equal(text("text-package-addons-bought"), "ZZ TEST reserved adults' table ×1");
     const box = required("beo-package-info").textContent ?? "";
-    assert.ok(!box.includes("฿"), `no price in the package part: ${box}`);
-    assert.equal(byTestId("input-qty-si_zz_2"), null, "nothing to price or count here: add-ons are the till's");
-    assert.equal(byTestId("package-total-breakdown"), null, "no app-made package total in the editor");
+    assert.ok(!box.includes("฿"), `folded, no price in the package part: ${box}`);
+    assert.equal(required("button-toggle-package-addons").getAttribute("aria-expanded"), "false", "Add-ons folded as the BEO opens");
+    assert.equal(byTestId("input-qty-si_zz_2"), null, "the add-on rows are folded away");
+  });
+
+  // SCRUM-1029 review: the till charges an add-on only from the package snapshot's stored rows
+  // (not included, billable, quantity above 0), and the park's packages copy their add-ons at
+  // quantity 0; staff set the quantity nowhere else, so the rows stay reachable, unfolded under
+  // "Add-ons", writing the same PATCH route the Birthday Package section wrote.
+  await check("Add-ons unfolded: every add-on row with its quantity, price, billable and note, written by the item's own PATCH, and the package total", async () => {
+    await open();
+    await click("button-toggle-package-addons");
+    assert.equal(required("button-toggle-package-addons").getAttribute("aria-expanded"), "true");
+    assert.equal(sectionOf("package-addons-rows"), "event-info", "inside Event Info's package part");
+    for (const id of ["si_zz_2", "si_zz_3"]) {
+      for (const field of ["input-qty", "input-price", "switch-billable", "input-notes"]) required(`${field}-${id}`);
+    }
+    assert.equal(byTestId("snapshot-item-si_zz_1"), null, "an included item is not an add-on row");
+    assert.equal((required("input-qty-si_zz_3") as HTMLInputElement).value, "0", "the add-on not bought yet, at quantity 0");
+    assert.equal((required("input-price-si_zz_3") as HTMLInputElement).value, "4000.00");
+    assert.equal(text("text-addon-subtotal"), "Add-ons Subtotal: ฿5,000.00", "the bought add-on, at its unit price");
+    assert.ok(required("package-total-breakdown"), "the package total, as the Birthday Package section showed it");
+    const qty = required("input-qty-si_zz_3") as HTMLInputElement;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, "value")!.set!.call(qty, "2");
+      qty.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
+    });
+    await settle();
+    await click("switch-billable-si_zz_2");
+    const itemPatches = asked.filter((a) => a.method === "PATCH" && /\/package-snapshot\/items\//.test(a.path));
+    assert.deepEqual(
+      itemPatches.map((a) => [a.path, a.body]),
+      [
+        [`/api/beo/events/${FOUR_SECTIONS_EVENT}/package-snapshot/items/si_zz_3`, { qty: 2 }],
+        [`/api/beo/events/${FOUR_SECTIONS_EVENT}/package-snapshot/items/si_zz_2`, { billable: false }],
+      ],
+      "the same route and bodies the Birthday Package section sent",
+    );
+    assert.equal(saves().length, 0, "written by its own change, not by Save");
   });
 
   await check("the slips' time sits in Food & Drinks and writes the same stored field as before", async () => {

@@ -32,6 +32,7 @@ import {
   Sparkles,
   Check,
   RefreshCw,
+  ChevronDown,
 } from "lucide-react";
 import { addOnsBoughtOf, partyPackageTotal, partyPackageTotalLines, type PartyForPricing } from "@shared/partyPackageTotal";
 import { beoPackageIncludedOf } from "@shared/beoPackageLine";
@@ -174,6 +175,92 @@ export function PackageTotalBreakdown({ reading }: { reading: ReturnType<typeof 
           Package Total: {formatPrice(reading.totalSatang)}
         </span>
       </div>
+    </div>
+  );
+}
+
+/**
+ * One line of the applied package (an included item or an add-on): its quantity, unit price,
+ * billable switch and note, each written by the snapshot item's own PATCH as it is changed. The
+ * till charges an add-on from these stored values (not included, billable, quantity above 0).
+ */
+function PackageSnapshotItemRow({ item, readOnly, onUpdate }: {
+  item: SnapshotItem;
+  readOnly?: boolean;
+  onUpdate: (data: Record<string, unknown>) => void;
+}) {
+  return (
+    <div
+      className="flex flex-col gap-1 p-2 rounded-md bg-muted/30"
+      data-testid={`snapshot-item-${item.id}`}
+    >
+      <div className="flex items-center gap-2 flex-wrap">
+        {item.category && (
+          <Badge variant="outline" className="text-[10px]" data-testid={`badge-category-${item.id}`}>
+            {item.category}
+          </Badge>
+        )}
+        <span className="text-sm font-medium flex-1" data-testid={`text-item-label-${item.id}`}>
+          {item.label}
+        </span>
+      </div>
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-1">
+          <Label className="text-[10px] text-muted-foreground">Qty</Label>
+          <Input
+            type="number"
+            min={0}
+            value={item.qty}
+            onChange={(e) => {
+              if (readOnly) return;
+              const qty = parseInt(e.target.value) || 0;
+              onUpdate({ qty });
+            }}
+            className="w-16 h-7 text-xs"
+            disabled={readOnly}
+            data-testid={`input-qty-${item.id}`}
+          />
+        </div>
+        <div className="flex items-center gap-1">
+          <Label className="text-[10px] text-muted-foreground">Price</Label>
+          <Input
+            type="number"
+            step="0.01"
+            value={(item.unitPrice / 100).toFixed(2)}
+            onChange={(e) => {
+              if (readOnly) return;
+              const unitPrice = parsePriceToSatang(e.target.value);
+              onUpdate({ unitPrice });
+            }}
+            className="w-24 h-7 text-xs"
+            disabled={readOnly}
+            data-testid={`input-price-${item.id}`}
+          />
+        </div>
+        <div className="flex items-center gap-1">
+          <Label className="text-[10px] text-muted-foreground">Billable</Label>
+          <Switch
+            checked={item.billable}
+            onCheckedChange={(billable) => {
+              if (readOnly) return;
+              onUpdate({ billable });
+            }}
+            disabled={readOnly}
+            data-testid={`switch-billable-${item.id}`}
+          />
+        </div>
+      </div>
+      <Input
+        placeholder="Notes..."
+        value={item.notes || ""}
+        onChange={(e) => {
+          if (readOnly) return;
+          onUpdate({ notes: e.target.value });
+        }}
+        className="h-7 text-xs"
+        disabled={readOnly}
+        data-testid={`input-notes-${item.id}`}
+      />
     </div>
   );
 }
@@ -485,79 +572,7 @@ export function BeoPackageModule({ eventId, readOnly, section = "all", onPackage
                     <Badge variant="secondary" className="text-[10px]">{includedItems.length} items</Badge>
                   </div>
                   {includedItems.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex flex-col gap-1 p-2 rounded-md bg-muted/30"
-                      data-testid={`snapshot-item-${item.id}`}
-                    >
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {item.category && (
-                          <Badge variant="outline" className="text-[10px]" data-testid={`badge-category-${item.id}`}>
-                            {item.category}
-                          </Badge>
-                        )}
-                        <span className="text-sm font-medium flex-1" data-testid={`text-item-label-${item.id}`}>
-                          {item.label}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <div className="flex items-center gap-1">
-                          <Label className="text-[10px] text-muted-foreground">Qty</Label>
-                          <Input
-                            type="number"
-                            min={0}
-                            value={item.qty}
-                            onChange={(e) => {
-                              if (readOnly) return;
-                              const qty = parseInt(e.target.value) || 0;
-                              updateSnapshotItemMutation.mutate({ itemId: item.id, data: { qty } });
-                            }}
-                            className="w-16 h-7 text-xs"
-                            disabled={readOnly}
-                            data-testid={`input-qty-${item.id}`}
-                          />
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Label className="text-[10px] text-muted-foreground">Price</Label>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={(item.unitPrice / 100).toFixed(2)}
-                            onChange={(e) => {
-                              if (readOnly) return;
-                              const unitPrice = parsePriceToSatang(e.target.value);
-                              updateSnapshotItemMutation.mutate({ itemId: item.id, data: { unitPrice } });
-                            }}
-                            className="w-24 h-7 text-xs"
-                            disabled={readOnly}
-                            data-testid={`input-price-${item.id}`}
-                          />
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Label className="text-[10px] text-muted-foreground">Billable</Label>
-                          <Switch
-                            checked={item.billable}
-                            onCheckedChange={(billable) => {
-                              if (readOnly) return;
-                              updateSnapshotItemMutation.mutate({ itemId: item.id, data: { billable } });
-                            }}
-                            disabled={readOnly}
-                            data-testid={`switch-billable-${item.id}`}
-                          />
-                        </div>
-                      </div>
-                      <Input
-                        placeholder="Notes..."
-                        value={item.notes || ""}
-                        onChange={(e) => {
-                          if (readOnly) return;
-                          updateSnapshotItemMutation.mutate({ itemId: item.id, data: { notes: e.target.value } });
-                        }}
-                        className="h-7 text-xs"
-                        disabled={readOnly}
-                        data-testid={`input-notes-${item.id}`}
-                      />
-                    </div>
+                    <PackageSnapshotItemRow key={item.id} item={item} readOnly={readOnly} onUpdate={(data) => updateSnapshotItemMutation.mutate({ itemId: item.id, data })} />
                   ))}
                   <div className="flex justify-end pt-1">
                     <span className="text-xs text-muted-foreground" data-testid="text-included-subtotal">
@@ -574,79 +589,7 @@ export function BeoPackageModule({ eventId, readOnly, section = "all", onPackage
                     <Badge variant="secondary" className="text-[10px]">{addonItems.length} items</Badge>
                   </div>
                   {addonItems.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex flex-col gap-1 p-2 rounded-md bg-muted/30"
-                      data-testid={`snapshot-item-${item.id}`}
-                    >
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {item.category && (
-                          <Badge variant="outline" className="text-[10px]" data-testid={`badge-category-${item.id}`}>
-                            {item.category}
-                          </Badge>
-                        )}
-                        <span className="text-sm font-medium flex-1" data-testid={`text-item-label-${item.id}`}>
-                          {item.label}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <div className="flex items-center gap-1">
-                          <Label className="text-[10px] text-muted-foreground">Qty</Label>
-                          <Input
-                            type="number"
-                            min={0}
-                            value={item.qty}
-                            onChange={(e) => {
-                              if (readOnly) return;
-                              const qty = parseInt(e.target.value) || 0;
-                              updateSnapshotItemMutation.mutate({ itemId: item.id, data: { qty } });
-                            }}
-                            className="w-16 h-7 text-xs"
-                            disabled={readOnly}
-                            data-testid={`input-qty-${item.id}`}
-                          />
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Label className="text-[10px] text-muted-foreground">Price</Label>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={(item.unitPrice / 100).toFixed(2)}
-                            onChange={(e) => {
-                              if (readOnly) return;
-                              const unitPrice = parsePriceToSatang(e.target.value);
-                              updateSnapshotItemMutation.mutate({ itemId: item.id, data: { unitPrice } });
-                            }}
-                            className="w-24 h-7 text-xs"
-                            disabled={readOnly}
-                            data-testid={`input-price-${item.id}`}
-                          />
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Label className="text-[10px] text-muted-foreground">Billable</Label>
-                          <Switch
-                            checked={item.billable}
-                            onCheckedChange={(billable) => {
-                              if (readOnly) return;
-                              updateSnapshotItemMutation.mutate({ itemId: item.id, data: { billable } });
-                            }}
-                            disabled={readOnly}
-                            data-testid={`switch-billable-${item.id}`}
-                          />
-                        </div>
-                      </div>
-                      <Input
-                        placeholder="Notes..."
-                        value={item.notes || ""}
-                        onChange={(e) => {
-                          if (readOnly) return;
-                          updateSnapshotItemMutation.mutate({ itemId: item.id, data: { notes: e.target.value } });
-                        }}
-                        className="h-7 text-xs"
-                        disabled={readOnly}
-                        data-testid={`input-notes-${item.id}`}
-                      />
-                    </div>
+                    <PackageSnapshotItemRow key={item.id} item={item} readOnly={readOnly} onUpdate={(data) => updateSnapshotItemMutation.mutate({ itemId: item.id, data })} />
                   ))}
                   <div className="flex justify-end pt-1">
                     <span className="text-xs text-muted-foreground" data-testid="text-addon-subtotal">
@@ -942,13 +885,17 @@ const snapshotKey = (eventId: string) => ["/api/beo/events", eventId, "package-s
  * SCRUM-1029: the party's package in the BEO editor's Event Info. The package is chosen, changed,
  * re-applied or removed as the Birthday Package section did it (the same routes); beside its name
  * the screen says what it includes in the Staff BEO's own words, from the same snapshot the print
- * reads (shared/beoPackageLine.ts). The add-ons bought are listed read-only: add-ons are handled
- * at the till, so the editor neither adds nor prices them. The kitchen and bar slips' time is
- * Food & Drinks' (BeoSlipsTime). No price is typed here.
+ * reads (shared/beoPackageLine.ts). The add-ons bought are listed read-only, folded; unfolded,
+ * "Add-ons" holds the package's add-on rows as the Birthday Package section had them (quantity,
+ * price, billable, note, each written by the snapshot item's own PATCH) and the package total:
+ * the till charges an add-on only from these stored values, and staff set an add-on's quantity
+ * nowhere else, so they stay reachable here until the money step moves them (SCRUM-1029 review).
+ * The kitchen and bar slips' time is Food & Drinks' (BeoSlipsTime).
  */
-export function BeoPackageInfo({ eventId, readOnly, onPackageApplied }: Pick<BeoPackageModuleProps, "eventId" | "readOnly" | "onPackageApplied">) {
+export function BeoPackageInfo({ eventId, readOnly, onPackageApplied, party }: Pick<BeoPackageModuleProps, "eventId" | "readOnly" | "onPackageApplied" | "party">) {
   const { toast } = useToast();
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
+  const [addOnsOpen, setAddOnsOpen] = useState(false);
   const { data: packageTemplates = [], isLoading: loadingTemplates } = useQuery<PackageTemplate[]>({
     queryKey: ["/api/beo/birthday-packages"],
   });
@@ -978,6 +925,15 @@ export function BeoPackageInfo({ eventId, readOnly, onPackageApplied }: Pick<Beo
     onError: () => toast({ title: "Failed to remove package", variant: "destructive" }),
   });
 
+  const updateSnapshotItemMutation = useMutation({
+    mutationFn: ({ itemId, data }: { itemId: string; data: Record<string, unknown> }) =>
+      apiRequest("PATCH", `/api/beo/events/${eventId}/package-snapshot/items/${itemId}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: snapshotKey(eventId) });
+    },
+    onError: () => toast({ title: "Failed to update item", variant: "destructive" }),
+  });
+
   const activeTemplates = packageTemplates.filter((t) => t.isActive);
   const templateUpdateAvailable = useMemo(() => {
     if (!snapshot?.templateId || !snapshot?.templateUpdatedAtAtApply) return false;
@@ -985,6 +941,19 @@ export function BeoPackageInfo({ eventId, readOnly, onPackageApplied }: Pick<Beo
     if (!sourceTemplate) return false;
     return new Date(sourceTemplate.updatedAt) > new Date(snapshot.templateUpdatedAtAtApply);
   }, [snapshot, packageTemplates]);
+
+  // SCRUM-808: the package total as the Birthday Package section showed it (the day's price, the
+  // extras beyond the included counts, the add-ons bought), read the same way.
+  const packageReading = useMemo(
+    () =>
+      snapshot
+        ? partyPackageTotal(
+            { ...snapshot, items: snapshot.items ?? [] },
+            { eventDate: party?.eventDate ?? null, numChildren: party?.numChildren ?? null, numAdults: party?.numAdults ?? null },
+          )
+        : null,
+    [snapshot, party?.eventDate, party?.numChildren, party?.numAdults],
+  );
 
   if (loadingSnapshot || loadingTemplates) {
     return (
@@ -1033,6 +1002,10 @@ export function BeoPackageInfo({ eventId, readOnly, onPackageApplied }: Pick<Beo
 
   const included = beoPackageIncludedOf(snapshot);
   const addOns = addOnsBoughtOf(snapshot.items ?? []);
+  const addOnRows = (snapshot.items ?? []).filter((item) => !item.included);
+  const addOnsSubtotal = addOnRows
+    .filter((item) => item.billable)
+    .reduce((sum, item) => sum + item.qty * item.unitPrice, 0);
   return (
     <div className="space-y-2" data-testid="beo-package-info">
       <div className="flex flex-wrap items-center gap-2">
@@ -1097,19 +1070,48 @@ export function BeoPackageInfo({ eventId, readOnly, onPackageApplied }: Pick<Beo
           Included: {included}
         </p>
       )}
-      {addOns.length > 0 && (
-        <div className="space-y-1" data-testid="package-addons">
-          <p className="text-xs text-muted-foreground">Add-ons, handled at the till</p>
-          <ul className="space-y-0.5">
-            {addOns.map((item) => (
-              <li key={item.id} className="flex items-baseline gap-2 text-sm" data-testid={`package-addon-${item.id}`}>
-                <span className="min-w-0">{item.label}</span>
-                <span className="shrink-0 text-xs text-muted-foreground">×{item.qty}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <div className="rounded-md border" data-testid="package-addons">
+        <button
+          type="button"
+          className="flex min-h-10 w-full items-center gap-2 px-2.5 py-1.5 text-left"
+          onClick={() => setAddOnsOpen((open) => !open)}
+          aria-expanded={addOnsOpen}
+          aria-controls={`package-addons-rows-${eventId}`}
+          data-testid="button-toggle-package-addons"
+        >
+          <span className="shrink-0 text-xs font-medium text-muted-foreground">Add-ons</span>
+          <span className="min-w-0 flex-1 truncate text-sm" data-testid="text-package-addons-bought">
+            {addOns.length > 0
+              ? addOns.map((item, i) => (
+                  <span key={item.id} data-testid={`package-addon-${item.id}`}>
+                    {i > 0 && ", "}
+                    {item.label} <span className="text-xs text-muted-foreground">×{item.qty}</span>
+                  </span>
+                ))
+              : <span className="text-muted-foreground">None bought</span>}
+          </span>
+          <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${addOnsOpen ? "rotate-180" : ""}`} />
+        </button>
+        {addOnsOpen && (
+          <div className="space-y-1.5 border-t px-2.5 pb-2.5 pt-2" id={`package-addons-rows-${eventId}`} data-testid="package-addons-rows">
+            {addOnRows.length === 0 ? (
+              <p className="text-xs text-muted-foreground" data-testid="text-no-addons">This package has no add-ons.</p>
+            ) : (
+              <>
+                {addOnRows.map((item) => (
+                  <PackageSnapshotItemRow key={item.id} item={item} readOnly={readOnly} onUpdate={(data) => updateSnapshotItemMutation.mutate({ itemId: item.id, data })} />
+                ))}
+                <div className="flex justify-end pt-1">
+                  <span className="text-xs text-muted-foreground" data-testid="text-addon-subtotal">
+                    Add-ons Subtotal: {formatPrice(addOnsSubtotal)}
+                  </span>
+                </div>
+              </>
+            )}
+            {packageReading && <PackageTotalBreakdown reading={packageReading} />}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -1133,7 +1135,7 @@ export function BeoSlipsTime({ eventId, readOnly }: { eventId: string; readOnly?
   if (!snapshot) return null;
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1" data-testid="beo-slips-time">
-      <Label htmlFor={`slips-time-${eventId}`} className="text-sm text-muted-foreground">Kitchen &amp; bar slips at</Label>
+      <Label htmlFor={`slips-time-${eventId}`} className="text-xs text-muted-foreground">Kitchen &amp; bar slips at</Label>
       <Input
         id={`slips-time-${eventId}`}
         key={snapshot.slipsTime ?? "default"}
