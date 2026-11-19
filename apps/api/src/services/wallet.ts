@@ -1190,12 +1190,49 @@ export async function creditVoucherWalletsOf(db: Exec, saleId: string): Promise<
  * the box asks for the receipt, after the bands are minted and paired.
  */
 export async function saleCreditsOf(db: Exec, saleId: string): Promise<SalePrintCredit[]> {
-  return (await grantsOfSale(db, saleId)).map((g) => ({
-    creditSatang: g.creditSatang,
+  const grants = await grantsOfSale(db, saleId);
+  /**
+   * SCRUM-1048 — the extra food credit this sale loaded (`loadExtraCredit`):
+   * on a child's grant wallet it is part of what that wallet's QR holds from
+   * this sale, so its credit section says the whole; on a wallet of the
+   * child's own (a ticket that earns no credit) it is a credit section of its
+   * own after the grants, so its QR is on the receipt whether or not its band
+   * was minted and paired.
+   */
+  const extras = (
+    await db
+      .select({ walletId: walletEntry.walletId, amountSatang: walletEntry.amountSatang, payload: walletEntry.payload })
+      .from(walletEntry)
+      .where(and(eq(walletEntry.saleId, saleId), eq(walletEntry.kind, 'grant'), eq(walletEntry.source, 'prepaid_food')))
+      .orderBy(asc(walletEntry.createdAt), asc(walletEntry.id))
+  ).filter((row) => (row.payload as { extraCredit?: unknown } | null)?.extraCredit === true);
+  const extraOn = new Map<string, number>();
+  for (const row of extras) extraOn.set(row.walletId, (extraOn.get(row.walletId) ?? 0) + row.amountSatang);
+  const credits: SalePrintCredit[] = grants.map((g) => ({
+    creditSatang: g.creditSatang + (extraOn.get(g.walletId) ?? 0),
     qrCode: g.qrCode || null,
     holderName: g.holderName,
     bandShortCode: g.bandShortCode,
   }));
+  const own = [...extraOn.keys()].filter((walletId) => !grants.some((g) => g.walletId === walletId));
+  if (own.length === 0) return credits;
+  const rows = await db.select().from(wallet).where(inArray(wallet.id, own));
+  const keys = await db
+    .select({ walletId: walletKey.walletId, kind: walletKey.kind, value: walletKey.value })
+    .from(walletKey)
+    .where(inArray(walletKey.walletId, own))
+    .orderBy(asc(walletKey.createdAt));
+  for (const walletId of own) {
+    const qr = keys.find((k) => k.walletId === walletId && k.kind === 'voucher_qr');
+    const bandKey = keys.find((k) => k.walletId === walletId && k.kind === 'band');
+    credits.push({
+      creditSatang: extraOn.get(walletId)!,
+      qrCode: qr?.value ?? null,
+      holderName: rows.find((r) => r.id === walletId)?.holderName ?? null,
+      bandShortCode: bandKey ? bandShortCode(bandKey.value) : null,
+    });
+  }
+  return credits;
 }
 
 /**
@@ -1469,6 +1506,29 @@ async function takeBackExtraCredit(
     lock: true,
   });
   if (!held) return null;
+  // Past its date the credit is no longer on the band (the day's expiry took
+  // it), which is not the family having used it: said in its own words.
+  const [expiry] =
+    held.refundableSatang < held.loadedSatang && held.spentSatang <= 0
+      ? await tx
+          .select({ id: walletEntry.id })
+          .from(walletEntry)
+          .where(
+            and(
+              eq(walletEntry.walletId, held.walletId),
+              eq(walletEntry.kind, 'expire'),
+              sql`${walletEntry.createdAt} >= ${loaded.createdAt.toISOString()}::timestamptz`,
+            ),
+          )
+          .limit(1)
+      : [];
+  if (expiry) {
+    throw errors.conflict(
+      'PREPAID_CREDIT_EXPIRED',
+      'This extra food credit has expired and is no longer on the band, so this food line cannot be refunded.',
+      { saleLineId: input.line.id, loadedSatang: held.loadedSatang, refundableSatang: held.refundableSatang },
+    );
+  }
   if (held.refundableSatang < held.loadedSatang) {
     throw errors.conflict(
       'PREPAID_CREDIT_SPENT',

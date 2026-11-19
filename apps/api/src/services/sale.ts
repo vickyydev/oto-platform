@@ -3503,6 +3503,7 @@ export async function extraCreditLinesOf(
   if (extras.length === 0) return out;
   const byId = new Map(lines.map((line) => [line.id.toLowerCase(), line]));
   const targets: CartLineInput[] = [];
+  const named = new Set<string>();
   for (const line of extras) {
     const creditFor = line.creditFor!;
     if (line.foodProvision?.mode !== 'prepaid_credit' || line.foodProvision.paidSatang <= 0) {
@@ -3528,6 +3529,13 @@ export async function extraCreditLinesOf(
     if (creditFor.kidOrdinal >= target.kids) {
       throw errors.badRequest('That ticket has no child for this food credit', { cartLineId: line.id });
     }
+    // One line per child, as the till keeps it: a second would load the same
+    // band twice, and one spend would then block the refund of both.
+    const child = `${target.id.toLowerCase()}:${creditFor.kidOrdinal}`;
+    if (named.has(child)) {
+      throw errors.badRequest('That child already has extra food credit on this order', { cartLineId: line.id });
+    }
+    named.add(child);
     if (target.serviceFee || target.foodProvision) {
       throw errors.badRequest(
         "A dropped-off or nanny child's extra food credit is chosen on their drop-off form",

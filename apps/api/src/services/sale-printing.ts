@@ -29,6 +29,8 @@ import {
 } from '@oto/db';
 import {
   PAYMENT_ATTEMPT_TAKEN_STATUSES,
+  bandShortCode,
+  extraCreditForOf,
   isPartyDepositAttempt,
   eventBandDocument,
   groupPrepTickets,
@@ -1400,6 +1402,25 @@ export async function salePrintSnapshotOf(db: Exec, saleRow: SaleRow): Promise<S
     if (!left || left.length === 0) return undefined;
     return left.splice(0, Math.max(1, l.quantity));
   };
+  /**
+   * SCRUM-1048 — the band each extra food credit line's credit is on, so the
+   * receipt says which wrist holds it: the kid band paired with its child by
+   * the pairing `attachSaleBandKeys` uses (the i-th kid on a cart line takes
+   * the i-th kid band minted on that line, oldest first).
+   */
+  const cartLineOf = new Map(lines.map((l) => [l.id, l.cartLineId?.toLowerCase() ?? null]));
+  const kidBandsByCartLine = new Map<string, (typeof bandRows)[number][]>();
+  for (const row of bandRows) {
+    const cartLineId = row.band.kind === 'kid' && row.band.saleLineId ? cartLineOf.get(row.band.saleLineId) : null;
+    if (!cartLineId) continue;
+    kidBandsByCartLine.set(cartLineId, [...(kidBandsByCartLine.get(cartLineId) ?? []), row]);
+  }
+  const creditBandOf = (l: SaleLineRow): { shortCode: string; childName: string | null } | undefined => {
+    const target = extraCreditForOf(l.payload);
+    const row = target ? kidBandsByCartLine.get(target.cartLineId.toLowerCase())?.[target.kidOrdinal] : undefined;
+    const shortCode = row && row.band.status === 'active' ? bandShortCode(row.band.code) : null;
+    return shortCode ? { shortCode, childName: row!.band.childId ? (row!.childName ?? null) : null } : undefined;
+  };
   return {
     saleId: saleRow.id,
     receiptNumber: saleRow.receiptNumber,
@@ -1414,6 +1435,7 @@ export async function salePrintSnapshotOf(db: Exec, saleRow: SaleRow): Promise<S
     customerPhone: saleRow.customerPhone ?? memberRow?.phone ?? null,
     lines: lines.map((l) => {
       const voucherCodes = voucherCodesOf(l);
+      const creditBand = creditBandOf(l);
       return {
         id: l.id,
         kind: l.kind,
@@ -1427,6 +1449,7 @@ export async function salePrintSnapshotOf(db: Exec, saleRow: SaleRow): Promise<S
         stayDurationLabel: l.stayDurationLabel,
         productCode: l.productId ? (productCodes.get(l.productId) ?? null) : null,
         ...(voucherCodes ? { voucherCodes } : {}),
+        ...(creditBand ? { creditBand } : {}),
       };
     }),
     subtotalSatang: saleRow.subtotalSatang,

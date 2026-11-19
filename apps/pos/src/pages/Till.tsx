@@ -1721,7 +1721,8 @@ export default function Till() {
   /**
    * SCRUM-1048 — staff add extra food credit for one child on an ordinary
    * ticket: its own line on the order, after that ticket (`lib/extraCredit`).
-   * The same child again sets the amount; nothing takes it off.
+   * The same child again sets the amount; the card's own remove (the corner
+   * trash every order card has, `handleRemoveLine`) takes it off, on any lane.
    */
   const handleAddExtraCredit = (ticketLineId: string, kidOrdinal: number, amountTHB: number) => {
     if (orderFrozen()) return;
