@@ -1,3 +1,29 @@
+## 19 November 2026, evening: five build lanes run; family profiles are being planned
+
+- The owner freed memory on the laptop (5.3 GB free), so the till's smaller
+  requests started without waiting for the inbox lane: SCRUM-1039 "Menu
+  options editor: a wider name and one price" and SCRUM-1040 "Mystery Box: a
+  stock item, and scanning its voucher takes one off the shelf", workflow
+  wf_387e5bfd-ecd, `C:/oto-lanes/codex-payment-handover-20261113`, branch
+  `lane/tillsmall1039-20261119`, checkpoints on `wip/tillsmall1039-20261119`.
+- The HR app's smaller requests (SCRUM-1036, 1037, 1038) run as workflow
+  wf_fb54b581-d0e.
+- Running in all: the inbox redesign (wf_a874254d-e41, fix stage), the
+  drop-off counter flow (wf_2b410f77-dcd), the BEO timeline and print
+  (wf_252a7ef8-097), the HR smaller requests, the till smaller requests.
+  Workflow scripts are under the session's `workflows/scripts`; a stopped one
+  resumes with its script path and run id.
+- A read-only planning pass for family profiles (SCRUM-1024, 1025) is running;
+  its result becomes `FAMILY_PROFILES_PLAN.md` in
+  `docs/progress/plans/dropoff-beo-20261119/`.
+- Still queued: SCRUM-1041 (several displays per till) after the counter flow
+  lands; the BEO editor (SCRUM-1029 to 1035) after the print lands; the phone
+  form (SCRUM-1022, 1023).
+- Three readings in the small tickets wait for the owner's word: the Mystery
+  Box at zero warns and never blocks a won prize; an option with two
+  different prices keeps them until edited; a former employee clocks in for
+  the one shift only. "Adult Waffles" also waits for his choice.
+
 ## 19 November 2026, later afternoon: the plan page is fully answered; the smaller requests are ticketed
 
 - **All 56 questions are answered.** The last nine: six say build, three say
