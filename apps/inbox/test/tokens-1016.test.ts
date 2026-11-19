@@ -74,7 +74,7 @@ describe('SCRUM-1016: the OTO tokens', () => {
   it('holds the approved light values', () => {
     expect(light).toMatchObject({
       ground: '#fbf5ef', card: '#fefdfb', ink: '#3b281c', 'ink-muted': '#766456', 'ink-soft': '#5f4f43',
-      line: '#eae0d7', 'line-soft': '#efe6dc', field: '#e0d3c6', band: '#f1e9df',
+      line: '#eae0d7', 'line-soft': '#efe6dc', band: '#f1e9df',
       coral: '#ca3500', 'coral-ink': '#9f2d00', mint: '#d4edea', teal: '#234343',
       money: '#f1f7ee', 'money-line': '#c9e0c3', 'money-ink': '#1f4d2b', 'money-badge': '#d3ead0',
       needs: '#fde6da', 'needs-ink': '#8a2a05', staff: '#3b281c', 'on-staff': '#fbf5ef',
@@ -127,6 +127,51 @@ describe('SCRUM-1016: the OTO tokens', () => {
     }
     expect(src('src/components/Rail.tsx')).toContain("active ? 'bg-segment font-bold text-ink");
     expect(src('src/components/ui.ts')).toContain("export const SEGMENT_ON = 'bg-segment ");
+  });
+
+  // SCRUM-1043: an edge that marks a control (a field, a search box, a pill,
+  // an outlined button, Resume on the assistant's line) reaches 3 : 1 against
+  // every surface it sits on, by colour at 1 px. Before, a field's edge was
+  // 1.44 : 1 on the card (1.63 in dark), an outlined button's 2.27 (2.41) and
+  // Resume's 1.79. Card edges and dividers keep their drawn values; the
+  // field's old shade lives on as `line-deep` for dashed frames that are not
+  // controls.
+  it('holds the control edges at the smallest step to 3 : 1, and the decorative lines as drawn', () => {
+    expect(light).toMatchObject({ field: '#998879', edge: '#998879', 'mint-control': '#6b9690', 'line-deep': '#e0d3c6', 'mint-edge': '#9cc9c2' });
+    expect(dark).toMatchObject({ field: '#5d6e90', edge: '#5d6e90', 'mint-control': '#3a7671', 'line-deep': '#34425f', 'mint-edge': '#2f6b66' });
+    expect(dark).toMatchObject({ line: '#24304a', 'line-soft': '#1c2740', 'money-line': '#1f4030' });
+    expect(light).toMatchObject({ line: '#eae0d7', 'line-soft': '#efe6dc', 'money-line': '#c9e0c3' });
+  });
+
+  it.each([['light', light], ['dark', dark]] as const)('every control edge stands out at 3 : 1 on the surfaces it sits on (%s)', (_, theme) => {
+    // Fields, pills and the search sit on the card, the page's ground and the
+    // template box's wash; Create BEO sits on the paid deposit's green too.
+    for (const ground of ['card', 'ground', 'wash']) {
+      expect(contrast(theme, 'field', ground), `field against ${ground}`).toBeGreaterThanOrEqual(3);
+      expect(contrast(theme, 'edge', ground), `edge against ${ground}`).toBeGreaterThanOrEqual(3);
+    }
+    expect(contrast(theme, 'edge', 'money'), 'edge against money').toBeGreaterThanOrEqual(3);
+    // Resume and Pause: a card-coloured pill on the assistant's soft mint.
+    for (const ground of ['mint-soft', 'card']) {
+      expect(contrast(theme, 'mint-control', ground), `mint-control against ${ground}`).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it('draws every control on a control edge, and only decoration on the drawn lines', () => {
+    const ui = src('src/components/ui.ts');
+    expect(ui).toMatch(/export const INPUT =\s*'[^']*border border-field /);
+    expect(ui).toMatch(/export const BTN_OUTLINE = `[^`]*border border-edge /);
+    expect(ui).toMatch(/export const BTN_SMALL = `[^`]*border border-edge /);
+    expect(src('src/components/atoms.tsx')).toContain("PILL_OFF = 'border-field bg-card");
+    expect(src('src/components/ChatActions.tsx')).toMatch(/SECONDARY_BUTTON =\s*'[^']*border border-edge /);
+    const chat = src('src/components/ChatPanel.tsx');
+    expect(chat).toContain('rounded-full border border-mint-control bg-card'); // Resume / Pause
+    expect(chat).toContain('ring-1 ring-field hover:bg-wash'); // Earlier messages
+    expect(chat).toContain('rounded-xl border border-edge bg-card px-3 py-2'); // the BEO's chip
+    expect(src('src/components/MessageBubble.tsx')).toContain('ring-1 ring-edge hover:bg-wash'); // a file's Open
+    // Decoration keeps its drawn shade: the withdrawn line, the refused hand-off's note.
+    expect(src('src/components/MessageBubble.tsx')).toContain('border-dashed border-line-deep bg-ground');
+    expect(src('src/components/SignOnPanels.tsx')).toContain('border-dashed border-line-deep');
   });
 
   // SCRUM-1045: the selected row's edge is a quiet 1 px of the muted ink.

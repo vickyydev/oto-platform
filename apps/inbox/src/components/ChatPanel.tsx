@@ -986,7 +986,7 @@ export function ChatPanel({
                 disabled={busy !== null}
                 title={`${event.title} · ${event.archived ? 'Archived' : event.statusName} in the Events calendar. Opens it in the OTO App.`}
                 data-testid="event-chip"
-                className="hit inline-flex min-h-ctl items-center gap-2 rounded-xl border border-line bg-card px-3 py-2 text-left text-ui font-semibold text-ink hover:bg-wash disabled:opacity-60"
+                className="hit inline-flex min-h-ctl items-center gap-2 rounded-xl border border-edge bg-card px-3 py-2 text-left text-ui font-semibold text-ink hover:bg-wash disabled:opacity-60"
               >
                 <Calendar aria-hidden className="h-4 w-4 shrink-0 text-ink-soft" />
                 {eventChipLabel(eventChipOf(event))}
@@ -1122,7 +1122,7 @@ export function ChatPanel({
                 aria-label={AI_ACTION_NAME[aiLine.action]}
                 onClick={toggleAi}
                 title={aiTitle}
-                className="hit inline-flex h-ctl shrink-0 items-center gap-1.5 rounded-full border border-mint-edge bg-card px-3.5 text-ui font-semibold text-teal hover:bg-mint disabled:opacity-60 md:px-3"
+                className="hit inline-flex h-ctl shrink-0 items-center gap-1.5 rounded-full border border-mint-control bg-card px-3.5 text-ui font-semibold text-teal hover:bg-mint disabled:opacity-60 md:px-3"
               >
                 {busy === 'ai' && <Loader2 aria-hidden className="h-3.5 w-3.5 animate-spin" />}
                 {AI_ACTION_LABEL[aiLine.action]}
@@ -1175,7 +1175,7 @@ export function ChatPanel({
                   type="button"
                   onClick={onLoadOlder}
                   disabled={thread.loadingOlder}
-                  className="hit inline-flex min-h-ctl items-center gap-1.5 rounded-full bg-card px-4 text-note font-semibold text-ink-soft ring-1 ring-line hover:bg-wash"
+                  className="hit inline-flex min-h-ctl items-center gap-1.5 rounded-full bg-card px-4 text-note font-semibold text-ink-soft ring-1 ring-field hover:bg-wash"
                 >
                   {thread.loadingOlder && <Loader2 aria-hidden className="h-3.5 w-3.5 animate-spin" />}
                   Earlier messages
