@@ -15,7 +15,7 @@ import { ChildReviewPromptSchema, childReviewAge, ConsentActionSchema, ConsentPr
   nameIsPhoneNumber, newId, type ChildReviewPrompt, type ConsentFormStep, type ConsentPrompt } from '@oto/shared';
 import { familyReviewChange, familyReviewChangeLine } from '@/lib/familyReviewChange';
 import { careShownFor, displayCareLine, profileCareNote, profileMedicalNote } from '@/lib/displayCareNotes';
-import { asksOrderWithIncluded, extraCreditOfSlot, includedCreditTHB, ordersWithIncluded } from '@/lib/dropOffFoodCredit';
+import { asksOrderWithIncluded, extraCreditOfSlot, includedCreditTHB, includedTicksDropped, includedTicksDroppedNotice, ordersWithIncluded } from '@/lib/dropOffFoodCredit';
 import { addedGatePlace, emptyGatePlace, gateTicketLines, savedChildrenOffForm } from '@/lib/editDetails';
 import { useCustomerTheme } from '@/lib/themePref';
 import { computeLineTotal, computeLineBreakdown, priceForTier, unpricedCartLines } from '@/lib/pricing';
@@ -2889,6 +2889,12 @@ export default function Till() {
         });
         registrationId = reg.id;
         if (ownSale()) gateOnline.noteWrite();
+        // SCRUM-1054 — a registration that went to the counter box after the
+        // parent ticked has the child as "no food" (its lane does not carry
+        // the tick): staff are told, so nobody is surprised at the counter.
+        const ticksDropped = includedTicksDropped(supervised.map(({ slot }, i) => ({ checkinId: stayIds[i]!,
+          name: slot.name.trim(), orderWithIncludedCredit: ordersWithIncluded(slot, slotIncludedCreditTHB(slot)) })), reg.children);
+        if (ticksDropped.length > 0 && ownSale()) toast(includedTicksDroppedNotice(ticksDropped));
         created = supervised.map(({ slot }, i) => {
           const stay = reg.children.find((c) => c.id === stayIds[i]);
           if (!stay) throw new Error(`${slot.name.trim() || 'A child'} is missing from the registration — press Continue again.`);
@@ -4042,7 +4048,8 @@ export default function Till() {
     const extra = extraCreditOfSlot(slot);
     return { ...(included > 0 ? { includedCreditTHB: included } : {}), ...(extra !== null ? { extraCreditTHB: Math.min(100_000, extra) } : {}),
       // SCRUM-1054 — the parent's included-credit tick, as the till holds it; the form shows it while no extra is chosen.
-      ...(asksOrderWithIncluded(slot, included) ? { orderWithIncludedCredit: slot.orderWithIncludedCredit === true } : {}) };
+      // Not asked while the till works through its counter box, whose lane does not carry it.
+      ...(lane !== 'box' && asksOrderWithIncluded(slot, included) ? { orderWithIncludedCredit: slot.orderWithIncludedCredit === true } : {}) };
   };
   const consentBase: Omit<ConsentPrompt, 'kind' | 'requestId' | 'completed'> = {
     visitorId: reviewVisitorId,
@@ -4791,7 +4798,7 @@ export default function Till() {
         {inlineDisplay && step === 7 && (
           <div className={`w-1/2 h-full min-w-0 ${customerTheme === 'dark' ? 'dark' : 'light'}`}>
             <ConsentCapture
-              includedCreditTHB={slotIncludedCreditTHB}
+              includedCreditTHB={slotIncludedCreditTHB} includedTickOffline={lane === 'box'}
               slots={superSlots}
               parentName={superParentName}
               consentAck={superConsentAck}
@@ -4876,7 +4883,7 @@ export default function Till() {
             <DialogDescription>Complete the child and guardian checks on this staff screen before continuing.</DialogDescription>
           </DialogHeader>
           <div className="flex-1 min-h-0 dark" inert={gateSaving}>
-            <ConsentCapture staffScreen slots={superSlots} includedCreditTHB={slotIncludedCreditTHB} ticksReadOnly={!staffTicks} parentName={superParentName} consentAck={superConsentAck} policy={supervisionPolicy}
+            <ConsentCapture staffScreen slots={superSlots} includedCreditTHB={slotIncludedCreditTHB} includedTickOffline={lane === 'box'} ticksReadOnly={!staffTicks} parentName={superParentName} consentAck={superConsentAck} policy={supervisionPolicy}
               parentPhone={superParentPhone} parentContactMethod={superParentContactMethod}
               onParentNameChange={setSuperParentName} onParentPhoneChange={changeGuardianPhone}
               // SCRUM-1018 — staff change the number and correct the profile's
@@ -4913,7 +4920,7 @@ export default function Till() {
             ))}
           </div>}
           <div className="flex-1 min-h-0 dark" inert={gateSaving}>
-            <ConsentCapture staffScreen ticksReadOnly slots={superSlots} includedCreditTHB={slotIncludedCreditTHB} parentName={superParentName} consentAck={superConsentAck} policy={supervisionPolicy}
+            <ConsentCapture staffScreen ticksReadOnly slots={superSlots} includedCreditTHB={slotIncludedCreditTHB} includedTickOffline={lane === 'box'} parentName={superParentName} consentAck={superConsentAck} policy={supervisionPolicy}
               parentPhone={superParentPhone} parentContactMethod={superParentContactMethod}
               onParentNameChange={setSuperParentName} onParentPhoneChange={changeGuardianPhone}
               onParentContactMethodChange={changeGuardianChannel} onConsentAckChange={setSuperConsentAck}

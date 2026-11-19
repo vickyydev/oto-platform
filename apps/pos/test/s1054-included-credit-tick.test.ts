@@ -7,7 +7,7 @@ import { ConsentCapture } from '@/components/till/ConsentCapture';
 import { PublicConsentCapture, mergeConsentDraft } from '@/components/till/PublicConsentCapture';
 import type { SupervisedSlot } from '@/components/till/SupervisionGate';
 import { consentSlotPatches } from '@/lib/consentForm';
-import { asksOrderWithIncluded, ordersWithIncluded, showsOrderWithIncluded } from '@/lib/dropOffFoodCredit';
+import { asksOrderWithIncluded, includedTicksDropped, includedTicksDroppedNotice, ordersWithIncluded, showsOrderWithIncluded } from '@/lib/dropOffFoodCredit';
 import { DICTIONARY } from '@/i18n/dictionary';
 import type { SupervisionPolicy, TicketType } from '@/types';
 import { renderHook } from './support/hooks';
@@ -205,14 +205,52 @@ describe('SCRUM-1054 (3): the till’s own form (its customer half, staff’s co
     expect(words(view.result.current)).toContain('ticked by the family');
     view.unmount();
   });
+
+  it('not asked while the registration goes through the counter box: the form says "no food" as before', () => {
+    for (const extra of [{}, { staffScreen: true, ticksReadOnly: true }]) {
+      const view = form(slot({ orderWithIncludedCredit: true }), { includedTickOffline: true, ...extra });
+      expect(tickOf(view)).toBeUndefined();
+      expect(pickerOf(view)!.props.noneNote).toBe(true);
+      // The ticket's own credit is still shown as included.
+      expect(words(view.result.current)).toContain('superviseConsent.foodIncluded:1300');
+      view.unmount();
+    }
+  });
 });
 
 describe('SCRUM-1054 (4): the tills wire it, the box lane leaves it off, and the words exist in every language', () => {
   const read = (file: string) => readFileSync(path.join(import.meta.dirname, '..', 'src', file), 'utf8');
   it('both tills send the tick on the registration; the counter publishes it on the display’s form', () => {
     expect(read('pages/Till.tsx')).toContain('...(ordersWithIncluded(slot, slotIncludedCreditTHB(slot)) ? { orderWithIncludedCredit: true } : {}),');
-    expect(read('pages/Till.tsx')).toContain('...(asksOrderWithIncluded(slot, included) ? { orderWithIncludedCredit: slot.orderWithIncludedCredit === true } : {})');
+    expect(read('pages/Till.tsx')).toContain("...(lane !== 'box' && asksOrderWithIncluded(slot, included) ? { orderWithIncludedCredit: slot.orderWithIncludedCredit === true } : {})");
     expect(read('components/mobile/MobileTill.tsx')).toContain('...(ordersWithIncluded(slot, formIncludedCreditTHB(slot)) ? { orderWithIncludedCredit: true } : {}),');
+  });
+
+  it('on the box lane neither till asks it: the counter half, staff’s copies and the phone till’s form', () => {
+    const till = read('pages/Till.tsx');
+    expect(till.match(/includedCreditTHB=\{slotIncludedCreditTHB\} includedTickOffline=\{lane === 'box'\}/g)).toHaveLength(3);
+    expect(till.match(/<ConsentCapture/g)).toHaveLength(3);
+    expect(read('components/mobile/MobileTill.tsx')).toMatch(/includedCreditTHB=\{formIncludedCreditTHB\}\s+includedTickOffline=\{lane === 'box'\}/);
+  });
+
+  it('a tick the box lane did not carry is said to staff on both tills, with the child’s name', () => {
+    const sent = [
+      { checkinId: 'zz-a', name: 'ZZ TEST Mint', orderWithIncludedCredit: true },
+      { checkinId: 'zz-b', name: 'ZZ TEST Ploy', orderWithIncludedCredit: true },
+      { checkinId: 'zz-c', name: 'ZZ TEST Nok' },
+    ];
+    // The platform kept both ticks: nothing to say.
+    expect(includedTicksDropped(sent, [{ id: 'zz-a', mayOrderFood: true }, { id: 'zz-b', mayOrderFood: true }, { id: 'zz-c', mayOrderFood: false }])).toEqual([]);
+    // The box kept none: the ticked children are named, the unticked one is not.
+    const dropped = includedTicksDropped(sent, [{ id: 'zz-a', mayOrderFood: false }, { id: 'zz-b', mayOrderFood: false }, { id: 'zz-c', mayOrderFood: false }]);
+    expect(dropped).toEqual(['ZZ TEST Mint', 'ZZ TEST Ploy']);
+    expect(includedTicksDroppedNotice(dropped)).toEqual({
+      title: 'Food with the included credit needs the internet',
+      description: 'ZZ TEST Mint and ZZ TEST Ploy are registered without the family’s tick: the food counter will ask a manager before an order.',
+    });
+    expect(includedTicksDroppedNotice(['ZZ TEST Mint']).description).toMatch(/^ZZ TEST Mint is registered without/);
+    expect(read('pages/Till.tsx')).toContain('if (ticksDropped.length > 0 && ownSale()) toast(includedTicksDroppedNotice(ticksDropped));');
+    expect(read('components/mobile/MobileTill.tsx')).toContain('if (ticksDropped.length > 0) toast(includedTicksDroppedNotice(ticksDropped));');
   });
 
   it('the counter box’s registration is sent the children without it: the child is "no food" there, as before', async () => {

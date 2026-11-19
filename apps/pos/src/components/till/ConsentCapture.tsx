@@ -49,6 +49,12 @@ interface ConsentCaptureProps {
    * charge. Left out (the booking site), nothing is shown.
    */
   includedCreditTHB?: (slot: SupervisedSlot) => number;
+  /**
+   * SCRUM-1054 — the registration will go through the counter box, whose lane
+   * does not carry the parent's included-credit tick: the tick is not asked,
+   * so the family is never asked for something that would not take effect.
+   */
+  includedTickOffline?: boolean;
   // EVERY child on the unaccompanied sale — the parent types names + ages here on
   // their own screen, and those flow (via the lifted draft) straight into the
   // staff gate's requirement resolution. Consent fields then appear per child for
@@ -231,6 +237,7 @@ export function ConsentTicksStatus({
 export function ConsentCapture({
   photoAtReception = false,
   includedCreditTHB,
+  includedTickOffline = false,
   slots,
   parentName,
   consentAck,
@@ -548,11 +555,11 @@ export function ConsentCapture({
                       });
                     }}
                     // SCRUM-1054 — the tick below says what it allows instead.
-                    noneNote={!showsOrderWithIncluded(slot, includedCreditTHB?.(slot) ?? 0)}
+                    noneNote={includedTickOffline || !showsOrderWithIncluded(slot, includedCreditTHB?.(slot) ?? 0)}
                     variant="dark"
                   />
-                  {/* SCRUM-1054 — no extra food chosen: the parent's one tick for the included credit. */}
-                  {showsOrderWithIncluded(slot, includedCreditTHB?.(slot) ?? 0) && (
+                  {/* SCRUM-1054 — no extra food chosen: the parent's one tick for the included credit (not on the counter box's lane). */}
+                  {!includedTickOffline && showsOrderWithIncluded(slot, includedCreditTHB?.(slot) ?? 0) && (
                     <label htmlFor={`${lineId}-included-${slot.id}`}
                       className={cn(LINE, 'mt-3', ticksReadOnly ? 'cursor-default' : 'cursor-pointer')}>
                       <Checkbox

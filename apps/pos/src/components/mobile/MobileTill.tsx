@@ -23,7 +23,7 @@ import { makeDropOffLine, normalizeDropOffFees, resolveDropOffPricing } from '@/
 import { resolveGroupRequirements, resolveSupervisionOutcome, sortedConfirmations } from '@/lib/supervision';
 import { messagingPhoneProblem } from '@/lib/consentForm';
 import { profileGuardianName } from '@/lib/returningFamily';
-import { includedCreditTHB, ordersWithIncluded } from '@/lib/dropOffFoodCredit';
+import { includedCreditTHB, includedTicksDropped, includedTicksDroppedNotice, ordersWithIncluded } from '@/lib/dropOffFoodCredit';
 import { consentMissing } from '@/lib/consentFinish';
 import { buildSale } from '@/lib/sale';
 import { branchTradingDate } from '@/lib/pricingMode';
@@ -1529,6 +1529,10 @@ export default function MobileTill() {
           })),
         });
         registrationId = reg.id;
+        // SCRUM-1054 — a tick the counter box's lane did not carry is said to staff.
+        const ticksDropped = includedTicksDropped(supervised.map(({ slot }, i) => ({ checkinId: stayIds[i]!,
+          name: slot.name.trim(), orderWithIncludedCredit: ordersWithIncluded(slot, formIncludedCreditTHB(slot)) })), reg.children);
+        if (ticksDropped.length > 0) toast(includedTicksDroppedNotice(ticksDropped));
         created = supervised.map(({ slot }, i) => {
           const stay = reg.children.find((c) => c.id === stayIds[i]);
           if (!stay) throw new Error(`${slot.name.trim() || 'A child'} is missing from the registration — press Continue again.`);
@@ -2759,6 +2763,7 @@ export default function MobileTill() {
             parentPhoneFixed={!!customerPhone.trim()}
             parentNameFixed={superGuardianFromProfile && !!superParentName.trim()}
             includedCreditTHB={formIncludedCreditTHB}
+            includedTickOffline={lane === 'box'}
             onParentNameChange={setSuperParentName}
             onConsentAckChange={setSuperConsentAck}
             onUpdateChild={handleUpdateSlot}

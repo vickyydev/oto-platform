@@ -488,12 +488,20 @@ export async function registrationsAwaitingCheckIn(
  * credit is the payment, loaded on the child's band at check-in, so the stay's
  * own food permission is given and the food counter asks no manager. Without
  * the tick, a provision that paid nothing authorises nothing, as before.
+ *
+ * The form asks the tick only while no extra food is chosen and no prepaid
+ * items are (`showsOrderWithIncluded` on the till): a tick sent beside paid
+ * food is not the form's and is ignored (`ticked` false; that food authorises
+ * the child as before). The permission is the stay's general food permission,
+ * as for paid extra food: what a child may spend is the band's balance, and an
+ * order beyond it paid another way is not stopped here (as today).
  */
 function normaliseProvision(raw: FoodProvisionInput | null | undefined, orderWithIncludedCredit = false): {
   provision: FoodProvisionInput | null;
   mayOrderFood: boolean;
+  ticked: boolean;
 } {
-  if (!raw) return { provision: null, mayOrderFood: orderWithIncludedCredit };
+  if (!raw) return { provision: null, mayOrderFood: orderWithIncludedCredit, ticked: orderWithIncludedCredit };
   const paid = raw.mode !== 'none' && raw.paidSatang <= 0 ? { mode: 'none' as const, paidSatang: 0 } : raw;
   // SCRUM-494 — nothing has been served at registration: every prepaid item
   // starts unserved (the design's `redeemedQty: 0`, `ChildFoodProvisionPicker`).
@@ -501,7 +509,8 @@ function normaliseProvision(raw: FoodProvisionInput | null | undefined, orderWit
     paid.mode === 'prepaid_items' && paid.items
       ? { ...paid, items: paid.items.map((it) => ({ ...it, redeemedQty: 0 })) }
       : paid;
-  return { provision, mayOrderFood: (provision.mode !== 'none' && provision.paidSatang > 0) || orderWithIncludedCredit };
+  const ticked = orderWithIncludedCredit && provision.mode === 'none';
+  return { provision, mayOrderFood: (provision.mode !== 'none' && provision.paidSatang > 0) || ticked, ticked };
 }
 
 /**
@@ -642,7 +651,7 @@ async function insertStays(
   const now = new Date();
   for (const c of children) {
     if (already.has(c.checkinId)) continue;
-    const { provision, mayOrderFood } = normaliseProvision(c.foodProvision, c.orderWithIncludedCredit === true);
+    const { provision, mayOrderFood, ticked } = normaliseProvision(c.foodProvision, c.orderWithIncludedCredit === true);
     await assertPrepaidItems(tx, actor.operatorId, reg.branchId, c.name.trim(), provision, now);
     const values = {
       id: c.checkinId,
@@ -682,7 +691,7 @@ async function insertStays(
         mayOrderFood,
         foodProvision: provision,
         // SCRUM-1054 — the parent's tick, kept with the food it authorised.
-        ...(c.orderWithIncludedCredit === true ? { orderWithIncludedCredit: true } : {}),
+        ...(ticked ? { orderWithIncludedCredit: true } : {}),
       },
     });
   }
