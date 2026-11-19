@@ -82,8 +82,9 @@ describe('SCRUM-1016: Book the date, laid out as drawn', () => {
   it('the fields are large and named by their labels as drawn', () => {
     const html = render({ initialDeposit: paid });
     for (const label of ['Date', 'Start time', 'Park', 'Children', 'Adults', 'Birthday child', 'Turning', 'Booking name', 'Phone']) {
-      // SCRUM-1045: the scale's large field (48 px on a phone), not a height of its own.
-      expect(html, label).toMatch(new RegExp(`aria-label="${label}"[^>]*class="min-h-ctl-lg `));
+      // SCRUM-1045: the scale's large field (48 px on a phone), not a height of its own;
+      // SCRUM-1043: the field step, which is also 44 px at least on a touch screen.
+      expect(html, label).toMatch(new RegExp(`aria-label="${label}"[^>]*class="min-h-field `));
       expect(html, label).toContain(`>${label}</span>`);
     }
   });

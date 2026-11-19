@@ -606,7 +606,7 @@ export function ChatPanel({
       <PendingControl
         reason={WRITES_PENDING_REASON}
         label="Mark as handled"
-        className={wide ? `${SECONDARY_BUTTON} min-h-ctl-lg w-full border-ink text-action font-bold` : HEADER_ICON}
+        className={wide ? `${SECONDARY_BUTTON} hit min-h-ctl-lg w-full border-ink text-action font-bold` : HEADER_ICON}
       >
         <CheckCircle2 aria-hidden className="h-5 w-5" />
         {wide && 'Mark as handled'}
@@ -624,7 +624,7 @@ export function ChatPanel({
         title="Mark as handled"
         // SCRUM-1045: the words show only where the chat is wide enough and the
         // contact's name still fits whole beside them (`useNameFirst`); else the icon.
-        className={wide ? `${SECONDARY_BUTTON} min-h-ctl-lg w-full border-ink text-action font-bold` : `${HEADER_ICON} ${handleWords ? HANDLE_WORDS : ''}`}
+        className={wide ? `${SECONDARY_BUTTON} hit min-h-ctl-lg w-full border-ink text-action font-bold` : `${HEADER_ICON} ${handleWords ? HANDLE_WORDS : ''}`}
       >
         <CheckCircle2 aria-hidden className={wide ? 'h-5 w-5' : 'h-[22px] w-[22px] md:h-[18px] md:w-[18px]'} />
         <span ref={wide ? undefined : wordsRef} className={wide ? '' : handleWords ? 'hidden whitespace-nowrap @min-[30rem]/thread:inline' : 'hidden'}>
@@ -895,7 +895,9 @@ export function ChatPanel({
       </ActionSection>
       </div>
 
-      {conv.category === 'birthdays' && (
+      {/* In the panel, a paid deposit's card stands at its top with Book the date: the
+          Party heading would stand over nothing, so it is left out (SCRUM-1043). */}
+      {conv.category === 'birthdays' && !(panel && showCard && !removedEvent) && (
         <ActionSection title="Party" card={false}>
           <div className="flex flex-col gap-2">
             {event ? (
@@ -1141,7 +1143,7 @@ export function ChatPanel({
                   <span
                     key={a.assignmentId}
                     aria-hidden
-                    className={`flex size-[2.4em] items-center justify-center rounded-full border-2 border-mint-soft text-caption font-bold ${chip.tint} ${i > 0 ? '-ml-2' : ''}`}
+                    className={`flex size-[2.4em] items-center justify-center rounded-full border-2 border-mint-soft text-caption font-bold ${chip.tint} ${i > 0 ? '-ml-1' : ''}`}
                   >
                     {chip.initials}
                   </span>
@@ -1151,7 +1153,9 @@ export function ChatPanel({
           </div>
         )}
 
-        {showCard && card(false, `mx-pane mt-3 shrink-0 ${panelOff}`)}
+        {/* SCRUM-1043: 12 px of ground under the card, so the thread's lines fade out
+            below it rather than meeting its edge. */}
+        {showCard && card(false, `mx-pane mb-3 mt-3 shrink-0 ${panelOff}`)}
 
         <ActionFeedback
           error={error}
@@ -1166,8 +1170,16 @@ export function ChatPanel({
           </p>
         )}
 
-        {/* Timeline: the one part of the chat that scrolls. */}
-        <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-ground px-pane py-3.5 md:py-4 @min-[42rem]/thread:px-6">
+        {/* Timeline: the one part of the chat that scrolls. Under the paid deposit's card,
+            which has no rule below it, the lines fade out over the top 14 px (the
+            timeline's own top padding, so nothing is faded at rest) rather than being
+            cut flush (SCRUM-1043). */}
+        <div
+          ref={scroller}
+          className={`min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-ground px-pane py-3.5 md:py-4 @min-[42rem]/thread:px-6 ${
+            showCard ? '[mask-image:linear-gradient(to_bottom,transparent,black_0.875rem)]' : ''
+          }`}
+        >
           <div className="mx-auto flex max-w-3xl flex-col gap-2.5">
             {thread.olderCursor !== null && (
               <div className="flex justify-center">

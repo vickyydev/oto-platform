@@ -83,7 +83,8 @@ export function StatsRow({
       onClick={onToggleUnanswered}
       aria-pressed={unansweredOnly}
       className={`hit flex shrink-0 flex-col items-center justify-center gap-1 transition ${
-        bar ? 'min-h-ctl-lg rounded-xl px-3' : figures ? 'rounded-l-2xl px-3 py-2 @max-[330px]/list:px-2' : 'min-h-ctl flex-1 rounded-2xl px-3 py-1.5'
+        // The app bar's figure keeps 4 px above and below its words inside the pressed edge (SCRUM-1043).
+        bar ? 'min-h-ctl-lg rounded-xl px-3 py-1' : figures ? 'rounded-l-2xl px-3 py-2 @max-[330px]/list:px-2' : 'min-h-ctl flex-1 rounded-2xl px-3 py-1.5'
       } ${unansweredOnly ? 'bg-needs text-needs-ink ring-1 ring-inset ring-coral' : 'text-coral-ink hover:bg-wash'}`}
     >
       {needs !== null && <span className={value}>{needs}</span>}
@@ -116,7 +117,7 @@ export function StatsRow({
           aria-haspopup="dialog"
           aria-expanded={open}
           aria-label={`${v(data?.newToday)} new today, average reply ${avg}, ${v(data?.handledToday)} handled today. ${MORE_FIGURES_LABEL}`}
-          className={`flex min-w-0 items-stretch transition hover:bg-wash ${bar ? 'rounded-xl' : 'flex-1 rounded-r-2xl border-l border-line py-2'}`}
+          className={`hit flex min-w-0 items-stretch transition hover:bg-wash ${bar ? 'rounded-xl' : 'flex-1 rounded-r-2xl border-l border-line py-2'}`}
         >
           {figure(v(data?.newToday), 'New today', !bar)}
           {figure(avg, 'Avg reply')}

@@ -123,7 +123,10 @@ describe('SCRUM-1045: no component carries a size of its own', () => {
       // An icon-only button has no words to size.
       if (name !== 'BTN_ICON') expect(cls, name).toMatch(new RegExp(`(?:^|\\s)text-(?:${STEPS.join('|')})(?:\\s|$)`));
     }
-    expect(INPUT).toContain('min-h-ctl-lg');
+    // SCRUM-1043: a field is the large control, and 44 px at least on a touch screen.
+    expect(INPUT).toContain('min-h-field');
+    expect(css).toContain('--spacing-field: max(var(--ui-h-lg), var(--ui-touch-min, 0px));');
+    expect(css).toMatch(/@media \(any-pointer: coarse\) \{\s*:root \{\s*--ui-touch-min: 44px;/);
     expect(INPUT).toContain('text-body');
     for (const cls of [LABEL, HINT, BADGE]) expect(cls).toMatch(new RegExp(`(?:^|\\s)text-(?:${STEPS.join('|')})(?:\\s|$)`));
   });

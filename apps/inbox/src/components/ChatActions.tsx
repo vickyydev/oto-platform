@@ -111,14 +111,22 @@ export function PersonRow({
       </div>
     );
   }
+  // SCRUM-1043: the words keep together and step under the name, right-aligned,
+  // when the card cannot give the name 10 rem beside them (a 360 px phone with
+  // Change and Remove), instead of cutting the name to a few letters.
   return (
-    <div className="flex min-h-14 items-center gap-3 border-t border-line-soft py-1.5 pl-3.5 pr-2 first:border-t-0">
-      <PersonFace chip={chip} />
-      <span className="flex min-w-0 flex-1 flex-col">
-        <span className="truncate text-body font-semibold text-ink">{chip.name}</span>
-        <span className="text-note text-ink-muted">{role}</span>
+    <div className="flex min-h-14 items-start gap-3 border-t border-line-soft py-1.5 pl-3.5 pr-2 first:border-t-0">
+      {/* The face beside the name's first line, whether or not the words step under it. */}
+      <span className="mt-1.5 shrink-0 md:mt-1">
+        <PersonFace chip={chip} />
       </span>
-      {children}
+      <span className="flex min-w-0 flex-1 flex-wrap items-center justify-end">
+        <span className="flex min-w-0 flex-1 basis-40 flex-col">
+          <span className="truncate text-body font-semibold text-ink">{chip.name}</span>
+          <span className="text-balance text-note text-ink-muted">{role}</span>
+        </span>
+        {children && <span className="flex shrink-0 items-center">{children}</span>}
+      </span>
     </div>
   );
 }
@@ -212,7 +220,8 @@ export function NextStepCard({
             </>
           )}
           <span className="text-body font-bold">{card.title}</span>{' '}
-          <span className="text-note">{card.detail}</span>
+          {/* No word left alone on the last line in the panel's narrow card (SCRUM-1043). */}
+          <span className="text-pretty text-note">{card.detail}</span>
         </span>
       </div>
       <div className={stacked ? 'flex flex-col gap-2' : 'grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] gap-2'}>
@@ -221,7 +230,7 @@ export function NextStepCard({
           onClick={onBook}
           disabled={busy}
           title="Block this date in the Events calendar"
-          className="inline-flex h-[46px] items-center justify-center gap-2 rounded-[13px] bg-coral px-3 text-body font-bold text-on-coral hover:bg-coral/90 disabled:opacity-60"
+          className="hit inline-flex min-h-ctl-lg items-center justify-center gap-2 rounded-[13px] bg-coral px-3 text-body font-bold text-on-coral hover:bg-coral/90 disabled:opacity-60"
         >
           <Calendar aria-hidden className="h-[18px] w-[18px]" />
           Book the date
@@ -231,7 +240,7 @@ export function NextStepCard({
           onClick={onBeo}
           disabled={busy}
           title="Book the date, then open its BEO in the OTO App"
-          className={`${SECONDARY_BUTTON} h-[46px]`}
+          className={`${SECONDARY_BUTTON} hit min-h-ctl-lg`}
         >
           {beoBusy && <Loader2 aria-hidden className="h-4 w-4 animate-spin" />}
           Create BEO

@@ -293,8 +293,12 @@ export function MessageBubble({
               Correct the assistant
             </button>
           )}
-          <span>{bubbleTime(m.sentAt ?? m.createdAt, now)}</span>
-          {m.direction === 'outbound' && <Delivery status={m.providerStatus} />}
+          {/* The time and the delivery word stay on one line together; where the column is
+              short, "Correct the assistant" takes its own line above them (SCRUM-1043). */}
+          <span className="inline-flex items-center gap-x-2 whitespace-nowrap">
+            <span>{bubbleTime(m.sentAt ?? m.createdAt, now)}</span>
+            {m.direction === 'outbound' && <Delivery status={m.providerStatus} />}
+          </span>
         </span>
         {withdrawn && (
           <span className="inline-flex items-center gap-1 px-1 text-meta font-medium text-ink-muted">
