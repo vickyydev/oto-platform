@@ -19,6 +19,7 @@ import {
 } from "@shared/beoExtras";
 import { EXPECTED_EXTRA_LABEL, SOCKS_PRINT_LABEL, expectedExtraWordsOf, socksWordsOf } from "@shared/beoGuestsSocks";
 import { beoDishNameOf } from "@shared/beoAdultWaffles";
+import { lineServingTagOf } from "@shared/beoServingTimes";
 import { beoPdfTillMoneyHtml } from "./lib/beoPdfMoney";
 import {
   STEP_ACTIVITY,
@@ -531,8 +532,9 @@ export interface BeoPdfData {
   kitchenPlan?: {
     required?: boolean;
     menus?: {
-      kids?: { quantity: number; itemName: string; notes?: string; price?: number; included?: boolean; source?: string; productCode?: string }[];
-      adults?: { quantity: number; itemName: string; notes?: string; price?: number; included?: boolean; source?: string; productCode?: string }[];
+      // SCRUM-1033: a dish's own serving time and its group, when it stores them (shared/beoServingTimes.ts).
+      kids?: { quantity: number; itemName: string; notes?: string; price?: number; included?: boolean; source?: string; productCode?: string; serviceTime?: string; serviceGroup?: string }[];
+      adults?: { quantity: number; itemName: string; notes?: string; price?: number; included?: boolean; source?: string; productCode?: string; serviceTime?: string; serviceGroup?: string }[];
       /** SCRUM-829: "Different for adults"; absent on a BEO saved before the switch (shared/kitchenAdults.ts). */
       adultsDiffer?: boolean;
       kidsFoodTime?: string;
@@ -556,7 +558,7 @@ export interface BeoPdfData {
   barPlan?: {
     serviceTime?: string;
     // SCRUM-949: an EXTRA drink's price for each item, as the kitchen's lines carry theirs.
-    items?: { quantity: number; itemName: string; notes?: string; source?: string; price?: number; productCode?: string }[];
+    items?: { quantity: number; itemName: string; notes?: string; source?: string; price?: number; productCode?: string; serviceTime?: string; serviceGroup?: string }[];
   };
   /**
    * SCRUM-970: the till's menu as read for the party's park (the BEO editor's own reading), for
@@ -599,9 +601,10 @@ export interface BeoPdfData {
     includedSummary?: string | null;
   };
   /**
-   * SCRUM-1028: each Entertainment activity as stored, in the editor's order, with its own person
-   * (server/lib/beoTimelineRead.ts, as the timeline reads it), for the print's Entertainment part.
-   * (`activities` above is the Event Info's free text of that name.)
+   * SCRUM-1028: each Entertainment activity as stored, in the editor's order, with its own people
+   * (SCRUM-1032: one or several, a role with its number) and its note (server/lib/beoTimelineRead.ts,
+   * as the timeline reads it), for the print's Entertainment part. (`activities` above is the Event
+   * Info's free text of that name.)
    */
   entertainmentActs?: readonly BeoTimelineActivity[];
   branchName?: string;
@@ -870,7 +873,7 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
     return t.startsWith('(') && t.includes(')') ? t : `(${t})`;
   };
 
-  type FoodLine = { quantity?: number; itemName?: string; notes?: string; price?: number; included?: boolean; source?: string; productCode?: string; groupId?: string };
+  type FoodLine = { quantity?: number; itemName?: string; notes?: string; price?: number; included?: boolean; source?: string; productCode?: string; groupId?: string; serviceTime?: string; serviceGroup?: string };
   // SCRUM-1050 (R24, the owner's answer of 19 November): an EXTRA line the till does not charge
   // (no price entered and no till code: "Price unresolved - not charged") carries a small mark
   // beside its badge instead of those words, and the words print ONCE under the list that has
@@ -895,8 +898,10 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
   // SCRUM-1050 (R13, the owner's answer of 19 November): a set-menu choice prints its group's label
   // beside it again, "Margherita (Pizza 2)", as the print did before 19 November (SCRUM-958: in one
   // pair of brackets). SCRUM-1042: the birthday package's waffles read "Adult Waffles" here
-  // (shared/beoAdultWaffles.ts); the stored line keeps its name.
-  const foodRow = (item: FoodLine, area: "food" | "bar", charge?: BeoExtraCharge) => {
+  // (shared/beoAdultWaffles.ts); the stored line keeps its name. SCRUM-1033: a dish served at a time
+  // of its own carries it beside its name, with its group's name when it has one ("13:00", "Dessert ·
+  // 13:00"); a dish served at its menu's time carries nothing (shared/beoServingTimes.ts).
+  const foodRow = (item: FoodLine, area: "food" | "bar", charge?: BeoExtraCharge, menuTime?: string) => {
     const isSet = item.source === 'set_menu';
     const rawNote = item.notes?.trim() ?? '';
     const note = rawNote
@@ -908,16 +913,17 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
     const lineCharge = isSet ? null : charge ?? beoExtraChargeOf(asExtraLine(item), area, extrasCtx);
     const unresolved = lineCharge?.kind === 'not_charged';
     if (unresolved) unresolvedIn[area] = true;
+    const serving = lineServingTagOf(item, menuTime);
     return `<tr>
       <td class="qty">${countInName(item) ? '' : `${beoQuantityOf(item.quantity)}x`}</td>
-      <td class="dish">${s(name)}${note}</td>
+      <td class="dish">${s(name)}${note}${serving ? ` <span class="at" data-serving>${s(serving)}</span>` : ''}</td>
       <td class="price-col">${isSet ? SET_BADGE : unresolved ? `<span class="extra-badge">EXTRA</span><span class="mark">${UNRESOLVED_MARK}</span>` : extraBadgeOf(lineCharge!)}</td>
     </tr>`;
   };
-  const foodTable = (lines: FoodLine[], area: "food" | "bar", style = '', charges?: readonly BeoExtraCharge[]) =>
+  const foodTable = (lines: FoodLine[], area: "food" | "bar", style = '', charges?: readonly BeoExtraCharge[], menuTime?: string) =>
     `<table class="menu-table"${style ? ` style="${style}"` : ''}>
       <colgroup><col class="qty-col" /><col /><col class="price-col-w" /></colgroup>
-      ${lines.map((l, at) => foodRow(l, area, charges?.[at])).join('')}
+      ${lines.map((l, at) => foodRow(l, area, charges?.[at], menuTime)).join('')}
     </table>`;
   const serviceWords = (time: string | undefined) => time ? ` <span class="svc">&mdash; Service: ${s(time)}</span>` : '';
 
@@ -944,7 +950,7 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
     if (!pdfKids.length && !isSetMenuMode) return '';
     const heading = `<h3>Kids Menu${data.numChildren ? ` (${data.numChildren} kids)` : ''}${serviceWords(kidsFoodTime)}</h3>`;
 
-    if (!isSetMenuMode) return `${heading}${foodTable(pdfKids, 'food')}`;
+    if (!isSetMenuMode) return `${heading}${foodTable(pdfKids, 'food', '', undefined, kidsFoodTime)}`;
 
     const setMenuItems = pdfKids.filter((i) => i.source === 'set_menu');
     const additionalItems = pdfKids.filter((i) => i.source !== 'set_menu');
@@ -965,12 +971,12 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
           }
         </div>
         ${setMenuItems.length > 0
-          ? foodTable(setMenuItems, 'food', 'margin:0;')
+          ? foodTable(setMenuItems, 'food', 'margin:0;', undefined, kidsFoodTime)
           : `<p class="set-empty">No selections yet — parent link sent</p>`
         }
       </div>`;
     const additionalBlock = additionalItems.length > 0
-      ? `<h3 style="margin-top:6px;">Additional Items</h3>${foodTable(additionalItems, 'food')}`
+      ? `<h3 style="margin-top:6px;">Additional Items</h3>${foodTable(additionalItems, 'food', '', undefined, kidsFoodTime)}`
       : '';
     return `${heading}${setMenuBlock}${additionalBlock}`;
   })();
@@ -980,7 +986,7 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
     const adultsFoodTime = kp.menus?.adultsFoodTime;
     if (pdfAdultsDiffer) {
       return `<h3 data-adults="differ">Adults Menu${data.numAdults ? ` (${data.numAdults} adults)` : ''}${serviceWords(adultsFoodTime)}</h3>
-        ${pdfAdultLines.length ? foodTable(pdfAdultLines, 'food', '', adultsCharges) : '<p class="plain">No dishes listed for the adults.</p>'}`;
+        ${pdfAdultLines.length ? foodTable(pdfAdultLines, 'food', '', adultsCharges, adultsFoodTime) : '<p class="plain">No dishes listed for the adults.</p>'}`;
     }
     if (!pdfKids.length && !kp.setMenuEnabled) return '';
     return `<p class="adults-same" data-adults="same">Adults: ${s(ADULTS_SAME_AS_KIDS.toLowerCase())}${adultsFoodTime ? ` &mdash; Service: ${s(adultsFoodTime)}` : ''}</p>`;
@@ -1047,17 +1053,19 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
     <div class="part box" data-part="bar">
       <h2>Bar</h2>
       ${bar.serviceTime ? `<div class="info-item" style="margin-bottom:4px;"><span class="info-label">Service Time:</span><span class="info-value">${s(bar.serviceTime)}</span></div>` : ''}
-      ${barItems.length ? foodTable(barItems, 'bar') : ''}
+      ${barItems.length ? foodTable(barItems, 'bar', '', undefined, bar.serviceTime) : ''}
       ${barItems.length ? unresolvedNote('bar') : ''}
     </div>
   ` : '';
 
   // Each activity as stored, in the editor's order: its time (none stored: said so, never given
-  // one), its name (the timeline's own words for an act with none) and its own person.
+  // one), its name (the timeline's own words for an act with none), its own note under its name, and
+  // its people (SCRUM-1032: one or several, "2 × Animator" for a role with its number).
   // The Program and the Activities text of Event Info print here (they printed in Event Details).
   const acts = data.entertainmentActs ?? [];
-  // The person's column only when an act names one (nothing writes a person on an act yet: SCRUM-1032).
-  const actsHavePeople = acts.some((a) => !!a.person?.trim());
+  const actPeopleOf = (a: BeoTimelineActivity) => (Array.isArray(a.people) ? a.people.join(', ') : a.person ?? '').trim();
+  // The people's column only when an act names someone.
+  const actsHavePeople = acts.some((a) => !!actPeopleOf(a));
   const entertainmentHtml = acts.length || data.programName || data.activities ? `
     <div class="part box" data-part="entertainment">
       <h2>Entertainment</h2>
@@ -1068,10 +1076,11 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
             ${acts.map((a) => {
               const raw = typeof a.startTime === 'string' ? a.startTime.trim() : '';
               const time = beoClockOf(raw)?.time ?? raw;
+              const note = typeof a.notes === 'string' ? a.notes.trim() : '';
               return `<tr>
                 <td style="font-weight: 600;">${time ? s(time) : '<span class="item-note" style="white-space: nowrap;">No time set</span>'}</td>
-                <td>${s(a.customName?.trim() || STEP_ACTIVITY)}</td>
-                ${actsHavePeople ? `<td>${a.person?.trim() ? s(a.person.trim()) : ''}</td>` : ''}
+                <td>${s(a.customName?.trim() || STEP_ACTIVITY)}${note ? `<div class="act-note" data-act-note>${s(note)}</div>` : ''}</td>
+                ${actsHavePeople ? `<td data-act-people>${s(actPeopleOf(a))}</td>` : ''}
               </tr>`;
             }).join('')}
           </tbody>
@@ -1210,6 +1219,8 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
     .arrival { margin-top: 4px; padding: 2px 6px; background: #fffbeb; border: 1px solid #f6e05e; border-radius: 3px; font-size: 11px; }
     .mark { color: #975a16; font-weight: 700; font-size: 10px; margin-left: 2px; }
     .mark-note { font-size: 9px; color: #718096; margin: 0 0 6px 0; break-before: avoid; page-break-before: avoid; }
+    .at { display: inline-block; font-size: 9px; font-weight: 600; color: #1e3a8a; border: 1px solid #bfdbfe; background: #eff6ff; border-radius: 2px; padding: 0 3px; margin-left: 2px; white-space: nowrap; font-style: normal; }
+    .act-note { color: #4a5568; font-size: 10px; font-style: italic; margin-top: 1px; white-space: pre-wrap; }
     .plain { font-size: 11px; color: #4a5568; }
     .adults-same { font-size: 10px; color: #6b7280; margin: 4px 0 0; }
     .set-box { border: 2px solid #6ee7b7; border-radius: 6px; overflow: hidden; margin-bottom: 6px; }

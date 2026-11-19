@@ -532,7 +532,11 @@ describe('A. fences and seams', () => {
       // a set-menu choice's group label again (R13), no "1x" before a set line whose name carries its
       // count, and a mark on an EXTRA the till does not charge with its words once under its list
       // (R24); PDF generation and where the BEO's documents live are unchanged.
-      'pdf.ts': '5b44a26709ddcf6dfa1a43a3c5509cc4e0a5f76f09011733b84f220d688f5e07',
+      // SCRUM-1032/1033: the Staff BEO's Entertainment part prints each activity's people (one or
+      // several, a role with its number) and its note, and the Kitchen and the Bar print a dish's or a
+      // drink's own serving time, or its group with its time, beside it (shared/beoServingTimes.ts);
+      // PDF generation and where the BEO's documents live are unchanged.
+      'pdf.ts': 'f0d300055dbdb92e6e7737aac1491f4bd3923c4b69b0f2d8a4d3bc53f367165c',
       // SCRUM-803 / SCRUM-806: Generate from BEO bills the package in baht and only the add-ons a party bought; where the BEO's documents live is unchanged.
       // SCRUM-769: the BEO's staff list leaves out a login whose employment has ended (onStaff); where documents live is unchanged.
       // SCRUM-815: the parent link's set-menu lines are resolved by server/lib/setMenuResolve.ts (moved, not changed) and the
@@ -609,7 +613,12 @@ describe('A. fences and seams', () => {
       // plan's Kitchen Notes only when its body names them (kitchenPlanDbDataOf), and the PDF route hands
       // the print the four new event fields; no PDF, file, bucket or public-folder door is added; where
       // the BEO's documents live is unchanged.
-      'beo-routes.ts': '3677961228780fffaf628f061f99d95ee304a454f415da43fd6292440a4fab50',
+      // SCRUM-1032/1033: the activities' read answers each activity's people, and
+      // PUT /api/events/:eventId/beo/entertainment-items/:id/people writes them after the event's own
+      // access check (server/lib/beoActivityPeopleWrite.ts); the BEO's Save refuses in words, before it
+      // writes anything, a dish's serving time that is no time of day (servingRefusal); no PDF, file,
+      // bucket or public-folder door is added; where the BEO's documents live is unchanged.
+      'beo-routes.ts': '5a717716c11f918605b9fb34126a1556a4a6e3dfef2ef08618d58be50de1092f',
       'orgChartRoutes.ts': 'eff8d4478165e8b0157ef07d37891222104f751b49932e70f525f06366fe9d90',
     };
     for (const [file, hash] of Object.entries(main)) expect(sha256(committed(join(APP_SERVER, file))), file).toBe(hash);
