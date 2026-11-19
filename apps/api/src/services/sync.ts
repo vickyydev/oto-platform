@@ -5431,6 +5431,7 @@ export async function cacheBundle(
               id: deviceCredential.id,
               stationId: deviceCredential.stationId,
               secretHash: deviceCredential.secretHash,
+              label: deviceCredential.label,
             })
             .from(deviceCredential)
             .where(
@@ -5446,6 +5447,8 @@ export async function cacheBundle(
                 sql`${deviceCredential.secretHash} is not null`,
               ),
             )
+            // SCRUM-1041 — a station may have up to three: in the order they were paired.
+            .orderBy(asc(deviceCredential.pairedAt), asc(deviceCredential.id))
         : [];
       put(
         'station_config',
@@ -5463,9 +5466,14 @@ export async function cacheBundle(
           devices: assignments
             .filter((a) => a.stationId === s.id)
             .map((a) => ({ id: a.device.id, role: a.role, kind: a.device.kind })),
+          /**
+           * SCRUM-1041 — with its name from the Console, so a till on this box
+           * lists its displays by the names staff gave them (the box already
+           * reads it; without one it says "Customer display").
+           */
           displays: displays
             .filter((d) => d.stationId === s.id)
-            .map((d) => ({ id: d.id, credentialHash: d.secretHash })),
+            .map((d) => ({ id: d.id, credentialHash: d.secretHash, ...(d.label ? { name: d.label } : {}) })),
           /**
            * How stale this counter's copies may grow (OD-5, OD-6). The plan's
            * defaults until the owner's two catalogue numbers have a Console

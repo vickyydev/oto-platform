@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, isNotNull, isNull, ne, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull, ne, or, sql } from 'drizzle-orm';
 import {
   account,
   box,
@@ -55,6 +55,7 @@ import { resolveEffectivePermissions } from './permissions';
 import { audit } from './audit';
 import { claimClientId, markReplay } from './client-id';
 import { BOOTH_CODE_PREFIX_RULE, isBoothCodePrefix } from './booth-admin';
+import { refuseDisplayPastLimit } from './display';
 import { boxSettings, issueClaimCode, mintClaimCode, normaliseClaimCode, sha256Hex } from './box';
 import { atBranch } from '../lib/staff-scope';
 import { mintStaffToken, staffTokenSettings, type MintedStaffToken } from './staff-token';
@@ -2696,11 +2697,8 @@ export async function pairCredential(
   const created = await withTx(db, ctx, 'device_credential.pair', async (tx) => {
     if (input.kind === 'display') {
       await tx.select({ id: station.id }).from(station).where(eq(station.id, stationRow.id)).for('update');
-      const [active] = await tx.select({ id: deviceCredential.id }).from(deviceCredential).where(and(
-        eq(deviceCredential.stationId, stationRow.id), eq(deviceCredential.kind, 'display'),
-        isNull(deviceCredential.revokedAt), isNotNull(deviceCredential.pairedAt), isNotNull(deviceCredential.secretHash),
-      )).limit(1);
-      if (active) throw new AppError(409, 'DISPLAY_STATION_OCCUPIED', 'Revoke the current display before pairing another at this station');
+      // SCRUM-1041 — the same limit of three the display's own pairing keeps.
+      await refuseDisplayPastLimit(tx, stationRow.id);
     }
     await tx.insert(deviceCredential).values({
       id,

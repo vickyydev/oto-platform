@@ -131,9 +131,21 @@ export const BridgeStatusSchema = z.object({
 });
 export type BridgeStatus = z.infer<typeof BridgeStatusSchema>;
 
-/** Authenticated staff presence read; contains no display credential. */
+/**
+ * SCRUM-1041 — how many customer displays one till or kiosk may have paired
+ * at once. Each shows the same sale; a pairing past this is refused.
+ */
+export const STATION_DISPLAY_LIMIT = 3;
+
+/**
+ * Authenticated staff presence read; contains no display credential.
+ *
+ * SCRUM-1041 — `lastSeenAt`: when the display last called, for the till's
+ * list of its displays. Optional: a box from before it does not say.
+ */
 export const BridgeDisplaysSchema = z.object({ displays: z.array(z.object({
   id: z.string(), name: z.string(), connected: z.boolean(),
+  lastSeenAt: z.string().nullable().optional(),
 })) });
 
 /**

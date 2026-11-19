@@ -754,10 +754,12 @@ export const deviceCredential = core.table(
     uniqueIndex('device_credential_pairing_unique')
       .on(t.pairingCodeHash)
       .where(sql`pairing_code_hash is not null`),
-    /** Historical and unredeemed credentials stay; a station has only one live paired display. */
-    uniqueIndex('device_credential_active_display_unique')
-      .on(t.stationId)
-      .where(sql`kind = 'display' and revoked_at is null and paired_at is not null and secret_hash is not null`),
+    /**
+     * Historical and unredeemed credentials stay. SCRUM-1041 (0137): a station
+     * has up to three live paired displays, so the one-per-station unique index
+     * is gone; the limit is kept where a display is paired
+     * (`refuseDisplayPastLimit` in the api), under the station row's lock.
+     */
     index('device_credential_station_idx').on(t.stationId),
     index('device_credential_box_idx').on(t.boxId),
     index('device_credential_operator_idx').on(t.operatorId),
