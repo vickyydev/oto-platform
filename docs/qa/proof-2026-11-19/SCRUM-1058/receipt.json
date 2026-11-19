@@ -1,0 +1,531 @@
+{
+  "tickets": [
+    "SCRUM-1058",
+    "SCRUM-1037 follow-up"
+  ],
+  "sha": "90de59969e9373d8f7a64a7b5a3958bde6addb21",
+  "startedAt": "2026-11-19T20:55:19.048Z",
+  "phase": "clean-up",
+  "requests": [
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/qa-reports/config",
+      "status": 200
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/user",
+      "status": 200
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/leave-types",
+      "status": 200
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/branches",
+      "status": 200
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/departments",
+      "status": 200
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "POST",
+      "path": "/api/employees",
+      "status": 201
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "POST",
+      "path": "/api/employees",
+      "status": 201
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "POST",
+      "path": "/api/employees",
+      "status": 201
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "PATCH",
+      "path": "/api/employees/:id",
+      "status": 200
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/activity-logs",
+      "status": 200
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "POST",
+      "path": "/api/users/:id/suite-sign-in",
+      "status": 200
+    },
+    {
+      "who": "staff",
+      "origin": "oto-launcher-staging",
+      "method": "POST",
+      "path": "/api/auth/change-password",
+      "status": 200
+    },
+    {
+      "who": "staff",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/user",
+      "status": 200
+    },
+    {
+      "who": "staff",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/activity-logs",
+      "status": 200
+    },
+    {
+      "who": "staff",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/activity-logs",
+      "status": 200
+    },
+    {
+      "who": "staff",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/activity-logs",
+      "status": 200
+    },
+    {
+      "who": "staff",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/activity-logs/summary",
+      "status": 200
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "POST",
+      "path": "/api/users/:id/suite-sign-in",
+      "status": 200
+    },
+    {
+      "who": "manager",
+      "origin": "oto-launcher-staging",
+      "method": "POST",
+      "path": "/api/auth/change-password",
+      "status": 200
+    },
+    {
+      "who": "manager",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/user",
+      "status": 200
+    },
+    {
+      "who": "manager",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/activity-logs",
+      "status": 200
+    },
+    {
+      "who": "manager",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/activity-logs",
+      "status": 200
+    },
+    {
+      "who": "manager",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/activity-logs",
+      "status": 200
+    },
+    {
+      "who": "manager",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/activity-logs/summary",
+      "status": 200
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/activity-logs",
+      "status": 200
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/activity-logs",
+      "status": 200
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/activity-logs",
+      "status": 200
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/activity-logs/summary",
+      "status": 200
+    },
+    {
+      "who": "staff",
+      "origin": "oto-app-staging",
+      "method": "POST",
+      "path": "/api/logout",
+      "status": 200
+    },
+    {
+      "who": "staff",
+      "origin": "oto-launcher-staging",
+      "method": "POST",
+      "path": "/api/auth/sign-out",
+      "status": 200
+    },
+    {
+      "who": "manager",
+      "origin": "oto-app-staging",
+      "method": "POST",
+      "path": "/api/logout",
+      "status": 200
+    },
+    {
+      "who": "manager",
+      "origin": "oto-launcher-staging",
+      "method": "POST",
+      "path": "/api/auth/sign-out",
+      "status": 200
+    },
+    {
+      "who": "console",
+      "origin": "oto-console-staging",
+      "method": "PATCH",
+      "path": "/api/accounts/:id",
+      "status": 200
+    },
+    {
+      "who": "console",
+      "origin": "oto-console-staging",
+      "method": "DELETE",
+      "path": "/api/admin/apps/oto_app/users/:id",
+      "status": 200
+    },
+    {
+      "who": "console",
+      "origin": "oto-console-staging",
+      "method": "PATCH",
+      "path": "/api/accounts/:id",
+      "status": 200
+    },
+    {
+      "who": "console",
+      "origin": "oto-console-staging",
+      "method": "DELETE",
+      "path": "/api/admin/apps/oto_app/users/:id",
+      "status": 200
+    },
+    {
+      "who": "console",
+      "origin": "oto-console-staging",
+      "method": "POST",
+      "path": "/api/auth/sign-out",
+      "status": 200
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "DELETE",
+      "path": "/api/employees/:id",
+      "status": 204
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/employees/:id",
+      "status": 404
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "DELETE",
+      "path": "/api/employees/:id",
+      "status": 204
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/employees/:id",
+      "status": 404
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "DELETE",
+      "path": "/api/employees/:id",
+      "status": 204
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/employees/:id",
+      "status": 404
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "POST",
+      "path": "/api/logout",
+      "status": 200
+    },
+    {
+      "who": "admin",
+      "origin": "oto-launcher-staging",
+      "method": "POST",
+      "path": "/api/auth/sign-out",
+      "status": 200
+    }
+  ],
+  "made": [
+    {
+      "kind": "employee",
+      "id": "e986e5c8-39c1-40ea-bb36-4430666340c9",
+      "name": "ZZ TEST 1058 674f Pay"
+    },
+    {
+      "kind": "employee",
+      "id": "a834d02e-bc65-4157-9fad-e78ff09a6586",
+      "name": "ZZ TEST 1058 674f Staff"
+    },
+    {
+      "kind": "employee",
+      "id": "87dcd123-9345-42ef-a15a-cd0d20dfa7a2",
+      "name": "ZZ TEST 1058 674f Manager"
+    },
+    {
+      "kind": "platform account",
+      "who": "staff",
+      "id": "01a1f597-e6fc-723c-9997-c6dde376d515"
+    },
+    {
+      "kind": "platform account",
+      "who": "manager",
+      "id": "01a1f597-ff9a-794f-8698-1a91bd0e4dd0"
+    }
+  ],
+  "steps": {
+    "adminHandoff": 200,
+    "badges": [
+      {
+        "code": "ANNUAL",
+        "isActive": true,
+        "managersOnly": false,
+        "badge": "Staff can see"
+      },
+      {
+        "code": "BUSINESS",
+        "isActive": true,
+        "managersOnly": true,
+        "badge": "Managers only"
+      },
+      {
+        "code": "CHANGE_DAY_OFF",
+        "isActive": true,
+        "managersOnly": false,
+        "badge": "Staff can see"
+      },
+      {
+        "code": "OTHER",
+        "isActive": false,
+        "managersOnly": false,
+        "badge": null
+      },
+      {
+        "code": "SICK",
+        "isActive": true,
+        "managersOnly": true,
+        "badge": "Managers only"
+      },
+      {
+        "code": "TRAINING",
+        "isActive": false,
+        "managersOnly": false,
+        "badge": null
+      },
+      {
+        "code": "UNPAID",
+        "isActive": true,
+        "managersOnly": true,
+        "badge": "Managers only"
+      }
+    ],
+    "salaryChange": 200,
+    "adminReads": {
+      "entries": [
+        {
+          "type": "salary_change",
+          "summary": "ZZ TEST 1058 674f Pay salary changed from ฿10,000 to ฿11,000"
+        },
+        {
+          "type": "employee_created",
+          "summary": "New employee \"ZZ TEST 1058 674f Manager\" was added"
+        },
+        {
+          "type": "employee_created",
+          "summary": "New employee \"ZZ TEST 1058 674f Staff\" was added"
+        },
+        {
+          "type": "employee_created",
+          "summary": "New employee \"ZZ TEST 1058 674f Pay\" was added"
+        }
+      ],
+      "salaryChanges": 1
+    },
+    "staffSuiteSignIn": 200,
+    "staffChangePassword": 200,
+    "staffHandoff": 200,
+    "staffRole": "staff",
+    "staffReads": {
+      "searchedZzEntries": [
+        "employee_created",
+        "employee_created",
+        "employee_created"
+      ],
+      "searchedSalaryChanges": 0,
+      "typeFilterRows": 0,
+      "typeFilterTotal": 0,
+      "branchPageSalaryChanges": 0,
+      "summarySalaryChange": 0
+    },
+    "managerSuiteSignIn": 200,
+    "managerChangePassword": 200,
+    "managerHandoff": 200,
+    "managerRole": "manager",
+    "managerReads": {
+      "searchedZzEntries": [
+        "employee_created",
+        "employee_created",
+        "employee_created"
+      ],
+      "searchedSalaryChanges": 0,
+      "typeFilterRows": 0,
+      "typeFilterTotal": 0,
+      "branchPageSalaryChanges": 0,
+      "summarySalaryChange": 0
+    },
+    "adminReadsAll": {
+      "searchedZzEntries": [
+        "salary_change",
+        "employee_created",
+        "employee_created",
+        "employee_created"
+      ],
+      "searchedSalaryChanges": 1,
+      "typeFilterRows": 2,
+      "typeFilterTotal": 2,
+      "branchPageSalaryChanges": 2,
+      "summarySalaryChange": 2
+    },
+    "managerLogbook": [
+      "Employee Added New employee \"ZZ TEST 1058 674f Manager\" was added 20-11-2026 less than a minute ago",
+      "Employee Added New employee \"ZZ TEST 1058 674f Staff\" was added 20-11-2026 less than a minute ago",
+      "Employee Added New employee \"ZZ TEST 1058 674f Pay\" was added 20-11-2026 less than a minute ago"
+    ],
+    "adminLogbook": [
+      "Salary Change ZZ TEST 1058 674f Pay salary changed from ฿10,000 to ฿11,000 20-11-2026 less than a minute ago",
+      "Employee Added New employee \"ZZ TEST 1058 674f Manager\" was added 20-11-2026 less than a minute ago",
+      "Employee Added New employee \"ZZ TEST 1058 674f Staff\" was added 20-11-2026 less than a minute ago",
+      "Employee Added New employee \"ZZ TEST 1058 674f Pay\" was added 20-11-2026 less than a minute ago"
+    ]
+  },
+  "cleanup": [
+    {
+      "label": "staff sign-out",
+      "app": 200,
+      "launcher": 200
+    },
+    {
+      "label": "manager sign-out",
+      "app": 200,
+      "launcher": 200
+    },
+    {
+      "label": "console: ZZ TEST accounts inactive, app links removed",
+      "done": [
+        {
+          "who": "staff",
+          "off": 200,
+          "unlink": 200
+        },
+        {
+          "who": "manager",
+          "off": 200,
+          "unlink": 200
+        }
+      ],
+      "signOut": 200
+    },
+    {
+      "label": "delete ZZ TEST 1058 Pay",
+      "del": 204,
+      "read": 404
+    },
+    {
+      "label": "delete ZZ TEST 1058 Staff",
+      "del": 204,
+      "read": 404
+    },
+    {
+      "label": "delete ZZ TEST 1058 Manager",
+      "del": 204,
+      "read": 404
+    },
+    {
+      "label": "admin sign-out",
+      "app": 200,
+      "launcher": 200
+    }
+  ],
+  "passed": true,
+  "adminRole": "global_admin",
+  "branch": "Head Office",
+  "behaviorPassed": true,
+  "finishedAt": "2026-11-19T20:56:05.320Z"
+}
