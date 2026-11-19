@@ -142,8 +142,6 @@ const FACT_ENTITY_TYPES = [
   'supervision_waiver',
   // S2-21 round 3: a staff benefit applied to a sale of the day, and the quota it used.
   'benefit_application',
-  // SCRUM-1024: the family a child added during the session was given, as the child's own rows go.
-  'family',
 ];
 
 /** Rows removed per table, for the response and the audit entry. */

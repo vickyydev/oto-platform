@@ -2,6 +2,7 @@ import { and, asc, desc, eq, ilike, inArray, isNull, or, sql, type SQL } from 'd
 import { account, child, employee, member, memberTierVerification, type Db } from '@oto/db';
 import { errors } from '../lib/errors';
 import { audit } from './audit';
+import { childAuditView } from './family';
 import { isTierRevocation } from './member-tier';
 import { recordChange } from './sync';
 import type { Tx } from './tx';
@@ -224,12 +225,12 @@ export async function archiveChild(
     action: 'child.archive',
     entityType: 'child',
     entityId: childId,
-    before,
+    before: childAuditView(before),
     after: actor.fromDisplay
-      ? { ...after, source: CUSTOMER_DISPLAY_SOURCE, stationId: actor.fromDisplay.stationId }
+      ? { ...childAuditView(after), source: CUSTOMER_DISPLAY_SOURCE, stationId: actor.fromDisplay.stationId }
       : actor.fromBookingSite
-        ? { ...after, source: BOOKING_SITE_SOURCE }
-        : after,
+        ? { ...childAuditView(after), source: BOOKING_SITE_SOURCE }
+        : childAuditView(after),
     requestId: actor.requestId,
     ...(actor.fromDisplay
       ? { origin: CUSTOMER_DISPLAY_SOURCE }

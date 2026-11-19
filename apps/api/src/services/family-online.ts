@@ -229,8 +229,8 @@ export async function saveFamilyOnline(
             foodRestrictions: blank(sent.foodRestrictions),
           };
           // SCRUM-1024 — the child's family (nothing reads it yet).
-          const { familyId } = await ensureFamilyFor(tx, { operatorId: input.operatorId, memberId, childId: id, source: 'booking',
-            context: { accountId: null, branchId: input.branchId, stationId: null, requestId: ctx.requestId ?? null, origin: BOOKING_SITE_SOURCE } });
+          const { familyId } = await ensureFamilyFor(tx, { operatorId: input.operatorId, memberId, source: 'booking',
+            context: { accountId: null, branchId: input.branchId, stationId: null } });
           const [created] = await tx
             .insert(child)
             .values({ id, memberId, familyId, ...details, consentRecordedAt: now })

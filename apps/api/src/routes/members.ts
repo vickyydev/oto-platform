@@ -24,7 +24,7 @@ import type { App } from '../app';
 import { AppError, errors } from '../lib/errors';
 import { audit } from '../services/audit';
 import { ClientIdSchema, REPLAY_HEADER, claimClientId } from '../services/client-id';
-import { ensureFamilyFor } from '../services/family';
+import { childAuditView, ensureFamilyFor } from '../services/family';
 import {
   CUSTOMER_DISPLAY_SOURCE,
   REGISTER_PAGE_DEFAULT,
@@ -828,9 +828,8 @@ export async function memberRoutes(app: App): Promise<void> {
       const id = claim.id;
       await withTx(app.db, opCtx(req), 'child.create', async (tx) => {
         // SCRUM-1024 — the child's family (nothing reads it yet).
-        const { familyId } = await ensureFamilyFor(tx, { operatorId: auth.operatorId, memberId: m.id, childId: id, source: 'till',
-          context: { accountId: auth.accountId, branchId: auth.branchId, stationId: auth.stationId, requestId: req.id,
-            ...(fromDisplay ? { origin: CUSTOMER_DISPLAY_SOURCE } : {}) } });
+        const { familyId } = await ensureFamilyFor(tx, { operatorId: auth.operatorId, memberId: m.id, source: 'till',
+          context: { accountId: auth.accountId, branchId: auth.branchId, stationId: auth.stationId } });
         const [created] = await tx.insert(child).values({
           id,
           memberId: req.params.id,
@@ -968,14 +967,14 @@ export async function memberRoutes(app: App): Promise<void> {
           action: 'child.update',
           entityType: 'child',
           entityId: req.params.childId,
-          before,
+          before: childAuditView(before),
           // SCRUM-1020 — the audit row says the family made it on the customer
           // display of this till (the session's own station), and whether they
           // confirmed there is nothing to note.
           after: fromDisplay
-            ? { ...after, source: CUSTOMER_DISPLAY_SOURCE, stationId: fromDisplay.stationId,
+            ? { ...childAuditView(after), source: CUSTOMER_DISPLAY_SOURCE, stationId: fromDisplay.stationId,
               ...(confirmedNone ? { confirmedNone: true } : {}) }
-            : after,
+            : childAuditView(after),
           requestId: req.id,
           ...(fromDisplay ? { origin: CUSTOMER_DISPLAY_SOURCE } : {}),
         });
