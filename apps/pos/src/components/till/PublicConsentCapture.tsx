@@ -420,6 +420,15 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
   };
   /** Copies in a row in which the till did not keep what was sent (`LIVE_IGNORED`). */
   const ignored = useRef(0);
+  /**
+   * SCRUM-1041 — a till may have up to three displays, all showing this one
+   * form. The step the till's copy says the family is on is settled as a
+   * field is (`mergeConsentDraft`): followed here when another display moved
+   * the form on, kept when this screen moved since, or sent that step on the
+   * copy. One display sends every step itself, so it never follows one.
+   */
+  const baseStep = useRef<Step | undefined>(prompt.familyStep);
+  const sentSteps = useRef<Step[]>([]);
   useEffect(() => {
     if (mirror || lastRequest.current === prompt.requestId) return;
     lastRequest.current = prompt.requestId;
@@ -427,6 +436,13 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
     const gone = sent.current;
     const was = base.current;
     sent.current = [];
+    const theirStep = prompt.familyStep;
+    const wasStep = baseStep.current;
+    const goneSteps = sentSteps.current;
+    sentSteps.current = [];
+    baseStep.current = theirStep;
+    if (theirStep !== undefined && prompt.agreementsOnly !== true && theirStep !== stepNow.current && theirStep !== wasStep
+      && !goneSteps.includes(theirStep)) setStep(theirStep);
     // The till took a form from here but its copy is the one before, unchanged.
     ignored.current = gone.length > 0 && !gone.some((form) => same(trimmed(next), form))
       && same(trimmed(next), trimmed(was)) ? ignored.current + 1 : 0;
@@ -611,6 +627,7 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
     urgent.current = false;
     dirtySince.current = null;
     sent.current = [...sent.current, trimmed(outgoing(form))].slice(-20);
+    sentSteps.current = [...sentSteps.current, at].slice(-20);
     persist(form, at);
     cameraSent.current = camera;
     onAction(fillOf(form, at));
