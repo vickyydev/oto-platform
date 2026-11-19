@@ -157,7 +157,10 @@ export async function stationBridgeRoutes(app: App): Promise<void> {
   }, async (req, reply) => {
     const { row } = await standing(req, req.params.stationId, true);
     reply.header('cache-control', 'private, no-store');
-    return stationDisplays(app.db, row.id, req.requireAuth().operatorId);
+    // SCRUM-1041 — the answer as it was: a till here reads when each display
+    // was seen from `GET /stations/:id/displays`; only a counter box adds it.
+    const { displays } = await stationDisplays(app.db, row.id, req.requireAuth().operatorId);
+    return { displays: displays.map(({ id, name, connected }) => ({ id, name, connected })) };
   });
 
   app.post(

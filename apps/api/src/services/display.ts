@@ -1,7 +1,9 @@
 import { createHash, randomInt } from 'node:crypto';
-import { and, desc, eq, gt, isNotNull, isNull, lte, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, isNotNull, isNull, lte, sql } from 'drizzle-orm';
 import { box, boxState, branch, deviceCredential, displayPairingRequest, displayResponseSnapshot, operator, station, stationEvent, type Db } from '@oto/db';
-import { newId, projectDisplayDiagnosticDocument, type DisplaySnapshotResponse, type StationIntent } from '@oto/shared';
+import {
+  newId, projectDisplayDiagnosticDocument, STATION_DISPLAY_LIMIT, type DisplaySnapshotResponse, type StationIntent,
+} from '@oto/shared';
 import type { StationSessionDocument } from '@oto/box-agent';
 import type { FastifyBaseLogger } from 'fastify';
 import { AppError } from '../lib/errors';
@@ -9,7 +11,7 @@ import { pgErrorOf } from '../lib/scrub';
 import { audit } from './audit';
 import { managerForStation } from './station-session';
 import { limitPrincipal } from './throttle';
-import { withTx, type OpContext } from './tx';
+import { withTx, type Exec, type OpContext } from './tx';
 
 const PAIRING_TTL_MS = 10 * 60 * 1000;
 const CONNECTED_MS = 10_000;
@@ -206,6 +208,20 @@ export async function expireDisplayPairing(db: Db, ctx: OpContext, tokenHash: st
   });
 }
 
+/**
+ * SCRUM-1041 — a station's displays, at most `STATION_DISPLAY_LIMIT`. Called
+ * with the station row locked, so the count and the pairing it allows are one.
+ */
+export async function refuseDisplayPastLimit(tx: Exec, stationId: string): Promise<void> {
+  const active = await tx.select({ id: deviceCredential.id }).from(deviceCredential).where(and(
+    eq(deviceCredential.stationId, stationId), eq(deviceCredential.kind, 'display'),
+    isNull(deviceCredential.revokedAt), isNotNull(deviceCredential.pairedAt), isNotNull(deviceCredential.secretHash),
+  )).limit(STATION_DISPLAY_LIMIT);
+  if (active.length >= STATION_DISPLAY_LIMIT) {
+    throw new AppError(409, 'DISPLAY_STATION_OCCUPIED', 'This station already has three displays. Revoke one before pairing another');
+  }
+}
+
 /** Code consumption, credential and manager attribution commit together. */
 export async function claimDisplay(
   db: Db,
@@ -230,11 +246,9 @@ export async function claimDisplay(
         isNull(displayPairingRequest.credentialId), gt(displayPairingRequest.expiresAt, new Date()),
       )).limit(1).for('update');
     if (!request) throw new AppError(409, 'DISPLAY_PAIRING_INVALID', 'This pairing code has expired or already been used');
-    const [active] = await tx.select({ id: deviceCredential.id }).from(deviceCredential).where(and(
-      eq(deviceCredential.stationId, current.id), eq(deviceCredential.kind, 'display'),
-      isNull(deviceCredential.revokedAt), isNotNull(deviceCredential.pairedAt), isNotNull(deviceCredential.secretHash),
-    )).limit(1);
-    if (active) throw new AppError(409, 'DISPLAY_STATION_OCCUPIED', 'Revoke the current display before pairing another at this station');
+    // SCRUM-1041 — up to three displays per station, counted under the
+    // station's lock so two codes claimed at once cannot make a fourth.
+    await refuseDisplayPastLimit(tx, current.id);
     const id = newId();
     const claimedAt = new Date();
     await tx.insert(deviceCredential).values({
@@ -417,7 +431,8 @@ export async function stationDisplays(db: Db, stationId: string, operatorId: str
       eq(deviceCredential.stationId, stationId), eq(deviceCredential.operatorId, operatorId),
       eq(deviceCredential.kind, 'display'), isNull(deviceCredential.revokedAt),
       isNotNull(deviceCredential.pairedAt), isNotNull(deviceCredential.secretHash),
-    ));
+    // SCRUM-1041 — in the order they were paired, so a till lists them the same way every time.
+    )).orderBy(asc(deviceCredential.pairedAt), asc(deviceCredential.id));
   return { displays: rows.map((row) => ({
     id: row.id, name: row.name ?? 'Customer display', lastSeenAt: row.lastSeenAt?.toISOString() ?? null,
     connected: Boolean(row.lastSeenAt && row.lastSeenAt.getTime() >= Date.now() - CONNECTED_MS),

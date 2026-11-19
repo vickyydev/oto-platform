@@ -190,19 +190,22 @@ describe('a display requests pairing before a manager chooses its station (SCRUM
       .where(eq(deviceCredential.secretHash, tokenHash(token)))).toHaveLength(1);
   });
 
-  it('allows one active display even when distinct codes race, then permits re-pairing after revocation', async () => {
-    const tokens = [bearer(), bearer()];
+  // SCRUM-1041 — the limit is three displays a station (it was one): four
+  // distinct codes claimed at once still pair three and refuse the fourth.
+  it('allows three active displays even when distinct codes race, then permits re-pairing after revocation', async () => {
+    const tokens = [bearer(), bearer(), bearer(), bearer()];
     const requests = await Promise.all(tokens.map((token) => mint(token)));
-    expect(requests.map((result) => result.statusCode)).toEqual([200, 200]);
+    expect(requests.map((result) => result.statusCode)).toEqual([200, 200, 200, 200]);
     const claims = await Promise.all(requests.map((result) => claim(result.json().pairingCode as string)));
-    expect(claims.map((result) => result.statusCode).sort()).toEqual([200, 409]);
-    const winner = claims.findIndex((result) => result.statusCode === 200);
-    const loser = winner === 0 ? 1 : 0;
+    expect(claims.map((result) => result.statusCode).sort()).toEqual([200, 200, 200, 409]);
+    const loser = claims.findIndex((result) => result.statusCode === 409);
+    const winners = claims.flatMap((result, index) => result.statusCode === 200 ? [index] : []);
+    const winner = winners[0]!;
     expect(claims[loser]!.json().error.code).toBe('DISPLAY_STATION_OCCUPIED');
     expect(await proof.db.select({ id: deviceCredential.id }).from(deviceCredential).where(and(
       eq(deviceCredential.stationId, target.id), eq(deviceCredential.kind, 'display'),
       isNull(deviceCredential.revokedAt), isNotNull(deviceCredential.pairedAt), isNotNull(deviceCredential.secretHash),
-    ))).toHaveLength(1);
+    ))).toHaveLength(3);
     const legacy = await proof.app.inject({ method: 'POST', url: `/stations/${target.id}/credentials`,
       headers: { cookie: managerCookie }, payload: { kind: 'display', label: 'Legacy display request' } });
     expect(legacy.statusCode).toBe(409);
@@ -219,6 +222,9 @@ describe('a display requests pairing before a manager chooses its station (SCRUM
     ))).toHaveLength(1);
     expect((await claim(requests[loser]!.json().pairingCode as string)).statusCode).toBe(200);
     expect((await proof.app.inject({ method: 'GET', url: '/display/session', headers: headers(tokens[winner]!) })).statusCode).toBe(401);
+    for (const kept of winners.slice(1)) {
+      expect((await proof.app.inject({ method: 'GET', url: '/display/session', headers: headers(tokens[kept]!) })).statusCode).toBe(200);
+    }
   });
 
   it('requires pairing permission and a bearer, regardless of the staff cookie', async () => {

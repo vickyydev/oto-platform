@@ -43168,6 +43168,7 @@ export interface paths {
                                 id: string;
                                 name: string;
                                 connected: boolean;
+                                lastSeenAt?: string | null;
                             }[];
                         };
                     };

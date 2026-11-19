@@ -53,7 +53,7 @@ export function DisplayPairPanel({
         err instanceof ApiError && err.code === 'DISPLAY_PAIRING_INVALID'
           ? 'This code is no longer available. Get a new code on the display and try again.'
           : err instanceof ApiError && err.code === 'DISPLAY_STATION_OCCUPIED'
-            ? 'This station already has a display. Revoke it in Paired screens before pairing another.'
+            ? 'This station already has three displays. Revoke one in Paired screens before pairing another.'
           : err instanceof ApiError && err.status === 403
             ? 'You do not have permission to pair a display at this station.'
             : err instanceof ApiError && err.status === 404

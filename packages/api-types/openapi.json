@@ -112192,6 +112192,10 @@
                           },
                           "connected": {
                             "type": "boolean"
+                          },
+                          "lastSeenAt": {
+                            "type": "string",
+                            "nullable": true
                           }
                         },
                         "required": [

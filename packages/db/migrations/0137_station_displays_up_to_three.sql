@@ -1,0 +1,16 @@
+-- SCRUM-1041 (more than one customer display on a till) - 0137: a station
+-- may now have up to three live paired displays, so the unique index that
+-- held it to one (0031) goes. The limit of three is kept where a display is
+-- paired (refuseDisplayPastLimit in apps/api/src/services/display.ts), with
+-- the station row locked, on both pairing paths. Nothing is added or read
+-- differently: the release before this one still refuses a second display
+-- in its own code, so it runs unchanged against this database.
+--
+-- TO REVERSE (by hand, as one transaction): only while no station has more
+-- than one live paired display; revoke the extra ones in the Console first,
+-- then
+--   CREATE UNIQUE INDEX "device_credential_active_display_unique"
+--     ON "core"."device_credential" USING btree ("station_id")
+--     WHERE kind = 'display' and revoked_at is null and paired_at is not null
+--       and secret_hash is not null;
+DROP INDEX "core"."device_credential_active_display_unique";
