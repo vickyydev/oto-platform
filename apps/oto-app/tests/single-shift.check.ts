@@ -7,31 +7,33 @@
 // (the owner's answer of 19 November 2026), over HTTP against the routes as
 // registered:
 //
-//   0. What one single shift is worth, both ways, with exact figures on fixture
-//      contracts (ZZ TEST amounts): a casual day rate is the rate; the old
-//      contract is one day of it as payroll values a day (a day rate as it is,
-//      a monthly salary or fee ÷ 30); no payroll profile, no figure.
 //   1. Who may invite: staff are refused; a manager outside the shift's branch
-//      is refused; a current employee, a profile with Onboard Again planned and
-//      a former employee of another branch are refused in words, with nothing
+//      is refused; a current employee is refused in words, with nothing
 //      written; a past day and a casual rate missing or not whole are refused.
+//      A profile with Onboard Again planned is a former employee until it
+//      starts, and a former employee of another branch meets the schedule's
+//      own checks: no rule of the invitation's own refuses either.
 //   2. A former employee is accepted by a manager: one assignment on that shift
 //      and day, its invitation, "On the old contract" by default, the activity
-//      log naming who and which way; the week shows the shift; a second single
-//      shift the same day is refused (one shift only), and the ordinary
+//      log naming who and which way; the week shows the shift; the same shift
+//      twice is refused by the schedule's own check; and the ordinary
 //      assignment route still refuses a former employee.
-//   3. The pay: the manager sees the way and no salary; a payroll role sees the
-//      figure. Switched to a casual day rate of 1,200 and back, each switch in
-//      the activity log with who, when and from/to; a day-rate contract's and
-//      a profile-less person's figures.
+//   3. The pay: no figure is worked out for anyone. Switched to a casual day
+//      rate of 1,200 and back, each switch in the activity log with who and
+//      from/to way, never the rate; two single shifts on one day are accepted.
 //   4. The kiosk: on the shift's day at its branch the former employee clocks
 //      in and out; at another branch that day, and on any other day, refused
 //      as before with nothing written; the next day it is closed again by
-//      itself. A shift removed closes it too.
+//      itself. A shift removed closes it too; the missed-clock doors take the
+//      shift's own day only.
 //   5. Access outside it unchanged: the profile stays Left and the login in pay
 //      only, refused everywhere but My pay, before and after.
 //   6. The 03:00 batch ending an employment keeps a single shift already made
-//      for that person (it deletes the ending employment's own later shifts).
+//      for that person, and so does an edit of the last working day.
+//   7. Payroll does not pay a single shift yet: the month's payroll names each
+//      one still on the schedule, with how it is to be paid.
+//   8. The record of how a shift is paid stays: an employee with a single
+//      shift is not deleted, in words, and the key refuses a direct delete.
 //
 // Usage, from apps/oto-app, with DATABASE_URL naming a database whose otoapp
 // schema the app's migrator has built (CI's OTO App job runs exactly this):
@@ -39,6 +41,7 @@
 import assert from "node:assert/strict";
 import { spawn, type ChildProcess } from "node:child_process";
 import { createHash, randomBytes, randomUUID, scryptSync } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
@@ -115,6 +118,9 @@ async function shiftRow(label: string, start: string, end: string): Promise<stri
 }
 const MORNING = await shiftRow("morning", "09:00", "15:00");
 const EVENING = await shiftRow("evening", "15:00", "21:00");
+const EARLY = await shiftRow("early", "06:00", "08:00");
+/** What the schedule's own checks answer for a former employee of the other branch (no rule of the invitation's own). */
+const EXPECT_ELSEWHERE = 201;
 
 async function user(role: string, label: string, branchId: string | null) {
   const id = randomUUID();
@@ -294,25 +300,7 @@ const shiftsOn = (origin: string, cookie: string, branchId: string, from: string
   call(origin, "GET", `/api/schedule/single-shift/invitations?branchId=${branchId}&startDate=${from}&endDate=${to}`, cookie);
 
 try {
-  // ── 0. The pay, both ways, on its own ──────────────────────────────────────
-  console.log("0. what one single shift is worth, both ways:");
   Object.assign(process.env, HARNESS_ENV);
-  const { singleShiftPay } = await import("../server/lib/singleShift");
-  await check("a casual day rate is the rate for the shift; the old contract is one day of it as payroll values a day", () => {
-    assert.deepEqual(singleShiftPay("casual_day_rate", 1200, null), { way: "casual_day_rate", amount: 1200, formula: "Casual day rate ฿1,200 × 1 shift" });
-    assert.deepEqual(singleShiftPay("old_contract", null, { workerType: "monthly", monthlySalary: 15000, dayRate: 0, fixedFee: 0 }),
-      { way: "old_contract", amount: 500, formula: "Monthly salary ฿15,000 ÷ 30 × 1 shift" });
-    assert.equal(singleShiftPay("old_contract", null, { workerType: "monthly", monthlySalary: 16000, dayRate: 0, fixedFee: 0 }).amount, 533.33);
-    assert.deepEqual(singleShiftPay("old_contract", null, { workerType: "day-rate", monthlySalary: 0, dayRate: 450, fixedFee: 0 }),
-      { way: "old_contract", amount: 450, formula: "Day rate ฿450 × 1 shift" });
-    assert.deepEqual(singleShiftPay("old_contract", null, { workerType: "contractor", monthlySalary: 0, dayRate: 0, fixedFee: 9000 }),
-      { way: "old_contract", amount: 300, formula: "Fixed fee ฿9,000 ÷ 30 × 1 shift" });
-    assert.deepEqual(singleShiftPay("old_contract", null, null),
-      { way: "old_contract", amount: null, formula: "No payroll profile: the old contract's pay terms are not on file" });
-    assert.throws(() => singleShiftPay("casual_day_rate", null, null));
-    assert.throws(() => singleShiftPay("casual_day_rate", 99.5, null));
-  });
-
   const origin = await serve();
   const asAdmin = await signIn(origin, admin.email);
   const asManager = await signIn(origin, manager.email);
@@ -338,13 +326,6 @@ try {
     assert.deepEqual(await invitationsOf(current), []);
     assert.deepEqual(await assignmentsOf(current), []);
   });
-  await check("a profile with Onboard Again planned, and a former employee of another branch, are refused", async () => {
-    const back = await invite(origin, asManager, { ...base, employeeId: comingBack });
-    assert.deepEqual([back.status, back.body.reasonCode], [400, "ONBOARD_AGAIN_PLANNED"], show(back));
-    const away = await invite(origin, asAdmin, { ...base, employeeId: elsewhere });
-    assert.deepEqual([away.status, away.body.reasonCode], [400, "BRANCH_MISMATCH"], show(away));
-    assert.deepEqual([...(await invitationsOf(comingBack)), ...(await invitationsOf(elsewhere))], []);
-  });
   await check("a past day, a casual rate missing or not whole baht, and a rate on the old contract are refused", async () => {
     const past = await invite(origin, asManager, { ...base, shiftDate: plus(-1) });
     assert.deepEqual([past.status, past.body.message], [400, SINGLE_SHIFT_REFUSALS.pastDate], show(past));
@@ -359,12 +340,22 @@ try {
     }
     assert.deepEqual(await invitationsOf(former), []);
   });
-  await check("the branch's former employees are listed for the manager: not the current one, not the one coming back, not another branch's", async () => {
+  await check("a profile with Onboard Again planned is a former employee until it starts: invited on a day before the start", async () => {
+    const back = await invite(origin, asManager, { ...base, employeeId: comingBack });
+    assert.deepEqual([back.status, back.body.payLabel], [201, "On the old contract"], show(back));
+    assert.deepEqual((await assignmentsOf(comingBack)).map((a) => [a.shift_row_id, a.shift_date]), [[MORNING, SHIFT_DAY]]);
+  });
+  await check("a former employee of another branch meets the schedule's own checks, as anybody does; no branch rule of the invitation's own", async () => {
+    const away = await invite(origin, asAdmin, { ...base, employeeId: elsewhere });
+    assert.notEqual(away.body.reasonCode, "BRANCH_MISMATCH", show(away));
+    assert.equal(away.status, EXPECT_ELSEWHERE, show(away));
+  });
+  await check("the branch's former employees are listed for the manager, the one coming back too; not the current one, not another branch's", async () => {
     const res = await call(origin, "GET", `/api/schedule/single-shift/former-employees?branchId=${BRANCH}`, asManager);
     assert.equal(res.status, 200, show(res));
     const ids = (res.body as { id: string }[]).map((p) => p.id);
-    for (const id of [former, dayRater, noProfile, stranger, leaving]) assert.ok(ids.includes(id), `${id} listed`);
-    for (const id of [current, comingBack, elsewhere]) assert.ok(!ids.includes(id), `${id} not listed`);
+    for (const id of [former, dayRater, noProfile, stranger, leaving, comingBack]) assert.ok(ids.includes(id), `${id} listed`);
+    for (const id of [current, elsewhere]) assert.ok(!ids.includes(id), `${id} not listed`);
   });
 
   // ── 2. A former employee accepted ──────────────────────────────────────────
@@ -375,20 +366,20 @@ try {
     assert.equal(res.status, 201, show(res));
     assert.deepEqual([res.body.employeeId, res.body.shiftRowId, res.body.shiftDate, res.body.payWay, res.body.casualDayRate, res.body.payLabel],
       [former, MORNING, SHIFT_DAY, "old_contract", null, "On the old contract"]);
-    assert.equal("pay" in res.body, false, "a manager is not shown the salary");
+    assert.equal("pay" in res.body, false, "no figure is worked out");
     invitationId = res.body.id;
     const assignments = await assignmentsOf(former);
     assert.deepEqual(assignments.map((a) => [a.shift_row_id, a.shift_date]), [[MORNING, SHIFT_DAY]]);
     const [row] = await invitationsOf(former);
     assert.deepEqual([row!.pay_basis, row!.casual_day_rate, row!.assignment_id, row!.shift_date, row!.created_by], ["old_contract", null, assignments[0]!.id, SHIFT_DAY, manager.id]);
   });
-  await check("the activity log names who and which way", async () => {
+  await check("the activity log names who and which way, and no figure", async () => {
     const [entry, ...rest] = await activityOf(former);
     assert.equal(rest.length, 0);
     assert.equal(entry!.activity_type, "single_shift_invited");
     assert.equal(entry!.created_by, manager.id);
-    assert.deepEqual([entry!.metadata.invitationId, entry!.metadata.shiftDate, entry!.metadata.payWay, entry!.metadata.casualDayRate],
-      [invitationId, SHIFT_DAY, "old_contract", null]);
+    assert.deepEqual([entry!.metadata.invitationId, entry!.metadata.shiftDate, entry!.metadata.payWay], [invitationId, SHIFT_DAY, "old_contract"]);
+    assert.equal("casualDayRate" in entry!.metadata, false);
     assert.match(entry!.summary_text, /single shift on .*, on the old contract$/);
   });
   await check("the week shows the shift, with the person, like any shift", async () => {
@@ -398,9 +389,9 @@ try {
     const all = (week.body.shiftRows as { assignments?: { employeeId: string; shiftDate: string }[] }[]).flatMap((r) => r.assignments ?? []);
     assert.ok(all.some((a) => a.employeeId === former && String(a.shiftDate).startsWith(SHIFT_DAY)), JSON.stringify(all));
   });
-  await check("one shift only: a second single shift the same day is refused, and nothing more is written", async () => {
-    const res = await invite(origin, asManager, { ...base, shiftRowId: EVENING });
-    assert.deepEqual([res.status, res.body.message, res.body.reasonCode], [409, SINGLE_SHIFT_REFUSALS.sameDay, "ALREADY_INVITED"], show(res));
+  await check("the same shift twice is refused by the schedule's own check, and nothing more is written", async () => {
+    const res = await invite(origin, asManager, base);
+    assert.deepEqual([res.status, res.body.reasonCode, res.body.message], [400, "ALREADY_ASSIGNED", "Employee is already assigned to this shift."], show(res));
     assert.equal((await assignmentsOf(former)).length, 1);
     assert.equal((await invitationsOf(former)).length, 1);
   });
@@ -412,15 +403,19 @@ try {
 
   // ── 3. The pay ─────────────────────────────────────────────────────────────
   console.log("3. how the shift is paid:");
-  await check("a payroll role sees the old contract's figure: ฿15,000 a month ÷ 30 = ฿500 for the shift", async () => {
-    const res = await shiftsOn(origin, asAdmin, BRANCH, SHIFT_DAY, SHIFT_DAY);
-    assert.equal(res.status, 200, show(res));
-    const mine = (res.body as { id: string; pay: unknown }[]).find((s) => s.id === invitationId)!;
-    assert.deepEqual(mine.pay, { way: "old_contract", amount: 500, formula: "Monthly salary ฿15,000 ÷ 30 × 1 shift" });
-    const asMgr = await shiftsOn(origin, asManager, BRANCH, SHIFT_DAY, SHIFT_DAY);
-    assert.equal(Object.hasOwn((asMgr.body as { id: string }[]).find((s) => s.id === invitationId)!, "pay"), false);
+  const noFigure = (entries: { summary_text: string; metadata_json: string }[]) => {
+    for (const e of entries) assert.doesNotMatch(`${e.summary_text} ${e.metadata_json}`, /1,?200|800|฿/, e.summary_text);
+  };
+  await check("no figure is worked out for anyone: a payroll role and a manager see the way, never an amount", async () => {
+    for (const cookie of [asAdmin, asManager]) {
+      const res = await shiftsOn(origin, cookie, BRANCH, SHIFT_DAY, SHIFT_DAY);
+      assert.equal(res.status, 200, show(res));
+      const mine = (res.body as { id: string; payLabel: string }[]).find((s) => s.id === invitationId)!;
+      assert.equal(mine.payLabel, "On the old contract");
+      assert.equal(Object.hasOwn(mine, "pay"), false);
+    }
   });
-  await check("switched to a casual day rate of ฿1,200: stored on the invitation, shown, and in the activity log from/to", async () => {
+  await check("switched to a casual day rate of ฿1,200: stored on the invitation and shown; the activity log has the way from/to, not the rate", async () => {
     const res = await call(origin, "PATCH", `/api/schedule/single-shift/invitations/${invitationId}`, asManager, { payWay: "casual_day_rate", casualDayRate: 1200 });
     assert.equal(res.status, 200, show(res));
     assert.deepEqual([res.body.payWay, res.body.casualDayRate, res.body.payLabel], ["casual_day_rate", 1200, "Casual day rate ฿1,200 a day"]);
@@ -430,11 +425,9 @@ try {
     assert.equal(entries.length, 2);
     assert.equal(entries[1]!.activity_type, "single_shift_pay_changed");
     assert.equal(entries[1]!.created_by, manager.id);
-    assert.deepEqual([entries[1]!.metadata.from, entries[1]!.metadata.to],
-      [{ payWay: "old_contract", casualDayRate: null }, { payWay: "casual_day_rate", casualDayRate: 1200 }]);
-    const admin1 = await shiftsOn(origin, asAdmin, BRANCH, SHIFT_DAY, SHIFT_DAY);
-    assert.deepEqual((admin1.body as { id: string; pay: unknown }[]).find((s) => s.id === invitationId)!.pay,
-      { way: "casual_day_rate", amount: 1200, formula: "Casual day rate ฿1,200 × 1 shift" });
+    assert.deepEqual([entries[1]!.metadata.from, entries[1]!.metadata.to], [{ payWay: "old_contract" }, { payWay: "casual_day_rate" }]);
+    assert.match(entries[1]!.summary_text, /single shift on .*, on a casual day rate$/);
+    noFigure(entries);
   });
   await check("the same way again writes nothing; a bad rate is refused; switched back to the old contract by the administrator", async () => {
     const same = await call(origin, "PATCH", `/api/schedule/single-shift/invitations/${invitationId}`, asManager, { payWay: "casual_day_rate", casualDayRate: 1200 });
@@ -445,25 +438,22 @@ try {
     const outside = await call(origin, "PATCH", `/api/schedule/single-shift/invitations/${invitationId}`, asOtherManager, { payWay: "old_contract" });
     assert.equal(outside.status, 404, show(outside));
     const back = await call(origin, "PATCH", `/api/schedule/single-shift/invitations/${invitationId}`, asAdmin, { payWay: "old_contract" });
-    assert.deepEqual([back.status, back.body.payLabel, back.body.pay?.amount], [200, "On the old contract", 500], show(back));
+    assert.deepEqual([back.status, back.body.payLabel, Object.hasOwn(back.body, "pay")], [200, "On the old contract", false], show(back));
     const entries = await activityOf(former);
     assert.deepEqual(entries.map((e) => e.activity_type), ["single_shift_invited", "single_shift_pay_changed", "single_shift_pay_changed"]);
     assert.equal(entries[2]!.created_by, admin.id);
-    assert.deepEqual(entries[2]!.metadata.to, { payWay: "old_contract", casualDayRate: null });
+    assert.deepEqual(entries[2]!.metadata.to, { payWay: "old_contract" });
+    noFigure(entries);
   });
-  await check("a day-rate contract's shift is its day rate; a person with no payroll profile shows no figure", async () => {
+  await check("two single shifts on one day are accepted, each its own way; a day-rate contract's shift is on the old contract by default", async () => {
     const dr = await invite(origin, asManager, { employeeId: dayRater, shiftRowId: EVENING, shiftDate: SHIFT_DAY });
-    assert.equal(dr.status, 201, show(dr));
+    assert.deepEqual([dr.status, dr.body.payLabel], [201, "On the old contract"], show(dr));
     const np = await invite(origin, asManager, { employeeId: noProfile, shiftRowId: EVENING, shiftDate: SHIFT_DAY, payWay: "casual_day_rate", casualDayRate: 800 });
     assert.deepEqual([np.status, np.body.payLabel], [201, "Casual day rate ฿800 a day"], show(np));
-    const res = await shiftsOn(origin, asAdmin, BRANCH, SHIFT_DAY, SHIFT_DAY);
-    const byPerson = new Map((res.body as { employeeId: string; pay: { amount: number | null } }[]).map((s) => [s.employeeId, s.pay.amount]));
-    assert.deepEqual([byPerson.get(dayRater), byPerson.get(noProfile)], [450, 800]);
-    const switched = await call(origin, "PATCH", `/api/schedule/single-shift/invitations/${np.body.id}`, asManager, { payWay: "old_contract" });
-    assert.deepEqual([switched.status, switched.body.payLabel], [200, "On the old contract"], show(switched));
-    const after = await shiftsOn(origin, asAdmin, BRANCH, SHIFT_DAY, SHIFT_DAY);
-    const np2 = (after.body as { employeeId: string; pay: { amount: number | null; formula: string } }[]).find((s) => s.employeeId === noProfile)!;
-    assert.deepEqual([np2.pay.amount, np2.pay.formula], [null, "No payroll profile: the old contract's pay terms are not on file"]);
+    const early = await invite(origin, asManager, { employeeId: noProfile, shiftRowId: EARLY, shiftDate: SHIFT_DAY });
+    assert.deepEqual([early.status, early.body.payLabel], [201, "On the old contract"], show(early));
+    assert.deepEqual((await invitationsOf(noProfile)).map((r) => [r.pay_basis, r.casual_day_rate]), [["casual_day_rate", 800], ["old_contract", null]]);
+    noFigure(await activityOf(noProfile));
   });
 
   // ── 4. The kiosk ───────────────────────────────────────────────────────────
@@ -500,6 +490,22 @@ try {
     assert.deepEqual([res.status, res.body], [403, REFUSED], show(res));
     assert.equal((await timeEventsOf(former)).length, 2);
   });
+  await check("the missed-clock doors take the single shift's own day only: another day sent stays refused", async () => {
+    const { kioskEmploymentEnded } = await import("../server/lib/kioskEmploymentEnded");
+    const [profile] = await q<{ id: string; status: string; employmentState: string; lastWorkingDay: Date }>(
+      `select id, status, employment_state as "employmentState", last_working_day as "lastWorkingDay" from employees where id = $1`, [former]);
+    const at = new Date(tenAmBangkok(SHIFT_DAY));
+    assert.equal(await kioskEmploymentEnded(profile!, at, BRANCH), false, "the clock doors, on the day");
+    assert.equal(await kioskEmploymentEnded(profile!, at, BRANCH, SHIFT_DAY), false, "a missed clock for the shift's own day");
+    assert.equal(await kioskEmploymentEnded(profile!, at, BRANCH, plus(-3)), true, "a missed clock for another day");
+    assert.equal(await kioskEmploymentEnded(profile!, at, BRANCH_2, SHIFT_DAY), true, "another branch");
+    const routes = readFileSync(join(APP_DIR, "server", "routes.ts"), "utf8");
+    for (const door of ['app.post("/api/kiosk/missed-clock/auto-fix"', 'app.post("/api/kiosk/missed-clock/manual"']) {
+      const at2 = routes.indexOf(door);
+      const body = routes.slice(at2, routes.indexOf("\n  app.", at2 + door.length));
+      assert.ok(body.includes("kioskEmploymentEnded(employee, undefined, branchId, shiftDate)"), door);
+    }
+  });
   await check("a single shift removed from the schedule opens nothing on its day", async () => {
     const [assignment] = await assignmentsOf(dayRater);
     const removed = await call(origin, "DELETE", `/api/schedule/assignments/${assignment!.id}`, asManager);
@@ -529,8 +535,8 @@ try {
     }
   });
 
-  // ── 6. The night batch ─────────────────────────────────────────────────────
-  console.log("6. the 03:00 batch:");
+  // ── 6. The night batch, and an edit of the last working day ────────────────
+  console.log("6. the 03:00 batch and the last working day:");
   await check("a person resigned and still Leaving is invited; the batch ends the employment and keeps that single shift", async () => {
     const res = await invite(origin, asManager, { employeeId: leaving, shiftRowId: MORNING, shiftDate: OTHER_DAY });
     assert.equal(res.status, 201, show(res));
@@ -546,6 +552,50 @@ try {
     assert.deepEqual((await assignmentsOf(leaving)).map((a) => a.shift_date), [OTHER_DAY]);
     assert.notEqual((await invitationsOf(leaving))[0]!.assignment_id, null);
   });
+  await check("clearing the shifts after a last working day keeps a single shift and clears the rest, as the door that edits it asks", async () => {
+    const [kept] = await assignmentsOf(leaving);
+    const [{ week_plan_id: plan }] = await q<{ week_plan_id: string }>("select week_plan_id from schedule_assignments where id = $1", [kept!.id]);
+    const ordinary = randomUUID();
+    await q(
+      `insert into schedule_assignments (id, tenant_id, week_plan_id, shift_row_id, shift_date, assignee_type, employee_id)
+       values ($1, $2, $3, $4, $5, 'employee', $6)`,
+      [ordinary, TENANT, plan, EVENING, OTHER_DAY, leaving],
+    );
+    const { storage } = await import("../server/storage");
+    const removed = await storage.deleteAssignmentsByEmployeeAndDateRange(leaving, OTHER_DAY, "2099-12-31", undefined, TENANT, { keepSingleShifts: true });
+    assert.deepEqual(removed.map((a) => a.id), [ordinary]);
+    assert.deepEqual((await assignmentsOf(leaving)).map((a) => a.id), [kept!.id]);
+    const routes = readFileSync(join(APP_DIR, "server", "routes.ts"), "utf8");
+    assert.ok(routes.includes("employeeId, startDateStr, farFuture, tx, undefined, { keepSingleShifts: true }"), "the last-working-day edit keeps single shifts");
+  });
+
+  // ── 7. Payroll ─────────────────────────────────────────────────────────────
+  console.log("7. payroll:");
+  await check("the month's payroll names every single shift it does not pay, with how it is to be paid; a removed one is not named", async () => {
+    const { loadPayrollWorld } = await import("../server/payroll/world");
+    const reasons = new Map<string, string>();
+    for (const month of new Set([SHIFT_DAY, OTHER_DAY].map((d) => d.slice(0, 7)))) {
+      for (const x of (await loadPayrollWorld(TENANT, month)).excluded) reasons.set(x.employeeId, `${reasons.get(x.employeeId) ?? ""} ${x.reason}`);
+    }
+    const NOT_PAID = "not paid by this run: company payroll does not take single shifts yet.";
+    assert.ok(reasons.get(former)!.includes(`Single shift on ${SHIFT_DAY} (on the old contract) is ${NOT_PAID}`), reasons.get(former));
+    assert.ok(reasons.get(noProfile)!.includes(
+      `Single shifts on ${SHIFT_DAY} (casual day rate ฿800 a day), ${SHIFT_DAY} (on the old contract) are ${NOT_PAID}`), reasons.get(noProfile));
+    assert.ok(reasons.get(leaving)!.includes(`Single shift on ${OTHER_DAY} (on the old contract) is ${NOT_PAID}`), reasons.get(leaving));
+    assert.ok(!(reasons.get(dayRater) ?? "").includes("Single shift"), "the removed shift is not named");
+    assert.ok(!(reasons.get(stranger) ?? "").includes("Single shift"), "nobody without one is named for one");
+  });
+
+  // ── 8. The record ──────────────────────────────────────────────────────────
+  console.log("8. the record of how a shift is paid:");
+  await check("an employee with a single shift is not deleted: the delete names it in words and writes nothing; the key refuses a direct delete", async () => {
+    const res = await call(origin, "DELETE", `/api/employees/${noProfile}`, asAdmin);
+    assert.equal(res.status, 409, show(res));
+    assert.match(String(res.body.message), /2 single shifts/, show(res));
+    assert.equal((await invitationsOf(noProfile)).length, 2);
+    await assert.rejects(q("delete from employees where id = $1", [noProfile]), (e: { code?: string }) => e.code === "23503");
+    assert.equal((await invitationsOf(noProfile)).length, 2);
+  });
 
   console.log(`single-shift.check: ${checks} checks passed`);
 } catch (err) {
@@ -554,6 +604,6 @@ try {
 } finally {
   for (const child of children) child.kill();
   await pool.end();
-  // The pure leg's import opened the app's own pool; it holds no connection the check needs.
+  // The in-process legs opened the app's own pool; it holds no connection the check needs.
   setTimeout(() => process.exit(process.exitCode ?? 0), 200).unref();
 }

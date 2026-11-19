@@ -426,7 +426,16 @@ try {
   await activity(duplicate, "ZZ TEST fold face enrolled");
   // The duplicate's 11 shifts: 4 days, a gap, then 7.
   const shiftDays = [-5, -4, -3, -2, 0, 1, 2, 3, 4, 5, 6].map(plus);
-  for (const date of shiftDays) await shift(duplicate, date);
+  const dupShifts: string[] = [];
+  for (const date of shiftDays) dupShifts.push(await shift(duplicate, date));
+  // SCRUM-1038: one of them is a single shift's invitation (who invited, how
+  // it is paid): the fold moves it with its shift, nothing in it changed.
+  const dupInvitation = randomUUID();
+  await q(
+    `insert into single_shift_invitations (id, tenant_id, employee_id, branch_id, assignment_id, shift_row_id, shift_date, pay_basis, casual_day_rate)
+     values ($1, $2, $3, $4, $5, $6, $7, 'casual_day_rate', 700)`,
+    [dupInvitation, TENANT, duplicate, BRANCH, dupShifts[5], ROW, shiftDays[5]],
+  );
   const dupChecklist = await checklist(duplicate);
   const dupTask = await task(duplicate);
   // Its 7 time records: 3 clock-ins, 3 time entries, 1 attendance review item.
@@ -569,6 +578,11 @@ try {
     assert.equal(await timeRecordsOf(original), 7 + 2 * 4);
     assert.deepEqual(await q("select employee_id, status from timekeeping_issues where id = $1", [dupIssue]), [{ employee_id: original, status: "OPEN" }]);
     assert.equal(await countOf("select count(*) as n from schedule_assignments where employee_id = $1", [original]), 11);
+    // SCRUM-1038: the single shift's invitation went with its shift, as it was.
+    assert.deepEqual(
+      await q("select employee_id, assignment_id, pay_basis, casual_day_rate from single_shift_invitations where id = $1", [dupInvitation]),
+      [{ employee_id: original, assignment_id: dupShifts[5], pay_basis: "casual_day_rate", casual_day_rate: 700 }],
+    );
     assert.deepEqual(await q("select employee_id from checklist_template_assignees where template_id = $1", [dupChecklist]), [{ employee_id: original }]);
     assert.deepEqual(await q("select assignment_id from task_assignments where task_id = $1", [dupTask]), [{ assignment_id: original }]);
     for (const item of onShiftDays) {

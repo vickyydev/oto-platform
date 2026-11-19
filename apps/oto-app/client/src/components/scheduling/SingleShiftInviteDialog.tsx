@@ -14,8 +14,6 @@ import {
   CASUAL_DAY_RATE_LABEL,
   OLD_CONTRACT_LABEL,
   SINGLE_SHIFT_MARK,
-  SINGLE_SHIFT_REFUSALS,
-  bahtText,
   type SingleShiftPayWay,
 } from "@shared/singleShift";
 
@@ -25,8 +23,8 @@ import {
  * the branch's former employees and how the shift is paid: on the old
  * contract (the default), or switched to a casual day rate they type. The
  * shift's single shifts already made are listed above, each with how it is
- * paid and a switch between the two ways; the payroll roles also see what the
- * shift is worth.
+ * paid and a switch between the two ways. No figure is worked out here: what
+ * a shift is worth is payroll's.
  */
 
 export interface FormerEmployee {
@@ -45,7 +43,6 @@ export interface SingleShift {
   payWay: SingleShiftPayWay;
   casualDayRate: number | null;
   payLabel: string;
-  pay?: { amount: number | null; formula: string };
   invitedBy: string | null;
   invitedAt: string;
   changedBy: string | null;
@@ -133,11 +130,6 @@ function InvitedRow({ shift, onSaved }: { shift: SingleShift; onSaved: () => voi
         <span className="text-sm font-medium">{shift.employeeName}</span>
         <Badge variant="outline" className="text-[10px] px-1 py-0" data-testid={`single-shift-pay-${shift.employeeId}`}>{shift.payLabel}</Badge>
       </div>
-      {shift.pay && (
-        <p className="text-xs text-muted-foreground" data-testid={`single-shift-amount-${shift.employeeId}`}>
-          {shift.pay.amount === null ? shift.pay.formula : `${bahtText(shift.pay.amount)} for the shift (${shift.pay.formula})`}
-        </p>
-      )}
       {editing ? (
         <div className="space-y-2 pt-1">
           <PayWayFields idPrefix={`single-shift-change-${shift.employeeId}`} way={way} onWay={setWay} rate={rate} onRate={setRate} />
@@ -191,7 +183,6 @@ export function SingleShiftInviteDialog({
     enabled: open && !!branchId && !!date,
   });
   const onThisShift = (shifts.data ?? []).filter((s) => s.shiftRowId === shiftRowId);
-  const invitedThatDay = new Set((shifts.data ?? []).map((s) => s.employeeId));
 
   const refresh = () => {
     queryClient.invalidateQueries({ queryKey: ["/api/schedule/single-shift/invitations", branchId] });
@@ -270,25 +261,21 @@ export function SingleShiftInviteDialog({
             <div className="space-y-3">
               <div className="space-y-1">
                 <h4 className="text-sm font-medium">Former employee</h4>
-                {(former.data ?? []).map((person) => {
-                  const already = invitedThatDay.has(person.id);
-                  return (
-                    <Button
-                      key={person.id}
-                      variant="ghost"
-                      size="sm"
-                      disabled={already}
-                      className={cn("w-full justify-between text-sm h-8", chosen === person.id && "bg-accent")}
-                      onClick={() => setChosen(person.id)}
-                      data-testid={`button-single-shift-${person.id}`}
-                    >
-                      <span>{person.name}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {already ? SINGLE_SHIFT_REFUSALS.sameDay.replace("This person already has", "Already has") : person.lastWorkingDay ? `Left after ${person.lastWorkingDay}` : "Left"}
-                      </span>
-                    </Button>
-                  );
-                })}
+                {(former.data ?? []).map((person) => (
+                  <Button
+                    key={person.id}
+                    variant="ghost"
+                    size="sm"
+                    className={cn("w-full justify-between text-sm h-8", chosen === person.id && "bg-accent")}
+                    onClick={() => setChosen(person.id)}
+                    data-testid={`button-single-shift-${person.id}`}
+                  >
+                    <span>{person.name}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {person.lastWorkingDay ? `Left after ${person.lastWorkingDay}` : "Left"}
+                    </span>
+                  </Button>
+                ))}
               </div>
               <div className="space-y-1">
                 <h4 className="text-sm font-medium">How this shift is paid</h4>

@@ -848,12 +848,14 @@ jobs:
           npx tsx tests/leave-type-audience.check.ts
           TSX_TSCONFIG_PATH=tests/tsconfig.jsx.json npx tsx tests/leave-types-manager-ui.check.ts
       # SCRUM-1038: a former employee invited to one shift (migration 0056) —
-      # only a former employee of the shift's branch, by a manager there; one
-      # shift a day; paid on the old contract or switched to a casual day rate,
-      # each choice in the activity log, the figure for payroll roles only;
-      # the kiosk open at that branch on that day alone; the profile Left and
-      # the login in pay only throughout; the night batch keeps the shift; and
-      # the Invite a Former Employee dialog with its pay choice.
+      # by a manager of the shift's branch, with the schedule's own checks;
+      # paid on the old contract or switched to a casual day rate, each choice
+      # in the activity log without a figure, no figure worked out anywhere;
+      # payroll names every single shift it does not pay yet; the kiosk open
+      # at that branch on that day alone, missed clocks for that day only; the
+      # profile Left and the login in pay only throughout; the night batch and
+      # a last-working-day edit keep the shift; the profile is not deleted
+      # while it has one; and the Invite a Former Employee dialog.
       - name: The app's single shift checks
         if: steps.changes.outputs.app == 'true'
         run: |

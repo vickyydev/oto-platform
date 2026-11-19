@@ -1,5 +1,5 @@
 {
-  "id": "a6d6fc18-5a67-4f41-825d-164a8d5f2a14",
+  "id": "83f2ec54-0714-464f-bed4-8c8e079407e5",
   "prevId": "a1cc2ca6-659d-4a60-8939-d059b59710aa",
   "version": "7",
   "dialect": "postgresql",
@@ -20801,7 +20801,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
+          "onDelete": "restrict",
           "onUpdate": "no action"
         },
         "single_shift_invitations_branch_id_branches_id_fk": {

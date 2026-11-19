@@ -37,10 +37,12 @@
  * its allocation's home at month end (the roster branch). A profile that
  * cannot be placed — no joining date, no allocation by month end, a home
  * branch without payroll details or rules — is left out and LISTED in
- * `excluded`, so nobody silently goes unpaid.
+ * `excluded`, so nobody silently goes unpaid. So is every single shift a
+ * former employee was invited to in the month (SCRUM-1038), which payroll
+ * does not pay yet.
  */
 import { createHash } from "node:crypto";
-import { and, asc, eq, inArray, lt } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, lt, lte } from "drizzle-orm";
 import {
   branches,
   employeeTimeOff,
@@ -73,8 +75,11 @@ import {
   payrollRunVersions,
   payrollServicePolicies,
   publicHolidays,
+  scheduleAssignments,
+  singleShiftInvitations,
   statutoryRuleSets,
 } from "@shared/schema";
+import { singleShiftPayLabel } from "@shared/singleShift";
 import { db } from "../db";
 import { getEmployeeDisplayName } from "../lib/employeeDisplayName";
 import { listTenantLeaveTypes } from "../leave-types";
@@ -320,6 +325,43 @@ export async function loadPayrollWorld(tenantId: string, month: string, options:
     branch.staff.push(staff);
     roster.set(employee.id, home);
   }
+  // ── Single shifts (SCRUM-1038) ──
+  // A former employee invited to one shift is paid on the old contract or on
+  // a casual day rate, and company payroll does not pay either way yet: the
+  // owner has not ruled which run pays it, what it carries (social security,
+  // tax, allowances, overtime, service charge) or how a day of a monthly
+  // contract is counted. Until then every single shift still on the schedule
+  // in the month is LISTED here with how it is to be paid, so none goes
+  // unpaid silently (a person outside the run, or inside it with the shift
+  // after their last working day, which the engine does not pay).
+  const singleShiftRows = await q(db.select({ invitation: singleShiftInvitations, employee: employees })
+    .from(singleShiftInvitations)
+    .innerJoin(employees, and(eq(employees.id, singleShiftInvitations.employeeId), eq(employees.tenantId, tenantId)))
+    .innerJoin(scheduleAssignments, and(
+      eq(scheduleAssignments.id, singleShiftInvitations.assignmentId),
+      eq(scheduleAssignments.employeeId, singleShiftInvitations.employeeId),
+      eq(scheduleAssignments.shiftDate, singleShiftInvitations.shiftDate),
+    ))
+    .where(and(
+      eq(singleShiftInvitations.tenantId, tenantId),
+      gte(singleShiftInvitations.shiftDate, `${month}-01`),
+      lte(singleShiftInvitations.shiftDate, monthEnd),
+    ))
+    .orderBy(asc(singleShiftInvitations.employeeId), asc(singleShiftInvitations.shiftDate), asc(singleShiftInvitations.createdAt)));
+  const singleShiftsByPerson = new Map<string, { name: string; shifts: string[] }>();
+  for (const { invitation: i, employee } of singleShiftRows) {
+    const entry = singleShiftsByPerson.get(i.employeeId) ?? { name: getEmployeeDisplayName(employee), shifts: [] };
+    entry.shifts.push(`${iso(i.shiftDate)} (${singleShiftPayLabel(i.payBasis, i.casualDayRate).toLowerCase()})`);
+    singleShiftsByPerson.set(i.employeeId, entry);
+  }
+  for (const [employeeId, { name, shifts }] of singleShiftsByPerson) {
+    const reason = `${shifts.length === 1 ? "Single shift" : "Single shifts"} on ${shifts.join(", ")} ` +
+      `${shifts.length === 1 ? "is" : "are"} not paid by this run: company payroll does not take single shifts yet.`;
+    const listed = excluded.find((x) => x.employeeId === employeeId);
+    if (listed) listed.reason = `${listed.reason} ${reason}`;
+    else excluded.push({ employeeId, name, reason });
+  }
+
   const people = profileRows.filter((r) => roster.has(r.employee.id)).map((r) => ({
     id: r.employee.id, rosterBranchId: roster.get(r.employee.id)!, weeklyOffDays: r.employee.weeklyOffDays ?? [],
   }));
