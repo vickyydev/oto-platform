@@ -355,7 +355,10 @@ function Row({
               part that does not fit wraps to a second line that is never shown,
               so the line ends on a whole word. The empty first item lets even
               the topic step aside when the badge leaves it no room. */}
-          <span className={`flex h-[1.25em] min-w-0 flex-1 flex-wrap overflow-hidden text-meta leading-[1.25] ${ready ? 'text-ink-soft' : 'text-ink-muted'}`}>
+          <span
+            title={meta.park ? `${meta.topic} · ${meta.park}` : meta.topic}
+            className={`flex h-[1.25em] min-w-0 flex-1 flex-wrap overflow-hidden text-meta leading-[1.25] ${ready ? 'text-ink-soft' : 'text-ink-muted'}`}
+          >
             <span aria-hidden className="h-[1.25em] w-0" />
             <span className="whitespace-nowrap">{meta.topic}</span>
             {meta.park && <span className="whitespace-pre">{` · ${meta.park}`}</span>}
