@@ -5,26 +5,24 @@ import { ApiError } from '@/api/client';
 import { NOT_ON_YOUR_ACCESS, assistantApi, notOnAccess, type AiRule, type RuleCondition, type RuleStatus } from '@/api/assistant';
 import type { InboxMe } from '@/api/inbox';
 import { RuleConfirm } from '@/components/AssistantConfirms';
-import { Refusal } from '@/components/confirms';
-import { FIELD, Field } from '@/components/CorrectAssistant';
+import { AssistantHeader, StatusBadge, countWords, intentTitle } from '@/components/assistant-parts';
 import { Dialog } from '@/components/Dialog';
 import {
-  BADGE,
-  BTN_MAIN,
-  BTN_QUIET,
-  BTN_SMALL,
-  CHECK_BOX,
-  CHECK_LINE,
-  HINT,
-  ITEM_CARD,
-  SEGMENT,
-  SEGMENT_OFF,
-  SEGMENT_ON,
-} from '@/components/ui';
+  EmptyNote,
+  Field,
+  FormRefusal,
+  InlineError,
+  InlineNote,
+  LoadingNote,
+  MetaLine,
+  SECTION_CARD,
+  SettingsRow,
+  ViewSwitch,
+  type RowAction,
+} from '@/components/settings-parts';
+import { BTN_MAIN, BTN_QUIET, CHECK_BOX, CHECK_LINE, HINT, INPUT } from '@/components/ui';
 import {
   INTENTS,
-  KB_STATUS_LABEL,
-  KB_STATUS_TINT,
   RULE_CONDITION_LABEL,
   RULE_CONDITION_OPTIONS,
   RULE_INSTRUCTION_MAX,
@@ -33,20 +31,20 @@ import {
   askFirstIgnored,
   ruleAskFirst,
   ruleDraftProblem,
-  ruleIntentLabel,
 } from '@/lib/assistant';
 import { branchLabel, branchOptions } from '@/lib/view';
 
 // The house controls (SCRUM-1016, components/ui.ts): the page looks part of the Inbox, and does what it did.
-const BUTTON = BTN_SMALL;
-const PRIMARY = BTN_MAIN;
-const CANCEL = BTN_QUIET;
+// A one-line box and a select share one height; a box of several lines takes the padding of its lines.
+const FIELD = INPUT;
+const AREA = `${INPUT} resize-y py-2 leading-relaxed`;
 
 /** "Not on your access" politely; every other refusal is the server's own sentence. */
 function said(err: unknown, fallback: string): string {
   if (notOnAccess(err)) return NOT_ON_YOUR_ACCESS;
   return err instanceof ApiError ? err.message : fallback;
 }
+const toneOf = (text: string) => (text === NOT_ON_YOUR_ACCESS ? 'ask' : 'danger');
 
 const RULE_TABS: [RuleStatus, string][] = [
   ['draft', 'Drafts'],
@@ -58,12 +56,20 @@ const RULE_TABS: [RuleStatus, string][] = [
 export const ASK_FIRST_IGNORED_LINE =
   'The assistant never asks first on this kind of message (a complaint, a refund, a request for a person, an upset or unclear message, a child in our care, the birthday flow, a greeting, a thank-you, a bot question or spam). The instruction is still followed; the question is not asked.';
 
+/** What the rules page is for, word for word as it has said it. */
+export const RULES_NOTE =
+  'How the assistant handles a kind of message: an instruction it follows and, if you want, one question it asks first. Only approved rules reach the assistant. A rule adds to its own rules and never overrides them: it cannot grant a price, a discount, a refund, a date or a booking.';
+
 /**
  * The behaviour rules (SCRUM-696): how the assistant handles a kind of
  * message — an instruction it follows and, optionally, one question it asks
  * first. Taught in the Teach chat or written here; drafted, approved,
  * archived, as the knowledge base is. Editing an approved rule replaces it at
  * once and keeps the old words under Archived.
+ *
+ * Since SCRUM-1044 a page of the settings frame: its header with New rule,
+ * what a rule may do in the assistant's mint, Drafts, Approved and Archived
+ * as one switch, and a calm row per rule (SETTINGS.md, Rules).
  */
 export function RulesPanel({ me }: { me: InboxMe }) {
   const [status, setStatus] = useState<RuleStatus>('draft');
@@ -103,92 +109,54 @@ export function RulesPanel({ me }: { me: InboxMe }) {
     }
   };
 
+  const shownLabel = RULE_TABS.find(([s]) => s === status)?.[1] ?? '';
   return (
-    <div className="mt-4">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <p className="min-w-0 text-ui leading-relaxed text-ink-muted">
-          How the assistant handles a kind of message: an instruction it follows and, if you want, one question it asks
-          first. Only approved rules reach the assistant. A rule adds to its own rules and never overrides them: it cannot
-          grant a price, a discount, a refund, a date or a booking.
-        </p>
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
-          <div className="flex gap-1 rounded-xl bg-band p-1">
-            {RULE_TABS.map(([s, label]) => (
-              <button
-                key={s}
-                type="button"
-                aria-pressed={status === s}
-                onClick={() => setStatus(s)}
-                className={`${SEGMENT} ${status === s ? SEGMENT_ON : SEGMENT_OFF}`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          <button type="button" onClick={() => setEditing('new')} className={PRIMARY}>
+    <>
+      <AssistantHeader
+        title="Rules"
+        actions={
+          <button type="button" onClick={() => setEditing('new')} className={BTN_MAIN}>
             <Plus aria-hidden className="h-4 w-4" />
             New rule
           </button>
-        </div>
+        }
+      />
+      <InlineNote tone="assistant" live={false}>
+        {RULES_NOTE}
+      </InlineNote>
+
+      <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <ViewSwitch label="Rules to show" options={RULE_TABS} value={status} onChange={setStatus} />
+        <p className="text-note text-ink-muted" aria-live="polite">
+          {rules && rules.length > 0 ? countWords(rules.length, 'rule', 'rules') : ' '}
+        </p>
       </div>
 
-      {error && <Refusal text={error} tone={error === NOT_ON_YOUR_ACCESS ? 'ask' : 'danger'} />}
-      {!error && rules === null && (
-        <div className="flex justify-center py-8 text-ink-muted">
-          <Loader2 className="h-5 w-5 animate-spin" />
-        </div>
+      {error && <InlineError text={error} tone={toneOf(error)} />}
+      {!error && rules === null && <LoadingNote label="Reading the rules" />}
+      {rules?.length === 0 && (
+        <EmptyNote
+          icon={ListChecks}
+          title="Nothing here."
+          line={status === 'draft' ? 'New rule, or a rule taught in Teach, starts here as a draft.' : undefined}
+        />
       )}
-      {rules?.length === 0 && <p className="mt-4 text-note text-ink-muted">Nothing here.</p>}
-      <ul className="mt-4 grid grid-cols-1 gap-2 lg:grid-cols-2">
-        {rules?.map((r) => (
-          <li key={r.id} className={`${ITEM_CARD} ${r.status === 'archived' ? 'opacity-70' : ''}`}>
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-note font-bold text-ink">{ruleIntentLabel(r.intent)}</span>
-              <span className="text-meta text-ink-muted">{r.branchId ? branchLabel(r.branchId, me.teams) : 'Both parks'}</span>
-              <span className={`${BADGE} ring-1 ${KB_STATUS_TINT[r.status]}`}>{KB_STATUS_LABEL[r.status]}</span>
-            </div>
-            <p className="mt-1.5 whitespace-pre-line break-words text-ui leading-relaxed text-ink">{r.instruction}</p>
-            {r.askFirst && (
-              <p className="mt-1.5 break-words rounded-xl bg-mint px-2.5 py-1.5 text-ui text-teal">
-                <span className="font-medium">Ask first:</span> {r.askFirst.question.en}
-                <span className="text-meta text-teal"> · {RULE_CONDITION_LABEL[r.askFirst.condition]}</span>
-              </p>
-            )}
-            {r.taughtFrom && (
-              <p className="mt-1 line-clamp-3 break-words text-note italic text-ink-muted">Taught from: “{r.taughtFrom}”</p>
-            )}
-            {r.status !== 'archived' && r.canManage && (
-              <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                {r.status === 'draft' && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActError(null);
-                      setActing({ rule: r, what: 'approve' });
-                    }}
-                    className={BUTTON}
-                  >
-                    <CheckCircle2 aria-hidden className="h-3.5 w-3.5" /> Approve
-                  </button>
-                )}
-                <button type="button" onClick={() => setEditing(r)} className={BUTTON}>
-                  <Pencil aria-hidden className="h-3.5 w-3.5" /> Edit
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActError(null);
-                    setActing({ rule: r, what: 'archive' });
-                  }}
-                  className={BUTTON}
-                >
-                  <Archive aria-hidden className="h-3.5 w-3.5" /> Archive
-                </button>
-              </div>
-            )}
-          </li>
-        ))}
-      </ul>
+      {rules && rules.length > 0 && (
+        <ul aria-label={shownLabel} className={SECTION_CARD}>
+          {rules.map((r) => (
+            <RuleRow
+              key={r.id}
+              me={me}
+              rule={r}
+              onEdit={() => setEditing(r)}
+              onAct={(what) => {
+                setActError(null);
+                setActing({ rule: r, what });
+              }}
+            />
+          ))}
+        </ul>
+      )}
 
       {editing !== null && (
         <RuleEditor
@@ -203,14 +171,72 @@ export function RulesPanel({ me }: { me: InboxMe }) {
       )}
 
       <RuleConfirm me={me} acting={acting} busy={busy} error={actError} onCancel={() => setActing(null)} onConfirm={() => void act()} />
-    </div>
+    </>
+  );
+}
+
+/**
+ * One rule: the kind of message as the main text, the instruction whole with
+ * its line breaks, the ask-first question in the assistant's mint, the words
+ * it was taught from; its status as the one badge and its park as meta.
+ * Approve (a draft), Edit and Archive for a person who manages it, none once
+ * archived — as the card offered them.
+ */
+export function RuleRow({
+  me,
+  rule: r,
+  onEdit,
+  onAct,
+}: {
+  me: InboxMe;
+  rule: AiRule;
+  onEdit: () => void;
+  onAct: (what: 'approve' | 'archive') => void;
+}) {
+  const actions: RowAction[] =
+    r.status !== 'archived' && r.canManage
+      ? [
+          ...(r.status === 'draft' ? [{ label: 'Approve', icon: CheckCircle2, onSelect: () => onAct('approve') }] : []),
+          { label: 'Edit', icon: Pencil, onSelect: onEdit },
+          { label: 'Archive', icon: Archive, onSelect: () => onAct('archive') },
+        ]
+      : [];
+  const park = r.branchId ? branchLabel(r.branchId, me.teams) : 'Both parks';
+  return (
+    <SettingsRow
+      title={intentTitle(r.intent)}
+      name={`${intentTitle(r.intent)}, ${park}`}
+      preview={r.instruction}
+      previewLines="all"
+      keepBreaks
+      detail={
+        <>
+          {r.askFirst && (
+            <div className="mt-1.5 max-w-prose break-words rounded-xl bg-mint-soft px-3 py-2 text-teal ring-1 ring-mint-line">
+              <p className="text-note">
+                <span className="font-semibold">Ask first</span> · {RULE_CONDITION_LABEL[r.askFirst.condition]}
+              </p>
+              <p className="mt-0.5 text-ui leading-relaxed">{r.askFirst.question.en}</p>
+            </div>
+          )}
+          {r.taughtFrom && (
+            <p className="mt-1 line-clamp-3 max-w-prose break-words text-note italic text-ink-muted">Taught from: “{r.taughtFrom}”</p>
+          )}
+        </>
+      }
+      badge={<StatusBadge status={r.status} />}
+      meta={<MetaLine parts={[{ text: park }]} />}
+      actions={actions}
+    />
   );
 }
 
 /**
  * Write or change one rule, in the house Dialog. A new rule is a draft; a
  * draft is changed in place; an approved rule is replaced at once by the
- * saved words (the api's revise, as the knowledge base's edit).
+ * saved words (the api's revise, as the knowledge base's edit). The server's
+ * refusal of what a rule says (a number, a link, a date, a grant, a question
+ * that would not pass) shows at the top of the form, word for word.
  */
 export function RuleEditor({
   me,
@@ -270,24 +296,25 @@ export function RuleEditor({
       wide
       footer={
         <>
-          <button type="button" onClick={onClose} disabled={busy} className={CANCEL}>
+          <button type="button" onClick={onClose} disabled={busy} className={BTN_QUIET}>
             Cancel
           </button>
-          <button type="submit" form={formId} disabled={busy || problem !== null} className={PRIMARY}>
+          <button type="submit" form={formId} disabled={busy || problem !== null} className={BTN_MAIN}>
             {busy && <Loader2 aria-hidden className="h-4 w-4 animate-spin" />}
             Save
           </button>
         </>
       }
     >
-      <form id={formId} onSubmit={(e) => void save(e)} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <form id={formId} onSubmit={(e) => void save(e)} className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <FormRefusal text={error} tone={error ? toneOf(error) : 'danger'} />
         <Field label="Kind of message">
           <select value={intent} onChange={(e) => setIntent(e.target.value)} className={FIELD}>
             {intent === '' && <option value="">Choose…</option>}
-            <option value={RULE_INTENT_ANY}>{ruleIntentLabel(RULE_INTENT_ANY)}</option>
+            <option value={RULE_INTENT_ANY}>{intentTitle(RULE_INTENT_ANY)}</option>
             {INTENTS.map((i) => (
               <option key={i} value={i}>
-                {ruleIntentLabel(i)}
+                {intentTitle(i)}
               </option>
             ))}
           </select>
@@ -303,7 +330,9 @@ export function RuleEditor({
           </select>
         </Field>
         {askFirstIgnored(intent) && (
-          <p className={`${HINT} sm:col-span-2`}>{ASK_FIRST_IGNORED_LINE}</p>
+          <div className="min-w-0 md:col-span-2">
+            <InlineNote tone="ask">{ASK_FIRST_IGNORED_LINE}</InlineNote>
+          </div>
         )}
         <Field label={`What the assistant should do · ${[...instruction].length}/${RULE_INSTRUCTION_MAX}`} wide>
           <textarea
@@ -312,16 +341,16 @@ export function RuleEditor({
             rows={4}
             maxLength={RULE_INSTRUCTION_MAX}
             placeholder="If someone says they lost something, first ask which park they visited."
-            className={`${FIELD} resize-y`}
+            className={AREA}
           />
         </Field>
-        <label className={`${CHECK_LINE} sm:col-span-2`}>
+        <label className={`${CHECK_LINE} md:col-span-2`}>
           <input type="checkbox" checked={askFirst} onChange={(e) => setAskFirst(e.target.checked)} className={CHECK_BOX} />
           Ask one question first, before anything else
         </label>
         {askFirst && (
           <>
-            <Field label="When">
+            <Field label="When" wide>
               <select value={condition} onChange={(e) => setCondition(e.target.value as RuleCondition)} className={FIELD}>
                 {RULE_CONDITION_OPTIONS.map(([v, l]) => (
                   <option key={v} value={v}>
@@ -341,9 +370,8 @@ export function RuleEditor({
             </Field>
           </>
         )}
-        {problem && (intent || instruction) && <p className={`${HINT} sm:col-span-2`}>{problem}</p>}
+        {problem && (intent || instruction) && <p className={`${HINT} md:col-span-2`}>{problem}</p>}
       </form>
-      {error && <Refusal text={error} tone={error === NOT_ON_YOUR_ACCESS ? 'ask' : 'danger'} />}
     </Dialog>
   );
 }

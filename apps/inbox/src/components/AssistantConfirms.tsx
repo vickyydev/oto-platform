@@ -4,7 +4,7 @@ import type { InboxMe } from '@/api/inbox';
 import { Refusal } from '@/components/confirms';
 import { Dialog } from '@/components/Dialog';
 import { BTN_MAIN, BTN_QUIET } from '@/components/ui';
-import { ruleIntentLabel } from '@/lib/assistant';
+import { intentTitle } from '@/components/assistant-parts';
 import { branchLabel, langLabel } from '@/lib/view';
 
 // The house controls (SCRUM-1016, components/ui.ts).
@@ -81,7 +81,7 @@ export function RuleConfirm({
       icon={acting?.what === 'approve' ? CheckCircle2 : Archive}
       tone={acting?.what === 'approve' ? 'money' : 'neutral'}
       title={acting?.what === 'approve' ? 'Approve this rule?' : 'Archive this rule?'}
-      subtitle={acting ? `${ruleIntentLabel(acting.rule.intent)} · ${acting.rule.branchId ? branchLabel(acting.rule.branchId, me.teams) : 'Both parks'}` : undefined}
+      subtitle={acting ? `${intentTitle(acting.rule.intent)} · ${acting.rule.branchId ? branchLabel(acting.rule.branchId, me.teams) : 'Both parks'}` : undefined}
       footer={
         <>
           <button type="button" onClick={onCancel} disabled={busy} className={CANCEL}>

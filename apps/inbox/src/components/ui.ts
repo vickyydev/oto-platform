@@ -51,6 +51,8 @@ export const HINT = 'text-meta text-ink-muted';
 
 /** A checkbox or a radio with its words: the whole line is the 44 px target. */
 export const CHECK_LINE = 'hit inline-flex min-h-ctl cursor-pointer items-center gap-2.5 text-ui text-ink-soft';
+/** The same, for words that run to more than one line: the box stays by the first line. */
+export const CHECK_LINES = 'hit flex min-h-ctl cursor-pointer items-start gap-2.5 py-2 text-ui leading-relaxed text-ink-soft';
 export const CHECK_BOX = 'h-5 w-5 shrink-0 accent-coral md:h-4 md:w-4';
 
 /**
@@ -84,11 +86,3 @@ export const SEGMENT = `hit inline-flex min-h-ctl items-center rounded-lg px-3 t
 /** The chosen segment: lighter than the band in both themes (`--oto-segment`, Dark.dc.html). */
 export const SEGMENT_ON = 'bg-segment text-ink shadow-sm ring-1 ring-line';
 export const SEGMENT_OFF = 'text-ink-soft hover:text-ink';
-
-/**
- * An item card inside a settings page (an entry, a rule, an example). The
- * settings frame's own parts (SCRUM-1044) are in `settings-parts.tsx`: the
- * page header, the section card and its calm rows take this card's place as
- * each page is rebuilt.
- */
-export const ITEM_CARD = 'min-w-0 rounded-2xl border border-line bg-card p-3.5';
