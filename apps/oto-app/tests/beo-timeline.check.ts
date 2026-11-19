@@ -363,7 +363,8 @@ await check("the screens show the built timeline: the editor's preview, the Day-
   // SCRUM-1029: the other timed steps are a part of Entertainment & Program.
   assert.match(form, /title="Other timed steps"/);
   assert.match(form, /queryClient\.invalidateQueries\(\{ queryKey: builtTimelineKey\(eventId\) \}\);/, "an act written at once is read again into the preview");
-  assert.equal(form.split("onSuccess: actsChanged,").length - 1, 3, "on add, change and removal of an act");
+  // SCRUM-1032: and on a change of an act's people (its own route), read again the same way.
+  assert.equal(form.split("onSuccess: actsChanged,").length - 1, 4, "on add, change, people and removal of an act");
   const dayOf = code(read("client/src/components/beo/beo-day-of-view.tsx"));
   assert.match(dayOf, /useBuiltTimeline\(eventId, \{ refetchInterval: 30000 \}\)/);
   assert.doesNotMatch(dayOf, /beoData\.timeline/, "the Day-of view no longer reads the stored rows as its timeline");
