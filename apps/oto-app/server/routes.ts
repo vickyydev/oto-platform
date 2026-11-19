@@ -11687,7 +11687,9 @@ OTO Company Limited`,
         return res.status(400).json({ message: "Branch ID required" });
       }
       // SCRUM-769: an ended employment clocks neither in nor out; nothing is written.
-      if (await kioskEmploymentEnded(employee, undefined, branchId)) {
+      // SCRUM-1055: no screen calls this PIN door, so a single shift does not open it
+      // (no branch passed): the person clocks in on the kiosk's phone road.
+      if (await kioskEmploymentEnded(employee)) {
         return refuseEndedEmployment(res, { employeeId: employee.id, branchId, kioskDeviceId, method: "PIN", photoEvidenceUrl, sessionId });
       }
 
