@@ -249,10 +249,26 @@ export function gateWriteKey(
   change: unknown,
   mint: () => string = () => crypto.randomUUID(),
 ): string {
+  return heldWriteKey(held, write, change, 'gate-child', mint);
+}
+
+/**
+ * The rule `gateWriteKey` keeps, for any screen that holds its own keys (the
+ * membership check's "Who's visiting today?" window holds its keys the same
+ * way, SCRUM-1059): the key of `write` is kept while `change` is the change
+ * being sent, and a new one is minted, named for the screen, for another.
+ */
+export function heldWriteKey(
+  held: Map<string, HeldWriteKey>,
+  write: string,
+  change: unknown,
+  prefix: string,
+  mint: () => string = () => crypto.randomUUID(),
+): string {
   const signature = JSON.stringify(change);
   const known = held.get(write);
   if (known?.change === signature) return known.key;
-  const key = `gate-child:${mint()}`;
+  const key = `${prefix}:${mint()}`;
   held.set(write, { change: signature, key });
   return key;
 }
