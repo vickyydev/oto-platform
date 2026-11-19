@@ -512,7 +512,8 @@ export function BookDateDialog({
           {paidCard ? (
             <p className="flex items-start gap-2.5">
               <CheckCircle2 aria-hidden className="mt-px h-5 w-5 shrink-0" />
-              <span className="min-w-0">
+              {/* Even lines on a phone, never the time alone on a line of its own (SCRUM-1043). */}
+              <span className="min-w-0 text-balance">
                 <strong className="font-bold">{paidCard.title}</strong>
                 {deposit?.paidAt ? ` · verified ${verifiedAt(deposit.paidAt)}` : ''}
                 <span className="block">Full deposit: Gateway verified — check park capacity before booking.</span>

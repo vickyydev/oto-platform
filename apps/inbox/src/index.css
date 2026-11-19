@@ -312,6 +312,9 @@ html.dark {
   --spacing-ctl-sm: var(--ui-h-sm);
   --spacing-ctl: var(--ui-h);
   --spacing-ctl-lg: var(--ui-h-lg);
+  /* A field: the large control, and never under 44 px on a touch screen, where
+     a text box cannot borrow `.hit`'s invisible extension (SCRUM-1043). */
+  --spacing-field: max(var(--ui-h-lg), var(--ui-touch-min, 0px));
   --spacing-icon: var(--ui-h-icon);
   --spacing-pane: var(--ui-pane);
   --spacing-row: var(--ui-row);
@@ -431,6 +434,11 @@ h3 {
  * centred on it, so the finger's target is 44 px while the shape stays calm.
  * A mouse needs none. `:where` keeps a control's own `absolute` in charge.
  */
+@media (any-pointer: coarse) {
+  :root {
+    --ui-touch-min: 44px;
+  }
+}
 @layer base {
   @media (any-pointer: coarse) {
     :where(.hit) {

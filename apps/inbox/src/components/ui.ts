@@ -11,9 +11,11 @@ export const FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-2 foc
 /**
  * The one main button (Book the date, Yes, mark as handled, Save): deep coral
  * with white words. Disabled it turns to the band's ground with muted words,
- * never coral at 60 %, which no one could read.
+ * never coral at 60 %, which no one could read. A label too long for one line
+ * ("Book Sun 20 Dec 2026, 14:00" on a 360 px phone) breaks into two even lines
+ * (SCRUM-1043), never one word left alone.
  */
-export const BTN_MAIN = `hit inline-flex min-h-ctl-lg items-center justify-center gap-2 rounded-[14px] bg-coral px-4 text-action font-bold text-on-coral hover:bg-coral/90 disabled:cursor-not-allowed disabled:bg-band disabled:text-ink-muted md:rounded-xl md:px-3.5 ${FOCUS}`;
+export const BTN_MAIN = `hit inline-flex min-h-ctl-lg items-center justify-center gap-2 rounded-[14px] bg-coral px-4 text-balance text-center text-action font-bold text-on-coral hover:bg-coral/90 disabled:cursor-not-allowed disabled:bg-band disabled:text-ink-muted md:rounded-xl md:px-3.5 ${FOCUS}`;
 
 /** A dialog footer's main button: it takes the footer's width on a phone (BookDate.dc.html). */
 export const BTN_FOOTER_MAIN = `${BTN_MAIN} max-md:flex-1`;
@@ -33,9 +35,13 @@ export const BTN_SMALL = `hit inline-flex min-h-ctl-sm items-center justify-cent
 /** An icon-only button: 44 px on a phone, the scale's `icon` size elsewhere, its name in `aria-label`. */
 export const BTN_ICON = `hit inline-flex size-icon shrink-0 items-center justify-center rounded-xl text-ink-soft hover:bg-wash hover:text-ink disabled:opacity-60 ${FOCUS}`;
 
-/** A field (BookDate.dc.html): 48 px on a phone, the field border, ink on focus. */
+/**
+ * A field (BookDate.dc.html): 48 px on a phone, the field border, ink on
+ * focus; on a touch tablet 44 px rather than the 36 px of a button there,
+ * because a text box cannot take `hit`'s invisible extension (SCRUM-1043).
+ */
 export const INPUT =
-  'min-h-ctl-lg w-full min-w-0 rounded-xl border border-field bg-card px-3 text-body text-ink placeholder:text-ink-muted focus:border-ink focus:outline-none focus:ring-1 focus:ring-ink disabled:bg-band disabled:text-ink-muted';
+  'min-h-field w-full min-w-0 rounded-xl border border-field bg-card px-3 text-body text-ink placeholder:text-ink-muted focus:border-ink focus:outline-none focus:ring-1 focus:ring-ink disabled:bg-band disabled:text-ink-muted';
 
 /** A field's label over it. */
 export const LABEL = 'text-note font-semibold text-ink';
