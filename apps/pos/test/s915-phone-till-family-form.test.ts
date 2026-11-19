@@ -16,8 +16,8 @@ import type { SupervisionPolicy } from '@/types';
  * the photo were given, and that Continue was the only way the phone opened
  * the family's form. The phone has no customer screen, so the same form the
  * counter's customer half shows now opens on the phone itself (handed to the
- * parent): the phone's camera for the photo, the number confirmation tick,
- * the "Still needed" line and Done, which registers the children through the
+ * parent): the phone's camera for the photo (SCRUM-1018: the number is shown,
+ * with no tick), the "Still needed" line and Done, which registers the children through the
  * gate staff's Continue runs and moves the sale on. The gate's Continue opens
  * the form while it still needs anything.
  */
@@ -119,6 +119,23 @@ describe('the phone till’s wiring', () => {
     expect(form).toContain('doneNotSaved={familyDoneNotSaved}');
     // No photo at reception on the phone: its own camera takes it.
     expect(form).not.toContain('photoAtReception');
+  });
+
+  it('SCRUM-1018: the number is staff-only and the profile name is shown, as on the counter', () => {
+    const form = phone.slice(phone.indexOf("case 'consent':"), phone.indexOf("case 'qr':"));
+    // Once a number was given the family sees it and cannot change it; with
+    // none yet, the form takes one, as before.
+    expect(form).toContain('parentPhoneFixed={!!customerPhone.trim()}');
+    expect(form).toContain('parentNameFixed={superGuardianFromProfile && !!superParentName.trim()}');
+    // SCRUM-1021 — the ticket's own food credit, shown as included.
+    expect(form).toContain('includedCreditTHB={formIncludedCreditTHB}');
+    const open = phone.slice(phone.indexOf('const openSupervisionGate = () => {'), phone.indexOf('const handleUpdateSlot'));
+    expect(open).toContain('const profileName = profileGuardianName(member, phoneCreatedMemberIdRef.current);');
+    expect(open).toMatch(/setSuperParentName\(profileName \?\? ''\);\s*setSuperGuardianFromProfile\(profileName !== null\);/);
+    // A member made on this sale is a first visit: the form asks the name.
+    expect(phone).toMatch(/if \(saleEpochRef\.current !== epoch\) return;\s*phoneCreatedMemberIdRef\.current = saved\.id;/);
+    // What the fixed props draw (the number and name shown, no box to type
+    // in) is pinned on the counter's customer half: s1018-customer-half.
   });
 
   it('the family’s Done registers the children through the same gate and hands the phone back on the next step', () => {

@@ -22,6 +22,8 @@ import {
 import { makeDropOffLine, normalizeDropOffFees, resolveDropOffPricing } from '@/lib/dropoff';
 import { resolveGroupRequirements, resolveSupervisionOutcome, sortedConfirmations } from '@/lib/supervision';
 import { messagingPhoneProblem } from '@/lib/consentForm';
+import { profileGuardianName } from '@/lib/returningFamily';
+import { includedCreditTHB } from '@/lib/dropOffFoodCredit';
 import { consentMissing } from '@/lib/consentFinish';
 import { buildSale } from '@/lib/sale';
 import { branchTradingDate } from '@/lib/pricingMode';
@@ -447,6 +449,10 @@ export default function MobileTill() {
   // ── Supervision state ─────────────────────────────────────────────────────
   const [superSlots, setSuperSlots] = useState<SupervisedSlot[]>([]);
   const [superParentName, setSuperParentName] = useState('');
+  /** SCRUM-1018 — the parent's name on the form is the profile's, shown, not asked. */
+  const [superGuardianFromProfile, setSuperGuardianFromProfile] = useState(false);
+  /** SCRUM-1018 — a member this sale made (a rate saved before the details): a first visit, not a profile. */
+  const phoneCreatedMemberIdRef = useRef<string | null>(null);
   const [superConsentAck, setSuperConsentAck] = useState(false);
   const [superAcknowledgedConfirmationIds, setSuperAcknowledgedConfirmationIds] = useState<string[]>([]);
   const [supervisionResolved, setSupervisionResolved] = useState(false);
@@ -745,6 +751,8 @@ export default function MobileTill() {
     setTierClaimRefusal(null);
     setSuperSlots([]);
     setSuperParentName('');
+    setSuperGuardianFromProfile(false);
+    phoneCreatedMemberIdRef.current = null;
     setSuperConsentAck(false);
     setSupervisionResolved(false);
     gateRegistrationIdRef.current = null;
@@ -1287,7 +1295,12 @@ export default function MobileTill() {
       }
     }
     setSuperSlots(slots);
-    setSuperParentName('');
+    // SCRUM-1018 — the parent's name comes from the family's profile when the
+    // lookup found them, as on the counter (`profileGuardianName`); a first
+    // visit is asked it on the form, as before.
+    const profileName = profileGuardianName(member, phoneCreatedMemberIdRef.current);
+    setSuperParentName(profileName ?? '');
+    setSuperGuardianFromProfile(profileName !== null);
     gateRegistrationIdRef.current = null;
     gateStayIdsRef.current = new Map();
     gateWaiverIdsRef.current = new Map();
@@ -1326,7 +1339,8 @@ export default function MobileTill() {
    * customer screen: the drop-off and nanny form the counter shows on its
    * customer half opens here, on the phone handed to the parent (the
    * hand-to-customer overlay), with the phone's camera for the photo, the
-   * number confirmation tick, the "Still needed" line and Done. What the form
+   * "Still needed" line and Done (SCRUM-1018: the number is shown, with no
+   * tick). What the form
    * still needs is the counter's own reading (`consentMissing`): each child
    * named and aged, the name and consent, the confirmations, the number
    * confirmed for its channel, a photo of each child in care.
@@ -1353,9 +1367,15 @@ export default function MobileTill() {
     });
   };
   // SCRUM-1018 — the number and the channel on the form write the sale's
-  // contact, as before; no tick is withdrawn (none is asked).
+  // contact, as before; no tick is withdrawn (none is asked). Once a number
+  // was given the form shows it and the family cannot change it
+  // (`parentPhoneFixed`); only a form with no number yet takes one.
   const changeFormPhone = (next: string) => setCustomerPhone(next);
   const changeFormChannel = (next: ContactChannel) => handleCustomerContactChannelChange(next);
+  /** SCRUM-1021 — the ticket's own food credit, shown on the form as included, as on the counter. */
+  const formIncludedCreditTHB = (slot: SupervisedSlot): number =>
+    Math.round(includedCreditTHB(slot.ticketType, tier ?? getDefaultTier().id,
+      lines.some((line) => line.id === slot.sourceLineId && !!line.voucherGift)));
 
   /**
    * Mobile-specific supervision continue: opens the family's form on the
@@ -1670,6 +1690,7 @@ export default function MobileTill() {
       })
         .then((saved) => {
           if (saleEpochRef.current !== epoch) return;
+          phoneCreatedMemberIdRef.current = saved.id;
           setMember(saved);
           setPendingVerification(null);
           toast({
@@ -2694,6 +2715,11 @@ export default function MobileTill() {
             parentContactMethod={customerContactChannel}
             onParentPhoneChange={changeFormPhone}
             onParentContactMethodChange={changeFormChannel}
+            // SCRUM-1018 — the number given at the start and the profile's
+            // name are shown, not asked, as on the counter's customer half.
+            parentPhoneFixed={!!customerPhone.trim()}
+            parentNameFixed={superGuardianFromProfile && !!superParentName.trim()}
+            includedCreditTHB={formIncludedCreditTHB}
             onParentNameChange={setSuperParentName}
             onConsentAckChange={setSuperConsentAck}
             onUpdateChild={handleUpdateSlot}

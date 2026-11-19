@@ -57,7 +57,10 @@ describe('the till’s own customer half', () => {
       expect(html).not.toContain('data-testid="consent-contact-confirm"');
       expect(html).toContain('WhatsApp');
       expect(html).toContain('Telegram');
-      expect(html).toContain(t('till.input.phoneKept').replace(/'/g, '&#x27;'));
+      // A neutral line (fix round): the number may come from the start, the
+      // profile or staff, so it no longer says "the number you gave at the start".
+      expect(html).toContain(t('superviseConsent.phoneShown').replace(/'/g, '&#x27;'));
+      expect(html).not.toContain(t('till.input.phoneKept').replace(/'/g, '&#x27;'));
     }
   });
 
