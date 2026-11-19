@@ -24,22 +24,38 @@ export function ActionSection({ title, children, card = true }: { title: string;
   );
 }
 
-/** One line of a card: a label, its value, and what may be done with it; a rule above every line but the first. */
+/**
+ * One line of a card: a label, its value, and what may be done with it; a
+ * rule above every line but the first. `stacked` sets the label over its
+ * value, for the desktop's narrow right panel (Desktop.dc.html), where a
+ * label column beside the value left the value a few letters wide.
+ */
 export function ActionRow({
   label,
   children,
   action,
   title,
+  stacked = false,
 }: {
   label: string;
   children: ReactNode;
   action?: ReactNode;
   title?: string;
+  stacked?: boolean;
 }) {
   return (
     <div title={title} className={`relative flex min-h-[52px] items-center gap-3 border-t border-line-soft py-1 pl-3.5 pr-2 first:border-t-0 ${ROW_FOCUS}`}>
-      <span className="w-20 shrink-0 text-[13.5px] text-ink-muted">{label}</span>
-      <span className="flex min-w-0 flex-1 items-center gap-2 text-[14.5px] font-semibold text-ink">{children}</span>
+      {stacked ? (
+        <span className="flex min-w-0 flex-1 flex-col gap-0.5 py-1.5">
+          <span className="text-[12.5px] text-ink-muted">{label}</span>
+          <span className="flex min-w-0 items-center gap-2 text-[14px] font-semibold text-ink">{children}</span>
+        </span>
+      ) : (
+        <>
+          <span className="w-20 shrink-0 text-[13.5px] text-ink-muted">{label}</span>
+          <span className="flex min-w-0 flex-1 items-center gap-2 text-[14.5px] font-semibold text-ink">{children}</span>
+        </>
+      )}
       {action}
     </div>
   );
@@ -65,8 +81,36 @@ export function PersonFace({ chip }: { chip: Chip }) {
   );
 }
 
-/** A person on the conversation: their face, their name, their place on it, and what may be done. */
-export function PersonRow({ chip, role, children }: { chip: Chip; role: string; children?: ReactNode }) {
+/**
+ * A person on the conversation: their face, their name, their place on it,
+ * and what may be done. `stacked` (the desktop's right panel) puts the action
+ * words on their own line under the name, so neither the name nor the words
+ * are squeezed into the panel's width; the role keeps one line there.
+ */
+export function PersonRow({
+  chip,
+  role,
+  children,
+  stacked = false,
+}: {
+  chip: Chip;
+  role: string;
+  children?: ReactNode;
+  stacked?: boolean;
+}) {
+  if (stacked) {
+    return (
+      <div className="flex items-start gap-3 border-t border-line-soft py-2.5 pl-3.5 pr-2 first:border-t-0" data-person-row="stacked">
+        <PersonFace chip={chip} />
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span title={chip.name} className="truncate text-[14.5px] font-semibold text-ink">{chip.name}</span>
+          <span title={role} className="truncate text-[12.5px] text-ink-muted">{role}</span>
+          {/* The words' own padding lines their text up with the name above them. */}
+          {children && <span className="-ml-3 mt-0.5 flex flex-wrap items-center">{children}</span>}
+        </span>
+      </div>
+    );
+  }
   return (
     <div className="flex min-h-14 items-center gap-3 border-t border-line-soft py-1.5 pl-3.5 pr-2 first:border-t-0">
       <PersonFace chip={chip} />

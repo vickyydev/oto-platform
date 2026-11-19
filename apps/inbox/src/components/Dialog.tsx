@@ -37,9 +37,12 @@ export function Dialog({
   wide = false,
   sheet = false,
   closeLabel = 'Close',
+  lead,
 }: {
   open: boolean;
   onClose: () => void;
+  /** A sheet's mark before its title (a contact's face); decorative, the title names the sheet. */
+  lead?: ReactNode;
   /** The header's icon from 768 px; a sheet has none. */
   icon?: LucideIcon;
   /** The icon's tint, one of the tested tones. */
@@ -88,8 +91,10 @@ export function Dialog({
           onClick={(e) => e.stopPropagation()}
           className="flex max-h-[calc(100%-3.5rem)] w-full flex-col overflow-hidden rounded-t-3xl bg-ground shadow-pop outline-none md:max-h-full md:max-w-lg md:rounded-3xl"
         >
-          <div className="flex shrink-0 items-center justify-between gap-3 pb-1.5 pl-5 pr-2 pt-3.5">
-            <div className="min-w-0">
+          <div className="flex shrink-0 items-center gap-3 pb-1.5 pl-5 pr-2 pt-3.5">
+            {/* What the sheet is about, before its title (ChatActions.dc.html: the contact's 44 px face). */}
+            {lead}
+            <div className="min-w-0 flex-1">
               <h2 id={titleId} className="truncate text-[20px] font-extrabold tracking-[-0.02em] text-ink">
                 {title}
               </h2>

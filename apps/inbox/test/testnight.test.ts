@@ -468,7 +468,8 @@ describe('the wording (U9)', () => {
     // details' Branch line became People and actions' Park row).
     const agent = panel(anya, r, detail(r));
     expect(agent).not.toContain('aria-label="Conversation branch"');
-    expect(agent).toMatch(/>Park<\/span><span[^>]*><span class="truncate">Central Floresta<\/span>/);
+    // SCRUM-1016 (review): the desktop panel sets the value under its label, whole.
+    expect(agent).toMatch(/>Park<\/span><span[^>]*><span class="min-w-0 break-words">Central Floresta<\/span>/);
     // And the header says where the chat came from: the number, the topic, the park.
     expect(agent).toContain(' · General · Central Floresta</p>');
   });
@@ -539,26 +540,30 @@ describe('the phone’s team and status controls (U10)', () => {
   // SCRUM-1016: the team and status controls a phone found in the details
   // dialog are rows of People and actions — the sheet a phone opens from the
   // chat's menu, the panel beside the chat on a desktop — at every width.
+  // SCRUM-1016 (review): the status is no longer set from a row of its own
+  // (a third home of Mark as handled); a phone marks a chat handled from the
+  // sheet's footer (and the header behind it) and reopens it from the composer.
   const r = row();
+  const sheetOf = (html: string) => html.slice(html.indexOf('role="dialog"'));
   it('the sheet carries both controls for the GM, in the section that holds them', () => {
-    const html = panel(hana, r, detail(r), true);
-    const sheet = html.slice(html.indexOf('role="dialog"'));
+    const sheet = sheetOf(panel(hana, r, detail(r), true));
     expect(sheet).toContain('data-phone-actions="true"');
     expect(sheet).toContain('aria-label="Move to team"');
-    expect(sheet).toContain('aria-label="Set conversation status"');
+    expect(sheet).toContain('Mark as handled</span></button>');
   });
   it('the panel hands the sheet the controls the viewer holds: both for the GM, the status only for the primary', () => {
-    const gm = panel(hana, r, detail(r), true);
+    const gm = sheetOf(panel(hana, r, detail(r), true));
     expect(gm).toContain('data-phone-actions="true"');
     expect(gm).toContain('aria-label="Move to team"');
-    expect(gm).toContain('aria-label="Set conversation status"');
+    expect(gm).toContain('Mark as handled</span></button>');
     // The agent is the primary: she may mark it handled, not move it.
-    const agent = panel(anya, r, detail(r), true);
-    expect(agent).toContain('aria-label="Set conversation status"');
+    const agent = sheetOf(panel(anya, r, detail(r), true));
+    expect(agent).toContain('Mark as handled</span></button>');
     expect(agent).not.toContain('aria-label="Move to team"');
     // An agent off the thread, with no rights on it, gets no actions block.
     const bystander = panel({ ...anya, accountId: VERA, name: 'Demo Vera' }, { ...r, mine: false }, detail({ ...r, mine: false }), true);
     expect(bystander).not.toContain('data-phone-actions');
+    expect(bystander).not.toContain('Mark as handled</span></button>');
   });
 });
 

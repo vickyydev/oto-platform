@@ -248,7 +248,8 @@ describe('SCRUM-1016: the accessibility pass', () => {
   it('a native select laid invisibly over a row or a word hands its focus ring to what is seen', () => {
     const html = chat(viewer({ assign: true, birthdays: false }), true);
     const root = doc(html);
-    for (const name of ['Move to team', 'Conversation branch', 'Set conversation status']) {
+    // SCRUM-1016 (review): the status row is a read-out now, with no select to hand a ring.
+    for (const name of ['Move to team', 'Conversation branch']) {
       const select = root.querySelector(`select[aria-label="${name}"]`)!;
       expect(select.className, name).toContain('opacity-0');
       expect(select.closest('div')!.className, name).toContain('has-[select:focus-visible]:outline-coral');
