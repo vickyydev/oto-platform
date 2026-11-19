@@ -50,6 +50,12 @@ import '../../../src/index.css';
  *  &fonts=1          the till's own fonts (Inter, Till Thai), so a measured
  *                    line reads the same on Windows and on Linux
  *
+ * SCRUM-1059:
+ *  &photoWithStaff=1 the till is deciding on the photo the form still needs
+ *                    (a returning child's last photo), as Till.tsx sends it
+ *  &short=1          a returning family's short form: the agreements alone,
+ *                    the child named from their profile (SCRUM-1018)
+ *
  * `#till` holds what the till has: the display's last fill, or the half's state.
  */
 const query = new URLSearchParams(location.search);
@@ -84,13 +90,17 @@ const policy: SupervisionPolicy = {
 
 const firstPrompt: ConsentPrompt = {
   kind: 'consent', requestId: 'zz-form-1', visitorId: 'zz-form-visitor',
-  slots: [{ id: 'zz-slot', name: '', ageYears: 6, requirement: 'drop_off', dateOfBirth: null, allergiesMedical: '', foodRestrictions: '',
+  slots: [{ id: 'zz-slot', name: query.get('short') === '1' ? 'ZZ TEST Mai' : '', ageYears: 6, requirement: 'drop_off', dateOfBirth: null, allergiesMedical: '', foodRestrictions: '',
     ...(camera ? { photo: 'needed' as const } : {}) }],
   guardianName: '', guardianPhone: '+66898930001', contactChannel: 'whatsapp', contactConfirmed: false, familyStep: step,
   consentRequired: true, consentAcknowledged: false,
   confirmations: policy.confirmations.map((item) => ({ id: item.id, text: item.text, required: item.required, acknowledged: false })),
   fees: { nannyHourlyTHB: 300, dropOffFeeTHB: 225 },
   ...(camera ? { reportsCamera: true } : {}),
+  // SCRUM-1059 — &photoWithStaff=1: the photo the form still needs is staff's to decide on the till;
+  // &short=1: a returning family's short form (the agreements alone, the child named from their profile).
+  ...(query.get('photoWithStaff') === '1' ? { photoWithStaff: true as const } : {}),
+  ...(query.get('short') === '1' ? { agreementsOnly: true } : {}),
   staffReady: false, canContinue: false, completed: false,
 };
 

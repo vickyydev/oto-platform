@@ -3,7 +3,7 @@ import { SupervisionPolicy, ChildFoodProvision, ContactChannel } from '@/types';
 import { cn } from '@/lib/utils';
 import { CHANNEL_LABEL } from '@/lib/contactChannel';
 import { messagingPhoneProblem } from '@/lib/consentForm';
-import { consentMissing, consentMissingLine } from '@/lib/consentFinish';
+import { consentMissing, consentMissingLine, photoWithTeamLine } from '@/lib/consentFinish';
 import { Button } from '@/components/ui/button';
 import { formatStoredPhone } from '@/lib/phoneUtils';
 import { getDropOffPricing } from '@/mockApi';
@@ -349,17 +349,21 @@ export function ConsentCapture({
   // SCRUM-875 — what is still missing before the family's Done, in their language.
   const careLine = onDone && pendingCare
     ? t('superviseConsent.careClearedLine', { name: pendingCare.name.trim() || t('superviseConsent.thisChild') }) : null;
+  const familyMissing = consentMissing({
+    children: slots.map((s) => ({ name: s.name, ageYears: slotAge(s) })),
+    consentRequired: anyNeedsConsent,
+    guardianName: parentName,
+    consentAcknowledged: consentAck,
+    confirmations: confirmations.map((c) => ({ required: c.required, acknowledged: acknowledgedConfirmationIds.includes(c.id) })),
+    ...(onContactConfirmedChange ? { contact: { confirmed: contactConfirmed, problem: messagingPhoneProblem(parentPhone ?? '') } } : {}),
+    // SCRUM-1053 — a photo staff compare or reuse on the till is not the family's to give.
+    photosTaken: rows.every((r) => !r.needsConsent || !!r.slot.childPhotoUrl || photoAtTillFor.includes(r.slot.id)),
+  });
+  // SCRUM-1059 — all of the family's is done and staff are still deciding on a photo: say so, as the display does.
+  const teamPhotoLine = photoWithTeamLine(t, { missing: familyMissing, consentRequired: anyNeedsConsent,
+    photoWithStaff: !doneReady && rows.some((r) => r.needsConsent && !r.slot.childPhotoUrl && photoAtTillFor.includes(r.slot.id)) });
   const missingLine = onDone
-    ? careLine ?? consentMissingLine(t, consentMissing({
-      children: slots.map((s) => ({ name: s.name, ageYears: slotAge(s) })),
-      consentRequired: anyNeedsConsent,
-      guardianName: parentName,
-      consentAcknowledged: consentAck,
-      confirmations: confirmations.map((c) => ({ required: c.required, acknowledged: acknowledgedConfirmationIds.includes(c.id) })),
-      ...(onContactConfirmedChange ? { contact: { confirmed: contactConfirmed, problem: messagingPhoneProblem(parentPhone ?? '') } } : {}),
-      // SCRUM-1053 — a photo staff compare or reuse on the till is not the family's to give.
-      photosTaken: rows.every((r) => !r.needsConsent || !!r.slot.childPhotoUrl || photoAtTillFor.includes(r.slot.id)),
-    }), CHANNEL_LABEL[parentContactMethod])
+    ? careLine ?? consentMissingLine(t, familyMissing, CHANNEL_LABEL[parentContactMethod]) ?? teamPhotoLine
     : null;
 
   const language = (

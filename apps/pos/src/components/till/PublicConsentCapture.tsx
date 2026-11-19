@@ -13,7 +13,7 @@ import { DISPLAY_TOUCH, NARROW_BAR, NARROW_HEAD, NARROW_HEAD_TOUCH, NARROW_LINE,
 import { useLanguage } from '@/i18n/LanguageContext';
 import { consentFormPhone, consentPhoneShown, messagingPhoneProblem } from '@/lib/consentForm';
 import { clearConsentDraft, keepConsentDraft, readConsentDraft } from '@/lib/consentDraftStore';
-import { consentMissing, consentMissingLine } from '@/lib/consentFinish';
+import { consentMissing, consentMissingLine, photoWithTeamLine } from '@/lib/consentFinish';
 import { CHANNEL_LABEL } from '@/lib/contactChannel';
 import type { DisplayPhotoForm } from '@/api/consentPhoto';
 import { DisplayChildPhoto, MirrorChildPhoto, useCameraPresence } from './DisplayChildPhoto';
@@ -684,7 +684,7 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
   // entered here. The photos are the till's: each child it asks this screen
   // for is `taken` once it holds one, from the family or from staff (SCRUM-857);
   // a till that marks none says so in `staffReady`.
-  const missingLine = consentMissingLine(t, consentMissing({
+  const missing = consentMissing({
     children: prompt.slots.map((slot) => ({ name: draft.slots[slot.id]?.name ?? '', ageYears: draft.slots[slot.id]?.ageYears ?? null })),
     consentRequired: prompt.consentRequired,
     guardianName: draft.guardianName,
@@ -694,7 +694,10 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
     // SCRUM-1053 — a photo staff are deciding on the till (the last visit's,
     // compared or reused) is not the family's to give: not named here.
     photosTaken: marked ? prompt.slots.every((slot) => slot.photo !== 'needed') : prompt.staffReady || prompt.photoWithStaff === true,
-  }), CHANNEL_LABEL[contactChannel]);
+  });
+  const missingLine = consentMissingLine(t, missing, CHANNEL_LABEL[contactChannel]);
+  // SCRUM-1059 — all of the family's is done and staff are deciding on the photo: say so, not nothing.
+  const teamPhotoLine = photoWithTeamLine(t, { missing, consentRequired: prompt.consentRequired, photoWithStaff: prompt.photoWithStaff === true });
   // SCRUM-875 — with nothing missing, Done also waits while this screen's last
   // change is on its way to the till (it is pressed on the till's copy of the
   // form); when that takes more than a moment, the line says it is sending.
@@ -708,7 +711,7 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
   // SCRUM-1020 — a note emptied without the family's "no allergies" comes first: Done waits on it.
   const careLine = pendingCare
     ? t('superviseConsent.careClearedLine', { name: draft.slots[pendingCare.id]?.name.trim() || t('superviseConsent.thisChild') }) : null;
-  const doneLine = careLine ?? missingLine ?? (slowSend ? t('display.sending') : null);
+  const doneLine = careLine ?? missingLine ?? (slowSend ? t('display.sending') : null) ?? teamPhotoLine;
   const setChild = (id: string, patch: Partial<ChildDraft>) =>
     edit((current) => ({ ...current, slots: { ...current.slots, [id]: { ...current.slots[id]!, ...patch } } }));
   /**
