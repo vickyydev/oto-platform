@@ -30,7 +30,13 @@ is wanted — not a re-run of the old file.
 | --- | --- | --- |
 | `0021_voucher_redemption` | `0021_voucher_redemption.sql` | 0023 (the ledger's TRUNCATE trigger), 0024 (the throttle's code hashes) |
 | `0022_booth_staff_session_and_voucher_wording` | `0022_booth_staff_session_and_voucher_wording.sql` | — |
+| `0136_family_profiles` | `0136_family_profiles.sql` | — |
 
-Both files were run against a database built from every migration up to 0034,
-and the schema they left matched, object for object, a database built from a
-journal without 0021–0024 (SCRUM-423, 30 September).
+The first two files were run against a database built from every migration up
+to 0034, and the schema they left matched, object for object, a database built
+from a journal without 0021–0024 (SCRUM-423, 30 September).
+
+`0136_family_profiles.sql` was written with its migration (SCRUM-1024), as the
+plan for family profiles asks, and is held by
+`packages/db/test/s1024-family-migration.test.ts`: run against a database built
+from every migration, it leaves the catalogue of `crm` as it was before 0136.
