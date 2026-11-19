@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ApiError, apiRequest } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
 import { EMPLOYMENT_ENDED } from "@shared/payOnly";
+import { kioskShiftTimes, type SingleShiftKioskView } from "@shared/singleShift";
 import { normalizeEnrollmentIdentity, type KioskEnrollmentIdentity } from "@/lib/kiosk-enrollment";
 import { Camera, QrCode, Clock, CheckCircle, XCircle, User, ArrowLeft, AlertTriangle, Keyboard, RefreshCw, Loader2 } from "lucide-react";
 import { Html5Qrcode } from "html5-qrcode";
@@ -64,7 +65,13 @@ interface ClockResult {
     lateMinutes: number;
     scheduledStart: string;
   };
+  /** SCRUM-1055 (R7): a former employee's single shift today, at this branch. */
+  singleShifts?: SingleShiftKioskView[];
 }
+
+/** How long the answer stays up: longer when it shows a single shift to read. */
+const SUCCESS_SCREEN_MS = 5000;
+const SINGLE_SHIFT_SCREEN_MS = 15000;
 
 interface KioskPageProps {
   branchId?: string;
@@ -152,7 +159,7 @@ export default function KioskPage({ branchId }: KioskPageProps) {
   const showSuccessScreen = (result: ClockResult) => {
     setClockResult(result);
     setScreen("success");
-    setTimeout(resetToHome, 5000);
+    setTimeout(resetToHome, result.singleShifts?.length ? SINGLE_SHIFT_SCREEN_MS : SUCCESS_SCREEN_MS);
   };
 
   const showErrorScreen = (message: string) => {
@@ -325,6 +332,7 @@ export default function KioskPage({ branchId }: KioskPageProps) {
           },
           identityType: isAdvisor ? "ADVISOR" : "EMPLOYEE",
           lateArrival: clockData.lateArrival,
+          singleShifts: clockData.singleShifts,
         });
       } else if (result.livenessFailed) {
         // Liveness check failed - show specific message and allow retry
@@ -466,6 +474,7 @@ export default function KioskPage({ branchId }: KioskPageProps) {
           eventTime: data.eventTime,
           employee: data.advisor || data.employee,
           identityType: data.identityType,
+          singleShifts: data.singleShifts,
         });
       } else {
         showErrorScreen(data.message || "Phone verification failed");
@@ -1497,6 +1506,22 @@ export default function KioskPage({ branchId }: KioskPageProps) {
                       </p>
                     </div>
                   )}
+                  {clockResult.singleShifts?.map((shift, i) => (
+                    <div key={i} className="mt-6 p-4 bg-background/70 rounded-lg border text-left" data-testid="single-shift-today">
+                      <p className="text-sm text-muted-foreground mb-1">Your shift today</p>
+                      <p className="text-2xl font-mono font-semibold" data-testid="single-shift-times">
+                        {kioskShiftTimes(shift.startTime, shift.endTime)}
+                      </p>
+                      <p className="text-base" data-testid="single-shift-place">
+                        {[shift.label, shift.department, shift.role, shift.branchName].filter(Boolean).join(" · ")}
+                      </p>
+                      {shift.breaks.map((b, j) => (
+                        <p key={j} className="text-sm text-muted-foreground" data-testid="single-shift-break">
+                          Break {kioskShiftTimes(b.startTime, b.endTime)}
+                        </p>
+                      ))}
+                    </div>
+                  ))}
                 </>
               ) : (
                 <>
@@ -1509,8 +1534,13 @@ export default function KioskPage({ branchId }: KioskPageProps) {
                 </>
               )}
               <p className="text-sm text-muted-foreground mt-6">
-                Returning to home in 5 seconds...
+                Returning to home in {clockResult?.singleShifts?.length ? SINGLE_SHIFT_SCREEN_MS / 1000 : SUCCESS_SCREEN_MS / 1000} seconds...
               </p>
+              {clockResult?.singleShifts?.length ? (
+                <Button variant="outline" size="lg" className="mt-6" onClick={resetToHome} data-testid="button-single-shift-done">
+                  Back to Home
+                </Button>
+              ) : null}
             </CardContent>
           </Card>
         )}

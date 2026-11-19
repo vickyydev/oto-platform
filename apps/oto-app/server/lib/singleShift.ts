@@ -1,7 +1,11 @@
 import { and, asc, eq, gte, inArray, isNotNull, lte } from "drizzle-orm";
 import {
+  branches,
+  departments,
   employees,
+  roles,
   scheduleAssignments,
+  scheduleShiftBreaks,
   scheduleShiftRows,
   singleShiftInvitations,
   users,
@@ -13,6 +17,7 @@ import {
   singleShiftPayLabel,
   singleShiftWayWords,
   validCasualDayRate,
+  type SingleShiftKioskView,
   type SingleShiftPayWay,
 } from "@shared/singleShift";
 import { db } from "../db";
@@ -54,6 +59,9 @@ import { getEmployeeDisplayName } from "./employeeDisplayName";
  *    shift's branch on its day, as anybody employed that day does, and from
  *    the next day the kiosk refuses them again by itself. The login stays in
  *    pay only.
+ *  - What they see of the schedule (SCRUM-1055, R7, `singleShiftsShownAtKiosk`):
+ *    that day's shift, on the kiosk's answer to their own clock-in and
+ *    clock-out there; nothing else of the schedule, and nothing in pay only.
  */
 
 export type { SingleShiftPayWay };
@@ -87,6 +95,83 @@ export async function singleShiftOpenOn(employeeId: string, branchId: string, da
       eq(scheduleAssignments.shiftDate, day),
     )).limit(1);
   return !!row;
+}
+
+/**
+ * What the kiosk shows the former employee about their shift (SCRUM-1055, R7:
+ * they "also see their schedule for that day"). Their login is in pay only
+ * and reaches no schedule (lib/payOnlyAccess.ts), and is left so: the one
+ * door already open to them is the kiosk at the shift's branch on its day,
+ * so the shift is shown there, in the answer to their own clock-in and
+ * clock-out (routes.ts, the phone and face clock doors).
+ *
+ * Read only for a profile whose employment has ended (the kiosk's own
+ * measure): a current employee's clock is answered as before, with nothing
+ * more read. Only the shifts of the pair that opened the kiosk
+ * (`singleShiftOpenOn`): the invitation and its assignment, still naming this
+ * person and today, at this branch. Each with its times, its name in the
+ * schedule, department, role, branch and this person's own breaks; never how
+ * it is paid, nobody else's shift, no other day. Undefined when there is none.
+ */
+export async function singleShiftsShownAtKiosk(
+  profile: Pick<Employee, "id" | "status" | "employmentState" | "lastWorkingDay">,
+  branchId: string,
+  now: Date = new Date(),
+): Promise<SingleShiftKioskView[] | undefined> {
+  const today = bangkokToday(now);
+  if (!employmentEndedOn(profile, today)) return undefined;
+  const rows = await db.select({
+    assignmentId: scheduleAssignments.id,
+    startTime: scheduleShiftRows.startTime,
+    endTime: scheduleShiftRows.endTime,
+    label: scheduleShiftRows.label,
+    department: departments.name,
+    role: roles.name,
+    branchName: branches.name,
+    breakStartTime: scheduleShiftBreaks.breakStartTime,
+    breakEndTime: scheduleShiftBreaks.breakEndTime,
+  })
+    .from(singleShiftInvitations)
+    .innerJoin(scheduleAssignments, and(
+      eq(scheduleAssignments.id, singleShiftInvitations.assignmentId),
+      eq(scheduleAssignments.employeeId, singleShiftInvitations.employeeId),
+      eq(scheduleAssignments.shiftDate, singleShiftInvitations.shiftDate),
+    ))
+    .innerJoin(scheduleShiftRows, eq(scheduleShiftRows.id, scheduleAssignments.shiftRowId))
+    .innerJoin(branches, eq(branches.id, singleShiftInvitations.branchId))
+    .leftJoin(departments, eq(departments.id, scheduleShiftRows.departmentId))
+    .leftJoin(roles, eq(roles.id, scheduleAssignments.roleId))
+    .leftJoin(scheduleShiftBreaks, and(
+      eq(scheduleShiftBreaks.assignmentId, scheduleAssignments.id),
+      eq(scheduleShiftBreaks.shiftDate, singleShiftInvitations.shiftDate),
+    ))
+    .where(and(
+      eq(singleShiftInvitations.employeeId, profile.id),
+      eq(singleShiftInvitations.branchId, branchId),
+      eq(singleShiftInvitations.shiftDate, today),
+    ))
+    .orderBy(asc(scheduleShiftRows.startTime), asc(scheduleAssignments.id), asc(scheduleShiftBreaks.breakStartTime));
+  if (!rows.length) return undefined;
+  const hhmm = (t: string) => t.slice(0, 5);
+  const shown = new Map<string, SingleShiftKioskView>();
+  for (const row of rows) {
+    let view = shown.get(row.assignmentId);
+    if (!view) {
+      view = {
+        shiftDate: today,
+        startTime: hhmm(row.startTime),
+        endTime: hhmm(row.endTime),
+        label: row.label ?? null,
+        department: row.department ?? null,
+        role: row.role ?? null,
+        branchName: row.branchName,
+        breaks: [],
+      };
+      shown.set(row.assignmentId, view);
+    }
+    if (row.breakStartTime && row.breakEndTime) view.breaks.push({ startTime: hhmm(row.breakStartTime), endTime: hhmm(row.breakEndTime) });
+  }
+  return Array.from(shown.values());
 }
 
 export interface FormerEmployeeView {

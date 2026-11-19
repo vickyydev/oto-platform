@@ -193,6 +193,7 @@ import { archivedBranchIds } from "./lib/platformBranches";
 import { branchAddedAt, branchesAddedByEdit, checklistRunStartDate } from "./lib/checklistBranchStart";
 import { liftPayOnlyIfWorkingWithin, payOnlyFence, restrictLoginWithin } from "./lib/payOnlyAccess";
 import { kioskEmploymentEnded, kioskProfileByPhone, refuseEndedEmployment, workingProfileBesides } from "./lib/kioskEmploymentEnded";
+import { singleShiftsShownAtKiosk } from "./lib/singleShift";
 import {
   BRANCH_NOT_FOUND,
   CATALOG_ITEM_NOT_FOUND,
@@ -10922,6 +10923,9 @@ OTO Company Limited`,
         }
       }
 
+      // SCRUM-1055 (R7): as on the phone road.
+      const singleShifts = await singleShiftsShownAtKiosk(employee, branchId);
+
       res.json({
         success: true,
         eventType,
@@ -10931,6 +10935,7 @@ OTO Company Limited`,
           fullName: employee.fullName,
         },
         lateArrival,
+        ...(singleShifts ? { singleShifts } : {}),
       });
     } catch (error) {
       next(error);
@@ -11577,6 +11582,10 @@ OTO Company Limited`,
 
       await storage.incrementEmployeePhoneFallbackUsage(employee.id);
 
+      // SCRUM-1055 (R7): a former employee clocking for their single shift is
+      // shown that shift; anybody else's answer is as before.
+      const singleShifts = await singleShiftsShownAtKiosk(employee, branchId);
+
       res.json({
         success: true,
         eventType,
@@ -11585,6 +11594,7 @@ OTO Company Limited`,
           id: employee.id,
           fullName: employee.fullName,
         },
+        ...(singleShifts ? { singleShifts } : {}),
       });
     } catch (error) {
       next(error);
