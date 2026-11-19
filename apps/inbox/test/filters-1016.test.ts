@@ -18,8 +18,9 @@ import type { ConversationList as ListPage, ConversationRow, Dashboard as Dashbo
 import { AppBar } from '@/components/AppBar';
 import { ConversationList, TILL_NOTICE_LABEL } from '@/components/ConversationList';
 import { FiltersDialog, showConversationsLabel } from '@/components/dialogs';
-import { Rail, ScopeTabs } from '@/components/Rail';
+import { FilterFields, Rail, ScopeTabs } from '@/components/Rail';
 import { StatsRow } from '@/components/StatsRow';
+import { channelChoices, mergeSources, sourcesOfRows, withoutHiddenChannel, type SourceOption } from '@/lib/inboxes';
 import { EMPTY_FILTERS, type Filters } from '@/lib/query';
 
 const CENTRAL = '00000000-0000-7000-8000-00000000000c';
@@ -155,6 +156,43 @@ describe('SCRUM-1016: each filter is offered once', () => {
   });
 });
 
+describe('SCRUM-1016 (review): Channel and "Hide till notices"', () => {
+  const NOTICES = '0192f0a0-1234-7abc-8def-0000000000b9';
+  const WA = '0192f0a0-1234-7abc-8def-0000000000b8';
+  const sources: SourceOption[] = mergeSources([], sourcesOfRows([
+    row({ channelAccountId: NOTICES, channelAccountName: 'ZZ TEST check-in notices', canReply: false }),
+    row({ channelAccountId: WA, channelAccountName: 'ZZ TEST WhatsApp', canReply: true }),
+  ]));
+
+  it('learns from the rows which numbers carry only the till’s notices', () => {
+    expect(sources.find((s) => s.id === NOTICES)?.canReply).toBe(false);
+    expect(sources.find((s) => s.id === WA)?.canReply).toBe(true);
+    // A number first known without it (the simulator's list) learns it from a row, once.
+    const bare = mergeSources([], [{ id: NOTICES, channel: 'whatsapp', name: null }]);
+    const learned = mergeSources(bare, sources);
+    expect(learned.find((s) => s.id === NOTICES)).toEqual({ id: NOTICES, channel: 'whatsapp', name: 'ZZ TEST check-in notices', canReply: false });
+    expect(mergeSources(learned, sources)).toBe(learned);
+  });
+
+  it('while the notices are hidden, their number is no Channel choice; shown, it is', () => {
+    expect(channelChoices(sources, me, { hideNotices: true }).map((s) => s.id)).not.toContain(NOTICES);
+    expect(channelChoices(sources, me, { hideNotices: false }).map((s) => s.id)).toContain(NOTICES);
+    const on = markup(createElement(FilterFields, { me, filters: EMPTY_FILTERS, onChange: noop, sources }));
+    expect(on).not.toContain(`data-chip="channelAccountId:${NOTICES}"`);
+    expect(on).toContain(`data-chip="channelAccountId:${WA}"`);
+    const off = markup(createElement(FilterFields, { me, filters: { ...EMPTY_FILTERS, hideNotices: false }, onChange: noop, sources }));
+    expect(off).toContain(`data-chip="channelAccountId:${NOTICES}"`);
+  });
+
+  it('switching the notices off and on lets a chosen notices number go, and keeps any other', () => {
+    expect(withoutHiddenChannel({ ...EMPTY_FILTERS, channelAccountId: NOTICES }, sources).channelAccountId).toBe('');
+    expect(withoutHiddenChannel({ ...EMPTY_FILTERS, hideNotices: false, channelAccountId: NOTICES }, sources).channelAccountId).toBe(NOTICES);
+    expect(withoutHiddenChannel({ ...EMPTY_FILTERS, channelAccountId: WA }, sources).channelAccountId).toBe(WA);
+    // A number not known to be notices-only (no row read yet) is kept.
+    expect(withoutHiddenChannel({ ...EMPTY_FILTERS, channelAccountId: LINE }, sources).channelAccountId).toBe(LINE);
+  });
+});
+
 describe('SCRUM-1016: the Filters sheet', () => {
   it('applies a choice as it is pressed, folds General into Topic, switches the notices, clears and closes', async () => {
     const onChange = vi.fn(), onClear = vi.fn(), onClose = vi.fn();
@@ -241,6 +279,25 @@ describe('SCRUM-1016: the list head', () => {
     // The applied filters as removable pills; one press clears exactly one.
     await press(document.querySelector('[aria-label="Clear Russian"]'));
     expect(onFilters).toHaveBeenLastCalledWith({ language: '' });
+  });
+
+  it('narrowed past its tab, the list’s count says what it is out of, so it reads with the tab’s own count', () => {
+    // SCRUM-1016 (review): "Mine 16" beside "3 conversations" read as two
+    // answers to one question; the tab counts before the filters.
+    const text = (props: Partial<ListProps>) => {
+      const html = markup(createElement(ConversationList, listProps(props)));
+      return /<h3 class="px-4 pb-1.5 pt-3.5[^"]*">([^<]*)<\/h3>/.exec(html)![1];
+    };
+    const three = [row(), row(), row()];
+    expect(text({ rows: three })).toBe('3 conversations · newest first');
+    expect(text({ rows: three, filters: { ...EMPTY_FILTERS, language: 'ru' } })).toBe('3 of 16 conversations · newest first');
+    expect(text({ rows: three, filters: { ...EMPTY_FILTERS, unread: true } })).toBe('3 of 16 conversations · newest first');
+    expect(text({ rows: three, filters: { ...EMPTY_FILTERS, unanswered: true }, tab: 'team' })).toBe('3 of 18 conversations · newest first');
+    expect(text({ rows: three, filters: { ...EMPTY_FILTERS, q: 'ZZ' } })).toBe('3 of 16 conversations · newest first');
+    expect(text({ rows: [row()], filters: { ...EMPTY_FILTERS, branchId: CENTRAL }, page: page({ nextCursor: 'ZZ-cursor' }) })).toBe('1+ of 16 conversations · newest first');
+    // "Hide till notices" counts on both sides alike; the archive has no tab count.
+    expect(text({ rows: three, filters: { ...EMPTY_FILTERS, hideNotices: true } })).toBe('3 conversations · newest first');
+    expect(text({ rows: three, filters: { ...EMPTY_FILTERS, language: 'ru' }, tab: 'handled' })).toBe('3 conversations · newest first');
   });
 
   it('Handled keeps its range, "Resolved by" and the Export that is not built yet, on the Handled tab only', () => {

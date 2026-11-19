@@ -219,7 +219,8 @@ export function FilterFields({
     })),
   ];
   const parks = branchOptions(me.teams);
-  const channels = channelChoices(sources, me);
+  // While the till's notices are hidden, their numbers are no choice (SCRUM-1016 review).
+  const channels = channelChoices(sources, me, { hideNotices: filters.hideNotices });
 
   return (
     <div className={layout === 'sheet' ? 'flex flex-col gap-5' : 'flex flex-col gap-[18px]'}>

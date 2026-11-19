@@ -33,11 +33,17 @@ export function toggleChip(f: Pick<Filters, ChipDim>, dim: ChipDim, value: strin
 
 // --- The source: the number a conversation came in on ----------------------------------------
 
-/** A number the Source row offers: its channel account, by its display name when it has one. */
+/**
+ * A number the Source row offers: its channel account, by its display name
+ * when it has one. `canReply` is false for a number that only carries the
+ * till's check-in notices, as a row or the assistant's list says; unknown
+ * (absent) until one of them does.
+ */
 export interface SourceOption {
   id: string;
   channel: InboxChannelKey;
   name: string | null;
+  canReply?: boolean;
 }
 /** Previously learned names cannot survive a newer server access restriction. */
 export function inboxSourcesWithinAccess(sources: readonly SourceOption[], access: InboxMe['access']): SourceOption[] {
@@ -103,9 +109,9 @@ function bySource(a: SourceOption, b: SourceOption): number {
 
 /**
  * The numbers known so far, with `incoming` folded in: a new number joins, a
- * name fills a number known without one. The same array comes back when
- * nothing changed, so a list refresh that names no new number re-renders
- * nothing.
+ * name fills a number known without one, and so does whether it can reply.
+ * The same array comes back when nothing changed, so a list refresh that
+ * names no new number re-renders nothing.
  */
 export function mergeSources(prev: readonly SourceOption[], incoming: readonly SourceOption[]): SourceOption[] {
   let next: SourceOption[] | null = null;
@@ -114,16 +120,39 @@ export function mergeSources(prev: readonly SourceOption[], incoming: readonly S
     const at = list.findIndex((x) => x.id === s.id);
     if (at < 0) {
       next = [...list, s];
-    } else if (list[at]!.name === null && s.name !== null && s.name.trim() !== '') {
-      next = list.map((x, i) => (i === at ? { ...x, name: s.name } : x));
+      continue;
+    }
+    const known = list[at]!;
+    const name = known.name === null && s.name !== null && s.name.trim() !== '' ? s.name : known.name;
+    const canReply = known.canReply ?? s.canReply;
+    if (name !== known.name || canReply !== known.canReply) {
+      next = list.map((x, i) => (i === at ? { ...x, name, ...(canReply === undefined ? {} : { canReply }) } : x));
     }
   }
   return next ? next.sort(bySource) : (prev as SourceOption[]);
 }
 
-/** The numbers a page of conversations names (`channelAccountId`, `channelAccountName`). */
-export function sourcesOfRows(rows: readonly Pick<ConversationRow, 'channel' | 'channelAccountId' | 'channelAccountName'>[]): SourceOption[] {
-  return rows.map((r) => ({ id: r.channelAccountId, channel: r.channel, name: r.channelAccountName }));
+/** The numbers a page of conversations names (`channelAccountId`, `channelAccountName`), and whether each can reply. */
+export function sourcesOfRows(
+  rows: readonly (Pick<ConversationRow, 'channel' | 'channelAccountId' | 'channelAccountName'> & Partial<Pick<ConversationRow, 'canReply'>>)[],
+): SourceOption[] {
+  return rows.map((r) => ({
+    id: r.channelAccountId,
+    channel: r.channel,
+    name: r.channelAccountName,
+    ...(typeof r.canReply === 'boolean' ? { canReply: r.canReply } : {}),
+  }));
+}
+
+/**
+ * "Hide till notices" on (SCRUM-1016): a notices-only number chosen under
+ * Channel would ask for the replyable threads of a number that has none, an
+ * empty list with no reason given. So the number is let go of when the
+ * switch goes on (and is not offered while it is on, `channelChoices`).
+ */
+export function withoutHiddenChannel(f: Filters, sources: readonly SourceOption[]): Filters {
+  if (!f.hideNotices || !f.channelAccountId) return f;
+  return sources.some((s) => s.id === f.channelAccountId && s.canReply === false) ? { ...f, channelAccountId: '' } : f;
 }
 
 // --- The Topic choices --------------------------------------------------------------------
@@ -144,14 +173,18 @@ export function topicChoices(access: InboxMe['access']): Exclude<TopicChoice, ''
  * The numbers the Channel row offers: those known so far (the rows read, the
  * simulator's, the assistant's list) and every WhatsApp test line the api
  * names (SCRUM-908), so a test line is a choice before any of its threads is
- * read — inside the SCRUM-993 limits, as every other choice.
+ * read — inside the SCRUM-993 limits, as every other choice. While "Hide till
+ * notices" is on (`hideNotices`), a number known to carry only the till's
+ * notices is left out: its list could only be empty (SCRUM-1016 review).
  */
 export function channelChoices(
   sources: readonly SourceOption[],
   me: Partial<Pick<InboxMe, 'testLines' | 'access'>>,
+  opts: { hideNotices?: boolean } = {},
 ): SourceOption[] {
   const lines = (me.testLines ?? []).map((l) => ({ id: l.id, channel: l.channel, name: l.displayName }));
-  return inboxSourcesWithinAccess(mergeSources(sources, lines), me.access);
+  const within = inboxSourcesWithinAccess(mergeSources(sources, lines), me.access);
+  return opts.hideNotices ? within.filter((s) => s.canReply !== false) : within;
 }
 
 /** SCRUM-908: whether the viewer may press Start over on a conversation of this number. */
