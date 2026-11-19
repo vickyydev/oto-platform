@@ -6,11 +6,12 @@ import {
   beoKitchenPlans,
   beoSetupPlans,
   beoTimelineItems,
+  coreEvents,
   departments,
   roles,
   users,
 } from "@shared/schema";
-import { buildBeoTimeline, type BeoTimeline, type BeoTimelineActivity, type BeoTimelineSource } from "@shared/beoTimeline";
+import { beoTimedMadeSteps, buildBeoTimeline, type BeoTimeline, type BeoTimelineActivity, type BeoTimelineSource } from "@shared/beoTimeline";
 import { db } from "../db";
 
 /** The event's fields the timeline reads. */
@@ -119,4 +120,81 @@ export async function beoTimelineSourceOf(
 /** SCRUM-1027: the party's one timeline, as every reader shows it (shared/beoTimeline.ts). */
 export async function readBeoTimeline(event: BeoTimelineEvent): Promise<BeoTimeline> {
   return buildBeoTimeline(await beoTimelineSourceOf(event, { rows: true, people: true }));
+}
+
+/** A step the system makes, as its stored automatic row holds it. */
+export interface MadeStepRow {
+  label: string;
+  offsetMinutes: number;
+  assignedToType: string;
+}
+
+/**
+ * SCRUM-1027: the stored automatic rows the timeline's timed steps make, by source key: each
+ * step's words, its minutes from the party's start (from 14:00 for a party with no start, as the
+ * rows have always been held) and its role. The generator stores these on every Save of the BEO
+ * (`generateTimelineFromBeo` in server/beo-routes.ts); SCRUM-1050's first tick on the Day-of view
+ * stores one of them the same way (`tickMadeStep`).
+ */
+export function madeStepRowsOf(startTime: string | null, src: BeoTimelineSource): Map<string, MadeStepRow> {
+  const startTimeParts = startTime?.split(":").map(Number) || [14, 0];
+  const startTotalMin = startTimeParts[0] * 60 + startTimeParts[1];
+  const rows = new Map<string, MadeStepRow>();
+  for (const step of beoTimedMadeSteps(src)) {
+    const offsetMinutes = step.clock.minute - startTotalMin;
+    if (Number.isNaN(offsetMinutes)) continue;
+    rows.set(step.key, { label: step.label, offsetMinutes, assignedToType: step.assignedToType });
+  }
+  return rows;
+}
+
+type StoredTimelineRow = typeof beoTimelineItems.$inferSelect;
+
+/**
+ * SCRUM-1050: an automatic step ticked on the Day-of view before the BEO's next Save stored its
+ * row. The row is stored now exactly as the generator stores it (its source key, words, minutes
+ * from the start and role), ticked done by this person; the generator's next run finds it by its
+ * source key, keeps the tick and stores no second row. A step already stored is ticked done (a
+ * tick already there stays as it is). Null when the timeline makes no such step with a time, or
+ * staff removed it from the timeline.
+ */
+export async function tickMadeStep(
+  event: BeoTimelineEvent,
+  key: string,
+  userId: string,
+): Promise<StoredTimelineRow | null> {
+  if ((event.suppressedTimelineSources ?? []).includes(key)) return null;
+  const made = madeStepRowsOf(event.startTime, await beoTimelineSourceOf(event)).get(key);
+  if (!made) return null;
+  return db.transaction(async (tx) => {
+    // The event's row is held: two first ticks of the same step store one row.
+    await tx.select({ id: coreEvents.id }).from(coreEvents).where(eq(coreEvents.id, event.id)).for("update");
+    const [stored] = await tx.select().from(beoTimelineItems).where(and(
+      eq(beoTimelineItems.eventId, event.id),
+      eq(beoTimelineItems.isSystemGenerated, true),
+      eq(beoTimelineItems.sourceKey, key),
+    ));
+    const now = new Date();
+    if (stored) {
+      if (stored.isCompleted) return stored;
+      const [ticked] = await tx.update(beoTimelineItems)
+        .set({ isCompleted: true, completedAt: now, completedByUserId: userId, updatedAt: now })
+        .where(eq(beoTimelineItems.id, stored.id))
+        .returning();
+      return ticked ?? null;
+    }
+    const [row] = await tx.insert(beoTimelineItems).values({
+      eventId: event.id,
+      label: made.label,
+      offsetFromStartMinutes: made.offsetMinutes,
+      assignedToType: made.assignedToType as StoredTimelineRow["assignedToType"],
+      isSystemGenerated: true,
+      sourceKey: key,
+      sortOrder: 0,
+      isCompleted: true,
+      completedAt: now,
+      completedByUserId: userId,
+    }).returning();
+    return row ?? null;
+  });
 }
