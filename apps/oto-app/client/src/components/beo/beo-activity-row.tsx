@@ -66,6 +66,9 @@ export function BeoActivityRow({
   const [people, setPeople] = useState<ActivityPerson[]>(stored);
   const writes = useRef<Promise<unknown>>(Promise.resolve());
   const pending = useRef(0);
+  const failed = useRef(false);
+  const storedNow = useRef(stored);
+  storedNow.current = stored;
   // The people as stored once no change of this row is still on its way.
   useEffect(() => {
     if (pending.current === 0) setPeople(stored);
@@ -77,8 +80,15 @@ export function BeoActivityRow({
     pending.current += 1;
     writes.current = writes.current
       .then(() => onPeople(next.map(entryOf)))
-      .catch(() => undefined)
-      .finally(() => { pending.current -= 1; });
+      .catch(() => { failed.current = true; })
+      .finally(() => {
+        pending.current -= 1;
+        // A change refused (its toast says why): the row shows the people as stored again.
+        if (pending.current === 0 && failed.current) {
+          failed.current = false;
+          setPeople(storedNow.current);
+        }
+      });
   };
 
   return (
