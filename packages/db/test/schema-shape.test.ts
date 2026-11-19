@@ -76,6 +76,42 @@ it('retains one scoped display response per credential with restrictive history 
   ]);
 });
 
+it('fences a family and its guardians to one operator, and keeps the child link nullable (SCRUM-1024)', () => {
+  const family = byName.get('crm.family')!;
+  const guardian = byName.get('crm.family_guardian')!;
+  const child = byName.get('crm.child')!;
+  expect(family).toBeDefined();
+  expect(guardian).toBeDefined();
+  // Not the drop-off collector table, which keeps its own name and meaning.
+  expect(byName.get('crm.guardian')?.columns.has('registration_id')).toBe(true);
+  expect(family.cfg.uniqueConstraints.map((u) => [u.name, u.columns.map((c) => c.name)])).toEqual([
+    ['family_tenant_key', ['operator_id', 'id']],
+  ]);
+  const fence = guardian.cfg.foreignKeys.find((fk) => fk.getName() === 'family_guardian_family_fk')!;
+  expect(fence.reference().columns.map((c) => c.name)).toEqual(['operator_id', 'family_id']);
+  expect(fence.reference().foreignColumns.map((c) => c.name)).toEqual(['operator_id', 'id']);
+  expect(tableName(getTableConfig(fence.reference().foreignTable))).toBe('crm.family');
+  for (const t of [family, guardian]) {
+    expect(t.cfg.foreignKeys.every((fk) => fk.onDelete === 'restrict'), t.name).toBe(true);
+  }
+  const live = guardian.cfg.indexes.find((i) => i.config.name === 'family_guardian_live_unique')!;
+  expect(live.config.unique).toBe(true);
+  expect(sqlToText(live.config.where)).toContain('archived_at is null');
+  // Expand only: the two new child columns take NULL, and member_id stays the owner.
+  for (const name of ['family_id', 'merged_into_child_id']) {
+    expect(child.cfg.columns.find((c) => c.name === name)?.notNull, name).toBe(false);
+  }
+  expect(child.cfg.columns.find((c) => c.name === 'member_id')?.notNull).toBe(true);
+  const childTargets = child.cfg.foreignKeys
+    .map((fk) => [fk.reference().columns[0]!.name, tableName(getTableConfig(fk.reference().foreignTable)), fk.onDelete])
+    .sort();
+  expect(childTargets).toEqual([
+    ['family_id', 'crm.family', 'restrict'],
+    ['member_id', 'crm.member', 'restrict'],
+    ['merged_into_child_id', 'crm.child', 'restrict'],
+  ]);
+});
+
 /** The text of a `sql` fragment — a check's predicate, an index's WHERE. */
 function sqlToText(value: unknown): string {
   if (!(value instanceof SQL)) return '';
@@ -403,6 +439,10 @@ const PARTIAL_UNIQUE_EXEMPT: Record<string, string> = {
   // Its business key, the thread, is partial (`conversation_thread_unique`).
   'inbox.conversation.conversation_tenant_key':
     "The tenant fence: (operator_id, id) is the target of the composite foreign keys from message, assignment, event and the rest of a thread's rows. id is the primary key, so archiving frees nothing; a foreign key needs a non-partial unique.",
+  // SCRUM-1024: a family is archivable (a later step archives an emptied one).
+  // Its guardian rows' business key is partial (`family_guardian_live_unique`).
+  'crm.family.family_tenant_key':
+    "The tenant fence: (operator_id, id) is the target of family_guardian's composite foreign key, so a guardian row can never name another operator's family. id is the primary key, so archiving frees nothing; a foreign key needs a non-partial unique.",
 };
 
 /**
