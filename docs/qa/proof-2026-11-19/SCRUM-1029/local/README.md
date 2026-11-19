@@ -103,3 +103,28 @@ bar's still show the time chip with a gear and a clear button (one time box
 each is part of SCRUM-1029); the Entertainment Host picker in the same section
 shows "Unknown" in the preview because its stand-in staff list does not hold
 the fixture's backup host.
+
+## After the review (20 November 2026)
+
+Rendered the same way, from the same ZZ TEST party, with Add-ons
+unfolded, at 390, 768, 820, 1024, 1133, 1366 and 1920 pixels wide. At
+every width nothing ran past the sheet's edge and the sheet did not
+scroll sideways (scroll width equal to the sheet's: 389 of 389 on a
+phone, 671 of 671 in the 672-pixel sheet); the page raised no error.
+Each picture kept was looked at.
+
+- `scrum-1029-review-editor-addons-768.png`: Event Info's Package part
+  with "Add-ons" unfolded: each add-on row with its quantity, price,
+  billable switch and note, as the Birthday Package section had them
+  ("ZZ TEST balloon decoration" at quantity 0, not bought), the add-ons
+  subtotal and the package total. Folded, the row reads the add-ons
+  bought only, with no price.
+- `scrum-1029-review-editor-till-tiles-390.png`: on a phone the POS
+  line item's note sits inside its row, and the till's Total, Deposit
+  and Outstanding tiles stack, the deposit's date inside its tile.
+- `scrum-1029-review-editor-slips-time-820.png`: the Food part opens
+  with "No food for this party" and, beside it, "Kitchen & bar slips
+  at" in the small label size.
+- `scrum-1029-review-editor-acts-first-1024.png`: Entertainment &
+  Program opens with the acts and a normal "Add Act" button; the
+  free-text Activities and the Entertainment Host follow.
