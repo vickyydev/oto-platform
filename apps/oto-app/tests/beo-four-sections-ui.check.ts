@@ -583,4 +583,4 @@ if (!RECORD) {
 
 await act(async () => { root.unmount(); });
 console.log(`beo-four-sections-ui.check: ${checks} checks passed`);
-process.exit(checks === (RECORD ? 2 : 15) ? 0 : 1);
+process.exit(checks === (RECORD ? 2 : 16) ? 0 : 1);
