@@ -40,6 +40,7 @@ import {
   beoCatalogueSystemBlock,
   detailsFromFill,
   emptyCatalogue,
+  fillWithoutUnansweredQuestions,
   loadBeoCatalogue,
   quoteOf,
   renderTranscript,
@@ -463,6 +464,12 @@ export async function runBeoFill(
       unanswered += withoutUnansweredQuestions(proposal, readRefs, readAlone);
     }
   }
+  // SCRUM-1035: the form's own read is the ruling message's (or the pasted one's): a question it
+  // asks, with no line of the family's after it, is not in it either, so Load into Editor and
+  // Fetch from chat (which offers this read where the conversation's gives nothing) never bring it.
+  const rulingLine = input.fallbackFrom?.line ?? null;
+  const answeredAfter = rulingLine !== null && readRefs.some((r) => r.source === "family" && r.line > rulingLine);
+  if (formRun && run.ok && ruling !== null && !answeredAfter) unanswered += fillWithoutUnansweredQuestions(run.value, ruling);
   if (catalogueRun && !catalogueRun.ok) {
     // The form's read stands: the review is the free-text preview of before (with no ruling, nothing filled).
     log().warn({ ...runLogFields(catalogueRun.facts), eventId: input.event?.id ?? null }, "the conversation's catalogue read did not fill");
