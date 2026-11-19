@@ -20,6 +20,11 @@ import { chooseLanguageFirst } from './walk-in';
  * The customer half says "Member rate applied" exactly while the member's
  * own rate is the sale's.
  *
+ * SCRUM-1019 (the owner's answer of 19 November 2026): a member with a valid
+ * Expat rate now skips the rate step and lands on tickets, the rate on the
+ * order with "change", which opens the step with its one card and "Show all
+ * rates". James's case pins that; the other cases land on the step as before.
+ *
  * Runs on the isolated harness: `pnpm --filter @oto/pos e2e e2e/member-tier.spec.ts`.
  */
 
@@ -64,13 +69,13 @@ async function signOut(page: Page): Promise<void> {
  * The customer half of the split view: the guest's language, their number
  * (the national digits after +66, on the half's keypad — the last copy of
  * each key on the page), then Continue. The staff half lands on the
- * customer type step.
+ * customer type step, or on tickets for a valid Expat rate (SCRUM-1019).
  */
-async function identifyOnCustomerHalf(page: Page, digits: string): Promise<void> {
+async function identifyOnCustomerHalf(page: Page, digits: string, landsOn = 'Select Customer Type'): Promise<void> {
   await chooseLanguageFirst(page, 'en');
   for (const digit of digits) await page.getByRole('button', { name: digit, exact: true }).last().click();
   await page.getByRole('button', { name: 'Continue', exact: true }).last().click();
-  await expect(page.getByRole('heading', { name: 'Select Customer Type', exact: true })).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole('heading', { name: landsOn, exact: true })).toBeVisible({ timeout: 20_000 });
 }
 
 /** The tier cards on the step, by their headings. */
@@ -99,7 +104,12 @@ test('a verified expat with a valid document sees only Expat; "Show all rates" i
   await signIn(page);
   try {
     expect(await storedTier(page, '0822222222')).toBe('expat');
-    await identifyOnCustomerHalf(page, '822222222');
+    // SCRUM-1019 — straight to tickets, the rate on the order with "change".
+    await identifyOnCustomerHalf(page, '822222222', 'Add to Sale');
+    const change = page.getByTestId('order-change-tier');
+    await expect(change).toBeVisible();
+    await change.click();
+    await expect(page.getByRole('heading', { name: 'Select Customer Type', exact: true })).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText('Expat · verified')).toBeVisible();
     expect(await tierCards(page)).toEqual(['Expat']);
     await expect(page.getByText('Passport — no proof needed')).toBeVisible();
