@@ -1,3 +1,56 @@
+## 19 November 2026, 20:15: the drop-off counter flow is on staging; a fault after a sibling waiver is being repaired first
+
+- **The counter flow landed** (main a7630e73d, 18 commits; repair of two CI
+  pins 7e97dfd2b; proof 88a23d84a). Deployed at 18:32 to 18:41:
+  `oto-api-staging`, `oto-pos-staging`, `oto-pos-web-staging`. Pictures in
+  `docs/qa/proof-2026-11-19/SCRUM-1017/` (the lead opened the waiver refusal,
+  the display's short form and the pickup card).
+  - SCRUM-1020 "Drop-off: Edit details and the care notes on the display":
+    Deployed.
+  - SCRUM-1021 "Drop-off: food credit on the form, at pickup and on
+    receipts": Deployed. Extra credit on any child ticket is SCRUM-1048.
+  - SCRUM-1018 "Drop-off: a returning family in three steps": Testing. The
+    steps work; the sale after a sibling waiver is refused (below).
+  - SCRUM-1019 "Drop-off: the number, the rate, the document": Testing. A
+    number with no name still shows "New member?" until the owner chooses
+    (R1).
+- **Fault found on staging: SCRUM-1052 "Drop-off: after a sibling waiver the
+  sale is refused".** Built to the owner's answer (no free form after a
+  waiver), the sale has no registration, and the platform's rule refuses a
+  ticket sale for children with no adult and no registration. Counter
+  workaround: "Undo waiver".
+- **The lead's decision:** the safety rule is not loosened. The repair
+  restores what the counter did before today on that one path (the covering
+  sibling's short no-fee form). Whether that form is dropped is put to the
+  owner as R25 on his page, with what it means said plainly: two children in
+  the park with no adult and no registration.
+- **Hosted CI on a7630e73d was red** on two checks the lane's local gates had
+  not run (a text pin on the consent form's number, the route seam walker).
+  Both repaired in 7e97dfd2b; its run was still queued at 20:10. The new till
+  lane's brief names both gates.
+- **Launched: the till lane** (run wf_0c9c04fd-917, worktree
+  `C:/oto-lanes/codex-deposit-910-20261114`, branch `lane/till1052-20261119`,
+  script in the session scratchpad
+  `till-waiver-credit-displays.workflow.js`): repair SCRUM-1052 and land it on
+  its own; then SCRUM-1048 extra food credit on any child ticket and
+  SCRUM-1041 several displays per till; review, land, prove.
+- **Filed:** SCRUM-1053 "Drop-off counter flow: consistency points" (five
+  built with the repair: the display's short-form wording, the "no allergies"
+  tick on the till's own half, a behavioural gate test, the unused
+  photo-reuse route removed, the Console member form's expiry date; two not
+  built: "Credit left" on receipts the counter box prints offline, which needs
+  a box release, and the pickup card's wording, which follows R21).
+- **Left on staging by the proof:** eight archived ZZ TEST families, about
+  eight cash ticket sales and six food sales of today on ZZ TEST tills, ten
+  archived ZZ TEST tills, every child released, every display revoked.
+- **Seen and not changed:** when another lane's api deploy went live mid-form,
+  the paired display jumped back a step and the till's agreement ticks
+  cleared (not diagnosed); a child added through "Edit details" on an Eat &
+  Play line is charged as a paid kid on that ticket.
+- **Running:** BEO editor (wf_4697db44-bf9), HR smaller requests (repairs),
+  inbox follow-up, the contracts repair. The owner's page is at Version 8 with
+  25 open points.
+
 ## 19 November 2026, 19:30: the BEO timeline and Staff BEO print are on staging; family profiles' first step is on staging, inert; the BEO editor lane is running
 
 - **SCRUM-1027 "BEO: one timeline made by the system" and SCRUM-1028 "BEO:
