@@ -366,8 +366,10 @@ describe('SCRUM-1016 (review): the desktop panel is laid out for its width', () 
   it('Add support and Divert are a line each, never two words side by side', () => {
     expect(p).toContain('class="flex flex-col border-t border-line-soft empty:hidden');
     expect(p).not.toContain('grid-flow-col');
-    // SCRUM-1045: the scale's large control, a 44 px target on a touch screen (`hit`).
-    expect(p).toMatch(/aria-label="Divert to ZZ TEST Vera" class="hit inline-flex min-h-ctl-lg w-full items-center gap-1.5 px-3.5 /);
+    // SCRUM-1045: the scale's large control; stacked one over the other, each
+    // is 44 px tall itself on a touch screen (`row-touch-lg`, the fix stage's
+    // review: `hit`'s extensions overlapped between stacked lines).
+    expect(p).toMatch(/aria-label="Divert to ZZ TEST Vera" class="hit inline-flex min-h-row-touch-lg w-full items-center gap-1.5 px-3.5 /);
     expect(sheet).toContain('grid auto-cols-fr grid-flow-col');
   });
 

@@ -1411,7 +1411,7 @@ const FOOTER_WORD =
   'hit inline-flex min-h-ctl-lg w-full items-center justify-center gap-1.5 px-3 text-ui font-semibold text-ink hover:bg-wash disabled:opacity-60';
 /** The same word in the desktop panel, a line of its own: its whole words, from the card's left edge. */
 const FOOTER_WORD_STACKED =
-  'hit inline-flex min-h-ctl-lg w-full items-center gap-1.5 px-3.5 py-1.5 text-left text-ui font-semibold text-ink hover:bg-wash disabled:opacity-60';
+  'hit inline-flex min-h-row-touch-lg w-full items-center gap-1.5 px-3.5 py-1.5 text-left text-ui font-semibold text-ink hover:bg-wash disabled:opacity-60';
 
 /**
  * The People card's footer: its cells side by side under a rule, as

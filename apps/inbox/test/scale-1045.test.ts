@@ -9,8 +9,9 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { BADGE, BTN_ICON, BTN_MAIN, BTN_OUTLINE, BTN_QUIET, BTN_SMALL, CHECK_LINE, HINT, INPUT, LABEL, SEGMENT } from '@/components/ui';
+import { BADGE, BTN_ICON, BTN_MAIN, BTN_OUTLINE, BTN_QUIET, BTN_SMALL, CHECK_LINE, CHECK_LINES, HINT, INPUT, LABEL, SEGMENT } from '@/components/ui';
 import { PILL } from '@/components/atoms';
+import { MENU_ITEM } from '@/components/settings-parts';
 
 const here = (...p: string[]) => path.resolve(import.meta.dirname, '..', ...p);
 const css = readFileSync(here('src/index.css'), 'utf8');
@@ -118,7 +119,7 @@ describe('SCRUM-1045: no component carries a size of its own', () => {
 
   it('the shared classes are on the scale, and every control among them keeps a 44 px target to a finger', () => {
     for (const [name, cls] of Object.entries({ BTN_MAIN, BTN_QUIET, BTN_OUTLINE, BTN_SMALL, BTN_ICON, SEGMENT, PILL, CHECK_LINE })) {
-      expect(cls, name).toMatch(/(?:^|\s)(?:min-h|h|size)-(?:ctl|ctl-sm|ctl-lg|icon)(?:\s|$)/);
+      expect(cls, name).toMatch(/(?:^|\s)(?:min-h|h|size)-(?:ctl|ctl-sm|ctl-lg|icon|row-touch|row-touch-lg)(?:\s|$)/);
       expect(cls, name).toMatch(/(?:^|\s)hit(?:\s|$)/);
       // An icon-only button has no words to size.
       if (name !== 'BTN_ICON') expect(cls, name).toMatch(new RegExp(`(?:^|\\s)text-(?:${STEPS.join('|')})(?:\\s|$)`));
@@ -129,6 +130,49 @@ describe('SCRUM-1045: no component carries a size of its own', () => {
     expect(css).toMatch(/@media \(any-pointer: coarse\) \{\s*:root \{\s*--ui-touch-min: 44px;/);
     expect(INPUT).toContain('text-body');
     for (const cls of [LABEL, HINT, BADGE]) expect(cls).toMatch(new RegExp(`(?:^|\\s)text-(?:${STEPS.join('|')})(?:\\s|$)`));
+  });
+
+  // SCRUM-1045 (review): `.hit`'s extension reaches 44 px only where nothing
+  // stands beside the control. Lines stacked one on another (the settings
+  // column's pages, the views column, a menu, a form's check lines) overlap
+  // and the line below wins the tap: a 32 px line had a real target of 34 px on
+  // a touch tablet. Such a line is now 44 px TALL on a touch screen, by the
+  // stylesheet's own arithmetic, so the overlap can no longer happen; the
+  // Filters sheet's pills, which wrap, stand 12 px apart there (32 + 12).
+  it('a line in a stack is 44 px tall itself on a touch screen, never by an extension that overlaps its neighbour', () => {
+    expect(css).toContain('--spacing-row-touch: max(var(--ui-h), var(--ui-touch-min, 0px));');
+    expect(css).toContain('--spacing-row-touch-lg: max(var(--ui-h-lg), var(--ui-touch-min, 0px));');
+    for (const [name, cls] of Object.entries({ CHECK_LINE, CHECK_LINES })) expect(cls, name).toMatch(/(?:^|\s)min-h-row-touch(?:\s|$)/);
+    expect(MENU_ITEM).toMatch(/(?:^|\s)min-h-row-touch-lg(?:\s|$)/);
+    const of = (file: string) => sources.find(([f]) => f === file)![1];
+    // The settings column's pages and its way back; the views column's scope, filters and switch.
+    expect(of('components/SettingsFrame.tsx')).toMatch(/const NAV_ITEM = `hit flex min-h-row-touch /);
+    expect(of('components/SettingsFrame.tsx')).toMatch(/className=\{`hit flex min-h-row-touch w-full items-center gap-2 [^`]*`\}\s*>\s*<ArrowLeft/);
+    expect(of('components/Rail.tsx').match(/hit flex min-h-row-touch /g)).toHaveLength(3);
+    expect(of('components/Rail.tsx')).toContain('flex flex-wrap gap-2 [@media(any-pointer:coarse)]:gap-y-3');
+    // The account menu's items and the desktop panel's stacked footer words.
+    expect(of('components/AppBar.tsx')).toMatch(/const ITEM =\s*'hit flex min-h-row-touch-lg /);
+    expect(of('components/ChatPanel.tsx')).toMatch(/const FOOTER_WORD_STACKED =\s*'hit inline-flex min-h-row-touch-lg /);
+    // No line of a column or a menu is left on the bare control height.
+    expect(of('components/SettingsFrame.tsx')).not.toMatch(/hit flex min-h-ctl /);
+    expect(of('components/Rail.tsx')).not.toMatch(/hit flex min-h-ctl (?:items-center justify-between|w-full|cursor-pointer)/);
+  });
+
+  // SCRUM-1043 (review): the three main text boxes (the app bar's search, the
+  // reply's pill and Teach's) were 34 to 36 px on a touch tablet, and a text
+  // box cannot borrow `.hit`. The search takes the field step; each composer
+  // bar raises its icon step to 44 px on a touch screen, so the pill (whose
+  // padding comes from that step), Send and the icons stay one height.
+  it('the search and both message pills are 44 px tall on a touch screen', () => {
+    expect(css).toMatch(/@media \(any-pointer: coarse\) \{[^]*?\[data-composer\] \{\s*--ui-h-icon: var\(--ui-touch-min\);/);
+    const of = (file: string) => sources.find(([f]) => f === file)![1];
+    expect(of('components/AppBar.tsx')).toMatch(/<label className="hidden h-field /);
+    expect(of('components/Composer.tsx')).toContain('py-[calc((var(--ui-h-icon)-22px)/2)]');
+    expect(of('components/Composer.tsx')).toContain('<form data-composer ');
+    expect(of('components/TeachPanel.tsx')).toContain('<form data-composer ');
+    // One pill, shared: Teach draws the reply's, not a copy of it.
+    expect(of('components/TeachPanel.tsx')).toContain('<ComposerPill ');
+    expect(of('components/TeachPanel.tsx')).not.toContain('rounded-[22px]');
   });
 
   it('no control draws an edge thicker than 1 px: a chosen state is a ground and a fine edge', () => {

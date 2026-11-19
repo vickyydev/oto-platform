@@ -490,7 +490,8 @@ describe('SCRUM-1044: the shared parts on the one scale and the tested tokens', 
   it('rows, menus and fields take their sizes from the scale, each control a 44 px target to a finger', () => {
     expect(SETTINGS_ROW).toContain('px-pane py-row');
     expect(MENU_ITEM).toMatch(/(?:^|\s)hit(?:\s|$)/);
-    expect(MENU_ITEM).toContain('min-h-ctl-lg');
+    // A menu's items stand one on another: 44 px tall themselves on a touch screen (SCRUM-1045 review).
+    expect(MENU_ITEM).toContain('min-h-row-touch-lg');
     const main = createElement('button', { type: 'button', className: BTN_MAIN }, 'Save');
     const parts = [
       createElement(PageHeader, { eyebrow: 'Assistant', title: 'ZZ TEST page', help: 'ZZ TEST help', actions: main }),
@@ -515,7 +516,7 @@ describe('SCRUM-1044: the shared parts on the one scale and the tested tokens', 
     const doc = document.createElement('div');
     doc.innerHTML = parts;
     for (const b of doc.querySelectorAll('button')) {
-      expect(b.className, b.textContent ?? '').toMatch(/(?:^|\s)(?:min-h|h|size)-(?:ctl|ctl-sm|ctl-lg|icon)(?:\s|$)/);
+      expect(b.className, b.textContent ?? '').toMatch(/(?:^|\s)(?:min-h|h|size)-(?:ctl|ctl-sm|ctl-lg|icon|row-touch|row-touch-lg)(?:\s|$)/);
       expect(b.className, b.textContent ?? '').toMatch(/(?:^|\s)hit(?:\s|$)/);
     }
     // The field: labelled, its help and its error tied to it, marked invalid.

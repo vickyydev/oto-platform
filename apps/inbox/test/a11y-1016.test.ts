@@ -273,15 +273,19 @@ describe('SCRUM-1016: the accessibility pass', () => {
 
   // SCRUM-1045: the heights are the scale's (`min-h-ctl`, `size-icon`, …), 44 to
   // 48 px on a phone and drawn smaller on a tablet or a desktop, so every
-  // button also carries `hit`: a 44 px target on a touch screen at any width.
+  // button also carries `hit`, the 44 px extension on a touch screen; a line in
+  // a stack (a page in the settings column, a menu item) is `row-touch`, 44 px
+  // tall itself there. This reads the class names only: jsdom cannot hit-test,
+  // so the real target is measured in a browser (scale-1045 pins the CSS that
+  // makes it; the fix stage's sweep measured it with elementFromPoint).
   it.each(surfaces.filter(([name]) => /page|Book the date|confirmations/.test(name)))(
-    '%s: on the tokens, and every button a 44 px target on a phone and on a touch screen',
+    '%s: on the tokens, and every button sized from the scale and carrying the touch extension',
     (_, render) => {
       const html = render();
       expect(html).not.toMatch(/\b(?:bg|text|border|ring)-(?:slate|amber|indigo|emerald|violet|rose|sky|orange)-\d/);
       expect(html).not.toMatch(/\bdark:/);
       for (const b of doc(html).querySelectorAll('button')) {
-        expect(b.className, b.textContent ?? '').toMatch(/(?:^|\s)(?:min-h|h|size)-(?:ctl|ctl-sm|ctl-lg|icon)(?:\s|$)/);
+        expect(b.className, b.textContent ?? '').toMatch(/(?:^|\s)(?:min-h|h|size)-(?:ctl|ctl-sm|ctl-lg|icon|row-touch|row-touch-lg)(?:\s|$)/);
         expect(b.className, b.textContent ?? '').toMatch(/(?:^|\s)hit(?:\s|$)/);
       }
     },
