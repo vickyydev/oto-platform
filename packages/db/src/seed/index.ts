@@ -72,6 +72,19 @@ async function keyHolder(
 }
 
 /**
+ * SCRUM-1024 — a demo member's family, with the member as its one guardian:
+ * the shape the backfill gives every member saved with children before
+ * families existed, which is what the demo cast stands for (source
+ * `backfill`). Written only with the member's first children, as they are.
+ */
+async function seedFamily(db: Db, operatorId: string, memberId: string): Promise<string> {
+  const familyId = newId();
+  await db.insert(s.family).values({ id: familyId, operatorId, source: 'backfill' });
+  await db.insert(s.familyGuardian).values({ id: newId(), operatorId, familyId, memberId, source: 'backfill' });
+  return familyId;
+}
+
+/**
  * A trading day of sales across every tender (S2-10a), re-exported so that
  * `@oto/db/seed` is the one door to every fixture. It is NOT part of `seed()`:
  * the seed builds a park and this fills its till, and a deploy that wants the
@@ -710,10 +723,12 @@ export async function seed(db: Db = getDb(), opts: SeedOptions = {}): Promise<vo
         branchId,
       });
     }
+    const familyId = m.children?.length ? await seedFamily(db, operatorId, id) : null;
     for (const c of m.children ?? []) {
       await db.insert(s.child).values({
         id: newId(),
         memberId: id,
+        familyId,
         name: c.name,
         ageYears: c.age ?? null,
         dateOfBirth: c.dob ?? null,
@@ -2022,6 +2037,7 @@ async function seedSecondOperator(
     await db.insert(s.child).values({
       id: newId(),
       memberId: foreignMember.id,
+      familyId: await seedFamily(db, operatorId, foreignMember.id),
       name: 'Second-Op Child',
       ageYears: 6,
       allergies: 'Eggs',

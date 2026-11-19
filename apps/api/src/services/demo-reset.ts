@@ -1,4 +1,4 @@
-import { eq, inArray, isNotNull, ne, notInArray, or, sql } from 'drizzle-orm';
+import { and, eq, inArray, isNotNull, ne, notExists, notInArray, or, sql } from 'drizzle-orm';
 import {
   attendee,
   auditLog,
@@ -16,6 +16,8 @@ import {
   child,
   endOfDay,
   eventAttendeeLink,
+  family,
+  familyGuardian,
   eventPassHold,
   saleHold,
   eventCheckin,
@@ -140,6 +142,8 @@ const FACT_ENTITY_TYPES = [
   'supervision_waiver',
   // S2-21 round 3: a staff benefit applied to a sale of the day, and the quota it used.
   'benefit_application',
+  // SCRUM-1024: the family a child added during the session was given, as the child's own rows go.
+  'family',
 ];
 
 /** Rows removed per table, for the response and the audit entry. */
@@ -447,11 +451,48 @@ async function resetDemoDataIn(tx: Tx): Promise<DemoResetCounts> {
           .returning({ id: memberTierVerification.id })
       ).length
     : 0;
+  /**
+   * SCRUM-1024: a child names its family and a guardian row names its member
+   * (both ON DELETE RESTRICT). The guardian rows of the members the session
+   * created go before those members; their children before the families; and
+   * a family goes once nothing names it any more — so a seeded family keeps
+   * its own family, whatever was added to it. Not in `counts`: the reset's
+   * answer keeps the fields it had until a family is something a screen shows.
+   */
+  const doomedFamilies = doomedIds.length
+    ? [
+        ...new Set([
+          ...(
+            await tx
+              .delete(familyGuardian)
+              .where(inArray(familyGuardian.memberId, doomedIds))
+              .returning({ familyId: familyGuardian.familyId })
+          ).map((r) => r.familyId),
+          ...(
+            await tx
+              .select({ familyId: child.familyId })
+              .from(child)
+              .where(and(inArray(child.memberId, doomedIds), isNotNull(child.familyId)))
+          ).map((r) => r.familyId!),
+        ]),
+      ]
+    : [];
   counts.child = doomedIds.length
     ? (
         await tx.delete(child).where(inArray(child.memberId, doomedIds)).returning({ id: child.id })
       ).length
     : 0;
+  if (doomedFamilies.length > 0) {
+    await tx
+      .delete(family)
+      .where(
+        and(
+          inArray(family.id, doomedFamilies),
+          notExists(tx.select({ one: sql`1` }).from(child).where(eq(child.familyId, family.id))),
+          notExists(tx.select({ one: sql`1` }).from(familyGuardian).where(eq(familyGuardian.familyId, family.id))),
+        ),
+      );
+  }
   /**
    * Offline plan Round 3: an id merged into a member at sync is kept as an
    * alias of it (`crm.member_alias`, ON DELETE RESTRICT), so the aliases of a
