@@ -36,6 +36,9 @@ export async function stableNames(q: Query, tenantId: string): Promise<{ ids: Ma
   add(await q("select id, name as label from payroll_incentive_rules where tenant_id = $1", [tenantId]), "rule");
   add(await q(`select m.id, e.full_name || ' ' || m.kind || ' ' || m.amount::text as label from payroll_run_manual_lines m
                join employees e on e.id = m.employee_id where m.tenant_id = $1`, [tenantId]), "manual");
+  // A single shift's lines carry its invitation (SCRUM-1055).
+  add(await q(`select i.id, e.full_name || ' ' || i.shift_date::text || ' ' || i.pay_basis as label from single_shift_invitations i
+               join employees e on e.id = i.employee_id where i.tenant_id = $1`, [tenantId]), "single-shift");
   // A profile's advances and separate payments name their lines (advance:<id>, separate:<id>, pnd3:<id>).
   for (const [table, prefix] of [["payroll_profile_advances", "advance"], ["payroll_profile_separate_payments", "separate"]] as const) {
     add(await q(`select x.id, e.full_name || ' ' || row_number() over (partition by x.profile_id order by x.created_at, x.id)::text as label
