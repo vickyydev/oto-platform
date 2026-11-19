@@ -51,7 +51,7 @@ export function ChipView({ chip, withName = true }: { chip: Chip; withName?: boo
       className={`inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium ${chip.tint}`}
       title={withName ? undefined : chip.name}
     >
-      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-white/70 dark:bg-slate-900/60 text-[9px] font-bold text-slate-700 dark:text-slate-200">
+      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-card/70 text-[9px] font-bold text-ink">
         {chip.initials}
       </span>
       {withName && <span className="truncate">{chip.name}</span>}
@@ -76,7 +76,7 @@ export function StatusBadge({
     <span className="relative inline-flex">
       <span
         className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ${STATUS_TINT[status]}${
-          live ? ' cursor-pointer hover:ring-slate-400 dark:hover:ring-slate-500' : ''
+          live ? ' cursor-pointer hover:ring-field' : ''
         }`}
         title={live ? (status === 'handled' ? 'Click to reopen this conversation' : 'Click to mark as handled') : undefined}
       >
@@ -109,7 +109,7 @@ export function CategoryBadge({
     <span className="relative inline-flex">
       <span
         className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ${CATEGORY_TINT[category]}${
-          live ? ' cursor-pointer hover:ring-slate-400 dark:hover:ring-slate-500' : ''
+          live ? ' cursor-pointer hover:ring-field' : ''
         }`}
         title={live ? 'Click to move this conversation to another team' : title}
       >
@@ -125,7 +125,7 @@ export function ChannelDot({ channel }: { channel: InboxChannelKey }) {
   return (
     <span
       title={CHANNEL_LABEL[channel]}
-      className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full ring-2 ring-white dark:ring-slate-900 ${CHANNEL_TINT[channel]}`}
+      className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full ring-2 ring-card ${CHANNEL_TINT[channel]}`}
     />
   );
 }
@@ -154,24 +154,24 @@ export function MetricCard({
       type={clickable ? 'button' : undefined}
       onClick={onClick}
       aria-pressed={clickable ? Boolean(active) : undefined}
-      className={`min-w-0 rounded-xl border bg-white dark:bg-slate-900 p-3 text-left transition ${
+      className={`min-w-0 rounded-xl border bg-card p-3 text-left transition ${
         active
           ? 'border-rose-300 dark:border-rose-500/50 ring-2 ring-rose-200 dark:ring-rose-500/30'
           : clickable
-            ? 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-600 hover:shadow-sm'
-            : 'border-slate-200 dark:border-slate-800'
+            ? 'border-line hover:border-field hover:shadow-sm'
+            : 'border-line'
       }`}
     >
       <div className="flex items-center gap-2">
         <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${tint}`}>
           <Icon className="h-3.5 w-3.5" />
         </span>
-        <div className="min-w-0 text-[10px] font-semibold uppercase leading-snug tracking-[0.16em] text-slate-500 dark:text-slate-400">{label}</div>
+        <div className="min-w-0 text-[10px] font-semibold uppercase leading-snug tracking-[0.16em] text-ink-muted">{label}</div>
       </div>
       <div className="mt-2 flex items-baseline justify-between gap-2">
-        <div className="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">{value}</div>
+        <div className="text-xl font-semibold tracking-tight text-ink">{value}</div>
         {hint && (
-          <span className={`hidden text-[10px] sm:inline ${active ? 'font-medium text-rose-600 dark:text-rose-400' : 'text-slate-400'}`}>
+          <span className={`hidden text-[10px] sm:inline ${active ? 'font-medium text-rose-600 dark:text-rose-400' : 'text-ink-muted'}`}>
             {hint}
           </span>
         )}
@@ -209,15 +209,15 @@ export function CategoryMixCard({
   const total = Math.max(1, data.birthdays + data.general + data.marketing + data.gm);
   const w = (n: number) => `${Math.round((n / total) * 100)}%`;
   return (
-    <div className="min-w-0 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3">
+    <div className="min-w-0 rounded-xl border border-line bg-card p-3">
       <div className="flex items-center gap-2">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-band text-ink-soft">
           <TrendingUp className="h-3.5 w-3.5" />
         </span>
-        <div className="min-w-0 text-[10px] font-semibold uppercase leading-snug tracking-[0.16em] text-slate-500 dark:text-slate-400">By category</div>
+        <div className="min-w-0 text-[10px] font-semibold uppercase leading-snug tracking-[0.16em] text-ink-muted">By category</div>
       </div>
       <div
-        className="mt-2 flex h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800"
+        className="mt-2 flex h-2 overflow-hidden rounded-full bg-band"
         role="img"
         aria-label={keys.map((k) => `${CATEGORY_LABEL[k]} ${data[k]}`).join(', ')}
       >
@@ -225,7 +225,7 @@ export function CategoryMixCard({
           <div key={k} className={CATEGORY_BAR[k]} style={{ width: w(data[k]) }} />
         ))}
       </div>
-      <div className="mt-1.5 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
+      <div className="mt-1.5 flex items-center justify-between text-[10px] text-ink-muted">
         {keys.map((k) => {
           const Icon = CATEGORY_ICON[k];
           if (!onPick) {
@@ -246,8 +246,8 @@ export function CategoryMixCard({
               title={on ? `Showing ${CATEGORY_LABEL[k]} only — click to clear` : `Show ${CATEGORY_LABEL[k]} only`}
               className={`flex items-center gap-1 rounded-full px-1.5 py-0.5 transition ${
                 on
-                  ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
-                  : 'hover:bg-slate-100 hover:text-slate-800 dark:hover:bg-slate-800 dark:hover:text-slate-200'
+                  ? 'bg-ink text-on-ink'
+                  : 'hover:bg-band hover:text-ink'
               }`}
             >
               <Icon className={`h-3 w-3 ${on ? '' : CATEGORY_ICON_INK[k]}`} />
@@ -267,8 +267,8 @@ export function CategoryMixCard({
  * in `aria-pressed` as the dashboard tiles carry it (SCRUM-652).
  */
 export const PILL = 'rounded-full px-2.5 py-1 text-[11px] font-medium ring-1 transition';
-export const PILL_ON = 'bg-slate-900 text-white ring-slate-900 dark:bg-slate-100 dark:text-slate-900 dark:ring-slate-100';
-export const PILL_OFF = 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 ring-slate-200 dark:ring-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800';
+export const PILL_ON = 'bg-ink text-on-ink ring-ink';
+export const PILL_OFF = 'bg-card text-ink-soft ring-line hover:bg-band';
 
 /**
  * One chip of the rail's filters: a press adds it, a second press removes it.
@@ -309,11 +309,11 @@ export function FilterChip({
 export function EmptyState({ icon: Icon, title, subtitle }: { icon: LucideIcon; title: string; subtitle: string }) {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-2 p-8 text-center">
-      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400">
+      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-band text-ink-muted">
         <Icon className="h-5 w-5" />
       </div>
-      <div className="text-[14px] font-semibold text-slate-700 dark:text-slate-200">{title}</div>
-      <div className="max-w-xs text-[12.5px] text-slate-500 dark:text-slate-400">{subtitle}</div>
+      <div className="text-[14px] font-semibold text-ink">{title}</div>
+      <div className="max-w-xs text-[12.5px] text-ink-muted">{subtitle}</div>
     </div>
   );
 }
@@ -321,6 +321,6 @@ export function EmptyState({ icon: Icon, title, subtitle }: { icon: LucideIcon; 
 /** The eyebrow label: uppercase, letter-spaced, grey. */
 export function Eyebrow({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
-    <div className={`text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400 ${className}`}>{children}</div>
+    <div className={`text-[10px] font-semibold uppercase tracking-[0.2em] text-ink-muted ${className}`}>{children}</div>
   );
 }

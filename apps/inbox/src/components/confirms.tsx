@@ -4,7 +4,7 @@ import { Dialog } from '@/components/Dialog';
 import { CATEGORY_LABEL } from '@/lib/view';
 
 const CANCEL =
-  'rounded-lg border border-slate-200 dark:border-slate-800 px-3 py-1.5 text-[13px] font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60';
+  'rounded-lg border border-line px-3 py-1.5 text-[13px] font-medium text-ink hover:bg-wash disabled:opacity-60';
 
 /**
  * "Mark as handled for everyone?" — the prototype's confirmation (:1734-1764),
@@ -49,7 +49,7 @@ export function HandleConfirm({
         </>
       }
     >
-      <p className="text-[12.5px] text-slate-500 dark:text-slate-400">
+      <p className="text-[12.5px] text-ink-muted">
         This conversation will leave Active Messages for the whole team and move to the Handled tab. It returns
         automatically only if the customer sends a new message — or a manager reopens it.
       </p>
@@ -105,7 +105,7 @@ export function PrimaryMoveConfirm({
             type="button"
             onClick={onConfirm}
             disabled={busy}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-[13px] font-medium text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white disabled:opacity-60"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-ink px-3 py-1.5 text-[13px] font-medium text-on-ink hover:bg-ink/90 disabled:opacity-60"
           >
             {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
             Yes, move to {to}
@@ -114,7 +114,7 @@ export function PrimaryMoveConfirm({
       }
     >
       {pending && (
-        <p className="text-[12.5px] text-slate-700 dark:text-slate-200">
+        <p className="text-[12.5px] text-ink">
           Setting <strong>{pending.name}</strong> as primary will move this conversation
           {pending.fromCategory && (
             <>
@@ -172,7 +172,7 @@ export function TeamMoveConfirm({
             type="button"
             onClick={onConfirm}
             disabled={busy}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-[13px] font-medium text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white disabled:opacity-60"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-ink px-3 py-1.5 text-[13px] font-medium text-on-ink hover:bg-ink/90 disabled:opacity-60"
           >
             {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
             Yes, move to {pending?.toTeamName ?? 'the team'}
@@ -181,7 +181,7 @@ export function TeamMoveConfirm({
       }
     >
       {pending && (
-        <p className="text-[12.5px] text-slate-700 dark:text-slate-200">
+        <p className="text-[12.5px] text-ink">
           Moving this conversation
           {pending.fromTeamName && (
             <>
@@ -262,7 +262,7 @@ export function StartOverConfirm({
         </>
       }
     >
-      <p className="text-[12.5px] text-slate-500 dark:text-slate-400">
+      <p className="text-[12.5px] text-ink-muted">
         This test conversation leaves the inbox and its messages are erased. The assistant forgets this number: the
         next message from it starts a new conversation, as from a new customer. This cannot be undone.
       </p>

@@ -38,13 +38,13 @@ import { CHANNEL_LABEL, bubbleTime, contactName } from '@/lib/view';
  */
 
 const CANCEL =
-  'rounded-lg border border-slate-200 dark:border-slate-800 px-3 py-1.5 text-[13px] font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60';
+  'rounded-lg border border-line px-3 py-1.5 text-[13px] font-medium text-ink hover:bg-wash disabled:opacity-60';
 const PRIMARY =
-  'inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-[13px] font-medium text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white disabled:opacity-60';
+  'inline-flex items-center gap-1.5 rounded-lg bg-ink px-3 py-1.5 text-[13px] font-medium text-on-ink hover:bg-ink/90 disabled:opacity-60';
 const INPUT =
-  'w-full min-w-0 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2.5 py-1.5 text-[13px] text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:border-slate-300 dark:focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200 dark:focus:ring-slate-600 disabled:opacity-60';
-const LABEL = 'text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400';
-const HINT = 'text-[12px] text-slate-500 dark:text-slate-400';
+  'w-full min-w-0 rounded-lg border border-line bg-card px-2.5 py-1.5 text-[13px] text-ink placeholder:text-ink-muted focus:border-field focus:outline-none focus:ring-2 focus:ring-field disabled:opacity-60';
+const LABEL = 'text-[11px] font-semibold uppercase tracking-wide text-ink-muted';
+const HINT = 'text-[12px] text-ink-muted';
 const ERROR = 'text-[12.5px] text-rose-700 dark:text-rose-300';
 
 function messageOf(err: unknown, fallback: string): string {
@@ -281,7 +281,7 @@ export function NewContactDialog({
       }
     >
       {done ? (
-        <p className="text-[13px] text-slate-700 dark:text-slate-200" data-testid="created-line">
+        <p className="text-[13px] text-ink" data-testid="created-line">
           {done}
         </p>
       ) : (

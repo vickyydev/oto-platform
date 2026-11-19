@@ -128,7 +128,8 @@ describe('the withdrawn bubble (§A.3)', () => {
       createElement(MessageBubble, { m: aiLine, me, now: new Date('2026-10-20T09:00:00Z'), withdrawnNote: 'Not sent: a person replied' }),
     );
     expect(html).toContain('data-withdrawn="true"');
-    expect(html).toContain('<s class="decoration-slate-400">We open at 10:00.</s>');
+    // SCRUM-1016: the strike-through wears the muted ink token in place of slate-400.
+    expect(html).toContain('<s class="decoration-ink-muted">We open at 10:00.</s>');
     expect(html).toContain('Not sent: a person replied');
     expect(html).toContain('AI Assistant');
     expect(html).toContain('border-dashed');

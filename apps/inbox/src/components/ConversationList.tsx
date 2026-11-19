@@ -105,9 +105,9 @@ export function ConversationList({
   );
   return (
     <>
-      <div className="border-b border-slate-200 dark:border-slate-800 px-4 py-3">
+      <div className="border-b border-line px-4 py-3">
         {/* Phone: the rail's tabs. */}
-        <div className="mb-2 flex gap-1 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 p-1 lg:hidden" role="tablist">
+        <div className="mb-2 flex gap-1 rounded-xl border border-line bg-ground p-1 lg:hidden" role="tablist">
           {me.tabs.map((t) => {
             const Icon = TAB_ICON[t];
             const active = t === tab;
@@ -120,13 +120,13 @@ export function ConversationList({
                 aria-selected={active}
                 onClick={() => onTab(t)}
                 className={`flex min-w-0 flex-1 items-center justify-center gap-1 rounded-lg px-1.5 py-1.5 text-[12px] font-medium transition ${
-                  active ? 'bg-slate-900 text-white shadow-sm dark:bg-slate-100 dark:text-slate-900' : 'text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800'
+                  active ? 'bg-ink text-on-ink shadow-sm' : 'text-ink-soft hover:bg-card'
                 }`}
               >
                 <Icon className="hidden h-3.5 w-3.5 shrink-0 sm:block" />
                 <span className="truncate">{TAB_LABEL[t]}</span>
                 {count !== undefined && (
-                  <span className={`rounded-full px-1.5 text-[10px] ${active ? 'bg-white/20 dark:bg-slate-900/15' : 'bg-slate-200 dark:bg-slate-700'}`}>{count}</span>
+                  <span className={`rounded-full px-1.5 text-[10px] ${active ? 'bg-on-ink/20' : 'bg-line'}`}>{count}</span>
                 )}
               </button>
             );
@@ -135,13 +135,13 @@ export function ConversationList({
         {hasStrip && <div className="mb-2 lg:hidden">{strip}</div>}
         <div className="flex items-center gap-2">
           <div className="relative min-w-0 flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-muted" />
             <input
               value={search}
               onChange={(e) => onSearch(e.target.value)}
               aria-label="Search"
               placeholder="Search customers, intents…"
-              className="w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-2 pl-8 pr-3 text-[13px] placeholder:text-slate-400 focus:border-slate-300 dark:focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200 dark:focus:ring-slate-600"
+              className="w-full rounded-lg border border-line bg-card py-2 pl-8 pr-3 text-[13px] placeholder:text-ink-muted focus:border-field focus:outline-none focus:ring-2 focus:ring-field"
             />
           </div>
           {onNewContact && (
@@ -150,7 +150,7 @@ export function ConversationList({
               onClick={onNewContact}
               aria-label={NEW_CONTACT_LABEL}
               title={NEW_CONTACT_LABEL}
-              className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2.5 py-2 text-[12px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+              className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-line bg-card px-2.5 py-2 text-[12px] font-medium text-ink-soft hover:bg-wash"
             >
               <UserPlus className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">New</span>
@@ -160,12 +160,12 @@ export function ConversationList({
             type="button"
             onClick={onOpenFilters}
             aria-label="Filters"
-            className="relative inline-flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2.5 py-2 text-[12px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 lg:hidden"
+            className="relative inline-flex shrink-0 items-center gap-1 rounded-lg border border-line bg-card px-2.5 py-2 text-[12px] font-medium text-ink-soft hover:bg-wash lg:hidden"
           >
             <Filter className="h-3.5 w-3.5" />
             Filters
             {filterCount > 0 && (
-              <span className="rounded-full bg-slate-900 px-1.5 text-[10px] font-semibold text-white dark:bg-slate-100 dark:text-slate-900">{filterCount}</span>
+              <span className="rounded-full bg-ink px-1.5 text-[10px] font-semibold text-on-ink">{filterCount}</span>
             )}
           </button>
         </div>
@@ -179,7 +179,7 @@ export function ConversationList({
               <span
                 key={p.key}
                 className={`inline-flex min-w-0 max-w-full items-center gap-1 rounded-full py-0.5 pl-2.5 pr-1 text-[11px] font-medium ring-1 ${
-                  p.tint ?? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 ring-slate-200 dark:ring-slate-700'
+                  p.tint ?? 'bg-band text-ink ring-line'
                 }`}
               >
                 {p.label}
@@ -187,7 +187,7 @@ export function ConversationList({
                   type="button"
                   aria-label={`Clear ${p.label}`}
                   onClick={() => onFilters(p.clear)}
-                  className="rounded-full p-0.5 text-slate-400 transition hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-700 dark:hover:text-slate-200"
+                  className="rounded-full p-0.5 text-ink-muted transition hover:bg-line hover:text-ink"
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -195,7 +195,7 @@ export function ConversationList({
             ))}
           </div>
         )}
-        <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+        <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-ink-muted">
           <span>
             {rows.length}
             {page?.nextCursor ? '+' : ''} conversation{rows.length === 1 ? '' : 's'}
@@ -212,7 +212,7 @@ export function ConversationList({
               aria-pressed={filters.unanswered}
               onClick={() => onFilters({ unanswered: !filters.unanswered })}
               className={`${hasStrip ? 'hidden lg:inline-flex ' : ''}rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 transition ${
-                filters.unanswered ? 'bg-rose-50 dark:bg-rose-500/15 text-rose-700 dark:text-rose-300 ring-rose-200 dark:ring-rose-500/30' : 'bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 ring-slate-200 dark:ring-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
+                filters.unanswered ? 'bg-rose-50 dark:bg-rose-500/15 text-rose-700 dark:text-rose-300 ring-rose-200 dark:ring-rose-500/30' : 'bg-card text-ink-muted ring-line hover:bg-wash'
               }`}
             >
               Unanswered only
@@ -220,21 +220,21 @@ export function ConversationList({
           )}
         </div>
         {tab === 'handled' && (
-          <div className="mt-3 space-y-2 rounded-lg bg-slate-50 dark:bg-slate-950/60 p-2.5 ring-1 ring-slate-200 dark:ring-slate-700">
+          <div className="mt-3 space-y-2 rounded-lg bg-ground p-2.5 ring-1 ring-line">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+              <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-muted">
                 <Archive className="h-3 w-3" /> Archive filters
               </div>
               <PendingControl
                 reason="Export is not built yet"
                 label="Export"
-                className="inline-flex items-center gap-1 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-300"
+                className="inline-flex items-center gap-1 rounded-md border border-line bg-card px-2 py-1 text-[11px] font-medium text-ink-soft"
               >
                 <Download className="h-3 w-3" /> Export
               </PendingControl>
             </div>
             <div>
-              <div className="mb-1 flex items-center gap-1 text-[10px] font-medium text-slate-500 dark:text-slate-400">
+              <div className="mb-1 flex items-center gap-1 text-[10px] font-medium text-ink-muted">
                 <CalendarRange className="h-3 w-3" /> Handled in the last
               </div>
               <div className="flex flex-wrap gap-1">
@@ -252,7 +252,7 @@ export function ConversationList({
               </div>
             </div>
             <div>
-              <div className="mb-1 flex items-center gap-1 text-[10px] font-medium text-slate-500 dark:text-slate-400">
+              <div className="mb-1 flex items-center gap-1 text-[10px] font-medium text-ink-muted">
                 <CheckCircle2 className="h-3 w-3" /> Resolved by
               </div>
               <div className="flex flex-wrap gap-1">
@@ -282,7 +282,7 @@ export function ConversationList({
         {error ? (
           <div className="m-4 rounded-lg bg-rose-50 dark:bg-rose-500/15 px-3 py-2 text-[12.5px] text-rose-700 dark:text-rose-300 ring-1 ring-rose-200 dark:ring-rose-500/30">{error}</div>
         ) : loading && rows.length === 0 ? (
-          <div className="flex justify-center py-10 text-slate-400">
+          <div className="flex justify-center py-10 text-ink-muted">
             <Loader2 className="h-5 w-5 animate-spin" />
           </div>
         ) : rows.length === 0 ? (
@@ -305,7 +305,7 @@ export function ConversationList({
                   type="button"
                   onClick={onMore}
                   disabled={loadingMore}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-white dark:bg-slate-900 px-3 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-300 ring-1 ring-slate-200 dark:ring-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-card px-3 py-1 text-[11px] font-medium text-ink-soft ring-1 ring-line hover:bg-wash"
                 >
                   {loadingMore && <Loader2 className="h-3 w-3 animate-spin" />}
                   More conversations
@@ -361,7 +361,7 @@ function Row({
           onSelect(c.id);
         }
       }}
-      className={`group relative block w-full cursor-pointer border-b border-slate-100 dark:border-slate-800 px-4 py-3 text-left transition focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-emerald-700 dark:focus-visible:outline-emerald-300 ${conversationRowColour(selected, c.unread)}`}
+      className={`group relative block w-full cursor-pointer border-b border-line-soft px-4 py-3 text-left transition focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-emerald-700 dark:focus-visible:outline-emerald-300 ${conversationRowColour(selected, c.unread)}`}
     >
       <div className="flex items-start gap-3">
         <div className="relative">
@@ -370,14 +370,14 @@ function Row({
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
-            <div className="min-w-0 truncate text-[13px] font-semibold text-slate-900 dark:text-slate-100">
+            <div className="min-w-0 truncate text-[13px] font-semibold text-ink">
               {name}
               {/* The number it came in on (SCRUM-220 playbook), not the bare channel. */}
-              <span className="font-normal text-slate-600 dark:text-slate-300"> · {sourceLabel(c.channel, c.channelAccountName)}</span>
+              <span className="font-normal text-ink-soft"> · {sourceLabel(c.channel, c.channelAccountName)}</span>
             </div>
-            <div className="shrink-0 text-[11px] text-slate-600 dark:text-slate-300">{listTime(c.lastMessageAt, now)}</div>
+            <div className="shrink-0 text-[11px] text-ink-soft">{listTime(c.lastMessageAt, now)}</div>
           </div>
-          <div className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+          <div className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[11px] text-ink-muted">
             {c.intent && (
               <>
                 <span className="truncate">{c.intent}</span>
@@ -388,7 +388,7 @@ function Row({
             <span>·</span>
             <span className="truncate">{branchLabel(effectiveBranchId(c, me.teams), me.teams)}</span>
           </div>
-          <div className={`mt-1 truncate text-[12.5px] ${c.unanswered ? 'text-slate-800 dark:text-slate-200' : 'text-slate-600 dark:text-slate-300'}`}>
+          <div className={`mt-1 truncate text-[12.5px] ${c.unanswered ? 'text-ink' : 'text-ink-soft'}`}>
             {c.lastMessagePreview ?? ' '}
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-1.5">

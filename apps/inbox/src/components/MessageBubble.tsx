@@ -52,7 +52,7 @@ export function AttachmentChip({ attachment: a, muted }: { attachment: Attachmen
 
   return (
     <div className="mt-1 flex min-w-0 flex-col gap-1" data-attachment={a.fileId}>
-      <div className={`flex min-w-0 items-center gap-1.5 text-[11.5px] ${muted ? 'text-slate-400' : ''}`}>
+      <div className={`flex min-w-0 items-center gap-1.5 text-[11.5px] ${muted ? 'text-ink-muted' : ''}`}>
         <Paperclip className="h-3 w-3 shrink-0" />
         <span className="min-w-0 truncate font-medium">{name}</span>
         {opened ? (
@@ -60,7 +60,7 @@ export function AttachmentChip({ attachment: a, muted }: { attachment: Attachmen
             href={opened.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex shrink-0 items-center gap-1 rounded-md bg-white/80 dark:bg-slate-900/80 px-1.5 py-0.5 text-[11px] font-medium text-slate-700 dark:text-slate-200 ring-1 ring-slate-200 dark:ring-slate-700 hover:bg-white dark:hover:bg-slate-800"
+            className="inline-flex shrink-0 items-center gap-1 rounded-md bg-card/80 px-1.5 py-0.5 text-[11px] font-medium text-ink ring-1 ring-line hover:bg-card"
           >
             <ExternalLink className="h-3 w-3" /> Open
           </a>
@@ -70,7 +70,7 @@ export function AttachmentChip({ attachment: a, muted }: { attachment: Attachmen
             onClick={() => void open()}
             disabled={busy}
             aria-label={`Open ${name}`}
-            className="inline-flex shrink-0 items-center gap-1 rounded-md bg-white/80 dark:bg-slate-900/80 px-1.5 py-0.5 text-[11px] font-medium text-slate-700 dark:text-slate-200 ring-1 ring-slate-200 dark:ring-slate-700 hover:bg-white dark:hover:bg-slate-800 disabled:opacity-60"
+            className="inline-flex shrink-0 items-center gap-1 rounded-md bg-card/80 px-1.5 py-0.5 text-[11px] font-medium text-ink ring-1 ring-line hover:bg-card disabled:opacity-60"
           >
             {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <ExternalLink className="h-3 w-3" />} Open
           </button>
@@ -78,7 +78,7 @@ export function AttachmentChip({ attachment: a, muted }: { attachment: Attachmen
       </div>
       {image && opened && (
         <a href={opened.url} target="_blank" rel="noopener noreferrer">
-          <img src={opened.url} alt={name} className="max-h-48 max-w-full rounded-lg ring-1 ring-slate-200 dark:ring-slate-700" />
+          <img src={opened.url} alt={name} className="max-h-48 max-w-full rounded-lg ring-1 ring-line" />
         </a>
       )}
       {audio && opened && <audio controls preload="none" src={opened.url} className="h-8 w-full max-w-[260px]" />}
@@ -93,16 +93,16 @@ export function AttachmentChip({ attachment: a, muted }: { attachment: Attachmen
  * not when it could not be read, was too long, or no provider is configured.
  */
 export function VoiceTranscript({ view }: { view: VoiceTranscriptView }) {
-  const muted = 'text-[11.5px] italic text-slate-500 dark:text-slate-400';
+  const muted = 'text-[11.5px] italic text-ink-muted';
   return (
     <div
       data-testid="voice-transcript"
       data-state={view.state}
-      className="mt-1.5 border-t border-slate-100 dark:border-slate-800 pt-1.5"
+      className="mt-1.5 border-t border-line-soft pt-1.5"
     >
       {view.state === 'done' ? (
         <>
-          <span className="mb-0.5 flex items-center gap-1 text-[10px] uppercase tracking-wide text-slate-400">
+          <span className="mb-0.5 flex items-center gap-1 text-[10px] uppercase tracking-wide text-ink-muted">
             <Mic className="h-3 w-3" /> {view.label}
           </span>
           <span className="text-[13px]">{view.text}</span>
@@ -129,11 +129,11 @@ export function ShadowBubble({ text, at, now, label = SHADOW_LABEL }: { text: st
   return (
     <div className="flex justify-end" data-shadow="true">
       <div className="flex min-w-0 max-w-[80%] flex-col items-end gap-1">
-        <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+        <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-muted">
           <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 dark:bg-indigo-500/15 px-1.5 py-0.5 text-indigo-600 dark:text-indigo-400 ring-1 ring-indigo-200 dark:ring-indigo-500/30">
             <Bot className="h-2.5 w-2.5" /> AI Assistant
           </span>
-          <span className="inline-flex items-center gap-1 normal-case tracking-normal text-slate-400">
+          <span className="inline-flex items-center gap-1 normal-case tracking-normal text-ink-muted">
             <EyeOff className="h-3 w-3" /> {label}
           </span>
         </div>
@@ -209,27 +209,27 @@ export function MessageBubble({
   const voice = isCustomer ? voiceTranscriptOf(m) : null;
 
   const bubble = isCustomer
-    ? 'rounded-tl-sm bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 ring-1 ring-slate-200 dark:ring-slate-700'
+    ? 'rounded-tl-sm bg-card text-ink ring-1 ring-line'
     : withdrawn
-      ? 'rounded-tr-sm border border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-950/60 text-slate-400'
+      ? 'rounded-tr-sm border border-dashed border-field bg-ground text-ink-muted'
       : isAi
         ? 'rounded-tr-sm bg-indigo-50 dark:bg-indigo-500/15 text-indigo-900 dark:text-indigo-200 ring-1 ring-indigo-100 dark:ring-indigo-500/25'
         : isSystem
-          ? 'rounded-tr-sm bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 ring-1 ring-slate-200 dark:ring-slate-700'
-          : 'rounded-tr-sm bg-slate-900 text-white dark:bg-slate-700 dark:text-slate-50';
-  const meta = isCustomer || withdrawn ? 'text-slate-400' : isAi ? 'text-indigo-400' : isSystem ? 'text-slate-400' : 'text-slate-300';
+          ? 'rounded-tr-sm bg-band text-ink ring-1 ring-line'
+          : 'rounded-tr-sm bg-staff text-on-staff';
+  const meta = isCustomer || withdrawn ? 'text-ink-muted' : isAi ? 'text-indigo-400' : isSystem ? 'text-ink-muted' : 'text-on-staff/75';
 
   return (
     <div className={`flex ${isCustomer ? 'justify-start' : 'justify-end'}`} data-withdrawn={withdrawn ? 'true' : undefined}>
       <div className={`flex min-w-0 max-w-[80%] flex-col gap-1 ${isCustomer ? 'items-start' : 'items-end'}`}>
         {!isCustomer && (
-          <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+          <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-muted">
             {isAi ? (
               <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 dark:bg-indigo-500/15 px-1.5 py-0.5 text-indigo-600 dark:text-indigo-400 ring-1 ring-indigo-200 dark:ring-indigo-500/30">
                 <Bot className="h-2.5 w-2.5" /> AI Assistant
               </span>
             ) : isSystem ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 text-slate-600 dark:text-slate-300 ring-1 ring-slate-200 dark:ring-slate-700">
+              <span className="inline-flex items-center gap-1 rounded-full bg-band px-1.5 py-0.5 text-ink-soft ring-1 ring-line">
                 <Bot className="h-2.5 w-2.5" /> Automatic
               </span>
             ) : (
@@ -241,14 +241,14 @@ export function MessageBubble({
           className={`max-w-full whitespace-pre-line break-words rounded-2xl px-3.5 py-2 text-[13.5px] leading-relaxed ${withdrawn ? '' : 'shadow-sm '}${bubble}`}
         >
           {m.body !== null ? (
-            withdrawn ? <s className="decoration-slate-400">{m.body}</s> : m.body
+            withdrawn ? <s className="decoration-ink-muted">{m.body}</s> : m.body
           ) : m.redacted ? (
             <span className="italic opacity-70">Removed at the customer’s request</span>
           ) : attachments.length === 0 && !voice ? (
             <span className="italic opacity-70">No text</span>
           ) : null}
           {m.translatedBody && (
-            <div className={`mt-1.5 border-t pt-1.5 text-[12.5px] ${isCustomer ? 'border-slate-100 dark:border-slate-800' : 'border-white/15'}`}>
+            <div className={`mt-1.5 border-t pt-1.5 text-[12.5px] ${isCustomer ? 'border-line-soft' : 'border-white/15'}`}>
               <span className={`mr-1 inline-flex items-center gap-1 text-[10px] uppercase tracking-wide ${meta}`}>
                 <Languages className="h-3 w-3" /> {langLabel(m.translatedTo)}
               </span>
@@ -269,7 +269,7 @@ export function MessageBubble({
           </div>
         </div>
         {withdrawn && (
-          <div className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+          <div className="inline-flex items-center gap-1 text-[11px] font-medium text-ink-muted">
             <Ban className="h-3 w-3" />
             {withdrawnNote ?? 'Not sent: a person replied'}
           </div>
