@@ -1,3 +1,26 @@
+## 19 November 2026, night: the owner's tablet feedback leads the inbox follow-up
+
+- The owner tested the redesigned Inbox on iPad mini and iPad 13 layouts and
+  sent two screenshots: the type and the controls are too big on smaller
+  screens and do not adjust; borders and rings are heavy; the list and the
+  chat share the width evenly; the chat needs more room and the split must be
+  adjustable by dragging. "It needs to be perfect."
+- Filed as SCRUM-1045 "Unified Inbox: sizes that follow the screen, more room
+  for the chat, and a draggable divider".
+- The follow-up lane was stopped before it had committed anything and
+  started again with this as its first stage: one size scale that follows
+  each pane's width, lighter controls with 1 pixel borders, the list as the
+  narrower side, a divider that drags by mouse, touch and keyboard and is
+  remembered, and nothing cut off where there is room. Then SCRUM-1043
+  (border contrast and a sweep at real device sizes) and SCRUM-1044 (the
+  settings pages), a review that checks his points first, and the landing.
+- Workflow wf_aa6464ff-de4 (the earlier run wf_51ed8906-c56 is stopped), same
+  folder and branch: `C:/oto-lanes/codex-inbox-feedback-20261116`,
+  `lane/inbox1043-20261119`.
+- A lesson for later redesigns: the first build was checked at 390, 768 and
+  1440 only, and the tablet split was judged "as drawn" rather than as used.
+  Tablets upright and on their side are now in every inbox check.
+
 ## 19 November 2026, night: family profiles answered; the inbox follow-up builds
 
 - **Family profiles (SCRUM-1024, 1025):** the owner answered the plan's eight
