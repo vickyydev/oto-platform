@@ -27,8 +27,8 @@ export const BTN_QUIET = `hit inline-flex min-h-ctl-lg items-center justify-cent
 /** A second action beside the main one (Create BEO, Check payment): an outlined card. */
 export const BTN_OUTLINE = `hit inline-flex min-h-ctl items-center justify-center gap-1.5 rounded-xl border border-edge bg-card px-3.5 text-ui font-semibold text-ink hover:bg-wash disabled:opacity-60 md:px-3 ${FOCUS}`;
 
-/** An action on a card in a list (Edit, Archive, Approve, Insert). */
-export const BTN_SMALL = `hit inline-flex min-h-ctl-sm items-center justify-center gap-1.5 rounded-lg border border-line bg-card px-3 text-note font-semibold text-ink-soft hover:bg-wash hover:text-ink disabled:opacity-60 md:px-2.5 ${FOCUS}`;
+/** An action on a card in a list (Edit, Archive, Approve, Insert): the control edge, 3 : 1 (SCRUM-1043). */
+export const BTN_SMALL = `hit inline-flex min-h-ctl-sm items-center justify-center gap-1.5 rounded-lg border border-edge bg-card px-3 text-note font-semibold text-ink-soft hover:bg-wash hover:text-ink disabled:opacity-60 md:px-2.5 ${FOCUS}`;
 
 /** An icon-only button: 44 px on a phone, the scale's `icon` size elsewhere, its name in `aria-label`. */
 export const BTN_ICON = `hit inline-flex size-icon shrink-0 items-center justify-center rounded-xl text-ink-soft hover:bg-wash hover:text-ink disabled:opacity-60 ${FOCUS}`;

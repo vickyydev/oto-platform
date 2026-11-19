@@ -26,9 +26,16 @@
   --oto-segment: #fefdfb;
   --oto-line: #eae0d7;
   --oto-line-soft: #efe6dc;
-  --oto-field: #e0d3c6;
-  /* An outlined button's edge (Create BEO, Mark as handled on a desktop; ChatPaid.dc.html). */
-  --oto-edge: #b9a898;
+  /* A dashed frame around what is not a control (a withdrawn line, a refused
+     hand-off's note): the field's drawn shade, kept as decoration (SCRUM-1043). */
+  --oto-line-deep: #e0d3c6;
+  /* The edge that marks a CONTROL (SCRUM-1043): a field, a search box, a pill
+     and an outlined button (Create BEO, Mark as handled on a desktop). 3 : 1
+     against the card, the ground, the wash and money's green in both themes
+     (tokens-1016), by colour at 1 px: the drawn values, deepened in their own
+     hue and chroma only as far as 3 : 1. */
+  --oto-field: #998879;
+  --oto-edge: #998879;
   --oto-ink: #3b281c;
   --oto-ink-soft: #5f4f43;
   --oto-ink-muted: #766456;
@@ -42,6 +49,8 @@
   --oto-mint-soft: #eef7f5;
   --oto-mint-line: #d4e6e2;
   --oto-mint-edge: #9cc9c2;
+  /* The edge of a control on the assistant's line (Resume, Pause): 3 : 1 on its mint (SCRUM-1043). */
+  --oto-mint-control: #6b9690;
   --oto-money: #f1f7ee;
   --oto-money-line: #c9e0c3;
   --oto-money-badge: #d3ead0;
@@ -93,8 +102,9 @@ html.dark {
   --oto-segment: #2a3a5c;
   --oto-line: #24304a;
   --oto-line-soft: #1c2740;
-  --oto-field: #34425f;
-  --oto-edge: #4b5b7c;
+  --oto-line-deep: #34425f;
+  --oto-field: #5d6e90;
+  --oto-edge: #5d6e90;
   --oto-ink: #f1f5f9;
   --oto-ink-soft: #c3cee0;
   --oto-ink-muted: #a9b6ca;
@@ -107,6 +117,7 @@ html.dark {
   --oto-mint-soft: #10262a;
   --oto-mint-line: #1b3a3d;
   --oto-mint-edge: #2f6b66;
+  --oto-mint-control: #3a7671;
   --oto-money: #13291f;
   --oto-money-line: #1f4030;
   --oto-money-badge: #1f4a2c;
@@ -315,6 +326,7 @@ html.dark {
   --color-segment: var(--oto-segment);
   --color-line: var(--oto-line);
   --color-line-soft: var(--oto-line-soft);
+  --color-line-deep: var(--oto-line-deep);
   --color-field: var(--oto-field);
   --color-edge: var(--oto-edge);
   --color-ink: var(--oto-ink);
@@ -329,6 +341,7 @@ html.dark {
   --color-mint-soft: var(--oto-mint-soft);
   --color-mint-line: var(--oto-mint-line);
   --color-mint-edge: var(--oto-mint-edge);
+  --color-mint-control: var(--oto-mint-control);
   --color-money: var(--oto-money);
   --color-money-line: var(--oto-money-line);
   --color-money-badge: var(--oto-money-badge);

@@ -33,9 +33,9 @@ export const ATTACHMENT_FALLBACK_NAME = 'Attachment';
 /** A message's audio, named (SCRUM-824). */
 export const VOICE_NOTE_NAME = 'Voice note';
 
-/** A file's Open control: a card-coloured pill, 44 px tall on a phone (SCRUM-1016). */
+/** A file's Open control: a card-coloured pill, 44 px tall on a phone (SCRUM-1016), on the control edge (SCRUM-1043). */
 const OPEN_FILE =
-  'hit inline-flex min-h-ctl-sm shrink-0 items-center gap-1 rounded-lg bg-card px-2 text-meta font-semibold text-ink ring-1 ring-line hover:bg-wash md:py-0.5';
+  'hit inline-flex min-h-ctl-sm shrink-0 items-center gap-1 rounded-lg bg-card px-2 text-meta font-semibold text-ink ring-1 ring-edge hover:bg-wash md:py-0.5';
 
 /**
  * One attachment on a bubble (customer-AI test night, W7: the brochure showed
@@ -233,7 +233,7 @@ export function MessageBubble({
   const bubble = isCustomer
     ? 'rounded-tl-md bg-card text-ink ring-1 ring-line'
     : withdrawn
-      ? 'rounded-tr-md border border-dashed border-field bg-ground text-ink-muted'
+      ? 'rounded-tr-md border border-dashed border-line-deep bg-ground text-ink-muted'
       : isAi
         ? 'rounded-tr-md bg-mint text-teal'
         : isSystem

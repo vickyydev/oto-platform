@@ -68,7 +68,7 @@ export function SignInPanel() {
 
       {/* A refused hand-off from the launcher: why this screen appeared at all. */}
       {handoffError && (
-        <p className="mb-4 rounded-xl border border-dashed border-field px-3 py-2 text-note text-ink-soft">{handoffError}</p>
+        <p className="mb-4 rounded-xl border border-dashed border-line-deep px-3 py-2 text-note text-ink-soft">{handoffError}</p>
       )}
 
       <form onSubmit={submit} className="flex flex-col gap-3">
