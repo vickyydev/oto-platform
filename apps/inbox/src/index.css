@@ -20,6 +20,10 @@
   --oto-card: #fefdfb;
   --oto-wash: #f7f0e8;
   --oto-band: #f1e9df;
+  /* The chosen segment of a switch on the band (Mine / Team / Handled, the
+     settings' sections): the card in light, a lighter navy than the band in
+     dark (Dark.dc.html), so the chosen one stands up rather than sinks. */
+  --oto-segment: #fefdfb;
   --oto-line: #eae0d7;
   --oto-line-soft: #efe6dc;
   --oto-field: #e0d3c6;
@@ -81,6 +85,7 @@ html.dark {
   --oto-card: #141f38;
   --oto-wash: #18233d;
   --oto-band: #1f2b45;
+  --oto-segment: #2a3a5c;
   --oto-line: #24304a;
   --oto-line-soft: #1c2740;
   --oto-field: #34425f;
@@ -137,6 +142,7 @@ html.dark {
   --color-card: var(--oto-card);
   --color-wash: var(--oto-wash);
   --color-band: var(--oto-band);
+  --color-segment: var(--oto-segment);
   --color-line: var(--oto-line);
   --color-line-soft: var(--oto-line-soft);
   --color-field: var(--oto-field);
