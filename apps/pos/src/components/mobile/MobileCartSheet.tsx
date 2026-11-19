@@ -25,6 +25,8 @@ interface MobileCartSheetProps {
   promoError?: string;
   onAddManualDiscount: () => void;
   onRemoveManualDiscount: (id: string) => void;
+  /** SCRUM-1048 — extra food credit for one child on a ticket, as the panel offers it; absent, not offered. */
+  onAddExtraCredit?: (ticketLineId: string, kidOrdinal: number, amountTHB: number) => void;
   onPay: () => void;
   onCancel: () => void;
   /**
@@ -89,6 +91,7 @@ export function MobileCartSheet({
   promoError,
   onAddManualDiscount,
   onRemoveManualDiscount,
+  onAddExtraCredit,
   onPay,
   onCancel,
   canPay,
@@ -167,6 +170,7 @@ export function MobileCartSheet({
               promoError={promoError}
               onAddManualDiscount={onAddManualDiscount}
               onRemoveManualDiscount={onRemoveManualDiscount}
+              {...(onAddExtraCredit ? { onAddExtraCredit } : {})}
               onPay={() => { onOpenChange(false); onPay(); }}
               onCancel={() => { onOpenChange(false); onCancel(); }}
               canPay={canPay}
