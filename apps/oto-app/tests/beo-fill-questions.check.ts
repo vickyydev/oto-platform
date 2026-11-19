@@ -12,7 +12,8 @@
 //     each field kind proposed from such a question is left out, before the
 //     review, the team's names and the approval; a family's answer after it,
 //     a team's statement, and what the family itself asked stay as before; the
-//     deposit keeps its own rule; the activity row counts what was left out.
+//     deposit keeps its own rule; the activity row counts what was left out;
+//     the ruling message's own read (Load into Editor, Fetch from chat) too.
 //   - SCRUM-1030: AI Fill proposes the Kitchen Notes from what the family says
 //     of handling or serving the food; the review shows it with the chat's
 //     words beside what the form holds; Approve and create writes it to the
@@ -50,7 +51,7 @@ process.env.LOG_LEVEL ??= "warn";
 const { registerAIRoutes } = await import("../server/ai-routes");
 const { registerBeoRoutes } = await import("../server/beo-routes");
 const {
-  loadBeoCatalogue, resolveCatalogueAnswer, withoutUnansweredQuestions, unansweredQuestion, saidAsQuestion, timedElsewhere, detailsFromFill,
+  loadBeoCatalogue, resolveCatalogueAnswer, withoutUnansweredQuestions, unansweredQuestion, saidAsQuestion, timedElsewhere, detailsFromFill, fillWithoutUnansweredQuestions,
   beoCatalogueSystemBlock, BEO_CONVERSATION_OUTPUT_FORMAT, CONVERSATION_SHAPE,
 } = await import("../server/lib/beoCatalogueFill");
 type TranscriptRef = import("../server/lib/beoCatalogueFill").TranscriptRef;
@@ -78,7 +79,7 @@ async function check(name: string, fn: () => Promise<void> | void) {
     failures[name] = error instanceof Error ? `${error.message}\n${error.stack?.split("\n").slice(1, 4).join("\n")}` : String(error);
   }
 }
-const CHECKS = 9;
+const CHECKS = 10;
 
 const run = randomUUID().slice(0, 8);
 const tenant = randomUUID();
@@ -428,6 +429,37 @@ try {
       const evRow = (await q("select location_text from core_events where id = $1", [ev[key]]))[0]!;
       assert.equal(evRow.location_text, null, `${key}: no room the team only offered`);
     }
+    // The ruling message's own read (Load into Editor, and Fetch from chat where the conversation
+    // gives nothing) holds none of them either; with the family answering after it, all stay.
+    const ruled = await fill("ruled");
+    const f = ruled.body.fill;
+    assert.deepEqual(
+      [f.event?.locationText, f.setupPlan?.readyBy, f.setupPlan?.simplifiedTasks, f.partyDetails?.items, f.timeline, f.team?.partyHost],
+      [undefined, undefined, [], [], [], undefined],
+      "the form's read keeps no question",
+    );
+    inbox.set(conv.answered, transcriptOf("answered", [["customer", FAMILY_ASKS], ["staff", TEAM_ASKS], ["customer", FAMILY_YES]], 1));
+    conversationAnswers.set(FAMILY_YES, { catalogue: answerFor(2) });
+    const yes = await fill("answered");
+    assert.equal(yes.status, 200, JSON.stringify(yes.body));
+    assert.deepEqual(questionsLeft(yes.body.review.proposal), ALL_ASKED, "answered: every one is proposed");
+    assert.deepEqual([yes.body.fill.setupPlan?.readyBy, yes.body.fill.timeline?.length, yes.body.fill.proposals.partyHost?.match?.id], ["13:30", 1, nok], "and the form's read keeps them");
+    const rows = await q("select metadata_json from activity_log where activity_type = 'beo_ai_fill' and metadata_json like $1", [`%${ev.answered}%`]);
+    assert.equal(JSON.parse(rows[0]!.metadata_json).unanswered, undefined, "nothing left out, nothing counted");
+  });
+
+  await check("aConfirmationsQuestionsLeaveTheFormsReadToo", () => {
+    const message = "Confirmed: 12 kids at 14:00, Margherita pizza. Shall we add a candy bar? Would you like the cake at 16:00? (ZZ TEST)";
+    const read = {
+      event: { numChildren: 12, startTime: "14:00", decoration: "a candy bar" },
+      kitchenPlan: { kidsMenu: [{ itemName: "Margherita pizza", quantity: 1 }, { itemName: "a candy bar", quantity: 1 }], cakeMode: "INTERNAL" as const, cakeTime: "16:00" },
+      timeline: [{ time: "16:00", label: "the cake" }],
+    };
+    const refused = fillWithoutUnansweredQuestions(read as never, message);
+    assert.equal(refused, 4);
+    assert.deepEqual(read.event, { numChildren: 12, startTime: "14:00" }, "what it confirms stays");
+    assert.deepEqual(read.kitchenPlan, { kidsMenu: [{ itemName: "Margherita pizza", quantity: 1 }] }, "the cake it only asks about goes whole");
+    assert.deepEqual(read.timeline, []);
   });
 
   await check("aPastedConfirmationThatAsksIsNotAgreed", async () => {
