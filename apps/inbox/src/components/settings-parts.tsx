@@ -20,16 +20,28 @@ import {
   type ReactNode,
 } from 'react';
 import { AlertCircle, CheckCircle2, Info, MoreHorizontal, type LucideIcon } from 'lucide-react';
-import { BTN_ICON, BTN_SMALL, HINT, LABEL } from '@/components/ui';
+import { BTN_ICON, BTN_SMALL, HINT, LABEL, SEGMENT, SEGMENT_OFF, SEGMENT_ON } from '@/components/ui';
 
 /** The page area's gutter (SettingsFrame); the sticky action bar bleeds to it. */
 export const FRAME_GUTTER = 'px-4 md:px-6';
 
+/**
+ * The page's column: centred, at most 768 px, inside the gutter. Every page
+ * sits in it; the Teach chat sets it on its parts itself (its header, its
+ * thread, its message box), so the box's bar can span the whole page area,
+ * as the Inbox's composer spans the chat.
+ */
+export const PAGE_COLUMN = `mx-auto w-full max-w-3xl ${FRAME_GUTTER}`;
+
 /** A section's card: the card ground, the drawn line, the 16 px corner. Rows inside are divided by the soft line. */
 export const SECTION_CARD = 'min-w-0 rounded-2xl border border-line bg-card';
 
-/** One row of a settings list: the conversation row's gutter and rhythm (ConversationList `Row`). */
-export const SETTINGS_ROW = 'flex min-w-0 gap-3 border-b border-line-soft px-pane py-row last:border-b-0';
+/**
+ * One row of a settings list: the conversation row's gutter and rhythm
+ * (ConversationList `Row`). It may wrap: a row's actions move under its words
+ * where the page is narrow (SettingsRow).
+ */
+export const SETTINGS_ROW = 'flex min-w-0 flex-wrap gap-x-3 gap-y-2.5 border-b border-line-soft px-pane py-row last:border-b-0';
 
 /** An item of a three-dot menu: the menu's height, the coral focus ring drawn inside it. */
 export const MENU_ITEM =
@@ -99,11 +111,12 @@ export function SectionCard({
   );
 }
 
-/** One part of a row's quiet meta: its words, and an optional tone (`ask` for a thing still to do). */
+/** One part of a row's quiet meta: its words, and an optional tone (`ask` for a thing still to do, `code` for a key). */
 export interface MetaPart {
   text: string;
-  tone?: 'ask';
+  tone?: 'ask' | 'code';
 }
+const META_TONE = { ask: 'font-semibold text-ask-ink', code: 'font-mono' } as const;
 
 /**
  * A row's quiet meta ("Every channel · Every park · No approval needed"): the
@@ -118,7 +131,7 @@ export function MetaLine({ parts }: { parts: readonly MetaPart[] }) {
         <Fragment key={`${i}-${p.text}`}>
           {/* The dot keeps to the part before it; the line may break after it. */}
           {i > 0 && <span aria-hidden>{' · '}</span>}
-          <span className={`whitespace-nowrap ${p.tone === 'ask' ? 'font-semibold text-ask-ink' : ''}`}>{p.text}</span>
+          <span className={`whitespace-nowrap ${p.tone ? META_TONE[p.tone] : ''}`}>{p.text}</span>
         </Fragment>
       ))}
     </>
@@ -133,17 +146,27 @@ export interface RowAction {
   disabled?: boolean;
 }
 
+/** How many lines a row's preview shows before it is cut (Tailwind needs the whole class written out). */
+const PREVIEW_LINES = { 2: 'line-clamp-2', 3: 'line-clamp-3', 4: 'line-clamp-4', all: '' } as const;
+
 /**
  * A row of a settings list, in the conversation row's rhythm: the main text,
  * a preview clamped to two lines, then at most one badge beside quiet meta.
  * The actions come from ONE list: buttons at the row's end from 768 px, the
  * three-dot menu below it, so the two can never offer different things.
  * `name` says which row an action belongs to, for a screen reader.
+ *
+ * A preview that is written text (a knowledge answer, a rule's instruction)
+ * keeps its line breaks (`keepBreaks`) and may show more lines
+ * (`previewLines`), at the row's reading measure.
  */
 export function SettingsRow({
   title,
   name,
   preview,
+  previewLines = 2,
+  keepBreaks = false,
+  detail,
   badge,
   meta,
   actions = [],
@@ -153,6 +176,10 @@ export function SettingsRow({
   /** The row's name in its actions' accessible names ("Edit: Welcome, English"). */
   name: string;
   preview?: ReactNode;
+  previewLines?: keyof typeof PREVIEW_LINES;
+  keepBreaks?: boolean;
+  /** What belongs with the words, before the badge and meta (a rule's ask-first question, an example's good reply). */
+  detail?: ReactNode;
   badge?: ReactNode;
   meta?: ReactNode;
   actions?: readonly RowAction[];
@@ -163,7 +190,14 @@ export function SettingsRow({
     <li className={SETTINGS_ROW}>
       <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
         <div className="min-w-0 break-words text-body font-semibold leading-tight text-ink">{title}</div>
-        {preview && <p className="line-clamp-2 break-words text-ui leading-snug text-ink-soft">{preview}</p>}
+        {preview && (
+          <p
+            className={`${PREVIEW_LINES[previewLines]} ${keepBreaks ? 'max-w-prose whitespace-pre-line leading-relaxed' : 'leading-snug'} break-words text-ui text-ink-soft`}
+          >
+            {preview}
+          </p>
+        )}
+        {detail}
         {/* One flow of words: the badge, then the meta's parts, wrapping between parts. */}
         {(badge || meta) && (
           <div className="mt-[3px] min-w-0 break-words text-meta leading-relaxed text-ink-muted">
@@ -174,8 +208,10 @@ export function SettingsRow({
         {children}
       </div>
       {actions.length > 0 && (
-        <div className="flex shrink-0 items-start">
-          <div className="hidden items-center gap-1.5 md:flex">
+        // From 768 px the buttons sit at the row's end, and under its words while the page area is under
+        // 768 px wide (a tablet held upright), so three of them never squeeze the words into a column.
+        <div className="flex shrink-0 items-start md:@max-[48rem]/settings:basis-full">
+          <div className="hidden flex-wrap items-center gap-1.5 md:flex">
             {actions.map((a) => {
               const Icon = a.icon;
               return (
@@ -448,12 +484,20 @@ export type NoteTone = keyof typeof NOTE_TONE;
 
 const NOTE_ICON: Record<NoteTone, LucideIcon> = { success: CheckCircle2, assistant: Info, ask: Info, danger: AlertCircle };
 
-/** A note on a page: a status for a screen reader, or an alert when it is a refusal. */
-export function InlineNote({ tone = 'success', children }: { tone?: NoteTone; children: ReactNode }) {
+/**
+ * A note on a page: a status for a screen reader, or an alert when it is a
+ * refusal. A note that is part of the page from the start (what the
+ * assistant does with a page's contents) is `live={false}`: read in its
+ * place, never announced.
+ */
+export function InlineNote({ tone = 'success', live = true, children }: { tone?: NoteTone; live?: boolean; children: ReactNode }) {
   const Icon = NOTE_ICON[tone];
   return (
-    <p role={tone === 'danger' ? 'alert' : 'status'} className={`flex items-start gap-2 rounded-xl px-3 py-2 text-note ring-1 ${NOTE_TONE[tone]}`}>
-      <Icon aria-hidden className="mt-px h-4 w-4 shrink-0" />
+    <p
+      role={live ? (tone === 'danger' ? 'alert' : 'status') : undefined}
+      className={`flex items-start gap-2 rounded-xl px-3 py-2 text-note leading-relaxed ring-1 ${NOTE_TONE[tone]}`}
+    >
+      <Icon aria-hidden className="mt-[3px] h-4 w-4 shrink-0" />
       <span className="min-w-0 break-words">{children}</span>
     </p>
   );
@@ -462,6 +506,96 @@ export function InlineNote({ tone = 'success', children }: { tone?: NoteTone; ch
 /** A refusal said as the server said it: red, or the polite amber of "not on your access". */
 export function InlineError({ text, tone = 'danger' }: { text: string; tone?: 'danger' | 'ask' }) {
   return <InlineNote tone={tone}>{text}</InlineNote>;
+}
+
+/**
+ * The server's refusal of a form (a rule that may not say what it says), at
+ * the TOP of the form, word for word, in the refusal's red; brought into view
+ * when it appears, so a person who pressed Save at the foot of a long sheet
+ * sees why nothing was saved. It takes both columns of a two-column form.
+ */
+export function FormRefusal({ text, tone = 'danger' }: { text: string | null; tone?: 'danger' | 'ask' }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (text) ref.current?.scrollIntoView?.({ block: 'nearest' });
+  }, [text]);
+  if (!text) return null;
+  return (
+    <div ref={ref} className="min-w-0 scroll-my-4 md:col-span-2">
+      <InlineError text={text} tone={tone} />
+    </div>
+  );
+}
+
+/** The band a switch's segments sit on (the settings band on a phone, a number's mode). */
+export const SEGMENT_BAND = 'flex min-w-0 gap-1 rounded-[14px] bg-band p-1';
+
+/**
+ * Which part of a list shows (Drafts, Approved, Archived; To review, …): one
+ * switch of pressed buttons on the band, the width of the page on a phone
+ * with equal segments, its own width from 768 px.
+ */
+export function ViewSwitch<T extends string>({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: readonly (readonly [T, string])[];
+  value: T;
+  onChange: (v: T) => void;
+}) {
+  return (
+    <div role="group" aria-label={label} className={`${SEGMENT_BAND} max-md:w-full`}>
+      {options.map(([v, words]) => (
+        <button
+          key={v}
+          type="button"
+          aria-pressed={value === v}
+          onClick={() => onChange(v)}
+          className={`${SEGMENT} justify-center whitespace-nowrap rounded-[10px] max-md:flex-1 ${value === v ? SEGMENT_ON : SEGMENT_OFF}`}
+        >
+          {words}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * A setting as one labelled row (a number's assistant mode): its name, quiet
+ * meta, a line saying what its value means, and its control at the row's end
+ * from 768 px; on a phone the control sits under the words at the row's
+ * width, where a thumb reaches it. What goes wrong with it shows under the
+ * whole row (`children`).
+ */
+export function ControlRow({
+  title,
+  meta,
+  help,
+  control,
+  children,
+}: {
+  title: ReactNode;
+  meta?: ReactNode;
+  help?: ReactNode;
+  control: ReactNode;
+  children?: ReactNode;
+}) {
+  return (
+    <li className={`${SETTINGS_ROW} flex-col`}>
+      <div className="flex min-w-0 flex-col gap-3 md:flex-row md:items-center md:gap-4">
+        <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
+          <div className="min-w-0 break-words text-body font-semibold leading-tight text-ink">{title}</div>
+          {meta && <div className="min-w-0 break-words text-meta leading-relaxed text-ink-muted">{meta}</div>}
+          {help && <div className="max-w-prose text-note leading-relaxed text-ink-soft">{help}</div>}
+        </div>
+        <div className="flex min-w-0 shrink-0">{control}</div>
+      </div>
+      {children}
+    </li>
+  );
 }
 
 /** The focus ring of the frame's own controls, drawn inside them. */
