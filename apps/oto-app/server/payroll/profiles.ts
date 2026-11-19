@@ -120,6 +120,13 @@ async function loadProfiles(tenantId: string, employeeIds?: string[]) {
   return { rows, allocations, advances, payments };
 }
 
+/** One person's payroll profile as payroll reads it, or null when there is none (SCRUM-1055: a single shift's invitation). */
+export async function payrollProfileOf(tenantId: string, employeeId: string): Promise<EmployeePayrollProfile | null> {
+  const loaded = await loadProfiles(tenantId, [employeeId]);
+  const row = loaded.rows[0];
+  return row ? profileOut(row, loaded.allocations, loaded.advances, loaded.payments) : null;
+}
+
 const allocationBadge = (version: AllocationVersion | null, branchName: (id: string) => string) => {
   if (!version) return null;
   return version.lines.map((line) => `${line.costCentre === OWNER_NON_OPERATIONAL ? "Owner" : branchName(line.costCentre)} ${line.percent}%`).join(" · ");

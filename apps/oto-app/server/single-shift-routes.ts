@@ -1,6 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { z } from "zod";
 import { SINGLE_SHIFT_PAY_BASES } from "@shared/singleShift";
+import { canViewHrSalary } from "@shared/hr-salary-permission";
 import { requireAuth } from "./auth";
 import { canUserAccessBranch, requireManager } from "./auth-middleware";
 import { requireSchedulePark } from "./schedule-scope";
@@ -25,7 +26,8 @@ import {
  *    former employees, the people who may be invited there;
  *  - GET  /api/schedule/single-shift/invitations?branchId=&startDate=&endDate=
  *    — the branch's single shifts in those days, each with how it is paid (no
- *    figure is worked out here: what a shift is worth is payroll's);
+ *    figure is worked out here: what a shift is worth is payroll's; a casual
+ *    day rate is shown only to the roles that may see salaries, SCRUM-1055);
  *  - POST /api/schedule/single-shift/invitations — { employeeId, shiftRowId,
  *    shiftDate, payWay: "old_contract" | "casual_day_rate", casualDayRate? };
  *  - PATCH /api/schedule/single-shift/invitations/:id — { payWay, casualDayRate? }:
@@ -55,6 +57,8 @@ function refuse(res: Response, error: unknown): boolean {
 
 const tenantOf = (req: Request) => req.userWithAccess!.tenantId!;
 const reach = (req: Request) => (branchId: string) => canUserAccessBranch(req.userWithAccess!, branchId);
+/** SCRUM-1055: the salary rule the app already has (SCRUM-559) decides who reads a casual day rate back. */
+const showPay = (req: Request) => canViewHrSalary(req.userWithAccess ?? req.user);
 
 export function registerSingleShiftRoutes(app: Express): void {
   app.get("/api/schedule/single-shift/former-employees", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
@@ -77,7 +81,7 @@ export function registerSingleShiftRoutes(app: Express): void {
       }
       if (!reach(req)(branchId)) return res.status(403).json({ message: "Access denied to this branch" });
       res.set("Cache-Control", "private, no-store");
-      res.json(await singleShiftsOf(tenantOf(req), branchId, startDate, endDate));
+      res.json(await singleShiftsOf(tenantOf(req), branchId, startDate, endDate, showPay(req)));
     } catch (error) {
       next(error);
     }
@@ -103,7 +107,7 @@ export function registerSingleShiftRoutes(app: Express): void {
         casualDayRate: parsed.data.casualDayRate ?? null,
       });
       await generateBreaksForShiftRow(shiftRow.id, parsed.data.shiftDate, tenantId).catch((err) => console.error("[BREAKS] Generation error:", err));
-      const [view] = (await singleShiftsOf(tenantId, shiftRow.branchId, parsed.data.shiftDate, parsed.data.shiftDate))
+      const [view] = (await singleShiftsOf(tenantId, shiftRow.branchId, parsed.data.shiftDate, parsed.data.shiftDate, showPay(req)))
         .filter((s) => s.id === invitation.id);
       res.status(201).json(view);
     } catch (error) {
@@ -125,7 +129,7 @@ export function registerSingleShiftRoutes(app: Express): void {
         casualDayRate: parsed.data.casualDayRate ?? null,
       });
       const day = String(after.shiftDate).slice(0, 10);
-      const [view] = (await singleShiftsOf(tenantId, after.branchId, day, day)).filter((s) => s.id === after.id);
+      const [view] = (await singleShiftsOf(tenantId, after.branchId, day, day, showPay(req))).filter((s) => s.id === after.id);
       res.json(view);
     } catch (error) {
       if (!refuse(res, error)) next(error);

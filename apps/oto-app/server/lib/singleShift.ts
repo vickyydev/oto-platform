@@ -1,8 +1,11 @@
-import { and, asc, eq, gte, inArray, isNotNull, lte } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, isNotNull, lte, sql } from "drizzle-orm";
 import {
   branches,
   departments,
   employees,
+  payrollMonthRuns,
+  payrollProfiles,
+  payrollRunVersions,
   roles,
   scheduleAssignments,
   scheduleShiftBreaks,
@@ -22,6 +25,8 @@ import {
 } from "@shared/singleShift";
 import { db } from "../db";
 import { storage } from "../storage";
+import { allocationAt } from "../payroll/engine/payroll-profile";
+import { payrollProfileOf } from "../payroll/profiles";
 import { employmentEndedOn } from "./employmentEnded";
 import { bangkokToday } from "./engagementDates";
 import { getEmployeeDisplayName } from "./employeeDisplayName";
@@ -49,12 +54,17 @@ import { getEmployeeDisplayName } from "./employeeDisplayName";
  *    workers page takes a casual worker's rate), and switch back, until the
  *    day has passed (the schedule's "no change on a past date"). Each choice is
  *    written to the activity log with who and which way, never the figure
- *    (`single_shift_invited`, `single_shift_pay_changed`).
+ *    (`single_shift_invited`, `single_shift_pay_changed`). The rate itself is
+ *    shown only to the roles that may see salaries (`canViewHrSalary`).
  *  - What the shift is worth is payroll's (SCRUM-1055): the run of the month
  *    it is worked pays an old-contract shift as its own "Single shift" line
- *    (payroll/world.ts, engine/company-calculations.ts); a casual day rate is
- *    not paid there (company payroll has no pay for casual workers) and the
- *    month's payroll names it, with every shift it cannot pay.
+ *    (payroll/world.ts, engine/company-calculations.ts), once per day; a
+ *    casual day rate is not paid there (company payroll has no pay for casual
+ *    workers) and the month's payroll names it, with every shift it cannot
+ *    pay. An old-contract shift in a month whose run is already locked is
+ *    refused, and so is a change of pay once it is: no run would pay it.
+ *  - One invitation at a time for a person and a day (an advisory lock), so
+ *    the same shift sent twice is refused by the schedule's own check.
  *  - The kiosk (`singleShiftOpenOn`): the person clocks in and out at the
  *    shift's branch on its day, as anybody employed that day does, and from
  *    the next day the kiosk refuses them again by itself. The login stays in
@@ -178,6 +188,12 @@ export interface FormerEmployeeView {
   id: string;
   name: string;
   lastWorkingDay: string | null;
+  /**
+   * SCRUM-1055: whether payroll has a profile to pay the old contract from.
+   * Without one the month's payroll lists the shift as not paid; the dialog
+   * says so before the invitation, so the profile can be made first.
+   */
+  payrollProfile: boolean;
 }
 
 /** The branch's former employees, by name: the people the dialog offers for a single shift there. */
@@ -186,11 +202,43 @@ export async function formerEmployeesOf(tenantId: string, branchId: string, now:
   const rows = await db.select().from(employees)
     .where(and(eq(employees.tenantId, tenantId), eq(employees.branchId, branchId)))
     .orderBy(asc(employees.nickname), asc(employees.fullName));
-  return rows.filter((profile) => employmentEndedOn(profile, today)).map((p) => ({
+  const former = rows.filter((profile) => employmentEndedOn(profile, today));
+  const withProfile = new Set(former.length
+    ? (await db.select({ employeeId: payrollProfiles.employeeId }).from(payrollProfiles)
+      .where(and(eq(payrollProfiles.tenantId, tenantId), inArray(payrollProfiles.employeeId, former.map((p) => p.id))))).map((r) => r.employeeId)
+    : []);
+  return former.map((p) => ({
     id: p.id,
     name: getEmployeeDisplayName(p),
     lastWorkingDay: p.lastWorkingDay ? new Date(p.lastWorkingDay).toISOString().slice(0, 10) : null,
+    payrollProfile: withProfile.has(p.id),
   }));
+}
+
+/**
+ * SCRUM-1055: whether the month's run that would pay this person's old
+ * contract for a shift on `shiftDate` is already locked or paid: the current
+ * version of the run of each paying entity the payroll profile's allocation
+ * names on that day (the entities the shift's line is split to, engine
+ * splitEarning). A locked run takes nothing new, and the next month's run
+ * pays only its own month, so such a shift would be paid by no run.
+ */
+async function payrollLockedFor(tenantId: string, employeeId: string, shiftDate: string): Promise<boolean> {
+  const profile = await payrollProfileOf(tenantId, employeeId);
+  const entities = profile ? Array.from(new Set(allocationAt(profile, shiftDate)?.lines.map((l) => l.entityId) ?? [])) : [];
+  if (!entities.length) return false;
+  const runs = await db.select({ status: payrollRunVersions.status }).from(payrollMonthRuns)
+    .innerJoin(payrollRunVersions, and(
+      eq(payrollRunVersions.tenantId, payrollMonthRuns.tenantId),
+      eq(payrollRunVersions.runId, payrollMonthRuns.id),
+      eq(payrollRunVersions.version, payrollMonthRuns.currentVersion),
+    ))
+    .where(and(
+      eq(payrollMonthRuns.tenantId, tenantId),
+      inArray(payrollMonthRuns.entityId, entities),
+      eq(payrollMonthRuns.month, shiftDate.slice(0, 7)),
+    ));
+  return runs.some((r) => r.status === "locked" || r.status === "paid");
 }
 
 export class SingleShiftRefusal extends Error {
@@ -228,13 +276,20 @@ export async function inviteToSingleShift(input: InviteInput): Promise<SingleShi
     throw new SingleShiftRefusal(400, SINGLE_SHIFT_REFUSALS.rate);
   }
   if (!employmentEndedOn(employee, today)) throw new SingleShiftRefusal(400, SINGLE_SHIFT_REFUSALS.notFormer, "NOT_FORMER_EMPLOYEE");
-  // Every check the schedule makes for anybody, but the two that refuse an ended employment.
-  const fit = await storage.canAssignEmployeeToShift(employee.id, shiftRow.id, shiftDate, { singleShiftInvitation: true }, input.tenantId);
-  if (!fit.ok) throw new SingleShiftRefusal(400, fit.message || "Cannot assign employee to shift", fit.reasonCode);
-  const weekPlan = await storage.getOrCreateWeekPlan(shiftRow.branchId, mondayOf(shiftDate), input.actorId, input.tenantId);
+  if (input.way === "old_contract" && await payrollLockedFor(input.tenantId, employee.id, shiftDate)) {
+    throw new SingleShiftRefusal(409, SINGLE_SHIFT_REFUSALS.payrollLocked, "PAYROLL_LOCKED");
+  }
   const name = getEmployeeDisplayName(employee);
 
   return db.transaction(async (tx) => {
+    // SCRUM-1055: one invitation at a time for a person and a day, so the same
+    // shift sent twice at once meets the schedule's "already assigned" check
+    // below after the first is committed, and is not made twice (and paid twice).
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`single-shift:${employee.id}:${shiftDate}`}, 0))`);
+    // Every check the schedule makes for anybody, but the two that refuse an ended employment.
+    const fit = await storage.canAssignEmployeeToShift(employee.id, shiftRow.id, shiftDate, { singleShiftInvitation: true }, input.tenantId);
+    if (!fit.ok) throw new SingleShiftRefusal(400, fit.message || "Cannot assign employee to shift", fit.reasonCode);
+    const weekPlan = await storage.getOrCreateWeekPlan(shiftRow.branchId, mondayOf(shiftDate), input.actorId, input.tenantId);
     const [assignment] = await tx.insert(scheduleAssignments).values({
       tenantId: input.tenantId,
       weekPlanId: weekPlan.id,
@@ -301,6 +356,11 @@ export async function changeSingleShiftPay(input: {
     if (String(before.shiftDate) < today) throw new SingleShiftRefusal(400, SINGLE_SHIFT_REFUSALS.pastChange);
     const rate = input.way === "casual_day_rate" ? input.casualDayRate : null;
     if (before.payBasis === input.way && (before.casualDayRate ?? null) === rate) return before;
+    // SCRUM-1055: a locked month has paid (or not paid) the old contract as it stood; the record stays as it was paid.
+    if ((before.payBasis === "old_contract" || input.way === "old_contract")
+      && await payrollLockedFor(input.tenantId, before.employeeId, String(before.shiftDate).slice(0, 10))) {
+      throw new SingleShiftRefusal(409, SINGLE_SHIFT_REFUSALS.payrollLocked, "PAYROLL_LOCKED");
+    }
     const [after] = await tx.update(singleShiftInvitations)
       .set({ payBasis: input.way, casualDayRate: rate, updatedBy: input.actorId, updatedAt: new Date() })
       .where(eq(singleShiftInvitations.id, before.id)).returning();
@@ -339,8 +399,13 @@ export interface SingleShiftView {
 
 const day = (value: string | Date) => (value instanceof Date ? value.toISOString() : String(value)).slice(0, 10);
 
-/** The branch's single shifts between two days, each still on the schedule. */
-export async function singleShiftsOf(tenantId: string, branchId: string, from: string, to: string): Promise<SingleShiftView[]> {
+/**
+ * The branch's single shifts between two days, each still on the schedule.
+ * `showPay` is the salary rule's answer for the reader (`canViewHrSalary`,
+ * SCRUM-1055): a reader below the roles that may see salaries gets the way a
+ * shift is paid in words ("Casual day rate"), never the rate.
+ */
+export async function singleShiftsOf(tenantId: string, branchId: string, from: string, to: string, showPay: boolean): Promise<SingleShiftView[]> {
   const rows = await db.select({ invitation: singleShiftInvitations, employee: employees })
     .from(singleShiftInvitations)
     .innerJoin(employees, eq(employees.id, singleShiftInvitations.employeeId))
@@ -371,8 +436,8 @@ export async function singleShiftsOf(tenantId: string, branchId: string, from: s
     shiftRowId: i.shiftRowId,
     shiftDate: day(i.shiftDate),
     payWay: i.payBasis,
-    casualDayRate: i.casualDayRate,
-    payLabel: singleShiftPayLabel(i.payBasis, i.casualDayRate),
+    casualDayRate: showPay ? i.casualDayRate : null,
+    payLabel: singleShiftPayLabel(i.payBasis, showPay ? i.casualDayRate : null),
     invitedBy: i.createdBy ? names.get(i.createdBy) ?? null : null,
     invitedAt: i.createdAt.toISOString(),
     changedBy: i.updatedBy ? names.get(i.updatedBy) ?? null : null,

@@ -23,6 +23,7 @@ import { createRequire, Module } from "node:module";
 import { fileURLToPath } from "node:url";
 import { buildSync } from "esbuild";
 import { JSDOM } from "jsdom";
+import { NO_PAYROLL_PROFILE_HINT } from "../shared/singleShift";
 
 const app = fileURLToPath(new URL("../", import.meta.url));
 const dom = new JSDOM("<!doctype html><html><body></body></html>", { url: "http://localhost/scheduling", pretendToBeVisual: true });
@@ -76,7 +77,7 @@ const DAY = "2026-12-02";
 const NOK = "e0000000-0000-4000-8000-00000000000a";
 const PIM = "e0000000-0000-4000-8000-00000000000b";
 type Shift = Record<string, unknown> & { id: string; employeeId: string; payWay: string; casualDayRate: number | null };
-let former: { id: string; name: string; lastWorkingDay: string | null }[] = [];
+let former: { id: string; name: string; lastWorkingDay: string | null; payrollProfile: boolean }[] = [];
 let shifts: Shift[] = [];
 let writes: Array<{ method: string; path: string; body: any }> = []; // eslint-disable-line @typescript-eslint/no-explicit-any -- a JSON body read field by field
 
@@ -163,7 +164,7 @@ async function unmount() {
 
 const cases: Record<string, () => Promise<void>> = {
   "lists the former employees; the pay starts on the old contract; inviting sends the shift, the day and no rate": async () => {
-    former = [{ id: NOK, name: "ZZ Nok", lastWorkingDay: "2026-11-01" }, { id: PIM, name: "ZZ Pim", lastWorkingDay: null }];
+    former = [{ id: NOK, name: "ZZ Nok", lastWorkingDay: "2026-11-01", payrollProfile: true }, { id: PIM, name: "ZZ Pim", lastWorkingDay: null, payrollProfile: true }];
     shifts = [];
     await mount();
     assert.ok(doc.body.textContent!.includes("Invite a Former Employee"));
@@ -178,7 +179,7 @@ const cases: Record<string, () => Promise<void>> = {
     assert.equal(required(`single-shift-pay-${NOK}`).textContent, "On the old contract");
   },
   "a casual day rate asks for the rate, whole baht, before the invite goes; then sends it": async () => {
-    former = [{ id: NOK, name: "ZZ Nok", lastWorkingDay: "2026-11-01" }];
+    former = [{ id: NOK, name: "ZZ Nok", lastWorkingDay: "2026-11-01", payrollProfile: true }];
     shifts = [];
     await mount();
     await click(required(`button-single-shift-${NOK}`));
@@ -194,7 +195,7 @@ const cases: Record<string, () => Promise<void>> = {
     assert.equal(required(`single-shift-pay-${NOK}`).textContent, "Casual day rate ฿1,200 a day");
   },
   "a shift already made shows how it is paid and no figure; Change pay switches both ways": async () => {
-    former = [{ id: NOK, name: "ZZ Nok", lastWorkingDay: "2026-11-01" }];
+    former = [{ id: NOK, name: "ZZ Nok", lastWorkingDay: "2026-11-01", payrollProfile: true }];
     shifts = [shift("s-1", NOK, "ZZ Nok", "old_contract", null)];
     await mount();
     assert.ok(doc.body.textContent!.includes("Single shift · former employee"));
@@ -215,7 +216,7 @@ const cases: Record<string, () => Promise<void>> = {
     assert.equal(required(`single-shift-pay-${NOK}`).textContent, "On the old contract");
   },
   "the casual way shows its rate and no figure; somebody already on a single shift that day can still be picked": async () => {
-    former = [{ id: NOK, name: "ZZ Nok", lastWorkingDay: "2026-11-01" }, { id: PIM, name: "ZZ Pim", lastWorkingDay: null }];
+    former = [{ id: NOK, name: "ZZ Nok", lastWorkingDay: "2026-11-01", payrollProfile: true }, { id: PIM, name: "ZZ Pim", lastWorkingDay: null, payrollProfile: true }];
     shifts = [shift("s-1", NOK, "ZZ Nok", "casual_day_rate", 900)];
     await mount();
     assert.equal(required(`single-shift-pay-${NOK}`).textContent, "Casual day rate ฿900 a day");
@@ -223,6 +224,34 @@ const cases: Record<string, () => Promise<void>> = {
     assert.equal((required(`button-single-shift-${NOK}`) as HTMLButtonElement).disabled, false);
     assert.equal((required(`button-single-shift-${PIM}`) as HTMLButtonElement).disabled, false);
     assert.equal(required(`button-single-shift-${NOK}`).textContent, "ZZ NokLeft after 2026-11-01");
+  },
+  // SCRUM-1055: a reader below the salary roles gets the casual way in words, the rate withheld by the server.
+  "the casual way without its rate, as a manager reads it: the words alone; Change pay asks for the rate again": async () => {
+    former = [{ id: NOK, name: "ZZ Nok", lastWorkingDay: "2026-11-01", payrollProfile: true }];
+    shifts = [{ ...shift("s-1", NOK, "ZZ Nok", "casual_day_rate", 900), casualDayRate: null, payLabel: "Casual day rate" }];
+    await mount();
+    assert.equal(required(`single-shift-pay-${NOK}`).textContent, "Casual day rate");
+    assert.doesNotMatch(doc.body.textContent!, /฿/);
+    await click(button("Change pay"));
+    assert.equal(checked(`single-shift-change-${NOK}-casual`), true);
+    assert.equal((required(`single-shift-change-${NOK}-rate`) as HTMLInputElement).value, "", "no rate to show");
+    assert.equal(button("Save pay").disabled, true, "a casual way needs a rate typed");
+  },
+  // SCRUM-1055: payroll pays the old contract from the payroll profile; without one it cannot.
+  "a former employee with no payroll profile is marked, and the old contract says payroll cannot pay it yet": async () => {
+    former = [{ id: NOK, name: "ZZ Nok", lastWorkingDay: "2026-11-01", payrollProfile: false }, { id: PIM, name: "ZZ Pim", lastWorkingDay: null, payrollProfile: true }];
+    shifts = [];
+    await mount();
+    assert.equal(required(`button-single-shift-${NOK}`).textContent, "ZZ NokLeft after 2026-11-01 · no payroll profile");
+    assert.equal(required(`button-single-shift-${PIM}`).textContent, "ZZ PimLeft");
+    assert.equal(byTestId("single-shift-no-payroll-profile"), null, "nobody picked yet");
+    await click(required(`button-single-shift-${NOK}`));
+    assert.equal(required("single-shift-no-payroll-profile").textContent, NO_PAYROLL_PROFILE_HINT);
+    await click(required("single-shift-invite-casual"));
+    assert.equal(byTestId("single-shift-no-payroll-profile"), null, "not on a casual day rate");
+    await click(required("single-shift-invite-old-contract"));
+    await click(required(`button-single-shift-${PIM}`));
+    assert.equal(byTestId("single-shift-no-payroll-profile"), null, "not for somebody payroll has a profile for");
   },
 };
 
