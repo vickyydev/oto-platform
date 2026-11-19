@@ -15,7 +15,8 @@ import { X, type LucideIcon } from 'lucide-react';
  *
  * `sheet` (SCRUM-1016, Filters.dc.html) is the same dialog as a sheet: on a
  * phone it rises from the bottom edge with rounded top corners and a large
- * title, from 768 px it is the centred card; it carries no icon.
+ * title, from 768 px it is the centred card; it carries no icon. Its
+ * `subtitle` is a quiet line under the title (People and actions, SCRUM-1016).
  */
 export function Dialog({
   open,
@@ -73,9 +74,13 @@ export function Dialog({
           className="flex max-h-[calc(100dvh-3.5rem)] w-full flex-col overflow-hidden rounded-t-3xl bg-ground shadow-pop md:max-h-[calc(100dvh-2rem)] md:max-w-lg md:rounded-3xl"
         >
           <div className="flex shrink-0 items-center justify-between gap-3 pb-1.5 pl-5 pr-2 pt-3.5">
-            <h2 id={titleId} className="text-[20px] font-extrabold tracking-[-0.02em] text-ink">
-              {title}
-            </h2>
+            <div className="min-w-0">
+              <h2 id={titleId} className="truncate text-[20px] font-extrabold tracking-[-0.02em] text-ink">
+                {title}
+              </h2>
+              {/* The sheet's line under its title (ChatActions.dc.html: the channel, the language, the member link). */}
+              {subtitle && <p className="text-[12.5px] text-ink-muted">{subtitle}</p>}
+            </div>
             <button
               ref={closeRef}
               type="button"

@@ -1,24 +1,14 @@
 // The prototype's small UI atoms (WhatsAppDemo.tsx :727-1026, :1773-1868),
-// ported with their classes as they are and their data moved onto the api's
-// shapes: `Avatar`, `StaffChip` (here `ChipView`), `StatusBadge`,
-// `CategoryBadge`, `ChannelDot`, `EmptyState`; and the toggle pill as the
-// rail's `FilterChip`, which took the place of the prototype's
-// `FilterSelect` (SCRUM-220 playbook). The dashboard's `MetricCard` and
-// `CategoryMixCard` gave way to the statistics row (SCRUM-1016).
+// their data moved onto the api's shapes: `Avatar`, `ChannelDot`,
+// `EmptyState`; and the toggle pill as the rail's `FilterChip`, which took
+// the place of the prototype's `FilterSelect` (SCRUM-220 playbook). The
+// dashboard's `MetricCard` and `CategoryMixCard` gave way to the statistics
+// row, and the chat header's `StatusBadge` and `CategoryBadge` to the chat's
+// People and actions, where team and status are rows (SCRUM-1016).
 import type { ReactNode } from 'react';
-import { ChevronDown, type LucideIcon } from 'lucide-react';
-import type { InboxCategoryKey, InboxChannelKey, InboxStatusKey } from '@oto/shared/inbox';
-import {
-  CATEGORY_LABEL,
-  CATEGORY_TINT,
-  CHANNEL_LABEL,
-  CHANNEL_TINT,
-  STATUS_DOT,
-  STATUS_LABEL,
-  STATUS_TINT,
-  TRANSLATION_PENDING,
-  type Chip,
-} from '@/lib/view';
+import type { LucideIcon } from 'lucide-react';
+import type { InboxChannelKey } from '@oto/shared/inbox';
+import { CHANNEL_LABEL, CHANNEL_TINT, TRANSLATION_PENDING } from '@/lib/view';
 
 /**
  * The mark on a RU or TH template whose body is still the English source
@@ -27,7 +17,7 @@ import {
  */
 export function TranslationNote() {
   return (
-    <span className="rounded-full bg-amber-50 dark:bg-amber-500/15 px-1.5 text-[10px] font-medium text-amber-700 dark:text-amber-300 ring-1 ring-amber-200 dark:ring-amber-500/30">
+    <span className="rounded-full bg-needs px-1.5 text-[10px] font-medium text-needs-ink">
       {TRANSLATION_PENDING}
     </span>
   );
@@ -46,83 +36,6 @@ export function Avatar({ initials, tint, size = 44 }: { initials: string; tint: 
     >
       {initials}
     </div>
-  );
-}
-
-/** `StaffChip` (:738-749): initials in a white disc, then the name. */
-export function ChipView({ chip, withName = true }: { chip: Chip; withName?: boolean }) {
-  return (
-    <span
-      className={`inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium ${chip.tint}`}
-      title={withName ? undefined : chip.name}
-    >
-      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-card/70 text-[9px] font-bold text-ink">
-        {chip.initials}
-      </span>
-      {withName && <span className="truncate">{chip.name}</span>}
-    </span>
-  );
-}
-
-/**
- * `StatusBadge` (:931-962). With a live `picker` (the native select laid
- * over it) the badge takes the prototype's pointer, hover ring and hint.
- */
-export function StatusBadge({
-  status,
-  picker,
-  live = false,
-}: {
-  status: InboxStatusKey;
-  picker?: ReactNode;
-  live?: boolean;
-}) {
-  return (
-    <span className="relative inline-flex">
-      <span
-        className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ${STATUS_TINT[status]}${
-          live ? ' cursor-pointer hover:ring-field' : ''
-        }`}
-        title={live ? (status === 'handled' ? 'Click to reopen this conversation' : 'Click to mark as handled') : undefined}
-      >
-        <span className={`h-1.5 w-1.5 rounded-full ${STATUS_DOT[status]}`} />
-        {STATUS_LABEL[status]}
-        {picker && <ChevronDown className="h-3 w-3 opacity-60" />}
-      </span>
-      {picker}
-    </span>
-  );
-}
-
-export function CategoryBadge({
-  category,
-  label,
-  picker,
-  live = false,
-  title,
-}: {
-  category: InboxCategoryKey;
-  /** The move picker shows the team ("Reception · Central"); the list shows the category. */
-  label?: string;
-  picker?: ReactNode;
-  /** The picker is live: the prototype's pointer, hover ring and hint (:995-998). */
-  live?: boolean;
-  /** What the badge means, for a reader (`categoryTitle`: topic, not team); the live picker's hint wins. */
-  title?: string;
-}) {
-  return (
-    <span className="relative inline-flex">
-      <span
-        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ${CATEGORY_TINT[category]}${
-          live ? ' cursor-pointer hover:ring-field' : ''
-        }`}
-        title={live ? 'Click to move this conversation to another team' : title}
-      >
-        {label ?? CATEGORY_LABEL[category]}
-        {picker && <ChevronDown className="h-3 w-3 opacity-60" />}
-      </span>
-      {picker}
-    </span>
   );
 }
 

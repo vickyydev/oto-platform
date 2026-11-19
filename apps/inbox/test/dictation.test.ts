@@ -272,7 +272,8 @@ describe('the composer’s microphone', () => {
     expect(button('dictation-stop')!.getAttribute('aria-label')).toBe('Stop dictating');
     const recording = line()!;
     expect(recording.getAttribute('role')).toBe('status');
-    expect(recording.querySelector('.bg-rose-500.animate-pulse')).not.toBeNull();
+    // SCRUM-1016: the recording dot wears the danger token in place of rose-500.
+    expect(recording.querySelector('.bg-danger-ink.animate-pulse')).not.toBeNull();
     expect(recording.textContent).toContain('Recording · 0:00 / 3:00');
     expect(recording.textContent).toContain(DICTATION_PRIVACY_LINE);
     expect(fetched).toHaveLength(0);

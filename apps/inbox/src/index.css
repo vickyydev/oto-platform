@@ -23,6 +23,8 @@
   --oto-line: #eae0d7;
   --oto-line-soft: #efe6dc;
   --oto-field: #e0d3c6;
+  /* An outlined button's edge (Create BEO, Mark as handled on a desktop; ChatPaid.dc.html). */
+  --oto-edge: #b9a898;
   --oto-ink: #3b281c;
   --oto-ink-soft: #5f4f43;
   --oto-ink-muted: #766456;
@@ -32,12 +34,20 @@
   --oto-coral-ink: #9f2d00;
   --oto-mint: #d4edea;
   --oto-teal: #234343;
+  /* The chat's assistant line (Chat.dc.html): a softer mint, its rule and its button's edge. */
+  --oto-mint-soft: #eef7f5;
+  --oto-mint-line: #d4e6e2;
+  --oto-mint-edge: #9cc9c2;
   --oto-money: #f1f7ee;
   --oto-money-line: #c9e0c3;
   --oto-money-badge: #d3ead0;
   --oto-money-ink: #1f4d2b;
   --oto-needs: #fde6da;
   --oto-needs-ink: #8a2a05;
+  /* A refusal or an error after an action: red, apart from the coral of "needs reply". */
+  --oto-danger: #fdecea;
+  --oto-danger-ink: #a1251b;
+  --oto-danger-line: #f3c4bf;
   --oto-staff: #3b281c;
   --oto-on-staff: #fbf5ef;
   --oto-scrim: rgb(59 40 28 / 0.4);
@@ -68,6 +78,7 @@ html.dark {
   --oto-line: #24304a;
   --oto-line-soft: #1c2740;
   --oto-field: #34425f;
+  --oto-edge: #4b5b7c;
   --oto-ink: #f1f5f9;
   --oto-ink-soft: #c3cee0;
   --oto-ink-muted: #a9b6ca;
@@ -77,12 +88,18 @@ html.dark {
   --oto-coral-ink: #ffb596;
   --oto-mint: #173b3b;
   --oto-teal: #b9ece6;
+  --oto-mint-soft: #10262a;
+  --oto-mint-line: #1b3a3d;
+  --oto-mint-edge: #2f6b66;
   --oto-money: #13291f;
   --oto-money-line: #1f4030;
   --oto-money-badge: #1f4a2c;
   --oto-money-ink: #b9efc3;
   --oto-needs: #4a2414;
   --oto-needs-ink: #ffc7ae;
+  --oto-danger: #3b1418;
+  --oto-danger-ink: #ffc4c4;
+  --oto-danger-line: #6a2a30;
   --oto-staff: #2a3a5c;
   --oto-on-staff: #f8fafc;
   --oto-scrim: rgb(2 6 23 / 0.6);
@@ -113,6 +130,7 @@ html.dark {
   --color-line: var(--oto-line);
   --color-line-soft: var(--oto-line-soft);
   --color-field: var(--oto-field);
+  --color-edge: var(--oto-edge);
   --color-ink: var(--oto-ink);
   --color-ink-soft: var(--oto-ink-soft);
   --color-ink-muted: var(--oto-ink-muted);
@@ -122,12 +140,18 @@ html.dark {
   --color-coral-ink: var(--oto-coral-ink);
   --color-mint: var(--oto-mint);
   --color-teal: var(--oto-teal);
+  --color-mint-soft: var(--oto-mint-soft);
+  --color-mint-line: var(--oto-mint-line);
+  --color-mint-edge: var(--oto-mint-edge);
   --color-money: var(--oto-money);
   --color-money-line: var(--oto-money-line);
   --color-money-badge: var(--oto-money-badge);
   --color-money-ink: var(--oto-money-ink);
   --color-needs: var(--oto-needs);
   --color-needs-ink: var(--oto-needs-ink);
+  --color-danger: var(--oto-danger);
+  --color-danger-ink: var(--oto-danger-ink);
+  --color-danger-line: var(--oto-danger-line);
   --color-staff: var(--oto-staff);
   --color-on-staff: var(--oto-on-staff);
   --color-scrim: var(--oto-scrim);

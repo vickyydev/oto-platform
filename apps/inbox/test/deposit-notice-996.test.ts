@@ -15,7 +15,8 @@ import {
   DEPOSIT_SIGNAL_LABELS,
   NEXT_ACTION_LABELS,
   READY_TO_BOOK_LABEL,
-  depositPaidLine,
+  SIMULATOR_PAYMENT_LINE,
+  depositPaidCard,
   withReadyToBook,
 } from '@/lib/list-state';
 import { EMPTY_FILTERS } from '@/lib/query';
@@ -132,17 +133,26 @@ describe('SCRUM-996: the "Ready to book" group', () => {
   });
 });
 
-describe('SCRUM-996: the line beside Book Date', () => {
+// SCRUM-1016: the line beside Book Date became the chat's next-step card
+// (ChatPaid.dc.html) — "Deposit ฿3,000 paid" as its title, the gateway's
+// verification and time under it, Book the date as its main button. The
+// facts it says, who sees it and the simulator's warning are unchanged.
+describe('SCRUM-996: the paid deposit’s next step', () => {
   const paid = paidPrebookingFixture(CENTRAL);
   it('says the amount, the gateway verification and its time, and names a simulator payment', () => {
-    expect(depositPaidLine({ ...paid, simulator: false }, 'paid')).toBe(
-      'Deposit ฿3,000 paid and gateway verified at 16 Nov, 19:00. Check capacity, then Book Date.',
-    );
-    expect(depositPaidLine(paid, 'paid')).toBe(
-      'Simulator test payment, no real money: deposit ฿3,000 paid and gateway verified at 16 Nov, 19:00. Check capacity, then Book Date.',
-    );
-    expect(depositPaidLine({ ...paid, simulator: false }, 'paid_date_passed')).toBe(
-      'Deposit ฿3,000 paid and gateway verified at 16 Nov, 19:00. The party date has passed: staff must resolve the paid deposit with the family.',
+    expect(depositPaidCard({ ...paid, simulator: false }, 'paid')).toEqual({
+      title: 'Deposit ฿3,000 paid',
+      detail: 'Gateway verified at 16 Nov, 19:00. Check capacity, then book the date.',
+      simulator: null,
+    });
+    expect(depositPaidCard(paid, 'paid')).toEqual({
+      title: 'Deposit ฿3,000 paid',
+      detail: 'Gateway verified at 16 Nov, 19:00. Check capacity, then book the date.',
+      simulator: 'Simulator test payment, no real money.',
+    });
+    expect(SIMULATOR_PAYMENT_LINE).toBe('Simulator test payment, no real money.');
+    expect(depositPaidCard({ ...paid, simulator: false }, 'paid_date_passed').detail).toBe(
+      'Gateway verified at 16 Nov, 19:00. The party date has passed: staff must resolve the paid deposit with the family.',
     );
   });
 
@@ -175,15 +185,30 @@ describe('SCRUM-996: the line beside Book Date', () => {
     await act(async () => undefined);
   }
 
-  it('a person who may book sees the line once the deposit reads paid, and it opens Book Date', async () => {
+  it('a person who may book sees the card once the deposit reads paid, and its Book the date opens Book Date', async () => {
     const read = vi.spyOn(inboxApi, 'prebooking').mockResolvedValue({ draft: { ...paid, simulator: false } });
     vi.spyOn(inboxApi, 'bookDateProposal').mockRejectedValue(new Error('ZZ TEST no reading'));
     await open(me(), row({ depositSignal: 'paid', nextAction: 'staff_action_needed' }));
-    const line = host!.querySelector('[data-testid="deposit-paid-line"]') as HTMLButtonElement | null;
-    expect(line?.textContent).toBe('Deposit ฿3,000 paid and gateway verified at 16 Nov, 19:00. Check capacity, then Book Date.');
+    const line = host!.querySelector('[data-testid="deposit-paid-line"]');
+    expect(line?.textContent).toBe('Deposit ฿3,000 paid Gateway verified at 16 Nov, 19:00. Check capacity, then book the date.');
     expect(read).toHaveBeenCalled();
-    await act(async () => line!.click());
+    // One card in the chat (below the desktop width) and the same in the desktop's panel, each shown at its own width.
+    const cards = [...host!.querySelectorAll('section[aria-label="Next step"]')];
+    expect(cards).toHaveLength(2);
+    expect(cards[0]!.className).toContain('xl:hidden');
+    expect(cards[1]!.closest('[data-region="customer-panel"]')).not.toBeNull();
+    const book = [...cards[0]!.querySelectorAll('button')].find((b) => b.textContent === 'Book the date')!;
+    await act(async () => book.click());
     expect(host!.ownerDocument.body.textContent).toContain('Book Date — ');
+  });
+
+  it('a simulator payment says so first on the card', async () => {
+    vi.spyOn(inboxApi, 'prebooking').mockResolvedValue({ draft: paid });
+    vi.spyOn(inboxApi, 'bookDateProposal').mockRejectedValue(new Error('ZZ TEST no reading'));
+    await open(me(), row({ depositSignal: 'paid', nextAction: 'staff_action_needed' }));
+    expect(host!.querySelector('[data-testid="deposit-paid-line"]')?.textContent).toBe(
+      'Simulator test payment, no real money. Deposit ฿3,000 paid Gateway verified at 16 Nov, 19:00. Check capacity, then book the date.',
+    );
   });
 
   it('a person who sees the chat but may not book gets no line and no amount, and nothing is asked for them', async () => {
@@ -191,6 +216,7 @@ describe('SCRUM-996: the line beside Book Date', () => {
     vi.spyOn(inboxApi, 'bookDateProposal').mockRejectedValue(new Error('ZZ TEST no reading'));
     await open(me({ member: false }), row({ depositSignal: 'paid', nextAction: 'staff_action_needed' }));
     expect(host!.querySelector('[data-testid="deposit-paid-line"]')).toBeNull();
+    expect(host!.querySelector('section[aria-label="Next step"]')).toBeNull();
     expect(host!.textContent).not.toContain('฿3,000');
     expect(read).not.toHaveBeenCalled();
   });

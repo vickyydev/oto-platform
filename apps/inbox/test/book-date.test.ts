@@ -331,10 +331,14 @@ describe('the dialog opens with the reading and checks before it saves', () => {
   });
 });
 
+// SCRUM-1016: the button reads "Book the date" (ChatPaid.dc.html, approved as
+// drawn) and sits in People and actions — the sheet on a phone, the panel on
+// a desktop — with Create BEO beside it; who may press them, and why not, is
+// unchanged. The dialog it opens keeps its title, "Book Date — <name>".
 describe('Book Date and Create BEO in the conversation', () => {
   it('for the birthdays team: both live, no event yet', () => {
     const html = panel(me(), null);
-    expect(buttonNamed(html, 'Book Date')).not.toMatch(DISABLED);
+    expect(buttonNamed(html, 'Book the date')).not.toMatch(DISABLED);
     expect(buttonNamed(html, 'Create BEO')).not.toMatch(DISABLED);
     expect(html).not.toContain('Event: ');
     expect(html).not.toContain('With the event orders');
@@ -342,20 +346,20 @@ describe('Book Date and Create BEO in the conversation', () => {
 
   it('a manager who assigns, outside the team, may book too', () => {
     expect(mayBookDate(me({ member: false, assign: true }))).toBe(true);
-    expect(buttonNamed(panel(me({ member: false, assign: true }), null), 'Book Date')).not.toMatch(DISABLED);
+    expect(buttonNamed(panel(me({ member: false, assign: true }), null), 'Book the date')).not.toMatch(DISABLED);
   });
 
   it('anyone else sees both disabled, with why', () => {
     const viewer = me({ member: false, assign: false });
     expect(mayBookDate(viewer)).toBe(false);
     const html = panel(viewer, null);
-    expect(buttonNamed(html, 'Book Date')).toMatch(DISABLED);
+    expect(buttonNamed(html, 'Book the date')).toMatch(DISABLED);
     expect(html).toContain(`title="${BOOK_DATE_NOT_YOURS_REASON}"`);
   });
 
   it('with writes not switched on, both say so, as the other controls do', () => {
     const html = panel(me({ writes: false }), null);
-    expect(buttonNamed(html, 'Book Date')).toMatch(DISABLED);
+    expect(buttonNamed(html, 'Book the date')).toMatch(DISABLED);
     expect(buttonNamed(html, 'Create BEO')).toMatch(DISABLED);
     expect(html).toContain(`title="${WRITES_PENDING_REASON}"`);
     expect(html).not.toContain(BOOK_DATE_NOT_YOURS_REASON);
@@ -392,7 +396,7 @@ describe('Book Date and Create BEO in the conversation', () => {
       // As on a conversation with no date yet.
       expect(buttonNamed(html, 'Date Booked')).toBeNull();
       expect(buttonNamed(html, 'Event archived')).toBeNull();
-      expect(buttonNamed(html, 'Book Date')).not.toMatch(DISABLED);
+      expect(buttonNamed(html, 'Book the date')).not.toMatch(DISABLED);
       const beo = buttonNamed(html, 'Create BEO');
       expect(beo).not.toMatch(DISABLED);
       expect(beo).toContain('Book the date, then open its BEO in the OTO App');
@@ -401,7 +405,7 @@ describe('Book Date and Create BEO in the conversation', () => {
     const viewer = me({ member: false, assign: false });
     const html = panel(viewer, { ...event, removed: true });
     expect(html).toContain(PARTY_REMOVED_LABEL);
-    expect(buttonNamed(html, 'Book Date')).toMatch(DISABLED);
+    expect(buttonNamed(html, 'Book the date')).toMatch(DISABLED);
     expect(html).toContain(`title="${BOOK_DATE_NOT_YOURS_REASON}"`);
   });
 
@@ -417,7 +421,7 @@ describe('Book Date and Create BEO in the conversation', () => {
 
   it('a conversation outside Birthdays & Events has neither', () => {
     const html = panel(me(), null, row({ category: 'general', teamId: T_CENTRAL }));
-    expect(buttonNamed(html, 'Book Date')).toBeNull();
+    expect(buttonNamed(html, 'Book the date')).toBeNull();
     expect(buttonNamed(html, 'Create BEO')).toBeNull();
   });
 

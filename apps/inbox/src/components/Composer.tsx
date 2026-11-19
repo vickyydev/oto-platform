@@ -1,15 +1,14 @@
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
-import { AlertTriangle, FileText, Loader2, Paperclip, Send, Smile, X, type LucideIcon } from 'lucide-react';
+import { AlertTriangle, ArrowUp, FileText, Loader2, X } from 'lucide-react';
 import { newId } from '@oto/shared/ids';
 import { renderTemplate, templateVariables } from '@oto/shared/inbox-reply';
 import { ApiError } from '@/api/client';
 import { inboxApi, type ConversationRow, type InboxMe, type QualifyingTemplate, type ReplyRefusalDetails } from '@/api/inbox';
 import { TranslationNote } from '@/components/atoms';
 import { DictateButton, DictationLine, useDictation } from '@/components/Dictation';
-import { PendingControl } from '@/components/writes';
-import { COMPOSER_LINE_PX, composerBox, sendsOnKey } from '@/lib/composer';
+import { COMPOSER_ICON, COMPOSER_LINE_PX, composerBox, sendsOnKey } from '@/lib/composer';
 import { dictationAvailable, dictationCeilingOf, insertAtCaret } from '@/lib/dictation';
-import { COMPOSER_EXTRAS_REASON, langLabel, needsTranslation, offeredTemplates } from '@/lib/view';
+import { contactName, langLabel, needsTranslation, offeredTemplates } from '@/lib/view';
 
 /** A template the composer holds: from the templates dialog, or offered by a refusal. */
 export interface ComposerTemplate {
@@ -43,6 +42,19 @@ interface Refused {
  */
 export const newDraftId = (): string => newId();
 
+/** The composer's footer (Chat.dc.html): the card under a rule, never scrolled away. */
+export const COMPOSER_BAR = 'shrink-0 border-t border-line bg-card px-2 pb-3.5 pt-2 md:px-5 md:pb-4 md:pt-3';
+/** Why the composer has no box (a till notice, a handled thread): the band's quiet line. */
+const COMPOSER_NOTICE = 'flex min-h-11 flex-wrap items-center gap-2 rounded-2xl bg-band px-4 py-2 text-[13.5px] text-ink-soft';
+const REOPEN_BUTTON =
+  'inline-flex min-h-11 items-center gap-1.5 rounded-full border border-ink bg-card px-4 text-[13.5px] font-bold text-ink hover:bg-wash disabled:opacity-60 md:min-h-9';
+const DISMISS = 'flex h-11 w-11 shrink-0 items-center justify-center rounded-full opacity-80 hover:opacity-100 md:h-7 md:w-7';
+
+/** The box's prompt names the person the reply goes to (Chat.dc.html), not the one writing it. */
+export function replyPlaceholder(conv: Pick<ConversationRow, 'contact'>): string {
+  return `Reply to ${contactName(conv.contact)}`;
+}
+
 /**
  * The composer (WhatsAppDemo.tsx :2036-2058), live (I3b). Free text, or a
  * template with its `{{name}}` values. The free-text window is NEVER guessed
@@ -63,6 +75,11 @@ export const newDraftId = (): string => newId();
  * up to five, then it scrolls — a long dictated reply is read whole before
  * it is sent. Enter sends, as it did in the one-line box; Shift+Enter makes
  * a new line.
+ *
+ * In the OTO look (SCRUM-1016, Chat.dc.html) the composer is the chat's
+ * footer, never scrolled away: Templates and the microphone as 44 px icons,
+ * the box in a cream pill, Send in the coral. The emoji and attach buttons,
+ * which did nothing, are gone.
  */
 export function Composer({
   conv,
@@ -177,9 +194,9 @@ export function Composer({
 
   if (!conv.canReply) {
     return (
-      <div className="border-t border-line bg-card px-4 py-3">
-        <div className="flex items-center gap-2 rounded-lg bg-ground px-3 py-2 text-[12.5px] text-ink-muted">
-          <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+      <div className={COMPOSER_BAR}>
+        <div className={COMPOSER_NOTICE}>
+          <AlertTriangle aria-hidden className="h-4 w-4 shrink-0" />
           Notices from the till — this thread cannot take a reply.
         </div>
       </div>
@@ -188,24 +205,19 @@ export function Composer({
 
   if (conv.status === 'handled') {
     return (
-      <div className="border-t border-line bg-card px-4 py-3">
-        <div className="flex items-center justify-between gap-2 rounded-lg bg-ground px-3 py-2 text-[12.5px] text-ink-muted">
+      <div className={COMPOSER_BAR}>
+        <div className={`${COMPOSER_NOTICE} justify-between`}>
           <span className="flex items-center gap-2">
-            <AlertTriangle className="h-3.5 w-3.5 shrink-0" /> Handled — composer disabled
+            <AlertTriangle aria-hidden className="h-4 w-4 shrink-0" /> Handled — composer disabled
           </span>
           {me.capabilities.reopen ? (
-            <button
-              type="button"
-              onClick={onReopen}
-              disabled={reopening}
-              className="inline-flex items-center gap-1 text-[12px] font-medium text-ink hover:underline disabled:opacity-60"
-            >
-              {reopening && <Loader2 className="h-3 w-3 animate-spin" />}
+            <button type="button" onClick={onReopen} disabled={reopening} className={REOPEN_BUTTON}>
+              {reopening && <Loader2 aria-hidden className="h-3.5 w-3.5 animate-spin" />}
               Reopen
             </button>
           ) : (
             // Reopening is a manager's (the rails' rights); the screen said nothing (test night U7).
-            <span className="text-[12px] text-ink-muted">{MANAGER_REOPENS}</span>
+            <span className="text-[13px] text-ink-muted">{MANAGER_REOPENS}</span>
           )}
         </div>
       </div>
@@ -252,18 +264,18 @@ export function Composer({
   // at the top, the other languages folded away (test night U1).
   const offered = offeredTemplates(refused?.details?.qualifyingTemplates ?? [], conv.language);
   const offer = (t: QualifyingTemplate) => (
-    <li key={t.id} className="flex min-w-0 items-start gap-2 rounded-md bg-card/70 px-2 py-1.5 ring-1 ring-amber-100 dark:ring-amber-500/25">
+    <li key={t.id} className="flex min-w-0 items-center gap-2 rounded-xl bg-card px-3 py-2 ring-1 ring-line">
       <span className="min-w-0 flex-1">
-        <span className="flex flex-wrap items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-muted">
+        <span className="flex flex-wrap items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-ink-muted">
           {t.key.replace(/[_.]/g, ' ')} · {langLabel(t.language)}
           {needsTranslation(t) && <TranslationNote />}
         </span>
-        <span className="block truncate text-[12px] text-ink">{t.body}</span>
+        <span className="block truncate text-[13px] text-ink">{t.body}</span>
       </span>
       <button
         type="button"
         onClick={() => pickTemplate({ id: t.id, key: t.key, language: t.language, body: t.body, needsTranslation: needsTranslation(t) })}
-        className="shrink-0 rounded-md border border-line bg-card px-2 py-0.5 text-[11px] font-medium text-ink hover:bg-wash"
+        className="min-h-11 shrink-0 rounded-full border border-field bg-card px-4 text-[13px] font-semibold text-ink hover:bg-wash md:min-h-9"
       >
         Insert
       </button>
@@ -271,33 +283,33 @@ export function Composer({
   );
 
   return (
-    <div className="border-t border-line bg-card px-4 py-3">
+    <div className={COMPOSER_BAR}>
       {refused && (
         <div
           role="alert"
-          className={`mb-2 rounded-lg px-3 py-2 text-[12.5px] ring-1 ${
-            refused.details?.window ? 'bg-amber-50 dark:bg-amber-500/15 text-amber-800 dark:text-amber-200 ring-amber-200 dark:ring-amber-500/30' : 'bg-rose-50 dark:bg-rose-500/15 text-rose-700 dark:text-rose-300 ring-rose-200 dark:ring-rose-500/30'
+          className={`mb-2 rounded-2xl px-3 py-2 text-[13px] ring-1 ${
+            refused.details?.window ? 'bg-needs text-needs-ink ring-needs-ink/25' : 'bg-danger text-danger-ink ring-danger-line'
           }`}
         >
           <div className="flex items-start gap-2">
-            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <AlertTriangle aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
             <span className="min-w-0 flex-1 break-words">{refused.message}</span>
-            <button type="button" onClick={() => setRefused(null)} aria-label="Dismiss" className="shrink-0 opacity-70 hover:opacity-100">
-              <X className="h-3.5 w-3.5" />
+            <button type="button" onClick={() => setRefused(null)} aria-label="Dismiss" className={DISMISS}>
+              <X aria-hidden className="h-4 w-4" />
             </button>
           </div>
           {(offered.own.length > 0 || offered.others.length > 0) && (
-            <div className="mt-2 max-h-56 overflow-y-auto overflow-x-hidden">
+            <div className="mt-2 max-h-[40dvh] overflow-y-auto overflow-x-hidden md:max-h-56">
               {offered.own.length > 0 ? (
                 <ul className="space-y-1.5">{offered.own.map(offer)}</ul>
               ) : (
-                <p className="text-[12px]">
+                <p className="text-[13px]">
                   No template in {langLabel(conv.language)} qualifies yet; the other languages are below.
                 </p>
               )}
               {offered.others.length > 0 && (
                 <details className="mt-2">
-                  <summary className="cursor-pointer text-[11px] font-medium text-amber-800 dark:text-amber-200">
+                  <summary className="flex min-h-11 cursor-pointer items-center text-[12.5px] font-semibold md:min-h-0 md:py-1">
                     Other languages ({offered.others.length})
                   </summary>
                   <ul className="mt-1.5 space-y-1.5">{offered.others.map(offer)}</ul>
@@ -309,10 +321,10 @@ export function Composer({
       )}
 
       {template && (
-        <div className="mb-2 rounded-xl border border-violet-200 dark:border-violet-500/40 bg-violet-50/60 dark:bg-violet-500/10 px-3 py-2">
+        <div className="mb-2 rounded-2xl border border-line bg-wash px-3 py-2">
           <div className="flex items-center gap-2">
-            <FileText className="h-3.5 w-3.5 shrink-0 text-violet-600 dark:text-violet-400" />
-            <span className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-violet-700 dark:text-violet-300">
+            <FileText aria-hidden className="h-4 w-4 shrink-0 text-ink-soft" />
+            <span className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-ink-soft">
               <span className="truncate">
                 Template · {template.key.replace(/[_.]/g, ' ')} · {langLabel(template.language)}
               </span>
@@ -326,18 +338,18 @@ export function Composer({
                 setValues({});
               }}
               aria-label="Remove the template"
-              className="shrink-0 text-violet-500 dark:text-violet-400 hover:text-violet-800 dark:hover:text-violet-200"
+              className={DISMISS}
             >
-              <X className="h-3.5 w-3.5" />
+              <X aria-hidden className="h-4 w-4" />
             </button>
           </div>
-          <p className="mt-1 whitespace-pre-line break-words text-[12.5px] text-ink">
+          <p className="mt-1 whitespace-pre-line break-words text-[13.5px] text-ink">
             {renderTemplate(template.body, Object.fromEntries(Object.entries(values).filter(([, v]) => v.trim()))).text}
           </p>
           {variables.length > 0 && (
             <div className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
               {variables.map((v) => (
-                <label key={v} className="flex min-w-0 items-center gap-1.5 text-[11px] text-ink-muted">
+                <label key={v} className="flex min-w-0 items-center gap-1.5 text-[12px] text-ink-muted">
                   <span className="shrink-0 font-mono">{v}</span>
                   <input
                     value={values[v] ?? ''}
@@ -345,7 +357,7 @@ export function Composer({
                       touch();
                       setValues((o) => ({ ...o, [v]: e.target.value }));
                     }}
-                    className="min-w-0 flex-1 rounded-md border border-line bg-card px-2 py-0.5 text-[12px] text-ink focus:border-field focus:outline-none focus:ring-2 focus:ring-field"
+                    className="min-h-11 min-w-0 flex-1 rounded-xl border border-field bg-card px-3 text-[14px] text-ink focus-visible:outline-2 focus-visible:outline-coral md:min-h-9"
                   />
                 </label>
               ))}
@@ -354,58 +366,47 @@ export function Composer({
         </div>
       )}
 
-      <form onSubmit={(e) => void send(e)} className="flex items-center gap-2 rounded-xl border border-line bg-ground px-3 py-2">
-        <ComposerExtra icon={Smile} label="Emoji" />
-        <ComposerExtra icon={Paperclip} label="Attach a file" />
-        <button
-          type="button"
-          onClick={onOpenTemplates}
-          aria-label="Templates"
-          title="Templates"
-          className="text-ink-muted hover:text-ink-soft"
-        >
-          <FileText className="h-4 w-4" />
+      <form onSubmit={(e) => void send(e)} className="flex items-end gap-0.5">
+        <button type="button" onClick={onOpenTemplates} aria-label="Templates" title="Templates" className={COMPOSER_ICON}>
+          <FileText aria-hidden className="h-[22px] w-[22px]" />
         </button>
         <DictateButton dictation={dictation} disabled={template !== null || busy} />
-        <textarea
-          ref={inputRef}
-          rows={1}
-          value={shown}
-          disabled={template !== null}
-          onChange={(e) => {
-            touch();
-            setText(e.target.value);
-          }}
-          onKeyDown={(e: KeyboardEvent<HTMLTextAreaElement>) => {
-            if (!sendsOnKey({ key: e.key, shiftKey: e.shiftKey, composing: e.nativeEvent.isComposing })) return;
-            e.preventDefault();
-            void send();
-          }}
-          style={{ lineHeight: `${COMPOSER_LINE_PX}px` }}
-          aria-label="Reply"
-          placeholder={template ? 'Sending the template above' : `Reply as ${me.name ?? 'you'}…`}
-          className="min-w-0 flex-1 resize-none bg-transparent text-[13px] placeholder:text-ink-muted focus:outline-none disabled:cursor-not-allowed"
-        />
+        {/* The pill is the box's frame: the box has no padding of its own, so its height is its lines (`composerBox`). */}
+        <span className="flex min-w-0 flex-1 rounded-[22px] border border-field bg-ground px-4 py-[11px] focus-within:outline-2 focus-within:outline-coral">
+          <textarea
+            ref={inputRef}
+            rows={1}
+            value={shown}
+            disabled={template !== null}
+            onChange={(e) => {
+              touch();
+              setText(e.target.value);
+            }}
+            onKeyDown={(e: KeyboardEvent<HTMLTextAreaElement>) => {
+              if (!sendsOnKey({ key: e.key, shiftKey: e.shiftKey, composing: e.nativeEvent.isComposing })) return;
+              e.preventDefault();
+              void send();
+            }}
+            style={{ lineHeight: `${COMPOSER_LINE_PX}px` }}
+            aria-label="Reply"
+            placeholder={template ? 'Sending the template above' : replyPlaceholder(conv)}
+            className="block w-full min-w-0 resize-none bg-transparent text-[15px] text-ink placeholder:text-ink-muted focus:outline-none disabled:cursor-not-allowed"
+          />
+        </span>
         <button
           type="submit"
           disabled={!canSend}
           aria-label="Send"
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ink text-on-ink hover:bg-ink/90 disabled:opacity-50"
+          className="ml-1.5 flex h-11 min-w-11 shrink-0 items-center justify-center rounded-full bg-coral text-[14.5px] font-bold text-on-coral hover:bg-coral/90 disabled:opacity-50 lg:px-[18px]"
         >
-          {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+          {busy ? <Loader2 aria-hidden className="h-5 w-5 animate-spin" /> : <ArrowUp aria-hidden className="h-5 w-5 lg:hidden" />}
+          <span aria-hidden className="hidden lg:inline">
+            Send
+          </span>
         </button>
       </form>
       <DictationLine dictation={dictation} />
     </div>
-  );
-}
-
-/** The prototype's emoji and attachment buttons: there, but the reply route takes words and templates only. */
-function ComposerExtra({ icon: Icon, label }: { icon: LucideIcon; label: string }) {
-  return (
-    <PendingControl reason={COMPOSER_EXTRAS_REASON} label={label} className="text-ink-muted">
-      <Icon className="h-4 w-4" />
-    </PendingControl>
   );
 }
 

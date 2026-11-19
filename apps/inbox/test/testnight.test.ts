@@ -12,7 +12,7 @@ import { ChatPanel, type Thread } from '@/components/ChatPanel';
 import { newDraftId } from '@/components/Composer';
 import { PrimaryMoveConfirm, TeamMoveConfirm } from '@/components/confirms';
 import { StatsMore } from '@/components/StatsRow';
-import { DetailsDialog, MANAGERS_ADD_SUPPORT, type DetailsActions } from '@/components/dialogs';
+import { MANAGERS_ADD_SUPPORT } from '@/components/ChatActions';
 import { MessageBubble } from '@/components/MessageBubble';
 import { FilterFields } from '@/components/Rail';
 import { EMPTY_FILTERS } from '@/lib/query';
@@ -193,36 +193,48 @@ describe('the ids the Inbox mints (customer-AI test night, CR6)', () => {
 });
 
 describe('the assistant’s state on a thread (U5)', () => {
+  // SCRUM-1016: one line under the chat's header says the state ("Assistant
+  // on", "Assistant handed over") with why, and its control is the word Pause
+  // or Resume beside it (Chat.dc.html), where the strip's chip once read "AI
+  // on · Pause". The states, which carry a control, and the U5 rules are unchanged.
+  const pauseButton = /data-ai-action="pause"[^>]*aria-label="Pause the assistant"[^>]*>Pause<\/button>/;
+  const resumeButton = /data-ai-action="resume"[^>]*aria-label="Resume the assistant"[^>]*>Resume<\/button>/;
   const r = row();
   it('says the assistant is off on the number, with no pause control', () => {
     const html = panel(anya, r, detail(r, { aiMode: 'off' }));
     expect(html).toContain('Assistant off on this number');
-    expect(html).not.toContain('AI on · Pause');
+    expect(html).not.toContain('Pause the assistant');
     expect(html).not.toContain('aria-pressed');
   });
   it('says shadow as a label, and live as the pause control', () => {
     expect(panel(anya, r, detail(r, { aiMode: 'shadow' }))).toContain('Assistant in shadow');
     const live = panel(anya, r, detail(r, { aiMode: 'live' }));
-    expect(live).toContain('AI on · Pause');
+    expect(live).toContain('<strong class="font-bold">Assistant on</strong>');
+    expect(live).toMatch(pauseButton);
     expect(live).toContain('aria-pressed="false"');
-    expect(panel(anya, r, detail(r, { aiMode: 'live', aiPaused: true }))).toContain('AI paused · Resume');
+    const paused = panel(anya, r, detail(r, { aiMode: 'live', aiPaused: true }));
+    expect(paused).toContain('<strong class="font-bold">Assistant paused</strong>');
+    expect(paused).toMatch(resumeButton);
   });
   it('says nothing until the detail — the number’s mode — is in', () => {
     const html = panel(anya, r, null);
-    expect(html).not.toContain('AI on · Pause');
+    expect(html).not.toContain('Pause the assistant');
     expect(html).not.toContain('Assistant off');
   });
 
   it('says the api’s thread state when it is there (customer-AI test night, W4a), with the control it needs', () => {
     const live = (aiState: string) => panel(anya, r, { ...detail(r, { aiMode: 'live' }), aiState } as ConversationDetail);
-    expect(live('ready')).toMatch(/data-ai-action="pause"[^>]*>.*AI on · Pause/);
-    expect(live('paused')).toMatch(/data-ai-action="resume"[^>]*>.*AI paused · Resume/);
-    expect(live('left_for_team')).toMatch(/data-ai-action="resume"[^>]*>.*AI handed over · Resume/);
-    expect(live('person_replied')).toMatch(/data-ai-action="resume"[^>]*>.*AI stopped: a person replied · Resume/);
+    expect(live('ready')).toMatch(pauseButton);
+    expect(live('ready')).toContain('Assistant on</strong> · it answers what it knows');
+    expect(live('paused')).toMatch(resumeButton);
+    expect(live('left_for_team')).toMatch(resumeButton);
+    expect(live('left_for_team')).toContain('Assistant handed over</strong> · it will stay quiet');
+    expect(live('person_replied')).toMatch(resumeButton);
+    expect(live('person_replied')).toContain('Assistant quiet</strong> · a person replied');
     expect(live('shadow')).toContain('Assistant in shadow');
     expect(live('shadow')).not.toContain('aria-pressed');
     expect(live('off')).toContain('Assistant off on this number');
-    expect(live('off')).not.toContain('AI on · Pause');
+    expect(live('off')).not.toContain('Pause the assistant');
   });
 });
 
@@ -305,7 +317,10 @@ describe('a hand-over’s pills, in one line (customer-AI test night, W7)', () =
     // The pills are still there, under the line.
     expect(html).toContain('Assigned Demo Anya as primary');
     expect(html).toContain('Moved from Reception · Central Floresta → Birthdays &amp; Events by AI');
-    expect((html.match(/lucide-bot/g) ?? []).length).toBeGreaterThanOrEqual(8);
+    // SCRUM-1016: a pill is plain words on the band (Chat.dc.html), with no bot icon on a person's
+    // pill; the seven are counted by their band, under the one summary line.
+    const group = html.slice(html.indexOf('data-pill-group="7"'), html.indexOf('</details>'));
+    expect((group.match(/rounded-full bg-band px-3 py-1\.5/g) ?? []).length).toBe(7);
   });
 
   it('names the brochure on the AI’s bubble with a way to open it, instead of "No text · 1 attachment"', () => {
@@ -393,11 +408,12 @@ describe('shadow suggestions (customer-AI test night, W5)', () => {
     expect(html).toContain('data-shadow="true"');
     expect(html).toContain(SHADOW_LABEL);
     expect(html).toContain('Yes, there are free lockers at reception.');
-    expect(html).toContain('AI Assistant');
+    // SCRUM-1016: under the "Assistant" label (Chat.dc.html), dashed on the card.
+    expect(html).toContain('</svg> Assistant</span>');
     expect(html).toContain('border-dashed');
     expect(html).toContain('AI in shadow · would have answered · faq');
     // Never an ordinary AI bubble, never the default pill ("ai shadow"), no correction control on it.
-    expect(html).not.toContain('bg-indigo-50 text-indigo-900');
+    expect(html).not.toContain('rounded-tr-md bg-mint text-teal');
     expect(html).not.toContain('ai shadow');
     expect(html).not.toContain('Correct the assistant');
   });
@@ -437,17 +453,24 @@ describe('dead ends for an agent without a word (U7)', () => {
 
 describe('the wording (U9)', () => {
   const r = row();
-  it('labels a Facebook id in the header and the details', () => {
-    expect(panel(anya, r, detail(r))).toContain('Facebook ID 939562181554109');
-    expect(panel(anya, r, detail(r), true)).toContain('>Facebook ID</dt>');
+  // SCRUM-1016: the header's second line says where the chat came from
+  // (Chat.dc.html); the id is in People and actions' details, labelled so
+  // nobody dials it.
+  it('labels a Facebook id in the details', () => {
+    expect(panel(anya, r, detail(r))).toMatch(/>Facebook ID<\/dt><dd[^>]*>939562181554109<\/dd>/);
+    expect(panel(anya, r, detail(r))).not.toContain('>Handle</dt>');
   });
   it('shows the desk’s park, not "All branches", on a reception thread with no branch of its own', () => {
     const html = panel(hana, r, detail(r));
     expect(html).toContain('aria-label="Conversation branch"');
     expect(html).toMatch(new RegExp(`<option value="${CENTRAL}" selected="">Central Floresta</option>`));
-    // The agent's read-only strip and the details say the same park.
-    expect(panel(anya, r, detail(r))).toContain('Central Floresta');
-    expect(panel(anya, r, detail(r), true)).toMatch(/>Branch<\/dt><dd[^>]*>Central Floresta</);
+    // The agent's read-only Park row says the same park (SCRUM-1016: the
+    // details' Branch line became People and actions' Park row).
+    const agent = panel(anya, r, detail(r));
+    expect(agent).not.toContain('aria-label="Conversation branch"');
+    expect(agent).toMatch(/>Park<\/span><span[^>]*><span class="truncate">Central Floresta<\/span>/);
+    // And the header says where the chat came from: the number, the topic, the park.
+    expect(agent).toContain(' · General · Central Floresta</p>');
   });
   it('explains the category badge against the team, in a tooltip', () => {
     expect(panel(anya, r, detail(r))).toContain(
@@ -513,39 +536,18 @@ describe('the move confirmations (U6)', () => {
 });
 
 describe('the phone’s team and status controls (U10)', () => {
+  // SCRUM-1016: the team and status controls a phone found in the details
+  // dialog are rows of People and actions — the sheet a phone opens from the
+  // chat's menu, the panel beside the chat on a desktop — at every width.
   const r = row();
-  const actions: DetailsActions = {
-    moves: [
-      { value: 'birthdays', label: 'Birthdays & Events', dest: { kind: 'birthdays' } },
-      { value: `reception:${CENTRAL}`, label: 'Reception · Central Floresta', dest: { kind: 'reception', branchId: CENTRAL } },
-    ],
-    currentMove: `reception:${CENTRAL}`,
-    canMove: true,
-    onMove: noop,
-    status: 'active',
-    canHandle: true,
-    canReopen: false,
-    onHandle: noop,
-    onReopen: noop,
-    busy: false,
-  };
-  const dialog = (me: InboxMe, a: DetailsActions | undefined) =>
-    renderToStaticMarkup(
-      createElement(DetailsDialog, { open: true, onClose: noop, row: r, detail: detail(r), me, now: new Date(), actions: a }),
-    );
-  it('carries both controls in the details, shown only where the header hides them', () => {
-    const html = dialog(hana, actions);
-    expect(html).toMatch(/data-phone-actions="true"[^>]*>/);
-    expect(html).toMatch(/class="[^"]*md:hidden[^"]*" data-phone-actions="true"/);
-    expect(html).toContain('aria-label="Move to team"');
-    expect(html).toContain('aria-label="Set conversation status"');
+  it('the sheet carries both controls for the GM, in the section that holds them', () => {
+    const html = panel(hana, r, detail(r), true);
+    const sheet = html.slice(html.indexOf('role="dialog"'));
+    expect(sheet).toContain('data-phone-actions="true"');
+    expect(sheet).toContain('aria-label="Move to team"');
+    expect(sheet).toContain('aria-label="Set conversation status"');
   });
-  it('carries nothing for someone without the rights', () => {
-    const html = dialog(anya, { ...actions, canMove: false, canHandle: false, canReopen: false });
-    expect(html).not.toContain('data-phone-actions');
-    expect(dialog(anya, undefined)).not.toContain('data-phone-actions');
-  });
-  it('the panel hands the dialog the controls the viewer holds: both for the GM, the status only for the primary', () => {
+  it('the panel hands the sheet the controls the viewer holds: both for the GM, the status only for the primary', () => {
     const gm = panel(hana, r, detail(r), true);
     expect(gm).toContain('data-phone-actions="true"');
     expect(gm).toContain('aria-label="Move to team"');

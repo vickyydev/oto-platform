@@ -185,7 +185,8 @@ describe('the reply box in the composer', () => {
     await render();
     expect(box().tagName).toBe('TEXTAREA');
     expect(box().rows).toBe(1);
-    expect(box().placeholder).toBe('Reply as Demo Tom…');
+    // SCRUM-1016 (Chat.dc.html): the prompt names who the reply goes to, not who writes it.
+    expect(box().placeholder).toBe('Reply to ZZ TEST Liam');
     expect(box().disabled).toBe(false);
     expect(box().className).toContain('resize-none');
     expect(box().style.lineHeight).toBe(`${COMPOSER_LINE_PX}px`);

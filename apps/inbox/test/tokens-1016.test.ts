@@ -44,6 +44,12 @@ const TEXT_PAIRS: Array<[ink: string, ground: string]> = [
   // its green ground, the group's count pill, and the contacts' faces.
   ['ink', 'money'], ['ink-soft', 'money'], ['money', 'money-ink'],
   ['face-violet-ink', 'face-violet'], ['face-sky-ink', 'face-sky'],
+  // The chat (SCRUM-1016): the assistant's line and its Resume, its label and
+  // "Correct the assistant" on the thread's ground, the open-question line;
+  // a refusal's red; the paid deposit's card; the GM's inverted face.
+  ['teal', 'mint-soft'], ['teal', 'card'], ['teal', 'ground'],
+  ['danger-ink', 'danger'], ['money-ink', 'card'],
+  ['ink-muted', 'money'], ['ink-soft', 'mint-soft'],
 ];
 
 describe('SCRUM-1016: the OTO tokens', () => {

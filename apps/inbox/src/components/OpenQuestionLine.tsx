@@ -11,10 +11,10 @@ export function OpenQuestionLine({ questions }: { questions: readonly OpenQuesti
   if (questions.length === 0) return null;
   return (
     <div className="-mt-1 flex justify-end" data-testid="open-question">
-      <div className="flex min-w-0 max-w-[80%] flex-wrap justify-end gap-x-3 gap-y-0.5 text-[11px] text-indigo-500/80 dark:text-indigo-300/70">
+      <div className="flex min-w-0 max-w-[80%] flex-wrap justify-end gap-x-3 gap-y-0.5 px-1 text-[12px] text-teal lg:max-w-[62%]">
         {questions.map((q) => (
           <span key={q.id} className="inline-flex items-center gap-1" data-slot={q.slot} data-state={q.state}>
-            <HelpCircle className="h-3 w-3 shrink-0" />
+            <HelpCircle aria-hidden className="h-3.5 w-3.5 shrink-0" />
             {openQuestionText(q)}
           </span>
         ))}

@@ -1,22 +1,18 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   Archive,
-  ArrowLeft,
   Bot,
   Calendar,
   CheckCircle2,
   ChevronDown,
+  ChevronLeft,
   FileText,
   Loader2,
-  MapPin,
   MoreHorizontal,
-  PauseCircle,
   PenLine,
-  PlayCircle,
   Plus,
   Repeat,
   RotateCcw,
-  X,
 } from 'lucide-react';
 import { INBOX_CATEGORY_KEYS, type InboxCategoryKey } from '@oto/shared/inbox';
 import { newId } from '@oto/shared/ids';
@@ -24,6 +20,7 @@ import { ApiError } from '@/api/client';
 import { assistantApi } from '@/api/assistant';
 import {
   inboxApi,
+  type Assignee,
   type BookDateProposal,
   type ConversationDetail,
   type ConversationEvent,
@@ -33,9 +30,23 @@ import {
   type Prebooking,
 } from '@/api/inbox';
 import { openBlankTab, openConversationBeo } from '@/api/otoApp';
-import { Avatar, CategoryBadge, ChannelDot, ChipView, StatusBadge } from '@/components/atoms';
+import { Avatar, ChannelDot } from '@/components/atoms';
 import { BookDateDialog, type BookDateValues } from '@/components/BookDateDialog';
-import { Composer, MANAGER_REOPENS, type InsertedTemplate } from '@/components/Composer';
+import {
+  ACTION_WORD,
+  ActionFeedback,
+  ActionRow,
+  ActionSection,
+  ConversationFacts,
+  MANAGERS_ADD_SUPPORT,
+  NextStepCard,
+  PersonRow,
+  RowChevron,
+  SECONDARY_BUTTON,
+  SelectOver,
+  actionsSubtitle,
+} from '@/components/ChatActions';
+import { COMPOSER_BAR, Composer, MANAGER_REOPENS, type InsertedTemplate } from '@/components/Composer';
 import { ContactNameDialog } from '@/components/ContactDialogs';
 import { CorrectAssistant, type CorrectionTarget } from '@/components/CorrectAssistant';
 import {
@@ -46,19 +57,24 @@ import {
   type PendingPrimaryMove,
   type PendingTeamMove,
 } from '@/components/confirms';
-import { DetailsDialog, type DetailsActions } from '@/components/dialogs';
+import { Dialog } from '@/components/Dialog';
 import { MessageBubble, ShadowBubble } from '@/components/MessageBubble';
 import { OpenQuestionLine } from '@/components/OpenQuestionLine';
-import { SlotPicker } from '@/components/SlotPicker';
 import { PendingControl } from '@/components/writes';
 import { EDIT_NAME_LABEL } from '@/lib/contacts';
 import { mayStartOver, sourceLabel } from '@/lib/inboxes';
-import { depositPaidLine, isReadyToBook } from '@/lib/list-state';
+import { depositPaidCard, isReadyToBook } from '@/lib/list-state';
 import { openQuestionsByMessage } from '@/lib/open-question';
 import { PARTY_REMOVED_LABEL, bookDateDraft, eventChipLabel, eventLinkOf, parseBeoFromConversation } from '@/lib/beo';
 import {
+  AI_ACTION_LABEL,
+  AI_ACTION_NAME,
   BOOK_DATE_NOT_YOURS_REASON,
+  CATEGORY_DOT,
+  CATEGORY_LABEL,
+  CATEGORY_SHORT,
   CHANNEL_LABEL,
+  STATUS_LABEL,
   SUPPORT_FULL_HINT,
   WRITES_PENDING_REASON,
   aiStateLineFor,
@@ -75,9 +91,7 @@ import {
   contactName,
   dayOf,
   effectiveBranchId,
-  handleLabel,
   initialsOf,
-  langLabel,
   mayBookDate,
   moveOptions,
   moveOutcome,
@@ -123,15 +137,25 @@ function refusalOf(err: unknown, fallback: string): string {
 }
 
 /**
- * The chat panel (WhatsAppDemo.tsx `ChatPanel`, :1870-2062): the header, the
- * assignment strip, the timeline and the composer, from the api.
+ * The chat panel (WhatsAppDemo.tsx `ChatPanel`, :1870-2062), from the api,
+ * in the OTO look (SCRUM-1016): a header with the way back, the name, where
+ * the chat came from, Mark as handled and one menu; one line for what the
+ * assistant is doing, with its Pause or Resume; for a paid deposit the next
+ * step; the thread; and the composer fixed at the bottom, always on screen.
  *
- * LIVE since I3b (SCRUM-588), behind the same write switch (`writeMode`):
- * the move-team badge and the status picker in the header; the primary and
- * support slot pickers, Divert and the branch select in the strip; Mark as
- * Handled; the composer. Every refusal is the server's sentence, shown as it
- * was said. While the api says `writes: false` the same controls render
- * disabled with their reason, as in Cut A.
+ * People and actions (ChatActions.dc.html) holds what the assignment strip
+ * and the details dialog held: the primary and the support places with their
+ * pickers, "Support 2/2" and Divert; the team, the park and the status, each
+ * with its confirmation; the assistant's state; the contact and the member
+ * link; rename; Start over on a test line; Book the date and Create BEO. It
+ * is a sheet below the desktop panel's width (`detailsOpen`), and the right
+ * panel beside the chat on a desktop (Desktop.dc.html); `panelWide` moves
+ * that width out when the simulator's side panel takes the room.
+ *
+ * LIVE since I3b (SCRUM-588), behind the same write switch (`writeMode`).
+ * Every refusal is the server's sentence, shown as it was said. While the api
+ * says `writes: false` the same controls render disabled with their reason,
+ * as in Cut A.
  *
  * Book Date and Create BEO (SCRUM-775, owner decision 4 November: the OTO
  * App's Events module is the one home for birthday orders): Book Date opens
@@ -155,13 +179,14 @@ export function ChatPanel({
   onOpenTemplates,
   onAskHandle,
   onChanged,
+  panelWide = false,
 }: {
   row: ConversationRow;
   thread: Thread;
   me: InboxMe;
   now: Date;
   inserted: InsertedTemplate | null;
-  /** The details dialog is the panel's (it carries the phone's team and status controls, test night U10). */
+  /** People and actions as a sheet (the menu in the header; it holds the phone's team and status controls, test night U10). */
   detailsOpen: boolean;
   onBack: () => void;
   onLoadOlder: () => void;
@@ -171,6 +196,8 @@ export function ChatPanel({
   onAskHandle: () => void;
   /** After a write: re-read the thread, the list and the dashboard. */
   onChanged: () => Promise<void>;
+  /** The simulator's side panel is shown: the desktop panel waits for a wider screen (1760 px, not 1280). */
+  panelWide?: boolean;
 }) {
   const pending = writeMode(me) === 'disabled';
   const live = !pending;
@@ -396,7 +423,7 @@ export function ChatPanel({
       gone = true;
     };
   }, [conv.id, conv.category, mayBook, paidSignal, booked]);
-  const paidLine = paidSignal && paidDeposit?.convId === conv.id ? depositPaidLine(paidDeposit.draft, paidSignal) : null;
+  const paidCard = paidSignal && paidDeposit?.convId === conv.id ? depositPaidCard(paidDeposit.draft, paidSignal) : null;
   const askBookDate = (thenBeo: boolean) => {
     setBookError(null);
     setBooking({ conversationId: conv.id, eventId: newId(), thenBeo });
@@ -521,198 +548,148 @@ export function ChatPanel({
   // its own is its desk's (test night U9: "All Branches" on a thread pinned to
   // Central Floresta).
   const branchValue = effectiveBranchId(conv, me.teams) ?? '';
-  const idLabel = handleLabel(conv.channel);
   const supportCap = me.capabilities.assign ? supportCapLabel(supports.length) : null;
-
-  // The phone's team and status controls, in the details dialog (test night U10).
-  const phoneActions: DetailsActions = {
-    moves,
-    currentMove,
-    canMove: live && me.capabilities.move,
-    onMove: (o) => {
-      onCloseDetails();
-      askMove(o);
-    },
-    status: conv.status,
-    canHandle: live && handleable,
-    canReopen: live && reopenable,
-    onHandle: () => {
-      onCloseDetails();
-      onAskHandle();
-    },
-    onReopen: () => {
-      onCloseDetails();
-      void run('reopen', () => inboxApi.reopen(conv.id), 'The conversation could not be reopened.');
-    },
-    busy: busy !== null,
+  const reopen = () => void run('reopen', () => inboxApi.reopen(conv.id), 'The conversation could not be reopened.');
+  const toggleAi = () => {
+    if (aiLine?.kind !== 'control') return;
+    void run(
+      'ai',
+      () => (aiLine.action === 'resume' ? assistantApi.resume(conv.id) : assistantApi.pause(conv.id)),
+      aiLine.action === 'resume' ? 'The assistant could not be resumed here.' : 'The assistant could not be paused here.',
+    );
   };
+  const aiTitle =
+    aiLine?.kind === 'control' && aiLine.action === 'resume'
+      ? 'The assistant stays quiet on this conversation. Resume to let it answer again.'
+      : 'Stop the assistant answering on this conversation. Lines not yet sent are withdrawn.';
+  // The next-step card stands in the chat below the panel's width and in the
+  // panel beside it: the same card, one place at each width.
+  const panelOn = panelWide ? 'min-[1760px]:flex' : 'xl:flex';
+  const panelOff = panelWide ? 'min-[1760px]:hidden' : 'xl:hidden';
+  const showCard = conv.category === 'birthdays' && !event && mayBook && paidCard !== null;
+  const card = (stacked: boolean, className = '') =>
+    paidCard && (
+      <NextStepCard
+        card={paidCard}
+        busy={busy !== null}
+        beoBusy={busy === 'beo'}
+        onBook={() => askBookDate(false)}
+        onBeo={() => askBookDate(true)}
+        stacked={stacked}
+        className={className}
+      />
+    );
+  const park = effectiveBranchId(conv, me.teams);
+  const topicPark = [CATEGORY_SHORT[conv.category], park ? branchLabel(park, me.teams) : null].filter(Boolean).join(' · ');
+  const peopleNames = [primary ? `Primary: ${assigneeChip(primary, me).name}` : 'Unassigned', ...supports.map((s) => `Support: ${assigneeChip(s, me).name}`)].join('. ');
 
-  return (
-    <>
-      {/* Header */}
-      <header className="flex items-center gap-3 border-b border-line bg-card px-4 py-3">
-        <button
-          type="button"
-          onClick={onBack}
-          aria-label="Back to the conversations"
-          className="rounded-lg p-1.5 text-ink-muted hover:bg-band md:hidden"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </button>
-        <div className="relative">
-          <Avatar initials={initialsOf(name)} tint={tintFor(conv.contact.id)} size={40} />
-          <ChannelDot channel={conv.channel} />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex min-w-0 items-center gap-2">
-            <div className="truncate text-[14px] font-semibold text-ink">{name}</div>
-            {/* SCRUM-860: the name staff set shows here, in the list and in the search; an erased contact has no name to edit. */}
-            {live && !conv.contact.erased && (
-              <button
-                type="button"
-                onClick={() => setEditingName(true)}
-                aria-label={EDIT_NAME_LABEL}
-                title={EDIT_NAME_LABEL}
-                className="shrink-0 rounded-lg p-1 text-ink-muted hover:bg-band hover:text-ink"
-              >
-                <PenLine className="h-3.5 w-3.5" />
-              </button>
+  const markHandled = (wide: boolean) =>
+    handleable &&
+    (pending ? (
+      <PendingControl
+        reason={WRITES_PENDING_REASON}
+        label="Mark as handled"
+        className={wide ? `${SECONDARY_BUTTON} h-12 w-full border-ink text-[15px] font-bold` : HEADER_ICON}
+      >
+        <CheckCircle2 aria-hidden className="h-5 w-5" />
+        {wide && 'Mark as handled'}
+      </PendingControl>
+    ) : (
+      <button
+        type="button"
+        onClick={() => {
+          // From the sheet, the sheet steps aside for the confirmation.
+          if (wide) onCloseDetails();
+          onAskHandle();
+        }}
+        disabled={busy !== null}
+        aria-label={wide ? undefined : 'Mark as handled'}
+        title="Mark as handled"
+        className={wide ? `${SECONDARY_BUTTON} h-12 w-full border-ink text-[15px] font-bold` : `${HEADER_ICON} md:w-auto md:gap-2 md:rounded-xl md:border md:border-edge md:bg-card md:px-3.5 md:text-[13.5px] md:font-semibold`}
+      >
+        <CheckCircle2 aria-hidden className="h-[22px] w-[22px] md:h-[18px] md:w-[18px]" />
+        <span className={wide ? '' : 'hidden md:inline'}>Mark as handled</span>
+      </button>
+    ));
+
+  /** People and actions: the sheet's body and the desktop panel's, the same parts. */
+  const actions = (where: 'sheet' | 'panel') => (
+    <div className="flex flex-col gap-4">
+      {where === 'sheet' && (
+        <ActionFeedback error={error} note={note} onDismissError={() => setError(null)} onDismissNote={() => setNote(null)} />
+      )}
+      <ActionSection title="People">
+        {primary ? (
+          <PersonRow chip={assigneeChip(primary, me)} role="Primary · answers this chat">
+            {live && mayAssign ? (
+              <PeoplePicker label="Set primary" word="Change" options={slotOptions(conv, me, 'primary')} disabled={busy !== null} onPick={(o) => void pickPrimary(o)} />
+            ) : (
+              pending &&
+              mayAssign && (
+                <PendingControl reason={WRITES_PENDING_REASON} label="Change the primary owner" className={ACTION_WORD}>
+                  Change
+                </PendingControl>
+              )
             )}
-            <span className="text-[11px] text-ink-muted">·</span>
-            {/* The number it came in on (SCRUM-220 playbook), not the bare channel. */}
-            <span className="min-w-0 truncate text-[11px] text-ink-muted" title={CHANNEL_LABEL[conv.channel]}>
-              {sourceLabel(conv.channel, conv.channelAccountName)}
-            </span>
+          </PersonRow>
+        ) : live && mayAssign ? (
+          <div className="flex min-h-14 items-center px-2">
+            <PeoplePicker
+              label="Set primary"
+              word="Assign primary"
+              icon
+              options={slotOptions(conv, me, 'primary')}
+              disabled={busy !== null}
+              onPick={(o) => void pickPrimary(o)}
+            />
           </div>
-          <div className="mt-0.5 flex min-w-0 items-center gap-2 text-[11px] text-ink-muted">
-            <span className="truncate">{idLabel ? `${idLabel} ${conv.contact.handle}` : conv.contact.handle}</span>
-            {conv.intent && (
+        ) : (
+          <div className="flex min-h-14 items-center gap-3 px-3.5">
+            <span className="rounded-lg bg-needs px-2 py-1 text-[12.5px] font-semibold text-needs-ink">Unassigned</span>
+          </div>
+        )}
+        {supports.map((s, i) => (
+          <PersonRow key={s.assignmentId} chip={assigneeChip(s, me)} role={`Support · ${i + 1} of 2`}>
+            {live && me.capabilities.assign && (
               <>
-                <span>·</span>
-                <span className="truncate">{conv.intent}</span>
+                <PeoplePicker
+                  label="Set support"
+                  word="Change"
+                  options={slotOptions(conv, me, 'support')}
+                  disabled={busy !== null}
+                  // A different person in this place: release it, then seat them.
+                  onPick={(o) =>
+                    void run(
+                      'support',
+                      async () => {
+                        await inboxApi.removeSupport(conv.id, s.assignmentId);
+                        await inboxApi.addSupport(conv.id, o.assignee.id);
+                      },
+                      'Support could not be changed.',
+                    )
+                  }
+                />
+                <button
+                  type="button"
+                  disabled={busy !== null}
+                  onClick={() => void run('support', () => inboxApi.removeSupport(conv.id, s.assignmentId), 'Support could not be removed.')}
+                  aria-label={`Remove support: ${assigneeChip(s, me).name}`}
+                  className={ACTION_WORD}
+                >
+                  Remove
+                </button>
               </>
             )}
-            <span>·</span>
-            <span className="uppercase tracking-wide">{langLabel(conv.language)}</span>
-          </div>
-        </div>
-        <div className="hidden items-center gap-2 md:flex">
-          <CategoryBadge
-            category={conv.category}
-            label={me.capabilities.move ? teamDestLabel(conv, me) : undefined}
-            title={categoryTitle(conv.category, detail?.teamName ?? null)}
-            live={live && me.capabilities.move}
-            picker={
-              !me.capabilities.move ? undefined : pending ? (
-                <PendingOverlay label="Move to another team" />
-              ) : (
-                <select
-                  value={currentMove}
-                  disabled={busy !== null}
-                  onChange={(e) => {
-                    const opt = moves.find((m) => m.value === e.target.value);
-                    if (opt && opt.value !== currentMove) askMove(opt);
-                  }}
-                  aria-label="Move to team"
-                  className="absolute inset-0 cursor-pointer opacity-0 disabled:cursor-wait"
-                >
-                  {/* SCRUM-789: held in the General inbox — no team is the current one, every team is offered. */}
-                  {currentMove === MOVE_VALUE_GENERAL && (
-                    <option value={MOVE_VALUE_GENERAL} disabled>
-                      {HELD_IN_GENERAL_LABEL}
-                    </option>
-                  )}
-                  {moves.map((m) => (
-                    <option key={m.value} value={m.value}>
-                      {m.label}
-                    </option>
-                  ))}
-                </select>
-              )
-            }
-          />
-          <StatusBadge
-            status={conv.status}
-            live={live && (handleable || reopenable)}
-            picker={
-              !(handleable || reopenable) ? undefined : pending ? (
-                <PendingOverlay label={conv.status === 'handled' ? 'Reopen' : 'Mark as handled'} />
-              ) : (
-                <select
-                  value={conv.status === 'handled' ? 'handled' : 'new'}
-                  disabled={busy !== null}
-                  onChange={(e) => {
-                    if (e.target.value === 'handled') onAskHandle();
-                    else void run('reopen', () => inboxApi.reopen(conv.id), 'The conversation could not be reopened.');
-                  }}
-                  aria-label="Set conversation status"
-                  className="absolute inset-0 cursor-pointer opacity-0 disabled:cursor-wait"
-                >
-                  <option value="new">Active</option>
-                  <option value="handled">Handled</option>
-                </select>
-              )
-            }
-          />
-        </div>
-        {startOverAllowed && (
-          <button
-            type="button"
-            onClick={() => {
-              setStartOverError(null);
-              setStartingOver(true);
-            }}
-            aria-label={START_OVER_LABEL}
-            title={`${START_OVER_LABEL} — test line`}
-            className="rounded-lg p-1.5 text-ink-muted hover:bg-band"
-          >
-            <RotateCcw className="h-4 w-4" />
-          </button>
-        )}
-        <button
-          type="button"
-          onClick={onOpenDetails}
-          aria-label="Conversation details"
-          title="Conversation details"
-          className="rounded-lg p-1.5 text-ink-muted hover:bg-band"
-        >
-          <MoreHorizontal className="h-4 w-4" />
-        </button>
-      </header>
-
-      {/* Assignment strip */}
-      <div className="border-b border-line bg-card/70 px-4 py-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-muted">Primary</span>
-          {live && mayAssign ? (
-            <SlotPicker
-              slotLabel="primary"
-              current={primary ? assigneeChip(primary, me) : null}
-              options={slotOptions(conv, me, 'primary')}
-              onPick={(o) => void pickPrimary(o)}
-              emptyLabel="Assign primary"
-              disabled={busy !== null}
-            />
-          ) : primary ? (
-            pending && mayAssign ? (
-              <PendingControl reason={WRITES_PENDING_REASON} label="Change the primary owner" className="rounded-full">
-                <ChipView chip={assigneeChip(primary, me)} />
-              </PendingControl>
-            ) : (
-              <ChipView chip={assigneeChip(primary, me)} />
-            )
-          ) : (
-            <span className="inline-flex items-center rounded-full bg-amber-50 dark:bg-amber-500/15 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-300 ring-1 ring-amber-200 dark:ring-amber-500/30">
-              Unassigned
-            </span>
-          )}
+          </PersonRow>
+        ))}
+        <PeopleFooter>
           {supportCap && (
             // Both places taken (test night U4): say so where "Add support" sat,
             // with the api's own reason, rather than let the button vanish.
             <span
               title={SUPPORT_FULL_HINT}
               aria-label={`${supportCap} — ${SUPPORT_FULL_HINT}`}
-              className="inline-flex items-center gap-1 rounded-full border border-dashed border-field bg-card px-2 py-0.5 text-[11px] font-medium text-ink-muted"
+              className="flex min-h-12 items-center justify-center px-3 text-[14px] font-semibold text-ink-muted"
             >
               {supportCap}
             </span>
@@ -720,73 +697,26 @@ export function ChatPanel({
           {me.capabilities.assign &&
             supportCap === null &&
             (live ? (
-              <SlotPicker
-                slotLabel="support"
-                current={null}
+              <PeoplePicker
+                label="Set support"
+                word="Add support"
+                icon
                 options={slotOptions(conv, me, 'support')}
-                onPick={(o) =>
-                  void run('support', () => inboxApi.addSupport(conv.id, o.assignee.id), 'Support could not be added.')
-                }
-                emptyLabel="Add support"
                 disabled={busy !== null}
+                onPick={(o) => void run('support', () => inboxApi.addSupport(conv.id, o.assignee.id), 'Support could not be added.')}
+                className={FOOTER_WORD}
               />
             ) : (
-              <PendingControl
-                reason={WRITES_PENDING_REASON}
-                label="Add support"
-                className="inline-flex items-center gap-1 rounded-full border border-dashed border-field bg-card px-2 py-0.5 text-[11px] font-medium text-ink-muted"
-              >
-                <Plus className="h-3 w-3" />
+              <PendingControl reason={WRITES_PENDING_REASON} label="Add support" className={FOOTER_WORD}>
+                <Plus aria-hidden className="h-4 w-4" />
                 Add support
               </PendingControl>
             ))}
-          {supports.length > 0 && (
-            <>
-              <span className="mx-1 h-4 w-px bg-line" />
-              <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-muted">Support</span>
-              {supports.map((s) =>
-                live && me.capabilities.assign ? (
-                  <SlotPicker
-                    key={s.assignmentId}
-                    slotLabel="support"
-                    current={assigneeChip(s, me)}
-                    options={slotOptions(conv, me, 'support')}
-                    // A different person in this place: release it, then seat them.
-                    onPick={(o) =>
-                      void run(
-                        'support',
-                        async () => {
-                          await inboxApi.removeSupport(conv.id, s.assignmentId);
-                          await inboxApi.addSupport(conv.id, o.assignee.id);
-                        },
-                        'Support could not be changed.',
-                      )
-                    }
-                    onRemove={() =>
-                      void run(
-                        'support',
-                        () => inboxApi.removeSupport(conv.id, s.assignmentId),
-                        'Support could not be removed.',
-                      )
-                    }
-                    emptyLabel="Add support"
-                    disabled={busy !== null}
-                  />
-                ) : (
-                  <ChipView key={s.assignmentId} chip={assigneeChip(s, me)} />
-                ),
-              )}
-            </>
-          )}
           {mayAssign &&
             primary?.assigneeKind === 'account' &&
             (pending ? (
-              <PendingControl
-                reason={WRITES_PENDING_REASON}
-                label="Divert to the backup"
-                className="inline-flex items-center gap-1 rounded-full bg-card px-2 py-0.5 text-[11px] font-medium text-ink-soft ring-1 ring-line"
-              >
-                <Repeat className="h-3 w-3" />
+              <PendingControl reason={WRITES_PENDING_REASON} label="Divert to the backup" className={FOOTER_WORD}>
+                <Repeat aria-hidden className="h-4 w-4" />
                 Divert
               </PendingControl>
             ) : (
@@ -797,346 +727,539 @@ export function ChatPanel({
                   onClick={() => void run('divert', () => inboxApi.divert(conv.id), 'The conversation could not be diverted.')}
                   title={`Divert to ${divertTo.name ?? 'the backup'}`}
                   aria-label={`Divert to ${divertTo.name ?? 'the backup'}`}
-                  className="inline-flex items-center gap-1 rounded-full bg-card px-2 py-0.5 text-[11px] font-medium text-ink-soft ring-1 ring-line hover:bg-wash hover:text-ink disabled:opacity-60"
+                  className={FOOTER_WORD}
                 >
-                  {busy === 'divert' ? <Loader2 className="h-3 w-3 animate-spin" /> : <Repeat className="h-3 w-3" />}
-                  Divert
+                  {busy === 'divert' ? <Loader2 aria-hidden className="h-4 w-4 animate-spin" /> : <Repeat aria-hidden className="h-4 w-4" />}
+                  Divert to {divertTo.name ?? 'the backup'}
                 </button>
               )
             ))}
-          <span className="ml-auto flex flex-wrap items-center gap-2">
-            {mayPauseAi && aiLine?.kind === 'label' && (
-              <span
-                data-ai-state={detail?.aiMode}
-                className="inline-flex items-center gap-1 rounded-full bg-band px-2 py-0.5 text-[11px] font-medium text-ink-muted ring-1 ring-line"
+          {!me.capabilities.assign && (
+            <span className="flex min-h-12 items-center px-3.5 text-[13px] text-ink-muted">{MANAGERS_ADD_SUPPORT}</span>
+          )}
+        </PeopleFooter>
+      </ActionSection>
+
+      {/* The team and status controls a phone had in the details (test night U10), for those who hold them. */}
+      <div data-phone-actions={live && (me.capabilities.move || handleable || reopenable) ? 'true' : undefined}>
+      <ActionSection title="This conversation">
+        <ActionRow
+          label="Team"
+          title={categoryTitle(conv.category, detail?.teamName ?? null)}
+          action={
+            me.capabilities.move &&
+            (pending ? (
+              <PendingControl reason={WRITES_PENDING_REASON} label="Move to another team" className={ACTION_WORD}>
+                <RowChevron />
+              </PendingControl>
+            ) : (
+              <SelectOver
+                label="Move to team"
+                value={currentMove}
+                disabled={busy !== null}
+                onChange={(v) => {
+                  const opt = moves.find((m) => m.value === v);
+                  if (!opt || opt.value === currentMove) return;
+                  // From the sheet, the sheet steps aside for the confirmation (as the details dialog did, U10).
+                  if (where === 'sheet') onCloseDetails();
+                  askMove(opt);
+                }}
+                cover
+                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+                options={
+                  <>
+                    {/* SCRUM-789: held in the General inbox — no team is the current one, every team is offered. */}
+                    {currentMove === MOVE_VALUE_GENERAL && (
+                      <option value={MOVE_VALUE_GENERAL} disabled>
+                        {HELD_IN_GENERAL_LABEL}
+                      </option>
+                    )}
+                    {moves.map((m) => (
+                      <option key={m.value} value={m.value}>
+                        {m.label}
+                      </option>
+                    ))}
+                  </>
+                }
               >
-                <Bot className="h-3 w-3" />
-                {aiLine.text}
+                <RowChevron />
+              </SelectOver>
+            ))
+          }
+        >
+          <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${CATEGORY_DOT[conv.category]}`} />
+          <span className="truncate">{me.capabilities.move ? teamDestLabel(conv, me) : CATEGORY_LABEL[conv.category]}</span>
+        </ActionRow>
+        <ActionRow
+          label="Park"
+          action={
+            me.capabilities.assign && live ? (
+              <SelectOver
+                label="Conversation branch"
+                value={branchValue}
+                disabled={busy !== null}
+                onChange={(v) => {
+                  const next = v || null;
+                  if (next !== conv.branchId) void setBranch(next);
+                }}
+                cover
+                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+                options={branchSelectOptions(me.teams).map((b) => (
+                  <option key={b.value} value={b.value}>
+                    {b.label}
+                  </option>
+                ))}
+              >
+                <RowChevron />
+              </SelectOver>
+            ) : (
+              pending &&
+              me.capabilities.assign && (
+                <PendingControl reason={WRITES_PENDING_REASON} label="Change the branch" className={ACTION_WORD}>
+                  <RowChevron />
+                </PendingControl>
+              )
+            )
+          }
+        >
+          <span className="truncate">{branchLabel(branchValue || null, me.teams)}</span>
+        </ActionRow>
+        <ActionRow
+          label="Status"
+          action={
+            (handleable || reopenable) &&
+            (pending ? (
+              <PendingControl
+                reason={WRITES_PENDING_REASON}
+                label={conv.status === 'handled' ? 'Reopen' : 'Mark as handled'}
+                className={ACTION_WORD}
+              >
+                <RowChevron />
+              </PendingControl>
+            ) : (
+              <SelectOver
+                label="Set conversation status"
+                value={conv.status === 'handled' ? 'handled' : 'new'}
+                disabled={busy !== null}
+                onChange={(v) => {
+                  if (v === 'handled') {
+                    if (where === 'sheet') onCloseDetails();
+                    onAskHandle();
+                  } else reopen();
+                }}
+                cover
+                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+                options={
+                  <>
+                    <option value="new">Active</option>
+                    <option value="handled">Handled</option>
+                  </>
+                }
+              >
+                <RowChevron />
+              </SelectOver>
+            ))
+          }
+        >
+          {STATUS_LABEL[conv.status]}
+        </ActionRow>
+        {mayPauseAi && aiLine && (
+          <ActionRow
+            label="Assistant"
+            action={
+              aiLine.kind === 'control' && (
+                <button
+                  type="button"
+                  disabled={busy !== null}
+                  onClick={toggleAi}
+                  aria-label={AI_ACTION_NAME[aiLine.action]}
+                  title={aiTitle}
+                  className={ACTION_WORD}
+                >
+                  {AI_ACTION_LABEL[aiLine.action]}
+                </button>
+              )
+            }
+          >
+            <span className="truncate">{aiLine.text}</span>
+          </ActionRow>
+        )}
+      </ActionSection>
+      </div>
+
+      {conv.category === 'birthdays' && (
+        <ActionSection title="Party" card={false}>
+          <div className="flex flex-col gap-2">
+            {event ? (
+              <div className="grid grid-cols-2 gap-2">
+                {/* The prototype's booked state (:1986-1996): the date is held, the press is spent. An event archived in the Events module says so; it is restored there. */}
+                <button
+                  type="button"
+                  disabled
+                  title={
+                    event.archived
+                      ? 'The event was archived in the Events calendar. Restore it there to use it again.'
+                      : 'Date already blocked in the Events calendar'
+                  }
+                  className={`${SECONDARY_BUTTON} h-12 cursor-default border-money-line bg-money text-money-ink`}
+                >
+                  <Calendar aria-hidden className="h-4 w-4" />
+                  {event.archived ? 'Event archived' : 'Date Booked'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void openBeo(conv.id, undefined, true)}
+                  disabled={busy !== null}
+                  title="Open this event's BEO in the OTO App"
+                  className={`${SECONDARY_BUTTON} h-12`}
+                >
+                  {busy === 'beo' ? <Loader2 aria-hidden className="h-4 w-4 animate-spin" /> : <FileText aria-hidden className="h-4 w-4" />}
+                  Create BEO
+                </button>
+              </div>
+            ) : showCard ? (
+              where === 'sheet' && <p className="px-1 text-[13px] text-ink-muted">The deposit is paid: Book the date is at the top of the chat.</p>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                {mayBook ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (where === 'sheet') onCloseDetails();
+                      askBookDate(false);
+                    }}
+                    disabled={busy !== null}
+                    title="Block this date in the Events calendar"
+                    className="inline-flex h-12 items-center justify-center gap-2 rounded-[13px] bg-coral px-3 text-[14.5px] font-bold text-on-coral hover:bg-coral/90 disabled:opacity-60"
+                  >
+                    <Calendar aria-hidden className="h-4 w-4" />
+                    Book the date
+                  </button>
+                ) : (
+                  <PendingControl
+                    reason={bookOffReason}
+                    label="Book the date"
+                    className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[13px] bg-coral px-3 text-[14.5px] font-bold text-on-coral"
+                  >
+                    <Calendar aria-hidden className="h-4 w-4" />
+                    Book the date
+                  </PendingControl>
+                )}
+                {mayBook ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (where === 'sheet') onCloseDetails();
+                      askBookDate(true);
+                    }}
+                    disabled={busy !== null}
+                    title="Book the date, then open its BEO in the OTO App"
+                    className={`${SECONDARY_BUTTON} h-12`}
+                  >
+                    {busy === 'beo' ? <Loader2 aria-hidden className="h-4 w-4 animate-spin" /> : <FileText aria-hidden className="h-4 w-4" />}
+                    Create BEO
+                  </button>
+                ) : (
+                  <PendingControl reason={bookOffReason} label="Create BEO" className={`${SECONDARY_BUTTON} h-12 w-full`}>
+                    <FileText aria-hidden className="h-4 w-4" />
+                    Create BEO
+                  </PendingControl>
+                )}
+              </div>
+            )}
+            {event && (
+              <button
+                type="button"
+                onClick={() => void openBeo(conv.id)}
+                disabled={busy !== null}
+                title={`${event.title} · ${event.archived ? 'Archived' : event.statusName} in the Events calendar. Opens it in the OTO App.`}
+                data-testid="event-chip"
+                className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line bg-card px-3 py-2 text-left text-[13.5px] font-semibold text-ink hover:bg-wash disabled:opacity-60"
+              >
+                <Calendar aria-hidden className="h-4 w-4 shrink-0 text-ink-soft" />
+                {eventChipLabel(eventChipOf(event))}
+              </button>
+            )}
+            {removedEvent && (
+              // SCRUM-820: said, never pressed — there is no BEO to open.
+              <span
+                title={`${removedEvent.title} was deleted or archived in the Events calendar. Book the date books it again.`}
+                data-testid="event-chip-removed"
+                className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-band px-3 py-2 text-[13.5px] font-semibold text-ink-soft"
+              >
+                <Calendar aria-hidden className="h-4 w-4 shrink-0" />
+                {PARTY_REMOVED_LABEL}
               </span>
             )}
-            {mayPauseAi && aiLine?.kind === 'control' && (
+          </div>
+        </ActionSection>
+      )}
+
+      <ActionSection title="Details" card={false}>
+        <ConversationFacts row={conv} detail={detail} now={now} />
+        {(live && !conv.contact.erased) || startOverAllowed ? (
+          <div className="flex flex-wrap gap-2">
+            {/* SCRUM-860: the name staff set shows in the chat, the list and the search; an erased contact has no name to edit. */}
+            {live && !conv.contact.erased && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (where === 'sheet') onCloseDetails();
+                  setEditingName(true);
+                }}
+                aria-label={EDIT_NAME_LABEL}
+                className={`${SECONDARY_BUTTON} min-h-11`}
+              >
+                <PenLine aria-hidden className="h-4 w-4" />
+                {EDIT_NAME_LABEL}
+              </button>
+            )}
+            {startOverAllowed && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (where === 'sheet') onCloseDetails();
+                  setStartOverError(null);
+                  setStartingOver(true);
+                }}
+                aria-label={START_OVER_LABEL}
+                title={`${START_OVER_LABEL} — test line`}
+                className={`${SECONDARY_BUTTON} min-h-11`}
+              >
+                <RotateCcw aria-hidden className="h-4 w-4" />
+                {START_OVER_LABEL}
+              </button>
+            )}
+          </div>
+        ) : null}
+      </ActionSection>
+    </div>
+  );
+
+  return (
+    <div className="flex min-h-0 min-w-0 flex-1">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        {/* Header (Chat.dc.html): back, the face, the name and where the chat came from, Mark as handled, one menu. */}
+        <header className="flex shrink-0 items-center gap-1 border-b border-line bg-card px-1 py-2 md:gap-3 md:px-5 md:py-3">
+          <button
+            type="button"
+            onClick={onBack}
+            aria-label="Back to the conversations"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-ink hover:bg-wash md:hidden"
+          >
+            <ChevronLeft aria-hidden className="h-6 w-6" />
+          </button>
+          <div className="relative shrink-0">
+            <Avatar initials={initialsOf(name)} tint={tintFor(conv.contact.id)} size={40} />
+            <ChannelDot channel={conv.channel} />
+          </div>
+          <div className="min-w-0 flex-1 pl-2 md:pl-0">
+            <h2 className="truncate text-[16px] font-bold tracking-[-0.01em] text-ink">{name}</h2>
+            <p className="truncate text-[12.5px] text-ink-muted">
+              {/* The number it came in on (SCRUM-220 playbook), not the bare channel; its channel in the title. */}
+              <span title={CHANNEL_LABEL[conv.channel]}>{sourceLabel(conv.channel, conv.channelAccountName)}</span>
+              {topicPark && ` · ${topicPark}`}
+            </p>
+          </div>
+          {busy !== null && busy !== 'divert' && (
+            <Loader2 role="status" aria-label="Working" className="h-4 w-4 shrink-0 animate-spin text-ink-muted" />
+          )}
+          {markHandled(false)}
+          <button
+            type="button"
+            onClick={onOpenDetails}
+            aria-label="People and actions"
+            title="People and actions"
+            className={`${HEADER_ICON} ${panelOff}`}
+          >
+            <MoreHorizontal aria-hidden className="h-[22px] w-[22px]" />
+          </button>
+        </header>
+
+        {/* The assistant's line (SCRUM-590 A3, Chat.dc.html): its state, why, and Pause or Resume. */}
+        {mayPauseAi && aiLine && (
+          <div
+            data-ai-state={detail?.aiMode}
+            className="flex shrink-0 items-center gap-2 border-b border-mint-line bg-mint-soft py-0.5 pl-4 pr-2 text-teal md:py-1.5 md:pl-5"
+          >
+            <Bot aria-hidden className="h-[18px] w-[18px] shrink-0" />
+            <span className="min-w-0 flex-1 truncate py-2 text-[13px]">
+              <strong className="font-bold">{aiLine.text}</strong>
+              {aiLine.kind === 'control' && ` · ${aiLine.hint}`}
+            </span>
+            {aiLine.kind === 'control' && (
               <button
                 type="button"
                 data-ai-state={detail?.aiMode}
                 data-ai-action={aiLine.action}
                 disabled={busy !== null}
                 aria-pressed={aiPaused}
-                onClick={() =>
-                  void run(
-                    'ai',
-                    () => (aiLine.action === 'resume' ? assistantApi.resume(conv.id) : assistantApi.pause(conv.id)),
-                    aiLine.action === 'resume' ? 'The assistant could not be resumed here.' : 'The assistant could not be paused here.',
-                  )
-                }
-                title={
-                  aiLine.action === 'resume'
-                    ? 'The assistant stays quiet on this conversation. Resume to let it answer again.'
-                    : 'Stop the assistant answering on this conversation. Lines not yet sent are withdrawn.'
-                }
-                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 disabled:opacity-60 ${
-                  aiPaused
-                    ? 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 ring-amber-200 dark:ring-amber-500/30 hover:bg-amber-100 dark:hover:bg-amber-500/25'
-                    : 'bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 ring-indigo-200 dark:ring-indigo-500/30 hover:bg-indigo-100 dark:hover:bg-indigo-500/25'
-                }`}
+                aria-label={AI_ACTION_NAME[aiLine.action]}
+                onClick={toggleAi}
+                title={aiTitle}
+                className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full border border-mint-edge bg-card px-3.5 text-[13px] font-semibold text-teal hover:bg-mint disabled:opacity-60 md:h-8"
               >
-                {busy === 'ai' ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : aiPaused ? (
-                  <PlayCircle className="h-3 w-3" />
-                ) : (
-                  <PauseCircle className="h-3 w-3" />
-                )}
-                {aiLine.text}
+                {busy === 'ai' && <Loader2 aria-hidden className="h-3.5 w-3.5 animate-spin" />}
+                {AI_ACTION_LABEL[aiLine.action]}
               </button>
             )}
-            {me.capabilities.assign && live ? (
-              <label className="flex items-center gap-1.5 text-[11px] text-ink-muted">
-                <MapPin className="h-3 w-3" />
-                <span className="relative">
-                  <select
-                    value={branchValue}
-                    disabled={busy !== null}
-                    onChange={(e) => {
-                      const next = e.target.value || null;
-                      if (next !== conv.branchId) void setBranch(next);
-                    }}
-                    aria-label="Conversation branch"
-                    className="appearance-none rounded-md border border-line bg-card py-0.5 pl-2 pr-6 text-[11px] capitalize text-ink focus:border-field focus:outline-none focus:ring-2 focus:ring-field"
-                  >
-                    {branchSelectOptions(me.teams).map((b) => (
-                      <option key={b.value} value={b.value}>
-                        {b.label}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-1 top-1/2 h-3 w-3 -translate-y-1/2 text-ink-muted" />
-                </span>
-              </label>
-            ) : pending && me.capabilities.assign ? (
-              <PendingControl
-                reason={WRITES_PENDING_REASON}
-                label="Change the branch"
-                className="inline-flex items-center gap-1.5 rounded-md border border-line bg-card py-0.5 pl-2 pr-2 text-[11px] text-ink"
-              >
-                <MapPin className="h-3 w-3 text-ink-muted" />
-                {branchLabel(conv.branchId, me.teams)}
-              </PendingControl>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 text-[11px] text-ink-muted">
-                <MapPin className="h-3 w-3" />
-                {branchLabel(branchValue || null, me.teams)}
-              </span>
-            )}
-            {conv.category === 'birthdays' && (
-              <>
-                {event ? (
-                  // The prototype's booked state (:1986-1996): the date is held, the press is spent.
-                  // An event archived in the Events module says so; it is restored there.
-                  <button
-                    type="button"
-                    disabled
-                    title={
-                      event.archived
-                        ? 'The event was archived in the Events calendar. Restore it there to use it again.'
-                        : 'Date already blocked in the Events calendar'
-                    }
-                    className="inline-flex cursor-default items-center gap-1.5 rounded-lg bg-amber-50 dark:bg-amber-500/15 px-2.5 py-1 text-[12px] font-medium text-amber-700 dark:text-amber-300 ring-1 ring-amber-200 dark:ring-amber-500/30"
-                  >
-                    <Calendar className="h-3.5 w-3.5" />
-                    {event.archived ? 'Event archived' : 'Date Booked'}
-                  </button>
-                ) : mayBook ? (
-                  <button
-                    type="button"
-                    onClick={() => askBookDate(false)}
-                    disabled={busy !== null}
-                    title="Block this date in the Events calendar"
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-2.5 py-1 text-[12px] font-medium text-white ring-1 ring-amber-500 hover:bg-amber-600 disabled:opacity-60"
-                  >
-                    <Calendar className="h-3.5 w-3.5" />
-                    Book Date
-                  </button>
-                ) : (
-                  <PendingControl
-                    reason={bookOffReason}
-                    label="Book Date"
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-2.5 py-1 text-[12px] font-medium text-white ring-1 ring-amber-500"
-                  >
-                    <Calendar className="h-3.5 w-3.5" />
-                    Book Date
-                  </PendingControl>
-                )}
-                {event || mayBook ? (
-                  <button
-                    type="button"
-                    onClick={() => (event ? void openBeo(conv.id, undefined, true) : askBookDate(true))}
-                    disabled={busy !== null}
-                    title={event ? "Open this event's BEO in the OTO App" : 'Book the date, then open its BEO in the OTO App'}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-2.5 py-1 text-[12px] font-medium text-white ring-1 ring-violet-600 hover:bg-violet-700 disabled:opacity-60"
-                  >
-                    {busy === 'beo' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileText className="h-3.5 w-3.5" />}
-                    Create BEO
-                  </button>
-                ) : (
-                  <PendingControl
-                    reason={bookOffReason}
-                    label="Create BEO"
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-2.5 py-1 text-[12px] font-medium text-white ring-1 ring-violet-600"
-                  >
-                    <FileText className="h-3.5 w-3.5" />
-                    Create BEO
-                  </PendingControl>
-                )}
-                {!event && mayBook && paidLine && (
-                  <button
-                    type="button"
-                    onClick={() => askBookDate(false)}
-                    disabled={busy !== null}
-                    title="Open Book Date"
-                    data-testid="deposit-paid-line"
-                    className="inline-flex items-center rounded-lg bg-teal-50 px-2.5 py-1 text-left text-[12px] font-medium text-teal-900 ring-1 ring-teal-300 hover:bg-teal-100 disabled:opacity-60 dark:bg-teal-950 dark:text-teal-100 dark:ring-teal-700 dark:hover:bg-teal-900"
-                  >
-                    {paidLine}
-                  </button>
-                )}
-                {event && (
-                  <button
-                    type="button"
-                    onClick={() => void openBeo(conv.id)}
-                    disabled={busy !== null}
-                    title={`${event.title} · ${event.archived ? 'Archived' : event.statusName} in the Events calendar. Opens it in the OTO App.`}
-                    data-testid="event-chip"
-                    className="inline-flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-500/15 px-2 py-0.5 text-[11px] font-medium text-amber-800 dark:text-amber-200 ring-1 ring-amber-200 dark:ring-amber-500/30 hover:bg-amber-100 dark:hover:bg-amber-500/25 disabled:opacity-60"
-                  >
-                    <Calendar className="h-3 w-3" />
-                    {eventChipLabel(eventChipOf(event))}
-                  </button>
-                )}
-                {removedEvent && (
-                  // SCRUM-820: said, never pressed — there is no BEO to open.
+            <button
+              type="button"
+              onClick={onOpenDetails}
+              aria-label={peopleNames}
+              title={peopleNames}
+              className={`flex h-11 shrink-0 items-center px-1 ${panelOff}`}
+            >
+              {[primary, ...supports].filter((a): a is Assignee => a !== undefined).map((a, i) => {
+                const chip = assigneeChip(a, me);
+                return (
                   <span
-                    title={`${removedEvent.title} was deleted or archived in the Events calendar. Book Date books the date again.`}
-                    data-testid="event-chip-removed"
-                    className="inline-flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-500/15 px-2 py-0.5 text-[11px] font-medium text-amber-800 dark:text-amber-200 ring-1 ring-amber-200 dark:ring-amber-500/30"
+                    key={a.assignmentId}
+                    aria-hidden
+                    className={`flex h-7 w-7 items-center justify-center rounded-full border-2 border-mint-soft text-[10.5px] font-bold ${chip.tint} ${i > 0 ? '-ml-2' : ''}`}
                   >
-                    <Calendar className="h-3 w-3" />
-                    {PARTY_REMOVED_LABEL}
+                    {chip.initials}
                   </span>
-                )}
-              </>
-            )}
-          </span>
-        </div>
-        {handleable && (
-          <div className="mt-2 flex items-center gap-2">
-            {pending ? (
-              <PendingControl
-                reason={WRITES_PENDING_REASON}
-                label="Mark as Handled"
-                className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-2.5 py-1 text-[12px] font-medium text-white"
-              >
-                <CheckCircle2 className="h-3.5 w-3.5" />
-                Mark as Handled
-              </PendingControl>
-            ) : (
-              <button
-                type="button"
-                onClick={onAskHandle}
-                disabled={busy !== null}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-2.5 py-1 text-[12px] font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
-              >
-                <CheckCircle2 className="h-3.5 w-3.5" />
-                Mark as Handled
-              </button>
-            )}
-            {busy !== null && busy !== 'divert' && <Loader2 className="h-3.5 w-3.5 animate-spin text-ink-muted" />}
-          </div>
-        )}
-        {!handleable && busy !== null && busy !== 'divert' && (
-          <Loader2 className="mt-1.5 h-3.5 w-3.5 animate-spin text-ink-muted" />
-        )}
-        {error && (
-          <div role="alert" className="mt-2 flex items-start gap-2 rounded-lg bg-rose-50 dark:bg-rose-500/15 px-3 py-1.5 text-[12px] text-rose-700 dark:text-rose-300 ring-1 ring-rose-200 dark:ring-rose-500/30">
-            <span className="min-w-0 flex-1 break-words">{error}</span>
-            <button type="button" onClick={() => setError(null)} aria-label="Dismiss" className="shrink-0 opacity-70 hover:opacity-100">
-              <X className="h-3.5 w-3.5" />
+                );
+              })}
             </button>
           </div>
         )}
-        {note && (
-          <div
-            role="status"
-            className="mt-2 flex items-start gap-2 rounded-lg bg-emerald-50 dark:bg-emerald-500/15 px-3 py-1.5 text-[12px] text-emerald-800 dark:text-emerald-200 ring-1 ring-emerald-200 dark:ring-emerald-500/30"
-          >
-            <span className="min-w-0 flex-1 break-words">{note}</span>
-            <button type="button" onClick={() => setNote(null)} aria-label="Dismiss" className="shrink-0 opacity-70 hover:opacity-100">
-              <X className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        )}
+
+        {showCard && card(false, `mx-4 mt-3 shrink-0 md:mx-5 ${panelOff}`)}
+
+        <ActionFeedback
+          error={error}
+          note={note}
+          onDismissError={() => setError(null)}
+          onDismissNote={() => setNote(null)}
+          className="mx-4 mt-3 shrink-0 md:mx-5"
+        />
         {pending && (
-          <p className="mt-1.5 text-[11px] text-ink-muted">
+          <p className="mx-4 mt-2 shrink-0 text-[12.5px] text-ink-muted md:mx-5">
             Assigning, moving, handling and replying are {WRITES_PENDING_REASON.toLowerCase()}.
           </p>
         )}
-      </div>
 
-      {/* Timeline */}
-      <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-ground px-4 py-4">
-        <div className="mx-auto flex max-w-2xl flex-col gap-2">
-          {thread.olderCursor !== null && (
-            <div className="flex justify-center">
-              <button
-                type="button"
-                onClick={onLoadOlder}
-                disabled={thread.loadingOlder}
-                className="inline-flex items-center gap-1.5 rounded-full bg-card px-3 py-1 text-[11px] font-medium text-ink-soft ring-1 ring-line hover:bg-wash"
-              >
-                {thread.loadingOlder && <Loader2 className="h-3 w-3 animate-spin" />}
-                Earlier messages
-              </button>
-            </div>
-          )}
-          {thread.loading && thread.messages.length === 0 && (
-            <div className="flex justify-center py-8 text-ink-muted">
-              <Loader2 className="h-5 w-5 animate-spin" />
-            </div>
-          )}
-          {thread.error && (
-            <div className="rounded-lg bg-rose-50 dark:bg-rose-500/15 px-3 py-2 text-[12.5px] text-rose-700 dark:text-rose-300 ring-1 ring-rose-200 dark:ring-rose-500/30">
-              {thread.error}
-            </div>
-          )}
-          {items.map((it) =>
-            it.kind === 'shadow' ? (
-              <ShadowBubble key={it.id} text={it.text} at={it.at} now={now} {...(it.label ? { label: it.label } : {})} />
-            ) : it.kind === 'group' ? (
-              // One moment's pills in one line (customer-AI test night, W7), the pills under it on a press.
-              <details key={it.id} className="my-1 flex flex-col items-center gap-1" data-pill-group={it.pills.length}>
-                <summary className="inline-flex max-w-full cursor-pointer list-none items-center gap-1.5 rounded-full bg-band px-2.5 py-1 text-center text-[11px] font-medium text-ink-soft hover:bg-line">
-                  <Bot className="h-3 w-3 shrink-0" />
-                  <span className="min-w-0">{it.summary}</span>
-                  <ChevronDown className="h-3 w-3 shrink-0 opacity-60" />
-                </summary>
-                <div className="flex flex-col items-center gap-1">
-                  {it.pills.map((p) => (
-                    <Pill key={p.id} text={p.text} />
-                  ))}
-                </div>
-              </details>
-            ) : it.kind === 'pill' ? (
-              <div key={it.id} className="my-1 flex flex-col items-center gap-0.5">
-                <Pill text={it.text} />
-                {it.event === 'ai_silent' && mayCorrect && (
-                  <button
-                    type="button"
-                    onClick={() => setCorrecting({ at: it.at })}
-                    className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[11px] font-medium text-indigo-500 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/15 hover:text-indigo-700 dark:hover:text-indigo-300"
-                  >
-                    <PenLine className="h-3 w-3" />
-                    Correct the assistant
-                  </button>
-                )}
+        {/* Timeline: the one part of the chat that scrolls. */}
+        <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-ground px-4 py-3.5 md:px-6 md:py-5">
+          <div className="mx-auto flex max-w-3xl flex-col gap-2.5">
+            {thread.olderCursor !== null && (
+              <div className="flex justify-center">
+                <button
+                  type="button"
+                  onClick={onLoadOlder}
+                  disabled={thread.loadingOlder}
+                  className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-card px-4 text-[12.5px] font-semibold text-ink-soft ring-1 ring-line hover:bg-wash md:min-h-8"
+                >
+                  {thread.loadingOlder && <Loader2 aria-hidden className="h-3.5 w-3.5 animate-spin" />}
+                  Earlier messages
+                </button>
               </div>
-            ) : (
-              <Fragment key={it.message.id}>
-                <MessageBubble
-                  m={it.message}
-                  me={me}
-                  now={now}
-                  withdrawnNote={withdrawn.get(it.message.id)}
-                  attachments={attachmentsOf(it.message, fileNames)}
-                  onCorrect={mayCorrect ? () => setCorrecting({ messageId: it.message.id }) : undefined}
-                />
-                <OpenQuestionLine questions={asked.get(it.message.id) ?? []} />
-              </Fragment>
-            ),
-          )}
-          {conv.status === 'handled' && (
-            <div className="mt-2 flex justify-center">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 dark:bg-emerald-500/25 px-3 py-1 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
-                <Archive className="h-3 w-3" /> Conversation closed · Will reopen if customer replies
-              </span>
-            </div>
-          )}
+            )}
+            {thread.loading && thread.messages.length === 0 && (
+              <div className="flex justify-center py-8 text-ink-muted">
+                <Loader2 aria-hidden className="h-5 w-5 animate-spin" />
+              </div>
+            )}
+            {thread.error && (
+              <div role="alert" className="rounded-2xl bg-danger px-3.5 py-2 text-[13px] text-danger-ink ring-1 ring-danger-line">
+                {thread.error}
+              </div>
+            )}
+            {items.map((it) =>
+              it.kind === 'shadow' ? (
+                <ShadowBubble key={it.id} text={it.text} at={it.at} now={now} {...(it.label ? { label: it.label } : {})} />
+              ) : it.kind === 'group' ? (
+                // One moment's pills in one line (customer-AI test night, W7), the pills under it on a press.
+                <details key={it.id} className="my-0.5 flex flex-col items-center gap-1" data-pill-group={it.pills.length}>
+                  <summary className="mx-auto flex min-h-11 max-w-[90%] cursor-pointer list-none items-center gap-1.5 rounded-full bg-band px-3 text-center text-[12px] text-ink-soft hover:bg-line md:min-h-0 md:py-1.5">
+                    <span className="min-w-0">{it.summary}</span>
+                    <ChevronDown aria-hidden className="h-3.5 w-3.5 shrink-0" />
+                  </summary>
+                  <div className="mt-1 flex flex-col items-center gap-1">
+                    {it.pills.map((p) => (
+                      <Pill key={p.id} text={p.text} />
+                    ))}
+                  </div>
+                </details>
+              ) : it.kind === 'pill' ? (
+                <div key={it.id} className="my-0.5 flex flex-col items-center gap-0.5">
+                  <Pill text={it.text} />
+                  {/* "AI left this one for the team" keeps its correction in view, never folded into a group. */}
+                  {it.event === 'ai_silent' && mayCorrect && (
+                    <button
+                      type="button"
+                      onClick={() => setCorrecting({ at: it.at })}
+                      className="inline-flex min-h-11 items-center gap-1 px-2 text-[11.5px] font-semibold text-teal underline underline-offset-2 hover:no-underline md:min-h-0 md:py-1"
+                    >
+                      <PenLine aria-hidden className="h-3.5 w-3.5" />
+                      Correct the assistant
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <Fragment key={it.message.id}>
+                  <MessageBubble
+                    m={it.message}
+                    me={me}
+                    now={now}
+                    withdrawnNote={withdrawn.get(it.message.id)}
+                    attachments={attachmentsOf(it.message, fileNames)}
+                    onCorrect={mayCorrect ? () => setCorrecting({ messageId: it.message.id }) : undefined}
+                  />
+                  <OpenQuestionLine questions={asked.get(it.message.id) ?? []} />
+                </Fragment>
+              ),
+            )}
+            {conv.status === 'handled' && (
+              <div className="mt-2 flex justify-center">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-money-badge px-3 py-1.5 text-[12px] font-semibold text-money-ink">
+                  <Archive aria-hidden className="h-3.5 w-3.5" /> Conversation closed · Will reopen if customer replies
+                </span>
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* Composer: fixed at the bottom of the chat, at every width. */}
+        {live ? (
+          <Composer
+            key={conv.id}
+            conv={conv}
+            me={me}
+            inserted={inserted}
+            onOpenTemplates={onOpenTemplates}
+            onSent={() => void onChanged()}
+            onReopen={reopen}
+            reopening={busy === 'reopen'}
+          />
+        ) : (
+          <PendingComposer conv={conv} me={me} onOpenTemplates={onOpenTemplates} />
+        )}
       </div>
 
-      {/* Composer */}
-      {live ? (
-        <Composer
-          key={conv.id}
-          conv={conv}
-          me={me}
-          inserted={inserted}
-          onOpenTemplates={onOpenTemplates}
-          onSent={() => void onChanged()}
-          onReopen={() => void run('reopen', () => inboxApi.reopen(conv.id), 'The conversation could not be reopened.')}
-          reopening={busy === 'reopen'}
-        />
-      ) : (
-        <PendingComposer conv={conv} me={me} onOpenTemplates={onOpenTemplates} />
-      )}
+      {/* The desktop's right panel (Desktop.dc.html): the next step, then People and actions. */}
+      <aside
+        aria-label="About this conversation"
+        data-region="customer-panel"
+        className={`hidden w-[300px] shrink-0 flex-col gap-4 overflow-y-auto border-l border-line bg-ground p-4 ${panelOn}`}
+      >
+        {showCard && card(true)}
+        {actions('panel')}
+      </aside>
+
+      <Dialog
+        open={detailsOpen}
+        onClose={onCloseDetails}
+        sheet
+        title={name}
+        subtitle={actionsSubtitle(conv, detail)}
+        closeLabel="Close people and actions"
+        footer={handleable ? markHandled(true) : undefined}
+      >
+        {actions('sheet')}
+      </Dialog>
 
       {correcting && (
         <CorrectAssistant
@@ -1193,26 +1316,81 @@ export function ChatPanel({
         }}
         onConfirm={() => void confirmStartOver()}
       />
-      <DetailsDialog
-        open={detailsOpen}
-        onClose={onCloseDetails}
-        row={conv}
-        detail={detail}
-        me={me}
-        now={now}
-        actions={phoneActions}
-      />
-    </>
+    </div>
   );
 }
 
-/** A system event's grey pill (:2019-2023). */
+/** The header's 44 px icon controls (Chat.dc.html). */
+const HEADER_ICON = 'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-ink hover:bg-wash disabled:opacity-60';
+/** A word in the People card's footer (Add support, Divert): the full cell, 48 px. */
+const FOOTER_WORD =
+  'inline-flex min-h-12 w-full items-center justify-center gap-1.5 px-3 text-[14px] font-semibold text-ink hover:bg-wash disabled:opacity-60';
+
+/** The People card's footer: its cells side by side under a rule, as ChatActions.dc.html draws them. */
+function PeopleFooter({ children }: { children: ReactNode }) {
+  return (
+    <div className="grid auto-cols-fr grid-flow-col border-t border-line-soft empty:hidden [&>*+*]:border-l [&>*+*]:border-line-soft">
+      {children}
+    </div>
+  );
+}
+
+/**
+ * The primary and support pickers (`SlotPicker`, WhatsAppDemo.tsx :753-824):
+ * a word — "Change", "Assign primary", "Add support" — with the native select
+ * of the people who may take the place laid over it.
+ */
+function PeoplePicker({
+  label,
+  word,
+  options,
+  onPick,
+  disabled,
+  icon = false,
+  className = ACTION_WORD,
+}: {
+  label: string;
+  word: string;
+  options: SlotOption[];
+  onPick: (option: SlotOption) => void;
+  disabled: boolean;
+  icon?: boolean;
+  className?: string;
+}) {
+  return (
+    <SelectOver
+      label={label}
+      value="__placeholder__"
+      disabled={disabled}
+      onChange={(v) => {
+        const picked = options.find((o) => o.value === v);
+        if (picked) onPick(picked);
+      }}
+      className={className}
+      options={
+        <>
+          {/* A hidden anchor, so React always has a matching option for the value. */}
+          <option value="__placeholder__" hidden>
+            Pick someone…
+          </option>
+          {options.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </>
+      }
+    >
+      {icon && <Plus aria-hidden className="h-4 w-4" />}
+      {word}
+    </SelectOver>
+  );
+}
+
+/** A system event's pill on the band (:2019-2023; Chat.dc.html). */
 function Pill({ text }: { text: string }) {
   return (
-    <span className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-band px-2.5 py-1 text-center text-[11px] font-medium text-ink-soft">
-      <Bot className="h-3 w-3 shrink-0" />
-      <span className="min-w-0">{text}</span>
-    </span>
+    <span className="max-w-[90%] rounded-full bg-band px-3 py-1.5 text-center text-[12px] text-ink-soft">{text}</span>
   );
 }
 
@@ -1227,59 +1405,41 @@ function PendingComposer({
   onOpenTemplates: () => void;
 }) {
   return (
-    <div className="border-t border-line bg-card px-4 py-3">
+    <div className={COMPOSER_BAR}>
       {!conv.canReply ? (
-        <div className="flex items-center gap-2 rounded-lg bg-ground px-3 py-2 text-[12.5px] text-ink-muted">
+        <div className="flex min-h-11 items-center gap-2 rounded-2xl bg-band px-4 py-2 text-[13.5px] text-ink-soft">
           Notices from the till — this thread cannot take a reply.
         </div>
       ) : conv.status === 'handled' ? (
-        <div className="flex items-center justify-between gap-2 rounded-lg bg-ground px-3 py-2 text-[12.5px] text-ink-muted">
+        <div className="flex min-h-11 items-center justify-between gap-2 rounded-2xl bg-band px-4 py-2 text-[13.5px] text-ink-soft">
           <span>Handled — composer disabled</span>
           {me.capabilities.reopen ? (
-            <PendingControl reason={WRITES_PENDING_REASON} label="Reopen" className="text-[12px] font-medium text-ink">
+            <PendingControl reason={WRITES_PENDING_REASON} label="Reopen" className="min-h-11 px-3 text-[13.5px] font-bold text-ink md:min-h-9">
               Reopen
             </PendingControl>
           ) : (
-            <span className="text-[12px]">{MANAGER_REOPENS}</span>
+            <span className="text-[13px]">{MANAGER_REOPENS}</span>
           )}
         </div>
       ) : (
-        <div className="flex items-center gap-2 rounded-xl border border-line bg-ground px-3 py-2">
+        <div className="flex items-center gap-0.5">
           <button
             type="button"
             onClick={onOpenTemplates}
             aria-label="Templates"
             title="Templates"
-            className="text-ink-muted hover:text-ink-soft"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-soft hover:bg-wash"
           >
-            <FileText className="h-4 w-4" />
+            <FileText aria-hidden className="h-[22px] w-[22px]" />
           </button>
           <input
             disabled
             aria-label="Reply"
             placeholder={`Replying is ${WRITES_PENDING_REASON.toLowerCase()}`}
-            className="min-w-0 flex-1 cursor-not-allowed bg-transparent text-[13px] placeholder:text-ink-muted focus:outline-none"
+            className="h-11 min-w-0 flex-1 cursor-not-allowed rounded-[22px] border border-field bg-ground px-4 text-[15px] placeholder:text-ink-muted"
           />
         </div>
       )}
     </div>
-  );
-}
-
-/**
- * The prototype's pickers are a native select laid over the badge (:950-958,
- * :1004-1014). While writes are off the overlay is a disabled control in the
- * same place, so the badge shows its chevron and says why it does not open.
- */
-function PendingOverlay({ label }: { label: string }) {
-  return (
-    <span title={WRITES_PENDING_REASON} className="absolute inset-0">
-      <button
-        type="button"
-        disabled
-        aria-label={`${label} — ${WRITES_PENDING_REASON}`}
-        className="h-full w-full cursor-not-allowed"
-      />
-    </span>
   );
 }
