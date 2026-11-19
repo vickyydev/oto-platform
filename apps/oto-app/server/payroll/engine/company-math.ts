@@ -1,7 +1,10 @@
-import type { BranchId, PayrollWorld, StaffMember } from "./model";
+import type { AttendanceDay, BranchId, PayrollWorld, StaffMember } from "./model";
 import { allocationAt, resolvePayingAccount, type EmployeePayrollProfile } from "./payroll-profile";
-import type { CompanyPayrollDocument, MoneyAllocation, PayrollException, RevenueBase } from "./company-model";
+import type { AttendanceReview, CompanyPayrollDocument, MoneyAllocation, PayrollException, RevenueBase } from "./company-model";
 
+/** SCRUM-1055: the component of a single shift's own line; classed with the old contract's salary wherever a statutory base reads it. */
+export const SINGLE_SHIFT_COMPONENT = "single-shift";
+export const SINGLE_SHIFT_LABEL = "Single shift";
 export const money = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
 export const monthDays = (month: string) => new Date(Date.UTC(+month.slice(0, 4), +month.slice(5), 0)).getUTCDate();
 export const previousMonth = (month: string) => {
@@ -20,15 +23,28 @@ export function apportion(total: number, weights: number[]): number[] {
   for (let left = cents - parts.reduce((a, b) => a + b, 0), i = 0; left > 0; left--, i++) parts[order[i % order.length].i]++;
   return parts.map(n => sign * n / 100);
 }
+/** The run's attendance decisions of the month, by fed day. */
+const monthReviews = (doc: CompanyPayrollDocument, month: string) =>
+  new Map(Object.values(doc.runs).filter(r => r.month === month).flatMap(r => Object.entries(r.attendance)));
+/** A day's clock-in as the worked-day rule reads it: the run's override first, then the effective, then the actual clock. */
+const clockIn = (day: AttendanceDay, review: AttendanceReview | undefined) =>
+  review?.action === "override" ? review.clockIn ?? day.effectiveClockIn ?? day.actualClockIn : day.effectiveClockIn ?? day.actualClockIn;
 export function workedDates(data: PayrollWorld, doc: CompanyPayrollDocument, staff: StaffMember, month: string): string[] {
   const p = staff.payrollProfile!;
-  const decisions = Object.values(doc.runs).filter(r => r.month === month).flatMap(r => Object.entries(r.attendance));
-  const reviews = new Map(decisions);
+  const reviews = monthReviews(doc, month);
   return Array.from(new Set(data.attendance.filter(day => {
-    const review = reviews.get(day.id);
-    const clock = review?.action === "override" ? review.clockIn ?? day.effectiveClockIn ?? day.actualClockIn : day.effectiveClockIn ?? day.actualClockIn;
+    const clock = clockIn(day, reviews.get(day.id));
     return day.staffId === staff.id && day.date.startsWith(month) && employed(p, day.date) && !!clock;
   }).map(d => d.date))).sort();
+}
+/**
+ * SCRUM-1055: whether a single shift's day was worked, by the worked-day rule
+ * above (a clock-in after the run's own review) on that one day, which lies
+ * outside the employment the rule otherwise counts.
+ */
+export function workedOn(data: PayrollWorld, doc: CompanyPayrollDocument, staff: StaffMember, date: string): boolean {
+  const reviews = monthReviews(doc, date.slice(0, 7));
+  return data.attendance.some(day => day.staffId === staff.id && day.date === date && !!clockIn(day, reviews.get(day.id)));
 }
 export function workedUnits(data: PayrollWorld, doc: CompanyPayrollDocument, staff: StaffMember, month: string) {
   const dates = workedDates(data, doc, staff, month);

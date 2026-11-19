@@ -2,7 +2,7 @@ import * as XLSX from "xlsx";
 import type { PayrollWorld } from "./model";
 import type { CompanyCalculation, CompanyDownloadFile, CompanyPerson, CompanyResult, CompanySnapshot } from "./company-model";
 import { isoValueDate, thaiIdValid } from "./upload-common";
-import { money } from "./company-math";
+import { money, SINGLE_SHIFT_COMPONENT } from "./company-math";
 
 export const EWF_UPLOAD_HEADERS = ["คำนำหน้า", "ชื่อ", "ชื่อสกุล", "อายุ", "สัญชาติ", "เลขบัตรประชาชน/เลขหนังสือเดินทาง", "ประเภทค่าจ้าง", "ค่าจ้าง (บาท)", "วันที่เริ่มงาน", "วันที่สิ้นสุดงาน", "สาเหตุการออกจากงาน/หมายเหตุอื่นๆ"];
 const THAI_MONTHS = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
@@ -47,8 +47,9 @@ export function ewfUploadFile(data: PayrollWorld, calculation: CompanyCalculatio
     const p = profiles.find(s => s.id === person.id)?.payrollProfile;
     const details = person.ewfFiling ?? { dateOfBirth: p?.dateOfBirth, nationality: p?.nationality, passportNumber: p?.passportNumber, leavingReason: p?.leavingReason, title: p?.ssoTitle, givenName: p?.givenName, surname: p?.surname };
     const errors = ewfFilingIssues(details, person.taxId, person.joinedOn, person.lastWorkingDay, result.month);
-    const earningLines = calculation.entities.flatMap(e => e.people).filter(p => p.id === person.id).flatMap(p => p.lines).filter(l => l.category === "earning" && (l.component === "salary" || l.component.startsWith("fixed:")));
+    const earningLines = calculation.entities.flatMap(e => e.people).filter(p => p.id === person.id).flatMap(p => p.lines).filter(l => l.category === "earning" && (l.component === "salary" || l.component === SINGLE_SHIFT_COMPONENT || l.component.startsWith("fixed:")));
     // The filing always uses actual month days, even where an explicit payroll ÷30 setting remains.
+    // A single shift (SCRUM-1055) is already a day of the month's actual days, and is counted as it is.
     const prorated = person.joinedOn.startsWith(result.month) || !!person.lastWorkingDay?.startsWith(result.month);
     const wage = money(earningLines.reduce((n, l) => n + l.amount * (l.component === "salary" && person.workerType !== "day-rate" && prorated && !l.overridden ? (person.prorationDivisor ?? monthEnd(result.month).getUTCDate()) / monthEnd(result.month).getUTCDate() : 1), 0));
     if (wage <= 0) errors.push("wage is 0");

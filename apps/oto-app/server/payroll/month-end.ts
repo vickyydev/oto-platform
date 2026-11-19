@@ -42,7 +42,7 @@ import { PayrollRefusal, requireReason, type PayrollActor } from "./setup";
 import { recordRunAudit } from "./run-audit";
 import { frozenSnapshot, lifecycleView } from "./run-view";
 import { engineRefusal, payrollPeople, requireMonth } from "./inputs";
-import { loadPayrollWorld, sourceSignature, type RunRef } from "./world";
+import { loadPayrollWorld, PAY_READER, sourceSignature, type RunRef } from "./world";
 import { calculateCompanyEngine } from "./engine/company-calculations";
 import { openCheckFixProblems, recordAttendanceReview } from "./engine/company-issue-review";
 import { newCompanyDraft } from "./engine/company-workflow";
@@ -89,7 +89,7 @@ export async function loadMonthEnd(tenantId: string, entityId: string, monthValu
   const month = requireMonth(monthValue);
   const entity = await entityOf(db, tenantId, entityId);
   const [loaded, people] = await Promise.all([
-    loadPayrollWorld(tenantId, month).catch(engineRefusal),
+    loadPayrollWorld(tenantId, month, PAY_READER).catch(engineRefusal),
     payrollPeople(tenantId, `${month}-${String(monthDays(month)).padStart(2, "0")}`),
   ]);
   const run = loaded.runs.get(entity.id) ?? null;
@@ -152,7 +152,7 @@ export async function recordReview(tenantId: string, actor: PayrollActor, entity
   const action = body.action as AttendanceReview["action"];
   if (!["confirm", "override", "excuse"].includes(action)) throw new PayrollRefusal(400, "Choose confirm, override or excuse.");
   await entityOf(db, tenantId, entityId);
-  const loaded = await loadPayrollWorld(tenantId, month).catch(engineRefusal);
+  const loaded = await loadPayrollWorld(tenantId, month, PAY_READER).catch(engineRefusal);
   const day = loaded.world.attendance.find((d) => d.id === dayKey);
   if (!day) throw new PayrollRefusal(404, "Attendance day not found");
   const run = newCompanyDraft(entityId, month);
@@ -261,7 +261,7 @@ export async function previewMonth(tenantId: string, entityId: string, monthValu
   const month = requireMonth(monthValue);
   const entity = await entityOf(db, tenantId, entityId);
   const started = performance.now();
-  const loaded = await loadPayrollWorld(tenantId, month).catch(engineRefusal);
+  const loaded = await loadPayrollWorld(tenantId, month, PAY_READER).catch(engineRefusal);
   const loadedAt = performance.now();
   const ref = loaded.runs.get(entity.id);
   const signature = sourceSignature(loaded);
