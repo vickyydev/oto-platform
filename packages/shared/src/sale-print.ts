@@ -2,7 +2,7 @@ import { bandShortCode } from './band-code';
 import { wallClockMinutesInTz } from './business-date';
 import { isoDateInTz } from './dates';
 import { formatTHB } from './money';
-import { formatDisplayPhone } from './phone';
+import { formatDisplayPhone, nameIsPhoneNumber } from './phone';
 import { groupPrepTickets, type PrintKind } from './print';
 import { summarizeTax, type TaxBreakdown } from './tax';
 
@@ -488,6 +488,19 @@ export function saleItemSlipGroups(
 // --- The documents ---------------------------------------------------------------------
 
 /**
+ * SCRUM-1019 — the member's name as paper prints it. A member created from a
+ * number with no name is held under the number itself until a name is given
+ * (the owner's answer of 19 November, R1); paper never prints that number in
+ * a name's place, so a receipt, a kitchen or bar slip and an adult's band
+ * gain no full number they did not print before. Such a member prints as a
+ * sale with no member name does.
+ */
+function printedMemberName(snapshot: Pick<SalePrintSnapshot, 'memberNickname'>): string | undefined {
+  const name = snapshot.memberNickname?.trim();
+  return name && !nameIsPhoneNumber(name) ? snapshot.memberNickname! : undefined;
+}
+
+/**
  * The receipt, as the abbreviated tax invoice the park prints.
  *
  * The Thai title is the document's name under the Revenue Code; the seller's
@@ -521,7 +534,7 @@ export function saleReceiptDocument(snapshot: SalePrintSnapshot, copy = false): 
     receiptNumber: snapshot.receiptNumber ?? undefined,
     dateTime: stampIn(new Date(snapshot.at), snapshot.timezone),
     staffName: snapshot.staffName ?? undefined,
-    memberNickname: snapshot.memberNickname || undefined,
+    memberNickname: printedMemberName(snapshot),
     lines: snapshot.lines
       .filter((l) => l.quantity > 0)
       .map((l) => ({ qty: l.quantity, name: lineName(l), price: formatTHB(l.grossSatang), note: lineNote(l) })),
@@ -561,7 +574,7 @@ export function salePrepDocument(
     title: ticket?.title ?? (station === 'kitchen' ? 'Kitchen' : 'Bar'),
     orderRef: pickup ?? snapshot.receiptNumber ?? snapshot.saleId.slice(-6),
     time: hhmm(at, snapshot.timezone),
-    holderName: holder ? holder.name || undefined : snapshot.memberNickname || undefined,
+    holderName: holder ? holder.name || undefined : printedMemberName(snapshot),
     allergiesMedical: holder
       ? holder.allergiesMedical?.trim() || undefined
       : allergyTextOf(snapshot.orderChildren),
@@ -605,7 +618,7 @@ export function saleBandDocument(snapshot: SalePrintSnapshot, band: SalePrintBan
   const guardianPhone = guardianPhoneFor(snapshot, band);
   return {
     holderName:
-      band.kind === 'kid' ? (band.childName ?? undefined) : snapshot.memberNickname || undefined,
+      band.kind === 'kid' ? (band.childName ?? undefined) : printedMemberName(snapshot),
     duration,
     dietaryRequirement: band.kind === 'kid' ? band.dietary?.trim() || undefined : undefined,
     allergy,

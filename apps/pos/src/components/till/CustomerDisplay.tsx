@@ -7,7 +7,7 @@ import { QrCode } from './QrCode';
 import { ScreenKeyboard } from './ScreenKeyboard';
 import { PaymentExpiry, PaymentQr } from './PaymentQr';
 import type { PaymentDisplayState } from '@/lib/usePaymentStage';
-import type { DisplayLineBreakdown } from '@oto/shared';
+import { nameIsPhoneNumber, type DisplayLineBreakdown } from '@oto/shared';
 import { PhoneInput } from '@/components/shared/PhoneInput';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { CustomerLanguageChoice } from './CustomerLanguageChoice';
@@ -734,30 +734,34 @@ export function CustomerDisplay({
 
   if (stage === 'welcome') {
     const memberRate = !!member && tierNeedsProof(sale.tier);
+    // SCRUM-1019 (R1) — a member still held under their number is not
+    // greeted by it ("Welcome back, +66 …"): the screen's greeting without a
+    // name, as for a family it has no name for.
+    const greetByName = !!member && !nameIsPhoneNumber(member.nickname);
     return (
       <Shell customerName={displayName}>
         <div className="flex-1 flex flex-col items-center justify-center text-center px-10 animate-in fade-in zoom-in-95 duration-500">
           <div className="w-28 h-28 rounded-[2rem] bg-primary flex items-center justify-center text-primary-foreground font-black text-6xl mb-8 shadow-2xl shadow-primary/30">
             O
           </div>
-          {member ? (
+          {member && greetByName ? (
             <>
               <h1 className="text-6xl font-black tracking-tight mb-4">
                 {t('till.welcome.backTitle', { name: member.nickname })}
               </h1>
               <p className="text-2xl text-foreground/70 max-w-lg">{t('till.welcome.backSubtitle')}</p>
-              {memberRate && (
-                <div className="flex items-center gap-2 mt-8 px-5 py-2.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-(--cd-success) text-lg font-semibold">
-                  <BadgeCheck className="w-5 h-5" />
-                  {t('till.welcome.memberRate')}
-                </div>
-              )}
             </>
           ) : (
             <>
               <h1 className="text-6xl font-black tracking-tight mb-4">{t('till.welcome.title')}</h1>
               <p className="text-2xl text-foreground/70 max-w-lg">{t('till.welcome.subtitle')}</p>
             </>
+          )}
+          {memberRate && (
+            <div className="flex items-center gap-2 mt-8 px-5 py-2.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-(--cd-success) text-lg font-semibold">
+              <BadgeCheck className="w-5 h-5" />
+              {t('till.welcome.memberRate')}
+            </div>
           )}
           <div className="flex items-center gap-2 mt-10 text-foreground/50 text-lg">
             <Sparkles className="w-5 h-5" />

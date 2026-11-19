@@ -12,7 +12,7 @@ import { takeBookingRedeemHandoff, takeDropOffHandoff } from '@/lib/dropoffHando
 import { useCustomerDisplayPref } from '@/lib/customerDisplayPref';
 import { childReviewPatch, useChildReviewSave, useTicketDisplay } from '@/lib/displaySession';
 import { ChildReviewPromptSchema, childReviewAge, ConsentActionSchema, ConsentPromptSchema, consentSlotsComplete, consentActionAllowed,
-  newId, type ChildReviewPrompt, type ConsentFormStep, type ConsentPrompt } from '@oto/shared';
+  nameIsPhoneNumber, newId, type ChildReviewPrompt, type ConsentFormStep, type ConsentPrompt } from '@oto/shared';
 import { familyReviewChange, familyReviewChangeLine } from '@/lib/familyReviewChange';
 import { careShownFor, displayCareLine, profileCareNote, profileMedicalNote } from '@/lib/displayCareNotes';
 import { extraCreditOfSlot, includedCreditTHB } from '@/lib/dropOffFoodCredit';
@@ -29,7 +29,7 @@ import { withPlatformCredit } from '@/lib/saleCredit';
 import { dropOrphanedDiscounts } from '@/lib/manualDiscount';
 import { followTickets, kidLabel, withExtraCredit } from '@/lib/extraCredit';
 import { resolveAutoTier, tierLabel } from '@/lib/membership';
-import { createMemberForNumber, newMemberName, rateStepSkippedFor } from '@/lib/membershipCheck';
+import { createMemberForNumber, nameForNewMember, rateStepSkippedFor } from '@/lib/membershipCheck';
 import { welcomedMember } from '@/lib/welcomeMember';
 import { savedRateSummary } from '@/lib/tierApproval';
 import { confirmTierAtTill } from '@/lib/thaiRateConfirmation';
@@ -1185,14 +1185,14 @@ export default function Till() {
          * SCRUM-1019 — A NUMBER THE SYSTEM DOES NOT KNOW CREATES THE CUSTOMER
          * BY ITSELF (the owner's answer of 19 November), with the name the
          * family gave on the first screen; staff are not asked whether to
-         * create one. With no name known yet the box below still asks staff
-         * for one, as before: a member's name cannot be empty
-         * (`newMemberName`). A create that fails says why and leaves that box
-         * open, so staff can try again or go on as a walk-in. A sale with no
-         * number at all stays a walk-in, exactly as before.
+         * create one. With no name given, the number itself is the name until
+         * one is given (R1, `nameForNewMember`), so no "New member?" box is
+         * opened for it either. A create that fails says why and leaves that
+         * box open, so staff can try again or go on as a walk-in. A sale with
+         * no number at all stays a walk-in, exactly as before.
          */
         let createdHere = false;
-        const name = !mapped && phone ? newMemberName(nickname) : null;
+        const name = !mapped && phone ? nameForNewMember(nickname, phone) : null;
         if (name) {
           try {
             mapped = await createMemberForNumber({ phone, name, channel });
@@ -1219,7 +1219,9 @@ export default function Till() {
           // SCRUM-885 — greeted as a first visit, as one staff create is.
           setCreatedMemberId(mapped.id);
           setCustomerPhone(mapped.phone);
-          toast({ title: 'Member created', description: `${mapped.nickname} · ${mapped.phone}` });
+          // R1 — a member named by their number is said once, as the number.
+          toast({ title: 'Member created',
+            description: nameIsPhoneNumber(mapped.nickname) ? mapped.nickname : `${mapped.nickname} · ${mapped.phone}` });
         }
         if (mapped) {
           setTier(resolveAutoTier(mapped));
@@ -1227,8 +1229,8 @@ export default function Till() {
           if ((mapped.savedChildren?.length ?? 0) > 0) setShowVisitChildren(true);
           skipTier = rateStepSkippedFor(mapped);
         } else if (phone) {
-          // SCRUM-31: nobody found and no name to create them with → the
-          // create-member path asks staff for the name.
+          // SCRUM-31: nobody found and the create above failed (or the number
+          // does not read as one) → the create-member path, as before.
           setOfferCreateMember(true);
         }
         if (skipTier) {

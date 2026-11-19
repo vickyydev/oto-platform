@@ -35,7 +35,7 @@ import {
   type AttendeeForm,
 } from '@/components/shared/AttendeeFormFields';
 import { toAttendeeInput } from '@/api/events';
-import { newId, type PublicEventPass } from '@oto/shared';
+import { nameIsPhoneNumber, newId, type PublicEventPass } from '@oto/shared';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
@@ -752,7 +752,9 @@ export default function Book() {
       setFamilyPass(null);
       newChildIds.current = {};
       removedSaved.current = new Set();
-      const resolvedName = found?.nickname ?? nick.trim();
+      // SCRUM-1019 (R1) — a member still held under their number has no name
+      // yet: never greeted by the number nor booked under it as the parent.
+      const resolvedName = found && !nameIsPhoneNumber(found.nickname) ? found.nickname : nick.trim();
       setNickname(resolvedName);
       setParentName(resolvedName);
       setPhone(typed);

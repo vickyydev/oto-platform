@@ -1,3 +1,4 @@
+import { nameIsPhoneNumber } from '@oto/shared';
 import type { CartLine, Member, SavedChild, SupervisionPolicy } from '@/types';
 import { slotAge, type SupervisedSlot } from '@/components/till/SupervisionGate';
 import { prefillSlots } from '@/lib/savedChildren';
@@ -78,11 +79,15 @@ export function ticketKidsDefault(lines: readonly Pick<CartLine, 'kids'>[], tick
  * that family's form keeps every step it has today) and for a profile with no
  * name, where the form asks for it as before. Staff can still correct it on
  * the till (Private child details).
+ *
+ * SCRUM-1019 (R1) — a member still held under their number has no name yet:
+ * the form asks for it, as for any profile with no name, and never shows the
+ * number as the parent's name nor sends it in the check-in message.
  */
 export function profileGuardianName(member: Pick<Member, 'id' | 'nickname'> | null, createdMemberId: string | null): string | null {
   if (!member || member.id === createdMemberId) return null;
   const name = member.nickname.trim().slice(0, 100);
-  return name || null;
+  return name && !nameIsPhoneNumber(name) ? name : null;
 }
 
 /**
