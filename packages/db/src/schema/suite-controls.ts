@@ -82,6 +82,23 @@ export const SIGN_IN_BLOCK_PREFIX = 'signin.blocked.';
 export const signInBlockKey = (app: SuiteAppKey) => `${SIGN_IN_BLOCK_PREFIX}${app}`;
 export const MESSAGING_PAUSE_KEY = 'messaging.outbound_paused';
 
+/**
+ * SCRUM-1024 — family profiles (plan
+ * `docs/progress/plans/dropoff-beo-20261119/FAMILY_PROFILES_PLAN.md` §2.2).
+ * `off`: every reader finds a member's children through `child.member_id`, as
+ * before families existed. `read`: readers find them through the family.
+ * `on`: also adding and linking parents and guardians, the family's messages
+ * and camp offers. Set at operator scope and kept without an expiry, because
+ * an expired override falls back to `off`.
+ *
+ * `supported: false` until its readers are switched (plan step F3): the
+ * catalogue lists it, and no write path accepts it before then, so it stays
+ * `off` everywhere.
+ */
+export const FAMILY_PROFILES_KEY = 'crm.family_profiles';
+export const FAMILY_PROFILES_MODES = ['off', 'read', 'on'] as const;
+export type FamilyProfilesMode = typeof FAMILY_PROFILES_MODES[number];
+
 export const FLAG_CATALOGUE: readonly FlagCatalogueEntry[] = [
   {
     key: MESSAGING_PAUSE_KEY, kind: 'kill_switch', targetApp: 'inbox', label: 'Pause outbound messaging',
@@ -122,6 +139,11 @@ export const FLAG_CATALOGUE: readonly FlagCatalogueEntry[] = [
     key: 'analytics.rollups_frozen', kind: 'kill_switch', targetApp: 'radar', label: 'Freeze analytics rollups',
     effect: 'Not integrated: the rollup jobs do not read this switch yet.', valueType: 'boolean', defaultValue: false,
     scopes: ['platform', 'operator'], supported: false,
+  },
+  {
+    key: FAMILY_PROFILES_KEY, kind: 'feature', targetApp: 'pos', label: 'Family profiles',
+    effect: 'Not integrated: the till, the counter box and the booking site do not read this switch yet.',
+    valueType: 'enum', values: FAMILY_PROFILES_MODES, defaultValue: 'off', scopes: ['operator'], supported: false,
   },
 ];
 
