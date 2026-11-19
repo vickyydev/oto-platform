@@ -27,7 +27,7 @@ import { gateFailureCause, gateFailureDescription, gateOnlineHold, gateSaleFailu
 import { buildSale } from '@/lib/sale';
 import { withPlatformCredit } from '@/lib/saleCredit';
 import { dropOrphanedDiscounts } from '@/lib/manualDiscount';
-import { followTickets, kidLabel, withExtraCredit } from '@/lib/extraCredit';
+import { extraCreditAfterGate, followTickets, gateExtraCredit, kidLabel, withExtraCredit } from '@/lib/extraCredit';
 import { resolveAutoTier, tierLabel } from '@/lib/membership';
 import { createMemberForNumber, nameForNewMember, rateStepSkippedFor } from '@/lib/membershipCheck';
 import { welcomedMember } from '@/lib/welcomeMember';
@@ -730,6 +730,8 @@ export default function Till() {
   const gateMatchedChildrenRef = useRef(new Map<string, string>());
   // SCRUM-1053 — the key each change to a child goes under, for the life of the gate (`gateWriteKey`).
   const gateWriteKeysRef = useRef(new Map<string, HeldWriteKey>());
+  /** SCRUM-1059 — each gate place drawn from a ticket's children: the ticket and the child's place on it. */
+  const gateKidPlacesRef = useRef(new Map<string, { lineId: string; ordinal: number }>());
   // SCRUM-887 — a gate that has written on the platform finishes there (lib/gateOnline).
   const [gateOnline] = useState(() => gateOnlineHold((words) => toast(words)));
   // Carried to the family's sale; released once it is written, and with the till.
@@ -2251,6 +2253,7 @@ export default function Till() {
       return;
     }
     const slots: SupervisedSlot[] = [];
+    const places = new Map<string, { lineId: string; ordinal: number }>();
     for (const l of only?.lines ?? lines) {
       if (l.dropOff) continue;
       if (only && l.id !== only.lineId) continue;
@@ -2258,9 +2261,13 @@ export default function Till() {
       // itself, and why, is `lib/editDetails` emptyGatePlace: SCRUM-1020's
       // "Edit details" adds the same place to an open form).
       for (let i = 0; i < l.kids; i++) {
-        slots.push(emptyGatePlace(l, { age: only ? String(only.age) : '' }));
+        // SCRUM-1059 — extra credit staff added for this child opens their form as already chosen.
+        const place = emptyGatePlace(l, { age: only ? String(only.age) : '' });
+        places.set(place.id, { lineId: l.id, ordinal: i });
+        slots.push({ ...place, ...gateExtraCredit(only?.lines ?? lines, l.id, i) });
       }
     }
+    gateKidPlacesRef.current = places;
     // SCRUM-1018 — the parent's name comes from the family's profile when the
     // membership check found them; a first visit is asked it on the form, as
     // before (the prototype started it empty at every gate).
@@ -3026,7 +3033,18 @@ export default function Till() {
         residual.push({ ...kept, lineTotal: computeLineTotal(kept) });
       }
     }
-    setLines(normalizeDropOffFees([...residual, ...dropLines], dropOffPricing));
+    // SCRUM-1059 — staff's extra credit: a child in care had it carried into their form (one
+    // source, the form's); a child who stayed a plain ticket keeps theirs, at their new place.
+    const careIds = new Set(supervised.map(({ slot }) => slot.id));
+    const inCare = new Map<string, boolean[]>();
+    for (const slot of superSlots) {
+      const place = gateKidPlacesRef.current.get(slot.id);
+      if (!place) continue;
+      const row = inCare.get(place.lineId) ?? [];
+      row[place.ordinal] = careIds.has(slot.id);
+      inCare.set(place.lineId, row);
+    }
+    setLines(normalizeDropOffFees([...extraCreditAfterGate(residual, inCare), ...dropLines], dropOffPricing));
     setSupervisionResolved(true);
     gateOnline.carryToSale();
     // SCRUM-857 — the till moves on only from the form: staff who went back

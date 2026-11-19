@@ -88,6 +88,59 @@ export function withExtraCredit(
 }
 
 /**
+ * SCRUM-1059 — EXTRA CREDIT STAFF ADDED ON A TICKET THAT THEN GOES THROUGH
+ * THE DROP-OFF GATE.
+ *
+ * "Add food credit" is offered on a ticket with children and no adult; on
+ * Continue the gate turns those children into drop-off and nanny children,
+ * whose extra credit is the family's to choose on the form. Until now the
+ * staff's line was then removed with no word (`followTickets`: the ticket no
+ * longer takes extra credit) and the form opened at nothing: the credit was
+ * lost. On a ticket where a waived child stayed a plain ticket, the line
+ * could even land on the other child, the places having closed up.
+ *
+ * One source for each child: the amount staff added opens the child's form as
+ * the extra credit already chosen (`gateExtraCredit`, the field staff's own
+ * "Prepaid credit" on the till sets), where the family keeps or changes it.
+ * When the gate writes, the staff line of a child who went into care is
+ * removed, the form's amount being the one charged and loaded; the line of a
+ * child who stayed a plain ticket stays theirs, at their new place on the
+ * ticket (`extraCreditAfterGate`).
+ */
+export function gateExtraCredit(
+  lines: readonly CartLine[],
+  ticketLineId: string,
+  kidOrdinal: number,
+): { foodProvision: { mode: 'prepaid_credit'; creditAmountTHB: number; paidTHB: number }; mayOrderFood: true } | null {
+  const credit = lines.find((line) => line.extraCredit?.forLineId === ticketLineId && line.extraCredit.kidOrdinal === kidOrdinal);
+  const amount = credit?.extraCredit?.amountTHB ?? 0;
+  if (amount <= 0) return null;
+  return { foodProvision: { mode: 'prepaid_credit', creditAmountTHB: amount, paidTHB: amount }, mayOrderFood: true };
+}
+
+/**
+ * The staff extra credit lines once the gate has written: `inCare` lists, for
+ * each ticket the gate took children from, whether the child at each place
+ * went into care. A care child's line goes (their form carried it); a plain
+ * child's line follows them to their place among the ticket's plain children.
+ * Lines of other tickets, and places the gate did not draw, are left as they
+ * were (`followTickets` keeps them with their ticket as always).
+ */
+export function extraCreditAfterGate(
+  lines: readonly CartLine[],
+  inCare: ReadonlyMap<string, readonly boolean[]>,
+): CartLine[] {
+  return lines.flatMap((line) => {
+    const credit = line.extraCredit;
+    const places = credit ? inCare.get(credit.forLineId) : undefined;
+    if (!credit || !places || places[credit.kidOrdinal] === undefined) return [line];
+    if (places[credit.kidOrdinal]) return [];
+    const kidOrdinal = places.slice(0, credit.kidOrdinal).filter((cared) => !cared).length;
+    return kidOrdinal === credit.kidOrdinal ? [line] : [{ ...line, extraCredit: { ...credit, kidOrdinal } }];
+  });
+}
+
+/**
  * Keep every extra credit line with its ticket: a line whose ticket is gone,
  * has fewer children than its place, or no longer takes extra credit (it
  * became a drop-off or nanny child's) is removed; the rest take their
