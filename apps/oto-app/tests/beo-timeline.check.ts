@@ -327,7 +327,11 @@ const sliceFrom = (text: string, start: string, end: string) => {
 
 await check("the generator that stores the automatic rows takes them from the timeline's own steps", () => {
   const gen = sliceFrom(routes, "export async function generateTimelineFromBeo(", "export function registerBeoRoutes(");
-  assert.match(gen, /beoTimedMadeSteps\(await beoTimelineSourceOf\(event\)\)/);
+  // SCRUM-1050: through madeStepRowsOf (server/lib/beoTimelineRead.ts), which the Day-of view's first
+  // tick of a step not stored yet stores its row with too.
+  assert.match(gen, /madeStepRowsOf\(event\.startTime, await beoTimelineSourceOf\(event\)\)/);
+  const rowsOf = sliceFrom(code(read("server/lib/beoTimelineRead.ts")), "export function madeStepRowsOf(", "\n}\n");
+  assert.match(rowsOf, /for \(const step of beoTimedMadeSteps\(src\)\)/);
   assert.doesNotMatch(gen, /sourceMap\.set\("guests_arrive"|sourceMap\.set\("setup_ready"|sourceMap\.set\("cake"/, "no second set of rules");
   assert.match(gen, /if \(suppressed\.has\(sourceKey\)\) continue;/, "a removed step stays removed");
 });
