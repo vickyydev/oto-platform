@@ -11,7 +11,10 @@
 --
 -- Re-runnable, like 0018 (the restore rehearsal replays migrations onto a
 -- restored database): the column only where it is missing, the seed function
--- replaced in place, and each update only where a row is not yet as set.
+-- replaced in place, and each update only where a row is not yet as set. A
+-- replay re-applies the owner's set: a choice a manager made on the leave
+-- types screen after the first run (Sick Leave seen by staff again, Training
+-- switched back on) is set back to it. The migrator itself runs this once.
 ALTER TABLE "leave_types" ADD COLUMN IF NOT EXISTS "managers_only" boolean DEFAULT false NOT NULL;
 --> statement-breakpoint
 -- A new park group's seven built-in types: 0018's seed with every value read
@@ -82,12 +85,10 @@ END $$;
 UPDATE leave_types SET managers_only = true, updated_at = now()
  WHERE upper(code) IN ('SICK', 'BUSINESS', 'UNPAID') AND NOT managers_only;
 --> statement-breakpoint
--- Every existing park group: its built-in Training and Other switched off
--- where each is still as built (on, its built name, no accrual). One a manager
--- renamed or gave an accrual is left as the manager made it; one already off
--- stays off.
+-- Every existing park group: its built-in Training and Other switched off,
+-- by their codes (a code never changes; the time-off rows store it), however
+-- a manager has named them since. One already off stays off. Switching off
+-- deletes nothing: an admin can switch one back on on the leave types screen.
 UPDATE leave_types SET is_active = false, updated_at = now()
  WHERE is_active
-   AND accrual_method = 'NONE'
-   AND ((upper(code) = 'TRAINING' AND lower(btrim(name)) = 'training')
-     OR (upper(code) = 'OTHER' AND lower(btrim(name)) = 'other'));
+   AND upper(code) IN ('TRAINING', 'OTHER');

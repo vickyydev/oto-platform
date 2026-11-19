@@ -70,6 +70,7 @@ import {
 import { differenceInDays } from "date-fns";
 import { formatDate, formatCurrency as _formatCurrency } from "@/lib/format-utils";
 import { devLog } from "@/lib/auth-diag";
+import { daysLeftTotal } from "@/lib/leave-balance-reading";
 import { QRCodeSVG } from "qrcode.react";
 
 // The editor's tabs (SCRUM-563); `?tab=` opens one directly.
@@ -1664,7 +1665,8 @@ function DaysOffSection({ employee }: { employee: Employee }) {
   const updateDraft = (leaveTypeId: string, override: LeaveOverride | undefined, key: keyof LeaveOverrideDraft, value: string) => {
     setDrafts((current) => ({ ...current, [leaveTypeId]: { ...getDraft(leaveTypeId, override), [key]: value } }));
   };
-  const totalBalance = data?.balances.reduce((sum, item) => sum + (item.isActive ? item.balance : 0), 0) ?? 0;
+  // SCRUM-1037: a type switched off with days used this year stays in the total, as it was while on.
+  const totalBalance = data ? daysLeftTotal(data.balances) : 0;
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
