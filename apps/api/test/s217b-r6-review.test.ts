@@ -598,7 +598,14 @@ describe('A. fences and seams', () => {
       // SCRUM-1027 (the review's repair): the generator keeps a stored automatic row staff ticked done
       // when the timeline no longer makes its step, instead of deleting the tick; no door is added; where
       // the BEO's documents live is unchanged.
-      'beo-routes.ts': '52ffd4b9a8158d9bfbf30a9d67136ab5ce7bbaf2e72c810fff5417e07a50edce',
+      // SCRUM-1034: the BEO's Save refuses, before it writes anything, a change of the hand-typed
+      // deposit from anyone but a manager (depositChangeRefused, shared/beoDepositManager.ts; the
+      // route itself stays behind requireManager). SCRUM-1050: the generator makes its rows through
+      // madeStepRowsOf (moved, not changed, to server/lib/beoTimelineRead.ts), and
+      // POST /api/events/:eventId/beo/timeline/steps/:key/complete stores an automatic step's row on
+      // its first tick, after the event's own access check, as the generator would; no PDF, file,
+      // bucket or public-folder door is added; where the BEO's documents live is unchanged.
+      'beo-routes.ts': 'e5b60d05a8390d01f57327d63cd9950cfc64a5ef4cf2f2fa2bd612d666fd4cee',
       'orgChartRoutes.ts': 'eff8d4478165e8b0157ef07d37891222104f751b49932e70f525f06366fe9d90',
     };
     for (const [file, hash] of Object.entries(main)) expect(sha256(committed(join(APP_SERVER, file))), file).toBe(hash);

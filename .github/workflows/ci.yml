@@ -1087,7 +1087,9 @@ jobs:
       # SCRUM-1027: the stored automatic timeline rows on the next Save — a
       # row staff ticked done is kept with its tick when the timeline no
       # longer makes its step, an unticked one is removed, the end time
-      # stores no step. Against the migrated database.
+      # stores no step. SCRUM-1050: a step no Save stored yet, ticked on the
+      # Day-of view, is stored as the generator stores it, once, ticked.
+      # Against the migrated database.
       - name: The app's BEO timeline rows check
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/beo-timeline-rows.check.ts
@@ -1103,12 +1105,28 @@ jobs:
         run: npx tsx tests/beo-staff-print.check.ts
       # SCRUM-1029: the BEO editor in four sections under jsdom — the same
       # party opened and saved untouched, and edited in ten fields, sends
-      # the Save body the editor before the regrouping sent (recorded on it).
+      # the Save body the editor before the regrouping sent (recorded on it);
+      # the sections in the brief's order, every field's new home, the
+      # package's words, the slips' time, the "No food for this party" tick,
+      # the deposit a manager's (SCRUM-1034), the steps badge (SCRUM-1050).
       - name: The app's BEO four sections check
         if: steps.changes.outputs.app == 'true'
         env:
           TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
         run: npx tsx tests/beo-four-sections-ui.check.ts
+      # SCRUM-1034: the hand-typed deposit is a manager's — the roles
+      # requireManager allows, and the BEO's Save refusing anyone else's
+      # change before it writes anything. No database.
+      - name: The app's BEO deposit for managers check
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/beo-deposit-manager.check.ts
+      # SCRUM-1050: the Day-of view ticks an automatic step no Save stored
+      # yet, straight away, under jsdom.
+      - name: The app's BEO Day-of first tick check
+        if: steps.changes.outputs.app == 'true'
+        env:
+          TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
+        run: npx tsx tests/beo-day-of-tick-ui.check.ts
       # SCRUM-827: the BEO pre-filled in one pass, the form under jsdom: Create
       # BEO's review opens with every section proposed and marked (the chat's
       # lines, the park's default for the title), a value the form holds kept

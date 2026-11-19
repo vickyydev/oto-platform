@@ -36,7 +36,7 @@ process.env.SESSION_SECRET ??= randomUUID() + randomUUID();
 process.env.LOG_LEVEL ??= "warn";
 
 const { generateTimelineFromBeo } = await import("../server/beo-routes");
-const { readBeoTimeline } = await import("../server/lib/beoTimelineRead");
+const { readBeoTimeline, tickMadeStep } = await import("../server/lib/beoTimelineRead");
 const { pool: appDbPool } = await import("../server/db");
 
 const pool = new pg.Pool({ connectionString: DATABASE_URL, options: "-c search_path=otoapp", max: 2 });
@@ -117,6 +117,52 @@ try {
     assert.deepEqual(timeline.steps.map((s) => [s.time, s.label]), [["13:30", "Setup ready"], ["14:00", "Guests arrive"]]);
     assert.equal(timeline.steps.find((s) => s.key === "guests_arrive")!.isCompleted, true, "the stored tick is carried");
     assert.deepEqual(timeline.untimed.filter((u) => u.home === "setup").map((u) => u.label), ["ZZ TEST balloon arch", "ZZ TEST table cloths"], "the tasks belong to the setup plan");
+  });
+
+  // SCRUM-1050: a step the timeline makes that no Save stored yet (the kids' menu's time, set after
+  // the last Save) is ticked on the Day-of view straight away.
+  await q("insert into beo_kitchen_plans (event_id, food_required, menus) values ($1, true, $2)", [
+    eventId,
+    JSON.stringify({ kids: [{ id: "k1", itemName: "ZZ TEST Margherita", quantity: 3 }], adults: [], adultsDiffer: false, kidsFoodTime: "14:30", adultsFoodTime: "" }),
+  ]);
+  const eventRead = async () => {
+    const [event] = await q("select * from core_events where id = $1", [eventId]);
+    return { id: event.id, tenantId: event.tenant_id, startTime: event.start_time, endTime: event.end_time, suppressedTimelineSources: event.suppressed_timeline_sources } as Parameters<typeof readBeoTimeline>[0];
+  };
+
+  await check("SCRUM-1050: the first tick of a step not stored yet stores its row as the generator would, ticked by this person", async () => {
+    const before = await readBeoTimeline(await eventRead());
+    const kids = before.steps.find((s) => s.key === "kids_food");
+    assert.ok(kids, "the timeline makes the kids' menu step");
+    assert.equal(kids.rowId, null, "not stored yet: it had no tick until the next Save");
+    const row = await tickMadeStep(await eventRead(), "kids_food", staff);
+    assert.ok(row);
+    assert.deepEqual(
+      [row.sourceKey, row.label, row.offsetFromStartMinutes, row.assignedToType, row.isSystemGenerated, row.isCompleted, row.completedByUserId],
+      ["kids_food", "Kids' menu served", 30, "KITCHEN_RESPONSIBLE", true, true, staff],
+    );
+    const after = await readBeoTimeline(await eventRead());
+    const ticked = after.steps.find((s) => s.key === "kids_food")!;
+    assert.equal(ticked.rowId, row.id);
+    assert.equal(ticked.isCompleted, true, "the timeline shows the tick at once");
+  });
+
+  await check("SCRUM-1050: the next Save stores no second row for it and keeps the tick; a second press keeps it ticked", async () => {
+    await generateTimelineFromBeo(eventId);
+    const kids = (await rowsOf()).filter((r) => r.source_key === "kids_food");
+    assert.equal(kids.length, 1, JSON.stringify(kids));
+    assert.deepEqual([kids[0]!.is_completed, kids[0]!.completed_by_user_id, kids[0]!.offset_from_start_minutes], [true, staff, 30]);
+    const again = await tickMadeStep(await eventRead(), "kids_food", staff);
+    assert.equal(again?.isCompleted, true);
+    assert.equal((await rowsOf()).filter((r) => r.source_key === "kids_food").length, 1);
+  });
+
+  await check("SCRUM-1050: a step the timeline does not make, or one staff removed, stores nothing", async () => {
+    assert.equal(await tickMadeStep(await eventRead(), "cake", staff), null, "no cake on this party");
+    await q("update core_events set suppressed_timeline_sources = $2 where id = $1", [eventId, ["setup_ready"]]);
+    assert.equal(await tickMadeStep(await eventRead(), "setup_ready", staff), null, "removed by staff");
+    await q("update core_events set suppressed_timeline_sources = '{}' where id = $1", [eventId]);
+    assert.equal((await rowsOf()).some((r) => r.source_key === "cake"), false);
   });
 
   console.log(`\nbeo-timeline-rows.check: ${checks} checks passed`);
