@@ -59,3 +59,30 @@ export const SINGLE_SHIFT_REFUSALS = {
   rate: "Enter the casual day rate in whole baht, more than zero.",
   pastChange: "The pay of a shift on a past date cannot be changed.",
 } as const;
+
+/**
+ * What the kiosk shows a former employee about their single shift
+ * (SCRUM-1055, the owner's answer R7: they "also see their schedule for that
+ * day"): on the tablet at that branch, on that day, when they clock in or
+ * out. The shift's own times, its name in the schedule, the department and
+ * role it is in, the branch, and the break the schedule gives them. Never how
+ * it is paid, never anybody else's shift, never another day.
+ */
+export interface SingleShiftKioskView {
+  shiftDate: string;
+  /** "HH:MM", the schedule's own times. */
+  startTime: string;
+  endTime: string;
+  /** The shift's name in the schedule ("Morning"), when it has one. */
+  label: string | null;
+  department: string | null;
+  role: string | null;
+  branchName: string;
+  /** The breaks the schedule gives this person on this shift ("HH:MM"); none when it gives none. */
+  breaks: Array<{ startTime: string; endTime: string }>;
+}
+
+/** "09:00 – 15:00", the kiosk's words for a shift's or a break's times. */
+export function kioskShiftTimes(start: string, end: string): string {
+  return `${start.slice(0, 5)} – ${end.slice(0, 5)}`;
+}
