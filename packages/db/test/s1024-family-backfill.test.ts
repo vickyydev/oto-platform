@@ -35,7 +35,9 @@ import { createTestDatabase, stopTestServer } from '../src/testing';
  *   - one `family.backfill` audit row per batch and operator, with its range
  *     and counts; `child.updated_at` is left as it was;
  *   - a second run writes nothing at all;
- *   - the four checks are zero after, and each counts its own deliberate fault;
+ *   - the five checks are zero after, and each counts its own deliberate fault
+ *     (the fifth, a member split across two families of their own, passes
+ *     the plan's four);
  *   - a batch that fails rolls back alone, and the next run completes it;
  *   - a member or child a till holds is skipped without waiting and done by
  *     the next run; --max-batches stops and names where to resume;
@@ -148,9 +150,10 @@ const ZERO = {
   families_without_guardian: 0,
   children_not_own_guardian: 0,
   operator_mismatch: 0,
+  members_in_several_families: 0,
 };
 
-/** The four checks with a fault planted, inside a transaction that is rolled back. */
+/** The five checks with a fault planted, inside a transaction that is rolled back. */
 async function verifyWithFault(plant: (tx: Parameters<Parameters<Db['transaction']>[0]>[0]) => Promise<void>) {
   const out: { report?: FamilyVerifyReport } = {};
   try {
@@ -422,14 +425,14 @@ describe('SCRUM-1024 family backfill and checks', () => {
     expect(counts(ofB.after as FamilyBackfillCounts)).toEqual(EXPECTED_B);
   });
 
-  it('the four checks are zero after the backfill', { timeout: 60_000 }, async () => {
+  it('the five checks are zero after the backfill', { timeout: 60_000 }, async () => {
     const report = await verifyFamilies(db);
     expect(report.ok).toBe(true);
     expect(byKey(report)).toEqual(ZERO);
     const cli = runScript('family-verify.ts');
     expect(cli.code, cli.out).toBe(0);
     expect(cli.out).toContain('ALL ZERO');
-    expect(cli.out.match(/: 0$/gm)).toHaveLength(4);
+    expect(cli.out.match(/: 0$/gm)).toHaveLength(5);
     expectNoPersonalData(cli.out);
   });
 
@@ -507,6 +510,31 @@ describe('SCRUM-1024 family backfill and checks', () => {
     });
     expect(byKey(r)).toEqual({ ...ZERO, children_not_own_guardian: 1, operator_mismatch: 1 });
     expect(r.checks[3]!.samples).toEqual([`crm.child ${c.one}`]);
+
+    // 5. A member split across two live families of their own, the children
+    //    shared out between them: every family has its guardian and every
+    //    child is in its own member's family, so checks 1 to 4 read zero.
+    r = await verifyWithFault(async (tx) => {
+      const second = newId();
+      await tx.insert(s.family).values({ id: second, operatorId: opA, source: 'till' });
+      await tx.insert(s.familyGuardian).values({ id: newId(), operatorId: opA, familyId: second, memberId: m.many, source: 'till' });
+      await tx.update(s.child).set({ familyId: second }).where(eq(s.child.id, c.many2));
+    });
+    expect(byKey(r)).toEqual({ ...ZERO, members_in_several_families: 1 });
+    expect(r.ok).toBe(false);
+    expect(r.checks[4]!.samples).toEqual([`crm.member ${m.many}`]);
+
+    // 5, not counted: a family archived with its guardian row (as linking two
+    //    records will do) leaves the member in one live family.
+    r = await verifyWithFault(async (tx) => {
+      const gone = newId();
+      const at = new Date('2026-11-18T00:00:00Z');
+      await tx.insert(s.family).values({ id: gone, operatorId: opA, source: 'link', archivedAt: at });
+      await tx
+        .insert(s.familyGuardian)
+        .values({ id: newId(), operatorId: opA, familyId: gone, memberId: m.many, source: 'link', archivedAt: at });
+    });
+    expect(byKey(r)).toEqual(ZERO);
 
     // Every fault was rolled back.
     expect((await verifyFamilies(db)).ok).toBe(true);
@@ -654,8 +682,9 @@ describe('SCRUM-1024 family backfill and checks', () => {
     expect(await count('crm.family_guardian')).toBe(before.guardian);
     expect(await count('core.audit_log')).toBe(before.audit);
 
-    // The checks show it, and the command line exits non-zero and lists them.
-    expect(byKey(await verifyFamilies(db)).children_without_family).toBe(2);
+    // The checks show it (the member in two families by the fifth), and the
+    // command line exits non-zero and lists them.
+    expect(byKey(await verifyFamilies(db))).toEqual({ ...ZERO, children_without_family: 2, members_in_several_families: 1 });
     const cli = runScript('family-backfill.ts', ['--batch-size', '50']);
     expect(cli.code, cli.out).toBe(1);
     expect(cli.out).toContain('members left for a person');

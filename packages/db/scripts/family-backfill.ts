@@ -3,7 +3,7 @@
  * step F2, "B1"). The logic is `backfillFamilies` in `src/family-backfill.ts`;
  * this is its command line. Without --apply it is a dry run: the same reads
  * and counts, and nothing written. The order of a whole run (backfill, then
- * `family-verify.ts`, then the api's `family-shadow-compare.ts`) is in
+ * `family-verify.ts`) is in
  * `docs/progress/plans/dropoff-beo-20261119/FAMILY_BACKFILL_RUNBOOK.md`.
  *
  * Usage, with DATABASE_URL pointing at the database:

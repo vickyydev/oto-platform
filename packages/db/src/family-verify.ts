@@ -5,7 +5,7 @@ import type { Db } from './index';
  * SCRUM-1024 — THE FAMILY CHECKS (plan step F2, "V1" in section 3 of
  * `docs/progress/plans/dropoff-beo-20261119/FAMILY_PROFILES_PLAN.md`).
  *
- * Read only. Four counts, each of which must be zero after the backfill and
+ * Read only. Five counts, each of which must be zero after the backfill and
  * before any reader is switched to the family (plan step R1). The command
  * line is `scripts/family-verify.ts`, which exits non-zero when any count is
  * above zero; the runbook is `FAMILY_BACKFILL_RUNBOOK.md` beside the plan.
@@ -19,7 +19,14 @@ import type { Db } from './index';
  *      the writers make, until a second parent is added (step F4);
  *   4. rows whose family, guardian member and child member disagree on the
  *      operator: a guardian row whose family or member is another
- *      operator's, and a child whose family is not its member's operator's.
+ *      operator's, and a child whose family is not its member's operator's;
+ *   5. members who are a live guardian of more than one live family. Not one
+ *      of the plan's four: it is the fault the writers' lock and the
+ *      backfill's reuse of a member's own family exist to prevent, and checks
+ *      1 to 4 cannot see it (two families of one member, each holding only
+ *      that member, with the children split between them, pass all four).
+ *      Zero until a second parent can be added (step F4), after which a
+ *      member may rightly be in several and this check is retired.
  *
  * Archived members and archived children are counted like any other: the
  * column is to be made NOT NULL (step C1) over every row. Each check lists a
@@ -36,6 +43,10 @@ export const FAMILY_VERIFY_CHECKS = [
   {
     key: 'operator_mismatch',
     label: 'rows whose family, guardian member and child member disagree on the operator',
+  },
+  {
+    key: 'members_in_several_families',
+    label: 'members who are a live guardian of more than one live family (until step F4)',
   },
 ] as const;
 
@@ -82,9 +93,15 @@ const OFFENDERS: Record<FamilyVerifyKey, SQL> = {
       join crm.family f on f.id = c.family_id
       join crm.member m on m.id = c.member_id
      where f.operator_id <> m.operator_id`,
+  members_in_several_families: sql`
+    select 'crm.member' as tbl, g.member_id as id from crm.family_guardian g
+      join crm.family f on f.id = g.family_id
+     where g.archived_at is null and f.archived_at is null
+     group by g.member_id
+    having count(distinct g.family_id) > 1`,
 };
 
-/** Run the four checks. Read only; safe on a live database at any time. */
+/** Run the five checks. Read only; safe on a live database at any time. */
 export async function verifyFamilies(exec: Exec, opts: { sample?: number } = {}): Promise<FamilyVerifyReport> {
   const sample = Math.max(0, Math.floor(opts.sample ?? 20));
   const checks: FamilyVerifyCheck[] = [];
