@@ -365,6 +365,13 @@
       "when": 1795073459063,
       "tag": "0053_leave_type_managers_only",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1795075724121,
+      "tag": "0054_single_shift_invitations",
+      "breakpoints": true
     }
   ]
 }
