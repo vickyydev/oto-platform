@@ -244,7 +244,7 @@ const open = async (eventId: string) => {
   });
   await settle(12);
   assert.ok(byTestId("accordion-event-info"), `the BEO ${eventId} is open`);
-  await click("accordion-party-details");
+  // SCRUM-1029: the POS box with its Deposit is part of Event Info, open as the BEO opens.
   assert.ok(byTestId("input-prepayment"), "Party Details shows the Deposit field");
   assert.equal(byTestId("section-billing"), null, "the Billing section stays closed throughout");
   asked.length = 0;

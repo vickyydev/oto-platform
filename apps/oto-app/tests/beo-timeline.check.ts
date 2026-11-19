@@ -356,7 +356,8 @@ await check("the screens show the built timeline: the editor's preview, the Day-
   assert.match(editor, /<BeoBuiltTimelineList timeline=\{built\.data\}/);
   assert.match(editor, /\(timeline \|\| \[\]\)\.filter\(\(item\) => !item\.isSystemGenerated\)/, "the control keeps only the other timed steps");
   const form = read("client/src/components/beo/beo-event-editor.tsx");
-  assert.match(form, /<span>Other timed steps<\/span>/);
+  // SCRUM-1029: the other timed steps are a part of Entertainment & Program.
+  assert.match(form, /title="Other timed steps"/);
   assert.match(form, /queryClient\.invalidateQueries\(\{ queryKey: builtTimelineKey\(eventId\) \}\);/, "an act written at once is read again into the preview");
   assert.equal(form.split("onSuccess: actsChanged,").length - 1, 3, "on add, change and removal of an act");
   const dayOf = code(read("client/src/components/beo/beo-day-of-view.tsx"));

@@ -224,9 +224,9 @@ const openBeo = async (eventId: string) => {
     );
   });
   await settle(10);
-  assert.ok(byTestId("accordion-kitchen-plan"), `the BEO ${eventId} is open`);
-  await click("accordion-kitchen-plan");
-  await click("accordion-bar-plan");
+  assert.ok(byTestId("accordion-food-drinks"), `the BEO ${eventId} is open`);
+  // SCRUM-1029: the kitchen and the bar are parts of Food & Drinks.
+  await click("accordion-food-drinks");
 };
 const saved = async () => {
   const before = asked.length;
