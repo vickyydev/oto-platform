@@ -111,9 +111,12 @@ Kept as today by his answers (so three of the plan's ten steps fall away):
   final message to the parent): all kept, unchanged, inside the new sections.
 - **A dish with no quantity** counts as 1 (his note: "if there is no quantity,
   default it as 1"). The plan's step 9 is not built.
-- **"Adult Waffles":** unchanged (his note: no menu item of the kitchen is
-  changed on a guess). The plan's step 10 is not done. The request came from
-  the operations lead's brief of 12 November.
+- **"Adult Waffles" (changed the same evening, SCRUM-1042):** once shown the
+  line in the operations lead's brief (section 5.2, Kids Menu), he chose: the
+  birthday package's waffles item reads "Adult Waffles" on the BEO and its
+  print only; the set menu, the till and the kitchen slips keep "Mini
+  Waffles". Built with the editor, after the print lands. No menu item is
+  renamed.
 
 To build:
 
@@ -154,7 +157,8 @@ To build:
   as well."
 - **SCRUM-1039, the option editor:** a wider name and one price.
 - **SCRUM-1040, Mystery Box stock:** a stock item, and the voucher scan takes
-  one off.
+  one off. Confirmed by him the same evening: at a count of zero the till
+  warns staff and never blocks a prize the family has won.
 - **SCRUM-1041, more than one customer display on a till:** build it now.
   Built straight after the counter flow lands, because both change what the
   display shows.
