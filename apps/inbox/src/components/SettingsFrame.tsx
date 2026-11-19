@@ -5,7 +5,7 @@ import { assistantCapabilities } from '@/api/assistant';
 import { AssistantSettings, assistantSections } from '@/components/AssistantSettings';
 import { FOCUS_INSIDE, PAGE_COLUMN } from '@/components/settings-parts';
 import { TemplateSettings } from '@/components/TemplateSettings';
-import { BTN_ICON, SEGMENT, SEGMENT_OFF, SEGMENT_ON } from '@/components/ui';
+import { BTN_ICON, SEGMENT, SEGMENT_BAND_LOOK, SEGMENT_OFF, SEGMENT_ON } from '@/components/ui';
 import type { AssistantTab, SettingsPage } from '@/lib/url';
 
 /** A page of the settings frame: Templates, or one of the assistant's sections. */
@@ -157,7 +157,7 @@ function Strip({ items, current, onOpen }: { items: readonly SettingsNavItem[]; 
       onScroll={measure}
       className={`-mx-4 overflow-x-auto px-4 [scrollbar-width:none] ${STRIP_FADE[`${more.before ? 1 : 0}${more.after ? 1 : 0}`]}`}
     >
-      <div className="flex w-max min-w-full gap-1 rounded-[14px] bg-band p-1">
+      <div className={`flex w-max min-w-full ${SEGMENT_BAND_LOOK}`}>
         {items.map((i) => {
           const on = i.key === current;
           return (

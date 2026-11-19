@@ -129,6 +129,19 @@ describe('SCRUM-1016: the OTO tokens', () => {
     expect(src('src/components/ui.ts')).toContain("export const SEGMENT_ON = 'bg-segment ");
   });
 
+  // SCRUM-1044 (review): the chosen segment's light fill is only 1.18 : 1 on
+  // the band (1.25 in dark), so Off and Shadow on a number read alike. Its
+  // 1 px edge says which one is chosen: 3 : 1 against the band around it and
+  // the fill inside it, in both themes, on every switch of segments.
+  it.each([['light', light], ['dark', dark]] as const)('the chosen segment is told by its edge at 3 : 1, not by its fill (%s)', (_, theme) => {
+    expect(contrast(theme, 'segment', 'band')).toBeLessThan(3);
+    for (const ground of ['band', 'segment']) {
+      expect(contrast(theme, 'segment-edge', ground), `segment-edge against ${ground}`).toBeGreaterThanOrEqual(3);
+    }
+    expect(src('src/components/ui.ts')).toMatch(/export const SEGMENT_ON = '[^']*\bring-1 ring-segment-edge\b/);
+    expect(src('src/components/Rail.tsx')).toMatch(/active \? 'bg-segment font-bold text-ink [^']*\bring-1 ring-segment-edge\b/);
+  });
+
   // SCRUM-1043: an edge that marks a control (a field, a search box, a pill,
   // an outlined button, Resume on the assistant's line) reaches 3 : 1 against
   // every surface it sits on, by colour at 1 px. Before, a field's edge was

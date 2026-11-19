@@ -14,7 +14,6 @@ import {
   InlineError,
   InlineNote,
   LoadingNote,
-  MetaLine,
   SECTION_CARD,
   SettingsRow,
   ViewSwitch,
@@ -113,6 +112,7 @@ export function RulesPanel({ me }: { me: InboxMe }) {
   return (
     <>
       <AssistantHeader
+        section="rules"
         title="Rules"
         actions={
           <button type="button" onClick={() => setEditing('new')} className={BTN_MAIN}>
@@ -225,7 +225,7 @@ export function RuleRow({
         </>
       }
       badge={<StatusBadge status={r.status} />}
-      meta={<MetaLine parts={[{ text: park }]} />}
+      meta={[{ text: park }]}
       actions={actions}
     />
   );

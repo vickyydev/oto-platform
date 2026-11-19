@@ -7,7 +7,6 @@
 // and every pair of words and ground is a tested token pair
 // (test/settings-1044.test.ts).
 import {
-  Fragment,
   cloneElement,
   isValidElement,
   useEffect,
@@ -20,9 +19,9 @@ import {
   type ReactNode,
 } from 'react';
 import { AlertCircle, CheckCircle2, Info, MoreHorizontal, type LucideIcon } from 'lucide-react';
-import { BTN_ICON, BTN_SMALL, HINT, LABEL, SEGMENT, SEGMENT_OFF, SEGMENT_ON } from '@/components/ui';
+import { BTN_ICON, BTN_SMALL, HINT, LABEL, SEGMENT, SEGMENT_BAND_LOOK, SEGMENT_OFF, SEGMENT_ON } from '@/components/ui';
 
-/** The page area's gutter (SettingsFrame); the sticky action bar bleeds to it. */
+/** The page area's gutter (SettingsFrame). */
 export const FRAME_GUTTER = 'px-4 md:px-6';
 
 /**
@@ -119,22 +118,36 @@ export interface MetaPart {
 const META_TONE = { ask: 'font-semibold text-ask-ink', code: 'font-mono' } as const;
 
 /**
- * A row's quiet meta ("Every channel · Every park · No approval needed"): the
- * parts joined by a dot, each kept whole, so a narrow row wraps between
- * parts and never leaves one word of a part alone on a line (SCRUM-1045's
- * "10m 40s" on two lines, in the settings).
+ * A row's quiet meta ("Every channel · Every park · No approval needed"),
+ * after the row's one badge (`lead`): the parts joined by a dot, each kept
+ * whole, so a narrow row wraps between parts and never leaves one word of a
+ * part alone on a line (SCRUM-1045's "10m 40s" on two lines, in the
+ * settings). A wrapped line neither ends nor starts with a dot (SCRUM-1044
+ * review): each part carries its dot before it, and the flow is drawn 12 px
+ * to the left inside a frame that clips them, so the dot of a part that
+ * starts a line is out of sight. A part longer than the row is cut with an
+ * ellipsis, its whole words in its title. The dots are decoration: their
+ * spoken text is empty.
  */
-export function MetaLine({ parts }: { parts: readonly MetaPart[] }) {
+export function MetaLine({ parts, lead }: { parts: readonly MetaPart[]; lead?: ReactNode }) {
   return (
-    <>
-      {parts.map((p, i) => (
-        <Fragment key={`${i}-${p.text}`}>
-          {/* The dot keeps to the part before it; the line may break after it. */}
-          {i > 0 && <span aria-hidden>{' · '}</span>}
-          <span className={`whitespace-nowrap ${p.tone ? META_TONE[p.tone] : ''}`}>{p.text}</span>
-        </Fragment>
-      ))}
-    </>
+    <div className="min-w-0 overflow-hidden text-meta leading-relaxed text-ink-muted">
+      <div className="-ml-3 flex min-w-0 flex-wrap items-center">
+        {lead && <span className="ml-3 inline-flex">{lead}</span>}
+        {parts.map((p, i) => (
+          <span
+            key={`${i}-${p.text}`}
+            data-meta-part
+            title={p.text}
+            className={`min-w-0 max-w-full truncate before:inline-block before:w-3 before:text-center before:content-['·'_/_''] ${
+              i === 0 && lead ? 'before:invisible' : ''
+            } ${p.tone ? META_TONE[p.tone] : ''}`}
+          >
+            {p.text}
+          </span>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -181,7 +194,8 @@ export function SettingsRow({
   /** What belongs with the words, before the badge and meta (a rule's ask-first question, an example's good reply). */
   detail?: ReactNode;
   badge?: ReactNode;
-  meta?: ReactNode;
+  /** The quiet meta's parts, after the badge (`MetaLine`). */
+  meta?: readonly MetaPart[];
   actions?: readonly RowAction[];
   /** What the row carries under its lines (the birthday brochure). */
   children?: ReactNode;
@@ -198,11 +212,10 @@ export function SettingsRow({
           </p>
         )}
         {detail}
-        {/* One flow of words: the badge, then the meta's parts, wrapping between parts. */}
-        {(badge || meta) && (
-          <div className="mt-[3px] min-w-0 break-words text-meta leading-relaxed text-ink-muted">
-            {badge && <span className="mr-2 inline-flex align-middle">{badge}</span>}
-            {meta}
+        {/* One flow: the badge, then the meta's parts, wrapping between parts. */}
+        {(badge || (meta && meta.length > 0)) && (
+          <div className="mt-[3px]">
+            <MetaLine lead={badge} parts={meta ?? []} />
           </div>
         )}
         {children}
@@ -414,21 +427,6 @@ export function Field({
   );
 }
 
-/**
- * A form's Cancel and Save, sticky at the bottom of the page area: the card
- * ground over a line, bled to the frame's gutter; on a phone the last (main)
- * button takes the bar's width, as a dialog's footer does. `status` is a
- * quiet word on its left ("Unsaved changes").
- */
-export function ActionBar({ status, children }: { status?: ReactNode; children: ReactNode }) {
-  return (
-    <div className="sticky bottom-0 z-10 -mx-4 -mb-8 mt-6 flex flex-wrap items-center justify-end gap-3 border-t border-line bg-card px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 md:-mx-6 md:gap-2 md:px-6">
-      {status && <span className="mr-auto min-w-0 text-note text-ink-muted">{status}</span>}
-      <div className="flex min-w-0 flex-1 items-center justify-end gap-3 max-md:[&>*:last-child]:flex-1 md:flex-none md:gap-2">{children}</div>
-    </div>
-  );
-}
-
 /** Nothing here yet: a dashed frame (decoration, not a control), the thing's icon, one line, an optional way on. */
 export function EmptyNote({
   icon: Icon,
@@ -528,7 +526,7 @@ export function FormRefusal({ text, tone = 'danger' }: { text: string | null; to
 }
 
 /** The band a switch's segments sit on (the settings band on a phone, a number's mode). */
-export const SEGMENT_BAND = 'flex min-w-0 gap-1 rounded-[14px] bg-band p-1';
+export const SEGMENT_BAND = `flex min-w-0 ${SEGMENT_BAND_LOOK}`;
 
 /**
  * Which part of a list shows (Drafts, Approved, Archived; To review, …): one
@@ -579,7 +577,8 @@ export function ControlRow({
   children,
 }: {
   title: ReactNode;
-  meta?: ReactNode;
+  /** The quiet meta's parts (`MetaLine`). */
+  meta?: readonly MetaPart[];
   help?: ReactNode;
   control: ReactNode;
   children?: ReactNode;
@@ -589,7 +588,7 @@ export function ControlRow({
       <div className="flex min-w-0 flex-col gap-3 md:flex-row md:items-center md:gap-4">
         <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
           <div className="min-w-0 break-words text-body font-semibold leading-tight text-ink">{title}</div>
-          {meta && <div className="min-w-0 break-words text-meta leading-relaxed text-ink-muted">{meta}</div>}
+          {meta && meta.length > 0 && <MetaLine parts={meta} />}
           {help && <div className="max-w-prose text-note leading-relaxed text-ink-soft">{help}</div>}
         </div>
         <div className="flex min-w-0 shrink-0">{control}</div>

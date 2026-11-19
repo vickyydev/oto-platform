@@ -11,7 +11,6 @@ import {
   InlineError,
   InlineNote,
   LoadingNote,
-  MetaLine,
   PageHeader,
   SectionCard,
   SettingsRow,
@@ -309,9 +308,11 @@ function TemplateRow({
     <SettingsRow
       title={languageName(t.language)}
       name={name}
-      preview={t.body.replace(/\s+/g, ' ').trim() || ' '}
+      preview={t.body.trim() || ' '}
+      previewLines={3}
+      keepBreaks
       badge={badge}
-      meta={<MetaLine parts={meta} />}
+      meta={meta}
       actions={actions}
     >
       {t.key === BROCHURE_KEY && <Brochure template={t} onChanged={onChanged} />}
