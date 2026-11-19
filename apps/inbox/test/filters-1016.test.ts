@@ -266,6 +266,15 @@ describe('SCRUM-1016: the rows and the list’s states', () => {
     for (const gone of ['Mark handled', '>Active<', 'Unassigned', 'ring-violet', 'ring-sky']) expect(html).not.toContain(gone);
   });
 
+  it('the face keeps its own height, so the channel dot sits on its corner; name and line at a tight leading', () => {
+    // SCRUM-1016 (review): stretched to the row's height, the face's box put
+    // the dot 25 to 35 px under the face, beside the badge, on every row.
+    const html = markup(createElement(ConversationList, listProps({ rows: [row({ unread: 1 })] })));
+    expect(html).toMatch(/<span class="relative shrink-0 self-start" data-face="true"><div aria-hidden="true"[^>]*style="width:44px;height:44px;[^"]*">[^<]{1,3}<\/div><span title="WhatsApp" class="absolute -bottom-\[3px\] -right-\[3px\]/);
+    expect(html).toMatch(/<span class="min-w-0 flex-1 truncate text-\[15px\] leading-tight text-ink font-extrabold">ZZ TEST guest \d+<\/span>/);
+    expect(html).toContain('<span class="truncate text-[13.5px] leading-tight text-ink">ZZ TEST line</span>');
+  });
+
   it('a till notice thread, when shown, says so in its one badge', () => {
     const html = markup(createElement(ConversationList, listProps({ rows: [row({ canReply: false, nextAction: 'waiting_customer' })] })));
     expect(html).toContain(`>${TILL_NOTICE_LABEL}<`);
