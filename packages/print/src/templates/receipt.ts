@@ -143,6 +143,15 @@ export function buildReceipt({ template, creditTemplate, data, device }: Receipt
     for (const tender of data.tenders) blocks.push(moneyRow(tender.label, tender.amount, false, T));
   }
 
+  // SCRUM-1021 — what each band the sale was paid from still holds.
+  if (data.creditLeft?.length) {
+    blocks.push(space(4));
+    for (const left of data.creditLeft) {
+      blocks.push(moneyRow(left.label, left.amount, false, T));
+      if (left.detail) blocks.push(text(`  ${left.detail}`, T.small));
+    }
+  }
+
   if (data.bandCodes?.length) {
     blocks.push(divider(T.ruleDots));
     blocks.push(text('Bands issued', { ...T.small, tracking: 1 }));

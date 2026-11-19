@@ -99,6 +99,8 @@ export const FIXTURES: Fixture[] = [
         vat: '฿71.32',
         total: '฿1,090.50',
         tenders: [{ label: 'Cash', amount: '฿1,100' }, { label: 'Change', amount: '฿9.50' }],
+        // SCRUM-1021 — the credit left on a band the sale was paid from, in English and Thai.
+        creditLeft: [{ label: 'Credit left', amount: '฿60', detail: 'เครดิตคงเหลือ · Band HKT1-4822' }],
         bandCodes: ['HKT1-4821', 'HKT1-4822'],
         creditGrants: ['฿100 credit', '2× Grip socks to collect'],
         // The sale's F&B credit, on the receipt rather than a slip of its own:

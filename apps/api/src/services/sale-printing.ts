@@ -59,7 +59,7 @@ import {
 } from './bands';
 import { routeOnBox, templateTypeFor } from './print';
 import { testPageDocumentOf } from './test-page';
-import { attachSaleBandKeys, creditVoucherDocumentOf, creditVoucherWalletsOf, saleCreditsOf } from './wallet';
+import { attachSaleBandKeys, creditVoucherDocumentOf, creditVoucherWalletsOf, saleCreditsOf, saleWalletsLeftOf } from './wallet';
 import { bandHolderOfSale, isPrepaidSetAside } from './band-food';
 import { endOfDayReceiptDocumentOf } from './end-of-day-receipt';
 import { tillVoucherDocumentOf } from './voucher-promotions';
@@ -1485,6 +1485,10 @@ export async function salePrintSnapshotOf(db: Exec, saleRow: SaleRow): Promise<S
     // it carries none either: one paper from either end, and History reprints
     // what the guest was handed.
     credits: saleRow.origin === 'box' ? [] : await saleCreditsOf(db, saleRow.id),
+    // SCRUM-1021 — what each band the sale was paid from held after it. A
+    // sale the box filed printed from the box's own snapshot, so its copy
+    // here carries none either, for the reason the credits above give.
+    walletsLeft: saleRow.origin === 'box' ? [] : await saleWalletsLeftOf(db, saleRow.id),
   };
 }
 
