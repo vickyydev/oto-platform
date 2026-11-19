@@ -849,6 +849,10 @@ jobs:
       # profile Left and the login in pay only throughout; the night batch and
       # a last-working-day edit keep the shift; the profile is not deleted
       # while it has one; and the Invite a Former Employee dialog.
+      # SCRUM-1055 (R7): that day's shift shown on the kiosk's own answer
+      # to the person, nothing else; a clock-out after midnight closed by
+      # the 00:01 batch. SCRUM-1058: the activity log's pay entries for
+      # the salary roles only.
       - name: The app's single shift checks
         if: steps.changes.outputs.app == 'true'
         run: |
