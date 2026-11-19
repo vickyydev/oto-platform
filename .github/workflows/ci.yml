@@ -722,6 +722,14 @@ jobs:
         env:
           PUPPETEER_EXECUTABLE_PATH: /usr/bin/google-chrome
         run: npx tsx tests/documents.check.ts
+      # SCRUM-1047: a signed contract or letter restored from the old system
+      # opens from this app's own bucket, environment folder and contracts or
+      # letters folder by its file name alone; anything else a stored path
+      # says is refused before the bucket is asked (a stand-in bucket, no
+      # database).
+      - name: The app's restored contract path checks
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/contract-pdf-paths.check.ts
       - name: The app's finance import checks
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/finance.check.ts
