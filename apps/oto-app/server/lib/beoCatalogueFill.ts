@@ -560,7 +560,7 @@ Read every field of the form below from the conversation too, from the family's 
 - A note the conversation gives about one dish ("no cheese on the pizza", "cut into squares") is that dish's "notes", on its "menuLines" entry or on its set-menu choice, in the conversation's own words: not a request
 - A "menuLines" entry whose food code carries several "names" in "food" (the options of one dish, such as "Fried rice (Veggie)", "Fried rice (Chicken)") names the one the conversation means as its "option", exactly as "food" lists it, whatever language the conversation is in. Leave "option" out when the conversation does not say which: staff choose it
 - An allergy or a food intolerance (nuts, gluten, lactose, seafood) is a "requests" entry of the kind "allergy", one for each, in the conversation's own words; it is not given again as a "special_request"
-- "kitchenNotes": what the conversation says the kitchen must know about handling or serving the food as a whole, in the conversation's own words, joined in one text: an allergy or an intolerance the food must avoid (given as its "allergy" request as well), "no chilli", "no pork", "serve the fruit after the cake", "cut everything small for the little ones". A note about one dish stays that dish's "notes"
+- "kitchenNotes": what the conversation says the kitchen must know about handling or serving the food as a whole, in the conversation's own words, joined in one text: "no chilli", "no pork", "serve the fruit after the cake", "cut everything small for the little ones". A note about one dish stays that dish's "notes". An allergy or an intolerance is its "allergy" request only, never repeated here
 - A show or an act the conversation gives a time for ("the bubble show at 15:00") keeps its "entertainment" entry with that time as its "time", HH:MM, and is not given again as a "timeline" step
 
 Add these keys inside "catalogue", beside the ones above (the "event", "cake", "menuLines", "setMenu" choices, "entertainment" and "requests" entries take the keys shown here as well as their own):
@@ -1406,14 +1406,11 @@ export function resolveCatalogueAnswer(
   // after the setup plan, so a setup task (which the Timeline places itself) is not a step again.
   for (const t of readMany(TimelineAnswer, answer.timeline, 60)) {
     if (!t.time || !t.label) continue;
-    // SCRUM-1050: a step that only names a show of the entertainment is that show, never a typed
-    // step beside the show's own: a show with no time takes the step's (unless the step is a
-    // question nobody answered, SCRUM-1035); a show with a time keeps its own.
-    const show = proposal.entertainment.find((e) => namesOnlyShows(t.label!, [e]));
-    if (show) {
-      if (!show.time && !unansweredQuestion(fromOf(t, t.label, t.time), refs, fallbackText, [t.label, t.time])) show.time = t.time;
-      continue;
-    }
+    // SCRUM-1050: a step that only names a show of the entertainment with a time of its own is
+    // that show's step, never a typed step beside it; the show keeps its own time.
+    // A show with no time makes no step of its own, so the chat's step for it stays a typed step
+    // at its time: nothing moves into the show (SCRUM-1035 review).
+    if (proposal.entertainment.some((e) => !!e.time && namesOnlyShows(t.label!, [e]))) continue;
     if (timedElsewhere({ time: t.time, label: t.label }, proposal)) continue;
     const entry = { time: t.time, label: t.label, from: fromOf(t, t.label, t.time) };
     merge(proposal.details.timeline, entry, (x) => fold(x.label) === fold(entry.label));
@@ -1445,9 +1442,9 @@ export function timedElsewhere(
     (e) => e.time === step.time && [e.name, e.said].some((n) => !!n && (fold(n).includes(label) || label.includes(fold(n)))),
   );
   if (show) return true;
-  // SCRUM-1050: a step that only names a show of the entertainment, at any time: the show's own
-  // step stands (at its own time, or listed with Entertainment while it has none).
-  if (namesOnlyShows(step.label, proposal.entertainment)) return true;
+  // SCRUM-1050: a step that only names a show of the entertainment that has a time, at any time:
+  // the show's own step stands at its own time. A show with no time has no step of its own.
+  if (namesOnlyShows(step.label, proposal.entertainment.filter((e) => !!e.time))) return true;
   if (proposal.event.barServiceTime?.value === step.time && DRINKS_WORDS.test(step.label)) return true;
   // SCRUM-1050: the kids' or the adults' food served at their time ("13:00 lunch", "pizza for the
   // kids"), which the Timeline makes its own step of ("Kids' menu served"): a step saying nothing
@@ -2073,6 +2070,8 @@ const COUNT_WORDS: Record<number, string> = {
 };
 /** SCRUM-941: words for the cake, in the languages the park's chats are written in. */
 const CAKE_WORDS = /(^|[^\p{L}])cakes?([^\p{L}]|$)|เค้ก|торт/iu;
+/** SCRUM-1035 review: where the cake is named, at the word itself (never inside "cupcakes"). */
+const CAKE_NAMED = /(?<!\p{L})cakes?(?!\p{L})|เค้ก|торт/iu;
 /** SCRUM-946: words for getting the room ready. */
 const SETUP_WORDS = /(^|[^\p{L}])(set ?up|ready|decorat\p{L}*)([^\p{L}]|$)|เตรียม|จัดห้อง|подготов|готов/iu;
 /** SCRUM-946: the words a step that only marks the party's start or end is made of (and its time). */
@@ -2143,19 +2142,53 @@ const SENTENCE_STOP = /[?？]|[.!。](?=\s|$)|\n/g;
 /** A Thai sentence that asks with its particle and no question mark ("รับเค้กเพิ่มไหมคะ"). */
 const THAI_ASKS = /(?:ไหม|มั้ย|มั๊ย|ไม๊|หรือเปล่า|รึเปล่า|หรือไม่)\s*(?:คะ|ค่ะ|ครับ|คับ|นะ|จ๊ะ|จ้ะ|จ้า)?\s*$/u;
 
+type Sentence = { start: number; end: number; asks: boolean };
+
+/**
+ * One sentence of a line, as `sentencesOfLine` keeps it. Thai writes a confirmation and its
+ * question as one run of clauses split by spaces, with no stop between them ("ยืนยันงานวันเสาร์
+ * เวลา 14:00 เด็ก 15 คน รับเค้กเพิ่มไหมคะ"): there only the clause holding the question particle
+ * asks, and the clauses before it say (SCRUM-1035 review).
+ */
+function pushSentence(out: Sentence[], line: string, start: number, end: number, endsWithMark: boolean): void {
+  const text = line.slice(start, end).replace(/[?？]\s*$/u, "").trimEnd();
+  if (!text.trim()) return;
+  const thai = THAI_ASKS.exec(text);
+  if (thai) {
+    const clause = text.slice(0, thai.index).search(/\s\S*$/u);
+    if (clause > 0 && text.slice(0, clause).trim()) {
+      out.push({ start, end: start + clause, asks: false });
+      out.push({ start: start + clause, end, asks: true });
+      return;
+    }
+  }
+  out.push({ start, end, asks: endsWithMark || !!thai });
+}
+
 /** The sentences of a line: where each starts and ends, and whether it asks. */
-function sentencesOfLine(line: string): Array<{ start: number; end: number; asks: boolean }> {
-  const out: Array<{ start: number; end: number; asks: boolean }> = [];
+function sentencesOfLine(line: string): Sentence[] {
+  const out: Sentence[] = [];
   let from = 0;
   for (const m of line.matchAll(SENTENCE_STOP)) {
     const stop = m.index ?? 0;
-    const text = line.slice(from, stop);
-    if (text.trim()) out.push({ start: from, end: stop + m[0].length, asks: m[0] === "?" || m[0] === "？" || THAI_ASKS.test(text) });
+    pushSentence(out, line, from, stop + m[0].length, m[0] === "?" || m[0] === "？");
     from = stop + m[0].length;
   }
-  const rest = line.slice(from);
-  if (rest.trim()) out.push({ start: from, end: line.length, asks: THAI_ASKS.test(rest) });
+  if (line.slice(from).trim()) pushSentence(out, line, from, line.length, false);
   return out;
+}
+
+/**
+ * Whether the sentence holding the value's words (the first of `words` the line holds, as
+ * `quoteOf` finds them) asks, and where those words are. A line that holds none of them asks it
+ * only when every sentence of it is a question; otherwise it cannot be told, and it does not ask.
+ */
+function questionIn(lineText: string, words: ReadonlyArray<string | number | null | undefined>): { asks: boolean; at: number | null } {
+  const sentences = sentencesOfLine(lineText);
+  if (sentences.length === 0) return { asks: false, at: null };
+  const found = findInLine(lineText, words);
+  if (!found) return { asks: sentences.every((s) => s.asks), at: null };
+  return { asks: sentences.some((s) => s.asks && found.start >= s.start && found.start < s.end), at: found.start };
 }
 
 /**
@@ -2165,11 +2198,84 @@ function sentencesOfLine(line: string): Array<{ start: number; end: number; asks
  * told, and the value is not refused for it.
  */
 export function saidAsQuestion(lineText: string, words: ReadonlyArray<string | number | null | undefined>): boolean {
-  const sentences = sentencesOfLine(lineText);
-  if (sentences.length === 0) return false;
-  const found = findInLine(lineText, words);
-  if (!found) return sentences.every((s) => s.asks);
-  return sentences.some((s) => s.asks && found.start >= s.start && found.start < s.end);
+  return questionIn(lineText, words).asks;
+}
+
+/** Whether a reply answers: a turn made only of questions ("Can you send me the address?") does not. */
+const answersBack = (text: string): boolean => sentencesOfLine(text).some((s) => !s.asks);
+
+/**
+ * SCRUM-1035 review: whether the family answered what the team's line `line` asked: the FIRST turn
+ * of the family's after it (its lines up to the next line of someone else's) answers, unless it
+ * only asks back. A later turn of the family's is not taken for the answer: the family writes
+ * something later in almost every chat ("Can you send me the address please?", "Thanks!").
+ */
+export function familyAnsweredAfter(refs: readonly TranscriptRef[], line: number): boolean {
+  const after = refs.filter((r) => r.line > line).sort((a, b) => a.line - b.line);
+  const first = after.findIndex((r) => r.source === "family");
+  if (first < 0) return false;
+  const turn: TranscriptRef[] = [];
+  for (const r of after.slice(first)) {
+    if (r.source !== "family") break;
+    turn.push(r);
+  }
+  return turn.some((r) => answersBack(r.text ?? ""));
+}
+
+/** The id `/api/ai/parse-beo` gives the one line a pasted text is read as (`renderTranscript`). */
+const PASTED_LINE_ID = "pasted";
+/**
+ * A speaker's name opening a line of a pasted exchange ("Mum: Yes please!", "[14:02, 19/11/2026]
+ * Team: ...", "19/11/2026, 14:02 - Team: ..."): a name before a colon and a space, so "at 15:00"
+ * names nobody.
+ */
+const SPEAKER = /^[ \t]*(?:\[[^\]\n]{3,40}\][ \t]*|\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4},?[ \t]+\d{1,2}[:.]\d{2}(?:[:.]\d{2})?[ \t]*(?:[AaPp]\.?[Mm]\.?)?[ \t]*[-–][ \t]*)?([^\s:\d[][^:\n]{0,39}?)[ \t]*:(?=\s)/u;
+
+/**
+ * SCRUM-1035 review: a pasted text holding a two-sided exchange, each turn opened by its
+ * speaker's name (at most four words: "Team: Would you like the bubble show at 15:00?" then "Mum:
+ * Yes please!"): the question at `at` is answered when the first turn of another speaker after it
+ * answers (the rule of `familyAnsweredAfter`, by speaker, as a paste names nobody as the family).
+ * A text with one speaker, or none, holds no answer.
+ */
+export function answeredInPaste(text: string, at: number): boolean {
+  const turns: Array<{ speaker: string; start: number; text: string }> = [];
+  let offset = 0;
+  for (const raw of text.split("\n")) {
+    const named = SPEAKER.exec(raw);
+    const speaker = named && named[1]!.trim().split(/\s+/).length <= 4 ? fold(named[1]!) : null;
+    if (speaker !== null || turns.length === 0) turns.push({ speaker: speaker ?? "", start: offset, text: named && speaker !== null ? raw.slice(named[0].length) : raw });
+    else turns[turns.length - 1]!.text += `\n${raw}`;
+    offset += raw.length + 1;
+  }
+  const asked = turns.reduce((found, t, i) => (t.start <= at ? i : found), -1);
+  if (asked < 0) return false;
+  const who = turns[asked]!.speaker;
+  if (!who) return false;
+  const next = turns.findIndex((t, i) => i > asked && t.speaker !== "" && t.speaker !== who);
+  if (next < 0) return false;
+  const reply: string[] = [];
+  for (const t of turns.slice(next)) {
+    if (t.speaker !== turns[next]!.speaker) break;
+    reply.push(t.text);
+  }
+  return reply.some(answersBack);
+}
+
+/**
+ * SCRUM-1035 review: a read-back ("So it's Saturday at 14:00 for 15 kids, right?") repeats what
+ * the family itself asked: a value the family's own earlier line says (not asks) is the family's,
+ * whatever the team's question repeating it, and is not refused for that question.
+ */
+function familySaidBefore(refs: readonly TranscriptRef[], line: number, words: ReadonlyArray<string | number | null | undefined>): boolean {
+  // Words, never a bare number: a 12 the family wrote elsewhere ("the 12th") is not its 12 kids.
+  const held = words.filter((w): w is string => typeof w === "string" && w.trim() !== "" && !/^\d+$/.test(w.trim()));
+  if (held.length === 0) return false;
+  return refs.some((r) => {
+    if (r.source !== "family" || r.line >= line || !r.text) return false;
+    const q = questionIn(r.text, held);
+    return q.at !== null && !q.asks;
+  });
 }
 
 /**
@@ -2177,15 +2283,19 @@ export function saidAsQuestion(lineText: string, words: ReadonlyArray<string | n
  * answered is never written as agreed, on any field. A proposed value is such a question when its
  * line is the team's, its words in that line sit in a question (`saidAsQuestion`; its own words and
  * value first, then the chat's words it carries when they are a part of the line, never the whole
- * line), and no line of the family's comes after it. The ruling message read alone (no conversation)
- * knows no line after it: a question it asks is unanswered. A value of the family's, the park's
- * default or a template, or one whose line is not known, is never refused here.
+ * line), the family's first turn after it does not answer it (`familyAnsweredAfter`; in a pasted
+ * exchange, the other speaker's: `answeredInPaste`), and no earlier line of the family's says it (a
+ * read-back). The ruling message read alone (no conversation) knows no line after it: a question
+ * it asks is unanswered. A value of the family's, the park's default or a template, or one whose
+ * line is not known, is never refused here.
  */
 export function unansweredQuestion(
   from: BeoAiFrom | null | undefined,
   refs: readonly TranscriptRef[],
   fallbackText: string | null | undefined,
   words: ReadonlyArray<string | number | null | undefined>,
+  /** A single value's own words, for a read-back of the family's earlier line (`familySaidBefore`). */
+  readBack: ReadonlyArray<string | number | null | undefined> = [],
 ): boolean {
   if (!from || from.source !== "team") return false;
   const ref = from.line !== null ? refs.find((r) => r.line === from.line) : undefined;
@@ -2193,8 +2303,43 @@ export function unansweredQuestion(
   if (!text || !text.trim()) return false;
   const quote = from.quote?.replace(/^…|…$/g, "").trim();
   const part = quote && foldQuote(quote) !== foldQuote(text) ? quote : null;
-  if (!saidAsQuestion(text, [...words, part])) return false;
-  return !ref || !refs.some((r) => r.source === "family" && r.line > ref.line);
+  const asked = questionIn(text, [...words, part]);
+  if (!asked.asks) return false;
+  if (!ref) return true;
+  if (ref.id === PASTED_LINE_ID && asked.at !== null && answeredInPaste(text, asked.at)) return false;
+  if (familySaidBefore(refs, ref.line, readBack)) return false;
+  return !familyAnsweredAfter(refs, ref.line);
+}
+
+/**
+ * SCRUM-1035 review: whether a dish's count or price that the value's own line does not hold
+ * comes from a question of the team's nobody answered ("Shall we make it 3 pizzas?" to the
+ * family's "We'd like pizza"): a line of the team's holding the dish's words and that number in
+ * one asking sentence (times aside), with no answer after it (`familyAnsweredAfter`).
+ */
+function numberAskedOfDish(
+  refs: readonly TranscriptRef[],
+  fallbackText: string | null | undefined,
+  from: BeoAiFrom,
+  dish: ReadonlyArray<string | null | undefined>,
+  value: number,
+): boolean {
+  const own = from.line !== null ? refs.find((r) => r.line === from.line)?.text : refs.length === 0 ? fallbackText : null;
+  if (own && findInLine(own.replace(/\d{1,2}[:.]\d{2}/g, " "), [value])) return false;
+  const team: Array<{ line: number; text: string }> =
+    refs.length > 0
+      ? refs.flatMap((r) => (r.source === "team" && r.text ? [{ line: r.line, text: r.text }] : []))
+      : fallbackText
+        ? [{ line: 0, text: fallbackText }]
+        : [];
+  return team.some((r) =>
+    sentencesOfLine(r.text).some((s) => {
+      if (!s.asks) return false;
+      const sentence = r.text.slice(s.start, s.end);
+      if (!findInLine(sentence, dish) || !findInLine(sentence.replace(/\d{1,2}[:.]\d{2}/g, " "), [value])) return false;
+      return refs.length === 0 || !familyAnsweredAfter(refs, r.line);
+    }),
+  );
 }
 
 /**
@@ -2212,16 +2357,21 @@ export function withoutUnansweredQuestions(
   fallbackText?: string | null,
 ): number {
   let refused = 0;
-  const asked = (from: BeoAiFrom | null | undefined, ...words: Array<string | number | null | undefined>): boolean => {
-    const no = unansweredQuestion(from, refs, fallbackText, words);
+  const asked = (from: BeoAiFrom | null | undefined, ...words: Array<string | number | null | undefined>): boolean => askedOf(from, words, []);
+  const askedOf = (from: BeoAiFrom | null | undefined, words: ReadonlyArray<string | number | null | undefined>, readBack: ReadonlyArray<string | number | null | undefined>): boolean => {
+    const no = unansweredQuestion(from, refs, fallbackText, words, readBack);
     if (no) refused += 1;
     return no;
   };
   const keep = <T extends { from: BeoAiFrom }>(list: T[], words: (x: T) => Array<string | number | null | undefined>): T[] =>
     list.filter((x) => !asked(x.from, ...words(x)));
   // A value's own words before the value itself: "15 kids" is found as said, never the 15 of a "15:00".
-  const one = <T extends { value: unknown; from: BeoAiFrom }>(v: T | null | undefined, ...words: Array<string | number | null | undefined>): T | null | undefined =>
-    v && asked(v.from, ...words, typeof v.value === "string" || typeof v.value === "number" ? v.value : null) ? null : v;
+  // A single value the family's own earlier line says is a read-back, not refused (the review).
+  const one = <T extends { value: unknown; from: BeoAiFrom }>(v: T | null | undefined, ...words: Array<string | number | null | undefined>): T | null | undefined => {
+    if (!v) return v;
+    const value = typeof v.value === "string" || typeof v.value === "number" ? v.value : null;
+    return askedOf(v.from, [...words, value], [...words, value]) ? null : v;
+  };
 
   if (p.package && asked(p.package.from, p.package.said)) {
     const brought = !!p.setMenu && p.setMenu.from === p.package.from;
@@ -2247,6 +2397,19 @@ export function withoutUnansweredQuestions(
     if (p.adultsFolded.length === 0) delete p.adultsFolded;
   }
   p.menuLines = keep(p.menuLines, (l) => [l.itemName, l.matchedName]);
+  // A dish the family asked for keeps no count or price the family never said that the team only
+  // asked about ("Shall we make it 3 pizzas?"): with no count it is one, as a dish always is.
+  for (const l of p.menuLines) {
+    const dish = [l.itemName, l.matchedName];
+    if (l.quantity > 1 && numberAskedOfDish(refs, fallbackText, l.from, dish, l.quantity)) {
+      l.quantity = 1;
+      refused += 1;
+    }
+    if (l.chatPrice !== null && numberAskedOfDish(refs, fallbackText, l.from, dish, l.chatPrice)) {
+      l.chatPrice = null;
+      refused += 1;
+    }
+  }
   p.entertainment = keep(p.entertainment, (e) => [e.said, e.name, e.time]);
   p.otherLines = keep(p.otherLines, (o) => [o.text]);
 
@@ -2259,7 +2422,7 @@ export function withoutUnansweredQuestions(
   if (ev.numChildren && !one(ev.numChildren, `${kids} kid`, `${kids} child`)) delete ev.numChildren;
   const adults = ev.numAdults?.value;
   if (ev.numAdults && !one(ev.numAdults, `${adults} adult`)) delete ev.numAdults;
-  if (ev.eventDate && asked(ev.eventDate.from, ev.eventDate.said, ev.eventDate.value)) delete ev.eventDate;
+  if (ev.eventDate && askedOf(ev.eventDate.from, [ev.eventDate.said, ev.eventDate.value], [ev.eventDate.said, ev.eventDate.value])) delete ev.eventDate;
 
   if (p.cake && asked(p.cake.from, p.cake.notes, p.cake.time)) p.cake = null;
 
@@ -2293,11 +2456,29 @@ export function withoutUnansweredQuestions(
  * no line of the family's follows that message. The deposit's fields keep their own rule; the
  * Final Message to Parent is the message itself. Returns how many values were left out.
  */
-export function fillWithoutUnansweredQuestions(fill: BeoFill, messageText: string): number {
+export function fillWithoutUnansweredQuestions(fill: BeoFill, messageText: string, options: { pasted?: boolean } = {}): number {
   let refused = 0;
+  // SCRUM-1035 review: a pasted exchange may hold the family's answer after the question.
+  const answered = (at: number | null) => !!options.pasted && at !== null && answeredInPaste(messageText, at);
   const asks = (...words: Array<string | number | null | undefined>): boolean => {
     if (!words.some((w) => w !== null && w !== undefined && String(w).trim() !== "")) return false;
-    const no = saidAsQuestion(messageText, words);
+    const q = questionIn(messageText, words);
+    const no = q.asks && !answered(q.at);
+    if (no) refused += 1;
+    return no;
+  };
+  /** SCRUM-1035 review: the cake by its own words ("Would you like us to make the birthday cake?"), whatever its fields. */
+  const cakeAsked = (notes: string | undefined, time: string | undefined): boolean => {
+    const byWords = notes !== undefined || time !== undefined ? questionIn(messageText, [notes, time]) : null;
+    if (byWords && byWords.at !== null) {
+      const no = byWords.asks && !answered(byWords.at);
+      if (no) refused += 1;
+      return no;
+    }
+    const word = CAKE_NAMED.exec(messageText);
+    const no = word
+      ? sentencesOfLine(messageText).some((s) => s.asks && word.index >= s.start && word.index < s.end) && !answered(word.index)
+      : !!byWords?.asks;
     if (no) refused += 1;
     return no;
   };
@@ -2323,8 +2504,9 @@ export function fillWithoutUnansweredQuestions(fill: BeoFill, messageText: strin
   if (kitchen) {
     if (kitchen.kidsMenu) kitchen.kidsMenu = kitchen.kidsMenu.filter((l) => !asks(l.itemName));
     if (kitchen.adultsMenu) kitchen.adultsMenu = kitchen.adultsMenu.filter((l) => !asks(l.itemName));
-    if ((kitchen.cakeNotes !== undefined || kitchen.cakeTime !== undefined) && asks(kitchen.cakeNotes, kitchen.cakeTime)) {
-      for (const key of ["cakeMode", "cakeNotes", "cakeTime", "cakeIncluded", "cakePrice", "cakeQuantity"] as const) delete kitchen[key];
+    const cakeKeys = ["cakeMode", "cakeNotes", "cakeTime", "cakeIncluded", "cakePrice", "cakeQuantity"] as const;
+    if (cakeKeys.some((key) => kitchen[key] !== undefined) && cakeAsked(kitchen.cakeNotes ?? undefined, kitchen.cakeTime ?? undefined)) {
+      for (const key of cakeKeys) delete kitchen[key];
     }
   }
   const party = fill.partyDetails;
