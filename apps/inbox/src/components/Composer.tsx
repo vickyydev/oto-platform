@@ -193,11 +193,22 @@ export function Composer({
   }, [inserted, conv.id]);
 
   if (!conv.canReply) {
+    // A handled thread of notices is reopened here too: the composer is the
+    // one home of Reopen (SCRUM-1016 made the People and actions status a read-out).
+    const reopenHere = conv.status === 'handled' && me.capabilities.reopen;
     return (
       <div className={COMPOSER_BAR}>
-        <div className={COMPOSER_NOTICE}>
-          <AlertTriangle aria-hidden className="h-4 w-4 shrink-0" />
-          Notices from the till — this thread cannot take a reply.
+        <div className={`${COMPOSER_NOTICE} ${reopenHere ? 'justify-between' : ''}`}>
+          <span className="flex items-center gap-2">
+            <AlertTriangle aria-hidden className="h-4 w-4 shrink-0" />
+            Notices from the till — this thread cannot take a reply.
+          </span>
+          {reopenHere && (
+            <button type="button" onClick={onReopen} disabled={reopening} className={REOPEN_BUTTON}>
+              {reopening && <Loader2 aria-hidden className="h-3.5 w-3.5 animate-spin" />}
+              Reopen
+            </button>
+          )}
         </div>
       </div>
     );

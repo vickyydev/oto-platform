@@ -227,13 +227,26 @@ describe('SCRUM-1016: People and actions holds every control', () => {
   it.each([
     ['the sheet', sheetOf],
     ['the desktop panel', panelOf],
-  ] as const)('%s: the team, the park, the status and the assistant', (_, part) => {
+  ] as const)('%s: the team and the park to change; the status said', (_, part) => {
     const p = part(html);
     expect(p).toContain('aria-label="Move to team"');
     expect(p).toContain('aria-label="Conversation branch"');
-    expect(p).toContain('aria-label="Set conversation status"');
-    expect(p).toContain('aria-label="Resume the assistant"');
+    // SCRUM-1016 (review): the status is a read-out here. Mark as handled has
+    // its homes in the chat's header and the sheet's footer, Reopen in the
+    // composer; the "Set conversation status" select offered both a third time.
+    expect(p).toMatch(/>Status<\/span><span[^>]*><span data-status="active">Active<\/span>/);
+    expect(p).not.toContain('aria-label="Set conversation status"');
     expect(p).toContain('title="Topic: Birthdays &amp; Events — what the conversation is about. Team: Birthdays &amp; Events — who handles it."');
+  });
+
+  it('the assistant: a row of the sheet, which covers the chat on a phone; beside the desktop panel, the chat’s own line', () => {
+    // SCRUM-1016 (review): Desktop.dc.html has no Assistant row in the panel,
+    // and the line above the thread holds Pause or Resume on screen beside it.
+    expect(sheetOf(html)).toMatch(/>Assistant<\/span>[^]*aria-label="Resume the assistant"/);
+    expect(panelOf(html)).not.toContain('aria-label="Resume the assistant"');
+    expect(panelOf(html)).not.toContain('>Assistant</span>');
+    const chatOnly = html.slice(0, html.indexOf('data-region="customer-panel"'));
+    expect(chatOnly).toMatch(/data-ai-action="resume"[^>]*aria-label="Resume the assistant"/);
   });
 
   it.each([
@@ -279,22 +292,104 @@ describe('SCRUM-1016: People and actions holds every control', () => {
     const off = viewer({ assign: false, move: false, reopen: false, accountId: GM });
     const outsider: InboxMe = { ...off, roles: ['staff'], teams: off.teams.map((t) => ({ ...t, member: false })) };
     const theirs = row({ mine: false });
-    const bystander = panelOf(panel(outsider, theirs, detail(theirs)));
+    const bystanderChat = panel(outsider, theirs, detail(theirs));
+    const bystander = panelOf(bystanderChat);
     expect(bystander).not.toContain('aria-label="Set primary"');
-    expect(bystander).not.toContain('aria-label="Set conversation status"');
+    // SCRUM-1016 (review): Mark as handled is the header's (the status row is a read-out); a bystander gets none.
+    expect(bystanderChat).not.toContain('aria-label="Mark as handled"');
     expect(p).not.toContain('aria-label="Move to team"');
     expect(p).not.toContain('aria-label="Conversation branch"');
     expect(p).toContain('Managers add support');
-    // She is the primary: she may still mark it handled.
-    expect(p).toContain('aria-label="Set conversation status"');
+    // She is the primary: she may still mark it handled, from the chat's header.
+    expect(panel(agent, r, detail(r))).toContain('aria-label="Mark as handled"');
   });
 
   it('with writes not switched on, every control is there, disabled, with why', () => {
-    const p = panelOf(panel(viewer({ writes: false }), r, detail(r)));
+    const html = panel(viewer({ writes: false }), r, detail(r));
+    const p = panelOf(html);
     expect(p).toContain('aria-label="Change the primary owner — Coming with the channel connection"');
     expect(p).toContain('aria-label="Move to another team — Coming with the channel connection"');
     expect(p).toContain('aria-label="Change the branch — Coming with the channel connection"');
-    expect(p).toContain('aria-label="Mark as handled — Coming with the channel connection"');
+    // SCRUM-1016 (review): Mark as handled is the chat header's, not the status row's.
+    expect(html.slice(0, html.indexOf('data-region="customer-panel"'))).toContain('aria-label="Mark as handled — Coming with the channel connection"');
+  });
+});
+
+describe('SCRUM-1016 (review): the desktop panel is laid out for its width', () => {
+  // The review's pictures at 1440 px: the panel used the sheet's parts, and in
+  // its 268 px a support name read "Z..", "Support · 1 of 2" broke a word a
+  // line, the team read "Birthday…" and "Divert to …" took two lines.
+  const r = row();
+  const gm = viewer({ testLine: true });
+  const html = panel(gm, r, detail(r), true);
+  const p = panelOf(html);
+  const sheet = sheetOf(html);
+
+  it('a person’s action words sit on their own line under the name and the role', () => {
+    expect(p.match(/data-person-row="stacked"/g)).toHaveLength(2);
+    expect(p).toMatch(/title="Support · 1 of 2" class="truncate text-\[12.5px\] text-ink-muted">Support · 1 of 2<\/span><span class="-ml-3 mt-0.5 flex flex-wrap items-center">/);
+    // The sheet, a phone's full width, keeps the words beside the name.
+    expect(sheet).not.toContain('data-person-row');
+  });
+
+  it('Add support and Divert are a line each, never two words side by side', () => {
+    expect(p).toContain('class="flex flex-col border-t border-line-soft empty:hidden');
+    expect(p).not.toContain('grid-flow-col');
+    expect(p).toMatch(/aria-label="Divert to ZZ TEST Vera" class="inline-flex min-h-12 w-full items-center gap-1.5 px-3.5 /);
+    expect(sheet).toContain('grid auto-cols-fr grid-flow-col');
+  });
+
+  it('a row’s label sits over its value, and the value keeps its whole words', () => {
+    for (const label of ['Team', 'Park', 'Status']) {
+      expect(p, label).toContain(`<span class="flex min-w-0 flex-1 flex-col gap-0.5 py-1.5"><span class="text-[12.5px] text-ink-muted">${label}</span>`);
+    }
+    expect(p).not.toContain('w-20 shrink-0');
+    expect(p).toContain('<span class="min-w-0 break-words">Central Floresta</span>');
+    expect(p).not.toMatch(/<span class="truncate">(?:Central Floresta|Birthdays)/);
+    // The sheet keeps its label column.
+    expect(sheet).toContain('<span class="w-20 shrink-0 text-[13.5px] text-ink-muted">Team</span>');
+  });
+
+  it('the party’s Book the date and Create BEO stand one over the other', () => {
+    const party = p.slice(p.indexOf('>Party</h3>'));
+    expect(party).toMatch(/^>Party<\/h3><div class="flex flex-col gap-2"><div class="flex flex-col gap-2">/);
+    expect(sheet.slice(sheet.indexOf('>Party</h3>'))).toMatch(/^>Party<\/h3><div class="flex flex-col gap-2"><div class="grid grid-cols-2 gap-2">/);
+  });
+
+  it('the sheet opens with the contact’s face before the name, as drawn', () => {
+    expect(sheet).toMatch(/<div class="relative shrink-0"><div aria-hidden="true" class="[^"]*" style="width:44px;height:44px;[^"]*">ZS<\/div><span title="WhatsApp"[^>]*><\/span><\/div><div class="min-w-0 flex-1"><h2/);
+  });
+});
+
+describe('SCRUM-1016 (review): the chat header on a tablet', () => {
+  it('Mark as handled is an icon below 1024 px, so the name keeps its room', () => {
+    const r = row();
+    const html = panel(viewer(), r, detail(r));
+    const header = html.slice(html.indexOf('<header'), html.indexOf('</header>'));
+    expect(header).toMatch(/aria-label="Mark as handled" title="Mark as handled" class="[^"]*lg:w-auto[^"]*"/);
+    expect(header).toContain('<span class="hidden lg:inline">Mark as handled</span>');
+    expect(header).not.toMatch(/md:(?:w-auto|inline|border|px-3\.5)/);
+  });
+});
+
+describe('SCRUM-1016 (review): Reopen has one home, the composer', () => {
+  it('a handled chat offers Reopen in the composer and only says its status in People and actions', () => {
+    const handled = row({ status: 'handled', handledAt: '2026-11-19T05:30:00.000Z' });
+    const html = panel(viewer(), handled, detail(handled), true);
+    expect(html.match(/>Reopen<\/button>/g)).toHaveLength(1);
+    expect(sheetOf(html)).toContain('<span data-status="handled">Handled</span>');
+    expect(html).not.toContain('aria-label="Set conversation status"');
+  });
+
+  it('a handled thread of till notices, which has no reply box, is reopened from the composer too', () => {
+    const notice = row({ canReply: false, status: 'handled', handledAt: '2026-11-19T05:30:00.000Z' });
+    const html = panel(viewer(), notice, detail(notice));
+    expect(html).toContain('Notices from the till — this thread cannot take a reply.');
+    expect(html.match(/>Reopen<\/button>/g)).toHaveLength(1);
+    // Someone without the reopen right gets the notice alone.
+    expect(panel(viewer({ reopen: false }), notice, detail(notice))).not.toContain('>Reopen<');
+    // With writes not switched on, it is there, disabled, with why.
+    expect(panel(viewer({ writes: false }), notice, detail(notice))).toContain('aria-label="Reopen — Coming with the channel connection"');
   });
 });
 

@@ -145,12 +145,14 @@ function refusalOf(err: unknown, fallback: string): string {
  *
  * People and actions (ChatActions.dc.html) holds what the assignment strip
  * and the details dialog held: the primary and the support places with their
- * pickers, "Support 2/2" and Divert; the team, the park and the status, each
- * with its confirmation; the assistant's state; the contact and the member
- * link; rename; Start over on a test line; Book the date and Create BEO. It
- * is a sheet below the desktop panel's width (`detailsOpen`), and the right
- * panel beside the chat on a desktop (Desktop.dc.html); `panelWide` moves
- * that width out when the simulator's side panel takes the room.
+ * pickers, "Support 2/2" and Divert; the team and the park, each with its
+ * confirmation; the status, said (Mark as handled is the header's and the
+ * sheet's footer's, Reopen the composer's); the assistant's state on the
+ * sheet; the contact and the member link; rename; Start over on a test line;
+ * Book the date and Create BEO. It is a sheet below the desktop panel's width
+ * (`detailsOpen`), and the right panel beside the chat on a desktop
+ * (Desktop.dc.html), laid out for its narrow width; `panelWide` moves that
+ * width out when the simulator's side panel takes the room.
  *
  * LIVE since I3b (SCRUM-588), behind the same write switch (`writeMode`).
  * Every refusal is the server's sentence, shown as it was said. While the api
@@ -605,22 +607,39 @@ export function ChatPanel({
         disabled={busy !== null}
         aria-label={wide ? undefined : 'Mark as handled'}
         title="Mark as handled"
-        className={wide ? `${SECONDARY_BUTTON} h-12 w-full border-ink text-[15px] font-bold` : `${HEADER_ICON} md:w-auto md:gap-2 md:rounded-xl md:border md:border-edge md:bg-card md:px-3.5 md:text-[13.5px] md:font-semibold`}
+        // The words from 1024 px only: on a tablet's chat column they left the name a few letters wide.
+        className={wide ? `${SECONDARY_BUTTON} h-12 w-full border-ink text-[15px] font-bold` : `${HEADER_ICON} lg:w-auto lg:gap-2 lg:rounded-xl lg:border lg:border-edge lg:bg-card lg:px-3.5 lg:text-[13.5px] lg:font-semibold`}
       >
-        <CheckCircle2 aria-hidden className="h-[22px] w-[22px] md:h-[18px] md:w-[18px]" />
-        <span className={wide ? '' : 'hidden md:inline'}>Mark as handled</span>
+        <CheckCircle2 aria-hidden className="h-[22px] w-[22px] lg:h-[18px] lg:w-[18px]" />
+        <span className={wide ? '' : 'hidden lg:inline'}>Mark as handled</span>
       </button>
     ));
 
-  /** People and actions: the sheet's body and the desktop panel's, the same parts. */
-  const actions = (where: 'sheet' | 'panel') => (
+  /**
+   * People and actions: the sheet's body and the desktop panel's, the same
+   * parts. The panel is narrow (Desktop.dc.html), so there a person's action
+   * words sit under their name, the footer's words stack, a row's label sits
+   * over its value and the party's two buttons stack; nothing is cut short.
+   */
+  const actions = (where: 'sheet' | 'panel') => {
+    const panel = where === 'panel';
+    const footerWord = panel ? FOOTER_WORD_STACKED : FOOTER_WORD;
+    // A row's value: one line on the sheet, its whole words in the panel.
+    const value = panel ? 'min-w-0 break-words' : 'truncate';
+    // The select laid over a row: the whole row is the target, the chevron only shows it.
+    const rowChoice = panel
+      ? 'inline-flex h-11 w-6 shrink-0 items-center justify-center rounded-xl'
+      : 'inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl';
+    // The party's two buttons: side by side on the sheet, one over the other in the panel (as the next-step card).
+    const pair = panel ? 'flex flex-col gap-2' : 'grid grid-cols-2 gap-2';
+    return (
     <div className="flex flex-col gap-4">
       {where === 'sheet' && (
         <ActionFeedback error={error} note={note} onDismissError={() => setError(null)} onDismissNote={() => setNote(null)} />
       )}
       <ActionSection title="People">
         {primary ? (
-          <PersonRow chip={assigneeChip(primary, me)} role="Primary · answers this chat">
+          <PersonRow chip={assigneeChip(primary, me)} role="Primary · answers this chat" stacked={panel}>
             {live && mayAssign ? (
               <PeoplePicker label="Set primary" word="Change" options={slotOptions(conv, me, 'primary')} disabled={busy !== null} onPick={(o) => void pickPrimary(o)} />
             ) : (
@@ -649,7 +668,7 @@ export function ChatPanel({
           </div>
         )}
         {supports.map((s, i) => (
-          <PersonRow key={s.assignmentId} chip={assigneeChip(s, me)} role={`Support · ${i + 1} of 2`}>
+          <PersonRow key={s.assignmentId} chip={assigneeChip(s, me)} role={`Support · ${i + 1} of 2`} stacked={panel}>
             {live && me.capabilities.assign && (
               <>
                 <PeoplePicker
@@ -682,7 +701,7 @@ export function ChatPanel({
             )}
           </PersonRow>
         ))}
-        <PeopleFooter>
+        <PeopleFooter stacked={panel}>
           {supportCap && (
             // Both places taken (test night U4): say so where "Add support" sat,
             // with the api's own reason, rather than let the button vanish.
@@ -702,10 +721,10 @@ export function ChatPanel({
                 options={slotOptions(conv, me, 'support')}
                 disabled={busy !== null}
                 onPick={(o) => void run('support', () => inboxApi.addSupport(conv.id, o.assignee.id), 'Support could not be added.')}
-                className={FOOTER_WORD}
+                className={footerWord}
               />
             ) : (
-              <PendingControl reason={WRITES_PENDING_REASON} label="Add support" className={FOOTER_WORD}>
+              <PendingControl reason={WRITES_PENDING_REASON} label="Add support" className={footerWord}>
                 <Plus aria-hidden className="h-4 w-4" />
                 Add support
               </PendingControl>
@@ -713,7 +732,7 @@ export function ChatPanel({
           {mayAssign &&
             primary?.assigneeKind === 'account' &&
             (pending ? (
-              <PendingControl reason={WRITES_PENDING_REASON} label="Divert to the backup" className={FOOTER_WORD}>
+              <PendingControl reason={WRITES_PENDING_REASON} label="Divert to the backup" className={footerWord}>
                 <Repeat aria-hidden className="h-4 w-4" />
                 Divert
               </PendingControl>
@@ -725,7 +744,7 @@ export function ChatPanel({
                   onClick={() => void run('divert', () => inboxApi.divert(conv.id), 'The conversation could not be diverted.')}
                   title={`Divert to ${divertTo.name ?? 'the backup'}`}
                   aria-label={`Divert to ${divertTo.name ?? 'the backup'}`}
-                  className={FOOTER_WORD}
+                  className={footerWord}
                 >
                   {busy === 'divert' ? <Loader2 aria-hidden className="h-4 w-4 animate-spin" /> : <Repeat aria-hidden className="h-4 w-4" />}
                   Divert to {divertTo.name ?? 'the backup'}
@@ -744,6 +763,7 @@ export function ChatPanel({
         <ActionRow
           label="Team"
           title={categoryTitle(conv.category, detail?.teamName ?? null)}
+          stacked={panel}
           action={
             me.capabilities.move &&
             (pending ? (
@@ -763,7 +783,7 @@ export function ChatPanel({
                   askMove(opt);
                 }}
                 cover
-                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+                className={rowChoice}
                 options={
                   <>
                     {/* SCRUM-789: held in the General inbox — no team is the current one, every team is offered. */}
@@ -786,10 +806,11 @@ export function ChatPanel({
           }
         >
           <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${CATEGORY_DOT[conv.category]}`} />
-          <span className="truncate">{me.capabilities.move ? teamDestLabel(conv, me) : CATEGORY_LABEL[conv.category]}</span>
+          <span className={value}>{me.capabilities.move ? teamDestLabel(conv, me) : CATEGORY_LABEL[conv.category]}</span>
         </ActionRow>
         <ActionRow
           label="Park"
+          stacked={panel}
           action={
             me.capabilities.assign && live ? (
               <SelectOver
@@ -801,7 +822,7 @@ export function ChatPanel({
                   if (next !== conv.branchId) void setBranch(next);
                 }}
                 cover
-                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+                className={rowChoice}
                 options={branchSelectOptions(me.teams).map((b) => (
                   <option key={b.value} value={b.value}>
                     {b.label}
@@ -820,48 +841,18 @@ export function ChatPanel({
             )
           }
         >
-          <span className="truncate">{branchLabel(branchValue || null, me.teams)}</span>
+          <span className={value}>{branchLabel(branchValue || null, me.teams)}</span>
         </ActionRow>
-        <ActionRow
-          label="Status"
-          action={
-            (handleable || reopenable) &&
-            (pending ? (
-              <PendingControl
-                reason={WRITES_PENDING_REASON}
-                label={conv.status === 'handled' ? 'Reopen' : 'Mark as handled'}
-                className={ACTION_WORD}
-              >
-                <RowChevron />
-              </PendingControl>
-            ) : (
-              <SelectOver
-                label="Set conversation status"
-                value={conv.status === 'handled' ? 'handled' : 'new'}
-                disabled={busy !== null}
-                onChange={(v) => {
-                  if (v === 'handled') {
-                    if (where === 'sheet') onCloseDetails();
-                    onAskHandle();
-                  } else reopen();
-                }}
-                cover
-                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
-                options={
-                  <>
-                    <option value="new">Active</option>
-                    <option value="handled">Handled</option>
-                  </>
-                }
-              >
-                <RowChevron />
-              </SelectOver>
-            ))
-          }
-        >
-          {STATUS_LABEL[conv.status]}
+        {/* The status, said (SCRUM-1016, inventory §3 item 9): Mark as handled
+            has its homes in the chat's header and the sheet's footer, Reopen
+            in the composer, so the row is a read-out and offers neither again. */}
+        <ActionRow label="Status" stacked={panel}>
+          <span data-status={conv.status}>{STATUS_LABEL[conv.status]}</span>
         </ActionRow>
-        {mayPauseAi && aiLine && (
+        {/* The assistant's row on the sheet only (ChatActions.dc.html): the
+            sheet covers the chat's assistant line on a phone; beside the
+            desktop panel that line is on screen with its Pause or Resume. */}
+        {!panel && mayPauseAi && aiLine && (
           <ActionRow
             label="Assistant"
             action={
@@ -889,7 +880,7 @@ export function ChatPanel({
         <ActionSection title="Party" card={false}>
           <div className="flex flex-col gap-2">
             {event ? (
-              <div className="grid grid-cols-2 gap-2">
+              <div className={pair}>
                 {/* The prototype's booked state (:1986-1996): the date is held, the press is spent. An event archived in the Events module says so; it is restored there. */}
                 <button
                   type="button"
@@ -919,7 +910,7 @@ export function ChatPanel({
               where === 'sheet' && <p className="px-1 text-[13px] text-ink-muted">The deposit is paid: Book the date is at the top of the chat.</p>
             ) : (
               <>
-                <div className="grid grid-cols-2 gap-2">
+                <div className={pair}>
                   {mayBook ? (
                     <button
                       type="button"
@@ -1036,7 +1027,8 @@ export function ChatPanel({
         ) : null}
       </ActionSection>
     </div>
-  );
+    );
+  };
 
   return (
     <div className="flex min-h-0 min-w-0 flex-1">
@@ -1258,6 +1250,12 @@ export function ChatPanel({
         title={name}
         subtitle={actionsSubtitle(conv, detail)}
         closeLabel="Close people and actions"
+        lead={
+          <div className="relative shrink-0">
+            <Avatar initials={initialsOf(name)} tint={tintFor(conv.contact.id)} size={44} />
+            <ChannelDot channel={conv.channel} ring="ring-ground" />
+          </div>
+        }
         footer={handleable ? markHandled(true) : undefined}
       >
         {actions('sheet')}
@@ -1327,11 +1325,24 @@ const HEADER_ICON = 'flex h-11 w-11 shrink-0 items-center justify-center rounded
 /** A word in the People card's footer (Add support, Divert): the full cell, 48 px. */
 const FOOTER_WORD =
   'inline-flex min-h-12 w-full items-center justify-center gap-1.5 px-3 text-[14px] font-semibold text-ink hover:bg-wash disabled:opacity-60';
+/** The same word in the desktop panel, a line of its own: its whole words, from the card's left edge. */
+const FOOTER_WORD_STACKED =
+  'inline-flex min-h-12 w-full items-center gap-1.5 px-3.5 py-1.5 text-left text-[14px] font-semibold text-ink hover:bg-wash disabled:opacity-60';
 
-/** The People card's footer: its cells side by side under a rule, as ChatActions.dc.html draws them. */
-function PeopleFooter({ children }: { children: ReactNode }) {
+/**
+ * The People card's footer: its cells side by side under a rule, as
+ * ChatActions.dc.html draws them; one under the other in the desktop panel
+ * (`stacked`), where two side by side broke "Divert to …" over two lines.
+ */
+function PeopleFooter({ children, stacked = false }: { children: ReactNode; stacked?: boolean }) {
   return (
-    <div className="grid auto-cols-fr grid-flow-col border-t border-line-soft empty:hidden [&>*+*]:border-l [&>*+*]:border-line-soft">
+    <div
+      className={
+        stacked
+          ? 'flex flex-col border-t border-line-soft empty:hidden [&>*+*]:border-t [&>*+*]:border-line-soft'
+          : 'grid auto-cols-fr grid-flow-col border-t border-line-soft empty:hidden [&>*+*]:border-l [&>*+*]:border-line-soft'
+      }
+    >
       {children}
     </div>
   );
@@ -1409,8 +1420,14 @@ function PendingComposer({
   return (
     <div className={COMPOSER_BAR}>
       {!conv.canReply ? (
-        <div className="flex min-h-11 items-center gap-2 rounded-2xl bg-band px-4 py-2 text-[13.5px] text-ink-soft">
-          Notices from the till — this thread cannot take a reply.
+        <div className="flex min-h-11 flex-wrap items-center justify-between gap-2 rounded-2xl bg-band px-4 py-2 text-[13.5px] text-ink-soft">
+          <span>Notices from the till — this thread cannot take a reply.</span>
+          {/* Reopen's one home is the composer (SCRUM-1016), for a handled thread of notices too. */}
+          {conv.status === 'handled' && me.capabilities.reopen && (
+            <PendingControl reason={WRITES_PENDING_REASON} label="Reopen" className="min-h-11 px-3 text-[13.5px] font-bold text-ink md:min-h-9">
+              Reopen
+            </PendingControl>
+          )}
         </div>
       ) : conv.status === 'handled' ? (
         <div className="flex min-h-11 items-center justify-between gap-2 rounded-2xl bg-band px-4 py-2 text-[13.5px] text-ink-soft">
