@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react';
 import { AlertTriangle, ArrowUp, FileText, Loader2, X } from 'lucide-react';
 import { newId } from '@oto/shared/ids';
 import { renderTemplate, templateVariables } from '@oto/shared/inbox-reply';
@@ -6,9 +6,54 @@ import { ApiError } from '@/api/client';
 import { inboxApi, type ConversationRow, type InboxMe, type QualifyingTemplate, type ReplyRefusalDetails } from '@/api/inbox';
 import { TranslationNote } from '@/components/atoms';
 import { DictateButton, DictationLine, useDictation } from '@/components/Dictation';
-import { COMPOSER_ICON, COMPOSER_LINE_PX, composerBox, sendsOnKey } from '@/lib/composer';
+import { COMPOSER_ICON, COMPOSER_LINE_PX, COMPOSER_TEXTAREA, composerBox, sendsOnKey } from '@/lib/composer';
 import { dictationAvailable, dictationCeilingOf, insertAtCaret } from '@/lib/dictation';
 import { contactName, langLabel, needsTranslation, offeredTemplates } from '@/lib/view';
+
+/**
+ * The message box's pill (Chat.dc.html): the box's frame, shared by the
+ * reply and Teach (SCRUM-1044). The box inside has no padding of its own, so
+ * its height is its lines (`composerBox`), and the pill's padding is taken
+ * from the scale's icon step, so one line stands as tall as the icons and
+ * Send beside it: 44 px on a phone and on a touch screen (`data-composer`,
+ * index.css), the scale's own with a mouse. A label, so a press anywhere on
+ * the pill, its padding too, puts the caret in the box (SCRUM-1016 review).
+ *
+ * The placeholder is drawn on one line, ending in a true ellipsis where the
+ * box is narrow (a textarea's own placeholder wraps, growing the box, or is
+ * cut mid-word); the native one stays, unseen, for assistive technology
+ * (SCRUM-1045). `reply` marks the Inbox's own (`data-reply-pill`).
+ */
+export function ComposerPill({
+  placeholder,
+  empty,
+  reply = false,
+  children,
+}: {
+  placeholder: string;
+  empty: boolean;
+  reply?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <label
+      data-reply-pill={reply || undefined}
+      className="relative flex min-w-0 flex-1 cursor-text rounded-[22px] border border-field bg-ground px-4 py-[calc((var(--ui-h-icon)-22px)/2)] focus-within:outline-2 focus-within:outline-coral"
+    >
+      {empty && (
+        <span
+          aria-hidden
+          data-placeholder
+          className="pointer-events-none absolute inset-x-4 top-1/2 -translate-y-1/2 truncate text-body text-ink-muted"
+          style={{ lineHeight: `${COMPOSER_LINE_PX}px` }}
+        >
+          {placeholder}
+        </span>
+      )}
+      {children}
+    </label>
+  );
+}
 
 /** A template the composer holds: from the templates dialog, or offered by a refusal. */
 export interface ComposerTemplate {
@@ -378,27 +423,12 @@ export function Composer({
         </div>
       )}
 
-      <form onSubmit={(e) => void send(e)} className="flex items-end gap-0.5">
+      <form data-composer onSubmit={(e) => void send(e)} className="flex items-end gap-0.5">
         <button type="button" onClick={onOpenTemplates} aria-label="Templates" title="Templates" className={COMPOSER_ICON}>
           <FileText aria-hidden className="h-[22px] w-[22px]" />
         </button>
         <DictateButton dictation={dictation} disabled={template !== null || busy} />
-        {/* The pill is the box's frame: the box has no padding of its own, so its height is its lines (`composerBox`).
-            A label, so a press anywhere on the 44 px pill, its padding too, puts the caret in the box (SCRUM-1016 review). */}
-        <label data-reply-pill className="relative flex min-w-0 flex-1 cursor-text rounded-[22px] border border-field bg-ground px-4 py-[calc((var(--ui-h-icon)-22px)/2)] focus-within:outline-2 focus-within:outline-coral">
-          {/* SCRUM-1045: the placeholder on one line, ending in a true ellipsis where the
-              box is narrow (a textarea's own placeholder wraps, growing the box, or is
-              cut mid-word). The native one stays, unseen, for assistive technology. */}
-          {shown === '' && (
-            <span
-              aria-hidden
-              data-placeholder
-              className="pointer-events-none absolute inset-x-4 top-1/2 -translate-y-1/2 truncate text-body text-ink-muted"
-              style={{ lineHeight: `${COMPOSER_LINE_PX}px` }}
-            >
-              {placeholder}
-            </span>
-          )}
+        <ComposerPill reply placeholder={placeholder} empty={shown === ''}>
           <textarea
             ref={inputRef}
             rows={1}
@@ -416,9 +446,9 @@ export function Composer({
             style={{ lineHeight: `${COMPOSER_LINE_PX}px` }}
             aria-label="Reply"
             placeholder={placeholder}
-            className="block w-full min-w-0 resize-none bg-transparent text-body text-ink placeholder:whitespace-nowrap placeholder:text-transparent focus:outline-none disabled:cursor-not-allowed"
+            className={`${COMPOSER_TEXTAREA} disabled:cursor-not-allowed`}
           />
-        </label>
+        </ComposerPill>
         <button
           type="submit"
           disabled={!canSend}

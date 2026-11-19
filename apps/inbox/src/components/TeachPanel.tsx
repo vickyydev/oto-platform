@@ -10,7 +10,8 @@ import { StatusBadge, intentTitle } from '@/components/assistant-parts';
 import { Eyebrow } from '@/components/atoms';
 import { InlineError, PAGE_COLUMN } from '@/components/settings-parts';
 import { BADGE, BTN_SMALL, HINT, TONE } from '@/components/ui';
-import { COMPOSER_LINE_PX, composerBox, sendsOnKey } from '@/lib/composer';
+import { ComposerPill } from '@/components/Composer';
+import { COMPOSER_LINE_PX, COMPOSER_TEXTAREA, composerBox, sendsOnKey } from '@/lib/composer';
 import {
   RULE_CONDITION_LABEL,
   TEACH_MESSAGE_MAX,
@@ -271,19 +272,9 @@ export function TeachPanel({ me, active = true, onTab }: { me: InboxMe; active?:
               <InlineError text={error} tone={error === NOT_ON_YOUR_ACCESS ? 'ask' : 'danger'} />
             </div>
           )}
-          <form onSubmit={onSubmit} className="flex items-end gap-2">
-            {/* The pill is the box's frame; a press anywhere on it puts the caret in the box (the Inbox's reply pill). */}
-            <label className="relative flex min-w-0 flex-1 cursor-text rounded-[22px] border border-field bg-ground px-4 py-[calc((var(--ui-h-icon)-22px)/2)] focus-within:outline-2 focus-within:outline-coral">
-              {/* The placeholder on one line, ending in an ellipsis where the box is narrow; the native one stays for assistive technology. */}
-              {draft === '' && (
-                <span
-                  aria-hidden
-                  className="pointer-events-none absolute inset-x-4 top-1/2 -translate-y-1/2 truncate text-body text-ink-muted"
-                  style={{ lineHeight: `${COMPOSER_LINE_PX}px` }}
-                >
-                  {TEACH_PLACEHOLDER}
-                </span>
-              )}
+          <form data-composer onSubmit={onSubmit} className="flex items-end gap-2">
+            {/* The Inbox's message pill: a press anywhere on it puts the caret in the box. */}
+            <ComposerPill placeholder={TEACH_PLACEHOLDER} empty={draft === ''}>
               <textarea
                 ref={boxRef}
                 rows={1}
@@ -295,9 +286,9 @@ export function TeachPanel({ me, active = true, onTab }: { me: InboxMe; active?:
                 aria-describedby={keysId}
                 placeholder={TEACH_PLACEHOLDER}
                 style={{ lineHeight: `${COMPOSER_LINE_PX}px` }}
-                className="block w-full min-w-0 resize-none bg-transparent text-body text-ink placeholder:whitespace-nowrap placeholder:text-transparent focus:outline-none"
+                className={COMPOSER_TEXTAREA}
               />
-            </label>
+            </ComposerPill>
             <button
               type="submit"
               disabled={busy || !draft.trim()}

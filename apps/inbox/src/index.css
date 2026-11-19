@@ -319,6 +319,13 @@ html.dark {
   /* A field: the large control, and never under 44 px on a touch screen, where
      a text box cannot borrow `.hit`'s invisible extension (SCRUM-1043). */
   --spacing-field: max(var(--ui-h-lg), var(--ui-touch-min, 0px));
+  /* A line in a stack (a page or a view in a column, a menu's item, a check
+     line in a form): drawn at the control's height, and never under 44 px on
+     a touch screen, where the line above and the line below leave `.hit`'s
+     extension no room, so a finger's tap would land on the neighbour
+     (SCRUM-1045). The `-lg` one for a line of the large control's height. */
+  --spacing-row-touch: max(var(--ui-h), var(--ui-touch-min, 0px));
+  --spacing-row-touch-lg: max(var(--ui-h-lg), var(--ui-touch-min, 0px));
   --spacing-icon: var(--ui-h-icon);
   --spacing-pane: var(--ui-pane);
   --spacing-row: var(--ui-row);
@@ -441,6 +448,16 @@ h3 {
 @media (any-pointer: coarse) {
   :root {
     --ui-touch-min: 44px;
+  }
+  /*
+   * A composer's bar (the reply's, Teach's): its pill is a text box, which
+   * cannot borrow `.hit`'s extension, so on a touch screen the bar's icon
+   * step is 44 px. The pill (whose padding is taken from the step), Send and
+   * the icons beside it stay one height, a finger's (SCRUM-1043). With a
+   * mouse they keep the scale's own.
+   */
+  [data-composer] {
+    --ui-h-icon: var(--ui-touch-min);
   }
 }
 @layer base {

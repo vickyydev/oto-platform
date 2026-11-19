@@ -43,9 +43,9 @@ export const SECTION_CARD = 'min-w-0 rounded-2xl border border-line bg-card';
  */
 export const SETTINGS_ROW = 'flex min-w-0 flex-wrap gap-x-3 gap-y-2.5 border-b border-line-soft px-pane py-row last:border-b-0';
 
-/** An item of a three-dot menu: the menu's height, the coral focus ring drawn inside it. */
+/** An item of a three-dot menu: the menu's height, 44 px on a touch screen (`row-touch-lg`), the coral focus ring drawn inside it. */
 export const MENU_ITEM =
-  'hit flex min-h-ctl-lg w-full items-center gap-3 rounded-xl px-3 text-left text-ui font-medium text-ink hover:bg-wash disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-coral';
+  'hit flex min-h-row-touch-lg w-full items-center gap-3 rounded-xl px-3 text-left text-ui font-medium text-ink hover:bg-wash disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-coral';
 
 /** A page's help line under its title. */
 const PAGE_HELP = 'max-w-prose text-ui leading-relaxed text-ink-soft';

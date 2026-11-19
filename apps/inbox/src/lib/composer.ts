@@ -39,6 +39,13 @@ export function sendsOnKey(e: { key: string; shiftKey: boolean; composing?: bool
 }
 
 /**
+ * The message box inside the pill (`ComposerPill`): no frame and no padding
+ * of its own, its placeholder kept to one line and drawn by the pill.
+ */
+export const COMPOSER_TEXTAREA =
+  'block w-full min-w-0 resize-none bg-transparent text-body text-ink placeholder:whitespace-nowrap placeholder:text-transparent focus:outline-none';
+
+/**
  * A composer icon (Templates, the microphone; SCRUM-1016, Chat.dc.html):
  * 44 px, in the soft ink. Here so the composer and its microphone share it
  * without importing each other.

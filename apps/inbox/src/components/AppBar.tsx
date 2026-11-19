@@ -52,7 +52,7 @@ export const BACK_TO_SUITE_LABEL = 'Back to the suite';
 export const SIGN_OUT_LABEL = 'Sign out';
 
 const ITEM =
-  'hit flex min-h-ctl-lg w-full items-center gap-3 rounded-xl px-3 text-left text-ui font-medium text-ink hover:bg-wash focus:bg-wash focus:outline-none';
+  'hit flex min-h-row-touch-lg w-full items-center gap-3 rounded-xl px-3 text-left text-ui font-medium text-ink hover:bg-wash focus:bg-wash focus:outline-none';
 
 export type AccountMenuProps = {
   me: InboxMe;
@@ -289,7 +289,7 @@ export function AppBar({
           <img src={logoUrl} alt="OTO" className="block h-5 w-auto md:h-[22px]" />
           <h1 className="text-display font-extrabold leading-none tracking-[-0.02em] text-ink">Inbox</h1>
         </div>
-        <label className="hidden h-ctl-lg min-w-0 max-w-[380px] flex-[1_1_260px] items-center gap-2 rounded-xl border border-field bg-ground px-3 focus-within:border-ink-muted md:flex">
+        <label className="hidden h-field min-w-0 max-w-[380px] flex-[1_1_260px] items-center gap-2 rounded-xl border border-field bg-ground px-3 focus-within:border-ink-muted md:flex">
           <Search aria-hidden className="h-[18px] w-[18px] shrink-0 text-ink-muted" />
           <input
             type="search"

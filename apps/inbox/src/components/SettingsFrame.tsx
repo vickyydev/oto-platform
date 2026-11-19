@@ -60,7 +60,7 @@ export function settingsCurrent(items: readonly SettingsNavItem[], page: Setting
 }
 
 /** A line of the column (the views column's look, Rail `ScopeNav`): its icon, its words, chosen on the band. */
-const NAV_ITEM = `hit flex min-h-ctl w-full min-w-0 items-center gap-2.5 rounded-[10px] px-3 text-left text-ui text-ink transition ${FOCUS_INSIDE}`;
+const NAV_ITEM = `hit flex min-h-row-touch w-full min-w-0 items-center gap-2.5 rounded-[10px] px-3 text-left text-ui text-ink transition ${FOCUS_INSIDE}`;
 
 function NavList({ items, current, onOpen }: { items: readonly SettingsNavItem[]; current: SettingsKey | null; onOpen: (i: SettingsNavItem) => void }) {
   const groupId = useId();
@@ -222,7 +222,7 @@ export function SettingsFrame({
           <button
             type="button"
             onClick={onBack}
-            className={`hit flex min-h-ctl w-full items-center gap-2 rounded-[10px] px-3 text-left text-ui font-semibold text-ink-soft transition hover:bg-wash hover:text-ink ${FOCUS_INSIDE}`}
+            className={`hit flex min-h-row-touch w-full items-center gap-2 rounded-[10px] px-3 text-left text-ui font-semibold text-ink-soft transition hover:bg-wash hover:text-ink ${FOCUS_INSIDE}`}
           >
             <ArrowLeft aria-hidden className="h-4 w-4 shrink-0" />
             {BACK_TO_INBOX}

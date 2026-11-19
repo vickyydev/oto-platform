@@ -106,7 +106,7 @@ function controlsAreSound(scope: Element) {
   for (const b of scope.querySelectorAll('button')) {
     expect(nameOf(b), b.outerHTML.slice(0, 120)).not.toBe('');
     expect(b.className, nameOf(b)).toMatch(/(?:^|\s)hit(?:\s|$)/);
-    expect(b.className, nameOf(b)).toMatch(/(?:^|\s)(?:min-h|h|size)-(?:ctl|ctl-sm|ctl-lg|icon)(?:\s|$)/);
+    expect(b.className, nameOf(b)).toMatch(/(?:^|\s)(?:min-h|h|size)-(?:ctl|ctl-sm|ctl-lg|icon|row-touch|row-touch-lg)(?:\s|$)/);
   }
   expect(scope.innerHTML).not.toMatch(/\b(?:bg|text|border|ring)-(?:slate|amber|indigo|emerald|violet|rose|sky|orange|gray|teal|red|green)-\d/);
 }

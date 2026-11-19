@@ -49,10 +49,14 @@ export const LABEL = 'text-note font-semibold text-ink';
 /** A quiet line under a field. */
 export const HINT = 'text-meta text-ink-muted';
 
-/** A checkbox or a radio with its words: the whole line is the 44 px target. */
-export const CHECK_LINE = 'hit inline-flex min-h-ctl cursor-pointer items-center gap-2.5 text-ui text-ink-soft';
+/**
+ * A checkbox or a radio with its words: the whole line is the target, and 44
+ * px tall on a touch screen (`row-touch`), where two lines one under the other
+ * leave `hit`'s extension no room (SCRUM-1045).
+ */
+export const CHECK_LINE = 'hit inline-flex min-h-row-touch cursor-pointer items-center gap-2.5 text-ui text-ink-soft';
 /** The same, for words that run to more than one line: the box stays by the first line. */
-export const CHECK_LINES = 'hit flex min-h-ctl cursor-pointer items-start gap-2.5 py-2 text-ui leading-relaxed text-ink-soft';
+export const CHECK_LINES = 'hit flex min-h-row-touch cursor-pointer items-start gap-2.5 py-2 text-ui leading-relaxed text-ink-soft';
 export const CHECK_BOX = 'h-5 w-5 shrink-0 accent-coral md:h-4 md:w-4';
 
 /**

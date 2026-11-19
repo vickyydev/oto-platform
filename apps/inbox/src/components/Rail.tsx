@@ -91,7 +91,7 @@ function ScopeNav({ tabs, tab, counts, onTab }: { tabs: readonly InboxTab[]; tab
             type="button"
             onClick={() => onTab(t)}
             aria-current={active ? 'page' : undefined}
-            className={`hit flex min-h-ctl items-center justify-between gap-2 rounded-[10px] px-3 text-left text-ui text-ink transition focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-coral ${
+            className={`hit flex min-h-row-touch items-center justify-between gap-2 rounded-[10px] px-3 text-left text-ui text-ink transition focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-coral ${
               active ? 'bg-band font-bold' : 'font-medium hover:bg-wash'
             }`}
           >
@@ -118,7 +118,11 @@ interface Choice {
   count?: number;
 }
 
-/** A line of the desktop's views column (Desktop.dc.html): its dot, its words, its count. */
+/**
+ * A line of the desktop's views column (Desktop.dc.html): its dot, its words,
+ * its count; 44 px tall on a touch screen, where the lines stand one on another
+ * (`row-touch`, SCRUM-1045).
+ */
 function ColumnChoice({ c }: { c: Choice }) {
   return (
     <button
@@ -127,7 +131,7 @@ function ColumnChoice({ c }: { c: Choice }) {
       aria-pressed={c.pressed}
       onClick={c.onPress}
       title={c.title ?? c.label}
-      className={`hit flex min-h-ctl w-full min-w-0 items-center gap-2.5 rounded-[10px] px-3 text-left text-ui text-ink transition hover:bg-wash focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-coral ${
+      className={`hit flex min-h-row-touch w-full min-w-0 items-center gap-2.5 rounded-[10px] px-3 text-left text-ui text-ink transition hover:bg-wash focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-coral ${
         c.pressed ? 'bg-wash font-bold' : ''
       }`}
     >
@@ -143,7 +147,9 @@ function Group({ label, title, layout, children }: { label: string; title: strin
   return layout === 'sheet' ? (
     <div role="group" aria-label={label}>
       <h3 className="mb-2.5 text-note font-bold text-ink-soft">{title}</h3>
-      <div className="flex flex-wrap gap-2">{children}</div>
+      {/* The pills wrap onto lines 12 px apart on a touch screen, so a 32 px pill's 44 px target never
+          reaches into the line below (SCRUM-1045); 8 px with a mouse, or on a phone's 44 px pills. */}
+      <div className="flex flex-wrap gap-2 [@media(any-pointer:coarse)]:gap-y-3">{children}</div>
     </div>
   ) : (
     <div role="group" aria-label={label} className="flex flex-col gap-0.5">
@@ -274,7 +280,7 @@ export function HideNoticesSwitch({ on, onChange, compact = false }: { on: boole
     />
   );
   return compact ? (
-    <label title={HIDE_NOTICES_HINT} className="hit flex min-h-ctl cursor-pointer items-center gap-2.5 px-3 text-note text-ink-soft">
+    <label title={HIDE_NOTICES_HINT} className="hit flex min-h-row-touch cursor-pointer items-center gap-2.5 px-3 text-note text-ink-soft">
       {input}
       {HIDE_NOTICES_LABEL}
     </label>
