@@ -200,20 +200,21 @@ try {
     const page = await pdf({ required: true, setMenuEnabled: true, setMenuTemplateName: "ZZ TEST set", menus: { kids, adults, adultsDiffer: true } });
     const adultsAt = page.indexOf('data-adults="differ"');
     assert.ok(adultsAt > 0, "the adults' own heading");
-    // SCRUM-1028 (the brief: the chosen dishes by name, without the set menu's numbering): a set-menu
-    // choice prints by its name; its note, which holds only its group's label "(Pizza)", is left out.
-    assert.deepEqual(rowsOf(page.slice(0, adultsAt)), ["1x Hawaiian SET", "3x Margherita EXTRA 400฿ each"]);
-    assert.deepEqual(rowsOf(page.slice(adultsAt)), ["1x Hawaiian SET", "2x Margherita EXTRA 450฿ each"]);
+    // SCRUM-1050, R13 (the owner's answer of 19 November): a set-menu choice prints with its group's
+    // label beside it again, "Hawaiian (Pizza)", as before 19 November; SCRUM-1028 had left the label
+    // out and these rows pinned that.
+    assert.deepEqual(rowsOf(page.slice(0, adultsAt)), ["1x Hawaiian (Pizza) SET", "3x Margherita EXTRA 400฿ each"]);
+    assert.deepEqual(rowsOf(page.slice(adultsAt)), ["1x Hawaiian (Pizza) SET", "2x Margherita EXTRA 450฿ each"]);
     assert.equal(/kids only|adults only|kids 3 · adults 2/.test(page), false, "never one row at the kids' price, no marks");
     // The same price each: each list its own row and count.
     const same = rowsOf(await pdf({ required: true, setMenuEnabled: true, menus: { kids, adults: [adults[0]!, { ...adults[1]!, price: 400 }], adultsDiffer: true } }));
-    assert.deepEqual(same, ["1x Hawaiian SET", "3x Margherita EXTRA 400฿ each", "1x Hawaiian SET", "2x Margherita EXTRA 400฿ each"]);
+    assert.deepEqual(same, ["1x Hawaiian (Pizza) SET", "3x Margherita EXTRA 400฿ each", "1x Hawaiian (Pizza) SET", "2x Margherita EXTRA 400฿ each"]);
     // The one dish the till charges once (name, count and code): the adults' row says so, no second price.
     const once = rowsOf(await pdf({ required: true, setMenuEnabled: false, menus: { kids: [{ ...kids[1]!, quantity: 2 }], adults: [{ ...adults[1]! }], adultsDiffer: true } }));
     assert.deepEqual(once, ["2x Margherita EXTRA 400฿ each", "2x Margherita EXTRA charged once, with the kids' line"], "charged once, with the kids' line");
     // A SET dish for the kids and an EXTRA of it for the adults: each in its list, the adults' at its price.
     const kinds = rowsOf(await pdf({ required: true, setMenuEnabled: true, menus: { kids: [set("Margherita", PIZZA)], adults: [{ quantity: 3, itemName: "Margherita", price: 300, source: "additional", productCode: "CF-24" }], adultsDiffer: true } }));
-    assert.deepEqual(kinds, ["1x Margherita SET", "3x Margherita EXTRA 300฿ each"]);
+    assert.deepEqual(kinds, ["1x Margherita (Pizza) SET", "3x Margherita EXTRA 300฿ each"], "SCRUM-1050, R13: the group's label beside the set dish");
     // A note of the adults' own on the same line: printed on their row (charged once, with the kids').
     const noted = rowsOf(await pdf({ required: true, setMenuEnabled: false, menus: { kids: [{ ...kids[1]! }], adults: [{ ...kids[1]!, notes: "no basil" }], adultsDiffer: true } }));
     assert.deepEqual(noted, ["3x Margherita EXTRA 400฿ each", "3x Margherita (no basil) EXTRA charged once, with the kids' line"]);

@@ -61,6 +61,7 @@ import type { DepositSaveNote } from "@shared/partyDeposit";
 import { OBJECT_STORAGE } from "./config/env";
 import { beoActivitiesOf, beoTimelineSourceOf, madeStepRowsOf, readBeoTimeline, tickMadeStep } from "./lib/beoTimelineRead";
 import { BEO_DEPOSIT_MANAGERS_ONLY, mayChangeBeoDeposit } from "@shared/beoDepositManager";
+import { guestsSocksRefusal } from "@shared/beoGuestsSocks";
 import { uploadToObjectStorage } from "./file-storage";
 import { s3PresignedGet } from "./storage/s3Storage";
 import { onStaff } from "./lib/payOnlyAccess";
@@ -287,6 +288,10 @@ export function kitchenPlanDbDataOf(kp: Record<string, any>): Record<string, any
     ...(cakes !== null ? { cakeQuantity: cakes } : {}),
     cakeNotes: kp.cakeNotes || null,
     cakeTime: kp.cakeTime || null,
+    // SCRUM-1030: the Kitchen Notes, the plan's own column the Day-of view already edits, written
+    // only when the body names them (the BEO editor names them when they were changed in it): a
+    // writer that sends none keeps the plan's own.
+    ...("kitchenNotes" in kp ? { kitchenNotes: typeof kp.kitchenNotes === "string" && kp.kitchenNotes.trim() ? kp.kitchenNotes : null } : {}),
     serviceSchedule: kp.serviceSchedule || [],
     setMenuEnabled: kp.setMenuEnabled ?? false,
     setMenuTemplateId: kp.setMenuTemplateId || null,
@@ -1763,6 +1768,12 @@ export function registerBeoRoutes(app: Express) {
         if (startRefused) return res.status(400).json({ error: startRefused });
       }
 
+      // SCRUM-1031: the expected extra guests and the socks arrangement the form names are refused
+      // in words, before anything is written, when they are not what the party can store
+      // (shared/beoGuestsSocks.ts); a Save that names none of them is not asked.
+      const guestsSocksRefused = guestsSocksRefusal(eventUpdates as Record<string, unknown> | undefined);
+      if (guestsSocksRefused) return res.status(400).json({ error: guestsSocksRefused });
+
       // Validate times: endTime must be after startTime
       if (eventUpdates?.startTime && eventUpdates?.endTime) {
         const timeToMinutes = (time: string): number => {
@@ -2890,6 +2901,11 @@ export function registerBeoRoutes(app: Express) {
         kidTurningAge: event.kidTurningAge ?? undefined,
         numChildren: event.numChildren || undefined,
         numAdults: event.numAdults || undefined,
+        // SCRUM-1031: the expected extra guests and the socks arrangement, as the party stores them.
+        expectedExtraKids: event.expectedExtraKids,
+        expectedExtraAdults: event.expectedExtraAdults,
+        socksArrangement: event.socksArrangement,
+        socksNote: event.socksNote,
         programName: event.programName || undefined,
         programDetails: event.programDetails || undefined,
         activities: event.activities || undefined,
