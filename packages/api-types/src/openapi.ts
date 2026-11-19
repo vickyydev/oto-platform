@@ -37444,7 +37444,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description The conversations the caller can see — operator-wide reading sees all; a branch grant that branch; a team member (a department-scoped grant) the team's; anyone the conversations they hold a slot on — newest activity first, keyset-paged by `cursor`. `tab` applies the ported rule: mine = active and on it; team = every active one visible (the viewer’s own included); handled = handled. Filters: category, branch (that branch's and the operator-wide ones — a park's inbox; SCRUM-789: never a conversation held in the General inbox), `inbox=general` (SCRUM-789: only the general conversations held out of the park inboxes — routed, on no team, a general question the assistant is answering), status, language, `q` (customer, intent, last message), `unanswered=true` (a customer message or a routing after the last staff reply; AI lines do not count), the handled date range, and `resolvedBy` (on the handled tab only). `tabCounts` counts the viewer’s tabs over everything visible, before filters. (SCRUM-996) Each row’s `depositSignal` says where a pre-booking birthday deposit stands — `paid`, `paid_date_passed` or `needs_checking`, words only, never an amount — to whoever sees the row; the first page also carries `readyToBook`, the tab’s rows (same filters) whose deposit is paid and not yet booked, newest activity first, which the shell pins above the list. Needs inbox:conversation:read somewhere in the operator. */
+        /** @description The conversations the caller can see — operator-wide reading sees all; a branch grant that branch; a team member (a department-scoped grant) the team's; anyone the conversations they hold a slot on — newest activity first, keyset-paged by `cursor`. `tab` applies the ported rule: mine = active and on it; team = every active one visible (the viewer’s own included); handled = handled. Filters: category, branch (that branch's and the operator-wide ones — a park's inbox; SCRUM-789: never a conversation held in the General inbox), `inbox=general` (SCRUM-789: only the general conversations held out of the park inboxes — routed, on no team, a general question the assistant is answering), status, language, `q` (customer, intent, last message), `unanswered=true` (a customer message or a routing after the last staff reply; AI lines do not count), the handled date range, and `resolvedBy` (on the handled tab only). (SCRUM-1016) `replyable=true` leaves out the threads that cannot take a reply (the till’s check-in notices), and `unread=true` keeps only those with a customer message after the caller’s own read marker. `tabCounts` counts the viewer’s tabs over everything visible, before filters — but with `replyable=true` the notices are left out of them too. (SCRUM-996) Each row’s `depositSignal` says where a pre-booking birthday deposit stands — `paid`, `paid_date_passed` or `needs_checking`, words only, never an amount — to whoever sees the row; the first page also carries `readyToBook`, the tab’s rows (same filters) whose deposit is paid and not yet booked, newest activity first, which the shell pins above the list, and (SCRUM-1016) `topicCounts`, each topic’s count for this tab and these filters but the topic’s own. Needs inbox:conversation:read somewhere in the operator. */
         get: {
             parameters: {
                 query?: {
@@ -37457,6 +37457,8 @@ export interface paths {
                     q?: string;
                     channelAccountId?: string;
                     unanswered?: "true" | "false";
+                    replyable?: "true" | "false";
+                    unread?: "true" | "false";
                     phone?: string;
                     handledFrom?: string;
                     handledTo?: string;
@@ -37609,6 +37611,13 @@ export interface paths {
                                 mine?: number;
                                 team?: number;
                                 handled?: number;
+                            };
+                            topicCounts?: {
+                                birthdays: number;
+                                general: number;
+                                marketing: number;
+                                gm: number;
+                                heldInGeneral: number;
                             };
                         };
                     };
@@ -38275,10 +38284,12 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description The metric cards, over the conversations the caller can see: new today and handled today (the Bangkok day), unanswered, active, the average first response (first staff reply less the start; opening hours ignored) and every conversation by category. Needs inbox:dashboard:read somewhere in the operator. */
+        /** @description The metric cards, over the conversations the caller can see: new today and handled today (the Bangkok day), unanswered, active, the average first response (first staff reply less the start; opening hours ignored) and every conversation by category. (SCRUM-1016) `replyable=true` leaves the threads that cannot take a reply (the till’s check-in notices) out of every figure, as the list does while it hides them. Needs inbox:dashboard:read somewhere in the operator. */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    replyable?: "true" | "false";
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;

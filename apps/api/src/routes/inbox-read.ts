@@ -7,6 +7,7 @@ import {
   InboxConversationDetailSchema,
   InboxConversationListQuerySchema,
   InboxConversationListSchema,
+  InboxDashboardQuerySchema,
   InboxDashboardSchema,
   InboxMarkReadBodySchema,
   InboxMarkReadSchema,
@@ -115,11 +116,15 @@ export async function inboxReadRoutes(app: App): Promise<void> {
           'inbox), `inbox=general` (SCRUM-789: only the general conversations held out of the park inboxes — routed, on ' +
           'no team, a general question the assistant is answering), status, language, `q` (customer, intent, last message), ' +
           '`unanswered=true` (a customer message or a routing after the last staff reply; AI lines do not count), the ' +
-          'handled date range, and `resolvedBy` (on the handled tab only). `tabCounts` counts the viewer’s tabs over ' +
-          'everything visible, before filters. (SCRUM-996) Each row’s `depositSignal` says where a pre-booking ' +
+          'handled date range, and `resolvedBy` (on the handled tab only). (SCRUM-1016) `replyable=true` leaves out ' +
+          'the threads that cannot take a reply (the till’s check-in notices), and `unread=true` keeps only those ' +
+          'with a customer message after the caller’s own read marker. `tabCounts` counts the viewer’s tabs over ' +
+          'everything visible, before filters — but with `replyable=true` the notices are left out of them too. ' +
+          '(SCRUM-996) Each row’s `depositSignal` says where a pre-booking ' +
           'birthday deposit stands — `paid`, `paid_date_passed` or `needs_checking`, words only, never an amount — to ' +
           'whoever sees the row; the first page also carries `readyToBook`, the tab’s rows (same filters) whose ' +
-          'deposit is paid and not yet booked, newest activity first, which the shell pins above the list. ' +
+          'deposit is paid and not yet booked, newest activity first, which the shell pins above the list, and ' +
+          '(SCRUM-1016) `topicCounts`, each topic’s count for this tab and these filters but the topic’s own. ' +
           'Needs inbox:conversation:read somewhere in the operator.',
         querystring: InboxConversationListQuerySchema,
         response: { 200: InboxConversationListSchema },
@@ -267,13 +272,16 @@ export async function inboxReadRoutes(app: App): Promise<void> {
         description:
           'The metric cards, over the conversations the caller can see: new today and handled today (the Bangkok ' +
           'day), unanswered, active, the average first response (first staff reply less the start; opening hours ' +
-          'ignored) and every conversation by category. Needs inbox:dashboard:read somewhere in the operator.',
+          'ignored) and every conversation by category. (SCRUM-1016) `replyable=true` leaves the threads that ' +
+          'cannot take a reply (the till’s check-in notices) out of every figure, as the list does while it hides ' +
+          'them. Needs inbox:dashboard:read somewhere in the operator.',
+        querystring: InboxDashboardQuerySchema,
         response: { 200: InboxDashboardSchema },
       },
     },
     async (req) => {
       const { viewer } = await inboxCaller(req, 'inbox:dashboard:read');
-      return inboxDashboard(app.db, viewer, new Date());
+      return inboxDashboard(app.db, viewer, new Date(), req.query);
     },
   );
 

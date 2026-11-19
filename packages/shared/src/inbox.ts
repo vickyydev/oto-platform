@@ -304,6 +304,19 @@ export const InboxConversationListQuerySchema = z.object({
   /** Only the conversations a person still owes an answer (`isUnanswered`). */
   unanswered: TrueFalse.optional(),
   /**
+   * SCRUM-1016: only the conversations that can take a reply — the till's
+   * check-in notice threads (a number that cannot carry a reply) are left
+   * out. Applied in the database, so the paging, `tabCounts`, `topicCounts`
+   * and `readyToBook` leave them out too. Visibility is unchanged.
+   */
+  replyable: TrueFalse.optional(),
+  /**
+   * SCRUM-1016: only the conversations with a customer message after the
+   * caller's own read marker — the row's `unread` count above nought, by
+   * the same rule. Per caller; visibility is unchanged.
+   */
+  unread: TrueFalse.optional(),
+  /**
    * SCRUM-648: only the conversations whose contact has this phone, in any
    * format (normalised as every phone is). Visibility is unchanged; an
    * unreadable number matches nothing rather than reading as no filter.
@@ -438,6 +451,22 @@ export const InboxTabCountsSchema = z.object({
   handled: z.number().int().min(0).optional(),
 });
 
+/**
+ * SCRUM-1016: how many conversations each topic holds for this list — the
+ * tab and every filter except the topic itself, within what the caller can
+ * see — so the desktop's views column can say what a topic would show.
+ * `heldInGeneral` counts the general questions held out of the park inboxes
+ * (SCRUM-789, `inbox=general`), which are also counted under `general`.
+ */
+export const InboxTopicCountsSchema = z.object({
+  birthdays: z.number().int().min(0),
+  general: z.number().int().min(0),
+  marketing: z.number().int().min(0),
+  gm: z.number().int().min(0),
+  heldInGeneral: z.number().int().min(0),
+});
+export type InboxTopicCounts = z.infer<typeof InboxTopicCountsSchema>;
+
 export const InboxVisibilityLimitsSchema = z.object({
   categories: z.array(InboxCategorySchema).nullable(),
   channelAccountIds: z.array(Uuid).nullable(),
@@ -455,8 +484,14 @@ export const InboxConversationListSchema = z.object({
    * rows may also come in `conversations`, where they keep their place.
    */
   readyToBook: z.array(InboxConversationRowSchema).optional(),
-  /** The viewer's tabs, counted over everything they can see, before filters (:1088-1097). */
+  /**
+   * The viewer's tabs, counted over everything they can see, before filters
+   * (:1088-1097) — except `replyable`: while the till's notices are left out
+   * of the list they are left out of these counts too (SCRUM-1016).
+   */
   tabCounts: InboxTabCountsSchema,
+  /** SCRUM-1016: the topics' counts for this list; sent with the first page only. */
+  topicCounts: InboxTopicCountsSchema.optional(),
 });
 export type InboxConversationList = z.infer<typeof InboxConversationListSchema>;
 
@@ -715,6 +750,16 @@ export type InboxDashboardScope = (typeof INBOX_DASHBOARD_SCOPES)[number];
 
 /** Which conversations By category counts: the active ones (the Active card's population), or every status. */
 export const INBOX_DASHBOARD_POPULATIONS = ['active', 'all'] as const;
+
+/**
+ * `GET /inbox/dashboard` query (SCRUM-1016): `replyable=true` counts only the
+ * conversations that can take a reply, as the list does while its "Hide till
+ * notices" switch is on, so "Needs reply" never counts a till notice.
+ */
+export const InboxDashboardQuerySchema = z.object({
+  replyable: TrueFalse.optional(),
+});
+export type InboxDashboardQuery = z.infer<typeof InboxDashboardQuerySchema>;
 
 export const InboxDashboardSchema = z.object({
   /** Whose conversations every number below is over. */

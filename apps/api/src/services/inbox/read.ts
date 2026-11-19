@@ -14,10 +14,12 @@ import {
   type InboxConversationListQuery,
   type InboxConversationRow,
   type InboxDashboard,
+  type InboxDashboardQuery,
   type InboxDepositSignal,
   type InboxMe,
   type InboxMessage,
   type InboxTab,
+  type InboxTopicCounts,
   type InboxViewRole,
 } from '@oto/shared';
 import { errors } from '../../lib/errors';
@@ -176,10 +178,12 @@ const rowColumns = {
 
 type RawRow = Awaited<ReturnType<typeof selectRows>>[number];
 
-/** Customer messages after the viewer's last read one; all of them before any read. */
-function unreadSql(viewer: InboxViewer): SQL<number> {
-  return sql<number>`(
-    select count(*)::int from ${s.message} um
+/**
+ * The viewer's customer messages after their last read one; all of them
+ * before any read. One rule for the row's count and the Unread filter.
+ */
+function unreadMessagesSql(viewer: InboxViewer, select: SQL): SQL {
+  return sql`select ${select} from ${s.message} um
     where um.operator_id = ${s.conversation.operatorId}
       and um.conversation_id = ${s.conversation.id}
       and um.direction = 'inbound'
@@ -189,9 +193,32 @@ function unreadSql(viewer: InboxViewer): SQL<number> {
         where p.operator_id = ${s.conversation.operatorId}
           and p.conversation_id = ${s.conversation.id}
           and p.account_id = ${viewer.accountId}
-      ), '-infinity'::timestamptz)
-  )`;
+      ), '-infinity'::timestamptz)`;
 }
+
+/** Customer messages after the viewer's last read one; all of them before any read. */
+function unreadSql(viewer: InboxViewer): SQL<number> {
+  return sql<number>`(${unreadMessagesSql(viewer, sql`count(*)::int`)})`;
+}
+
+/** SCRUM-1016, the Unread filter: at least one customer message after the viewer's read marker. */
+function hasUnreadSql(viewer: InboxViewer): SQL {
+  return sql`exists (${unreadMessagesSql(viewer, sql`1`)})`;
+}
+
+/**
+ * SCRUM-1016, "Hide till notices": the conversation's number can take a
+ * reply. The till's check-in notices come in on a number that cannot
+ * (`channel_account.can_reply`, false for the console sender). An `exists` of
+ * its own, so the list (which joins the number) and the counts (which do not)
+ * apply one rule.
+ */
+export const replyableSql: SQL = sql`exists (
+  select 1 from ${s.channelAccount} replyable_ca
+  where replyable_ca.operator_id = ${s.conversation.operatorId}
+    and replyable_ca.id = ${s.conversation.channelAccountId}
+    and replyable_ca.can_reply
+)`;
 
 function selectRows(db: Db | Tx, viewer: InboxViewer) {
   return db
@@ -305,7 +332,7 @@ function toRow(
 }
 
 /** Every filter of the list except the tab, as SQL (`WhatsAppDemo.tsx` :1065-1085). */
-function filterSql(q: InboxConversationListQuery): SQL[] {
+function filterSql(q: InboxConversationListQuery, viewer: InboxViewer): SQL[] {
   const where: SQL[] = [];
   if (q.category) where.push(eq(s.conversation.category, q.category));
   // `matchesBranchFilter`: the branch's own, and the operator-wide ones (:1066);
@@ -321,6 +348,9 @@ function filterSql(q: InboxConversationListQuery): SQL[] {
   // SCRUM-220 playbook, the named inboxes: the number the conversation came in on.
   if (q.channelAccountId) where.push(eq(s.conversation.channelAccountId, q.channelAccountId));
   if (q.unanswered === 'true') where.push(unansweredSql);
+  // SCRUM-1016: "Hide till notices" and the Unread quick filter.
+  if (q.replyable === 'true') where.push(replyableSql);
+  if (q.unread === 'true') where.push(hasUnreadSql(viewer));
   if (q.phone !== undefined) {
     // SCRUM-648 (support lookup): the contact's stored E.164, never a partial match.
     const phone = normalizePhone(q.phone);
@@ -349,8 +379,17 @@ function filterSql(q: InboxConversationListQuery): SQL[] {
   return where;
 }
 
-/** The viewer's tabs, counted over everything they can see before any filter (:1088-1097). */
-async function tabCountsOf(db: Db, viewer: InboxViewer, tabs: InboxTab[]): Promise<InboxConversationList['tabCounts']> {
+/**
+ * The viewer's tabs, counted over everything they can see before any filter
+ * (:1088-1097) — but for the till's notices: while the list leaves them out
+ * (`replyable`), so do its tabs' counts (SCRUM-1016).
+ */
+async function tabCountsOf(
+  db: Db,
+  viewer: InboxViewer,
+  tabs: InboxTab[],
+  opts: { replyable: boolean },
+): Promise<InboxConversationList['tabCounts']> {
   if (tabs.length === 0) return {};
   const [row] = await db
     .select({
@@ -359,10 +398,43 @@ async function tabCountsOf(db: Db, viewer: InboxViewer, tabs: InboxTab[]): Promi
       handled: sql<number>`count(*) filter (where ${inTabSql('handled', viewer)})::int`,
     })
     .from(s.conversation)
-    .where(visibleConversationsSql(viewer));
+    .where(and(visibleConversationsSql(viewer), opts.replyable ? replyableSql : undefined));
   const counts: InboxConversationList['tabCounts'] = {};
   for (const t of tabs) counts[t] = Number(row?.[t] ?? 0);
   return counts;
+}
+
+/**
+ * SCRUM-1016: each topic's count for this list — the tab and every filter
+ * but the topic's own (`category`, and `inbox=general`, which the Topic
+ * choice also sets), within what the viewer can see — so the desktop's views
+ * column says what each topic would show. One aggregate over the list's own
+ * rule; the list itself is untouched.
+ */
+async function topicCountsOf(db: Db, viewer: InboxViewer, q: InboxConversationListQuery): Promise<InboxTopicCounts> {
+  const scope: SQL[] = [visibleConversationsSql(viewer), ...filterSql({ ...q, category: undefined, inbox: undefined }, viewer)];
+  if (q.tab) scope.push(inTabSql(q.tab, viewer));
+  const of = (category: InboxCategory): SQL<number> =>
+    sql<number>`count(*) filter (where ${s.conversation.category} = ${category})::int`;
+  const [row] = await db
+    .select({
+      birthdays: of('birthdays'),
+      general: of('general'),
+      marketing: of('marketing'),
+      gm: of('gm'),
+      heldInGeneral: sql<number>`count(*) filter (where ${generalPoolSql})::int`,
+    })
+    .from(s.conversation)
+    // The search reads the contact's name: the list's own join.
+    .innerJoin(s.contact, and(eq(s.contact.operatorId, s.conversation.operatorId), eq(s.contact.id, s.conversation.contactId)))
+    .where(and(...scope));
+  return {
+    birthdays: Number(row?.birthdays ?? 0),
+    general: Number(row?.general ?? 0),
+    marketing: Number(row?.marketing ?? 0),
+    gm: Number(row?.gm ?? 0),
+    heldInGeneral: Number(row?.heldInGeneral ?? 0),
+  };
 }
 
 /** SCRUM-996: the deposit signals of the rows the cheap look picked, by the one rule. */
@@ -395,7 +467,7 @@ export async function listConversations(
   tabs: InboxTab[],
   q: InboxConversationListQuery,
 ): Promise<InboxConversationList> {
-  const scope: SQL[] = [visibleConversationsSql(viewer), ...filterSql(q)];
+  const scope: SQL[] = [visibleConversationsSql(viewer), ...filterSql(q, viewer)];
   if (q.tab) scope.push(inTabSql(q.tab, viewer));
   const where: SQL[] = [...scope];
   if (q.cursor) {
@@ -422,9 +494,11 @@ export async function listConversations(
     conversations: page.map((r) => toRow(r, assignments.get(r.id) ?? [], signals.get(r.id) ?? null)),
     access: await inboxVisibilityLimits(db, viewer),
     nextCursor,
-    tabCounts: await tabCountsOf(db, viewer, tabs),
-    // The group rides on the first page; a later page is the list's own.
-    ...(q.cursor ? {} : { readyToBook: await readyToBookOf(db, viewer, scope) }),
+    tabCounts: await tabCountsOf(db, viewer, tabs, { replyable: q.replyable === 'true' }),
+    // The group and the topics' counts ride on the first page; a later page is the list's own.
+    ...(q.cursor
+      ? {}
+      : { readyToBook: await readyToBookOf(db, viewer, scope), topicCounts: await topicCountsOf(db, viewer, q) }),
   };
 }
 
@@ -744,11 +818,21 @@ export async function dashboardScopeOf(db: Db, viewer: InboxViewer): Promise<Inb
  * Active card — and says so (`population`). The prototype counted every
  * scoped conversation whatever its status (:1121-1125), which put 15 under
  * the categories beside an Active of 12 on the test night (SCRUM-220, R3).
+ *
+ * `replyable` (SCRUM-1016): while the list hides the till's notices, every
+ * figure here leaves them out too, so "Needs reply" never counts a thread
+ * that cannot take a reply.
  */
-export async function inboxDashboard(db: Db, viewer: InboxViewer, now: Date): Promise<InboxDashboard> {
+export async function inboxDashboard(
+  db: Db,
+  viewer: InboxViewer,
+  now: Date,
+  q: InboxDashboardQuery = {},
+): Promise<InboxDashboard> {
   const day = inboxToday(now);
   const start = dayStartSql(day);
   const weekStart = inboxWeekStart(day);
+  const within = and(visibleConversationsSql(viewer), q.replyable === 'true' ? replyableSql : undefined)!;
   const activeIn = (category: InboxCategory): SQL =>
     sql`count(*) filter (where ${s.conversation.status} = 'active' and ${s.conversation.category} = ${category})::int`;
   const [row] = await db
@@ -766,7 +850,7 @@ export async function inboxDashboard(db: Db, viewer: InboxViewer, now: Date): Pr
       gm: activeIn('gm').mapWith(Number),
     })
     .from(s.conversation)
-    .where(visibleConversationsSql(viewer));
+    .where(within);
   // The BEO card (SCRUM-775): a birthday conversation whose event Book Date
   // made this week, one row per conversation so a second pill never counts
   // twice. Its own query: the correlation has to sit in a WHERE, where the
@@ -776,7 +860,7 @@ export async function inboxDashboard(db: Db, viewer: InboxViewer, now: Date): Pr
     .from(s.conversation)
     .where(
       and(
-        visibleConversationsSql(viewer),
+        within,
         eq(s.conversation.category, 'birthdays'),
         sql`${s.conversation.eventOrderRef} is not null`,
         sql`exists (
