@@ -45,9 +45,11 @@ import { getEmployeeDisplayName } from "./employeeDisplayName";
  *    day has passed (the schedule's "no change on a past date"). Each choice is
  *    written to the activity log with who and which way, never the figure
  *    (`single_shift_invited`, `single_shift_pay_changed`).
- *  - What the shift is worth is payroll's, and company payroll does not take a
- *    single shift yet: until the owner rules how it is paid, the month's
- *    payroll names every single shift it does not pay (payroll/world.ts).
+ *  - What the shift is worth is payroll's (SCRUM-1055): the run of the month
+ *    it is worked pays an old-contract shift as its own "Single shift" line
+ *    (payroll/world.ts, engine/company-calculations.ts); a casual day rate is
+ *    not paid there (company payroll has no pay for casual workers) and the
+ *    month's payroll names it, with every shift it cannot pay.
  *  - The kiosk (`singleShiftOpenOn`): the person clocks in and out at the
  *    shift's branch on its day, as anybody employed that day does, and from
  *    the next day the kiosk refuses them again by itself. The login stays in

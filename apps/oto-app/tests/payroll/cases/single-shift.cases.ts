@@ -132,3 +132,17 @@ test("everyone else's pay is identical with and without the single shift; calcul
 test("a shift of another month is not paid by this one", () => {
   assert.equal(personIn(run(world(undefined, { shift: "2026-11-02", clocked: false }))), undefined);
 });
+
+test("a leaver of last month, already in the month for the service-charge payout: the payout stays as it was, the shift adds its own line", () => {
+  const leaver = (x: EmployeePayrollProfile) => { x.lastWorkingDay = "2026-09-20"; };
+  const withShift = world(leaver);
+  const without = world(leaver);
+  delete without.branches["hkt-central"].staff.find((s) => s.id === FORMER)!.singleShifts;
+  without.attendance = without.attendance.filter((d) => d.staffId !== FORMER || d.date !== SHIFT);
+  const a = personIn(run(withShift))!, b = personIn(run(without))!;
+  const sc = (p: CompanyPerson) => p.lines.filter((l) => l.component === "sc");
+  assert.ok(sc(b).length > 0, "the leaver has last month's service charge");
+  assert.deepEqual(sc(a), sc(b));
+  assert.equal(line(a, `${SINGLE_SHIFT_COMPONENT}:zz-invitation-1`)!.amount, 500);
+  assert.equal(line(b, `${SINGLE_SHIFT_COMPONENT}:zz-invitation-1`), undefined);
+});
