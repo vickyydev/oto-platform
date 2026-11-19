@@ -1,0 +1,270 @@
+{
+  "ticket": "SCRUM-1016",
+  "landed": "7547eace27fcee0dcf28be57eca809857bb4072c",
+  "staging": {
+    "inbox": "oto-inbox-staging dep-dbvaea0u01pc73da7tmg",
+    "api": "oto-api-staging dep-dbvae8hsrm7s73btq9n0"
+  },
+  "accounts": [
+    "Demo Hana (GM)",
+    "Demo Anya (Birthdays EN/RU)"
+  ],
+  "sizes": [
+    "390x844",
+    "768x1024",
+    "1440x900"
+  ],
+  "dark": "the dark class put on the page by hand; the theme control was never pressed",
+  "chatsOpened": [
+    {
+      "who": "GM",
+      "category": "general",
+      "unreadBefore": 0,
+      "modelRead": "no"
+    },
+    {
+      "who": "birthdays agent",
+      "category": "birthdays",
+      "unreadBefore": 0,
+      "modelRead": "yes: the Book Date reading starts on open"
+    }
+  ],
+  "writesByThePages": 0,
+  "bookTheDate": [
+    {
+      "width": 390,
+      "closedWith": "Cancel",
+      "dialogsLeft": 0
+    },
+    {
+      "width": 1440,
+      "closedWith": "Cancel",
+      "dialogsLeft": 0
+    }
+  ],
+  "names": "rows whose name is not a Demo or ZZ TEST name are painted grey (face, name and last line)",
+  "measure": {
+    "gm": {
+      "list-390": {
+        "viewport": [
+          390,
+          844
+        ],
+        "pageScrolls": false,
+        "reply": null,
+        "rowsFullyVisible": 5,
+        "rowsPartlyVisible": 6,
+        "rowHeight": 94
+      },
+      "list-768": {
+        "viewport": [
+          768,
+          1024
+        ],
+        "pageScrolls": false,
+        "reply": null,
+        "rowsFullyVisible": 7,
+        "rowsPartlyVisible": 8,
+        "rowHeight": 94
+      },
+      "list-1440": {
+        "viewport": [
+          1440,
+          900
+        ],
+        "pageScrolls": false,
+        "reply": null,
+        "rowsFullyVisible": 7,
+        "rowsPartlyVisible": 8,
+        "rowHeight": 94
+      },
+      "handled-390": {
+        "viewport": [
+          390,
+          844
+        ],
+        "pageScrolls": false,
+        "reply": null,
+        "rowsFullyVisible": 3,
+        "rowsPartlyVisible": 4,
+        "rowHeight": 90
+      },
+      "handled-1440": {
+        "viewport": [
+          1440,
+          900
+        ],
+        "pageScrolls": false,
+        "reply": null,
+        "rowsFullyVisible": 5,
+        "rowsPartlyVisible": 6,
+        "rowHeight": 90
+      },
+      "chat-390": {
+        "viewport": [
+          390,
+          844
+        ],
+        "pageScrolls": false,
+        "reply": {
+          "top": 798,
+          "bottom": 818,
+          "left": 117,
+          "width": 196,
+          "height": 20,
+          "gapToBottom": 26
+        },
+        "rowsFullyVisible": 0,
+        "rowsPartlyVisible": 0,
+        "rowHeight": null
+      },
+      "chat-768": {
+        "viewport": [
+          768,
+          1024
+        ],
+        "pageScrolls": false,
+        "reply": {
+          "top": 976,
+          "bottom": 996,
+          "left": 489,
+          "width": 190,
+          "height": 20,
+          "gapToBottom": 28
+        },
+        "rowsFullyVisible": 7,
+        "rowsPartlyVisible": 8,
+        "rowHeight": 94
+      },
+      "chat-1440": {
+        "viewport": [
+          1440,
+          900
+        ],
+        "pageScrolls": false,
+        "reply": {
+          "top": 852,
+          "bottom": 872,
+          "left": 705,
+          "width": 318,
+          "height": 20,
+          "gapToBottom": 28
+        },
+        "rowsFullyVisible": 7,
+        "rowsPartlyVisible": 8,
+        "rowHeight": 94
+      }
+    },
+    "birthdays": {
+      "list-390": {
+        "viewport": [
+          390,
+          844
+        ],
+        "pageScrolls": false,
+        "reply": null,
+        "rowsFullyVisible": 5,
+        "rowsPartlyVisible": 6,
+        "rowHeight": 94
+      },
+      "list-768": {
+        "viewport": [
+          768,
+          1024
+        ],
+        "pageScrolls": false,
+        "reply": null,
+        "rowsFullyVisible": 7,
+        "rowsPartlyVisible": 8,
+        "rowHeight": 94
+      },
+      "list-1440": {
+        "viewport": [
+          1440,
+          900
+        ],
+        "pageScrolls": false,
+        "reply": null,
+        "rowsFullyVisible": 7,
+        "rowsPartlyVisible": 8,
+        "rowHeight": 94
+      },
+      "handled-390": {
+        "viewport": [
+          390,
+          844
+        ],
+        "pageScrolls": false,
+        "reply": null,
+        "rowsFullyVisible": 3,
+        "rowsPartlyVisible": 4,
+        "rowHeight": 90
+      },
+      "handled-1440": {
+        "viewport": [
+          1440,
+          900
+        ],
+        "pageScrolls": false,
+        "reply": null,
+        "rowsFullyVisible": 5,
+        "rowsPartlyVisible": 6,
+        "rowHeight": 90
+      },
+      "chat-390": {
+        "viewport": [
+          390,
+          844
+        ],
+        "pageScrolls": false,
+        "reply": {
+          "top": 798,
+          "bottom": 818,
+          "left": 117,
+          "width": 196,
+          "height": 20,
+          "gapToBottom": 26
+        },
+        "rowsFullyVisible": 0,
+        "rowsPartlyVisible": 0,
+        "rowHeight": null
+      },
+      "chat-768": {
+        "viewport": [
+          768,
+          1024
+        ],
+        "pageScrolls": false,
+        "reply": {
+          "top": 976,
+          "bottom": 996,
+          "left": 489,
+          "width": 190,
+          "height": 20,
+          "gapToBottom": 28
+        },
+        "rowsFullyVisible": 7,
+        "rowsPartlyVisible": 8,
+        "rowHeight": 94
+      },
+      "chat-1440": {
+        "viewport": [
+          1440,
+          900
+        ],
+        "pageScrolls": false,
+        "reply": {
+          "top": 852,
+          "bottom": 872,
+          "left": 705,
+          "width": 318,
+          "height": 20,
+          "gapToBottom": 28
+        },
+        "rowsFullyVisible": 7,
+        "rowsPartlyVisible": 8,
+        "rowHeight": 94
+      }
+    }
+  }
+}
