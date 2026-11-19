@@ -17,7 +17,7 @@ const SHIFT = "2026-10-14";
 const FORMER = "zz-former";
 
 /** The seed world with one former employee (left in June) cloned from a Central monthly profile, on a single shift. */
-function world(edit: (p: EmployeePayrollProfile) => void = () => undefined, opts: { clocked?: boolean; overtime?: number; shift?: string } = {}): PayrollWorld {
+function world(edit: (p: EmployeePayrollProfile) => void = () => undefined, opts: { clocked?: boolean; overtime?: number; shift?: string; invitations?: number } = {}): PayrollWorld {
   const data = createSeedData();
   const central = data.branches["hkt-central"];
   const model = central.staff.find((s) => s.id === "hkc-001")!;
@@ -31,7 +31,8 @@ function world(edit: (p: EmployeePayrollProfile) => void = () => undefined, opts
   const former: StaffMember = { ...structuredClone(model), id: FORMER, employeeNumber: FORMER, name: "ZZ TEST Former",
     monthlySalary: p.workerType === "day-rate" ? null : p.workerType === "contractor" ? p.fixedFee : p.monthlySalary,
     dayRate: p.workerType === "day-rate" ? p.dayRate : null, joinedOn: p.joinedOn, leftOn: p.lastWorkingDay, payrollProfile: p,
-    singleShifts: [{ invitationId: "zz-invitation-1", date: opts.shift ?? SHIFT }] };
+    // More than one invitation on the same day: two shifts that day, or the same shift sent twice.
+    singleShifts: Array.from({ length: opts.invitations ?? 1 }, (_, i) => ({ invitationId: `zz-invitation-${i + 1}`, date: opts.shift ?? SHIFT })) };
   central.staff.push(former);
   if (opts.clocked !== false) {
     const day: AttendanceDay = { id: `hkt-central-${FORMER}-${opts.shift ?? SHIFT}`, branchId: "hkt-central", staffId: FORMER, date: opts.shift ?? SHIFT,
@@ -59,7 +60,24 @@ test("R11: a day of a monthly salary is the salary ÷ the days in the month, one
   assert.deepEqual([shift.taxable, shift.ssoWage, shift.category], [true, true, "earning"]);
   assert.equal(money(shift.allocations.reduce((n, a) => n + a.amount, 0)), shift.amount);
   assert.match(shift.formula, /15500 monthly salary ÷ 31 days in 2026-10; single shift on 2026-10-14/);
-  assert.equal(p.lines.filter((l) => l.component === SINGLE_SHIFT_COMPONENT).length, 1, "one line per invitation");
+  assert.equal(p.lines.filter((l) => l.component === SINGLE_SHIFT_COMPONENT).length, 1, "one line for the day");
+});
+
+test("by the day: two invitations on one date are ONE day's pay and ONE food allowance, and the run names the second as already paid", () => {
+  const one = personIn(run(world()))!;
+  const calc = run(world(undefined, { invitations: 2 }));
+  const two = personIn(calc)!;
+  assert.deepEqual(two.lines.filter((l) => l.component === SINGLE_SHIFT_COMPONENT).map((l) => [l.id, l.amount]), [[`${SINGLE_SHIFT_COMPONENT}:zz-invitation-1`, 500]]);
+  assert.deepEqual(two.lines.filter((l) => l.component === "food").map((l) => [l.id, l.amount]), [[`${SINGLE_SHIFT_COMPONENT}-food:zz-invitation-1`, 60]]);
+  assert.match(line(two, `${SINGLE_SHIFT_COMPONENT}:zz-invitation-1`)!.formula, /2 single shifts that day, paid as one day/);
+  assert.equal(two.gross, one.gross, "the same gross as one invitation");
+  assert.equal(two.net, one.net);
+  assert.ok(calc.exceptions.some((e) => e.kind === "single-shift" && e.staffId === FORMER && e.severity === "warning"
+    && /a second single shift on 2026-10-14; the day is paid once/.test(e.message)));
+  const dayRate = (x: EmployeePayrollProfile) => { x.workerType = "day-rate"; x.dayRate = 700; x.monthlySalary = 0; };
+  const dr = personIn(run(world(dayRate, { invitations: 3 })))!;
+  assert.deepEqual(dr.lines.filter((l) => l.component === SINGLE_SHIFT_COMPONENT).map((l) => l.amount), [700], "one day rate for the worked day");
+  assert.equal(dr.lines.filter((l) => l.component === "food").length, 1);
 });
 
 test("R9: tax and social security through the old contract's own path, on this run's earnings", () => {
@@ -87,18 +105,29 @@ test("R10: the food allowance of the worked day on the food line's own flags; no
 });
 
 test("no clock-in: a monthly contract is paid by the calendar, a day-rate contract only for a worked day", () => {
-  const monthly = line(personIn(run(world(undefined, { clocked: false }))), `${SINGLE_SHIFT_COMPONENT}:zz-invitation-1`)!;
+  const unclocked = run(world(undefined, { clocked: false }));
+  const monthly = line(personIn(unclocked), `${SINGLE_SHIFT_COMPONENT}:zz-invitation-1`)!;
   assert.equal(monthly.amount, 500);
   assert.match(monthly.formula, /no clock-in recorded, a monthly contract is paid by the calendar/);
+  assert.ok(unclocked.exceptions.some((e) => e.kind === "single-shift" && e.staffId === FORMER && e.severity === "warning"
+    && /no clock-in on the single shift's day 2026-10-14; on the old monthly contract the day is paid by the calendar/.test(e.message)),
+  "the run says the day is paid without a clock-in");
+  assert.ok(!run(world()).exceptions.some((e) => e.kind === "single-shift"), "a clocked shift raises nothing");
   const dayRate = (x: EmployeePayrollProfile) => { x.workerType = "day-rate"; x.dayRate = 700; x.monthlySalary = 0; };
   assert.equal(line(personIn(run(world(dayRate))), `${SINGLE_SHIFT_COMPONENT}:zz-invitation-1`)!.amount, 700, "the old day rate, as it was");
   assert.equal(personIn(run(world(dayRate, { clocked: false }))), undefined, "an unworked day-rate shift is not paid");
 });
 
-test("a contractor's fixed monthly fee: the fee ÷ the days in the month, and its PND.3 withholding as before", () => {
-  const p = personIn(run(world((x) => { x.workerType = "contractor"; x.fixedFee = 31000; x.monthlySalary = 0; x.pnd3WithholdingPercent = 3; x.ssoEligible = false; x.pnd1Eligible = false; x.foodAllowanceEligible = false; x.otEligible = false; })))!;
-  assert.equal(line(p, `${SINGLE_SHIFT_COMPONENT}:zz-invitation-1`)!.amount, 1000);
-  assert.equal(p.lines.filter((l) => l.component === "pnd3").reduce((n, l) => n + l.amount, 0), 30);
+test("a contractor's fixed fee is not a salary and no answer rules one shift of it: not paid, and the run says why", () => {
+  const calc = run(world((x) => { x.workerType = "contractor"; x.fixedFee = 31000; x.monthlySalary = 0; x.pnd3WithholdingPercent = 3; x.ssoEligible = false; x.pnd1Eligible = false; x.foodAllowanceEligible = false; x.otEligible = false; }));
+  assert.equal(personIn(calc), undefined);
+  assert.ok(calc.exceptions.some((e) => e.kind === "single-shift" && e.staffId === FORMER
+    && /not paid: the old contract is a contractor's fixed fee, and how one shift of a fee is paid is not decided/.test(e.message)));
+});
+
+test("an owner-household contract is paid from its monthly salary as R11 rules it", () => {
+  const p = personIn(run(world((x) => { x.workerType = "owner-household"; })))!;
+  assert.equal(line(p, `${SINGLE_SHIFT_COMPONENT}:zz-invitation-1`)!.amount, 500);
 });
 
 test("R10: overtime of the shift's day as on the old contract, allocated to that day", () => {
