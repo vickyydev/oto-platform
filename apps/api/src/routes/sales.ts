@@ -138,6 +138,18 @@ const CartLine = z.object({
    * gift admits. Says which line only; the voucher's worth is the platform's.
    */
   voucherGift: z.boolean().optional(),
+  /**
+   * SCRUM-1048 — extra food credit for one child on a ticket line, as a line
+   * of its own: this line carries the prepaid credit and nobody, and names
+   * the ticket line of this cart and which of its children (0 is the first).
+   * The credit loads on that child's band when the sale is paid.
+   */
+  creditFor: z
+    .object({
+      cartLineId: z.string().uuid(),
+      kidOrdinal: z.number().int().min(0).max(49),
+    })
+    .nullish(),
 });
 
 /**

@@ -4228,6 +4228,11 @@ export interface paths {
                             stayHours?: number;
                             stayDurationLabel?: string;
                             voucherGift?: boolean;
+                            creditFor?: {
+                                /** Format: uuid */
+                                cartLineId: string;
+                                kidOrdinal: number;
+                            } | null;
                         }[];
                         /** @default [] */
                         items?: {
@@ -4447,6 +4452,11 @@ export interface paths {
                             stayHours?: number;
                             stayDurationLabel?: string;
                             voucherGift?: boolean;
+                            creditFor?: {
+                                /** Format: uuid */
+                                cartLineId: string;
+                                kidOrdinal: number;
+                            } | null;
                         }[];
                         /** @default [] */
                         items?: {
@@ -4603,6 +4613,11 @@ export interface paths {
                                 stayHours?: number;
                                 stayDurationLabel?: string;
                                 voucherGift?: boolean;
+                                creditFor?: {
+                                    /** Format: uuid */
+                                    cartLineId: string;
+                                    kidOrdinal: number;
+                                } | null;
                             }[];
                             /** @default [] */
                             items?: {
@@ -5098,6 +5113,11 @@ export interface paths {
                             stayHours?: number;
                             stayDurationLabel?: string;
                             voucherGift?: boolean;
+                            creditFor?: {
+                                /** Format: uuid */
+                                cartLineId: string;
+                                kidOrdinal: number;
+                            } | null;
                         }[];
                         /** @default [] */
                         items?: {

@@ -228,6 +228,29 @@ export function earningPersonsOf(lines: readonly GrantLine[]): PersonGrant[] {
   return personGrantsOf(lines).filter((p) => p.creditSatang > 0);
 }
 
+/**
+ * SCRUM-1048 — WHICH CHILD AN EXTRA FOOD CREDIT LINE IS FOR (the owner's
+ * answer of 19 November 2026: extra food credit can be added on any child
+ * ticket, as its own line on the order). The ticket line of the same cart,
+ * by its id, and the child's place among that line's kids, 0 first: the same
+ * place `personGrantsOf` gives the child and the kids band is minted in.
+ */
+export interface ExtraCreditFor {
+  cartLineId: string;
+  kidOrdinal: number;
+}
+
+/** The `creditFor` a sale line's payload carries, or null on every other line. */
+export function extraCreditForOf(payload: unknown): ExtraCreditFor | null {
+  const raw = (payload as { creditFor?: unknown } | null | undefined)?.creditFor as
+    | { cartLineId?: unknown; kidOrdinal?: unknown }
+    | null
+    | undefined;
+  if (!raw || typeof raw.cartLineId !== 'string' || typeof raw.kidOrdinal !== 'number') return null;
+  if (!Number.isInteger(raw.kidOrdinal) || raw.kidOrdinal < 0) return null;
+  return { cartLineId: raw.cartLineId, kidOrdinal: raw.kidOrdinal };
+}
+
 /** One sale-ledger row, as `grantLinesOfLedger` reads it. */
 export interface GrantLedgerRow {
   cartLineId: string;
