@@ -743,7 +743,7 @@ describe('SCRUM-1024 — ensureFamilyFor refuses across operators and families',
 // --- The audit rows that keep a whole child row ------------------------------------------
 
 describe('SCRUM-1024 — the audit of a child edit or removal reads as it did before families', () => {
-  it('the till edit, the box edit, the till removal and the booking site removal store no family column', async () => {
+  it('the till edit, the box edit, the till removal, the booking site removal and a display care note store no family column', async () => {
     const { memberId, phone } = await newMember('ZZ TEST 1024 Audit Shape');
     const ids: string[] = [];
     for (const name of ['ZZ TEST 1024 Audit Till', 'ZZ TEST 1024 Audit Box', 'ZZ TEST 1024 Audit Gone', 'ZZ TEST 1024 Audit Online']) {
@@ -789,6 +789,24 @@ describe('SCRUM-1024 — the audit of a child edit or removal reads as it did be
     expectNoFamilyColumns(onlineAudit!.before, 'booking site removal, before');
     expectNoFamilyColumns(onlineAudit!.after, 'booking site removal, after');
     expect(onlineAudit!.after).toMatchObject({ source: 'booking_site' });
+
+    // The care note the family changes on the customer display (SCRUM-1020):
+    // the till's edit again, from the station the session holds.
+    const displayEdit = (await addChild(memberId, { name: 'ZZ TEST 1024 Audit Display' })).json().child.id as string;
+    const [till] = await ctx.db.select().from(station).where(and(eq(station.operatorId, otoId), eq(station.codePrefix, 'T1')));
+    await takeStation(ctx.app, reception, till!.id);
+    const fromDisplay = await ctx.app.inject({
+      method: 'PATCH',
+      url: `/members/children/${displayEdit}`,
+      headers: { cookie: reception },
+      payload: { source: 'customer_display', memberId, allergies: 'ZZ TEST shellfish' },
+    });
+    expect(fromDisplay.statusCode, fromDisplay.body).toBe(200);
+    const [displayAudit] = await childAudit('child.update', displayEdit);
+    expectNoFamilyColumns(displayAudit!.before, 'display edit, before');
+    expectNoFamilyColumns(displayAudit!.after, 'display edit, after');
+    expect(displayAudit!.after).toMatchObject({ source: 'customer_display', stationId: till!.id });
+    ids.push(displayEdit);
 
     // The rows themselves keep their family: only the audit copy leaves it out.
     for (const id of ids) expect((await childRow(id)).familyId, id).not.toBeNull();
