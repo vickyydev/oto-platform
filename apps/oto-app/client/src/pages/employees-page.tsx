@@ -42,6 +42,7 @@ import { DndContext, DragEndEvent, PointerSensor, TouchSensor, useSensor, useSen
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { compareEmployeeOrder, orderAfterDrag } from "@/lib/employee-order";
 
 function EmployeeStatusIcons({ employeeId }: { employeeId: string }) {
   const { data, isLoading, error } = useQuery<{
@@ -800,16 +801,17 @@ export default function EmployeesPage() {
       
       // Find the department these employees belong to
       if (!employeesByDepartment) return;
-      
-      for (const [, deptEmployees] of Array.from(employeesByDepartment.entries())) {
-        const oldIndex = deptEmployees.findIndex((e: EmployeeWithAccess) => e.id === activeEmpId);
-        const newIndex = deptEmployees.findIndex((e: EmployeeWithAccess) => e.id === overEmpId);
-        
-        if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-          const newOrder = arrayMove([...deptEmployees], oldIndex, newIndex);
-          reorderEmployeesMutation.mutate(newOrder.map((e: EmployeeWithAccess) => e.id));
-          break;
-        }
+
+      // SCRUM-1036: worked out as Scheduling works it out — on the list as it
+      // is shown, over the whole department, so staff a filter or a search
+      // hides keep their places and both screens read the same order.
+      for (const [deptId, deptEmployees] of Array.from(employeesByDepartment.entries())) {
+        const shownIds = deptEmployees.map((e: EmployeeWithAccess) => e.id);
+        if (!shownIds.includes(activeEmpId) || !shownIds.includes(overEmpId)) continue;
+        const department = (employees ?? []).filter((e) => (e.primaryDepartmentId || null) === deptId);
+        const newOrder = orderAfterDrag(department, shownIds, activeEmpId, overEmpId);
+        if (newOrder) reorderEmployeesMutation.mutate(newOrder);
+        break;
       }
       return;
     }
@@ -933,9 +935,10 @@ export default function EmployeesPage() {
       grouped.get(deptId)!.push(emp);
     }
     
-    // Sort employees within each group by displayOrder
+    // Sort employees within each group by displayOrder (SCRUM-1036: the
+    // comparator Scheduling draws with and the drag above works out on)
     for (const [, emps] of Array.from(grouped.entries())) {
-      emps.sort((a: EmployeeWithAccess, b: EmployeeWithAccess) => (a.displayOrder || 0) - (b.displayOrder || 0));
+      emps.sort(compareEmployeeOrder);
     }
     
     return grouped;
