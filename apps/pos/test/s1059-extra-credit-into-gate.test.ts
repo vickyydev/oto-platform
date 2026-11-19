@@ -72,7 +72,8 @@ describe('SCRUM-1059 (2): once the gate writes, one source for each child', () =
 
   it('the till carries the amount in when the gate opens and settles the lines when it writes', () => {
     const till = readFileSync(new URL('../src/pages/Till.tsx', import.meta.url), 'utf8');
-    expect(till).toContain('slots.push({ ...place, ...gateExtraCredit(only?.lines ?? lines, l.id, i) });');
+    expect(till).toContain('const carried = gateExtraCredit(only?.lines ?? lines, l.id, i);');
+    expect(till).toContain('if (carried) slots[slots.length - 1] = { ...place, ...carried };');
     expect(till).toContain('places.set(place.id, { lineId: l.id, ordinal: i });');
     expect(till).toContain('gateKidPlacesRef.current = places;');
     expect(till).toContain('setLines(normalizeDropOffFees([...extraCreditAfterGate(residual, inCare), ...dropLines], dropOffPricing));');

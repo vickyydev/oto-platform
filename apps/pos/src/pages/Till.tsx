@@ -2261,10 +2261,12 @@ export default function Till() {
       // itself, and why, is `lib/editDetails` emptyGatePlace: SCRUM-1020's
       // "Edit details" adds the same place to an open form).
       for (let i = 0; i < l.kids; i++) {
+        slots.push(emptyGatePlace(l, { age: only ? String(only.age) : '' }));
         // SCRUM-1059 — extra credit staff added for this child opens their form as already chosen.
-        const place = emptyGatePlace(l, { age: only ? String(only.age) : '' });
+        const place = slots[slots.length - 1]!;
         places.set(place.id, { lineId: l.id, ordinal: i });
-        slots.push({ ...place, ...gateExtraCredit(only?.lines ?? lines, l.id, i) });
+        const carried = gateExtraCredit(only?.lines ?? lines, l.id, i);
+        if (carried) slots[slots.length - 1] = { ...place, ...carried };
       }
     }
     gateKidPlacesRef.current = places;
@@ -3758,8 +3760,8 @@ export default function Till() {
    */
   const handleCheckInGroupNow = (group: DoorCheckInGroup) => {
     if (!operator || !station || !saleResult || checkInChoiceBusy.current) return;
-    checkInChoiceBusy.current = true;
     const checkedInSaleId = saleResult.id;
+    checkInChoiceBusy.current = true;
     // SCRUM-887 — a family the gate wrote and sold online is checked in online.
     gateOnline.beginDoor();
     void checkinApi
