@@ -1,3 +1,53 @@
+## 19 November 2026, 20:05: the owner answered the 25 open points; the family backfill ran on staging; the Inbox follow-up is on staging
+
+- **The 25 points the builds raised are all answered** (his page, read at
+  19:50 on his word). Recorded as section 8 of
+  `docs/progress/plans/dropoff-beo-20261119/ANSWERS.md`, on the tickets'
+  State lines and in comments. Fourteen confirm what is built. To build:
+  - R1: a number with no name uses the number as the name. SCRUM-1019
+    "Drop-off: the number, the rate, the document".
+  - R3: SCRUM-1054 "Drop-off: the parent ticks whether the child may order
+    food with the included credit".
+  - R25: the short no-fee form after a sibling waiver stays (replaces his
+    earlier answer). SCRUM-1052, being repaired in the till lane.
+  - R13 and R24: the set-menu label comes back on the Staff BEO; "Price
+    unresolved - not charged" becomes a mark with the words once. SCRUM-1050.
+  - R7 to R11: SCRUM-1055 "Single shift: the pay reaches payroll, and the
+    person sees that day's schedule".
+  - R15: a family with two different verified rates gets the cheaper one
+    (family profiles, step F3 on).
+  - Later, on his word: SCRUM-1056 "Face clock-in in the new app: staff enrol
+    their faces again". Waiting for him: SCRUM-1057 "Old signed staff
+    contracts: fetch the 55 that were on the old server's disk" (steps on the
+    ticket; he asked to be reminded). R19: the park's Mystery Box voucher is
+    not switched; he will say when. R17: the files missing from the old
+    storage stay missing (noted in the go-live PROGRESS file).
+- **Family backfill on staging (R16, his go):** dry run, then applied as
+  one-off jobs on `oto-api-staging` at f223c08e: 121 families made for 121
+  members, 203 children given a family, none needing a hand, locks held 58
+  ms. Verify: all five checks zero. Nothing anyone sees changed; the switch
+  is off. Next is step F3 (readers through the family behind the switch, with
+  the shadow compare); switching a reader on is a separate go.
+- **Inbox follow-up landed** (main 5ce8dafc3, pictures 199076d80;
+  `oto-inbox-staging` live 19:34): SCRUM-1045 "Unified Inbox: sizes that
+  follow the screen, more room for the chat, and a draggable divider",
+  SCRUM-1043 "clearer field and button borders, and small layout repairs" and
+  SCRUM-1044 "the settings pages redesigned to match the new Inbox", all
+  Deployed. Measured on staging: at 768 wide the list is 276 px beside a 492
+  px chat (it was half and half), dragging gives 264 to 408; tablets use 14 px
+  names and 32 px pills with 1 px edges. The lead opened the 768 and 1024
+  pictures and a settings page. Two points for the owner: an iPad mini 6
+  upright (744 px) shows one pane at a time; the views column at 1024 upright
+  cannot be folded.
+- **Hosted CI:** the push run on 4c518eb77 failed on the two checks the
+  counter flow's landing had missed (repaired in 7e97dfd2b); the manual run on
+  main passed; the run on 5ce8dafc3 was in progress at 20:00.
+- **Running:** the till lane (wf_0c9c04fd-917, repair first), the BEO editor
+  (wf_4697db44-bf9), HR smaller requests (repairs), the contracts repair
+  (landing). **Queued:** R13 and R24 join the BEO editor lane at its next
+  stage; R1 and SCRUM-1054 join the till lane after the displays; SCRUM-1055
+  after the HR smaller requests land; family step F3.
+
 ## 19 November 2026, 20:15: the drop-off counter flow is on staging; a fault after a sibling waiver is being repaired first
 
 - **The counter flow landed** (main a7630e73d, 18 commits; repair of two CI

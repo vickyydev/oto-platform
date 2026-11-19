@@ -206,3 +206,73 @@ Kept or held (nothing built):
    phone form (SCRUM-1022, 1023) on the till once the SMS sender is proved.
 3. Then family profiles (SCRUM-1024, 1025), with their own migration plan and
    staging run.
+
+## 8. The 25 points the builds raised (answered 19 November, evening)
+
+The owner answered all 25 on his page. "Built" means the answer is what the
+build already does; "to build" names the ticket.
+
+Drop-off at the counter:
+
+- **R1, a number with no name:** the number itself is the name until one is
+  given. To build, SCRUM-1019.
+- **R2, the number on the phone till's form:** stays editable there. Built.
+- **R3, a dropped-off child on Eat & Play whose parent chose no extra food:**
+  the form asks the parent one tick, "may order food with the included
+  credit". To build, SCRUM-1054.
+- **R4, pickup where the park refunds:** also shows the credit that stays on
+  the band. Built.
+- **R21, which credit is spent first:** the credit the parent paid for. Built.
+- **R22, a rate document saved earlier with no expiry date:** stays valid
+  until staff next check the document. Built.
+- **R25, two children with no adult and the older sibling covers:** the short
+  no-fee form for the older sibling stays, so both children have a guardian
+  number, the agreements and a pickup check. This replaces his earlier answer
+  ("no free drop-off form after a waiver") in section 2. Being built,
+  SCRUM-1052.
+
+The BEO:
+
+- **R12, setup tasks on older events:** one "Setup ready" step. Built.
+- **R13, the set menu's group label beside a dish:** the label comes back:
+  "Margherita (Pizza 2)". To build, SCRUM-1050.
+- **R14, food steps on the timeline:** short, the dishes in Kitchen only.
+  Built.
+- **R23, rows the assistant stored earlier on older parties:** both show.
+  Built; nothing is hidden.
+- **R24, "Price unresolved - not charged":** a small mark on the line and the
+  words once under the list. To build, SCRUM-1050.
+
+The HR app:
+
+- **R5, an option with two different prices:** both kept until edited. Built.
+- **R6, leave types:** right as built.
+- **R7, single shift, the former employee:** clocks in and out for that shift
+  and also sees their schedule for that day. To build, SCRUM-1055.
+- **R8 to R11, single shift pay:** paid in the payroll run of the month the
+  shift is worked; on the old contract taxed and insured as before, on a day
+  rate paid as a casual worker with no social security; on the old contract
+  the food allowance, overtime and the service-charge share apply; one day of
+  a monthly salary is the salary divided by the days in that month. To build,
+  SCRUM-1055.
+
+Family profiles:
+
+- **R15, two parents with different verified rates:** the whole family gets
+  the cheaper of the two. For step F3 and later.
+- **R16, the backfill on staging:** go. Run on 19 November at 19:55: 121
+  families made for 121 members, 203 children given a family, none needing a
+  hand; the five checks all zero.
+
+Old data:
+
+- **R17, about 1,000 files the database names that are not in the old live
+  storage** (848 of them check-in photos): left as they are; those links stay
+  empty. The older storage of the first Replit version is not opened. Noted
+  here and in `docs/progress/plans/go-live/PROGRESS.md`.
+- **R18, face clock-in:** staff enrol their faces again in the new app, later;
+  PIN and phone are enough for now. SCRUM-1056, not started.
+- **R19, the park's own Mystery Box voucher:** wait; he will do it or say when.
+- **R20, the 55 older signed contracts:** he will look in the old Replit
+  project and download the folder; the steps are on SCRUM-1057 and he asked to
+  be reminded.

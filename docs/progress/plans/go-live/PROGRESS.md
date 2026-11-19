@@ -231,6 +231,29 @@ Status in Jira: SCRUM-110 (P7 Cutover), SCRUM-12 (migrate and reconcile data
 from the existing system) and SCRUM-113 (agree the cutover and rollback plan)
 are In Progress; nothing is Done.
 
+## The old app's files (19 November 2026)
+
+- The old app's stored files were copied from its cloud storage into the new
+  storage: production holds all 10,285 files (13.7 GB, none failed); staging
+  holds a smaller set of 6,220 files (4.46 GB: every folder in full except
+  check-in photos, and the newest check-in photos). The old storage was only
+  read. Photos, signatures and contracts never pass through the repository.
+- **Known gap, left on purpose (the owner, 19 November):** about 1,000 files
+  the database names are not in the old live storage, 848 of them check-in
+  photos. They may have been cleared by the old app or sit in the older
+  storage of its first version, which was not opened. Those links stay
+  empty in the new app.
+- **Signed staff contracts:** 21 are in the storage and open once the repair
+  SCRUM-1047 is deployed; 55 older ones were on the old server's disk and
+  never reached the cloud. The owner fetches that folder from the old
+  project (steps on SCRUM-1057).
+- **Face clock-in:** the face data lives in the old system's own face store
+  and was not moved. PIN and phone clock-in work. Staff enrol their faces
+  again later (SCRUM-1056).
+- **On switch day:** list the old storage again and copy what is new since
+  19 November (the copy skips what is already there), after the fresh
+  database copy.
+
 ## Where things are
 
 - Scratch scripts (this session's scratchpad, not in the repository):
