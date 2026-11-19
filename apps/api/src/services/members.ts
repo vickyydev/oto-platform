@@ -94,6 +94,65 @@ export interface ChildArchiveActor {
 /** SCRUM-1014 — how an audit row names a change the family made on a station's customer display. */
 export const CUSTOMER_DISPLAY_SOURCE = 'customer_display';
 
+/**
+ * SCRUM-1020 — A SAVED CHILD'S CARE NOTES, CHANGED BY THE FAMILY ON THE
+ * CUSTOMER DISPLAY (the owner's answer of 19 November: the parent sees a saved
+ * child's allergy and medical notes on the display and may update them there).
+ *
+ * The till carries the change out under its own session when it writes the
+ * drop-off form, as it does a new child the family named there (SCRUM-1014),
+ * and says so with `source=customer_display`. What such a change may be:
+ *
+ *   - it names the family identified at that till (`memberId`), and the child
+ *     must be one of theirs: a child of any other family is the same 404 as a
+ *     child that does not exist;
+ *   - it changes the care notes and nothing else: the display shows the
+ *     family nothing else of the record to change;
+ *   - an empty note never replaces one that had text unless the family said
+ *     plainly that there is none (`confirmedNone`): a box emptied by accident
+ *     never takes an allergy off a child left in the park's care.
+ *
+ * Null when the change may be made; otherwise the refusal, and nothing is
+ * written.
+ */
+export const DISPLAY_CARE_FIELDS = ['allergies', 'medicalNotes'] as const;
+export type DisplayCareField = (typeof DISPLAY_CARE_FIELDS)[number];
+
+export interface DisplayCareRefusal {
+  status: 400 | 404;
+  code: 'BAD_REQUEST' | 'NOT_FOUND' | 'DISPLAY_CARE_ONLY' | 'CARE_NOTE_CLEAR_UNCONFIRMED';
+  message: string;
+}
+
+export function displayCareRefusal(input: {
+  before: { memberId: string } & Partial<Record<DisplayCareField, string | null>>;
+  /** The family the till identified, as the request names it. */
+  memberId: string | undefined;
+  /** Every child field the request sets. */
+  fields: readonly string[];
+  patch: Partial<Record<DisplayCareField, string | null | undefined>>;
+  confirmedNone: boolean;
+}): DisplayCareRefusal | null {
+  if (!input.memberId) {
+    return { status: 400, code: 'BAD_REQUEST', message: 'A change from the customer display names the family identified at this till' };
+  }
+  if (input.before.memberId !== input.memberId) return { status: 404, code: 'NOT_FOUND', message: 'Child not found' };
+  const careFields: readonly string[] = DISPLAY_CARE_FIELDS;
+  if (input.fields.length === 0 || input.fields.some((field) => !careFields.includes(field))) {
+    return { status: 400, code: 'DISPLAY_CARE_ONLY', message: 'Only the allergy and medical notes are changed from the customer display' };
+  }
+  const cleared = DISPLAY_CARE_FIELDS.some((field) =>
+    input.patch[field] !== undefined && !(input.patch[field] ?? '').trim() && !!(input.before[field] ?? '').trim());
+  if (cleared && !input.confirmedNone) {
+    return {
+      status: 400,
+      code: 'CARE_NOTE_CLEAR_UNCONFIRMED',
+      message: 'The family has not confirmed that this child has no allergies or medical needs: the note is kept',
+    };
+  }
+  return null;
+}
+
 /** SCRUM-1011 — how an audit row names a change the family made to its record on the booking site. */
 export const BOOKING_SITE_SOURCE = 'booking_site';
 
