@@ -3509,13 +3509,15 @@ export type ScheduleAssignment = typeof scheduleAssignments.$inferSelect;
 // manager types, in whole baht a day as a casual worker's rate is. The kiosk
 // takes the person's clock-in and clock-out at the shift's branch on its day
 // only (server/lib/singleShift.ts); the profile and the login are not changed.
+// A record of how a shift is paid: an employee who has one is not deleted
+// (RESTRICT, named by the employee delete), and a fold moves it.
 export const singleShiftPayBases = ["old_contract", "casual_day_rate"] as const;
 export type SingleShiftPayBasis = typeof singleShiftPayBases[number];
 
 export const singleShiftInvitations = pgTable("single_shift_invitations", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
-  employeeId: varchar("employee_id").references(() => employees.id, { onDelete: "cascade" }).notNull(),
+  employeeId: varchar("employee_id").references(() => employees.id, { onDelete: "restrict" }).notNull(),
   branchId: varchar("branch_id").references(() => branches.id).notNull(),
   // The shift; emptied when the manager removes it, which closes the kiosk again.
   assignmentId: varchar("assignment_id").references(() => scheduleAssignments.id, { onDelete: "set null" }),

@@ -1,8 +1,6 @@
-import { and, asc, eq, gte, inArray, isNotNull, lte, sql } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, isNotNull, lte } from "drizzle-orm";
 import {
-  employeeEngagements,
   employees,
-  payrollProfiles,
   scheduleAssignments,
   scheduleShiftRows,
   singleShiftInvitations,
@@ -13,14 +11,12 @@ import {
 import {
   SINGLE_SHIFT_REFUSALS,
   singleShiftPayLabel,
+  singleShiftWayWords,
   validCasualDayRate,
-  bahtText,
   type SingleShiftPayWay,
 } from "@shared/singleShift";
 import { db } from "../db";
-import { storage, type DbExecutor } from "../storage";
-import { frozenDailyRate } from "../payroll/feeds";
-import type { WorkerType } from "../payroll/engine/payroll-profile";
+import { storage } from "../storage";
 import { employmentEndedOn } from "./employmentEnded";
 import { bangkokToday } from "./engagementDates";
 import { getEmployeeDisplayName } from "./employeeDisplayName";
@@ -34,76 +30,31 @@ import { getEmployeeDisplayName } from "./employeeDisplayName";
  * Again's (SCRUM-794); this changes nothing about the profile or its login.
  *
  *  - Who. The people who schedule staff today (`requireManager`, with access to
- *    the shift's branch) put a FORMER employee of that branch on one shift row
- *    on one day: a profile whose employment has ended by today, by the kiosk's
- *    own measure (`employmentEndedOn`), with no Onboard Again employment
- *    planned. A current employee is refused in words: they are scheduled as
- *    usual. One single shift per person per day; each invitation is one shift.
+ *    the shift's branch) put a FORMER employee on a shift: a profile whose
+ *    employment has ended by today, by the kiosk's own measure
+ *    (`employmentEndedOn`). A current employee is refused in words: they are
+ *    scheduled as usual. Each invitation is one shift.
  *  - The shift is an ordinary schedule assignment, made with every check the
- *    schedule makes for anybody (department, role, leave, overlapping shifts),
- *    except the two that refuse an ended employment. This row beside it is the
- *    invitation: the day, the branch, and how the shift is paid.
+ *    schedule makes for anybody (department, role, transfer, leave, the same
+ *    shift twice, overlapping shifts), except the two that refuse an ended
+ *    employment, and on no past date (the schedule's own rule). This row
+ *    beside it is the invitation: the day, the branch, and how it is paid.
  *  - How it is paid. By default on the old contract; the manager may switch the
- *    shift to a casual day rate and type it (whole baht a day, as a casual
- *    worker's rate is entered), and switch back. Each choice is written to the
- *    activity log with who and when (`single_shift_invited`,
- *    `single_shift_pay_changed`). A shift on a past day keeps its pay as it is.
- *  - What the shift is worth, `singleShiftPay`: on a casual day rate, the rate;
- *    on the old contract, one day of that contract as payroll already values a
- *    day of it (`frozenDailyRate`: the day rate of a day-rate profile, a monthly
- *    salary or fee ÷ 30), from the person's payroll profile. Shown to the
- *    payroll roles only (`canViewHrSalary`); a manager sees the way, not the
- *    salary. Company payroll does not take the shift yet: a profile whose last
- *    working day is before a month is not in that month at all (payroll/world.ts).
+ *    shift to a casual day rate and type it (whole baht a day, as the casual
+ *    workers page takes a casual worker's rate), and switch back, until the
+ *    day has passed (the schedule's "no change on a past date"). Each choice is
+ *    written to the activity log with who and which way, never the figure
+ *    (`single_shift_invited`, `single_shift_pay_changed`).
+ *  - What the shift is worth is payroll's, and company payroll does not take a
+ *    single shift yet: until the owner rules how it is paid, the month's
+ *    payroll names every single shift it does not pay (payroll/world.ts).
  *  - The kiosk (`singleShiftOpenOn`): the person clocks in and out at the
- *    shift's branch on its day, as anybody rostered does, and from the next day
- *    the kiosk refuses them again by itself. The login stays in pay only.
+ *    shift's branch on its day, as anybody employed that day does, and from
+ *    the next day the kiosk refuses them again by itself. The login stays in
+ *    pay only.
  */
 
 export type { SingleShiftPayWay };
-
-/** The pay terms of a contract this needs, as the payroll profile holds them. */
-export interface OldContractTerms {
-  workerType: WorkerType;
-  dayRate: number;
-  monthlySalary: number;
-  fixedFee: number;
-}
-
-export interface SingleShiftPay {
-  way: SingleShiftPayWay;
-  /** Baht for the shift; null when the old contract's terms are not on file. */
-  amount: number | null;
-  /** How the amount is made, in words. */
-  formula: string;
-}
-
-const money = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
-
-/**
- * What one single shift is worth, both ways. Pure.
- *
- *  - casual day rate: the rate, for the one shift;
- *  - old contract: one day of the contract as payroll values a day of it
- *    (`frozenDailyRate`, the prototype's rule): a day-rate profile's day rate,
- *    a monthly salary ÷ 30, a contractor's fee ÷ 30.
- */
-export function singleShiftPay(way: SingleShiftPayWay, casualDayRate: number | null, oldContract: OldContractTerms | null): SingleShiftPay {
-  if (way === "casual_day_rate") {
-    if (!validCasualDayRate(casualDayRate)) throw new Error("A casual day rate must be whole baht, more than zero.");
-    return { way, amount: casualDayRate, formula: `Casual day rate ${bahtText(casualDayRate)} × 1 shift` };
-  }
-  if (!oldContract) {
-    return { way, amount: null, formula: "No payroll profile: the old contract's pay terms are not on file" };
-  }
-  const amount = money(frozenDailyRate(oldContract));
-  const formula = oldContract.workerType === "day-rate"
-    ? `Day rate ${bahtText(oldContract.dayRate)} × 1 shift`
-    : oldContract.workerType === "contractor"
-      ? `Fixed fee ${bahtText(oldContract.fixedFee)} ÷ 30 × 1 shift`
-      : `Monthly salary ${bahtText(oldContract.monthlySalary)} ÷ 30 × 1 shift`;
-  return { way, amount, formula };
-}
 
 /** The Monday of a `YYYY-MM-DD` day, as the schedule's own week plans start. */
 export function mondayOf(day: string): string {
@@ -116,13 +67,6 @@ export function mondayOf(day: string): string {
 const validDay = (value: unknown): value is string =>
   typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) && new Date(`${value}T00:00:00Z`).toISOString().slice(0, 10) === value;
 export { validDay as validSingleShiftDay };
-
-/** Whether a profile has an Onboard Again employment planned (it is coming back, not a former employee). */
-async function hasPlannedEngagement(employeeId: string): Promise<boolean> {
-  const [row] = await db.select({ id: employeeEngagements.id }).from(employeeEngagements)
-    .where(and(eq(employeeEngagements.employeeId, employeeId), eq(employeeEngagements.status, "planned"))).limit(1);
-  return !!row;
-}
 
 /**
  * The kiosk's door (lib/kioskEmploymentEnded.ts): whether this profile has a
@@ -149,18 +93,13 @@ export interface FormerEmployeeView {
   lastWorkingDay: string | null;
 }
 
-/** The branch's former employees, by name: the people who may be invited to a single shift there. */
+/** The branch's former employees, by name: the people the dialog offers for a single shift there. */
 export async function formerEmployeesOf(tenantId: string, branchId: string, now: Date = new Date()): Promise<FormerEmployeeView[]> {
   const today = bangkokToday(now);
   const rows = await db.select().from(employees)
     .where(and(eq(employees.tenantId, tenantId), eq(employees.branchId, branchId)))
     .orderBy(asc(employees.nickname), asc(employees.fullName));
-  const ended = rows.filter((profile) => employmentEndedOn(profile, today));
-  if (!ended.length) return [];
-  const planned = new Set((await db.select({ employeeId: employeeEngagements.employeeId }).from(employeeEngagements)
-    .where(and(inArray(employeeEngagements.employeeId, ended.map((p) => p.id)), eq(employeeEngagements.status, "planned"))))
-    .map((r) => r.employeeId));
-  return ended.filter((p) => !planned.has(p.id)).map((p) => ({
+  return rows.filter((profile) => employmentEndedOn(profile, today)).map((p) => ({
     id: p.id,
     name: getEmployeeDisplayName(p),
     lastWorkingDay: p.lastWorkingDay ? new Date(p.lastWorkingDay).toISOString().slice(0, 10) : null,
@@ -184,16 +123,9 @@ export interface InviteInput {
   now?: Date;
 }
 
-/** Whether the person already has a single shift on the day, still on the schedule. */
-async function singleShiftOn(exec: DbExecutor, employeeId: string, shiftDate: string): Promise<boolean> {
-  const [row] = await exec.select({ id: singleShiftInvitations.id }).from(singleShiftInvitations)
-    .innerJoin(scheduleAssignments, eq(scheduleAssignments.id, singleShiftInvitations.assignmentId))
-    .where(and(eq(singleShiftInvitations.employeeId, employeeId), eq(singleShiftInvitations.shiftDate, shiftDate))).limit(1);
-  return !!row;
-}
-
-const auditSummary = (name: string, day: string, way: SingleShiftPayWay, rate: number | null) =>
-  `${name}: single shift on ${day}, ${singleShiftPayLabel(way, rate).toLowerCase()}`;
+/** The activity log's words: who, which day, which way; never the figure. */
+const auditSummary = (name: string, day: string, way: SingleShiftPayWay) =>
+  `${name}: single shift on ${day}, ${singleShiftWayWords(way)}`;
 
 /**
  * Puts a former employee on one shift: the assignment, the invitation and the
@@ -209,11 +141,6 @@ export async function inviteToSingleShift(input: InviteInput): Promise<SingleShi
     throw new SingleShiftRefusal(400, SINGLE_SHIFT_REFUSALS.rate);
   }
   if (!employmentEndedOn(employee, today)) throw new SingleShiftRefusal(400, SINGLE_SHIFT_REFUSALS.notFormer, "NOT_FORMER_EMPLOYEE");
-  if (await hasPlannedEngagement(employee.id)) throw new SingleShiftRefusal(400, SINGLE_SHIFT_REFUSALS.onboardAgain, "ONBOARD_AGAIN_PLANNED");
-  if (employee.branchId !== shiftRow.branchId) {
-    throw new SingleShiftRefusal(400, "This person was not employed at this shift's branch.", "BRANCH_MISMATCH");
-  }
-  if (await singleShiftOn(db, employee.id, shiftDate)) throw new SingleShiftRefusal(409, SINGLE_SHIFT_REFUSALS.sameDay, "ALREADY_INVITED");
   // Every check the schedule makes for anybody, but the two that refuse an ended employment.
   const fit = await storage.canAssignEmployeeToShift(employee.id, shiftRow.id, shiftDate, { singleShiftInvitation: true }, input.tenantId);
   if (!fit.ok) throw new SingleShiftRefusal(400, fit.message || "Cannot assign employee to shift", fit.reasonCode);
@@ -221,9 +148,6 @@ export async function inviteToSingleShift(input: InviteInput): Promise<SingleShi
   const name = getEmployeeDisplayName(employee);
 
   return db.transaction(async (tx) => {
-    // One person's invitations are made one at a time, so two clicks cannot make two shifts on a day.
-    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`single-shift:${employee.id}`}))`);
-    if (await singleShiftOn(tx, employee.id, shiftDate)) throw new SingleShiftRefusal(409, SINGLE_SHIFT_REFUSALS.sameDay, "ALREADY_INVITED");
     const [assignment] = await tx.insert(scheduleAssignments).values({
       tenantId: input.tenantId,
       weekPlanId: weekPlan.id,
@@ -250,10 +174,9 @@ export async function inviteToSingleShift(input: InviteInput): Promise<SingleShi
       branchId: shiftRow.branchId,
       employeeId: employee.id,
       activityType: "single_shift_invited",
-      summaryText: auditSummary(name, shiftDate, input.way, invitation.casualDayRate),
+      summaryText: auditSummary(name, shiftDate, input.way),
       metadataJson: JSON.stringify({
-        invitationId: invitation.id, assignmentId: assignment.id, shiftRowId: shiftRow.id, shiftDate,
-        payWay: input.way, casualDayRate: invitation.casualDayRate,
+        invitationId: invitation.id, assignmentId: assignment.id, shiftRowId: shiftRow.id, shiftDate, payWay: input.way,
       }),
       createdBy: input.actorId,
       tenantId: input.tenantId,
@@ -298,11 +221,10 @@ export async function changeSingleShiftPay(input: {
       branchId: before.branchId,
       employeeId: before.employeeId,
       activityType: "single_shift_pay_changed",
-      summaryText: auditSummary(person ? getEmployeeDisplayName(person) : "A former employee", String(before.shiftDate), input.way, rate),
+      summaryText: auditSummary(person ? getEmployeeDisplayName(person) : "A former employee", String(before.shiftDate), input.way),
       metadataJson: JSON.stringify({
         invitationId: before.id, shiftDate: String(before.shiftDate),
-        from: { payWay: before.payBasis, casualDayRate: before.casualDayRate },
-        to: { payWay: input.way, casualDayRate: rate },
+        from: { payWay: before.payBasis }, to: { payWay: input.way },
       }),
       createdBy: input.actorId,
       tenantId: input.tenantId,
@@ -322,8 +244,6 @@ export interface SingleShiftView {
   payWay: SingleShiftPayWay;
   casualDayRate: number | null;
   payLabel: string;
-  /** What the shift is worth: for the payroll roles only, else absent. */
-  pay?: SingleShiftPay;
   invitedBy: string | null;
   invitedAt: string;
   changedBy: string | null;
@@ -332,12 +252,8 @@ export interface SingleShiftView {
 
 const day = (value: string | Date) => (value instanceof Date ? value.toISOString() : String(value)).slice(0, 10);
 
-/**
- * The branch's single shifts between two days, each still on the schedule.
- * `withPay` (the payroll roles) adds what each is worth, from the person's
- * payroll profile.
- */
-export async function singleShiftsOf(tenantId: string, branchId: string, from: string, to: string, withPay: boolean): Promise<SingleShiftView[]> {
+/** The branch's single shifts between two days, each still on the schedule. */
+export async function singleShiftsOf(tenantId: string, branchId: string, from: string, to: string): Promise<SingleShiftView[]> {
   const rows = await db.select({ invitation: singleShiftInvitations, employee: employees })
     .from(singleShiftInvitations)
     .innerJoin(employees, eq(employees.id, singleShiftInvitations.employeeId))
@@ -359,16 +275,6 @@ export async function singleShiftsOf(tenantId: string, branchId: string, from: s
   const names = new Map((people.length
     ? await db.select({ id: users.id, fullName: users.fullName }).from(users).where(inArray(users.id, people))
     : []).map((u) => [u.id, u.fullName]));
-  const terms = new Map<string, OldContractTerms>();
-  if (withPay) {
-    const profiles = await db.select().from(payrollProfiles).where(and(
-      eq(payrollProfiles.tenantId, tenantId),
-      inArray(payrollProfiles.employeeId, Array.from(new Set(rows.map((r) => r.invitation.employeeId)))),
-    ));
-    for (const p of profiles) {
-      terms.set(p.employeeId, { workerType: p.workerType, dayRate: Number(p.dayRate), monthlySalary: Number(p.monthlySalary), fixedFee: Number(p.fixedFee) });
-    }
-  }
   return rows.map(({ invitation: i, employee }) => ({
     id: i.id,
     assignmentId: i.assignmentId!,
@@ -380,7 +286,6 @@ export async function singleShiftsOf(tenantId: string, branchId: string, from: s
     payWay: i.payBasis,
     casualDayRate: i.casualDayRate,
     payLabel: singleShiftPayLabel(i.payBasis, i.casualDayRate),
-    ...(withPay ? { pay: singleShiftPay(i.payBasis, i.casualDayRate, terms.get(i.employeeId) ?? null) } : {}),
     invitedBy: i.createdBy ? names.get(i.createdBy) ?? null : null,
     invitedAt: i.createdAt.toISOString(),
     changedBy: i.updatedBy ? names.get(i.updatedBy) ?? null : null,

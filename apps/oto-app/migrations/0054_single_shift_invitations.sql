@@ -4,10 +4,13 @@
 -- and how the shift is paid — on the person's last contract (the default) or
 -- switched to a casual day rate the manager types, in whole baht a day.
 --
--- Expand-only: one new table, read by the new single-shift routes and by the
--- kiosk's ended-employment check; no existing row is read or written. An
--- employee deleted takes their invitations with them (as their shifts go); a
--- shift removed empties `assignment_id`, which closes the kiosk again.
+-- Expand-only: one new table, read by the new single-shift routes, by the
+-- kiosk's ended-employment check and by payroll's month (which names each
+-- single shift it does not pay); no existing row is read or written. An
+-- invitation is a record of how a shift is paid, so an employee who has one
+-- is not deleted (ON DELETE RESTRICT; the employee delete names it in words,
+-- and folding a duplicate profile moves it to the profile kept); a shift
+-- removed empties `assignment_id`, which closes the kiosk again.
 --
 -- Re-runnable, like 0053 (the restore rehearsal replays migrations onto a
 -- restored database): the table, its keys and its check are made in one
@@ -27,7 +30,7 @@ CREATE TABLE IF NOT EXISTS "single_shift_invitations" (
 	"updated_by" varchar,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "single_shift_invitations_tenant_id_tenants_id_fk" FOREIGN KEY ("tenant_id") REFERENCES "tenants"("id") ON DELETE no action ON UPDATE no action,
-	CONSTRAINT "single_shift_invitations_employee_id_employees_id_fk" FOREIGN KEY ("employee_id") REFERENCES "employees"("id") ON DELETE cascade ON UPDATE no action,
+	CONSTRAINT "single_shift_invitations_employee_id_employees_id_fk" FOREIGN KEY ("employee_id") REFERENCES "employees"("id") ON DELETE restrict ON UPDATE no action,
 	CONSTRAINT "single_shift_invitations_branch_id_branches_id_fk" FOREIGN KEY ("branch_id") REFERENCES "branches"("id") ON DELETE no action ON UPDATE no action,
 	CONSTRAINT "single_shift_invitations_assignment_id_schedule_assignments_id_fk" FOREIGN KEY ("assignment_id") REFERENCES "schedule_assignments"("id") ON DELETE set null ON UPDATE no action,
 	CONSTRAINT "single_shift_invitations_shift_row_id_schedule_shift_rows_id_fk" FOREIGN KEY ("shift_row_id") REFERENCES "schedule_shift_rows"("id") ON DELETE set null ON UPDATE no action,

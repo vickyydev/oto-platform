@@ -38,12 +38,24 @@ export function singleShiftPayLabel(way: SingleShiftPayWay, casualDayRate: numbe
   return OLD_CONTRACT_LABEL;
 }
 
-/** Why an invitation is refused, in the words the screen shows as they are. */
+/**
+ * The way a shift is paid, with no figure: what the activity log says
+ * ("on the old contract", "on a casual day rate"). The log is read by more
+ * people than the pay is; the rate stays on the invitation only.
+ */
+export function singleShiftWayWords(way: SingleShiftPayWay): string {
+  return way === "casual_day_rate" ? "on a casual day rate" : "on the old contract";
+}
+
+/**
+ * Why an invitation is refused, in the words the screen shows as they are.
+ * The past-date rules are the schedule's own ("Cannot assign shifts on past
+ * dates", "Cannot modify schedules for past dates", routes.ts); the rate is a
+ * casual worker's rate as the casual workers page takes it.
+ */
 export const SINGLE_SHIFT_REFUSALS = {
   notFormer: "Only a former employee can be invited to a single shift. A current employee is scheduled as usual.",
-  onboardAgain: "This person has an Onboard Again employment planned: schedule them from its start date instead.",
   pastDate: "A single shift cannot be added on a past date.",
-  sameDay: "This person already has a single shift on that day.",
   rate: "Enter the casual day rate in whole baht, more than zero.",
   pastChange: "The pay of a shift on a past date cannot be changed.",
 } as const;

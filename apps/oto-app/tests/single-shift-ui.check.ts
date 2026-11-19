@@ -10,10 +10,11 @@
 //      and no rate.
 //   2. Switched to "Casual day rate", the rate is asked for: no invite until a
 //      whole number is typed; then the POST carries the casual day rate.
-//   3. A single shift already on this shift is listed with how it is paid; a
-//      payroll role's view shows what it is worth. "Change pay" switches it to
-//      a casual day rate (PATCH with the rate) and back to the old contract.
-//   4. Somebody who already has a single shift that day cannot be picked again.
+//   3. A single shift already on this shift is listed with how it is paid, and
+//      no figure. "Change pay" switches it to a casual day rate (PATCH with the
+//      rate) and back to the old contract.
+//   4. Nobody is locked out by a rule of the dialog's own: somebody already on
+//      a single shift that day can be picked (the schedule's checks decide).
 //
 // Run from apps/oto-app:
 //   TSX_TSCONFIG_PATH=tests/tsconfig.jsx.json npx tsx tests/single-shift-ui.check.ts
@@ -80,9 +81,9 @@ let shifts: Shift[] = [];
 let writes: Array<{ method: string; path: string; body: any }> = []; // eslint-disable-line @typescript-eslint/no-explicit-any -- a JSON body read field by field
 
 const label = (way: string, rate: number | null) => (way === "casual_day_rate" ? `Casual day rate ฿${rate!.toLocaleString("en-US")} a day` : "On the old contract");
-const shift = (id: string, employeeId: string, name: string, way: string, rate: number | null, pay?: { amount: number | null; formula: string }): Shift => ({
+const shift = (id: string, employeeId: string, name: string, way: string, rate: number | null): Shift => ({
   id, assignmentId: `a-${id}`, employeeId, employeeName: name, shiftRowId: ROW, shiftDate: DAY, payWay: way, casualDayRate: rate,
-  payLabel: label(way, rate), ...(pay ? { pay } : {}), invitedBy: "ZZ TEST manager", invitedAt: "2026-11-19T03:00:00.000Z",
+  payLabel: label(way, rate), invitedBy: "ZZ TEST manager", invitedAt: "2026-11-19T03:00:00.000Z",
   changedBy: "ZZ TEST manager", changedAt: "2026-11-19T03:00:00.000Z",
 });
 
@@ -192,13 +193,14 @@ const cases: Record<string, () => Promise<void>> = {
     assert.deepEqual(writes.map((w) => [w.method, w.body.payWay, w.body.casualDayRate]), [["POST", "casual_day_rate", 1200]]);
     assert.equal(required(`single-shift-pay-${NOK}`).textContent, "Casual day rate ฿1,200 a day");
   },
-  "a shift already made shows its pay and, for a payroll role, its figure; Change pay switches both ways": async () => {
+  "a shift already made shows how it is paid and no figure; Change pay switches both ways": async () => {
     former = [{ id: NOK, name: "ZZ Nok", lastWorkingDay: "2026-11-01" }];
-    shifts = [shift("s-1", NOK, "ZZ Nok", "old_contract", null, { amount: 500, formula: "Monthly salary ฿15,000 ÷ 30 × 1 shift" })];
+    shifts = [shift("s-1", NOK, "ZZ Nok", "old_contract", null)];
     await mount();
     assert.ok(doc.body.textContent!.includes("Single shift · former employee"));
     assert.equal(required(`single-shift-pay-${NOK}`).textContent, "On the old contract");
-    assert.equal(required(`single-shift-amount-${NOK}`).textContent, "฿500 for the shift (Monthly salary ฿15,000 ÷ 30 × 1 shift)");
+    assert.equal(byTestId(`single-shift-amount-${NOK}`), null);
+    assert.doesNotMatch(doc.body.textContent!, /for the shift|÷/);
     await click(button("Change pay"));
     await click(required(`single-shift-change-${NOK}-casual`));
     await fill(`single-shift-change-${NOK}-rate`, "1100");
@@ -212,14 +214,15 @@ const cases: Record<string, () => Promise<void>> = {
     assert.deepEqual(writes.at(-1)!.body, { payWay: "old_contract", casualDayRate: null });
     assert.equal(required(`single-shift-pay-${NOK}`).textContent, "On the old contract");
   },
-  "a manager's view shows the way and no figure; somebody already on a single shift that day cannot be picked again": async () => {
+  "the casual way shows its rate and no figure; somebody already on a single shift that day can still be picked": async () => {
     former = [{ id: NOK, name: "ZZ Nok", lastWorkingDay: "2026-11-01" }, { id: PIM, name: "ZZ Pim", lastWorkingDay: null }];
     shifts = [shift("s-1", NOK, "ZZ Nok", "casual_day_rate", 900)];
     await mount();
     assert.equal(required(`single-shift-pay-${NOK}`).textContent, "Casual day rate ฿900 a day");
     assert.equal(byTestId(`single-shift-amount-${NOK}`), null);
-    assert.equal((required(`button-single-shift-${NOK}`) as HTMLButtonElement).disabled, true);
+    assert.equal((required(`button-single-shift-${NOK}`) as HTMLButtonElement).disabled, false);
     assert.equal((required(`button-single-shift-${PIM}`) as HTMLButtonElement).disabled, false);
+    assert.equal(required(`button-single-shift-${NOK}`).textContent, "ZZ NokLeft after 2026-11-01");
   },
 };
 
