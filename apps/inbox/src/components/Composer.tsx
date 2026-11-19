@@ -144,6 +144,7 @@ export function Composer({
   // after every change of what it holds, and when the window's width moves
   // the wrapping. The box is only on screen for an open thread that replies.
   const shown = template ? '' : text;
+  const placeholder = template ? 'Sending the template above' : replyPlaceholder(conv);
   useLayoutEffect(() => {
     const fit = () => {
       const box = inputRef.current;
@@ -384,7 +385,20 @@ export function Composer({
         <DictateButton dictation={dictation} disabled={template !== null || busy} />
         {/* The pill is the box's frame: the box has no padding of its own, so its height is its lines (`composerBox`).
             A label, so a press anywhere on the 44 px pill, its padding too, puts the caret in the box (SCRUM-1016 review). */}
-        <label data-reply-pill className="flex min-w-0 flex-1 cursor-text rounded-[22px] border border-field bg-ground px-4 py-[calc((var(--ui-h-icon)-22px)/2)] focus-within:outline-2 focus-within:outline-coral">
+        <label data-reply-pill className="relative flex min-w-0 flex-1 cursor-text rounded-[22px] border border-field bg-ground px-4 py-[calc((var(--ui-h-icon)-22px)/2)] focus-within:outline-2 focus-within:outline-coral">
+          {/* SCRUM-1045: the placeholder on one line, ending in a true ellipsis where the
+              box is narrow (a textarea's own placeholder wraps, growing the box, or is
+              cut mid-word). The native one stays, unseen, for assistive technology. */}
+          {shown === '' && (
+            <span
+              aria-hidden
+              data-placeholder
+              className="pointer-events-none absolute inset-x-4 top-1/2 -translate-y-1/2 truncate text-body text-ink-muted"
+              style={{ lineHeight: `${COMPOSER_LINE_PX}px` }}
+            >
+              {placeholder}
+            </span>
+          )}
           <textarea
             ref={inputRef}
             rows={1}
@@ -401,8 +415,8 @@ export function Composer({
             }}
             style={{ lineHeight: `${COMPOSER_LINE_PX}px` }}
             aria-label="Reply"
-            placeholder={template ? 'Sending the template above' : replyPlaceholder(conv)}
-            className="block w-full min-w-0 resize-none bg-transparent text-body text-ink placeholder:truncate placeholder:text-ink-muted focus:outline-none disabled:cursor-not-allowed"
+            placeholder={placeholder}
+            className="block w-full min-w-0 resize-none bg-transparent text-body text-ink placeholder:whitespace-nowrap placeholder:text-transparent focus:outline-none disabled:cursor-not-allowed"
           />
         </label>
         <button

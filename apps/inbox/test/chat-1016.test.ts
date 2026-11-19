@@ -160,6 +160,10 @@ describe('SCRUM-1016: the reply box is the chat’s fixed footer', () => {
     expect(html).toContain('aria-label="Templates"');
     // The microphone needs a browser that records; dictation.test.ts drives it in a DOM.
     expect(html).toContain('placeholder="Reply to ZZ TEST Sarah"');
+    // SCRUM-1045: what is seen is one line ending in an ellipsis, laid over the
+    // box; the native placeholder stays for assistive technology, unseen.
+    expect(html).toMatch(/<span aria-hidden="true" data-placeholder="true" class="[^"]*\btruncate\b[^"]*"[^>]*>Reply to ZZ TEST Sarah<\/span><textarea/);
+    expect(html).toMatch(/aria-label="Reply" placeholder="Reply to ZZ TEST Sarah" class="[^"]*placeholder:whitespace-nowrap placeholder:text-transparent/);
     expect(html).toContain('aria-label="Send"');
     expect(html).not.toContain('Emoji');
     expect(html).not.toContain('Attach a file');
