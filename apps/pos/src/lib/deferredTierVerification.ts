@@ -62,7 +62,8 @@ export async function saveDeferredVerification(input: {
   const { member } = await membersApi.verifyTier(target.id, {
     toTier: verification.tier,
     evidenceType: verification.proofType,
-    // Optional, as in the approved design's verification step.
+    // Every document check carries it (SCRUM-1019); the Thai rate confirmed
+    // at the till never does.
     ...(verification.expiresAt ? { evidenceExpiresAt: verification.expiresAt } : {}),
     // What staff checked for an Other document (SCRUM-697).
     ...(verification.note ? { note: verification.note } : {}),

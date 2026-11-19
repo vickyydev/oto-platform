@@ -11,8 +11,10 @@ import { CustomerTier, Member, TierVerification } from '@/types';
 import { getDefaultTier } from '@/mockApi';
 import {
   TIER_PROOF_CHOICES,
+  TIER_PROOF_EXPIRY_PROBLEMS,
   TIER_PROOF_NOTE_MAX,
   TIER_PROOF_OTHER,
+  tierProofExpiryProblem,
   tierProofLabel,
   tierProofNoteProblem,
 } from '@/lib/tierProof';
@@ -295,20 +297,22 @@ export function VerifyTierModal({
   const heldOther = !!held && held.tier !== tier;
 
   /**
-   * The approved design's step asks for the proof type only, so the expiry is
-   * optional for a member and for a visitor with no member yet alike. A
-   * document with no expiry date never expires; one that is given must not
-   * have passed.
+   * SCRUM-1019 — the expiry date is required on every document, Other
+   * included (the owner's answer of 19 November 2026), for a member and for a
+   * visitor with no member yet alike, and it must not have passed. The
+   * platform and the box refuse a document without one in the same words
+   * (`tierProofExpiryProblem`). A member's document recorded earlier with no
+   * date is not touched by this: it is only asked for on a new check.
    */
-  const expiryValid =
-    expiresAt === '' || (/^\d{4}-\d{2}-\d{2}$/.test(expiresAt) && expiresAt >= todayIso());
+  const expiryMissing = tierProofExpiryProblem(expiresAt) === TIER_PROOF_EXPIRY_PROBLEMS.missing;
+  const expiryValid = tierProofExpiryProblem(expiresAt) === null && expiresAt >= todayIso();
   /**
    * SCRUM-697 — Other carries what staff checked instead of a kind. The
    * description follows the platform's rule word for word
    * (`tierProofNoteProblem`): two words at least, never a document number.
    * Only Other sends one; a description typed before switching to a named
    * kind is left behind. The expiry date is asked for on Other too
-   * (SCRUM-773), optional as on every kind.
+   * (SCRUM-773), required as on every kind (SCRUM-1019).
    */
   const isOther = proofType === TIER_PROOF_OTHER;
   const noteText = isOther ? note.trim() : '';
@@ -496,14 +500,14 @@ export function VerifyTierModal({
               </div>
             )}
 
-            {/* Every kind, Other included (SCRUM-773): optional, never past. */}
+            {/* Every kind, Other included (SCRUM-773): required (SCRUM-1019), never past. */}
             <div className="space-y-2">
               <label
                 htmlFor="tier-evidence-expiry"
                 className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground"
               >
                 <CalendarClock className="w-4 h-4" />
-                Document expiry date
+                Document expiry date <span className="text-destructive">*</span>
               </label>
               <input
                 id="tier-evidence-expiry"
@@ -515,6 +519,11 @@ export function VerifyTierModal({
               />
               {expiresAt && !expiryValid && (
                 <p className="text-sm text-destructive">The document has already expired.</p>
+              )}
+              {proofType && expiryMissing && (
+                <p className="text-sm text-muted-foreground" data-testid="tier-evidence-expiry-needed">
+                  {TIER_PROOF_EXPIRY_PROBLEMS.missing}
+                </p>
               )}
             </div>
 

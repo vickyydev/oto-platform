@@ -19,7 +19,9 @@ import {
  * Driving licence takes the place of Residence certificate: new checks may
  * name it and may no longer name the retired kind, while a member or a sale
  * checked on a Residence certificate before the change reads as it was filed.
- * Other takes an expiry date again, optional as on every kind.
+ * Other takes an expiry date again, optional as on every kind — until
+ * SCRUM-1019 (the owner's answer of 19 November 2026) made it required on
+ * every kind, Other included; the pin on Other with no date reads so now.
  */
 
 let ctx: TestContext;
@@ -131,11 +133,13 @@ describe('SCRUM-773 — Other takes an expiry date again', () => {
     expect(row!.evidenceExpiresAt?.toISOString().slice(0, 10)).toBe(NEXT_YEAR);
   });
 
-  it('still records Other with no expiry: the date is optional', async () => {
+  // SCRUM-1019: this pinned "the date is optional"; it is required now.
+  it('no longer records Other with no expiry: the date is required, as on every kind', async () => {
     const memberId = await newMember('0637730004', 'Other No Expiry');
     const res = await verify(memberId, { evidenceType: 'Other', note: 'Work permit' });
-    expect(res.statusCode, res.body).toBe(200);
-    expect(res.json().member.tierVerification).toMatchObject({ proofType: 'Other', expiresAt: null });
+    expect(res.statusCode, res.body).toBe(400);
+    expect(res.json().error.code).toBe('TIER_PROOF_EXPIRY');
+    expect(await rowsOf(memberId)).toHaveLength(0);
   });
 
   it('refuses an Other document that has already expired, as every kind', async () => {
@@ -190,7 +194,7 @@ describe('SCRUM-773 — a Residence certificate recorded before the change', () 
 
   it('reads as it was filed on the sale it priced', async () => {
     const actionId = newId();
-    const made = await claim({ actionId, evidenceType: 'Passport' });
+    const made = await claim({ actionId, evidenceType: 'Passport', evidenceExpiresAt: NEXT_YEAR });
     expect(made.statusCode, made.body).toBe(200);
     // The claim as one filed before 4 November reads.
     await ctx.db

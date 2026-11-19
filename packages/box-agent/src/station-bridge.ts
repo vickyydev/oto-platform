@@ -68,6 +68,7 @@ import {
   TIER_PROOF_OTHER,
   TIER_PROOF_TYPES,
   tierConfirmationProblem,
+  tierProofExpiryProblem,
   tierProofNoteProblem,
   OfflineMemberUpdatedSchema,
   OfflineVisitCreatedSchema,
@@ -2120,6 +2121,10 @@ export class StationBridge {
           // kind carries a document number — the platform's own rule.
           const noteProblem = tierProofNoteProblem(body.note, body.evidenceType);
           if (noteProblem) throw new BridgeError(400, 'VALIDATION', noteProblem);
+          // SCRUM-1019: every document carries its expiry date, Other included —
+          // the platform's own rule. A replay of an earlier check is not read here.
+          const expiryProblem = tierProofExpiryProblem(body.evidenceExpiresAt);
+          if (expiryProblem) throw new BridgeError(400, 'VALIDATION', expiryProblem);
         }
         if (!(await this.tierCodes()).includes(body.toTier)) {
           throw new BridgeError(400, 'VALIDATION', `Unknown tier "${body.toTier}"`);

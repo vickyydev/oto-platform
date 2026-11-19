@@ -17,6 +17,7 @@ import {
   newId,
   normalizePhone,
   tierConfirmationProblem,
+  tierProofExpiryProblem,
   tierProofNoteProblem,
 } from '@oto/shared';
 import type { App } from '../app';
@@ -534,9 +535,11 @@ export async function memberRoutes(app: App): Promise<void> {
              */
             evidenceType: z.enum([...TIER_PROOF_CHOICES, TIER_APPROVAL_EVIDENCE]),
             /**
-             * Optional, as the approved design's verification step asks for
-             * the proof type only. When recorded, its passing flags the member
-             * for re-verification (`reverifyDue`); it never ends the rate.
+             * Required for every document, Other included (SCRUM-1019, the
+             * owner's answer of 19 November; `tierProofExpiryProblem`), and
+             * never sent with the Thai rate confirmed at the till. Its passing
+             * flags the member for re-verification (`reverifyDue`); it never
+             * ends the rate. A replayed check answers before this is read.
              */
             evidenceExpiresAt: z
               .string()
@@ -577,6 +580,9 @@ export async function memberRoutes(app: App): Promise<void> {
       } else {
         const noteProblem = tierProofNoteProblem(req.body.note, req.body.evidenceType);
         if (noteProblem) throw new AppError(400, 'TIER_PROOF_NOTE', noteProblem);
+        // SCRUM-1019 — every document carries its expiry date, Other included.
+        const expiryProblem = tierProofExpiryProblem(req.body.evidenceExpiresAt);
+        if (expiryProblem) throw new AppError(400, 'TIER_PROOF_EXPIRY', expiryProblem);
       }
       const note = req.body.note?.trim() || null;
 

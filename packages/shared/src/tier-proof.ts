@@ -18,7 +18,8 @@ export type TierProofType = (typeof TIER_PROOF_TYPES)[number];
  * description is the record's note; it is what makes an Other check mean
  * anything, so it is required, and it describes the document, never its
  * number. The document's expiry date is asked for as on the three kinds
- * (SCRUM-773) and, as on them, it is optional.
+ * (SCRUM-773) and, as on them, it is required (SCRUM-1019,
+ * `tierProofExpiryProblem`).
  */
 export const TIER_PROOF_OTHER = 'Other' as const;
 
@@ -82,6 +83,42 @@ export function tierProofNoteProblem(
     const words = text.split(/\s+/).filter((word) => HAS_LETTER.test(word));
     if (words.length < 2) return TIER_PROOF_NOTE_PROBLEMS.missing;
   }
+  return null;
+}
+
+/**
+ * SCRUM-1019 — THE EXPIRY DATE IS REQUIRED ON EVERY DOCUMENT (the owner's
+ * answer of 19 November 2026): on every kind, Other included. His one
+ * exception, the Thai ID card ("nationality does not expire"), is not a kind
+ * the till offers: the Thai rate is confirmed at the till with no document
+ * and no date at all (SCRUM-772, `tierConfirmationProblem`), and stays so.
+ *
+ * Only a NEW check is held to it, on the till, the platform and the box. A
+ * document recorded before the rule with no date stays as it was filed — no
+ * backfill, no lock-out — and a box's replay of a check its counter made
+ * earlier still files as it was made.
+ */
+export const TIER_PROOF_EXPIRY_PROBLEMS = {
+  missing: "Enter the document's expiry date.",
+  notADate: 'That document expiry is not a date.',
+} as const;
+
+/** A `YYYY-MM-DD` that names a real day. */
+function isCalendarDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const at = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(at.getTime()) && at.toISOString().slice(0, 10) === value;
+}
+
+/**
+ * Why a new document check's expiry date cannot be recorded, or null when it
+ * can: it is missing, or it is not a date. Whether it has passed is each
+ * writer's own check, in its own words, as before.
+ */
+export function tierProofExpiryProblem(expiresAt: string | null | undefined): string | null {
+  const text = (expiresAt ?? '').trim();
+  if (text === '') return TIER_PROOF_EXPIRY_PROBLEMS.missing;
+  if (!isCalendarDate(text)) return TIER_PROOF_EXPIRY_PROBLEMS.notADate;
   return null;
 }
 

@@ -4,6 +4,7 @@ import {
   TIER_APPROVAL_TEXT_MAX,
   TIER_PROOF_CHOICES,
   TIER_PROOF_NOTE_MAX,
+  tierProofExpiryProblem,
   tierProofNoteProblem,
 } from '@oto/shared';
 import type { App } from '../app';
@@ -61,8 +62,10 @@ const ClaimBody = z
      */
     evidenceType: z.enum(TIER_PROOF_CHOICES),
     /**
-     * The document's expiry, when it carries one. Optional, as at the design's
-     * verify step: a claim with no expiry date never expires.
+     * The document's expiry: required on every kind, Other included
+     * (SCRUM-1019, the owner's answer of 19 November;
+     * `tierProofExpiryProblem`). Nullish in the schema so its absence is
+     * answered with the rule's own sentence rather than a schema error.
      */
     evidenceExpiresAt: z
       .string()
@@ -246,6 +249,9 @@ export async function saleTierRoutes(app: App): Promise<void> {
       const auth = req.requireAuth();
       const noteProblem = tierProofNoteProblem(req.body.note, req.body.evidenceType);
       if (noteProblem) throw new AppError(400, 'TIER_PROOF_NOTE', noteProblem);
+      // SCRUM-1019 — every document carries its expiry date, Other included.
+      const expiryProblem = tierProofExpiryProblem(req.body.evidenceExpiresAt);
+      if (expiryProblem) throw new AppError(400, 'TIER_PROOF_EXPIRY', expiryProblem);
       const branchId = req.body.branchId ?? auth.branchId;
       if (!branchId) {
         throw errors.badRequest(
