@@ -13,7 +13,9 @@ import { describe, expect, it } from 'vitest';
 import type { Assignee, ConversationDetail, ConversationRow, InboxMe } from '@/api/inbox';
 import { AppBar } from '@/components/AppBar';
 import { AssistantSettings } from '@/components/AssistantSettings';
-import { TemplateSettings } from '@/components/TemplateSettings';
+import { SettingsFrame } from '@/components/SettingsFrame';
+import { RowMenuItems } from '@/components/settings-parts';
+import { TemplateEditor, TemplateGroups, TemplateSettings } from '@/components/TemplateSettings';
 import { BookDateDialog } from '@/components/BookDateDialog';
 import { ChatPanel, type Thread } from '@/components/ChatPanel';
 import { HandleConfirm, PrimaryMoveConfirm, StartOverConfirm, TeamMoveConfirm } from '@/components/confirms';
@@ -23,6 +25,7 @@ import { Rail } from '@/components/Rail';
 import { EMPTY_FILTERS } from '@/lib/query';
 import { BOOK_DATE_NOT_YOURS_REASON, SUPPORT_FULL_HINT } from '@/lib/view';
 import { paidPrebookingFixture } from './paid-prebooking-fixture';
+import { settingsTemplates } from './settings-fixture';
 
 const CENTRAL = '00000000-0000-7000-8000-00000000000c';
 const T_CENTRAL = '00000000-0000-7000-8000-0000000000c1';
@@ -201,16 +204,65 @@ const surfaces: Array<[string, () => string]> = [
         .map((el: ReactElement) => renderToStaticMarkup(el))
         .join(''),
   ],
-  ['the templates page', () => renderToStaticMarkup(createElement(TemplateSettings, { me: viewer({ assign: true, birthdays: false }), onBack: noop }))],
+  // SCRUM-1044: the settings pages sit in the settings frame, which holds the
+  // way back and the choice of page; the pages take no onBack of their own.
+  ['the templates page', () => renderToStaticMarkup(createElement(TemplateSettings, { me: viewer({ assign: true, birthdays: false }) }))],
   ...(['numbers', 'knowledge', 'examples', 'rules', 'teach'] as const).map((tab): [string, () => string] => [
     `the assistant page, ${tab}`,
     () => {
       const me = viewer({ assign: true, birthdays: false });
       return renderToStaticMarkup(
-        createElement(AssistantSettings, { me: { ...me, capabilities: { ...me.capabilities, kb: true, ai: true } }, tab, onBack: noop, onTab: noop }),
+        createElement(AssistantSettings, { me: { ...me, capabilities: { ...me.capabilities, kb: true, ai: true } }, tab, onTab: noop }),
       );
     },
   ]),
+  ...(['templates', 'assistant'] as const).map((page): [string, () => string] => [
+    `the settings frame page, ${page}`,
+    () => {
+      const me = viewer({ assign: true, birthdays: false });
+      return renderToStaticMarkup(
+        createElement(SettingsFrame, {
+          me: { ...me, capabilities: { ...me.capabilities, kb: true, ai: true } },
+          page,
+          section: page === 'assistant' ? 'rules' : null,
+          accessKey: '',
+          onOpen: noop,
+          onBack: noop,
+        }),
+      );
+    },
+  ]),
+  [
+    'the templates page, its rows',
+    () =>
+      renderToStaticMarkup(
+        createElement(TemplateGroups, {
+          me: viewer({ assign: true, birthdays: false }),
+          templates: settingsTemplates(CENTRAL),
+          onEdit: noop,
+          onArchive: noop,
+          onChanged: async () => undefined,
+        }),
+      ),
+  ],
+  [
+    'the template editor page, new and edit',
+    () =>
+      [null, settingsTemplates(CENTRAL)[0]!]
+        .map((template) =>
+          renderToStaticMarkup(
+            createElement(TemplateEditor, { me: viewer({ assign: true, birthdays: false }), template, onClose: noop, onSaved: async () => undefined }),
+          ),
+        )
+        .join(''),
+  ],
+  [
+    'the settings parts page, a row menu open',
+    () =>
+      renderToStaticMarkup(
+        createElement(RowMenuItems, { label: 'Actions: ZZ TEST', items: [{ label: 'Edit', onSelect: noop }, { label: 'Archive', onSelect: noop }], onChoose: noop }),
+      ),
+  ],
   ['the filters sheet', () => renderToStaticMarkup(createElement(FiltersDialog, { open: true, onClose: noop, me: viewer({ assign: true, birthdays: false }), filters: EMPTY_FILTERS, onChange: noop, onClear: noop }))],
 ];
 

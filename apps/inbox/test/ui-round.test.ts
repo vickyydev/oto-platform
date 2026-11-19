@@ -9,6 +9,7 @@ import { describe, expect, it } from 'vitest';
 import type { Dashboard as DashboardData, InboxMe } from '@/api/inbox';
 import { AssistantSettings, assistantSections } from '@/components/AssistantSettings';
 import { AccountMenuItems, AppBar, settingsMenuEntries, type AccountMenuProps } from '@/components/AppBar';
+import { SettingsFrame } from '@/components/SettingsFrame';
 import { ConversationList } from '@/components/ConversationList';
 import { StatsMore, StatsRow } from '@/components/StatsRow';
 import { EMPTY_FILTERS, filterPills, type Filters } from '@/lib/query';
@@ -184,12 +185,28 @@ describe('F2 — one Settings control, listing only what the viewer may open', (
   });
 });
 
+// SCRUM-1044: the assistant's sections are chosen in the settings frame now
+// (a column from 768 px, a band on a phone), each a page with aria-current,
+// no longer a tab list on the assistant page; the rules are the same.
 describe("F2 — the assistant page's three tabs", () => {
   function assistant(me: InboxMe, tab: AssistantTab | null): string {
-    return renderToStaticMarkup(createElement(AssistantSettings, { me, tab, onBack: noop, onTab: noop }));
+    return renderToStaticMarkup(
+      createElement(SettingsFrame, { me, page: 'assistant', section: tab, accessKey: '', onOpen: noop, onBack: noop }),
+    );
   }
-  const selected = (html: string, label: string) =>
-    new RegExp(`aria-selected="true"[^>]*>${label}<`).test(html);
+  /** The pages marked as the one open, column and band alike, by their words. */
+  const chosen = (html: string) =>
+    new Set([...html.matchAll(/<button[^>]*aria-current="page"[^>]*>([\s\S]*?)<\/button>/g)].map((m) => m[1]!.replace(/<[^>]+>/g, '')));
+  const selected = (html: string, label: string) => {
+    const on = chosen(html);
+    return on.size === 1 && on.has(label);
+  };
+
+  it('the assistant page renders the chosen section under its own name, without a tab list of its own', () => {
+    const html = renderToStaticMarkup(createElement(AssistantSettings, { me: hana, tab: 'examples', onTab: noop }));
+    expect(html).not.toContain('role="tablist"');
+    expect(html).toMatch(/<h2[^>]*>Examples<\/h2>/);
+  });
 
   it('offers Numbers on inbox:ai:manage, Knowledge, Examples, Rules and Teach on inbox:kb:manage, in that order', () => {
     expect(assistantSections({ ai: true, kb: true }).map(([, l]) => l)).toEqual(['Numbers', 'Knowledge', 'Examples', 'Rules', 'Teach']);

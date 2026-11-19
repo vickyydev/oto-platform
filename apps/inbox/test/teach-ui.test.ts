@@ -9,6 +9,7 @@ import type { InboxMe } from '@/api/inbox';
 import { AssistantSettings } from '@/components/AssistantSettings';
 import { KbConfirm, RuleConfirm } from '@/components/AssistantConfirms';
 import { ASK_FIRST_IGNORED_LINE, RuleEditor, RulesPanel } from '@/components/RulesPanel';
+import { SettingsFrame } from '@/components/SettingsFrame';
 import {
   DryRun,
   TEACH_CARD_GONE,
@@ -243,14 +244,25 @@ describe('a teach card shows the whole draft before Approve', () => {
 });
 
 describe('the teach chat survives a tab switch', () => {
+  // SCRUM-1044: the way back and the choice of section moved to the settings frame.
   const settings = (tab: 'rules' | 'teach' | 'knowledge') =>
-    renderToStaticMarkup(createElement(AssistantSettings, { me, tab, onBack: noop, onTab: noop }));
+    renderToStaticMarkup(createElement(AssistantSettings, { me, tab, onTab: noop }));
 
   it('stays mounted, hidden, while Rules or Knowledge shows', () => {
     for (const tab of ['rules', 'knowledge'] as const) {
       expect(settings(tab)).toMatch(/<div class="hidden" data-teach-chat="true">[\s\S]*Brief the assistant like a new receptionist/);
     }
     expect(settings('teach')).toMatch(/<div data-teach-chat="true">[\s\S]*Brief the assistant like a new receptionist/);
+  });
+
+  it('stays mounted, hidden, while the frame shows Templates (SCRUM-1044), and nothing else of the assistant is drawn', () => {
+    const withTemplates: InboxMe = { ...me, capabilities: { ...me.capabilities, templates: true } };
+    const html = renderToStaticMarkup(
+      createElement(SettingsFrame, { me: withTemplates, page: 'templates', section: 'teach', accessKey: '', onOpen: noop, onBack: noop }),
+    );
+    expect(html).toMatch(/<div class="hidden" data-teach-chat="true">[\s\S]*Brief the assistant like a new receptionist/);
+    expect(html).toMatch(/<h2[^>]*>Templates<\/h2>/);
+    expect(html).not.toContain('The assistant answers simple questions');
   });
 });
 
