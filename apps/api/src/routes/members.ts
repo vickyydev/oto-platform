@@ -23,6 +23,7 @@ import type { App } from '../app';
 import { AppError, errors } from '../lib/errors';
 import { audit } from '../services/audit';
 import { ClientIdSchema, REPLAY_HEADER, claimClientId } from '../services/client-id';
+import { ensureFamilyFor } from '../services/family';
 import {
   CUSTOMER_DISPLAY_SOURCE,
   REGISTER_PAGE_DEFAULT,
@@ -819,9 +820,14 @@ export async function memberRoutes(app: App): Promise<void> {
       }
       const id = claim.id;
       await withTx(app.db, opCtx(req), 'child.create', async (tx) => {
+        // SCRUM-1024 — the child's family (nothing reads it yet).
+        const { familyId } = await ensureFamilyFor(tx, { operatorId: auth.operatorId, memberId: m.id, childId: id, source: 'till',
+          context: { accountId: auth.accountId, branchId: auth.branchId, stationId: auth.stationId, requestId: req.id,
+            ...(fromDisplay ? { origin: CUSTOMER_DISPLAY_SOURCE } : {}) } });
         const [created] = await tx.insert(child).values({
           id,
           memberId: req.params.id,
+          familyId,
           name: details.name.trim(),
           dateOfBirth: details.dateOfBirth ?? null,
           ageYears: details.ageYears ?? null,
