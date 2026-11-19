@@ -8,7 +8,8 @@
 //      its note; every change written at once to the activity's own routes, the
 //      people one change after the other; an activity of before shows its one
 //      person (kept as it was until staff change it) and a member of staff who
-//      has left by the name the server gives;
+//      has left by the name the server gives; a change the server refuses
+//      shows the people as stored again;
 //   2. a dish's and a drink's own serving time and group, set from its row in
 //      Food & Drinks, shown on the row and saved with the line; a group's
 //      dishes follow its one time; cleared, the line is saved as before;
@@ -104,6 +105,7 @@ const asked: Asked[] = [];
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 let OVER: Record<string, unknown> = {};
 let slowPeople = 0;
+let refusePeople = false;
 
 g.fetch = async (input: string | URL | Request, init?: RequestInit) => {
   const url = new URL(input instanceof Request ? input.url : String(input), "http://localhost");
@@ -116,6 +118,10 @@ g.fetch = async (input: string | URL | Request, init?: RequestInit) => {
   if (beo && method === "PUT") return json({ id: beo[1], oneDeposit: { amountThb: 3000, date: "2099-05-01" } });
   if (/\/beo\/entertainment-items$/.test(url.pathname) && method === "GET") return json(acts);
   const people = /\/beo\/entertainment-items\/([^/]+)\/people$/.exec(url.pathname);
+  if (people && method === "PUT" && refusePeople) {
+    refusePeople = false;
+    return json({ error: "Someone on this activity is not on the park's staff list." }, 400);
+  }
   if (people && method === "PUT") {
     // The first change is slow: the second waits for it (one change after the other).
     if (slowPeople > 0) { slowPeople -= 1; await new Promise((r) => setTimeout(r, 60)); }
@@ -257,6 +263,17 @@ await check("a role with its number: picked at 1, stepped to 2; the chip says it
   assert.deepEqual(peopleSent("act-zz-old").at(-1), [], "the person of before taken off: the activity names no one");
 });
 
+await check("a change of the people the server refuses: the row shows the people as stored again", async () => {
+  await open();
+  refusePeople = true;
+  await pick("entertainment-act-people-0", "employee-emp-zz-nok");
+  await settle(20);
+  assert.equal(peopleSent("act-zz-old").length, 1, "asked once");
+  assert.equal(text("entertainment-act-people-0-chip-0"), "ZZ Left Staff");
+  assert.equal(byTestId("entertainment-act-people-0-chip-1"), null, "the refused person is not shown as if saved");
+  assert.match(doc.body.textContent ?? "", /The activity's people were not saved/);
+});
+
 await check("the activity's note and its time are written at once to the activity", async () => {
   await open();
   await typeInto("input-entertainment-act-notes-1", "ZZ TEST bring the treasure map");
@@ -345,4 +362,4 @@ await check("a party opened and saved untouched sends its lines' serving keys ba
 
 console.log(`beo-activities-times-ui.check: ${checks} checks passed`);
 await act(async () => { root.unmount(); });
-process.exit(checks === 7 ? 0 : 1);
+process.exit(checks === 8 ? 0 : 1);
