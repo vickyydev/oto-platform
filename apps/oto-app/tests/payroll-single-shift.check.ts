@@ -16,8 +16,9 @@
 //      clock-in is not paid and its day asks for review; a casual day rate is
 //      listed as not paid, with why; the paid shift is not listed; every
 //      other person of the golden month is unchanged line for line; the run
-//      calculated twice is the same run; the readers that do not pay (feeds,
-//      inputs) do not take the former employee.
+//      calculated twice is the same run; the readers that do not pay (the
+//      feeds' OT bank, the month inputs, the statutory documents) do not take
+//      the former employee.
 //   3. Changed after the run: a pay way switched after the GM's confirmation
 //      makes the run stale and the Owner lock refuses until it is confirmed
 //      again; the lock freezes the shift's line, payslip, bank transfer and
@@ -179,11 +180,17 @@ try {
     assert.deepEqual((now as unknown as { service: unknown }).service, (was as unknown as { service: unknown }).service);
     assert.deepEqual((await preview()).calculation, first.calculation);
   });
-  await check("the readers that do not pay do not take the former employee: the feeds' OT bank and the month inputs", async () => {
+  await check("the readers that do not pay do not take the former employee: the feeds' OT bank, the month inputs, the statutory documents", async () => {
     const feeds = await ok("admin", "GET", `/api/payroll/feeds/${MONTH}`);
     assert.ok(!(feeds.otBank as { employeeId: string }[]).some((o) => o.employeeId === monthly), "not an employee of the month for the OT bank");
     const refused = await call(g, "admin", "POST", `/api/payroll/inputs/${MONTH}/override`, { key: `days:${monthly}`, value: 1, reason });
     assert.notEqual(refused.status, 200, "no days-worked figure for a former employee");
+    // The statutory documents name nobody until a per-branch run exists, so their reader is held by its load:
+    // only the pay readers ask for single shifts.
+    const source = (file: string) => readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "server", "payroll", file), "utf8");
+    assert.ok(source("statutory.ts").includes("({ world } = await loadPayrollWorld(tenantId, month));"), "the statutory documents load the month without single shifts");
+    for (const file of ["feeds.ts", "inputs.ts", "statutory.ts"]) assert.ok(!source(file).includes("PAY_READER"), file);
+    for (const file of ["month-end.ts", "lifecycle.ts"]) assert.ok(source(file).includes("PAY_READER"), file);
   });
 
   console.log("3. changed after the run:");
