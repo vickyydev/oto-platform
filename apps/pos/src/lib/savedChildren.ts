@@ -24,6 +24,8 @@ export function slotPatchFromSavedChild(child: SavedChild): Partial<SupervisedSl
     dateOfBirth: child.dateOfBirth,
     age: String(derivedAge ?? child.childAge),
     allergiesMedical: child.allergiesMedical ?? '',
+    // SCRUM-1020 fix round — the record's medical notes, for the family's display to show and update.
+    medicalNotes: child.medicalNotes ?? '',
     foodRestrictions: child.foodRestrictions ?? child.dietary ?? '',
     childPhotoUrl: undefined,
     // SCRUM-1018 — staff's answer on the last photo belongs to the child it

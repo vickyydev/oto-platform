@@ -282,7 +282,7 @@ describe('SCRUM-1020 (4): the write names the display and the family, apart from
     savedChildren: [{ id: 'zz-child-mai', childName: 'ZZ TEST Mai', childAge: 6, allergiesMedical: PEANUTS }] } as unknown as Member;
 
   it('the gate writes the family\'s "none" on its own, for the family it is saved on', async () => {
-    const care = vi.fn(async (_id: string, c: { allergies: string | null }) => ({ child: apiChild(c.allergies) }));
+    const care = vi.fn(async (_id: string, c: { allergies?: string | null }) => ({ child: apiChild(c.allergies ?? null) }));
     const update = vi.fn(async () => ({ child: apiChild(null) }));
     await saveGateChildren({ guardian, slots: [{ slot: slot({ allergiesMedical: '', careSource: 'display', careNoneConfirmed: true }), age: 6 }],
       childIdFor: () => 'unused', matchedSlots: new Map(), addChild: vi.fn(), updateChild: update,
@@ -308,13 +308,18 @@ describe('SCRUM-1020 (5): the till wires it', () => {
   it('publishes the note of each saved child in care, with the family\'s "none"', () => {
     expect(till).toContain('...(slot.savedChildId ? { saved: true, ...(careShownFor(slot, outcome.needsConsent) ? {');
     expect(till).toContain('careShown: true, allergiesMedical: slot.allergiesMedical.slice(0, 500),');
-    expect(till).toContain("...(slot.careNoneConfirmed && !slot.allergiesMedical.trim() ? { allergiesNone: true } : {}),");
+    // Fix round: the family's "none" also stands for emptied medical notes.
+    expect(till).toContain('...(slot.careNoneConfirmed && (!slot.allergiesMedical.trim()');
+    expect(till).toContain('|| (slot.medicalNotes !== undefined && !slot.medicalNotes.trim())) ? { allergiesNone: true } : {}),');
+    // And the record's medical notes beside the allergy line, with the alert staff set.
+    expect(till).toContain('...(slot.medicalNotes !== undefined ? { medicalNotes: slot.medicalNotes.slice(0, 500) } : {}),');
+    expect(till).toContain('?.medicalAlert ? { medicalAlert: true } : {}),');
   });
 
   it('takes the family\'s steps with the care it published; a change on the till is the till\'s', () => {
     expect(till).toMatch(/care: \{ shown: prompt\.data\.slots\.flatMap\(\(slot\) => \(slot\.saved && slot\.careShown \? \[slot\.id\] : \[\]\)\),/);
     const update = till.slice(till.indexOf('const handleUpdateSlot = '), till.indexOf('const handleToggleWaiver'));
-    expect(update).toContain("'allergiesMedical' in patch && !('careSource' in patch)");
+    expect(update).toContain("('allergiesMedical' in patch || 'medicalNotes' in patch) && !('careSource' in patch)");
     expect(update).toContain('careSource: undefined, careNoneConfirmed: undefined');
   });
 
@@ -324,15 +329,93 @@ describe('SCRUM-1020 (5): the till wires it', () => {
     const platform = readFileSync(path.resolve(import.meta.dirname, '..', 'src', 'api', 'platform.ts'), 'utf8');
     expect(platform).toContain("cloudMembersApi.updateChild(childId, { source: 'customer_display', ...care })");
     // The box's fact stays the child.update it has always taken.
-    expect(platform).toContain("onBox<{ child: ApiChild }>(stationId, 'child.update', { childId, allergies: care.allergies })");
+    expect(platform).toContain("...(care.allergies !== undefined ? { allergies: care.allergies } : {}),");
+    expect(platform).toContain("...(care.medicalNotes !== undefined ? { medicalNotes: care.medicalNotes } : {}),");
   });
 
   it('every new word is there in all five languages', () => {
-    for (const key of ['superviseConsent.careFromProfile', 'superviseConsent.noAllergiesConfirm', 'superviseConsent.careClearedLine']) {
+    for (const key of ['superviseConsent.careFromProfile', 'superviseConsent.noAllergiesConfirm', 'superviseConsent.careClearedLine',
+      'superviseConsent.medicalNotes', 'superviseConsent.medicalNotesPlaceholder', 'superviseConsent.medicalAlertOn']) {
       const entry = DICTIONARY[key]!;
       for (const lang of ['en', 'zh', 'th', 'ru', 'fr'] as const) expect(entry[lang], `${key} ${lang}`).toBeTruthy();
       for (const lang of ['zh', 'th', 'ru', 'fr'] as const) expect(entry[lang], `${key} ${lang}`).not.toBe(entry.en);
     }
     expect(DICTIONARY['superviseConsent.noAllergiesConfirm']!.th).toContain('{{name}}');
+  });
+});
+
+/**
+ * SCRUM-1020 fix round — THE MEDICAL NOTES TOO. The owner's answer names a
+ * saved child's allergy AND medical notes; the display showed only the
+ * allergy line. The record's medical notes now sit beside it, on the same
+ * rules (never emptied without the family's "none"), with the medical alert
+ * staff set shown, not changed.
+ */
+describe('SCRUM-1020 (6): the medical notes beside the allergy line', () => {
+  const INHALER = 'ZZ TEST inhaler';
+
+  it('the display shows the medical notes to update, and the alert as a line', () => {
+    const form = open(promptOf({ slots: [mai({ medicalNotes: INHALER, medicalAlert: true })] }));
+    expect(form.byTest('consent-saved-medical')).toHaveLength(1);
+    expect(form.byTest('consent-saved-medical')[0]!.props.value).toBe(INHALER);
+    expect(form.byTest('consent-saved-medical-alert')).toHaveLength(1);
+    form.view.unmount();
+    // A till that did not send them: the allergy line alone, as before.
+    const older = open(promptOf());
+    expect(older.byTest('consent-saved-medical')).toHaveLength(0);
+    older.view.unmount();
+  });
+
+  it("emptied without the tick: the tick is asked, and the till's note is what is sent", () => {
+    const slotOf = mai({ medicalNotes: INHALER });
+    expect(careNeedsTick(slotOf, { allergiesMedical: PEANUTS, medicalNotes: '' })).toBe(true);
+    expect(carePending(slotOf, { allergiesMedical: PEANUTS, medicalNotes: '' })).toBe(true);
+    expect(carePending(slotOf, { allergiesMedical: PEANUTS, medicalNotes: '', allergiesNone: true })).toBe(false);
+    expect(careNeedsTick(slotOf, { allergiesMedical: PEANUTS, medicalNotes: 'ZZ TEST inhaler, daily' })).toBe(false);
+    // Nothing held, nothing to confirm.
+    expect(careNeedsTick(mai({ medicalNotes: '' }), { allergiesMedical: PEANUTS, medicalNotes: '' })).toBe(false);
+  });
+
+  it("the till takes the family's change on the same rules, and tells the cashier", () => {
+    const held = slot({ medicalNotes: INHALER });
+    const typed = { ...filled(PEANUTS), medicalNotes: 'ZZ TEST inhaler, daily' };
+    expect(displayCarePatch(held, typed, PEANUTS, INHALER)).toMatchObject({ medicalNotes: 'ZZ TEST inhaler, daily', careSource: 'display' });
+    // Empty without the tick: kept. With it: cleared on their word.
+    expect(displayCarePatch(held, { ...filled(PEANUTS), medicalNotes: '' }, PEANUTS, INHALER)).toBeNull();
+    expect(displayCarePatch(held, { ...filled(PEANUTS, true), medicalNotes: '' }, PEANUTS, INHALER))
+      .toMatchObject({ medicalNotes: '', careNoneConfirmed: true, careSource: 'display' });
+    expect(displayCareLine(slot({ medicalNotes: 'ZZ TEST inhaler, daily', careSource: 'display' }), PEANUTS, INHALER))
+      .toBe(`The family updated ZZ TEST Mai's medical notes on the customer display: now “ZZ TEST inhaler, daily” (was “${INHALER}”).`);
+    const care = { shown: ['zz-mai'], profileNote: () => PEANUTS, profileMedical: () => INHALER };
+    expect(consentSlotPatches([held], [typed], care)[0]!.patch).toMatchObject({ medicalNotes: 'ZZ TEST inhaler, daily' });
+  });
+
+  it("the write names the display for the medical notes, with the family's \"none\" for a cleared one", () => {
+    expect(displayCareWrite(slot({ careSource: 'display' }), { medicalNotes: 'ZZ TEST inhaler, daily' }))
+      .toEqual({ care: { medicalNotes: 'ZZ TEST inhaler, daily' }, rest: null });
+    expect(displayCareWrite(slot({ careSource: 'display', careNoneConfirmed: true }), { medicalNotes: null }))
+      .toEqual({ care: { medicalNotes: null, confirmedNone: true }, rest: null });
+  });
+
+  it("the gate writes medical notes only for the family's change, never a stale copy", async () => {
+    const guardianWith = { id: 'zz-family', phone: '+66898020001', nickname: 'ZZ TEST Ploy',
+      savedChildren: [{ id: 'zz-child-mai', childName: 'ZZ TEST Mai', childAge: 6, allergiesMedical: PEANUTS,
+        medicalNotes: 'ZZ TEST changed elsewhere' }] } as unknown as Member;
+    const child = { id: 'zz-child-mai', name: 'ZZ TEST Mai', dateOfBirth: null, ageYears: 6, allergies: PEANUTS, medicalNotes: null,
+      medicalAlert: true, dietary: null, foodRestrictions: null, notes: null, lastConfirmedAt: null } as ApiChild;
+    const care = vi.fn(async () => ({ child }));
+    const update = vi.fn(async () => ({ child }));
+    // The copy the gate took at its opening differs, but the family did not change it: nothing is written.
+    await saveGateChildren({ guardian: guardianWith, slots: [{ slot: slot({ medicalNotes: INHALER }), age: 6 }],
+      childIdFor: () => 'unused', matchedSlots: new Map(), addChild: vi.fn(), updateChild: update,
+      updateChildCareFromDisplay: care, onSaved: vi.fn() });
+    expect(care).not.toHaveBeenCalled();
+    expect(update).not.toHaveBeenCalled();
+    // The family's change goes on its own, naming the display.
+    await saveGateChildren({ guardian: guardianWith,
+      slots: [{ slot: slot({ medicalNotes: 'ZZ TEST inhaler, daily', careSource: 'display' }), age: 6 }],
+      childIdFor: () => 'unused', matchedSlots: new Map(), addChild: vi.fn(), updateChild: update,
+      updateChildCareFromDisplay: care, onSaved: vi.fn() });
+    expect(care).toHaveBeenCalledWith('zz-child-mai', { medicalNotes: 'ZZ TEST inhaler, daily' }, 'zz-family');
   });
 });

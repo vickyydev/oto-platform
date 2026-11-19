@@ -109,6 +109,9 @@ export interface SavedChild {
   // / legacy fallback for records captured before DOB existed.
   dateOfBirth?: string;
   allergiesMedical?: string;
+  /** SCRUM-1020 fix round — the record's medical notes and the alert staff set, for the family's display. */
+  medicalNotes?: string;
+  medicalAlert?: boolean;
   dietary?: string;
   foodRestrictions?: string;
   notes?: string;

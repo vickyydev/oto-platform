@@ -86,6 +86,14 @@ export const gateChildPatch = (
   }
   const allergies = slot.allergiesMedical.trim();
   if (allergies !== (saved.allergiesMedical ?? '').trim()) patch.allergies = allergies || null;
+  // SCRUM-1020 fix round — the medical notes, only from a place the family
+  // changed on the display (no screen of the gate edits them otherwise), and
+  // only when they differ from the record: a copy taken at the gate's opening
+  // never writes over a change made elsewhere since.
+  if (slot.medicalNotes !== undefined && slot.careSource === 'display') {
+    const medical = slot.medicalNotes.trim();
+    if (medical !== (saved.medicalNotes ?? '').trim()) patch.medicalNotes = medical || null;
+  }
   // The slot's dietary box is pre-filled from food restrictions FALLING BACK
   // to the dietary line (slotPatchFromSavedChild), so it is compared against
   // the same fallback — otherwise every confirm of an untouched child would

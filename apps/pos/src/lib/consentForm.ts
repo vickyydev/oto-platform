@@ -34,7 +34,7 @@ export function consentSlotPatches(
     // their note, on the rules of `displayCarePatch` (never emptied without
     // their tick). Any other saved child keeps the profile's, as before.
     const savedCare = slot.savedChildId && care?.shown.includes(slot.id)
-      ? displayCarePatch(slot, child, care.profileNote(slot)) ?? {} : {};
+      ? displayCarePatch(slot, child, care.profileNote(slot), care.profileMedical?.(slot) ?? '') ?? {} : {};
     // SCRUM-1021 — the extra prepaid food credit the family chose on their
     // screen, on a child whose form asked them (`consentActionAllowed`).
     const food = child.extraCreditTHB !== undefined ? slotFoodFromFamily(slot, child.extraCreditTHB) ?? {} : {};
@@ -57,6 +57,8 @@ export function consentSlotPatches(
 export interface DisplayCareContext {
   shown: readonly string[];
   profileNote: (slot: SupervisedSlot) => string;
+  /** SCRUM-1020 fix round — the profile's medical notes for the child in this place. */
+  profileMedical?: (slot: SupervisedSlot) => string;
 }
 
 /**

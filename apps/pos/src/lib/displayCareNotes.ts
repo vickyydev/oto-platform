@@ -42,10 +42,44 @@ export function profileCareNote(
   return savedChildren.find((child) => child.id === slot.savedChildId)?.allergiesMedical ?? '';
 }
 
+/** SCRUM-1020 fix round — the medical notes on the family's profile for the saved child in this place. */
+export function profileMedicalNote(
+  slot: Pick<SupervisedSlot, 'savedChildId'>,
+  savedChildren: readonly Pick<SavedChild, 'id' | 'medicalNotes'>[],
+): string {
+  if (!slot.savedChildId) return '';
+  return savedChildren.find((child) => child.id === slot.savedChildId)?.medicalNotes ?? '';
+}
+
 /** The care notes as the family's screen sends them for one child. */
 export interface FilledCare {
   allergiesMedical: string;
   allergiesNone?: boolean;
+  /** SCRUM-1020 fix round — only where the form showed the medical notes. */
+  medicalNotes?: string;
+}
+
+/**
+ * SCRUM-1020 fix round — the medical notes, on the same rules as the allergy
+ * line: text is the family's; an empty box replaces a note only with their
+ * "none" tick; empty without it keeps the note; a tick taken back puts the
+ * profile's note back.
+ */
+function displayMedicalPatch(
+  slot: Pick<SupervisedSlot, 'medicalNotes' | 'careNoneConfirmed'>,
+  filled: FilledCare,
+  profileMedical: string,
+): Partial<SupervisedSlot> | null {
+  if (filled.medicalNotes === undefined) return null;
+  const held = slot.medicalNotes ?? '';
+  const typed = filled.medicalNotes.slice(0, 500);
+  if (typed.trim()) return typed === held ? null : { medicalNotes: typed, careSource: 'display' };
+  if (filled.allergiesNone) {
+    if (!held.trim() && !profileMedical.trim()) return null;
+    return held === '' ? null : { medicalNotes: '', careSource: 'display' };
+  }
+  if (slot.careNoneConfirmed && held !== profileMedical) return { medicalNotes: profileMedical };
+  return null;
 }
 
 /**
@@ -59,6 +93,29 @@ export interface FilledCare {
  *     the profile's note is what the place holds again.
  */
 export function displayCarePatch(
+  slot: Pick<SupervisedSlot, 'allergiesMedical' | 'careNoneConfirmed' | 'medicalNotes'>,
+  filled: FilledCare,
+  profileNote: string,
+  profileMedical = '',
+): Partial<SupervisedSlot> | null {
+  const allergy = displayAllergyPatch(slot, filled, profileNote);
+  const medical = displayMedicalPatch(slot, filled, profileMedical);
+  if (!allergy && !medical) return null;
+  const patch: Partial<SupervisedSlot> = { ...medical, ...allergy };
+  // The family's "none" stands for whichever box it emptied: the allergy line
+  // or the medical notes (the write then carries their word with it).
+  const allergiesAfter = patch.allergiesMedical ?? slot.allergiesMedical;
+  const medicalAfter = patch.medicalNotes ?? slot.medicalNotes ?? '';
+  const none = filled.allergiesNone === true
+    && (!allergiesAfter.trim() || (filled.medicalNotes !== undefined && !medicalAfter.trim()));
+  return {
+    ...patch,
+    careNoneConfirmed: none,
+    ...(allergy?.careSource === 'display' || medical?.careSource === 'display' ? { careSource: 'display' as const } : {}),
+  };
+}
+
+function displayAllergyPatch(
   slot: Pick<SupervisedSlot, 'allergiesMedical' | 'careNoneConfirmed'>,
   filled: FilledCare,
   profileNote: string,
@@ -85,10 +142,20 @@ const quoted = (note: string) => `“${note.trim()}”`;
  * child; null when the place holds the profile's note. Staff's own English.
  */
 export function displayCareLine(
-  slot: Pick<SupervisedSlot, 'name' | 'allergiesMedical' | 'careSource' | 'careNoneConfirmed'>,
+  slot: Pick<SupervisedSlot, 'name' | 'allergiesMedical' | 'careSource' | 'careNoneConfirmed' | 'medicalNotes'>,
   profileNote: string,
+  profileMedical = '',
 ): string | null {
-  if (slot.careSource !== 'display' || slot.allergiesMedical.trim() === profileNote.trim()) return null;
+  if (slot.careSource !== 'display') return null;
+  const medicalChanged = slot.medicalNotes !== undefined && slot.medicalNotes.trim() !== profileMedical.trim();
+  if (slot.allergiesMedical.trim() === profileNote.trim()) {
+    if (!medicalChanged) return null;
+    const who = slot.name.trim() || 'A child';
+    const was = profileMedical.trim() ? `was ${quoted(profileMedical)}` : 'there was no note';
+    return slot.medicalNotes!.trim()
+      ? `The family updated ${who}'s medical notes on the customer display: now ${quoted(slot.medicalNotes!)} (${was}).`
+      : `The family confirmed on the customer display that ${who} has no medical notes (${was}).`;
+  }
   const who = slot.name.trim() || 'A child';
   const was = profileNote.trim() ? `was ${quoted(profileNote)}` : 'there was no note';
   if (!slot.allergiesMedical.trim()) {
@@ -99,7 +166,9 @@ export function displayCareLine(
 
 /** What the till writes for a saved child's care notes the family changed on the display. */
 export interface DisplayCare {
-  allergies: string | null;
+  allergies?: string | null;
+  /** SCRUM-1020 fix round — the medical notes, when the family changed them. */
+  medicalNotes?: string | null;
   confirmedNone?: true;
 }
 
@@ -113,9 +182,14 @@ export function displayCareWrite(
   slot: Pick<SupervisedSlot, 'careSource' | 'careNoneConfirmed'>,
   patch: Record<string, unknown>,
 ): { care: DisplayCare | null; rest: Record<string, unknown> | null } {
-  if (slot.careSource !== 'display' || !('allergies' in patch)) return { care: null, rest: patch };
-  const { allergies, ...others } = patch;
-  const note = typeof allergies === 'string' && allergies.trim() ? allergies : null;
-  const care: DisplayCare = { allergies: note, ...(note === null && slot.careNoneConfirmed ? { confirmedNone: true as const } : {}) };
+  if (slot.careSource !== 'display' || !('allergies' in patch || 'medicalNotes' in patch)) return { care: null, rest: patch };
+  const { allergies, medicalNotes, ...others } = patch;
+  const textOf = (value: unknown) => (typeof value === 'string' && value.trim() ? value : null);
+  const care: DisplayCare = {
+    ...('allergies' in patch ? { allergies: textOf(allergies) } : {}),
+    ...('medicalNotes' in patch ? { medicalNotes: textOf(medicalNotes) } : {}),
+  };
+  const emptied = ('allergies' in patch && care.allergies === null) || ('medicalNotes' in patch && care.medicalNotes === null);
+  if (emptied && slot.careNoneConfirmed) care.confirmedNone = true;
   return { care, rest: Object.keys(others).length > 0 ? others : null };
 }

@@ -417,9 +417,10 @@ export function ConsentCapture({
                     )}
                   </div>}
 
-                  {agreementsOnly && slot.savedChildId ? (
-                    <p className="text-lg text-foreground/70" data-testid="consent-care-saved">{t('superviseConsent.savedOnProfile')}</p>
-                  ) : <div className="space-y-4">
+                  {/* SCRUM-1020 fix round — the family sees and may update a saved
+                      child's care notes, on this half too (it showed the boxes for
+                      every child before the agreements-only form): the boxes stay. */}
+                  <div className="space-y-4">
                     <div>
                       <label className="flex items-center gap-2 text-lg text-foreground/70">
                         <HeartPulse className="h-5 w-5" /> {t('superviseConsent.allergiesMedical')}
@@ -445,7 +446,7 @@ export function ConsentCapture({
                         className="mt-2 h-12 border-foreground/10 bg-foreground/5 px-4 text-lg text-foreground placeholder:text-foreground/30"
                       />
                     </div>
-                  </div>}
+                  </div>
                 </div>
 
                 {/* Food provision — replaces the old toggle with the 3-way prepaid picker. */}

@@ -37,6 +37,18 @@ describe('SCRUM-1020 — the care notes on the form', () => {
     expect(consentActionAllowed(form({ saved: undefined }), ticked)).toBe(false);
     expect(consentActionAllowed(form({ careShown: undefined }), ConsentActionSchema.parse(fill()))).toBe(true);
     expect(ConsentActionSchema.safeParse({ ...fill(), slots: [{ ...fill().slots[0], allergiesNone: false }] }).success).toBe(false);
-    expect(ConsentActionSchema.safeParse({ ...fill(), slots: [{ ...fill().slots[0], medicalNotes: 'x' }] }).success).toBe(false);
+  });
+
+  it('fix round: the medical notes travel too, and only for a saved child whose form sent them', () => {
+    // Pinned before as never carried; the owner's answer names the medical
+    // notes beside the allergy line, so they are now (SCRUM-1020 fix round).
+    expect(ConsentPromptSchema.parse(form({ medicalNotes: 'ZZ TEST inhaler', medicalAlert: true })).slots[0])
+      .toMatchObject({ medicalNotes: 'ZZ TEST inhaler', medicalAlert: true });
+    const withMedical = ConsentActionSchema.parse({ ...fill(), slots: [{ ...fill().slots[0], medicalNotes: 'ZZ TEST inhaler, daily' }] });
+    expect(consentActionAllowed(form({ medicalNotes: 'ZZ TEST inhaler' }), withMedical)).toBe(true);
+    // A form that did not send the notes, or not for a saved child shown its care, takes none.
+    expect(consentActionAllowed(form(), withMedical)).toBe(false);
+    expect(consentActionAllowed(form({ medicalNotes: 'ZZ TEST inhaler', careShown: undefined }), withMedical)).toBe(false);
+    expect(ConsentActionSchema.safeParse({ ...fill(), slots: [{ ...fill().slots[0], medicalNotes: 'x'.repeat(501) }] }).success).toBe(false);
   });
 });

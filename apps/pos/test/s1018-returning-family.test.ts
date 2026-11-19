@@ -276,8 +276,9 @@ describe('the till wires it', () => {
     expect(resolve).toMatch(/photoReuse: reuses\.map\(\(\{ checkinId, fromCheckinId \}\) => \(\{ checkinId, fromCheckinId \}\)\)/);
     expect(resolve).not.toContain('checkinApi.reusePhoto');
     // Refused, nothing is written: the old photo is let go, not offered again,
-    // and the gate stays shut until a new photo is taken.
-    expect(resolve).toMatch(/if \(photoReuseRefused\(err\) && reusedSlotIds\.length > 0\) \{[\s\S]{0,700}?\{ status: 'none' \}[\s\S]{0,300}?childPhotoUrl: undefined, lastPhotoChoice: undefined[\s\S]{0,300}?return \{ ok: false, message: err\.message \};/);
+    // and the gate stays shut until a new photo is taken; the failure is said
+    // as any other gate failure (the sale-moved-on rule first).
+    expect(resolve).toMatch(/\}\)\.catch\(\(err: unknown\) => \{[\s\S]{0,600}?if \(photoReuseRefused\(err\) && reuses\.length > 0 && ownSale\(\)\) \{[\s\S]{0,400}?\{ status: 'none' \}[\s\S]{0,300}?childPhotoUrl: undefined, lastPhotoChoice: undefined[\s\S]{0,100}?throw err;/);
     // The display is not asked for a photo staff compare or reuse.
     expect(till).toContain("needsConsent: outcome.needsConsent && photoStateOf(slot) === 'today'");
     expect(till).toContain('photoAtTillFor={staffPhotoSlotIds}');

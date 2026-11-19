@@ -14,7 +14,7 @@ import { childReviewPatch, useChildReviewSave, useTicketDisplay } from '@/lib/di
 import { ChildReviewPromptSchema, childReviewAge, ConsentActionSchema, ConsentPromptSchema, consentSlotsComplete, consentActionAllowed,
   newId, type ChildReviewPrompt, type ConsentFormStep, type ConsentPrompt } from '@oto/shared';
 import { familyReviewChange, familyReviewChangeLine } from '@/lib/familyReviewChange';
-import { careShownFor, displayCareLine, profileCareNote } from '@/lib/displayCareNotes';
+import { careShownFor, displayCareLine, profileCareNote, profileMedicalNote } from '@/lib/displayCareNotes';
 import { extraCreditOfSlot, includedCreditTHB } from '@/lib/dropOffFoodCredit';
 import { addedGatePlace, emptyGatePlace, gateTicketLines, savedChildrenOffForm } from '@/lib/editDetails';
 import { useCustomerTheme } from '@/lib/themePref';
@@ -2334,7 +2334,7 @@ export default function Till() {
       // SCRUM-1020 — a care note changed anywhere but the family's display
       // (staff, or the till's own customer half) is the till's change: the
       // family's mark and their "no allergies" go with it.
-      const own = 'allergiesMedical' in patch && !('careSource' in patch)
+      const own = ('allergiesMedical' in patch || 'medicalNotes' in patch) && !('careSource' in patch)
         ? { ...patch, careSource: undefined, careNoneConfirmed: undefined } : patch;
       const next = prev.map((s) => (s.id === id ? { ...s, ...own } : s));
       // A waiver only holds while the child stays waiver-eligible. An age edit
@@ -2799,7 +2799,6 @@ export default function Till() {
     if (!ownSale()) return { ok: false, message: SALE_MOVED_ON };
     let created: CheckIn[] = [];
     let registrationId: string | null = null;
-    let reusedSlotIds: string[] = [];
     try {
       if (supervised.length > 0) {
         const regId = gateRegistrationIdRef.current ?? checkinApi.newId();
@@ -2815,7 +2814,6 @@ export default function Till() {
           const from = photoReuseFor(slot, childIdBySlot.get(slot.id));
           return from ? [{ checkinId: stayIds[i]!, fromCheckinId: from, slotId: slot.id }] : [];
         });
-        reusedSlotIds = reuses.map((item) => item.slotId);
         const reg = await checkinApi.createRegistration({
           id: regId,
           branchId: platformBranchId,
@@ -2844,6 +2842,21 @@ export default function Till() {
           ...(reuses.length > 0
             ? { photoReuse: reuses.map(({ checkinId, fromCheckinId }) => ({ checkinId, fromCheckinId })) }
             : {}),
+        }).catch((err: unknown) => {
+          // Refused, nothing was written: the old photo is let go for these
+          // children and not offered again this sale, so the photo check
+          // holds Continue until a new one is taken (the family on the
+          // display, or staff in Private child details). The failure is then
+          // said as any other, below.
+          if (photoReuseRefused(err) && reuses.length > 0 && ownSale()) {
+            const refused = new Set(reuses.map((item) => item.slotId));
+            const childIds = superSlots.flatMap((slot) => (refused.has(slot.id) && slot.savedChildId ? [slot.savedChildId] : []));
+            setLastPhotos((previous) => ({ ...previous,
+              ...Object.fromEntries(childIds.map((id) => [id, { status: 'none' } as LastPhotoState])) }));
+            setSuperSlots((previous) => previous.map((slot) => (refused.has(slot.id)
+              ? { ...slot, childPhotoUrl: undefined, lastPhotoChoice: undefined } : slot)));
+          }
+          throw err;
         });
         registrationId = reg.id;
         if (ownSale()) gateOnline.noteWrite();
@@ -2904,25 +2917,6 @@ export default function Till() {
       }
     } catch (err) {
       if (!ownSale()) return { ok: false, message: SALE_MOVED_ON };
-      // SCRUM-1018 — the last photo could not be reused (refused by the
-      // platform, or the till is on the counter box): nothing was written.
-      // The old photo is let go for these children and is not offered
-      // again this sale, so the photo check holds Continue until a new one
-      // is taken (the family on the display, or staff in Private child
-      // details).
-      if (photoReuseRefused(err) && reusedSlotIds.length > 0) {
-        const refused = new Set(reusedSlotIds);
-        const childIds = superSlots.flatMap((slot) => (refused.has(slot.id) && slot.savedChildId ? [slot.savedChildId] : []));
-        setLastPhotos((previous) => ({ ...previous, ...Object.fromEntries(childIds.map((id) => [id, { status: 'none' } as LastPhotoState])) }));
-        setSuperSlots((previous) => previous.map((slot) => (refused.has(slot.id)
-          ? { ...slot, childPhotoUrl: undefined, lastPhotoChoice: undefined } : slot)));
-        toast({
-          title: 'Take a new photo',
-          description: err.message,
-          variant: 'destructive',
-        });
-        return { ok: false, message: err.message };
-      }
       toast({
         title: "Couldn't register these children",
         description: gateFailureDescription(err, gateOnline.startedOnline),
@@ -3947,7 +3941,8 @@ export default function Till() {
   // SCRUM-1020 — what the family changed of a saved child's care notes on the
   // display, for the cashier, as it happens (as SCRUM-1014 tells a removal).
   const displayCareLines = superSlots.flatMap((slot) => {
-    const line = displayCareLine(slot, profileCareNote(slot, member?.savedChildren ?? []));
+    const line = displayCareLine(slot, profileCareNote(slot, member?.savedChildren ?? []),
+      profileMedicalNote(slot, member?.savedChildren ?? []));
     return line ? [{ id: slot.id, line }] : [];
   });
   // SCRUM-1020 — the ticket lines "Edit details" adds a child to, and this
@@ -4027,9 +4022,14 @@ export default function Till() {
       // SCRUM-1020 — a saved child in care: the family sees the allergy and
       // medical notes the till holds and may update them (`careShown`); the
       // food notes stay the profile's. Any other saved child, as before.
+      // SCRUM-1020 fix round — and the record's medical notes beside the
+      // allergy line, with the medical alert staff set (shown, not changed).
       ...(slot.savedChildId ? { saved: true, ...(careShownFor(slot, outcome.needsConsent) ? {
         careShown: true, allergiesMedical: slot.allergiesMedical.slice(0, 500),
-        ...(slot.careNoneConfirmed && !slot.allergiesMedical.trim() ? { allergiesNone: true } : {}),
+        ...(slot.medicalNotes !== undefined ? { medicalNotes: slot.medicalNotes.slice(0, 500) } : {}),
+        ...(member?.savedChildren?.find((c) => c.id === slot.savedChildId)?.medicalAlert ? { medicalAlert: true } : {}),
+        ...(slot.careNoneConfirmed && (!slot.allergiesMedical.trim()
+          || (slot.medicalNotes !== undefined && !slot.medicalNotes.trim())) ? { allergiesNone: true } : {}),
       } : {}) } : {
         allergiesMedical: slot.allergiesMedical.slice(0, 500), foodRestrictions: slot.foodRestrictions.slice(0, 200),
       }) })),
@@ -4133,7 +4133,8 @@ export default function Till() {
         // SCRUM-1020 — the saved children whose care notes the form showed the
         // family, as published, and each one's note on the profile.
         care: { shown: prompt.data.slots.flatMap((slot) => (slot.saved && slot.careShown ? [slot.id] : [])),
-          profileNote: (slot) => profileCareNote(slot, member?.savedChildren ?? []) },
+          profileNote: (slot) => profileCareNote(slot, member?.savedChildren ?? []),
+          profileMedical: (slot) => profileMedicalNote(slot, member?.savedChildren ?? []) },
         updateSlot: handleUpdateSlot, setGuardianName: setSuperParentName, setGuardianPhone: setSuperParentPhone,
         setContactChannel: setSuperParentContactMethod,
         contactChannel: superParentContactMethod,

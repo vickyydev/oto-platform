@@ -51,6 +51,8 @@ export function apiChildToSavedChild(c: ApiChild): SavedChild {
     childAge: c.ageYears ?? ageFromDob(c.dateOfBirth) ?? 0,
     dateOfBirth: c.dateOfBirth ?? undefined,
     allergiesMedical: c.allergies ?? undefined,
+    medicalNotes: c.medicalNotes ?? undefined,
+    medicalAlert: c.medicalAlert,
     dietary: c.dietary ?? undefined,
     foodRestrictions: c.foodRestrictions ?? undefined,
     notes: c.notes ?? undefined,
