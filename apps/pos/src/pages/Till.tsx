@@ -25,6 +25,7 @@ import { buildSale } from '@/lib/sale';
 import { withPlatformCredit } from '@/lib/saleCredit';
 import { dropOrphanedDiscounts } from '@/lib/manualDiscount';
 import { resolveAutoTier, tierLabel } from '@/lib/membership';
+import { createMemberForNumber, newMemberName, rateStepSkippedFor } from '@/lib/membershipCheck';
 import { welcomedMember } from '@/lib/welcomeMember';
 import { savedRateSummary } from '@/lib/tierApproval';
 import { confirmTierAtTill } from '@/lib/thaiRateConfirmation';
@@ -322,6 +323,14 @@ export default function Till() {
    * lookup and by `resetSale`. Nothing is written to the member.
    */
   const [showAllTiersFor, setShowAllTiersFor] = useState<string | null>(null);
+  /**
+   * SCRUM-1019 — the member whose valid Expat rate took this sale straight
+   * to tickets (`rateStepSkippedFor`): the order shows the rate with a
+   * "change" link back to the rate step while staff are on tickets. Keyed by
+   * the member, as `showAllTiersFor` is; set by every lookup, cleared with
+   * the sale.
+   */
+  const [rateSkippedFor, setRateSkippedFor] = useState<string | null>(null);
 
   /**
    * SCRUM-885 — the member this till created on this sale (the create-member
@@ -999,6 +1008,8 @@ export default function Till() {
     setConsentFinishing(null);
     setConsentNotSaved(null);
     setSupervisionResolved(false);
+    // SCRUM-1019 — the next visitor's rate step is theirs to skip or not.
+    setRateSkippedFor(null);
   };
 
   /**
@@ -1144,15 +1155,47 @@ export default function Till() {
   }, [rungUpSaleId, saleWriter.state.kind, step, station?.stationId]);
 
   // Both the inline harness and a paired display use the same lookup. The
-  // separate screen delivers its phone through the station document.
-  const identifyPhone = (value: string) => {
+  // separate screen delivers its phone through the station document, with the
+  // nickname and channel the family gave beside it (`given`): this screen's
+  // own state has not caught up with that answer yet when the lookup runs.
+  const identifyPhone = (value: string, given?: { nickname?: string; channel?: ContactChannel }) => {
     const epoch = saleEpochRef.current;
+    const nickname = given?.nickname ?? customerNickname;
+    const channel = given?.channel ?? customerContactChannel;
     void (async () => {
       const phone = value.trim();
+      /** SCRUM-1019 — the member's own document answers the rate step. */
+      let skipTier: CustomerTier | null = null;
       try {
         const found = phone ? (await membersApi.lookup(phone)).member : null;
         if (saleEpochRef.current !== epoch) return;
-        const mapped = found ? apiMemberToMember(found) : null;
+        let mapped = found ? apiMemberToMember(found) : null;
+        /**
+         * SCRUM-1019 — A NUMBER THE SYSTEM DOES NOT KNOW CREATES THE CUSTOMER
+         * BY ITSELF (the owner's answer of 19 November), with the name the
+         * family gave on the first screen; staff are not asked whether to
+         * create one. With no name known yet the box below still asks staff
+         * for one, as before: a member's name cannot be empty
+         * (`newMemberName`). A create that fails says why and leaves that box
+         * open, so staff can try again or go on as a walk-in. A sale with no
+         * number at all stays a walk-in, exactly as before.
+         */
+        let createdHere = false;
+        const name = !mapped && phone ? newMemberName(nickname) : null;
+        if (name) {
+          try {
+            mapped = await createMemberForNumber({ phone, name, channel });
+            createdHere = true;
+          } catch (err) {
+            if (saleEpochRef.current !== epoch) return;
+            toast({
+              title: "Couldn't create the member",
+              description: err instanceof Error ? err.message : 'Unknown error',
+              variant: 'destructive',
+            });
+          }
+          if (saleEpochRef.current !== epoch) return;
+        }
         // SCRUM-1018 — the children ticked for the last visitor are not this one's.
         setVisitingChildIds(null);
         // A new lookup is a new (or no) visit: the last check's visit must not
@@ -1161,14 +1204,28 @@ export default function Till() {
         // SCRUM-858 — every rate was asked for the last visitor, not this one.
         setShowAllTiersFor(null);
         setMember(mapped);
+        if (mapped && createdHere) {
+          // SCRUM-885 — greeted as a first visit, as one staff create is.
+          setCreatedMemberId(mapped.id);
+          setCustomerPhone(mapped.phone);
+          toast({ title: 'Member created', description: `${mapped.nickname} · ${mapped.phone}` });
+        }
         if (mapped) {
           setTier(resolveAutoTier(mapped));
           if (mapped.preferredChannel) setCustomerContactChannel(mapped.preferredChannel);
           if ((mapped.savedChildren?.length ?? 0) > 0) setShowVisitChildren(true);
+          skipTier = rateStepSkippedFor(mapped);
         } else if (phone) {
-          // SCRUM-31: nobody found → offer the create-member path.
+          // SCRUM-31: nobody found and no name to create them with → the
+          // create-member path asks staff for the name.
           setOfferCreateMember(true);
         }
+        if (skipTier) {
+          // SCRUM-1019 — as if staff had pressed the member's one card.
+          setTier(skipTier);
+          restateLinesToTier(skipTier);
+        }
+        setRateSkippedFor(skipTier && mapped ? mapped.id : null);
       } catch (err) {
         if (saleEpochRef.current !== epoch) return;
         toast({
@@ -1177,8 +1234,9 @@ export default function Till() {
           variant: 'destructive',
         });
         setMember(null);
+        setRateSkippedFor(null);
       }
-      setStep(2);
+      setStep(skipTier ? 3 : 2);
     })();
   };
   const handleIdentify = () => identifyPhone(customerPhone);
@@ -4112,7 +4170,7 @@ export default function Till() {
       setCustomerPhone(answer.phone);
       if (answer.nickname !== undefined) setCustomerNickname(answer.nickname);
       if (answer.contactChannel !== undefined) handleCustomerContactChannelChange(answer.contactChannel);
-      identifyPhone(answer.phone);
+      identifyPhone(answer.phone, { nickname: answer.nickname, channel: answer.contactChannel });
     } else if (answer.type === 'contact_done' && step === 4 && answer.phone?.trim()
       && answer.nickname !== undefined && answer.contactChannel !== undefined) {
       setCustomerPhone(answer.phone);
@@ -4395,6 +4453,9 @@ export default function Till() {
         <div className="w-[360px] min-w-0 bg-sidebar flex flex-col p-6 overflow-y-auto" inert={step === 5 && (completionRetry !== null || !paymentStage.canBack)}>
           <OrderSummary
             tier={tier}
+            // SCRUM-1019 — the rate step was skipped for this member's valid
+            // Expat rate: "change" opens it, while staff are on tickets.
+            {...(step === 3 && member && rateSkippedFor === member.id ? { onChangeTier: () => setStep(2) } : {})}
             customerName={customerNickname.trim() || member?.nickname || ''}
             lines={lines}
             activeLineId={activeLineId}

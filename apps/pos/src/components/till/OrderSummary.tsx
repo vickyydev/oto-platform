@@ -24,6 +24,13 @@ import { bahtText } from '@/lib/bahtText';
 
 interface OrderSummaryProps {
   tier: CustomerTier | null;
+  /**
+   * SCRUM-1019 — a member whose valid Expat rate skipped the rate step: the
+   * rate stays on the order with a "change" link beside it that opens the
+   * rate step (where "Show all rates" for a guest of the member still lives).
+   * Absent on every other order, which shows the rate as before.
+   */
+  onChangeTier?: () => void;
   /** Customer nickname shown atop the panel (moved out of the nav bar). */
   customerName?: string;
   lines: CartLine[];
@@ -223,7 +230,7 @@ function AdultQtyRow({ line, onChange }: { line: CartLine; onChange: (next: numb
   );
 }
 
-export function OrderSummary({ tier, customerName, lines, activeLineId, discounts, manualDiscounts, onUpdateLine, onConfigureLine, onRemoveLine, onRemoveDiscount, onApplyPromoCode, promoError, onAddManualDiscount, onRemoveManualDiscount, onPay, onCancel, canPay, payBlockedReason, chargeTarget, payLabel, totals, priceNote, tierClaimRefusal, voucherLine, voucher }: OrderSummaryProps) {
+export function OrderSummary({ tier, onChangeTier, customerName, lines, activeLineId, discounts, manualDiscounts, onUpdateLine, onConfigureLine, onRemoveLine, onRemoveDiscount, onApplyPromoCode, promoError, onAddManualDiscount, onRemoveManualDiscount, onPay, onCancel, canPay, payBlockedReason, chargeTarget, payLabel, totals, priceNote, tierClaimRefusal, voucherLine, voucher }: OrderSummaryProps) {
   const [promoInput, setPromoInput] = useState('');
 
   const applyPromoInput = () => {
@@ -318,15 +325,29 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
       );
     });
   const orderDiscounts = manualDiscounts.filter((md) => md.scope === 'order');
+  const tierPill = (
+    <span className="px-3 py-1 rounded-full bg-primary/20 text-primary text-sm font-bold uppercase tracking-wider">
+      {tier}
+    </span>
+  );
 
   return (
     <div className="h-full flex flex-col">
       <div className="flex items-center justify-between mb-2">
         <h2 className="text-2xl font-bold">Current Order</h2>
-        {tier && (
-          <span className="px-3 py-1 rounded-full bg-primary/20 text-primary text-sm font-bold uppercase tracking-wider">
-            {tier}
-          </span>
+        {tier && !onChangeTier && tierPill}
+        {tier && onChangeTier && (
+          <div className="flex items-center gap-2 shrink-0">
+            {tierPill}
+            <button
+              type="button"
+              data-testid="order-change-tier"
+              onClick={onChangeTier}
+              className="text-sm font-semibold text-primary underline-offset-4 hover:underline"
+            >
+              change
+            </button>
+          </div>
         )}
       </div>
 
