@@ -790,7 +790,11 @@ try {
       event: { barServiceTime: { value: "14:15", from: family(3) } },
     };
     assert.equal(timedElsewhere({ time: "15:00", label: "Bubble show" }, proposal), true);
-    assert.equal(timedElsewhere({ time: "15:30", label: "Bubble show" }, proposal), false, "another time is another step");
+    // SCRUM-1050 (the owner's answers of 19 November): a step that only names a show the
+    // entertainment carries is that show's own step at any time, never a typed row beside it; a step
+    // with words of its own at another time stays.
+    assert.equal(timedElsewhere({ time: "15:30", label: "Bubble show" }, proposal), true, "the show's own step, at the show's own time");
+    assert.equal(timedElsewhere({ time: "15:30", label: "Bubble show photo session" }, proposal), false, "another moment at another time stays");
     assert.equal(timedElsewhere({ time: "14:15", label: "Drinks served" }, proposal), true);
     assert.equal(timedElsewhere({ time: "14:15", label: "เครื่องดื่ม" }, proposal), true);
     assert.equal(timedElsewhere({ time: "14:15", label: "Welcome speech" }, proposal), false, "another step at the bar's time stays");
