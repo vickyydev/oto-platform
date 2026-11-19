@@ -198,6 +198,19 @@ describe('the reply box in the composer', () => {
     expect(form.querySelector('button[aria-label="Send"]')).not.toBeNull();
   });
 
+  it('the whole 44 px pill is the box’s target: a press on its padding puts the caret in the box', async () => {
+    // SCRUM-1016 (review): the box is 20 px tall in a 44 px pill; the pill was
+    // a plain span, so a press on its top or bottom 12 px did nothing.
+    await render();
+    const pill = box().closest('label')!;
+    expect(pill).not.toBeNull();
+    expect(pill.hasAttribute('data-reply-pill')).toBe(true);
+    // The box is the label's one control, so the label's press is the box's.
+    expect(pill.querySelectorAll('input, textarea, select, button')).toHaveLength(1);
+    expect((pill as HTMLLabelElement).control).toBe(box());
+    expect(box().getAttribute('aria-label')).toBe('Reply');
+  });
+
   it('holds a reply of several lines, whole', async () => {
     await render();
     const reply = 'ZZ TEST line one\nZZ TEST line two\nZZ TEST line three';
