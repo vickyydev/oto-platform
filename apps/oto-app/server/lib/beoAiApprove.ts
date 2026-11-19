@@ -61,7 +61,8 @@ import { resolveSetMenuLines, type SetMenuChoice } from "./setMenuResolve";
  *   - SCRUM-827, the rest of the BEO in the same pass (`body.details`): the
  *     event's title, booking name, location, special requests, activities
  *     and decoration; the setup plan's ready-by, who and tasks; the POS box's
- *     name, notes and line items (Party Details); the chat's timed steps as
+ *     name, notes and line items (Party Details); the kitchen plan's Kitchen
+ *     Notes (SCRUM-1030); the chat's timed steps as
  *     the timeline's own lines; the party host, the entertainment host and
  *     the setup's who, where the reviewer ticked a person of the park. A
  *     text field is written as the reviewer left it; tasks, line items and
@@ -727,6 +728,14 @@ export async function approveBeoAiFill(
       else await tx.insert(beoKitchenPlans).values({ eventId: event.id, ...values });
       if (body.cake) written.cake = true;
       if (service.kidsFoodTime || service.adultsFoodTime) written.foodTimes = true;
+    }
+    // SCRUM-1030: the Kitchen Notes, as the reviewer left them (the BEO keeps its own when none is
+    // sent), on the kitchen plan's own field, which the Day-of view and the BEO's Save edit too.
+    if (details?.kitchenNotes !== undefined) {
+      const [plan] = await tx.select({ id: beoKitchenPlans.id }).from(beoKitchenPlans).where(eq(beoKitchenPlans.eventId, event.id));
+      if (plan) await tx.update(beoKitchenPlans).set({ kitchenNotes: details.kitchenNotes, updatedAt: input.now }).where(eq(beoKitchenPlans.id, plan.id));
+      else await tx.insert(beoKitchenPlans).values({ eventId: event.id, kitchenNotes: details.kitchenNotes });
+      written.kitchenNotes = true;
     }
 
     // The bar plan's lines.
