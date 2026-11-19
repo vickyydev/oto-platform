@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { randomBytes } from 'node:crypto';
 import { and, eq, isNotNull, isNull } from 'drizzle-orm';
-import { auditLog, deviceCredential, fileObject, station } from '@oto/db';
+import { auditLog, boxCommand, deviceCredential, fileObject, station } from '@oto/db';
 import { newId, STATION_DISPLAY_LIMIT } from '@oto/shared';
 import type { FileStorage } from '../src/services/files';
 import { ADMIN, RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
@@ -220,6 +220,16 @@ describe('SCRUM-1041 — up to three customer displays on one till', () => {
     expect(await proof.db.select({ id: auditLog.id }).from(auditLog).where(and(
       eq(auditLog.action, 'display.revoked'), eq(auditLog.entityId, displays[0]!.deviceId),
     ))).toHaveLength(1);
+    // The till is served through a counter box: the box is asked to fetch its
+    // copy of the station's settings now, so it cuts the display off within
+    // seconds (its command poll) rather than at its next minute's refresh.
+    const [served] = await proof.db.select({ boxId: station.boxId }).from(station).where(eq(station.id, tillId));
+    expect(served!.boxId).not.toBeNull();
+    const asked = (await proof.db.select().from(boxCommand).where(and(eq(boxCommand.boxId, served!.boxId!),
+      eq(boxCommand.kind, 'config_apply')))).filter((row) =>
+      (row.payload as { credentialId?: string } | null)?.credentialId === displays[0]!.deviceId);
+    expect(asked).toHaveLength(1);
+    expect(asked[0]).toMatchObject({ state: 'queued', payload: { reason: 'display_revoked' } });
     expect(((await list()).json().displays as { id: string }[]).map((row) => row.id))
       .toEqual([displays[1]!.deviceId, displays[2]!.deviceId]);
     // The place it left is free for another display.

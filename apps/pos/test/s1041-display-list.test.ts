@@ -18,10 +18,13 @@ vi.mock('@/auth/OperatorContext', () => ({ useOperator: () => ({ can: (permissio
   operator.allowed && permission === 'admin:device:revoke' }) }));
 const client = vi.hoisted(() => ({ post: vi.fn() }));
 vi.mock('@/api/client', async () => ({ ...await vi.importActual('@/api/client'), api: { post: client.post } }));
+// Whether this till is served through a counter box (its page is the box's).
+const bridge = vi.hoisted(() => ({ viaBox: false }));
+vi.mock('@/api/bridge', async () => ({ ...await vi.importActual('@/api/bridge'), hasBridgeOrigin: () => bridge.viaBox }));
 
 import { ApiError } from '@/api/client';
 import { PairedDisplaysDialog, displaySeenLine } from '@/components/till/PairedDisplays';
-import { labelDisplays, type PairedDisplay } from '@/lib/displaySession';
+import { labelDisplays, pairedRows, type PairedDisplay } from '@/lib/displaySession';
 import { renderHook } from './support/hooks';
 
 type Element = React.ReactElement<Record<string, unknown>>;
@@ -30,7 +33,7 @@ const elements = (node: unknown): Element[] => Array.isArray(node) ? node.flatMa
 const words = (node: unknown): string => typeof node === 'string' || typeof node === 'number' ? String(node) :
   Array.isArray(node) ? node.map(words).join('') : React.isValidElement<Record<string, unknown>>(node) ? words(node.props.children) : '';
 
-beforeEach(() => { vi.stubGlobal('React', React); vi.clearAllMocks(); operator.allowed = true; });
+beforeEach(() => { vi.stubGlobal('React', React); vi.clearAllMocks(); operator.allowed = true; bridge.viaBox = false; });
 afterEach(() => { vi.unstubAllGlobals(); });
 
 // Display ids sort in the order the displays were paired (UUIDv7).
@@ -121,6 +124,30 @@ describe('the till\'s list of its displays', () => {
     await vi.waitFor(() => expect(words(list.byTestId('paired-displays-error')[0])).toBe('Only a manager can remove a display.'));
     expect(list.byTestId('paired-display')).toHaveLength(1);
     list.view.unmount();
+  });
+
+  it('through a counter box: the row stays, as being removed, until the box no longer lists it', async () => {
+    bridge.viaBox = true;
+    client.post.mockResolvedValue({ ok: true });
+    const list = open([left, right, tablet]);
+    list.press(list.within(list.row('ZZ TEST counter right'), 'paired-display-remove'));
+    // Said honestly: the box cuts it off when its copy drops it, not at once.
+    expect(words(list.row('ZZ TEST counter right'))).toContain('It stops showing this till’s sales within a minute.');
+    list.press(list.within(list.row('ZZ TEST counter right'), 'paired-display-remove-confirm'));
+    await vi.waitFor(() => expect(list.within(list.row('ZZ TEST counter right'), 'paired-display-removing')).toBeDefined());
+    expect(list.byTestId('paired-display')).toHaveLength(3);
+    expect(words(list.within(list.row('ZZ TEST counter right'), 'paired-display-removing'))).toBe('Removing — it stops showing within a minute');
+    expect(list.within(list.row('ZZ TEST counter right'), 'paired-display-remove')).toBeUndefined();
+    list.view.unmount();
+    // The list the till reads keeps it, connected, until the box drops it.
+    const removed = new Set([right.id]);
+    const live = { ...right, connected: true };
+    expect(pairedRows([left, live, tablet], true, removed).find((row) => row.id === right.id))
+      .toMatchObject({ connected: true, removing: true });
+    expect(pairedRows([left, tablet], true, removed).map((row) => row.id)).toEqual([left.id, tablet.id]);
+    // On the platform it is cut off at once, and leaves the list at once.
+    expect(pairedRows([left, live, tablet], false, removed).map((row) => row.id)).toEqual([left.id, tablet.id]);
+    expect(pairedRows([left], true, removed)[0]).not.toHaveProperty('removing');
   });
 
   it('offers no Remove to staff who may not remove a display, and says who can', () => {
