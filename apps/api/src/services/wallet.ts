@@ -32,6 +32,7 @@ import {
   normaliseWalletKeyValue,
   parseDayStart,
   partyLineCreditSatang,
+  supervisedLineCreditSatang,
   type SalePrintCredit,
   type WalletEntryKind,
   type WalletEntrySource,
@@ -980,11 +981,18 @@ export async function grantSaleCredit(
 
 /** The wallets a sale's grants made, in person order, as the till and the display show them. */
 export async function grantsOfSale(db: Exec, saleId: string): Promise<WalletGrantView[]> {
-  const rows = await db
-    .select({ entry: walletEntry, wallet })
-    .from(walletEntry)
-    .innerJoin(wallet, eq(wallet.id, walletEntry.walletId))
-    .where(and(eq(walletEntry.saleId, saleId), eq(walletEntry.kind, 'grant'), eq(walletEntry.source, 'ticket_sale')));
+  const rows = (
+    await db
+      .select({ entry: walletEntry, wallet })
+      .from(walletEntry)
+      .innerJoin(wallet, eq(wallet.id, walletEntry.walletId))
+      .where(and(eq(walletEntry.saleId, saleId), eq(walletEntry.kind, 'grant'), eq(walletEntry.source, 'ticket_sale')))
+  )
+    // SCRUM-1021 — a supervised child's ticket credit, loaded on their own
+    // band at check-in (`loadChildIncludedCredit`), is not one of the sale's
+    // person grants: it has no place in the sale's person order and no voucher
+    // of its own on the receipt.
+    .filter(({ entry }) => !(entry.payload as { checkinId?: unknown } | null)?.checkinId);
   if (rows.length === 0) return [];
   const keys = await db
     .select({ walletId: walletKey.walletId, kind: walletKey.kind, value: walletKey.value })
@@ -1354,6 +1362,113 @@ export async function loadChildPrepaid(
       }
       return loadWallet(tx, actor, { walletId: existing.id, ...common });
     }
+  }
+  return createWalletWithGrant(tx, actor, {
+    ...common,
+    memberId: saleRow.memberId,
+    holderName: stay.childName,
+    keys: [
+      ...(stay.childId ? [{ kind: 'child' as const, value: stay.childId }] : []),
+      ...bandKey,
+      { kind: 'voucher_qr' as const, value: mintVoucherQr() },
+    ],
+  });
+}
+
+export function includedCreditActionId(checkinId: string): string {
+  return `checkin:${checkinId}:included`;
+}
+
+/**
+ * SCRUM-1021 — A SUPERVISED CHILD'S TICKET CREDIT GOES ON THEIR BAND (the
+ * owner's answer of 19 November: a dropped-off or nanny child on a ticket that
+ * includes food credit, Eat & Play, gets the ticket's credit as a child
+ * playing with a parent does). Until now the grant law passed their line by
+ * (`grantSaleCredit`: "their food is their own wallet"), so the family paid
+ * for the ticket and the child got none of its credit.
+ *
+ * Loaded at "Check in now", in that transaction, onto the same wallet as the
+ * child's prepaid food: a band names one wallet, and the supervised child's
+ * band is minted here, not when the sale closes. Call it AFTER
+ * `loadChildPrepaid`, so a walk-in child's wallet that load just made is the
+ * one this finds by the band.
+ *
+ * The figure is the grant law's for the stay's own ticket line, off the sale's
+ * ledger (`supervisedLineCreditSatang`): the ticket's list unit and its
+ * package's credit rule, nothing the registration says. A `grant` from
+ * `ticket_sale` naming the sale and the stay, dated by the branch's wallet
+ * policy as every grant is. Keyed `checkin:<id>:included`, so a retried
+ * check-in, or the board's check-in of a child left as booked, loads it
+ * once; the sale's own grant never includes the line, so it is never granted
+ * twice for one ticket.
+ *
+ * The prepaid food's settlement at pickup is untouched by it: what may be
+ * handed back is still this stay's prepaid load less the counter spending
+ * since (`prepaidBalanceOf`), never this credit.
+ */
+export async function loadChildIncludedCredit(
+  tx: Tx,
+  actor: WalletActor,
+  input: { stay: CheckinRow; saleRow: SaleRow; bandCode: string | null; now?: Date },
+): Promise<WalletWrite | null> {
+  const { stay, saleRow } = input;
+  const rows = await tx
+    .select({
+      cartLineId: saleLine.cartLineId,
+      kind: saleLine.kind,
+      ticketPackageId: saleLine.ticketPackageId,
+      quantity: saleLine.quantity,
+      unitSatang: saleLine.unitSatang,
+      lineNo: saleLine.lineNo,
+    })
+    .from(saleLine)
+    .where(and(eq(saleLine.saleId, saleRow.id), eq(saleLine.cartLineId, stay.id)));
+  const packageIds = [...new Set(rows.map((r) => r.ticketPackageId).filter((id): id is string => !!id))];
+  if (packageIds.length === 0) return null;
+  const packages = await tx
+    .select({ id: ticketPackage.id, creditRule: ticketPackage.creditRule, gateAccess: ticketPackage.gateAccess })
+    .from(ticketPackage)
+    .where(inArray(ticketPackage.id, packageIds));
+  const gifted = await giftTicketLinesOfSale(tx, saleRow.operatorId, saleRow.id);
+  const amount = supervisedLineCreditSatang(
+    rows,
+    new Map(packages.map((p) => [p.id, { creditRule: p.creditRule, gateAccess: p.gateAccess }])),
+    stay.id,
+    gifted,
+  );
+  if (amount <= 0) return null;
+  const now = input.now ?? new Date();
+  const { businessDate, expiresAt } = await expiryFor(tx, stay.branchId, now);
+  const common = {
+    actionId: includedCreditActionId(stay.id),
+    amountSatang: amount,
+    source: 'ticket_sale' as const,
+    branchId: stay.branchId,
+    saleId: saleRow.id,
+    stationId: saleRow.stationId,
+    boxId: saleRow.boxId,
+    businessDate,
+    expiresAt,
+    payload: { checkinId: stay.id, childId: stay.childId, included: true },
+    now,
+  };
+  const bandKey = input.bandCode ? [{ kind: 'band' as const, value: input.bandCode }] : [];
+  if (stay.childId) {
+    await lockAction(tx, actor.operatorId, `child:${stay.childId}`);
+    const existing = await walletByKey(tx, actor.operatorId, 'child', stay.childId);
+    if (existing) {
+      await attachKeys(tx, actor.operatorId, existing.id, bandKey, now);
+      if (stay.childName && existing.holderName !== stay.childName) {
+        await tx.update(wallet).set({ holderName: stay.childName, updatedAt: now }).where(eq(wallet.id, existing.id));
+      }
+      return loadWallet(tx, actor, { walletId: existing.id, ...common });
+    }
+  }
+  // A walk-in child whose prepaid food was just loaded: that wallet is on the band.
+  const onBand = input.bandCode ? await walletByKey(tx, actor.operatorId, 'band', input.bandCode) : null;
+  if (onBand) {
+    if (stay.childId) await attachKeys(tx, actor.operatorId, onBand.id, [{ kind: 'child', value: stay.childId }], now);
+    return loadWallet(tx, actor, { walletId: onBand.id, ...common });
   }
   return createWalletWithGrant(tx, actor, {
     ...common,
