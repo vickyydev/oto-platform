@@ -359,7 +359,10 @@ test('lock → sign in → membership lookup → child confirm → sign out', as
   }
 });
 
-test('unknown phone offers the create-member path (SCRUM-31)', async ({ page, browser, baseURL }) => {
+// SCRUM-31, as the owner answered on 19 November (SCRUM-1019 R1): a number
+// nobody has, typed with no name, makes the member by itself, held under the
+// number as its name until one is given; no "New member?" box is asked.
+test('unknown phone with no name makes the member by itself (SCRUM-31, SCRUM-1019 R1)', async ({ page, browser, baseURL }) => {
   requireLocalFixture(baseURL);
   await page.goto('/');
   await signIn(page);
@@ -374,16 +377,6 @@ test('unknown phone offers the create-member path (SCRUM-31)', async ({ page, br
       && response.request().method() === 'POST' && response.request().postDataJSON()?.type === 'display.identify');
     const lookup = page.waitForResponse(response => response.url().includes('/api/members/lookup?')
       && response.request().method() === 'GET').catch(() => null);
-    await fixture.display.getByRole('button', { name: 'Continue', exact: true }).click();
-    const answer = await answered;
-    expect(answer.status()).toBe(200);
-    expect(answer.request().postDataJSON()?.payload?.phone === expectedPhone).toBe(true);
-    const lookedUp = await lookup;
-    expect(lookedUp?.status() === 200).toBe(true);
-    if (!lookedUp) throw new Error('The staff till did not look up the entered phone');
-    expect(new URL(lookedUp.url()).searchParams.get('phone') === expectedPhone).toBe(true);
-    expect((await lookedUp.json()).member === null).toBe(true);
-    await expect(page.getByText('New member?', { exact: true })).toBeVisible({ timeout: 20_000 });
     // SCRUM-885 — every welcome the till publishes from here, with the member it creates.
     const welcomes: unknown[] = [];
     const recordWelcome = (request: Request) => {
@@ -393,16 +386,27 @@ test('unknown phone offers the create-member path (SCRUM-31)', async ({ page, br
       if (body?.type === 'session.publish_display' && body.payload?.stage === 'welcome') welcomes.push(body.payload.member ?? null);
     };
     page.on('request', recordWelcome);
-    await page.getByPlaceholder('e.g. Mali').fill('Smoke visitor');
     const created = page.waitForResponse((response) => response.url().endsWith('/api/members') && response.request().method() === 'POST');
-    await page.getByRole('button', { name: 'Create member', exact: true }).click();
+    await fixture.display.getByRole('button', { name: 'Continue', exact: true }).click();
+    const answer = await answered;
+    expect(answer.status()).toBe(200);
+    expect(answer.request().postDataJSON()?.payload?.phone === expectedPhone).toBe(true);
+    const lookedUp = await lookup;
+    expect(lookedUp?.status() === 200).toBe(true);
+    if (!lookedUp) throw new Error('The staff till did not look up the entered phone');
+    expect(new URL(lookedUp.url()).searchParams.get('phone') === expectedPhone).toBe(true);
+    expect((await lookedUp.json()).member === null).toBe(true);
+    // The till makes the member itself, under the number, with no box for staff.
     const response = await created;
     expect(response.ok()).toBe(true);
     const member = (await response.json()).member;
     expect(typeof member?.id === 'string').toBe(true);
     createdMemberId = member.id;
-    expect(member.nickname === 'Smoke visitor').toBe(true);
+    expect(member.phone === expectedPhone).toBe(true);
+    expect(String(member.nickname).replace(/\D/g, '').endsWith(unknown.slice(1))).toBe(true);
+    expect(/[A-Za-z]/.test(String(member.nickname))).toBe(false);
     await expect(page.getByText('Member created', { exact: true })).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText('New member?', { exact: true })).toHaveCount(0);
     // SCRUM-885 — the family registered a moment ago is welcomed on the display
     // as a first visit, never "Welcome back": two of the display's own reads
     // after the create, and no welcome the till published names the member.
@@ -493,8 +497,10 @@ async function staffTakesPhoto(page: Page): Promise<void> {
  * SCRUM-1018 — a family new to the park still gets the whole form on their
  * screen: the children named and aged there, their care, then the agreements
  * with the parent's own name. (A returning family is asked the agreements
- * alone.) A walk-in on a number nobody has: the till offers to make them a
- * member, and they go on as a walk-in at the Tourist rate (SCRUM-762).
+ * alone.) A number nobody has, typed with no name: the till makes the member
+ * by itself, held under the number until a name is given, with no "New
+ * member?" box (SCRUM-1019 R1), and they go on at the Tourist rate. Such a
+ * member has no name yet, so the form still asks the parent's name.
  */
 function freshDigits(): string {
   // A Thai mobile (09x): the form's number has to be one that can take the
@@ -502,11 +508,14 @@ function freshDigits(): string {
   return `9${String(Math.floor(10_000_000 + Math.random() * 89_999_999))}`;
 }
 
-async function walkInOnDisplay(page: Page, display: Page, digits: string): Promise<void> {
+async function newNumberOnDisplay(page: Page, display: Page, digits: string): Promise<void> {
   await typePhone(display, digits);
+  const created = page.waitForResponse(response => new URL(response.url()).pathname === '/api/members'
+    && response.request().method() === 'POST');
   await display.getByRole('button', { name: 'Continue', exact: true }).click();
-  await page.getByRole('button', { name: 'Continue as walk-in', exact: true }).click();
+  expect((await created).ok()).toBe(true);
   await page.getByRole('heading', { name: 'Tourist', exact: true }).click();
+  await expect(page.getByText('New member?', { exact: true })).toHaveCount(0);
 }
 
 /** The family names a child and sets the age on their own screen's picker. */
@@ -1089,8 +1098,9 @@ test('separate display guardian acknowledgement retains lock and retry, while st
  *
  * SCRUM-1018 — a returning family is asked the agreements alone (the children,
  * the name and the number come from the profile), so this case follows a
- * family new to the park through the whole form: a walk-in, who names the
- * child, steps through the care and types the parent's name.
+ * family new to the park through the whole form: a number nobody has, held
+ * under the number until named (SCRUM-1019 R1), who names the child, steps
+ * through the care and types the parent's name.
  */
 test('separate display drop-off form is mirrored live on the till and survives a reload mid-form', async ({ page, browser, baseURL }) => {
   test.setTimeout(150_000);
@@ -1099,7 +1109,7 @@ test('separate display drop-off form is mirrored live on the till and survives a
   await signIn(page);
   const fixture = await pairedDisplay(browser, page, baseURL);
   try {
-    await walkInOnDisplay(page, fixture.display, freshDigits());
+    await newNumberOnDisplay(page, fixture.display, freshDigits());
     await page.getByRole('heading', { name: '1 Hour Play', exact: true }).click();
     await page.getByRole('button', { name: 'Remove one Adults', exact: true }).first().click();
     await page.getByRole('button', { name: 'Continue', exact: true }).click();
@@ -1190,8 +1200,9 @@ test('separate display drop-off form is mirrored live on the till and survives a
  *
  * SCRUM-1018 — a returning family is asked the agreements alone and no new
  * photo while staff decide on the last one, so each sale here is a family new
- * to the park (a walk-in on a number nobody has): the whole form, the child
- * named and photographed and the parent's name typed on their screen. The
+ * to the park (a number nobody has, held under the number until named,
+ * SCRUM-1019 R1): the whole form, the child named and photographed and the
+ * parent's name typed on their screen. The
  * number they gave at the start is shown on the form, not asked again.
  *
  * The local harness has no object storage (nor has CI), so the two photo
@@ -1255,7 +1266,7 @@ test('separate display drop-off: the family takes the photo, a half-done form wr
     const consent = fixture.display.getByTestId('display-consent');
     const mirror = page.getByTestId('consent-mirror');
     const openForm = async (digits: string, child: string): Promise<{ needsNanny: boolean }> => {
-      await walkInOnDisplay(page, fixture.display, digits);
+      await newNumberOnDisplay(page, fixture.display, digits);
       await page.getByRole('heading', { name: '1 Hour Play', exact: true }).click();
       await page.getByRole('button', { name: 'Remove one Adults', exact: true }).first().click();
       await page.getByRole('button', { name: 'Continue', exact: true }).click();
@@ -1308,10 +1319,14 @@ test('separate display drop-off: the family takes the photo, a half-done form wr
     await chooseLanguageFirst(fixture.display, 'en');
     expect(registrations).toEqual([]);
     expect(await fixture.display.evaluate(() => sessionStorage.getItem('oto.display.consentDraft.v1'))).toBeNull();
-    // Nobody was made a member from the half-done form either.
-    const nobody = await fixture.admin.get('/api/members/lookup', { params: { phone: `+66${halfDone}` } });
-    expect(nobody.status()).toBe(200);
-    expect((await nobody.json()).member).toBeNull();
+    // The half-done form changed no member either: the one the number made at
+    // the start (SCRUM-1019 R1) is still held under the number, with no child.
+    const held = await fixture.admin.get('/api/members/lookup', { params: { phone: `+66${halfDone}` } });
+    expect(held.status()).toBe(200);
+    const heldMember = (await held.json()).member;
+    expect(String(heldMember?.nickname ?? '').replace(/\D/g, '').endsWith(halfDone)).toBe(true);
+    expect(/[A-Za-z]/.test(String(heldMember?.nickname ?? ''))).toBe(false);
+    expect(heldMember?.children ?? []).toEqual([]);
 
     // 2. The next family: back and forward through the form, then their own Done.
     const { needsNanny } = await openForm(freshDigits(), 'ZZ TEST Photo child');
@@ -1389,8 +1404,9 @@ test('separate display drop-off: the family takes the photo, a half-done form wr
     await expect(page.getByRole('heading', { name: 'Children playing alone', exact: true })).toHaveCount(0);
     await page.getByRole('button', { name: 'Cancel', exact: true }).first().click();
     await expect(page.getByText('Membership Check', { exact: true })).toBeVisible({ timeout: 30_000 });
-    // The next family: the same family again (the cancelled run made them a
-    // member before its visit write), the children skipped, so no visit is theirs.
+    // The next family: the same family again (a member since their number, and
+    // the cancelled run saved their child before its visit write), the
+    // children skipped, so no visit is theirs.
     await chooseLanguageFirst(fixture.display, 'en');
     const nextLookup = page.waitForResponse(response => response.url().includes('/api/members/lookup?') && response.status() === 200);
     await typePhone(fixture.display, cancelled);

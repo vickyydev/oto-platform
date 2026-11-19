@@ -14,11 +14,11 @@ import { chooseLanguageFirst } from './walk-in';
  * to a member created on this sale.
  *
  * In the split view, at 1680 x 1050 and 1440 x 900: a ZZ TEST number nobody
- * knows, the customer half's Continue, the "New member?" box, and the
- * customer half still says "Welcome to Oto" once the member exists. The next
- * sale with the same number finds them, and welcomes them back. The separate
- * display's case is in smoke.spec.ts ("unknown phone offers the
- * create-member path").
+ * knows and a name on the customer half, Continue, the till making the member
+ * by itself (SCRUM-1019: no "New member?" box), and the customer half still
+ * says "Welcome to Oto" once the member exists. The next sale with the same
+ * number finds them, and welcomes them back. The separate display's case is
+ * in smoke.spec.ts ("unknown phone with no name makes the member by itself").
  *
  * Runs on the isolated harness: `pnpm --filter @oto/pos e2e e2e/new-member-greeting.spec.ts`.
  * `POS_E2E_SHOTS` names a folder to keep the screens in.
@@ -68,10 +68,11 @@ async function signOut(page: Page): Promise<void> {
   }
 }
 
-/** The customer half: the guest's language, the number's national digits on its keypad, Continue. */
-async function identifyOnCustomerHalf(page: Page, digits: string): Promise<void> {
+/** The customer half: the guest's language, the number's national digits on its keypad, the name when given, Continue. */
+async function identifyOnCustomerHalf(page: Page, digits: string, nickname?: string): Promise<void> {
   await chooseLanguageFirst(page, 'en');
   for (const digit of digits) await page.getByRole('button', { name: digit, exact: true }).last().click();
+  if (nickname) await page.getByPlaceholder('e.g. Mama, John').last().fill(nickname);
   await page.getByRole('button', { name: 'Continue', exact: true }).last().click();
 }
 
@@ -79,7 +80,11 @@ const FIRST_VISIT_LINE = "Thailand's happiest indoor play park. Let's get you re
 const suffix = Date.now().toString(36).slice(-4);
 
 for (const size of [{ width: 1680, height: 1050 }, { width: 1440, height: 900 }]) {
-  test(`at ${size.width} x ${size.height}: a member created at the New member box is welcomed as a first visit, and back on the next sale`, async ({ page }) => {
+  // SCRUM-1019 — a number nobody has makes the member by itself (no "New
+  // member?" box): with the name typed beside it here, so the next sale can
+  // welcome them back by it (a member held under the number alone is greeted
+  // without a name, R1, pinned in smoke.spec.ts).
+  test(`at ${size.width} x ${size.height}: a member the till makes from a new number and a name is welcomed as a first visit, and back on the next sale`, async ({ page }) => {
     requireFixture();
     await page.setViewportSize(size);
     await signIn(page);
@@ -88,17 +93,14 @@ for (const size of [{ width: 1680, height: 1050 }, { width: 1440, height: 900 }]
       const digits = `89885${String(Math.floor(Math.random() * 10_000)).padStart(4, '0')}`;
       const name = `ZZ TEST 885 ${suffix}${size.width}`;
       const lookup = page.waitForResponse((r) => r.url().includes('/api/members/lookup?') && r.request().method() === 'GET');
-      await identifyOnCustomerHalf(page, digits);
-      expect((await (await lookup).json()).member).toBeNull();
-      await expect(page.getByText('New member?', { exact: true })).toBeVisible({ timeout: 20_000 });
-
-      await page.getByPlaceholder('e.g. Mali').fill(name);
       const created = page.waitForResponse((r) => r.url().endsWith('/api/members') && r.request().method() === 'POST');
-      await page.getByRole('button', { name: 'Create member', exact: true }).click();
+      await identifyOnCustomerHalf(page, digits, name);
+      expect((await (await lookup).json()).member).toBeNull();
       const response = await created;
       expect(response.ok()).toBe(true);
       expect((await response.json()).member?.nickname).toBe(name);
       await expect(page.getByText('Member created', { exact: true })).toBeVisible({ timeout: 20_000 });
+      await expect(page.getByText('New member?', { exact: true })).toHaveCount(0);
       // The staff half has the member on the sale.
       await expect(page.getByRole('heading', { name: 'Select Customer Type', exact: true })).toBeVisible();
       await expect(page.getByText('No verified rate', { exact: true })).toBeVisible();
