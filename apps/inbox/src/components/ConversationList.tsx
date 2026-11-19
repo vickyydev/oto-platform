@@ -114,19 +114,19 @@ export function ConversationList({
   );
   return (
     <>
-      <div className="flex shrink-0 flex-col gap-3 px-4 pb-2 pt-1 md:pt-3 lg:pt-3.5">
+      <div className="flex shrink-0 flex-col gap-stack px-pane pb-2 pt-1 md:pt-3">
         {/* Below 1024 px: the one scope switch, then the day's figures. */}
         <div className="lg:hidden">
           <ScopeTabs tabs={me.tabs} tab={tab} counts={page?.tabCounts ?? null} onTab={onTab} />
         </div>
         {hasStrip && <div className="lg:hidden">{strip}</div>}
         <div className="flex min-w-0 items-center gap-2">
-          <h2 className="mr-auto hidden text-[18px] font-extrabold tracking-[-0.02em] text-ink lg:block">{TAB_LABEL[tab]}</h2>
+          <h2 className="mr-auto hidden text-title font-extrabold tracking-[-0.02em] text-ink lg:block">{TAB_LABEL[tab]}</h2>
           <button
             type="button"
             aria-pressed={filters.unread}
             onClick={() => onFilters({ unread: !filters.unread })}
-            className={`${PILL} ${filters.unread ? PILL_ON : PILL_OFF} md:min-h-9`}
+            className={`${PILL} ${filters.unread ? PILL_ON : PILL_OFF}`}
           >
             {UNREAD_FILTER_LABEL}
           </button>
@@ -135,12 +135,12 @@ export function ConversationList({
             type="button"
             onClick={onOpenFilters}
             aria-label="Filters"
-            className={`${PILL} ${PILL_OFF} gap-1.5 px-3 md:min-h-9 lg:hidden`}
+            className={`${PILL} ${PILL_OFF} gap-1.5 lg:hidden`}
           >
-            <SlidersHorizontal aria-hidden className="h-[18px] w-[18px]" />
+            <SlidersHorizontal aria-hidden className="h-[1.2em] w-[1.2em]" />
             Filters
             {filterCount > 0 && (
-              <span className="min-w-5 rounded-full bg-ink px-1.5 text-center text-[11.5px] font-bold text-on-ink">{filterCount}</span>
+              <span className="min-w-[1.6em] rounded-full bg-ink px-1.5 text-center text-caption font-bold leading-[1.6] text-on-ink">{filterCount}</span>
             )}
           </button>
         </div>
@@ -151,7 +151,7 @@ export function ConversationList({
             {pills.map((p) => (
               <span
                 key={p.key}
-                className="inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-full border border-line bg-card py-0.5 pl-3 pr-0.5 text-[12.5px] font-semibold text-ink"
+                className="inline-flex min-w-0 max-w-full items-center gap-1 rounded-full border border-line bg-card py-0.5 pl-3 pr-0.5 text-note font-semibold text-ink"
               >
                 {p.dot && <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${p.dot}`} />}
                 <span className="truncate">{p.label}</span>
@@ -159,7 +159,7 @@ export function ConversationList({
                   type="button"
                   aria-label={`Clear ${p.label}`}
                   onClick={() => onFilters(p.clear)}
-                  className="-my-1.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-muted transition hover:bg-wash hover:text-ink md:my-0 md:h-8 md:w-8"
+                  className="hit -my-1.5 flex size-ctl shrink-0 items-center justify-center rounded-full text-ink-muted transition hover:bg-wash hover:text-ink md:my-0 md:size-ctl-sm"
                 >
                   <X aria-hidden className="h-3.5 w-3.5" />
                 </button>
@@ -171,7 +171,7 @@ export function ConversationList({
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
         {error ? (
-          <div role="alert" className="m-4 rounded-xl bg-needs px-3 py-2 text-[13px] text-needs-ink">
+          <div role="alert" className="m-pane rounded-xl bg-needs px-3 py-2 text-note text-needs-ink">
             {error}
           </div>
         ) : loading && rows.length === 0 ? (
@@ -184,16 +184,16 @@ export function ConversationList({
           <>
             {readyToBook.length > 0 && (
               <section aria-label={READY_TO_BOOK_LABEL} data-testid="ready-to-book">
-                <h3 className="flex items-center gap-2 px-4 pb-1.5 pt-2 text-[12px] font-bold text-money-ink">
+                <h3 className="flex items-center gap-2 px-pane pb-1.5 pt-2 text-meta font-bold text-money-ink">
                   {READY_TO_BOOK_LABEL}
-                  <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-money-ink px-1.5 text-[11.5px] text-money">
+                  <span className="inline-flex h-[1.7em] min-w-[1.7em] items-center justify-center rounded-full bg-money-ink px-1.5 text-caption text-money">
                     {readyToBook.length}
                   </span>
                 </h3>
                 <div className="border-y border-money-line">{readyToBook.map(rowOf(true))}</div>
               </section>
             )}
-            <h3 className="px-4 pb-1.5 pt-3.5 text-[12px] font-bold text-ink-muted">
+            <h3 className="px-pane pb-1.5 pt-3 text-meta font-bold text-ink-muted">
               {countLabel(rows.length, Boolean(page?.nextCursor), narrowed(filters) && tab !== 'handled' ? page?.tabCounts[tab] : undefined)} · newest first
             </h3>
             {rest.map(rowOf(false))}
@@ -224,7 +224,7 @@ export function ConversationList({
  */
 function HandledBar({ filters, onFilters }: { filters: Filters; onFilters: (next: Partial<Filters>) => void }) {
   const choice = (pressed: boolean, label: string, onClick: () => void, key: string) => (
-    <button key={key} type="button" aria-pressed={pressed} onClick={onClick} className={`${PILL} ${pressed ? PILL_ON : PILL_OFF} md:min-h-9`}>
+    <button key={key} type="button" aria-pressed={pressed} onClick={onClick} className={`${PILL} ${pressed ? PILL_ON : PILL_OFF}`}>
       {label}
     </button>
   );
@@ -232,11 +232,11 @@ function HandledBar({ filters, onFilters }: { filters: Filters; onFilters: (next
     <div className="flex flex-col gap-2.5 rounded-2xl border border-line bg-card p-3">
       <div role="group" aria-label="Handled in the last" className="flex flex-col gap-1.5">
         <div className="flex items-center justify-between gap-2">
-          <h3 className="text-[12px] font-bold text-ink-muted">Handled in the last</h3>
+          <h3 className="text-meta font-bold text-ink-muted">Handled in the last</h3>
           <PendingControl
             reason="Export is not built yet"
             label="Export"
-            className="inline-flex min-h-9 items-center rounded-full border border-line px-3 text-[12.5px] font-semibold text-ink-muted"
+            className="inline-flex min-h-ctl-sm items-center rounded-full border border-line px-3 text-note font-semibold text-ink-muted"
           >
             Export
           </PendingControl>
@@ -246,7 +246,7 @@ function HandledBar({ filters, onFilters }: { filters: Filters; onFilters: (next
         </div>
       </div>
       <div role="group" aria-label="Resolved by" className="flex flex-col gap-1.5">
-        <h3 className="text-[12px] font-bold text-ink-muted">Resolved by</h3>
+        <h3 className="text-meta font-bold text-ink-muted">Resolved by</h3>
         <div className="flex flex-wrap gap-1.5">
           {(
             [
@@ -262,10 +262,10 @@ function HandledBar({ filters, onFilters }: { filters: Filters; onFilters: (next
 }
 
 /** "General · Central Floresta", "Marketing": the topic, and the park when it has one. */
-function rowMeta(c: ConversationRow, me: InboxMe): string {
+function rowMeta(c: ConversationRow, me: InboxMe): { topic: string; park?: string } {
   const branchId = effectiveBranchId(c, me.teams);
   const park = branchId ? branchOptions(me.teams).find((b) => b.id === branchId)?.label : undefined;
-  return park ? `${CATEGORY_SHORT[c.category]} · ${park}` : CATEGORY_SHORT[c.category];
+  return { topic: CATEGORY_SHORT[c.category], park };
 }
 
 /**
@@ -275,7 +275,7 @@ function rowMeta(c: ConversationRow, me: InboxMe): string {
  * (SCRUM-996), else the next action (SCRUM-992), "Till notice" on a thread
  * that cannot take a reply — with the topic and the park as quiet text, and
  * the viewer's own unread count. An unread row is heavier; the selected one
- * stands on the band's ground inside a 2 px ring. The category, status and
+ * stands on the band's ground inside a quiet 1 px edge (SCRUM-1045). The category, status and
  * assignee chips and the hover "Mark handled" are gone from the row: the
  * chat carries them, Mark as handled with its confirmation.
  */
@@ -314,7 +314,7 @@ function Row({
     ...(unread ? [`${c.unread} unread for you`] : []),
     NEXT_ACTION_LABELS[nextAction],
     ...(deposit ? [DEPOSIT_SIGNAL_LABELS[deposit]] : []),
-    meta,
+    meta.park ? `${meta.topic} · ${meta.park}` : meta.topic,
     `on ${source}`,
     time,
   ].join(', ');
@@ -325,7 +325,7 @@ function Row({
       aria-label={said}
       data-next-action={nextAction}
       onClick={() => onSelect(c.id)}
-      className={`flex w-full min-w-0 gap-3 border-b px-4 py-3 text-left transition last:border-b-0 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-coral ${
+      className={`flex w-full min-w-0 gap-3 border-b px-pane py-row text-left transition last:border-b-0 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-coral ${
         ready ? 'border-money-line' : 'border-line-soft'
       } ${conversationRowColour(selected, ready)}`}
     >
@@ -338,24 +338,32 @@ function Row({
       <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
         <span className="flex min-w-0 items-baseline gap-2">
           {/* The name and the line at a tight leading, as Main.dc.html sets them (a row of about 92 px). */}
-          <span className={`min-w-0 flex-1 truncate text-[15px] leading-tight text-ink ${unread ? 'font-extrabold' : 'font-semibold'}`}>{name}</span>
-          <span className={`shrink-0 text-[12px] ${ready ? 'text-ink-soft' : 'text-ink-muted'}`}>{time}</span>
+          <span className={`min-w-0 flex-1 truncate text-body leading-tight text-ink ${unread ? 'font-extrabold' : 'font-semibold'}`}>{name}</span>
+          <span className={`shrink-0 whitespace-nowrap text-meta ${ready ? 'text-ink-soft' : 'text-ink-muted'}`}>{time}</span>
         </span>
-        <span className={`truncate text-[13.5px] leading-tight ${unread ? 'text-ink' : 'text-ink-soft'}`}>{c.lastMessagePreview ?? ' '}</span>
-        <span className="mt-[3px] flex min-w-0 items-center gap-2">
+        <span className={`truncate text-ui leading-tight ${unread ? 'text-ink' : 'text-ink-soft'}`}>{c.lastMessagePreview ?? ' '}</span>
+        <span className="mt-[3px] flex min-w-0 items-center gap-1.5">
           {badge && (
             <span
               {...(deposit ? { 'data-deposit-signal': deposit } : {})}
-              className={`inline-flex h-6 shrink-0 items-center rounded-lg px-2 text-[12px] font-semibold ${badge.colour}`}
+              className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-md px-1.5 py-[3px] text-meta font-semibold leading-tight ${badge.colour}`}
             >
               {badge.words}
             </span>
           )}
-          <span className={`min-w-0 flex-1 truncate text-[12px] ${ready ? 'text-ink-soft' : 'text-ink-muted'}`}>{meta}</span>
+          {/* The topic, then the park, each whole or not at all (SCRUM-1045): a
+              part that does not fit wraps to a second line that is never shown,
+              so the line ends on a whole word. The empty first item lets even
+              the topic step aside when the badge leaves it no room. */}
+          <span className={`flex h-[1.25em] min-w-0 flex-1 flex-wrap overflow-hidden text-meta leading-[1.25] ${ready ? 'text-ink-soft' : 'text-ink-muted'}`}>
+            <span aria-hidden className="h-[1.25em] w-0" />
+            <span className="whitespace-nowrap">{meta.topic}</span>
+            {meta.park && <span className="whitespace-pre">{` · ${meta.park}`}</span>}
+          </span>
           {unread && (
             <span
               aria-label={`${c.unread} unread messages for you`}
-              className="inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-coral px-1.5 text-[11.5px] font-bold text-on-coral"
+              className="inline-flex h-[1.7em] min-w-[1.7em] shrink-0 items-center justify-center rounded-full bg-coral px-1.5 text-caption font-bold text-on-coral"
             >
               {c.unread}
             </span>

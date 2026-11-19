@@ -151,7 +151,7 @@ export function DictationLine({ dictation }: { dictation: Dictation }) {
       <p
         role="status"
         data-testid="dictation-line"
-        className="mt-1.5 flex items-center gap-2 px-2 text-[12px] text-ink-muted"
+        className="mt-1.5 flex items-center gap-2 px-2 text-meta text-ink-muted"
       >
         <span aria-hidden="true" className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-danger-ink" />
         <span className="shrink-0 font-semibold tabular-nums text-danger-ink">
@@ -163,7 +163,7 @@ export function DictationLine({ dictation }: { dictation: Dictation }) {
   }
   if (dictation.phase === 'starting' || dictation.phase === 'transcribing') {
     return (
-      <p role="status" data-testid="dictation-line" className="mt-1.5 flex items-center gap-2 px-2 text-[12px] text-ink-muted">
+      <p role="status" data-testid="dictation-line" className="mt-1.5 flex items-center gap-2 px-2 text-meta text-ink-muted">
         <Loader2 aria-hidden className="h-3.5 w-3.5 shrink-0 animate-spin" />
         {dictation.phase === 'starting' ? 'Opening the microphone…' : DICTATION_TRANSCRIBING}
       </p>
@@ -174,7 +174,7 @@ export function DictationLine({ dictation }: { dictation: Dictation }) {
       <p
         role="alert"
         data-testid="dictation-line"
-        className="mt-1.5 flex items-center gap-2 rounded-2xl bg-danger px-3 py-1 text-[13px] text-danger-ink ring-1 ring-danger-line"
+        className="mt-1.5 flex items-center gap-2 rounded-2xl bg-danger px-3 py-1 text-note text-danger-ink ring-1 ring-danger-line"
       >
         <AlertTriangle aria-hidden className="h-4 w-4 shrink-0" />
         <span className="min-w-0 flex-1 break-words">{dictation.error}</span>
@@ -182,7 +182,7 @@ export function DictationLine({ dictation }: { dictation: Dictation }) {
           type="button"
           onClick={dictation.dismissError}
           aria-label="Dismiss"
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full opacity-80 hover:opacity-100 md:h-7 md:w-7"
+          className="hit flex size-icon shrink-0 items-center justify-center rounded-full opacity-80 hover:opacity-100 md:h-7 md:w-7"
         >
           <X aria-hidden className="h-4 w-4" />
         </button>

@@ -7,7 +7,7 @@ import { CATEGORY_LABEL } from '@/lib/view';
 /** Cancel in every confirmation: the quiet words (BookDate.dc.html). */
 const CANCEL = BTN_QUIET;
 /** A confirmation's words, readable at arm's length on a phone. */
-const SAYS = 'text-[14px] leading-relaxed md:text-[13px]';
+const SAYS = 'text-ui leading-relaxed';
 
 /**
  * "Mark as handled for everyone?" — the prototype's confirmation (:1734-1764),
@@ -209,7 +209,7 @@ export function Refusal({ text, tone = 'danger' }: { text: string; tone?: 'dange
   return (
     <p
       role="alert"
-      className={`mt-3 break-words rounded-xl px-3 py-2 text-[13px] ring-1 ${
+      className={`mt-3 break-words rounded-xl px-3 py-2 text-note ring-1 ${
         tone === 'danger' ? 'bg-danger text-danger-ink ring-danger-line' : 'bg-ask text-ask-ink ring-ask-line'
       }`}
     >

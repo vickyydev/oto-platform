@@ -8,9 +8,9 @@ import type { Theme } from '@/lib/theme';
 import type { SettingsPage } from '@/lib/url';
 import { initialsOf } from '@/lib/view';
 
-/** A 44 px square icon control (every touch target at least 44 px, SCRUM-1016). */
+/** A square icon control: 44 px on a phone, the scale's `icon` elsewhere, a 44 px target on a touch screen (SCRUM-1045). */
 const ICON_BUTTON =
-  'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-ink transition hover:bg-wash focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral';
+  'hit flex size-icon shrink-0 items-center justify-center rounded-xl text-ink transition hover:bg-wash focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral';
 const SEARCH_PLACEHOLDER = 'Search a family, a message';
 
 /**
@@ -52,7 +52,7 @@ export const BACK_TO_SUITE_LABEL = 'Back to the suite';
 export const SIGN_OUT_LABEL = 'Sign out';
 
 const ITEM =
-  'flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-[14px] font-medium text-ink hover:bg-wash focus:bg-wash focus:outline-none';
+  'hit flex min-h-ctl-lg w-full items-center gap-3 rounded-xl px-3 text-left text-ui font-medium text-ink hover:bg-wash focus:bg-wash focus:outline-none';
 
 export type AccountMenuProps = {
   me: InboxMe;
@@ -94,8 +94,8 @@ export function AccountMenuItems({
       className="w-72 max-w-[calc(100vw-1rem)] rounded-2xl border border-line bg-card p-1.5 text-ink shadow-pop"
     >
       <div role="none" className="px-3 pb-2 pt-2">
-        <div className="truncate text-[14px] font-bold">{me.name ?? 'You'}</div>
-        <div className="truncate text-[12.5px] text-ink-muted">{viewerRoleLabel(me)}</div>
+        <div className="truncate text-ui font-bold">{me.name ?? 'You'}</div>
+        <div className="truncate text-note text-ink-muted">{viewerRoleLabel(me)}</div>
       </div>
       {entries.length > 0 && (
         <div role="group" aria-label="Settings" className="border-t border-line-soft py-1">
@@ -120,7 +120,7 @@ export function AccountMenuItems({
         </div>
       )}
       <div role="group" aria-label="Theme" className="border-t border-line-soft py-1">
-        <div aria-hidden className="px-3 pb-1 pt-1.5 text-[12px] font-bold text-ink-muted">
+        <div aria-hidden className="px-3 pb-1 pt-1.5 text-meta font-bold text-ink-muted">
           Theme
         </div>
         {THEME_CHOICES.map(({ theme: t, label, icon: Icon }) => (
@@ -237,10 +237,10 @@ export function AccountMenu(props: AccountMenuProps) {
         // From 1280 px the name beside the initials, as Desktop.dc.html draws it ("AN Anya").
         className={`${ICON_BUTTON} rounded-full xl:w-auto xl:max-w-[14rem] xl:gap-2 xl:pl-1.5 xl:pr-3`}
       >
-        <span aria-hidden className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-mint text-[12px] font-bold text-teal">
+        <span aria-hidden className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-mint text-meta font-bold text-teal">
           {initialsOf(name)}
         </span>
-        <span aria-hidden data-account-name className="hidden min-w-0 truncate text-[13.5px] font-semibold xl:inline">
+        <span aria-hidden data-account-name className="hidden min-w-0 truncate text-ui font-semibold xl:inline">
           {name}
         </span>
       </button>
@@ -284,12 +284,12 @@ export function AppBar({
   const phoneSearch = searchOpen || search !== '';
   return (
     <header className="shrink-0 bg-ground md:border-b md:border-line md:bg-card">
-      <div className="flex min-h-14 items-center gap-2 py-1.5 pl-4 pr-2 md:gap-x-6 md:px-5">
+      <div className="flex items-center gap-2 py-1.5 pl-4 pr-2 md:gap-x-5 md:px-pane md:py-2 lg:px-4">
         <div className="flex shrink-0 items-center gap-2.5">
           <img src={logoUrl} alt="OTO" className="block h-5 w-auto md:h-[22px]" />
-          <h1 className="text-[20px] font-extrabold leading-none tracking-[-0.02em] text-ink md:text-[18px]">Inbox</h1>
+          <h1 className="text-display font-extrabold leading-none tracking-[-0.02em] text-ink">Inbox</h1>
         </div>
-        <label className="hidden h-10 min-w-0 max-w-[380px] flex-[1_1_260px] items-center gap-2 rounded-xl border border-field bg-ground px-3 focus-within:border-ink-muted md:flex">
+        <label className="hidden h-ctl-lg min-w-0 max-w-[380px] flex-[1_1_260px] items-center gap-2 rounded-xl border border-field bg-ground px-3 focus-within:border-ink-muted md:flex">
           <Search aria-hidden className="h-[18px] w-[18px] shrink-0 text-ink-muted" />
           <input
             type="search"
@@ -297,7 +297,7 @@ export function AppBar({
             onChange={(e) => onSearch(e.target.value)}
             aria-label="Search"
             placeholder={SEARCH_PLACEHOLDER}
-            className="min-w-0 flex-1 bg-transparent text-[14px] text-ink placeholder:text-ink-muted focus:outline-none"
+            className="min-w-0 flex-1 bg-transparent text-ui text-ink placeholder:text-ink-muted focus:outline-none"
           />
         </label>
         <div className="ml-auto hidden min-w-0 lg:flex">{children}</div>
@@ -310,7 +310,7 @@ export function AppBar({
           {onNewContact && (
             <button type="button" onClick={onNewContact} aria-label={NEW_CONTACT_LABEL} className={`${ICON_BUTTON} md:w-auto md:gap-1.5 md:px-3`}>
               <Plus aria-hidden className="h-[22px] w-[22px] md:h-[18px] md:w-[18px]" />
-              <span className="hidden text-[13.5px] font-semibold md:inline">New</span>
+              <span className="hidden text-ui font-semibold md:inline">New</span>
             </button>
           )}
           {account}
@@ -318,7 +318,7 @@ export function AppBar({
       </div>
       {phoneSearch && (
         <div className="flex items-center gap-1 pb-2 pl-4 pr-2 md:hidden">
-          <label className="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-xl border border-field bg-card px-3 focus-within:border-ink-muted">
+          <label className="hit flex h-ctl min-w-0 flex-1 items-center gap-2 rounded-xl border border-field bg-card px-3 focus-within:border-ink-muted">
             <Search aria-hidden className="h-[18px] w-[18px] shrink-0 text-ink-muted" />
             <input
               type="search"
@@ -327,7 +327,7 @@ export function AppBar({
               aria-label="Search"
               placeholder={SEARCH_PLACEHOLDER}
               autoFocus={searchOpen}
-              className="min-w-0 flex-1 bg-transparent text-[15px] text-ink placeholder:text-ink-muted focus:outline-none"
+              className="min-w-0 flex-1 bg-transparent text-body text-ink placeholder:text-ink-muted focus:outline-none"
             />
           </label>
           <button

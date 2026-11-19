@@ -189,7 +189,8 @@ describe('SCRUM-1016: a phone gets a full-height sheet, a wider screen the centr
     expect(html).toContain('top-[var(--view-as-offset,0px)]');
     // The icon waits for the wider card; the close control is 44 px.
     expect(html).toMatch(/class="hidden h-10 w-10[^"]*md:flex/);
-    expect(html).toMatch(/aria-label="Close" class="flex h-11 w-11/);
+    // SCRUM-1045: the scale's icon size (44 px on a phone), a 44 px target on a touch screen.
+    expect(html).toMatch(/aria-label="Close" class="hit flex size-icon/);
     // The footer's last control, its main one, takes the footer's width.
     expect(html).toContain('max-md:[&amp;&gt;*:last-child]:flex-1');
   });

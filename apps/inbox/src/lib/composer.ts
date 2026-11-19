@@ -44,4 +44,4 @@ export function sendsOnKey(e: { key: string; shiftKey: boolean; composing?: bool
  * without importing each other.
  */
 export const COMPOSER_ICON =
-  'flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-soft hover:bg-wash hover:text-ink disabled:cursor-not-allowed disabled:opacity-60';
+  'hit flex size-icon shrink-0 items-center justify-center rounded-full text-ink-soft hover:bg-wash hover:text-ink disabled:cursor-not-allowed disabled:opacity-60';

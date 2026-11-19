@@ -136,11 +136,24 @@ describe('SCRUM-1016: the reply box is the chat’s fixed footer', () => {
     expect(html).toMatch(/class="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-ground[^"]*"/);
     expect(html).toMatch(/<div class="shrink-0 border-t border-line bg-card[^"]*"><form/);
     // The chat is a column the full height of its place, on a phone too (no width variant on it).
-    expect(html).toMatch(/^<div class="flex min-h-0 min-w-0 flex-1"><div class="flex min-h-0 min-w-0 flex-1 flex-col">/);
+    // SCRUM-1045: the column is a size container (`thread`), so its header sizes itself by the chat's width.
+    expect(html).toMatch(/^<div class="flex min-h-0 min-w-0 flex-1"><div class="@container\/thread flex min-h-0 min-w-0 flex-1 flex-col">/);
   });
 
+  // SCRUM-1045: one pane at a time is the workspace's decision (a phone, or a
+  // window too narrow for both panes), handed down as `single`, not a breakpoint.
   it('a phone gets the way back in the header; from 768 px the list stands beside the chat', () => {
-    expect(html).toMatch(/aria-label="Back to the conversations" class="[^"]*md:hidden[^"]*"/);
+    expect(html).toMatch(/aria-label="Back to the conversations" class="[^"]*\bhidden\b[^"]*"/);
+    const thread: Thread = { detail: detail(r), messages: [], olderCursor: null, loading: false, loadingOlder: false, error: null };
+    const single = renderToStaticMarkup(
+      createElement(ChatPanel, {
+        row: r, thread, me: viewer(), now: new Date('2026-11-19T06:00:00.000Z'), inserted: null, detailsOpen: false,
+        onBack: noop, onLoadOlder: noop, onOpenDetails: noop, onCloseDetails: noop, onOpenTemplates: noop,
+        onAskHandle: noop, onChanged: async () => undefined, single: true,
+      }),
+    );
+    expect(single).toMatch(/aria-label="Back to the conversations" class="[^"]*\bflex\b[^"]*"/);
+    expect(single).not.toMatch(/aria-label="Back to the conversations" class="[^"]*\bhidden\b[^"]*"/);
   });
 
   it('carries Templates, the microphone, the growing box and Send — and no emoji or attach button', () => {
@@ -167,12 +180,16 @@ describe('SCRUM-1016: the chat’s header and the assistant’s line', () => {
 
   it('names the contact, then the number it came in on, the topic and the park', () => {
     expect(html).toContain('>ZZ TEST Sarah</h2>');
-    expect(html).toContain('<span title="WhatsApp">ZZ TEST line</span> · Birthdays · Central Floresta</p>');
+    // SCRUM-1045: each part its own piece, so one that does not fit steps aside whole.
+    expect(html).toMatch(/<span title="WhatsApp" class="[^"]*">ZZ TEST line<\/span><span class="whitespace-pre"> · Birthdays<\/span><span class="whitespace-pre"> · Central Floresta<\/span><\/p>/);
   });
 
+  // SCRUM-1045: the panel, and the menu stepping aside for it, need the window
+  // at 1280 px AND the chat pane at 660 px (a list widened by the divider wins).
   it('holds Mark as handled and one menu, People and actions, which steps aside where the panel shows', () => {
     expect(html).toMatch(/aria-label="Mark as handled"/);
-    expect(html).toMatch(/aria-label="People and actions"[^>]*class="[^"]*xl:hidden/);
+    expect(html).toMatch(/aria-label="People and actions"[^>]*class="[^"]*xl:@min-\[660px\]\/chat:hidden/);
+    expect(html).toMatch(/data-region="customer-panel" data-pane="panel" class="[^"]*xl:@min-\[660px\]\/chat:flex/);
     expect(html).not.toContain('aria-label="Conversation details"');
   });
 
@@ -185,12 +202,13 @@ describe('SCRUM-1016: the chat’s header and the assistant’s line', () => {
         onAskHandle: noop, onChanged: async () => undefined, panelWide: true,
       }),
     );
-    expect(wide).toMatch(/data-region="customer-panel" class="[^"]*min-\[1760px\]:flex/);
-    expect(wide).toMatch(/aria-label="People and actions"[^>]*class="[^"]*min-\[1760px\]:hidden/);
+    expect(wide).toMatch(/data-region="customer-panel" data-pane="panel" class="[^"]*min-\[1760px\]:@min-\[660px\]\/chat:flex/);
+    expect(wide).toMatch(/aria-label="People and actions"[^>]*class="[^"]*min-\[1760px\]:@min-\[660px\]\/chat:hidden/);
   });
 
   it('says the assistant’s state in one line, with Resume, and who is on the chat', () => {
-    expect(html).toContain('<strong class="font-bold">Assistant handed over</strong> · it will stay quiet');
+    // SCRUM-1045: the why is its own piece, stepping aside whole when it does not fit.
+    expect(html).toContain('<strong class="min-w-0 max-w-full truncate font-bold">Assistant handed over</strong><span class="whitespace-pre"> · it will stay quiet');
     expect(html).toMatch(/data-ai-action="resume"[^>]*>Resume<\/button>/);
     expect(html).toContain('aria-label="Primary: ZZ TEST Anya. Support: ZZ TEST Vera"');
   });
@@ -327,7 +345,8 @@ describe('SCRUM-1016 (review): the desktop panel is laid out for its width', () 
 
   it('a person’s action words sit on their own line under the name and the role', () => {
     expect(p.match(/data-person-row="stacked"/g)).toHaveLength(2);
-    expect(p).toMatch(/title="Support · 1 of 2" class="truncate text-\[12.5px\] text-ink-muted">Support · 1 of 2<\/span><span class="-ml-3 mt-0.5 flex flex-wrap items-center">/);
+    // SCRUM-1045: sizes from the scale (`text-note`).
+    expect(p).toMatch(/title="Support · 1 of 2" class="truncate text-note text-ink-muted">Support · 1 of 2<\/span><span class="-ml-3 mt-0.5 flex flex-wrap items-center">/);
     // The sheet, a phone's full width, keeps the words beside the name.
     expect(sheet).not.toContain('data-person-row');
   });
@@ -335,23 +354,24 @@ describe('SCRUM-1016 (review): the desktop panel is laid out for its width', () 
   it('Add support and Divert are a line each, never two words side by side', () => {
     expect(p).toContain('class="flex flex-col border-t border-line-soft empty:hidden');
     expect(p).not.toContain('grid-flow-col');
-    expect(p).toMatch(/aria-label="Divert to ZZ TEST Vera" class="inline-flex min-h-12 w-full items-center gap-1.5 px-3.5 /);
+    // SCRUM-1045: the scale's large control, a 44 px target on a touch screen (`hit`).
+    expect(p).toMatch(/aria-label="Divert to ZZ TEST Vera" class="hit inline-flex min-h-ctl-lg w-full items-center gap-1.5 px-3.5 /);
     expect(sheet).toContain('grid auto-cols-fr grid-flow-col');
   });
 
   it('a row’s label sits over its value, and the value keeps its whole words', () => {
     for (const label of ['Team', 'Park', 'Status']) {
-      expect(p, label).toContain(`<span class="flex min-w-0 flex-1 flex-col gap-0.5 py-1.5"><span class="text-[12.5px] text-ink-muted">${label}</span>`);
+      expect(p, label).toContain(`<span class="flex min-w-0 flex-1 flex-col gap-0.5 py-1.5"><span class="text-note text-ink-muted">${label}</span>`);
     }
     expect(p).not.toContain('w-20 shrink-0');
     expect(p).toContain('<span class="min-w-0 break-words">Central Floresta</span>');
     expect(p).not.toMatch(/<span class="truncate">(?:Central Floresta|Birthdays)/);
     // The sheet keeps its label column; its values keep their whole words too,
     // and the row's chevron takes only its own width (the whole row is the target).
-    expect(sheet).toContain('<span class="w-20 shrink-0 text-[13.5px] text-ink-muted">Team</span>');
+    expect(sheet).toContain('<span class="w-20 shrink-0 text-ui text-ink-muted">Team</span>');
     expect(sheet).toContain('<span class="min-w-0 break-words">Central Floresta</span>');
     expect(sheet).not.toMatch(/<span class="truncate">(?:Central Floresta|Birthdays|Assistant)/);
-    expect(sheet).toMatch(/<span class="inline-flex h-11 w-6 shrink-0 items-center justify-center rounded-xl">(?:<svg[^]*?<\/svg>)<select aria-label="Conversation branch" class="absolute inset-0 /);
+    expect(sheet).toMatch(/<span class="inline-flex h-ctl w-6 shrink-0 items-center justify-center rounded-xl">(?:<svg[^]*?<\/svg>)<select aria-label="Conversation branch" class="absolute inset-0 /);
   });
 
   it('the party’s Book the date and Create BEO stand one over the other', () => {
@@ -361,18 +381,23 @@ describe('SCRUM-1016 (review): the desktop panel is laid out for its width', () 
   });
 
   it('the sheet opens with the contact’s face before the name, as drawn', () => {
-    expect(sheet).toMatch(/<div class="relative shrink-0"><div aria-hidden="true" class="[^"]*" style="width:44px;height:44px;[^"]*">ZS<\/div><span title="WhatsApp"[^>]*><\/span><\/div><div class="min-w-0 flex-1"><h2/);
+    // SCRUM-1045: the face's size is the scale's `face` (44 px on a phone), not a number of its own.
+    expect(sheet).toMatch(/<div class="relative shrink-0"><div aria-hidden="true" class="[^"]*\bsize-face\b[^"]*">ZS<\/div><span title="WhatsApp"[^>]*><\/span><\/div><div class="min-w-0 flex-1"><h2/);
   });
 });
 
+// SCRUM-1045 replaced the 1024 px breakpoint: the words show by the chat's own
+// width (30 rem, the `thread` container) and only while the name still fits
+// whole beside them (`useNameFirst`, measured in the browser; the markup starts
+// with the words allowed). The button keeps its name either way.
 describe('SCRUM-1016 (review): the chat header on a tablet', () => {
-  it('Mark as handled is an icon below 1024 px, so the name keeps its room', () => {
+  it('Mark as handled is an icon until the chat is wide enough, so the name keeps its room', () => {
     const r = row();
     const html = panel(viewer(), r, detail(r));
     const header = html.slice(html.indexOf('<header'), html.indexOf('</header>'));
-    expect(header).toMatch(/aria-label="Mark as handled" title="Mark as handled" class="[^"]*lg:w-auto[^"]*"/);
-    expect(header).toContain('<span class="hidden lg:inline">Mark as handled</span>');
-    expect(header).not.toMatch(/md:(?:w-auto|inline|border|px-3\.5)/);
+    expect(header).toMatch(/aria-label="Mark as handled" title="Mark as handled" class="[^"]*@min-\[30rem\]\/thread:w-auto[^"]*"/);
+    expect(header).toContain('<span class="hidden whitespace-nowrap @min-[30rem]/thread:inline">Mark as handled</span>');
+    expect(header).not.toMatch(/\b(?:md|lg):(?:w-auto|inline|border|px-3\.5)/);
   });
 });
 

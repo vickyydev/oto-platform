@@ -145,7 +145,7 @@ export function TemplateSettings({ me, onBack }: { me: InboxMe; onBack: () => vo
           <Loader2 className="h-5 w-5 animate-spin" />
         </div>
       )}
-      {templates?.length === 0 && <p className="mt-4 text-[13.5px] text-ink-muted">No templates yet.</p>}
+      {templates?.length === 0 && <p className="mt-4 text-ui text-ink-muted">No templates yet.</p>}
 
       <div className="mt-4 space-y-5">
         {byKey.map((g) => (
@@ -156,7 +156,7 @@ export function TemplateSettings({ me, onBack }: { me: InboxMe; onBack: () => vo
                 <li key={t.id} className={`${ITEM_CARD} ${t.archivedAt ? 'opacity-70' : ''}`}>
                   <div className="flex flex-wrap items-center gap-1.5">
                     <span className={`${BADGE} ${TONE.neutral}`}>{langLabel(t.language)}</span>
-                    <span className="text-[12px] text-ink-muted">
+                    <span className="text-meta text-ink-muted">
                       {t.channel ? CHANNEL_LABEL[t.channel] : 'Every channel'} · {t.branchId ? branchLabel(t.branchId, me.teams) : 'Every park'}
                     </span>
                     <span className={`${BADGE} ${APPROVAL_TINT[t.approvalStatus]}`}>
@@ -174,7 +174,7 @@ export function TemplateSettings({ me, onBack }: { me: InboxMe; onBack: () => vo
                       </span>
                     )}
                   </div>
-                  <p className="mt-1.5 line-clamp-4 whitespace-pre-line break-words text-[14px] leading-relaxed text-ink md:text-[13px]">{t.body}</p>
+                  <p className="mt-1.5 line-clamp-4 whitespace-pre-line break-words text-ui leading-relaxed text-ink">{t.body}</p>
                   {t.key === BROCHURE_KEY && <Brochure template={t} onChanged={load} />}
                   {!t.archivedAt && (
                     <div className="mt-2.5 flex flex-wrap items-center gap-2">
@@ -240,7 +240,7 @@ export function TemplateSettings({ me, onBack }: { me: InboxMe; onBack: () => vo
           </>
         }
       >
-        <p className="text-[13.5px] leading-relaxed text-ink-muted md:text-[13px]">
+        <p className="text-ui leading-relaxed text-ink-muted">
           It leaves the composer and this list for good. The messages already sent from it keep naming it.
         </p>
         {archiveError && <Refusal text={archiveError} />}
@@ -299,7 +299,7 @@ function Brochure({ template, onChanged }: { template: ManagedTemplate; onChange
 
   return (
     <div className="mt-2.5 rounded-xl bg-band px-3 py-2 ring-1 ring-line">
-      <div className="flex flex-wrap items-center gap-2 text-[12.5px] text-ink-soft">
+      <div className="flex flex-wrap items-center gap-2 text-note text-ink-soft">
         <Paperclip aria-hidden className="h-3.5 w-3.5" />
         <span className="min-w-0 flex-1">
           {count > 0 ? `Birthday brochure attached (${count} file${count === 1 ? '' : 's'})` : 'No birthday brochure yet'}

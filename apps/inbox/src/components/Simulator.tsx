@@ -14,7 +14,7 @@ import { CATEGORY_LABEL, CHANNEL_LABEL, LANGUAGE_OPTIONS } from '@/lib/view';
 const FIELD = `${INPUT} py-2`;
 const PRIMARY_BUTTON = BTN_MAIN;
 const RECORD_BUTTON = BTN_OUTLINE;
-const STOP_BUTTON = `inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-danger-line bg-danger px-3.5 text-[14px] font-semibold text-danger-ink hover:bg-danger/80 md:min-h-9 md:text-[13px] ${FOCUS}`;
+const STOP_BUTTON = `hit inline-flex min-h-ctl items-center gap-1.5 rounded-xl border border-danger-line bg-danger px-3.5 text-ui font-semibold text-danger-ink hover:bg-danger/80 ${FOCUS}`;
 
 type Category = NonNullable<NonNullable<SimulatedInbound['hint']>['category']>;
 
@@ -216,7 +216,7 @@ export function SimulatorBody({
   return (
       <div className="space-y-5">
         <Section title="Demo conversations">
-          <p className="text-[13px] text-ink-muted">
+          <p className="text-note text-ink-muted">
             Plays the ten demo threads, the six demo staff and the four simulator channel accounts. Playing it again
             writes nothing.
           </p>
@@ -228,7 +228,7 @@ export function SimulatorBody({
 
         <Section title="A customer writes">
           {accounts.length === 0 ? (
-            <p className="text-[13px] text-ink-muted">No simulator channel account yet — play the demo first.</p>
+            <p className="text-note text-ink-muted">No simulator channel account yet — play the demo first.</p>
           ) : (
             <form onSubmit={sendInbound} className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <Field label="Channel account" wide>
@@ -269,7 +269,7 @@ export function SimulatorBody({
               <Field label="Message" wide>
                 <textarea value={text} onChange={(e) => setText(e.target.value)} rows={3} className={`${FIELD} resize-y`} />
               </Field>
-              <div className="flex min-w-0 flex-col gap-1.5 text-[13px] font-semibold text-ink sm:col-span-2">
+              <div className="flex min-w-0 flex-col gap-1.5 text-note font-semibold text-ink sm:col-span-2">
                 <label className="flex min-w-0 flex-col gap-1.5">
                   {recorder.supported
                     ? 'Voice note (optional): an audio file or a recording, played as a WhatsApp voice message'
@@ -308,14 +308,14 @@ export function SimulatorBody({
                     <span
                       role="status"
                       data-testid="simulator-record-clock"
-                      className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold tabular-nums text-danger-ink"
+                      className="inline-flex items-center gap-1.5 text-note font-semibold tabular-nums text-danger-ink"
                     >
                       <span aria-hidden="true" className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-danger-ink" />
                       Recording · {clockOf(recorder.seconds)} / {clockOf(SIMULATOR_VOICE_MAX_SECONDS)}
                     </span>
                   )}
                   {voice && (
-                    <span data-testid="simulator-voice-name" className="inline-flex items-center gap-1 text-[12.5px] font-normal text-ink-soft">
+                    <span data-testid="simulator-voice-name" className="inline-flex items-center gap-1 text-note font-normal text-ink-soft">
                       <Mic aria-hidden className="h-3.5 w-3.5" /> {voice.name}
                       <button
                         type="button"
@@ -328,7 +328,7 @@ export function SimulatorBody({
                     </span>
                   )}
                   {(voiceError ?? recorder.error) && (
-                    <span role="alert" data-testid="simulator-voice-error" className="text-[12.5px] font-normal text-danger-ink">
+                    <span role="alert" data-testid="simulator-voice-error" className="text-note font-normal text-danger-ink">
                       {voiceError ?? recorder.error}
                     </span>
                   )}
@@ -350,10 +350,10 @@ export function SimulatorBody({
 
         <Section title="Delivery receipts">
           {accounts.length === 0 ? (
-            <p className="text-[13px] text-ink-muted">No simulator channel account yet — play the demo first.</p>
+            <p className="text-note text-ink-muted">No simulator channel account yet — play the demo first.</p>
           ) : (
             <>
-              <p className="text-[13px] text-ink-muted">
+              <p className="text-note text-ink-muted">
                 Marks the replies sent on {account ? accountLabel(account) : 'the account'} delivered, then read.
               </p>
               <button type="button" onClick={pushReceipts} disabled={busy !== null} className={`mt-2 ${PRIMARY_BUTTON}`}>
@@ -365,7 +365,7 @@ export function SimulatorBody({
         </Section>
 
         {done && (
-          <p role="status" className="rounded-xl bg-money px-3 py-2 text-[13px] text-money-ink ring-1 ring-money-line">
+          <p role="status" className="rounded-xl bg-money px-3 py-2 text-note text-money-ink ring-1 ring-money-line">
             {done}
           </p>
         )}

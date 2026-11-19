@@ -11,7 +11,7 @@ export function OpenQuestionLine({ questions }: { questions: readonly OpenQuesti
   if (questions.length === 0) return null;
   return (
     <div className="-mt-1 flex justify-end" data-testid="open-question">
-      <div className="flex min-w-0 max-w-[80%] flex-wrap justify-end gap-x-3 gap-y-0.5 px-1 text-[12px] text-teal lg:max-w-[62%]">
+      <div className="flex min-w-0 max-w-[80%] flex-wrap justify-end gap-x-3 gap-y-0.5 px-1 text-meta text-teal lg:max-w-[62%]">
         {questions.map((q) => (
           <span key={q.id} className="inline-flex items-center gap-1" data-slot={q.slot} data-state={q.state}>
             <HelpCircle aria-hidden className="h-3.5 w-3.5 shrink-0" />

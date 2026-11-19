@@ -168,7 +168,7 @@ export function AssistantSettings({
       </div>
 
       {sections.length === 0 && (
-        <p className="mt-4 text-[13.5px] text-ink-muted">You do not manage the assistant.</p>
+        <p className="mt-4 text-ui text-ink-muted">You do not manage the assistant.</p>
       )}
       {section === 'numbers' && caps.ai && <ChannelModes me={me} />}
       {section === 'knowledge' && caps.kb && <KnowledgeBase me={me} />}
@@ -227,7 +227,7 @@ function ChannelModes({ me }: { me: InboxMe }) {
 
   return (
     <div className="mt-4 space-y-3">
-      <div className="rounded-xl bg-mint px-3 py-2 text-[13.5px] text-teal ring-1 ring-mint-edge md:text-[13px]">
+      <div className="rounded-xl bg-mint px-3 py-2 text-ui text-teal ring-1 ring-mint-edge">
         <span className="font-semibold">Live means customers hear it.</span> Run a number in Shadow first: the assistant
         records what it would have said, and nobody sees it.
       </div>
@@ -237,21 +237,21 @@ function ChannelModes({ me }: { me: InboxMe }) {
             <dt>
               <span className={`${BADGE} ring-1 ${AI_MODE_TINT[o.value]}`}>{o.label}</span>
             </dt>
-            <dd className="mt-1.5 text-[12px] text-ink-soft">{o.description}</dd>
+            <dd className="mt-1.5 text-meta text-ink-soft">{o.description}</dd>
           </div>
         ))}
       </dl>
 
       {error && <Refusal text={error} tone={error === NOT_ON_YOUR_ACCESS ? 'ask' : 'danger'} />}
       {!error && accounts === null && <Spinner />}
-      {accounts?.length === 0 && <p className="text-[13.5px] leading-relaxed text-ink-muted md:text-[13px]">No channel numbers yet.</p>}
+      {accounts?.length === 0 && <p className="text-ui leading-relaxed text-ink-muted">No channel numbers yet.</p>}
       <ul className="space-y-2">
         {accounts?.map((a) => (
           <li key={a.id} className={ITEM_CARD}>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
-                <div className="truncate text-[13px] font-semibold text-ink">{a.displayName}</div>
-                <div className="text-[12.5px] text-ink-muted">
+                <div className="truncate text-note font-semibold text-ink">{a.displayName}</div>
+                <div className="text-note text-ink-muted">
                   {CHANNEL_LABEL[a.channel]} · {a.branchId ? branchLabel(a.branchId, me.teams) : 'Both parks'}
                 </div>
               </div>
@@ -273,7 +273,7 @@ function ChannelModes({ me }: { me: InboxMe }) {
                 ))}
               </div>
             </div>
-            <p className="mt-1.5 flex items-start gap-1.5 text-[12.5px] text-ink-muted">
+            <p className="mt-1.5 flex items-start gap-1.5 text-note text-ink-muted">
               {busyId === a.id && <Loader2 aria-hidden className="mt-0.5 h-3.5 w-3.5 shrink-0 animate-spin" />}
               <span className="min-w-0">{aiModeOption(a.aiMode).description}</span>
             </p>
@@ -306,8 +306,8 @@ function ChannelModes({ me }: { me: InboxMe }) {
           </>
         }
       >
-        <p className="text-[12.5px] text-ink-soft">{aiModeOption('live').description}</p>
-        <p className="mt-2 text-[12.5px] text-ink-muted">You can switch it back to Shadow or Off at any time.</p>
+        <p className="text-note text-ink-soft">{aiModeOption('live').description}</p>
+        <p className="mt-2 text-note text-ink-muted">You can switch it back to Shadow or Off at any time.</p>
       </Dialog>
     </div>
   );
@@ -356,7 +356,7 @@ function KnowledgeBase({ me }: { me: InboxMe }) {
   return (
     <div className="mt-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <p className="min-w-0 text-[12.5px] text-ink-muted">
+        <p className="min-w-0 text-note text-ink-muted">
           Only approved entries reach the assistant. Opening hours, addresses and ticket prices come from the platform
           itself; write notes beside them here, never the numbers. Editing an approved entry replaces it at once; the
           previous words stay in the archive.
@@ -379,7 +379,7 @@ function KnowledgeBase({ me }: { me: InboxMe }) {
 
       {error && <Refusal text={error} tone={error === NOT_ON_YOUR_ACCESS ? 'ask' : 'danger'} />}
       {!error && entries === null && <Spinner />}
-      {entries?.length === 0 && <p className="mt-4 text-[12.5px] text-ink-muted">No entries yet.</p>}
+      {entries?.length === 0 && <p className="mt-4 text-note text-ink-muted">No entries yet.</p>}
 
       <div className="mt-4 space-y-5">
         {kbGroups(entries ?? []).map((g) => (
@@ -389,9 +389,9 @@ function KnowledgeBase({ me }: { me: InboxMe }) {
               {g.entries.map((e) => (
                 <li key={e.id} className={`min-w-0 rounded-xl border border-line p-3 ${e.status === 'archived' ? 'opacity-60' : ''}`}>
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="min-w-0 break-all font-mono text-[12px] text-ink">{e.key}</span>
+                    <span className="min-w-0 break-all font-mono text-meta text-ink">{e.key}</span>
                     <span className={`${BADGE} ${TONE.neutral}`}>{langLabel(e.language)}</span>
-                    <span className="text-[12px] text-ink-muted">{e.branchId ? branchLabel(e.branchId, me.teams) : 'Both parks'}</span>
+                    <span className="text-meta text-ink-muted">{e.branchId ? branchLabel(e.branchId, me.teams) : 'Both parks'}</span>
                     <span className={`${BADGE} ring-1 ${KB_STATUS_TINT[e.status]}`}>
                       {KB_STATUS_LABEL[e.status]}
                     </span>
@@ -401,8 +401,8 @@ function KnowledgeBase({ me }: { me: InboxMe }) {
                       </span>
                     )}
                   </div>
-                  <p className="mt-1.5 break-words text-[12.5px] font-medium text-ink">{e.question}</p>
-                  <p className="mt-1 line-clamp-4 whitespace-pre-line break-words text-[12.5px] text-ink-soft">{e.body}</p>
+                  <p className="mt-1.5 break-words text-note font-medium text-ink">{e.question}</p>
+                  <p className="mt-1 line-clamp-4 whitespace-pre-line break-words text-note text-ink-soft">{e.body}</p>
                   {e.status !== 'archived' && e.canManage && (
                     <div className="mt-2 flex flex-wrap items-center gap-1.5">
                       <button type="button" onClick={() => setEditing(e)} className={BUTTON}>
@@ -658,7 +658,7 @@ function ExamplesQueue({ me }: { me: InboxMe }) {
   return (
     <div className="mt-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <p className="min-w-0 text-[13.5px] leading-relaxed text-ink-muted md:text-[13px]">
+        <p className="min-w-0 text-ui leading-relaxed text-ink-muted">
           Corrections staff proposed from the conversations. An approved example is what the assistant answers from next;
           approve only once it holds no names, numbers or children’s details.
         </p>
@@ -679,7 +679,7 @@ function ExamplesQueue({ me }: { me: InboxMe }) {
 
       {error && <Refusal text={error} tone={error === NOT_ON_YOUR_ACCESS ? 'ask' : 'danger'} />}
       {!error && examples === null && <Spinner />}
-      {examples?.length === 0 && <p className="mt-4 text-[12.5px] text-ink-muted">Nothing here.</p>}
+      {examples?.length === 0 && <p className="mt-4 text-note text-ink-muted">Nothing here.</p>}
       <ul className="mt-4 grid grid-cols-1 gap-2 lg:grid-cols-2">
         {examples?.map((x) => (
           <ExampleCard
@@ -736,15 +736,15 @@ export function ExampleCard({
     <li className={ITEM_CARD}>
       <div className="flex flex-wrap items-center gap-1.5">
         <span className={`${BADGE} ${TONE.neutral}`}>{langLabel(x.language)}</span>
-        <span className="text-[12px] text-ink-muted">{intentLabel(x.intent)}</span>
+        <span className="text-meta text-ink-muted">{intentLabel(x.intent)}</span>
         <span className={`${BADGE} ${TONE.assistant}`}>
           {VERDICT_LABEL[x.verdict]}
         </span>
-        {proposer && <span className="text-[12px] text-ink-muted">by {proposer}</span>}
+        {proposer && <span className="text-meta text-ink-muted">by {proposer}</span>}
       </div>
-      <p className="mt-1.5 line-clamp-3 whitespace-pre-line break-words text-[12.5px] text-ink">{x.customerText}</p>
+      <p className="mt-1.5 line-clamp-3 whitespace-pre-line break-words text-note text-ink">{x.customerText}</p>
       {x.goodReply && (
-        <p className="mt-1 line-clamp-3 whitespace-pre-line break-words rounded-xl bg-mint px-2.5 py-1.5 text-[13.5px] text-teal md:text-[13px]">
+        <p className="mt-1 line-clamp-3 whitespace-pre-line break-words rounded-xl bg-mint px-2.5 py-1.5 text-ui text-teal">
           {x.goodReply}
         </p>
       )}
@@ -802,10 +802,10 @@ export function WithdrawExampleConfirm({
         </>
       }
     >
-      <p className="text-[12.5px] text-ink">{WITHDRAW_EXAMPLE_LINE}</p>
-      <p className="mt-2 text-[12.5px] text-ink-muted">It moves to Rejected and stays there; propose a new one to replace it.</p>
+      <p className="text-note text-ink">{WITHDRAW_EXAMPLE_LINE}</p>
+      <p className="mt-2 text-note text-ink-muted">It moves to Rejected and stays there; propose a new one to replace it.</p>
       {example && (
-        <p className="mt-2 line-clamp-4 whitespace-pre-line break-words rounded-xl border border-line bg-card px-3 py-2 text-[13.5px] text-ink md:bg-ground md:text-[13px]">
+        <p className="mt-2 line-clamp-4 whitespace-pre-line break-words rounded-xl border border-line bg-card px-3 py-2 text-ui text-ink md:bg-ground">
           {example.customerText}
         </p>
       )}
@@ -968,7 +968,7 @@ export function ExampleReview({
           </select>
         </Field>
         {problem && <p className={`${HINT} sm:col-span-2`}>{problem}</p>}
-        <label className="flex min-h-11 cursor-pointer items-start gap-2.5 rounded-xl bg-ask px-3 py-2.5 text-[13.5px] text-ask-ink ring-1 ring-ask-line sm:col-span-2 md:text-[13px]">
+        <label className="hit flex min-h-ctl cursor-pointer items-start gap-2.5 rounded-xl bg-ask px-3 py-2.5 text-ui text-ask-ink ring-1 ring-ask-line sm:col-span-2">
           <input
             type="checkbox"
             checked={deidentified}

@@ -17,7 +17,7 @@ import { CHANNEL_LABEL, CHANNEL_TINT, TRANSLATION_PENDING } from '@/lib/view';
  */
 export function TranslationNote() {
   return (
-    <span className="rounded-full bg-needs px-1.5 text-[10px] font-medium text-needs-ink">
+    <span className="rounded-full bg-needs px-1.5 text-caption font-medium text-needs-ink">
       {TRANSLATION_PENDING}
     </span>
   );
@@ -25,15 +25,14 @@ export function TranslationNote() {
 
 /**
  * A contact's face: their initials on their tint, a soft square (Main.dc.html,
- * 44 px with a 14 px radius), so a face never reads as a person's round chip.
+ * a 32 % radius), so a face never reads as a person's round chip. Its size is
+ * the scale's (SCRUM-1045): `face` in a row and on a sheet (44 px on a phone,
+ * 36 to 38 px elsewhere), `face-sm` in the chat's header.
  */
-export function Avatar({ initials, tint, size = 44 }: { initials: string; tint: string; size?: number }) {
+const FACE = { face: 'size-face text-note', 'face-sm': 'size-face-sm text-meta' } as const;
+export function Avatar({ initials, tint, size = 'face' }: { initials: string; tint: string; size?: keyof typeof FACE }) {
   return (
-    <div
-      aria-hidden
-      className={`flex shrink-0 items-center justify-center font-bold ${tint}`}
-      style={{ width: size, height: size, fontSize: Math.round(size * 0.32), borderRadius: Math.round(size * 0.32) }}
-    >
+    <div aria-hidden className={`flex shrink-0 items-center justify-center rounded-[32%] font-bold ${FACE[size]} ${tint}`}>
       {initials}
     </div>
   );
@@ -52,12 +51,15 @@ export function ChannelDot({ channel, ring = 'ring-card' }: { channel: InboxChan
 /**
  * The toggle pill (Filters.dc.html): the archive's choices on the Handled
  * tab, the Unread quick filter and every choice in the Filters sheet. A card
- * with a field border when off, inverted ink when on, the state in
- * `aria-pressed` (SCRUM-652); 44 px tall on a phone (SCRUM-1016).
+ * with a 1 px field border when off; when on, the coral's light ground with
+ * a 1 px coral edge (SCRUM-1045: a chosen state is a ground and a fine edge,
+ * never a heavy fill or ring), the state in `aria-pressed` (SCRUM-652).
+ * 44 px tall on a phone, the scale's `ctl` (32 to 34 px) on a tablet or a
+ * desktop, and still a 44 px target on a touch screen (`hit`).
  */
 export const PILL =
-  'inline-flex min-h-11 items-center rounded-full border px-3.5 text-[13.5px] font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral md:min-h-10';
-export const PILL_ON = 'border-ink bg-ink text-on-ink';
+  'hit inline-flex min-h-ctl items-center rounded-full border px-3.5 text-ui font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral md:px-3';
+export const PILL_ON = 'border-coral bg-needs text-needs-ink';
 export const PILL_OFF = 'border-field bg-card text-ink hover:bg-wash';
 
 /**
@@ -99,11 +101,11 @@ export function FilterChip({
 export function EmptyState({ icon: Icon, title, subtitle }: { icon: LucideIcon; title: string; subtitle: string }) {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-2 p-8 text-center">
-      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-band text-ink-muted">
+      <div className="flex size-ctl-lg items-center justify-center rounded-full bg-band text-ink-muted">
         <Icon className="h-5 w-5" />
       </div>
-      <div className="text-[14px] font-semibold text-ink">{title}</div>
-      <div className="max-w-xs text-[12.5px] text-ink-muted">{subtitle}</div>
+      <div className="text-ui font-semibold text-ink">{title}</div>
+      <div className="max-w-xs text-note text-ink-muted">{subtitle}</div>
     </div>
   );
 }
@@ -111,6 +113,6 @@ export function EmptyState({ icon: Icon, title, subtitle }: { icon: LucideIcon; 
 /** The eyebrow label: uppercase, letter-spaced, grey. */
 export function Eyebrow({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
-    <div className={`text-[10px] font-semibold uppercase tracking-[0.2em] text-ink-muted ${className}`}>{children}</div>
+    <div className={`text-caption font-semibold uppercase tracking-[0.16em] text-ink-muted ${className}`}>{children}</div>
   );
 }

@@ -195,7 +195,8 @@ describe('SCRUM-996: the paid deposit’s next step', () => {
     // One card in the chat (below the desktop width) and the same in the desktop's panel, each shown at its own width.
     const cards = [...host!.querySelectorAll('section[aria-label="Next step"]')];
     expect(cards).toHaveLength(2);
-    expect(cards[0]!.className).toContain('xl:hidden');
+    // SCRUM-1045: the panel needs the window at 1280 px and the chat pane at 660 px.
+    expect(cards[0]!.className).toContain('xl:@min-[660px]/chat:hidden');
     expect(cards[1]!.closest('[data-region="customer-panel"]')).not.toBeNull();
     const book = [...cards[0]!.querySelectorAll('button')].find((b) => b.textContent === 'Book the date')!;
     await act(async () => book.click());

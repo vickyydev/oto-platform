@@ -59,16 +59,16 @@ export function SignInPanel() {
 
   return (
     <Card>
-      <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-ink-muted">
+      <div className="flex items-center gap-2 text-caption font-semibold uppercase tracking-[0.22em] text-ink-muted">
         <MessagesSquare className="h-3.5 w-3.5" />
         Unified Customer Inbox
       </div>
-      <h1 className="mt-1 text-xl font-semibold tracking-tight text-ink">Sign in</h1>
-      <p className="mt-1 mb-5 text-[13px] text-ink-muted">Every message from a family in one place, routed to the right team.</p>
+      <h1 className="mt-1 text-display font-semibold tracking-tight text-ink">Sign in</h1>
+      <p className="mt-1 mb-5 text-note text-ink-muted">Every message from a family in one place, routed to the right team.</p>
 
       {/* A refused hand-off from the launcher: why this screen appeared at all. */}
       {handoffError && (
-        <p className="mb-4 rounded-xl border border-dashed border-field px-3 py-2 text-[13px] text-ink-soft">{handoffError}</p>
+        <p className="mb-4 rounded-xl border border-dashed border-field px-3 py-2 text-note text-ink-soft">{handoffError}</p>
       )}
 
       <form onSubmit={submit} className="flex flex-col gap-3">
@@ -95,13 +95,13 @@ export function SignInPanel() {
             className={FIELD}
           />
         </label>
-        {error && <p role="alert" className="text-[13px] text-danger-ink">{error}</p>}
+        {error && <p role="alert" className="text-note text-danger-ink">{error}</p>}
         <button type="submit" className={`${PRIMARY} mt-1`} disabled={busy || !phone.trim() || !password}>
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogIn className="h-4 w-4" />}
           {busy ? 'Signing in…' : 'Sign in'}
         </button>
       </form>
-      <p className="mt-4 text-[12.5px] text-ink-muted">
+      <p className="mt-4 text-note text-ink-muted">
         {LAUNCHER_URL ? (
           <>
             First shift, or a forgotten password?{' '}
@@ -144,8 +144,8 @@ export function LockedPanel() {
       <span className="flex h-10 w-10 items-center justify-center rounded-full bg-ask text-ask-ink">
         <Lock className="h-5 w-5" />
       </span>
-      <h1 className="mt-3 text-xl font-semibold tracking-tight text-ink">This session is locked</h1>
-      <p className="mt-1 mb-5 text-[13px] text-ink-muted">
+      <h1 className="mt-3 text-display font-semibold tracking-tight text-ink">This session is locked</h1>
+      <p className="mt-1 mb-5 text-note text-ink-muted">
         It locked after a quiet spell on another app. Your password opens it again, here and there.
       </p>
       <form onSubmit={submit} className="flex flex-col gap-3">
@@ -158,7 +158,7 @@ export function LockedPanel() {
           placeholder="Password"
           className={FIELD}
         />
-        {error && <p role="alert" className="text-[13px] text-danger-ink">{error}</p>}
+        {error && <p role="alert" className="text-note text-danger-ink">{error}</p>}
         <button type="submit" className={PRIMARY} disabled={busy || !password}>
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
           Unlock
@@ -180,15 +180,15 @@ export function BlockedPanel({ reason }: { reason: 'must-change-password' | 'no-
       <span className="flex h-10 w-10 items-center justify-center rounded-full bg-band text-ink-soft">
         {changing ? <KeyRound className="h-5 w-5" /> : <ShieldOff className="h-5 w-5" />}
       </span>
-      <h1 className="mt-3 text-xl font-semibold tracking-tight text-ink">
+      <h1 className="mt-3 text-display font-semibold tracking-tight text-ink">
         {changing ? 'Choose a password first' : 'The inbox is not on your access'}
       </h1>
-      <p className="mt-1 text-[13px] text-ink-muted">
+      <p className="mt-1 text-note text-ink-muted">
         {changing ? (
           'This account is on a temporary password. The inbox stays closed until it is changed.'
         ) : (
           <>
-            Opening the inbox needs <code className="font-mono text-[12px]">app:inbox:access</code>. A manager grants it
+            Opening the inbox needs <code className="font-mono text-meta">app:inbox:access</code>. A manager grants it
             from the Login Users panel.
           </>
         )}

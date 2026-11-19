@@ -378,7 +378,8 @@ describe('the source, everywhere a conversation shows', () => {
   it('the list row says the number in its accessible name, not the bare channel; with no name, the channel', () => {
     const named = list([row()]);
     expect(named).toMatch(/aria-label="Olga Demo, [^"]*, on Reception · Central Floresta, /);
-    expect(named).toContain('>General · Central Floresta</span>');
+    // SCRUM-1045: the topic and the park are two pieces, so the park steps aside whole.
+    expect(named).toContain('>General</span><span class="whitespace-pre"> · Central Floresta</span>');
     expect(named).toContain('title="WhatsApp"');
     const nameless = list([row({ channelAccountName: null })]);
     expect(nameless).toMatch(/aria-label="Olga Demo, [^"]*, on WhatsApp, /);
@@ -418,7 +419,7 @@ describe('the GM queue’s label and colour wherever a category shows', () => {
   // SCRUM-1016: no category chip on the row; the GM queue is named in its quiet text.
   it('the list row names the GM queue in its quiet text, without a chip', () => {
     const html = list([row({ category: 'gm', teamId: T_GM, branchId: null })]);
-    expect(html).toMatch(/text-ink-muted">GM<\/span>/);
+    expect(html).toMatch(/text-ink-muted"><span aria-hidden="true" class="[^"]*"><\/span><span class="whitespace-nowrap">GM<\/span>/);
     expect(html).not.toMatch(/bg-amber-50/);
   });
 

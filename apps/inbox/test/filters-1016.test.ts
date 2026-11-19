@@ -107,7 +107,8 @@ describe('SCRUM-1016: each filter is offered once', () => {
     expect(list).toMatch(/<div class="lg:hidden"><div role="tablist" aria-label="Which conversations"/);
     expect(count(list, 'role="tab"')).toBe(3);
     expect(count(screen, '<nav aria-label="Which conversations"')).toBe(1);
-    expect(rail).toMatch(/^<aside aria-label="Views" class="hidden [^"]*lg:flex/);
+    // SCRUM-1045: the views column is a pane of its own (`data-pane`), sized by its own width.
+    expect(rail).toMatch(/^<aside aria-label="Views" data-pane="rail" class="hidden [^"]*lg:flex/);
     const nav = /<nav aria-label="Which conversations"[\s\S]*?<\/nav>/.exec(rail)![0];
     expect([...nav.matchAll(/<button[^>]*>(Mine|Team|Handled)/g)].map((m) => m[1])).toEqual(['Mine', 'Team', 'Handled']);
     // The header's Handled button, the tiles and the Status row that did the same are gone.
@@ -130,7 +131,8 @@ describe('SCRUM-1016: each filter is offered once', () => {
   });
 
   it('Needs reply: the statistics row’s figure, one per width; Unread: one quick filter in the list', () => {
-    const needs = (html: string) => count(html, '<span class="text-[11.5px] font-semibold leading-tight">Needs reply</span>');
+    // SCRUM-1045: the caption on the scale (`text-caption`).
+    const needs = (html: string) => [...html.matchAll(/<span class="[^"]*\btext-caption\b[^"]*font-semibold">Needs reply<\/span>/g)].length;
     expect(needs(list)).toBe(1);
     expect(list).toMatch(/<div class="lg:hidden"><section aria-label="Today"/);
     expect(needs(bar)).toBe(1);
@@ -140,10 +142,15 @@ describe('SCRUM-1016: each filter is offered once', () => {
     expect(list).toMatch(/<button type="button" aria-pressed="false" class="[^"]*">Unread<\/button>/);
   });
 
-  it('the figures’ labels keep one line on a tablet’s list column and in the app bar', () => {
-    // SCRUM-1016 (review): "Handled today" broke over two lines at 768 px.
-    expect(list).toContain('md:whitespace-nowrap md:tracking-[-0.01em]">Handled today</span>');
-    expect(bar).toContain('leading-tight text-ink-muted whitespace-nowrap">Handled today</span>');
+  // SCRUM-1016 (review): "Handled today" broke over two lines at 768 px.
+  // SCRUM-1045: a figure never wraps ("10m 40s" once read "10m / 40s"). A
+  // caption keeps one line in the app bar and in a list of 330 px and more
+  // (370 px on a phone); narrower, all four sit on two short lines alike
+  // ("Handled / today"), so the figures keep their row without colliding.
+  it('the figures keep one line each; their labels one line, or two short ones alike in a narrow list', () => {
+    for (const html of [list, bar]) expect(html).not.toMatch(/<span class="(?![^"]*whitespace-nowrap)[^"]*text-figure/);
+    expect(list).toContain('whitespace-nowrap max-md:@max-[370px]/list:w-min max-md:@max-[370px]/list:whitespace-normal md:@max-[330px]/list:w-min md:@max-[330px]/list:whitespace-normal text-ink-muted">Handled today</span>');
+    expect(bar).toContain('tracking-[-0.005em] whitespace-nowrap text-ink-muted">Handled today</span>');
   });
 
   it('Hide till notices: in the views column, and in the sheet; never twice on one screen', () => {
@@ -292,7 +299,7 @@ describe('SCRUM-1016: the list head', () => {
     // answers to one question; the tab counts before the filters.
     const text = (props: Partial<ListProps>) => {
       const html = markup(createElement(ConversationList, listProps(props)));
-      return /<h3 class="px-4 pb-1.5 pt-3.5[^"]*">([^<]*)<\/h3>/.exec(html)![1];
+      return /<h3 class="px-pane pb-1.5 pt-3[^"]*">([^<]*)<\/h3>/.exec(html)![1];
     };
     const three = [row(), row(), row()];
     expect(text({ rows: three })).toBe('3 conversations · newest first');
@@ -320,10 +327,11 @@ describe('SCRUM-1016: the list head', () => {
 describe('SCRUM-1016: the rows and the list’s states', () => {
   it('a row: the face with its channel dot, name and time, one line, one badge, "Topic · Park" and the unread count', () => {
     const html = markup(createElement(ConversationList, listProps({ rows: [row({ unread: 2 })] })));
-    expect(html).toMatch(/border-radius:14px/);
+    expect(html).toContain('rounded-[32%]');
     expect(html).toContain('bg-channel-whatsapp');
     expect(html).toContain('>Needs reply<');
-    expect(html).toContain('>General · Central Floresta<');
+    // SCRUM-1045: the topic and the park are two pieces, so the park steps aside whole.
+    expect(html).toContain('<span class="whitespace-nowrap">General</span><span class="whitespace-pre"> · Central Floresta</span>');
     expect(html).toContain('aria-label="2 unread messages for you"');
     // No category, status or assignee chips, and no hover "Mark handled": the chat carries them.
     for (const gone of ['Mark handled', '>Active<', 'Unassigned', 'ring-violet', 'ring-sky']) expect(html).not.toContain(gone);
@@ -333,9 +341,10 @@ describe('SCRUM-1016: the rows and the list’s states', () => {
     // SCRUM-1016 (review): stretched to the row's height, the face's box put
     // the dot 25 to 35 px under the face, beside the badge, on every row.
     const html = markup(createElement(ConversationList, listProps({ rows: [row({ unread: 1 })] })));
-    expect(html).toMatch(/<span class="relative shrink-0 self-start" data-face="true"><div aria-hidden="true"[^>]*style="width:44px;height:44px;[^"]*">[^<]{1,3}<\/div><span title="WhatsApp" class="absolute -bottom-\[3px\] -right-\[3px\]/);
-    expect(html).toMatch(/<span class="min-w-0 flex-1 truncate text-\[15px\] leading-tight text-ink font-extrabold">ZZ TEST guest \d+<\/span>/);
-    expect(html).toContain('<span class="truncate text-[13.5px] leading-tight text-ink">ZZ TEST line</span>');
+    // SCRUM-1045: the face, the name and the line take the scale's sizes (`face`, `body`, `ui`).
+    expect(html).toMatch(/<span class="relative shrink-0 self-start" data-face="true"><div aria-hidden="true" class="[^"]*\bsize-face\b[^"]*">[^<]{1,3}<\/div><span title="WhatsApp" class="absolute -bottom-\[3px\] -right-\[3px\]/);
+    expect(html).toMatch(/<span class="min-w-0 flex-1 truncate text-body leading-tight text-ink font-extrabold">ZZ TEST guest \d+<\/span>/);
+    expect(html).toContain('<span class="truncate text-ui leading-tight text-ink">ZZ TEST line</span>');
   });
 
   it('a till notice thread, when shown, says so in its one badge', () => {

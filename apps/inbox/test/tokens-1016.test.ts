@@ -129,9 +129,10 @@ describe('SCRUM-1016: the OTO tokens', () => {
     expect(src('src/components/ui.ts')).toContain("export const SEGMENT_ON = 'bg-segment ");
   });
 
-  it.each([['light', light], ['dark', dark]] as const)('the selected row’s ink ring stands out at 3 : 1 (%s)', (_, theme) => {
+  // SCRUM-1045: the selected row's edge is a quiet 1 px of the muted ink.
+  it.each([['light', light], ['dark', dark]] as const)('the selected row’s muted ink edge stands out at 3 : 1 (%s)', (_, theme) => {
     for (const ground of ['band', 'money']) {
-      expect(contrast(theme, 'ink', ground), `ink ring against ${ground}`).toBeGreaterThanOrEqual(3);
+      expect(contrast(theme, 'ink-muted', ground), `ink-muted edge against ${ground}`).toBeGreaterThanOrEqual(3);
     }
   });
 

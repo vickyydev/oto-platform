@@ -65,12 +65,12 @@ export function ScopeTabs({
             aria-selected={active}
             tabIndex={active ? 0 : -1}
             onClick={() => onTab(t)}
-            className={`flex min-h-11 min-w-0 items-center justify-center gap-1.5 rounded-[10px] px-2 text-[14px] transition focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-coral ${
+            className={`hit flex min-h-ctl min-w-0 items-center justify-center gap-1.5 rounded-[10px] px-2 text-ui transition focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-coral ${
               active ? 'bg-segment font-bold text-ink shadow-[0_1px_2px_var(--oto-shadow)]' : 'font-semibold text-ink-soft hover:bg-wash'
             }`}
           >
             <span className="truncate">{TAB_LABEL[t]}</span>
-            {count !== undefined && <span className={`text-[12px] font-bold ${active ? 'text-coral-ink' : ''}`}>{count}</span>}
+            {count !== undefined && <span className={`text-meta font-bold ${active ? 'text-coral-ink' : ''}`}>{count}</span>}
           </button>
         );
       })}
@@ -91,12 +91,12 @@ function ScopeNav({ tabs, tab, counts, onTab }: { tabs: readonly InboxTab[]; tab
             type="button"
             onClick={() => onTab(t)}
             aria-current={active ? 'page' : undefined}
-            className={`flex min-h-10 items-center justify-between gap-2 rounded-[10px] px-3 text-left text-[14px] text-ink transition focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-coral ${
+            className={`hit flex min-h-ctl items-center justify-between gap-2 rounded-[10px] px-3 text-left text-ui text-ink transition focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-coral ${
               active ? 'bg-band font-bold' : 'font-medium hover:bg-wash'
             }`}
           >
             {TAB_LABEL[t]}
-            {count !== undefined && <span className={`text-[12.5px] ${active ? 'text-coral-ink' : 'text-ink-muted'}`}>{count}</span>}
+            {count !== undefined && <span className={`text-meta ${active ? 'text-coral-ink' : 'text-ink-muted'}`}>{count}</span>}
           </button>
         );
       })}
@@ -127,13 +127,14 @@ function ColumnChoice({ c }: { c: Choice }) {
       aria-pressed={c.pressed}
       onClick={c.onPress}
       title={c.title ?? c.label}
-      className={`flex min-h-9 w-full min-w-0 items-center gap-2.5 rounded-[10px] px-3 text-left text-[14px] text-ink transition hover:bg-wash focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-coral ${
+      className={`hit flex min-h-ctl w-full min-w-0 items-center gap-2.5 rounded-[10px] px-3 text-left text-ui text-ink transition hover:bg-wash focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-coral ${
         c.pressed ? 'bg-wash font-bold' : ''
       }`}
     >
       {c.dot && <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${c.dot}`} />}
-      <span className="min-w-0 flex-1 truncate">{c.label}</span>
-      {c.count !== undefined && <span className="shrink-0 text-[12.5px] font-normal text-ink-muted">{c.count}</span>}
+      {/* A long label wraps to a second line rather than lose its end ("Birthdays & Events", SCRUM-1045). */}
+      <span className="min-w-0 flex-1 break-words py-1.5 leading-snug">{c.label}</span>
+      {c.count !== undefined && <span className="shrink-0 text-meta font-normal text-ink-muted">{c.count}</span>}
     </button>
   );
 }
@@ -141,12 +142,12 @@ function ColumnChoice({ c }: { c: Choice }) {
 function Group({ label, title, layout, children }: { label: string; title: string; layout: 'sheet' | 'column'; children: ReactNode }) {
   return layout === 'sheet' ? (
     <div role="group" aria-label={label}>
-      <h3 className="mb-2.5 text-[13px] font-bold text-ink-soft">{title}</h3>
+      <h3 className="mb-2.5 text-note font-bold text-ink-soft">{title}</h3>
       <div className="flex flex-wrap gap-2">{children}</div>
     </div>
   ) : (
     <div role="group" aria-label={label} className="flex flex-col gap-0.5">
-      <h3 className="mb-1 px-3 text-[12px] font-bold text-ink-muted">{title}</h3>
+      <h3 className="mb-1 px-3 text-meta font-bold text-ink-muted">{title}</h3>
       {children}
     </div>
   );
@@ -273,15 +274,15 @@ export function HideNoticesSwitch({ on, onChange, compact = false }: { on: boole
     />
   );
   return compact ? (
-    <label title={HIDE_NOTICES_HINT} className="flex min-h-10 cursor-pointer items-center gap-2.5 px-3 text-[13px] text-ink-soft">
+    <label title={HIDE_NOTICES_HINT} className="hit flex min-h-ctl cursor-pointer items-center gap-2.5 px-3 text-note text-ink-soft">
       {input}
       {HIDE_NOTICES_LABEL}
     </label>
   ) : (
     <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-line bg-card px-3.5 py-3">
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="text-[14px] font-semibold text-ink">{HIDE_NOTICES_LABEL}</span>
-        <span className="text-[12.5px] text-ink-muted">{HIDE_NOTICES_HINT}</span>
+        <span className="text-ui font-semibold text-ink">{HIDE_NOTICES_LABEL}</span>
+        <span className="text-note text-ink-muted">{HIDE_NOTICES_HINT}</span>
       </span>
       {input}
     </label>
@@ -313,8 +314,8 @@ export function Rail({
   onFilters: (next: Partial<Filters>) => void;
 }) {
   return (
-    <aside aria-label="Views" className="hidden min-h-0 flex-col border-r border-line bg-ground lg:flex">
-      <div className="flex min-h-0 flex-1 flex-col gap-[18px] overflow-y-auto px-3 py-4">
+    <aside aria-label="Views" data-pane="rail" className="hidden min-h-0 flex-col border-r border-line bg-ground lg:flex">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-3 py-3.5">
         <ScopeNav tabs={me.tabs} tab={tab} counts={counts} onTab={onTab} />
         <FilterFields me={me} filters={filters} onChange={onFilters} sources={sources} layout="column" topicCounts={topicCounts} />
         <div className="mt-auto">

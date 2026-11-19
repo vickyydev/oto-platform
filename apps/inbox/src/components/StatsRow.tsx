@@ -70,29 +70,33 @@ export function StatsRow({
   const avg = data ? durationLabel(data.averageFirstResponseSeconds) : '—';
   const needs = figures ? v(data?.unanswered) : null;
 
+  // SCRUM-1045: pressed is the coral's light ground inside a 1 px coral edge,
+  // never a heavy ring. A figure never wraps ("10m 40s" stays one line): the
+  // cells take their own width and share what is left; in a list narrower than
+  // 330 px (370 px on a phone, whose type is larger) each caption sits on two short lines ("Handled / today"), all four
+  // alike, and below 280 px the figures step down the scale.
+  const value = `whitespace-nowrap text-figure font-extrabold leading-none tracking-[-0.02em] ${bar ? '' : '@max-[280px]/list:text-title'}`;
+  const caption = `text-center text-caption leading-tight tracking-[-0.005em] ${bar ? 'whitespace-nowrap' : 'whitespace-nowrap max-md:@max-[370px]/list:w-min max-md:@max-[370px]/list:whitespace-normal md:@max-[330px]/list:w-min md:@max-[330px]/list:whitespace-normal'}`;
   const needsButton = (
     <button
       type="button"
       onClick={onToggleUnanswered}
       aria-pressed={unansweredOnly}
-      className={`flex shrink-0 flex-col items-center justify-center gap-0.5 transition ${
-        bar ? 'min-h-11 rounded-xl px-3.5' : figures ? 'min-h-14 rounded-l-2xl px-1 py-2' : 'min-h-11 flex-1 rounded-2xl px-3 py-1.5'
-      } ${unansweredOnly ? 'bg-needs text-needs-ink ring-2 ring-inset ring-coral' : 'text-coral-ink hover:bg-wash'}`}
+      className={`hit flex shrink-0 flex-col items-center justify-center gap-1 transition ${
+        bar ? 'min-h-ctl-lg rounded-xl px-3' : figures ? 'rounded-l-2xl px-3 py-2 @max-[330px]/list:px-2' : 'min-h-ctl flex-1 rounded-2xl px-3 py-1.5'
+      } ${unansweredOnly ? 'bg-needs text-needs-ink ring-1 ring-inset ring-coral' : 'text-coral-ink hover:bg-wash'}`}
     >
-      {needs !== null && <span className={`${bar ? 'text-[18px]' : 'text-[19px]'} font-extrabold leading-none tracking-[-0.02em]`}>{needs}</span>}
-      <span className="text-[11.5px] font-semibold leading-tight">{NEEDS_REPLY_LABEL}</span>
+      {needs !== null && <span className={value}>{needs}</span>}
+      <span className={`${caption} font-semibold`}>{NEEDS_REPLY_LABEL}</span>
     </button>
   );
 
-  // On a tablet's list column a figure is 82 px wide: its label keeps one line
-  // there ("Handled today" broke over two, SCRUM-1016 review); a phone narrower
-  // than the drawn 390 px may still wrap it rather than clip it.
-  const figure = (value: string, label: string, first = false) => (
+  const figure = (val: string, label: string, first = false) => (
     <span
-      className={`flex flex-col items-center justify-center gap-0.5 ${bar ? 'shrink-0 px-4' : 'min-w-0 flex-1 px-1 md:px-0.5'} ${first ? '' : 'border-l border-line'}`}
+      className={`flex flex-col items-center justify-center gap-1 ${bar ? 'shrink-0 px-3.5' : 'min-w-fit flex-1 basis-auto px-2 @max-[330px]/list:px-1'} ${first ? '' : 'border-l border-line'}`}
     >
-      <span className={`${bar ? 'text-[18px]' : 'text-[19px]'} font-extrabold leading-none tracking-[-0.02em] text-ink`}>{value}</span>
-      <span className={`text-center text-[11.5px] leading-tight text-ink-muted ${bar ? 'whitespace-nowrap' : 'md:whitespace-nowrap md:tracking-[-0.01em]'}`}>{label}</span>
+      <span className={`${value} text-ink`}>{val}</span>
+      <span className={`${caption} text-ink-muted`}>{label}</span>
     </span>
   );
 
@@ -101,7 +105,7 @@ export function StatsRow({
       ref={root}
       aria-label="Today"
       aria-busy={busy}
-      className={`relative ${bar ? 'flex items-stretch' : `${figures ? 'grid grid-cols-4' : 'flex'} rounded-2xl border border-line bg-card`}`}
+      className={`relative flex items-stretch ${bar ? '' : 'rounded-2xl border border-line bg-card'}`}
     >
       {needsButton}
       {figures && !error && (
@@ -112,7 +116,7 @@ export function StatsRow({
           aria-haspopup="dialog"
           aria-expanded={open}
           aria-label={`${v(data?.newToday)} new today, average reply ${avg}, ${v(data?.handledToday)} handled today. ${MORE_FIGURES_LABEL}`}
-          className={`flex min-w-0 items-stretch transition hover:bg-wash ${bar ? 'rounded-xl' : 'col-span-3 rounded-r-2xl border-l border-line py-2'}`}
+          className={`flex min-w-0 items-stretch transition hover:bg-wash ${bar ? 'rounded-xl' : 'flex-1 rounded-r-2xl border-l border-line py-2'}`}
         >
           {figure(v(data?.newToday), 'New today', !bar)}
           {figure(avg, 'Avg reply')}
@@ -120,7 +124,7 @@ export function StatsRow({
         </button>
       )}
       {figures && error && (
-        <p role="alert" className={`flex items-center text-[12px] text-danger-ink ${bar ? 'px-3' : 'col-span-3 border-l border-line px-3'}`}>
+        <p role="alert" className={`flex items-center text-meta text-danger-ink ${bar ? 'px-3' : 'flex-1 border-l border-line px-3'}`}>
           {error}
         </p>
       )}
@@ -141,12 +145,12 @@ export function StatsRow({
           }`}
         >
           <div className="mb-2 flex items-center justify-between">
-            <h2 className="text-[13px] font-bold">{MORE_FIGURES_LABEL}</h2>
+            <h2 className="text-note font-bold">{MORE_FIGURES_LABEL}</h2>
             <button
               type="button"
               onClick={close}
               aria-label="Close"
-              className="-mr-2 flex h-11 w-11 items-center justify-center rounded-xl text-ink-muted hover:bg-wash hover:text-ink"
+              className="hit -mr-2 flex size-icon items-center justify-center rounded-xl text-ink-muted hover:bg-wash hover:text-ink"
             >
               <X className="h-4 w-4" />
             </button>
@@ -169,14 +173,14 @@ export function StatsMore({ data }: { data: DashboardData }) {
   const scope = responseScopeLabel(data.scope);
   const total = Math.max(1, TOPICS.reduce((sum, k) => sum + data.byCategory[k], 0));
   return (
-    <dl className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-2 text-[13px]">
+    <dl className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-2 text-note">
       <dt className="text-ink-muted">Active</dt>
       <dd className="m-0 text-right font-bold">{data.active}</dd>
       <dt className="text-ink-muted">
-        Avg reply{scope && <span className="ml-1 text-[12px]">· {scope}</span>}
+        Avg reply{scope && <span className="ml-1 text-meta">· {scope}</span>}
       </dt>
       <dd className="m-0 text-right font-bold">{durationLabel(data.averageFirstResponseSeconds)}</dd>
-      <dt className="col-span-2 mt-1 text-[12px] font-bold text-ink-muted">By topic</dt>
+      <dt className="col-span-2 mt-1 text-meta font-bold text-ink-muted">By topic</dt>
       <dd className="col-span-2 m-0">
         <div
           role="img"
@@ -199,7 +203,7 @@ export function StatsMore({ data }: { data: DashboardData }) {
       </dd>
       <dt className="mt-1 text-ink-muted">
         BEOs created · week
-        {data.weekStart && <span className="block text-[12px]">Since Monday {data.weekStart}</span>}
+        {data.weekStart && <span className="block text-meta">Since Monday {data.weekStart}</span>}
       </dt>
       <dd className="m-0 mt-1 text-right font-bold">{data.beosThisWeek}</dd>
     </dl>
