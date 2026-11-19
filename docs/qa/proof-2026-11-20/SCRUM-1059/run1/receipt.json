@@ -1,0 +1,868 @@
+{
+  "ticket": "SCRUM-1059",
+  "sha": "8a6f5fbc67846d9eeb0664cbda90d3b0314028e8",
+  "startedAt": "2026-11-19T22:52:26.796Z",
+  "phase": "finished",
+  "passes": [
+    "f",
+    "r"
+  ],
+  "points": {
+    "6-typed-size": {
+      "pass": true,
+      "pictures": [
+        "SCRUM-1059/run1/p6a-display-768x1024-name-typed.png",
+        "SCRUM-1059/run1/p6b-display-1024x768-name-typed.png"
+      ],
+      "shows": "Names typed on the 768x1024 and the 1024x768 displays draw at the box's own 24 px, as on the 600 display",
+      "seen": {
+        "B": [
+          {
+            "filled": true,
+            "fontSize": "24px",
+            "boxHeight": 56
+          },
+          {
+            "filled": true,
+            "fontSize": "24px",
+            "boxHeight": 56
+          }
+        ],
+        "BSideways": false,
+        "C": [
+          {
+            "filled": true,
+            "fontSize": "24px",
+            "boxHeight": 56
+          },
+          {
+            "filled": true,
+            "fontSize": "24px",
+            "boxHeight": 56
+          }
+        ],
+        "CSideways": false
+      }
+    },
+    "9-staff-copy": {
+      "pass": true,
+      "pictures": [
+        "SCRUM-1059/run1/p9-till-staff-copy-included-credit.png"
+      ],
+      "shows": "Staff's copy: the child whose parent ticked \"may order food with the included credit\" reads \"Included credit\" on the food choice, not \"No food\"; the child with staff's ฿300 keeps \"Prepaid credit\"",
+      "seen": {
+        "includedCredit": 1,
+        "noFood": 1,
+        "tickedByFamily": 5,
+        "familyTicksOnScreen": 0
+      }
+    },
+    "2-credit-into-form": {
+      "pass": true,
+      "pictures": [
+        "SCRUM-1059/run1/p2a-till-order-before-continue.png",
+        "SCRUM-1059/run1/p2b-display-form-carries-staff-credit.png",
+        "SCRUM-1059/run1/p2c-till-order-after-continue.png"
+      ],
+      "shows": "Staff add ฿300 food credit for the first child on a ticket with no adult; Continue opens that child's form with ฿300 already chosen; after the gate the order has it once, on the child's drop-off line, and the band holds ฿1,300 + ฿300; the second child's band holds the ticket's ฿1,300 alone",
+      "seen": {
+        "memberId": "01a1f603-4a2f-7133-8fc0-7e5bb1191295",
+        "saleId": "01a1f603-dab9-70d5-b217-8d00ecdc8ac7",
+        "registrationId": "01a1f603-d427-7a08-9e83-5f39d7043692",
+        "before": {
+          "amount": "฿300",
+          "staffLines": [
+            "Extra food credit Kid 1 · Eat & Play Kids Pass ฿300"
+          ],
+          "formLines": [],
+          "total": "Total ฿2900"
+        },
+        "after": {
+          "staffLines": [],
+          "formLines": [
+            "Extra food credit ฿300"
+          ],
+          "total": "Total ฿3350"
+        },
+        "extraShown": [
+          "฿300",
+          "฿0"
+        ],
+        "tickCount": 1,
+        "sentFood": [
+          {
+            "name": "first",
+            "foodProvision": {
+              "mode": "prepaid_credit",
+              "paidSatang": 30000,
+              "creditSatang": 30000
+            },
+            "mayOrderFood": null,
+            "orderWithIncludedCredit": null
+          },
+          {
+            "name": "second",
+            "foodProvision": {
+              "mode": "none",
+              "paidSatang": 0
+            },
+            "mayOrderFood": null,
+            "orderWithIncludedCredit": true
+          }
+        ],
+        "bracelet": {
+          "printsAtCheckIn": 0,
+          "bandCodeRows": 2,
+          "namesShown": [
+            true,
+            true
+          ]
+        },
+        "balances": {
+          "a": 160000,
+          "b": 130000
+        },
+        "lines": [
+          {
+            "label": "Kids",
+            "amountSatang": null
+          },
+          {
+            "label": "Drop-off service",
+            "amountSatang": null
+          },
+          {
+            "label": "Prepaid food",
+            "amountSatang": null
+          },
+          {
+            "label": "Kids",
+            "amountSatang": null
+          },
+          {
+            "label": "Drop-off service",
+            "amountSatang": null
+          }
+        ],
+        "grossSatang": 335000
+      }
+    },
+    "8-bracelet-after-check-in": {
+      "pass": true,
+      "pictures": [
+        "SCRUM-1059/run1/p8-paid-checked-in-bracelet-cards.png"
+      ],
+      "shows": "After \"Check in now\" the Payment Successful screen's bracelet cards show each child's band (code masked) and name, and no longer \"Prints at check-in\"",
+      "seen": {
+        "printsAtCheckIn": 0,
+        "bandCodeRows": 2,
+        "namesShown": [
+          true,
+          true
+        ]
+      }
+    },
+    "5-fb-credit": {
+      "pass": true,
+      "pictures": [
+        "SCRUM-1059/run1/p5a-fnb-pay-from-band.png",
+        "SCRUM-1059/run1/p5-fnb-order-confirmed-fb-credit.png"
+      ],
+      "shows": "The order paid from the band is confirmed with an \"F&B credit\" row, with no backslash",
+      "seen": {
+        "fAndBCredit": true,
+        "strayBackslash": false
+      }
+    },
+    "1-visit-window-key": {
+      "pass": true,
+      "pictures": [
+        "SCRUM-1059/run1/p1a-visiting-window-reply-lost.png",
+        "SCRUM-1059/run1/p1b-visit-confirmed-after-retry.png"
+      ],
+      "shows": "\"Who's visiting today?\": the child's change was written, its reply lost; Confirm again sent it under the same key, the platform answered from the first write, and the child has one change row in the activity log",
+      "seen": {
+        "writes": [
+          {
+            "keyNamed": true,
+            "sameKeyAsFirst": true,
+            "platformStatus": 200,
+            "replayed": false
+          },
+          {
+            "keyNamed": true,
+            "sameKeyAsFirst": true,
+            "platformStatus": 200,
+            "replayed": true
+          }
+        ],
+        "auditActions": [
+          "child.update"
+        ],
+        "childUpdateRows": 1,
+        "allergyNow": "ZZ TEST sesame"
+      }
+    },
+    "7-short-form-line": {
+      "pass": true,
+      "pictures": [
+        "SCRUM-1059/run1/p7-display-600x1024-short-form-team-checking.png",
+        "SCRUM-1059/run1/p7b-display-1024x768-short-form-team-checking.png"
+      ],
+      "shows": "A returning family's short form with the agreements ticked while staff decide the last photo: the line says the team is checking the photo and nothing more is theirs to do; Done waits for staff",
+      "seen": {
+        "line": "The team is checking the photo — there is nothing more for you to do.",
+        "done": false,
+        "staffDeciding": 1,
+        "sizes": {
+          "768x1024": {
+            "sideways": false,
+            "line": "The team is checking the photo — there is nothing more for you to do."
+          },
+          "1024x768": {
+            "sideways": false,
+            "line": "The team is checking the photo — there is nothing more for you to do."
+          }
+        }
+      }
+    },
+    "4-food-box-ink": {
+      "pass": true,
+      "pictures": [
+        "SCRUM-1059/run1/p4a-fnb-food-not-authorized-light.png",
+        "SCRUM-1059/run1/p4b-fnb-food-not-authorized-dark.png"
+      ],
+      "shows": "The \"Food not authorized\" box reads in the light theme (amber-800 title, amber-900 warning) and keeps its dark-theme inks",
+      "seen": {
+        "accountTheme": "light",
+        "light": {
+          "title": "oklch(0.473 0.137 46.201)",
+          "warning": "oklch(0.414 0.112 45.904)",
+          "backdrop": "rgb(251, 245, 239)"
+        },
+        "dark": {
+          "title": "oklch(0.879 0.169 91.605)",
+          "warning": "oklab(0.962 -0.00577481 0.0587167 / 0.9)",
+          "backdrop": "rgb(15, 23, 41)"
+        }
+      }
+    }
+  },
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/:id/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/:id/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/:id/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/wallets/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/wallets/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/:id/revoke",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/:id/revoke",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/:id/revoke",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    }
+  ],
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1f602-f551-7998-a5af-5f60e8243ed2",
+      "name": "ZZ TEST SCRUM-1059 proof till 1795128746803",
+      "prefix": "Z05901"
+    },
+    {
+      "kind": "display",
+      "id": "01a1f603-05f1-7786-9e2a-c00ef64ac8dd",
+      "name": "ZZ TEST SCRUM-1059 display A"
+    },
+    {
+      "kind": "display",
+      "id": "01a1f603-1619-754b-ac06-5eca21e1eca9",
+      "name": "ZZ TEST SCRUM-1059 display B"
+    },
+    {
+      "kind": "display",
+      "id": "01a1f603-22ae-7980-a221-544d0c566c6c",
+      "name": "ZZ TEST SCRUM-1059 display C"
+    },
+    {
+      "kind": "member",
+      "id": "01a1f603-4a2f-7133-8fc0-7e5bb1191295"
+    },
+    {
+      "kind": "registration",
+      "id": "01a1f603-d427-7a08-9e83-5f39d7043692"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1f603-dab9-70d5-b217-8d00ecdc8ac7"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1f604-08ae-77d6-8327-50d3043fed7e",
+      "note": "F&B paid from the band"
+    },
+    {
+      "kind": "registration",
+      "id": "01a1f604-8200-78a9-b773-47d9594c4eed"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1f604-8276-7a46-b191-83f9ef125138"
+    }
+  ],
+  "checks": {
+    "typed": {
+      "B": [
+        {
+          "filled": true,
+          "fontSize": "24px",
+          "boxHeight": 56
+        },
+        {
+          "filled": true,
+          "fontSize": "24px",
+          "boxHeight": 56
+        }
+      ],
+      "BSideways": false,
+      "C": [
+        {
+          "filled": true,
+          "fontSize": "24px",
+          "boxHeight": 56
+        },
+        {
+          "filled": true,
+          "fontSize": "24px",
+          "boxHeight": 56
+        }
+      ],
+      "CSideways": false
+    },
+    "staffCopy": {
+      "includedCredit": 1,
+      "noFood": 1,
+      "tickedByFamily": 5,
+      "familyTicksOnScreen": 0
+    },
+    "f": {
+      "memberId": "01a1f603-4a2f-7133-8fc0-7e5bb1191295",
+      "saleId": "01a1f603-dab9-70d5-b217-8d00ecdc8ac7",
+      "registrationId": "01a1f603-d427-7a08-9e83-5f39d7043692",
+      "before": {
+        "amount": "฿300",
+        "staffLines": [
+          "Extra food credit Kid 1 · Eat & Play Kids Pass ฿300"
+        ],
+        "formLines": [],
+        "total": "Total ฿2900"
+      },
+      "after": {
+        "staffLines": [],
+        "formLines": [
+          "Extra food credit ฿300"
+        ],
+        "total": "Total ฿3350"
+      },
+      "extraShown": [
+        "฿300",
+        "฿0"
+      ],
+      "tickCount": 1,
+      "sentFood": [
+        {
+          "name": "first",
+          "foodProvision": {
+            "mode": "prepaid_credit",
+            "paidSatang": 30000,
+            "creditSatang": 30000
+          },
+          "mayOrderFood": null,
+          "orderWithIncludedCredit": null
+        },
+        {
+          "name": "second",
+          "foodProvision": {
+            "mode": "none",
+            "paidSatang": 0
+          },
+          "mayOrderFood": null,
+          "orderWithIncludedCredit": true
+        }
+      ],
+      "bracelet": {
+        "printsAtCheckIn": 0,
+        "bandCodeRows": 2,
+        "namesShown": [
+          true,
+          true
+        ]
+      },
+      "balances": {
+        "a": 160000,
+        "b": 130000
+      },
+      "lines": [
+        {
+          "label": "Kids",
+          "amountSatang": null
+        },
+        {
+          "label": "Drop-off service",
+          "amountSatang": null
+        },
+        {
+          "label": "Prepaid food",
+          "amountSatang": null
+        },
+        {
+          "label": "Kids",
+          "amountSatang": null
+        },
+        {
+          "label": "Drop-off service",
+          "amountSatang": null
+        }
+      ],
+      "grossSatang": 335000
+    },
+    "fnb": {
+      "fAndBCredit": true,
+      "strayBackslash": false,
+      "saleId": "01a1f604-08ae-77d6-8327-50d3043fed7e"
+    },
+    "visitWindow": {
+      "writes": [
+        {
+          "keyNamed": true,
+          "sameKeyAsFirst": true,
+          "platformStatus": 200,
+          "replayed": false
+        },
+        {
+          "keyNamed": true,
+          "sameKeyAsFirst": true,
+          "platformStatus": 200,
+          "replayed": true
+        }
+      ],
+      "auditActions": [
+        "child.update"
+      ],
+      "childUpdateRows": 1,
+      "allergyNow": "ZZ TEST sesame"
+    },
+    "shortForm": {
+      "line": "The team is checking the photo — there is nothing more for you to do.",
+      "done": false,
+      "staffDeciding": 1,
+      "sizes": {
+        "768x1024": {
+          "sideways": false,
+          "line": "The team is checking the photo — there is nothing more for you to do."
+        },
+        "1024x768": {
+          "sideways": false,
+          "line": "The team is checking the photo — there is nothing more for you to do."
+        }
+      }
+    },
+    "foodBox": {
+      "accountTheme": "light",
+      "light": {
+        "title": "oklch(0.473 0.137 46.201)",
+        "warning": "oklch(0.414 0.112 45.904)",
+        "backdrop": "rgb(251, 245, 239)"
+      },
+      "dark": {
+        "title": "oklch(0.879 0.169 91.605)",
+        "warning": "oklab(0.962 -0.00577481 0.0587167 / 0.9)",
+        "backdrop": "rgb(15, 23, 41)"
+      }
+    }
+  },
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": "reception signs in at the own till",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": "r: Confirm; the reply to the child's change is lost at the edge after the platform wrote it",
+      "kind": "http",
+      "text": "PATCH /api/members/children/:id 504"
+    }
+  ],
+  "cleanup": [
+    {
+      "kind": "released",
+      "id": "01a1f603-d427-7a08-9e83-5f39d7043692",
+      "children": [
+        "out",
+        "out"
+      ]
+    },
+    {
+      "kind": "display",
+      "id": "01a1f603-1619-754b-ac06-5eca21e1eca9",
+      "revoked": true
+    },
+    {
+      "kind": "display",
+      "id": "01a1f603-22ae-7980-a221-544d0c566c6c",
+      "revoked": true
+    },
+    {
+      "kind": "released",
+      "id": "01a1f604-8200-78a9-b773-47d9594c4eed",
+      "children": [
+        "out"
+      ]
+    },
+    {
+      "kind": "display",
+      "id": "01a1f603-05f1-7786-9e2a-c00ef64ac8dd",
+      "revoked": true
+    },
+    {
+      "kind": "released",
+      "id": "01a1f603-d427-7a08-9e83-5f39d7043692",
+      "children": [
+        "out",
+        "out"
+      ]
+    },
+    {
+      "kind": "released",
+      "id": "01a1f604-8200-78a9-b773-47d9594c4eed",
+      "children": [
+        "out"
+      ]
+    },
+    {
+      "kind": "sales-read-back",
+      "sales": [
+        {
+          "id": "01a1f604-8276-7a46-b191-83f9ef125138",
+          "status": "finalised",
+          "grossSatang": 152500
+        },
+        {
+          "id": "01a1f604-08ae-77d6-8327-50d3043fed7e",
+          "status": "finalised",
+          "grossSatang": 42000
+        },
+        {
+          "id": "01a1f603-dab9-70d5-b217-8d00ecdc8ac7",
+          "status": "finalised",
+          "grossSatang": 335000
+        }
+      ]
+    },
+    {
+      "kind": "station",
+      "id": "01a1f602-f551-7998-a5af-5f60e8243ed2",
+      "archived": true
+    },
+    {
+      "kind": "member",
+      "id": "01a1f603-4a2f-7133-8fc0-7e5bb1191295",
+      "archived": true
+    },
+    {
+      "kind": "till-session",
+      "signedOut": true
+    },
+    {
+      "kind": "admin-session",
+      "signedOut": true
+    }
+  ],
+  "deployments": {
+    "oto-api-staging": {
+      "id": "dep-dbvmhfeq1p3s738utrj0",
+      "status": "live",
+      "sha": "90de59969e9373d8f7a64a7b5a3958bde6addb21"
+    },
+    "oto-pos-staging": {
+      "id": "dep-dbvnpcp7lnhs73cpklr0",
+      "status": "live",
+      "sha": "8a6f5fbc67846d9eeb0664cbda90d3b0314028e8",
+      "containsProvedSha": true
+    },
+    "oto-pos-web-staging": {
+      "id": "dep-dbvnpd67bikc73dnodmg",
+      "status": "live",
+      "sha": "8a6f5fbc67846d9eeb0664cbda90d3b0314028e8",
+      "containsProvedSha": true
+    }
+  },
+  "passed": true,
+  "finishedAt": "2026-11-19T22:54:24.032Z"
+}
