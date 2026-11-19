@@ -1,3 +1,52 @@
+## 20 November 2026, 06:40: the BEO editor is on staging; its remaining brief points are being built
+
+- **Landed** (main cc500e844, 24 commits; two look fixes 97201a4b4 and
+  b95813a4f; pictures 8896d5b30). `oto-app-staging` live 05:22, 05:54 and
+  06:08; HR app migrations 0054 (extra guests and socks) and 0055 (people on
+  an activity) applied on staging, columns only. Hosted CI green on the first
+  two SHAs; the third was still running at the lane's last reading.
+- **Deployed, with staging pictures on "ZZ TEST 1028 Staff BEO"**
+  (`docs/qa/proof-2026-11-19/SCRUM-1029/staging/`; the lead opened the editor
+  at 768 and 1024 wide and the printed Staff BEO):
+  - SCRUM-1032 "BEO: people on an activity": several staff, or a role with a
+    number, and a note; on the editor, the timeline and the print.
+  - SCRUM-1033 "BEO: a time per dish or group": on the BEO and its print; a
+    group's time is its own step on the timeline. The till's slips follow as
+    SCRUM-1051.
+  - SCRUM-1034 "BEO: the deposit typed by hand, for managers only".
+  - SCRUM-1035 "BEO: AI Fill never writes an unanswered question as agreed":
+    one press on staging with a made-up chat; the unanswered add-on was not
+    proposed, the food-handling wish was proposed for Kitchen Notes.
+  - SCRUM-1042 "BEO: the birthday package's waffles read Adult Waffles on the
+    BEO and its print": shown on the package's own set-menu item; a
+    hand-typed "Mini waffles" keeps its name.
+  - SCRUM-1050 "BEO: the new timeline and print on older parties, consistency
+    points": the label back beside a dish (R13), a mark with the words once
+    under the list (R24), "1 step", no "1x" before a name that carries its
+    count, a first tick on the Day-of view, AI Fill proposing no step the
+    system makes.
+- **In Testing, parts of the brief still unbuilt:** SCRUM-1029 "BEO: the
+  editor in four sections" (the four sections, the manager rule and the look
+  at tablet sizes are on staging; one plain time box per time, the "Mark ...
+  Done" buttons and Food & Drinks as four one-line parts are not); SCRUM-1030
+  "BEO: Kitchen Notes" (Fetch from chat does not offer it); SCRUM-1031 "BEO:
+  expected extra guests and the Socks choice" (the assistant does not read
+  them from the chat).
+- **Launched for those: the BEO editor finish lane** (run wf_769ee238-817,
+  worktree `C:/oto-lanes/codex-whatsapp-908-20261116`, branch
+  `lane/beo1029b-20261120`).
+- **Builder choices to tell the owner:** Setup / Table sits inside Food &
+  Drinks, as the operations lead's brief draws it, and the fourth section is
+  Internal Notes; the package can still be chosen in Event Info, its contents
+  read-only.
+- **Left on staging:** the ZZ TEST 1028 party with every new field filled and
+  two real staff picked on one activity (names covered in every picture); a
+  new "ZZ TEST 1050 Day-of first tick" party.
+- **No staging sign-in below manager reaches the HR app**, so role refusals
+  there are shown by local checks only.
+- **Queue:** SCRUM-1051 (the till's slips) when memory allows (2.9 GB free;
+  family F3, the till finish points and the BEO finish lane are running).
+
 ## 20 November 2026, 04:15: the activity-log pay fix is on staging; the single shift waits for seven pay answers
 
 - **SCRUM-1058 "HR app: the activity log shows salary-change entries to staff
