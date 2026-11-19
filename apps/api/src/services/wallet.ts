@@ -1481,6 +1481,24 @@ export async function loadChildIncludedCredit(
     gifted,
   );
   if (amount <= 0) return null;
+  // Never a second grant for the same child's ticket: a sale finalised before
+  // its stays existed (an offline replay out of order, a no-fee drop-off line
+  // with no service fee row to mark it supervised) may already have granted
+  // this kid's credit as a person grant naming the stay's cart line.
+  const [granted] = await tx
+    .select({ id: walletEntry.id })
+    .from(walletEntry)
+    .where(
+      and(
+        eq(walletEntry.saleId, saleRow.id),
+        eq(walletEntry.kind, 'grant'),
+        eq(walletEntry.source, 'ticket_sale'),
+        sql`${walletEntry.payload}->>'cartLineId' = ${stay.id}`,
+        sql`${walletEntry.payload}->>'role' = 'kid'`,
+      ),
+    )
+    .limit(1);
+  if (granted) return null;
   const now = input.now ?? new Date();
   const { businessDate, expiresAt } = await expiryFor(tx, stay.branchId, now);
   const common = {

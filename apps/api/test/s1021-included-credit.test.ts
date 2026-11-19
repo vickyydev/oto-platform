@@ -1,8 +1,8 @@
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, isNull, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { band, branch, station, ticketPackage, wallet, walletEntry, walletKey } from '@oto/db';
+import { band, branch, checkin, child, member, nanny, nannyShift, sale, station, ticketPackage, wallet, walletEntry, walletKey } from '@oto/db';
 import { newId } from '@oto/shared';
-import { debitWallet, includedCreditActionId, prepaidBalanceOf } from '../src/services/wallet';
+import { debitWallet, includedCreditActionId, loadChildIncludedCredit, prepaidBalanceOf } from '../src/services/wallet';
 import { RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
 
 /**
@@ -80,21 +80,26 @@ async function finalise(saleId: string) {
   return res.json();
 }
 
-async function checkInNow(saleId: string, checkinId: string) {
+async function checkInNow(saleId: string, checkinId: string, nannyId: string | null = null) {
   const res = await ctx.app.inject({
     method: 'POST',
     url: '/checkin/check-in-now',
     headers: { cookie: reception },
-    payload: { saleId, entries: [{ checkinId, nannyId: null }] },
+    payload: { saleId, entries: [{ checkinId, nannyId }] },
   });
   expect(res.statusCode, res.body).toBe(200);
   return res.json();
 }
 
 /** A ZZ TEST child registered for drop-off on `packageId`, paid on one sale. Not yet checked in. */
-async function droppedOff(packageId: string, food: { mode: 'prepaid_credit'; paidSatang: number; creditSatang: number } | null) {
+async function droppedOff(
+  packageId: string,
+  food: { mode: 'prepaid_credit'; paidSatang: number; creditSatang: number } | null,
+  who: { service?: 'drop_off' | 'nanny'; ageYears?: number; memberId?: string; childId?: string; name?: string } = {},
+) {
   const checkinId = newId();
   const registrationId = newId();
+  const service = who.service ?? 'drop_off';
   const reg = await ctx.app.inject({
     method: 'POST',
     url: '/checkin/registrations',
@@ -103,13 +108,23 @@ async function droppedOff(packageId: string, food: { mode: 'prepaid_credit'; pai
       id: registrationId,
       branchId,
       stationId,
+      ...(who.memberId ? { memberId: who.memberId } : {}),
       guardianName: 'ZZ TEST Parent',
       guardianPhone: '0812345678',
       contactChannel: 'whatsapp',
       consentAcknowledged: true,
       acknowledgedConfirmationIds: ALL_CONFIRMATIONS,
       children: [
-        { checkinId, name: 'ZZ TEST Mint', ageYears: 6, service: 'drop_off', allergies: null, foodRestrictions: null, foodProvision: food ?? { mode: 'none', paidSatang: 0 } },
+        {
+          checkinId,
+          ...(who.childId ? { childId: who.childId } : {}),
+          name: who.name ?? 'ZZ TEST Mint',
+          ageYears: who.ageYears ?? 6,
+          service,
+          allergies: null,
+          foodRestrictions: null,
+          foodProvision: food ?? { mode: 'none', paidSatang: 0 },
+        },
       ],
     },
   });
@@ -121,7 +136,7 @@ async function droppedOff(packageId: string, food: { mode: 'prepaid_credit'; pai
         packageId,
         kids: 1,
         adults: 0,
-        serviceFee: { label: 'Drop-off service', amountSatang: 22_500 },
+        serviceFee: service === 'nanny' ? { label: 'Nanny (2h)', amountSatang: 66_000 } : { label: 'Drop-off service', amountSatang: 22_500 },
         ...(food ? { foodProvision: { mode: food.mode, paidSatang: food.paidSatang } } : {}),
       },
     ],
@@ -193,6 +208,10 @@ describe('SCRUM-1021 — the ticket credit of a dropped-off child', () => {
     expect(held).toMatchObject({ balanceSatang: 150_000, loadedSatang: 20_000, refundableSatang: 20_000 });
 
     // ฿50 spent at the counter: the prepaid food left to hand back is ฿150, as before this change.
+    // OPEN OWNER QUESTION (PLAN.md, "Questions from the fix round", Q-F2):
+    // which credit a counter spend uses first. Pinned here is today's
+    // reading, kept as the default: a spend counts against the prepaid load
+    // first, so the included credit is never what is handed back.
     await ctx.db.transaction((tx) =>
       debitWallet(tx, { accountId: null, operatorId }, { walletId: held!.walletId, actionId: `zz-spend:${newId()}`, amountSatang: 5_000, source: 'fnb_order', branchId }),
     );
@@ -220,6 +239,87 @@ describe('SCRUM-1021 — the ticket credit of a dropped-off child', () => {
     // The ticket's credit stays on the band for the rest of the park's day.
     const [after] = await ctx.db.select().from(wallet).where(eq(wallet.id, held!.walletId));
     expect(after!.balanceSatang).toBe(130_000);
+    await assertLedgerTruth();
+  });
+});
+
+/**
+ * SCRUM-1021 fix round — the other children the credit loads for, and the
+ * guard against a second grant for the same child's ticket.
+ */
+describe('SCRUM-1021 — a nanny child, a saved child, and never twice', () => {
+  it('a nanny child on Eat & Play gets the ticket’s credit on their band', async () => {
+    const [pim] = await ctx.db.select().from(nanny).where(and(eq(nanny.branchId, branchId), eq(nanny.name, 'Pim')));
+    await ctx.db.insert(nannyShift).values({
+      id: newId(),
+      operatorId,
+      nannyId: pim!.id,
+      branchId,
+      startsAt: new Date(Date.now() - 3_600_000),
+      endsAt: new Date(Date.now() + 3_600_000),
+    });
+    const family = await droppedOff(eatPlayId, null, { service: 'nanny', ageYears: 3, name: 'ZZ TEST Kai' });
+    const done = await checkInNow(family.saleId, family.checkinId, pim!.id);
+    const [entry] = await includedEntries(family.checkinId);
+    expect(entry).toMatchObject({ kind: 'grant', source: 'ticket_sale', amountSatang: 130_000, saleId: family.saleId });
+    const keys = await ctx.db.select().from(walletKey).where(eq(walletKey.walletId, entry!.walletId));
+    const [kidBand] = await ctx.db.select().from(band).where(eq(band.id, done.bands[0].id));
+    expect(keys.find((k) => k.kind === 'band')!.value).toBe(kidBand!.code);
+    await assertLedgerTruth();
+  });
+
+  it('a saved child: the credit goes on the child’s own wallet, which carries the band', async () => {
+    const [saved] = await ctx.db
+      .select({ childId: child.id, memberId: child.memberId, name: child.name })
+      .from(child)
+      .innerJoin(member, eq(member.id, child.memberId))
+      .where(and(eq(member.operatorId, operatorId), isNull(child.archivedAt)))
+      .limit(1);
+    const family = await droppedOff(eatPlayId, null, { memberId: saved!.memberId, childId: saved!.childId, name: saved!.name });
+    const done = await checkInNow(family.saleId, family.checkinId);
+    const [entry] = await includedEntries(family.checkinId);
+    expect(entry).toMatchObject({ amountSatang: 130_000, saleId: family.saleId });
+    const keys = await ctx.db.select().from(walletKey).where(eq(walletKey.walletId, entry!.walletId));
+    expect(keys.find((k) => k.kind === 'child')!.value).toBe(saved!.childId);
+    const [kidBand] = await ctx.db.select().from(band).where(eq(band.id, done.bands[0].id));
+    expect(keys.find((k) => k.kind === 'band')!.value).toBe(kidBand!.code);
+    await assertLedgerTruth();
+  });
+
+  it('a kid whose ticket the sale already granted (a sale filed before its stay) gets no second credit', async () => {
+    // The sale is finalised before any stay names its line (online the
+    // counter needs an adult on such a line; an offline replay out of order
+    // is how a supervised line gets here): the kid earns the sale's own
+    // grant, naming the line.
+    const lineId = newId();
+    const saleId = await commit({ lines: [{ id: lineId, packageId: eatPlayId, kids: 1, adults: 1 }] });
+    const fin = await finalise(saleId);
+    expect(fin.grants.length).toBeGreaterThan(0);
+    // Then a stay is registered under that line's id.
+    const reg = await ctx.app.inject({
+      method: 'POST',
+      url: '/checkin/registrations',
+      headers: { cookie: reception },
+      payload: {
+        id: newId(),
+        branchId,
+        stationId,
+        guardianName: 'ZZ TEST Parent',
+        guardianPhone: '0812345678',
+        contactChannel: 'whatsapp',
+        consentAcknowledged: true,
+        acknowledgedConfirmationIds: ALL_CONFIRMATIONS,
+        children: [{ checkinId: lineId, name: 'ZZ TEST Ann', ageYears: 6, service: 'drop_off', foodProvision: { mode: 'none', paidSatang: 0 } }],
+      },
+    });
+    expect(reg.statusCode, reg.body).toBe(200);
+    const [stayRow] = await ctx.db.select().from(checkin).where(eq(checkin.id, lineId));
+    const [saleRow] = await ctx.db.select().from(sale).where(eq(sale.id, saleId));
+    const loaded = await ctx.db.transaction((tx) =>
+      loadChildIncludedCredit(tx, { accountId: null, operatorId }, { stay: stayRow!, saleRow: saleRow!, bandCode: null }),
+    );
+    expect(loaded).toBeNull();
+    expect(await includedEntries(lineId)).toHaveLength(0);
     await assertLedgerTruth();
   });
 });
