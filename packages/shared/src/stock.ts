@@ -865,8 +865,9 @@ const ShrinkageFigures = {
   /** True when one of those movements carried no cost: the loss is understated. */
   costMissing: z.boolean(),
   /**
-   * E1 — the corrections UP (positive), a correction typed `delivery` left out:
-   * that is a delivery, counted in `received`, never a find.
+   * E1 — the corrections UP (positive), a correction typed `delivery` left out
+   * (a delivery, counted in `received`, never a find) and a new size's starting
+   * stock left out (its opening, counted in `opening`).
    */
   correctedUp: z.number().int(),
   /** E1 — Σ quantity × frozen cost of `correctedUp`; null to a non-manager. */
@@ -875,10 +876,11 @@ const ShrinkageFigures = {
   net: z.number().int(),
   /**
    * E2 — the record at the start of the range, plus what any place's OPENING
-   * count inside the range set (a starting figure, not a loss or a find).
+   * count, or a new size's starting stock, inside the range set (a starting
+   * figure, not a loss or a find).
    */
   opening: z.number().int(),
-  /** E2 — of `opening`, the units set by places' opening counts inside the range. */
+  /** E2 — of `opening`, the units set inside the range by places' opening counts and new sizes' starting stock. */
   openingCounted: z.number().int(),
   /** E2 — deliveries: Receive and purchase orders, plus corrections typed `delivery` that added units. */
   received: z.number().int(),

@@ -387,3 +387,18 @@ describe('review pins', () => {
     ).rejects.toThrow();
   });
 });
+
+describe('a new size’s starting stock', () => {
+  it('is its opening, never a correction up: a size started with 4, one written down, reads −1 and net −1', async () => {
+    const made = await call('POST', `/branches/${branchId}/stock/items`, manager, {
+      name: 'ZZ TEST Starter', productId: null, unitCostSatang: 1_000, reorder: null, units: [],
+      sizes: [{ variantId: null, label: 'Default', lowStockThreshold: null, startingStock: 4, parByLocation: {} }],
+    });
+    expect(made.statusCode, made.body).toBe(200);
+    const starter = (made.json() as { stockItemIds: string[] }).stockItemIds[0]!;
+    const down = await call('POST', `/branches/${branchId}/stock/adjustments`, manager, { stockItemId: starter, delta: -1, reasonType: 'damaged', reason: 'ZZ TEST dropped' });
+    expect(down.statusCode, down.body).toBe(200);
+    const r = await reportsAs(manager, dayOf(0), dayOf(6));
+    expect(rowOf(r, starter)).toMatchObject({ total: -1, correctedUp: 0, net: -1, opening: 4, openingCounted: 4, received: 0, closing: 3, notExplained: 1 });
+  });
+});

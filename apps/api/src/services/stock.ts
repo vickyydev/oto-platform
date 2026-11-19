@@ -3714,7 +3714,8 @@ export async function stockUsage(
  * it, all read from the same ledger (`pos.stock_movement`):
  *
  *   E1 the corrections up (a correction typed `delivery` is a delivery, never a
- *      find) and the net: today's total + corrected up.
+ *      find; a new size's starting stock is its opening) and the net: today's
+ *      total + corrected up.
  *   E2 the period columns: opening (the record before the range, plus what a
  *      place's opening count inside it set), received (deliveries, plus
  *      corrections typed `delivery` that added units), sold net of refunds,
@@ -3781,6 +3782,9 @@ export async function stockLossReport(
     with mv as (
       select m.stock_item_id, m.stock_location_id, m.kind, m.quantity, m.shortfall, m.unit_cost_satang, m.reason_type,
              m.business_date < ${scope.from}::date as before,
+             -- A new size's starting stock (saveStockItem, action "opening:") is its
+             -- opening, written as an Adjust: a starting figure, never a correction up.
+             (m.kind = 'adjust' and m.action_id like 'opening:%') as starting_stock,
              (case when m.kind = 'count' and m.business_date >= ${scope.from}::date and l.id is not null
                    then ${placeOpeningSql('l', 't')} else false end) as opening_line
         from pos.stock_movement m
@@ -3791,13 +3795,14 @@ export async function stockLossReport(
     ), flagged as (
       select mv.*,
              (not before and ((kind = 'count' and not opening_line) or (kind = 'adjust' and quantity < 0))) as loss,
-             (not before and kind = 'adjust' and quantity > 0 and reason_type is distinct from 'delivery') as up
+             (not before and kind = 'adjust' and quantity > 0 and not starting_stock
+                and reason_type is distinct from 'delivery') as up
         from mv
     )
     select stock_item_id, stock_location_id,
            sum(quantity) filter (where before)::bigint as opening_record,
            sum(quantity)::bigint as closing,
-           sum(quantity) filter (where not before and kind = 'count' and opening_line)::bigint as opening_counted,
+           sum(quantity) filter (where not before and ((kind = 'count' and opening_line) or starting_stock))::bigint as opening_counted,
            sum(quantity) filter (where not before and (kind = 'receive'
                                    or (kind = 'adjust' and quantity > 0 and reason_type = 'delivery')))::bigint as received,
            (-sum(quantity) filter (where not before and kind in ('sale','offline_sale','refund')))::bigint as sold,
