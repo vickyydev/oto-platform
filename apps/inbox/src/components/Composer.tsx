@@ -402,7 +402,7 @@ export function Composer({
             style={{ lineHeight: `${COMPOSER_LINE_PX}px` }}
             aria-label="Reply"
             placeholder={template ? 'Sending the template above' : replyPlaceholder(conv)}
-            className="block w-full min-w-0 resize-none bg-transparent text-body text-ink placeholder:text-ink-muted focus:outline-none disabled:cursor-not-allowed"
+            className="block w-full min-w-0 resize-none bg-transparent text-body text-ink placeholder:truncate placeholder:text-ink-muted focus:outline-none disabled:cursor-not-allowed"
           />
         </label>
         <button
