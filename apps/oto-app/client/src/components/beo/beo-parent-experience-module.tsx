@@ -261,11 +261,11 @@ export function BeoParentExperienceModule({ eventId, event }: BeoParentExperienc
                 <p className="text-xs text-muted-foreground">Full event details & RSVP dashboard for parents</p>
               </div>
               {parentPortalToken ? (
-                <div className="flex items-center gap-2">
+                <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto">
                   <Input
                     value={parentPortalUrl || ""}
                     readOnly
-                    className="w-64 text-xs"
+                    className="min-w-0 flex-1 text-xs sm:w-64 sm:flex-none"
                     data-testid="input-parent-portal-url"
                   />
                   <Button
@@ -308,11 +308,11 @@ export function BeoParentExperienceModule({ eventId, event }: BeoParentExperienc
                 <p className="text-xs text-muted-foreground">Simple invitation & RSVP form for guests</p>
               </div>
               {guestInviteToken ? (
-                <div className="flex items-center gap-2">
+                <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto">
                   <Input
                     value={guestInviteUrl || ""}
                     readOnly
-                    className="w-64 text-xs"
+                    className="min-w-0 flex-1 text-xs sm:w-64 sm:flex-none"
                     data-testid="input-guest-rsvp-url"
                   />
                   <Button

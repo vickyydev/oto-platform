@@ -484,17 +484,21 @@ function PackageLineItemRow({ item, idx, packageItems, setPackageItems }: {
         </Button>
       </div>
       {item.notes !== undefined && item.notes !== "" && (
-        <EditableText
-          className="text-xs ml-14"
-          value={item.notes.trim()}
-          onChange={(v) => {
-            const updated = [...packageItems];
-            updated[idx] = { ...item, notes: v };
-            setPackageItems(updated);
-          }}
-          placeholder="Item note..."
-          data-testid={`input-item-notes-${idx}`}
-        />
+        // The note sits under the line's words, inside the row: the indent is the wrapper's
+        // padding, so the full-width box never runs past the row (SCRUM-1029 review).
+        <div className="min-w-0 pl-14">
+          <EditableText
+            className="text-xs"
+            value={item.notes.trim()}
+            onChange={(v) => {
+              const updated = [...packageItems];
+              updated[idx] = { ...item, notes: v };
+              setPackageItems(updated);
+            }}
+            placeholder="Item note..."
+            data-testid={`input-item-notes-${idx}`}
+          />
+        </div>
       )}
     </div>
   );
@@ -717,7 +721,7 @@ function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab, menuTime
         </div>
       )}
       {/* SCRUM-1033: the dish's own serving time, read under its row. */}
-      <ServingTimeLine line={item} className="pl-16" testId={`text-serving-${menuTab}-${idx}`} />
+      <ServingTimeLine line={item} className="pl-[3.25rem]" testId={`text-serving-${menuTab}-${idx}`} />
     </div>
   );
 }
@@ -2717,6 +2721,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                     <BeoPackageInfo
                       eventId={eventId}
                       readOnly={readOnly}
+                      party={{ eventDate: eventData.eventDate ?? null, numChildren: eventData.numChildren ?? null, numAdults: eventData.numAdults ?? null }}
                       onPackageApplied={({ setMenuTemplateId: packageSetMenuId }) => {
                         // The package's set menu starts the kitchen plan's, as the
                         // server did; a set menu already chosen here stays.
@@ -2883,9 +2888,6 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
             </AccordionTrigger>
             <AccordionContent className={`px-4 pb-4 overflow-visible ${readOnly ? "opacity-75 cursor-not-allowed" : ""}`}>
               <div>
-                {/* The time the party's kitchen and bar slips print: the package snapshot's own field, moved here. */}
-                {beoData.eventType === "birthday" && <BeoSlipsTime eventId={eventId} readOnly={readOnly} />}
-
                 <SectionPart
                   testId="part-setup"
                   title="Setup / Table"
@@ -2904,7 +2906,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                   <div className="space-y-4">
                     <div className="grid sm:grid-cols-2 gap-3">
                       <div className="flex items-center gap-2">
-                        <Label className="text-sm text-muted-foreground whitespace-nowrap flex items-center gap-1">Ready by{aiMark("setupReadyBy")}</Label>
+                        <Label className="text-xs text-muted-foreground whitespace-nowrap flex items-center gap-1">Ready by{aiMark("setupReadyBy")}</Label>
                         <div className="flex items-center gap-1">
                           {setupReadyBy ? (
                             <>
@@ -2946,7 +2948,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                         </div>
                       </div>
                       <div className="flex items-center gap-2 relative">
-                        <Label className="text-sm text-muted-foreground whitespace-nowrap flex items-center gap-1">Who{aiMark(aiMarks["team:setupResponsible"] ? "team:setupResponsible" : "setupResponsible")}</Label>
+                        <Label className="text-xs text-muted-foreground whitespace-nowrap flex items-center gap-1">Who{aiMark(aiMarks["team:setupResponsible"] ? "team:setupResponsible" : "setupResponsible")}</Label>
                         <div className="flex-1 relative">
                           {setupResponsible && !showResponsibleDropdown ? (
                             <div
@@ -3177,15 +3179,19 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                   <div className="grid grid-cols-1 gap-4">
                     {/* SCRUM-1029: the kitchen plan's "food required", ticked off as "No food for this party". The menus
                         and the cake are hidden while it is ticked, never deleted; the print says the kitchen is Not Needed. */}
-                    <label className="flex min-h-9 w-fit cursor-pointer items-center gap-2 text-sm" data-testid="label-no-food">
-                      <Checkbox
-                        checked={!kitchenRequired}
-                        onCheckedChange={(ticked) => setKitchenRequired(ticked !== true)}
-                        disabled={readOnly}
-                        data-testid="checkbox-no-food"
-                      />
-                      No food for this party
-                    </label>
+                    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                      <label className="flex min-h-9 w-fit cursor-pointer items-center gap-2 text-sm" data-testid="label-no-food">
+                        <Checkbox
+                          checked={!kitchenRequired}
+                          onCheckedChange={(ticked) => setKitchenRequired(ticked !== true)}
+                          disabled={readOnly}
+                          data-testid="checkbox-no-food"
+                        />
+                        No food for this party
+                      </label>
+                      {/* The time the party's kitchen and bar slips print: the package snapshot's own field, moved here. */}
+                      {beoData.eventType === "birthday" && <BeoSlipsTime eventId={eventId} readOnly={readOnly} />}
+                    </div>
                     {kitchenRequired ? (
                       <>
                         {/* SCRUM-1030: general instructions for the kitchen, printed at the very top of the
@@ -4115,39 +4121,23 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
               <div>
                 <SectionPart testId="part-activities">
                   <div className="grid grid-cols-1 gap-4">
-                    <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground flex items-center gap-1">Activities{aiMark("activities")}</Label>
-                      <EditableText
-                        value={eventData.activities || ""}
-                        onChange={(v) => { setEventData({ ...eventData, activities: v }); aiTouched("activities"); }}
-                        placeholder="e.g., Games, Face Painting"
-                        data-testid="input-event-activities"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground flex items-center gap-1">Entertainment Host (Optional){aiMark("team:entertainmentHost")}</Label>
-                      <AssignmentSearchBar
-                        value={entertainmentHostAssignmentValue}
-                        onChange={(values) => { handleEntertainmentHostChange(values); aiTouched("team:entertainmentHost"); }}
-                        employees={(allEmployees || []).filter(e => e.id !== partyHost.assignedEmployeeId)}
-                        placeholder="Search employees to assign as entertainment host..."
-                        showEveryone={false}
-                      />
-                    </div>
-
+                    {/* The review: the acts, which the brief calls the activities, read first; the host and the free-text activities follow. */}
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Entertainment Acts</Label>
                         {!readOnly && (
-                          <button
+                          <Button
                             type="button"
-                            className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-violet-500/15 text-violet-600 border-violet-500/30 dark:text-violet-400 hover:bg-violet-500/25 transition-colors"
+                            variant="outline"
+                            size="sm"
+                            className="h-9 gap-1 text-violet-600 dark:text-violet-400"
                             onClick={() => addEntItemMutation.mutate({ customName: "" })}
                             disabled={addEntItemMutation.isPending}
                             data-testid="button-add-entertainment-act"
                           >
-                            + Add Act
-                          </button>
+                            <Plus className="h-4 w-4" />
+                            Add Act
+                          </Button>
                         )}
                       </div>
                       {entertainmentItems.length === 0 ? (
@@ -4177,6 +4167,26 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                           </p>
                         </div>
                       )}
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground flex items-center gap-1">Activities{aiMark("activities")}</Label>
+                      <EditableText
+                        value={eventData.activities || ""}
+                        onChange={(v) => { setEventData({ ...eventData, activities: v }); aiTouched("activities"); }}
+                        placeholder="e.g., Games, Face Painting"
+                        data-testid="input-event-activities"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground flex items-center gap-1">Entertainment Host (Optional){aiMark("team:entertainmentHost")}</Label>
+                      <AssignmentSearchBar
+                        value={entertainmentHostAssignmentValue}
+                        onChange={(values) => { handleEntertainmentHostChange(values); aiTouched("team:entertainmentHost"); }}
+                        employees={(allEmployees || []).filter(e => e.id !== partyHost.assignedEmployeeId)}
+                        placeholder="Search employees to assign as entertainment host..."
+                        showEveryone={false}
+                      />
                     </div>
                   </div>
                 </SectionPart>
