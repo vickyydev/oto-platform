@@ -550,46 +550,46 @@ export function BookDateDialog({
             </>
           )}
           {((onRequestDeposit && !paidCard) || onReadDeposit || deposit?.paymentLink) && (
-          <div className="flex flex-wrap items-center gap-2">
-            {onRequestDeposit && !paidCard && (
-              <button
-                type="button"
-                className={BTN_MAIN}
-                onClick={() => void requestDeposit()}
-                disabled={
-                  busy ||
-                  depositBusy ||
-                  waiting !== null ||
-                  deposit?.state === 'paid' ||
-                  deposit?.state === 'needs_review'
-                }
-              >
-                Request deposit
-              </button>
-            )}
-            {onReadDeposit && (
-              <button
-                type="button"
-                className={BTN_SMALL}
-                onClick={() => void refreshDeposit()}
-                disabled={busy || depositBusy}
-              >
-                {depositBusy && <Loader2 aria-hidden className="h-3.5 w-3.5 animate-spin" />}
-                Check payment
-              </button>
-            )}
-            {deposit?.paymentLink && (
-              <a
-                href={deposit.paymentLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`inline-flex min-h-11 items-center gap-1.5 rounded-lg px-1 font-semibold text-coral-ink underline underline-offset-2 md:min-h-8 ${FOCUS}`}
-              >
-                Open payment page
-                <ExternalLink aria-hidden className="h-3.5 w-3.5" />
-              </a>
-            )}
-          </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {onRequestDeposit && !paidCard && (
+                <button
+                  type="button"
+                  className={BTN_MAIN}
+                  onClick={() => void requestDeposit()}
+                  disabled={
+                    busy ||
+                    depositBusy ||
+                    waiting !== null ||
+                    deposit?.state === 'paid' ||
+                    deposit?.state === 'needs_review'
+                  }
+                >
+                  Request deposit
+                </button>
+              )}
+              {onReadDeposit && (
+                <button
+                  type="button"
+                  className={BTN_SMALL}
+                  onClick={() => void refreshDeposit()}
+                  disabled={busy || depositBusy}
+                >
+                  {depositBusy && <Loader2 aria-hidden className="h-3.5 w-3.5 animate-spin" />}
+                  Check payment
+                </button>
+              )}
+              {deposit?.paymentLink && (
+                <a
+                  href={deposit.paymentLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`inline-flex min-h-11 items-center gap-1.5 rounded-lg px-1 font-semibold text-coral-ink underline underline-offset-2 md:min-h-8 ${FOCUS}`}
+                >
+                  Open payment page
+                  <ExternalLink aria-hidden className="h-3.5 w-3.5" />
+                </a>
+              )}
+            </div>
           )}
         </section>
 
