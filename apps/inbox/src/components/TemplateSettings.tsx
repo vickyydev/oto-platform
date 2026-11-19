@@ -167,7 +167,7 @@ export function TemplateSettings({ me }: { me: InboxMe }) {
 
       <div className="-my-1 flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 border-y border-line py-1">
         <p className="text-note text-ink-muted" aria-live="polite">
-          {templates === null ? ' ' : templateCount(templates)}
+          {templates === null || templates.length === 0 ? ' ' : templateCount(templates)}
         </p>
         <label className={CHECK_LINE}>
           <input type="checkbox" checked={archived} onChange={(e) => setArchived(e.target.checked)} className={CHECK_BOX} />
