@@ -1,7 +1,7 @@
 import { useAdminScreenRuntime } from '../../../runtime/AdminScreenRuntime';
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { MemberFormPorts } from '../../../runtime/operations';
-import { TIER_APPROVAL_EVIDENCE, isTierApprovalTier } from "@oto/shared";
+import { TIER_APPROVAL_EVIDENCE, isTierApprovalTier, tierProofExpiryProblem } from "@oto/shared";
 import { type ContactChannel, type CustomerTier, type Member, type TierVerification } from "../../../model/types";
 import { TIER_PROOF_NOTE, TIER_PROOF_TYPES } from "../../../lib/tierProof";
 import { useOperator } from "../../../runtime/AdminScreenRuntime";
@@ -31,8 +31,9 @@ export interface TierChangeRequest {
   toTier: CustomerTier;
   evidenceType: string;
   /**
-   * Document expiry, YYYY-MM-DD, when the document carries one; absent, the
-   * verification never expires. The API refuses an already-expired document.
+   * Document expiry, YYYY-MM-DD: required on every document (SCRUM-1019 /
+   * SCRUM-1053, `tierDocumentProblem`), and never sent with the Thai rate,
+   * which names no document. The API refuses a missing or expired one.
    */
   evidenceExpiresAt?: string;
   note?: string;
@@ -182,6 +183,27 @@ interface FormErrors {
 }
 
 const todayIso = (): string => new Date().toISOString().slice(0, 10);
+
+/**
+ * SCRUM-1053 — WHY A NEW RATE DOCUMENT CANNOT BE SAVED, or null when it can:
+ * the same rule as the till's (SCRUM-1019, the owner's answer of 19
+ * November: the expiry date is required on every kind, Other included; the
+ * Thai rate names no document and no date, SCRUM-772). The platform refuses
+ * a missing date (`tierProofExpiryProblem`); the form says so before saving.
+ * Only a change of document is held to it: a member's document recorded
+ * before the rule with no date stays as it was filed.
+ */
+export function tierDocumentProblem(
+  selection: Pick<TierSelection, 'proofType' | 'expiresAt'>,
+  options: { noDocument: boolean; proofTypes: readonly string[]; today: string },
+): string | null {
+  if (options.noDocument) return null;
+  if (!options.proofTypes.some((type) => type === selection.proofType)) return 'Select the document you checked.';
+  const expiryProblem = tierProofExpiryProblem(selection.expiresAt);
+  if (expiryProblem) return expiryProblem;
+  if (selection.expiresAt < options.today) return 'That document has already expired — it cannot verify a discounted rate.';
+  return null;
+}
 
 /**
  * The messaging channel, with "None" as a real choice — SCRUM-321.
@@ -405,15 +427,10 @@ const toSelection = useCallback((member: Member | null, isDefaultTier: (tier: st
       }
     }
     if (tierChanged) {
-      if (noDocument) {
-        // SCRUM-772: the Thai rate has no document and no expiry to check.
-      } else if (!proofTypes.some((type) => type === selection.proofType)) {
-        nextErrors.tier = 'Select the document you checked.';
-      } else if (selection.expiresAt && !/^\d{4}-\d{2}-\d{2}$/.test(selection.expiresAt)) {
-        nextErrors.tier = "Enter the document's expiry date.";
-      } else if (selection.expiresAt && selection.expiresAt < todayIso()) {
-        nextErrors.tier = 'That document has already expired — it cannot verify a discounted rate.';
-      }
+      // SCRUM-772: the Thai rate has no document and no expiry to check.
+      // SCRUM-1053: every document carries its expiry date, as on the till.
+      const documentProblem = tierDocumentProblem(selection, { noDocument, proofTypes, today: todayIso() });
+      if (documentProblem) nextErrors.tier = documentProblem;
       // The verifier is stamped from the session, so there has to be one.
       if (!operator) {
         nextErrors.operator = 'You must be signed in to verify or change a tier.';
