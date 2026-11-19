@@ -38,10 +38,11 @@
 //     link's submit after the switch writes the same resolved lines into it,
 //     a Save with a stale submission takes the parent's lines for the adults
 //     too, and an approval with a set menu copies the lines for the adults;
-//   - the BEO PDF prints ONE food list: "Adults: same as the kids' menu" with
-//     the switch off; with it on, the adults' changes marked beside the kids'
-//     lines and their own dishes after, marked "adults only" — never a second
-//     Adults Menu table.
+//   - the BEO PDF: "Adults: same as the kids' menu" with the switch off; with
+//     it on, since SCRUM-1028 (the owner's answer of 19 November), the adults'
+//     own list under its own heading with their own counts, a copy of a kids'
+//     line saying it is charged once, with the kids' line (it was ONE food
+//     list with the adults' changes marked beside the kids' lines).
 //
 // Run from apps/oto-app:
 //   DATABASE_URL=<migrated scratch> npx tsx tests/kitchen-adults.check.ts
@@ -565,38 +566,53 @@ try {
     assert.equal(split.body.kitchenPlan.adultsMenu, undefined, "the adults' list that only repeats the kids' dishes is folded before it reaches the preview");
   });
 
-  await check("the BEO PDF prints one food list: the adults' line with the switch off; their changes marked and their own dishes after with it on", async () => {
+  // SCRUM-1028 (the owner's answer of 19 November): the Staff BEO prints the adults as their OWN list
+  // when they eat differently, each line with its own count; "Same as kids" is one line under the
+  // kids' rows. The marks beside the kids' rows (SCRUM-829's one food list) are no longer printed.
+  await check("the BEO PDF: the adults' line with the switch off; with it on, their own list with their own counts", async () => {
     const pdf = (menus: Record<string, unknown>, setMenuEnabled = false) =>
       beoPdfHtml({ eventTitle: "ZZ TEST 829", eventDate: "2099-03-14", startTime: "13:00", status: "upcoming", kitchenPlan: { required: true, menus: menus as any, setMenuEnabled } });
+    /** The text of each row from `from` on, the price cell aside ("2x Fries (no salt)"). */
+    const rowsFrom = (html: string, from: number, to = html.length) =>
+      html.slice(from, to).split("<tr>").slice(1).map((r) => r.slice(0, r.indexOf("</tr>")).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().replace(/ (SET|EXTRA).*$/, ""));
+    const priceOf = (html: string, from: number, row: number) => {
+      const r = html.slice(from).split("<tr>")[row + 1]!;
+      return r.slice(r.indexOf('class="price-col"')).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").replace(/^class="price-col"> ?/, "").trim();
+    };
     const off = await pdf({ kids: KIDS, adults: [], adultsDiffer: false, kidsFoodTime: "14:00" });
     assert.ok(off.includes("Kids Menu"), "the kids' menu is the main selection");
     assert.ok(off.includes("Adults: same as the kids' menu"), "one line says the adults eat it");
     assert.ok(!off.includes("Adults Menu"), "no second list");
     assert.ok(!off.includes(KIDS_ONLY_MARK) && !off.includes(ADULTS_ONLY_MARK));
     const on = await pdf({ kids: KIDS, adults: [line("a1", "Nuggets", 2), line("a2", "Fries", 2, { notes: "no salt" }), line("a3", "Pasta", 4)], adultsDiffer: true, kidsFoodTime: "14:00", adultsFoodTime: "15:00" });
-    assert.ok(on.includes("Adults: different for adults"), "the one line says their changes are marked");
-    assert.ok(on.includes("&mdash; Service: 15:00"), "the adults' service time rides on it");
-    assert.ok(!on.includes("Adults Menu"), "still no second list");
-    assert.ok(on.includes(`Nuggets <span class="item-note" style="color:#92400e;font-weight:600;">— ${adultsCountMark(8, 2)}</span>`), "the two counts beside the nuggets");
-    assert.ok(on.includes(`ZZ unicorn cake <span class="item-note" style="color:#92400e;font-weight:600;">— ${KIDS_ONLY_MARK}</span>`), "the cake the adults do not get");
-    assert.ok(on.includes(`Pasta <span class="item-note" style="color:#92400e;font-weight:600;">— ${ADULTS_ONLY_MARK}</span>`), "the adults' own dish, marked");
-    assert.equal(on.split("Fries").length, 2, "the fries once, unmarked");
-    // A note cleared for the adults is marked, never dropped.
+    const onAdults = on.indexOf('data-adults="differ"');
+    assert.ok(onAdults > 0 && on.slice(onAdults).includes("Adults Menu"), "their own list");
+    assert.ok(on.slice(onAdults).includes("&mdash; Service: 15:00"), "the adults' service time on their heading");
+    assert.deepEqual(rowsFrom(on, 0, onAdults), ["8x Nuggets", "2x Fries (no salt)", "1x ZZ unicorn cake"], "the kids' rows as they are, unmarked");
+    assert.deepEqual(rowsFrom(on, onAdults), ["2x Nuggets", "2x Fries (no salt)", "4x Pasta"], "the adults' own counts");
+    assert.equal(priceOf(on, onAdults, 1), "EXTRA charged once, with the kids' line", "the kids' own Fries again: charged once");
+    for (const mark of [KIDS_ONLY_MARK, ADULTS_ONLY_MARK, adultsCountMark(8, 2), ADULTS_NO_NOTE_MARK]) assert.ok(!on.includes(mark), mark);
+    // A note cleared for the adults: the kids' row keeps it, the adults' row has none.
     const cleared = await pdf({ kids: KIDS, adults: [line("a1", "Nuggets", 8), line("a2", "Fries", 2), line("a3", "ZZ unicorn cake", 1, { productCode: "PARTY-ZZ829A" })], adultsDiffer: true });
-    assert.ok(cleared.includes(`Fries <span class="item-note">(no salt)</span> <span class="item-note" style="color:#92400e;font-weight:600;">— ${ADULTS_NO_NOTE_MARK}</span>`), "the kids' note stays, the adults' clearing marked");
-    // A set-menu BEO: the marks ride on the set menu's own rows too.
+    const clearedAdults = cleared.indexOf('data-adults="differ"');
+    assert.deepEqual(rowsFrom(cleared, 0, clearedAdults), ["8x Nuggets", "2x Fries (no salt)", "1x ZZ unicorn cake"]);
+    assert.deepEqual(rowsFrom(cleared, clearedAdults), ["8x Nuggets", "2x Fries", "1x ZZ unicorn cake"]);
+    // A set-menu BEO: the set menu's rows for the kids; the adults' list as theirs.
     const set = await pdf({
       kids: [line("s1", "Margherita", 3, { source: "set_menu", notes: "(Pizza)" }), line("k2", "Fruit skewers", 2, { source: "additional" })],
       adults: [line("a1", "Fruit skewers", 2)],
       adultsDiffer: true,
     }, true);
+    const setAdults = set.indexOf('data-adults="differ"');
     // SCRUM-958 (SCRUM-940 point 3): the set-menu choice in one pair of brackets, no longer "((Pizza))".
-    assert.ok(set.includes(`Margherita (Pizza) <span class="item-note" style="color:#92400e;font-weight:600;">— ${KIDS_ONLY_MARK}</span>`), "a set-menu row the adults do not get");
-    assert.equal(set.split("Fruit skewers").length, 2, "the additional item the adults share, once and unmarked");
-    // A BEO saved before the switch with two different lists: their list as saved, as the adults' changes.
+    assert.deepEqual(rowsFrom(set, 0, setAdults), ["3x Margherita (Pizza)", "2x Fruit skewers"]);
+    assert.deepEqual(rowsFrom(set, setAdults), ["2x Fruit skewers"]);
+    // A BEO saved before the switch with two different lists: their list as saved, as their own.
     const before = await pdf({ kids: KIDS, adults: [line("a1", "Steak", 4)] });
-    assert.ok(before.includes(`Steak <span class="item-note" style="color:#92400e;font-weight:600;">— ${ADULTS_ONLY_MARK}</span>`));
-    assert.ok(before.includes(`Nuggets <span class="item-note" style="color:#92400e;font-weight:600;">— ${KIDS_ONLY_MARK}</span>`));
+    const beforeAdults = before.indexOf('data-adults="differ"');
+    assert.ok(beforeAdults > 0);
+    assert.deepEqual(rowsFrom(before, beforeAdults), ["4x Steak"]);
+    assert.deepEqual(rowsFrom(before, 0, beforeAdults), ["8x Nuggets", "2x Fries (no salt)", "1x ZZ unicorn cake"]);
   });
 
   console.log(`kitchen-adults.check: ${checks} checks passed`);

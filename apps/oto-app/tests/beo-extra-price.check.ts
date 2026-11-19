@@ -154,7 +154,9 @@ await check("the BEO PDF prints a drink's EXTRA price for each item, as the kitc
     },
   } as Parameters<typeof beoPdfHtml>[0]);
   assert.ok(html.includes("450฿ each"), "the kitchen's EXTRA, as before");
-  const bar = html.slice(html.indexOf("<h2>Bar Plan</h2>"));
+  // SCRUM-1028: the Staff BEO's bar part is headed "Bar" (it was "Bar Plan"); what it prints is unchanged.
+  const bar = html.slice(html.indexOf("<h2>Bar</h2>"));
+  assert.ok(html.includes("<h2>Bar</h2>"), "the bar part is printed");
   assert.ok(bar.includes(">EXTRA</span> <span class=\"price\">145฿ each</span>"), "the drink's price for each item");
   assert.ok(!bar.includes("90฿ each"), "never on a SET line");
   assert.equal((bar.match(/ each<\/span>/g) ?? []).length, 1, "a line with no price prints none");

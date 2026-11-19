@@ -7,10 +7,24 @@ import { Readable } from "stream";
 import { getFileFromObjectStorage } from "./file-storage";
 import { formatParkSignedDate, getLocalDateString } from "./timezone-utils";
 import { tillFiguresOf, type TillBillingReading } from "@shared/tillBilling";
-import { ADULTS_ONLY_MARK, ADULTS_SAME_AS_KIDS, adultsDifferOf, kitchenAdultsMarks } from "@shared/kitchenAdults";
-import { beoExtraChargeOf, beoExtraPrintWordsOf, beoPrintFoldable, type BeoExtraContext } from "@shared/beoExtras";
+import { ADULTS_SAME_AS_KIDS, adultsDifferOf } from "@shared/kitchenAdults";
+import {
+  beoExtraChargeOf,
+  beoExtraPrintWordsOf,
+  beoKitchenChargesOf,
+  type BeoExtraCharge,
+  type BeoExtraContext,
+  type BeoExtraLine,
+} from "@shared/beoExtras";
 import { beoPdfTillMoneyHtml } from "./lib/beoPdfMoney";
-import { timelineStepLine, untimedBesideTimeline, type BeoTimeline } from "@shared/beoTimeline";
+import {
+  STEP_ACTIVITY,
+  beoClockOf,
+  timelineStepLine,
+  untimedBesideTimeline,
+  type BeoTimeline,
+  type BeoTimelineActivity,
+} from "@shared/beoTimeline";
 
 // Resolve a stored branch logo before Chromium renders. Remote object storage
 // is the normal deployment path; the local file is kept for older dev uploads.
@@ -565,6 +579,22 @@ export interface BeoPdfData {
   }[];
   /** SCRUM-1027: the steps with no time and no other part of the page to show them; never given a time. */
   timelineUntimed?: { description: string }[];
+  /**
+   * SCRUM-1028: the package as the party's own snapshot stores it (beo_package_snapshots), for the
+   * header: its name and what it includes. Absent: no package applied.
+   */
+  packageSnapshot?: {
+    packageName?: string | null;
+    kidsIncluded?: number | null;
+    adultsIncluded?: number | null;
+    includedSummary?: string | null;
+  };
+  /**
+   * SCRUM-1028: each Entertainment activity as stored, in the editor's order, with its own person
+   * (server/lib/beoTimelineRead.ts, as the timeline reads it), for the print's Entertainment part.
+   * (`activities` above is the Event Info's free text of that name.)
+   */
+  entertainmentActs?: readonly BeoTimelineActivity[];
   branchName?: string;
   branchAddress?: string;
   branchLogoUrl?: string;
@@ -613,7 +643,58 @@ export function parkDateOf(at: Date, timeZone: string | null | undefined): strin
   return `${day}/${month}/${year}`;
 }
 
-/** The BEO PDF as HTML, before Chromium prints it: what the page says, for a check to read. */
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+/** The party's date as the BEO prints it: "16 December '99" (a date that is no yyyy-mm-dd prints as stored). */
+function beoEventDateWords(dateStr: string): string {
+  const parts = (dateStr || "").split("-");
+  if (parts.length !== 3) return dateStr;
+  const day = parseInt(parts[2], 10);
+  const month = MONTHS[parseInt(parts[1], 10) - 1] || parts[1];
+  const yearShort = "'" + parts[0].slice(2);
+  return `${day} ${month} ${yearShort}`;
+}
+
+/** Text for the page footer, which Chromium draws outside the page's own HTML: escaped here. */
+const escapeText = (v: string) =>
+  v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+
+/**
+ * The fonts every part of the Staff BEO prints in. Thai is named after the Latin faces so a Thai
+ * name or note never falls to a box: the app's image installs fonts-thai-tlwg (Loma, Garuda) beside
+ * fonts-liberation (Arial's metric twin); Leelawadee UI and Tahoma cover Thai on a Windows desk.
+ */
+const BEO_FONT_STACK = "'Helvetica Neue', Arial, 'Noto Sans Thai', Loma, Garuda, 'Leelawadee UI', Tahoma, sans-serif";
+
+/**
+ * SCRUM-1028: the line Chromium prints at the foot of EVERY page of the Staff BEO: the party, its day
+ * and time, and "Page n of m", so a loose second page says whose party it belongs to.
+ */
+export function beoPdfFooterTemplate(data: Pick<BeoPdfData, "eventTitle" | "eventDate" | "startTime" | "endTime">): string {
+  const when = `${beoEventDateWords(data.eventDate)} ${data.startTime || ""}${data.endTime ? ` – ${data.endTime}` : ""}`.trim();
+  return `<div style="width: 100%; padding: 0 15mm; font-size: 8px; color: #718096; font-family: ${BEO_FONT_STACK}; display: flex; justify-content: space-between; gap: 12px;">
+    <span>Staff BEO &bull; ${escapeText(data.eventTitle || "")} &bull; ${escapeText(when)}</span>
+    <span style="white-space: nowrap;">Page <span class="pageNumber"></span> of <span class="totalPages"></span></span>
+  </div>`;
+}
+
+/**
+ * The Staff BEO as HTML, before Chromium prints it: what the page says, for a check to read.
+ *
+ * SCRUM-1028, the page as the park's operations brief draws it (BEO_COMPARISON.md, the mock-up):
+ *   1. the header: the party's name, day, times, room or area and park; who the party is for and
+ *      the contact, the planned guests and the hosts, as printed before; and the package box (the
+ *      package, what it includes as its snapshot stores it, its lines and the till's money);
+ *   2. the ONE timeline the system makes (SCRUM-1027);
+ *   3. two columns: KITCHEN on the left (the kids' menu; the adults' menu as their own list when
+ *      they eat differently, or one line when they eat the kids'; plainly "no food" when there is
+ *      none); SETUP, BAR, ENTERTAINMENT, CAKE and NOTES on the right.
+ * Nothing is invented: every name, count, time, person and amount is the stored BEO's or the
+ * till's; a dish with no count is one (beoQuantityOf); prices print where they printed before.
+ * Long orders run onto the next page row by row: no part is held whole, a heading never ends a
+ * page alone, and every page's foot names the party and its page (beoPdfFooterTemplate). The line
+ * saying when the page was made sits under the park's name, where it can never take a page alone.
+ */
 export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
   const formatCurrency = (amount: number) => `${amount.toLocaleString()}฿`;
   const s = (str: string) => DOMPurify.sanitize(str);
@@ -624,79 +705,91 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
   // entered for each item, the till's price for the party's day, or "not charged"; the badge alone for
   // a coded line the till's menu could not price.
   const extrasCtx: BeoExtraContext = { till: data.extrasTill ?? { known: false, byCode: new Map() }, partyDate: data.eventDate || null };
-  const extraBadge = (item: { quantity?: number; itemName?: string; price?: number; source?: string; productCode?: string }, area: "food" | "bar") => {
-    const words = beoExtraPrintWordsOf(
-      beoExtraChargeOf(
-        { itemName: item.itemName ?? "", quantity: item.quantity ?? 1, price: item.price ?? null, source: item.source ?? null, productCode: item.productCode ?? null },
-        area,
-        extrasCtx,
-      ),
-    );
+  const asExtraLine = (item: { quantity?: number; itemName?: string; price?: number; source?: string; productCode?: string }): BeoExtraLine =>
+    ({ itemName: item.itemName ?? "", quantity: item.quantity ?? 1, price: item.price ?? null, source: item.source ?? null, productCode: item.productCode ?? null });
+  const extraBadgeOf = (charge: BeoExtraCharge) => {
+    const words = beoExtraPrintWordsOf(charge);
     return `<span class="extra-badge">EXTRA</span>${words ? ` <span class="price">${s(words)}</span>` : ''}`;
   };
+  const extraBadge = (item: { quantity?: number; itemName?: string; price?: number; source?: string; productCode?: string }, area: "food" | "bar") =>
+    extraBadgeOf(beoExtraChargeOf(asExtraLine(item), area, extrasCtx));
+  const SET_BADGE = '<span class="incl-badge" style="background:#dbeafe;color:#1e40af;border-color:#93c5fd;">SET</span>';
 
-  const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-  function formatEventDate(dateStr: string): string {
-    const parts = dateStr.split("-");
-    if (parts.length !== 3) return dateStr;
-    const day = parseInt(parts[2], 10);
-    const month = MONTHS[parseInt(parts[1], 10) - 1] || parts[1];
-    const yearShort = "'" + parts[0].slice(2);
-    return `${day} ${month} ${yearShort}`;
-  }
-  const formattedDate = formatEventDate(data.eventDate);
+  const formattedDate = beoEventDateWords(data.eventDate);
   const formattedTime = data.startTime + (data.endTime ? ` – ${data.endTime}` : '');
   const locationDisplay = data.locationText || data.location || '';
 
-  // SCRUM-978: a section with nothing to print prints no heading. The editor's Save keeps a party
-  // host and a setup plan row with nothing in them, and the PDF then printed "PARTY HOST" and
-  // "SETUP PLAN" with nothing under them (before any Save, neither was printed).
-  const partyHostHasText = !!data.partyHost && !!(
-    data.partyHost.assignedName || data.partyHost.backupName || data.partyHost.roleName || data.partyHost.notes
-  );
-  const setupPlanHasText = !!data.setupPlan && !!(
-    data.setupPlan.readyBy || data.setupPlan.responsible || data.setupPlan.tasks?.length || data.setupPlan.notes
-  );
-  const partyHostHtml = partyHostHasText && data.partyHost ? `
-    <div class="section">
-      <h2>Party Host</h2>
-      <div class="info-grid">
-        ${data.partyHost.assignedName ? `<div class="info-item"><span class="info-label">Assigned:</span><span class="info-value">${s(data.partyHost.assignedName)}</span></div>` : ''}
-        ${data.partyHost.backupName ? `<div class="info-item"><span class="info-label">Backup:</span><span class="info-value">${s(data.partyHost.backupName)}</span></div>` : ''}
-        ${data.partyHost.roleName && !data.partyHost.assignedName ? `<div class="info-item"><span class="info-label">Role:</span><span class="info-value">${s(data.partyHost.roleName)}</span></div>` : ''}
-      </div>
-      ${data.partyHost.notes ? `<p class="notes">${s(data.partyHost.notes)}</p>` : ''}
-    </div>
-  ` : '';
+  /** One "Label: value" of a grid; nothing for a value that is not there. */
+  const fact = (label: string, value: string | number | null | undefined) =>
+    value === undefined || value === null || value === ''
+      ? ''
+      : `<div class="info-item"><span class="info-label">${s(label)}:</span><span class="info-value">${typeof value === 'number' ? value : s(value)}</span></div>`;
 
-  // SCRUM-822: the POS section's money is the till's (server/lib/beoPdfMoney.ts), as on the BEO's
-  // screens; Party Details' lines are printed as written, with no price and no sum of the app's own.
+  // ── 1. The header ───────────────────────────────────────────────────────────────────────────────
+  // The party's facts as the page printed them before (Event Details, Party Host), in one box. The
+  // date, time and room print once, in the title band. SCRUM-978: a host line only with a name in it.
+  const host = data.partyHost;
+  // SCRUM-1031 prints the expected extra guests and the socks arrangement here once the BEO stores
+  // them; until then this place holds nothing and prints nothing.
+  const laterHeaderFacts: string[] = [];
+  const headerFacts = [
+    fact('Child', data.childName),
+    fact('Kid Turning Age', data.kidTurningAge ?? undefined),
+    fact('Booking Name', data.bookingName),
+    fact('Parent', data.parentName),
+    fact('WhatsApp', data.whatsappPhone),
+    fact('Children', data.numChildren || undefined),
+    fact('Adults', data.numAdults || undefined),
+    fact('Party Host', host?.assignedName),
+    fact('Backup', host?.backupName),
+    host?.roleName && !host.assignedName ? fact('Host role', host.roleName) : '',
+    ...laterHeaderFacts,
+  ].filter(Boolean);
+  const hostNotesHtml = host?.notes ? `<p class="notes">${s(host.notes)}</p>` : '';
+  const factsHtml = headerFacts.length || hostNotesHtml
+    ? `<div class="facts" data-part="party">
+        <div class="info-grid">${headerFacts.join('')}</div>
+        ${hostNotesHtml}
+      </div>`
+    : '';
+
+  // SCRUM-822: the POS box's money is the till's (server/lib/beoPdfMoney.ts), as on the BEO's screens;
+  // Party Details' lines are printed as written, with no price and no sum of the app's own.
+  // SCRUM-1028: the box sits in the header beside the party's facts and says what the package
+  // includes as its snapshot stores it ("Included: 10 kids + 4 adults, <the package's summary>").
   const packageHtml = (() => {
     const pd = data.partyDetails;
     const till = tillFiguresOf(data.till);
-    if (!pd && !till) return '';
+    const pkg = data.packageSnapshot;
+    if (!pd && !till && !pkg) return '';
     const includedItems = pd?.items?.filter(i => i.type === "included") || [];
     const extraItems = pd?.items?.filter(i => i.type === "extra") || [];
-    const packageName = pd?.packageName || till?.packageName;
+    const packageName = pd?.packageName || till?.packageName || pkg?.packageName || '';
+    const allowance = [
+      pkg?.kidsIncluded != null ? `${pkg.kidsIncluded} kids` : '',
+      pkg?.adultsIncluded != null ? `${pkg.adultsIncluded} adults` : '',
+    ].filter(Boolean).join(' + ');
+    const included = [allowance, pkg?.includedSummary?.trim() ?? ''].filter(Boolean).join(', ');
 
     return `
-      <div class="section">
+      <div class="pos-box" data-part="package">
         <h2>POS${packageName ? `: ${s(packageName)}` : ''}</h2>
+        ${included ? `<p class="pkg-included">Included: ${s(included)}</p>` : ''}
         ${includedItems.length ? `
           <h3>Included</h3>
-          <table class="menu-table">
+          <table class="menu-table pos-table">
             ${includedItems.map(item => `<tr>
               <td>${s(item.label || item.description)}${item.notes ? ` <span class="item-note">(${s(item.notes)})</span>` : ''}</td>
-              <td class="price-col"><span class="incl-badge">INCL</span></td>
+              <td class="badge-col"><span class="incl-badge">INCL</span></td>
             </tr>`).join('')}
           </table>
         ` : ''}
         ${extraItems.length ? `
           <h3>Extras</h3>
-          <table class="menu-table">
+          <table class="menu-table pos-table">
             ${extraItems.map(item => `<tr>
               <td>${s(item.label || item.description)}${item.notes ? ` <span class="item-note">(${s(item.notes)})</span>` : ''}</td>
-              <td class="price-col"><span class="extra-badge">EXTRA</span></td>
+              <td class="badge-col"><span class="extra-badge">EXTRA</span></td>
             </tr>`).join('')}
           </table>
         ` : ''}
@@ -706,218 +799,20 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
     `;
   })();
 
-  const setupHtml = setupPlanHasText && data.setupPlan ? `
-    <div class="section">
-      <h2>Setup Plan</h2>
-      <div class="info-grid" style="margin-bottom: 6px;">
-        ${data.setupPlan.readyBy ? `<div class="info-item"><span class="info-label">Ready By:</span><span class="info-value">${s(data.setupPlan.readyBy)}</span></div>` : ''}
-        ${data.setupPlan.responsible ? `<div class="info-item"><span class="info-label">Who:</span><span class="info-value">${s(data.setupPlan.responsible)}</span></div>` : ''}
-      </div>
-      ${data.setupPlan.tasks?.length ? `
-        <table class="timeline-table">
-          <thead>
-            <tr>
-              <th>Task</th>
-              <th>Notes</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${data.setupPlan.tasks.map(task => `
-              <tr>
-                <td>${s(task.itemLabel)}</td>
-                <td>${task.notes ? s(task.notes) : ''}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      ` : ''}
-      ${data.setupPlan.notes ? `<p class="notes">${s(data.setupPlan.notes)}</p>` : ''}
-    </div>
-  ` : '';
-
-  // SCRUM-958 (SCRUM-940 point 3): a line's note in brackets, once: a set-menu choice's note is
-  // already its group in brackets ("(Pizza)", the parent link's and the approval's mark), so it
-  // printed "Margherita ((Pizza))".
-  const noteInBrackets = (note: string) => {
-    const t = note.trim();
-    return t.startsWith('(') && t.includes(')') ? t : `(${t})`;
-  };
-
-  // SCRUM-829: the adults' change beside a line of the one food list, in the kitchen's words.
-  const adultsMarkHtml = (mark: string | null | undefined) =>
-    mark ? ` <span class="item-note" style="color:#92400e;font-weight:600;">— ${s(mark)}</span>` : '';
-
-  // SCRUM-906: a price entered on an EXTRA line is the price of one (the owner, 12 November):
-  // the till charges it times the line's count, so the BEO prints it "120฿ each".
-  const menuItemRow = (item: { quantity: number; itemName: string; notes?: string; price?: number; included?: boolean; source?: string; productCode?: string }, mark: string | null = null) => {
-    const isSet = item.source === 'set_menu';
-    const badge = isSet
-      ? '<span class="incl-badge" style="background:#dbeafe;color:#1e40af;border-color:#93c5fd;">SET</span>'
-      : extraBadge(item, 'food');
-    return `<tr>
-      <td class="qty">${beoQuantityOf(item.quantity)}x</td>
-      <td>${s(item.itemName)}${item.notes ? ` <span class="item-note">${s(noteInBrackets(item.notes))}</span>` : ''}${adultsMarkHtml(mark)}</td>
-      <td class="price-col">${badge}</td>
-    </tr>`;
-  };
-
-  const kp = data.kitchenPlan;
-
-  // SCRUM-829: ONE food list. The kids' menu is the main selection; the adults eat it unless
-  // "Different for adults" is on, and then their changes are marked beside the kids' lines
-  // ("kids only", "kids N · adults M", "adults: <note>") and their own dishes listed after,
-  // marked "adults only" — never a second list.
-  // SCRUM-978: the kids' list the editor and the till read: `menus` (canonical, kitchenPlanDbDataOf in
-  // beo-routes.ts), `simplifiedMenus` only for a plan of before that has no `menus` list.
-  const pdfKids = (Array.isArray(kp?.menus?.kids) ? kp!.menus!.kids : kp?.simplifiedMenus?.kids || []).map(item => ({ ...item, quantity: beoQuantityOf("quantity" in item ? item.quantity : undefined) }));
-  const pdfAdultLines = (kp?.menus?.adults ?? []).map(item => ({ ...item, quantity: beoQuantityOf(item.quantity) }));
-  const pdfAdultsDiffer = !!kp && adultsDifferOf({ kids: pdfKids, adults: pdfAdultLines, adultsDiffer: kp.menus?.adultsDiffer });
-  // SCRUM-978: an adults' line is marked beside the kids' row of its name only when that row's price
-  // cell holds for it too (the same kind of line at the same price each, or the one dish the till
-  // charges once); else it prints as its own row, with its own count and price, as the editor shows
-  // it and the till charges it.
-  const pdfAdults = kitchenAdultsMarks(pdfKids, pdfAdultLines, pdfAdultsDiffer, beoPrintFoldable(extrasCtx));
-  const adultsMarkOf = (item: unknown) => {
-    const at = (pdfKids as unknown[]).indexOf(item);
-    return at >= 0 ? pdfAdults.marks[at] ?? null : null;
-  };
-  const adultsOnlyRows = pdfAdults.adultsOnly.length > 0
-    ? `<table class="menu-table">
-        ${pdfAdults.adultsOnly.map((item: any) => menuItemRow({ quantity: item.quantity ?? 1, itemName: item.itemName ?? '', notes: item.notes, price: item.price, included: item.included, source: item.source, productCode: item.productCode }, ADULTS_ONLY_MARK)).join('')}
-       </table>`
-    : '';
-  const adultsLineHtml = kp && kp.required !== false && (pdfKids.length > 0 || kp.setMenuEnabled || pdfAdultsDiffer)
-    ? `<p style="font-size:10px;color:#6b7280;margin:4px 0 0;" data-adults="${pdfAdultsDiffer ? 'differ' : 'same'}">Adults: ${
-        pdfAdultsDiffer ? 'different for adults — their changes are marked above' : s(ADULTS_SAME_AS_KIDS.toLowerCase())
-      }${kp.menus?.adultsFoodTime ? ` &mdash; Service: ${s(kp.menus.adultsFoodTime)}` : ''}</p>`
-    : '';
-
-  const kidsMenuHtml = (() => {
-    if (!kp) return '';
-    const isSetMenuMode = kp.setMenuEnabled;
-    const rawKids = pdfKids;
-    const kidsFoodTime = kp.menus?.kidsFoodTime;
-    if (!rawKids.length && !isSetMenuMode) return '';
-
-    if (isSetMenuMode) {
-      const setMenuItems = rawKids.filter((i: any) => i.source === 'set_menu');
-      const additionalItems = rawKids.filter((i: any) => i.source !== 'set_menu');
-      const selStatus = kp.setMenuSelectionStatus;
-      const isSubmitted = selStatus != null ? selStatus.isSubmitted : setMenuItems.length > 0;
-
-      const templateName = kp.setMenuTemplateName || 'Set Menu';
-      const received = selStatus?.submittedAt ? parkDayMonthOf(selStatus.submittedAt, parkZone) : '';
-      const submittedLabel = received ? ` &mdash; Received ${received}` : '';
-
-      const setMenuBlock = `
-        <div style="border:2px solid #6ee7b7;border-radius:6px;overflow:hidden;margin-bottom:8px;">
-          <div style="background:#d1fae5;padding:5px 10px;display:flex;align-items:center;gap:8px;">
-            <span style="font-size:10px;font-weight:700;color:#065f46;text-transform:uppercase;letter-spacing:0.05em;">Set Menu</span>
-            ${isSubmitted
-              ? `<span style="font-size:10px;color:#065f46;font-weight:600;">${s(templateName)}${submittedLabel}</span>`
-              : `<span style="font-size:10px;color:#92400e;font-weight:600;">${s(templateName)}</span>
-                 <span style="font-size:10px;color:#b45309;margin-left:auto;">Awaiting parent selections</span>`
-            }
-          </div>
-          ${setMenuItems.length > 0
-            ? `<table class="menu-table" style="margin:0;">
-                ${setMenuItems.map((item: any) => `<tr>
-                  <td>${s(item.itemName)}${item.notes ? ` ${s(noteInBrackets(item.notes))}` : ''}${adultsMarkHtml(adultsMarkOf(item))}</td>
-                  <td class="price-col"><span class="incl-badge" style="background:#dbeafe;color:#1e40af;border-color:#93c5fd;">SET</span></td>
-                </tr>`).join('')}
-               </table>`
-            : `<p style="padding:6px 10px;font-size:10px;color:#6b7280;font-style:italic;margin:0;">No selections yet — parent link sent</p>`
-          }
-        </div>`;
-
-      const additionalBlock = additionalItems.length > 0
-        ? `<h3 style="margin-top:6px;">Additional Items</h3>
-           <table class="menu-table">
-             ${additionalItems.map((item: any) => {
-               const isSet = item.source === 'set_menu';
-               const badge = isSet
-                 ? '<span class="incl-badge" style="background:#dbeafe;color:#1e40af;border-color:#93c5fd;">SET</span>'
-                 : extraBadge(item, 'food');
-               return `<tr>
-                 <td class="qty">${beoQuantityOf(item.quantity)}x</td>
-                 <td>${s(item.itemName)}${item.notes ? ` <span class="item-note">${s(noteInBrackets(item.notes))}</span>` : ''}${adultsMarkHtml(adultsMarkOf(item))}</td>
-                 <td class="price-col">${badge}</td>
-               </tr>`;
-             }).join('')}
-           </table>`
-        : '';
-
-      return `
-        <h3>Kids Menu${kidsFoodTime ? ` <span style="font-weight:normal;font-size:11px;color:#666;">&mdash; Service: ${s(kidsFoodTime)}</span>` : ''}</h3>
-        ${setMenuBlock}
-        ${additionalBlock}`;
-    }
-
-    // Regular kids menu (no set menu)
-    return `
-      <h3>Kids Menu${kidsFoodTime ? ` <span style="font-weight:normal;font-size:11px;color:#666;">&mdash; Service: ${s(kidsFoodTime)}</span>` : ''}</h3>
-      <table class="menu-table">
-        ${rawKids.map((item) => menuItemRow(item, adultsMarkOf(item))).join('')}
-      </table>`;
-  })();
-
-  const kitchenHtml = kp ? `
-    <div class="section">
-      <h2>Kitchen Plan${kp.required === false ? ' <span class="badge-outline">Not Needed</span>' : ''}</h2>
-      ${kp.required !== false ? `
-
-      ${kidsMenuHtml}
-
-      ${adultsOnlyRows}
-
-      ${adultsLineHtml}
-
-      ${kp.cakeMode && kp.cakeMode !== 'NONE' ? `
-        <h3>Cake</h3>
-        <p style="font-size: 11px;">
-          ${kp.cakeMode === 'EXTERNAL' ? 'Own cake (guest brings)' : 'Our cake (provided)'}
-          ${(kp.cakeQuantity ?? 1) > 1 ? ` <strong>x${kp.cakeQuantity}</strong>` : ''}
-          ${kp.cakeIncluded !== undefined ? (kp.cakeIncluded ? ' <span class="incl-badge">INCL</span>' : ` <span class="extra-badge">EXTRA</span>${kp.cakePrice ? ` ${formatCurrency(kp.cakePrice)}` : ''}`) : ''}
-          ${kp.cakeTime ? ` &mdash; Time: ${s(kp.cakeTime)}` : ''}
-          ${kp.cakeNotes ? ` &mdash; ${s(kp.cakeNotes)}` : ''}
-        </p>
-      ` : ''}
-      ${data.cakeNotes ? `
-        <h3>Cake Notes</h3>
-        <p style="font-size: 11px;">${s(data.cakeNotes)}</p>
-      ` : ''}
-
-      ${kp.notes ? `<p class="notes">${s(kp.notes)}</p>` : ''}
-      ` : ''}
-    </div>
-  ` : '';
-
-  const barHtml = data.barPlan && (data.barPlan.serviceTime || (data.barPlan.items && data.barPlan.items.length > 0)) ? `
-    <div class="section">
-      <h2>Bar Plan</h2>
-      ${data.barPlan.serviceTime ? `<div class="info-item" style="margin-bottom:6px;"><span class="info-label">Service Time:</span><span class="info-value">${s(data.barPlan.serviceTime)}</span></div>` : ''}
-      <table class="menu-table">
-        ${data.barPlan.items.map(item => `<tr>
-          <td class="qty">${beoQuantityOf(item.quantity)}x</td>
-          <td>${s(item.itemName)}${item.notes ? ` <span class="item-note">${s(noteInBrackets(item.notes))}</span>` : ''}</td>
-          <td class="price-col">${item.source === 'set_menu' ? '<span class="incl-badge" style="background:#dbeafe;color:#1e40af;border-color:#93c5fd;">SET</span>' : extraBadge(item, 'bar')}</td>
-        </tr>`).join('')}
-      </table>
-    </div>
-  ` : '';
-
+  // ── 2. The one timeline ─────────────────────────────────────────────────────────────────────────
   // SCRUM-1027: the one timeline, in the order the system made it (equal times: party, food,
   // activity, other); a sort by the clock alone keeps that order. What is served and the step's
   // person print beside it; a step with no time is listed under it, never given one.
   const timelineUntimed = data.timelineUntimed ?? [];
   const timelineHtml = data.timeline?.length || timelineUntimed.length ? `
-    <div class="section">
+    <div class="part timeline-part" data-part="timeline">
       <h2>Timeline</h2>
       ${data.timeline?.length ? `
       <table class="timeline-table">
+        <colgroup><col style="width: 52px;" /><col /></colgroup>
         <thead>
           <tr>
-            <th style="width: 70px;">Time</th>
+            <th>Time</th>
             <th>Activity</th>
           </tr>
         </thead>
@@ -935,18 +830,226 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
     </div>
   ` : '';
 
+  // ── 3. Kitchen, the left column ─────────────────────────────────────────────────────────────────
+  // SCRUM-958 (SCRUM-940 point 3): a line's note in brackets, once: a set-menu choice's note is
+  // already its group in brackets ("(Pizza)", the parent link's and the approval's mark), so it
+  // printed "Margherita ((Pizza))".
+  const noteInBrackets = (note: string) => {
+    const t = note.trim();
+    return t.startsWith('(') && t.includes(')') ? t : `(${t})`;
+  };
+
+  type FoodLine = { quantity?: number; itemName?: string; notes?: string; price?: number; included?: boolean; source?: string; productCode?: string };
+  // One dish: its count (none stored is one, the owner's answer), its name as stored, its note, and
+  // its badge with the price words it printed before (SCRUM-906/970: an EXTRA's price for each item).
+  // A set-menu choice prints its group beside the name ("Margherita (Pizza)"), as before.
+  const foodRow = (item: FoodLine, area: "food" | "bar", charge?: BeoExtraCharge) => {
+    const isSet = item.source === 'set_menu';
+    const note = item.notes?.trim()
+      ? isSet && area === 'food'
+        ? ` ${s(noteInBrackets(item.notes))}`
+        : ` <span class="item-note">${s(noteInBrackets(item.notes))}</span>`
+      : '';
+    return `<tr>
+      <td class="qty">${beoQuantityOf(item.quantity)}x</td>
+      <td class="dish">${s(item.itemName ?? '')}${note}</td>
+      <td class="price-col">${isSet ? SET_BADGE : charge ? extraBadgeOf(charge) : extraBadge(item, area)}</td>
+    </tr>`;
+  };
+  const foodTable = (lines: FoodLine[], area: "food" | "bar", style = '', charges?: readonly BeoExtraCharge[]) =>
+    `<table class="menu-table"${style ? ` style="${style}"` : ''}>
+      <colgroup><col class="qty-col" /><col /><col class="price-col-w" /></colgroup>
+      ${lines.map((l, at) => foodRow(l, area, charges?.[at])).join('')}
+    </table>`;
+  const serviceWords = (time: string | undefined) => time ? ` <span class="svc">&mdash; Service: ${s(time)}</span>` : '';
+
+  const kp = data.kitchenPlan;
+  // SCRUM-978: the kids' list the editor and the till read: `menus` (canonical, kitchenPlanDbDataOf in
+  // beo-routes.ts), `simplifiedMenus` only for a plan of before that has no `menus` list.
+  const pdfKids: FoodLine[] = (Array.isArray(kp?.menus?.kids) ? kp!.menus!.kids : kp?.simplifiedMenus?.kids || [])
+    .map(item => ({ ...item, quantity: beoQuantityOf("quantity" in item ? item.quantity : undefined) }));
+  const pdfAdultLines: FoodLine[] = (kp?.menus?.adults ?? []).map(item => ({ ...item, quantity: beoQuantityOf(item.quantity) }));
+  // SCRUM-829's switch as its readers resolve it (shared/kitchenAdults.ts). SCRUM-1028, the owner's
+  // answer: when the adults eat differently they print as their OWN list with their own counts (no
+  // longer marked beside the kids' rows); "Same as kids" keeps them in the kids' rows, said in one line.
+  const pdfAdultsDiffer = !!kp && adultsDifferOf({ kids: pdfKids, adults: pdfAdultLines, adultsDiffer: kp.menus?.adultsDiffer });
+  // Each adults' line's price words as the editor and the till have them (shared/beoExtras.ts): a
+  // line that is the same dish as a kids' line (name, count, code) is charged once, with the kids'
+  // line, and says so; any other at its own price.
+  const adultsCharges = beoKitchenChargesOf(pdfKids.map(asExtraLine), pdfAdultLines.map(asExtraLine), pdfAdultsDiffer, extrasCtx).adults;
+  const foodNeeded = !!kp && kp.required !== false;
+
+  const kidsMenuHtml = (() => {
+    if (!kp || !foodNeeded) return '';
+    const isSetMenuMode = kp.setMenuEnabled;
+    const kidsFoodTime = kp.menus?.kidsFoodTime;
+    if (!pdfKids.length && !isSetMenuMode) return '';
+    const heading = `<h3>Kids Menu${data.numChildren ? ` (${data.numChildren} kids)` : ''}${serviceWords(kidsFoodTime)}</h3>`;
+
+    if (!isSetMenuMode) return `${heading}${foodTable(pdfKids, 'food')}`;
+
+    const setMenuItems = pdfKids.filter((i) => i.source === 'set_menu');
+    const additionalItems = pdfKids.filter((i) => i.source !== 'set_menu');
+    const selStatus = kp.setMenuSelectionStatus;
+    const isSubmitted = selStatus != null ? selStatus.isSubmitted : setMenuItems.length > 0;
+    const templateName = kp.setMenuTemplateName || 'Set Menu';
+    const received = selStatus?.submittedAt ? parkDayMonthOf(selStatus.submittedAt, parkZone) : '';
+    const submittedLabel = received ? ` &mdash; Received ${received}` : '';
+
+    const setMenuBlock = `
+      <div class="set-box">
+        <div class="set-head">
+          <span class="set-kind">Set Menu</span>
+          ${isSubmitted
+            ? `<span style="color:#065f46;">${s(templateName)}${submittedLabel}</span>`
+            : `<span style="color:#92400e;">${s(templateName)}</span>
+               <span style="color:#b45309;margin-left:auto;">Awaiting parent selections</span>`
+          }
+        </div>
+        ${setMenuItems.length > 0
+          ? foodTable(setMenuItems, 'food', 'margin:0;')
+          : `<p class="set-empty">No selections yet — parent link sent</p>`
+        }
+      </div>`;
+    const additionalBlock = additionalItems.length > 0
+      ? `<h3 style="margin-top:6px;">Additional Items</h3>${foodTable(additionalItems, 'food')}`
+      : '';
+    return `${heading}${setMenuBlock}${additionalBlock}`;
+  })();
+
+  const adultsHtml = (() => {
+    if (!kp || !foodNeeded) return '';
+    const adultsFoodTime = kp.menus?.adultsFoodTime;
+    if (pdfAdultsDiffer) {
+      return `<h3 data-adults="differ">Adults Menu${data.numAdults ? ` (${data.numAdults} adults)` : ''}${serviceWords(adultsFoodTime)}</h3>
+        ${pdfAdultLines.length ? foodTable(pdfAdultLines, 'food', '', adultsCharges) : '<p class="plain">No dishes listed for the adults.</p>'}`;
+    }
+    if (!pdfKids.length && !kp.setMenuEnabled) return '';
+    return `<p class="adults-same" data-adults="same">Adults: ${s(ADULTS_SAME_AS_KIDS.toLowerCase())}${adultsFoodTime ? ` &mdash; Service: ${s(adultsFoodTime)}` : ''}</p>`;
+  })();
+
+  // A party with no food says so in plain words.
+  const noFoodWords = !kp
+    ? 'No food ordered.'
+    : !foodNeeded
+      ? 'No food for this party: kitchen not needed.'
+      : !kidsMenuHtml && !adultsHtml
+        ? 'No food ordered.'
+        : '';
+  const kitchenHtml = `
+    <div class="part kitchen-part" data-part="kitchen">
+      <h2>Kitchen</h2>
+      ${noFoodWords ? `<p class="plain" data-no-food>${noFoodWords}</p>` : ''}
+      ${kidsMenuHtml}
+      ${adultsHtml}
+      ${foodNeeded && kp?.notes ? `<p class="notes">${s(kp.notes)}</p>` : ''}
+    </div>`;
+
+  // ── 4. The right column: Setup, Bar, Entertainment, Cake, Notes ─────────────────────────────────
+  // SCRUM-978: a part with nothing to print prints no heading.
+  const setup = data.setupPlan;
+  const setupHasText = !!setup && !!(setup.readyBy || setup.responsible || setup.tasks?.length || setup.notes);
+  const setupHtml = setupHasText || data.decoration ? `
+    <div class="part box" data-part="setup">
+      <h2>Setup</h2>
+      <div class="info-grid one">
+        ${fact('Ready By', setup?.readyBy)}
+        ${fact('Who', setup?.responsible)}
+        ${fact('Decoration', data.decoration)}
+      </div>
+      ${setup?.tasks?.length ? `
+        <table class="timeline-table" style="margin-top: 4px;">
+          <thead>
+            <tr>
+              <th>Task</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${setup.tasks.map(task => `
+              <tr>
+                <td>${s(task.itemLabel)}</td>
+                <td>${task.notes ? s(task.notes) : ''}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      ` : ''}
+      ${setup?.notes ? `<p class="notes">${s(setup.notes)}</p>` : ''}
+    </div>
+  ` : '';
+
+  const bar = data.barPlan;
+  const barItems = bar?.items ?? [];
+  const barHtml = bar && (bar.serviceTime || barItems.length > 0) ? `
+    <div class="part box" data-part="bar">
+      <h2>Bar</h2>
+      ${bar.serviceTime ? `<div class="info-item" style="margin-bottom:4px;"><span class="info-label">Service Time:</span><span class="info-value">${s(bar.serviceTime)}</span></div>` : ''}
+      ${barItems.length ? foodTable(barItems, 'bar') : ''}
+    </div>
+  ` : '';
+
+  // Each activity as stored, in the editor's order: its time (none stored: said so, never given
+  // one), its name (the timeline's own words for an act with none) and its own person.
+  // The Program and the Activities text of Event Info print here (they printed in Event Details).
+  const acts = data.entertainmentActs ?? [];
+  const entertainmentHtml = acts.length || data.programName || data.activities ? `
+    <div class="part box" data-part="entertainment">
+      <h2>Entertainment</h2>
+      ${acts.length ? `
+        <table class="timeline-table">
+          <colgroup><col style="width: 52px;" /><col /><col style="width: 34%;" /></colgroup>
+          <tbody>
+            ${acts.map((a) => {
+              const raw = typeof a.startTime === 'string' ? a.startTime.trim() : '';
+              const time = beoClockOf(raw)?.time ?? raw;
+              return `<tr>
+                <td style="font-weight: 600;">${time ? s(time) : '<span class="item-note">No time set</span>'}</td>
+                <td>${s(a.customName?.trim() || STEP_ACTIVITY)}</td>
+                <td>${a.person?.trim() ? s(a.person.trim()) : ''}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      ` : ''}
+      <div class="info-grid one" style="margin-top: 4px;">
+        ${fact('Program', data.programName)}
+        ${fact('Activities', data.activities)}
+      </div>
+    </div>
+  ` : '';
+
+  // The cake has its own part (it printed inside the kitchen before): what it is, how many, INCL or
+  // EXTRA with the price it printed with, its time and its notes; and the event's own cake notes.
+  const hasCake = !!kp?.cakeMode && kp.cakeMode !== 'NONE';
+  const cakeHtml = hasCake || data.cakeNotes ? `
+    <div class="part box" data-part="cake">
+      <h2>Cake</h2>
+      ${hasCake && kp ? `
+        <p>
+          ${kp.cakeMode === 'EXTERNAL' ? 'Own cake (guest brings)' : 'Our cake (provided)'}
+          ${(kp.cakeQuantity ?? 1) > 1 ? ` <strong>x${kp.cakeQuantity}</strong>` : ''}
+          ${kp.cakeIncluded !== undefined ? (kp.cakeIncluded ? ' <span class="incl-badge">INCL</span>' : ` <span class="extra-badge">EXTRA</span>${kp.cakePrice ? ` ${formatCurrency(kp.cakePrice)}` : ''}`) : ''}
+          ${kp.cakeTime ? ` &mdash; Time: ${s(kp.cakeTime)}` : ''}
+          ${kp.cakeNotes ? ` &mdash; ${s(kp.cakeNotes)}` : ''}
+        </p>
+      ` : ''}
+      ${data.cakeNotes ? `<p class="notes"><strong>Cake Notes:</strong> ${s(data.cakeNotes)}</p>` : ''}
+    </div>
+  ` : '';
+
+  // The notes as written: a note may carry an amount the family agreed (the owner's answer).
   const notesSection = [
     data.allergiesNotes ? { title: 'Allergies & Dietary Notes', content: data.allergiesNotes } : null,
     data.specialRequests ? { title: 'Special Requests', content: data.specialRequests } : null,
   ].filter(Boolean) as { title: string; content: string }[];
-
   const notesHtml = notesSection.length ? `
-    <div class="section">
+    <div class="part box" data-part="notes">
       <h2>Notes</h2>
       ${notesSection.map(n => `
-        <div style="margin-bottom: 6px;">
-          <p style="font-weight: 600; font-size: 11px; color: #4a5568;">${s(n.title)}</p>
-          <p style="font-size: 11px;">${s(n.content)}</p>
+        <div class="note-block">
+          <p class="note-title">${s(n.title)}</p>
+          <p class="note-text">${s(n.content)}</p>
         </div>
       `).join('')}
     </div>
@@ -961,67 +1064,96 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: 'Helvetica Neue', Arial, sans-serif;
+      font-family: ${BEO_FONT_STACK};
       font-size: 11px;
-      line-height: 1.5;
+      line-height: 1.35;
       color: #1a202c;
-      padding: 20px;
     }
+    td, p, .info-value, h3 { overflow-wrap: break-word; word-break: normal; }
     .header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
+      gap: 16px;
       border-bottom: 2px solid #2d3748;
-      padding-bottom: 12px;
-      margin-bottom: 18px;
+      padding-bottom: 8px;
+      margin-bottom: 8px;
     }
-    .header-left { display: flex; align-items: center; gap: 12px; }
+    .header-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
     .logo img { max-height: 50px; max-width: 100px; }
-    .branch-info { text-align: right; }
+    .branch-info { text-align: right; flex: 0 0 auto; max-width: 35%; }
     .branch-name { font-size: 13px; font-weight: 700; color: #2d3748; }
     .branch-address { font-size: 9px; color: #718096; }
     .event-title { font-size: 18px; font-weight: 700; color: #1a202c; margin-bottom: 3px; }
-    .event-meta { display: flex; gap: 15px; color: #4a5568; font-size: 11px; align-items: center; }
-    .event-datetime { font-size: 22px; font-weight: 900; color: #1a202c; letter-spacing: -0.5px; }
+    .event-meta { display: flex; flex-wrap: wrap; column-gap: 15px; row-gap: 2px; color: #4a5568; font-size: 11px; align-items: center; }
+    .event-datetime { font-size: 20px; font-weight: 900; color: #1a202c; letter-spacing: -0.5px; }
     .status-badge {
       display: inline-block; padding: 1px 6px; background: #ebf8ff;
       color: #2b6cb0; border-radius: 3px; font-size: 9px; font-weight: 600; text-transform: uppercase;
     }
-    .section { margin-bottom: 16px; page-break-inside: avoid; }
+    .header-band { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 10px; }
+    .facts { flex: 1 1 0; min-width: 0; border: 1px solid #cbd5e0; border-radius: 4px; padding: 6px 8px; break-inside: avoid; }
+    .pos-box { flex: 0 0 44%; min-width: 0; border: 1px solid #cbd5e0; border-radius: 4px; padding: 6px 8px; background: #f7fafc; break-inside: avoid; }
+    .header-band > .pos-box:only-child { flex: 1 1 auto; }
+    .pkg-included { font-size: 10px; color: #4a5568; background: #edf2f7; border-radius: 3px; padding: 2px 6px; margin-bottom: 4px; }
+    .part { margin-bottom: 10px; }
+    .box { break-inside: avoid; }
     h2 {
       font-size: 12px; font-weight: 700; color: #1a202c; text-transform: uppercase; letter-spacing: 0.5px;
-      border-bottom: 1px solid #cbd5e0; padding-bottom: 4px; margin-bottom: 8px;
+      border-bottom: 1px solid #cbd5e0; padding-bottom: 2px; margin-bottom: 5px;
+      break-after: avoid; page-break-after: avoid;
     }
+    .pos-box h2 { font-size: 11px; margin-bottom: 4px; }
     h3 {
-      font-size: 11px; font-weight: 600; color: #4a5568; margin: 8px 0 4px 0;
+      font-size: 11px; font-weight: 600; color: #4a5568; margin: 6px 0 3px 0;
+      break-after: avoid; page-break-after: avoid;
     }
-    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 20px; }
-    .info-item { display: flex; gap: 4px; font-size: 11px; }
-    .info-label { font-weight: 600; color: #4a5568; min-width: 80px; }
+    .svc { font-weight: normal; font-size: 10px; color: #666; }
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 16px; }
+    .info-grid.one { grid-template-columns: 1fr; }
+    .info-item { font-size: 11px; min-width: 0; }
+    .info-label { font-weight: 600; color: #4a5568; margin-right: 4px; }
     .info-value { color: #1a202c; }
     .info-table { width: 100%; border-collapse: collapse; }
-    .info-table td { padding: 3px 8px 3px 0; vertical-align: top; font-size: 11px; }
-    .timeline-table { width: 100%; border-collapse: collapse; font-size: 10px; }
-    .timeline-table th, .timeline-table td { border: 1px solid #e2e8f0; padding: 4px 8px; text-align: left; }
+    .info-table td { padding: 2px 8px 2px 0; vertical-align: top; font-size: 11px; }
+    .timeline-table { width: 100%; border-collapse: collapse; font-size: 10px; table-layout: fixed; }
+    .timeline-table th, .timeline-table td { border: 1px solid #e2e8f0; padding: 2px 6px; text-align: left; vertical-align: top; }
     .timeline-table th { background: #f7fafc; font-weight: 600; color: #4a5568; font-size: 9px; text-transform: uppercase; }
-    .menu-table { width: 100%; border-collapse: collapse; margin: 2px 0 6px 0; }
-    .menu-table td { padding: 2px 6px; font-size: 11px; vertical-align: top; }
-    .menu-table .qty { width: 35px; font-weight: 600; text-align: right; color: #4a5568; }
-    .menu-table .price-col { width: 120px; text-align: right; }
+    thead { display: table-header-group; }
+    tr { break-inside: avoid; page-break-inside: avoid; }
+    .menu-table { width: 100%; border-collapse: collapse; margin: 2px 0 6px 0; table-layout: fixed; }
+    .menu-table td { padding: 1px 4px; font-size: 11px; vertical-align: top; }
+    .menu-table .qty-col { width: 30px; }
+    .menu-table .price-col-w { width: 34%; }
+    .menu-table .qty { font-weight: 600; text-align: right; color: #4a5568; }
+    .menu-table .price-col { text-align: right; }
+    .pos-table .badge-col { width: 56px; text-align: right; }
     .price { color: #4a5568; font-size: 10px; }
+    .incl-badge, .extra-badge { white-space: nowrap; }
     .incl-badge { background: #c6f6d5; color: #276749; padding: 0 4px; border-radius: 2px; font-size: 9px; font-weight: 600; }
     .extra-badge { background: #fefcbf; color: #975a16; padding: 0 4px; border-radius: 2px; font-size: 9px; font-weight: 600; }
     .item-note { color: #888; font-size: 10px; font-style: italic; }
-    .notes { margin-top: 6px; padding: 6px; background: #f7fafc; border-radius: 3px; font-size: 10px; font-style: italic; }
-    .badge-outline { font-size: 9px; color: #718096; border: 1px solid #cbd5e0; padding: 0 4px; border-radius: 2px; margin-left: 6px; }
-    .footer { margin-top: 20px; padding-top: 10px; border-top: 1px solid #e2e8f0; font-size: 8px; color: #a0aec0; text-align: center; }
+    .notes { margin-top: 4px; padding: 4px 6px; background: #f7fafc; border-radius: 3px; font-size: 10px; font-style: italic; white-space: pre-wrap; }
+    .plain { font-size: 11px; color: #4a5568; }
+    .adults-same { font-size: 10px; color: #6b7280; margin: 4px 0 0; }
+    .set-box { border: 2px solid #6ee7b7; border-radius: 6px; overflow: hidden; margin-bottom: 6px; }
+    .set-head { background: #d1fae5; padding: 4px 8px; display: flex; align-items: center; gap: 8px; font-size: 10px; font-weight: 600; break-after: avoid; }
+    .set-kind { font-weight: 700; color: #065f46; text-transform: uppercase; letter-spacing: 0.05em; }
+    .set-empty { padding: 5px 8px; font-size: 10px; color: #6b7280; font-style: italic; }
+    .note-block { margin-bottom: 4px; }
+    .note-title { font-weight: 600; font-size: 10px; color: #4a5568; break-after: avoid; }
+    .note-text { font-size: 11px; white-space: pre-wrap; }
+    .columns { display: flex; gap: 14px; align-items: flex-start; }
+    .col-left { flex: 0 0 55%; min-width: 0; }
+    .col-right { flex: 1 1 0; min-width: 0; }
+    .generated { font-size: 8px; color: #a0aec0; margin-top: 2px; }
   </style>
 </head>
 <body>
   <div class="header">
     <div class="header-left">
       ${logoDataUrl ? `<div class="logo"><img src="${logoDataUrl}" alt="Logo" /></div>` : ''}
-      <div>
+      <div style="min-width: 0;">
         <div class="event-title">${s(data.eventTitle)}</div>
         <div class="event-meta">
           <span class="event-datetime">${s(formattedDate)} &bull; ${s(formattedTime)}</span>
@@ -1033,38 +1165,25 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
     <div class="branch-info">
       ${data.branchName ? `<div class="branch-name">${s(data.branchName)}</div>` : ''}
       ${data.branchAddress ? `<div class="branch-address">${s(data.branchAddress)}</div>` : ''}
+      <div class="generated">Generated ${parkDateOf(new Date(), parkZone)} &bull; Banquet Event Order</div>
     </div>
   </div>
 
-  <div class="section">
-    <h2>Event Details</h2>
-    <div class="info-grid">
-      <div class="info-item"><span class="info-label">Date:</span><span class="info-value">${s(formattedDate)}</span></div>
-      <div class="info-item"><span class="info-label">Time:</span><span class="info-value">${s(formattedTime)}</span></div>
-      ${data.childName ? `<div class="info-item"><span class="info-label">Child:</span><span class="info-value">${s(data.childName)}</span></div>` : ''}
-      ${data.bookingName ? `<div class="info-item"><span class="info-label">Booking Name:</span><span class="info-value">${s(data.bookingName)}</span></div>` : ''}
-      ${data.parentName ? `<div class="info-item"><span class="info-label">Parent:</span><span class="info-value">${s(data.parentName)}</span></div>` : ''}
-      ${data.whatsappPhone ? `<div class="info-item"><span class="info-label">WhatsApp:</span><span class="info-value">${s(data.whatsappPhone)}</span></div>` : ''}
-      ${data.kidTurningAge != null ? `<div class="info-item"><span class="info-label">Kid Turning Age:</span><span class="info-value">${data.kidTurningAge}</span></div>` : ''}
-      ${data.numChildren ? `<div class="info-item"><span class="info-label">Children:</span><span class="info-value">${data.numChildren}</span></div>` : ''}
-      ${data.numAdults ? `<div class="info-item"><span class="info-label">Adults:</span><span class="info-value">${data.numAdults}</span></div>` : ''}
-      ${data.programName ? `<div class="info-item"><span class="info-label">Program:</span><span class="info-value">${s(data.programName)}</span></div>` : ''}
-      ${data.activities ? `<div class="info-item"><span class="info-label">Activities:</span><span class="info-value">${s(data.activities)}</span></div>` : ''}
-      ${data.decoration ? `<div class="info-item"><span class="info-label">Decoration:</span><span class="info-value">${s(data.decoration)}</span></div>` : ''}
-      ${locationDisplay ? `<div class="info-item"><span class="info-label">Location:</span><span class="info-value">${s(locationDisplay)}</span></div>` : ''}
-    </div>
-  </div>
+  ${factsHtml || packageHtml ? `<div class="header-band">${factsHtml}${packageHtml}</div>` : ''}
 
-  ${partyHostHtml}
-  ${packageHtml}
-  ${setupHtml}
-  ${kitchenHtml}
-  ${barHtml}
   ${timelineHtml}
-  ${notesHtml}
 
-  <div class="footer">
-    Generated ${parkDateOf(new Date(), parkZone)} &bull; Banquet Event Order
+  <div class="columns">
+    <div class="col-left">
+      ${kitchenHtml}
+    </div>
+    <div class="col-right">
+      ${setupHtml}
+      ${barHtml}
+      ${entertainmentHtml}
+      ${cakeHtml}
+      ${notesHtml}
+    </div>
   </div>
 </body>
 </html>`;
@@ -1083,15 +1202,20 @@ export async function generateBeoPdf(data: BeoPdfData): Promise<Buffer> {
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: "networkidle0" });
 
+    // SCRUM-1028: every page's foot names the party and its page ("Page 2 of 3"), so a loose
+    // second page of a long order is known; the bottom margin leaves it room.
     const pdfUint8Array = await page.pdf({
       format: "A4",
       margin: {
         top: "15mm",
         right: "15mm",
-        bottom: "15mm",
+        bottom: "18mm",
         left: "15mm",
       },
       printBackground: true,
+      displayHeaderFooter: true,
+      headerTemplate: "<span></span>",
+      footerTemplate: beoPdfFooterTemplate(data),
     });
 
     return Buffer.from(pdfUint8Array);

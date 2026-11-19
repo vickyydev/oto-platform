@@ -192,26 +192,29 @@ try {
   // --- 1 and 2. The BEO PDF ------------------------------------------------------------------------
   await check("the PDF prints the adults' own extra at its own price, as the editor and the till have it", async () => {
     // The proof's thread R (pictures h06, h07): kids Margherita 3 at 400, adults 2 at 450.
+    // SCRUM-1028 (the owner's answer of 19 November): with "Different for adults" on, the adults
+    // print as their OWN list under their own heading, each line with its own count and price; the
+    // marks beside the kids' rows ("kids only", "kids 3 · adults 2", "adults: <note>") are gone.
     const kids = [set("Hawaiian", PIZZA), { quantity: 3, itemName: "Margherita", price: 400, source: "additional", productCode: "CF-24" }];
     const adults = [set("Hawaiian", PIZZA), { quantity: 2, itemName: "Margherita", price: 450, source: "additional", productCode: "CF-24" }];
-    const rows = rowsOf(await pdf({ required: true, setMenuEnabled: true, setMenuTemplateName: "ZZ TEST set", menus: { kids, adults, adultsDiffer: true } }));
-    assert.ok(rows.includes("3x Margherita — kids only EXTRA 400฿ each"), JSON.stringify(rows));
-    assert.ok(rows.includes("2x Margherita — adults only EXTRA 450฿ each"), JSON.stringify(rows));
-    assert.equal(rows.some((r) => r.includes("kids 3 · adults 2")), false, "never one row at the kids' price");
-    // The same price each: one row, the two counts beside it, as before.
+    const page = await pdf({ required: true, setMenuEnabled: true, setMenuTemplateName: "ZZ TEST set", menus: { kids, adults, adultsDiffer: true } });
+    const adultsAt = page.indexOf('data-adults="differ"');
+    assert.ok(adultsAt > 0, "the adults' own heading");
+    assert.deepEqual(rowsOf(page.slice(0, adultsAt)), ["1x Hawaiian (Pizza) SET", "3x Margherita EXTRA 400฿ each"]);
+    assert.deepEqual(rowsOf(page.slice(adultsAt)), ["1x Hawaiian (Pizza) SET", "2x Margherita EXTRA 450฿ each"]);
+    assert.equal(/kids only|adults only|kids 3 · adults 2/.test(page), false, "never one row at the kids' price, no marks");
+    // The same price each: each list its own row and count.
     const same = rowsOf(await pdf({ required: true, setMenuEnabled: true, menus: { kids, adults: [adults[0]!, { ...adults[1]!, price: 400 }], adultsDiffer: true } }));
-    assert.ok(same.includes("3x Margherita — kids 3 · adults 2 EXTRA 400฿ each"), JSON.stringify(same));
-    assert.equal(same.some((r) => r.includes("adults only")), false);
-    // The one dish the till charges once (name, count and code): folded, whatever the adults' copy says.
+    assert.deepEqual(same, ["1x Hawaiian (Pizza) SET", "3x Margherita EXTRA 400฿ each", "1x Hawaiian (Pizza) SET", "2x Margherita EXTRA 400฿ each"]);
+    // The one dish the till charges once (name, count and code): the adults' row says so, no second price.
     const once = rowsOf(await pdf({ required: true, setMenuEnabled: false, menus: { kids: [{ ...kids[1]!, quantity: 2 }], adults: [{ ...adults[1]! }], adultsDiffer: true } }));
-    assert.deepEqual(once, ["2x Margherita EXTRA 400฿ each"], "charged once, with the kids' line");
-    // A SET dish for the kids and an EXTRA of it for the adults: two rows, the adults' at its price.
+    assert.deepEqual(once, ["2x Margherita EXTRA 400฿ each", "2x Margherita EXTRA charged once, with the kids' line"], "charged once, with the kids' line");
+    // A SET dish for the kids and an EXTRA of it for the adults: each in its list, the adults' at its price.
     const kinds = rowsOf(await pdf({ required: true, setMenuEnabled: true, menus: { kids: [set("Margherita", PIZZA)], adults: [{ quantity: 3, itemName: "Margherita", price: 300, source: "additional", productCode: "CF-24" }], adultsDiffer: true } }));
-    assert.ok(kinds.includes("Margherita (Pizza) — kids only SET"), JSON.stringify(kinds));
-    assert.ok(kinds.includes("3x Margherita — adults only EXTRA 300฿ each"), JSON.stringify(kinds));
-    // A note of the adults' own on the same line still folds ("adults: <note>"), as before.
+    assert.deepEqual(kinds, ["1x Margherita (Pizza) SET", "3x Margherita EXTRA 300฿ each"]);
+    // A note of the adults' own on the same line: printed on their row (charged once, with the kids').
     const noted = rowsOf(await pdf({ required: true, setMenuEnabled: false, menus: { kids: [{ ...kids[1]! }], adults: [{ ...kids[1]!, notes: "no basil" }], adultsDiffer: true } }));
-    assert.deepEqual(noted, ["3x Margherita — adults: no basil EXTRA 400฿ each"]);
+    assert.deepEqual(noted, ["3x Margherita EXTRA 400฿ each", "3x Margherita (no basil) EXTRA charged once, with the kids' line"]);
     // The rule itself (shared/beoExtras.ts).
     const fold = beoPrintFoldable({ till: { known: false, byCode: new Map() }, partyDate: "2099-12-16" });
     assert.deepEqual([fold(kids[1]!, adults[1]!), fold(kids[1]!, { ...adults[1]!, price: 400 }), fold(kids[0]!, adults[0]!)], [false, true, true]);
@@ -229,18 +232,20 @@ try {
   });
 
   await check("PARTY HOST and SETUP PLAN print only with something under them", async () => {
+    // SCRUM-1028: the host prints in the header's facts ("Party Host: <name>"), the setup plan in the
+    // right column's part headed "Setup"; each still only with something in it.
     // What the PDF route builds after the editor's Save of a BEO with no host and no setup.
     const afterSave = await pdf({ required: true, menus: { kids: [] } }, {
       partyHost: { assignedName: undefined, backupName: undefined, roleName: undefined, responsibilities: undefined, notes: undefined },
       setupPlan: { readyBy: undefined, responsible: undefined, tasks: undefined, notes: undefined },
     });
-    assert.equal(afterSave.includes("<h2>Party Host</h2>"), false);
-    assert.equal(afterSave.includes("<h2>Setup Plan</h2>"), false);
+    assert.equal(afterSave.includes("Party Host"), false);
+    assert.equal(afterSave.includes("<h2>Setup</h2>"), false);
     const filled = await pdf({ required: true, menus: { kids: [] } }, { partyHost: { assignedName: "ZZ Noi" }, setupPlan: { readyBy: "13:30" } });
-    assert.ok(filled.includes("<h2>Party Host</h2>") && filled.includes("ZZ Noi"));
-    assert.ok(filled.includes("<h2>Setup Plan</h2>") && filled.includes("13:30"));
+    assert.ok(filled.includes('<span class="info-label">Party Host:</span><span class="info-value">ZZ Noi</span>'));
+    assert.ok(filled.includes("<h2>Setup</h2>") && filled.includes("13:30"));
     const tasksOnly = await pdf({ required: true, menus: { kids: [] } }, { setupPlan: { tasks: [{ itemLabel: "ZZ balloons" }] } });
-    assert.ok(tasksOnly.includes("<h2>Setup Plan</h2>") && tasksOnly.includes("ZZ balloons"));
+    assert.ok(tasksOnly.includes("<h2>Setup</h2>") && tasksOnly.includes("ZZ balloons"));
   });
 
   // --- 3. The cake count through the editor's Save -----------------------------------------------
@@ -681,7 +686,9 @@ try {
     assert.deepEqual(nuggetsOn.map((l: Record<string, unknown>) => [l.qty, l.unit_price_satang, l.audience ?? null]), [[12, 10000, null]], "the till: one Nuggets line, 12 at 100, for everyone");
     const onRow = (await planOf(ev.onExtra))!;
     const onRows = rowsOf(await pdf({ required: true, setMenuEnabled: true, menus: onRow.menus }));
-    assert.deepEqual(onRows.filter((r) => r.includes("ZZ Nuggets")), ["12x ZZ Nuggets EXTRA 100฿ each"], `the PDF: one row, no mark: ${JSON.stringify(onRows)}`);
+    // SCRUM-1028: the adults print as their own list, so their copy is a row of its own that says it is
+    // charged once, with the kids' line: one price, no mark.
+    assert.deepEqual(onRows.filter((r) => r.includes("ZZ Nuggets")), ["12x ZZ Nuggets EXTRA 100฿ each", "12x ZZ Nuggets EXTRA charged once, with the kids' line"], `the PDF: one price, no mark: ${JSON.stringify(onRows)}`);
     // Off: the adults eat the kids' menu, as before.
     const offExtra = await approve(ev.offExtra, sameAsKids);
     assert.equal(offExtra.ok, true, JSON.stringify(offExtra));
