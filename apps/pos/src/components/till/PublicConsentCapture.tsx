@@ -101,6 +101,13 @@ import { cn } from '@/lib/utils';
  * the children listed above the agreement ticks, with a camera only for a
  * child the till still asks the photo of (staff compare the last visit's
  * photo on the till). A form without these fields is the form as it was.
+ *
+ * SCRUM-1020 — the family sees a saved child's allergy and medical notes and
+ * may update them (the owner's answer of 19 November), on a child the till
+ * marks `careShown`: in the care step, and on the child's card of the
+ * agreements-only form. An emptied note needs their tick that there is none
+ * (`carePending`); the till shows the cashier each change. A form without the
+ * mark (an older till or station) says "Saved on your profile" as before.
  */
 
 interface ChildDraft {
@@ -109,7 +116,28 @@ interface ChildDraft {
   ageYears: number | null;
   allergiesMedical: string;
   foodRestrictions: string;
+  /** SCRUM-1020 — a saved child whose care notes the form shows: the family's tick that there are none. */
+  allergiesNone?: boolean;
 }
+
+type PromptSlot = ConsentPrompt['slots'][number];
+
+/**
+ * SCRUM-1020 — A SAVED CHILD'S CARE NOTES, SHOWN TO THE FAMILY TO UPDATE (the
+ * owner's answer of 19 November). The till marks each saved child in care
+ * whose allergy and medical notes the family may see (`careShown`) and sends
+ * the note it holds. The family may change it; an emptied box replaces a note
+ * that had text only once they tick that the child has no allergies or
+ * medical needs. Until then the box stands empty on their screen, the till
+ * keeps the note (this screen sends it the till's note) and Done waits.
+ */
+const careShown = (slot: PromptSlot): boolean => slot.saved === true && slot.careShown === true;
+/** The box is empty where the till holds a note, or the family's "none": the tick is asked. */
+export const careNeedsTick = (slot: PromptSlot, child: Pick<ChildDraft, 'allergiesMedical'>): boolean =>
+  careShown(slot) && !child.allergiesMedical.trim() && (!!(slot.allergiesMedical ?? '').trim() || slot.allergiesNone === true);
+/** Emptied without the tick: the note is kept, and Done waits. */
+export const carePending = (slot: PromptSlot, child: Pick<ChildDraft, 'allergiesMedical' | 'allergiesNone'>): boolean =>
+  careNeedsTick(slot, child) && child.allergiesNone !== true;
 interface FormDraft {
   slots: Record<string, ChildDraft>;
   guardianName: string;
@@ -127,6 +155,7 @@ function draftOf(prompt: ConsentPrompt): FormDraft {
     slots: Object.fromEntries(prompt.slots.map((slot) => [slot.id, {
       name: slot.name, dateOfBirth: slot.dateOfBirth ?? null, ageYears: slot.ageYears,
       allergiesMedical: slot.allergiesMedical ?? '', foodRestrictions: slot.foodRestrictions ?? '',
+      ...(careShown(slot) ? { allergiesNone: slot.allergiesNone === true } : {}),
     }])),
     guardianName: prompt.guardianName,
     guardianPhone: prompt.guardianPhone ?? '',
@@ -135,6 +164,16 @@ function draftOf(prompt: ConsentPrompt): FormDraft {
     consentAcknowledged: prompt.consentAcknowledged,
     confirmations: prompt.confirmations.filter((item) => item.acknowledged).map((item) => item.id),
   };
+}
+
+/**
+ * SCRUM-1020 — the draft on this screen with any place the till's copy has
+ * and the draft has not yet (a child reception added in "Edit details"),
+ * as the till holds it; the draft itself when there is none.
+ */
+function withArrivedPlaces(local: FormDraft, prompt: ConsentPrompt): FormDraft {
+  if (prompt.slots.every((slot) => !!local.slots[slot.id])) return local;
+  return { ...local, slots: { ...draftOf(prompt).slots, ...local.slots } };
 }
 
 const same = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSON.stringify(b);
@@ -147,7 +186,8 @@ function isFormDraft(value: unknown): value is FormDraft {
   return !!slots && typeof slots === 'object' && Object.values(slots as Record<string, unknown>).every((entry) => {
     const child = entry as Record<string, unknown> | null;
     return !!child && typeof child === 'object' && isText(child.name) && (child.dateOfBirth === null || isText(child.dateOfBirth))
-      && (child.ageYears === null || typeof child.ageYears === 'number') && isText(child.allergiesMedical) && isText(child.foodRestrictions);
+      && (child.ageYears === null || typeof child.ageYears === 'number') && isText(child.allergiesMedical) && isText(child.foodRestrictions)
+      && (child.allergiesNone === undefined || typeof child.allergiesNone === 'boolean');
   }) && isText(form.guardianName) && isText(form.guardianPhone)
     && (form.contactChannel === undefined || form.contactChannel === 'whatsapp' || form.contactChannel === 'telegram' || form.contactChannel === 'line')
     && (form.contactConfirmed === undefined || typeof form.contactConfirmed === 'boolean')
@@ -219,6 +259,9 @@ export function mergeConsentDraft(local: FormDraft, base: FormDraft, next: FormD
         gone.map((child) => child ? { dateOfBirth: child.dateOfBirth, ageYears: child.ageYears } : undefined)),
       allergiesMedical: pick(mine.allergiesMedical, was.allergiesMedical, theirs.allergiesMedical, gone.map((child) => child?.allergiesMedical)),
       foodRestrictions: pick(mine.foodRestrictions, was.foodRestrictions, theirs.foodRestrictions, gone.map((child) => child?.foodRestrictions)),
+      // SCRUM-1020 — the family's "no allergies", on a child whose care notes the till shows.
+      ...(theirs.allergiesNone !== undefined ? { allergiesNone: pick(mine.allergiesNone === true, was.allergiesNone === true,
+        theirs.allergiesNone, gone.map((child) => child?.allergiesNone === undefined ? undefined : child.allergiesNone)) } : {}),
     };
   }
   // SCRUM-863 — a number is the same number typed with its leading zero or
@@ -323,7 +366,10 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
   const [localStep, setStep] = useState<Step>(() => restored?.step ?? prompt.familyStep ?? 'children');
   const stepNow = useRef(localStep);
   stepNow.current = localStep;
-  const draft = mirror ? draftOf(prompt) : localDraft;
+  // SCRUM-1020 — a child reception adds in "Edit details" arrives as a new
+  // place on this same form: until the till's copy is merged in (below), the
+  // new place is shown as the till holds it.
+  const draft = mirror ? draftOf(prompt) : withArrivedPlaces(localDraft, prompt);
   // SCRUM-1018 — a returning family's form is the agreements alone.
   const agreementsOnly = prompt.agreementsOnly === true;
   const step: Step = agreementsOnly ? 'agreements' : mirror ? mirror.step ?? 'children' : localStep;
@@ -440,7 +486,20 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
       onStored={(fileId) => setPhotosToName((queued) => [...queued.filter((item) => item.slotId !== slot.id), { slotId: slot.id, fileId }])}
       onCameraTrouble={setCameraTrouble} />
     : null;
-  const saved = same(trimmed(draft), trimmed(draftOf(prompt)));
+  /**
+   * SCRUM-1020 — the form as this screen sends it: a saved child's box the
+   * family emptied without their tick goes as the note the till holds (kept),
+   * and the tick goes only with an empty box that asks for it.
+   */
+  const outgoing = (form: FormDraft): FormDraft => ({ ...form, slots: Object.fromEntries(Object.entries(form.slots).map(([id, child]) => {
+    const slot = prompt.slots.find((item) => item.id === id);
+    if (!slot || !careShown(slot)) return [id, child];
+    if (carePending(slot, child)) return [id, { ...child, allergiesMedical: slot.allergiesMedical ?? '', allergiesNone: false }];
+    return [id, { ...child, allergiesNone: careNeedsTick(slot, child) && child.allergiesNone === true }];
+  })) });
+  const saved = same(trimmed(outgoing(draft)), trimmed(draftOf(prompt)));
+  /** SCRUM-1020 — the first saved child whose note the family emptied without the tick: Done waits on it. */
+  const pendingCare = prompt.slots.find((slot) => !!draft.slots[slot.id] && carePending(slot, draft.slots[slot.id]!));
   // SCRUM-857 — a till that follows the family's step (`familyStep`) hears
   // every step change; one that does not is sent the form as before.
   const followsStep = !mirror && prompt.familyStep !== undefined;
@@ -479,10 +538,12 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
     ...fence,
     action: 'fill',
     slots: prompt.slots.map((slot): FilledConsentSlot => {
-      const child = form.slots[slot.id]!;
+      const child = outgoing(form).slots[slot.id]!;
       return {
         id: slot.id, name: child.name.trim().slice(0, 100), dateOfBirth: child.dateOfBirth, ageYears: child.ageYears,
         allergiesMedical: child.allergiesMedical.slice(0, 500), foodRestrictions: child.foodRestrictions.slice(0, 200),
+        // SCRUM-1020 — the family's "no allergies", only where the form shows the notes.
+        ...(careShown(slot) && child.allergiesNone ? { allergiesNone: true as const } : {}),
       };
     }),
     guardianName: form.guardianName.trim().slice(0, 100),
@@ -515,7 +576,7 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
     tries.current.count += 1;
     urgent.current = false;
     dirtySince.current = null;
-    sent.current = [...sent.current, trimmed(form)].slice(-20);
+    sent.current = [...sent.current, trimmed(outgoing(form))].slice(-20);
     persist(form, at);
     cameraSent.current = camera;
     onAction(fillOf(form, at));
@@ -582,9 +643,34 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
     const timer = setTimeout(() => setSlowSend(true), SLOW_SEND_MS);
     return () => clearTimeout(timer);
   }, [waitingOnTill]);
-  const doneLine = missingLine ?? (slowSend ? t('display.sending') : null);
+  // SCRUM-1020 — a note emptied without the family's "no allergies" comes first: Done waits on it.
+  const careLine = pendingCare
+    ? t('superviseConsent.careClearedLine', { name: draft.slots[pendingCare.id]?.name.trim() || t('superviseConsent.thisChild') }) : null;
+  const doneLine = careLine ?? missingLine ?? (slowSend ? t('display.sending') : null);
   const setChild = (id: string, patch: Partial<ChildDraft>) =>
     edit((current) => ({ ...current, slots: { ...current.slots, [id]: { ...current.slots[id]!, ...patch } } }));
+  /**
+   * SCRUM-1020 — a saved child's allergy and medical notes from their profile,
+   * for the family to update; emptying a note asks for their plain tick.
+   */
+  const careField = (slot: PromptSlot) => {
+    const child = draft.slots[slot.id]!;
+    const name = child.name.trim() || t('superviseConsent.thisChild');
+    return <div data-testid="consent-saved-care">
+      <label className="flex items-center gap-2 text-lg text-foreground/70"><HeartPulse className="h-5 w-5" /> {t('superviseConsent.allergiesMedical')}</label>
+      <p className="mt-1 text-base text-foreground/50">{t('superviseConsent.careFromProfile')}</p>
+      <TouchText multiline value={child.allergiesMedical} maxLength={500} disabled={locked} testId="consent-saved-allergies"
+        onChange={(allergiesMedical) => setChild(slot.id, { allergiesMedical, ...(allergiesMedical.trim() ? { allergiesNone: false } : {}) })}
+        placeholder={t('superviseConsent.allergiesPlaceholder')}
+        className="mt-2 min-h-[88px] border-foreground/10 bg-foreground/5 text-lg text-foreground placeholder:text-foreground/30" />
+      {careNeedsTick(slot, child) && <label className="mt-3 flex w-full items-start gap-4 rounded-2xl border border-foreground/10 bg-foreground/5 p-4 text-left">
+        <Checkbox checked={child.allergiesNone === true} disabled={locked} data-testid="public-consent-allergies-none"
+          onCheckedChange={(value) => choose((current) => ({ ...current,
+            slots: { ...current.slots, [slot.id]: { ...current.slots[slot.id]!, allergiesNone: value === true } } }))}
+          className="mt-1 h-6 w-6 border-foreground/30 data-[state=checked]:bg-primary" />
+        <span className="text-lg leading-snug text-foreground/80">{t('superviseConsent.noAllergiesConfirm', { name })}</span></label>}
+    </div>;
+  };
   const index = STEPS.indexOf(step);
   const next = () => {
     if (index < STEPS.length - 1) goTo(STEPS[index + 1]!);
@@ -674,7 +760,7 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
           return <div key={slot.id} className="rounded-3xl border border-foreground/10 bg-foreground/5 p-6 space-y-4" data-testid="consent-care">
             <div className="flex items-center gap-2 text-xl font-semibold"><Baby className="h-5 w-5" />{child.name || t('superviseConsent.thisChild')}</div>
             {photoOf(slot)}
-            {slot.saved ? <p className="text-lg text-foreground/70">{t('superviseConsent.savedOnProfile')}</p> : <>
+            {slot.saved ? careShown(slot) ? careField(slot) : <p className="text-lg text-foreground/70">{t('superviseConsent.savedOnProfile')}</p> : <>
               <div>
                 <label className="flex items-center gap-2 text-lg text-foreground/70"><HeartPulse className="h-5 w-5" /> {t('superviseConsent.allergiesMedical')}</label>
                 {/* SCRUM-893 — the allergies box opens the on-screen keyboard too. */}
@@ -703,6 +789,8 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
             {meta.note && <span className="text-base font-medium text-foreground/70">{meta.note}</span>}
           </div>}
           {photoOf(slot)}
+          {/* SCRUM-1020 — the saved child's allergy and medical notes, to update. */}
+          {careShown(slot) && careField(slot)}
         </div>;
       })}
 
@@ -769,9 +857,9 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
         <Button variant="outline" className={touch} disabled={readOnly || busy || helpAsked} onClick={() => setHelpAsked(true)}>{t('superviseConsent.askTeam')}</Button>
         {index > 0 && !agreementsOnly && <Button variant="outline" className={touch} disabled={readOnly || locked} onClick={() => goTo(STEPS[index - 1]!)}>{t('common.back')}</Button>}
         {step !== 'agreements'
-          ? <Button className={touch} disabled={readOnly || locked || step === 'children' && !childrenComplete} onClick={next}>{t('common.continue')}</Button>
+          ? <Button className={touch} disabled={readOnly || locked || step === 'children' && !childrenComplete || step === 'care' && !!pendingCare} onClick={next}>{t('common.continue')}</Button>
           : saved
-            ? <Button className={touch} disabled={readOnly || locked || answerPending || !prompt.canContinue || asksConfirm && !prompt.contactConfirmed} onClick={() => onAction({ ...fence, action: 'done' })}>{t('common.done')}</Button>
+            ? <Button className={touch} disabled={readOnly || locked || answerPending || !prompt.canContinue || asksConfirm && !prompt.contactConfirmed || !!pendingCare} onClick={() => onAction({ ...fence, action: 'done' })}>{t('common.done')}</Button>
             : <Button className={touch} disabled={readOnly || locked || prompt.consentRequired && draft.consentAcknowledged && !draft.guardianName.trim()} onClick={next}>{t('common.continue')}</Button>}
       </>}
     </div>

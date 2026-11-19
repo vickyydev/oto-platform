@@ -134,8 +134,9 @@ describe('what the till does with it', () => {
     // filled in and only staff change it. Both copies still write the
     // registration's contact (never the customer's own number); the
     // customer's copy is now told the number is fixed, staff's is not.
-    expect(till.match(/onParentPhoneChange=\{changeGuardianPhone\}/g)).toHaveLength(2);
-    expect(till.match(/onParentContactMethodChange=\{changeGuardianChannel\}/g)).toHaveLength(2);
+    // SCRUM-1020 — and a third copy, staff's "Edit details", writes it too.
+    expect(till.match(/onParentPhoneChange=\{changeGuardianPhone\}/g)).toHaveLength(3);
+    expect(till.match(/onParentContactMethodChange=\{changeGuardianChannel\}/g)).toHaveLength(3);
     expect(till).toMatch(/const changeGuardianPhone = \(next: string\) => setSuperParentPhone\(next\);/);
     expect(till).toMatch(/const changeGuardianChannel = \(next: ContactChannel\) => setSuperParentContactMethod\(next\);/);
     expect(till).not.toMatch(/parentPhoneKept|gatePhoneKept/);

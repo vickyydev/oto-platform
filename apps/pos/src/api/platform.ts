@@ -267,6 +267,19 @@ updateChild: (childId: string, patch: Record<string, unknown>, idempotencyKey?: 
       () => cloudMembersApi.updateChild(childId, patch, idempotencyKey, signal),
       (stationId) => onBox<{ child: ApiChild }>(stationId, 'child.update', { childId, ...patch }),
     ),
+/**
+ * SCRUM-1020 — a saved child's allergy and medical notes the family changed
+ * on this till's customer display: the platform's audit row names the
+ * display and the till's station, for the family identified here
+ * (`memberId`), and an empty note goes only with the family's "no allergies"
+ * (`confirmedNone`). The box lane's fact carries no source, as SCRUM-1014's
+ * new child: it is the same `child.update` the box has always taken.
+ */
+updateChildCareFromDisplay: (childId: string, care: { memberId: string; allergies: string | null; confirmedNone?: true }) =>
+    viaLane(
+      () => cloudMembersApi.updateChild(childId, { source: 'customer_display', ...care }),
+      (stationId) => onBox<{ child: ApiChild }>(stationId, 'child.update', { childId, allergies: care.allergies }),
+    ),
 verifyTier: (memberId: string, body: { toTier: string; evidenceType: string; evidenceExpiresAt?: string; note?: string }) => {
     const verificationId = newRecordId();
     return viaLane(

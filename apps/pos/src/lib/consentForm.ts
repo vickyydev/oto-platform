@@ -1,5 +1,6 @@
 import { normalizePhone, validateMessagingPhone, type ConsentAction, type ConsentFormStep, type FilledConsentSlot } from '@oto/shared';
 import type { SupervisedSlot } from '@/components/till/SupervisionGate';
+import { displayCarePatch } from '@/lib/displayCareNotes';
 import type { ContactChannel } from '@/types';
 
 /**
@@ -12,22 +13,42 @@ import type { ContactChannel } from '@/types';
  * notes the profile holds: those are changed with staff, never from the public
  * screen. Nothing staff decide — the photo, the food choice, a waiver — is in
  * a filled step at all.
+ *
+ * SCRUM-1020 — except the allergy and medical notes of a saved child the form
+ * shows them for (`care`): the owner's answer of 19 November lets the parent
+ * update those on the display. Their food notes stay the profile's.
  */
 export function consentSlotPatches(
   slots: readonly SupervisedSlot[],
   filled: readonly FilledConsentSlot[],
+  care?: DisplayCareContext,
 ): { id: string; patch: Partial<SupervisedSlot> }[] {
   return filled.flatMap((child) => {
     const slot = slots.find((item) => item.id === child.id);
     if (!slot) return [];
+    // SCRUM-1020 — a saved child whose care notes the form showed the family:
+    // their note, on the rules of `displayCarePatch` (never emptied without
+    // their tick). Any other saved child keeps the profile's, as before.
+    const savedCare = slot.savedChildId && care?.shown.includes(slot.id)
+      ? displayCarePatch(slot, child, care.profileNote(slot)) ?? {} : {};
     const patch: Partial<SupervisedSlot> = {
       name: child.name,
       dateOfBirth: child.dateOfBirth ?? undefined,
       age: child.ageYears === null ? '' : String(child.ageYears),
-      ...(slot.savedChildId ? {} : { allergiesMedical: child.allergiesMedical, foodRestrictions: child.foodRestrictions }),
+      ...(slot.savedChildId ? savedCare : { allergiesMedical: child.allergiesMedical, foodRestrictions: child.foodRestrictions }),
     };
     return [{ id: slot.id, patch }];
   });
+}
+
+/**
+ * SCRUM-1020 — the saved children whose care notes the form the till
+ * published shows the family (`careShown`), and the note each one's profile
+ * holds, for a tick taken back.
+ */
+export interface DisplayCareContext {
+  shown: readonly string[];
+  profileNote: (slot: SupervisedSlot) => string;
 }
 
 /**
@@ -115,6 +136,8 @@ export function messagingPhoneProblem(phone: string): 'empty' | 'invalid' | null
 export interface ConsentFormTill {
   /** The till's copy of each child, for a filled step's patches. */
   slots: readonly SupervisedSlot[];
+  /** SCRUM-1020 — the saved children whose care notes the form shows the family. Absent: none. */
+  care?: DisplayCareContext;
   /** The parent's number the till holds for the registration: the one given at the start, until it is changed. */
   guardianPhone: string;
   /** The form as it is shown now, which a `done` marks finished. */
@@ -200,7 +223,7 @@ export function takeConsentAction(action: ConsentAction, till: ConsentFormTill):
     till.setAcknowledgedConfirmationIds(action.acknowledgedConfirmationIds);
     till.setCompletedSignature(null);
   } else if (action.action === 'fill') {
-    for (const { id, patch } of consentSlotPatches(till.slots, action.slots)) till.updateSlot(id, patch);
+    for (const { id, patch } of consentSlotPatches(till.slots, action.slots, till.care)) till.updateSlot(id, patch);
     if (!till.nameFixed) till.setGuardianName(action.guardianName);
     // SCRUM-863 — the family confirms or changes their number and channel on
     // the form, and what they send is what the registration keeps: the stored

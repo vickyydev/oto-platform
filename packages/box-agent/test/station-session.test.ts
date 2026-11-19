@@ -287,6 +287,30 @@ test('SCRUM-764: a step that changes nothing waits on the screen until the till 
   } finally { h.close(); }
 });
 
+test('SCRUM-1020: a saved child\'s care notes reach the family\'s screen, and their "no allergies" only for that child', async () => {
+  const h = await openConsent();
+  try {
+    const prompt = consentPrompt({ slots: [{ id: 'slot', name: 'Child one', ageYears: 6, requirement: 'drop_off',
+      saved: true, careShown: true, allergiesMedical: 'ZZ TEST peanuts' }] });
+    const published = await h.publish(prompt);
+    assert.ok(published.ok);
+    assert.deepEqual(h.manager.snapshotFor(published.document, 'customer', null).document.prompt, prompt);
+    const step = { action: 'fill', requestId: prompt.requestId, visitorId: prompt.visitorId,
+      slots: [{ id: 'slot', name: 'Child one', dateOfBirth: null, ageYears: 6, allergiesMedical: '', foodRestrictions: '', allergiesNone: true }],
+      guardianName: '', consentAcknowledged: false, acknowledgedConfirmationIds: [] };
+    const answered = await h.send(step, 'care-none');
+    assert.ok(answered.ok);
+    assert.doesNotMatch(JSON.stringify(h.events), /ZZ TEST peanuts/);
+    // A saved child whose notes the form does not show takes no "no allergies".
+    const unmarked = await h.publish({ ...prompt, requestId: 'guardian-request-unmarked',
+      slots: [{ id: 'slot', name: 'Child one', ageYears: 6, requirement: 'drop_off', saved: true }] });
+    assert.ok(unmarked.ok);
+    const refused = await h.send({ ...step, requestId: 'guardian-request-unmarked' }, 'care-none-refused');
+    assert.equal(refused.ok, false);
+    assert.equal(h.facts.length, 0, 'a care note on the form registers nothing and changes no record');
+  } finally { h.close(); }
+});
+
 test('guardian acknowledgement refuses foreign prompts, stages, sources, checklist fields and premature Done', async () => {
   const h = await openConsent();
   try {
