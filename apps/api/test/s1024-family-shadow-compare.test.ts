@@ -2,14 +2,14 @@ import { execFileSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { eq, TransactionRollbackError } from 'drizzle-orm';
+import { and, eq, TransactionRollbackError } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import pg from 'pg';
 import { backfillFamilies, child, family, familyGuardian, member, operator, schema, type Db } from '@oto/db';
 import { createTestDatabase, stopTestServer } from '@oto/db/testing';
 import { newId } from '@oto/shared';
 import { ensureFamilyFor } from '../src/services/family';
-import { compareFamilyReads, type FamilyShadowReport } from '../src/services/family-shadow';
+import { compareFamilyReads, FAMILY_SHADOW_KINDS, type FamilyShadowKind, type FamilyShadowReport } from '../src/services/family-shadow';
 import type { Tx } from '../src/services/tx';
 
 /**
@@ -18,12 +18,18 @@ import type { Tx } from '../src/services/tx';
  * dropoff-beo-20261119/FAMILY_PROFILES_PLAN.md` §3 and the runbook
  * `FAMILY_BACKFILL_RUNBOOK.md`), against a real database. ZZ TEST data only.
  *
- * Pinned: before the backfill it reports every member whose children have no
- * family yet, and nothing for a member a writer already gave a family or for
- * an archived member; after the backfill it reports no difference; a second
- * live guardian on a family and a child moved to another member's family are
- * each reported, on both members they touch; the command line exits 1 on a
- * difference and 0 on none, and prints ids and counts only.
+ * For every member of every operator, archived or not: the children first
+ * saved under the member beside the children the member holds through its
+ * families, removed children on both sides.
+ *
+ * Pinned: before the backfill it reports every member with a child that has
+ * no family yet, archived members included, and nothing for a member a writer
+ * already gave a family; after the backfill it reports no difference; a
+ * hand-made difference of each kind is found and put under its kind, on every
+ * member it touches; a guardian row naming another operator's member is not a
+ * difference, because the fence keeps that member from the family; the
+ * command line exits 1 on a difference and 0 on none, prints ids and counts
+ * only, and holds to --sample.
  */
 
 const API = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -53,18 +59,18 @@ async function newChild(memberId: string, label: string, extra: Partial<typeof c
   return id;
 }
 
-async function familyOf(memberId: string): Promise<string> {
-  const [row] = await db.select({ familyId: familyGuardian.familyId }).from(familyGuardian).where(eq(familyGuardian.memberId, memberId));
+async function familyOf(exec: Db | Tx, memberId: string): Promise<string> {
+  const [row] = await exec.select({ familyId: familyGuardian.familyId }).from(familyGuardian).where(eq(familyGuardian.memberId, memberId));
   return row!.familyId;
 }
 
 /** The compare with a change planted, inside a transaction that is rolled back. */
-async function compareWith(plant: (tx: Tx) => Promise<void>): Promise<FamilyShadowReport> {
+async function compareWith(plant: (tx: Tx) => Promise<void>, opts: { sample?: number } = {}): Promise<FamilyShadowReport> {
   const out: { report?: FamilyShadowReport } = {};
   try {
     await db.transaction(async (tx) => {
       await plant(tx);
-      out.report = await compareFamilyReads(tx, { batchSize: 2 });
+      out.report = await compareFamilyReads(tx, { batchSize: 2, ...opts });
       tx.rollback();
     });
   } catch (err) {
@@ -73,9 +79,20 @@ async function compareWith(plant: (tx: Tx) => Promise<void>): Promise<FamilyShad
   return out.report!;
 }
 
-function runCompare(): { code: number; out: string } {
+/** Each kind that has members: its members, each with its children of that kind. */
+function byKind(report: FamilyShadowReport): Partial<Record<FamilyShadowKind, Record<string, string[]>>> {
+  const out: Partial<Record<FamilyShadowKind, Record<string, string[]>>> = {};
+  for (const k of report.kinds) {
+    if (k.members === 0) continue;
+    expect(k.samples).toHaveLength(k.members);
+    out[k.key] = Object.fromEntries(k.samples.map((s) => [s.memberId, s.childIds]));
+  }
+  return out;
+}
+
+function runCompare(args: string[] = []): { code: number; out: string } {
   try {
-    const out = execFileSync(process.execPath, [TSX, join('scripts', 'family-shadow-compare.ts')], {
+    const out = execFileSync(process.execPath, [TSX, join('scripts', 'family-shadow-compare.ts'), ...args], {
       cwd: API,
       env: { ...process.env, DATABASE_URL: url },
       stdio: 'pipe',
@@ -139,22 +156,35 @@ afterAll(async () => {
 });
 
 describe('SCRUM-1024 family shadow compare', () => {
-  it('before the backfill, reports each live member whose children have no family yet', async () => {
+  it('lists its kinds of difference, each with a label', () => {
+    expect(FAMILY_SHADOW_KINDS.map((k) => k.key)).toEqual([
+      'child_without_family',
+      'child_family_not_held',
+      'child_family_archived',
+      'child_merged',
+      'child_of_another_member',
+    ]);
+  });
+
+  it('before the backfill, reports each member with a child that has no family yet, archived members and removed children included', async () => {
     const report = await compareFamilyReads(db, { batchSize: 2 });
     expect(report.membersCompared).toBe(6);
-    // Today's read: the live children of live members.
-    expect(report.childrenByMember).toBe(6);
+    // Every child first saved under a member, removed ones and an archived member's included.
+    expect(report.childrenByMember).toBe(8);
     expect(report.childrenThroughFamily).toBe(1);
-    const byMember = new Map(report.differences.map((d) => [d.memberId, d]));
-    expect([...byMember.keys()].sort()).toEqual([m.one, m.many, m.b].sort());
-    expect(byMember.get(m.many)).toEqual({
-      memberId: m.many,
-      operatorId: opA,
-      memberLive: true,
-      onlyByMember: [c.many1, c.many2].sort(),
-      onlyThroughFamily: [],
+    expect(report.membersWithDifference).toBe(4);
+    expect(report.ok).toBe(false);
+    expect(byKind(report)).toEqual({
+      child_without_family: {
+        [m.one]: [c.one],
+        [m.many]: [c.many1, c.many2, c.manyArchived].sort(),
+        [m.archived]: [c.archived],
+        [m.b]: [c.b1, c.b2].sort(),
+      },
     });
-    expect(byMember.get(m.b)!.operatorId).toBe(opB);
+    const kind = report.kinds.find((k) => k.key === 'child_without_family')!;
+    expect(kind.children).toBe(7);
+    expect(kind.samples.find((s) => s.memberId === m.b)!.operatorId).toBe(opB);
   });
 
   it('after the backfill, the two reads agree for every member', async () => {
@@ -162,54 +192,102 @@ describe('SCRUM-1024 family shadow compare', () => {
     expect(backfill.failure).toBeNull();
     expect(backfill.finished).toBe(true);
     const report = await compareFamilyReads(db, { batchSize: 2 });
-    expect(report.differences).toEqual([]);
-    expect(report.membersCompared).toBe(6);
-    expect(report.childrenByMember).toBe(6);
-    expect(report.childrenThroughFamily).toBe(6);
+    expect(report).toMatchObject({ ok: true, membersCompared: 6, childrenByMember: 8, childrenThroughFamily: 8, membersWithDifference: 0 });
+    expect(report.kinds.every((k) => k.members === 0 && k.children === 0 && k.samples.length === 0)).toBe(true);
   });
 
-  it('reports a second live guardian on a family, on the member it gives children to', async () => {
+  it('a second live guardian on a family: the children it gives, under "a child first saved under another member"', async () => {
     const report = await compareWith(async (tx) => {
-      await tx
-        .insert(familyGuardian)
-        .values({ id: newId(), operatorId: opA, familyId: await familyOf(m.one), memberId: m.none, source: 'link' });
+      await tx.insert(familyGuardian).values({ id: newId(), operatorId: opA, familyId: await familyOf(tx, m.one), memberId: m.none, source: 'link' });
     });
-    expect(report.differences).toEqual([
-      { memberId: m.none, operatorId: opA, memberLive: true, onlyByMember: [], onlyThroughFamily: [c.one] },
-    ]);
+    expect(byKind(report)).toEqual({ child_of_another_member: { [m.none]: [c.one] } });
+    expect(report.membersWithDifference).toBe(1);
   });
 
-  it('reports a child moved into the family of another member, on both members', async () => {
+  it('a child moved into another member\'s family, and a guardian row taken off: "not a live guardian of"', async () => {
     const report = await compareWith(async (tx) => {
-      await tx.update(child).set({ familyId: await familyOf(m.one) }).where(eq(child.id, c.many1));
+      await tx.update(child).set({ familyId: await familyOf(tx, m.one) }).where(eq(child.id, c.many1));
+      await tx.update(familyGuardian).set({ archivedAt: new Date() }).where(eq(familyGuardian.memberId, m.writer));
     });
-    const byMember = new Map(report.differences.map((d) => [d.memberId, d]));
-    expect(byMember.size).toBe(2);
-    expect(byMember.get(m.many)).toMatchObject({ onlyByMember: [c.many1], onlyThroughFamily: [] });
-    expect(byMember.get(m.one)).toMatchObject({ onlyByMember: [], onlyThroughFamily: [c.many1] });
+    expect(byKind(report)).toEqual({
+      child_family_not_held: { [m.many]: [c.many1], [m.writer]: [c.writer] },
+      child_of_another_member: { [m.one]: [c.many1] },
+    });
+  });
+
+  it('an archived family and a merged child, each under its kind', async () => {
+    const report = await compareWith(async (tx) => {
+      await tx.update(family).set({ archivedAt: new Date() }).where(eq(family.id, await familyOf(tx, m.b)));
+      await tx.update(child).set({ mergedIntoChildId: c.many1, archivedAt: new Date() }).where(eq(child.id, c.many2));
+    });
+    expect(byKind(report)).toEqual({
+      child_family_archived: { [m.b]: [c.b1, c.b2].sort() },
+      child_merged: { [m.many]: [c.many2] },
+    });
+  });
+
+  it('a child given to another operator\'s family: a difference on both members; a row naming another operator\'s member is none', async () => {
+    const moved = await compareWith(async (tx) => {
+      await tx.update(child).set({ familyId: await familyOf(tx, m.b) }).where(eq(child.id, c.one));
+    });
+    expect(byKind(moved)).toEqual({
+      child_family_not_held: { [m.one]: [c.one] },
+      child_of_another_member: { [m.b]: [c.one] },
+    });
+    // A guardian row in operator A's family naming operator B's member: B's member is read inside B, so it
+    // holds nothing of A's family (verify check 4 counts the row itself).
+    const fenced = await compareWith(async (tx) => {
+      await tx.insert(familyGuardian).values({ id: newId(), operatorId: opA, familyId: await familyOf(tx, m.one), memberId: m.b, source: 'link' });
+    });
+    expect(fenced.ok).toBe(true);
+  });
+
+  it('holds to the sample size, and counts every member beyond it', async () => {
+    // Three more parents on one family, the archived member among them (the compare does not ask a member's state).
+    const plant = async (tx: Tx) => {
+      const familyId = await familyOf(tx, m.one);
+      for (const memberId of [m.none, m.many, m.archived]) {
+        await tx.insert(familyGuardian).values({ id: newId(), operatorId: opA, familyId, memberId, source: 'link' });
+      }
+    };
+    expect(byKind(await compareWith(plant))).toEqual({
+      child_of_another_member: { [m.none]: [c.one], [m.many]: [c.one], [m.archived]: [c.one] },
+    });
+    const capped = (await compareWith(plant, { sample: 2 })).kinds.find((k) => k.key === 'child_of_another_member')!;
+    expect(capped).toMatchObject({ members: 3, children: 3 });
+    expect(capped.samples).toHaveLength(2);
   });
 
   it('the command line exits 1 on a difference and 0 on none, with ids and counts only', { timeout: 180_000 }, async () => {
     const plantedId = newId();
     await db
       .insert(familyGuardian)
-      .values({ id: plantedId, operatorId: opA, familyId: await familyOf(m.one), memberId: m.none, source: 'link' });
+      .values({ id: plantedId, operatorId: opA, familyId: await familyOf(db, m.one), memberId: m.none, source: 'link' });
     try {
       const differs = runCompare();
       expect(differs.code, differs.out).toBe(1);
-      expect(differs.out).toContain(`member ${m.none} (operator ${opA}, live)`);
-      expect(differs.out).toContain(`only through the family [${c.one}]`);
       expect(differs.out).toContain('members with a difference 1');
+      expect(differs.out).toContain('5. the member holds, through a family, a child first saved under another member: 1 members, 1 children');
+      expect(differs.out).toContain(`member ${m.none} (operator ${opA}): children ${c.one}`);
+      expect(differs.out).toContain('1. the member\'s own child has no family (the backfill has not reached it): 0 members, 0 children');
+      expect(differs.out).toContain('DIFFERENCES: see the runbook before going on');
       expect(differs.out).not.toMatch(/ZZ TEST|\+66\d/);
+      const quiet = runCompare(['--sample', '0']);
+      expect(quiet.code, quiet.out).toBe(1);
+      expect(quiet.out).not.toContain(`member ${m.none}`);
+      const refused = runCompare(['--apply']);
+      expect(refused.code, refused.out).toBe(1);
+      expect(refused.out).toContain('refused: unknown argument "--apply"');
     } finally {
       await db.delete(familyGuardian).where(eq(familyGuardian.id, plantedId));
     }
     const clean = runCompare();
     expect(clean.code, clean.out).toBe(0);
-    expect(clean.out).toContain('members compared 6; children by member_id 6; children through the family 6');
+    expect(clean.out).toContain('members compared 6; children by member_id 8; children through the family 8; members with a difference 0');
     expect(clean.out).toContain('NO DIFFERENCE');
     expect(clean.out).not.toMatch(/ZZ TEST|\+66\d/);
-    // The command line is read only: the families are as the backfill left them.
+    // The command line is read only: the families and guardian rows are as the backfill left them.
     expect(await db.select().from(family)).toHaveLength(5);
+    expect(await db.select().from(familyGuardian).where(and(eq(familyGuardian.memberId, m.none)))).toEqual([]);
   });
 });
