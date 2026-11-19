@@ -267,6 +267,7 @@ describe('a fetch answered after the dialog was closed and opened again changes 
         }),
       );
     });
+  // SCRUM-1016: the fields are labelled as BookDate.dc.html draws them — "Children", "Birthday child", "Turning" — and the box is named by its label.
   const field = (label: string) => document.querySelector<HTMLInputElement>(`input[aria-label="${label}"]`)!;
   const click = (testId: string) =>
     act(async () => {
@@ -277,7 +278,7 @@ describe('a fetch answered after the dialog was closed and opened again changes 
     // Olga's conversation: the dialog open on her pattern reading; Fetch pressed, the model still reading.
     const olga = deferred<BookDateProposal>();
     await render({ open: true, initial: PATTERN, proposal: FIRST_READ, onFetch: () => olga.promise });
-    expect(field('Kids').value).toBe('12');
+    expect(field('Children').value).toBe('12');
     await click('button-fetch-from-chat');
     expect(document.querySelector('[data-testid="button-fetch-from-chat"]')?.textContent).toContain('Fetching from the chat…');
 
@@ -286,16 +287,16 @@ describe('a fetch answered after the dialog was closed and opened again changes 
     const nok = deferred<BookDateProposal>();
     await render({ open: false, initial: PATTERN, proposal: FIRST_READ, onFetch: () => olga.promise });
     await render({ open: true, initial: NOK, proposal: null, onFetch: () => nok.promise });
-    expect(field('Kids').value).toBe('');
-    expect(field("Child's name").value).toBe('');
+    expect(field('Children').value).toBe('');
+    expect(field('Birthday child').value).toBe('');
     expect(document.querySelector('[data-testid="button-fetch-from-chat"]')?.textContent).toBe('Fetch from chat');
 
     // Olga's reading lands now: 15 kids, 6 adults, Emma, 3pm. Nok's dialog takes none of it.
     olga.resolve(LATER_READ);
     await settle();
-    expect(field('Kids').value).toBe('');
+    expect(field('Children').value).toBe('');
     expect(field('Adults').value).toBe('');
-    expect(field("Child's name").value).toBe('');
+    expect(field('Birthday child').value).toBe('');
     expect(field('Date').value).toBe('');
     expect(document.querySelector('[data-testid="book-date-fetched"]')).toBeNull();
     expect(document.body.textContent).not.toContain('now 15 kids');
@@ -304,8 +305,8 @@ describe('a fetch answered after the dialog was closed and opened again changes 
     await click('button-fetch-from-chat');
     nok.resolve(answer({ kids: family(8, '8 kids'), childName: family('Nam', 'Nam') }));
     await settle();
-    expect(field('Kids').value).toBe('8');
-    expect(field("Child's name").value).toBe('Nam');
+    expect(field('Children').value).toBe('8');
+    expect(field('Birthday child').value).toBe('Nam');
     expect(document.querySelector('[data-testid="book-date-fetched"]')?.textContent).toBe("Filled from the chat: number of kids, child's name.");
   });
 
@@ -317,7 +318,7 @@ describe('a fetch answered after the dialog was closed and opened again changes 
     await render({ open: true, initial: PATTERN, proposal: FIRST_READ, onFetch: () => first.promise });
     first.resolve(LATER_READ);
     await settle();
-    expect(field('Kids').value).toBe('12');
+    expect(field('Children').value).toBe('12');
     expect(field('Adults').value).toBe('4');
     expect(field('Start time').value).toBe('14:00');
     expect(document.querySelector('[data-testid="book-date-fetched"]')).toBeNull();

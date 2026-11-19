@@ -59,7 +59,7 @@ export function withReadyToBook<T extends { id: string }>(group: readonly T[] | 
 }
 
 /** "16 Nov, 19:00" in the parks' clock. */
-const verifiedAt = (iso: string): string =>
+export const verifiedAt = (iso: string): string =>
   new Intl.DateTimeFormat('en-GB', {
     day: 'numeric',
     month: 'short',

@@ -166,7 +166,8 @@ describe('the proof’s Thai chats: the kids are read once', () => {
     const html = dialog(draft, model);
     expect(html).not.toContain('two ways');
     expect(html).not.toContain('data-choice="kids"');
-    expect(html).toMatch(new RegExp(`aria-label="Kids"[^>]*value="${kids}"`));
+    // SCRUM-1016: the fields are labelled as BookDate.dc.html draws them — "Children", "Birthday child", "Turning" — and the box is named by its label.
+    expect(html).toMatch(new RegExp(`aria-label="Children"[^>]*value="${kids}"`));
     expect(html).toContain(`The chat says “${words}”`);
   });
 });

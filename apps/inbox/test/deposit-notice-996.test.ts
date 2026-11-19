@@ -199,7 +199,10 @@ describe('SCRUM-996: the paid deposit’s next step', () => {
     expect(cards[1]!.closest('[data-region="customer-panel"]')).not.toBeNull();
     const book = [...cards[0]!.querySelectorAll('button')].find((b) => b.textContent === 'Book the date')!;
     await act(async () => book.click());
-    expect(host!.ownerDocument.body.textContent).toContain('Book Date — ');
+    // SCRUM-1016: the dialog is titled "Book the date" (BookDate.dc.html), the deposit first in it.
+    const dialog = host!.ownerDocument.querySelector('[role="dialog"]');
+    expect(dialog?.querySelector('h2')?.textContent).toBe('Book the date');
+    expect(dialog?.querySelector('[data-testid="prebooking-deposit"]')).not.toBeNull();
   });
 
   it('a simulator payment says so first on the card', async () => {

@@ -1,19 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import {
-  Calendar,
-  Check,
-  Clock3,
-  Hash,
-  Loader2,
-  MapPin,
-  Phone,
-  RefreshCw,
-  Users,
-  Wand2,
-  type LucideIcon,
-} from 'lucide-react';
+import { CheckCircle2, ExternalLink, Loader2, RefreshCw, Sparkles } from 'lucide-react';
 import { Dialog } from '@/components/Dialog';
 import { Refusal } from '@/components/confirms';
+import { BTN_FOOTER_MAIN, BTN_MAIN, BTN_QUIET, BTN_SMALL, FOCUS, HINT, INPUT, LABEL } from '@/components/ui';
 import type { BookDateProposal, Prebooking } from '@/api/inbox';
 import { newId } from '@oto/shared';
 import {
@@ -31,14 +20,7 @@ import {
   type FieldSource,
   type ProposedField,
 } from '@/lib/beo';
-
-const CANCEL =
-  'rounded-lg border border-line px-3 py-1.5 text-[13px] font-medium text-ink hover:bg-wash disabled:opacity-60';
-/** "Fetch from chat" (SCRUM-826): the Cancel button's language, at the header row's size. */
-const FETCH =
-  'inline-flex items-center gap-1 rounded-lg border border-line px-2 py-0.5 text-[11px] font-medium text-ink hover:bg-wash disabled:opacity-60';
-const INPUT =
-  'w-full rounded-lg border border-line bg-card px-2.5 py-1.5 text-[13px] text-ink placeholder:text-ink-muted focus:border-field focus:outline-none focus:ring-2 focus:ring-amber-100 dark:focus:ring-amber-500/20';
+import { depositPaidCard, verifiedAt } from '@/lib/list-state';
 
 /** What Save sends: the draft read into the route's fields. */
 export interface BookDateValues {
@@ -84,17 +66,16 @@ export function readDraft(d: BookDateDraft): { values: BookDateValues } | { prob
   };
 }
 
+
 /** "from the family" / "from the team": whose line the chat's words are. */
 export function SourceMark({ source }: { source: FieldSource['source'] }) {
   if (!source) return null;
   return (
-    <span className="ml-1 inline-flex items-center rounded-full bg-band px-1.5 py-px text-[10px] font-medium text-ink-soft">
+    <span className="ml-1 inline-flex items-center rounded-lg bg-band px-1.5 py-px text-[11px] font-medium text-ink-soft">
       {source === 'team' ? 'from the team' : 'from the family'}
     </span>
   );
 }
-
-const HINT = 'text-[11px] text-ink-muted';
 
 /** The chat's own words for a value, and whose line they are. */
 function Says({ text, source }: { text: string; source: FieldSource['source'] }) {
@@ -109,24 +90,55 @@ function Says({ text, source }: { text: string; source: FieldSource['source'] })
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+/** "2026-11-21" as a person reads it: "Sat 21 Nov 2026". */
+function dayOf(value: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!m) return value;
+  const day = new Date(`${value}T12:00:00Z`).getUTCDay();
+  return `${DAYS[day] ?? ''} ${Number(m[3])} ${MONTHS[Number(m[2]) - 1] ?? ''} ${m[1]}`.trim();
+}
+
 /** A reading's value as a person reads it: "Sat 21 Nov 2026", a park's name, the number. */
 function shown(
   field: ProposedField,
   value: string,
   branches: readonly { value: string; label: string }[],
 ): string {
-  if (field === 'date') {
-    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-    if (!m) return value;
-    const day = new Date(`${value}T12:00:00Z`).getUTCDay();
-    return `${DAYS[day] ?? ''} ${Number(m[3])} ${MONTHS[Number(m[2]) - 1] ?? ''} ${m[1]}`.trim();
-  }
+  if (field === 'date') return dayOf(value);
   if (field === 'branchId')
     return branches.find((b) => b.value === value)?.label ?? 'The conversation’s park';
   return value;
 }
 
-/** Two readings of one field: the person picks one, or types their own. */
+/**
+ * What Save says (SCRUM-1016, BookDate.dc.html "Book Sat 20 Dec, 14:00"): the
+ * day and the time it will book, with the year so a booking is never made
+ * for the wrong one; "Book the date" until a date is chosen. Opened from
+ * Create BEO, it says the BEO opens after.
+ */
+export function bookDateSaveLabel(draft: Pick<BookDateDraft, 'date' | 'startTime'>, thenOpensBeo: boolean): string {
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(draft.date) ? dayOf(draft.date) : null;
+  const time = /^([01]\d|2[0-3]):[0-5]\d$/.test(draft.startTime) ? draft.startTime : null;
+  const what = date ? `Book ${date}${time ? `, ${time}` : ''}` : 'Book the date';
+  return thenOpensBeo ? `${what} and open the BEO` : what;
+}
+
+/** The plain question over two readings of one field (BookDate.dc.html "Which start time is right?"). */
+const CHOICE_QUESTION: Record<ProposedField, string> = {
+  date: 'Which date is right?',
+  startTime: 'Which start time is right?',
+  branchId: 'Which park is right?',
+  kids: 'How many children?',
+  adults: 'How many adults?',
+  childName: 'What is the birthday child’s name?',
+  childAge: 'Which age is the child turning?',
+};
+
+/**
+ * Two readings of one field, asked plainly with both options under the
+ * fields they belong to: the person picks one, or types their own in the
+ * field above. `data-choice` names the field for the tests.
+ */
 function Choice({
   field,
   options,
@@ -139,53 +151,59 @@ function Choice({
   onPick: (option: FieldOption) => void;
 }) {
   return (
-    <span className="flex flex-col gap-1" data-choice={field}>
-      <span className="text-[11px] font-medium text-amber-700 dark:text-amber-300">
-        The chat reads two ways: choose one
-      </span>
-      <span className="flex flex-wrap gap-1.5">
+    <fieldset
+      data-choice={field}
+      className="col-span-2 m-0 flex min-w-0 flex-col gap-2.5 rounded-[14px] border border-ask-line bg-ask px-3 pb-3 pt-1"
+    >
+      <legend className="px-1 text-[13px] font-bold text-ask-ink">{CHOICE_QUESTION[field]}</legend>
+      <div className="grid grid-cols-2 gap-2">
         {options.map((o) => (
           <button
             key={`${o.by}-${o.value}`}
             type="button"
             onClick={() => onPick(o)}
-            className="inline-flex max-w-full items-center gap-1 rounded-lg border border-amber-200 dark:border-amber-500/40 bg-amber-50 dark:bg-amber-500/10 px-2 py-1 text-left text-[12px] text-ink hover:bg-amber-100 dark:hover:bg-amber-500/20"
+            aria-pressed={false}
+            className={`flex min-h-12 min-w-0 flex-col items-center justify-center rounded-xl border border-field bg-card px-2 py-1.5 text-center text-ink hover:border-ink ${FOCUS}`}
           >
-            <span className="font-medium">{shown(field, o.value, branches)}</span>
-            {o.text && (
-              <span className="truncate text-ink-muted">“{o.text}”</span>
-            )}
-            <SourceMark source={o.source} />
+            <span className="max-w-full truncate text-[14px] font-bold">{shown(field, o.value, branches)}</span>
+            <span className="max-w-full truncate text-[11.5px] font-medium text-ink-soft">
+              {o.text ? `“${o.text}” · ` : ''}
+              {o.source === 'team' ? 'from the team' : o.source === 'family' ? 'from the family' : 'from the chat'}
+            </span>
           </button>
         ))}
-      </span>
-    </span>
+      </div>
+    </fieldset>
   );
 }
 
+/**
+ * A field as BookDate.dc.html draws it: its label over a 48 px box, the
+ * chat's words under it. A field the chat reads two ways wears the amber
+ * edge and says so; the question itself is asked below the row.
+ */
 function Field({
-  icon: Icon,
   label,
   full = false,
   hint,
   children,
 }: {
-  icon: LucideIcon;
   label: string;
   full?: boolean;
   hint?: ReactNode;
   children: ReactNode;
 }) {
   return (
-    <label className={`flex min-w-0 flex-col gap-1 ${full ? 'sm:col-span-2' : ''}`}>
-      <span className="flex items-center gap-1.5 text-[11px] font-medium text-ink-soft">
-        <Icon className="h-3 w-3 text-ink-muted" /> {label}
-      </span>
+    <label className={`flex min-w-0 flex-col gap-1.5 ${full ? 'col-span-2' : ''}`}>
+      <span className={LABEL}>{label}</span>
       {children}
       {hint}
     </label>
   );
 }
+
+/** A field's box, with the amber edge while the chat reads it two ways. */
+const boxOf = (twoWays: boolean): string => (twoWays ? INPUT.replace('border border-field', 'border-2 border-ask-edge') : INPUT);
 
 /**
  * Book Date's confirm (SCRUM-775): the prototype's BEO modal pre-filled from
@@ -193,6 +211,11 @@ function Field({
  * needs — the park, the date and time, the guests, who is booking and the
  * child — on the house Dialog. Save books a TENTATIVE birthday there; the
  * BEO itself is then the Events module's own form (Create BEO).
+ *
+ * Laid out as BookDate.dc.html (SCRUM-1016): the deposit first, then the
+ * line that the fields were filled in from the chat, then large fields, and
+ * where the chat reads a field two ways the question asked plainly with both
+ * options before Save; Save names the day and time it books.
  *
  * The caller mints the event's id when the dialog opens and sends it on every
  * Save, so a second press, or a Save after a lost answer, is the same event.
@@ -360,18 +383,13 @@ export function BookDateDialog({
     setState((s) => editBookDate(s, k, v));
   const pick = (field: ProposedField, option: FieldOption) =>
     setState((s) => pickBookDateChoice(s, field, option));
-  /** A field's line under it: the two readings to pick from, else the chat's words for its value. */
+  /**
+   * A field's line under it: that the chat reads it two ways (the question is
+   * asked under the row, `choiceFor`), else the chat's words for its value.
+   */
   const hint = (field: ProposedField, otherwise?: ReactNode): ReactNode => {
-    const options = state.choices[field];
-    if (options)
-      return (
-        <Choice
-          field={field}
-          options={options}
-          branches={branches}
-          onPick={(o) => pick(field, o)}
-        />
-      );
+    if (state.choices[field])
+      return <span className="text-[12px] font-semibold text-ask-ink">The chat reads two ways: choose one</span>;
     const source = state.sources[field];
     if (source) return <Says text={source.text} source={source.source} />;
     return otherwise;
@@ -429,284 +447,332 @@ export function BookDateDialog({
     onSave(read.values);
   };
 
+
+  const branchName = (id: string) => branches.find((b) => b.value === id)?.label ?? 'another park';
+  /** The question over a field's two readings, under the row it belongs to. */
+  const choiceFor = (field: ProposedField): ReactNode => {
+    const options = state.choices[field];
+    return options ? (
+      <Choice key={`choice-${field}`} field={field} options={options} branches={branches} onPick={(o) => pick(field, o)} />
+    ) : null;
+  };
+  const twoWays = (field: ProposedField) => Boolean(state.choices[field]);
+  const paidCard = deposit?.state === 'paid' ? depositPaidCard(deposit, 'paid') : null;
+
   return (
     <Dialog
       open={open}
       onClose={busy ? () => undefined : onCancel}
-      icon={Calendar}
-      tone="money"
-      title={`Book Date — ${customer}`}
-      subtitle="Request the agreed deposit first. After gateway verification, check capacity and create the booking. A draft reserves no date."
+      title="Book the date"
+      subtitle={`${customer} · birthday party`}
+      closeLabel="Close without booking"
       wide
       footer={
         <>
           {waiting && (
-            <span className={`min-w-0 flex-1 self-center ${HINT}`} data-testid="book-date-waiting">
+            <span
+              className={`min-w-0 basis-full self-center text-[12.5px] font-semibold text-ask-ink md:flex-1 md:basis-auto`}
+              data-testid="book-date-waiting"
+            >
               {waiting}
             </span>
           )}
-          <button type="button" onClick={onCancel} disabled={busy} className={CANCEL}>
+          <button type="button" onClick={onCancel} disabled={busy} className={BTN_QUIET}>
             Cancel
           </button>
           <button
             type="button"
             onClick={save}
             disabled={busy || depositBusy || waiting !== null || !depositPaid}
-            title={waiting ?? undefined}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-1.5 text-[13px] font-medium text-white hover:bg-amber-600 disabled:opacity-60"
+            data-testid="book-date-save"
+            className={`${BTN_FOOTER_MAIN} text-center leading-tight`}
           >
-            {busy ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Calendar className="h-3.5 w-3.5" />
-            )}
-            {thenOpensBeo ? 'Book date and open the BEO' : 'Book date'}
+            {busy && <Loader2 aria-hidden className="h-4 w-4 shrink-0 animate-spin" />}
+            {bookDateSaveLabel(draft, thenOpensBeo)}
           </button>
         </>
       }
     >
-      <div
-        className="mb-3 rounded-lg border border-amber-200 p-3 text-[13px]"
-        data-testid="prebooking-deposit"
-      >
-        {deposit?.simulator && (
-          <p className="font-semibold">
-            Simulator test payment: no real bank deposit has been received.
+      <div className="flex flex-col gap-3.5">
+        {/* The deposit first (BookDate.dc.html): paid and verified on the green ground, else where it stands and what may be done. */}
+        <section
+          aria-label="Deposit"
+          data-testid="prebooking-deposit"
+          className={`flex flex-col gap-2 rounded-[14px] border px-3 py-2.5 text-[13.5px] ${
+            paidCard
+              ? 'border-money-line bg-money text-money-ink'
+              : deposit?.state === 'needs_review'
+                ? 'border-needs bg-needs text-needs-ink'
+                : 'border-line bg-card text-ink'
+          }`}
+        >
+          {deposit?.simulator && (
+            <p className="font-semibold">Simulator test payment: no real bank deposit has been received.</p>
+          )}
+          {paidCard ? (
+            <p className="flex items-start gap-2.5">
+              <CheckCircle2 aria-hidden className="mt-px h-5 w-5 shrink-0" />
+              <span className="min-w-0">
+                <strong className="font-bold">{paidCard.title}</strong>
+                {deposit?.paidAt ? ` · verified ${verifiedAt(deposit.paidAt)}` : ''}
+                <span className="block">Full deposit: Gateway verified — check park capacity before booking.</span>
+                {!depositPaid && deposit && (
+                  <span className="block font-semibold">
+                    Paid for {branchName(deposit.booking.branchId)}: booking unlocks at that park only.
+                  </span>
+                )}
+              </span>
+            </p>
+          ) : (
+            <>
+              {!onRequestDeposit && (
+                <p>A manager requests the agreed deposit. The birthdays team can book after gateway verification.</p>
+              )}
+              <p>
+                Full deposit:{' '}
+                {deposit?.state === 'needs_review'
+                  ? 'Payment needs staff resolution. No booking has been created.'
+                  : deposit?.state === 'expired' || deposit?.state === 'failed'
+                    ? 'The payment request ended unpaid. Request a new link.'
+                    : 'Gateway verification required. A payment slip or staff receipt does not unlock booking.'}
+              </p>
+              <label className="flex min-w-0 flex-col gap-1.5">
+                <span className={LABEL}>Agreed deposit (฿)</span>
+                <input
+                  aria-label="Agreed deposit (baht)"
+                  inputMode="numeric"
+                  value={depositAmount}
+                  onChange={(e) => setDepositAmount(e.target.value)}
+                  disabled={deposit !== null || depositBusy || !onRequestDeposit}
+                  className={`${INPUT} max-w-[14rem]`}
+                />
+              </label>
+            </>
+          )}
+          {((onRequestDeposit && !paidCard) || onReadDeposit || deposit?.paymentLink) && (
+          <div className="flex flex-wrap items-center gap-2">
+            {onRequestDeposit && !paidCard && (
+              <button
+                type="button"
+                className={BTN_MAIN}
+                onClick={() => void requestDeposit()}
+                disabled={
+                  busy ||
+                  depositBusy ||
+                  waiting !== null ||
+                  deposit?.state === 'paid' ||
+                  deposit?.state === 'needs_review'
+                }
+              >
+                Request deposit
+              </button>
+            )}
+            {onReadDeposit && (
+              <button
+                type="button"
+                className={BTN_SMALL}
+                onClick={() => void refreshDeposit()}
+                disabled={busy || depositBusy}
+              >
+                {depositBusy && <Loader2 aria-hidden className="h-3.5 w-3.5 animate-spin" />}
+                Check payment
+              </button>
+            )}
+            {deposit?.paymentLink && (
+              <a
+                href={deposit.paymentLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`inline-flex min-h-11 items-center gap-1.5 rounded-lg px-1 font-semibold text-coral-ink underline underline-offset-2 md:min-h-8 ${FOCUS}`}
+              >
+                Open payment page
+                <ExternalLink aria-hidden className="h-3.5 w-3.5" />
+              </a>
+            )}
+          </div>
+          )}
+        </section>
+
+        {/* Filled in from the chat (SCRUM-821, 826): how the fields were read, and the way to read it again. */}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <p className="flex min-w-0 flex-1 items-center gap-2 text-[13px] text-teal">
+            {reading ? (
+              <span className="inline-flex items-center gap-2" data-testid="book-date-reading">
+                <Loader2 aria-hidden className="h-4 w-4 shrink-0 animate-spin" /> Reading the whole chat…
+              </span>
+            ) : (
+              <>
+                <Sparkles aria-hidden className="h-4 w-4 shrink-0" />
+                <span className="min-w-0">
+                  {proposal?.model === 'ai' && (
+                    <span className="font-semibold" data-testid="book-date-read">
+                      Read the whole chat.{' '}
+                    </span>
+                  )}
+                  Filled in from the chat. Check each line before you book.
+                </span>
+              </>
+            )}
           </p>
-        )}
-        {!onRequestDeposit && <p>A manager requests the agreed deposit. The birthdays team can book after gateway verification.</p>}
-        <p>
-          Full deposit:{' '}
-          {deposit?.state === 'paid'
-            ? 'Gateway verified — check park capacity before booking.'
-            : deposit?.state === 'needs_review'
-              ? 'Payment needs staff resolution. No booking has been created.'
-              : deposit?.state === 'expired' || deposit?.state === 'failed'
-                ? 'The payment request ended unpaid. Request a new link.'
-                : 'Gateway verification required. A payment slip or staff receipt does not unlock booking.'}
-        </p>
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <label>
-            Agreed deposit (฿){' '}
-            <input
-              aria-label="Agreed deposit (baht)"
-              inputMode="numeric"
-              value={depositAmount}
-              onChange={(e) => setDepositAmount(e.target.value)}
-              disabled={deposit !== null || depositBusy || !onRequestDeposit}
-              className={INPUT}
-            />
-          </label>
-          {onRequestDeposit && (
+          {onFetch && (
             <button
               type="button"
-              className={CANCEL}
-              onClick={() => void requestDeposit()}
-              disabled={
-                busy ||
-                depositBusy ||
-                waiting !== null ||
-                deposit?.state === 'paid' ||
-                deposit?.state === 'needs_review'
-              }
+              onClick={() => void fetchFromChat()}
+              disabled={busy || reading || fetching}
+              className={BTN_SMALL}
+              title="Read the chat again as it is now. What you typed here stays."
+              data-testid="button-fetch-from-chat"
             >
-              Request deposit
+              {fetching ? (
+                <Loader2 aria-hidden className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <RefreshCw aria-hidden className="h-3.5 w-3.5" />
+              )}
+              {fetching ? 'Fetching from the chat…' : 'Fetch from chat'}
             </button>
           )}
-          {onReadDeposit && (
-            <button
-              type="button"
-              className={CANCEL}
-              onClick={() => void refreshDeposit()}
-              disabled={busy || depositBusy}
-            >
-              Check payment
-            </button>
-          )}
-          {deposit?.paymentLink && (
-            <a
-              href={deposit.paymentLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline"
-            >
-              Open payment page
-            </a>
+          {onFetch && !fetching && state.fetched && (
+            <span className={`${HINT} basis-full`} data-testid="book-date-fetched">
+              {bookDateFetchLine(state.fetched)}
+            </span>
           )}
         </div>
-        <p className="mt-2">
-          Payment never creates the booking automatically. If the date cannot be accommodated, staff
-          must resolve the paid deposit with the family.
-        </p>
-      </div>
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 dark:bg-indigo-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-indigo-700 dark:text-indigo-300 ring-1 ring-indigo-200 dark:ring-indigo-500/30">
-          <Wand2 className="h-3 w-3" /> Read from the chat
-        </span>
-        {reading && (
-          <span
-            className="inline-flex items-center gap-1 text-[11px] text-ink-muted"
-            data-testid="book-date-reading"
-          >
-            <Loader2 className="h-3 w-3 animate-spin" /> Reading the whole chat…
-          </span>
-        )}
-        {!reading && proposal?.model === 'ai' && (
-          <span
-            className="inline-flex items-center gap-1 text-[11px] text-emerald-700 dark:text-emerald-300"
-            data-testid="book-date-read"
-          >
-            <Check className="h-3 w-3" /> Read the whole chat
-          </span>
-        )}
-        {onFetch && (
-          <button
-            type="button"
-            onClick={() => void fetchFromChat()}
-            disabled={busy || reading || fetching}
-            className={FETCH}
-            title="Read the chat again as it is now. What you typed here stays."
-            data-testid="button-fetch-from-chat"
-          >
-            {fetching ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              <RefreshCw className="h-3 w-3" />
+
+        <div className="grid grid-cols-2 gap-x-3 gap-y-3.5">
+          <Field
+            label="Date"
+            hint={hint(
+              'date',
+              draft.dateFrom ? (
+                <Says text={draft.dateFrom} source={null} />
+              ) : (
+                <span className={HINT}>The chat names no date</span>
+              ),
             )}
-            {fetching ? 'Fetching from the chat…' : 'Fetch from chat'}
-          </button>
-        )}
-        {onFetch && !fetching && state.fetched && (
-          <span className={HINT} data-testid="book-date-fetched">
-            {bookDateFetchLine(state.fetched)}
-          </span>
-        )}
-      </div>
-      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-        <Field
-          icon={Calendar}
-          label="Date"
-          hint={hint(
-            'date',
-            draft.dateFrom ? (
-              <Says text={draft.dateFrom} source={null} />
-            ) : (
-              <span className={HINT}>The chat names no date</span>
-            ),
-          )}
-        >
-          <input
-            type="date"
-            value={draft.date}
-            onChange={(e) => set('date', e.target.value)}
-            aria-label="Date"
-            className={INPUT}
-          />
-        </Field>
-        <Field
-          icon={Clock3}
-          label="Start time"
-          hint={hint(
-            'startTime',
-            draft.timeFrom ? (
-              <Says text={draft.timeFrom} source={null} />
-            ) : draft.startTime ? undefined : (
-              <span className={HINT}>The chat names no start time</span>
-            ),
-          )}
-        >
-          <input
-            type="time"
-            value={draft.startTime}
-            onChange={(e) => set('startTime', e.target.value)}
-            aria-label="Start time"
-            className={INPUT}
-          />
-        </Field>
-        <Field
-          icon={MapPin}
-          label="Park"
-          full
-          hint={hint(
-            'branchId',
-            state.parkHint ? (
-              <Says text={state.parkHint.text} source={state.parkHint.source} />
-            ) : undefined,
-          )}
-        >
-          <select
-            value={draft.branchId}
-            onChange={(e) => set('branchId', e.target.value)}
-            aria-label="Park"
-            className={INPUT}
           >
-            <option value="">Choose the park</option>
-            {branches.map((b) => (
-              <option key={b.value} value={b.value}>
-                {b.label}
-              </option>
-            ))}
-          </select>
-        </Field>
-        {/* SCRUM-955: an empty count shows the window's dash (as the age does), never a 0 that reads as none. */}
-        <Field icon={Hash} label="# of kids" hint={hint('kids')}>
-          <input
-            inputMode="numeric"
-            value={draft.kids}
-            onChange={(e) => set('kids', e.target.value)}
-            placeholder={reading ? 'reading…' : '—'}
-            aria-label="Kids"
-            className={INPUT}
-          />
-        </Field>
-        <Field icon={Hash} label="# of adults" hint={hint('adults')}>
-          <input
-            inputMode="numeric"
-            value={draft.adults}
-            onChange={(e) => set('adults', e.target.value)}
-            placeholder={reading ? 'reading…' : '—'}
-            aria-label="Adults"
-            className={INPUT}
-          />
-        </Field>
-        <Field icon={Users} label="Booking name">
-          <input
-            value={draft.contactName}
-            onChange={(e) => set('contactName', e.target.value)}
-            aria-label="Booking name"
-            className={INPUT}
-          />
-        </Field>
-        <Field icon={Phone} label="Phone">
-          <input
-            value={draft.phone}
-            onChange={(e) => set('phone', e.target.value)}
-            placeholder="+66…"
-            aria-label="Phone"
-            className={INPUT}
-          />
-        </Field>
-        <Field icon={Users} label="Child's name" hint={hint('childName')}>
-          <input
-            value={draft.childName}
-            onChange={(e) => set('childName', e.target.value)}
-            placeholder={reading ? 'reading…' : 'If the chat says it'}
-            aria-label="Child's name"
-            className={INPUT}
-          />
-        </Field>
-        <Field icon={Hash} label="Turning (age)" hint={hint('childAge')}>
-          <input
-            inputMode="numeric"
-            value={draft.childAge}
-            onChange={(e) => set('childAge', e.target.value)}
-            placeholder={reading ? 'reading…' : '—'}
-            aria-label="Turning age"
-            className={INPUT}
-          />
-        </Field>
+            <input
+              type="date"
+              value={draft.date}
+              onChange={(e) => set('date', e.target.value)}
+              aria-label="Date"
+              className={boxOf(twoWays('date'))}
+            />
+          </Field>
+          <Field
+            label="Start time"
+            hint={hint(
+              'startTime',
+              draft.timeFrom ? (
+                <Says text={draft.timeFrom} source={null} />
+              ) : draft.startTime ? undefined : (
+                <span className={HINT}>The chat names no start time</span>
+              ),
+            )}
+          >
+            <input
+              type="time"
+              value={draft.startTime}
+              onChange={(e) => set('startTime', e.target.value)}
+              aria-label="Start time"
+              className={boxOf(twoWays('startTime'))}
+            />
+          </Field>
+          {choiceFor('date')}
+          {choiceFor('startTime')}
+          <Field
+            label="Park"
+            full
+            hint={hint(
+              'branchId',
+              state.parkHint ? <Says text={state.parkHint.text} source={state.parkHint.source} /> : undefined,
+            )}
+          >
+            <select
+              value={draft.branchId}
+              onChange={(e) => set('branchId', e.target.value)}
+              aria-label="Park"
+              className={boxOf(twoWays('branchId'))}
+            >
+              <option value="">Choose the park</option>
+              {branches.map((b) => (
+                <option key={b.value} value={b.value}>
+                  {b.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+          {choiceFor('branchId')}
+          {/* SCRUM-955: an empty count shows the window's dash (as the age does), never a 0 that reads as none. */}
+          <Field label="Children" hint={hint('kids')}>
+            <input
+              inputMode="numeric"
+              value={draft.kids}
+              onChange={(e) => set('kids', e.target.value)}
+              placeholder={reading ? 'reading…' : '—'}
+              aria-label="Children"
+              className={boxOf(twoWays('kids'))}
+            />
+          </Field>
+          <Field label="Adults" hint={hint('adults')}>
+            <input
+              inputMode="numeric"
+              value={draft.adults}
+              onChange={(e) => set('adults', e.target.value)}
+              placeholder={reading ? 'reading…' : '—'}
+              aria-label="Adults"
+              className={boxOf(twoWays('adults'))}
+            />
+          </Field>
+          {choiceFor('kids')}
+          {choiceFor('adults')}
+          <Field label="Birthday child" hint={hint('childName')}>
+            <input
+              value={draft.childName}
+              onChange={(e) => set('childName', e.target.value)}
+              placeholder={reading ? 'reading…' : 'If the chat says it'}
+              aria-label="Birthday child"
+              className={boxOf(twoWays('childName'))}
+            />
+          </Field>
+          <Field label="Turning" hint={hint('childAge')}>
+            <input
+              inputMode="numeric"
+              value={draft.childAge}
+              onChange={(e) => set('childAge', e.target.value)}
+              placeholder={reading ? 'reading…' : '—'}
+              aria-label="Turning"
+              className={boxOf(twoWays('childAge'))}
+            />
+          </Field>
+          {choiceFor('childName')}
+          {choiceFor('childAge')}
+          <Field label="Booking name">
+            <input
+              value={draft.contactName}
+              onChange={(e) => set('contactName', e.target.value)}
+              aria-label="Booking name"
+              className={INPUT}
+            />
+          </Field>
+          <Field label="Phone">
+            <input
+              value={draft.phone}
+              onChange={(e) => set('phone', e.target.value)}
+              placeholder="+66…"
+              aria-label="Phone"
+              inputMode="tel"
+              className={INPUT}
+            />
+          </Field>
+        </div>
+
+        <p className="text-[12.5px] leading-relaxed text-ink-muted">
+          Booking puts the party in the Events calendar as tentative; a draft reserves no date. Payment never
+          creates the booking automatically. If the date cannot be accommodated, staff must resolve the paid deposit
+          with the family.
+        </p>
+        {(problem ?? error) && <Refusal text={(problem ?? error)!} />}
       </div>
-      {(problem ?? error) && <Refusal text={(problem ?? error)!} />}
     </Dialog>
   );
 }

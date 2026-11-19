@@ -139,17 +139,20 @@ function dialog(initial: BookDateDraft, proposal: BookDateProposal | null, readi
   );
 }
 
+// SCRUM-1016: the fields are labelled as BookDate.dc.html draws them — "Children", "Birthday child", "Turning" — and the box is named by its label.
 /** The `<input …>` tag named `label`, as rendered. */
 function inputTag(html: string, label: string): string {
   return new RegExp(`<input[^>]*aria-label="${label}"[^>]*>`).exec(html)?.[0] ?? '';
 }
 
-/** The `<button …>…</button>` whose text is exactly `text`. */
-function buttonNamed(html: string, text: string): string {
-  const re = /<button[^>]*>(?:(?!<\/button>).)*<\/button>/gs;
-  for (const m of html.matchAll(re)) if (m[0].replace(/<[^>]+>/g, '').trim() === text) return m[0];
-  return '';
+/**
+ * Save, as rendered. SCRUM-1016: it names what it books ("Book Sat 12 Dec
+ * 2026, 13:00", BookDate.dc.html), so it is found by its test id, not its words.
+ */
+function saveButton(html: string): string {
+  return /<button[^>]*data-testid="book-date-save"[^>]*>(?:(?!<\/button>).)*<\/button>/s.exec(html)?.[0] ?? '';
 }
+const wordsOf = (tag: string) => tag.replace(/<[^>]+>/g, '').trim();
 
 /** A button that carries the disabled attribute (not the `disabled:` style). */
 const DISABLED = / disabled=""/;
@@ -175,25 +178,25 @@ describe('an empty count shows no figure', () => {
     expect(draft.adults).toBe('');
     const html = dialog(draft, NO_COUNT_MODEL);
     expect(html).not.toContain('placeholder="0"');
-    expect(inputTag(html, 'Kids')).toContain('value=""');
-    expect(inputTag(html, 'Kids')).toContain('placeholder="—"');
+    expect(inputTag(html, 'Children')).toContain('value=""');
+    expect(inputTag(html, 'Children')).toContain('placeholder="—"');
     expect(inputTag(html, 'Adults')).toContain('value=""');
     expect(inputTag(html, 'Adults')).toContain('placeholder="—"');
     // The same mark the window already gives an empty age.
-    expect(inputTag(html, 'Turning age')).toContain('placeholder="—"');
+    expect(inputTag(html, 'Turning')).toContain('placeholder="—"');
   });
 
   it('while the kids are read two ways (the proof’s picture 06), both boxes are empty and neither shows a 0', () => {
     const html = dialog(draftOf(P6), P6_MODEL);
     expect(html).toContain('data-choice="kids"');
-    expect(inputTag(html, 'Kids')).toContain('value=""');
+    expect(inputTag(html, 'Children')).toContain('value=""');
     expect(inputTag(html, 'Adults')).toContain('value=""');
     expect(html).not.toContain('placeholder="0"');
   });
 
   it('while the model reads, the boxes still say "reading…"', () => {
     const html = dialog(draftOf(NO_COUNT), null, true);
-    expect(inputTag(html, 'Kids')).toContain('placeholder="reading…"');
+    expect(inputTag(html, 'Children')).toContain('placeholder="reading…"');
     expect(inputTag(html, 'Adults')).toContain('placeholder="reading…"');
   });
 });
@@ -203,7 +206,7 @@ describe('a real 0 still shows as 0', () => {
     const draft = draftOf([msg('0 kids at 13:00 on 12 December, just adults (ZZ TEST)')]);
     expect(draft.kids).toBe('0');
     const html = dialog(draft, null);
-    expect(inputTag(html, 'Kids')).toContain('value="0"');
+    expect(inputTag(html, 'Children')).toContain('value="0"');
     expect(readDraft(draft)).toMatchObject({ values: { kids: 0 } });
   });
 
@@ -233,7 +236,7 @@ describe('a count the chat reads two ways is chosen before Book date saves', () 
     expect(merged.choices.kids?.map((o) => o.value)).toEqual(['12', '10']);
     expect(pendingChoice(merged)).toBe(KIDS_WAIT);
     const html = dialog(draftOf(P6), P6_MODEL);
-    expect(buttonNamed(html, 'Book date')).toMatch(DISABLED);
+    expect(saveButton(html)).toMatch(DISABLED);
     expect(html).toContain(`data-testid="book-date-waiting">${KIDS_WAIT}<`);
     // Opened from Create BEO, the same.
     const beo = renderToStaticMarkup(
@@ -252,13 +255,15 @@ describe('a count the chat reads two ways is chosen before Book date saves', () 
         reading: false,
       }),
     );
-    expect(buttonNamed(beo, 'Book date and open the BEO')).toMatch(DISABLED);
+    expect(saveButton(beo)).toMatch(DISABLED);
+    expect(wordsOf(saveButton(beo))).toMatch(/ and open the BEO$/);
   });
 
   it('with nothing two ways, "Book date" is ready and no line waits', () => {
     const html = dialog(draftOf(NO_COUNT), NO_COUNT_MODEL);
-    expect(buttonNamed(html, 'Book date')).not.toBe('');
-    expect(buttonNamed(html, 'Book date')).not.toMatch(DISABLED);
+    expect(saveButton(html)).not.toBe('');
+    expect(saveButton(html)).not.toMatch(DISABLED);
+    expect(wordsOf(saveButton(html))).toBe('Book Sat 12 Dec 2026, 13:00');
     expect(html).not.toContain('book-date-waiting');
   });
 
@@ -325,7 +330,7 @@ describe('every other field the window reads two ways is held the same way', () 
     // The model says nothing of the kids here: only this field is read two ways.
     expect(pendingChoice(mergeBookDateProposal(freshBookDate(initial), model, BRANCH_IDS))).toBe(wait);
     const html = dialog(initial, model);
-    expect(buttonNamed(html, 'Book date')).toMatch(DISABLED);
+    expect(saveButton(html)).toMatch(DISABLED);
     // The markup writes the apostrophe of "child's name" as &#x27;.
     expect(html).toContain(`data-testid="book-date-waiting">${wait.replace(/'/g, '&#x27;')}<`);
   });
@@ -377,11 +382,11 @@ describe('the dialog in a page: a pick or a typed figure frees Book date at once
       );
     });
   const buttons = () => Array.from(document.querySelectorAll<HTMLButtonElement>('button'));
-  const bookButton = () => buttons().find((b) => b.textContent?.trim() === 'Book date');
+  const bookButton = () => document.querySelector<HTMLButtonElement>('[data-testid="book-date-save"]') ?? undefined;
   const bookDisabled = () => bookButton()?.disabled ?? null;
   const waiting = () => document.querySelector('[data-testid="book-date-waiting"]')?.textContent ?? null;
   const readingsOfKids = () => Array.from(document.querySelectorAll<HTMLButtonElement>('[data-choice="kids"] button')).map((b) => b.textContent ?? '');
-  const kidsBox = () => document.querySelector<HTMLInputElement>('input[aria-label="Kids"]')!;
+  const kidsBox = () => document.querySelector<HTMLInputElement>('input[aria-label="Children"]')!;
   const press = (pick: () => HTMLButtonElement | undefined) =>
     act(async () => {
       pick()?.click();
