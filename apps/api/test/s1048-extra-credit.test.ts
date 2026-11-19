@@ -150,6 +150,10 @@ describe('SCRUM-1048 — extra food credit on a child ticket, as its own line', 
       grossSatang: 30_000,
       payload: { priceSource: 'till_snapshot', creditFor: { cartLineId: ticket.id, kidOrdinal: 1 } },
     });
+    // The sale's detail names the child too, so a sale resumed on the till shows it as its own line.
+    const detail = (await ctx.app.inject({ method: 'GET', url: `/sales/${saleId}`, headers: { cookie: reception } })).json();
+    const shown = (detail.lines as { cartLineId: string; creditFor: unknown; supervised: boolean }[]).find((l) => l.cartLineId === credit!.id);
+    expect(shown).toMatchObject({ creditFor: { cartLineId: ticket.id, kidOrdinal: 1 }, supervised: false });
   });
 
   it('loads on the named child’s band when paid, on top of the ticket’s own credit; the other child’s band is untouched', async () => {

@@ -6082,6 +6082,8 @@ export async function getSaleDetail(
       variantBreakdown: (line.payload as SaleLinePayload | null)?.variantBreakdown ?? null,
       prepaid: (line.payload as SaleLinePayload | null)?.prepaid ?? null,
       holderCheckinId: (line.payload as SaleLinePayload | null)?.holder?.checkinId ?? null,
+      /** SCRUM-1048 — on an extra food credit line: the child's ticket line and place. */
+      creditFor: (line.payload as SaleLinePayload | null)?.creditFor ?? null,
       supervised: supervisedLineIds.has(line.cartLineId),
       /**
        * SCRUM-934 — the drop-off or nanny child this line is for: its cart

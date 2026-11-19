@@ -213,6 +213,8 @@ export interface ApiSaleLine {
   variantBreakdown?: { variantId: string; variantLabel: string; quantity: number }[] | null;
   prepaid?: { checkinId: string; menuItemId: string; unmatched?: true; settledAtPickup?: true; usedUp?: true } | null;
   holderCheckinId?: string | null;
+  /** SCRUM-1048 — on an extra food credit line: the child's ticket line and place. Absent from an older platform. */
+  creditFor?: { cartLineId: string; kidOrdinal: number } | null;
   supervised?: boolean;
   /**
    * SCRUM-934 — the drop-off or nanny child this line is for, by the name on
