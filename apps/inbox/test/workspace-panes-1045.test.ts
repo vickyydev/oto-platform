@@ -10,7 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ConversationList as ListPage, InboxMe } from '@/api/inbox';
 import { PaneDivider } from '@/components/PaneDivider';
 import { Workspace } from '@/components/Workspace';
-import { CHAT_MIN, LIST_MIN, RAIL_WIDTH, listDefault } from '@/lib/panes';
+import { CHAT_MIN, LIST_MIN, PANEL_WIDTH, RAIL_WIDTH, listDefault } from '@/lib/panes';
 import { renderHook } from '../../pos/test/support/hooks';
 
 const calls = vi.hoisted(() => ({ dashboard: vi.fn(), conversations: vi.fn(), reload: vi.fn(async () => undefined) }));
@@ -93,7 +93,12 @@ describe('SCRUM-1045: the panes in the workspace', () => {
     const p = await render(1440);
     const room = 1440 - RAIL_WIDTH;
     expect(p.style.gridTemplateColumns).toBe(`${RAIL_WIDTH}px var(--list-w) minmax(0,1fr)`);
-    expect(p.divider?.props).toMatchObject({ width: listDefault(room), room, left: `calc(${RAIL_WIDTH}px + var(--list-w))` });
+    // From 1280 px the chat has its right panel: the default share leaves it out.
+    expect(p.divider?.props).toMatchObject({ width: listDefault(room, PANEL_WIDTH), room, left: `calc(${RAIL_WIDTH}px + var(--list-w))` });
+    expect(room - listDefault(room, PANEL_WIDTH) - PANEL_WIDTH).toBeGreaterThan(500);
+    // Below 1280 px there is no panel: the share is of the whole room.
+    cleanup?.();
+    expect((await render(1133)).divider?.props.width).toBe(listDefault(1133 - RAIL_WIDTH));
   });
 
   it('starts from the width this browser chose for the layout, clamped to the room', async () => {
@@ -107,7 +112,7 @@ describe('SCRUM-1045: the panes in the workspace', () => {
     expect((await render(768)).divider?.props.width).toBe(LIST_MIN);
     cleanup?.();
     // The desktop's own choice is apart from the tablet's.
-    expect((await render(1440)).divider?.props.width).toBe(listDefault(1440 - RAIL_WIDTH));
+    expect((await render(1440)).divider?.props.width).toBe(listDefault(1440 - RAIL_WIDTH, PANEL_WIDTH));
   });
 
   it('a committed width is remembered for its layout; a reset forgets it', async () => {

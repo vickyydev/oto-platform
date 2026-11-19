@@ -79,6 +79,8 @@ export function PaneDivider({
     if (next === d.at) return;
     d.at = next;
     onLive(next);
+    // Said as it moves, without a render: the committed value follows on release.
+    e.currentTarget.setAttribute('aria-valuenow', String(next));
   };
 
   const finish = (e: PointerEvent<HTMLDivElement>, cancelled: boolean) => {

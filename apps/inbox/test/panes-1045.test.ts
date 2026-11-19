@@ -13,6 +13,7 @@ import {
   LIST_DEFAULT_MAX,
   LIST_MAX,
   LIST_MIN,
+  PANEL_WIDTH,
   RAIL_WIDTH,
   canSplit,
   keyedWidth,
@@ -54,6 +55,17 @@ describe('SCRUM-1045: the list’s default width', () => {
     expect(listDefault(700)).toBe(LIST_MIN);
     expect(listDefault(1216)).toBe(LIST_DEFAULT_MAX); // 1440 px across
     expect(listDefault(3000)).toBe(LIST_DEFAULT_MAX);
+  });
+
+  it('from 1280 px, the share leaves out the chat’s right panel, so the conversation beside it keeps its room', () => {
+    const room = roomFor(1280, 'desktop');
+    expect(listDefault(room, PANEL_WIDTH)).toBe(272);
+    expect(room - listDefault(room, PANEL_WIDTH) - PANEL_WIDTH).toBe(484); // was 376 beside a 380 px list
+    expect(listDefault(roomFor(1440, 'desktop'), PANEL_WIDTH)).toBe(330);
+    expect(listDefault(roomFor(1920, 'desktop'), PANEL_WIDTH)).toBe(LIST_DEFAULT_MAX);
+    expect(listWidth(null, room, PANEL_WIDTH)).toBe(272);
+    // A chosen width is the person’s, panel or not.
+    expect(listWidth(350, room, PANEL_WIDTH)).toBe(350);
   });
 
   it('always leaves the chat its 360 px', () => {

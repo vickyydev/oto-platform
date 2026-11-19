@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  PANEL_WIDTH,
   RAIL_WIDTH,
   canSplit,
   layoutFor,
@@ -84,7 +85,10 @@ export function usePanes(simulatorShown: boolean): Panes {
   const estimate = win - (simulatorShown && win >= 1280 ? SIMULATOR_WIDTH : 0);
   const room = roomFor(measured ?? estimate, layout);
   const split = canSplit(layout, room);
-  const width = split ? listWidth(chosen[layout as SplitLayout], room) : 0;
+  // The chat's right panel shows from 1280 px (1760 px beside the simulator's):
+  // the default share leaves it out, so the conversation keeps its room.
+  const aside = win >= (simulatorShown ? 1760 : 1280) ? PANEL_WIDTH : 0;
+  const width = split ? listWidth(chosen[layout as SplitLayout], room, aside) : 0;
 
   const live = useCallback((w: number) => {
     shell.current?.style.setProperty('--list-w', `${w}px`);
@@ -97,9 +101,9 @@ export function usePanes(simulatorShown: boolean): Panes {
       setChosen((c) => ({ ...c, [layout]: value }));
       // The shell shows the committed width at once: React's style diff may
       // see no change from its last render (a reset to the width it drew).
-      shell.current?.style.setProperty('--list-w', `${listWidth(value, room)}px`);
+      shell.current?.style.setProperty('--list-w', `${listWidth(value, room, aside)}px`);
     },
-    [layout, room],
+    [layout, room, aside],
   );
 
   return {

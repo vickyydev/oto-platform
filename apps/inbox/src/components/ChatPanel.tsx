@@ -588,7 +588,16 @@ export function ChatPanel({
       />
     );
   const park = effectiveBranchId(conv, me.teams);
-  const topicParts = [CATEGORY_SHORT[conv.category], park ? branchLabel(park, me.teams) : null].filter((p): p is string => Boolean(p));
+  // The header's second line in whole parts (SCRUM-1045): the number's own name
+  // ("Demo WhatsApp · Central Floresta" is two), then the topic and the park,
+  // a part the number's name already says left out.
+  const [sourceFirst = '', ...sourceRest] = sourceLabel(conv.channel, conv.channelAccountName).split(' · ');
+  const lineParts = [
+    ...sourceRest,
+    ...[CATEGORY_SHORT[conv.category], park ? branchLabel(park, me.teams) : null].filter(
+      (p): p is string => Boolean(p) && !sourceRest.includes(p as string) && p !== sourceFirst,
+    ),
+  ];
   const peopleNames = [primary ? `Primary: ${assigneeChip(primary, me).name}` : 'Unassigned', ...supports.map((s) => `Support: ${assigneeChip(s, me).name}`)].join('. ');
 
   const markHandled = (wide: boolean) =>
@@ -1069,9 +1078,9 @@ export function ChatPanel({
                 wraps to a line that is never shown, so no word is cut in half (SCRUM-1045). */}
             <p className="flex h-[1.35em] flex-wrap overflow-hidden text-meta leading-[1.35] text-ink-muted">
               <span title={CHANNEL_LABEL[conv.channel]} className="min-w-0 max-w-full truncate">
-                {sourceLabel(conv.channel, conv.channelAccountName)}
+                {sourceFirst}
               </span>
-              {topicParts.map((part) => (
+              {lineParts.map((part) => (
                 <span key={part} className="whitespace-pre">{` · ${part}`}</span>
               ))}
             </p>

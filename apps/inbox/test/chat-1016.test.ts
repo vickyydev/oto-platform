@@ -184,6 +184,14 @@ describe('SCRUM-1016: the chat’s header and the assistant’s line', () => {
     expect(html).toMatch(/<span title="WhatsApp" class="[^"]*">ZZ TEST line<\/span><span class="whitespace-pre"> · Birthdays<\/span><span class="whitespace-pre"> · Central Floresta<\/span><\/p>/);
   });
 
+  it('splits a number named for its park into whole parts, and says the park once (SCRUM-1045)', () => {
+    const named = row({ channelAccountName: 'ZZ TEST WhatsApp · Central Floresta' });
+    const header = panel(viewer(), named, detail(named));
+    expect(header).toMatch(
+      /<span title="WhatsApp" class="[^"]*">ZZ TEST WhatsApp<\/span><span class="whitespace-pre"> · Central Floresta<\/span><span class="whitespace-pre"> · Birthdays<\/span><\/p>/,
+    );
+  });
+
   // SCRUM-1045: the panel, and the menu stepping aside for it, need the window
   // at 1280 px AND the chat pane at 660 px (a list widened by the divider wins).
   it('holds Mark as handled and one menu, People and actions, which steps aside where the panel shows', () => {

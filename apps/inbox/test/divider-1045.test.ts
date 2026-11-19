@@ -121,6 +121,7 @@ describe('SCRUM-1045: a drag', () => {
 
     await fire(handle, pointer('pointermove', { x: 300 }));
     expect(onLive).toHaveBeenLastCalledWith(300);
+    expect(handle.getAttribute('aria-valuenow')).toBe('300'); // said as it moves
     await fire(handle, pointer('pointermove', { x: 20 }));
     expect(onLive).toHaveBeenLastCalledWith(LIST_MIN);
     await fire(handle, pointer('pointermove', { x: 2000 }));

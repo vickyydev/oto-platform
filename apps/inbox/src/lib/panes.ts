@@ -22,6 +22,8 @@ export const LIST_DEFAULT_MAX = 380;
 /** However wide the screen, a list wider than this is no help to anyone. */
 export const LIST_MAX = 560;
 export const LIST_SHARE = 0.36;
+/** The chat's right panel (the customer and the next step), from 1280 px. */
+export const PANEL_WIDTH = 300;
 /** One arrow press moves the divider this far. */
 export const KEY_STEP = 16;
 
@@ -50,14 +52,19 @@ export function listMax(room: number): number {
   return Math.max(LIST_MIN, Math.min(LIST_MAX, room - CHAT_MIN));
 }
 
-/** The list's width when nobody chose one: about 36 % of the room, 264 to 380 px. */
-export function listDefault(room: number): number {
-  return clamp(Math.round(room * LIST_SHARE), LIST_MIN, Math.min(LIST_DEFAULT_MAX, listMax(room)));
+/**
+ * The list's width when nobody chose one: about 36 % of the room the list
+ * and the conversation share, 264 to 380 px. `aside` is the chat's own right
+ * panel where it shows (300 px from 1280 px): the share is taken without it,
+ * so the conversation beside the panel is not the one that pays for it.
+ */
+export function listDefault(room: number, aside = 0): number {
+  return clamp(Math.round(Math.max(0, room - aside) * LIST_SHARE), LIST_MIN, Math.min(LIST_DEFAULT_MAX, listMax(room)));
 }
 
 /** A chosen width, kept inside this room's limits; none chosen is the default. */
-export function listWidth(chosen: number | null, room: number): number {
-  if (chosen === null || !Number.isFinite(chosen)) return listDefault(room);
+export function listWidth(chosen: number | null, room: number, aside = 0): number {
+  if (chosen === null || !Number.isFinite(chosen)) return listDefault(room, aside);
   return clamp(Math.round(chosen), LIST_MIN, listMax(room));
 }
 
