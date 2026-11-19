@@ -1,3 +1,29 @@
+## 19 November 2026, 22:25: old signed contracts open on staging; family step F3 launched
+
+- **SCRUM-1047 "Signed contracts from the old system do not open in the new
+  HR app": Deployed** (main 74eb65dfc, picture 2457e0f23; `oto-app-staging`
+  live 21:57). On staging all 20 contracts whose files came across now open
+  (none did before), through both the signed-PDF link and "Download Signed
+  PDF". The 55 that were on the old server's disk answer a clean "not found"
+  and open once their files are placed (SCRUM-1057, the owner fetches the
+  folder). The repair resolves a stored path only inside the app's own
+  storage folder; the bucket named in an old path is never used. Production
+  takes it at its next deploy, on the owner's word. Staging lists 20 such
+  contracts, not the 21 counted earlier.
+- **Launched: family profiles step F3** (run wf_82883461-e5a, worktree
+  `C:/oto-lanes/codex-inbox-feedback-20261116`, branch
+  `lane/family-f3-20261119`): every reader of a member's children goes
+  through the family behind the switch, which stays off; the shadow compare;
+  review; lands inert; runs the two read-only jobs on staging. Turning the
+  switch to "read" on staging needs the owner's separate word.
+- **A worktree to avoid for api tests:**
+  `C:/oto-lanes/codex-app-every-field-20261117` has its `node_modules` linked
+  into another lane's folder, so platform tests there load older sources. Give
+  it its own install before any api work.
+- **Running:** the till lane (extra food credit), the BEO editor (fields),
+  the single shift's pay, family F3, and the repair of the red end-to-end
+  checks.
+
 ## 19 November 2026, 22:00: the waiver repair is on staging; hosted CI is red on the till's end-to-end tests and is being repaired
 
 - **SCRUM-1052 "Drop-off: after a sibling waiver the sale is refused":
