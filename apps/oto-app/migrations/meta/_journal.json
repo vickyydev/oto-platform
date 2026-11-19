@@ -365,6 +365,13 @@
       "when": 1795073459063,
       "tag": "0053_leave_type_managers_only",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1795098683158,
+      "tag": "0054_otoapp_beo_extra_guests_socks",
+      "breakpoints": true
     }
   ]
 }
