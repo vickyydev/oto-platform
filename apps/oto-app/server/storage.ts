@@ -3368,9 +3368,20 @@ export class DatabaseStorage implements IStorage {
         }
 
         async createEmployee(employee: InsertEmployee): Promise<Employee> {
+                // SCRUM-1036: a new employee takes the place after the last in
+                // their park group, not place 0 shared with everyone. A caller
+                // that sets a place keeps it.
+                let displayOrder = employee.displayOrder;
+                if (displayOrder === undefined || displayOrder === null) {
+                        const [last] = await db
+                                .select({ max: sql<number | null>`max(${employees.displayOrder})` })
+                                .from(employees)
+                                .where(eq(employees.tenantId, employee.tenantId));
+                        displayOrder = (last?.max ?? -1) + 1;
+                }
                 const [newEmployee] = await db
                         .insert(employees)
-                        .values(employee)
+                        .values({ ...employee, displayOrder })
                         .returning();
                 return newEmployee;
         }

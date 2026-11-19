@@ -5001,8 +5001,13 @@ export async function registerRoutes(
   app.post("/api/employees/reorder", requireAuth, requireManager, async (req, res, next) => {
     try {
       const { orderedIds } = req.body;
-      if (!Array.isArray(orderedIds)) {
-        return res.status(400).json({ message: "orderedIds must be an array" });
+      if (
+        !Array.isArray(orderedIds) ||
+        orderedIds.length > 2000 ||
+        !orderedIds.every((id) => typeof id === "string" && id.length > 0) ||
+        new Set(orderedIds).size !== orderedIds.length
+      ) {
+        return res.status(400).json({ message: "orderedIds must be an array of distinct employee ids" });
       }
 
       // The caller's park group's employees only (round 6's re-review, F6):

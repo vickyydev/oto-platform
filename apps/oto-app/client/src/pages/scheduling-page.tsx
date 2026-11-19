@@ -51,6 +51,7 @@ import { getWorkStatusColor } from "@/hooks/use-avatar-work-status";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { LeaveType } from "@/components/leave/leave-types-manager";
 import { VIEW_AS_HISTORY_NOTE } from "@/lib/viewAsBanner";
+import { compareEmployeeOrder, orderAfterDrag } from "@/lib/employee-order";
 
 type Department = {
   id: string;
@@ -75,6 +76,7 @@ type Employee = {
   weeklyOffDays?: number[] | null;
   profilePhotoPath?: string | null;
   displayOrder?: number;
+  createdAt?: string | null;
   lastWorkingDay?: string | null;
   schedulingTransferInfo?: {
     transferredFromBranch: string;
@@ -1757,6 +1759,13 @@ function SchedulingPageInner() {
     setActiveDragData(active.data.current as any);
   }, []);
 
+  // SCRUM-1036: the employee view as drawn, filled in after it is worked out
+  // below (the memos come later in this component than this handler).
+  const employeeOrderViewRef = useRef<{ byDepartment: Map<string, Employee[]>; active: Employee[] }>({
+    byDepartment: new Map(),
+    active: [],
+  });
+
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
     setActiveDragId(null);
@@ -1768,23 +1777,20 @@ function SchedulingPageInner() {
     const activeData = active.data.current as { type?: string; departmentId?: string } | undefined;
     if (activeData?.type === "employee" && active.id !== over.id) {
       const departmentId = activeData.departmentId;
-      const activeEmps = (employeesQuery.data || []).filter(
-        (e) => e.employmentState === "ACTIVE" || e.employmentState === "LEAVING" ||
-          (e.employmentState === "LEFT" && e.lastWorkingDay)
+      // SCRUM-1036: the order is worked out on the list as it is shown
+      // (displayOrder, the same tie-break), over the whole department so a
+      // search that hides some staff does not scramble them.
+      const view = employeeOrderViewRef.current;
+      const shownIds = (view.byDepartment.get(departmentId || "unassigned") || [])
+        .filter((e) => !(e as { isCasualWorker?: boolean }).isCasualWorker && !e.isPlannedRow)
+        .map((e) => e.id);
+      const department = view.active.filter(
+        (e) => (e.primaryDepartmentId || "unassigned") === departmentId,
       );
-      const deptEmployees = activeEmps.filter(e => (e.primaryDepartmentId || "unassigned") === departmentId);
-      
-      // Extract employee IDs from sortable IDs (format: "emp-{id}")
       const activeEmpId = (active.id as string).replace("emp-", "");
       const overEmpId = (over.id as string).replace("emp-", "");
-      
-      const oldIndex = deptEmployees.findIndex((e) => e.id === activeEmpId);
-      const newIndex = deptEmployees.findIndex((e) => e.id === overEmpId);
-      
-      if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-        const newOrder = arrayMove(deptEmployees, oldIndex, newIndex);
-        reorderEmployeesMutation.mutate(newOrder.map((e) => e.id));
-      }
+      const newOrder = orderAfterDrag(department, shownIds, activeEmpId, overEmpId);
+      if (newOrder) reorderEmployeesMutation.mutate(newOrder);
       return;
     }
 
@@ -2353,10 +2359,11 @@ function SchedulingPageInner() {
     
     // Sort employees within each department by displayOrder
     for (const [, emps] of Array.from(map.entries())) {
-      emps.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+      emps.sort(compareEmployeeOrder);
     }
     return map;
   }, [searchFilteredEmployees, casualWorkersForEmployeeViewQuery.data, searchTerm, departments, selectedBranchId]);
+  employeeOrderViewRef.current = { byDepartment: employeesByDepartment, active: activeEmployees };
 
   const getAssignmentsForCell = (row: ScheduleShiftRow, day: Date) => {
     const dateStr = format(day, "yyyy-MM-dd");
