@@ -4297,7 +4297,10 @@ export async function commitSale(
       clock.occurredAt,
     );
     if (finalising) {
-      await consumeSaleVouchers(tx, voucherScope, holder, clock.occurredAt);
+      // SCRUM-1040 — told whether this close is a box's, as the stock take below is.
+      await consumeSaleVouchers(tx, voucherScope, holder, clock.occurredAt, {
+        offline: options.printing === 'skip',
+      });
     }
   }
 
@@ -5128,7 +5131,10 @@ export async function finaliseSale(
   // A device-rung sale (S2-20 K1) carries no voucher — only a person records
   // one against a sale (`commitSale`) — so there is nothing to use up.
   const { consumed } = actor.accountId
-    ? await consumeSaleVouchers(tx, voucherScope, { accountId: actor.accountId, requestId: actor.requestId }, now)
+    ? await consumeSaleVouchers(tx, voucherScope, { accountId: actor.accountId, requestId: actor.requestId }, now, {
+        // SCRUM-1040 — a hand-over prize's unit leaves as the stock take below does.
+        offline: input.printing === 'skip' || row.origin === 'box',
+      })
     : { consumed: [] as string[] };
 
   if (!st?.codePrefix) {
