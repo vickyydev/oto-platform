@@ -651,7 +651,13 @@ export function CustomerDisplay({
   onLanguageChosen,
 }: CustomerDisplayProps) {
   const { t, lang } = useLanguage();
-  const displayName = nickname.trim() || member?.nickname || '';
+  /**
+   * SCRUM-1019 R1 — a member still held under their number has no name yet:
+   * the header strip names nobody for them through the sale, as it did before
+   * such a member was made, so the family's full number is never shown there.
+   */
+  const displayName =
+    nickname.trim() || (member && !nameIsPhoneNumber(member.nickname) ? member.nickname : '');
   if (stage === 'payment' && payment?.status === 'paid') {
     return <Shell customerName={displayName}><div className="flex-1 flex flex-col items-center justify-center text-center px-10" data-testid="customer-payment-paid">
       <BadgeCheck className="w-24 h-24 text-(--cd-success) mb-8" />
