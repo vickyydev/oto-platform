@@ -215,11 +215,12 @@ build already does; "to build" names the ticket.
 Drop-off at the counter:
 
 - **R1, a number with no name:** the number itself is the name until one is
-  given. To build, SCRUM-1019.
+  given. Built on a lane, SCRUM-1019 (what it means on each screen and paper:
+  `PLAN.md` section 7, with the question it leaves, Q-F5).
 - **R2, the number on the phone till's form:** stays editable there. Built.
 - **R3, a dropped-off child on Eat & Play whose parent chose no extra food:**
   the form asks the parent one tick, "may order food with the included
-  credit". To build, SCRUM-1054.
+  credit". Built on a lane, SCRUM-1054.
 - **R4, pickup where the park refunds:** also shows the credit that stays on
   the band. Built.
 - **R21, which credit is spent first:** the credit the parent paid for. Built.

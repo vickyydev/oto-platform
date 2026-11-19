@@ -121,6 +121,30 @@ stays until the owner answers. Each is for the owner's page.
   notes now show on the customer display** to whoever typed that family's
   number at the counter, beside the children's names SCRUM-1014 already shows
   there. This follows the answer; nothing to change unless the owner asks.
+- **Q-F1 answered (R1, 19 November evening) and built on the lane of
+  SCRUM-1052:** a number with no name makes the member with the number as
+  the name ("+66 61 919 1101"), with no "New member?" box. No new field: the
+  name is replaced where a member's name is edited today (the Console's
+  Members page). A member held under their number counts as having no name:
+  the drop-off and nanny forms ask the parent's name (so such a family gets
+  the full form, not the agreements-only one), an event pass asks staff, the
+  booking site neither greets nor books by it, the display's welcome uses its
+  greeting without a name ("Welcome to Oto"), and receipts, kitchen and bar
+  slips and an adult's band print no name for it. Staff screens show the
+  number where the name would be.
+- **Q-F5 (SCRUM-1019, for the owner) The name given on the drop-off form.**
+  The parent's name typed on the form is kept on that visit's registration,
+  as for every family today; it does not rename the member. So a member held
+  under their number keeps it, and is asked the name on the form at each
+  visit, until staff change the name in the Console. A. Keep (built). B. The
+  name given on the form also names the member while the member's name is
+  still their number.
+- **SCRUM-1054 built (R3):** the tick "may order food with the included
+  credit", on the display, the till's own half and the phone till's form,
+  while no extra food is chosen; ticked, the stay's food permission is given
+  and the counter asks no manager. The counter box's lane does not know the
+  tick yet: a registration made there is "no food" as before (a stay
+  registered online is read from the box's copy of the board with the tick).
 - **Known limits until the next counter box release (no box release is
   made by this lane):** a box from before this change drops the form's food
   credit lines and the new care-note fields, so a display served through it
