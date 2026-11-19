@@ -100,8 +100,8 @@ export function calculateCompanyEngine(data: PayrollWorld, doc: CompanyPayrollDo
       p.workerType === "day-rate" ? work.dates.map(date => ({ date, weight: work.perDate })) : dayWeights);
     if (p.foodAllowanceEligible) add("food", "Food allowance", p.foodAllowancePerDay * work.total, `${p.foodAllowancePerDay} × ${work.total} worked days`,
       work.dates.map(date => ({ date, weight: work.perDate })), false, false);
-    // SCRUM-1055: one "Single shift" line per invitation, taxed and an SSO wage as the old contract's salary,
-    // and the food allowance of that worked day on the food line's own flags.
+    // SCRUM-1055: one "Single shift" line per day worked (on the day's first invitation), taxed and an SSO
+    // wage as the old contract's salary, and the food allowance of that worked day on the food line's own flags.
     for (const shift of shifts) {
       const weights = [{ date: shift.date, weight: 1 }];
       if (shift.amount) add(SINGLE_SHIFT_COMPONENT, SINGLE_SHIFT_LABEL, shift.amount, shift.formula, weights, true, true, `${SINGLE_SHIFT_COMPONENT}:${shift.invitationId}`);
@@ -264,7 +264,7 @@ export function calculateCompanyEngine(data: PayrollWorld, doc: CompanyPayrollDo
       deduct("my-employer", "Employer EPF / SOCSO / EIS / HRD", statutory.employerStatutory, "Existing Malaysia statutory rates", "employer");
     }
     const feeOnly = doc.months[month]?.staff[s.id]?.pnd3Basis === "fee-only";
-    const feeLines = earnings.filter(l => feeOnly ? l.component === "salary" || l.component === SINGLE_SHIFT_COMPONENT : !l.component.startsWith("separate:"));
+    const feeLines = earnings.filter(l => feeOnly ? l.component === "salary" : !l.component.startsWith("separate:"));
     if (p.workerType === "contractor" && p.pnd3WithholdingPercent) {
       const total = money(feeLines.reduce((n, l) => n + l.amount, 0) * p.pnd3WithholdingPercent / 100);
       const buckets = feeLines.flatMap(l => l.allocations), parts = apportion(total, buckets.map(a => a.amount));
@@ -420,15 +420,23 @@ interface SingleShiftPay { invitationId: string; date: string; amount: number; f
  * R8 to R11). The world loader attaches the month's single shifts to the
  * person; nobody else has any, so for everyone else this answers nothing.
  *
- *  - The day's pay (R11): a monthly salary (an owner-household salary, a
- *    contractor's fixed monthly fee) divided by the days in the month, in
- *    payroll's own rounding. A day-rate contract is paid its day rate, as it
- *    was.
+ *  - By the DAY, as payroll counts work (company-math.workedDates is a set
+ *    of dates; food is per worked day; R11 names one day of the salary): two
+ *    single shifts on one date are one day's pay and one food allowance, on
+ *    the first invitation of that date; each other invitation of the date adds
+ *    nothing and the run names the day as already paid.
+ *  - The day's pay (R11): the profile's monthly salary (a monthly or an
+ *    owner-household contract, both paid from it) divided by the days in the
+ *    month, in payroll's own rounding. A day-rate contract is paid its day
+ *    rate, as it was. A contractor's fixed fee is not a salary and no answer
+ *    rules one shift of it: the world loader lists such a shift as not paid
+ *    (payroll/world.ts), and this pays none if one reaches it.
  *  - A shift with no clock-in: today's payroll pays a monthly contract by
  *    the calendar whatever the clock says, and a day-rate contract only for
  *    a worked day (a clock-in after the run's review, company-math.workedOn).
  *    So an unclocked shift is paid on a monthly contract and not on a day-rate
- *    one; the attendance feed's own no-show item asks for the day's review.
+ *    one; the attendance feed's own no-show item asks for the day's review,
+ *    and the run says that the monthly contract pays the day all the same.
  *  - The food allowance (R10): the profile's amount per worked day, on the
  *    same flags as the food line (not taxed, not an SSO wage).
  *  - Overtime (R10): the older engine's overtime of the person's fed days,
@@ -441,20 +449,29 @@ interface SingleShiftPay { invitationId: string; date: string; amount: number; f
  */
 function singleShiftPays(data: PayrollWorld, doc: CompanyPayrollDocument, s: StaffMember, month: string, exceptions: PayrollException[]): SingleShiftPay[] {
   const p = s.payrollProfile!, days = monthDays(month);
-  return (s.singleShifts ?? []).filter(shift => shift.date.startsWith(month)).flatMap((shift): SingleShiftPay[] => {
-    if (employed(p, shift.date)) {
-      exceptions.push({ id: `${s.id}-single-shift-${shift.invitationId}`, staffId: s.id, severity: "warning", kind: "single-shift",
-        message: `${s.name}: the single shift on ${shift.date} falls inside the employment on the payroll profile (joined ${p.joinedOn}, ${p.lastWorkingDay ? `last working day ${p.lastWorkingDay}` : "no last working day"}), so the day is paid as an employed day and not again.` });
+  const warn = (id: string, message: string) =>
+    exceptions.push({ id: `${s.id}-single-shift-${id}`, staffId: s.id, severity: "warning", kind: "single-shift", message: `${s.name}: ${message}` });
+  // The world loader reads the shifts by date, then by when they were made: the first of a date is its earliest invitation.
+  const byDate = new Map<string, string[]>();
+  for (const shift of s.singleShifts ?? []) if (shift.date.startsWith(month)) byDate.set(shift.date, [...(byDate.get(shift.date) ?? []), shift.invitationId]);
+  return Array.from(byDate).sort(([a], [b]) => a.localeCompare(b)).flatMap(([date, [invitationId, ...others]]): SingleShiftPay[] => {
+    for (const other of others) warn(other, `a second single shift on ${date}; the day is paid once, on the first single shift of that day.`);
+    if (employed(p, date)) {
+      warn(invitationId, `the single shift on ${date} falls inside the employment on the payroll profile (joined ${p.joinedOn}, ${p.lastWorkingDay ? `last working day ${p.lastWorkingDay}` : "no last working day"}), so the day is paid as an employed day and not again.`);
       return [];
     }
-    const worked = workedOn(data, doc, s, shift.date);
-    const on = `single shift on ${shift.date}`;
+    if (p.workerType === "contractor") {
+      warn(invitationId, `the single shift on ${date} is not paid: the old contract is a contractor's fixed fee, and how one shift of a fee is paid is not decided.`);
+      return [];
+    }
+    const worked = workedOn(data, doc, s, date);
+    const on = `single shift on ${date}${others.length ? `; ${others.length + 1} single shifts that day, paid as one day` : ""}`;
     const food = p.foodAllowanceEligible && worked ? p.foodAllowancePerDay : 0;
     if (p.workerType === "day-rate") {
-      return [{ ...shift, amount: worked ? money(p.dayRate) : 0, food, formula: worked ? `${p.dayRate} day rate × 1 worked day; ${on}` : `${on}; no clock-in` }];
+      return [{ invitationId, date, amount: worked ? money(p.dayRate) : 0, food, formula: worked ? `${p.dayRate} day rate × 1 worked day; ${on}` : `${on}; no clock-in` }];
     }
-    const monthly = p.workerType === "contractor" ? p.fixedFee : p.monthlySalary;
-    return [{ ...shift, amount: money(monthly / days), food,
-      formula: `${monthly} ${p.workerType === "contractor" ? "fixed fee" : "monthly salary"} ÷ ${days} days in ${month}; ${on}${worked ? "" : "; no clock-in recorded, a monthly contract is paid by the calendar"}` }];
+    if (!worked) warn(`${invitationId}-no-clock`, `no clock-in on the single shift's day ${date}; on the old monthly contract the day is paid by the calendar, as every employed day of a monthly contract is, unless an absence rule of the branch charges it.`);
+    return [{ invitationId, date, amount: money(p.monthlySalary / days), food,
+      formula: `${p.monthlySalary} monthly salary ÷ ${days} days in ${month}; ${on}${worked ? "" : "; no clock-in recorded, a monthly contract is paid by the calendar"}` }];
   });
 }

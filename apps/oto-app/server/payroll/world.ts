@@ -47,7 +47,9 @@
  * steps). The other readers of the month's people (the feeds' OT bank, the
  * statutory documents, the month inputs) do not, so a former employee is
  * never one of their employees of the month. A shift paid on a casual day
- * rate, or one that cannot be paid, is LISTED in `excluded` with why.
+ * rate, one on a contractor's fee, one that cannot be paid, and one taken off
+ * the schedule after the person clocked that day, is LISTED in `excluded`
+ * with why.
  */
 import { createHash } from "node:crypto";
 import { and, asc, eq, gte, inArray, lt, lte } from "drizzle-orm";
@@ -86,6 +88,7 @@ import {
   scheduleAssignments,
   singleShiftInvitations,
   statutoryRuleSets,
+  timeEvents,
 } from "@shared/schema";
 import { singleShiftPayLabel } from "@shared/singleShift";
 import { db } from "../db";
@@ -354,14 +357,16 @@ export async function loadPayrollWorld(tenantId: string, month: string, options:
   // person is NOT on the roster: leave valuations, OT-bank bookings and
   // offboarding records stay those of the month's employees. A casual day
   // rate is not paid here (company payroll has no pay for casual workers),
-  // and a shift that cannot be paid is listed in `excluded` with why.
+  // nor one shift of a contractor's fee (not ruled), and a shift that cannot
+  // be paid is listed in `excluded` with why.
   const singleShiftHome = new Map<string, string>();
   const singleShiftDates = new Map<string, Set<string>>();
   if (options.singleShifts) {
-    const singleShiftRows = await q(db.select({ invitation: singleShiftInvitations, employee: employees })
+    // Every invitation of the month; `onSchedule` is its assignment while it still names the person and the day.
+    const singleShiftRows = await q(db.select({ invitation: singleShiftInvitations, employee: employees, onSchedule: scheduleAssignments.id })
       .from(singleShiftInvitations)
       .innerJoin(employees, and(eq(employees.id, singleShiftInvitations.employeeId), eq(employees.tenantId, tenantId)))
-      .innerJoin(scheduleAssignments, and(
+      .leftJoin(scheduleAssignments, and(
         eq(scheduleAssignments.id, singleShiftInvitations.assignmentId),
         eq(scheduleAssignments.employeeId, singleShiftInvitations.employeeId),
         eq(scheduleAssignments.shiftDate, singleShiftInvitations.shiftDate),
@@ -372,20 +377,46 @@ export async function loadPayrollWorld(tenantId: string, month: string, options:
         lte(singleShiftInvitations.shiftDate, monthEnd),
       ))
       .orderBy(asc(singleShiftInvitations.employeeId), asc(singleShiftInvitations.shiftDate), asc(singleShiftInvitations.createdAt)));
+    // A shift taken off the schedule is not paid. One the person had already
+    // clocked for (a kiosk record that day, in the branch's own time) is NAMED,
+    // so a worked day never goes unpaid in silence; one never clocked is not.
+    const offSchedule = singleShiftRows.filter((r) => !r.onSchedule);
+    const clockedOn = new Set<string>();
+    if (offSchedule.length) {
+      const zoneOf = new Map(branchRows.map((b) => [b.id, b.timezone]));
+      const events = await q(db.select({ employeeId: timeEvents.employeeId, branchId: timeEvents.branchId, eventTime: timeEvents.eventTime })
+        .from(timeEvents)
+        .where(and(
+          eq(timeEvents.tenantId, tenantId),
+          inArray(timeEvents.employeeId, Array.from(new Set(offSchedule.map((r) => r.employee.id)))),
+          gte(timeEvents.eventTime, new Date(Date.parse(`${month}-01T00:00:00Z`) - 86_400_000)),
+          lte(timeEvents.eventTime, new Date(Date.parse(`${monthEnd}T00:00:00Z`) + 2 * 86_400_000)),
+        )));
+      for (const e of events) {
+        const zone = (e.branchId && zoneOf.get(e.branchId)) || "Asia/Bangkok";
+        clockedOn.add(`${e.employeeId}:${new Intl.DateTimeFormat("en-CA", { timeZone: zone, year: "numeric", month: "2-digit", day: "2-digit" }).format(e.eventTime)}`);
+      }
+    }
     const notPaid = new Map<string, { name: string; reasons: string[] }>();
     const refuse = (employeeId: string, name: string, shift: string, why: string) => {
       const entry = notPaid.get(employeeId) ?? { name, reasons: [] };
       entry.reasons.push(`Single shift on ${shift} is not paid by this run: ${why}.`);
       notPaid.set(employeeId, entry);
     };
-    for (const { invitation: i, employee } of singleShiftRows) {
+    for (const { invitation: i, employee, onSchedule } of singleShiftRows) {
       const name = getEmployeeDisplayName(employee), date = iso(i.shiftDate);
       const shift = `${date} (${singleShiftPayLabel(i.payBasis, i.casualDayRate).toLowerCase()})`;
+      if (!onSchedule) {
+        if (clockedOn.has(`${employee.id}:${date}`)) refuse(employee.id, name, shift, "it was taken off the schedule, but the person has a clock record that day");
+        continue;
+      }
       if (i.payBasis !== "old_contract") { refuse(employee.id, name, shift, "company payroll has no pay for casual workers, who are outside it"); continue; }
       const row = profileRows.find((r) => r.employee.id === employee.id);
       if (!row) { refuse(employee.id, name, shift, "there is no payroll profile to pay the old contract from"); continue; }
       if (excluded.some((x) => x.employeeId === employee.id)) { refuse(employee.id, name, shift, "the payroll profile cannot be paid this month"); continue; }
       const p = profileOut(row.profile, allocRows, advanceRows, paymentRows) as EmployeePayrollProfile;
+      // R11 rules a monthly salary and R9 a day rate; one shift of a contractor's fixed fee is not ruled.
+      if (p.workerType === "contractor") { refuse(employee.id, name, shift, "the old contract is a contractor's fixed fee, and how one shift of a fee is paid is not decided"); continue; }
       if (!allocationAt(p, date)) { refuse(employee.id, name, shift, `no allocation is effective on ${date}`); continue; }
       const placed = roster.get(employee.id) ?? singleShiftHome.get(employee.id);
       let staff = placed ? world.branches[placed]?.staff.find((s) => s.id === employee.id) : undefined;
