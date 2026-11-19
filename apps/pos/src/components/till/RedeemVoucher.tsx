@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { boothStaffLabel } from '@oto/shared';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, Gift, Printer, ShieldX, Ticket, Trash2, Wallet, X } from 'lucide-react';
+import { Ban, CheckCircle2, Gift, Printer, ShieldX, Ticket, Trash2, Wallet, X } from 'lucide-react';
 import {
   vouchersApi,
   type IssuableDefinition,
@@ -67,6 +67,20 @@ export function voucherPrintedBy(view: VoucherView): string {
   if (label) return `Printed by ${label}`;
   const who = view.issuedBy ? boothStaffLabel(view.issuedBy.name, view.issuedBy.code) : null;
   return who ? `Printed by ${who}` : 'Printed by: unattributed';
+}
+
+/**
+ * SCRUM-1040 — a hand-over prize whose stock item the count says is empty at
+ * this park (the Mystery Box): the warning staff read on the card. The count
+ * can be behind the shelf and the family has won it, so it is a warning and
+ * never a refusal — the prize is still rung up and handed over, and the
+ * platform records what the count did not hold. Null when the count holds one,
+ * and for every voucher that takes nothing off a shelf.
+ */
+export function prizeStockWarning(view: Pick<VoucherView, 'effect' | 'prizeStock'>): string | null {
+  const stock = view.prizeStock;
+  if (view.effect.type !== 'hand_over' || !stock || stock.available > 0) return null;
+  return `Out of stock: the count says no ${stock.name} is left. You can still hand it over.`;
 }
 
 /** Whole baht, as the panel prints every other figure. */
@@ -148,6 +162,7 @@ interface VoucherCardProps {
 export function VoucherCard({ held, quoted, busy, onRemove, note }: VoucherCardProps) {
   const { view } = held;
   const effect = view.effect.type;
+  const stockWarning = prizeStockWarning(view);
   // A free item and a hand-over prize take nothing off the bill; the others do,
   // and the figure is the platform's own for this cart.
   const takesOff =
@@ -184,6 +199,17 @@ export function VoucherCard({ held, quoted, busy, onRemove, note }: VoucherCardP
             <div className="text-xs text-emerald-500/70 leading-snug" data-testid="voucher-printed-by">
               {voucherPrintedBy(view)}
             </div>
+            {stockWarning && (
+              // The till's own "Out of stock" line (`MerchGrid`), with the station
+              // strip's lighter red on the dark theme (SCRUM-997) — a warning, not a block.
+              <div
+                className="flex items-start gap-1.5 text-xs font-bold leading-snug text-destructive dark:text-red-300 mt-0.5"
+                data-testid="voucher-prize-stock"
+              >
+                <Ban className="w-3.5 h-3.5 mt-px shrink-0" />
+                <span>{stockWarning}</span>
+              </div>
+            )}
             {quoted && !quoted.applicable && quoted.reason && (
               <div className="text-xs text-amber-400 leading-snug mt-0.5">{quoted.reason}</div>
             )}
