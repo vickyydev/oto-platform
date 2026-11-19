@@ -132,7 +132,7 @@ export function VoucherPromotionsPanel() {
     let live = true;
     const first = branches[0]?.apiId;
     let metadata: { definitions: VoucherDefinitionRow[]; campaigns: VoucherCampaignRow[] } | null = null;
-    let links: VoucherLinkOptions = { products: [], packages: [] };
+    let links: VoucherLinkOptions = { products: [], packages: [], stockItems: [] };
     let categories: ApiMenuCategory[] = [];
     const publish = () => { if (live && metadata) setSnapshot({ owner, ...metadata, links, categories }); };
     void Promise.all([voucherPromotionsApi.definitions(), voucherPromotionsApi.campaigns()]).then(([definitions, campaigns]) => {
@@ -153,7 +153,7 @@ export function VoucherPromotionsPanel() {
   const current = snapshot?.owner === owner ? snapshot : null;
   const localAccess = Boolean(runtime.branch.branch.apiId) || runtime.session.can('admin:booth:manage');
   return <VoucherPromotionsPanelWithPorts key={owner?.id ?? ''} ports={{
-    definitions: current?.definitions ?? [], campaigns: current?.campaigns ?? [], links: current?.links ?? { products: [], packages: [] }, categories: current?.categories ?? [], branches,
+    definitions: current?.definitions ?? [], campaigns: current?.campaigns ?? [], links: current?.links ?? { products: [], packages: [], stockItems: [] }, categories: current?.categories ?? [], branches,
     loading: !current && failure?.owner !== owner, loadError: failure?.owner === owner ? failure.message : null,
     onRetry: () => { setSnapshot(null); setFailure(null); setAttempt(value => value + 1); },
     canManageRules: localAccess && scope.canManageRules, canMintCampaign: branchId => localAccess && scope.canMintCampaign(branchId), canDownloadCodes: campaign => localAccess && scope.canDownloadCodes(campaign), authorityMessage: scope.authorityMessage,

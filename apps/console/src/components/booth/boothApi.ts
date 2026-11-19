@@ -313,6 +313,18 @@ export interface VoucherDefinitionRow {
   unredeemedVouchers?: number;
   /** SCRUM-405 — a free product's own product at each park that has one linked. */
   parkProducts?: VoucherParkProduct[];
+  /** SCRUM-1040 — a hand-over prize's stock item at each park that has one linked (the Mystery Box). */
+  parkStock?: VoucherParkStock[];
+}
+
+/** The stock item a hand-over prize takes one from at one park (SCRUM-1040). */
+export interface VoucherParkStock {
+  branchId: string;
+  branchName: string;
+  stockItemId: string;
+  stockItemName: string;
+  /** Counted at that park (not archived, not retired); the till takes from it only then. */
+  live: boolean;
 }
 
 /** One park's own product for a free-product voucher (SCRUM-405). */
@@ -361,6 +373,11 @@ export interface VoucherLinkOptions {
     priceSatang: number;
   }>;
   packages: Array<{ id: string; name: string; branchId: string; branchName: string }>;
+  /**
+   * SCRUM-1040 — each park's counted stock items, for a hand-over prize to take
+   * one from. Optional so an api that does not send it yet still reads.
+   */
+  stockItems?: Array<{ id: string; name: string; branchId: string; branchName: string }>;
 }
 
 /** What a prize create or edit sends. Every field but the name is optional. */
@@ -485,6 +502,14 @@ export const boothApi = {
     api.put<ApiResponse<'/voucher-definitions/{id}/park-products/{branchId}', 'put'>>(
       `/voucher-definitions/${encodeURIComponent(id)}/park-products/${encodeURIComponent(branchId)}`,
       { productId },
+      { idempotencyKey: idemKey() },
+    ),
+
+  /** SCRUM-1040 — the stock item a hand-over prize takes one from at one park; null clears it. */
+  setParkStock: (id: string, branchId: string, stockItemId: string | null) =>
+    api.put<ApiResponse<'/voucher-definitions/{id}/park-stock/{branchId}', 'put'>>(
+      `/voucher-definitions/${encodeURIComponent(id)}/park-stock/${encodeURIComponent(branchId)}`,
+      { stockItemId },
       { idempotencyKey: idemKey() },
     ),
 
