@@ -82,6 +82,13 @@ export interface VoucherView {
    * voucher from a SCRUM-694 booth, whose attribution is `staffLabel`.
    */
   issuedBy: { name: string | null; code: string } | null;
+  /**
+   * SCRUM-1040 — a hand-over prize that takes one off a stock item at this
+   * till's park (the Mystery Box): that item, and what the count says the park
+   * holds of it now. Null for every other voucher. Optional so an api that
+   * does not send it yet still reads.
+   */
+  prizeStock?: { name: string; available: number } | null;
 }
 
 export interface VoucherHoldAnswer {
