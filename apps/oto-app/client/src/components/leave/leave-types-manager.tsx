@@ -134,7 +134,8 @@ export function LeaveTypesManager() {
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-medium">{type.name}</span>
                       <Badge variant={type.isActive ? "default" : "secondary"}>{type.isActive ? "Active" : "Disabled"}</Badge>
-                      <Badge variant={type.managersOnly ? "secondary" : "outline"} data-testid={`leave-type-audience-${type.code}`}>{type.managersOnly ? "Managers only" : "Staff can see"}</Badge>
+                      {/* A switched-off type is offered to nobody, so it names no audience beside "Disabled". */}
+                      {type.isActive && <Badge variant={type.managersOnly ? "secondary" : "outline"} data-testid={`leave-type-audience-${type.code}`}>{type.managersOnly ? "Managers only" : "Staff can see"}</Badge>}
                       <Badge variant="outline">{type.code}</Badge>
                     </div>
                     <p className="mt-1 text-sm text-muted-foreground">
