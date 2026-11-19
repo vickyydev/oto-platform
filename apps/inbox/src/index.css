@@ -1,17 +1,122 @@
 @import "tailwindcss";
 
-/* The prototype's design language (docs/features/inbox.md "Design language"):
-   Inter, slate inks, white cards on a faint slate gradient. Tailwind's own
-   palette carries the colour code — violet, sky, pink, blue, emerald, amber,
-   indigo, rose — exactly as the prototype's classes name it, so there are no
-   tokens of our own to drift from it. */
-@theme {
-  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+/*
+ * The OTO look (SCRUM-1016, docs/progress/plans/inbox-redesign/PROPOSAL.md
+ * §3): the till's cream ground and brown ink, its cards, the logo's coral for
+ * the one action that matters and mint with teal for the assistant. The
+ * values live here and only here: `:root` holds the light theme, `html.dark`
+ * the dark one (the till's navy, coral kept as the accent), and `@theme
+ * inline` hands each to Tailwind as a colour, so a component writes
+ * `bg-card text-ink` and never a palette class.
+ *
+ * Contrast (WCAG, computed by test/tokens-1016.test.ts from this file):
+ * every text pair the components use is 4.5 : 1 or better in both themes.
+ * White on the till's own coral #f15d27 is only 3.3 : 1, so filled buttons
+ * and the unread count use the deeper #ca3500 (5.2 : 1); coral as text on
+ * cream is #9f2d00. The topic colours stay as small dots only.
+ */
+:root {
+  --oto-ground: #fbf5ef;
+  --oto-card: #fefdfb;
+  --oto-wash: #f7f0e8;
+  --oto-band: #f1e9df;
+  --oto-line: #eae0d7;
+  --oto-line-soft: #efe6dc;
+  --oto-field: #e0d3c6;
+  --oto-ink: #3b281c;
+  --oto-ink-soft: #5f4f43;
+  --oto-ink-muted: #766456;
+  --oto-on-ink: #fefdfb;
+  --oto-coral: #ca3500;
+  --oto-on-coral: #ffffff;
+  --oto-coral-ink: #9f2d00;
+  --oto-mint: #d4edea;
+  --oto-teal: #234343;
+  --oto-money: #f1f7ee;
+  --oto-money-line: #c9e0c3;
+  --oto-money-badge: #d3ead0;
+  --oto-money-ink: #1f4d2b;
+  --oto-needs: #fde6da;
+  --oto-needs-ink: #8a2a05;
+  --oto-staff: #3b281c;
+  --oto-on-staff: #fbf5ef;
+  --oto-scrim: rgb(59 40 28 / 0.4);
+  --oto-topic-birthdays: #6d28d9;
+  --oto-topic-general: #0369a1;
+  --oto-topic-marketing: #be185d;
+  --oto-topic-gm: #b45309;
+}
+
+html.dark {
+  --oto-ground: #0f1729;
+  --oto-card: #141f38;
+  --oto-wash: #18233d;
+  --oto-band: #1f2b45;
+  --oto-line: #24304a;
+  --oto-line-soft: #1c2740;
+  --oto-field: #34425f;
+  --oto-ink: #f1f5f9;
+  --oto-ink-soft: #c3cee0;
+  --oto-ink-muted: #a9b6ca;
+  --oto-on-ink: #0f1729;
+  --oto-coral: #ff9a70;
+  --oto-on-coral: #2a1206;
+  --oto-coral-ink: #ffb596;
+  --oto-mint: #173b3b;
+  --oto-teal: #b9ece6;
+  --oto-money: #13291f;
+  --oto-money-line: #1f4030;
+  --oto-money-badge: #1f4a2c;
+  --oto-money-ink: #b9efc3;
+  --oto-needs: #4a2414;
+  --oto-needs-ink: #ffc7ae;
+  --oto-staff: #2a3a5c;
+  --oto-on-staff: #f8fafc;
+  --oto-scrim: rgb(2 6 23 / 0.6);
+  --oto-topic-birthdays: #a78bfa;
+  --oto-topic-general: #38bdf8;
+  --oto-topic-marketing: #f472b6;
+  --oto-topic-gm: #f59e0b;
+}
+
+@theme inline {
+  --font-sans: 'Inter', 'Till Thai', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  --color-ground: var(--oto-ground);
+  --color-card: var(--oto-card);
+  --color-wash: var(--oto-wash);
+  --color-band: var(--oto-band);
+  --color-line: var(--oto-line);
+  --color-line-soft: var(--oto-line-soft);
+  --color-field: var(--oto-field);
+  --color-ink: var(--oto-ink);
+  --color-ink-soft: var(--oto-ink-soft);
+  --color-ink-muted: var(--oto-ink-muted);
+  --color-on-ink: var(--oto-on-ink);
+  --color-coral: var(--oto-coral);
+  --color-on-coral: var(--oto-on-coral);
+  --color-coral-ink: var(--oto-coral-ink);
+  --color-mint: var(--oto-mint);
+  --color-teal: var(--oto-teal);
+  --color-money: var(--oto-money);
+  --color-money-line: var(--oto-money-line);
+  --color-money-badge: var(--oto-money-badge);
+  --color-money-ink: var(--oto-money-ink);
+  --color-needs: var(--oto-needs);
+  --color-needs-ink: var(--oto-needs-ink);
+  --color-staff: var(--oto-staff);
+  --color-on-staff: var(--oto-on-staff);
+  --color-scrim: var(--oto-scrim);
+  --color-topic-birthdays: var(--oto-topic-birthdays);
+  --color-topic-general: var(--oto-topic-general);
+  --color-topic-marketing: var(--oto-topic-marketing);
+  --color-topic-gm: var(--oto-topic-gm);
 }
 
 /* Dark mode by class, not by media query (SCRUM-653): `lib/theme.ts` puts
    `dark` on <html> from the account's saved preference, so `dark:` variants
-   follow the person, and "system" is mapped there via matchMedia. */
+   and the tokens above follow the person, and "system" is mapped there via
+   matchMedia. */
 @custom-variant dark (&:where(.dark, .dark *));
 
 html,
@@ -22,24 +127,16 @@ body {
 body {
   margin: 0;
   font-family: var(--font-sans);
-  color: var(--color-slate-900);
-  background: linear-gradient(to bottom, var(--color-slate-50), var(--color-white));
-  background-attachment: fixed;
+  color: var(--oto-ink);
+  background: var(--oto-ground);
   -webkit-font-smoothing: antialiased;
   /* Phone width (plan §4.1): nothing on this page scrolls sideways. */
   overflow-x: hidden;
 }
 
-/* The same page inverted (SCRUM-653): near-black slate grounds, light ink.
-   `color-scheme` keeps native widgets (selects, scrollbars) dark with it. */
+/* `color-scheme` keeps native widgets (selects, scrollbars) dark with it. */
 html.dark {
   color-scheme: dark;
-}
-
-html.dark body {
-  color: var(--color-slate-100);
-  background: linear-gradient(to bottom, var(--color-slate-950), var(--color-slate-900));
-  background-attachment: fixed;
 }
 
 h1,
