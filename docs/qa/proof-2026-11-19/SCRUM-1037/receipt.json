@@ -1,0 +1,464 @@
+{
+  "tickets": [
+    "SCRUM-1036",
+    "SCRUM-1037"
+  ],
+  "sha": "209b452510e5ae5c2c29af3078b58c8794e29eb1",
+  "startedAt": "2026-11-19T14:27:12.715Z",
+  "phase": "clean-up",
+  "requests": [
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/qa-reports/config",
+      "status": 200
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/user",
+      "status": 200
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/leave-types",
+      "status": 200
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/branches",
+      "status": 200
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/employees",
+      "status": 200
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/departments",
+      "status": 200
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "POST",
+      "path": "/api/employees",
+      "status": 201
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "POST",
+      "path": "/api/employees",
+      "status": 201
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "POST",
+      "path": "/api/employees",
+      "status": 201
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/employees",
+      "status": 200
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/employees",
+      "status": 200
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "POST",
+      "path": "/api/users/:id/suite-sign-in",
+      "status": 200
+    },
+    {
+      "who": "staff",
+      "origin": "oto-launcher-staging",
+      "method": "POST",
+      "path": "/api/auth/change-password",
+      "status": 200
+    },
+    {
+      "who": "staff",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/user",
+      "status": 200
+    },
+    {
+      "who": "staff",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/leave-types",
+      "status": 200
+    },
+    {
+      "who": "staff",
+      "origin": "oto-app-staging",
+      "method": "POST",
+      "path": "/api/time-off",
+      "status": 403
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/time-off",
+      "status": 200
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "DELETE",
+      "path": "/api/time-off/:id",
+      "status": 204
+    },
+    {
+      "who": "staff",
+      "origin": "oto-app-staging",
+      "method": "POST",
+      "path": "/api/logout",
+      "status": 200
+    },
+    {
+      "who": "staff",
+      "origin": "oto-launcher-staging",
+      "method": "POST",
+      "path": "/api/auth/sign-out",
+      "status": 200
+    },
+    {
+      "who": "console",
+      "origin": "oto-console-staging",
+      "method": "PATCH",
+      "path": "/api/accounts/:id",
+      "status": 200
+    },
+    {
+      "who": "console",
+      "origin": "oto-console-staging",
+      "method": "DELETE",
+      "path": "/api/admin/apps/oto_app/users/:id",
+      "status": 200
+    },
+    {
+      "who": "console",
+      "origin": "oto-console-staging",
+      "method": "POST",
+      "path": "/api/auth/sign-out",
+      "status": 200
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "DELETE",
+      "path": "/api/employees/:id",
+      "status": 204
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/employees/:id",
+      "status": 404
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "DELETE",
+      "path": "/api/employees/:id",
+      "status": 204
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/employees/:id",
+      "status": 404
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "DELETE",
+      "path": "/api/employees/:id",
+      "status": 204
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/employees/:id",
+      "status": 404
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "POST",
+      "path": "/api/logout",
+      "status": 200
+    },
+    {
+      "who": "admin",
+      "origin": "oto-launcher-staging",
+      "method": "POST",
+      "path": "/api/auth/sign-out",
+      "status": 200
+    }
+  ],
+  "made": [
+    {
+      "kind": "employee",
+      "id": "aeb9c934-e49b-4f0b-88de-4a5dd2753997",
+      "name": "ZZ TEST 1036 Ant fb27"
+    },
+    {
+      "kind": "employee",
+      "id": "c55759ce-701e-4f2f-ac9b-d09b56444797",
+      "name": "ZZ TEST 1036 Bee fb27"
+    },
+    {
+      "kind": "employee",
+      "id": "82aa448b-345c-43d8-8c3e-be614aa41c72",
+      "name": "ZZ TEST 1037 Staff fb27"
+    },
+    {
+      "kind": "platform account",
+      "id": "01a1f435-0311-79f2-ab64-dba7fdfb6e79"
+    }
+  ],
+  "steps": {
+    "adminHandoff": 200,
+    "types": {
+      "before": [
+        {
+          "code": "ANNUAL",
+          "name": "Annual Leave",
+          "isActive": true,
+          "managersOnly": "(no such field yet)"
+        },
+        {
+          "code": "BUSINESS",
+          "name": "Business Days",
+          "isActive": true,
+          "managersOnly": "(no such field yet)"
+        },
+        {
+          "code": "CHANGE_DAY_OFF",
+          "name": "Days Off",
+          "isActive": true,
+          "managersOnly": "(no such field yet)"
+        },
+        {
+          "code": "OTHER",
+          "name": "Other",
+          "isActive": true,
+          "managersOnly": "(no such field yet)"
+        },
+        {
+          "code": "SICK",
+          "name": "Sick Leave",
+          "isActive": true,
+          "managersOnly": "(no such field yet)"
+        },
+        {
+          "code": "TRAINING",
+          "name": "Training",
+          "isActive": true,
+          "managersOnly": "(no such field yet)"
+        },
+        {
+          "code": "UNPAID",
+          "name": "Unpaid Leave",
+          "isActive": true,
+          "managersOnly": "(no such field yet)"
+        }
+      ],
+      "after": [
+        {
+          "code": "ANNUAL",
+          "name": "Annual Leave",
+          "isActive": true,
+          "managersOnly": false
+        },
+        {
+          "code": "BUSINESS",
+          "name": "Business Days",
+          "isActive": true,
+          "managersOnly": true
+        },
+        {
+          "code": "CHANGE_DAY_OFF",
+          "name": "Days Off",
+          "isActive": true,
+          "managersOnly": false
+        },
+        {
+          "code": "OTHER",
+          "name": "Other",
+          "isActive": false,
+          "managersOnly": false
+        },
+        {
+          "code": "SICK",
+          "name": "Sick Leave",
+          "isActive": true,
+          "managersOnly": true
+        },
+        {
+          "code": "TRAINING",
+          "name": "Training",
+          "isActive": false,
+          "managersOnly": false
+        },
+        {
+          "code": "UNPAID",
+          "name": "Unpaid Leave",
+          "isActive": true,
+          "managersOnly": true
+        }
+      ]
+    },
+    "departmentScan": [
+      {
+        "branch": "Head Office",
+        "department": "Accounting and Finance",
+        "othersShown": 3
+      },
+      {
+        "branch": "Head Office",
+        "department": "Maintanance ",
+        "othersShown": 0
+      },
+      {
+        "branch": "Head Office",
+        "department": "Management",
+        "othersShown": 3
+      }
+    ],
+    "emptyDepartmentFound": true,
+    "newPlaces": {
+      "a": 8,
+      "b": 9,
+      "staff": 10,
+      "highestOtherInBranch": 0
+    },
+    "orderBefore": "Ant, Bee",
+    "reorderSent": {
+      "count": 3,
+      "allZzTest": true
+    },
+    "reorderStatus": 200,
+    "orderAfterReload": "Bee, Ant",
+    "placesAfter": {
+      "a": 1,
+      "b": 0,
+      "staff": 2
+    },
+    "suiteSignIn": 200,
+    "changePassword": 200,
+    "staffHandoff": 200,
+    "staffRole": "staff",
+    "staffSees": [
+      {
+        "code": "ANNUAL",
+        "name": "Annual Leave",
+        "isActive": true
+      },
+      {
+        "code": "CHANGE_DAY_OFF",
+        "name": "Days Off",
+        "isActive": true
+      },
+      {
+        "code": "OTHER",
+        "name": "Other",
+        "isActive": false
+      },
+      {
+        "code": "TRAINING",
+        "name": "Training",
+        "isActive": false
+      }
+    ],
+    "staffRecordsSick": {
+      "status": 403,
+      "message": "{\"error\":\"Insufficient permissions\"}"
+    },
+    "timeOffAfterStaffAttempt": 0,
+    "recordDay": "2026-11-19",
+    "managerOffered": [
+      "annual",
+      "business",
+      "change_day_off",
+      "sick",
+      "unpaid"
+    ],
+    "managerRecordsSick": {
+      "status": 201,
+      "id": "99508f35-2688-4da0-bda9-12300c04997e"
+    }
+  },
+  "cleanup": [
+    {
+      "label": "delete the ZZ TEST time off",
+      "status": 204
+    },
+    {
+      "label": "staff sign-out",
+      "app": 200,
+      "launcher": 200
+    },
+    {
+      "label": "console: account inactive, app link removed",
+      "off": 200,
+      "unlink": 200,
+      "signOut": 200
+    },
+    {
+      "label": "delete ZZ TEST 1036 Ant",
+      "del": 204,
+      "read": 404
+    },
+    {
+      "label": "delete ZZ TEST 1036 Bee",
+      "del": 204,
+      "read": 404
+    },
+    {
+      "label": "delete ZZ TEST 1037 Staff",
+      "del": 204,
+      "read": 404
+    },
+    {
+      "label": "admin sign-out",
+      "app": 200,
+      "launcher": 200
+    }
+  ],
+  "passed": true,
+  "adminRole": "global_admin",
+  "branch": "Head Office",
+  "department": "Maintanance ",
+  "behaviorPassed": true,
+  "finishedAt": "2026-11-19T14:28:23.208Z"
+}

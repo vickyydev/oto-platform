@@ -1,0 +1,26 @@
+{
+  "at": "2026-11-19T14:22:03.127Z",
+  "removed": [
+    {
+      "name": "ZZ TEST 1036 Ant 1267",
+      "id": "3156090a-a2d3-4bbb-8e80-4a0b2c1c90db",
+      "before": 200,
+      "del": 204,
+      "after": 404
+    },
+    {
+      "name": "ZZ TEST 1036 Bee 1267",
+      "id": "3b3c3692-d08a-4225-be19-4927ab8a07a5",
+      "before": 200,
+      "del": 204,
+      "after": 404
+    },
+    {
+      "name": "ZZ TEST 1037 Staff 1267",
+      "id": "e7fc8b9c-ac52-404e-ad56-51df6ecb721d",
+      "before": 200,
+      "del": 204,
+      "after": 404
+    }
+  ]
+}

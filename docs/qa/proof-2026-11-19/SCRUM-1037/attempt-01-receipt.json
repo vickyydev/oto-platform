@@ -1,0 +1,312 @@
+{
+  "tickets": [
+    "SCRUM-1036",
+    "SCRUM-1037"
+  ],
+  "sha": "209b452510e5ae5c2c29af3078b58c8794e29eb1",
+  "startedAt": "2026-11-19T14:19:09.991Z",
+  "phase": "clean-up",
+  "requests": [
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/qa-reports/config",
+      "status": 200
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/user",
+      "status": 200
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/leave-types",
+      "status": 200
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/branches",
+      "status": 200
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/employees",
+      "status": 200
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/employees",
+      "status": 200
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "POST",
+      "path": "/api/employees",
+      "status": 201
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "POST",
+      "path": "/api/employees",
+      "status": 201
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "POST",
+      "path": "/api/employees",
+      "status": 201
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/employees",
+      "status": 200
+    },
+    {
+      "who": "staff",
+      "origin": "oto-app-staging",
+      "method": "POST",
+      "path": "/api/logout",
+      "status": 200
+    },
+    {
+      "who": "staff",
+      "origin": "oto-launcher-staging",
+      "method": "POST",
+      "path": "/api/auth/sign-out",
+      "status": 200
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "DELETE",
+      "path": "/api/employees/:id",
+      "status": 204
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/employees/:id",
+      "status": 404
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "DELETE",
+      "path": "/api/employees/:id",
+      "status": 204
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/employees/:id",
+      "status": 404
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "DELETE",
+      "path": "/api/employees/:id",
+      "status": 204
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/employees/:id",
+      "status": 404
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "POST",
+      "path": "/api/logout",
+      "status": 200
+    },
+    {
+      "who": "admin",
+      "origin": "oto-launcher-staging",
+      "method": "POST",
+      "path": "/api/auth/sign-out",
+      "status": 200
+    }
+  ],
+  "made": [
+    {
+      "kind": "employee",
+      "id": "82b9fa99-ea48-4e79-b1ca-11c8a3337e9b",
+      "name": "ZZ TEST 1036 Ant 1610"
+    },
+    {
+      "kind": "employee",
+      "id": "dec3dce1-33c9-4035-82df-77263e271d4b",
+      "name": "ZZ TEST 1036 Bee 1610"
+    },
+    {
+      "kind": "employee",
+      "id": "1d5edf4f-ab16-4fb2-a7cb-49bd2d48ddf4",
+      "name": "ZZ TEST 1037 Staff 1610"
+    }
+  ],
+  "steps": {
+    "adminHandoff": 200,
+    "types": {
+      "before": [
+        {
+          "code": "ANNUAL",
+          "name": "Annual Leave",
+          "isActive": true,
+          "managersOnly": "(no such field yet)"
+        },
+        {
+          "code": "BUSINESS",
+          "name": "Business Days",
+          "isActive": true,
+          "managersOnly": "(no such field yet)"
+        },
+        {
+          "code": "CHANGE_DAY_OFF",
+          "name": "Days Off",
+          "isActive": true,
+          "managersOnly": "(no such field yet)"
+        },
+        {
+          "code": "OTHER",
+          "name": "Other",
+          "isActive": true,
+          "managersOnly": "(no such field yet)"
+        },
+        {
+          "code": "SICK",
+          "name": "Sick Leave",
+          "isActive": true,
+          "managersOnly": "(no such field yet)"
+        },
+        {
+          "code": "TRAINING",
+          "name": "Training",
+          "isActive": true,
+          "managersOnly": "(no such field yet)"
+        },
+        {
+          "code": "UNPAID",
+          "name": "Unpaid Leave",
+          "isActive": true,
+          "managersOnly": "(no such field yet)"
+        }
+      ],
+      "after": [
+        {
+          "code": "ANNUAL",
+          "name": "Annual Leave",
+          "isActive": true,
+          "managersOnly": false
+        },
+        {
+          "code": "BUSINESS",
+          "name": "Business Days",
+          "isActive": true,
+          "managersOnly": true
+        },
+        {
+          "code": "CHANGE_DAY_OFF",
+          "name": "Days Off",
+          "isActive": true,
+          "managersOnly": false
+        },
+        {
+          "code": "OTHER",
+          "name": "Other",
+          "isActive": false,
+          "managersOnly": false
+        },
+        {
+          "code": "SICK",
+          "name": "Sick Leave",
+          "isActive": true,
+          "managersOnly": true
+        },
+        {
+          "code": "TRAINING",
+          "name": "Training",
+          "isActive": false,
+          "managersOnly": false
+        },
+        {
+          "code": "UNPAID",
+          "name": "Unpaid Leave",
+          "isActive": true,
+          "managersOnly": true
+        }
+      ]
+    },
+    "branchScan": [
+      {
+        "branch": "Head Office",
+        "unassignedOthers": 1
+      },
+      {
+        "branch": "Oto Play Park, Robinson Chalong",
+        "unassignedOthers": 0
+      }
+    ],
+    "newPlaces": {
+      "a": 8,
+      "b": 9,
+      "staff": 10,
+      "highestOtherInBranch": 2
+    }
+  },
+  "cleanup": [
+    {
+      "label": "staff sign-out",
+      "app": 200,
+      "launcher": 200
+    },
+    {
+      "label": "delete ZZ TEST 1036 Ant",
+      "del": 204,
+      "read": 404
+    },
+    {
+      "label": "delete ZZ TEST 1036 Bee",
+      "del": 204,
+      "read": 404
+    },
+    {
+      "label": "delete ZZ TEST 1037 Staff",
+      "del": 204,
+      "read": 404
+    },
+    {
+      "label": "admin sign-out",
+      "app": 200,
+      "launcher": 200
+    }
+  ],
+  "passed": false,
+  "adminRole": "global_admin",
+  "branch": "Oto Play Park, Robinson Chalong",
+  "failure": {
+    "phase": "1036 drag",
+    "message": "expect(locator).toBeVisible() failed\n\nLocator: getByTestId('button-drag-employee-82b9fa99-ea48-4e79-b1ca-11c8a3337e9b')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByTestId('button-drag-employee-82b9fa99-ea48-4e79-b1ca-11c8a3337e9b') with timeout 5000ms\n  - waiting for getByTestId('button-drag-employee-82b9fa99-ea48-4e79-b1ca-11c8a3337e9b')\n"
+  },
+  "finishedAt": "2026-11-19T14:19:39.285Z"
+}

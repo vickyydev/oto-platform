@@ -1,0 +1,49 @@
+{
+  "readAt": "2026-11-19T14:14:28.786Z",
+  "appVersion": "b297dd064fc65cfc6f6a775570aad7fd0f8e5eb2",
+  "adminRole": "global_admin",
+  "leaveTypes": [
+    {
+      "code": "ANNUAL",
+      "name": "Annual Leave",
+      "isActive": true,
+      "managersOnly": "(no such field yet)"
+    },
+    {
+      "code": "BUSINESS",
+      "name": "Business Days",
+      "isActive": true,
+      "managersOnly": "(no such field yet)"
+    },
+    {
+      "code": "CHANGE_DAY_OFF",
+      "name": "Days Off",
+      "isActive": true,
+      "managersOnly": "(no such field yet)"
+    },
+    {
+      "code": "OTHER",
+      "name": "Other",
+      "isActive": true,
+      "managersOnly": "(no such field yet)"
+    },
+    {
+      "code": "SICK",
+      "name": "Sick Leave",
+      "isActive": true,
+      "managersOnly": "(no such field yet)"
+    },
+    {
+      "code": "TRAINING",
+      "name": "Training",
+      "isActive": true,
+      "managersOnly": "(no such field yet)"
+    },
+    {
+      "code": "UNPAID",
+      "name": "Unpaid Leave",
+      "isActive": true,
+      "managersOnly": "(no such field yet)"
+    }
+  ]
+}

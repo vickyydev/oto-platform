@@ -1,0 +1,221 @@
+{
+  "tickets": [
+    "SCRUM-1036",
+    "SCRUM-1037"
+  ],
+  "sha": "209b452510e5ae5c2c29af3078b58c8794e29eb1",
+  "startedAt": "2026-11-19T14:20:54.620Z",
+  "phase": "1036 drag",
+  "requests": [
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/qa-reports/config",
+      "status": 200
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/user",
+      "status": 200
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/leave-types",
+      "status": 200
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/branches",
+      "status": 200
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/employees",
+      "status": 200
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/departments",
+      "status": 200
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "POST",
+      "path": "/api/employees",
+      "status": 201
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "POST",
+      "path": "/api/employees",
+      "status": 201
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "POST",
+      "path": "/api/employees",
+      "status": 201
+    },
+    {
+      "who": "admin",
+      "origin": "oto-app-staging",
+      "method": "GET",
+      "path": "/api/employees",
+      "status": 200
+    }
+  ],
+  "made": [
+    {
+      "kind": "employee",
+      "id": "3156090a-a2d3-4bbb-8e80-4a0b2c1c90db",
+      "name": "ZZ TEST 1036 Ant 1267"
+    },
+    {
+      "kind": "employee",
+      "id": "3b3c3692-d08a-4225-be19-4927ab8a07a5",
+      "name": "ZZ TEST 1036 Bee 1267"
+    },
+    {
+      "kind": "employee",
+      "id": "e7fc8b9c-ac52-404e-ad56-51df6ecb721d",
+      "name": "ZZ TEST 1037 Staff 1267"
+    }
+  ],
+  "steps": {
+    "adminHandoff": 200,
+    "types": {
+      "before": [
+        {
+          "code": "ANNUAL",
+          "name": "Annual Leave",
+          "isActive": true,
+          "managersOnly": "(no such field yet)"
+        },
+        {
+          "code": "BUSINESS",
+          "name": "Business Days",
+          "isActive": true,
+          "managersOnly": "(no such field yet)"
+        },
+        {
+          "code": "CHANGE_DAY_OFF",
+          "name": "Days Off",
+          "isActive": true,
+          "managersOnly": "(no such field yet)"
+        },
+        {
+          "code": "OTHER",
+          "name": "Other",
+          "isActive": true,
+          "managersOnly": "(no such field yet)"
+        },
+        {
+          "code": "SICK",
+          "name": "Sick Leave",
+          "isActive": true,
+          "managersOnly": "(no such field yet)"
+        },
+        {
+          "code": "TRAINING",
+          "name": "Training",
+          "isActive": true,
+          "managersOnly": "(no such field yet)"
+        },
+        {
+          "code": "UNPAID",
+          "name": "Unpaid Leave",
+          "isActive": true,
+          "managersOnly": "(no such field yet)"
+        }
+      ],
+      "after": [
+        {
+          "code": "ANNUAL",
+          "name": "Annual Leave",
+          "isActive": true,
+          "managersOnly": false
+        },
+        {
+          "code": "BUSINESS",
+          "name": "Business Days",
+          "isActive": true,
+          "managersOnly": true
+        },
+        {
+          "code": "CHANGE_DAY_OFF",
+          "name": "Days Off",
+          "isActive": true,
+          "managersOnly": false
+        },
+        {
+          "code": "OTHER",
+          "name": "Other",
+          "isActive": false,
+          "managersOnly": false
+        },
+        {
+          "code": "SICK",
+          "name": "Sick Leave",
+          "isActive": true,
+          "managersOnly": true
+        },
+        {
+          "code": "TRAINING",
+          "name": "Training",
+          "isActive": false,
+          "managersOnly": false
+        },
+        {
+          "code": "UNPAID",
+          "name": "Unpaid Leave",
+          "isActive": true,
+          "managersOnly": true
+        }
+      ]
+    },
+    "departmentScan": [
+      {
+        "branch": "Head Office",
+        "department": "Accounting and Finance",
+        "othersShown": 3
+      },
+      {
+        "branch": "Head Office",
+        "department": "Maintanance ",
+        "othersShown": 0
+      },
+      {
+        "branch": "Head Office",
+        "department": "Management",
+        "othersShown": 3
+      }
+    ],
+    "emptyDepartmentFound": true,
+    "newPlaces": {
+      "a": 8,
+      "b": 9,
+      "staff": 10,
+      "highestOtherInBranch": 0
+    },
+    "orderBefore": "Ant, Bee"
+  },
+  "cleanup": [],
+  "passed": false,
+  "adminRole": "global_admin",
+  "branch": "Head Office",
+  "department": "Maintanance "
+}
