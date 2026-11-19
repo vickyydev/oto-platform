@@ -1,0 +1,12 @@
+{
+  "what": "SCRUM-1048 order panel, local build, ZZ TEST data; 3 sizes x 2 themes x 4 states",
+  "pictures": 24,
+  "sideways": 0,
+  "overflowing": 0,
+  "states": [
+    "1-offer",
+    "2-adder-open",
+    "3-line-added",
+    "4-offline"
+  ]
+}
