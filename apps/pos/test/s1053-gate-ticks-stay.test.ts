@@ -6,6 +6,7 @@ import { slotAge, type SupervisedSlot } from '@/components/till/SupervisionGate'
 import { addedGatePlace, emptyGatePlace, gateTicketLines } from '@/lib/editDetails';
 import { prefillGate, profileGuardianName } from '@/lib/returningFamily';
 import { resolveGroupRequirements } from '@/lib/supervision';
+import { gateExtraCredit } from '@/lib/extraCredit';
 import { getTicketTypes } from '@/store/catalogStore';
 import type { CartLine, SavedChild, SupervisionPolicy } from '@/types';
 
@@ -101,7 +102,7 @@ describe('SCRUM-1053 — the ticks stay through the gate and "Edit details"', ()
     const lineUpdates: unknown[] = [];
     const till = page({
       // The till's own pieces, unchanged.
-      emptyGatePlace, prefillGate, profileGuardianName, gateTicketLines, addedGatePlace, resolveGroupRequirements, slotAge,
+      emptyGatePlace, prefillGate, profileGuardianName, gateTicketLines, addedGatePlace, resolveGroupRequirements, slotAge, gateExtraCredit,
       getSupervisionPolicy: () => policy,
       // What the page holds around the form.
       createdMemberId: null, customerPhone: '', customerContactChannel: 'whatsapp',
@@ -160,7 +161,7 @@ describe('SCRUM-1053 — the ticks stay through the gate and "Edit details"', ()
     const member = { id: 'zz-member-1053b', nickname: 'ZZ TEST Ploy', phone: '+66898020001', savedChildren: [MAI] };
     const state: State = { lines: [line], superSlots: [], confirmedSavedIds: [], step: 3, lastPhotos: {}, member, visitingChildIds: [MAI.id] };
     const till = page({
-      emptyGatePlace, prefillGate, profileGuardianName, gateTicketLines, addedGatePlace, resolveGroupRequirements, slotAge,
+      emptyGatePlace, prefillGate, profileGuardianName, gateTicketLines, addedGatePlace, resolveGroupRequirements, slotAge, gateExtraCredit,
       getSupervisionPolicy: () => policy, createdMemberId: null, customerPhone: '', customerContactChannel: 'whatsapp',
       toast: () => undefined, gateOnline: { reset: () => undefined }, refreshNannyRoster: () => undefined,
       reviewDate: () => '2026-11-19', readLastPhotos: () => undefined, orderFrozen: () => false,
