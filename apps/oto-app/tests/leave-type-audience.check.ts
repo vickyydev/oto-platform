@@ -9,8 +9,9 @@
 // and in the database migration 0053 made:
 //
 //   1. The rule itself (server/lib/leaveTypeAudience.ts): a managers-only
-//      type is left out for anyone below manager and refused to them in words;
-//      a switched-off type is refused to everyone.
+//      type is left out for anyone below manager. Recording keeps the app's
+//      own rule (POST and PATCH /api/time-off are requireManager, the same
+//      four roles): no refusal of its own was added there.
 //   2. A new park group's catalogue is made with the owner's set.
 //   3. The list per role: staff are not shown Sick Leave, Business Days,
 //      Unpaid Leave or a park's own managers-only type; a manager and an admin
@@ -19,10 +20,13 @@
 //      record nothing (the app's manager rule, as before) and nothing is
 //      saved; Training and Other are refused to everyone, new or changed.
 //   5. Nothing lost: a person's own Training and Other leave, and every other
-//      record, reads as before in their own history and balances.
+//      record, reads as before in their own history and balances; a type
+//      switched off with days used this year still reads as it did while on
+//      (client/src/lib/leave-balance-reading.ts, both balance cards).
 //   6. Existing park groups: 0053 replayed twice gives the same result; it
-//      sets only the built-in codes, leaves a park's own type and a renamed
-//      built-in as they were, and writes no time-off row or opening.
+//      sets only the built-in codes (Training and Other off by code, however
+//      a manager named them), leaves a park's own type as it was, and writes
+//      no time-off row or opening.
 //
 // Usage, from apps/oto-app, with DATABASE_URL naming a database whose otoapp
 // schema the app's migrator has built:
@@ -34,7 +38,8 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
-import { leaveTypeRefusal, leaveTypesShownTo } from "../server/lib/leaveTypeAudience";
+import { leaveTypesShownTo } from "../server/lib/leaveTypeAudience";
+import { daysLeftTotal, readsAsActive } from "../client/src/lib/leave-balance-reading";
 
 const APP_DIR = join(dirname(fileURLToPath(import.meta.url)), "..");
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -236,21 +241,21 @@ const historyRows = async (tenant: string) => ({
 try {
   // ── 1. The rule itself ──────────────────────────────────────────────────────
   console.log("1. the rule (server/lib/leaveTypeAudience.ts):");
-  await check("a managers-only type is left out for anyone below manager and refused to them in words; a switched-off type is refused to everyone", () => {
+  await check("a managers-only type is left out for anyone below manager; recording keeps the app's own manager rule, word for word", () => {
     const sick = { code: "SICK", name: "Sick Leave", isActive: true, managersOnly: true };
     const annual = { code: "ANNUAL", name: "Annual Leave", isActive: true, managersOnly: false };
     const training = { code: "TRAINING", name: "Training", isActive: false, managersOnly: false };
     assert.deepEqual(codes(leaveTypesShownTo([sick, annual, training], false)), ["ANNUAL", "TRAINING"]);
     assert.deepEqual(codes(leaveTypesShownTo([sick, annual, training], true)), ["ANNUAL", "SICK", "TRAINING"]);
-    assert.equal(leaveTypeRefusal(sick, true), null);
-    assert.equal(leaveTypeRefusal(annual, false), null);
-    assert.deepEqual(leaveTypeRefusal(sick, false), {
-      status: 403,
-      message: "Sick Leave is for managers only: ask your manager to record it for you",
-    });
-    for (const manager of [true, false]) {
-      assert.deepEqual(leaveTypeRefusal(training, manager), { status: 400, message: "Unknown or inactive leave type" });
-      assert.deepEqual(leaveTypeRefusal(undefined, manager), { status: 400, message: "Unknown or inactive leave type" });
+    // The time-off writes: requireManager (the four roles isManagerRank names)
+    // and SCRUM-560's check of an active type, with nothing added.
+    const routes = readFileSync(join(APP_DIR, "server", "routes.ts"), "utf8");
+    for (const door of ['app.post("/api/time-off", requireAuth, requireManager,', 'app.patch("/api/time-off/:id", requireAuth, requireManager,']) {
+      const at = routes.indexOf(door);
+      assert.ok(at > 0, door);
+      const body = routes.slice(at, routes.indexOf("\n  app.", at + door.length));
+      assert.match(body, /if \(!requestedLeaveType \|\| !requestedLeaveType\.isActive\) \{\s+return res\.status\(400\)\.json\(\{ message: "Unknown or inactive leave type" \}\);/, door);
+      assert.doesNotMatch(body, /managers only|managersOnly/, door);
     }
   });
 
@@ -286,7 +291,7 @@ try {
   console.log("6. existing park groups: 0053 replayed:");
   await check("replayed twice, the same result: Sick, Business and Unpaid for managers only, Training off, Annual and Days Off as they were", async () => {
     const historyBefore = await historyRows(OLD.tenant);
-    const untouched = (await typesRows(OLD.tenant)).filter((r) => ["ANNUAL", "CHANGE_DAY_OFF", "OTHER", `ZZ_OWN_${RUN}`].includes(String(r.code)));
+    const untouched = (await typesRows(OLD.tenant)).filter((r) => ["ANNUAL", "CHANGE_DAY_OFF", `ZZ_OWN_${RUN}`].includes(String(r.code)));
     await replay0053();
     const once = await typesRows(OLD.tenant);
     await replay0053();
@@ -295,10 +300,11 @@ try {
     const row = (code: string) => once.find((r) => r.code === code)!;
     for (const code of MANAGERS_ONLY) assert.deepEqual([row(code).managers_only, row(code).is_active], [true, true], code);
     assert.deepEqual([row("TRAINING").is_active, row("TRAINING").managers_only], [false, false]);
-    // Untouched, column for column: Annual, Days Off, the park's own type and
-    // the Other a manager renamed (it stays on, as the manager left it).
+    // Other is switched off by its code though a manager renamed it; its name
+    // is left as the manager made it.
+    assert.deepEqual([row("OTHER").is_active, row("OTHER").managers_only, row("OTHER").name], [false, false, "ZZ Renamed by the park"]);
+    // Untouched, column for column: Annual, Days Off and the park's own type.
     assert.deepEqual(once.filter((r) => untouched.some((u) => u.id === r.id)), untouched);
-    assert.equal(row("OTHER").is_active, true);
     assert.equal(row(`ZZ_OWN_${RUN}`).managers_only, false);
     // The history: no time-off row or opening read differently.
     assert.deepEqual(await historyRows(OLD.tenant), historyBefore);
@@ -432,7 +438,7 @@ try {
   await check("a staff member's own balances still count every type, the managers-only and the switched-off ones included", async () => {
     const res = await call("GET", `/api/employees/${staffPerson}/leave-balances-dynamic?year=${thisYear}`, { cookie: cookie.staff });
     assert.equal(res.status, 200, show(res));
-    const balances = res.body.balances as { code: string; used: number; isActive: boolean }[];
+    const balances = res.body.balances as { code: string; used: number; balance: number; isActive: boolean }[];
     for (const code of BUILTIN) assert.ok(balances.some((b) => b.code === code), `balance for ${code}`);
     assert.ok(balances.some((b) => b.code === own.code), "balance for the park's own managers-only type");
     // The days already taken are counted where they fall in this year.
@@ -440,6 +446,19 @@ try {
     if (inYear(-10)) assert.ok(byCode(balances, "TRAINING").used >= 1, "Training already taken is counted");
     if (inYear(-9)) assert.ok(byCode(balances, "OTHER").used >= 1, "Other already taken is counted");
     assert.equal(byCode(balances, "TRAINING").isActive, false);
+    // Both balance cards read a switched-off type with days used this year as
+    // they did while it was on, in the "days left" total too; one with no day
+    // used reads as off.
+    const training = byCode(balances, "TRAINING");
+    assert.equal(readsAsActive(training), training.used !== 0);
+    if (inYear(-10)) assert.equal(readsAsActive(training), true);
+    assert.equal(readsAsActive({ isActive: false, used: 0 }), false);
+    const asWhileOn = balances.filter((b) => b.isActive || b.used !== 0).reduce((sum, b) => sum + b.balance, 0);
+    assert.equal(daysLeftTotal(balances), asWhileOn);
+    for (const [page, use] of [["employee-editor-page.tsx", "daysLeftTotal(data.balances)"], ["timekeeping-employee-detail-page.tsx", "readsAsActive(balance)"]] as const) {
+      const source = readFileSync(join(APP_DIR, "client", "src", "pages", page), "utf8");
+      assert.ok(source.includes('from "@/lib/leave-balance-reading"') && source.includes(use), page);
+    }
   });
 
   await check("the existing park group's history after 0053: every row as it was, the old Training and Other leave still the person's", async () => {

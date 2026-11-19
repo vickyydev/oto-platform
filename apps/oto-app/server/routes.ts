@@ -175,7 +175,7 @@ import {
   updateTenantLeaveType,
   upsertEmployeeLeaveOverride,
 } from "./leave-types";
-import { leaveTypeRefusal, leaveTypesShownTo } from "./lib/leaveTypeAudience";
+import { leaveTypesShownTo } from "./lib/leaveTypeAudience";
 import { directoryEventRouter } from "./directory/eventRoutes";
 import { directoryKitchenPlanRouter } from "./directory/kitchenPlanRoutes";
 import { directoryJobRouter } from "./directory/jobRoutes";
@@ -13588,12 +13588,10 @@ OTO Company Limited`,
       if (!branch || branch.tenantId !== user.tenantId) {
         return res.status(404).json({ message: "Branch not found" });
       }
-      // The type is one of the park group's active leave types, stored by its
-      // code; a managers-only type is a manager's to record (SCRUM-1037).
+      // The type is one of the park group's active leave types, stored by its code.
       const requestedLeaveType = await getTenantLeaveTypeByCode(branch.tenantId, requestedTimeOffType);
-      const typeRefused = leaveTypeRefusal(requestedLeaveType, isManagerRank(user));
-      if (typeRefused || !requestedLeaveType) {
-        return res.status(typeRefused?.status ?? 400).json({ message: typeRefused?.message ?? "Unknown or inactive leave type" });
+      if (!requestedLeaveType || !requestedLeaveType.isActive) {
+        return res.status(400).json({ message: "Unknown or inactive leave type" });
       }
       const timeOffType = requestedLeaveType.code;
 
@@ -13744,12 +13742,10 @@ OTO Company Limited`,
 
       const updateData: { type?: string; note?: string | null; startDate?: Date; endDate?: Date } = {};
       if (validationResult.data.timeOffType !== undefined) {
-        // One of the record's park group's active leave types (SCRUM-560); a
-        // managers-only type is a manager's to record (SCRUM-1037).
+        // One of the record's park group's active leave types (SCRUM-560).
         const requestedLeaveType = await getTenantLeaveTypeByCode(existing.tenantId, validationResult.data.timeOffType);
-        const typeRefused = leaveTypeRefusal(requestedLeaveType, isManagerRank(user));
-        if (typeRefused || !requestedLeaveType) {
-          return res.status(typeRefused?.status ?? 400).json({ message: typeRefused?.message ?? "Unknown or inactive leave type" });
+        if (!requestedLeaveType || !requestedLeaveType.isActive) {
+          return res.status(400).json({ message: "Unknown or inactive leave type" });
         }
         updateData.type = requestedLeaveType.code;
       }
