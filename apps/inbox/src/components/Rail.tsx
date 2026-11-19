@@ -148,9 +148,10 @@ function Group({ label, title, layout, children }: { label: string; title: strin
   return layout === 'sheet' ? (
     <div role="group" aria-label={label}>
       <h3 className="mb-2.5 text-note font-bold text-ink-soft">{title}</h3>
-      {/* The pills wrap onto lines 12 px apart on a touch screen, so a 32 px pill's 44 px target never
-          reaches into the line below (SCRUM-1045); 8 px with a mouse, or on a phone's 44 px pills. */}
-      <div className="flex flex-wrap gap-2 [@media(any-pointer:coarse)]:gap-y-3">{children}</div>
+      {/* From 768 px the pills wrap onto lines 12 px apart on a touch screen, so a 32 px pill's 44 px
+          target never reaches into the line below (SCRUM-1045); 8 px with a mouse, and on a phone, whose
+          pills are 44 px drawn. */}
+      <div className="flex flex-wrap gap-2 md:[@media(any-pointer:coarse)]:gap-y-3">{children}</div>
     </div>
   ) : (
     <div role="group" aria-label={label} className="flex flex-col gap-0.5">
