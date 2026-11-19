@@ -1,9 +1,9 @@
 # Drop-off and the BEO: the owner's answers of 19 November 2026
 
-The owner answered 47 of the 56 questions on the plan page
-(https://claude.ai/artifact/WsbwvABPnVcBFbjWiX4PP1) and said: start on what is
-cleared while he answers the rest. This file is the build specification. A
-question he has not answered is not built; today's behaviour stays for it.
+The owner answered all 56 questions on the plan page
+(https://claude.ai/artifact/WsbwvABPnVcBFbjWiX4PP1): 47 first, with the word
+to start on what was cleared, then the last nine (section 6). This file is the
+build specification. Where an answer says "as today", nothing changes.
 
 Read with `PLAN.md` (the steps) and the two comparisons beside this file (the
 code as it stands, with file names).
@@ -141,14 +141,33 @@ To build:
 - **SCRUM-1035, AI Fill:** a question the team asked and the family never
   answered is never written as agreed, on every field.
 
-## 6. Not now, and not answered
+## 6. The smaller requests (answered later the same day; all 56 are now answered)
 
-- **Service charge inside food and drink prices:** "Not now". Nothing is built;
-  the question on the older page is answered the same way.
-- **Not answered yet (nothing built):** VAT on the service charge; the price of
-  an extra party guest; Mystery Box stock; the option editor; the scheduling
-  order repair; several displays per till; the booth game with nobody on
-  shift; a single shift for a former employee; leave types.
+To build:
+
+- **SCRUM-1036, Scheduling order:** repair it. The drag saves the order shown;
+  a new employee takes a place at the end.
+- **SCRUM-1037, leave types:** Training and Other off; staff see annual leave
+  and holidays; the other legal types for managers only.
+- **SCRUM-1038, a former employee invited to a single shift:** on the old
+  contract; his note: "with an option to switch and work on casual day rate
+  as well."
+- **SCRUM-1039, the option editor:** a wider name and one price.
+- **SCRUM-1040, Mystery Box stock:** a stock item, and the voucher scan takes
+  one off.
+- **SCRUM-1041, more than one customer display on a till:** build it now.
+  Built straight after the counter flow lands, because both change what the
+  display shows.
+
+Kept or held (nothing built):
+
+- **Service charge inside food and drink prices:** "Not now". The question on
+  the older page is answered the same way.
+- **VAT on the service charge:** he will ask accounting; "keep it on hold for
+  now".
+- **The price of an extra party guest:** the package's own extra price, as
+  today.
+- **The booth game with nobody at the booth:** runs always, as today.
 
 ## 7. Build order
 

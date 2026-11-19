@@ -1,3 +1,34 @@
+## 19 November 2026, later afternoon: the plan page is fully answered; the smaller requests are ticketed
+
+- **All 56 questions are answered.** The last nine: six say build, three say
+  keep or hold. `docs/progress/plans/dropoff-beo-20261119/ANSWERS.md`,
+  section 6.
+- **New tickets:** SCRUM-1036 "Scheduling: the saved employee order does not
+  match the order dragged"; SCRUM-1037 "Leave types: Training and Other off;
+  staff see annual leave and holidays; the other types for managers only";
+  SCRUM-1038 "A former employee invited to a single shift: on the old
+  contract, or switched to a casual day rate"; SCRUM-1039 "Menu options
+  editor: a wider name and one price"; SCRUM-1040 "Mystery Box: a stock item,
+  and scanning its voucher takes one off the shelf"; SCRUM-1041 "More than one
+  customer display on a till".
+- **Kept or held:** service charge inside food prices (not now); VAT on the
+  service charge (on hold, he asks accounting); an extra party guest's price
+  (as today); the booth game with nobody at the booth (as today).
+- **Lanes:** the drop-off counter flow (workflow wf_2b410f77-dcd) and the BEO
+  timeline and print (wf_252a7ef8-097) are building. The HR app's smaller
+  requests (SCRUM-1036, 1037, 1038) build in
+  `C:/oto-lanes/codex-app-reliability-983-20261114`, branch
+  `lane/hrsmall1036-20261119`. The till's smaller requests (SCRUM-1039, 1040)
+  start in `C:/oto-lanes/codex-payment-handover-20261113`, branch
+  `lane/tillsmall1039-20261119`, when the inbox redesign lane has landed (the
+  laptop's memory is the limit). SCRUM-1041 follows the counter flow.
+- **Queue after these:** the BEO editor and its fields (SCRUM-1029 to 1035)
+  when the print lands; the phone form (SCRUM-1022, 1023); family profiles
+  (SCRUM-1024, 1025).
+- **One open point for the owner:** "Adult Waffles" is in the operations
+  lead's brief (section 5.2, Kids Menu); he had asked where it came from. It
+  stays unchanged until he says.
+
 ## 19 November 2026, afternoon: the owner answered the drop-off and BEO plan; two lanes build
 
 - **His answers:** 47 of 56 on the plan page, all of drop-off and all of the
