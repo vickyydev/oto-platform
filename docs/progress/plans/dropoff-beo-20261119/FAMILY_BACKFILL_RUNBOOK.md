@@ -13,7 +13,13 @@ SCRUM-1024, plan step F2. The plan is `FAMILY_PROFILES_PLAN.md` beside this file
 
 Both print ids and counts only. None of them prints a name, a phone number or a care note. Each takes its database from the `DATABASE_URL` variable of the service it runs on.
 
-The plan's shadow compare (section 3, R1: for every member, the children today's read gives beside the children the family read gives) is not one of them. It needs the family read rule, which is built with the readers in step F3, and it is run with that step.
+The plan's shadow compare (section 3, R1: for every member, the children today's read gives beside the children the family read gives) came with the readers in step F3. It is read only, prints member, operator and child ids and counts only, and exits 0 when no member differs, 1 when one does:
+
+```
+node scripts/agent/render.mjs job "pnpm --filter @oto/api exec tsx scripts/family-shadow-compare.ts"
+```
+
+It must print `NO DIFFERENCE` after a clean verify, before anyone asks to switch a reader to the family, and again after.
 
 ## 2. What the backfill does
 
