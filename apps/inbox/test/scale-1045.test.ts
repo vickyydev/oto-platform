@@ -149,7 +149,7 @@ describe('SCRUM-1045: no component carries a size of its own', () => {
     expect(of('components/SettingsFrame.tsx')).toMatch(/const NAV_ITEM = `hit flex min-h-row-touch /);
     expect(of('components/SettingsFrame.tsx')).toMatch(/className=\{`hit flex min-h-row-touch w-full items-center gap-2 [^`]*`\}\s*>\s*<ArrowLeft/);
     expect(of('components/Rail.tsx').match(/hit flex min-h-row-touch /g)).toHaveLength(3);
-    expect(of('components/Rail.tsx')).toContain('flex flex-wrap gap-2 [@media(any-pointer:coarse)]:gap-y-3');
+    expect(of('components/Rail.tsx')).toContain('flex flex-wrap gap-2 md:[@media(any-pointer:coarse)]:gap-y-3');
     // The account menu's items and the desktop panel's stacked footer words.
     expect(of('components/AppBar.tsx')).toMatch(/const ITEM =\s*'hit flex min-h-row-touch-lg /);
     expect(of('components/ChatPanel.tsx')).toMatch(/const FOOTER_WORD_STACKED =\s*'hit inline-flex min-h-row-touch-lg /);
