@@ -221,6 +221,19 @@ h3 {
 }
 
 /*
+ * Every control shows where the keyboard is (SCRUM-1016, inventory §7 item
+ * 24): the coral ring, 3 : 1 against every ground (tokens-1016), unless a
+ * control draws its own. A native select laid invisibly over a row or a word
+ * hands its ring to what is seen (`ROW_FOCUS`, `FOCUS_WITHIN`).
+ */
+@layer base {
+  :where(button, a[href], input, select, textarea, summary, [tabindex]:not([tabindex='-1'])):focus-visible {
+    outline: 2px solid var(--oto-coral);
+    outline-offset: 2px;
+  }
+}
+
+/*
  * SCRUM-648 — the view-as banner is fixed at the top at one height (2.25rem).
  * While it shows, `html.view-as-active` starts the page below it and gives
  * every full-height region its height back, so it never covers a header

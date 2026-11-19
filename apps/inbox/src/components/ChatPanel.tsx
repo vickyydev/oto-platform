@@ -686,12 +686,10 @@ export function ChatPanel({
           {supportCap && (
             // Both places taken (test night U4): say so where "Add support" sat,
             // with the api's own reason, rather than let the button vanish.
-            <span
-              title={SUPPORT_FULL_HINT}
-              aria-label={`${supportCap} — ${SUPPORT_FULL_HINT}`}
-              className="flex min-h-12 items-center justify-center px-3 text-[14px] font-semibold text-ink-muted"
-            >
-              {supportCap}
+            // Its reason said on the sheet, not only in a tooltip (SCRUM-1016).
+            <span className="flex min-h-12 flex-col items-center justify-center px-3 py-1.5 text-center">
+              <span className="text-[14px] font-semibold text-ink-muted">{supportCap}</span>
+              <span className="text-[12px] text-ink-muted">{SUPPORT_FULL_HINT}</span>
             </span>
           )}
           {me.capabilities.assign &&
@@ -920,6 +918,7 @@ export function ChatPanel({
             ) : showCard ? (
               where === 'sheet' && <p className="px-1 text-[13px] text-ink-muted">The deposit is paid: Book the date is at the top of the chat.</p>
             ) : (
+              <>
               <div className="grid grid-cols-2 gap-2">
                 {mayBook ? (
                   <button
@@ -966,6 +965,9 @@ export function ChatPanel({
                   </PendingControl>
                 )}
               </div>
+              {/* Why both are off, said on the page and not only in a tooltip (SCRUM-1016). */}
+              {!mayBook && <p className="px-1 text-[12.5px] text-ink-muted" data-testid="book-off-reason">{bookOffReason}</p>}
+              </>
             )}
             {event && (
               <button

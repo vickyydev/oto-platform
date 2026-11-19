@@ -56,6 +56,8 @@ const TEXT_PAIRS: Array<[ink: string, ground: string]> = [
   // cannot be undone; a disabled main button's muted words on the band.
   ['ask-ink', 'ask'], ['ask-ink', 'ground'], ['ask-ink', 'card'], ['ink', 'ask'],
   ['danger', 'danger-ink'], ['ink-muted', 'band'],
+  // A refusal said on the page itself (sign-in, the figures, the simulator).
+  ['danger-ink', 'card'], ['danger-ink', 'ground'],
 ];
 
 describe('SCRUM-1016: the OTO tokens', () => {

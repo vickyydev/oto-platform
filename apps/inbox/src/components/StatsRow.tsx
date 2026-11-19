@@ -117,7 +117,7 @@ export function StatsRow({
         </button>
       )}
       {figures && error && (
-        <p role="alert" className={`flex items-center text-[12px] text-rose-700 dark:text-rose-300 ${bar ? 'px-3' : 'col-span-3 border-l border-line px-3'}`}>
+        <p role="alert" className={`flex items-center text-[12px] text-danger-ink ${bar ? 'px-3' : 'col-span-3 border-l border-line px-3'}`}>
           {error}
         </p>
       )}
