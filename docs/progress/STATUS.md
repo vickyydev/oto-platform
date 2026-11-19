@@ -1,3 +1,28 @@
+## 19 November 2026, night: the old files are copied and show in both apps; contracts do not open yet
+
+- **SCRUM-1046 (copy the old app's stored photos and documents):** production's
+  folder holds all 10,285 files (13.7 GB); staging's holds its smaller set,
+  6,220 files (4.5 GB: everything except check-in photos, plus check-in
+  photos from about 8 November on). No failures; the old storage was only
+  read.
+- **Checked inside the apps, looking only,** signed in on staging and on
+  production (the stored set-up login of the go-live scripts): profile
+  photos, drop-off photos and signatures, task, camp and repair media and
+  check-in photos are served at their right sizes; the staff list showed 58
+  of 58 pictures on staging and 59 of 59 on production. Files uploaded to the
+  old app after the database copy have no database row, so the apps answer
+  "not found" for them until the fresh database copy at the switch.
+- **Signed contracts do not open (SCRUM-1047, filed).** 21 are in the copied
+  files but the database names them under the old storage's name, which the
+  app refuses; a repair that resolves them inside the app's own storage is
+  being built (workflow wf_8810dbbe-bd4, `C:/oto-lanes/codex-app-every-field-20261117`,
+  branch `lane/contracts1047-20261119`; staging only, production takes it at
+  its next deploy on the owner's word). 55 older ones are named at a path on
+  the old server's own disk and were never in the old cloud storage: the
+  owner is asked where they are (his page, R20).
+- The check's two screenshots hold real staff photos and stay in
+  `C:\oto-data\work\media-proof`.
+
 ## 19 November 2026, night: the till's smaller requests are on staging; production holds every old file
 
 - **SCRUM-1039 "Menu options editor: a wider name and one price" and
