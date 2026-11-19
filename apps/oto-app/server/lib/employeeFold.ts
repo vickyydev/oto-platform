@@ -276,6 +276,10 @@ async function moveShifts(client: Exec, from: string, to: string): Promise<{ shi
   const skippedBreaks = await count(client, "select count(*)::int as n from schedule_shift_breaks where assignment_id = any($1::varchar[])", [skippedIds]);
   const skipped = await client.query("delete from schedule_assignments where id = any($1::varchar[])", [skippedIds]);
   const moved = await client.query("update schedule_assignments set employee_id = $2 where employee_id = $1", [from, to]);
+  // SCRUM-1038: a single shift's invitation (who invited, how it is paid)
+  // goes with its shift; one whose shift was skipped above keeps its record,
+  // its shift emptied as a removed shift's is.
+  await client.query("update single_shift_invitations set employee_id = $2 where employee_id = $1", [from, to]);
   const duties = await client.query("update duty_blocks set employee_id = $2 where employee_id = $1", [from, to]);
   const breaks = await client.query("update schedule_shift_breaks set employee_id = $2 where employee_id = $1", [from, to]);
   return {

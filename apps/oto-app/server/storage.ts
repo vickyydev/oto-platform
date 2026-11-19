@@ -1261,6 +1261,7 @@ export interface IStorage {
                 employeeId: string,
                 startDate: string,
                 endDate: string, executor?: DbExecutor, requestedTenantId?: string,
+                options?: { keepSingleShifts?: boolean },
         ): Promise<ScheduleAssignment[]>;
 
         // Eligibility for week scheduling
@@ -8449,7 +8450,16 @@ export class DatabaseStorage implements IStorage {
                 startDate: string,
                 endDate: string,
                 executor: DbExecutor = db, requestedTenantId?: string,
+                // SCRUM-1038 — `keepSingleShifts`: the shifts a former employee
+                // was invited to are not the ending employment's, so a door that
+                // clears that employment's later shifts leaves them, as the 03:00
+                // batch does (`processEmploymentStateTransitions`).
+                options?: { keepSingleShifts?: boolean },
         ): Promise<ScheduleAssignment[]> {
+                const notSingleShift = options?.keepSingleShifts
+                        ? sql`not exists (select 1 from single_shift_invitations i
+                                           where i.assignment_id = ${scheduleAssignments.id})`
+                        : undefined;
                 // First get the assignments that will be deleted (to return them for attention items)
                 const affected = await executor
                         .select()
@@ -8459,6 +8469,7 @@ export class DatabaseStorage implements IStorage {
                                         eq(scheduleAssignments.employeeId, employeeId),
                                         gte(scheduleAssignments.shiftDate, startDate),
                                         lte(scheduleAssignments.shiftDate, endDate),
+                                        notSingleShift,
                                 ), scheduleParkPredicate("schedule_assignments", requestedTenantId)),
                         );
 
@@ -8473,6 +8484,7 @@ export class DatabaseStorage implements IStorage {
                                                 eq(scheduleAssignments.employeeId, employeeId),
                                                 gte(scheduleAssignments.shiftDate, startDate),
                                                 lte(scheduleAssignments.shiftDate, endDate),
+                                                notSingleShift,
                                         ), scheduleParkPredicate("schedule_assignments", requestedTenantId)),
                                 );
                 }
