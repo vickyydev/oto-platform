@@ -5,6 +5,7 @@ import {
   account,
   auditLog,
   branch,
+  product,
   sale,
   saleDiscount,
   saleLine,
@@ -425,6 +426,41 @@ describe('a hand-over takes one off the shelf, once', () => {
     expect(paid.json()).toMatchObject({ finalised: true, redeemedVoucherIds: [v.id] });
     expect(await held(hktBox)).toBe(before - 1);
     expect(await prizeMovements(v.id)).toEqual([expect.objectContaining({ saleId, saleLineId: null, quantity: -1 })]);
+  });
+
+  it('beside a pair of socks: each shelf gives exactly its own unit when the sale is paid', async () => {
+    const [socks] = await ctx.db
+      .select({ id: product.id })
+      .from(product)
+      .where(and(eq(product.code, 'AO-SOCKS'), eq(product.branchId, hktId)));
+    const [socksItem] = await ctx.db
+      .select({ id: stockItem.id })
+      .from(stockItem)
+      .where(and(eq(stockItem.productId, socks!.id), eq(stockItem.branchId, hktId)));
+    const boxesBefore = await held(hktBox);
+    const socksBefore = await held(socksItem!.id);
+    const v = await issue(mysteryDef);
+    const saleId = newId();
+    expect((await hold(tillA, saleId, v.code)).statusCode).toBe(200);
+    const rung = await commit(tillA, {
+      id: saleId,
+      stationId: t1.id,
+      lines: [{ id: newId(), packageId: twoHoursHkt, kids: 1, adults: 1, addOns: [{ id: socks!.id, quantity: 1 }] }],
+      promoCodes: [v.code],
+    });
+    expect(rung.statusCode, rung.body).toBe(200);
+    const paid = await finalise(tillA, saleId);
+    expect(paid.statusCode, paid.body).toBe(200);
+    expect(await held(hktBox)).toBe(boxesBefore - 1);
+    expect(await held(socksItem!.id)).toBe(socksBefore - 1);
+    const moved = await ctx.db.select().from(stockMovement).where(eq(stockMovement.saleId, saleId));
+    expect(moved.map((m) => [m.stockItemId, m.quantity]).sort()).toEqual(
+      [
+        [hktBox, -1],
+        [socksItem!.id, -1],
+      ].sort(),
+    );
+    await expectLedgerAddsUp();
   });
 
   it('a sale rung up online and paid at a box with the link down: one unit, offline, and a replayed tender takes nothing twice', async () => {

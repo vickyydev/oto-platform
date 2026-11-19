@@ -1119,6 +1119,85 @@ export interface PrizeStockResult {
 export const prizeStockActionId = (voucherId: string): string => `prize:${voucherId}`;
 
 /**
+ * SCRUM-1040 — one hand-over prize a close is to take off its shelf, as
+ * `consumeSaleVouchers` names it when it uses the voucher up.
+ */
+export interface PrizeStockTake {
+  voucherId: string;
+  stockItemId: string;
+  /** "Mystery Box (voucher …8H2J)" — never the whole code. */
+  prizeLabel: string;
+}
+
+/** Every stock item a sale's lines take from: the shares frozen at commit, else resolved now. */
+async function saleStockItemIds(tx: Tx, saleRow: SaleRow): Promise<string[]> {
+  const lines = await tx
+    .select({
+      kind: saleLine.kind,
+      productId: saleLine.productId,
+      quantity: saleLine.quantity,
+      label: saleLine.label,
+      payload: saleLine.payload,
+    })
+    .from(saleLine)
+    .where(eq(saleLine.saleId, saleRow.id));
+  const stocked = lines.filter((l) => l.productId && STOCKED_LINE_KINDS.has(l.kind) && l.quantity > 0);
+  if (stocked.length === 0) return [];
+  const catalogue = await loadStockCatalogue(tx, saleRow.branchId, stocked.map((l) => l.productId!));
+  return stocked.flatMap((line) => {
+    const frozen = (line.payload as LinePayloadView | null)?.stock;
+    const shares = Array.isArray(frozen) && frozen.length > 0 ? frozen : lineStock(line, catalogue).shares;
+    return shares.map((s) => s.stockItemId);
+  });
+}
+
+/**
+ * THE STOCK A CLOSE TAKES, at both finalise points (`commitSale`'s ฿0 close
+ * and `finaliseSale`): the sale's own lines (`takeStockForSale`) and — SCRUM-1040
+ * — each hand-over prize its vouchers name (`takeStockForPrize`).
+ *
+ * ONE LOCK ORDER. With a prize to take, every shelf the close will touch — the
+ * prizes' items and the sale's own — is locked first in a single (item id,
+ * location id) acquisition (`lockLevels`), so the two takes after it re-lock
+ * rows this transaction already holds, and a close never takes two shelves in
+ * an order a count or another close could take them the other way round.
+ * Without a prize this is `takeStockForSale`, unchanged.
+ */
+export async function takeStockForClose(
+  tx: Tx,
+  saleRow: SaleRow,
+  ctx: { actorAccountId: string | null; requestId?: string | null; offline: boolean; now: Date },
+  prizes: readonly PrizeStockTake[] = [],
+): Promise<TakeStockResult> {
+  if (prizes.length > 0) {
+    const itemIds = [...new Set([...prizes.map((p) => p.stockItemId), ...(await saleStockItemIds(tx, saleRow))])];
+    const locations = await branchLocations(tx, saleRow.branchId);
+    await lockLevels(
+      tx,
+      itemIds.flatMap((stockItemId) => locations.map((loc) => ({ stockItemId, stockLocationId: loc.id }))),
+    );
+    for (const prize of prizes) {
+      await takeStockForPrize(tx, {
+        operatorId: saleRow.operatorId,
+        branchId: saleRow.branchId,
+        stockItemId: prize.stockItemId,
+        voucherId: prize.voucherId,
+        prizeLabel: prize.prizeLabel,
+        saleId: saleRow.id,
+        businessDate: saleRow.businessDate,
+        stationId: saleRow.stationId,
+        boxId: saleRow.boxId,
+        actorAccountId: ctx.actorAccountId,
+        requestId: ctx.requestId ?? null,
+        offline: ctx.offline,
+        now: ctx.now,
+      });
+    }
+  }
+  return takeStockForSale(tx, saleRow, ctx);
+}
+
+/**
  * A stock item as a person reads it: its name, and its size where it has one.
  * An item counted in one size and linked to no product carries the size label
  * "Default" (the Console's inventory form, `InventoryItemFormDialog`), which
@@ -1131,10 +1210,10 @@ export function stockItemDisplayName(name: string, variantLabel: string | null):
 
 /**
  * SCRUM-1040 — A HAND-OVER PRIZE TAKES ONE OFF ITS SHELF (owner, 19 November
- * 2026: "a stock item, and the scan takes one off"). Called from the one place
- * a voucher is used up (`consumeSaleVouchers`), in that transaction, for a
- * hand-over voucher type linked to a stock item at the redeeming park
- * (`promo.voucher_stock_link`).
+ * 2026: "a stock item, and the scan takes one off"). Taken by the close
+ * (`takeStockForClose`) in the transaction that used the voucher up, for each
+ * prize `consumeSaleVouchers` named: a hand-over voucher type linked to a
+ * stock item at the redeeming park (`promo.voucher_stock_link`).
  *
  * The same moment, and the same rules, as a sale's own decrement
  * (`takeStockForSale`): the sell point first, then back of house, then bulk,
