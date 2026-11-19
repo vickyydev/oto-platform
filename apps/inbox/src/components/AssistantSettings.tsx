@@ -260,7 +260,7 @@ function ChannelModes({ me }: { me: InboxMe }) {
                   ) : undefined
                 }
                 control={
-                  <div role="radiogroup" aria-label={`Assistant mode for ${a.displayName}`} className={`${SEGMENT_BAND} max-md:w-full`}>
+                  <div role="radiogroup" aria-label={`Assistant mode for ${a.displayName}`} className={`${SEGMENT_BAND} max-md:w-full sm:max-w-md`}>
                     {AI_MODE_OPTIONS.map((o) => (
                       <button
                         key={o.value}
