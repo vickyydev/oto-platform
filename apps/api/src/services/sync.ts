@@ -96,7 +96,7 @@ import { AppError } from '../lib/errors';
 import { pgErrorOf } from '../lib/scrub';
 import type { BranchReach } from './access-control';
 import { audit } from './audit';
-import { childAuditView, ensureFamilyFor } from './family';
+import { childAuditView, ensureFamilyFor, familyProfilesMode, type FamilyProfilesMode } from './family';
 import { addVisitChildren } from './visit-children';
 import { readStationsSellingReadiness } from './payments/terminal';
 /**
@@ -667,6 +667,13 @@ export interface BatchScope {
    * fail its event over: an offline sale's promo alert (SCRUM-401).
    */
   log?: OpContext['log'];
+  /**
+   * SCRUM-1024 — `crm.family_profiles` for the box's operator, read once for
+   * the whole batch (plan step F3), so every fact in it reads a member's
+   * children the same way. Today only `visit.children_added` (through
+   * `addVisitChildren`, shared with the till's route) reads it.
+   */
+  familyMode: FamilyProfilesMode;
 }
 
 export interface PreparedEvent {
@@ -1915,6 +1922,7 @@ const HANDLERS: Record<string, EventHandler> = {
           memberId,
           operatorId: scope.auth.operatorId,
           branchId: scope.auth.branchId,
+          familyMode: scope.familyMode,
           now: event.occurredAt,
           actor: { actorAccountId: event.envelope.actorAccountId ?? null,
             actionId: event.envelope.actionId ?? null, sourceEventId: event.envelope.eventId },
@@ -2887,6 +2895,7 @@ export async function pushEvents(
     stationIds: new Set(stations.map((s) => s.id)),
     db,
     log: ctx.log,
+    familyMode: await familyProfilesMode(db, auth.operatorId),
   };
 
   const epoch = boxRow.currentEpoch;
