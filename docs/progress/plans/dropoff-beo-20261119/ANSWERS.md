@@ -32,6 +32,9 @@ SCRUM-1018, a returning family in three steps:
 - **Unticking a saved child** asks no reason (as today).
 - **After a waiver** the older sibling who covers the younger one plays on a
   normal ticket: no free drop-off form, straight to payment.
+  **Replaced the same evening (R25, section 8):** the short no-fee form for
+  the older sibling stays, so both children have a guardian number, the
+  agreements and a pickup check. Built and on staging (SCRUM-1052).
 - The plan's step 1 itself: the children staff tick as visiting become the
   form's children and the ticket count.
 

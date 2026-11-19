@@ -1,3 +1,31 @@
+## 19 November 2026, 22:00: the waiver repair is on staging; hosted CI is red on the till's end-to-end tests and is being repaired
+
+- **SCRUM-1052 "Drop-off: after a sibling waiver the sale is refused":
+  Deployed** (main 2e17b1727, pictures fa5271908; api, till and Console live
+  on staging). After a waiver the older sibling has the short no-fee form
+  (the owner's choice R25) and the sale is accepted; the platform's rule is
+  unchanged. Proof: a waiver sale paid in cash, both children checked in and
+  released (`docs/qa/proof-2026-11-19/SCRUM-1052/run2/`).
+- **SCRUM-1018 "Drop-off: a returning family in three steps": Deployed.**
+  SCRUM-1053 "Drop-off counter flow: consistency points": five points on
+  staging, Testing. The returning family's short form on the display now
+  reads "Welcome back / Your children's details are saved. Tick the
+  agreements below so our team can keep them safe." (new wording, in English,
+  Thai and Russian; the lead opened the picture).
+- **Hosted CI on main is red** (run 44535257808): four tests in
+  `apps/pos/e2e/smoke.spec.ts` still wait for the display's saved-child
+  review screen that SCRUM-1018 removed, and
+  `apps/api/test/s504-review-recheck.test.ts` timed out on two runs. A repair
+  agent is working in `C:/oto-lanes/codex-payment-choice-recovery-20261116`
+  (branch `lane/ci-smoke-20261119`): the smoke tests follow the approved flow
+  and keep what they pinned; s504 is investigated before anything is changed.
+- **Seen and not changed:** the Payment Successful screen's second bracelet
+  card still reads "Prints at check-in" after "Check in now"; on the short
+  form, once the agreements are ticked and staff are still deciding on the
+  last photo, Done is disabled and nothing tells the family they are waiting
+  for staff.
+- The till lane goes on with SCRUM-1048 extra food credit (building).
+
 ## 19 November 2026, 21:40: the HR smaller requests are on staging; the single shift's pay is being built
 
 - **Landed** (main 209b45251, pictures f16acc725; `oto-app-staging` live
