@@ -96,7 +96,15 @@ import { AppError } from '../lib/errors';
 import { pgErrorOf } from '../lib/scrub';
 import type { BranchReach } from './access-control';
 import { audit } from './audit';
-import { childAuditView, ensureFamilyFor, familyProfilesMode, type FamilyProfilesMode } from './family';
+import {
+  childAuditView,
+  childGuardedInOperator,
+  childOfMember,
+  childrenByMemberThroughFamilies,
+  ensureFamilyFor,
+  familyProfilesMode,
+  type FamilyProfilesMode,
+} from './family';
 import { addVisitChildren } from './visit-children';
 import { readStationsSellingReadiness } from './payments/terminal';
 /**
@@ -670,8 +678,10 @@ export interface BatchScope {
   /**
    * SCRUM-1024 — `crm.family_profiles` for the box's operator, read once for
    * the whole batch (plan step F3), so every fact in it reads a member's
-   * children the same way. Today only `visit.children_added` (through
-   * `addVisitChildren`, shared with the till's route) reads it.
+   * children the same way: `child.created`'s sibling check, `child.updated`'s
+   * owner check, `visit.created`'s and `visit.children_added`'s saved
+   * children (the latter through `addVisitChildren`, shared with the till's
+   * route) and the registration replay in `sync-checkin.ts`.
    */
   familyMode: FamilyProfilesMode;
 }
@@ -1761,10 +1771,18 @@ const HANDLERS: Record<string, EventHandler> = {
        */
       let flagged: typeof member.$inferSelect | null = null;
       if (viaAlias && !guardian.childrenReviewSince) {
+        // SCRUM-1024 (step F3) — the survivor's own children by the batch's
+        // switch: `child.member_id` at `off` (the very condition), the
+        // survivor's families otherwise; the member's state not asked, as before.
         const [sibling] = await tx
           .select({ id: child.id })
           .from(child)
-          .where(and(eq(child.memberId, memberId), isNull(child.archivedAt)))
+          .where(
+            and(
+              childOfMember(scope.familyMode, { operatorId: scope.auth.operatorId, memberId, memberLive: false }),
+              isNull(child.archivedAt),
+            ),
+          )
           .limit(1);
         if (sibling) {
           const [marked] = await tx
@@ -1851,11 +1869,21 @@ const HANDLERS: Record<string, EventHandler> = {
       if (!before) {
         throw new RefuseEvent('apply_failed', 'SYNC_CHILD_ABSENT', 'No such child here yet');
       }
-      const [guardian] = await tx
-        .select({ id: member.id })
-        .from(member)
-        .where(and(eq(member.id, before.memberId), eq(member.operatorId, scope.auth.operatorId)))
-        .limit(1);
+      // SCRUM-1024 (step F3) — the owner check by the batch's switch, as the
+      // till's edit reads it: at `off` the child's own member in this
+      // operator; otherwise a live guardian of the child's family inside this
+      // operator. The member's state is not asked, as it never was here.
+      const [guardian] = scope.familyMode === 'off'
+        ? await tx
+          .select({ id: member.id })
+          .from(member)
+          .where(and(eq(member.id, before.memberId), eq(member.operatorId, scope.auth.operatorId)))
+          .limit(1)
+        : await tx
+          .select({ id: child.id })
+          .from(child)
+          .where(and(eq(child.id, before.id), childGuardedInOperator({ operatorId: scope.auth.operatorId, memberLive: false })))
+          .limit(1);
       if (!guardian) {
         throw new RefuseEvent('poison', 'SYNC_CHILD_NOT_OURS', 'That child belongs elsewhere');
       }
@@ -2003,13 +2031,22 @@ const HANDLERS: Record<string, EventHandler> = {
         // Distinct, because the insert below tolerates a repeated id with
         // `onConflictDoNothing` and a repeat must not become a refusal.
         const named = [...new Set(payload.childIds)];
+        // SCRUM-1024 (step F3) — "this member's own" by the batch's switch:
+        // `child.member_id` at `off` (the very condition), the member's
+        // families otherwise; the member's state not asked, as before. So a
+        // visit an old box filed under a second parent's id, for the family's
+        // children, is taken at `read` and refused at `off`, as today.
         const saved = await tx
           .select({ id: child.id })
           .from(child)
           .where(
             and(
               inArray(child.id, named),
-              eq(child.memberId, payload.memberId),
+              childOfMember(scope.familyMode, {
+                operatorId: scope.auth.operatorId,
+                memberId: payload.memberId,
+                memberLive: false,
+              }),
               isNull(child.archivedAt),
             ),
           );
@@ -5104,25 +5141,44 @@ export async function cacheBundle(
         )
         .orderBy(asc(member.id))
         .limit(limit);
-      const children = rows.length
-        ? await db
-            .select()
-            .from(child)
-            .where(
-              and(
-                inArray(
-                  child.memberId,
-                  rows.map((m) => m.id),
-                ),
-                isNull(child.archivedAt),
-              ),
-            )
-        : [];
+      /**
+       * SCRUM-1024 (step F3) — each member's children by the switch, read
+       * once for this bundle: at `off` by `child.member_id`, exactly as
+       * before; otherwise the live children of the member's families, nested
+       * under every parent on the family. Each child keeps its fields and its
+       * `memberId` ("first saved under"); the item gains no field, so the
+       * bundle's shape and version do not change while each family has one
+       * guardian, and a box on any release reads it as it always has.
+       */
+      const familyMode = await familyProfilesMode(db, operatorId);
       const byMember = new Map<string, unknown[]>();
-      for (const c of children) {
-        const list = byMember.get(c.memberId) ?? [];
-        list.push(childChange(c));
-        byMember.set(c.memberId, list);
+      if (familyMode === 'off') {
+        const children = rows.length
+          ? await db
+              .select()
+              .from(child)
+              .where(
+                and(
+                  inArray(
+                    child.memberId,
+                    rows.map((m) => m.id),
+                  ),
+                  isNull(child.archivedAt),
+                ),
+              )
+          : [];
+        for (const c of children) {
+          const list = byMember.get(c.memberId) ?? [];
+          list.push(childChange(c));
+          byMember.set(c.memberId, list);
+        }
+      } else {
+        const nested = await childrenByMemberThroughFamilies(
+          db,
+          { operatorId, memberIds: rows.map((m) => m.id), memberLive: true },
+          isNull(child.archivedAt),
+        );
+        for (const [memberId, list] of nested) byMember.set(memberId, list.map(childChange));
       }
       /**
        * The ids merged into each member (OD-7), so a counter that signed a
