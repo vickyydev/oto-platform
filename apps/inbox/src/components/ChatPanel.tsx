@@ -1078,7 +1078,7 @@ export function ChatPanel({
             {/* The number it came in on (SCRUM-220 playbook), not the bare channel; its channel in the title.
                 Then the topic and the park, each a whole part: one that does not fit
                 wraps to a line that is never shown, so no word is cut in half (SCRUM-1045). */}
-            <p className="flex h-[1.35em] flex-wrap overflow-hidden text-meta leading-[1.35] text-ink-muted">
+            <p title={[sourceFirst, ...lineParts].join(' · ')} className="flex h-[1.35em] flex-wrap overflow-hidden text-meta leading-[1.35] text-ink-muted">
               <span title={CHANNEL_LABEL[conv.channel]} className="min-w-0 max-w-full truncate">
                 {sourceFirst}
               </span>
@@ -1110,7 +1110,10 @@ export function ChatPanel({
           >
             <Bot aria-hidden className="h-[1.3em] w-[1.3em] shrink-0 text-note" />
             {/* The state, then why: the why steps aside whole when it does not fit (SCRUM-1045). */}
-            <span className="my-2 flex h-[1.35em] min-w-0 flex-1 flex-wrap overflow-hidden text-note leading-[1.35]">
+            <span
+              title={aiLine.kind === 'control' ? `${aiLine.text} · ${aiLine.hint}` : aiLine.text}
+              className="my-2 flex h-[1.35em] min-w-0 flex-1 flex-wrap overflow-hidden text-note leading-[1.35]"
+            >
               <strong className="min-w-0 max-w-full truncate font-bold">{aiLine.text}</strong>
               {aiLine.kind === 'control' && <span className="whitespace-pre">{` · ${aiLine.hint}`}</span>}
             </span>
