@@ -211,6 +211,8 @@ export interface ReviewDetails {
   /** SCRUM-904: the family's WhatsApp number and the setup plan's notes, held text never overwritten. */
   whatsapp: ReviewText;
   setupNotes: ReviewText;
+  /** SCRUM-1030: the kitchen plan's Kitchen Notes, held text never overwritten. */
+  kitchenNotes: ReviewText;
 }
 
 export interface BeoAiReviewState {
@@ -269,6 +271,8 @@ export interface ReviewHeld {
   /** SCRUM-904: the family's WhatsApp number and the setup plan's notes (absent from a caller before this rule: nothing held). */
   whatsapp?: string;
   setupNotes?: string;
+  /** SCRUM-1030: the kitchen plan's Kitchen Notes (absent from a caller before this rule: nothing held). */
+  kitchenNotes?: string;
 }
 export const NOTHING_HELD: ReviewHeld = {
   title: "",
@@ -283,6 +287,7 @@ export const NOTHING_HELD: ReviewHeld = {
   posNotes: "",
   whatsapp: "",
   setupNotes: "",
+  kitchenNotes: "",
 };
 
 let seq = 0;
@@ -462,6 +467,8 @@ export function initialReviewState(
       team: { proposals: teamProposals, accepted: [] },
       whatsapp: text("whatsapp", chatPhone),
       setupNotes: text("setupNotes", d.setup.notes ?? null),
+      // SCRUM-1030: the Kitchen Notes the chat gives, beside what the form holds.
+      kitchenNotes: text("kitchenNotes", d.kitchenNotes ?? null),
     },
   };
 }
@@ -562,7 +569,7 @@ const WRITTEN_SECTIONS: Array<[string, (w: Record<string, number | boolean>) => 
   ["the event's details (name, counts, times)", (w) => w.event === true],
   ["the date", (w) => w.eventDate === true],
   ["the package", (w) => w.package === true],
-  ["the kitchen plan", (w) => w.setMenu === true || Number(w.kitchenLines) > 0 || Number(w.adultsKidsLinesCopied) > 0 || w.cake === true || w.foodTimes === true],
+  ["the kitchen plan", (w) => w.setMenu === true || Number(w.kitchenLines) > 0 || Number(w.adultsKidsLinesCopied) > 0 || w.cake === true || w.foodTimes === true || w.kitchenNotes === true],
   ["the bar", (w) => Number(w.barLines) > 0 || w.barServiceTime === true],
   ["the entertainment", (w) => Number(w.entertainment) > 0],
   ["the setup plan", (w) => w.setup === true],
@@ -1037,6 +1044,8 @@ export function approveDetailsOf(
   text("posNotes", "posNotes");
   // SCRUM-904: the setup plan's notes, as any text field of the rest.
   text("setupNotes", "setupNotes");
+  // SCRUM-1030: the Kitchen Notes, as any text field of the rest.
+  text("kitchenNotes", "kitchenNotes");
   const tasks = d.setupTasks.filter((t) => t.label.trim());
   if (tasks.length > 0) {
     out.setupTasks = tasks.map((t, i) => {
@@ -1281,7 +1290,7 @@ export const APPROVED_SECTIONS: Record<string, (field: string) => boolean> = {
   "birthday-package": (f) => f === "package" || f.startsWith("addOn:") || f.startsWith("entertainment:"),
   "party-details": (f) => f.startsWith("pos") || f === "deposit",
   "setup-plan": (f) => f.startsWith("setup") || f === "team:setupResponsible",
-  "kitchen-plan": (f) => f === "setMenu" || f === "cake" || f.startsWith("choice:") || f.startsWith("menu:") || f === "kidsFoodTime" || f === "adultsFoodTime" || f === "barServiceTime",
+  "kitchen-plan": (f) => f === "setMenu" || f === "cake" || f.startsWith("choice:") || f.startsWith("menu:") || f === "kidsFoodTime" || f === "adultsFoodTime" || f === "barServiceTime" || f === "kitchenNotes",
   timeline: (f) => f.startsWith("timeline:"),
 };
 

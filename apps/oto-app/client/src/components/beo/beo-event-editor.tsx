@@ -1769,6 +1769,8 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
     // SCRUM-904: the family's number and the setup notes the form holds, never overwritten.
     whatsapp: eventData.whatsappPhoneRaw ?? "",
     setupNotes,
+    // SCRUM-1030: the Kitchen Notes the form holds, never overwritten.
+    kitchenNotes,
   });
 
   /**
@@ -1797,6 +1799,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
       posNotes: s(pd?.notes),
       whatsapp: s(saved?.whatsappPhoneRaw) || s(saved?.whatsappPhoneE164),
       setupNotes: s(sp?.setupNotes),
+      kitchenNotes: s(rec(saved?.kitchenPlan)?.kitchenNotes),
     };
   };
 
