@@ -1,3 +1,34 @@
+## 20 November 2026, 00:50: the care-note save is written once after a lost reply (on staging)
+
+- **Repaired under SCRUM-1053 "Drop-off counter flow: consistency points"**
+  (main 44bbb5a9d, pictures bfbe2739d; `oto-pos-staging` and
+  `oto-pos-web-staging` live 23:48 to 23:51). A child's change saved from the
+  gate (the family's note from the display, and staff's own changes, which
+  had the same gap) now goes under one key per change, and a retry after a
+  lost reply reuses it. The platform route already replayed a seen key; an
+  api test pins it. The smoke test that was marked as an expected failure is
+  an ordinary passing test again.
+- **Staging proof** (`docs/qa/proof-2026-11-19/SCRUM-1053/carenote/run1/`,
+  the lead opened the audit card): the first save reply dropped, "not saved"
+  on both screens, Done again; two writes under one key, one `child.update`
+  audit row from the customer display, the record holds the note. Left on
+  staging: one finalised ZZ TEST cash sale and a released stay under an
+  archived till and member.
+- **Also fixed in the tests:** the smoke spec's walk-in numbers could fall in
+  a range that is not a mobile, which made one test wait for staff; they now
+  draw mobile numbers.
+- **Hosted CI on 44bbb5a9d:** every job passed except `api-tests (1)`, where
+  two migration test files (`s217b-r4b`, `s217b-r6`) timed out on a run of
+  over 70 minutes; the same shard passed in about 30 minutes on the three
+  runs before, and the commit touched none of their inputs. The failed job
+  was re-run at 00:45; read its result by run id 44569795604.
+- **Not changed, noted on SCRUM-1053:** the membership check's own child
+  edits ("Who's visiting today?") still save without a retry key.
+- **Lanes:** the till lane is in its final landing stage (extra credit,
+  displays, the two counter answers built, reviewed and repaired); the BEO
+  editor and the single shift are in review; family F3 is building its
+  platform readers.
+
 ## 19 November 2026, 23:35: hosted CI is green again; one fault found in the care-note save, being repaired
 
 - **Hosted CI on main: green** (run 44555403965 on ef3453475, every job).
