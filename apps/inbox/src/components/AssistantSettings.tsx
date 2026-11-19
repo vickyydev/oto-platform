@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { Archive, BookOpen, Bot, CheckCircle2, Loader2, Pencil, Plus, Radio, ShieldCheck, Trash2, Undo2, X } from 'lucide-react';
+import { Archive, BookOpen, CheckCircle2, Loader2, Pencil, Plus, Radio, ShieldCheck, Trash2, Undo2, X } from 'lucide-react';
 import { newId } from '@oto/shared/ids';
 import { ApiError } from '@/api/client';
 import {
@@ -32,17 +32,14 @@ import {
   CHECK_LINE,
   HINT,
   ITEM_CARD,
-  PAGE_CARD,
-  PAGE_EYEBROW,
-  PAGE_LINE,
   SEGMENT,
   SEGMENT_OFF,
   SEGMENT_ON,
   TONE,
 } from '@/components/ui';
 import { RulesPanel } from '@/components/RulesPanel';
+import { PageHeader } from '@/components/settings-parts';
 import { TeachPanel } from '@/components/TeachPanel';
-import { BackToInbox } from '@/components/TemplateSettings';
 import {
   AI_MODE_OPTIONS,
   AI_MODE_TINT,
@@ -107,78 +104,62 @@ export function assistantSections(caps: { ai: boolean; kb: boolean }): [Assistan
   ];
 }
 
+/** The assistant's line at the head of each of its pages, as the page has said it since SCRUM-590. */
+export const ASSISTANT_HELP =
+  'The assistant answers simple questions from the approved knowledge base and hands everything else to the team. A person replying always takes over.';
+
 /**
- * The Assistant page (plan §C.2, §E; R7): beside the template settings, for
+ * The Assistant's pages (plan §C.2, §E; R7): beside the template settings, for
  * the people who run the assistant —
  *  - Numbers (inbox:ai:manage): each number's mode, off / shadow / live;
  *  - Knowledge (inbox:kb:manage): the facts it speaks from, by topic and
  *    language, drafted, approved, archived;
  *  - Examples: the corrections staff proposed, edited and approved only with
- *    the approver's "contains no personal data" tick.
- * The tab lives in the URL (`?settings=assistant&section=…`, UI round 2026-10-22,
- * F2); null is the default, the first tab the viewer may see.
- * The prototype has no settings; this page is in the template page's design
- * language (the eyebrow header card, bordered cards, the house Dialog).
+ *    the approver's "contains no personal data" tick;
+ *  - Rules and Teach (SCRUM-696).
+ * The section lives in the URL (`?settings=assistant&section=…`, UI round
+ * 2026-10-22, F2); null is the default, the first the viewer may see. Since
+ * SCRUM-1044 the settings frame (SettingsFrame) holds the way back and the
+ * choice of section, and this renders the chosen one under its header.
+ *
+ * `shown` false (another settings page is open, Templates) renders only the
+ * Teach chat, hidden: it stays mounted while any settings page shows, so a
+ * look elsewhere keeps the conversation with the curator.
  */
 export function AssistantSettings({
   me,
   tab,
-  onBack,
   onTab,
+  shown = true,
 }: {
   me: InboxMe;
   tab: AssistantTab | null;
-  onBack: () => void;
   onTab: (t: AssistantTab) => void;
+  shown?: boolean;
 }) {
   const caps = assistantCapabilities(me);
   const sections = assistantSections(caps);
   const section: AssistantTab = tab !== null && sections.some(([s]) => s === tab) ? tab : (sections[0]?.[0] ?? 'knowledge');
+  const label = sections.find(([s]) => s === section)?.[1];
+  const on = (s: AssistantTab) => shown && section === s;
 
   return (
-    <div className={`min-w-0 ${PAGE_CARD}`}>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <div className={PAGE_EYEBROW}>
-            <Bot aria-hidden className="h-4 w-4" />
-            Settings · Assistant
-          </div>
-          <p className={PAGE_LINE}>
-            The assistant answers simple questions from the approved knowledge base and hands everything else to the team.
-            A person replying always takes over.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <BackToInbox onBack={onBack} />
-          <div role="tablist" aria-label="Assistant settings" className="flex flex-wrap gap-1 rounded-xl bg-band p-1">
-            {sections.map(([s, label]) => (
-              <button
-                key={s}
-                type="button"
-                role="tab"
-                aria-selected={section === s}
-                onClick={() => onTab(s)}
-                className={`${SEGMENT} ${section === s ? SEGMENT_ON : SEGMENT_OFF}`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {sections.length === 0 && (
-        <p className="mt-4 text-ui text-ink-muted">You do not manage the assistant.</p>
-      )}
-      {section === 'numbers' && caps.ai && <ChannelModes me={me} />}
-      {section === 'knowledge' && caps.kb && <KnowledgeBase me={me} />}
-      {section === 'examples' && caps.kb && <ExamplesQueue me={me} />}
-      {section === 'rules' && caps.kb && <RulesPanel me={me} />}
-      {/* The teach chat stays mounted, hidden, while another tab shows, so a
+    <div className={shown ? 'flex min-w-0 flex-col' : 'contents'}>
+      {shown &&
+        (label ? (
+          <PageHeader eyebrow="Assistant" title={label} help={ASSISTANT_HELP} />
+        ) : (
+          <PageHeader title="Assistant" help="You do not manage the assistant." />
+        ))}
+      {on('numbers') && caps.ai && <ChannelModes me={me} />}
+      {on('knowledge') && caps.kb && <KnowledgeBase me={me} />}
+      {on('examples') && caps.kb && <ExamplesQueue me={me} />}
+      {on('rules') && caps.kb && <RulesPanel me={me} />}
+      {/* The teach chat stays mounted, hidden, while another page shows, so a
           card's "Open in Rules" and the way back keep the conversation. */}
       {caps.kb && (
-        <div className={section === 'teach' ? undefined : 'hidden'} data-teach-chat>
-          <TeachPanel me={me} active={section === 'teach'} onTab={onTab} />
+        <div className={on('teach') ? undefined : 'hidden'} data-teach-chat>
+          <TeachPanel me={me} active={on('teach')} onTab={onTab} />
         </div>
       )}
     </div>

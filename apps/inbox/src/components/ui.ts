@@ -79,20 +79,16 @@ export const BADGE = 'inline-flex items-center rounded-lg px-2 py-0.5 text-capti
 export const FOCUS_WITHIN =
   'has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-coral';
 
-/** A settings page's eyebrow ("Settings · Templates"). */
-export const PAGE_EYEBROW = 'flex items-center gap-2 text-meta font-bold uppercase tracking-[0.14em] text-ink-muted';
-
-/** A settings page's line under its eyebrow. */
-export const PAGE_LINE = 'mt-1 max-w-3xl text-ui leading-relaxed text-ink-soft';
-
 /** A segment of a switch (the assistant's sections, the queues, a number's mode): 44 px on a phone. */
 export const SEGMENT = `hit inline-flex min-h-ctl items-center rounded-lg px-3 text-ui font-semibold transition disabled:opacity-60 md:px-2.5 ${FOCUS}`;
 /** The chosen segment: lighter than the band in both themes (`--oto-segment`, Dark.dc.html). */
 export const SEGMENT_ON = 'bg-segment text-ink shadow-sm ring-1 ring-line';
 export const SEGMENT_OFF = 'text-ink-soft hover:text-ink';
 
-/** A settings page's card: the card ground, the line, the 16 px corner. */
-export const PAGE_CARD = 'rounded-2xl border border-line bg-card p-4 sm:p-5';
-
-/** An item card inside a settings page (a template, an entry, a rule). */
+/**
+ * An item card inside a settings page (an entry, a rule, an example). The
+ * settings frame's own parts (SCRUM-1044) are in `settings-parts.tsx`: the
+ * page header, the section card and its calm rows take this card's place as
+ * each page is rebuilt.
+ */
 export const ITEM_CARD = 'min-w-0 rounded-2xl border border-line bg-card p-3.5';

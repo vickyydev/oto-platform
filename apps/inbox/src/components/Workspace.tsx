@@ -6,7 +6,6 @@ import { assistantApi, assistantCapabilities } from '@/api/assistant';
 import { inboxApi, type ConversationList as ListPage, type ConversationRow, type Dashboard as DashboardData, type InboxMe, type Message } from '@/api/inbox';
 import { useSession } from '@/auth/SessionContext';
 import { AccountMenu, AppBar } from '@/components/AppBar';
-import { AssistantSettings } from '@/components/AssistantSettings';
 import { EmptyState } from '@/components/atoms';
 import { ChatPanel, type Thread } from '@/components/ChatPanel';
 import { composerTemplate, type InsertedTemplate } from '@/components/Composer';
@@ -17,8 +16,8 @@ import { FiltersDialog, TemplatesDialog, showConversationsLabel } from '@/compon
 import { PaneDivider } from '@/components/PaneDivider';
 import { Rail } from '@/components/Rail';
 import { SimulatorBody, SimulatorDialog } from '@/components/Simulator';
+import { SettingsFrame } from '@/components/SettingsFrame';
 import { StatsRow } from '@/components/StatsRow';
-import { TemplateSettings } from '@/components/TemplateSettings';
 import { inboxAccessSignature, inboxFiltersWithinAccess, inboxItemWithinAccess, inboxMeWithinAccess, inboxSourcesWithinAccess, mergeSources, sourcesOfRows, withoutHiddenChannel, type SourceOption } from '@/lib/inboxes';
 import { useInboxAccess } from '@/hooks/useInboxAccess';
 import { usePanes } from '@/hooks/usePanes';
@@ -143,7 +142,7 @@ export function Workspace({ me }: { me: InboxMe }) {
     setSimPane(next);
     try { localStorage.setItem('oto.simPane', next ? '1' : '0'); } catch { /* per-browser only */ }
   };
-  /** The settings page in place of the workspace card: templates (I3b) or the assistant (SCRUM-590 A3); in the URL as `?settings=` (U11). */
+  /** The settings page in place of the work: templates (I3b) or the assistant (SCRUM-590 A3), in the settings frame (SCRUM-1044); in the URL as `?settings=` (U11). */
   const [settings, setSettings] = useState<SettingsPage | null>(arrival.settings);
   /** The assistant page's tab; null is its default, the first the viewer may see (F2). */
   const [assistantTab, setAssistantTab] = useState<AssistantTab | null>(arrival.assistantTab);
@@ -510,6 +509,15 @@ export function Workspace({ me }: { me: InboxMe }) {
     setAssistantTab(null);
   };
 
+  // A page of the settings frame (SCRUM-1044): another page is a new history
+  // entry, as the account menu's choice is; another of the assistant's
+  // sections replaces the entry, as its tabs always did.
+  const openSettings = (page: SettingsPage, section: AssistantTab | null) => {
+    if (page !== settings) historyMode.current = 'push';
+    setSettings(page);
+    setAssistantTab(section);
+  };
+
   const select = (id: string) => {
     if (id !== selectedId) historyMode.current = 'push';
     setSelectedId(id);
@@ -581,7 +589,8 @@ export function Workspace({ me }: { me: InboxMe }) {
 
   // A chat open on a phone is its own full screen (Chat.dc.html): its header
   // has the way back, so the app bar steps aside while one pane shows.
-  const phoneChat = !sideBySide && showChatMobile && selected !== null;
+  // A settings page is not a chat: its frame sits under the app bar (SCRUM-1044).
+  const phoneChat = settings === null && !sideBySide && showChatMobile && selected !== null;
   // The chat's right panel for the customer and the next step (Desktop.dc.html)
   // is the chat's own, from 1280 px; the simulator panel takes that width, so
   // beside it the chat's panel waits for a wider screen (`panelWide`).
@@ -613,14 +622,14 @@ export function Workspace({ me }: { me: InboxMe }) {
         </div>
 
         {settings !== null && (
-          <div data-pane="settings" className="min-h-0 flex-1 overflow-y-auto">
-            <div className="mx-auto max-w-[1400px] px-4 py-5 sm:px-6">
-              {settings === 'templates' && <TemplateSettings me={currentMe} onBack={() => chooseSettings(null)} />}
-              {settings === 'assistant' && (
-                <AssistantSettings key={accessSignature} me={currentMe} tab={assistantTab} onBack={() => chooseSettings(null)} onTab={setAssistantTab} />
-              )}
-            </div>
-          </div>
+          <SettingsFrame
+            me={currentMe}
+            page={settings}
+            section={assistantTab}
+            accessKey={accessSignature}
+            onOpen={openSettings}
+            onBack={() => chooseSettings(null)}
+          />
         )}
 
         {/* The work: kept mounted under a settings page, as the card was. */}

@@ -291,6 +291,10 @@ html.dark {
 [data-pane='settings'] {
   container-name: pane settings;
 }
+/* The settings frame's column of pages (SCRUM-1044): narrow, so it keeps the compact values as the views column does. */
+[data-pane='settings-nav'] {
+  container-name: pane settings-nav;
+}
 
 @theme inline {
   --font-sans: 'Inter', 'Till Thai', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
