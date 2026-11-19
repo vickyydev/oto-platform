@@ -10,7 +10,6 @@ import {
   CreateWaiverSchema,
   LastChildPhotoSchema,
   LeaveAsBookedSchema,
-  ReuseRegistrationPhotoSchema,
 } from '@oto/shared';
 import type { FastifyRequest } from 'fastify';
 import type { Logger } from 'pino';
@@ -46,7 +45,7 @@ import {
   waiverViewOf,
   type Actor,
 } from '../services/checkin';
-import { lastChildPhoto, reuseRegistrationPhoto } from '../services/photo-reuse';
+import { lastChildPhoto } from '../services/photo-reuse';
 import { buildNoticeSender, type SmsSender } from '../services/sms';
 import { opCtx, withTx } from '../services/tx';
 
@@ -133,7 +132,7 @@ export async function checkinRoutes(app: App): Promise<void> {
     async (req, reply) => {
       const actor = actorOf(req);
       // SCRUM-1018 — reusing a stored photo is a change to the stays' photo:
-      // the same permission the separate photo-reuse route asks.
+      // the permission attaching a photo asks.
       if (req.body.photoReuse && req.body.photoReuse.length > 0) {
         await req.requirePermission('pos:checkin:update', { branchId: req.body.branchId });
       }
@@ -235,8 +234,10 @@ export async function checkinRoutes(app: App): Promise<void> {
     },
   );
 
-  // SCRUM-1018 — a returning child's last photo, shown to staff, and its
-  // reuse once staff confirm it still matches (services/photo-reuse.ts).
+  // SCRUM-1018 — a returning child's last photo, shown to staff. Its reuse,
+  // once staff confirm it still matches, travels in the registration's own
+  // write (`photoReuse`, services/photo-reuse.ts); SCRUM-1053 took out the
+  // separate reuse route no screen called.
   app.get(
     '/children/:childId/last-photo',
     {
@@ -254,28 +255,6 @@ export async function checkinRoutes(app: App): Promise<void> {
       const auth = req.requireAuth();
       await assertBranchOfOperator(app, auth.operatorId, req.query.branchId);
       return lastChildPhoto(app.db, auth.operatorId, req.query.branchId, req.params.childId);
-    },
-  );
-
-  app.post(
-    '/registrations/:id/photo-reuse',
-    {
-      config: { dynamicPermission: true },
-      schema: {
-        description:
-          "Staff confirmed a returning child's last photo still matches: the child's new stay points at that " +
-          'stored photo. Refused when the earlier stay is another child\'s, another park\'s, or its photo is no longer kept.',
-        params: z.object({ id: z.string().uuid() }),
-        body: ReuseRegistrationPhotoSchema,
-      },
-    },
-    async (req) => {
-      const actor = actorOf(req);
-      const reg = await loadRegistration(app.db, actor.operatorId, req.params.id);
-      await req.requirePermission('pos:checkin:update', { branchId: reg.branchId });
-      return withTx(app.db, { ...opCtx(req), branchId: reg.branchId }, 'registration.photo_reused', (tx) =>
-        reuseRegistrationPhoto(tx, actor, reg, req.body),
-      );
     },
   );
 

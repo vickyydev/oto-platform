@@ -130,13 +130,6 @@ async function attachPhoto(registrationId: string, checkinId: string, cookie = r
 
 const lastPhoto = (childId: string) =>
   ctx.app.inject({ method: 'GET', url: `/checkin/children/${childId}/last-photo?branchId=${branchId}`, headers: { cookie: reception } });
-const reuse = (registrationId: string, children: { checkinId: string; fromCheckinId: string }[], key = newId()) =>
-  ctx.app.inject({
-    method: 'POST',
-    url: `/checkin/registrations/${registrationId}/photo-reuse`,
-    headers: { cookie: reception, 'idempotency-key': key },
-    payload: { children },
-  });
 const reuseRows = (registrationId: string) =>
   ctx.db.select().from(auditLog).where(and(eq(auditLog.entityId, registrationId), eq(auditLog.action, 'registration.photo_reused')));
 
@@ -165,48 +158,6 @@ describe('the last photo of a returning child', () => {
     expect(res.statusCode).toBe(404);
   });
 
-  it('staff confirm it still matches: the new stay points at the same stored photo, recorded with who confirmed', async () => {
-    const next = await register(mine);
-    const res = await reuse(next.registrationId, [{ checkinId: next.checkinId, fromCheckinId: earlier.checkinId }]);
-    expect(res.statusCode, res.body).toBe(200);
-    const [stay] = await ctx.db.select().from(checkin).where(eq(checkin.id, next.checkinId));
-    expect(stay!.photoFileId).toBe(earlier.fileId);
-    const [reg] = await ctx.db.select().from(registration).where(eq(registration.id, next.registrationId));
-    expect(reg!.photoFileId).toBe(earlier.fileId);
-    const rows = await reuseRows(next.registrationId);
-    expect(rows).toHaveLength(1);
-    const after = rows[0]!.after as Record<string, unknown>;
-    expect(after.confirmation).toBe('still_matches');
-    expect(after.confirmedByAccountId).toBe(rows[0]!.actorAccountId);
-    expect(after.children).toEqual([{ checkinId: next.checkinId, photoFileId: earlier.fileId, reusedFromCheckinId: earlier.checkinId }]);
-    // The photo is read through the same permission check as any stay photo.
-    const url = await ctx.app.inject({ method: 'GET', url: `/files/${earlier.fileId}/url`, headers: { cookie: reception } });
-    expect(url.statusCode, url.body).toBe(200);
-    // Pressed again: nothing more is written and nothing more is recorded.
-    const again = await reuse(next.registrationId, [{ checkinId: next.checkinId, fromCheckinId: earlier.checkinId }]);
-    expect(again.statusCode, again.body).toBe(200);
-    expect(await reuseRows(next.registrationId)).toHaveLength(1);
-  });
-
-  it("is never put on another child's stay", async () => {
-    const other = await register(theirs);
-    const res = await reuse(other.registrationId, [{ checkinId: other.checkinId, fromCheckinId: earlier.checkinId }]);
-    expect(res.statusCode).toBe(400);
-    const [stay] = await ctx.db.select().from(checkin).where(eq(checkin.id, other.checkinId));
-    expect(stay!.photoFileId).toBeNull();
-    expect(await reuseRows(other.registrationId)).toHaveLength(0);
-  });
-
-  it('a stay that already holds a photo keeps it', async () => {
-    const next = await register(mine);
-    const own = await attachPhoto(next.registrationId, next.checkinId);
-    const res = await reuse(next.registrationId, [{ checkinId: next.checkinId, fromCheckinId: earlier.checkinId }]);
-    expect(res.statusCode, res.body).toBe(200);
-    const [stay] = await ctx.db.select().from(checkin).where(eq(checkin.id, next.checkinId));
-    expect(stay!.photoFileId).toBe(own);
-    expect(await reuseRows(next.registrationId)).toHaveLength(0);
-  });
-
   it('past the retention date the photo is not offered and not reused', async () => {
     // Every registration that owns one of this child's photos is past its date.
     await ctx.db.update(registration).set({ retentionUntil: new Date(Date.now() - 60_000) })
@@ -217,11 +168,13 @@ describe('the last photo of a returning child', () => {
         .where(eq(registration.id, latest.registrationId));
     }
     expect((await lastPhoto(mine.childId)).json()).toEqual({ photo: null });
-    const next = await register(mine);
-    const res = await reuse(next.registrationId, [{ checkinId: next.checkinId, fromCheckinId: earlier.checkinId }]);
+    // SCRUM-1053 — named in the registration's own write, the reuse is refused
+    // and nothing is written (the separate reuse route is gone).
+    const ids = { registrationId: newId(), checkinId: newId() };
+    const res = await registerRaw(mine, ids, { photoReuse: [{ checkinId: ids.checkinId, fromCheckinId: earlier.checkinId }] });
     expect(res.statusCode).toBe(400);
-    const [stay] = await ctx.db.select().from(checkin).where(eq(checkin.id, next.checkinId));
-    expect(stay!.photoFileId).toBeNull();
+    expect((JSON.parse(res.body) as { error: { code: string } }).error.code).toBe(PHOTO_REUSE_REFUSED);
+    expect(await ctx.db.select().from(registration).where(eq(registration.id, ids.registrationId))).toHaveLength(0);
   });
 });
 
@@ -248,9 +201,21 @@ describe("the reuse in the registration's own write", () => {
     expect(res.statusCode, res.body).toBe(200);
     const [stay] = await ctx.db.select().from(checkin).where(eq(checkin.id, ids.checkinId));
     expect(stay!.photoFileId).toBe(source.fileId);
+    const [reg] = await registrationRows(ids.registrationId);
+    expect(reg!.photoFileId).toBe(source.fileId);
     const rows = await reuseRows(ids.registrationId);
     expect(rows).toHaveLength(1);
-    expect((rows[0]!.after as Record<string, unknown>).confirmation).toBe('still_matches');
+    const after = rows[0]!.after as Record<string, unknown>;
+    expect(after.confirmation).toBe('still_matches');
+    expect(after.confirmedByAccountId).toBe(rows[0]!.actorAccountId);
+    expect(after.children).toEqual([{ checkinId: ids.checkinId, photoFileId: source.fileId, reusedFromCheckinId: source.checkinId }]);
+    // The photo is read through the same permission check as any stay photo.
+    const url = await ctx.app.inject({ method: 'GET', url: `/files/${source.fileId}/url`, headers: { cookie: reception } });
+    expect(url.statusCode, url.body).toBe(200);
+    // Sent again with the same id: the registration is answered, nothing more is recorded.
+    const again = await registerRaw(mine, ids, { photoReuse: [{ checkinId: ids.checkinId, fromCheckinId: source.checkinId }] });
+    expect(again.statusCode, again.body).toBe(200);
+    expect(await reuseRows(ids.registrationId)).toHaveLength(1);
     // The date staff are shown is the photo's own, not the newest stay's.
     const latest = (await lastPhoto(mine.childId)).json().photo as { checkinId: string; takenAt: string };
     expect(latest.checkinId).toBe(ids.checkinId);
@@ -306,20 +271,23 @@ describe("the reuse in the registration's own write", () => {
     expect(await registrationRows(ids.registrationId)).toHaveLength(0);
   });
 
-  it("staff of another park are refused, in the write and on the separate route", async () => {
+  it('staff of another park are refused in the write', async () => {
     const chalong = await signInAs(ctx.app, CHALONG_MANAGER.phone, CHALONG_MANAGER.password);
     const ids = { registrationId: newId(), checkinId: newId() };
     const res = await registerRaw(mine, ids, { cookie: chalong, photoReuse: [{ checkinId: ids.checkinId, fromCheckinId: source.checkinId }] });
     expect(res.statusCode).toBe(403);
     expect(await registrationRows(ids.registrationId)).toHaveLength(0);
+  });
+
+  it('SCRUM-1053: the separate reuse route no screen called is gone', async () => {
     const here = await register(mine);
     const separate = await ctx.app.inject({
       method: 'POST',
       url: `/checkin/registrations/${here.registrationId}/photo-reuse`,
-      headers: { cookie: chalong, 'idempotency-key': newId() },
+      headers: { cookie: reception, 'idempotency-key': newId() },
       payload: { children: [{ checkinId: here.checkinId, fromCheckinId: source.checkinId }] },
     });
-    expect(separate.statusCode).toBe(403);
+    expect(separate.statusCode).toBe(404);
     const [stay] = await ctx.db.select().from(checkin).where(eq(checkin.id, here.checkinId));
     expect(stay!.photoFileId).toBeNull();
   });
