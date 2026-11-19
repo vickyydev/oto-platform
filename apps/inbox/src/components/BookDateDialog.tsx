@@ -162,7 +162,6 @@ function Choice({
             key={`${o.by}-${o.value}`}
             type="button"
             onClick={() => onPick(o)}
-            aria-pressed={false}
             className={`flex min-h-12 min-w-0 flex-col items-center justify-center rounded-xl border border-field bg-card px-2 py-1.5 text-center text-ink hover:border-ink ${FOCUS}`}
           >
             <span className="max-w-full truncate text-[14px] font-bold">{shown(field, o.value, branches)}</span>
