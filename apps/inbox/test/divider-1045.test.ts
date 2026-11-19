@@ -77,12 +77,48 @@ describe('SCRUM-1045: the divider is a separator a person can find and read', ()
     expect(handle.getAttribute('aria-valuemax')).toBe(String(listMax(ROOM)));
     expect(handle.getAttribute('aria-controls')).toBe('inbox-list');
     expect(handle.tabIndex).toBe(0);
-    // A wide grab area (16 px, 24 px to a finger) over the 1 px edge, the col-resize cursor, no scrolling under a finger.
+    // A grab area over the 1 px edge, the col-resize cursor, no scrolling under a finger.
     expect(handle.className).toContain('w-4');
-    expect(handle.className).toContain('[@media(any-pointer:coarse)]:w-6');
     expect(handle.className).toContain('cursor-col-resize');
     expect(handle.className).toContain('touch-none');
     expect(handle.className).toContain('select-none');
+  });
+
+  // SCRUM-1045 (review): to a finger the strip was 24 px wide and reached 18 px
+  // into the chat, over the composer's Templates button (a tap there focused
+  // the divider; two reset the list), and at rest nothing showed on an iPad,
+  // which has no hover. Now the strip is 16 px centred on the edge (8 px into
+  // the chat, short of the 13 px where the composer's and the header's targets
+  // start); the grip is always drawn on a touch screen and is the finger's
+  // target, 44 px wide and 64 px tall, centred on the edge at mid-height.
+  it('to a finger: a strip centred on the edge, and a grip always shown with a 44 px target', async () => {
+    const { handle } = await mount(300);
+    const cls = (el: Element | null) => el?.getAttribute('class')?.split(/\s+/) ?? [];
+    // With a mouse: 16 px from 4 px left of the edge. To a finger: 16 px, 8 either side.
+    expect(cls(handle)).toEqual(expect.arrayContaining(['-ml-1', 'w-4', '[@media(any-pointer:coarse)]:-ml-2']));
+    expect(cls(handle).some((c) => /coarse\)\]:w-(?!4\b)/.test(c))).toBe(false);
+    // The line sits on the list's border in both: 4 - 3 and 8 - 7 px left of the edge's px.
+    expect(cls(handle.querySelector('[data-divider-line]'))).toEqual(expect.arrayContaining(['left-[3px]', '[@media(any-pointer:coarse)]:left-[7px]']));
+    // The grip: on hover with a mouse; always, in the muted ink, on a touch screen.
+    const grip = cls(handle.querySelector('[data-divider-grip]'));
+    expect(grip).toEqual(expect.arrayContaining(['opacity-0', 'group-hover:opacity-100', '[@media(any-pointer:coarse)]:opacity-100', '[@media(any-pointer:coarse)]:bg-ink-muted']));
+    // The finger's target: inside the separator (its events are the separator's), 44 px wide, centred, touch only.
+    const target = handle.querySelector('[data-divider-target]');
+    expect(target?.getAttribute('aria-hidden')).toBe('true');
+    expect(cls(target)).toEqual(
+      expect.arrayContaining(['hidden', '[@media(any-pointer:coarse)]:block', 'w-[var(--ui-touch-min)]', 'h-16', 'left-1/2', 'top-1/2', '-translate-x-1/2', '-translate-y-1/2']),
+    );
+  });
+
+  it('a press on the grip’s target drags the divider as a press on the strip does', async () => {
+    const { handle, onLive, onCommit, captured } = await mount(300);
+    const target = handle.querySelector<HTMLElement>('[data-divider-target]')!;
+    await fire(target, pointer('pointerdown', { x: 300, kind: 'touch', id: 7 }));
+    expect(captured).toEqual([7]);
+    await fire(target, pointer('pointermove', { x: 340, kind: 'touch', id: 7 }));
+    expect(onLive).toHaveBeenLastCalledWith(340);
+    await fire(target, pointer('pointerup', { x: 340, kind: 'touch', id: 7 }));
+    expect(onCommit).toHaveBeenCalledWith(340);
   });
 });
 

@@ -10,12 +10,18 @@ const TAP_SLOP = 4;
 
 /**
  * The divider between the list and the chat (SCRUM-1045): the list's 1 px
- * edge with a wide invisible grab area over it (16 px, 24 px on a touch
- * screen), the col-resize cursor, a small grip on hover, focus and while
- * dragging. A mouse, a finger or a pen drags it (pointer events with the
- * pointer captured, no scrolling or text selection on the way); the keyboard
- * moves it 16 px a press, Home and End go to the limits; Enter, a double
- * click or a double tap go back to the default.
+ * edge with an invisible grab area over it, the col-resize cursor, and a
+ * grip. With a mouse the area is 16 px wide and the grip shows on hover, on
+ * focus and while dragging. On a touch screen, which has no hover, the grip
+ * is always drawn, a small pill on the edge at mid-height, and it is the
+ * finger's target: 44 px wide and 64 px tall, centred on the edge. The full
+ * height strip there is 16 px, centred on the edge, so it reaches no further
+ * into the chat than 8 px: clear of the composer's Templates button and the
+ * chat header, whose own targets start 13 px in. A mouse, a finger or a pen
+ * drags it (pointer events with the pointer captured, no scrolling or text
+ * selection on the way); the keyboard moves it 16 px a press, Home and End
+ * go to the limits; Enter, a double click or a double tap go back to the
+ * default.
  *
  * While dragging only `onLive` runs, on every move: the workspace sets a CSS
  * variable on the shell, so the panes follow the pointer without React
@@ -128,17 +134,26 @@ export function PaneDivider({
       onDoubleClick={() => onCommit('default')}
       onKeyDown={onKeyDown}
       style={{ left }}
-      className="group absolute inset-y-0 z-20 -ml-1 w-4 cursor-col-resize touch-none select-none focus-visible:outline-none [@media(any-pointer:coarse)]:-ml-1.5 [@media(any-pointer:coarse)]:w-6"
+      className="group absolute inset-y-0 z-20 -ml-1 w-4 cursor-col-resize touch-none select-none focus-visible:outline-none [@media(any-pointer:coarse)]:-ml-2"
     >
-      {/* The edge itself, darkened while it is held or hovered. */}
+      {/* The edge itself, over the list's 1 px border, darkened while it is held or hovered. */}
       <span
         aria-hidden
-        className="absolute inset-y-0 left-[3px] w-px bg-transparent transition-colors group-hover:bg-edge group-focus-visible:bg-coral group-data-[dragging=true]:bg-coral [@media(any-pointer:coarse)]:left-[5px]"
+        data-divider-line
+        className="absolute inset-y-0 left-[3px] w-px bg-transparent transition-colors group-hover:bg-edge group-focus-visible:bg-coral group-data-[dragging=true]:bg-coral [@media(any-pointer:coarse)]:left-[7px]"
       />
-      {/* The grip: shown on hover, on focus and while dragging. */}
+      {/* The grip, centred on the edge: with a mouse shown on hover, on focus and while dragging; on a
+          touch screen always, in the muted ink (5 : 1 on the card and the ground, tokens-1016), a little larger. */}
       <span
         aria-hidden
-        className="absolute left-[1.5px] top-1/2 h-8 w-1 -translate-y-1/2 rounded-full bg-edge opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:bg-coral group-focus-visible:opacity-100 group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-coral group-data-[dragging=true]:bg-coral group-data-[dragging=true]:opacity-100 [@media(any-pointer:coarse)]:left-[3.5px]"
+        data-divider-grip
+        className="absolute left-[1.5px] top-1/2 h-8 w-1 -translate-y-1/2 rounded-full bg-edge opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:bg-coral group-focus-visible:opacity-100 group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-coral group-data-[dragging=true]:bg-coral group-data-[dragging=true]:opacity-100 [@media(any-pointer:coarse)]:left-[4.5px] [@media(any-pointer:coarse)]:h-10 [@media(any-pointer:coarse)]:w-1.5 [@media(any-pointer:coarse)]:bg-ink-muted [@media(any-pointer:coarse)]:opacity-100"
+      />
+      {/* A finger's target around the grip: 44 px wide and 64 px tall, centred on the edge (touch screens only). */}
+      <span
+        aria-hidden
+        data-divider-target
+        className="absolute left-1/2 top-1/2 hidden h-16 w-[var(--ui-touch-min)] -translate-x-1/2 -translate-y-1/2 [@media(any-pointer:coarse)]:block"
       />
     </div>
   );
