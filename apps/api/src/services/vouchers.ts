@@ -57,7 +57,7 @@ import { AppError } from '../lib/errors';
 import { audit } from './audit';
 import { SPIN_LABEL_JOINS, SPIN_STAFF_LABEL } from './booth-attribution';
 import { raiseAlert } from './ops';
-import { availableFor, stockItemDisplayName, takeStockForPrize } from './stock';
+import { availableFor, stockItemDisplayName, type PrizeStockTake } from './stock';
 import type { Exec, Tx } from './tx';
 import { CREDIT_VOUCHER_KIND, creditVoucherErrors } from './voucher-credit-approval';
 import {
@@ -2956,25 +2956,21 @@ export async function consumeSaleVouchers(
   scope: SaleVoucherScope,
   actor: { accountId: string; requestId?: string },
   now: Date,
-  /**
-   * SCRUM-1040 — the close came from a box (a replayed tender or sale), as
-   * `takeStockForSale` is told: a prize's unit then leaves as `offline_sale`.
-   */
-  opts: { offline?: boolean } = {},
-): Promise<{ consumed: string[]; walletLoads: VoucherWalletLoad[] }> {
+): Promise<{ consumed: string[]; walletLoads: VoucherWalletLoad[]; prizes: PrizeStockTake[] }> {
   const applied = await appliedVoucherIds(tx, scope);
   const consumed: string[] = [];
   const walletLoads: VoucherWalletLoad[] = [];
-  /** The closing sale: whose it is (per-customer limits, the wallet's member), where, and its trading day. */
-  let closing: { memberId: string | null; boxId: string | null; businessDate: string | null } | null = null;
+  const prizes: PrizeStockTake[] = [];
+  /** The closing sale: whose it is (per-customer limits, the wallet's member) and where. */
+  let closing: { memberId: string | null; boxId: string | null } | null = null;
   const closingSale = async () => {
     if (closing) return closing;
     const [row] = await tx
-      .select({ memberId: sale.memberId, boxId: sale.boxId, businessDate: sale.businessDate })
+      .select({ memberId: sale.memberId, boxId: sale.boxId })
       .from(sale)
       .where(eq(sale.id, scope.saleId))
       .limit(1);
-    closing = { memberId: row?.memberId ?? null, boxId: row?.boxId ?? null, businessDate: row?.businessDate ?? null };
+    closing = { memberId: row?.memberId ?? null, boxId: row?.boxId ?? null };
     return closing;
   };
   for (const voucherId of applied) {
@@ -3084,34 +3080,18 @@ export async function consumeSaleVouchers(
     }
 
     /*
-     * SCRUM-1040 — A HAND-OVER PRIZE TAKES ONE OFF ITS SHELF HERE, in the
-     * transaction that used the voucher up, when its type is linked to a stock
-     * item at this park (the Mystery Box). Once per voucher: the guarded update
-     * above uses a voucher up once, and the movement is keyed by the voucher.
-     * It never refuses — at zero the prize is still handed over and the
-     * shortfall is recorded (`takeStockForPrize`). A type with no stock item
-     * here takes nothing, as before; the bill is not touched either way.
+     * SCRUM-1040 — A HAND-OVER PRIZE TAKES ONE OFF ITS SHELF, when its type is
+     * linked to a stock item at this park (the Mystery Box). Named here, where
+     * the voucher is used up, and taken by the caller in this same transaction
+     * with the sale's own stock (`takeStockForClose`), so a close locks its
+     * shelves in one order. Once per voucher: the guarded update above uses a
+     * voucher up once, and the movement is keyed by the voucher. A type with
+     * no stock item here takes nothing, as before; the bill is not touched.
      */
     if (def.kind === 'manual') {
       const item = await prizeStockItemAt(tx, scope.operatorId, def.id, scope.branchId);
       if (item) {
-        const { boxId, businessDate } = await closingSale();
-        if (!businessDate) throw new Error('the closing sale was not found');
-        await takeStockForPrize(tx, {
-          operatorId: scope.operatorId,
-          branchId: scope.branchId,
-          stockItemId: item.id,
-          voucherId,
-          prizeLabel: voucherLineLabel(def.nameEn, usedRow.code),
-          saleId: scope.saleId,
-          businessDate,
-          stationId: scope.stationId,
-          boxId,
-          actorAccountId: actor.accountId,
-          requestId: actor.requestId ?? null,
-          offline: opts.offline ?? false,
-          now,
-        });
+        prizes.push({ voucherId, stockItemId: item.id, prizeLabel: voucherLineLabel(def.nameEn, usedRow.code) });
       }
     }
   }
@@ -3159,7 +3139,7 @@ export async function consumeSaleVouchers(
       });
     }
   }
-  return { consumed, walletLoads };
+  return { consumed, walletLoads, prizes };
 }
 
 /** A wallet credit voucher's load, as the close made it (`consumeSaleVouchers`). */
