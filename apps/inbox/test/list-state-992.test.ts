@@ -68,9 +68,10 @@ describe('SCRUM-992: unread and next action remain separate in the actual list m
     const unread = render({ nextAction: 'ai_replying' });
     expect(rowTag(unread)).not.toContain('ring-ink');
     expect(rowTag(unread)).not.toContain('bg-band');
-    expect(unread).toMatch(/text-\[15px\] text-ink font-extrabold">ZZ TEST guest</);
+    // SCRUM-1016 (review): the name sits at a tight leading, as Main.dc.html sets it.
+    expect(unread).toMatch(/text-\[15px\] leading-tight text-ink font-extrabold">ZZ TEST guest</);
     expect(unread).toMatch(/aria-label="2 unread messages for you" class="[^"]*bg-coral[^"]*text-on-coral/);
-    expect(render({ unread: 0 })).toMatch(/text-\[15px\] text-ink font-semibold">ZZ TEST guest</);
+    expect(render({ unread: 0 })).toMatch(/text-\[15px\] leading-tight text-ink font-semibold">ZZ TEST guest</);
     expect(conversationRowColour(false)).not.toContain('ring');
   });
   it('an unread handled conversation retains its personal unread count', () => {

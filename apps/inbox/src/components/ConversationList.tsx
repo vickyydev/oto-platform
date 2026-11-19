@@ -316,16 +316,19 @@ function Row({
         ready ? 'border-money-line' : 'border-line-soft'
       } ${conversationRowColour(selected, ready)}`}
     >
-      <span className="relative shrink-0">
+      {/* `self-start`: the face keeps its own height, so the channel dot sits on
+          its corner, not at the foot of the row it would otherwise stretch to. */}
+      <span className="relative shrink-0 self-start" data-face>
         <Avatar initials={initialsOf(name)} tint={tintFor(c.contact.id)} />
         <ChannelDot channel={c.channel} ring={ready ? 'ring-money' : selected ? 'ring-band' : 'ring-ground'} />
       </span>
       <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
         <span className="flex min-w-0 items-baseline gap-2">
-          <span className={`min-w-0 flex-1 truncate text-[15px] text-ink ${unread ? 'font-extrabold' : 'font-semibold'}`}>{name}</span>
+          {/* The name and the line at a tight leading, as Main.dc.html sets them (a row of about 92 px). */}
+          <span className={`min-w-0 flex-1 truncate text-[15px] leading-tight text-ink ${unread ? 'font-extrabold' : 'font-semibold'}`}>{name}</span>
           <span className={`shrink-0 text-[12px] ${ready ? 'text-ink-soft' : 'text-ink-muted'}`}>{time}</span>
         </span>
-        <span className={`truncate text-[13.5px] ${unread ? 'text-ink' : 'text-ink-soft'}`}>{c.lastMessagePreview ?? ' '}</span>
+        <span className={`truncate text-[13.5px] leading-tight ${unread ? 'text-ink' : 'text-ink-soft'}`}>{c.lastMessagePreview ?? ' '}</span>
         <span className="mt-[3px] flex min-w-0 items-center gap-2">
           {badge && (
             <span
