@@ -35,6 +35,18 @@
 //      allocation); the readers that do not pay take none.
 //   8. The record of how a shift is paid stays: an employee with a single
 //      shift is not deleted, in words, and the key refuses a direct delete.
+//   9. SCRUM-1055 (R7): the person sees that day's shift on the kiosk, in
+//      the answer to their own clock-in and clock-out at its branch: times,
+//      name, department, role, branch and their own break; never how it is
+//      paid, nobody else's shift, no other day or branch; a current
+//      employee's answer is as before. A clock-out after midnight is refused
+//      as on a last working day, and the 00:01 batch closes the open
+//      clock-in at midnight with a missing clock-out for the managers.
+//  10. SCRUM-1058: the activity log's pay entries (a salary change, a single
+//      shift's pay switched) reach the salary roles only: staff and a
+//      manager get the log without them by list, filter, employee, search
+//      and summary; pay fields in other entries' metadata are taken out for
+//      them; an administrator reads it whole; nothing stored changes.
 //
 // Usage, from apps/oto-app, with DATABASE_URL naming a database whose otoapp
 // schema the app's migrator has built (CI's OTO App job runs exactly this):
@@ -89,6 +101,8 @@ const plus = (n: number) => new Date(Date.parse(`${today}T00:00:00Z`) + n * DAY_
 const tenAmBangkok = (day: string) => new Date(Date.parse(`${day}T10:00:00+07:00`)).toISOString();
 /** 03:00 in Bangkok on a day, the 03:00 batch's hour, as an instant. */
 const threeAmBangkok = (day: string) => new Date(Date.parse(`${day}T03:00:00+07:00`)).toISOString();
+/** 00:30 in Bangkok on a day: after midnight, after the 00:01 batch's hour. */
+const halfPastMidnightBangkok = (day: string) => new Date(Date.parse(`${day}T00:30:00+07:00`)).toISOString();
 
 const SHIFT_DAY = plus(2);
 const OTHER_DAY = plus(3);
@@ -144,7 +158,7 @@ const formerLogin = await user("staff", "former", BRANCH);
 await q("update users set access_mode = 'pay_only' where id = $1", [formerLogin.id]);
 
 const phoneOf = () => `08${String(Math.floor(Math.random() * 1e8)).padStart(8, "0")}`;
-const PHONE = { former: phoneOf(), dayRate: phoneOf(), stranger: phoneOf(), current: phoneOf() };
+const PHONE = { former: phoneOf(), dayRate: phoneOf(), stranger: phoneOf(), current: phoneOf(), lateOut: phoneOf() };
 async function employee(label: string, opts: {
   status: string; state: string; lastDay?: string | null; branchId?: string; userId?: string | null; phone?: string;
 }): Promise<string> {
@@ -174,6 +188,8 @@ await q(
 const elsewhere = await employee("elsewhere", { ...LEFT, branchId: BRANCH_2 });
 // Resigned with a last day already past, the batch not yet run on it: still Leaving.
 const leaving = await employee("leaving", { status: "resigned", state: "LEAVING", lastDay: plus(-1) });
+// SCRUM-1055: a former employee who clocks in for a single shift and not out.
+const lateOut = await employee("lateout", { ...LEFT, phone: PHONE.lateOut });
 
 /** ZZ TEST pay terms on the payroll profile, the old contract's source. */
 async function payrollProfile(employeeId: string, workerType: string, amounts: { monthly?: number; day?: number; fee?: number }) {
@@ -474,12 +490,21 @@ try {
     assert.deepEqual([res.status, res.body], [403, REFUSED], show(res));
     assert.deepEqual(await timeEventsOf(former), []);
   });
+  // SCRUM-1055 (R7): the shift is given a role, so the kiosk's answer has one to show.
+  const ROLE = randomUUID();
+  const ROLE_NAME = `ZZ TEST s1038 runner ${run}`;
+  await q("insert into roles (id, tenant_id, name) values ($1, $2, $3)", [ROLE, TENANT, ROLE_NAME]);
+  await q("update schedule_assignments set role_id = $2 where employee_id = $1 and shift_date = $3", [former, ROLE, SHIFT_DAY]);
+  let clockedIn: Answer | undefined;
+  let clockedOut: Answer | undefined;
   await check("on the shift's day at its branch they clock in, then out", async () => {
     const inRes = await phoneClock(onTheDay, PHONE.former);
     assert.deepEqual([inRes.status, inRes.body.success, inRes.body.eventType], [200, true, "IN"], show(inRes));
     const outRes = await phoneClock(onTheDay, PHONE.former);
     assert.deepEqual([outRes.status, outRes.body.eventType], [200, "OUT"], show(outRes));
     assert.deepEqual((await timeEventsOf(former)).map((e) => [e.event_type, e.branch_id]), [["IN", BRANCH], ["OUT", BRANCH]]);
+    clockedIn = inRes;
+    clockedOut = outRes;
   });
   await check("a former employee with no single shift that day is still refused there", async () => {
     const res = await phoneClock(onTheDay, PHONE.stranger);
@@ -607,6 +632,196 @@ try {
     assert.equal((await invitationsOf(noProfile)).length, 2);
     await assert.rejects(q("delete from employees where id = $1", [noProfile]), (e: { code?: string }) => e.code === "23503");
     assert.equal((await invitationsOf(noProfile)).length, 2);
+  });
+
+
+  // ── 9. What they see of the schedule (SCRUM-1055, R7) ────────────────────
+  console.log("9. the schedule for that day, on the kiosk:");
+  await check("clocking in and out they see that day's shift: times, name, department, role, branch, their own break", async () => {
+    const [mine] = await assignmentsOf(former);
+    const breaks = await q<{ s: string; e: string }>(
+      "select to_char(break_start_time, 'HH24:MI') as s, to_char(break_end_time, 'HH24:MI') as e from schedule_shift_breaks where assignment_id = $1",
+      [mine!.id],
+    );
+    assert.equal(breaks.length, 1, "the schedule gave this person one break on the shift");
+    const expected = [{
+      shiftDate: SHIFT_DAY,
+      startTime: "09:00",
+      endTime: "15:00",
+      label: "ZZ TEST morning",
+      department: `ZZ TEST s1038 floor ${run}`,
+      role: ROLE_NAME,
+      branchName: `ZZ TEST s1038 one ${run}`,
+      breaks: [{ startTime: breaks[0]!.s, endTime: breaks[0]!.e }],
+    }];
+    for (const answer of [clockedIn!, clockedOut!]) {
+      assert.deepEqual(answer.body.singleShifts, expected, show(answer));
+      assert.deepEqual(Object.keys(answer.body).sort(), ["employee", "eventTime", "eventType", "singleShifts", "success"], show(answer));
+    }
+  });
+  await check("never how it is paid, and nobody else's shift: the others on that shift and day are not in the answer", async () => {
+    const others = await q<{ id: string; full_name: string; break_s: string | null }>(
+      `select e.id, e.full_name, to_char(b.break_start_time, 'HH24:MI') as break_s
+         from schedule_assignments a join employees e on e.id = a.employee_id
+         left join schedule_shift_breaks b on b.assignment_id = a.id
+        where a.shift_row_id = $1 and a.shift_date = $2 and a.employee_id <> $3`,
+      [MORNING, SHIFT_DAY, former],
+    );
+    assert.ok(others.length >= 1, "others work that shift that day");
+    for (const answer of [clockedIn!, clockedOut!]) {
+      const text = JSON.stringify(answer.body);
+      assert.doesNotMatch(text, /payWay|payLabel|pay_basis|casual|contract|฿/i, text);
+      for (const other of others) {
+        assert.ok(!text.includes(other.id) && !text.includes(other.full_name), `${other.id} is not in the answer`);
+        if (other.break_s) {
+          assert.ok(!(answer.body.singleShifts[0].breaks as { startTime: string }[]).some((b) => b.startTime === other.break_s), "only their own break");
+        }
+      }
+    }
+  });
+  await check("a current employee's answer is as before: clocked in and out, no shift in it", async () => {
+    for (const eventType of ["IN", "OUT"]) {
+      const res = await phoneClock(onTheDay, PHONE.current);
+      assert.deepEqual([res.status, res.body.eventType], [200, eventType], show(res));
+      assert.deepEqual(Object.keys(res.body).sort(), ["employee", "eventTime", "eventType", "success"], show(res));
+    }
+  });
+  await check("the reader shows nothing at another branch, on another day, or for a current employee; two shifts that day, each with its own break or none", async () => {
+    const { singleShiftsShownAtKiosk } = await import("../server/lib/singleShift");
+    const profileOfRow = async (id: string) => (await q<{ id: string; status: string; employmentState: string; lastWorkingDay: Date | null }>(
+      `select id, status, employment_state as "employmentState", last_working_day as "lastWorkingDay" from employees where id = $1`, [id]))[0]!;
+    const at = new Date(tenAmBangkok(SHIFT_DAY));
+    const formerProfile = await profileOfRow(former);
+    assert.equal((await singleShiftsShownAtKiosk(formerProfile, BRANCH, at))?.length, 1, "on the day at its branch");
+    assert.equal(await singleShiftsShownAtKiosk(formerProfile, BRANCH_2, at), undefined, "another branch");
+    assert.equal(await singleShiftsShownAtKiosk(formerProfile, BRANCH, new Date(tenAmBangkok(plus(3)))), undefined, "another day");
+    assert.equal(await singleShiftsShownAtKiosk(formerProfile, BRANCH, new Date(tenAmBangkok(plus(1)))), undefined, "the day before");
+    assert.equal(await singleShiftsShownAtKiosk(await profileOfRow(current), BRANCH, at), undefined, "a current employee");
+    assert.equal(await singleShiftsShownAtKiosk(await profileOfRow(stranger), BRANCH, at), undefined, "a former employee with no shift");
+    const two = await singleShiftsShownAtKiosk(await profileOfRow(noProfile), BRANCH, at);
+    assert.deepEqual(two?.map((v) => [v.startTime, v.endTime, v.label]), [["06:00", "08:00", "ZZ TEST early"], ["15:00", "21:00", "ZZ TEST evening"]]);
+    assert.deepEqual(two![0]!.breaks, [], "a two-hour shift the schedule gives no break");
+    assert.equal(two![1]!.breaks.length, 1);
+    assert.doesNotMatch(JSON.stringify(two), /casual|contract|800|฿/i);
+  });
+  await check("a clock-out after midnight is refused as on a last working day; the 00:01 batch closes it at midnight and tells the managers", async () => {
+    const res = await invite(origin, asManager, { employeeId: lateOut, shiftRowId: EVENING, shiftDate: SHIFT_DAY });
+    assert.equal(res.status, 201, show(res));
+    const inRes = await phoneClock(onTheDay, PHONE.lateOut);
+    assert.deepEqual([inRes.status, inRes.body.eventType, inRes.body.singleShifts?.[0]?.startTime], [200, "IN", "15:00"], show(inRes));
+    const afterMidnight = await serve(halfPastMidnightBangkok(plus(3)));
+    const late = await phoneClock(afterMidnight, PHONE.lateOut);
+    assert.deepEqual([late.status, late.body], [403, REFUSED], show(late));
+    assert.deepEqual((await timeEventsOf(lateOut)).map((e) => e.event_type), ["IN"], "the refusal writes nothing");
+    const batch = await fetch(`${afterMidnight}/api/directory/jobs/midnight/run`, {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${JOBS_KEY}` },
+      body: JSON.stringify({ tenantId: TENANT }),
+    });
+    const body = await batch.json() as { ok: boolean };
+    assert.deepEqual([batch.status, body.ok], [200, true], JSON.stringify(body));
+    const events = await q<{ event_type: string; event_time: Date; notes: string | null; branch_id: string }>(
+      "select event_type, event_time, notes, branch_id from time_events where employee_id = $1 order by event_time", [lateOut]);
+    assert.deepEqual(events.map((e) => [e.event_type, e.branch_id]), [["IN", BRANCH], ["OUT", BRANCH]]);
+    assert.equal(events[1]!.event_time.toISOString(), new Date(`${plus(3)}T00:00:00+07:00`).toISOString(), "closed at midnight");
+    assert.equal(events[1]!.notes, "[Auto-clocked out at midnight — missing clock-out]");
+    const items = await q<{ type: string; title: string; branch_id: string; status: string }>(
+      "select type, title, branch_id, status from attention_items where employee_id = $1", [lateOut]);
+    assert.deepEqual(items.map((i) => [i.type, i.title, i.branch_id, i.status]),
+      [["TIMEKEEPING_STUCK_CLOCK_IN", "Missing clock-out — auto-clocked out at midnight", BRANCH, "open"]]);
+  });
+
+
+  // ── 10. Pay in the activity log (SCRUM-1058) ───────────────────────────────
+  console.log("10. pay in the activity log:");
+  // ZZ TEST entries of the kinds that carry pay: a salary change, as the
+  // employee editor writes it, and a contract generated with a salary change
+  // among its employee changes, beside the single shift's own pay switches.
+  const SALARY_ENTRY = randomUUID();
+  const CONTRACT_ENTRY = randomUUID();
+  await q(
+    `insert into activity_log (id, tenant_id, branch_id, employee_id, activity_type, summary_text, metadata_json, created_by)
+     values ($1, $2, $3, $4, 'salary_change', $5, $6, $7)`,
+    [SALARY_ENTRY, TENANT, BRANCH, current, "ZZ TEST salary changed from ฿10,000 to ฿11,000", JSON.stringify({ oldValue: 10000, newValue: 11000 }), admin.id],
+  );
+  await q(
+    `insert into activity_log (id, tenant_id, branch_id, employee_id, activity_type, summary_text, metadata_json, created_by)
+     values ($1, $2, $3, $4, 'employee_updated', 'Employee updated during contract generation', $5, $6)`,
+    [CONTRACT_ENTRY, TENANT, BRANCH, current, JSON.stringify({
+      source: "contract_generation",
+      changes: { defaultMergeData: { old: { salaryThb: 10000, positionTitle: "ZZ TEST A" }, new: { salaryThb: 11000, positionTitle: "ZZ TEST B" } } },
+    }), admin.id],
+  );
+  const stored = async () => q<{ id: string; activity_type: string; summary_text: string; metadata_json: string | null }>(
+    "select id, activity_type, summary_text, metadata_json from activity_log where tenant_id = $1 order by id", [TENANT]);
+  const asStaffNow = await signIn(origin, staff.email);
+  const asManagerNow = await signIn(origin, manager.email);
+  const asAdminNow = await signIn(origin, admin.email);
+  const before = await stored();
+  const PAY_TYPES = ["salary_change", "single_shift_pay_changed"];
+  const logs = async (cookie: string, query: string) => {
+    const res = await call(origin, "GET", `/api/activity-logs?limit=500${query}`, cookie);
+    assert.equal(res.status, 200, show(res));
+    return res.body as { logs: { id: string; activityType: string; summaryText: string; metadataJson: string | null }[]; totalCount: number };
+  };
+  const payFree = (text: string) => assert.doesNotMatch(text, /10,000|11,000|10000|11000|salaryThb/, text);
+  const readers: [string, string][] = [["staff", asStaffNow], ["a manager", asManagerNow]];
+  await check("staff and a manager get the log without its pay entries, the count too; an administrator gets them", async () => {
+    const all = await logs(asAdminNow, `&branchId=${BRANCH}`);
+    const pay = all.logs.filter((l) => PAY_TYPES.includes(l.activityType));
+    assert.ok(pay.some((l) => l.id === SALARY_ENTRY), "the salary change is the administrator's to read");
+    assert.equal(pay.filter((l) => l.activityType === "single_shift_pay_changed").length, 2, "the single shift's two pay switches");
+    for (const [who, cookie] of readers) {
+      const theirs = await logs(cookie, `&branchId=${BRANCH}`);
+      assert.deepEqual(theirs.logs.filter((l) => PAY_TYPES.includes(l.activityType)), [], who);
+      assert.equal(theirs.totalCount, all.totalCount - pay.length, who);
+      assert.deepEqual(theirs.logs.map((l) => l.id).sort(), all.logs.filter((l) => !PAY_TYPES.includes(l.activityType)).map((l) => l.id).sort(), `${who}: the rest unchanged`);
+      payFree(JSON.stringify(theirs));
+    }
+  });
+  await check("not by filter, employee, search or summary either", async () => {
+    for (const [who, cookie] of readers) {
+      for (const query of [
+        "&types=salary_change", "&types=single_shift_pay_changed", "&types=salary_change,single_shift_pay_changed",
+        `&employeeId=${current}&types=salary_change`, `&employeeId=${former}&types=single_shift_pay_changed`,
+        "&search=salary", "&search=" + encodeURIComponent("฿"),
+      ]) {
+        const res = await logs(cookie, query);
+        assert.deepEqual(res.logs.filter((l) => PAY_TYPES.includes(l.activityType)), [], `${who} ${query}`);
+        if (query.includes("types=")) assert.deepEqual([res.logs.length, res.totalCount], [0, 0], `${who} ${query}`);
+        payFree(JSON.stringify(res));
+      }
+      const mine = await logs(cookie, `&employeeId=${current}`);
+      assert.ok(!mine.logs.some((l) => l.id === SALARY_ENTRY), who);
+      const summary = await call(origin, "GET", `/api/activity-logs/summary?branchId=${BRANCH}&sinceDays=30`, cookie);
+      assert.deepEqual([summary.status, summary.body.salary_change], [200, 0], `${who}: ${show(summary)}`);
+    }
+    const adminSummary = await call(origin, "GET", `/api/activity-logs/summary?branchId=${BRANCH}&sinceDays=30`, asAdminNow);
+    assert.deepEqual([adminSummary.status, adminSummary.body.salary_change], [200, 1], show(adminSummary));
+    const adminFiltered = await logs(asAdminNow, "&types=salary_change");
+    assert.deepEqual(adminFiltered.logs.map((l) => [l.id, l.summaryText]), [[SALARY_ENTRY, "ZZ TEST salary changed from ฿10,000 to ฿11,000"]]);
+  });
+  await check("another entry's pay fields are taken out of its metadata for them; the entry and its other fields stay", async () => {
+    for (const [who, cookie] of readers) {
+      const entry = (await logs(cookie, `&employeeId=${current}`)).logs.find((l) => l.id === CONTRACT_ENTRY);
+      assert.ok(entry, who);
+      assert.equal(entry!.summaryText, "Employee updated during contract generation");
+      assert.deepEqual(JSON.parse(entry!.metadataJson!), {
+        source: "contract_generation",
+        changes: { defaultMergeData: { old: { positionTitle: "ZZ TEST A" }, new: { positionTitle: "ZZ TEST B" } } },
+      }, who);
+    }
+    const whole = (await logs(asAdminNow, `&employeeId=${current}`)).logs.find((l) => l.id === CONTRACT_ENTRY);
+    assert.equal(JSON.parse(whole!.metadataJson!).changes.defaultMergeData.new.salaryThb, 11000);
+  });
+  await check("no other door reads the log: no entry by id, no export; the stored entries are unchanged", async () => {
+    const byId = await call(origin, "GET", `/api/activity-logs/${SALARY_ENTRY}`, asStaffNow);
+    assert.notEqual(byId.status, 200, show(byId));
+    payFree(JSON.stringify(byId.body));
+    const routes = readFileSync(join(APP_DIR, "server", "routes.ts"), "utf8");
+    const doors = Array.from(routes.matchAll(/app\.(get|post|put|patch|delete)\("(\/api\/activity-log[^"]*)"/g)).map((m) => `${m[1]} ${m[2]}`);
+    assert.deepEqual(doors, ["get /api/activity-logs", "get /api/activity-logs/summary", "post /api/activity-logs/backfill-departures"], "a new door on the log takes the same rule");
+    assert.deepEqual(await stored(), before, "nothing stored is deleted or changed");
   });
 
   console.log(`single-shift.check: ${checks} checks passed`);
