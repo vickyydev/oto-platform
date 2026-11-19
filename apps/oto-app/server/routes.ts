@@ -5002,9 +5002,11 @@ export async function registerRoutes(
   app.post("/api/employees/reorder", requireAuth, requireManager, async (req, res, next) => {
     try {
       const { orderedIds } = req.body;
+      // SCRUM-1036: one place per person — a repeated id would take its last
+      // place and leave a gap at the first, and a non-string id reached the
+      // query as it was sent.
       if (
         !Array.isArray(orderedIds) ||
-        orderedIds.length > 2000 ||
         !orderedIds.every((id) => typeof id === "string" && id.length > 0) ||
         new Set(orderedIds).size !== orderedIds.length
       ) {

@@ -1,33 +1,20 @@
-// SCRUM-1036 — the order of employees in Scheduling's employee view.
-// One comparator draws the list and works out a drag, so the order saved is
-// the order the manager saw.
+// SCRUM-1036 — the order of employees in Scheduling's employee view and on
+// the Employees page. One comparator draws both lists and works out a drag,
+// so the order saved is the order the manager saw, on either screen.
 
 export type OrderedEmployee = {
   id: string;
-  fullName: string;
   displayOrder?: number | null;
-  createdAt?: string | Date | null;
 };
 
-function createdMs(e: OrderedEmployee): number {
-  if (!e.createdAt) return 0;
-  const t = new Date(e.createdAt).getTime();
-  return Number.isFinite(t) ? t : 0;
-}
-
 /**
- * Shown order: displayOrder first; staff who share a place (every employee
- * saved before places were kept) fall back to earliest created, then name,
- * then id, so the list reads the same on every load.
+ * Shown order: displayOrder, as both screens have always drawn it. Staff who
+ * share a place (every employee saved before places were kept) stay in the
+ * order the server sends them (newest first, `getEmployeesWithAccess`): the
+ * sort is stable, so ties read exactly as they did before this repair.
  */
 export function compareEmployeeOrder(a: OrderedEmployee, b: OrderedEmployee): number {
-  const byPlace = (a.displayOrder ?? 0) - (b.displayOrder ?? 0);
-  if (byPlace !== 0) return byPlace;
-  const byCreated = createdMs(a) - createdMs(b);
-  if (byCreated !== 0) return byCreated;
-  const byName = a.fullName.localeCompare(b.fullName);
-  if (byName !== 0) return byName;
-  return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+  return (a.displayOrder ?? 0) - (b.displayOrder ?? 0);
 }
 
 export function sortEmployeesForDisplay<T extends OrderedEmployee>(list: T[]): T[] {
@@ -36,11 +23,12 @@ export function sortEmployeesForDisplay<T extends OrderedEmployee>(list: T[]): T
 
 /**
  * The ids to save after dragging `activeId` onto `overId` in the view the
- * manager is looking at. `department` is every employee of the department;
- * `shownIds` are those in view (a search may hide some). The dragged person
- * takes the place of the one dropped on, in the shown order; employees not in
- * view keep their places relative to each other and to the shown slots they
- * held. Returns null when nothing moves.
+ * manager is looking at. `department` is every employee of the department, in
+ * the order the server sent them (the order the screen's own list was made
+ * from); `shownIds` are those in view (a search may hide some). The dragged
+ * person takes the place of the one dropped on, in the shown order; employees
+ * not in view keep their places relative to each other and to the shown
+ * slots they held. Returns null when nothing moves.
  */
 export function orderAfterDrag(
   department: OrderedEmployee[],
