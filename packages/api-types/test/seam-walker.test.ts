@@ -180,8 +180,6 @@ const MACHINE_CALLERS: Array<{ prefix: string; exact?: boolean; except?: string;
  * caller fails until its line is removed, so the list stays the truth.
  */
 const NOT_YET_CALLED = new Map<string, string>([
-  // 2026-11-19, SCRUM-1018: the reuse moved into the registration's own write.
-  ['POST /checkin/registrations/{id}/photo-reuse', 'the till sends a reused photo inside POST /checkin/registrations (photoReuse) since the SCRUM-1018 fix round; this separate route is kept, guarded and audited, until its removal is decided, and no screen calls it'],
   ['POST /auth/unlock-offline', '2026-11-03 SCRUM-728: deprecated compatibility route for older virtual tills; the current till authenticates its box directly, and removal waits for verified retirement of older clients'],
   // 2026-11-03, SCRUM-674: the Console's support lookup reads these in process, as the caller, through its own route.
   ['GET /branches/{id}/gate-events', 'GET /console/support/lookup reads it per park through callPlatform; no screen calls it on its own'],

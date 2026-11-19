@@ -609,9 +609,7 @@ export const AttachRegistrationPhotoSchema = z
  * stay that has a photo (`GET /checkin/children/:childId/last-photo`), shows
  * it to staff with "Still matches" and "Take a new one", and on "Still
  * matches" names that stay in the registration's own write
- * (`photoReuse` on `POST /checkin/registrations`; the separate
- * `POST /checkin/registrations/:id/photo-reuse` does the same on a
- * registration already written): each child's new stay
+ * (`photoReuse` on `POST /checkin/registrations`): each child's new stay
  * points at the same stored photo, by reference, and the registration's
  * audit row says who confirmed it. The photo stays owned by the
  * registration it was taken for, so it is read through the same
