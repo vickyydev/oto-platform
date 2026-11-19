@@ -1,3 +1,37 @@
+## 20 November 2026, 07:30: the till finish points are on staging; the slips lane is running
+
+- **SCRUM-1059 "Till and display: finish points seen in the staging checks of
+  the counter flow": Deployed** (main 8a6f5fbc6, pictures f9a2af4f7;
+  `oto-pos-staging` and `oto-pos-web-staging` live 05:49 to 05:52). Eight of
+  nine points, each pictured on staging
+  (`docs/qa/proof-2026-11-20/SCRUM-1059/run1/`; the lead opened the F&B
+  warning and the short form): one key per change in the "Who's visiting
+  today?" window (one audit row after a retried save); extra credit added
+  before a line becomes drop-off is carried into the child's form and charged
+  once; the F&B "Food not authorized" warning is readable in the light theme;
+  "F&B credit" without the backslash; typed names at the field's size on 768
+  and 1024 displays; "The team is checking the photo — there is nothing more
+  for you to do." on the short form; the bracelet card shows the band after
+  check-in; staff's copy reads "Included credit" with "(ticked by the
+  family)".
+- **Not built, the owner's choice:** the till's header tabs do not fit at
+  1440 and 1680 wide ("Chec", "Hist" cut). It is the prototype's layout and
+  the open point of SCRUM-959 "Split view at 1440: the header tabs stay in
+  view". Put to him as N14 on his page (Version 10).
+- **Hosted CI:** other lanes' pushes cancelled this lane's queued run twice
+  and a later run skipped the till steps by path; a full run dispatched on
+  the lane's wip ref (44634679085) passed every job, the till end-to-end
+  included.
+- **Filed: SCRUM-1060 "Till: a save retried after a lost connection is
+  written once, the remaining paths"** (a visit retried can open a second
+  draft; a change that falls to the counter box's lane is written again
+  there; the desk gate's typed text size).
+- **Launched: the slips lane** (run wf_31edd191-870, worktree
+  `C:/oto-lanes/codex-deposit-910-20261114`, branch
+  `lane/tillslips1051-20261120`): SCRUM-1051 "BEO: the time per dish or group
+  on the till's kitchen and bar slips", then SCRUM-1060; review, land, prove.
+- **Running:** family F3, the BEO editor finish lane, the slips lane.
+
 ## 20 November 2026, 06:40: the BEO editor is on staging; its remaining brief points are being built
 
 - **Landed** (main cc500e844, 24 commits; two look fixes 97201a4b4 and
