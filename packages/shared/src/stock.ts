@@ -400,10 +400,49 @@ export const STOCK_ADJUST_QUICK_REASONS = [
 export type StockAdjustQuickReason = (typeof STOCK_ADJUST_QUICK_REASONS)[number];
 
 /**
+ * SCRUM-1012 (E5) — the type every correction names, picked from these seven;
+ * the free-text reason stays beside it. The loss report splits losses by it,
+ * and a correction typed `delivery` that adds units is a delivery, never a
+ * find (it is read as received, not as "corrected up"). Deliveries belong in
+ * the stock module's Receive; the type keeps the report honest when one is
+ * entered as a correction anyway.
+ */
+export const STOCK_ADJUST_REASON_TYPES = ['delivery', 'found', 'recount', 'damaged', 'expired', 'theft', 'other'] as const;
+export type StockAdjustReasonType = (typeof STOCK_ADJUST_REASON_TYPES)[number];
+
+export const STOCK_ADJUST_REASON_TYPE_LABELS: Record<StockAdjustReasonType, string> = {
+  delivery: 'Delivery',
+  found: 'Found',
+  recount: 'Recount',
+  damaged: 'Damaged',
+  expired: 'Expired',
+  theft: 'Theft',
+  other: 'Other',
+};
+
+/**
+ * A correction recorded before the type existed (migration 0134) names none.
+ * The report reads it as "not given" — never guessed from its words, and the
+ * stored row is never rewritten.
+ */
+export const STOCK_REASON_TYPE_NOT_GIVEN = 'not_given' as const;
+export const STOCK_REASON_TYPE_NOT_GIVEN_LABEL = 'Not given';
+
+/** A correction's type as the reports read it: one of the seven, or "not given". */
+export const STOCK_REPORT_REASON_TYPES = [...STOCK_ADJUST_REASON_TYPES, STOCK_REASON_TYPE_NOT_GIVEN] as const;
+export const StockReportReasonTypeSchema = z.enum(STOCK_REPORT_REASON_TYPES);
+export type StockReportReasonType = z.infer<typeof StockReportReasonTypeSchema>;
+
+export function stockReasonTypeLabel(type: StockReportReasonType): string {
+  return type === STOCK_REASON_TYPE_NOT_GIVEN ? STOCK_REASON_TYPE_NOT_GIVEN_LABEL : STOCK_ADJUST_REASON_TYPE_LABELS[type];
+}
+
+/**
  * A manager's correction — shrinkage, a damaged unit, staff use. Signed; a
  * place is optional: an increase lands at the sell point, a decrease takes from
  * the sell point first and then the cascade (the prototype's
- * `adjustInventoryStock`), and never past what the branch holds.
+ * `adjustInventoryStock`), and never past what the branch holds. Every
+ * correction names its type (SCRUM-1012, E5) as well as its reason.
  */
 export const StockAdjustBodySchema = z.object({
   stockItemId: StockId,
@@ -414,6 +453,9 @@ export const StockAdjustBodySchema = z.object({
     .min(-STOCK_MAX_EACHES)
     .max(STOCK_MAX_EACHES)
     .refine((n) => n !== 0, 'Enter a non-zero adjustment amount'),
+  reasonType: z.enum(STOCK_ADJUST_REASON_TYPES, {
+    errorMap: () => ({ message: 'Pick the type of correction: delivery, found, recount, damaged, expired, theft or other' }),
+  }),
   reason: StockReason,
 });
 export type StockAdjustBody = z.infer<typeof StockAdjustBodySchema>;
@@ -803,23 +845,136 @@ export const StockUsageRowSchema = z.object({
 });
 export type StockUsageRow = z.infer<typeof StockUsageRowSchema>;
 
-/** Count variances and corrections down, per size: what left the shelves unsold. */
-export const StockShrinkageRowSchema = z.object({
-  ...ReportSize,
+/**
+ * One size's loss figures — for the branch, or for one place (E3). TODAY'S
+ * FIGURE is `total` (count differences, each place's opening left out, plus
+ * corrections down) and `lossSatang`; SCRUM-1012 adds the rest BESIDE it and
+ * never changes it.
+ */
+const ShrinkageFigures = {
   /** Signed sum of the count movements (counted − expected), each place's opening excluded. */
   countVariance: z.number().int(),
   /** How many counts found the shelf short. */
   countedShort: z.number().int(),
   /** Sum of the corrections down (negative). */
   adjustedDown: z.number().int(),
-  /** countVariance + adjustedDown. */
+  /** countVariance + adjustedDown — today's figure. */
   total: z.number().int(),
   /** −Σ quantity × frozen cost over those movements; null to a non-manager. */
   lossSatang: z.number().int().nullable(),
   /** True when one of those movements carried no cost: the loss is understated. */
   costMissing: z.boolean(),
+  /**
+   * E1 — the corrections UP (positive), a correction typed `delivery` left out:
+   * that is a delivery, counted in `received`, never a find.
+   */
+  correctedUp: z.number().int(),
+  /** E1 — Σ quantity × frozen cost of `correctedUp`; null to a non-manager. */
+  correctedUpSatang: z.number().int().nullable(),
+  /** E1 — total + correctedUp. */
+  net: z.number().int(),
+  /**
+   * E2 — the record at the start of the range, plus what any place's OPENING
+   * count inside the range set (a starting figure, not a loss or a find).
+   */
+  opening: z.number().int(),
+  /** E2 — of `opening`, the units set by places' opening counts inside the range. */
+  openingCounted: z.number().int(),
+  /** E2 — deliveries: Receive and purchase orders, plus corrections typed `delivery` that added units. */
+  received: z.number().int(),
+  /** E2 — what the record's sales took, net of what refunds put back. */
+  sold: z.number().int(),
+  /** E2 — the record at the end of the range. */
+  closing: z.number().int(),
+  /**
+   * E2 — opening + received − sold − closing (+ moved in − moved out for one
+   * place). Positive: units gone that nothing explains. It equals −net.
+   */
+  notExplained: z.number().int(),
+  /** E4 d — units paid sales took beyond the record in the range (the ledger's shortfall). */
+  soldBeyondRecord: z.number().int(),
+  /**
+   * E4 b — a count in the range was the first at its place, and the place had
+   * no opening count: its difference holds everything since stock first went there.
+   */
+  firstCountWithoutOpening: z.boolean(),
+  /** E4 c — a count in the range was committed while a box of the branch had records it had not sent. */
+  countedWithUnsentSales: z.boolean(),
+};
+
+/** E3 — one size's figures at one place, with what moved in and out of it. */
+export const StockShrinkagePlaceSchema = z.object({
+  locationId: z.string().uuid(),
+  locationName: z.string(),
+  ...ShrinkageFigures,
+  movedIn: z.number().int(),
+  movedOut: z.number().int(),
+});
+export type StockShrinkagePlace = z.infer<typeof StockShrinkagePlaceSchema>;
+
+/** E5 — today's figure split by what caused it: the counts, and each correction type. */
+export const StockShrinkageCauseSchema = z.object({
+  cause: z.union([z.literal('count'), StockReportReasonTypeSchema]),
+  /** Signed units: a count's difference, or a correction's down movement. */
+  quantity: z.number().int(),
+  /** −Σ quantity × frozen cost; null to a non-manager. */
+  lossSatang: z.number().int().nullable(),
+});
+export type StockShrinkageCause = z.infer<typeof StockShrinkageCauseSchema>;
+
+/** Count variances and corrections down, per size: what left the shelves unsold. */
+export const StockShrinkageRowSchema = z.object({
+  ...ReportSize,
+  ...ShrinkageFigures,
+  /** E3 — every place the size moved at up to the range's end, retired ones too. */
+  byPlace: z.array(StockShrinkagePlaceSchema),
+  /** E5 — `total` by cause; the entries add up to it. */
+  byCause: z.array(StockShrinkageCauseSchema),
 });
 export type StockShrinkageRow = z.infer<typeof StockShrinkageRowSchema>;
+
+/** E4 a and d — the warnings that sit on the tiles, over every size. */
+export const StockShrinkageSummarySchema = z.object({
+  /** Sizes with a loss in the range that carries units with no cost: the loss leaves those units out. */
+  sizesWithoutCost: z.number().int(),
+  /** Units sold beyond the record in the range, every size. */
+  soldBeyondRecord: z.number().int(),
+  /** How many sizes those were. */
+  soldBeyondRecordSizes: z.number().int(),
+});
+export type StockShrinkageSummary = z.infer<typeof StockShrinkageSummarySchema>;
+
+/**
+ * E6 — one write-down (a correction down) or one count difference in the
+ * range, each place's opening left out: who, when, where and why.
+ */
+export const StockLossEventSchema = z.object({
+  /** The movement's id. */
+  id: z.string().uuid(),
+  kind: z.enum(['count', 'write_down']),
+  ...ReportSize,
+  locationId: z.string().uuid(),
+  locationName: z.string(),
+  /** Signed: the count's difference, or the write-down (negative). */
+  quantity: z.number().int(),
+  /** A count's expected and counted figures; null on a write-down. */
+  expectedQuantity: z.number().int().nullable(),
+  countedQuantity: z.number().int().nullable(),
+  /** A write-down's type, "not_given" for one recorded before types; null on a count. */
+  reasonType: StockReportReasonTypeSchema.nullable(),
+  reason: z.string().nullable(),
+  /** Who made it, as staff are named on screen; null when unknown. */
+  by: z.string().nullable(),
+  occurredAt: z.string(),
+  businessDate: z.string(),
+  /** −quantity × frozen cost; null to a non-manager or when no cost was frozen. */
+  lossSatang: z.number().int().nullable(),
+  costMissing: z.boolean(),
+  /** E4 b and c, for this one count. */
+  firstCountWithoutOpening: z.boolean(),
+  countedWithUnsentSales: z.boolean(),
+});
+export type StockLossEvent = z.infer<typeof StockLossEventSchema>;
 
 export const StockPurchaseLineSchema = z.object({
   id: z.string().uuid(),
@@ -879,6 +1034,10 @@ export const StockReportsSchema = z.object({
   discrepancies: z.array(StockDiscrepancyRowSchema),
   usage: z.array(StockUsageRowSchema),
   shrinkage: z.array(StockShrinkageRowSchema),
+  /** SCRUM-1012 E4 — the warnings over every size. */
+  shrinkageSummary: StockShrinkageSummarySchema,
+  /** SCRUM-1012 E6 — the write-downs and count differences in the range, newest first. */
+  shrinkageEvents: z.array(StockLossEventSchema),
   purchases: z.array(StockPurchaseOrderRowSchema),
   value: z.array(StockValueRowSchema),
 });

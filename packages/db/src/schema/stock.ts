@@ -68,6 +68,20 @@ export type StockMovementKind = (typeof STOCK_MOVEMENT_KINDS)[number];
 export const STOCK_ATTENTION_KINDS = ['stock_shortfall', 'size_unknown', 'low_stock', 'reorder'] as const;
 export type StockAttentionKind = (typeof STOCK_ATTENTION_KINDS)[number];
 
+/** One box that had not sent everything when a count was committed (`stock_take.unsent_boxes`). */
+export interface StockTakeUnsentBox {
+  boxId: string;
+  name: string;
+  role: string | null;
+  /** Records it held unsent. */
+  waiting: number | null;
+  /** When the oldest was queued, when known. */
+  since: string | null;
+}
+
+/** SCRUM-1012 (E5) — a correction's type (`stock_movement.reason_type`). Mirrors `STOCK_ADJUST_REASON_TYPES` in @oto/shared. */
+export const STOCK_MOVEMENT_REASON_TYPES = ['delivery', 'found', 'recount', 'damaged', 'expired', 'theft', 'other'] as const;
+
 export const STOCK_TAKE_STATUSES = ['open', 'committed'] as const;
 export const STOCK_TAKE_LINE_STATUSES = ['pending', 'confirmed', 'adjusted'] as const;
 export const PURCHASE_ORDER_STATES = ['to_order', 'ordered', 'received'] as const;
@@ -256,6 +270,14 @@ export const stockTake = pos.table(
     countedByAccountId: uuid('counted_by_account_id').references(() => account.id, { onDelete: 'restrict' }),
     committedAt: timestamp('committed_at', { withTimezone: true, mode: 'date' }),
     note: text('note'),
+    /**
+     * SCRUM-1012 (E4 c, migration 0133) — the branch's boxes that held records
+     * they had not sent when this count was committed (End of Day's
+     * `provisionalBoxesOf`, its outbox reason): a late sale then takes the
+     * record down after the count, so the count shows a loss and the next one a
+     * find. `[]` = checked, none waiting; NULL = committed before 0133, unknown.
+     */
+    unsentBoxes: jsonb('unsent_boxes').$type<StockTakeUnsentBox[]>(),
     ...timestamps,
   },
   (t) => [
@@ -442,6 +464,13 @@ export const stockMovement = pos.table(
     /** Pairs a transfer's out and in rows. No table: the pair IS the transfer. */
     transferId: uuid('transfer_id'),
     reason: text('reason'),
+    /**
+     * SCRUM-1012 (E5, migration 0134) — a correction's type, beside its
+     * free-text reason; adjust rows only. NULL on every correction written
+     * before 0134: the reports read it as "not given", the row is never
+     * rewritten (the ledger is append-only).
+     */
+    reasonType: text('reason_type').$type<(typeof STOCK_MOVEMENT_REASON_TYPES)[number]>(),
     /** The cost per each when it moved, satang — frozen for cost of goods. */
     unitCostSatang: integer('unit_cost_satang'),
     businessDate: date('business_date').notNull(),
@@ -479,6 +508,10 @@ export const stockMovement = pos.table(
     check('stock_movement_shortfall_check', sql`${t.shortfall} >= 0 and (${t.shortfall} = 0 or ${t.kind} in ('sale','offline_sale'))`),
     check('stock_movement_level_after_check', sql`${t.levelAfter} >= 0`),
     check('stock_movement_unit_cost_check', sql`${t.unitCostSatang} is null or ${t.unitCostSatang} >= 0`),
+    check(
+      'stock_movement_reason_type_check',
+      sql`${t.reasonType} is null or (${t.kind} = 'adjust' and ${t.reasonType} in ('delivery','found','recount','damaged','expired','theft','other'))`,
+    ),
   ],
 );
 

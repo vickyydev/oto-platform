@@ -222,7 +222,7 @@ export async function stockRoutes(app: App): Promise<void> {
       config: { permission: 'pos:stock:read', target: { branchId: 'params.branchId' } },
       schema: {
         description:
-          "The stock module's reports over business dates, each from the ledger: discrepancies (counts), usage (sales net of refunds), shrinkage (count variances and corrections down), purchases (orders and their receipts) and value (on hand × cost, no cost flagged). Cost figures only to a manager",
+          "The stock module's reports over business dates, each from the ledger: discrepancies (counts), usage (sales net of refunds), shrinkage (count variances and corrections down — today's figure — with corrections up and the net, the period columns, each place, the warnings, the causes and the write-downs and count differences behind it), purchases (orders and their receipts) and value (on hand × cost, no cost flagged). Cost figures only to a manager",
         params: BranchParams,
         querystring: StockReportQuerySchema,
         response: { 200: StockReportsSchema },
@@ -463,7 +463,7 @@ export async function stockRoutes(app: App): Promise<void> {
       config: { permission: 'pos:stock:adjust', target: { branchId: 'params.branchId' } },
       schema: {
         description:
-          "A manager's correction with a reason — shrinkage, damage, staff use. Never past what the branch holds",
+          "A manager's correction with its type (delivery, found, recount, damaged, expired, theft, other) and a reason — shrinkage, damage, staff use. Never past what the branch holds",
         params: BranchParams,
         body: StockAdjustBodySchema,
         response: { 200: StockAdjustResultSchema },

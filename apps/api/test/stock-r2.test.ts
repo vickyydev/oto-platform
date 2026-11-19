@@ -574,7 +574,7 @@ describe('who may do what (OD-S4): staff move, receive and count; orders and set
     const cap = await itemIdOf('MR-CAP');
     const refused = [
       await call('POST', `${base()}/purchase-orders/lines`, reception, { lines: [{ stockItemId: cap, quantity: 1 }] }),
-      await call('POST', `${base()}/adjustments`, reception, { stockItemId: cap, delta: -1, reason: 'Damaged' }),
+      await call('POST', `${base()}/adjustments`, reception, { stockItemId: cap, delta: -1, reasonType: 'damaged', reason: 'Damaged' }),
       await call('POST', `${base()}/locations`, reception, { name: 'Kiosk', type: 'rotation' }),
       await call('POST', `${base()}/items`, reception, {
         name: 'Thing',
@@ -594,12 +594,12 @@ describe("a manager's correction, and setup", () => {
   it('a decrease takes from the sell point first, then the cascade, never past what is there', async () => {
     const tshirt = await itemIdOf('MR-TSHIRT');
     const before = await heldBy(tshirt);
-    const res = await call('POST', `${base()}/adjustments`, manager, { stockItemId: tshirt, delta: -14, reason: 'Damaged / shrinkage' });
+    const res = await call('POST', `${base()}/adjustments`, manager, { stockItemId: tshirt, delta: -14, reasonType: 'damaged', reason: 'Damaged / shrinkage' });
     expect(res.statusCode).toBe(200);
     const after = await heldBy(tshirt);
     expect(after.FOH).toBe(0);
     expect(after.BOH).toBe((before.BOH ?? 0) - (14 - (before.FOH ?? 0)));
-    const tooMany = await call('POST', `${base()}/adjustments`, manager, { stockItemId: tshirt, delta: -100000, reason: 'x' });
+    const tooMany = await call('POST', `${base()}/adjustments`, manager, { stockItemId: tshirt, delta: -100000, reasonType: 'other', reason: 'x' });
     expect(tooMany.statusCode).toBe(200);
     expect(tooMany.json().delta).toBe(-Object.values(after).reduce((sum, count) => sum + count, 0));
     expect(Object.values(await heldBy(tshirt)).every((quantity) => quantity === 0)).toBe(true);
@@ -658,7 +658,7 @@ describe("a manager's correction, and setup", () => {
       { ...body, sizes: [{ ...body.sizes[0], stockItemId: created.stockItemIds[0], startingStock: 99 }] });
     expect(edited.statusCode).toBe(400);
     expect(await heldBy(created.stockItemIds[0]!)).toEqual({ FOH: 7 });
-    const down = await call('POST', `${base()}/adjustments`, manager, { stockItemId: created.stockItemIds[0], locationId: places.get('BOH'), delta: -99, reason: 'Count correction' });
+    const down = await call('POST', `${base()}/adjustments`, manager, { stockItemId: created.stockItemIds[0], locationId: places.get('BOH'), delta: -99, reasonType: 'recount', reason: 'Count correction' });
     expect(down.statusCode).toBe(200);
     expect(down.json().delta).toBe(-7);
     expect(Object.values(await heldBy(created.stockItemIds[0]!)).every((quantity) => quantity === 0)).toBe(true);

@@ -322,7 +322,7 @@ describe('a scripted week of T-shirts: every report equals the hand-summed movem
     );
     // Day 4: one damaged, written off at BOH.
     await ctx.db.transaction((tx) =>
-      adjustStock(tx, actor(), { stockItemId: shirt, locationId: places.get('BOH')!, delta: -1, reason: 'Damaged' }, at(4)),
+      adjustStock(tx, actor(), { stockItemId: shirt, locationId: places.get('BOH')!, delta: -1, reasonType: 'damaged', reason: 'Damaged' }, at(4)),
     );
     // Day 5: the other 18 arrive; the order closes.
     await ctx.db.transaction((tx) =>

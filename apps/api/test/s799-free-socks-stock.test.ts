@@ -275,6 +275,7 @@ describe('a complimentary pair with no sale is an Inventory Adjust', () => {
     const res = await call('POST', `/branches/${branchId}/stock/adjustments`, manager, {
       stockItemId: regularItemId,
       delta: -2,
+      reasonType: 'other',
       reason: STOCK_ADJUST_REASON_COMPLIMENTARY,
     });
     expect(res.statusCode).toBe(200);
@@ -310,6 +311,7 @@ describe('out of stock refuses the free pair too', () => {
     const emptied = await call('POST', `/branches/${branchId}/stock/adjustments`, manager, {
       stockItemId: regularItemId,
       delta: -left,
+      reasonType: 'other',
       reason: STOCK_ADJUST_REASON_COMPLIMENTARY,
     });
     expect(emptied.statusCode).toBe(200);

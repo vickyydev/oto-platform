@@ -233,7 +233,7 @@ describe('gate r4 — offline sale, its refund, a count and a correction up: eve
       ),
     );
     await ctx.db.transaction((tx) =>
-      adjustStock(tx, actor(), { stockItemId: plush, locationId: places.get('BOH')!, delta: 1, reason: 'Found one' }, now),
+      adjustStock(tx, actor(), { stockItemId: plush, locationId: places.get('BOH')!, delta: 1, reasonType: 'found', reason: 'Found one' }, now),
     );
     await expectLedgerAddsUp();
   });

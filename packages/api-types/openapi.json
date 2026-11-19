@@ -19826,7 +19826,7 @@
     },
     "/branches/{branchId}/stock/reports": {
       "get": {
-        "description": "The stock module's reports over business dates, each from the ledger: discrepancies (counts), usage (sales net of refunds), shrinkage (count variances and corrections down), purchases (orders and their receipts) and value (on hand × cost, no cost flagged). Cost figures only to a manager",
+        "description": "The stock module's reports over business dates, each from the ledger: discrepancies (counts), usage (sales net of refunds), shrinkage (count variances and corrections down — today's figure — with corrections up and the net, the period columns, each place, the warnings, the causes and the write-downs and count differences behind it), purchases (orders and their receipts) and value (on hand × cost, no cost flagged). Cost figures only to a manager",
         "parameters": [
           {
             "schema": {
@@ -20045,6 +20045,189 @@
                           },
                           "costMissing": {
                             "type": "boolean"
+                          },
+                          "correctedUp": {
+                            "type": "integer"
+                          },
+                          "correctedUpSatang": {
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "net": {
+                            "type": "integer"
+                          },
+                          "opening": {
+                            "type": "integer"
+                          },
+                          "openingCounted": {
+                            "type": "integer"
+                          },
+                          "received": {
+                            "type": "integer"
+                          },
+                          "sold": {
+                            "type": "integer"
+                          },
+                          "closing": {
+                            "type": "integer"
+                          },
+                          "notExplained": {
+                            "type": "integer"
+                          },
+                          "soldBeyondRecord": {
+                            "type": "integer"
+                          },
+                          "firstCountWithoutOpening": {
+                            "type": "boolean"
+                          },
+                          "countedWithUnsentSales": {
+                            "type": "boolean"
+                          },
+                          "byPlace": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "locationId": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "locationName": {
+                                  "type": "string"
+                                },
+                                "countVariance": {
+                                  "type": "integer"
+                                },
+                                "countedShort": {
+                                  "type": "integer"
+                                },
+                                "adjustedDown": {
+                                  "type": "integer"
+                                },
+                                "total": {
+                                  "type": "integer"
+                                },
+                                "lossSatang": {
+                                  "type": "integer",
+                                  "nullable": true
+                                },
+                                "costMissing": {
+                                  "type": "boolean"
+                                },
+                                "correctedUp": {
+                                  "type": "integer"
+                                },
+                                "correctedUpSatang": {
+                                  "type": "integer",
+                                  "nullable": true
+                                },
+                                "net": {
+                                  "type": "integer"
+                                },
+                                "opening": {
+                                  "type": "integer"
+                                },
+                                "openingCounted": {
+                                  "type": "integer"
+                                },
+                                "received": {
+                                  "type": "integer"
+                                },
+                                "sold": {
+                                  "type": "integer"
+                                },
+                                "closing": {
+                                  "type": "integer"
+                                },
+                                "notExplained": {
+                                  "type": "integer"
+                                },
+                                "soldBeyondRecord": {
+                                  "type": "integer"
+                                },
+                                "firstCountWithoutOpening": {
+                                  "type": "boolean"
+                                },
+                                "countedWithUnsentSales": {
+                                  "type": "boolean"
+                                },
+                                "movedIn": {
+                                  "type": "integer"
+                                },
+                                "movedOut": {
+                                  "type": "integer"
+                                }
+                              },
+                              "required": [
+                                "locationId",
+                                "locationName",
+                                "countVariance",
+                                "countedShort",
+                                "adjustedDown",
+                                "total",
+                                "lossSatang",
+                                "costMissing",
+                                "correctedUp",
+                                "correctedUpSatang",
+                                "net",
+                                "opening",
+                                "openingCounted",
+                                "received",
+                                "sold",
+                                "closing",
+                                "notExplained",
+                                "soldBeyondRecord",
+                                "firstCountWithoutOpening",
+                                "countedWithUnsentSales",
+                                "movedIn",
+                                "movedOut"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "byCause": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "cause": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "enum": [
+                                        "count"
+                                      ]
+                                    },
+                                    {
+                                      "type": "string",
+                                      "enum": [
+                                        "delivery",
+                                        "found",
+                                        "recount",
+                                        "damaged",
+                                        "expired",
+                                        "theft",
+                                        "other",
+                                        "not_given"
+                                      ]
+                                    }
+                                  ]
+                                },
+                                "quantity": {
+                                  "type": "integer"
+                                },
+                                "lossSatang": {
+                                  "type": "integer",
+                                  "nullable": true
+                                }
+                              },
+                              "required": [
+                                "cause",
+                                "quantity",
+                                "lossSatang"
+                              ],
+                              "additionalProperties": false
+                            }
                           }
                         },
                         "required": [
@@ -20058,7 +20241,161 @@
                           "adjustedDown",
                           "total",
                           "lossSatang",
-                          "costMissing"
+                          "costMissing",
+                          "correctedUp",
+                          "correctedUpSatang",
+                          "net",
+                          "opening",
+                          "openingCounted",
+                          "received",
+                          "sold",
+                          "closing",
+                          "notExplained",
+                          "soldBeyondRecord",
+                          "firstCountWithoutOpening",
+                          "countedWithUnsentSales",
+                          "byPlace",
+                          "byCause"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "shrinkageSummary": {
+                      "type": "object",
+                      "properties": {
+                        "sizesWithoutCost": {
+                          "type": "integer"
+                        },
+                        "soldBeyondRecord": {
+                          "type": "integer"
+                        },
+                        "soldBeyondRecordSizes": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "sizesWithoutCost",
+                        "soldBeyondRecord",
+                        "soldBeyondRecordSizes"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "shrinkageEvents": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "count",
+                              "write_down"
+                            ]
+                          },
+                          "stockItemId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "variantLabel": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "groupId": {
+                            "type": "string"
+                          },
+                          "productKind": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "locationId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "locationName": {
+                            "type": "string"
+                          },
+                          "quantity": {
+                            "type": "integer"
+                          },
+                          "expectedQuantity": {
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "countedQuantity": {
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "reasonType": {
+                            "type": "string",
+                            "enum": [
+                              "delivery",
+                              "found",
+                              "recount",
+                              "damaged",
+                              "expired",
+                              "theft",
+                              "other",
+                              "not_given"
+                            ],
+                            "nullable": true
+                          },
+                          "reason": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "by": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "occurredAt": {
+                            "type": "string"
+                          },
+                          "businessDate": {
+                            "type": "string"
+                          },
+                          "lossSatang": {
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "costMissing": {
+                            "type": "boolean"
+                          },
+                          "firstCountWithoutOpening": {
+                            "type": "boolean"
+                          },
+                          "countedWithUnsentSales": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "kind",
+                          "stockItemId",
+                          "name",
+                          "variantLabel",
+                          "groupId",
+                          "productKind",
+                          "locationId",
+                          "locationName",
+                          "quantity",
+                          "expectedQuantity",
+                          "countedQuantity",
+                          "reasonType",
+                          "reason",
+                          "by",
+                          "occurredAt",
+                          "businessDate",
+                          "lossSatang",
+                          "costMissing",
+                          "firstCountWithoutOpening",
+                          "countedWithUnsentSales"
                         ],
                         "additionalProperties": false
                       }
@@ -20240,6 +20577,8 @@
                     "discrepancies",
                     "usage",
                     "shrinkage",
+                    "shrinkageSummary",
+                    "shrinkageEvents",
                     "purchases",
                     "value"
                   ],
@@ -21894,7 +22233,7 @@
     },
     "/branches/{branchId}/stock/adjustments": {
       "post": {
-        "description": "A manager's correction with a reason — shrinkage, damage, staff use. Never past what the branch holds",
+        "description": "A manager's correction with its type (delivery, found, recount, damaged, expired, theft, other) and a reason — shrinkage, damage, staff use. Never past what the branch holds",
         "requestBody": {
           "required": true,
           "content": {
@@ -21915,6 +22254,18 @@
                     "minimum": -1000000,
                     "maximum": 1000000
                   },
+                  "reasonType": {
+                    "type": "string",
+                    "enum": [
+                      "delivery",
+                      "found",
+                      "recount",
+                      "damaged",
+                      "expired",
+                      "theft",
+                      "other"
+                    ]
+                  },
                   "reason": {
                     "type": "string",
                     "minLength": 1,
@@ -21924,6 +22275,7 @@
                 "required": [
                   "stockItemId",
                   "delta",
+                  "reasonType",
                   "reason"
                 ],
                 "additionalProperties": false

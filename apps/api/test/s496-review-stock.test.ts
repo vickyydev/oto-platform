@@ -86,11 +86,11 @@ describe('Adjust from a named place (entry 35)', () => {
   it('an increase lands at the named place; a decrease takes the named place first, then cascades, and clamps', async () => {
     const made = await newItem([{ label: 'Default', startingStock: 5 }]);
     const id = made.stockItemIds[0]!;
-    const up = await call('POST', `${base()}/adjustments`, { stockItemId: id, locationId: places.get('BOH'), delta: 6, reason: 'Delivery' });
+    const up = await call('POST', `${base()}/adjustments`, { stockItemId: id, locationId: places.get('BOH'), delta: 6, reasonType: 'delivery', reason: 'Delivery' });
     expect(up.statusCode, up.body).toBe(200);
     expect(await heldBy(id)).toEqual({ FOH: 5, BOH: 6 });
 
-    const down = await call('POST', `${base()}/adjustments`, { stockItemId: id, locationId: places.get('BOH'), delta: -8, reason: 'Recount' });
+    const down = await call('POST', `${base()}/adjustments`, { stockItemId: id, locationId: places.get('BOH'), delta: -8, reasonType: 'recount', reason: 'Recount' });
     expect(down.statusCode, down.body).toBe(200);
     // BOH first (6), then the cascade from the sell point (2).
     expect(down.json().movements).toEqual([
@@ -99,7 +99,7 @@ describe('Adjust from a named place (entry 35)', () => {
     ]);
     expect(await heldBy(id)).toEqual({ FOH: 3 });
 
-    const past = await call('POST', `${base()}/adjustments`, { stockItemId: id, locationId: places.get('Store'), delta: -50, reason: 'Recount' });
+    const past = await call('POST', `${base()}/adjustments`, { stockItemId: id, locationId: places.get('Store'), delta: -50, reasonType: 'recount', reason: 'Recount' });
     expect(past.statusCode, past.body).toBe(200);
     expect(past.json().delta).toBe(-3);
     expect(await heldBy(id)).toEqual({});

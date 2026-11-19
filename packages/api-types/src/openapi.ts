@@ -9320,7 +9320,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description The stock module's reports over business dates, each from the ledger: discrepancies (counts), usage (sales net of refunds), shrinkage (count variances and corrections down), purchases (orders and their receipts) and value (on hand × cost, no cost flagged). Cost figures only to a manager */
+        /** @description The stock module's reports over business dates, each from the ledger: discrepancies (counts), usage (sales net of refunds), shrinkage (count variances and corrections down — today's figure — with corrections up and the net, the period columns, each place, the warnings, the causes and the write-downs and count differences behind it), purchases (orders and their receipts) and value (on hand × cost, no cost flagged). Cost figures only to a manager */
         get: {
             parameters: {
                 query: {
@@ -9392,6 +9392,81 @@ export interface paths {
                                 total: number;
                                 lossSatang: number | null;
                                 costMissing: boolean;
+                                correctedUp: number;
+                                correctedUpSatang: number | null;
+                                net: number;
+                                opening: number;
+                                openingCounted: number;
+                                received: number;
+                                sold: number;
+                                closing: number;
+                                notExplained: number;
+                                soldBeyondRecord: number;
+                                firstCountWithoutOpening: boolean;
+                                countedWithUnsentSales: boolean;
+                                byPlace: {
+                                    /** Format: uuid */
+                                    locationId: string;
+                                    locationName: string;
+                                    countVariance: number;
+                                    countedShort: number;
+                                    adjustedDown: number;
+                                    total: number;
+                                    lossSatang: number | null;
+                                    costMissing: boolean;
+                                    correctedUp: number;
+                                    correctedUpSatang: number | null;
+                                    net: number;
+                                    opening: number;
+                                    openingCounted: number;
+                                    received: number;
+                                    sold: number;
+                                    closing: number;
+                                    notExplained: number;
+                                    soldBeyondRecord: number;
+                                    firstCountWithoutOpening: boolean;
+                                    countedWithUnsentSales: boolean;
+                                    movedIn: number;
+                                    movedOut: number;
+                                }[];
+                                byCause: {
+                                    cause: "count" | ("delivery" | "found" | "recount" | "damaged" | "expired" | "theft" | "other" | "not_given");
+                                    quantity: number;
+                                    lossSatang: number | null;
+                                }[];
+                            }[];
+                            shrinkageSummary: {
+                                sizesWithoutCost: number;
+                                soldBeyondRecord: number;
+                                soldBeyondRecordSizes: number;
+                            };
+                            shrinkageEvents: {
+                                /** Format: uuid */
+                                id: string;
+                                /** @enum {string} */
+                                kind: "count" | "write_down";
+                                /** Format: uuid */
+                                stockItemId: string;
+                                name: string;
+                                variantLabel: string | null;
+                                groupId: string;
+                                productKind: string | null;
+                                /** Format: uuid */
+                                locationId: string;
+                                locationName: string;
+                                quantity: number;
+                                expectedQuantity: number | null;
+                                countedQuantity: number | null;
+                                /** @enum {string|null} */
+                                reasonType: "delivery" | "found" | "recount" | "damaged" | "expired" | "theft" | "other" | "not_given" | null;
+                                reason: string | null;
+                                by: string | null;
+                                occurredAt: string;
+                                businessDate: string;
+                                lossSatang: number | null;
+                                costMissing: boolean;
+                                firstCountWithoutOpening: boolean;
+                                countedWithUnsentSales: boolean;
                             }[];
                             purchases: {
                                 /** Format: uuid */
@@ -10188,7 +10263,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description A manager's correction with a reason — shrinkage, damage, staff use. Never past what the branch holds */
+        /** @description A manager's correction with its type (delivery, found, recount, damaged, expired, theft, other) and a reason — shrinkage, damage, staff use. Never past what the branch holds */
         post: {
             parameters: {
                 query?: never;
@@ -10206,6 +10281,8 @@ export interface paths {
                         /** Format: uuid */
                         locationId?: string;
                         delta: number;
+                        /** @enum {string} */
+                        reasonType: "delivery" | "found" | "recount" | "damaged" | "expired" | "theft" | "other";
                         reason: string;
                     };
                 };

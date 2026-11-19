@@ -1,6 +1,7 @@
 import { and, asc, desc, eq, inArray, isNull, ne, notInArray, sql, type SQL } from 'drizzle-orm';
 import {
   account,
+  box,
   branch,
   employee,
   factStockDaily,
@@ -20,6 +21,7 @@ import {
   type sale,
   type StockAttentionKind,
   type StockMovementKind,
+  type StockTakeUnsentBox,
 } from '@oto/db';
 import {
   addDaysToIsoDate,
@@ -43,7 +45,9 @@ import {
   type PurchaseOrderView,
   type SaleLineStockShare,
   type SellableStock,
+  STOCK_REASON_TYPE_NOT_GIVEN,
   type StockAdjustBody,
+  type StockAdjustReasonType,
   type StockAdjustResult,
   type StockAttentionLowStock,
   type StockAttentionView,
@@ -59,7 +63,11 @@ import {
   type StockReceiveBody,
   type StockReceiveResult,
   type StockReports,
+  type StockLossEvent,
+  type StockShrinkageCause,
+  type StockShrinkagePlace,
   type StockShrinkageRow,
+  type StockShrinkageSummary,
   type StockUsageRow,
   type StockValueRow,
   type StockTakeBody,
@@ -129,6 +137,8 @@ export interface MovementDraft {
   stockTakeLineId?: string | null;
   transferId?: string | null;
   reason?: string | null;
+  /** A correction's type (adjust only, SCRUM-1012 E5). */
+  reasonType?: StockAdjustReasonType | null;
   unitCostSatang?: number | null;
 }
 
@@ -264,6 +274,7 @@ export async function applyMovements(
         stockTakeLineId: d.stockTakeLineId ?? null,
         transferId: d.transferId ?? null,
         reason: d.reason ?? null,
+        reasonType: d.reasonType ?? null,
         unitCostSatang: d.unitCostSatang ?? null,
         businessDate: ctx.businessDate,
         actorAccountId: ctx.actorAccountId,
@@ -1856,6 +1867,8 @@ export async function adjustStock(
   }
   const adjustmentId = newId();
   const reason = body.reason.trim();
+  // SCRUM-1012 (E5): every correction names its type, stored on each movement.
+  const reasonType = body.reasonType;
   const draft = (locationId: string, quantity: number): MovementDraft => ({
     stockItemId: item.id,
     stockLocationId: locationId,
@@ -1863,6 +1876,7 @@ export async function adjustStock(
     quantity,
     actionId: `adjust:${adjustmentId}:${locationId}`,
     reason,
+    reasonType,
     unitCostSatang: item.unitCostSatang,
   });
   const drafts: MovementDraft[] = [];
@@ -1891,7 +1905,7 @@ export async function adjustStock(
     entityType: 'stock_item',
     entityId: item.id,
     requestId: actor.requestId ?? null,
-    after: { requestedDelta: body.delta, delta: applied.reduce((sum, move) => sum + move.quantity, 0), reason, movements: applied.map((m) => ({ locationId: m.stockLocationId, quantity: m.quantity })) },
+    after: { requestedDelta: body.delta, delta: applied.reduce((sum, move) => sum + move.quantity, 0), reasonType, reason, movements: applied.map((m) => ({ locationId: m.stockLocationId, quantity: m.quantity })) },
   });
   await syncStockAttention(tx, actor, now);
   return {
@@ -2414,6 +2428,7 @@ export async function commitStockTake(
   /** The places this take opens: never counted, nothing ever moved there, nothing held there now. */
   const openingPlaces = new Set([...places.keys()].filter((id) => !started.has(id) && !stocked.has(id)));
   const opening = openingPlaces.size === places.size;
+  const unsentBoxes = await unsentBoxesAt(tx, actor, now);
   const takeId = newId();
   await tx.insert(stockTake).values({
     id: takeId,
@@ -2424,6 +2439,7 @@ export async function commitStockTake(
     countedByAccountId: actor.accountId,
     committedAt: now,
     note: body.note?.trim() || (opening ? 'Opening count' : null),
+    unsentBoxes,
     createdAt: now,
     updatedAt: now,
   });
@@ -2493,6 +2509,7 @@ export async function commitStockTake(
     after: {
       opening,
       openingPlaces: [...openingPlaces].map((id) => ({ locationId: id, place: places.get(id)!.name })),
+      unsentBoxes,
       counted: lines.length,
       adjusted: lines.filter((l) => l.difference !== 0).length,
       flagged: flaggedLines.map((l) => ({
@@ -2510,6 +2527,35 @@ export async function commitStockTake(
   await syncStockAttention(tx, actor, now);
   return { id: takeId, opening, lines };
 }
+
+/**
+ * SCRUM-1012 (E4 c) — THE BOXES THAT HAD NOT SENT EVERYTHING when a count is
+ * committed, stored on the take. End of Day's own check
+ * (`provisionalBoxesOf`, its outbox reason: a box holding records it has not
+ * delivered) — the clock reason is about dating, not about what the record
+ * holds, and is left out. Loaded on demand: end-of-day reaches the sale path,
+ * which imports this module.
+ */
+async function unsentBoxesAt(tx: Tx, actor: StockActor, now: Date): Promise<StockTakeUnsentBox[]> {
+  const { branchClockFor, provisionalBoxesOf } = await import('./end-of-day');
+  const waiting = (await provisionalBoxesOf(tx, await branchClockFor(tx, actor.operatorId, actor.branchId), now)).filter(
+    (b) => b.reason === 'outbox',
+  );
+  if (waiting.length === 0) return [];
+  const roles = new Map(
+    (
+      await tx
+        .select({ id: box.id, role: box.role })
+        .from(box)
+        .where(inArray(box.id, waiting.map((b) => b.boxId)))
+    ).map((b) => [b.id, b.role as string | null]),
+  );
+  return waiting.map((b) => ({ boxId: b.boxId, name: b.name, role: roles.get(b.boxId) ?? null, waiting: b.waiting, since: b.since }));
+}
+
+/** A box that sells: anything but a gate (a gate's unsent records are scans, never sales). */
+const sellsAtCounter = (boxes: readonly StockTakeUnsentBox[] | null | undefined): boolean =>
+  (boxes ?? []).some((b) => b.role !== 'gate');
 
 /**
  * WHEN EACH PLACE'S RECORD STARTED — the first committed count there, or the
@@ -3660,27 +3706,144 @@ export async function stockUsage(
   return out.sort((a, b) => b.net - a.net || a.name.localeCompare(b.name) || a.stockItemId.localeCompare(b.stockItemId));
 }
 
-/** Shrinkage: per size, count variances (each place's opening left out) plus corrections down. */
-export async function stockShrinkage(
+/**
+ * SHRINKAGE — THE LOSS REPORT (SCRUM-1012). Today's figure is kept exactly as
+ * it was: per size, the count differences in the range (each place's opening
+ * left out, `placeOpeningSql`) plus the corrections down, and the loss at the
+ * cost frozen on each of those movements. The owner's six additions sit BESIDE
+ * it, all read from the same ledger (`pos.stock_movement`):
+ *
+ *   E1 the corrections up (a correction typed `delivery` is a delivery, never a
+ *      find) and the net: today's total + corrected up.
+ *   E2 the period columns: opening (the record before the range, plus what a
+ *      place's opening count inside it set), received (deliveries, plus
+ *      corrections typed `delivery` that added units), sold net of refunds,
+ *      closing, and "not explained" = opening + received − sold − closing.
+ *      Read from the ledger it is exactly −net: the count differences and
+ *      corrections, both ways.
+ *   E3 every figure per place, with moves in and out; the places add up to the
+ *      size, and "not explained" at a place counts its moves.
+ *   E4 the warnings: sizes whose loss carries units with no cost; a count that
+ *      was the first at its place with no opening before it; a count
+ *      committed while a box had not sent everything (`stock_take.unsent_boxes`);
+ *      units sold beyond the record (the ledger's shortfall).
+ *   E5 today's figure split by cause: the counts, and each correction's type
+ *      ("not given" for a correction recorded before types).
+ *   E6 every write-down and count difference in the range: who, when, where, why.
+ *
+ * Money only with `withCost` (a manager), as before; every new figure follows it.
+ */
+export interface StockLossReport {
+  rows: StockShrinkageRow[];
+  summary: StockShrinkageSummary;
+  events: StockLossEvent[];
+}
+
+type CauseKey = StockShrinkageCause['cause'];
+
+export async function stockLossReport(
   db: Exec,
   scope: ReportScope,
   items?: Map<string, ReportItem>,
-): Promise<StockShrinkageRow[]> {
+): Promise<StockLossReport> {
   const byId = items ?? (await reportItems(db, scope.operatorId, scope.branchId));
+  // Every place of the branch, retired and removed ones too: a past movement may name one.
+  const placeRows = await db
+    .select({ id: stockLocation.id, name: stockLocation.name })
+    .from(stockLocation)
+    .where(eq(stockLocation.branchId, scope.branchId))
+    .orderBy(desc(stockLocation.sellPoint), asc(stockLocation.name), asc(stockLocation.id));
+  const placeNames = new Map(placeRows.map((p) => [p.id, p.name]));
+  const placeOrder = placeRows.map((p) => p.id);
+
+  // One pass over the ledger up to the range's end, per size and place. A
+  // count's "opening" is asked only of a count inside the range (the CASE keeps
+  // the correlated question off every other row).
   const { rows } = await db.execute<{
     stock_item_id: string;
-    count_variance: string | number;
-    counted_short: string | number;
-    adjusted_down: string | number;
-    moved_cost: string | number | null;
-    cost_missing: boolean;
+    stock_location_id: string;
+    opening_record: string | number | null;
+    closing: string | number | null;
+    opening_counted: string | number | null;
+    received: string | number | null;
+    sold: string | number | null;
+    moved_in: string | number | null;
+    moved_out: string | number | null;
+    count_variance: string | number | null;
+    counted_short: string | number | null;
+    adjusted_down: string | number | null;
+    corrected_up: string | number | null;
+    sold_beyond: string | number | null;
+    loss_cost: string | number | null;
+    cost_missing: boolean | null;
+    up_cost: string | number | null;
   }>(sql`
-    select m.stock_item_id,
-           sum(case when m.kind = 'count' then m.quantity else 0 end)::bigint as count_variance,
-           count(*) filter (where m.kind = 'count' and m.quantity < 0)::bigint as counted_short,
-           sum(case when m.kind = 'adjust' then m.quantity else 0 end)::bigint as adjusted_down,
-           sum(m.quantity * m.unit_cost_satang)::bigint as moved_cost,
-           bool_or(m.unit_cost_satang is null) as cost_missing
+    with mv as (
+      select m.stock_item_id, m.stock_location_id, m.kind, m.quantity, m.shortfall, m.unit_cost_satang, m.reason_type,
+             m.business_date < ${scope.from}::date as before,
+             (case when m.kind = 'count' and m.business_date >= ${scope.from}::date and l.id is not null
+                   then ${placeOpeningSql('l', 't')} else false end) as opening_line
+        from pos.stock_movement m
+        left join pos.stock_take_line l on l.id = m.stock_take_line_id
+        left join pos.stock_take t on t.id = l.stock_take_id
+       where m.operator_id = ${scope.operatorId}::uuid and m.branch_id = ${scope.branchId}::uuid
+         and m.business_date <= ${scope.to}::date
+    ), flagged as (
+      select mv.*,
+             (not before and ((kind = 'count' and not opening_line) or (kind = 'adjust' and quantity < 0))) as loss,
+             (not before and kind = 'adjust' and quantity > 0 and reason_type is distinct from 'delivery') as up
+        from mv
+    )
+    select stock_item_id, stock_location_id,
+           sum(quantity) filter (where before)::bigint as opening_record,
+           sum(quantity)::bigint as closing,
+           sum(quantity) filter (where not before and kind = 'count' and opening_line)::bigint as opening_counted,
+           sum(quantity) filter (where not before and (kind = 'receive'
+                                   or (kind = 'adjust' and quantity > 0 and reason_type = 'delivery')))::bigint as received,
+           (-sum(quantity) filter (where not before and kind in ('sale','offline_sale','refund')))::bigint as sold,
+           sum(quantity) filter (where not before and kind = 'transfer_in')::bigint as moved_in,
+           (-sum(quantity) filter (where not before and kind = 'transfer_out'))::bigint as moved_out,
+           sum(quantity) filter (where not before and kind = 'count' and not opening_line)::bigint as count_variance,
+           count(*) filter (where not before and kind = 'count' and not opening_line and quantity < 0)::bigint as counted_short,
+           sum(quantity) filter (where not before and kind = 'adjust' and quantity < 0)::bigint as adjusted_down,
+           sum(quantity) filter (where up)::bigint as corrected_up,
+           sum(shortfall) filter (where not before and kind in ('sale','offline_sale'))::bigint as sold_beyond,
+           sum(quantity * unit_cost_satang) filter (where loss)::bigint as loss_cost,
+           bool_or(unit_cost_satang is null) filter (where loss) as cost_missing,
+           sum(quantity * unit_cost_satang) filter (where up)::bigint as up_cost
+      from flagged
+     group by stock_item_id, stock_location_id`);
+
+  // E6 — the write-downs and count differences themselves, with E4 b and c:
+  // the same movements today's figure adds up.
+  const { rows: moves } = await db.execute<{
+    id: string;
+    stock_item_id: string;
+    stock_location_id: string;
+    kind: 'count' | 'adjust';
+    quantity: number;
+    reason: string | null;
+    reason_type: StockAdjustReasonType | null;
+    actor_account_id: string | null;
+    occurred_at: Date | string;
+    business_date: string;
+    unit_cost_satang: number | null;
+    expected_quantity: number | null;
+    counted_quantity: number | null;
+    first_at_place: boolean | null;
+    unsent_boxes: StockTakeUnsentBox[] | null;
+  }>(sql`
+    select m.id, m.stock_item_id, m.stock_location_id, m.kind, m.quantity, m.reason, m.reason_type,
+           m.actor_account_id, m.occurred_at, to_char(m.business_date, 'YYYY-MM-DD') as business_date,
+           m.unit_cost_satang, l.expected_quantity, l.counted_quantity,
+           (case when l.id is null then false else not exists (
+              select 1 from pos.stock_take_line prior_line
+                join pos.stock_take prior_take on prior_take.id = prior_line.stock_take_id
+               where prior_take.branch_id = t.branch_id
+                 and prior_take.status = 'committed'
+                 and prior_line.stock_location_id = l.stock_location_id
+                 and (prior_take.committed_at, prior_take.id) < (t.committed_at, t.id)) end) as first_at_place,
+           t.unsent_boxes
       from pos.stock_movement m
       left join pos.stock_take_line l on l.id = m.stock_take_line_id
       left join pos.stock_take t on t.id = l.stock_take_id
@@ -3688,25 +3851,180 @@ export async function stockShrinkage(
        and m.business_date between ${scope.from}::date and ${scope.to}::date
        and ((m.kind = 'count' and (l.id is null or not ${placeOpeningSql('l', 't')}))
             or (m.kind = 'adjust' and m.quantity < 0))
-     group by m.stock_item_id`);
-  const out: StockShrinkageRow[] = [];
-  for (const r of rows) {
-    const item = byId.get(r.stock_item_id);
+     order by m.occurred_at desc, m.id desc`);
+
+  const names = await staffNames(db, moves.map((m) => m.actor_account_id));
+  const events: StockLossEvent[] = [];
+  const flags = new Map<string, { first: boolean; unsent: boolean }>();
+  const causes = new Map<string, Map<CauseKey, { quantity: number; cost: number }>>();
+  for (const m of moves) {
+    const item = byId.get(m.stock_item_id);
     if (!item) continue;
+    const isCount = m.kind === 'count';
+    const first = isCount && m.first_at_place === true;
+    const unsent = isCount && sellsAtCounter(m.unsent_boxes);
+    const pk = pairKey(m.stock_item_id, m.stock_location_id);
+    const seen = flags.get(pk) ?? { first: false, unsent: false };
+    flags.set(pk, { first: seen.first || first, unsent: seen.unsent || unsent });
+    // A correction recorded before types (0134) reads as "not given" — never guessed.
+    const reasonType = isCount ? null : (m.reason_type ?? STOCK_REASON_TYPE_NOT_GIVEN);
+    const cause: CauseKey = reasonType ?? 'count';
+    const sizeCauses = causes.get(m.stock_item_id) ?? new Map<CauseKey, { quantity: number; cost: number }>();
+    const sofar = sizeCauses.get(cause) ?? { quantity: 0, cost: 0 };
+    sizeCauses.set(cause, {
+      quantity: sofar.quantity + m.quantity,
+      cost: sofar.cost + m.quantity * (m.unit_cost_satang ?? 0),
+    });
+    causes.set(m.stock_item_id, sizeCauses);
+    events.push({
+      id: m.id,
+      kind: isCount ? 'count' : 'write_down',
+      ...sizeOf(item),
+      locationId: m.stock_location_id,
+      locationName: placeNames.get(m.stock_location_id) ?? 'Place',
+      quantity: m.quantity,
+      expectedQuantity: isCount ? m.expected_quantity : null,
+      countedQuantity: isCount ? m.counted_quantity : null,
+      reasonType,
+      reason: m.reason,
+      by: m.actor_account_id ? (names.get(m.actor_account_id) ?? 'Staff') : null,
+      occurredAt: new Date(m.occurred_at).toISOString(),
+      businessDate: m.business_date,
+      lossSatang: scope.withCost && m.unit_cost_satang !== null ? -m.quantity * m.unit_cost_satang : null,
+      costMissing: m.unit_cost_satang === null,
+      firstCountWithoutOpening: first,
+      countedWithUnsentSales: unsent,
+    });
+  }
+
+  const sizes = new Map<string, StockShrinkagePlace[]>();
+  for (const r of rows) {
+    if (!byId.has(r.stock_item_id)) continue;
+    const pk = pairKey(r.stock_item_id, r.stock_location_id);
     const countVariance = int(r.count_variance);
     const adjustedDown = int(r.adjusted_down);
-    if (countVariance === 0 && adjustedDown === 0) continue;
-    out.push({
-      ...sizeOf(item),
+    const correctedUp = int(r.corrected_up);
+    const openingCounted = int(r.opening_counted);
+    const opening = int(r.opening_record) + openingCounted;
+    const received = int(r.received);
+    const sold = int(r.sold);
+    const movedIn = int(r.moved_in);
+    const movedOut = int(r.moved_out);
+    const closing = int(r.closing);
+    const total = countVariance + adjustedDown;
+    const place: StockShrinkagePlace = {
+      locationId: r.stock_location_id,
+      locationName: placeNames.get(r.stock_location_id) ?? 'Place',
       countVariance,
       countedShort: int(r.counted_short),
       adjustedDown,
-      total: countVariance + adjustedDown,
-      lossSatang: scope.withCost ? -int(r.moved_cost) : null,
-      costMissing: r.cost_missing,
+      total,
+      lossSatang: scope.withCost ? -int(r.loss_cost) : null,
+      costMissing: r.cost_missing === true,
+      correctedUp,
+      correctedUpSatang: scope.withCost ? int(r.up_cost) : null,
+      net: total + correctedUp,
+      opening,
+      openingCounted,
+      received,
+      sold,
+      closing,
+      notExplained: opening + received + movedIn - sold - movedOut - closing,
+      soldBeyondRecord: int(r.sold_beyond),
+      firstCountWithoutOpening: flags.get(pk)?.first ?? false,
+      countedWithUnsentSales: flags.get(pk)?.unsent ?? false,
+      movedIn,
+      movedOut,
+    };
+    sizes.set(r.stock_item_id, [...(sizes.get(r.stock_item_id) ?? []), place]);
+  }
+
+  const out: StockShrinkageRow[] = [];
+  let soldBeyondRecord = 0;
+  let soldBeyondRecordSizes = 0;
+  for (const [stockItemId, places] of sizes) {
+    const sum = (pick: (p: StockShrinkagePlace) => number) => places.reduce((n, p) => n + pick(p), 0);
+    const beyond = sum((p) => p.soldBeyondRecord);
+    if (beyond > 0) {
+      soldBeyondRecord += beyond;
+      soldBeyondRecordSizes += 1;
+    }
+    // A size is reported when one of its places has a count difference or a
+    // correction (a delivery aside): a loss at the counter and a find in the
+    // store room no longer cancel out of sight.
+    if (!places.some((p) => p.countVariance !== 0 || p.adjustedDown !== 0 || p.correctedUp !== 0)) continue;
+    const item = byId.get(stockItemId)!;
+    const countVariance = sum((p) => p.countVariance);
+    const adjustedDown = sum((p) => p.adjustedDown);
+    const correctedUp = sum((p) => p.correctedUp);
+    const opening = sum((p) => p.opening);
+    const received = sum((p) => p.received);
+    const sold = sum((p) => p.sold);
+    const closing = sum((p) => p.closing);
+    const total = countVariance + adjustedDown;
+    const byCause = [...(causes.get(stockItemId) ?? new Map<CauseKey, { quantity: number; cost: number }>())]
+      .filter(([, c]) => c.quantity !== 0)
+      .map(([cause, c]) => ({ cause, quantity: c.quantity, lossSatang: scope.withCost ? -c.cost : null }))
+      .sort((a, b) => a.quantity - b.quantity || a.cause.localeCompare(b.cause));
+    out.push({
+      ...sizeOf(item),
+      countVariance,
+      countedShort: sum((p) => p.countedShort),
+      adjustedDown,
+      total,
+      lossSatang: scope.withCost ? sum((p) => p.lossSatang ?? 0) : null,
+      costMissing: places.some((p) => p.costMissing),
+      correctedUp,
+      correctedUpSatang: scope.withCost ? sum((p) => p.correctedUpSatang ?? 0) : null,
+      net: total + correctedUp,
+      opening,
+      openingCounted: sum((p) => p.openingCounted),
+      received,
+      sold,
+      closing,
+      notExplained: opening + received - sold - closing,
+      soldBeyondRecord: beyond,
+      firstCountWithoutOpening: places.some((p) => p.firstCountWithoutOpening),
+      countedWithUnsentSales: places.some((p) => p.countedWithUnsentSales),
+      byPlace: places
+        .filter((p) =>
+          [p.countVariance, p.adjustedDown, p.correctedUp, p.opening, p.received, p.sold, p.closing, p.movedIn, p.movedOut, p.soldBeyondRecord].some(
+            (n) => n !== 0,
+          ),
+        )
+        .sort((a, b) => placeOrder.indexOf(a.locationId) - placeOrder.indexOf(b.locationId)),
+      byCause,
     });
   }
-  return out.sort((a, b) => a.total - b.total || a.name.localeCompare(b.name) || a.stockItemId.localeCompare(b.stockItemId));
+  out.sort((a, b) => a.total - b.total || a.name.localeCompare(b.name) || a.stockItemId.localeCompare(b.stockItemId));
+  return {
+    rows: out,
+    summary: {
+      sizesWithoutCost: out.filter((r) => r.total < 0 && r.costMissing).length,
+      soldBeyondRecord,
+      soldBeyondRecordSizes,
+    },
+    events,
+  };
+}
+
+/** Shrinkage: per size, count variances (each place's opening left out) plus corrections down, and SCRUM-1012's figures beside them. */
+export async function stockShrinkage(
+  db: Exec,
+  scope: ReportScope,
+  items?: Map<string, ReportItem>,
+): Promise<StockShrinkageRow[]> {
+  return (await stockLossReport(db, scope, items)).rows;
+}
+
+/** The loss report's three parts, as the reports read names them. */
+async function lossFields(
+  db: Exec,
+  scope: ReportScope,
+  items: Map<string, ReportItem>,
+): Promise<Pick<StockReports, 'shrinkage' | 'shrinkageSummary' | 'shrinkageEvents'>> {
+  const loss = await stockLossReport(db, scope, items);
+  return { shrinkage: loss.rows, shrinkageSummary: loss.summary, shrinkageEvents: loss.events };
 }
 
 /** Purchases: the orders created in the range, each line's receipts read back from the ledger. */
@@ -3832,7 +4150,7 @@ export async function stockReports(db: Exec, scope: ReportScope): Promise<StockR
     withCost: scope.withCost,
     discrepancies: await stockDiscrepancies(db, scope, items),
     usage: await stockUsage(db, scope, items),
-    shrinkage: await stockShrinkage(db, scope, items),
+    ...(await lossFields(db, scope, items)),
     purchases: await stockPurchases(db, scope, items),
     value: await stockValue(db, scope, items),
   };
