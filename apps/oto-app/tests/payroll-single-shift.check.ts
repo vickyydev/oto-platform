@@ -18,13 +18,18 @@
 //      other person of the golden month is unchanged line for line; the run
 //      calculated twice is the same run; the readers that do not pay (the
 //      feeds' OT bank, the month inputs, the statutory documents) do not take
-//      the former employee.
+//      the former employee. A second invitation on the same day (the same
+//      shift made twice) adds no pay: the day is paid once, and the run says
+//      so. A contractor's fee is not paid for one shift, and the run's
+//      not-paid list says why.
 //   3. Changed after the run: a pay way switched after the GM's confirmation
 //      makes the run stale and the Owner lock refuses until it is confirmed
 //      again; the lock freezes the shift's line, payslip, bank transfer and
-//      report row; a change after the lock leaves the locked run as it was;
-//      the reopened version pays it once, or not at all once it is casual;
-//      a shift removed from the schedule is no longer paid.
+//      report row; a change after the lock leaves the locked run as it was,
+//      and the invitation refuses an old-contract shift, or a change of pay,
+//      in the locked month; the reopened version pays it once, or not at all
+//      once it is casual; a shift removed from the schedule is no longer
+//      paid, and one the person had clocked for is named in the not-paid list.
 //
 // Usage, from apps/oto-app, with DATABASE_URL naming a database whose otoapp
 // schema the app's migrator has built (CI's OTO App job runs exactly this):
@@ -39,6 +44,7 @@ import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
 import { gunzipSync, gzipSync, strFromU8, strToU8 } from "fflate";
 import { projectRun, stableNames } from "./payroll/run-projection";
+import { SINGLE_SHIFT_REFUSALS } from "../shared/singleShift";
 
 // The engine's answer depends on the ORDER of the people's ids (the world is
 // read in id order and a pool's last cents go by that order), and the golden
@@ -141,7 +147,7 @@ try {
   await clock(monthly, `${MONTH}-17`);
   const casualA = await singleShift(monthly, `${MONTH}-24`, "casual_day_rate", 1200);
   const shiftB = await singleShift(dayRate, `${MONTH}-10`);
-  void casualA; void shiftB;
+  void casualA;
 
   console.log("2. the same month with single shifts:");
   const preview = async () => (await ok("admin", "GET", `${base}/preview`)) as { calculation: Calc; result: { people: Person[] }; excluded: { employeeId: string; reason: string }[]; stale: boolean; frozen: boolean };
@@ -193,6 +199,34 @@ try {
     for (const file of ["month-end.ts", "lifecycle.ts"]) assert.ok(source(file).includes("PAY_READER"), file);
   });
 
+  await check("the same shift made twice: one Single shift line, one food allowance, the same gross; the run names the second as already paid", async () => {
+    const twice = await singleShift(monthly, `${MONTH}-17`);
+    const again = await preview();
+    const a = personOf(again.calculation, monthly)!;
+    assert.deepEqual(a.lines.filter((l) => l.component === "single-shift").map((l) => [l.id, l.amount]), [[`single-shift:${shiftA.invitation}`, 500]]);
+    assert.equal(a.lines.filter((l) => l.component === "food").length, 1);
+    assert.equal(a.gross, 560);
+    assert.ok(again.calculation.exceptions.some((e) => e.kind === "single-shift" && e.staffId === monthly && e.message.includes(`a second single shift on ${MONTH}-17; the day is paid once`)));
+    await q("delete from single_shift_invitations where id = $1", [twice.invitation]);
+    await q("delete from schedule_assignments where id = $1", [twice.assignment]);
+    assert.deepEqual((await preview()).calculation.entities, first.calculation.entities, "taken away again, the run is as it was");
+  });
+  await check("a contractor's fixed fee is not paid for one shift: listed as not paid, with why", async () => {
+    const contractor = await former("ZZ TEST Former C", { workerType: "contractor", monthlySalary: 0, dayRate: 0, fixedFee: 30000, ssoEligible: false, pnd1Eligible: false, foodAllowanceEligible: false });
+    const made = await singleShift(contractor, `${MONTH}-18`);
+    await clock(contractor, `${MONTH}-18`);
+    const withIt = await preview();
+    assert.equal(personOf(withIt.calculation, contractor), undefined);
+    assert.ok(withIt.excluded.some((x) => x.employeeId === contractor && x.reason === `Single shift on ${MONTH}-18 (on the old contract) is not paid by this run: the old contract is a contractor's fixed fee, and how one shift of a fee is paid is not decided.`), JSON.stringify(withIt.excluded));
+    // Taken away again (its shift, clock and invitation), so the month goes on as the rest of this check expects.
+    await q("delete from single_shift_invitations where id = $1", [made.invitation]);
+    await q("delete from schedule_assignments where id = $1", [made.assignment]);
+    await q("delete from time_events where employee_id = $1", [contractor]);
+    const after = await preview();
+    assert.ok(!after.excluded.some((x) => x.employeeId === contractor && x.reason.includes("Single shift")));
+    assert.deepEqual(after.calculation.entities, first.calculation.entities, "nobody's pay moved");
+  });
+
   console.log("3. changed after the run:");
   // Lock needs every person's upload details, as the golden's lifecycle leg gives them (no number moves).
   const { fictionalThaiId } = await import("../server/payroll/engine/upload-common");
@@ -233,13 +267,28 @@ try {
     const summary = files.find((f) => f.filename.endsWith("branch-summary.csv"))!;
     assert.match(text(summary), /ZZ TEST Former A/);
   });
+  await check("in the locked month the invitation routes refuse an old-contract shift and a change of pay, with nothing written", async () => {
+    // The routes on a clock set to a day of the month before its shifts (the routes refuse a past day).
+    const during = await serve({ HARNESS_FAKE_NOW: `${MONTH}-05T03:00:00.000Z` });
+    const gDuring: Group = { ...g, cookies: {} as Group["cookies"] };
+    await signIn(during, gDuring);
+    const callDuring = caller(during);
+    const before = await q("select id, pay_basis, casual_day_rate from single_shift_invitations where tenant_id = $1 order by id", [tenant]);
+    const assignments = await q("select id from schedule_assignments where tenant_id = $1 order by id", [tenant]);
+    const made = await callDuring(gDuring, "admin", "POST", "/api/schedule/single-shift/invitations", { employeeId: monthly, shiftRowId: row.id, shiftDate: `${MONTH}-20` });
+    assert.deepEqual([made.status, made.body.reasonCode, made.body.message], [409, "PAYROLL_LOCKED", SINGLE_SHIFT_REFUSALS.payrollLocked], JSON.stringify(made.body));
+    const changed = await callDuring(gDuring, "admin", "PATCH", `/api/schedule/single-shift/invitations/${shiftA.invitation}`, { payWay: "casual_day_rate", casualDayRate: 900 });
+    assert.deepEqual([changed.status, changed.body.reasonCode], [409, "PAYROLL_LOCKED"], JSON.stringify(changed.body));
+    assert.deepEqual(await q("select id, pay_basis, casual_day_rate from single_shift_invitations where tenant_id = $1 order by id", [tenant]), before);
+    assert.deepEqual(await q("select id from schedule_assignments where tenant_id = $1 order by id", [tenant]), assignments);
+  });
   await check("a change after the lock leaves the locked run as it was", async () => {
     await setWay("casual_day_rate", 900);
     const frozen = await preview();
     assert.equal(frozen.frozen, true);
     assert.equal(personOf(frozen.calculation, monthly)!.lines.find((l) => l.component === "single-shift")!.amount, 500);
   });
-  await check("the reopened version pays the shift once, or not at all once it is casual; a removed shift is not paid", async () => {
+  await check("the reopened version pays the shift once, or not at all once it is casual; a removed shift is not paid, and one clocked for is named", async () => {
     await ok("operator_admin", "POST", `${base}/reopen`, { reason: "ZZ TEST correction", fromVersion: 1 });
     const casual = await preview();
     assert.equal(personOf(casual.calculation, monthly), undefined, "on a casual day rate it is not paid by this run");
@@ -247,9 +296,15 @@ try {
     await setWay("old_contract", null);
     const again = await preview();
     assert.equal(personOf(again.calculation, monthly)!.lines.filter((l) => l.component === "single-shift").length, 1, "once, in this version");
+    // SCRUM-1055: shiftA was clocked 10:00 to 19:00; shiftB never was.
     await q("delete from schedule_assignments where id = $1", [shiftA.assignment]);
+    await q("delete from schedule_assignments where id = $1", [shiftB.assignment]);
     const removed = await preview();
     assert.equal(personOf(removed.calculation, monthly), undefined, "a shift taken off the schedule is not paid");
+    const named = removed.excluded.filter((x) => x.employeeId === monthly);
+    assert.equal(named.length, 1);
+    assert.ok(named[0]!.reason.includes(`Single shift on ${MONTH}-17 (on the old contract) is not paid by this run: it was taken off the schedule, but the person has a clock record that day.`), named[0]!.reason);
+    assert.ok(!removed.excluded.some((x) => x.employeeId === dayRate), "a removed shift never clocked for is not named");
   });
 
   console.log(`payroll-single-shift.check: ${checks} checks passed`);

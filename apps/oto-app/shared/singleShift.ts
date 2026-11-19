@@ -58,7 +58,12 @@ export const SINGLE_SHIFT_REFUSALS = {
   pastDate: "A single shift cannot be added on a past date.",
   rate: "Enter the casual day rate in whole baht, more than zero.",
   pastChange: "The pay of a shift on a past date cannot be changed.",
+  /** SCRUM-1055: the month's run that would pay the old contract is already locked (or paid). */
+  payrollLocked: "Payroll for this month is locked, so a shift on the old contract could not be paid. The Owner must reopen the month in Payroll first.",
 } as const;
+
+/** SCRUM-1055: what the invite dialog says beside a former employee payroll has no profile for. */
+export const NO_PAYROLL_PROFILE_HINT = "No payroll profile: payroll cannot pay the old contract until one is made.";
 
 /**
  * What the kiosk shows a former employee about their single shift
