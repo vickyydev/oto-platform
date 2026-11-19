@@ -358,6 +358,13 @@
       "when": 1794842584245,
       "tag": "0052_otoapp_beo_bar_charge_provenance",
       "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1795095391020,
+      "tag": "0053_otoapp_beo_extra_guests_socks",
+      "breakpoints": true
     }
   ]
 }
