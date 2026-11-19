@@ -106,6 +106,10 @@ import { depositMovedWords, type DepositSaveNote, type OneDeposit } from "@share
 import { beoBillingMutationScope } from "@/lib/beo-deposit-buffer";
 import { bahtOfSatang, isTillPartyEventType, openAdditionalBillsOf, partyBillStateOf, tillFiguresOf } from "@shared/tillBilling";
 import { BeoGuestsSocks } from "./beo-guests-socks";
+import { BeoActivityRow, type BeoActivity } from "./beo-activity-row";
+import { ServingTimeButton, ServingTimeLine } from "./beo-serving-time";
+import { lineServingTagOf, servingKeysOf } from "@shared/beoServingTimes";
+import type { ActivityPersonEntry } from "@shared/beoActivityPeople";
 import { beoDishNameOf } from "@shared/beoAdultWaffles";
 import { additionalBillingToastOf, mayBillAtSave, type AdditionalBillingResult } from "@shared/beoBillingSource";
 import type { PartyMenuLine } from "@shared/partyMenuItem";
@@ -260,6 +264,9 @@ type MenuLine = {
   productCode?: string;
   chargeApproved?: boolean;
   billingSync?: string;
+  /** SCRUM-1033: the dish's own serving time and the group it is served under (shared/beoServingTimes.ts). */
+  serviceTime?: string;
+  serviceGroup?: string;
 };
 
 /** `qty` and `note` are the set menu's own (SCRUM-803); an older item has neither. */
@@ -493,8 +500,10 @@ function PackageLineItemRow({ item, idx, packageItems, setPackageItems }: {
   );
 }
 
-function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab, charge, paid, disabled = false }: {
+function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab, menuTime, charge, paid, disabled = false }: {
   item: MenuLine; idx: number; menuItems: MenuLine[]; setMenuItems: React.Dispatch<React.SetStateAction<MenuLine[]>>; menuTab: string;
+  /** SCRUM-1033: the menu's own service time, beside which a dish may have one of its own. */
+  menuTime?: string;
   /** SCRUM-949: the line's charge as its list decides it (the adults' copy of a kids' line). */
   charge?: BeoExtraCharge;
   /** SCRUM-1002 ruling 3: how many of this line the till has billed and paid; none when not paid. */
@@ -656,6 +665,15 @@ function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab, charge, 
             <MessageSquare className="h-3 w-3" />
           </button>
         )}
+        {/* SCRUM-1033: the dish's own serving time, or the group it is served under. */}
+        <ServingTimeButton
+          lines={menuItems}
+          index={idx}
+          menuTime={menuTime}
+          onLines={(next) => changeMenu(next)}
+          disabled={disabled}
+          testId={`button-serving-${menuTab}-${idx}`}
+        />
         <Button disabled={disabled}
           variant="ghost"
           size="icon"
@@ -698,6 +716,8 @@ function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab, charge, 
           </Button>
         </div>
       )}
+      {/* SCRUM-1033: the dish's own serving time, read under its row. */}
+      <ServingTimeLine line={item} className="pl-16" testId={`text-serving-${menuTab}-${idx}`} />
     </div>
   );
 }
@@ -807,7 +827,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
   const [fetchDeclined, setFetchDeclined] = useState<DeclinedChanges>(NO_DECLINED);
   const responsibleSearchRef = useRef<HTMLInputElement>(null);
 
-  const { data: entertainmentItems = [] } = useQuery<any[]>({
+  const { data: entertainmentItems = [] } = useQuery<BeoActivity[]>({
     queryKey: ["/api/events", eventId, "beo", "entertainment-items"],
     queryFn: async () => {
       const res = await fetch(`/api/events/${eventId}/beo/entertainment-items`, { credentials: "include" });
@@ -837,13 +857,24 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
   });
 
   const updateEntItemMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<{ customName: string; startTime: string | null }> }) => {
+    mutationFn: async ({ id, data }: { id: string; data: Partial<{ customName: string; startTime: string | null; notes: string | null }> }) => {
       const res = await apiRequest("PUT", `/api/events/${eventId}/beo/entertainment-items/${id}`, data);
       if (!res.ok) throw new Error("Failed to update entertainment item");
       return res.json();
     },
     onSuccess: actsChanged,
     onError: () => toast({ title: "Failed to update entertainment", variant: "destructive" }),
+  });
+
+  // SCRUM-1032: an activity's people, all of them in their order, written at once (the BEO's record only).
+  const peopleEntItemMutation = useMutation({
+    mutationFn: async ({ id, people }: { id: string; people: ActivityPersonEntry[] }) => {
+      const res = await apiRequest("PUT", `/api/events/${eventId}/beo/entertainment-items/${id}/people`, { people });
+      if (!res.ok) throw new Error("Failed to update the activity's people");
+      return res.json();
+    },
+    onSuccess: actsChanged,
+    onError: (error: Error) => toast({ title: "The activity's people were not saved", description: error.message, variant: "destructive" }),
   });
 
   const deleteEntItemMutation = useMutation({
@@ -1193,6 +1224,8 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
             ...(m.chargeApproved === true ? { chargeApproved: true, billingSync: m.billingSync } : {}),
             // SCRUM-828: a new item's till code rides with its line through every Save.
             ...(typeof m.productCode === "string" && m.productCode.trim() ? { productCode: m.productCode.trim() } : {}),
+            // SCRUM-1033: the dish's own serving time and group, only when it stores them.
+            ...servingKeysOf(m),
           });
           if (Array.isArray(menus.kids)) setKidsMenu(menus.kids.map(mapMenu));
           if (Array.isArray(menus.adults)) setAdultsMenu(menus.adults.map(mapMenu));
@@ -1228,6 +1261,8 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
           ...(m.chargeApproved === true ? { chargeApproved: true, billingSync: m.billingSync } : {}),
           // SCRUM-905: a drink picked from the till's menu keeps its till code through every Save.
           ...(typeof m.productCode === "string" && m.productCode.trim() ? { productCode: m.productCode.trim() } : {}),
+          // SCRUM-1033: the drink's own serving time and group, only when it stores them.
+          ...servingKeysOf(m),
         });
         if (Array.isArray(bp.items)) setBarItems(bp.items.map(mapBarItem));
       }
@@ -3347,6 +3382,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                                             menuItems={resolvedMenu}
                                                             setMenuItems={setResolvedMenu}
                                                             menuTab={resolvedMenuTab}
+                                                            menuTime={resolvedMenuTab === "kids" ? kidsFoodTime : adultsFoodTime}
                                                           />
                                                         );
                                                       })}
@@ -3492,6 +3528,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                                     menuItems={currentMenu}
                                                     setMenuItems={setCurrentMenu}
                                                     menuTab="kids"
+                                                    menuTime={kidsFoodTime}
                                                     paid={paidLines.get(item.id)}
                                                   />
                                                 );
@@ -3597,6 +3634,9 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                             <span className="text-[10px] font-mono text-muted-foreground shrink-0" title={tillCodeTitle(tillMenu.index, item.productCode)}>{item.productCode}</span>
                                           )}
                                           <TillCodeMark code={item.productCode} testId={`adults-mirror-code-dead-${index}`} />
+                                          {lineServingTagOf(item, kidsFoodTime) && (
+                                            <span className="shrink-0 rounded-full border border-sky-500/30 bg-sky-500/10 px-2 font-mono text-[11px] text-sky-700 dark:text-sky-300" data-testid={`adults-mirror-serving-${index}`}>{lineServingTagOf(item, kidsFoodTime)}</span>
+                                          )}
                                         </div>
                                       ))
                                     )}
@@ -3638,6 +3678,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                             menuItems={currentMenu}
                                             setMenuItems={setCurrentMenu}
                                             menuTab="adults"
+                                            menuTime={adultsFoodTime}
                                             charge={extraCharges.kitchen.adults[index]}
                                             paid={paidLines.get(item.id)}
                                           />
@@ -3978,6 +4019,15 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                 testId={`bar-${idx}`}
                               />
                             )}
+                            {/* SCRUM-1033: the drink's own serving time, or the group it is served under. */}
+                            <ServingTimeButton
+                              lines={barItems}
+                              index={idx}
+                              menuTime={barServiceTime}
+                              onLines={(next) => setBarItems(next)}
+                              disabled={readOnly}
+                              testId={`button-serving-bar-${idx}`}
+                            />
                             <Button
                               type="button"
                               variant="ghost"
@@ -4000,6 +4050,8 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                               data-testid={`bar-item-notes-${idx}`}
                             />
                           </div>
+                          {/* SCRUM-1033: the drink's own serving time, read under its row. */}
+                          <ServingTimeLine line={item} className="pl-[4.25rem]" testId={`text-serving-bar-${idx}`} />
                         </div>
                       ))}
                       <div className="flex gap-2 pt-1">
@@ -4101,56 +4153,24 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                         </p>
                       ) : (
                         <div className="space-y-2">
-                          {entertainmentItems.map((act: any, idx: number) => (
-                            <div
+                          {/* SCRUM-1032: each activity's name, its one time box, its people (staff by name, or a
+                              role with its number) and its note; each written at once. */}
+                          {entertainmentItems.map((act, idx) => (
+                            <BeoActivityRow
                               key={act.id}
-                              className="flex items-center gap-2 p-2 rounded-lg border bg-background"
-                              data-testid={`entertainment-act-${idx}`}
-                            >
-                              <EditableText
-                                className="flex-1 text-sm min-w-0"
-                                value={act.customName || ""}
-                                onChange={(v) => updateEntItemMutation.mutate({ id: act.id, data: { customName: v } })}
-                                placeholder="Act name (e.g. Spiderman Show)..."
-                                disabled={readOnly}
-                                data-testid={`input-entertainment-act-name-${idx}`}
-                              />
-                              <div className="flex items-center gap-1 shrink-0">
-                                {act.startTime ? (
-                                  <span className="text-xs font-mono bg-muted px-2 py-0.5 rounded flex items-center gap-1">
-                                    <Clock className="h-2.5 w-2.5" />
-                                    {act.startTime}
-                                  </span>
-                                ) : (
-                                  <span className="text-[10px] text-muted-foreground/60">no time</span>
-                                )}
-                                {!readOnly && (
-                                  <input
-                                    type="time"
-                                    className="text-xs border rounded px-1.5 py-0.5 bg-background w-[88px]"
-                                    value={act.startTime || ""}
-                                    onChange={(e) => updateEntItemMutation.mutate({ id: act.id, data: { startTime: e.target.value || null } })}
-                                    title="Start time — auto-adds this act to the Timeline"
-                                    data-testid={`input-entertainment-act-time-${idx}`}
-                                  />
-                                )}
-                              </div>
-                              {!readOnly && (
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
-                                  onClick={() => deleteEntItemMutation.mutate(act.id)}
-                                  data-testid={`button-delete-entertainment-act-${idx}`}
-                                >
-                                  <X className="h-3.5 w-3.5" />
-                                </Button>
-                              )}
-                            </div>
+                              act={act}
+                              idx={idx}
+                              readOnly={readOnly}
+                              staff={(allEmployees || []).map((e) => ({ id: e.id, label: e.nickname || e.fullName }))}
+                              staffType={partyHostSource === "user" ? "user" : "employee"}
+                              roles={(allRoles || []).map((r) => ({ id: r.id, label: r.name }))}
+                              onField={(data) => updateEntItemMutation.mutate({ id: act.id, data })}
+                              onPeople={(people) => peopleEntItemMutation.mutateAsync({ id: act.id, people })}
+                              onDelete={() => deleteEntItemMutation.mutate(act.id)}
+                            />
                           ))}
                           <p className="text-[10px] text-muted-foreground/70">
-                            Set a start time to auto-add the act to the Timeline. Changes sync when you save the BEO.
+                            An act with a time is on the Timeline. Changes to an act are saved as you make them.
                           </p>
                         </div>
                       )}
