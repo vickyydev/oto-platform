@@ -1,3 +1,54 @@
+## 19 November 2026, 19:30: the BEO timeline and Staff BEO print are on staging; family profiles' first step is on staging, inert; the BEO editor lane is running
+
+- **SCRUM-1027 "BEO: one timeline made by the system" and SCRUM-1028 "BEO:
+  the Staff BEO print rebuilt": Deployed.** Main b297dd064 (nine commits),
+  `oto-app-staging` live 18:57. Pictures in
+  `docs/qa/proof-2026-11-19/SCRUM-1026/staging/` (the lead opened them): a
+  one-page Staff BEO for "ZZ TEST 1028 Staff BEO" (header, one timeline,
+  Kitchen left; Setup, Bar, Entertainment, Cake, Notes right; Thai beside
+  English), the editor's "Other timed steps" with "The timeline as saved",
+  an older party still printing, and the family quote unchanged to the pixel.
+  The party is left on staging for retests. Hosted CI for the app's code: the
+  push runs were replaced in the queue; a manual run on main is in progress.
+- **Choices in that build the owner has not confirmed** (on his page where
+  marked): a setup task has no time of its own and prints in Setup (R12);
+  the set-menu label beside a dish is gone (R13, now built as the brief
+  asks); food steps on the timeline are short, the dishes in Kitchen only
+  (R14, now built that way); no "Party ends" step; the adults get their own
+  step only when their menu or time differs; the same step is shown once
+  only when minute and words match.
+- **Follow-ups filed:** SCRUM-1050 "BEO: the new timeline and print on older
+  parties, consistency points" (four points built with the editor; two wait
+  for the owner: R23 rows AI Fill stored earlier print beside the system's
+  steps on older parties, R24 "Price unresolved - not charged" on every
+  extra line) and SCRUM-1051 "BEO: the time per dish or group on the till's
+  kitchen and bar slips" (the till's part of SCRUM-1033, after it lands).
+- **SCRUM-1024 "Family profiles": step one is on staging and changes nothing
+  anyone sees.** Main f223c08e5 (14 commits), `oto-api-staging` live 19:06,
+  migration 0136 applied (two tables, two empty columns on a child). The
+  switch `crm.family_profiles` is listed, off and cannot be set. Every child
+  saved on staging from now on gets a family. The backfill of existing
+  families has NOT run: it waits for the owner's go (R16), runbook
+  `docs/progress/plans/dropoff-beo-20261119/FAMILY_BACKFILL_RUNBOOK.md`.
+  Ticket stays In Progress. Left on staging: one archived ZZ TEST member with
+  one child and its family row.
+- **Launched: the BEO editor lane** (run wf_4697db44-bf9, worktree
+  `C:/oto-lanes/codex-whatsapp-908-20261116`, branch
+  `lane/beo1029-20261119`): SCRUM-1029 four sections, SCRUM-1030 Kitchen
+  Notes, SCRUM-1031 extra guests and Socks, SCRUM-1032 people on an activity,
+  SCRUM-1033 a time per dish (BEO and print), SCRUM-1034 deposit by hand for
+  managers, SCRUM-1035 AI Fill, SCRUM-1042 Adult Waffles, and SCRUM-1050's
+  four built points. Its landing brief says: a fault holds a landing, an
+  unbuilt item does not.
+- **The drop-off counter flow's code is on main** (a7630e73d, 17:57); its
+  staging proof and Jira are still running in the lane (run wf_2b410f77-dcd).
+- **Still running:** HR smaller requests (repairs), inbox follow-up (review),
+  the contracts repair SCRUM-1047 (review).
+- **Queue:** the till lane (SCRUM-1048 extra food credit on any child ticket,
+  then SCRUM-1041 several displays per till) starts when the counter flow's
+  proof finishes, in the freed folder `C:/oto-lanes/codex-deposit-910-20261114`;
+  then SCRUM-1051. The owner's page is at Version 7 with 24 open points.
+
 ## 19 November 2026, late night: the counter flow's first landing attempt held; it now lands what is built
 
 - **Drop-off counter flow (SCRUM-1018 to 1021).** All four parts were built and
