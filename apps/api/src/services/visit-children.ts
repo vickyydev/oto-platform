@@ -2,6 +2,7 @@ import { and, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
 import { auditLog, child, member, visit, visitChild } from '@oto/db';
 import { errors } from '../lib/errors';
 import { audit, type AuditEntry } from './audit';
+import { childOfMember, type FamilyProfilesMode } from './family';
 import type { Tx } from './tx';
 
 /** One confirmation, including when its online answer was lost before box replay. */
@@ -13,6 +14,8 @@ export async function addVisitChildren(
     operatorId: string;
     branchId: string;
     memberId?: string;
+    /** SCRUM-1024 — `crm.family_profiles`, read once by the caller (a request, or a box's batch). */
+    familyMode: FamilyProfilesMode;
     childIds: string[];
     now: Date;
     actor: Pick<AuditEntry, 'actorAccountId' | 'requestId' | 'actionId' | 'sourceEventId'>;
@@ -36,8 +39,15 @@ export async function addVisitChildren(
   if (v.status === 'closed') throw errors.conflict('VISIT_CLOSED', 'That visit is closed');
   if (!v.memberId) throw errors.badRequest('childIds require a memberId');
   const childIds = [...new Set(input.childIds)];
+  // SCRUM-1024 (step F3) — the visit's member's own children by the switch.
+  // The member's state is not asked, as it was not before: a visit opened
+  // for a member archived since still takes that family's children.
   const saved = await tx.select({ id: child.id }).from(child)
-    .where(and(inArray(child.id, childIds), eq(child.memberId, v.memberId), isNull(child.archivedAt)));
+    .where(and(
+      inArray(child.id, childIds),
+      childOfMember(input.familyMode, { operatorId: input.operatorId, memberId: v.memberId, memberLive: false }),
+      isNull(child.archivedAt),
+    ));
   if (saved.length !== childIds.length) throw errors.badRequest('One or more children do not belong to this member');
   const before = (await tx.select({ childId: visitChild.childId }).from(visitChild)
     .where(eq(visitChild.visitId, v.id))).map((r) => r.childId);

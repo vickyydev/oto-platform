@@ -24,7 +24,13 @@ import type { App } from '../app';
 import { AppError, errors } from '../lib/errors';
 import { audit } from '../services/audit';
 import { ClientIdSchema, REPLAY_HEADER, claimClientId } from '../services/client-id';
-import { childAuditView, ensureFamilyFor } from '../services/family';
+import {
+  childAuditView,
+  childGuardedInOperator,
+  childOfMember,
+  ensureFamilyFor,
+  familyProfilesMode,
+} from '../services/family';
 import {
   CUSTOMER_DISPLAY_SOURCE,
   REGISTER_PAGE_DEFAULT,
@@ -135,10 +141,13 @@ async function memberWithChildren(app: App, memberId: string, operatorId: string
     )
     .limit(1);
   if (!m) return null;
+  // SCRUM-1024 (plan step F3) — the member's children by the switch, read
+  // once for this answer: `child.member_id` at `off`, the family otherwise.
+  const familyMode = await familyProfilesMode(app.db, operatorId);
   const children = await app.db
     .select()
     .from(child)
-    .where(and(eq(child.memberId, memberId), isNull(child.archivedAt)));
+    .where(and(childOfMember(familyMode, { operatorId, memberId, memberLive: true }), isNull(child.archivedAt)));
   const [verification] = await app.db
     .select()
     .from(memberTierVerification)
@@ -909,17 +918,28 @@ export async function memberRoutes(app: App): Promise<void> {
       // A child id carries no operator, so the guardian is what proves the
       // caller may touch this record — and the refusal is the same 404 as an
       // id that does not exist at all.
-      const [owner] = await app.db
-        .select()
-        .from(member)
-        .where(
-          and(
-            eq(member.id, before.memberId),
-            eq(member.operatorId, auth.operatorId),
-            isNull(member.archivedAt),
-          ),
-        )
-        .limit(1);
+      //
+      // SCRUM-1024 (step F3) — at `off` the guardian is the child's own
+      // member; otherwise a live guardian of the child's family, inside this
+      // operator, as the lookup that offered the child reads it.
+      const familyMode = await familyProfilesMode(app.db, auth.operatorId);
+      const [owner] = familyMode === 'off'
+        ? await app.db
+          .select()
+          .from(member)
+          .where(
+            and(
+              eq(member.id, before.memberId),
+              eq(member.operatorId, auth.operatorId),
+              isNull(member.archivedAt),
+            ),
+          )
+          .limit(1)
+        : await app.db
+          .select({ id: child.id })
+          .from(child)
+          .where(and(eq(child.id, before.id), childGuardedInOperator({ operatorId: auth.operatorId, memberLive: true })))
+          .limit(1);
       if (!owner) throw errors.notFound('Child not found');
       // SCRUM-1020 — a change the family made on the customer display: their
       // own child's care notes, and an empty note only on their plain word.
@@ -930,6 +950,22 @@ export async function memberRoutes(app: App): Promise<void> {
           fields: Object.keys(b).filter((key) => b[key as keyof typeof b] !== undefined),
           patch: b,
           confirmedNone: confirmedNone === true,
+          // SCRUM-1024 — through the family, whether the family the till
+          // identified is one of this child's live guardians.
+          ...(familyMode !== 'off' && displayFamily
+            ? {
+                heldByFamily: (
+                  await app.db
+                    .select({ id: child.id })
+                    .from(child)
+                    .where(and(
+                      eq(child.id, before.id),
+                      childOfMember(familyMode, { operatorId: auth.operatorId, memberId: displayFamily, memberLive: true }),
+                    ))
+                    .limit(1)
+                ).length > 0,
+              }
+            : {}),
         });
         if (refusal) throw new AppError(refusal.status, refusal.code, refusal.message);
       }
@@ -1028,11 +1064,23 @@ export async function memberRoutes(app: App): Promise<void> {
       // The guardian proves the tenancy, and a child belonging to another
       // operator gets the same 404 as an id that was never real — the
       // existence of another tenant's record is not ours to confirm.
-      const [owner] = await app.db
-        .select()
-        .from(member)
-        .where(and(eq(member.id, before.memberId), eq(member.operatorId, auth.operatorId)))
-        .limit(1);
+      //
+      // SCRUM-1024 (step F3) — at `off` the child's own member; otherwise a
+      // live guardian row on the child's family inside this operator. The
+      // member's own state is not asked, as it was not before: a removal is
+      // the operator's correction of its own list.
+      const familyMode = await familyProfilesMode(app.db, auth.operatorId);
+      const [owner] = familyMode === 'off'
+        ? await app.db
+          .select()
+          .from(member)
+          .where(and(eq(member.id, before.memberId), eq(member.operatorId, auth.operatorId)))
+          .limit(1)
+        : await app.db
+          .select({ id: child.id })
+          .from(child)
+          .where(and(eq(child.id, before.id), childGuardedInOperator({ operatorId: auth.operatorId, memberLive: false })))
+          .limit(1);
       if (!owner) throw errors.notFound('Child not found');
       return withTx(app.db, opCtx(req), 'child.archive', (tx) =>
         archiveChild(
@@ -1042,6 +1090,7 @@ export async function memberRoutes(app: App): Promise<void> {
             operatorId: auth.operatorId,
             branchId: auth.branchId,
             requestId: req.id,
+            familyMode,
             ...(fromDisplay ? { fromDisplay } : {}),
           },
           req.params.childId,

@@ -56,6 +56,7 @@ import { paidOnlineRefusal, paidOnlineStaysOf, type PaidOnlineBooking } from './
 import { openTillSalesOfStays, paidAtTillStaysOf, refundedLineIdsOf, type PaidAtTill } from './checkin-paid-at-till';
 import { BandKeyMissingError, mintSaleBands } from './bands';
 import { idInUse } from './client-id';
+import { childOfMember, familyProfilesMode } from './family';
 import { mirrorNotice } from './inbox/mirror';
 import { reuseRegistrationPhoto } from './photo-reuse';
 import { queueCheckinBandPrints, type SalePrintJobView } from './sale-printing';
@@ -602,6 +603,10 @@ async function assertChildrenOfMember(
   const ids = children.map((c) => c.childId).filter((id): id is string => !!id);
   if (ids.length === 0) return;
   if (!memberId) throw errors.badRequest('A saved child needs the guardian it is saved under — send the memberId too.');
+  // SCRUM-1024 (step F3) — "on this guardian's saved list" by the switch,
+  // read once for this registration: `child.member_id` at `off`, the
+  // member's families otherwise (the member's own state not asked, as before).
+  const familyMode = await familyProfilesMode(db, operatorId);
   const rows = await db
     .select({ id: child.id })
     .from(child)
@@ -609,7 +614,7 @@ async function assertChildrenOfMember(
     .where(
       and(
         inArray(child.id, ids),
-        eq(child.memberId, memberId),
+        childOfMember(familyMode, { operatorId, memberId, memberLive: false }),
         eq(member.operatorId, operatorId),
         isNull(child.archivedAt),
       ),
