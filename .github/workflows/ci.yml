@@ -1136,7 +1136,7 @@ jobs:
       - name: The app's Staff BEO new fields print check
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/beo-print-fields.check.ts
-      # SCRUM-1030/1031/1042: the new fields' rules, app migration 0053 expand
+      # SCRUM-1030/1031/1042: the new fields' rules, app migration 0054 expand
       # only, nothing the till reads naming them, the Save's refusal before
       # it writes, the Kitchen Notes written only when named, which line
       # reads "Adult Waffles". No database.
