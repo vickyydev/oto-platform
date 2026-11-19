@@ -83,7 +83,8 @@ export const PAGE_LINE = 'mt-1 max-w-3xl text-[14px] leading-relaxed text-ink-so
 
 /** A segment of a switch (the assistant's sections, the queues, a number's mode): 44 px on a phone. */
 export const SEGMENT = `inline-flex min-h-11 items-center rounded-lg px-3 text-[13.5px] font-semibold transition disabled:opacity-60 md:min-h-8 md:px-2.5 md:text-[12.5px] ${FOCUS}`;
-export const SEGMENT_ON = 'bg-card text-ink shadow-sm ring-1 ring-line';
+/** The chosen segment: lighter than the band in both themes (`--oto-segment`, Dark.dc.html). */
+export const SEGMENT_ON = 'bg-segment text-ink shadow-sm ring-1 ring-line';
 export const SEGMENT_OFF = 'text-ink-soft hover:text-ink';
 
 /** A settings page's card: the card ground, the line, the 16 px corner. */

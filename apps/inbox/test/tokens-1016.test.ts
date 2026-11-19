@@ -58,6 +58,9 @@ const TEXT_PAIRS: Array<[ink: string, ground: string]> = [
   ['danger', 'danger-ink'], ['ink-muted', 'band'],
   // A refusal said on the page itself (sign-in, the figures, the simulator).
   ['danger-ink', 'card'], ['danger-ink', 'ground'],
+  // The chosen segment of a switch (SCRUM-1016 review): its words and the
+  // tab's coral count.
+  ['ink', 'segment'], ['coral-ink', 'segment'],
 ];
 
 describe('SCRUM-1016: the OTO tokens', () => {
@@ -110,6 +113,18 @@ describe('SCRUM-1016: the OTO tokens', () => {
     for (const ground of ['card', 'ground']) {
       expect(contrast(theme, 'ask-edge', ground), `ask-edge against ${ground}`).toBeGreaterThanOrEqual(3);
     }
+  });
+
+  it('the chosen segment of a switch stands up from its band in both themes, as Dark.dc.html draws it', () => {
+    // SCRUM-1016 (review): in dark, the card (#141f38) is darker than the
+    // band (#1f2b45), so a chosen tab on the card's ground read as sunken.
+    expect(light.segment).toBe(light.card);
+    expect(dark.segment).toBe('#2a3a5c');
+    for (const theme of [light, dark]) {
+      expect(luminance(theme.segment!)).toBeGreaterThan(luminance(theme.band!));
+    }
+    expect(src('src/components/Rail.tsx')).toContain("active ? 'bg-segment font-bold text-ink");
+    expect(src('src/components/ui.ts')).toContain("export const SEGMENT_ON = 'bg-segment ");
   });
 
   it.each([['light', light], ['dark', dark]] as const)('the selected row’s ink ring stands out at 3 : 1 (%s)', (_, theme) => {

@@ -66,7 +66,7 @@ export function ScopeTabs({
             tabIndex={active ? 0 : -1}
             onClick={() => onTab(t)}
             className={`flex min-h-11 min-w-0 items-center justify-center gap-1.5 rounded-[10px] px-2 text-[14px] transition focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-coral ${
-              active ? 'bg-card font-bold text-ink shadow-[0_1px_2px_var(--oto-shadow)]' : 'font-semibold text-ink-soft hover:bg-wash'
+              active ? 'bg-segment font-bold text-ink shadow-[0_1px_2px_var(--oto-shadow)]' : 'font-semibold text-ink-soft hover:bg-wash'
             }`}
           >
             <span className="truncate">{TAB_LABEL[t]}</span>
