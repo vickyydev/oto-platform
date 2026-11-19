@@ -71,7 +71,7 @@ export function readDraft(d: BookDateDraft): { values: BookDateValues } | { prob
 export function SourceMark({ source }: { source: FieldSource['source'] }) {
   if (!source) return null;
   return (
-    <span className="ml-1 inline-flex items-center rounded-lg bg-band px-1.5 py-px text-[11px] font-medium text-ink-soft">
+    <span className="ml-1 inline-flex items-center rounded-lg bg-band px-1.5 py-px text-caption font-medium text-ink-soft">
       {source === 'team' ? 'from the team' : 'from the family'}
     </span>
   );
@@ -155,17 +155,17 @@ function Choice({
       data-choice={field}
       className="col-span-2 m-0 flex min-w-0 flex-col gap-2.5 rounded-[14px] border border-ask-line bg-ask px-3 pb-3 pt-1"
     >
-      <legend className="px-1 text-[13px] font-bold text-ask-ink">{CHOICE_QUESTION[field]}</legend>
+      <legend className="px-1 text-note font-bold text-ask-ink">{CHOICE_QUESTION[field]}</legend>
       <div className="grid grid-cols-2 gap-2">
         {options.map((o) => (
           <button
             key={`${o.by}-${o.value}`}
             type="button"
             onClick={() => onPick(o)}
-            className={`flex min-h-12 min-w-0 flex-col items-center justify-center rounded-xl border border-field bg-card px-2 py-1.5 text-center text-ink hover:border-ink ${FOCUS}`}
+            className={`hit flex min-h-ctl-lg min-w-0 flex-col items-center justify-center rounded-xl border border-field bg-card px-2 py-1.5 text-center text-ink hover:border-ink ${FOCUS}`}
           >
-            <span className="max-w-full truncate text-[14px] font-bold">{shown(field, o.value, branches)}</span>
-            <span className="max-w-full truncate text-[11.5px] font-medium text-ink-soft">
+            <span className="max-w-full truncate text-ui font-bold">{shown(field, o.value, branches)}</span>
+            <span className="max-w-full truncate text-caption font-medium text-ink-soft">
               {o.text ? `“${o.text}” · ` : ''}
               {o.source === 'team' ? 'from the team' : o.source === 'family' ? 'from the family' : 'from the chat'}
             </span>
@@ -202,7 +202,8 @@ function Field({
 }
 
 /** A field's box, with the amber edge while the chat reads it two ways. */
-const boxOf = (twoWays: boolean): string => (twoWays ? INPUT.replace('border border-field', 'border-2 border-ask-edge') : INPUT);
+// SCRUM-1045: a field read two ways stands out by the amber's ground and its 1 px edge (no edge is thicker).
+const boxOf = (twoWays: boolean): string => (twoWays ? INPUT.replace('border border-field bg-card', 'border border-ask-edge bg-ask') : INPUT);
 
 /**
  * Book Date's confirm (SCRUM-775): the prototype's BEO modal pre-filled from
@@ -388,7 +389,7 @@ export function BookDateDialog({
    */
   const hint = (field: ProposedField, otherwise?: ReactNode): ReactNode => {
     if (state.choices[field])
-      return <span className="text-[12px] font-semibold text-ask-ink">The chat reads two ways: choose one</span>;
+      return <span className="text-meta font-semibold text-ask-ink">The chat reads two ways: choose one</span>;
     const source = state.sources[field];
     if (source) return <Says text={source.text} source={source.source} />;
     return otherwise;
@@ -470,7 +471,7 @@ export function BookDateDialog({
         <>
           {waiting && (
             <span
-              className={`min-w-0 basis-full self-center text-[12.5px] font-semibold text-ask-ink md:flex-1 md:basis-auto`}
+              className={`min-w-0 basis-full self-center text-note font-semibold text-ask-ink md:flex-1 md:basis-auto`}
               data-testid="book-date-waiting"
             >
               {waiting}
@@ -497,7 +498,7 @@ export function BookDateDialog({
         <section
           aria-label="Deposit"
           data-testid="prebooking-deposit"
-          className={`flex flex-col gap-2 rounded-[14px] border px-3 py-2.5 text-[13.5px] ${
+          className={`flex flex-col gap-2 rounded-[14px] border px-3 py-2.5 text-ui ${
             paidCard
               ? 'border-money-line bg-money text-money-ink'
               : deposit?.state === 'needs_review'
@@ -582,7 +583,7 @@ export function BookDateDialog({
                   href={deposit.paymentLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={`inline-flex min-h-11 items-center gap-1.5 rounded-lg px-1 font-semibold text-coral-ink underline underline-offset-2 md:min-h-8 ${FOCUS}`}
+                  className={`hit inline-flex min-h-ctl items-center gap-1.5 rounded-lg px-1 font-semibold text-coral-ink underline underline-offset-2 ${FOCUS}`}
                 >
                   Open payment page
                   <ExternalLink aria-hidden className="h-3.5 w-3.5" />
@@ -594,7 +595,7 @@ export function BookDateDialog({
 
         {/* Filled in from the chat (SCRUM-821, 826): how the fields were read, and the way to read it again. */}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <p className="flex min-w-0 flex-1 items-center gap-2 text-[13px] text-teal">
+          <p className="flex min-w-0 flex-1 items-center gap-2 text-note text-teal">
             {reading ? (
               <span className="inline-flex items-center gap-2" data-testid="book-date-reading">
                 <Loader2 aria-hidden className="h-4 w-4 shrink-0 animate-spin" /> Reading the whole chat…
@@ -765,7 +766,7 @@ export function BookDateDialog({
           </Field>
         </div>
 
-        <p className="text-[12.5px] leading-relaxed text-ink-muted">
+        <p className="text-note leading-relaxed text-ink-muted">
           Booking puts the party in the Events calendar as tentative; a draft reserves no date. Payment never
           creates the booking automatically. If the date cannot be accommodated, staff must resolve the paid deposit
           with the family.

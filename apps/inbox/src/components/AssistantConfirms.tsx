@@ -47,13 +47,13 @@ export function KbConfirm({ acting, busy, error, onCancel, onConfirm }: ConfirmP
         </>
       }
     >
-      <p className="text-[14px] leading-relaxed text-ink-soft md:text-[13px]">
+      <p className="text-ui leading-relaxed text-ink-soft">
         {acting?.what === 'approve'
           ? 'The assistant may answer customers from these words from now on, on every number that is live. You are recorded as the approver.'
           : 'The assistant stops using it, and its key is free for a new entry.'}
       </p>
       {acting?.what === 'approve' && (
-        <p className="mt-2 whitespace-pre-line break-words rounded-xl border border-line bg-card px-3 py-2 text-[13.5px] text-ink md:bg-ground">
+        <p className="mt-2 whitespace-pre-line break-words rounded-xl border border-line bg-card px-3 py-2 text-ui text-ink md:bg-ground">
           {acting.entry.body}
         </p>
       )}
@@ -94,13 +94,13 @@ export function RuleConfirm({
         </>
       }
     >
-      <p className="text-[14px] leading-relaxed text-ink-soft md:text-[13px]">
+      <p className="text-ui leading-relaxed text-ink-soft">
         {acting?.what === 'approve'
           ? 'The assistant follows this rule from now on, on every number that is live. You are recorded as the approver.'
           : 'The assistant stops following it. It stays under Archived.'}
       </p>
       {acting && (
-        <p className="mt-2 whitespace-pre-line break-words rounded-xl border border-line bg-card px-3 py-2 text-[13.5px] text-ink md:bg-ground">
+        <p className="mt-2 whitespace-pre-line break-words rounded-xl border border-line bg-card px-3 py-2 text-ui text-ink md:bg-ground">
           {acting.rule.instruction}
         </p>
       )}

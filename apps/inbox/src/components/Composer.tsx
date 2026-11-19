@@ -43,12 +43,12 @@ interface Refused {
 export const newDraftId = (): string => newId();
 
 /** The composer's footer (Chat.dc.html): the card under a rule, never scrolled away. */
-export const COMPOSER_BAR = 'shrink-0 border-t border-line bg-card px-2 pb-3.5 pt-2 md:px-5 md:pb-4 md:pt-3';
+export const COMPOSER_BAR = 'shrink-0 border-t border-line bg-card px-2 pb-3.5 pt-2 md:px-pane md:pb-3 md:pt-2.5';
 /** Why the composer has no box (a till notice, a handled thread): the band's quiet line. */
-const COMPOSER_NOTICE = 'flex min-h-11 flex-wrap items-center gap-2 rounded-2xl bg-band px-4 py-2 text-[13.5px] text-ink-soft';
+const COMPOSER_NOTICE = 'flex min-h-ctl flex-wrap items-center gap-2 rounded-2xl bg-band px-4 py-2 text-ui text-ink-soft';
 const REOPEN_BUTTON =
-  'inline-flex min-h-11 items-center gap-1.5 rounded-full border border-ink bg-card px-4 text-[13.5px] font-bold text-ink hover:bg-wash disabled:opacity-60 md:min-h-9';
-const DISMISS = 'flex h-11 w-11 shrink-0 items-center justify-center rounded-full opacity-80 hover:opacity-100 md:h-7 md:w-7';
+  'hit inline-flex min-h-ctl items-center gap-1.5 rounded-full border border-ink bg-card px-4 text-ui font-bold text-ink hover:bg-wash disabled:opacity-60';
+const DISMISS = 'hit flex size-ctl-sm shrink-0 items-center justify-center rounded-full opacity-80 hover:opacity-100';
 
 /** The box's prompt names the person the reply goes to (Chat.dc.html), not the one writing it. */
 export function replyPlaceholder(conv: Pick<ConversationRow, 'contact'>): string {
@@ -228,7 +228,7 @@ export function Composer({
             </button>
           ) : (
             // Reopening is a manager's (the rails' rights); the screen said nothing (test night U7).
-            <span className="text-[13px] text-ink-muted">{MANAGER_REOPENS}</span>
+            <span className="text-note text-ink-muted">{MANAGER_REOPENS}</span>
           )}
         </div>
       </div>
@@ -277,16 +277,16 @@ export function Composer({
   const offer = (t: QualifyingTemplate) => (
     <li key={t.id} className="flex min-w-0 items-center gap-2 rounded-xl bg-card px-3 py-2 ring-1 ring-line">
       <span className="min-w-0 flex-1">
-        <span className="flex flex-wrap items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-ink-muted">
+        <span className="flex flex-wrap items-center gap-1.5 text-caption font-semibold uppercase tracking-[0.14em] text-ink-muted">
           {t.key.replace(/[_.]/g, ' ')} · {langLabel(t.language)}
           {needsTranslation(t) && <TranslationNote />}
         </span>
-        <span className="block truncate text-[13px] text-ink">{t.body}</span>
+        <span className="block truncate text-note text-ink">{t.body}</span>
       </span>
       <button
         type="button"
         onClick={() => pickTemplate({ id: t.id, key: t.key, language: t.language, body: t.body, needsTranslation: needsTranslation(t) })}
-        className="min-h-11 shrink-0 rounded-full border border-field bg-card px-4 text-[13px] font-semibold text-ink hover:bg-wash md:min-h-9"
+        className="hit min-h-ctl shrink-0 rounded-full border border-field bg-card px-4 text-note font-semibold text-ink hover:bg-wash"
       >
         Insert
       </button>
@@ -298,7 +298,7 @@ export function Composer({
       {refused && (
         <div
           role="alert"
-          className={`mb-2 rounded-2xl px-3 py-2 text-[13px] ring-1 ${
+          className={`mb-2 rounded-2xl px-3 py-2 text-note ring-1 ${
             refused.details?.window ? 'bg-needs text-needs-ink ring-needs-ink/25' : 'bg-danger text-danger-ink ring-danger-line'
           }`}
         >
@@ -314,13 +314,13 @@ export function Composer({
               {offered.own.length > 0 ? (
                 <ul className="space-y-1.5">{offered.own.map(offer)}</ul>
               ) : (
-                <p className="text-[13px]">
+                <p className="text-note">
                   No template in {langLabel(conv.language)} qualifies yet; the other languages are below.
                 </p>
               )}
               {offered.others.length > 0 && (
                 <details className="mt-2">
-                  <summary className="flex min-h-11 cursor-pointer items-center text-[12.5px] font-semibold md:min-h-0 md:py-1">
+                  <summary className="hit flex min-h-ctl-sm cursor-pointer items-center text-note font-semibold md:py-1">
                     Other languages ({offered.others.length})
                   </summary>
                   <ul className="mt-1.5 space-y-1.5">{offered.others.map(offer)}</ul>
@@ -335,7 +335,7 @@ export function Composer({
         <div className="mb-2 rounded-2xl border border-line bg-wash px-3 py-2">
           <div className="flex items-center gap-2">
             <FileText aria-hidden className="h-4 w-4 shrink-0 text-ink-soft" />
-            <span className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-ink-soft">
+            <span className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 text-caption font-semibold uppercase tracking-[0.14em] text-ink-soft">
               <span className="truncate">
                 Template · {template.key.replace(/[_.]/g, ' ')} · {langLabel(template.language)}
               </span>
@@ -354,13 +354,13 @@ export function Composer({
               <X aria-hidden className="h-4 w-4" />
             </button>
           </div>
-          <p className="mt-1 whitespace-pre-line break-words text-[13.5px] text-ink">
+          <p className="mt-1 whitespace-pre-line break-words text-ui text-ink">
             {renderTemplate(template.body, Object.fromEntries(Object.entries(values).filter(([, v]) => v.trim()))).text}
           </p>
           {variables.length > 0 && (
             <div className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
               {variables.map((v) => (
-                <label key={v} className="flex min-w-0 items-center gap-1.5 text-[12px] text-ink-muted">
+                <label key={v} className="flex min-w-0 items-center gap-1.5 text-meta text-ink-muted">
                   <span className="shrink-0 font-mono">{v}</span>
                   <input
                     value={values[v] ?? ''}
@@ -368,7 +368,7 @@ export function Composer({
                       touch();
                       setValues((o) => ({ ...o, [v]: e.target.value }));
                     }}
-                    className="min-h-11 min-w-0 flex-1 rounded-xl border border-field bg-card px-3 text-[14px] text-ink focus-visible:outline-2 focus-visible:outline-coral md:min-h-9"
+                    className="min-h-ctl min-w-0 flex-1 rounded-xl border border-field bg-card px-3 text-ui text-ink focus-visible:outline-2 focus-visible:outline-coral"
                   />
                 </label>
               ))}
@@ -384,7 +384,7 @@ export function Composer({
         <DictateButton dictation={dictation} disabled={template !== null || busy} />
         {/* The pill is the box's frame: the box has no padding of its own, so its height is its lines (`composerBox`).
             A label, so a press anywhere on the 44 px pill, its padding too, puts the caret in the box (SCRUM-1016 review). */}
-        <label data-reply-pill className="flex min-w-0 flex-1 cursor-text rounded-[22px] border border-field bg-ground px-4 py-[11px] focus-within:outline-2 focus-within:outline-coral">
+        <label data-reply-pill className="flex min-w-0 flex-1 cursor-text rounded-[22px] border border-field bg-ground px-4 py-[calc((var(--ui-h-icon)-22px)/2)] focus-within:outline-2 focus-within:outline-coral">
           <textarea
             ref={inputRef}
             rows={1}
@@ -402,14 +402,14 @@ export function Composer({
             style={{ lineHeight: `${COMPOSER_LINE_PX}px` }}
             aria-label="Reply"
             placeholder={template ? 'Sending the template above' : replyPlaceholder(conv)}
-            className="block w-full min-w-0 resize-none bg-transparent text-[15px] text-ink placeholder:text-ink-muted focus:outline-none disabled:cursor-not-allowed"
+            className="block w-full min-w-0 resize-none bg-transparent text-body text-ink placeholder:text-ink-muted focus:outline-none disabled:cursor-not-allowed"
           />
         </label>
         <button
           type="submit"
           disabled={!canSend}
           aria-label="Send"
-          className="ml-1.5 flex h-11 min-w-11 shrink-0 items-center justify-center rounded-full bg-coral text-[14.5px] font-bold text-on-coral hover:bg-coral/90 disabled:opacity-50 lg:px-[18px]"
+          className="hit ml-1.5 flex h-icon min-w-icon shrink-0 items-center justify-center rounded-full bg-coral text-ui font-bold text-on-coral hover:bg-coral/90 disabled:opacity-50 lg:px-4"
         >
           {busy ? <Loader2 aria-hidden className="h-5 w-5 animate-spin" /> : <ArrowUp aria-hidden className="h-5 w-5 lg:hidden" />}
           <span aria-hidden className="hidden lg:inline">

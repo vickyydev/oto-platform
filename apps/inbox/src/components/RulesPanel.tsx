@@ -106,7 +106,7 @@ export function RulesPanel({ me }: { me: InboxMe }) {
   return (
     <div className="mt-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <p className="min-w-0 text-[13.5px] leading-relaxed text-ink-muted md:text-[13px]">
+        <p className="min-w-0 text-ui leading-relaxed text-ink-muted">
           How the assistant handles a kind of message: an instruction it follows and, if you want, one question it asks
           first. Only approved rules reach the assistant. A rule adds to its own rules and never overrides them: it cannot
           grant a price, a discount, a refund, a date or a booking.
@@ -138,24 +138,24 @@ export function RulesPanel({ me }: { me: InboxMe }) {
           <Loader2 className="h-5 w-5 animate-spin" />
         </div>
       )}
-      {rules?.length === 0 && <p className="mt-4 text-[12.5px] text-ink-muted">Nothing here.</p>}
+      {rules?.length === 0 && <p className="mt-4 text-note text-ink-muted">Nothing here.</p>}
       <ul className="mt-4 grid grid-cols-1 gap-2 lg:grid-cols-2">
         {rules?.map((r) => (
           <li key={r.id} className={`${ITEM_CARD} ${r.status === 'archived' ? 'opacity-70' : ''}`}>
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-[13px] font-bold text-ink">{ruleIntentLabel(r.intent)}</span>
-              <span className="text-[12px] text-ink-muted">{r.branchId ? branchLabel(r.branchId, me.teams) : 'Both parks'}</span>
+              <span className="text-note font-bold text-ink">{ruleIntentLabel(r.intent)}</span>
+              <span className="text-meta text-ink-muted">{r.branchId ? branchLabel(r.branchId, me.teams) : 'Both parks'}</span>
               <span className={`${BADGE} ring-1 ${KB_STATUS_TINT[r.status]}`}>{KB_STATUS_LABEL[r.status]}</span>
             </div>
-            <p className="mt-1.5 whitespace-pre-line break-words text-[14px] leading-relaxed text-ink md:text-[13px]">{r.instruction}</p>
+            <p className="mt-1.5 whitespace-pre-line break-words text-ui leading-relaxed text-ink">{r.instruction}</p>
             {r.askFirst && (
-              <p className="mt-1.5 break-words rounded-xl bg-mint px-2.5 py-1.5 text-[13.5px] text-teal md:text-[13px]">
+              <p className="mt-1.5 break-words rounded-xl bg-mint px-2.5 py-1.5 text-ui text-teal">
                 <span className="font-medium">Ask first:</span> {r.askFirst.question.en}
-                <span className="text-[12px] text-teal"> · {RULE_CONDITION_LABEL[r.askFirst.condition]}</span>
+                <span className="text-meta text-teal"> · {RULE_CONDITION_LABEL[r.askFirst.condition]}</span>
               </p>
             )}
             {r.taughtFrom && (
-              <p className="mt-1 line-clamp-3 break-words text-[12.5px] italic text-ink-muted">Taught from: “{r.taughtFrom}”</p>
+              <p className="mt-1 line-clamp-3 break-words text-note italic text-ink-muted">Taught from: “{r.taughtFrom}”</p>
             )}
             {r.status !== 'archived' && r.canManage && (
               <div className="mt-2 flex flex-wrap items-center gap-1.5">

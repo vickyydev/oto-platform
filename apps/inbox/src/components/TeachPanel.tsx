@@ -29,7 +29,7 @@ import { branchLabel, langLabel } from '@/lib/view';
 const BUTTON = BTN_SMALL;
 const PRIMARY = BTN_MAIN;
 /** The assistant's own words on its mint, as its lines are in a chat. */
-const ASSISTANT_LINE = 'rounded-xl bg-mint px-2.5 py-1.5 text-[13.5px] text-teal md:text-[13px]';
+const ASSISTANT_LINE = 'rounded-xl bg-mint px-2.5 py-1.5 text-ui text-teal';
 
 /** "Not on your access" politely; every other refusal is the server's own sentence. */
 function said(err: unknown, fallback: string): string {
@@ -172,27 +172,27 @@ export function TeachPanel({ me, active = true, onTab }: { me: InboxMe; active?:
 
   return (
     <div className="mt-4">
-      <p className="text-[13.5px] leading-relaxed text-ink-muted md:text-[13px]">{TEACH_INTRO}</p>
+      <p className="text-ui leading-relaxed text-ink-muted">{TEACH_INTRO}</p>
 
       <div
         ref={scrollRef}
         className="mt-3 max-h-[60vh] min-h-[12rem] space-y-3 overflow-y-auto overflow-x-hidden rounded-xl border border-line bg-ground p-3"
       >
         {lines.length === 0 && !busy && (
-          <p className="py-6 text-center text-[13.5px] text-ink-muted">
+          <p className="py-6 text-center text-ui text-ink-muted">
             For example: “If someone says they lost something, first ask which park they visited.”
           </p>
         )}
         {lines.map((l, i) =>
           l.role === 'user' ? (
             <div key={i} className="flex justify-end">
-              <p className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-br-md bg-staff px-3 py-2 text-[14px] text-on-staff md:text-[13.5px]">
+              <p className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-br-md bg-staff px-3 py-2 text-ui text-on-staff">
                 {l.text}
               </p>
             </div>
           ) : (
             <div key={i} className="flex flex-col items-start gap-1.5">
-              <p className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-bl-md bg-mint px-3 py-2 text-[14px] text-teal md:text-[13.5px]">
+              <p className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-bl-md bg-mint px-3 py-2 text-ui text-teal">
                 {l.text}
               </p>
               {l.cards?.map((c) => (
@@ -216,7 +216,7 @@ export function TeachPanel({ me, active = true, onTab }: { me: InboxMe; active?:
         )}
         {busy && (
           <div className="flex justify-start">
-            <p className="inline-flex items-center gap-1.5 rounded-2xl rounded-bl-md bg-mint px-3 py-2 text-[13px] text-teal">
+            <p className="inline-flex items-center gap-1.5 rounded-2xl rounded-bl-md bg-mint px-3 py-2 text-note text-teal">
               <Loader2 aria-hidden className="h-4 w-4 animate-spin" />
               Thinking…
             </p>
@@ -336,39 +336,39 @@ export function TeachCardView({
         )}
         {content?.kind === 'fact' && (
           <>
-            <span className="min-w-0 break-all font-mono text-[12px] text-ink">{content.entry.key}</span>
+            <span className="min-w-0 break-all font-mono text-meta text-ink">{content.entry.key}</span>
             <span className={`${BADGE} ${TONE.neutral}`}>
               {langLabel(content.entry.language)}
             </span>
-            <span className="text-[12px] text-ink-muted">{parkOf(content.entry.branchId, me)}</span>
+            <span className="text-meta text-ink-muted">{parkOf(content.entry.branchId, me)}</span>
           </>
         )}
         {content?.kind === 'rule' && (
           <>
-            <span className="text-[13px] font-bold text-ink">{ruleIntentLabel(content.rule.intent)}</span>
-            <span className="text-[12px] text-ink-muted">{parkOf(content.rule.branchId, me)}</span>
+            <span className="text-note font-bold text-ink">{ruleIntentLabel(content.rule.intent)}</span>
+            <span className="text-meta text-ink-muted">{parkOf(content.rule.branchId, me)}</span>
           </>
         )}
       </div>
 
       {content?.kind === 'fact' && (
         <>
-          <p className="mt-1.5 break-words text-[13.5px] font-semibold text-ink">{content.entry.question}</p>
-          <p className="mt-1 whitespace-pre-line break-words text-[13.5px] text-ink-soft">{content.entry.body}</p>
+          <p className="mt-1.5 break-words text-ui font-semibold text-ink">{content.entry.question}</p>
+          <p className="mt-1 whitespace-pre-line break-words text-ui text-ink-soft">{content.entry.body}</p>
         </>
       )}
       {content?.kind === 'rule' && (
         <>
-          <p className="mt-1.5 whitespace-pre-line break-words text-[13.5px] text-ink">{content.rule.instruction}</p>
+          <p className="mt-1.5 whitespace-pre-line break-words text-ui text-ink">{content.rule.instruction}</p>
           {content.rule.askFirst ? (
             <div className={`mt-1.5 break-words ${ASSISTANT_LINE}`}>
               <p>
                 <span className="font-medium">Ask first</span>
-                <span className="text-[12px]"> · {RULE_CONDITION_LABEL[content.rule.askFirst.condition]}</span>
+                <span className="text-meta"> · {RULE_CONDITION_LABEL[content.rule.askFirst.condition]}</span>
               </p>
               {ruleQuestions(content.rule.askFirst).map(([language, question]) => (
                 <p key={language} className="mt-0.5">
-                  <span className="text-[12px] font-semibold">{language}:</span>{' '}
+                  <span className="text-meta font-semibold">{language}:</span>{' '}
                   {question ?? <span className="italic">not written</span>}
                 </p>
               ))}
@@ -378,7 +378,7 @@ export function TeachCardView({
           )}
         </>
       )}
-      {!readable && <p className="mt-1 break-words text-[13.5px] text-ink">{card.title}</p>}
+      {!readable && <p className="mt-1 break-words text-ui text-ink">{card.title}</p>}
       {content?.kind === 'gone' && <p className={`mt-1 ${HINT}`}>{TEACH_CARD_GONE}</p>}
       {content === undefined && !readError && (
         <p className={`mt-1 inline-flex items-center gap-1 ${HINT}`}>
@@ -410,8 +410,8 @@ export function DryRun({ run }: { run: TeachDryRun }) {
         <FlaskConical aria-hidden className="h-3.5 w-3.5" />
         Dry run · what the assistant would do now
       </Eyebrow>
-      <p className="mt-1.5 break-words text-[13.5px] italic text-ink-soft">“{run.message}”</p>
-      <p className="mt-1 text-[13.5px] text-ink">
+      <p className="mt-1.5 break-words text-ui italic text-ink-soft">“{run.message}”</p>
+      <p className="mt-1 text-ui text-ink">
         <span className="font-semibold">{TEACH_OUTCOME_LABEL[run.outcome]}</span>
         {run.intent && <span className="text-ink-muted"> · {ruleIntentLabel(run.intent)}</span>}
         {run.ruleFired && <span className="font-semibold text-teal"> · A rule fired</span>}

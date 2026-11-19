@@ -153,7 +153,7 @@ describe('the dark palette on the key surfaces', () => {
     );
     expect(html).toContain('text-ink'); // the contact's name
     expect(html).toContain('border-line-soft'); // the row's rule
-    expect(html).toContain('bg-band ring-2 ring-inset ring-ink'); // selection, apart from unread
+    expect(html).toContain('bg-band ring-1 ring-inset ring-ink-muted'); // selection, apart from unread (a quiet 1 px edge, SCRUM-1045)
     expect(html).toContain('bg-needs text-needs-ink'); // "Needs reply"
     expect(html).toContain('bg-coral'); // the unread count
     expect(html).not.toMatch(/[\s"]dark:/);

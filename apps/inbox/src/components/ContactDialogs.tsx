@@ -41,7 +41,7 @@ import { CHANNEL_LABEL, bubbleTime, contactName } from '@/lib/view';
 // The house controls (SCRUM-1016, components/ui.ts).
 const CANCEL = BTN_QUIET;
 const PRIMARY = BTN_MAIN;
-const ERROR = 'text-[13px] text-danger-ink';
+const ERROR = 'text-note text-danger-ink';
 
 function messageOf(err: unknown, fallback: string): string {
   return err instanceof ApiError ? err.message : fallback;
@@ -277,7 +277,7 @@ export function NewContactDialog({
       }
     >
       {done ? (
-        <p className="text-[14px] text-ink md:text-[13px]" data-testid="created-line">
+        <p className="text-ui text-ink" data-testid="created-line">
           {done}
         </p>
       ) : (

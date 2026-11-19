@@ -66,16 +66,16 @@ export function TemplatesDialog({
           <Loader2 className="h-5 w-5 animate-spin" />
         </div>
       )}
-      {templates?.length === 0 && <p className="text-[13.5px] text-ink-muted">No templates in this language yet.</p>}
+      {templates?.length === 0 && <p className="text-ui text-ink-muted">No templates in this language yet.</p>}
       <ul className="space-y-2">
         {/* `follow_up` first, and a row still in English marked (test night U1). */}
         {offeredTemplates(templates ?? [], null).own.map((t) => (
           <li key={t.id} className="rounded-2xl border border-line bg-card p-3.5">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[13px] font-bold capitalize text-ink">
+              <span className="text-note font-bold capitalize text-ink">
                 {t.key.replace(/[_.]/g, ' ')}
               </span>
-              <span className={`rounded-lg px-1.5 py-px text-[11px] font-semibold ${TONE.neutral}`}>{langLabel(t.language)}</span>
+              <span className={`rounded-lg px-1.5 py-px text-caption font-semibold ${TONE.neutral}`}>{langLabel(t.language)}</span>
               {t.needsTranslation && <TranslationNote />}
               {pending ? (
                 <span className="ml-auto">
@@ -100,7 +100,7 @@ export function TemplatesDialog({
                 )
               )}
             </div>
-            <p className="mt-1.5 whitespace-pre-line break-words text-[14px] leading-relaxed text-ink md:text-[13px]">{t.body}</p>
+            <p className="mt-1.5 whitespace-pre-line break-words text-ui leading-relaxed text-ink">{t.body}</p>
           </li>
         ))}
       </ul>
@@ -159,14 +159,14 @@ export function FiltersDialog({
           <button
             type="button"
             onClick={onClear}
-            className="min-h-12 rounded-xl px-4 text-[15px] font-semibold text-ink hover:bg-wash focus-visible:outline-2 focus-visible:outline-coral"
+            className="hit min-h-ctl-lg rounded-xl px-4 text-body font-semibold text-ink hover:bg-wash focus-visible:outline-2 focus-visible:outline-coral"
           >
             Clear
           </button>
           <button
             type="button"
             onClick={onClose}
-            className="min-h-12 flex-1 rounded-[14px] bg-coral px-4 text-[15px] font-bold text-on-coral hover:bg-coral/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral"
+            className="hit min-h-ctl-lg flex-1 rounded-[14px] bg-coral px-4 text-body font-bold text-on-coral hover:bg-coral/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral"
           >
             {showLabel}
           </button>

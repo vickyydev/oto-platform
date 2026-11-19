@@ -143,8 +143,170 @@ html.dark {
   --oto-banner-ink: #000000;
 }
 
+/*
+ * THE ONE SCALE (SCRUM-1045): every type size, control height, gutter and
+ * face of the Inbox, in three densities. A component writes `text-body`,
+ * `min-h-ctl`, `px-pane`, never a size of its own (test/scale-1045.test.ts).
+ *
+ * - comfortable: a phone's single column (below 768 px), the approved phone
+ *   look: 15 px names and bubbles, 44 to 48 px controls;
+ * - compact: tablets and split panes (768 px and up): 14 px names and
+ *   bubbles, 32 to 36 px controls, 11 px captions;
+ * - regular: a pane at least 720 px wide on a screen of 1280 px and more.
+ *
+ * The density follows the PANE a thing sits in, not only the window: each
+ * pane (`[data-pane]`, Workspace) is a size container and hands its content
+ * the density its own width calls for, so a chat narrowed by the divider
+ * settles to compact by itself. Dialogs and the app bar take the window's
+ * (`:root`, `.density-window`). Nothing is ever under 11 px. On a touch
+ * screen a control's hit area stays 44 px however small it is drawn (`.hit`).
+ */
+:root,
+.density-window {
+  --ui-fs-caption: 11.5px;
+  --ui-fs-meta: 12px;
+  --ui-fs-note: 13px;
+  --ui-fs-ui: 13.5px;
+  --ui-fs-action: 15px;
+  --ui-fs-body: 15px;
+  --ui-fs-title: 16px;
+  --ui-fs-heading: 18px;
+  --ui-fs-figure: 19px;
+  --ui-fs-display: 20px;
+  --ui-h-sm: 44px;
+  --ui-h: 44px;
+  --ui-h-lg: 48px;
+  --ui-h-icon: 44px;
+  --ui-pane: 16px;
+  --ui-row: 12px;
+  --ui-stack: 12px;
+  --ui-face: 44px;
+  --ui-face-sm: 40px;
+}
+
+@media (min-width: 768px) {
+  :root,
+  .density-window,
+  [data-pane] > * {
+    --ui-fs-caption: 11px;
+    --ui-fs-meta: 11.5px;
+    --ui-fs-note: 12.5px;
+    --ui-fs-ui: 13px;
+    --ui-fs-action: 13px;
+    --ui-fs-body: 14px;
+    --ui-fs-title: 15px;
+    --ui-fs-heading: 16px;
+    --ui-fs-figure: 17px;
+    --ui-fs-display: 18px;
+    --ui-h-sm: 28px;
+    --ui-h: 32px;
+    --ui-h-lg: 36px;
+    --ui-h-icon: 34px;
+    --ui-pane: 12px;
+    --ui-row: 10px;
+    --ui-stack: 10px;
+    --ui-face: 36px;
+    --ui-face-sm: 34px;
+  }
+}
+
+/* Regular: the window is wide, and so is the pane (or the window, outside one). */
+@media (min-width: 1280px) {
+  :root,
+  .density-window {
+    --ui-fs-caption: 11px;
+    --ui-fs-meta: 12px;
+    --ui-fs-note: 12.5px;
+    --ui-fs-ui: 13px;
+    --ui-fs-action: 13px;
+    --ui-fs-body: 14.5px;
+    --ui-fs-title: 16px;
+    --ui-fs-heading: 16px;
+    --ui-fs-figure: 18px;
+    --ui-fs-display: 18px;
+    --ui-h-sm: 30px;
+    --ui-h: 34px;
+    --ui-h-lg: 38px;
+    --ui-h-icon: 36px;
+    --ui-pane: 16px;
+    --ui-row: 10px;
+    --ui-stack: 10px;
+    --ui-face: 38px;
+    --ui-face-sm: 36px;
+  }
+  /* A narrow pane on a wide screen (the list, the views column) keeps the
+     compact values the 768 px rule gave it; a wide one turns regular. */
+  @container pane (min-width: 720px) {
+    [data-pane] > * {
+      --ui-fs-caption: 11px;
+      --ui-fs-meta: 12px;
+      --ui-fs-note: 12.5px;
+      --ui-fs-ui: 13px;
+      --ui-fs-action: 13px;
+      --ui-fs-body: 14.5px;
+      --ui-fs-title: 16px;
+      --ui-fs-heading: 16px;
+      --ui-fs-figure: 18px;
+      --ui-fs-display: 18px;
+      --ui-h-sm: 30px;
+      --ui-h: 34px;
+      --ui-h-lg: 38px;
+      --ui-h-icon: 36px;
+      --ui-pane: 16px;
+      --ui-row: 10px;
+      --ui-stack: 10px;
+      --ui-face: 38px;
+      --ui-face-sm: 36px;
+    }
+  }
+}
+
+/* The panes are size containers, each by its own name for the components' `@…/name:` variants. */
+[data-pane] {
+  container-type: inline-size;
+}
+[data-pane='list'] {
+  container-name: pane list;
+}
+[data-pane='chat'] {
+  container-name: pane chat;
+}
+[data-pane='rail'] {
+  container-name: pane rail;
+}
+[data-pane='panel'] {
+  container-name: pane panel;
+}
+[data-pane='settings'] {
+  container-name: pane settings;
+}
+
 @theme inline {
   --font-sans: 'Inter', 'Till Thai', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  /* The type scale: Tailwind's own sizes are removed, so only these exist. */
+  --text-*: initial;
+  --text-caption: var(--ui-fs-caption);
+  --text-meta: var(--ui-fs-meta);
+  --text-note: var(--ui-fs-note);
+  --text-ui: var(--ui-fs-ui);
+  --text-action: var(--ui-fs-action);
+  --text-body: var(--ui-fs-body);
+  --text-title: var(--ui-fs-title);
+  --text-heading: var(--ui-fs-heading);
+  --text-figure: var(--ui-fs-figure);
+  --text-display: var(--ui-fs-display);
+
+  /* Control heights, gutters and faces, as spacing: `min-h-ctl`, `h-icon`, `px-pane`, `size-face`. */
+  --spacing-ctl-sm: var(--ui-h-sm);
+  --spacing-ctl: var(--ui-h);
+  --spacing-ctl-lg: var(--ui-h-lg);
+  --spacing-icon: var(--ui-h-icon);
+  --spacing-pane: var(--ui-pane);
+  --spacing-row: var(--ui-row);
+  --spacing-stack: var(--ui-stack);
+  --spacing-face: var(--ui-face);
+  --spacing-face-sm: var(--ui-face-sm);
 
   --color-ground: var(--oto-ground);
   --color-card: var(--oto-card);
@@ -247,6 +409,29 @@ h3 {
   :where(button, a[href], input, select, textarea, summary, [tabindex]:not([tabindex='-1'])):focus-visible {
     outline: 2px solid var(--oto-coral);
     outline-offset: 2px;
+  }
+}
+
+/*
+ * A touch target of 44 px at least (SCRUM-1045): on a touch screen a control
+ * drawn smaller (a 32 px pill on a tablet) gets an invisible extension
+ * centred on it, so the finger's target is 44 px while the shape stays calm.
+ * A mouse needs none. `:where` keeps a control's own `absolute` in charge.
+ */
+@layer base {
+  @media (any-pointer: coarse) {
+    :where(.hit) {
+      position: relative;
+    }
+    .hit::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: max(100%, 44px);
+      height: max(100%, 44px);
+      transform: translate(-50%, -50%);
+    }
   }
 }
 

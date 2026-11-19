@@ -209,11 +209,12 @@ describe('the assistant’s state on a thread (U5)', () => {
   it('says shadow as a label, and live as the pause control', () => {
     expect(panel(anya, r, detail(r, { aiMode: 'shadow' }))).toContain('Assistant in shadow');
     const live = panel(anya, r, detail(r, { aiMode: 'live' }));
-    expect(live).toContain('<strong class="font-bold">Assistant on</strong>');
+    // SCRUM-1045: the state truncates only if it alone is too long; its why steps aside whole.
+    expect(live).toContain('<strong class="min-w-0 max-w-full truncate font-bold">Assistant on</strong>');
     expect(live).toMatch(pauseButton);
     expect(live).toContain('aria-pressed="false"');
     const paused = panel(anya, r, detail(r, { aiMode: 'live', aiPaused: true }));
-    expect(paused).toContain('<strong class="font-bold">Assistant paused</strong>');
+    expect(paused).toContain('<strong class="min-w-0 max-w-full truncate font-bold">Assistant paused</strong>');
     expect(paused).toMatch(resumeButton);
   });
   it('says nothing until the detail — the number’s mode — is in', () => {
@@ -225,12 +226,12 @@ describe('the assistant’s state on a thread (U5)', () => {
   it('says the api’s thread state when it is there (customer-AI test night, W4a), with the control it needs', () => {
     const live = (aiState: string) => panel(anya, r, { ...detail(r, { aiMode: 'live' }), aiState } as ConversationDetail);
     expect(live('ready')).toMatch(pauseButton);
-    expect(live('ready')).toContain('Assistant on</strong> · it answers what it knows');
+    expect(live('ready')).toContain('Assistant on</strong><span class="whitespace-pre"> · it answers what it knows');
     expect(live('paused')).toMatch(resumeButton);
     expect(live('left_for_team')).toMatch(resumeButton);
-    expect(live('left_for_team')).toContain('Assistant handed over</strong> · it will stay quiet');
+    expect(live('left_for_team')).toContain('Assistant handed over</strong><span class="whitespace-pre"> · it will stay quiet');
     expect(live('person_replied')).toMatch(resumeButton);
-    expect(live('person_replied')).toContain('Assistant quiet</strong> · a person replied');
+    expect(live('person_replied')).toContain('Assistant quiet</strong><span class="whitespace-pre"> · a person replied');
     expect(live('shadow')).toContain('Assistant in shadow');
     expect(live('shadow')).not.toContain('aria-pressed');
     expect(live('off')).toContain('Assistant off on this number');
@@ -471,7 +472,8 @@ describe('the wording (U9)', () => {
     // SCRUM-1016 (review): the desktop panel sets the value under its label, whole.
     expect(agent).toMatch(/>Park<\/span><span[^>]*><span class="min-w-0 break-words">Central Floresta<\/span>/);
     // And the header says where the chat came from: the number, the topic, the park.
-    expect(agent).toContain(' · General · Central Floresta</p>');
+    // SCRUM-1045: each part its own piece, stepping aside whole when it does not fit.
+    expect(agent).toContain('<span class="whitespace-pre"> · General</span><span class="whitespace-pre"> · Central Floresta</span></p>');
   });
   it('explains the category badge against the team, in a tooltip', () => {
     expect(panel(anya, r, detail(r))).toContain(

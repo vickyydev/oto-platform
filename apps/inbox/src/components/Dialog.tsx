@@ -95,12 +95,12 @@ export function Dialog({
             {/* What the sheet is about, before its title (ChatActions.dc.html: the contact's 44 px face). */}
             {lead}
             <div className="min-w-0 flex-1">
-              <h2 id={titleId} className="truncate text-[20px] font-extrabold tracking-[-0.02em] text-ink">
+              <h2 id={titleId} className="truncate text-display font-extrabold tracking-[-0.02em] text-ink">
                 {title}
               </h2>
               {/* The sheet's line under its title (ChatActions.dc.html: the channel, the language, the member link). */}
               {subtitle && (
-                <p id={subtitleId} className="text-[12.5px] text-ink-muted">
+                <p id={subtitleId} className="text-note text-ink-muted">
                   {subtitle}
                 </p>
               )}
@@ -110,7 +110,7 @@ export function Dialog({
               type="button"
               onClick={onClose}
               aria-label={closeLabel}
-              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-ink hover:bg-wash ${FOCUS}`}
+              className={`hit flex size-icon shrink-0 items-center justify-center rounded-xl text-ink hover:bg-wash ${FOCUS}`}
             >
               <X aria-hidden className="h-[22px] w-[22px]" />
             </button>
@@ -143,11 +143,11 @@ export function Dialog({
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <h2 id={titleId} className="text-[18px] font-extrabold tracking-[-0.02em] text-ink md:text-[16px] md:font-bold">
+            <h2 id={titleId} className="text-heading font-extrabold tracking-[-0.02em] text-ink md:font-bold">
               {title}
             </h2>
             {subtitle && (
-              <p id={subtitleId} className="mt-0.5 text-[12.5px] text-ink-muted">
+              <p id={subtitleId} className="mt-0.5 text-note text-ink-muted">
                 {subtitle}
               </p>
             )}
@@ -157,7 +157,7 @@ export function Dialog({
             type="button"
             onClick={onClose}
             aria-label={closeLabel}
-            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-ink hover:bg-wash md:h-9 md:w-9 md:text-ink-muted md:hover:bg-band md:hover:text-ink ${FOCUS}`}
+            className={`hit flex size-icon shrink-0 items-center justify-center rounded-xl text-ink hover:bg-wash md:text-ink-muted md:hover:bg-band md:hover:text-ink ${FOCUS}`}
           >
             <X aria-hidden className="h-[22px] w-[22px] md:h-4 md:w-4" />
           </button>

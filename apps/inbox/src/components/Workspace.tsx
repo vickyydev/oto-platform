@@ -14,12 +14,14 @@ import { HandleConfirm } from '@/components/confirms';
 import { NewContactDialog } from '@/components/ContactDialogs';
 import { ConversationList } from '@/components/ConversationList';
 import { FiltersDialog, TemplatesDialog, showConversationsLabel } from '@/components/dialogs';
+import { PaneDivider } from '@/components/PaneDivider';
 import { Rail } from '@/components/Rail';
 import { SimulatorBody, SimulatorDialog } from '@/components/Simulator';
 import { StatsRow } from '@/components/StatsRow';
 import { TemplateSettings } from '@/components/TemplateSettings';
 import { inboxAccessSignature, inboxFiltersWithinAccess, inboxItemWithinAccess, inboxMeWithinAccess, inboxSourcesWithinAccess, mergeSources, sourcesOfRows, withoutHiddenChannel, type SourceOption } from '@/lib/inboxes';
 import { useInboxAccess } from '@/hooks/useInboxAccess';
+import { usePanes } from '@/hooks/usePanes';
 import { withReadyToBook } from '@/lib/list-state';
 import { EMPTY_FILTERS, listQuery, type Filters } from '@/lib/query';
 import { fastInboxRefresh, startFastInboxRefresh } from '@/lib/refresh';
@@ -54,23 +56,6 @@ function message(err: unknown, fallback: string): string {
 }
 
 /**
- * The list and the chat stand side by side from 768 px (tablet and desktop,
- * SCRUM-1016); below that a phone shows one of them, the prototype's
- * `showChatMobile` (:1047). An open chat counts as on screen only when it is.
- */
-function useIsSideBySide(): boolean {
-  const query = '(min-width: 768px)';
-  const [wide, setWide] = useState(() => window.matchMedia(query).matches);
-  useEffect(() => {
-    const mq = window.matchMedia(query);
-    const on = () => setWide(mq.matches);
-    mq.addEventListener('change', on);
-    return () => mq.removeEventListener('change', on);
-  }, []);
-  return wide;
-}
-
-/**
  * Newer messages onto what is loaded: keep the older pages the reader opened,
  * and append the newest page past the last one already shown. If the newest
  * page no longer meets what is loaded (a long gap), it replaces it.
@@ -96,7 +81,6 @@ function mergeNewest(loaded: Message[], newest: Message[], loadedCursor: string 
 export function Workspace({ me }: { me: InboxMe }) {
   const { signOut, reload } = useSession();
   const { theme, setTheme } = useTheme();
-  const sideBySide = useIsSideBySide();
   const [now, setNow] = useState(() => new Date());
 
   // The URL's view (P2, `lib/url.ts`), read once as the workspace opens: a
@@ -200,6 +184,13 @@ export function Workspace({ me }: { me: InboxMe }) {
   const visibleSources = inboxSourcesWithinAccess(sources, currentAccess);
   sourcesRef.current = visibleSources;
   const currentMe = inboxMeWithinAccess(me, currentAccess);
+  // The list and the chat side by side from 768 px with a divider between
+  // them (SCRUM-1045, `lib/panes.ts`); below that, or when the room cannot
+  // give both their minimum, one of them at a time, the prototype's
+  // `showChatMobile` (:1047). An open chat counts as on screen only when it is.
+  const simulatorShown = Boolean(currentMe.simulator) && simPane;
+  const panes = usePanes(simulatorShown);
+  const sideBySide = panes.split;
   useEffect(() => {
     setSources(known => inboxSourcesWithinAccess(known, currentAccess));
     setFilters(held => inboxFiltersWithinAccess(held, currentAccess));
@@ -589,18 +580,16 @@ export function Workspace({ me }: { me: InboxMe }) {
   );
 
   // A chat open on a phone is its own full screen (Chat.dc.html): its header
-  // has the way back, so the app bar steps aside below 768 px.
-  const phoneChat = showChatMobile && selected !== null;
+  // has the way back, so the app bar steps aside while one pane shows.
+  const phoneChat = !sideBySide && showChatMobile && selected !== null;
   // The chat's right panel for the customer and the next step (Desktop.dc.html)
   // is the chat's own, from 1280 px; the simulator panel takes that width, so
   // beside it the chat's panel waits for a wider screen (`panelWide`).
-  const simulatorShown = Boolean(currentMe.simulator) && simPane;
-  const columns = 'lg:grid-cols-[216px_minmax(300px,360px)_minmax(0,1fr)] xl:grid-cols-[216px_360px_minmax(0,1fr)]';
 
   return (
     <div className="flex h-[100dvh] overflow-hidden">
       <div className="flex min-w-0 flex-1 flex-col">
-        <div className={phoneChat ? 'hidden md:block' : undefined}>
+        <div className={phoneChat ? 'hidden' : undefined}>
           <AppBar
             search={search}
             onSearch={setSearch}
@@ -624,7 +613,7 @@ export function Workspace({ me }: { me: InboxMe }) {
         </div>
 
         {settings !== null && (
-          <div className="min-h-0 flex-1 overflow-y-auto">
+          <div data-pane="settings" className="min-h-0 flex-1 overflow-y-auto">
             <div className="mx-auto max-w-[1400px] px-4 py-5 sm:px-6">
               {settings === 'templates' && <TemplateSettings me={currentMe} onBack={() => chooseSettings(null)} />}
               {settings === 'assistant' && (
@@ -636,7 +625,11 @@ export function Workspace({ me }: { me: InboxMe }) {
 
         {/* The work: kept mounted under a settings page, as the card was. */}
         <main
-          className={`${settings !== null ? 'hidden ' : ''}grid min-h-0 flex-1 grid-cols-1 overflow-hidden md:grid-cols-[minmax(300px,360px)_minmax(0,1fr)] ${columns}`}
+          ref={(el) => {
+            panes.shell.current = el;
+          }}
+          style={{ gridTemplateColumns: panes.columns, ['--list-w' as string]: `${panes.width}px` }}
+          className={`${settings !== null ? 'hidden ' : ''}relative grid min-h-0 flex-1 overflow-hidden`}
         >
           <Rail
             me={currentMe}
@@ -650,7 +643,9 @@ export function Workspace({ me }: { me: InboxMe }) {
           />
 
           <section
-            className={`min-h-0 min-w-0 flex-col border-line md:border-r ${showChatMobile ? 'hidden md:flex' : 'flex'}`}
+            id="inbox-list"
+            data-pane="list"
+            className={`min-h-0 min-w-0 flex-col border-line ${sideBySide ? 'flex border-r' : showChatMobile ? 'hidden' : 'flex'}`}
             aria-label="Conversations"
           >
             <ConversationList
@@ -674,8 +669,21 @@ export function Workspace({ me }: { me: InboxMe }) {
             />
           </section>
 
+          {sideBySide && (
+            <PaneDivider
+              width={panes.width}
+              room={panes.room}
+              max={panes.max}
+              left={panes.edge}
+              controls="inbox-list"
+              onLive={panes.live}
+              onCommit={panes.commit}
+            />
+          )}
+
           <section
-            className={`min-h-0 min-w-0 flex-col bg-ground ${showChatMobile ? 'flex' : 'hidden md:flex'}`}
+            data-pane="chat"
+            className={`min-h-0 min-w-0 flex-col bg-ground ${sideBySide || showChatMobile ? 'flex' : 'hidden'}`}
             aria-label="Conversation"
           >
             {selected ? (
@@ -685,6 +693,7 @@ export function Workspace({ me }: { me: InboxMe }) {
                 me={currentMe}
                 now={now}
                 detailsOpen={detailsOpen}
+                single={!sideBySide}
                 onBack={closeChat}
                 onLoadOlder={() => void loadOlder()}
                 onOpenDetails={() => setDetailsOpen(true)}
@@ -770,13 +779,13 @@ export function Workspace({ me }: { me: InboxMe }) {
         <aside className="hidden w-[420px] shrink-0 overflow-y-auto border-l border-line bg-card p-4 xl:block">
           <div className="mb-3 flex items-center justify-between gap-3">
             <div>
-              <div className="text-[13px] font-bold text-ink">Simulator · test only</div>
-              <div className="text-[11.5px] text-ink-muted">Temporary side panel for testing. Nothing reaches a real customer.</div>
+              <div className="text-note font-bold text-ink">Simulator · test only</div>
+              <div className="text-caption text-ink-muted">Temporary side panel for testing. Nothing reaches a real customer.</div>
             </div>
             <button
               type="button"
               onClick={() => toggleSimPane(false)}
-              className="min-h-11 shrink-0 rounded-full border border-field px-4 text-[13px] font-semibold text-ink-soft hover:bg-wash"
+              className="hit min-h-ctl shrink-0 rounded-full border border-field px-4 text-note font-semibold text-ink-soft hover:bg-wash"
             >
               Hide
             </button>

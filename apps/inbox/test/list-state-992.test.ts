@@ -55,23 +55,25 @@ describe('SCRUM-992: unread and next action remain separate in the actual list m
     expect(html).not.toContain('Needs reply');
     expect(html).not.toContain('>Unanswered<');
   });
-  // SCRUM-1016: selection is the band's ground inside a 2 px ink ring (no bar
-  // at the edge); unread is the heavier name and the coral count, never a ground.
+  // SCRUM-1016: selection is the band's ground inside a ring (no bar at the
+  // edge); unread is the heavier name and the coral count, never a ground.
+  // SCRUM-1045: the ring is a quiet 1 px edge in the muted ink (3 : 1 or
+  // better against the band in both themes, tokens-1016), not 2 px of ink.
   it('selection, keyboard focus and unread retain separate theme-aware markers', () => {
     const selected = rowTag(render({ nextAction: 'ai_replying' }, true));
     expect(selected).toContain('aria-current="true"');
     expect(selected).toContain('focus-visible:outline-2');
     expect(selected).toContain('focus-visible:outline-coral');
-    expect(selected).toContain('ring-2 ring-inset ring-ink');
+    expect(selected).toContain('ring-1 ring-inset ring-ink-muted');
     expect(selected).toContain('bg-band');
     expect(selected).not.toMatch(/border-l-\d|border-l-indigo/);
     const unread = render({ nextAction: 'ai_replying' });
     expect(rowTag(unread)).not.toContain('ring-ink');
     expect(rowTag(unread)).not.toContain('bg-band');
     // SCRUM-1016 (review): the name sits at a tight leading, as Main.dc.html sets it.
-    expect(unread).toMatch(/text-\[15px\] leading-tight text-ink font-extrabold">ZZ TEST guest</);
+    expect(unread).toMatch(/text-body leading-tight text-ink font-extrabold">ZZ TEST guest</);
     expect(unread).toMatch(/aria-label="2 unread messages for you" class="[^"]*bg-coral[^"]*text-on-coral/);
-    expect(render({ unread: 0 })).toMatch(/text-\[15px\] leading-tight text-ink font-semibold">ZZ TEST guest</);
+    expect(render({ unread: 0 })).toMatch(/text-body leading-tight text-ink font-semibold">ZZ TEST guest</);
     expect(conversationRowColour(false)).not.toContain('ring');
   });
   it('an unread handled conversation retains its personal unread count', () => {
@@ -97,7 +99,10 @@ function luminance(hex: string): number {
 }
 /** The token a class names (`bg-needs` → `needs`), from a set of classes. */
 function token(classes: string, prefix: 'bg' | 'text' | 'ring'): string {
-  const found = classes.split(' ').find((c) => c.startsWith(`${prefix}-`) && !/^(?:text|ring)-\[|^ring-\d|^ring-inset/.test(c));
+  // SCRUM-1045: `text-caption`, `text-meta`, … are the scale's sizes, not colours.
+  const found = classes
+    .split(' ')
+    .find((c) => c.startsWith(`${prefix}-`) && !/^(?:text|ring)-\[|^ring-\d|^ring-inset|^text-(?:caption|meta|note|ui|action|body|title|heading|figure|display)$/.test(c));
   if (!found) throw new Error(`Missing ${prefix} token in "${classes}"`);
   return found.slice(prefix.length + 1);
 }
@@ -118,7 +123,8 @@ describe('SCRUM-992: the OTO palette’s contrast in both themes', () => {
     // The selected ring stands out from its ground, and from a Ready to book row's.
     for (const ready of [false, true]) {
       const selected = conversationRowColour(true, ready);
-      expect(contrast(theme, 'ink', token(selected, 'bg'))).toBeGreaterThanOrEqual(3);
+      // SCRUM-1045: the ring's own colour (the muted ink), read from the class.
+      expect(contrast(theme, token(selected, 'ring'), token(selected, 'bg'))).toBeGreaterThanOrEqual(3);
     }
   });
 });

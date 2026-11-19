@@ -35,7 +35,7 @@ export const VOICE_NOTE_NAME = 'Voice note';
 
 /** A file's Open control: a card-coloured pill, 44 px tall on a phone (SCRUM-1016). */
 const OPEN_FILE =
-  'inline-flex min-h-11 shrink-0 items-center gap-1 rounded-lg bg-card px-2 text-[12px] font-semibold text-ink ring-1 ring-line hover:bg-wash md:min-h-0 md:py-0.5';
+  'hit inline-flex min-h-ctl-sm shrink-0 items-center gap-1 rounded-lg bg-card px-2 text-meta font-semibold text-ink ring-1 ring-line hover:bg-wash md:py-0.5';
 
 /**
  * One attachment on a bubble (customer-AI test night, W7: the brochure showed
@@ -70,7 +70,7 @@ export function AttachmentChip({ attachment: a, muted }: { attachment: Attachmen
 
   return (
     <div className="mt-1 flex min-w-0 flex-col gap-1" data-attachment={a.fileId}>
-      <div className={`flex min-w-0 items-center gap-1.5 text-[12.5px] ${muted ? 'text-ink-muted' : ''}`}>
+      <div className={`flex min-w-0 items-center gap-1.5 text-note ${muted ? 'text-ink-muted' : ''}`}>
         <Paperclip aria-hidden className="h-3.5 w-3.5 shrink-0" />
         <span className="min-w-0 truncate font-medium">{name}</span>
         {opened ? (
@@ -95,7 +95,7 @@ export function AttachmentChip({ attachment: a, muted }: { attachment: Attachmen
         </a>
       )}
       {audio && opened && <audio controls preload="none" src={opened.url} className="h-8 w-full max-w-[260px]" />}
-      {error && <span className="rounded-md bg-danger px-1.5 py-0.5 text-[11.5px] text-danger-ink">{error}</span>}
+      {error && <span className="rounded-md bg-danger px-1.5 py-0.5 text-caption text-danger-ink">{error}</span>}
     </div>
   );
 }
@@ -106,15 +106,15 @@ export function AttachmentChip({ attachment: a, muted }: { attachment: Attachmen
  * not when it could not be read, was too long, or no provider is configured.
  */
 export function VoiceTranscript({ view }: { view: VoiceTranscriptView }) {
-  const muted = 'text-[12px] italic text-ink-muted';
+  const muted = 'text-meta italic text-ink-muted';
   return (
     <div data-testid="voice-transcript" data-state={view.state} className="mt-1.5 border-t border-line-soft pt-1.5">
       {view.state === 'done' ? (
         <>
-          <span className="mb-0.5 flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-ink-muted">
+          <span className="mb-0.5 flex items-center gap-1 text-caption font-semibold uppercase tracking-wide text-ink-muted">
             <Mic aria-hidden className="h-3.5 w-3.5" /> {view.label}
           </span>
-          <span className="text-[14px]">{view.text}</span>
+          <span className="text-ui">{view.text}</span>
         </>
       ) : view.state === 'pending' ? (
         <span className={`inline-flex items-center gap-1 ${muted}`}>
@@ -129,15 +129,19 @@ export function VoiceTranscript({ view }: { view: VoiceTranscriptView }) {
   );
 }
 
-/** The column a line stands in: most of a phone's width, less on a desktop (Chat.dc.html, Desktop.dc.html). */
-const COLUMN = 'flex min-w-0 max-w-[80%] flex-col gap-1 lg:max-w-[62%]';
-/** A bubble: 18 px round, the corner by its author smaller (6 px), 14.5 px words. */
-const BUBBLE = 'max-w-full whitespace-pre-line break-words rounded-[18px] px-3.5 py-2.5 text-[14.5px] leading-[1.4]';
+/**
+ * The column a line stands in (Chat.dc.html, Desktop.dc.html): a comfortable
+ * measure, at most 34 em of text and never wider than 78 % of the chat
+ * (SCRUM-1045), the bubble's words at the scale's body size.
+ */
+const COLUMN = 'flex min-w-0 max-w-[min(78%,34em)] flex-col gap-1 text-body';
+/** A bubble: 18 px round, the corner by its author smaller (6 px), the body size at a 1.4 leading. */
+const BUBBLE = 'max-w-full whitespace-pre-line break-words rounded-[18px] px-3.5 py-2.5 text-body leading-[1.4]';
 
 /** "Assistant" over the assistant's lines, in its teal (Chat.dc.html). */
 function AssistantLabel() {
   return (
-    <span className="inline-flex items-center gap-1 text-[11.5px] font-bold text-teal">
+    <span className="inline-flex items-center gap-1 text-caption font-bold text-teal">
       <Bot aria-hidden className="h-3.5 w-3.5" /> Assistant
     </span>
   );
@@ -154,12 +158,12 @@ export function ShadowBubble({ text, at, now, label = SHADOW_LABEL }: { text: st
       <div className={`${COLUMN} items-end`}>
         <span className="flex flex-wrap items-center justify-end gap-x-2 gap-y-0.5 px-1">
           <AssistantLabel />
-          <span className="inline-flex items-center gap-1 text-[11.5px] font-medium text-ink-muted">
+          <span className="inline-flex items-center gap-1 text-caption font-medium text-ink-muted">
             <EyeOff aria-hidden className="h-3.5 w-3.5" /> {label}
           </span>
         </span>
         <div className={`${BUBBLE} rounded-tr-md border border-dashed border-mint-edge bg-card text-ink-soft`}>{text}</div>
-        <span className="px-1 text-[11.5px] text-ink-muted">{bubbleTime(at, now)}</span>
+        <span className="px-1 text-caption text-ink-muted">{bubbleTime(at, now)}</span>
       </div>
     </div>
   );
@@ -247,9 +251,9 @@ export function MessageBubble({
             <AssistantLabel />
           </span>
         ) : isSystem ? (
-          <span className="px-1 text-[11.5px] font-bold text-ink-soft">Sent automatically</span>
+          <span className="px-1 text-caption font-bold text-ink-soft">Sent automatically</span>
         ) : isStaff ? (
-          <span className="px-1 text-[11.5px] font-bold text-ink-soft">
+          <span className="px-1 text-caption font-bold text-ink-soft">
             {personChip(m.id, m.authorAccountId, m.authorName, me).name}
           </span>
         ) : null}
@@ -262,8 +266,8 @@ export function MessageBubble({
             <span className="italic opacity-80">No text</span>
           ) : null}
           {m.translatedBody && (
-            <div className={`mt-1.5 border-t pt-1.5 text-[13.5px] ${rule}`}>
-              <span className={`mr-1 inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide ${mark}`}>
+            <div className={`mt-1.5 border-t pt-1.5 text-ui ${rule}`}>
+              <span className={`mr-1 inline-flex items-center gap-1 text-caption font-semibold uppercase tracking-wide ${mark}`}>
                 <Languages aria-hidden className="h-3.5 w-3.5" /> {langLabel(m.translatedTo)}
               </span>
               {m.translatedBody}
@@ -278,12 +282,12 @@ export function MessageBubble({
           ))}
           {voice && <VoiceTranscript view={voice} />}
         </div>
-        <span className={`flex flex-wrap items-center gap-x-2 px-1 text-[11.5px] text-ink-muted ${isCustomer ? '' : 'justify-end'}`}>
+        <span className={`flex flex-wrap items-center gap-x-2 px-1 text-caption text-ink-muted ${isCustomer ? '' : 'justify-end'}`}>
           {isAi && onCorrect && (
             <button
               type="button"
               onClick={onCorrect}
-              className="inline-flex min-h-11 items-center gap-1 font-semibold text-teal underline underline-offset-2 hover:no-underline md:min-h-0 md:py-1"
+              className="hit inline-flex min-h-ctl-sm items-center gap-1 font-semibold text-teal underline underline-offset-2 hover:no-underline md:py-1"
             >
               <PenLine aria-hidden className="h-3.5 w-3.5" />
               Correct the assistant
@@ -293,7 +297,7 @@ export function MessageBubble({
           {m.direction === 'outbound' && <Delivery status={m.providerStatus} />}
         </span>
         {withdrawn && (
-          <span className="inline-flex items-center gap-1 px-1 text-[12px] font-medium text-ink-muted">
+          <span className="inline-flex items-center gap-1 px-1 text-meta font-medium text-ink-muted">
             <Ban aria-hidden className="h-3.5 w-3.5" />
             {withdrawnNote ?? 'Not sent: a person replied'}
           </span>

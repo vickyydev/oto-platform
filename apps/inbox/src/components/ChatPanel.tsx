@@ -182,6 +182,7 @@ export function ChatPanel({
   onAskHandle,
   onChanged,
   panelWide = false,
+  single = false,
 }: {
   row: ConversationRow;
   thread: Thread;
@@ -200,6 +201,8 @@ export function ChatPanel({
   onChanged: () => Promise<void>;
   /** The simulator's side panel is shown: the desktop panel waits for a wider screen (1760 px, not 1280). */
   panelWide?: boolean;
+  /** One pane at a time (a phone, or a window too narrow for both): the header has the way back. */
+  single?: boolean;
 }) {
   const pending = writeMode(me) === 'disabled';
   const live = !pending;
@@ -208,6 +211,7 @@ export function ChatPanel({
   const detail = thread.detail?.id === row.id ? thread.detail : null;
   const conv: ConversationRow = detail ?? row;
   const name = contactName(conv.contact);
+  const { headerRef, nameRef, wordsRef, words: handleWords } = useNameFirst(name);
   const primary = primaryOf(conv);
   const supports = supportsOf(conv);
   const viewerIsPrimary = primary?.accountId === me.accountId;
@@ -566,8 +570,10 @@ export function ChatPanel({
       : 'Stop the assistant answering on this conversation. Lines not yet sent are withdrawn.';
   // The next-step card stands in the chat below the panel's width and in the
   // panel beside it: the same card, one place at each width.
-  const panelOn = panelWide ? 'min-[1760px]:flex' : 'xl:flex';
-  const panelOff = panelWide ? 'min-[1760px]:hidden' : 'xl:hidden';
+  // SCRUM-1045: and only while the chat pane has room for it beside a 360 px
+  // conversation (660 px), so a list widened by the divider never squeezes the chat.
+  const panelOn = panelWide ? 'min-[1760px]:@min-[660px]/chat:flex' : 'xl:@min-[660px]/chat:flex';
+  const panelOff = panelWide ? 'min-[1760px]:@min-[660px]/chat:hidden' : 'xl:@min-[660px]/chat:hidden';
   const showCard = conv.category === 'birthdays' && !event && mayBook && paidCard !== null;
   const card = (stacked: boolean, className = '') =>
     paidCard && (
@@ -582,7 +588,7 @@ export function ChatPanel({
       />
     );
   const park = effectiveBranchId(conv, me.teams);
-  const topicPark = [CATEGORY_SHORT[conv.category], park ? branchLabel(park, me.teams) : null].filter(Boolean).join(' · ');
+  const topicParts = [CATEGORY_SHORT[conv.category], park ? branchLabel(park, me.teams) : null].filter((p): p is string => Boolean(p));
   const peopleNames = [primary ? `Primary: ${assigneeChip(primary, me).name}` : 'Unassigned', ...supports.map((s) => `Support: ${assigneeChip(s, me).name}`)].join('. ');
 
   const markHandled = (wide: boolean) =>
@@ -591,7 +597,7 @@ export function ChatPanel({
       <PendingControl
         reason={WRITES_PENDING_REASON}
         label="Mark as handled"
-        className={wide ? `${SECONDARY_BUTTON} h-12 w-full border-ink text-[15px] font-bold` : HEADER_ICON}
+        className={wide ? `${SECONDARY_BUTTON} min-h-ctl-lg w-full border-ink text-action font-bold` : HEADER_ICON}
       >
         <CheckCircle2 aria-hidden className="h-5 w-5" />
         {wide && 'Mark as handled'}
@@ -607,11 +613,14 @@ export function ChatPanel({
         disabled={busy !== null}
         aria-label={wide ? undefined : 'Mark as handled'}
         title="Mark as handled"
-        // The words from 1024 px only: on a tablet's chat column they left the name a few letters wide.
-        className={wide ? `${SECONDARY_BUTTON} h-12 w-full border-ink text-[15px] font-bold` : `${HEADER_ICON} lg:w-auto lg:gap-2 lg:rounded-xl lg:border lg:border-edge lg:bg-card lg:px-3.5 lg:text-[13.5px] lg:font-semibold`}
+        // SCRUM-1045: the words show only where the chat is wide enough and the
+        // contact's name still fits whole beside them (`useNameFirst`); else the icon.
+        className={wide ? `${SECONDARY_BUTTON} min-h-ctl-lg w-full border-ink text-action font-bold` : `${HEADER_ICON} ${handleWords ? HANDLE_WORDS : ''}`}
       >
-        <CheckCircle2 aria-hidden className="h-[22px] w-[22px] lg:h-[18px] lg:w-[18px]" />
-        <span className={wide ? '' : 'hidden lg:inline'}>Mark as handled</span>
+        <CheckCircle2 aria-hidden className={wide ? 'h-5 w-5' : 'h-[22px] w-[22px] md:h-[18px] md:w-[18px]'} />
+        <span ref={wide ? undefined : wordsRef} className={wide ? '' : handleWords ? 'hidden whitespace-nowrap @min-[30rem]/thread:inline' : 'hidden'}>
+          Mark as handled
+        </span>
       </button>
     ));
 
@@ -630,7 +639,7 @@ export function ChatPanel({
     // The select laid over a row (`cover`): the whole row is the target, so the
     // chevron needs only its own width, as ChatActions.dc.html draws it; the
     // value keeps the room ("Reception · Central Floresta" whole at 390 px).
-    const rowChoice = 'inline-flex h-11 w-6 shrink-0 items-center justify-center rounded-xl';
+    const rowChoice = 'inline-flex h-ctl w-6 shrink-0 items-center justify-center rounded-xl';
     // The party's two buttons: side by side on the sheet, one over the other in the panel (as the next-step card).
     const pair = panel ? 'flex flex-col gap-2' : 'grid grid-cols-2 gap-2';
     return (
@@ -665,7 +674,7 @@ export function ChatPanel({
           </div>
         ) : (
           <div className="flex min-h-14 items-center gap-3 px-3.5">
-            <span className="rounded-lg bg-needs px-2 py-1 text-[12.5px] font-semibold text-needs-ink">Unassigned</span>
+            <span className="rounded-lg bg-needs px-2 py-1 text-note font-semibold text-needs-ink">Unassigned</span>
           </div>
         )}
         {supports.map((s, i) => (
@@ -707,9 +716,9 @@ export function ChatPanel({
             // Both places taken (test night U4): say so where "Add support" sat,
             // with the api's own reason, rather than let the button vanish.
             // Its reason said on the sheet, not only in a tooltip (SCRUM-1016).
-            <span className="flex min-h-12 flex-col items-center justify-center px-3 py-1.5 text-center">
-              <span className="text-[14px] font-semibold text-ink-muted">{supportCap}</span>
-              <span className="text-[12px] text-ink-muted">{SUPPORT_FULL_HINT}</span>
+            <span className="flex min-h-ctl-lg flex-col items-center justify-center px-3 py-1.5 text-center">
+              <span className="text-ui font-semibold text-ink-muted">{supportCap}</span>
+              <span className="text-meta text-ink-muted">{SUPPORT_FULL_HINT}</span>
             </span>
           )}
           {me.capabilities.assign &&
@@ -753,7 +762,7 @@ export function ChatPanel({
               )
             ))}
           {!me.capabilities.assign && (
-            <span className="flex min-h-12 items-center px-3.5 text-[13px] text-ink-muted">{MANAGERS_ADD_SUPPORT}</span>
+            <span className="flex min-h-ctl-lg items-center px-3.5 text-note text-ink-muted">{MANAGERS_ADD_SUPPORT}</span>
           )}
         </PeopleFooter>
       </ActionSection>
@@ -891,7 +900,7 @@ export function ChatPanel({
                       ? 'The event was archived in the Events calendar. Restore it there to use it again.'
                       : 'Date already blocked in the Events calendar'
                   }
-                  className={`${SECONDARY_BUTTON} h-12 cursor-default border-money-line bg-money text-money-ink`}
+                  className={`${SECONDARY_BUTTON} hit h-ctl-lg cursor-default border-money-line bg-money text-money-ink`}
                 >
                   <Calendar aria-hidden className="h-4 w-4" />
                   {event.archived ? 'Event archived' : 'Date Booked'}
@@ -901,14 +910,14 @@ export function ChatPanel({
                   onClick={() => void openBeo(conv.id, undefined, true)}
                   disabled={busy !== null}
                   title="Open this event's BEO in the OTO App"
-                  className={`${SECONDARY_BUTTON} h-12`}
+                  className={`${SECONDARY_BUTTON} hit h-ctl-lg`}
                 >
                   {busy === 'beo' ? <Loader2 aria-hidden className="h-4 w-4 animate-spin" /> : <FileText aria-hidden className="h-4 w-4" />}
                   Create BEO
                 </button>
               </div>
             ) : showCard ? (
-              where === 'sheet' && <p className="px-1 text-[13px] text-ink-muted">The deposit is paid: Book the date is at the top of the chat.</p>
+              where === 'sheet' && <p className="px-1 text-note text-ink-muted">The deposit is paid: Book the date is at the top of the chat.</p>
             ) : (
               <>
                 <div className={pair}>
@@ -921,7 +930,7 @@ export function ChatPanel({
                       }}
                       disabled={busy !== null}
                       title="Block this date in the Events calendar"
-                      className="inline-flex h-12 items-center justify-center gap-2 rounded-[13px] bg-coral px-3 text-[14.5px] font-bold text-on-coral hover:bg-coral/90 disabled:opacity-60"
+                      className="hit inline-flex h-ctl-lg items-center justify-center gap-2 rounded-[13px] bg-coral px-3 text-body font-bold text-on-coral hover:bg-coral/90 disabled:opacity-60"
                     >
                       <Calendar aria-hidden className="h-4 w-4" />
                       Book the date
@@ -930,7 +939,7 @@ export function ChatPanel({
                     <PendingControl
                       reason={bookOffReason}
                       label="Book the date"
-                      className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[13px] bg-coral px-3 text-[14.5px] font-bold text-on-coral"
+                      className="hit inline-flex h-ctl-lg w-full items-center justify-center gap-2 rounded-[13px] bg-coral px-3 text-body font-bold text-on-coral"
                     >
                       <Calendar aria-hidden className="h-4 w-4" />
                       Book the date
@@ -945,20 +954,20 @@ export function ChatPanel({
                       }}
                       disabled={busy !== null}
                       title="Book the date, then open its BEO in the OTO App"
-                      className={`${SECONDARY_BUTTON} h-12`}
+                      className={`${SECONDARY_BUTTON} hit h-ctl-lg`}
                     >
                       {busy === 'beo' ? <Loader2 aria-hidden className="h-4 w-4 animate-spin" /> : <FileText aria-hidden className="h-4 w-4" />}
                       Create BEO
                     </button>
                   ) : (
-                    <PendingControl reason={bookOffReason} label="Create BEO" className={`${SECONDARY_BUTTON} h-12 w-full`}>
+                    <PendingControl reason={bookOffReason} label="Create BEO" className={`${SECONDARY_BUTTON} hit h-ctl-lg w-full`}>
                       <FileText aria-hidden className="h-4 w-4" />
                       Create BEO
                     </PendingControl>
                   )}
                 </div>
                 {/* Why both are off, said on the page and not only in a tooltip (SCRUM-1016). */}
-                {!mayBook && <p className="px-1 text-[12.5px] text-ink-muted" data-testid="book-off-reason">{bookOffReason}</p>}
+                {!mayBook && <p className="px-1 text-note text-ink-muted" data-testid="book-off-reason">{bookOffReason}</p>}
               </>
             )}
             {event && (
@@ -968,7 +977,7 @@ export function ChatPanel({
                 disabled={busy !== null}
                 title={`${event.title} · ${event.archived ? 'Archived' : event.statusName} in the Events calendar. Opens it in the OTO App.`}
                 data-testid="event-chip"
-                className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line bg-card px-3 py-2 text-left text-[13.5px] font-semibold text-ink hover:bg-wash disabled:opacity-60"
+                className="hit inline-flex min-h-ctl items-center gap-2 rounded-xl border border-line bg-card px-3 py-2 text-left text-ui font-semibold text-ink hover:bg-wash disabled:opacity-60"
               >
                 <Calendar aria-hidden className="h-4 w-4 shrink-0 text-ink-soft" />
                 {eventChipLabel(eventChipOf(event))}
@@ -979,7 +988,7 @@ export function ChatPanel({
               <span
                 title={`${removedEvent.title} was deleted or archived in the Events calendar. Book the date books it again.`}
                 data-testid="event-chip-removed"
-                className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-band px-3 py-2 text-[13.5px] font-semibold text-ink-soft"
+                className="inline-flex min-h-ctl items-center gap-2 rounded-xl bg-band px-3 py-2 text-ui font-semibold text-ink-soft"
               >
                 <Calendar aria-hidden className="h-4 w-4 shrink-0" />
                 {PARTY_REMOVED_LABEL}
@@ -1002,7 +1011,7 @@ export function ChatPanel({
                   setEditingName(true);
                 }}
                 aria-label={EDIT_NAME_LABEL}
-                className={`${SECONDARY_BUTTON} min-h-11`}
+                className={`${SECONDARY_BUTTON} hit min-h-ctl`}
               >
                 <PenLine aria-hidden className="h-4 w-4" />
                 {EDIT_NAME_LABEL}
@@ -1018,7 +1027,7 @@ export function ChatPanel({
                 }}
                 aria-label={START_OVER_LABEL}
                 title={`${START_OVER_LABEL} — test line`}
-                className={`${SECONDARY_BUTTON} min-h-11`}
+                className={`${SECONDARY_BUTTON} hit min-h-ctl`}
               >
                 <RotateCcw aria-hidden className="h-4 w-4" />
                 {START_OVER_LABEL}
@@ -1033,27 +1042,38 @@ export function ChatPanel({
 
   return (
     <div className="flex min-h-0 min-w-0 flex-1">
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+      <div className="@container/thread flex min-h-0 min-w-0 flex-1 flex-col">
         {/* Header (Chat.dc.html): back, the face, the name and where the chat came from, Mark as handled, one menu. */}
-        <header className="flex shrink-0 items-center gap-1 border-b border-line bg-card px-1 py-2 md:gap-3 md:px-5 md:py-3">
+        <header
+          ref={headerRef}
+          className={`flex shrink-0 items-center gap-1 border-b border-line bg-card py-2 md:gap-2.5 md:px-pane md:py-2.5 ${single ? 'px-1' : 'pl-pane pr-2'}`}
+        >
           <button
             type="button"
             onClick={onBack}
             aria-label="Back to the conversations"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-ink hover:bg-wash md:hidden"
+            className={`hit size-icon shrink-0 items-center justify-center rounded-xl text-ink hover:bg-wash ${single ? 'flex' : 'hidden'}`}
           >
             <ChevronLeft aria-hidden className="h-6 w-6" />
           </button>
           <div className="relative shrink-0">
-            <Avatar initials={initialsOf(name)} tint={tintFor(conv.contact.id)} size={40} />
+            <Avatar initials={initialsOf(name)} tint={tintFor(conv.contact.id)} size="face-sm" />
             <ChannelDot channel={conv.channel} />
           </div>
-          <div className="min-w-0 flex-1 pl-2 md:pl-0">
-            <h2 className="truncate text-[16px] font-bold tracking-[-0.01em] text-ink">{name}</h2>
-            <p className="truncate text-[12.5px] text-ink-muted">
-              {/* The number it came in on (SCRUM-220 playbook), not the bare channel; its channel in the title. */}
-              <span title={CHANNEL_LABEL[conv.channel]}>{sourceLabel(conv.channel, conv.channelAccountName)}</span>
-              {topicPark && ` · ${topicPark}`}
+          <div className={`min-w-0 flex-1 ${single ? 'pl-2' : 'pl-1'} md:pl-0.5`}>
+            <h2 ref={nameRef} className="truncate text-title font-bold leading-snug tracking-[-0.01em] text-ink">
+              {name}
+            </h2>
+            {/* The number it came in on (SCRUM-220 playbook), not the bare channel; its channel in the title.
+                Then the topic and the park, each a whole part: one that does not fit
+                wraps to a line that is never shown, so no word is cut in half (SCRUM-1045). */}
+            <p className="flex h-[1.35em] flex-wrap overflow-hidden text-meta leading-[1.35] text-ink-muted">
+              <span title={CHANNEL_LABEL[conv.channel]} className="min-w-0 max-w-full truncate">
+                {sourceLabel(conv.channel, conv.channelAccountName)}
+              </span>
+              {topicParts.map((part) => (
+                <span key={part} className="whitespace-pre">{` · ${part}`}</span>
+              ))}
             </p>
           </div>
           {busy !== null && busy !== 'divert' && (
@@ -1075,12 +1095,13 @@ export function ChatPanel({
         {mayPauseAi && aiLine && (
           <div
             data-ai-state={detail?.aiMode}
-            className="flex shrink-0 items-center gap-2 border-b border-mint-line bg-mint-soft py-0.5 pl-4 pr-2 text-teal md:py-1.5 md:pl-5"
+            className="flex shrink-0 items-center gap-2 border-b border-mint-line bg-mint-soft py-0.5 pl-pane pr-2 text-teal md:py-1"
           >
-            <Bot aria-hidden className="h-[18px] w-[18px] shrink-0" />
-            <span className="min-w-0 flex-1 truncate py-2 text-[13px]">
-              <strong className="font-bold">{aiLine.text}</strong>
-              {aiLine.kind === 'control' && ` · ${aiLine.hint}`}
+            <Bot aria-hidden className="h-[1.3em] w-[1.3em] shrink-0 text-note" />
+            {/* The state, then why: the why steps aside whole when it does not fit (SCRUM-1045). */}
+            <span className="my-2 flex h-[1.35em] min-w-0 flex-1 flex-wrap overflow-hidden text-note leading-[1.35]">
+              <strong className="min-w-0 max-w-full truncate font-bold">{aiLine.text}</strong>
+              {aiLine.kind === 'control' && <span className="whitespace-pre">{` · ${aiLine.hint}`}</span>}
             </span>
             {aiLine.kind === 'control' && (
               <button
@@ -1092,7 +1113,7 @@ export function ChatPanel({
                 aria-label={AI_ACTION_NAME[aiLine.action]}
                 onClick={toggleAi}
                 title={aiTitle}
-                className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full border border-mint-edge bg-card px-3.5 text-[13px] font-semibold text-teal hover:bg-mint disabled:opacity-60 md:h-8"
+                className="hit inline-flex h-ctl shrink-0 items-center gap-1.5 rounded-full border border-mint-edge bg-card px-3.5 text-ui font-semibold text-teal hover:bg-mint disabled:opacity-60 md:px-3"
               >
                 {busy === 'ai' && <Loader2 aria-hidden className="h-3.5 w-3.5 animate-spin" />}
                 {AI_ACTION_LABEL[aiLine.action]}
@@ -1103,7 +1124,7 @@ export function ChatPanel({
               onClick={onOpenDetails}
               aria-label={peopleNames}
               title={peopleNames}
-              className={`flex h-11 shrink-0 items-center px-1 ${panelOff}`}
+              className={`hit flex h-ctl shrink-0 items-center px-1 ${panelOff}`}
             >
               {[primary, ...supports].filter((a): a is Assignee => a !== undefined).map((a, i) => {
                 const chip = assigneeChip(a, me);
@@ -1111,7 +1132,7 @@ export function ChatPanel({
                   <span
                     key={a.assignmentId}
                     aria-hidden
-                    className={`flex h-7 w-7 items-center justify-center rounded-full border-2 border-mint-soft text-[10.5px] font-bold ${chip.tint} ${i > 0 ? '-ml-2' : ''}`}
+                    className={`flex size-[2.4em] items-center justify-center rounded-full border-2 border-mint-soft text-caption font-bold ${chip.tint} ${i > 0 ? '-ml-2' : ''}`}
                   >
                     {chip.initials}
                   </span>
@@ -1121,23 +1142,23 @@ export function ChatPanel({
           </div>
         )}
 
-        {showCard && card(false, `mx-4 mt-3 shrink-0 md:mx-5 ${panelOff}`)}
+        {showCard && card(false, `mx-pane mt-3 shrink-0 ${panelOff}`)}
 
         <ActionFeedback
           error={error}
           note={note}
           onDismissError={() => setError(null)}
           onDismissNote={() => setNote(null)}
-          className="mx-4 mt-3 shrink-0 md:mx-5"
+          className="mx-pane mt-3 shrink-0"
         />
         {pending && (
-          <p className="mx-4 mt-2 shrink-0 text-[12.5px] text-ink-muted md:mx-5">
+          <p className="mx-pane mt-2 shrink-0 text-note text-ink-muted">
             Assigning, moving, handling and replying are {WRITES_PENDING_REASON.toLowerCase()}.
           </p>
         )}
 
         {/* Timeline: the one part of the chat that scrolls. */}
-        <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-ground px-4 py-3.5 md:px-6 md:py-5">
+        <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-ground px-pane py-3.5 md:py-4 @min-[42rem]/thread:px-6">
           <div className="mx-auto flex max-w-3xl flex-col gap-2.5">
             {thread.olderCursor !== null && (
               <div className="flex justify-center">
@@ -1145,7 +1166,7 @@ export function ChatPanel({
                   type="button"
                   onClick={onLoadOlder}
                   disabled={thread.loadingOlder}
-                  className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-card px-4 text-[12.5px] font-semibold text-ink-soft ring-1 ring-line hover:bg-wash md:min-h-8"
+                  className="hit inline-flex min-h-ctl items-center gap-1.5 rounded-full bg-card px-4 text-note font-semibold text-ink-soft ring-1 ring-line hover:bg-wash"
                 >
                   {thread.loadingOlder && <Loader2 aria-hidden className="h-3.5 w-3.5 animate-spin" />}
                   Earlier messages
@@ -1158,7 +1179,7 @@ export function ChatPanel({
               </div>
             )}
             {thread.error && (
-              <div role="alert" className="rounded-2xl bg-danger px-3.5 py-2 text-[13px] text-danger-ink ring-1 ring-danger-line">
+              <div role="alert" className="rounded-2xl bg-danger px-3.5 py-2 text-note text-danger-ink ring-1 ring-danger-line">
                 {thread.error}
               </div>
             )}
@@ -1168,7 +1189,7 @@ export function ChatPanel({
               ) : it.kind === 'group' ? (
                 // One moment's pills in one line (customer-AI test night, W7), the pills under it on a press.
                 <details key={it.id} className="my-0.5 flex flex-col items-center gap-1" data-pill-group={it.pills.length}>
-                  <summary className="mx-auto flex min-h-11 max-w-[90%] cursor-pointer list-none items-center gap-1.5 rounded-full bg-band px-3 text-center text-[12px] text-ink-soft hover:bg-line md:min-h-0 md:py-1.5">
+                  <summary className="hit mx-auto flex min-h-ctl-sm max-w-[90%] cursor-pointer list-none items-center gap-1.5 rounded-full bg-band px-3 text-center text-meta text-ink-soft hover:bg-line md:py-1.5">
                     <span className="min-w-0">{it.summary}</span>
                     <ChevronDown aria-hidden className="h-3.5 w-3.5 shrink-0" />
                   </summary>
@@ -1186,7 +1207,7 @@ export function ChatPanel({
                     <button
                       type="button"
                       onClick={() => setCorrecting({ at: it.at })}
-                      className="inline-flex min-h-11 items-center gap-1 px-2 text-[11.5px] font-semibold text-teal underline underline-offset-2 hover:no-underline md:min-h-0 md:py-1"
+                      className="hit inline-flex min-h-ctl-sm items-center gap-1 px-2 text-caption font-semibold text-teal underline underline-offset-2 hover:no-underline md:py-1"
                     >
                       <PenLine aria-hidden className="h-3.5 w-3.5" />
                       Correct the assistant
@@ -1209,7 +1230,7 @@ export function ChatPanel({
             )}
             {conv.status === 'handled' && (
               <div className="mt-2 flex justify-center">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-money-badge px-3 py-1.5 text-[12px] font-semibold text-money-ink">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-money-badge px-3 py-1.5 text-meta font-semibold text-money-ink">
                   <Archive aria-hidden className="h-3.5 w-3.5" /> Conversation closed · Will reopen if customer replies
                 </span>
               </div>
@@ -1238,6 +1259,7 @@ export function ChatPanel({
       <aside
         aria-label="About this conversation"
         data-region="customer-panel"
+        data-pane="panel"
         className={`hidden w-[300px] shrink-0 flex-col gap-4 overflow-y-auto border-l border-line bg-ground p-4 ${panelOn}`}
       >
         {showCard && card(true)}
@@ -1253,7 +1275,7 @@ export function ChatPanel({
         closeLabel="Close people and actions"
         lead={
           <div className="relative shrink-0">
-            <Avatar initials={initialsOf(name)} tint={tintFor(conv.contact.id)} size={44} />
+            <Avatar initials={initialsOf(name)} tint={tintFor(conv.contact.id)} />
             <ChannelDot channel={conv.channel} ring="ring-ground" />
           </div>
         }
@@ -1321,14 +1343,54 @@ export function ChatPanel({
   );
 }
 
-/** The header's 44 px icon controls (Chat.dc.html). */
-const HEADER_ICON = 'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-ink hover:bg-wash disabled:opacity-60';
+/** The header's icon controls (Chat.dc.html): 44 px on a phone, the scale's `icon` elsewhere, 44 px to a finger. */
+const HEADER_ICON = 'hit flex size-icon shrink-0 items-center justify-center rounded-xl text-ink hover:bg-wash disabled:opacity-60';
+/** Mark as handled with its words: an outlined button of the scale's height, once the chat is 30 rem wide. */
+const HANDLE_WORDS =
+  '@min-[30rem]/thread:h-ctl @min-[30rem]/thread:w-auto @min-[30rem]/thread:gap-1.5 @min-[30rem]/thread:border @min-[30rem]/thread:border-edge @min-[30rem]/thread:bg-card @min-[30rem]/thread:px-3 @min-[30rem]/thread:text-ui @min-[30rem]/thread:font-semibold';
+
+/**
+ * The name comes first (SCRUM-1045): "Mark as handled" keeps its words only
+ * while the contact's name still fits whole beside them, and becomes its icon
+ * when it would not. Measured, not guessed: a long name drops the words at a
+ * width where a short one keeps them. The words come back only when the name
+ * would still fit with them, so the header never flickers between the two.
+ */
+function useNameFirst(name: string) {
+  const headerRef = useRef<HTMLElement>(null);
+  const nameRef = useRef<HTMLHeadingElement>(null);
+  const wordsRef = useRef<HTMLSpanElement>(null);
+  const [words, setWords] = useState(true);
+  // What the words add to the header when shown; measured each time they are.
+  const extra = useRef(140);
+  useEffect(() => {
+    const header = headerRef.current;
+    if (!header || typeof ResizeObserver === 'undefined') return;
+    const check = () => {
+      const h = nameRef.current;
+      if (!h) return;
+      const w = wordsRef.current;
+      const shown = w !== null && w.offsetWidth > 0;
+      const button = w?.parentElement;
+      if (shown && button) extra.current = button.offsetWidth - button.offsetHeight + 4;
+      setWords((on) => {
+        if (on) return shown ? h.scrollWidth <= h.clientWidth + 0.5 : true;
+        return h.clientWidth - extra.current >= h.scrollWidth;
+      });
+    };
+    const ro = new ResizeObserver(check);
+    ro.observe(header);
+    check();
+    return () => ro.disconnect();
+  }, [name]);
+  return { headerRef, nameRef, wordsRef, words };
+}
 /** A word in the People card's footer (Add support, Divert): the full cell, 48 px. */
 const FOOTER_WORD =
-  'inline-flex min-h-12 w-full items-center justify-center gap-1.5 px-3 text-[14px] font-semibold text-ink hover:bg-wash disabled:opacity-60';
+  'hit inline-flex min-h-ctl-lg w-full items-center justify-center gap-1.5 px-3 text-ui font-semibold text-ink hover:bg-wash disabled:opacity-60';
 /** The same word in the desktop panel, a line of its own: its whole words, from the card's left edge. */
 const FOOTER_WORD_STACKED =
-  'inline-flex min-h-12 w-full items-center gap-1.5 px-3.5 py-1.5 text-left text-[14px] font-semibold text-ink hover:bg-wash disabled:opacity-60';
+  'hit inline-flex min-h-ctl-lg w-full items-center gap-1.5 px-3.5 py-1.5 text-left text-ui font-semibold text-ink hover:bg-wash disabled:opacity-60';
 
 /**
  * The People card's footer: its cells side by side under a rule, as
@@ -1404,7 +1466,7 @@ function PeoplePicker({
 /** A system event's pill on the band (:2019-2023; Chat.dc.html). */
 function Pill({ text }: { text: string }) {
   return (
-    <span className="max-w-[90%] rounded-full bg-band px-3 py-1.5 text-center text-[12px] text-ink-soft">{text}</span>
+    <span className="max-w-[90%] rounded-full bg-band px-3 py-1.5 text-center text-meta text-ink-soft">{text}</span>
   );
 }
 
@@ -1421,24 +1483,24 @@ function PendingComposer({
   return (
     <div className={COMPOSER_BAR}>
       {!conv.canReply ? (
-        <div className="flex min-h-11 flex-wrap items-center justify-between gap-2 rounded-2xl bg-band px-4 py-2 text-[13.5px] text-ink-soft">
+        <div className="flex min-h-ctl flex-wrap items-center justify-between gap-2 rounded-2xl bg-band px-4 py-2 text-ui text-ink-soft">
           <span>Notices from the till — this thread cannot take a reply.</span>
           {/* Reopen's one home is the composer (SCRUM-1016), for a handled thread of notices too. */}
           {conv.status === 'handled' && me.capabilities.reopen && (
-            <PendingControl reason={WRITES_PENDING_REASON} label="Reopen" className="min-h-11 px-3 text-[13.5px] font-bold text-ink md:min-h-9">
+            <PendingControl reason={WRITES_PENDING_REASON} label="Reopen" className="hit min-h-ctl px-3 text-ui font-bold text-ink">
               Reopen
             </PendingControl>
           )}
         </div>
       ) : conv.status === 'handled' ? (
-        <div className="flex min-h-11 items-center justify-between gap-2 rounded-2xl bg-band px-4 py-2 text-[13.5px] text-ink-soft">
+        <div className="flex min-h-ctl items-center justify-between gap-2 rounded-2xl bg-band px-4 py-2 text-ui text-ink-soft">
           <span>Handled — composer disabled</span>
           {me.capabilities.reopen ? (
-            <PendingControl reason={WRITES_PENDING_REASON} label="Reopen" className="min-h-11 px-3 text-[13.5px] font-bold text-ink md:min-h-9">
+            <PendingControl reason={WRITES_PENDING_REASON} label="Reopen" className="hit min-h-ctl px-3 text-ui font-bold text-ink">
               Reopen
             </PendingControl>
           ) : (
-            <span className="text-[13px]">{MANAGER_REOPENS}</span>
+            <span className="text-note">{MANAGER_REOPENS}</span>
           )}
         </div>
       ) : (
@@ -1448,7 +1510,7 @@ function PendingComposer({
             onClick={onOpenTemplates}
             aria-label="Templates"
             title="Templates"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-soft hover:bg-wash"
+            className="hit flex size-icon shrink-0 items-center justify-center rounded-full text-ink-soft hover:bg-wash"
           >
             <FileText aria-hidden className="h-[22px] w-[22px]" />
           </button>
@@ -1456,7 +1518,7 @@ function PendingComposer({
             disabled
             aria-label="Reply"
             placeholder={`Replying is ${WRITES_PENDING_REASON.toLowerCase()}`}
-            className="h-11 min-w-0 flex-1 cursor-not-allowed rounded-[22px] border border-field bg-ground px-4 text-[15px] placeholder:text-ink-muted"
+            className="h-ctl min-w-0 flex-1 cursor-not-allowed rounded-[22px] border border-field bg-ground px-4 text-body placeholder:text-ink-muted"
           />
         </div>
       )}

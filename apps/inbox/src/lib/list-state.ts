@@ -113,5 +113,6 @@ export function depositPaidCard(
  */
 export function conversationRowColour(selected: boolean, ready = false): string {
   const ground = ready ? 'bg-money' : selected ? 'bg-band' : 'hover:bg-wash';
-  return selected ? `${ground} ring-2 ring-inset ring-ink` : ground;
+  // SCRUM-1045: the chosen row is its ground and a quiet 1 px edge (3 : 1, tokens-1016), never a heavy ring.
+  return selected ? `${ground} ring-1 ring-inset ring-ink-muted` : ground;
 }

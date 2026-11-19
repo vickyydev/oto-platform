@@ -18,7 +18,7 @@ export const MANAGERS_ADD_SUPPORT = 'Managers add support';
 export function ActionSection({ title, children, card = true }: { title: string; children: ReactNode; card?: boolean }) {
   return (
     <section className="flex flex-col gap-2">
-      <h3 className="px-1 text-[13px] font-bold text-ink-soft">{title}</h3>
+      <h3 className="px-1 text-note font-bold text-ink-soft">{title}</h3>
       {card ? <div className="flex flex-col overflow-hidden rounded-2xl border border-line bg-card">{children}</div> : children}
     </section>
   );
@@ -47,13 +47,13 @@ export function ActionRow({
     <div title={title} className={`relative flex min-h-[52px] items-center gap-3 border-t border-line-soft py-1 pl-3.5 pr-2 first:border-t-0 ${ROW_FOCUS}`}>
       {stacked ? (
         <span className="flex min-w-0 flex-1 flex-col gap-0.5 py-1.5">
-          <span className="text-[12.5px] text-ink-muted">{label}</span>
-          <span className="flex min-w-0 items-center gap-2 text-[14px] font-semibold text-ink">{children}</span>
+          <span className="text-note text-ink-muted">{label}</span>
+          <span className="flex min-w-0 items-center gap-2 text-ui font-semibold text-ink">{children}</span>
         </span>
       ) : (
         <>
-          <span className="w-20 shrink-0 text-[13.5px] text-ink-muted">{label}</span>
-          <span className="flex min-w-0 flex-1 items-center gap-2 text-[14.5px] font-semibold text-ink">{children}</span>
+          <span className="w-20 shrink-0 text-ui text-ink-muted">{label}</span>
+          <span className="flex min-w-0 flex-1 items-center gap-2 text-body font-semibold text-ink">{children}</span>
         </>
       )}
       {action}
@@ -74,7 +74,7 @@ export function PersonFace({ chip }: { chip: Chip }) {
   return (
     <span
       aria-hidden
-      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11.5px] font-bold ${chip.tint}`}
+      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-caption font-bold ${chip.tint}`}
     >
       {chip.initials}
     </span>
@@ -103,8 +103,8 @@ export function PersonRow({
       <div className="flex items-start gap-3 border-t border-line-soft py-2.5 pl-3.5 pr-2 first:border-t-0" data-person-row="stacked">
         <PersonFace chip={chip} />
         <span className="flex min-w-0 flex-1 flex-col">
-          <span title={chip.name} className="truncate text-[14.5px] font-semibold text-ink">{chip.name}</span>
-          <span title={role} className="truncate text-[12.5px] text-ink-muted">{role}</span>
+          <span title={chip.name} className="truncate text-body font-semibold text-ink">{chip.name}</span>
+          <span title={role} className="truncate text-note text-ink-muted">{role}</span>
           {/* The words' own padding lines their text up with the name above them. */}
           {children && <span className="-ml-3 mt-0.5 flex flex-wrap items-center">{children}</span>}
         </span>
@@ -115,8 +115,8 @@ export function PersonRow({
     <div className="flex min-h-14 items-center gap-3 border-t border-line-soft py-1.5 pl-3.5 pr-2 first:border-t-0">
       <PersonFace chip={chip} />
       <span className="flex min-w-0 flex-1 flex-col">
-        <span className="truncate text-[14.5px] font-semibold text-ink">{chip.name}</span>
-        <span className="text-[12.5px] text-ink-muted">{role}</span>
+        <span className="truncate text-body font-semibold text-ink">{chip.name}</span>
+        <span className="text-note text-ink-muted">{role}</span>
       </span>
       {children}
     </div>
@@ -125,7 +125,7 @@ export function PersonRow({
 
 /** The coral word of an action in a card ("Change", "Remove", "Resume"): 44 px tall. */
 export const ACTION_WORD =
-  'inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl px-3 text-[14px] font-semibold text-coral-ink hover:bg-wash disabled:opacity-60';
+  'hit inline-flex min-h-ctl shrink-0 items-center gap-1.5 rounded-xl px-3 text-ui font-semibold text-coral-ink hover:bg-wash disabled:opacity-60';
 
 /**
  * A choice behind a word (the prototype's pickers, a native select laid over
@@ -208,11 +208,11 @@ export function NextStepCard({
           {/* The spaces keep the words apart for a screen reader; the column sets them on their own lines. */}
           {card.simulator && (
             <>
-              <span className="text-[12.5px] font-semibold">{card.simulator}</span>{' '}
+              <span className="text-note font-semibold">{card.simulator}</span>{' '}
             </>
           )}
-          <span className="text-[15px] font-bold">{card.title}</span>{' '}
-          <span className="text-[13px]">{card.detail}</span>
+          <span className="text-body font-bold">{card.title}</span>{' '}
+          <span className="text-note">{card.detail}</span>
         </span>
       </div>
       <div className={stacked ? 'flex flex-col gap-2' : 'grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] gap-2'}>
@@ -221,7 +221,7 @@ export function NextStepCard({
           onClick={onBook}
           disabled={busy}
           title="Block this date in the Events calendar"
-          className="inline-flex h-[46px] items-center justify-center gap-2 rounded-[13px] bg-coral px-3 text-[15px] font-bold text-on-coral hover:bg-coral/90 disabled:opacity-60"
+          className="inline-flex h-[46px] items-center justify-center gap-2 rounded-[13px] bg-coral px-3 text-body font-bold text-on-coral hover:bg-coral/90 disabled:opacity-60"
         >
           <Calendar aria-hidden className="h-[18px] w-[18px]" />
           Book the date
@@ -243,7 +243,7 @@ export function NextStepCard({
 
 /** An outlined button on the card (Create BEO, Mark as handled on a desktop): the edge token, the ink. */
 export const SECONDARY_BUTTON =
-  'inline-flex items-center justify-center gap-2 rounded-[13px] border border-edge bg-card px-3 text-[14.5px] font-semibold text-ink hover:bg-wash disabled:opacity-60';
+  'inline-flex items-center justify-center gap-2 rounded-[13px] border border-edge bg-card px-3 text-body font-semibold text-ink hover:bg-wash disabled:opacity-60';
 
 /** What an action did, or why it could not (test night U6, U9): the green note and the red refusal, each dismissable. */
 export function ActionFeedback({
@@ -263,7 +263,7 @@ export function ActionFeedback({
   return (
     <div className={`flex flex-col gap-2 ${className}`}>
       {error && (
-        <div role="alert" className="flex items-center gap-2 rounded-2xl bg-danger py-1 pl-3.5 pr-1 text-[13px] text-danger-ink ring-1 ring-danger-line">
+        <div role="alert" className="flex items-center gap-2 rounded-2xl bg-danger py-1 pl-3.5 pr-1 text-note text-danger-ink ring-1 ring-danger-line">
           <span className="min-w-0 flex-1 break-words py-1.5">{error}</span>
           <button type="button" onClick={onDismissError} aria-label="Dismiss" className={DISMISS}>
             <X aria-hidden className="h-4 w-4" />
@@ -271,7 +271,7 @@ export function ActionFeedback({
         </div>
       )}
       {note && (
-        <div role="status" className="flex items-center gap-2 rounded-2xl bg-money py-1 pl-3.5 pr-1 text-[13px] text-money-ink ring-1 ring-money-line">
+        <div role="status" className="flex items-center gap-2 rounded-2xl bg-money py-1 pl-3.5 pr-1 text-note text-money-ink ring-1 ring-money-line">
           <span className="min-w-0 flex-1 break-words py-1.5">{note}</span>
           <button type="button" onClick={onDismissNote} aria-label="Dismiss" className={DISMISS}>
             <X aria-hidden className="h-4 w-4" />
@@ -282,7 +282,7 @@ export function ActionFeedback({
   );
 }
 
-const DISMISS = 'flex h-11 w-11 shrink-0 items-center justify-center rounded-full opacity-80 hover:opacity-100 md:h-8 md:w-8';
+const DISMISS = 'hit flex size-icon shrink-0 items-center justify-center rounded-full opacity-80 hover:opacity-100';
 
 /**
  * Who this is and where the conversation stands (the old details dialog,
@@ -321,7 +321,7 @@ export function ConversationFacts({
     ['Reopened', when(d?.reopenedAt)],
   ];
   return (
-    <dl className="grid grid-cols-[6.25rem_minmax(0,1fr)] gap-x-3 gap-y-2 px-1 text-[13.5px]">
+    <dl className="grid grid-cols-[6.25rem_minmax(0,1fr)] gap-x-3 gap-y-2 px-1 text-ui">
       {lines.map(([k, v]) => (
         <div key={k} className="contents">
           <dt className="text-ink-muted">{k}</dt>

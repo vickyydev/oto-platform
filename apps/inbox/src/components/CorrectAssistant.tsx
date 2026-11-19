@@ -163,7 +163,7 @@ export function CorrectAssistant({
       }
     >
       {saved ? (
-        <p className="text-[14px] text-ink-soft md:text-[13px]">Thank you. Approved examples are what the assistant answers from next.</p>
+        <p className="text-ui text-ink-soft">Thank you. Approved examples are what the assistant answers from next.</p>
       ) : (
         <form id={formId} onSubmit={(e) => void save(e)} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="What should it have done?" wide>

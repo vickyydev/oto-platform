@@ -82,7 +82,8 @@ describe('SCRUM-1016: Book the date, laid out as drawn', () => {
   it('the fields are large and named by their labels as drawn', () => {
     const html = render({ initialDeposit: paid });
     for (const label of ['Date', 'Start time', 'Park', 'Children', 'Adults', 'Birthday child', 'Turning', 'Booking name', 'Phone']) {
-      expect(html, label).toMatch(new RegExp(`aria-label="${label}"[^>]*class="min-h-12 `));
+      // SCRUM-1045: the scale's large field (48 px on a phone), not a height of its own.
+      expect(html, label).toMatch(new RegExp(`aria-label="${label}"[^>]*class="min-h-ctl-lg `));
       expect(html, label).toContain(`>${label}</span>`);
     }
   });
@@ -98,7 +99,8 @@ describe('SCRUM-1016: Book the date, laid out as drawn', () => {
     // the options act, they do not toggle, so none says "not pressed".
     expect(fieldset).not.toContain('aria-pressed');
     // The field wears the amber edge and the window's words; Save waits and says why.
-    expect(html).toMatch(/aria-label="Start time" class="[^"]*border-2 border-ask-edge/);
+    // SCRUM-1045: the amber's ground and a 1 px amber edge, not a 2 px one.
+    expect(html).toMatch(/aria-label="Start time" class="[^"]*border border-ask-edge bg-ask/);
     expect(html).toContain('The chat reads two ways: choose one');
     expect(html).toMatch(/<button[^>]*disabled=""[^>]*data-testid="book-date-save"/);
     expect(html).toContain('data-testid="book-date-waiting">The chat reads two ways for the start time: choose one.<');
