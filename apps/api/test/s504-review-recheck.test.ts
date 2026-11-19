@@ -700,13 +700,23 @@ describe('R3b — the connection lost while the redemption writes itself down af
         return rows[0]!.n > 0;
       });
       expect(settled).toBe(false);
-      await ctx.db.execute(
-        sql`select pg_terminate_backend(pid) from pg_stat_activity where application_name = 's504r-commit' and xact_start is not null`,
-      );
+      const ended = (
+        await ctx.db.execute(
+          sql`select pid, pg_terminate_backend(pid) as ended from pg_stat_activity
+              where application_name = 's504r-commit' and xact_start is not null`,
+        )
+      ).rows as Array<{ pid: number; ended: boolean }>;
+      expect(ended.length > 0 && ended.every((row) => row.ended), 'the kiosk’s held connection was ended').toBe(true);
+      // The ended backend itself, by its pid. The kiosk's own failed ending
+      // opens a new connection under the same name at once and waits on the
+      // held row until it is let go below; counting every open transaction
+      // under that name waited on that one too, and timed out whenever it
+      // began before a poll saw the ended backend gone.
+      const endedPids = ended.map((row) => row.pid);
       await until('the kiosk’s backend is gone', async () => {
         const rows = (
           await ctx.db.execute(
-            sql`select count(*)::int as n from pg_stat_activity where application_name = 's504r-commit' and xact_start is not null`,
+            sql`select count(*)::int as n from pg_stat_activity where pid in ${endedPids}`,
           )
         ).rows as Array<{ n: number }>;
         return rows[0]!.n === 0;
