@@ -10,12 +10,15 @@ import { tillFiguresOf, type TillBillingReading } from "@shared/tillBilling";
 import { ADULTS_SAME_AS_KIDS, adultsDifferOf } from "@shared/kitchenAdults";
 import {
   beoExtraChargeOf,
+  beoExtraHintOf,
   beoExtraPrintWordsOf,
   beoKitchenChargesOf,
   type BeoExtraCharge,
   type BeoExtraContext,
   type BeoExtraLine,
 } from "@shared/beoExtras";
+import { EXPECTED_EXTRA_LABEL, SOCKS_PRINT_LABEL, expectedExtraWordsOf, socksWordsOf } from "@shared/beoGuestsSocks";
+import { beoDishNameOf } from "@shared/beoAdultWaffles";
 import { beoPdfTillMoneyHtml } from "./lib/beoPdfMoney";
 import {
   STEP_ACTIVITY,
@@ -496,6 +499,12 @@ export interface BeoPdfData {
   kidTurningAge?: number;
   numChildren?: number;
   numAdults?: number;
+  /** SCRUM-1031: the guests the family expects beyond the planned counts, as the party stores them. */
+  expectedExtraKids?: number | null;
+  expectedExtraAdults?: number | null;
+  /** SCRUM-1031: how the socks are paid for (shared/beoGuestsSocks.ts), and the note of "Other / Custom". */
+  socksArrangement?: string | null;
+  socksNote?: string | null;
   programName?: string;
   programDetails?: string;
   activities?: string;
@@ -693,6 +702,11 @@ export function beoPdfFooterTemplate(data: Pick<BeoPdfData, "eventTitle" | "even
  *      is no Kitchen to print).
  * Nothing is invented: every name, count, time, person and amount is the stored BEO's or the
  * till's; a dish with no count is one (beoQuantityOf); prices print where they printed before.
+ * Since SCRUM-1030/1031/1042/1050: the header says the socks arrangement and the expected extra
+ * guests when the party stores them; the Kitchen opens with its Kitchen Notes; the birthday
+ * package's waffles read "Adult Waffles"; a set-menu choice prints its group's label again; a set
+ * line whose name carries its count prints no "1x"; an EXTRA the till does not charge carries a
+ * mark, its words said once under its list.
  * Long orders run onto the next page row by row: no part is held whole (in either column), a
  * heading never ends a page alone, and every page's foot names the party and its page
  * (beoPdfFooterTemplate). The line
@@ -714,8 +728,6 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
     const words = beoExtraPrintWordsOf(charge);
     return `<span class="extra-badge">EXTRA</span>${words ? ` <span class="price">${s(words)}</span>` : ''}`;
   };
-  const extraBadge = (item: { quantity?: number; itemName?: string; price?: number; source?: string; productCode?: string }, area: "food" | "bar") =>
-    extraBadgeOf(beoExtraChargeOf(asExtraLine(item), area, extrasCtx));
   const SET_BADGE = '<span class="incl-badge" style="background:#dbeafe;color:#1e40af;border-color:#93c5fd;">SET</span>';
 
   const formattedDate = beoEventDateWords(data.eventDate);
@@ -727,6 +739,9 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
     value === undefined || value === null || value === ''
       ? ''
       : `<div class="info-item"><span class="info-label">${s(label)}:</span><span class="info-value">${typeof value === 'number' ? value : s(value)}</span></div>`;
+  /** A fact across the grid's full width (SCRUM-1031); nothing for a value that is not there. */
+  const wideFact = (label: string, value: string | null | undefined) =>
+    value ? `<div class="info-item wide"><span class="info-label">${s(label)}:</span><span class="info-value">${s(value)}</span></div>` : '';
 
   // ── 1. The header ───────────────────────────────────────────────────────────────────────────────
   // The party's facts as the page printed them before (Event Details, Party Host), in one box. The
@@ -734,9 +749,16 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
   // Read row by row in pairs, as the brief's drawing groups them: the child and the age, the planned
   // children and adults, the host and the backup; then the contact.
   const host = data.partyHost;
-  // SCRUM-1031 prints the expected extra guests and the socks arrangement here once the BEO stores
-  // them; until then this place holds nothing and prints nothing.
-  const laterHeaderFacts: string[] = [];
+  // SCRUM-1031: the socks arrangement as the last fact, the box's full width so a note of "Other /
+  // Custom" reads on one line ("Socks arrangement: Birthday Parent Pays"); then the expected extra
+  // guests on their own line, marked for reception as the brief's drawing marks it ("+1 child · +6
+  // adults"). Information only: nothing is charged from either. Neither stored: nothing prints.
+  const socksWords = socksWordsOf(data);
+  const expectedExtraWords = expectedExtraWordsOf(data);
+  const laterHeaderFacts: string[] = [wideFact(SOCKS_PRINT_LABEL, socksWords)];
+  const expectedExtraHtml = expectedExtraWords
+    ? `<p class="arrival" data-fact="expected-extra"><span class="info-label">${s(EXPECTED_EXTRA_LABEL)}:</span><span class="info-value">${s(expectedExtraWords)}</span></p>`
+    : '';
   const headerFacts = [
     fact('Child', data.childName),
     fact('Kid Turning Age', data.kidTurningAge ?? undefined),
@@ -751,9 +773,10 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
     ...laterHeaderFacts,
   ].filter(Boolean);
   const hostNotesHtml = host?.notes ? `<p class="notes">${s(host.notes)}</p>` : '';
-  const factsHtml = headerFacts.length || hostNotesHtml
+  const factsHtml = headerFacts.length || hostNotesHtml || expectedExtraHtml
     ? `<div class="facts" data-part="party">
         <div class="info-grid">${headerFacts.join('')}</div>
+        ${expectedExtraHtml}
         ${hostNotesHtml}
       </div>`
     : '';
@@ -847,27 +870,48 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
     return t.startsWith('(') && t.includes(')') ? t : `(${t})`;
   };
 
-  type FoodLine = { quantity?: number; itemName?: string; notes?: string; price?: number; included?: boolean; source?: string; productCode?: string };
+  type FoodLine = { quantity?: number; itemName?: string; notes?: string; price?: number; included?: boolean; source?: string; productCode?: string; groupId?: string };
+  // SCRUM-1050 (R24, the owner's answer of 19 November): an EXTRA line the till does not charge
+  // (no price entered and no till code: "Price unresolved - not charged") carries a small mark
+  // beside its badge instead of those words, and the words print ONCE under the list that has
+  // such lines (the Kitchen, the Bar), beside the mark. When a line counts so is the editor's own
+  // rule, unchanged (shared/beoExtras.ts), and nothing about what is charged changes.
+  const UNRESOLVED_MARK = '*';
+  const unresolvedWords = beoExtraHintOf({ kind: "not_charged", why: "no_price" }) ?? '';
+  const unresolvedIn = { food: false, bar: false };
+  const unresolvedNote = (area: "food" | "bar") => unresolvedIn[area]
+    ? `<p class="mark-note" data-unresolved-note><span class="mark">${UNRESOLVED_MARK}</span> ${s(unresolvedWords)}</p>`
+    : '';
+  // SCRUM-1050: a set-menu line whose stored name already carries its count ("French fries x3",
+  // the set menu's own label) and that holds no count of its own (none stored, or the 1 every
+  // writer stores when the set menu names none: resolveSetMenuLines, beoQuantityOf) prints with no
+  // "1x" before it; every other line with no count still prints 1x, and a set line with a count of
+  // its own above one prints it as stored.
+  const COUNT_IN_NAME = /(?:^\d+\s?[x×]\s|\s[x×]\s?\d+$)/i;
+  const countInName = (item: FoodLine) =>
+    item.source === 'set_menu' && beoQuantityOf(item.quantity) === 1 && COUNT_IN_NAME.test((item.itemName ?? '').trim());
   // One dish: its count (none stored is one, the owner's answer), its name as stored, its note, and
   // its badge with the price words it printed before (SCRUM-906/970: an EXTRA's price for each item).
-  // SCRUM-1028, the brief: the kitchen reads the chosen dishes by name, without the set menu's
-  // numbering ("Hawaiian", not "Hawaiian (Pizza 1)"). A set-menu choice's note slot holds only its
-  // group's label in brackets (setMenuResolve, tillKitchenEdit; the editor gives a set line no note
-  // of its own), so that note is not printed; any other note prints as before.
+  // SCRUM-1050 (R13, the owner's answer of 19 November): a set-menu choice prints its group's label
+  // beside it again, "Margherita (Pizza 2)", as the print did before 19 November (SCRUM-958: in one
+  // pair of brackets). SCRUM-1042: the birthday package's waffles read "Adult Waffles" here
+  // (shared/beoAdultWaffles.ts); the stored line keeps its name.
   const foodRow = (item: FoodLine, area: "food" | "bar", charge?: BeoExtraCharge) => {
     const isSet = item.source === 'set_menu';
     const rawNote = item.notes?.trim() ?? '';
-    // Only one label in one pair of brackets: "(Fried rice) · no onion" is a note and prints whole.
-    const groupLabelOnly = isSet && area === 'food' && /^\([^()]*\)$/.test(rawNote);
-    const note = rawNote && !groupLabelOnly
+    const note = rawNote
       ? isSet && area === 'food'
         ? ` ${s(noteInBrackets(rawNote))}`
         : ` <span class="item-note">${s(noteInBrackets(rawNote))}</span>`
       : '';
+    const name = area === 'food' ? beoDishNameOf(item) : (item.itemName ?? '');
+    const lineCharge = isSet ? null : charge ?? beoExtraChargeOf(asExtraLine(item), area, extrasCtx);
+    const unresolved = lineCharge?.kind === 'not_charged';
+    if (unresolved) unresolvedIn[area] = true;
     return `<tr>
-      <td class="qty">${beoQuantityOf(item.quantity)}x</td>
-      <td class="dish">${s(item.itemName ?? '')}${note}</td>
-      <td class="price-col">${isSet ? SET_BADGE : charge ? extraBadgeOf(charge) : extraBadge(item, area)}</td>
+      <td class="qty">${countInName(item) ? '' : `${beoQuantityOf(item.quantity)}x`}</td>
+      <td class="dish">${s(name)}${note}</td>
+      <td class="price-col">${isSet ? SET_BADGE : unresolved ? `<span class="extra-badge">EXTRA</span><span class="mark">${UNRESOLVED_MARK}</span>` : extraBadgeOf(lineCharge!)}</td>
     </tr>`;
   };
   const foodTable = (lines: FoodLine[], area: "food" | "bar", style = '', charges?: readonly BeoExtraCharge[]) =>
@@ -947,13 +991,20 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
   // (SCRUM-978: a part with nothing in it prints no heading): the BEO does not store that no food
   // was ordered, and a party whose menu is not entered yet must not tell the kitchen so.
   const kitchenNotNeeded = !!kp && !foodNeeded;
-  const kitchenNotes = foodNeeded && kp?.notes ? `<p class="notes">${s(kp.notes)}</p>` : '';
+  // SCRUM-1030, the brief: the Kitchen Notes (the plan's own field, typed in the editor's Food &
+  // Drinks or on the Day-of view) print at the very top of the Kitchen, before the menus, as
+  // written, and only with the kitchen needed, as before. Empty: nothing.
+  const kitchenNotesText = foodNeeded && kp?.notes?.trim() ? kp.notes : '';
+  const kitchenNotes = kitchenNotesText
+    ? `<p class="notes kitchen-notes" data-kitchen-notes><span class="note-label">Kitchen Notes:</span> ${s(kitchenNotesText)}</p>`
+    : '';
   const kitchenHtml = kitchenNotNeeded || kidsMenuHtml || adultsHtml || kitchenNotes ? `
     <div class="part kitchen-part" data-part="kitchen">
       <h2>Kitchen${kitchenNotNeeded ? ' <span class="badge-outline" data-no-food>Not Needed</span>' : ''}</h2>
+      ${kitchenNotes}
       ${kidsMenuHtml}
       ${adultsHtml}
-      ${kitchenNotes}
+      ${unresolvedNote('food')}
     </div>` : '';
 
   // ── 4. The right column: Setup, Bar, Entertainment, Cake, Notes ─────────────────────────────────
@@ -997,6 +1048,7 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
       <h2>Bar</h2>
       ${bar.serviceTime ? `<div class="info-item" style="margin-bottom:4px;"><span class="info-label">Service Time:</span><span class="info-value">${s(bar.serviceTime)}</span></div>` : ''}
       ${barItems.length ? foodTable(barItems, 'bar') : ''}
+      ${barItems.length ? unresolvedNote('bar') : ''}
     </div>
   ` : '';
 
@@ -1128,6 +1180,7 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
     .svc { font-weight: normal; font-size: 10px; color: #666; }
     .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 16px; }
     .info-grid.one { grid-template-columns: 1fr; }
+    .info-grid .wide { grid-column: 1 / -1; }
     .info-item { font-size: 11px; min-width: 0; }
     .info-label { font-weight: 600; color: #4a5568; margin-right: 4px; }
     .info-value { color: #1a202c; }
@@ -1152,6 +1205,11 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
     .extra-badge { background: #fefcbf; color: #975a16; padding: 0 4px; border-radius: 2px; font-size: 9px; font-weight: 600; }
     .item-note { color: #888; font-size: 10px; font-style: italic; }
     .notes { margin-top: 4px; padding: 4px 6px; background: #f7fafc; border-radius: 3px; font-size: 10px; font-style: italic; white-space: pre-wrap; }
+    .kitchen-notes { margin: 0 0 4px 0; font-size: 11px; }
+    .note-label { font-weight: 600; font-style: normal; color: #4a5568; }
+    .arrival { margin-top: 4px; padding: 2px 6px; background: #fffbeb; border: 1px solid #f6e05e; border-radius: 3px; font-size: 11px; }
+    .mark { color: #975a16; font-weight: 700; font-size: 10px; margin-left: 2px; }
+    .mark-note { font-size: 9px; color: #718096; margin: 0 0 6px 0; break-before: avoid; page-break-before: avoid; }
     .plain { font-size: 11px; color: #4a5568; }
     .adults-same { font-size: 10px; color: #6b7280; margin: 4px 0 0; }
     .set-box { border: 2px solid #6ee7b7; border-radius: 6px; overflow: hidden; margin-bottom: 6px; }
