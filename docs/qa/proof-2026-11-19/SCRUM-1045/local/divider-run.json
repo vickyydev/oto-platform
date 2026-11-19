@@ -1,0 +1,143 @@
+{
+ "start": {
+  "valuenow": "330",
+  "valuemax": "560",
+  "list": 330,
+  "chat": 886,
+  "stored": {},
+  "bodySelect": "",
+  "panel": "flex"
+ },
+ "dragging": {
+  "valuenow": "390",
+  "valuemax": "560",
+  "list": 390,
+  "chat": 826,
+  "stored": {},
+  "bodySelect": "none",
+  "panel": "flex"
+ },
+ "atMin": {
+  "valuenow": "264",
+  "valuemax": "560",
+  "list": 264,
+  "chat": 952,
+  "stored": {},
+  "bodySelect": "none",
+  "panel": "flex"
+ },
+ "released": {
+  "valuenow": "264",
+  "valuemax": "560",
+  "list": 264,
+  "chat": 952,
+  "stored": {
+   "oto.inbox.listWidth.desktop": "264"
+  },
+  "bodySelect": "",
+  "panel": "flex"
+ },
+ "afterReload": {
+  "valuenow": "264",
+  "valuemax": "560",
+  "list": 264,
+  "chat": 952,
+  "stored": {
+   "oto.inbox.listWidth.desktop": "264"
+  },
+  "bodySelect": "",
+  "panel": "flex"
+ },
+ "keyRight2": {
+  "valuenow": "296",
+  "valuemax": "560",
+  "list": 296,
+  "chat": 920,
+  "stored": {
+   "oto.inbox.listWidth.desktop": "296"
+  },
+  "bodySelect": "",
+  "panel": "flex"
+ },
+ "keyEnd": {
+  "valuenow": "560",
+  "valuemax": "560",
+  "list": 560,
+  "chat": 656,
+  "stored": {
+   "oto.inbox.listWidth.desktop": "560"
+  },
+  "bodySelect": "",
+  "panel": "none"
+ },
+ "keyEnter": {
+  "valuenow": "330",
+  "valuemax": "560",
+  "list": 330,
+  "chat": 886,
+  "stored": {},
+  "bodySelect": "",
+  "panel": "flex"
+ },
+ "dblclick": {
+  "valuenow": "330",
+  "valuemax": "560",
+  "list": 330,
+  "chat": 886,
+  "stored": {},
+  "bodySelect": "",
+  "panel": "flex"
+ },
+ "touchStart": {
+  "valuenow": "276",
+  "valuemax": "408",
+  "list": 276,
+  "chat": 492,
+  "stored": {},
+  "bodySelect": "",
+  "panel": "none"
+ },
+ "touchHandleWidth": 24,
+ "touchMid": {
+  "valuenow": "264",
+  "valuemax": "408",
+  "list": 264,
+  "chat": 504,
+  "stored": {},
+  "bodySelect": "none",
+  "panel": "none"
+ },
+ "touchEnd": {
+  "valuenow": "264",
+  "valuemax": "408",
+  "list": 264,
+  "chat": 504,
+  "stored": {
+   "oto.inbox.listWidth.tablet": "264"
+  },
+  "bodySelect": "",
+  "panel": "none"
+ },
+ "rotated": {
+  "valuenow": "288",
+  "valuemax": "440",
+  "list": 288,
+  "chat": 512,
+  "stored": {
+   "oto.inbox.listWidth.tablet": "264"
+  },
+  "bodySelect": "",
+  "panel": "none"
+ },
+ "rotatedBack": {
+  "valuenow": "264",
+  "valuemax": "408",
+  "list": 264,
+  "chat": 504,
+  "stored": {
+   "oto.inbox.listWidth.tablet": "264"
+  },
+  "bodySelect": "",
+  "panel": "none"
+ }
+}
