@@ -146,7 +146,7 @@ export function ConversationList({
                   type="button"
                   aria-label={`Clear ${p.label}`}
                   onClick={() => onFilters(p.clear)}
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ink-muted transition hover:bg-wash hover:text-ink"
+                  className="-my-1.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-muted transition hover:bg-wash hover:text-ink md:my-0 md:h-8 md:w-8"
                 >
                   <X aria-hidden className="h-3.5 w-3.5" />
                 </button>
