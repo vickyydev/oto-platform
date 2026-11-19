@@ -22831,6 +22831,103 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/checkin/children/{childId}/last-photo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description A saved child's last stay at this park that holds a photo still kept under the retention rule, for staff to compare with the child and guardian at the counter. Null when there is none. */
+        get: {
+            parameters: {
+                query: {
+                    branchId: string;
+                };
+                header?: never;
+                path: {
+                    childId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            photo: {
+                                /** Format: uuid */
+                                checkinId: string;
+                                /** Format: uuid */
+                                registrationId: string;
+                                /** Format: uuid */
+                                fileId: string;
+                                takenAt: string;
+                            } | null;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/checkin/registrations/{id}/photo-reuse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Staff confirmed a returning child's last photo still matches: the child's new stay points at that stored photo. Refused when the earlier stay is another child's, another park's, or its photo is no longer kept. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        children: {
+                            /** Format: uuid */
+                            checkinId: string;
+                            /** Format: uuid */
+                            fromCheckinId: string;
+                        }[];
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/checkin/waivers": {
         parameters: {
             query?: never;
