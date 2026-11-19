@@ -1,4 +1,4 @@
-import { useId, useMemo } from 'react';
+import { useId, useMemo, useState } from 'react';
 import { SupervisionPolicy, ChildFoodProvision, ContactChannel } from '@/types';
 import { cn } from '@/lib/utils';
 import { CHANNEL_LABEL } from '@/lib/contactChannel';
@@ -136,6 +136,31 @@ interface ConsentCaptureProps {
   agreementsOnly?: boolean;
   /** SCRUM-1018 — the children whose photo staff compare or reuse on the till: no camera here. */
   photoAtTillFor?: readonly string[];
+  /**
+   * SCRUM-1053 — THE "NO ALLERGIES OR MEDICAL NEEDS" TICK, AS ON THE DISPLAY
+   * (SCRUM-1020): the note on the family's profile for a saved child. Given
+   * by the counter till for the family's half: emptying a saved child's note
+   * there asks the family's plain tick; without it the till keeps the note
+   * and Done waits; a tick taken back puts the profile's note back. Absent
+   * (staff's copy, the phone till, the booking site), the box is as before.
+   */
+  profileNoteOf?: (slot: SupervisedSlot) => string;
+}
+
+/**
+ * SCRUM-1053 — the allergy box of a saved child on the family's half, by the
+ * display's rule (`careNeedsTick`, `carePending` in PublicConsentCapture):
+ * what the box shows, whether the tick is asked, and whether Done waits on
+ * it. `emptied` is the family's empty box while the till keeps the note.
+ */
+export function halfCareState(
+  slot: Pick<SupervisedSlot, 'allergiesMedical' | 'careNoneConfirmed'>,
+  emptied: boolean,
+): { shown: string; asksTick: boolean; pending: boolean } {
+  const held = slot.allergiesMedical;
+  const shown = emptied ? '' : held;
+  const asksTick = !shown.trim() && (!!held.trim() || slot.careNoneConfirmed === true);
+  return { shown, asksTick, pending: asksTick && slot.careNoneConfirmed !== true };
 }
 
 /**
@@ -232,6 +257,7 @@ export function ConsentCapture({
   parentNameFixed = false,
   agreementsOnly = false,
   photoAtTillFor = [],
+  profileNoteOf,
 }: ConsentCaptureProps) {
   const customer = useLanguage();
   // The till draws this form twice at once (the customer's half and the staff's
@@ -283,16 +309,48 @@ export function ConsentCapture({
   });
   const anyNeedsConsent = rows.some((r) => r.needsConsent);
   const allAged = rows.every((r) => r.aged);
+  // SCRUM-1053 — the saved children whose note the family emptied here while
+  // the till keeps it, until they tick or write one in.
+  const [emptiedCare, setEmptiedCare] = useState<ReadonlySet<string>>(() => new Set());
+  const careTicked = (slot: SupervisedSlot) => !staffScreen && !!profileNoteOf && !!slot.savedChildId;
+  const careOf = (slot: SupervisedSlot) => halfCareState(slot, careTicked(slot) && emptiedCare.has(slot.id));
+  const markEmptied = (id: string, on: boolean) => setEmptiedCare((previous) => {
+    if (previous.has(id) === on) return previous;
+    const next = new Set(previous);
+    if (on) next.add(id); else next.delete(id);
+    return next;
+  });
+  const changeCare = (slot: SupervisedSlot, allergiesMedical: string) => {
+    if (!careTicked(slot)) { onUpdateChild(slot.id, { allergiesMedical }); return; }
+    // Emptied where the till holds a note: kept until the family's tick.
+    if (!allergiesMedical.trim() && slot.allergiesMedical.trim()) { markEmptied(slot.id, true); return; }
+    markEmptied(slot.id, false);
+    onUpdateChild(slot.id, { allergiesMedical });
+  };
+  const tickNoCare = (slot: SupervisedSlot, on: boolean) => {
+    // `careSource` named, so the till keeps the tick with the note (its own change).
+    if (on) {
+      markEmptied(slot.id, false);
+      onUpdateChild(slot.id, { allergiesMedical: '', careNoneConfirmed: true, careSource: undefined });
+    } else {
+      markEmptied(slot.id, true);
+      onUpdateChild(slot.id, { allergiesMedical: profileNoteOf?.(slot) ?? '', careNoneConfirmed: false, careSource: undefined });
+    }
+  };
+  const pendingCare = rows.find((r) => r.needsConsent && careTicked(r.slot) && careOf(r.slot).pending)?.slot;
   // SCRUM-875 — what is still missing before the family's Done, in their language.
+  const careLine = onDone && pendingCare
+    ? t('superviseConsent.careClearedLine', { name: pendingCare.name.trim() || t('superviseConsent.thisChild') }) : null;
   const missingLine = onDone
-    ? consentMissingLine(t, consentMissing({
+    ? careLine ?? consentMissingLine(t, consentMissing({
       children: slots.map((s) => ({ name: s.name, ageYears: slotAge(s) })),
       consentRequired: anyNeedsConsent,
       guardianName: parentName,
       consentAcknowledged: consentAck,
       confirmations: confirmations.map((c) => ({ required: c.required, acknowledged: acknowledgedConfirmationIds.includes(c.id) })),
       ...(onContactConfirmedChange ? { contact: { confirmed: contactConfirmed, problem: messagingPhoneProblem(parentPhone ?? '') } } : {}),
-      photosTaken: rows.every((r) => !r.needsConsent || !!r.slot.childPhotoUrl),
+      // SCRUM-1053 — a photo staff compare or reuse on the till is not the family's to give.
+      photosTaken: rows.every((r) => !r.needsConsent || !!r.slot.childPhotoUrl || photoAtTillFor.includes(r.slot.id)),
     }), CHANNEL_LABEL[parentContactMethod])
     : null;
 
@@ -315,11 +373,14 @@ export function ConsentCapture({
           <ShieldCheck className="h-6 w-6" />
           <span className="text-sm font-bold uppercase tracking-widest">{t('superviseConsent.playingToday')}</span>
         </div>
+        {/* SCRUM-1053 — a returning family's short form asks for no names: theirs are saved. */}
         <h2 className="text-4xl font-black">
-          {slots.length === 1 ? t('superviseConsent.titleOne') : t('superviseConsent.titleMany')}
+          {agreementsOnly ? t('superviseConsent.titleReturning')
+            : slots.length === 1 ? t('superviseConsent.titleOne') : t('superviseConsent.titleMany')}
         </h2>
         <p className={cn('mt-1 text-lg text-foreground/60', SHORT_HIDE)}>
-          {t('superviseConsent.subtitle')}
+          {!agreementsOnly ? t('superviseConsent.subtitle')
+            : slots.length === 1 ? t('superviseConsent.subtitleReturningOne') : t('superviseConsent.subtitleReturningMany')}
         </p>
       </div>
 
@@ -424,12 +485,23 @@ export function ConsentCapture({
                       </label>
                       <TouchText
                         multiline
-                        value={slot.allergiesMedical}
-                        onChange={(allergiesMedical) => onUpdateChild(slot.id, { allergiesMedical })}
+                        value={careTicked(slot) ? careOf(slot).shown : slot.allergiesMedical}
+                        onChange={(allergiesMedical) => changeCare(slot, allergiesMedical)}
                         placeholder={t('superviseConsent.allergiesPlaceholder')}
                         screenKeyboard={screenKeyboard} maxLength={keysBound(500)} testId="consent-allergies"
                         className="mt-2 min-h-[88px] border-foreground/10 bg-foreground/5 text-lg text-foreground placeholder:text-foreground/30"
                       />
+                      {/* SCRUM-1053 — the display's tick, on this half too. */}
+                      {careTicked(slot) && careOf(slot).asksTick && (
+                        <label className="mt-3 flex w-full items-start gap-4 rounded-2xl border border-foreground/10 bg-foreground/5 p-4 text-left">
+                          <Checkbox checked={slot.careNoneConfirmed === true} data-testid="consent-allergies-none"
+                            onCheckedChange={(value) => tickNoCare(slot, value === true)}
+                            className="mt-1 h-6 w-6 border-foreground/30 data-[state=checked]:bg-primary" />
+                          <span className="text-lg leading-snug text-foreground/80">
+                            {t('superviseConsent.noAllergiesConfirm', { name: slot.name.trim() || t('superviseConsent.thisChild') })}
+                          </span>
+                        </label>
+                      )}
                     </div>
                     <div>
                       <label className="flex items-center gap-2 text-lg text-foreground/70">
@@ -659,7 +731,7 @@ export function ConsentCapture({
             {doneNotSaved && <p role="status" className="w-full text-right text-base text-(--cd-amber)" data-testid="consent-not-saved">{t('superviseConsent.notSaved')}</p>}
             {/* SCRUM-977 — on a phone held sideways the line stands beside Done (`PHONE_SHORT_LINE`). */}
             {missingLine && <p className={cn('w-full text-right text-base text-foreground/60', NARROW_LINE, phoneScroll && PHONE_SHORT_LINE)} data-testid="consent-missing">{missingLine}</p>}
-            <Button disabled={!doneReady} onClick={onDone}>{t('common.done')}</Button>
+            <Button disabled={!doneReady || !!pendingCare} onClick={onDone}>{t('common.done')}</Button>
           </>}
         </div>
       )}

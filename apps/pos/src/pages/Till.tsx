@@ -3967,6 +3967,14 @@ export default function Till() {
    */
   const photoStateOf = (slot: SupervisedSlot) => slotPhotoState(slot, lastPhotos);
   const staffPhotoSlotIds = superSlots.filter(slot => photoStateOf(slot) !== 'today').map(slot => slot.id);
+  /**
+   * SCRUM-1053 — a photo is still missing and every missing one is a saved
+   * child's last photo staff are comparing ("Still matches" or "Take a new
+   * one"): nothing of the photo is the family's to do yet.
+   */
+  const photoMissing = (row: (typeof consentRows)[number]) => row.outcome.needsConsent && !row.slot.childPhotoUrl;
+  const consentPhotoWithStaff = consentRows.some(photoMissing)
+    && consentRows.filter(photoMissing).every(row => photoStateOf(row.slot) !== 'today');
   /** SCRUM-1018 — a returning family whose children are all saved: the agreements alone. */
   const consentAgreementsOnly = agreementsOnlyForm({ guardianFromProfile: superGuardianFromProfile, slots: superSlots });
   /**
@@ -4039,6 +4047,9 @@ export default function Till() {
     // SCRUM-1018 — a returning family is asked only the agreements (their
     // screen opens on that one step whatever step the till last heard).
     ...(consentAgreementsOnly ? { agreementsOnly: true } : {}),
+    // SCRUM-1053 — the photos still missing are staff's to decide here: the
+    // family's screen does not name a photo meanwhile.
+    ...(consentPhotoWithStaff ? { photoWithStaff: true as const } : {}),
     // SCRUM-857 — the till follows the family's step: their screen sends it
     // with every fill, and a display that re-pairs opens on it.
     familyStep: consentFamilyStep ?? 'children',
@@ -4738,6 +4749,9 @@ export default function Till() {
               parentNameFixed={superGuardianFromProfile && !!superParentName.trim()}
               agreementsOnly={consentAgreementsOnly}
               photoAtTillFor={staffPhotoSlotIds}
+              // SCRUM-1053 — a saved child's note is emptied only with the
+              // family's "no allergies or medical needs" tick, as on the display.
+              profileNoteOf={(slot) => profileCareNote(slot, member?.savedChildren ?? [])}
               onConsentAckChange={setSuperConsentAck}
               onUpdateChild={handleUpdateSlot}
               acknowledgedConfirmationIds={superAcknowledgedConfirmationIds}

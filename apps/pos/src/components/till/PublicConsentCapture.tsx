@@ -665,7 +665,9 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
     consentAcknowledged: draft.consentAcknowledged,
     confirmations: prompt.confirmations.map((item) => ({ required: item.required, acknowledged: draft.confirmations.includes(item.id) })),
     ...(asksConfirm ? { contact: { confirmed: draft.contactConfirmed === true, problem: contactProblem } } : {}),
-    photosTaken: marked ? prompt.slots.every((slot) => slot.photo !== 'needed') : prompt.staffReady,
+    // SCRUM-1053 — a photo staff are deciding on the till (the last visit's,
+    // compared or reused) is not the family's to give: not named here.
+    photosTaken: marked ? prompt.slots.every((slot) => slot.photo !== 'needed') : prompt.staffReady || prompt.photoWithStaff === true,
   }), CHANNEL_LABEL[contactChannel]);
   // SCRUM-875 — with nothing missing, Done also waits while this screen's last
   // change is on its way to the till (it is pressed on the till's copy of the
@@ -780,8 +782,11 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
           the heading already starts below the button (NARROW_HEAD). */}
       <div className={cn('mb-2 inline-flex items-center gap-2 text-primary', !mirror && PLAYING_TODAY_CLEAR)}><ShieldCheck className="h-6 w-6 shrink-0" />
         <span className="min-w-0 text-sm font-bold uppercase tracking-widest">{t('superviseConsent.playingToday')}</span></div>
-      <h2 className="text-4xl font-black">{t(prompt.slots.length === 1 ? 'superviseConsent.titleOne' : 'superviseConsent.titleMany')}</h2>
-      <p className={cn('mt-1 text-lg text-foreground/60', SHORT_HIDE)}>{t('superviseConsent.subtitle')}</p>
+      {/* SCRUM-1053 — a returning family's short form asks for no names: theirs are saved. */}
+      <h2 className="text-4xl font-black">{t(agreementsOnly ? 'superviseConsent.titleReturning'
+        : prompt.slots.length === 1 ? 'superviseConsent.titleOne' : 'superviseConsent.titleMany')}</h2>
+      <p className={cn('mt-1 text-lg text-foreground/60', SHORT_HIDE)}>{t(!agreementsOnly ? 'superviseConsent.subtitle'
+        : prompt.slots.length === 1 ? 'superviseConsent.subtitleReturningOne' : 'superviseConsent.subtitleReturningMany')}</p>
       {!agreementsOnly && <div className="mt-4 flex items-center justify-center gap-2" data-testid="consent-steps">
         {STEPS.map((name, at) => (
           <button key={name} type="button" disabled={locked || at > index && !childrenComplete}

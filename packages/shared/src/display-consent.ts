@@ -137,6 +137,14 @@ const promptObject = z.object({
    */
   agreementsOnly: z.boolean().optional(),
   /**
+   * SCRUM-1053 — every photo the form still needs is one staff are deciding
+   * on the till (a returning child's last photo, "Still matches" or "Take a
+   * new one"): the family is not asked for it, so their screen's "still
+   * needed" line does not name a photo meanwhile. Sent only then. Optional:
+   * a till or station from before it leaves the line as it was.
+   */
+  photoWithStaff: z.literal(true).optional(),
+  /**
    * SCRUM-857 — the step the family is on, as the till last heard it from
    * their screen (the owner's ruling of 12 November: staff watch the form as
    * it is filled). Sent by a till that follows the family's step: a form that
