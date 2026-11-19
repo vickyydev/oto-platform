@@ -379,6 +379,13 @@
       "when": 1795100529650,
       "tag": "0055_otoapp_beo_activity_people",
       "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1795140987385,
+      "tag": "0056_single_shift_invitations",
+      "breakpoints": true
     }
   ]
 }

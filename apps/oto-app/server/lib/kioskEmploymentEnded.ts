@@ -6,6 +6,7 @@ import { db } from "../db";
 import { storage } from "../storage";
 import { bangkokToday } from "./engagementDates";
 import { employmentEndedOn } from "./employmentEnded";
+import { singleShiftOpenOn } from "./singleShift";
 
 /**
  * The kiosk refuses a clock-in or clock-out for an ended employment (SCRUM-769).
@@ -32,10 +33,17 @@ export const KIOSK_EMPLOYMENT_ENDED_REFUSAL = {
   message: KIOSK_EMPLOYMENT_ENDED_MESSAGE,
 } as const;
 
-/** `employmentEndedOn` for today in Bangkok, with the profile's planned employments read. */
+/**
+ * `employmentEndedOn` for today in Bangkok, with the profile's planned
+ * employments read. With the kiosk's branch (`atBranchId`), a single shift the
+ * former employee was invited to today at that branch (SCRUM-1038,
+ * `./singleShift.ts`) lets them clock in and out for that day: the kiosk then
+ * treats them as anybody rostered, and from the next day refuses them again.
+ */
 export async function kioskEmploymentEnded(
   profile: Pick<Employee, "id" | "status" | "employmentState" | "lastWorkingDay">,
   now: Date = new Date(),
+  atBranchId?: string,
 ): Promise<boolean> {
   const today = bangkokToday(now);
   if (!employmentEndedOn(profile, today)) return false;
@@ -46,7 +54,8 @@ export async function kioskEmploymentEnded(
     eq(employeeEngagements.status, "planned"),
     lte(employeeEngagements.startDate, today),
   )).limit(1);
-  return employmentEndedOn(profile, today, !!due);
+  if (!employmentEndedOn(profile, today, !!due)) return false;
+  return !(atBranchId && await singleShiftOpenOn(profile.id, atBranchId, today));
 }
 
 /**
@@ -59,12 +68,12 @@ export async function kioskEmploymentEnded(
  * did before the kiosk refused ended profiles. In a fixed order, so one number
  * names the same profile every time.
  */
-export async function kioskProfileByPhone(phoneE164: string, tenantId: string, now: Date = new Date()): Promise<Employee | undefined> {
+export async function kioskProfileByPhone(phoneE164: string, tenantId: string, now: Date = new Date(), atBranchId?: string): Promise<Employee | undefined> {
   const profiles = await db.select().from(employees)
     .where(and(eq(employees.phoneE164, phoneE164), eq(employees.tenantId, tenantId)))
     .orderBy(asc(employees.createdAt), asc(employees.id));
   for (const profile of profiles) {
-    if (!(await kioskEmploymentEnded(profile, now))) return profile;
+    if (!(await kioskEmploymentEnded(profile, now, atBranchId))) return profile;
   }
   return profiles[0];
 }
