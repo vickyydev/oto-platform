@@ -1127,6 +1127,31 @@ jobs:
         env:
           TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
         run: npx tsx tests/beo-day-of-tick-ui.check.ts
+      # SCRUM-1030/1031/1042/1050: the Staff BEO with the BEO's new fields —
+      # Kitchen Notes at the top of the Kitchen, the socks arrangement and
+      # the expected extra guests in the header, the birthday package's
+      # waffles as "Adult Waffles", no "1x" before a set line whose name
+      # carries its count, the set menu's group label (R13), the mark for an
+      # EXTRA the till does not charge (R24). No database.
+      - name: The app's Staff BEO new fields print check
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/beo-print-fields.check.ts
+      # SCRUM-1030/1031/1042: the new fields' rules, app migration 0053 expand
+      # only, nothing the till reads naming them, the Save's refusal before
+      # it writes, the Kitchen Notes written only when named, which line
+      # reads "Adult Waffles". No database.
+      - name: The app's BEO new fields check
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/beo-guests-socks.check.ts
+      # SCRUM-1030/1031: the same through the app's real routes — an older
+      # party saves as before, the fields stored and read, a refused Save
+      # writes nothing, the Day-of view's Kitchen Notes kept, the print route,
+      # nothing sent to the platform. Against the migrated database.
+      - name: The app's BEO new fields routes check
+        if: steps.changes.outputs.app == 'true'
+        env:
+          PUPPETEER_EXECUTABLE_PATH: /usr/bin/google-chrome
+        run: npx tsx tests/beo-guests-socks-db.check.ts
       # SCRUM-827: the BEO pre-filled in one pass, the form under jsdom: Create
       # BEO's review opens with every section proposed and marked (the chat's
       # lines, the park's default for the title), a value the form holds kept
