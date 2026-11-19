@@ -1,5 +1,7 @@
 # Hosted session handover — the platform lane
 
+**19 November 2026, 10:00 Bangkok.** The build work is paused on the owner's word until he has answered his decisions page; every approved build is landed and main is green on the hosted checks at 178a86457. The open work is a redesign proposal of the Unified Inbox (SCRUM-1016): nothing in apps/inbox changes before his approval. Read the newest blocks of docs/progress/STATUS.md first; they hold the state, the lane folders, the page item ids and the method.
+
 _For a Claude Code session running on a hosted (cloud) machine with a fresh
 clone of this repository. It carries everything the local session knew that
 is not already in the repo: where the work stands, the order of work, how
