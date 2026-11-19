@@ -89,7 +89,9 @@ describe('the till publishes the step and shows staff the family’s screen', ()
   });
 
   it('every new form starts on the first step', () => {
-    expect(till).toMatch(/setConsentContactLegacy\(false\);\s*setConsentFamilyStep\('children'\);/);
+    // SCRUM-1018 — the number confirmation is gone from the gate, so the step
+    // now follows the number and the channel it starts from.
+    expect(till).toMatch(/setSuperParentContactMethod\(customerContactChannel\);\s*setConsentFamilyStep\('children'\);/);
   });
 
   it('beside the staff gate, only while the form is on a working paired display', () => {

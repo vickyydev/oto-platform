@@ -31,8 +31,12 @@ interface VisitChildrenModalProps {
    * than opening a second visit for the same family.
    */
   openVisitId?: string | null;
-  /** Called with the refreshed children after the visit is confirmed. */
-  onConfirmed: (children: SavedChild[], visitId: string) => void;
+  /**
+   * Called with the refreshed children after the visit is confirmed, and the
+   * children ticked as visiting (SCRUM-1018: they become the drop-off and
+   * nanny form's children and the ticket's kids count).
+   */
+  onConfirmed: (children: SavedChild[], visitId: string, visitingIds: string[]) => void;
 }
 
 /**
@@ -151,7 +155,7 @@ export function VisitChildrenModal({ open, member, openVisitId = null, onClose, 
             ? `${selectedIds.length} child${selectedIds.length > 1 ? 'ren' : ''} confirmed for today.`
             : 'Visit recorded with no children.',
       });
-      onConfirmed(updated, visitId);
+      onConfirmed(updated, visitId, selectedIds);
       onClose();
     } catch (err) {
       toast({

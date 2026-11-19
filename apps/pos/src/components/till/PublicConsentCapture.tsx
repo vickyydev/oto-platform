@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ChildDobPicker } from '@/components/shared/ChildDobPicker';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
-import { PhoneInput } from '@/components/shared/PhoneInput';
+import { ChannelSelector, PhoneInput } from '@/components/shared/PhoneInput';
 import { TouchText } from './TouchText';
 import { DISPLAY_TOUCH, NARROW_BAR, NARROW_HEAD, NARROW_HEAD_TOUCH, NARROW_LINE, PLAYING_TODAY_CLEAR, SHORT_HIDE } from './consentFormLayout';
 import { useLanguage } from '@/i18n/LanguageContext';
@@ -91,6 +91,16 @@ import { cn } from '@/lib/utils';
  * Done can be pressed, a short line under the agreements says what is still
  * missing: each child's details, the name and consent, the confirmations, the
  * number confirmation, a photo of each child.
+ *
+ * SCRUM-1018 — A RETURNING FAMILY IN THREE STEPS (the owner's answers of 19
+ * November). The number is shown, not asked (`phoneFixed`, replacing the
+ * tick above): filled in, with the app still to choose, and only staff change
+ * it on the till. The parent's name from the family's profile is shown, not
+ * asked (`guardianFixed`). A returning family whose children are all on their
+ * saved profile is asked only the agreements (`agreementsOnly`): one step,
+ * the children listed above the agreement ticks, with a camera only for a
+ * child the till still asks the photo of (staff compare the last visit's
+ * photo on the till). A form without these fields is the form as it was.
  */
 
 interface ChildDraft {
@@ -314,8 +324,10 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
   const stepNow = useRef(localStep);
   stepNow.current = localStep;
   const draft = mirror ? draftOf(prompt) : localDraft;
-  const step: Step = mirror ? mirror.step ?? 'children' : localStep;
-  const shows = (name: Step) => (mirror && mirror.step === null) || step === name;
+  // SCRUM-1018 — a returning family's form is the agreements alone.
+  const agreementsOnly = prompt.agreementsOnly === true;
+  const step: Step = agreementsOnly ? 'agreements' : mirror ? mirror.step ?? 'children' : localStep;
+  const shows = (name: Step) => agreementsOnly ? name === 'agreements' : (mirror && mirror.step === null) || step === name;
   // SCRUM-954 — each step opens at its top. The steps share one scrolling
   // part, which kept the last step's place: after a long care step the
   // agreements step opened at the confirmations, with the guardian's name and
@@ -445,6 +457,12 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
   // the parent's block shows only when a child needs consent.
   const takesContact = prompt.contactChannel !== undefined && prompt.consentRequired;
   const phoneKept = !takesContact && !!prompt.guardianPhone?.trim();
+  // SCRUM-1018 — the number shown, not asked: only staff change it, on the
+  // till; the family may still choose the app. With no number yet the family
+  // gives it once, as before.
+  const phoneFixed = takesContact && prompt.phoneFixed === true && !!prompt.guardianPhone?.trim();
+  // SCRUM-1018 — the parent's name from the family's profile, shown, not asked.
+  const nameFixed = prompt.guardianFixed === true && !!prompt.guardianName.trim();
   // SCRUM-857 — a till that sends the tick asks for it: the family confirms
   // the number is the one for the channel, and the step carries the tick
   // back. A form without it (an older till, or a station that drops the
@@ -603,7 +621,7 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
         <span className="min-w-0 text-sm font-bold uppercase tracking-widest">{t('superviseConsent.playingToday')}</span></div>
       <h2 className="text-4xl font-black">{t(prompt.slots.length === 1 ? 'superviseConsent.titleOne' : 'superviseConsent.titleMany')}</h2>
       <p className={cn('mt-1 text-lg text-foreground/60', SHORT_HIDE)}>{t('superviseConsent.subtitle')}</p>
-      <div className="mt-4 flex items-center justify-center gap-2" data-testid="consent-steps">
+      {!agreementsOnly && <div className="mt-4 flex items-center justify-center gap-2" data-testid="consent-steps">
         {STEPS.map((name, at) => (
           <button key={name} type="button" disabled={locked || at > index && !childrenComplete}
             onClick={() => { if (at !== index) goTo(name); }}
@@ -612,8 +630,9 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
             {at + 1}. {t(name === 'children' ? 'superviseConsent.stepChildren' : name === 'care' ? 'superviseConsent.stepCare' : 'superviseConsent.stepAgreements')}
           </button>
         ))}
-      </div>
-      <p className="mt-2 text-sm text-foreground/50">{t('superviseConsent.stepOf', { n: index + 1, total: STEPS.length })} · {t('superviseConsent.teamFollowing')}</p>
+      </div>}
+      <p className="mt-2 text-sm text-foreground/50">{agreementsOnly ? t('superviseConsent.teamFollowing')
+        : `${t('superviseConsent.stepOf', { n: index + 1, total: STEPS.length })} · ${t('superviseConsent.teamFollowing')}`}</p>
     </div>
 
     <div ref={scroller} className="flex-1 min-h-0 space-y-5 overflow-y-auto px-8 pb-6">
@@ -674,16 +693,35 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
         {prompt.consentRequired && !(mirror ? marked : takesPhotos) && <p className="flex items-center gap-2 text-base text-foreground/70"><Camera className="h-5 w-5 shrink-0" />{t('superviseConsent.photoAtReception')}</p>}
       </>}
 
+      {agreementsOnly && prompt.slots.map((slot) => {
+        const meta = requirementOf(slot);
+        const Icon = meta.icon;
+        return <div key={slot.id} className="rounded-3xl border border-foreground/10 bg-foreground/5 p-6 space-y-4" data-testid="consent-child-shown">
+          <div className="flex items-center gap-2 text-xl font-semibold"><Baby className="h-5 w-5" />{draft.slots[slot.id]?.name || t('superviseConsent.thisChild')}</div>
+          {slot.ageYears !== null && <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+            <Badge variant={meta.badge} className="gap-1.5 px-3 py-1.5 text-base"><Icon className="h-4 w-4" />{meta.label}</Badge>
+            {meta.note && <span className="text-base font-medium text-foreground/70">{meta.note}</span>}
+          </div>}
+          {photoOf(slot)}
+        </div>;
+      })}
+
       {shows('agreements') && <>
         <div className="rounded-3xl border border-foreground/10 bg-foreground/5 p-6 space-y-5">
           <div><label htmlFor="public-consent-guardian" className="text-lg text-foreground/70">{t('superviseConsent.parentGuardianName')}</label>
-            <TouchText id="public-consent-guardian" value={draft.guardianName} maxLength={100} disabled={locked} testId="consent-guardian"
+            {nameFixed ? <div data-testid="consent-kept-guardian">
+              <div className="mt-2 flex h-14 items-center rounded-md border border-foreground/10 bg-foreground/5 px-4 text-2xl font-semibold">{prompt.guardianName}</div>
+              <p className="mt-2 text-base text-foreground/50">{t('superviseConsent.savedOnProfile')}</p>
+            </div> : <TouchText id="public-consent-guardian" value={draft.guardianName} maxLength={100} disabled={locked} testId="consent-guardian"
               onChange={(guardianName) => edit((current) => ({ ...current, guardianName }))}
-              placeholder={t('superviseConsent.yourFullName')} className={FIELD} /></div>
+              placeholder={t('superviseConsent.yourFullName')} className={FIELD} />}</div>
           <div>
             <label className="flex items-center gap-2 text-lg text-foreground/70"><Phone className="h-5 w-5" /> {t('superviseConsent.phoneNumber')}</label>
-            {phoneKept ? <div data-testid="consent-kept-phone">
+            {phoneKept || phoneFixed ? <div data-testid="consent-kept-phone">
               <div className="mt-2 flex h-14 items-center rounded-md border border-foreground/10 bg-foreground/5 px-4 text-2xl font-semibold tabular-nums">{formatStoredPhone(prompt.guardianPhone ?? '')}</div>
+              {/* SCRUM-1018 — the app is still the family's to choose. */}
+              {phoneFixed && <ChannelSelector channel={contactChannel} kiosk pillClassName={touch}
+                onChange={(next) => { if (!locked && !readOnly) choose((current) => ({ ...current, contactChannel: next })); }} />}
               <p className="mt-2 text-base text-foreground/50">{t('till.input.phoneKept')}</p>
             </div> : <PhoneInput value={consentPhoneShown(draft.guardianPhone)} onChange={(guardianPhone) => { if (!locked) edit((current) => ({ ...current, guardianPhone, ...(current.contactConfirmed !== undefined ? { contactConfirmed: false } : {}) })); }}
               label="" showKeypad={kioskFlags.screenKeyboard} disabled={locked} translate
@@ -729,7 +767,7 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
         {/* SCRUM-943 — on the till's read-only copy (`mirror`) the family's
             buttons are drawn as not available: only their screen presses them. */}
         <Button variant="outline" className={touch} disabled={readOnly || busy || helpAsked} onClick={() => setHelpAsked(true)}>{t('superviseConsent.askTeam')}</Button>
-        {index > 0 && <Button variant="outline" className={touch} disabled={readOnly || locked} onClick={() => goTo(STEPS[index - 1]!)}>{t('common.back')}</Button>}
+        {index > 0 && !agreementsOnly && <Button variant="outline" className={touch} disabled={readOnly || locked} onClick={() => goTo(STEPS[index - 1]!)}>{t('common.back')}</Button>}
         {step !== 'agreements'
           ? <Button className={touch} disabled={readOnly || locked || step === 'children' && !childrenComplete} onClick={next}>{t('common.continue')}</Button>
           : saved

@@ -135,6 +135,14 @@ export interface ConsentFormTill {
    */
   /** The channel the till holds now, for a step that sends none. */
   contactChannel?: ContactChannel;
+  /**
+   * SCRUM-1018 — the form shows the number, not asks it (`phoneFixed` in the
+   * prompt): only staff change it, on the till, so a number a family's step
+   * carries is not taken. The channel they choose still is.
+   */
+  phoneFixed?: boolean;
+  /** SCRUM-1018 — the parent's name is the family's profile name (`guardianFixed`): a step's name is not taken. */
+  nameFixed?: boolean;
   /** The form the till published asks for the tick (`contactConfirmed` was sent). */
   asksContactConfirmation?: boolean;
   /** The tick stands on the till for the number and channel the form holds. */
@@ -187,13 +195,13 @@ export function takeConsentAction(action: ConsentAction, till: ConsentFormTill):
   // SCRUM-857 — a photo is not a step of the form and never finishes it.
   else if (action.action === 'photo') till.takePhoto?.(action.slotId, action.fileId);
   else if (action.action === 'acknowledge') {
-    till.setGuardianName(action.guardianName);
+    if (!till.nameFixed) till.setGuardianName(action.guardianName);
     till.setConsentAcknowledged(action.consentAcknowledged);
     till.setAcknowledgedConfirmationIds(action.acknowledgedConfirmationIds);
     till.setCompletedSignature(null);
   } else if (action.action === 'fill') {
     for (const { id, patch } of consentSlotPatches(till.slots, action.slots)) till.updateSlot(id, patch);
-    till.setGuardianName(action.guardianName);
+    if (!till.nameFixed) till.setGuardianName(action.guardianName);
     // SCRUM-863 — the family confirms or changes their number and channel on
     // the form, and what they send is what the registration keeps: the stored
     // form of a number that reads as one, otherwise as typed, exactly as the
@@ -201,7 +209,7 @@ export function takeConsentAction(action: ConsentAction, till: ConsentFormTill):
     // that cannot be one). The customer's own number on the sale is not
     // touched. An older display sends a number only when none was given at the
     // start and never a channel: a step without either changes neither.
-    if (action.guardianPhone !== undefined) {
+    if (action.guardianPhone !== undefined && !till.phoneFixed) {
       const phone = consentFormPhone(action.guardianPhone);
       if (phone !== till.guardianPhone.trim()) till.setGuardianPhone(phone);
     }
