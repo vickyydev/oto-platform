@@ -42,6 +42,12 @@ const LINE = 'flex w-full items-start gap-4 rounded-2xl border border-foreground
 interface ConsentCaptureProps {
   /** Public booking captures the protected visit photo at reception. */
   photoAtReception?: boolean;
+  /**
+   * SCRUM-1021 — the credit a child's ticket puts on their band, in baht
+   * (Eat & Play), shown above the food choice as included with no extra
+   * charge. Left out (the booking site), nothing is shown.
+   */
+  includedCreditTHB?: (slot: SupervisedSlot) => number;
   // EVERY child on the unaccompanied sale — the parent types names + ages here on
   // their own screen, and those flow (via the lifted draft) straight into the
   // staff gate's requirement resolution. Consent fields then appear per child for
@@ -198,6 +204,7 @@ export function ConsentTicksStatus({
  */
 export function ConsentCapture({
   photoAtReception = false,
+  includedCreditTHB,
   slots,
   parentName,
   consentAck,
@@ -447,6 +454,12 @@ export function ConsentCapture({
                     <UtensilsCrossed className="h-5 w-5 text-primary" />
                     {t('superviseConsent.foodDrinksFor', { name: slot.name || t('superviseConsent.thisChild') })}
                   </label>
+                  {/* SCRUM-1021 — the ticket's own food credit, on the band at check-in. */}
+                  {(includedCreditTHB?.(slot) ?? 0) > 0 && (
+                    <p data-testid="consent-food-included" className="mb-3 rounded-xl border border-primary/30 bg-primary/10 px-4 py-2.5 text-base font-semibold text-primary">
+                      {t('superviseConsent.foodIncluded', { amount: includedCreditTHB!(slot) })}
+                    </p>
+                  )}
                   <ChildFoodProvisionPicker
                     lang={lang}
                     childName={slot.name}

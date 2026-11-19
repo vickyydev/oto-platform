@@ -19,7 +19,7 @@ import {
   unpricedLineReason,
 } from '@/lib/pricing';
 import { formatDiscountDetail, formatDiscountTarget } from '@/lib/manualDiscount';
-import { Ticket, User, Baby, Trash2, Tag, BadgePercent, Footprints, Minus, Plus, HandHeart, UserCheck, Pencil, AlertTriangle, ShoppingBag, PartyPopper, Gift, type LucideIcon } from 'lucide-react';
+import { Ticket, User, Baby, Trash2, Tag, BadgePercent, Footprints, Minus, Plus, HandHeart, UserCheck, Pencil, AlertTriangle, ShoppingBag, PartyPopper, Gift, Wallet, type LucideIcon } from 'lucide-react';
 import { bahtText } from '@/lib/bahtText';
 
 interface OrderSummaryProps {
@@ -501,6 +501,20 @@ export function OrderSummary({ tier, onChangeTier, customerName, lines, activeLi
                           </>
                         )}
                       </div>
+                      {/* SCRUM-1021 — the child's prepaid food, its own row on the
+                          order (the owner's answer of 19 November): what the family
+                          chose, charged with this line and loaded on the band. */}
+                      {line.dropOff.lengthChosen && (line.dropOff.foodProvision?.paidTHB ?? 0) > 0 && (
+                        <div className="flex items-center justify-between gap-2" data-testid="order-food-credit">
+                          <span className="flex items-center gap-2 min-w-0">
+                            <Wallet className="w-4 h-4 shrink-0" />
+                            <span className="truncate">
+                              {line.dropOff.foodProvision!.mode === 'prepaid_items' ? 'Prepaid food' : 'Extra food credit'}
+                            </span>
+                          </span>
+                          <span className="tabular-nums shrink-0">฿{bahtText(line.dropOff.foodProvision!.paidTHB)}</span>
+                        </div>
+                      )}
                       {line.dropOff.service === 'nanny' && !line.dropOff.nannyId && (
                         <div className="flex items-center gap-2 text-amber-300">
                           <AlertTriangle className="w-4 h-4 shrink-0" /> Assign a nanny

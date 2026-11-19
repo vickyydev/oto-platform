@@ -15,6 +15,7 @@ import { ChildReviewPromptSchema, childReviewAge, ConsentActionSchema, ConsentPr
   newId, type ChildReviewPrompt, type ConsentFormStep, type ConsentPrompt } from '@oto/shared';
 import { familyReviewChange, familyReviewChangeLine } from '@/lib/familyReviewChange';
 import { careShownFor, displayCareLine, profileCareNote } from '@/lib/displayCareNotes';
+import { extraCreditOfSlot, includedCreditTHB } from '@/lib/dropOffFoodCredit';
 import { addedGatePlace, emptyGatePlace, gateTicketLines, savedChildrenOffForm } from '@/lib/editDetails';
 import { useCustomerTheme } from '@/lib/themePref';
 import { computeLineTotal, computeLineBreakdown, priceForTier, unpricedCartLines } from '@/lib/pricing';
@@ -3985,6 +3986,21 @@ export default function Till() {
    * that child's allergy and medical notes and may update them on the display
    * (`lib/displayCareNotes`).
    */
+  /**
+   * SCRUM-1021 — the food credit on the form, for a child in care: the
+   * ticket's own credit, shown as included with no extra charge (it goes on
+   * their band at check-in), and the extra prepaid credit, for the family to
+   * choose on their screen (not over prepaid items staff chose).
+   */
+  const slotIncludedCreditTHB = (slot: SupervisedSlot): number =>
+    Math.round(includedCreditTHB(slot.ticketType, tier ?? getDefaultTier().id,
+      lines.some((line) => line.id === slot.sourceLineId && !!line.voucherGift)));
+  const consentSlotFood = (slot: SupervisedSlot, inCare: boolean): { includedCreditTHB?: number; extraCreditTHB?: number } => {
+    if (!inCare) return {};
+    const included = slotIncludedCreditTHB(slot);
+    const extra = extraCreditOfSlot(slot);
+    return { ...(included > 0 ? { includedCreditTHB: included } : {}), ...(extra !== null ? { extraCreditTHB: Math.min(100_000, extra) } : {}) };
+  };
   const consentBase: Omit<ConsentPrompt, 'kind' | 'requestId' | 'completed'> = {
     visitorId: reviewVisitorId,
     slots: consentRows.map(({ slot, outcome }) => ({ id: slot.id, name: slot.name.slice(0, 100),
@@ -3995,6 +4011,7 @@ export default function Till() {
       // SCRUM-1018 — not for a photo staff compare or reuse on the till.
       ...consentSlotPhoto({ needsConsent: outcome.needsConsent && photoStateOf(slot) === 'today', hasPhoto: !!slot.childPhotoUrl,
         stationId: station?.stationId, throughCounterBox: hasBridgeOrigin() }),
+      ...consentSlotFood(slot, outcome.needsConsent),
       // SCRUM-1020 — a saved child in care: the family sees the allergy and
       // medical notes the till holds and may update them (`careShown`); the
       // food notes stay the profile's. Any other saved child, as before.
@@ -4699,6 +4716,7 @@ export default function Till() {
         {inlineDisplay && step === 7 && (
           <div className={`w-1/2 h-full min-w-0 ${customerTheme === 'dark' ? 'dark' : 'light'}`}>
             <ConsentCapture
+              includedCreditTHB={slotIncludedCreditTHB}
               slots={superSlots}
               parentName={superParentName}
               consentAck={superConsentAck}
@@ -4780,7 +4798,7 @@ export default function Till() {
             <DialogDescription>Complete the child and guardian checks on this staff screen before continuing.</DialogDescription>
           </DialogHeader>
           <div className="flex-1 min-h-0 dark" inert={gateSaving}>
-            <ConsentCapture staffScreen slots={superSlots} ticksReadOnly={!staffTicks} parentName={superParentName} consentAck={superConsentAck} policy={supervisionPolicy}
+            <ConsentCapture staffScreen slots={superSlots} includedCreditTHB={slotIncludedCreditTHB} ticksReadOnly={!staffTicks} parentName={superParentName} consentAck={superConsentAck} policy={supervisionPolicy}
               parentPhone={superParentPhone} parentContactMethod={superParentContactMethod}
               onParentNameChange={setSuperParentName} onParentPhoneChange={changeGuardianPhone}
               // SCRUM-1018 — staff change the number and correct the profile's
@@ -4817,7 +4835,7 @@ export default function Till() {
             ))}
           </div>}
           <div className="flex-1 min-h-0 dark" inert={gateSaving}>
-            <ConsentCapture staffScreen ticksReadOnly slots={superSlots} parentName={superParentName} consentAck={superConsentAck} policy={supervisionPolicy}
+            <ConsentCapture staffScreen ticksReadOnly slots={superSlots} includedCreditTHB={slotIncludedCreditTHB} parentName={superParentName} consentAck={superConsentAck} policy={supervisionPolicy}
               parentPhone={superParentPhone} parentContactMethod={superParentContactMethod}
               onParentNameChange={setSuperParentName} onParentPhoneChange={changeGuardianPhone}
               onParentContactMethodChange={changeGuardianChannel} onConsentAckChange={setSuperConsentAck}

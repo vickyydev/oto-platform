@@ -311,6 +311,29 @@ test('SCRUM-1020: a saved child\'s care notes reach the family\'s screen, and th
   } finally { h.close(); }
 });
 
+test('SCRUM-1021: the food credit reaches the family\'s screen, and their extra credit only for a child the form asks', async () => {
+  const h = await openConsent();
+  try {
+    const prompt = consentPrompt({ slots: [{ id: 'slot', name: 'Child one', ageYears: 6, requirement: 'drop_off',
+      includedCreditTHB: 1300, extraCreditTHB: 0 }] });
+    const published = await h.publish(prompt);
+    assert.ok(published.ok);
+    assert.deepEqual(h.manager.snapshotFor(published.document, 'customer', null).document.prompt, prompt);
+    const step = { action: 'fill', requestId: prompt.requestId, visitorId: prompt.visitorId,
+      slots: [{ id: 'slot', name: 'Child one', dateOfBirth: null, ageYears: 6, allergiesMedical: '', foodRestrictions: '', extraCreditTHB: 300 }],
+      guardianName: '', consentAcknowledged: false, acknowledgedConfirmationIds: [] };
+    const answered = await h.send(step, 'extra-credit');
+    assert.ok(answered.ok);
+    // A form that does not ask the family for extra credit takes none.
+    const unasked = await h.publish({ ...prompt, requestId: 'guardian-request-unasked',
+      slots: [{ id: 'slot', name: 'Child one', ageYears: 6, requirement: 'drop_off', includedCreditTHB: 1300 }] });
+    assert.ok(unasked.ok);
+    const refused = await h.send({ ...step, requestId: 'guardian-request-unasked' }, 'extra-credit-refused');
+    assert.equal(refused.ok, false);
+    assert.equal(h.facts.length, 0, 'a food choice on the form registers nothing and charges nothing');
+  } finally { h.close(); }
+});
+
 test('guardian acknowledgement refuses foreign prompts, stages, sources, checklist fields and premature Done', async () => {
   const h = await openConsent();
   try {
