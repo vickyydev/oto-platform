@@ -42,6 +42,7 @@ import {
 import { AppError, errors } from '../lib/errors';
 import type { BranchReach } from './access-control';
 import { audit } from './audit';
+import { childOfMember, familyProfilesMode } from './family';
 import { recordRun } from './ops';
 import { OtoAppSeamNotGrantedError, getBranchEvent, type SeamEvent } from './otoapp-events';
 import type {
@@ -404,10 +405,16 @@ async function planAttendee(deps: EventWriteDeps, actor: ActorContext, input: Wr
   }
   if (body.childId) {
     if (!body.memberId) throw errors.badRequest('A saved child is named with the member they belong to');
+    // SCRUM-1024 (step F3) — "the member's" by the switch, read once here; the
+    // member's and the child's own state not asked, as before.
+    const familyMode = await familyProfilesMode(db, actor.operatorId);
     const [c] = await db
       .select({ id: child.id })
       .from(child)
-      .where(and(eq(child.id, body.childId), eq(child.memberId, body.memberId)))
+      .where(and(
+        eq(child.id, body.childId),
+        childOfMember(familyMode, { operatorId: actor.operatorId, memberId: body.memberId, memberLive: false }),
+      ))
       .limit(1);
     if (!c) throw errors.notFound('Child not found');
   }

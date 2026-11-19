@@ -206,9 +206,10 @@ export type FamilySource = (typeof FAMILY_SOURCES)[number];
  * rows reach their family by a composite foreign key onto it, so a guardian
  * row can never name another operator's family.
  *
- * Expand only (plan §3): the till, the box and the booking site still read a
- * child through `child.member_id`; nothing reads a family until the readers
- * are switched behind the `crm.family_profiles` switch.
+ * Expand (plan §3), then the readers (step F3): a reader of a member's
+ * children reads `child.member_id` while the `crm.family_profiles` switch is
+ * `off` (the default), and the family when it is `read`
+ * (`apps/api/src/services/family.ts`).
  */
 export const family = crm.table(
   'family',

@@ -7,6 +7,7 @@ import { errors } from '../lib/errors';
 import { audit } from '../services/audit';
 import { addVisitChildren } from '../services/visit-children';
 import { ClientIdSchema, REPLAY_HEADER, claimClientId } from '../services/client-id';
+import { childOfMember, familyProfilesMode } from '../services/family';
 import { opCtx, withTx } from '../services/tx';
 
 /**
@@ -109,13 +110,17 @@ export async function visitRoutes(app: App): Promise<void> {
       // and send what the lookup now lists.
       if (req.body.childIds.length > 0) {
         if (!req.body.memberId) throw errors.badRequest('childIds require a memberId');
+        // SCRUM-1024 (step F3) — "the member's own" by the switch, read once
+        // here: `child.member_id` at `off`, the member's families otherwise.
+        // The member was found live just above.
+        const familyMode = await familyProfilesMode(app.db, auth.operatorId);
         const rows = await app.db
           .select({ id: child.id })
           .from(child)
           .where(
             and(
               inArray(child.id, req.body.childIds),
-              eq(child.memberId, req.body.memberId),
+              childOfMember(familyMode, { operatorId: auth.operatorId, memberId: req.body.memberId, memberLive: true }),
               isNull(child.archivedAt),
             ),
           );
@@ -210,11 +215,13 @@ export async function visitRoutes(app: App): Promise<void> {
       const [v] = await app.db.select().from(visit).where(eq(visit.id, req.params.id)).limit(1);
       if (!v || v.operatorId !== auth.operatorId) throw errors.notFound('Visit not found');
       await req.requirePermission('pos:visit:create', { branchId: v.branchId });
+      const familyMode = await familyProfilesMode(app.db, auth.operatorId);
       return withTx(app.db, opCtx(req), 'visit.children_add', (tx) => addVisitChildren(tx, {
         operationId: req.body.operationId,
         visitId: v.id,
         operatorId: auth.operatorId,
         branchId: v.branchId,
+        familyMode,
         childIds: req.body.childIds,
         now: new Date(),
         actor: { actorAccountId: auth.accountId, requestId: req.id },

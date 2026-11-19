@@ -3,7 +3,7 @@ import { child, member, type Db } from '@oto/db';
 import type { FamilyOnlineChild } from '@oto/shared';
 import { AppError, errors } from '../lib/errors';
 import { audit } from './audit';
-import { ensureFamilyFor } from './family';
+import { childOfMember, ensureFamilyFor, familyProfilesMode } from './family';
 import { familyPassMember, publicSavedChildrenOf, type PublicSavedChild } from './member-code';
 import { BOOKING_SITE_SOURCE, archiveChild, childCacheView, memberCacheView } from './members';
 import { recordChange } from './sync';
@@ -198,20 +198,31 @@ export async function saveFamilyOnline(
         ? await tx.select().from(child).where(inArray(child.id, allIds)).for('update')
         : [];
       const byId = new Map(rows.map((r) => [r.id, r]));
+      // SCRUM-1024 (step F3) — "this family's child" by the switch, read once
+      // for this save: the child's own member at `off`; otherwise one this
+      // member holds through a family (the child's own state as before).
+      const familyMode = await familyProfilesMode(tx, input.operatorId);
+      const held = familyMode === 'off' || rows.length === 0
+        ? null
+        : new Set((await tx.select({ id: child.id }).from(child).where(and(
+          inArray(child.id, rows.map((r) => r.id)),
+          childOfMember(familyMode, { operatorId: input.operatorId, memberId, memberLive: true }),
+        ))).map((r) => r.id));
+      const theirs = (row: typeof child.$inferSelect): boolean => (held ? held.has(row.id) : row.memberId === memberId);
       for (const id of savedIds) {
         const row = byId.get(id);
-        if (!row || row.memberId !== memberId || row.archivedAt) throw notThisFamilysChild();
+        if (!row || !theirs(row) || row.archivedAt) throw notThisFamilysChild();
       }
       for (const id of newIds) {
         const row = byId.get(id);
         // The booking site's own id, sent again: the same child, if it is this
         // family's and still saved. Anyone else's id is refused in the same
         // words as a child that is not this family's.
-        if (row && (row.memberId !== memberId || row.archivedAt)) throw notThisFamilysChild();
+        if (row && (!theirs(row) || row.archivedAt)) throw notThisFamilysChild();
       }
       for (const id of input.remove) {
         const row = byId.get(id);
-        if (!row || row.memberId !== memberId) throw notThisFamilysChild();
+        if (!row || !theirs(row)) throw notThisFamilysChild();
       }
 
       const now = new Date();
@@ -289,6 +300,7 @@ export async function saveFamilyOnline(
             operatorId: input.operatorId,
             branchId: input.branchId,
             ...(ctx.requestId ? { requestId: ctx.requestId } : {}),
+            familyMode,
             fromBookingSite: true,
           },
           id,
@@ -299,7 +311,7 @@ export async function saveFamilyOnline(
         await saveContactChannel(tx, ctx, input, m, now);
       }
 
-      return { children: await publicSavedChildrenOf(tx, memberId) };
+      return { children: await publicSavedChildrenOf(tx, { operatorId: input.operatorId, memberId, familyMode }) };
     },
   );
 }
@@ -357,10 +369,17 @@ export async function checkBookingFamilyLinks(
   if (input.savedChildIds.length === 0) return { checkedMemberId: holder?.memberId ?? null };
   if (!holder) throw bookingFamilyCheckRefusal();
   const ids = [...new Set(input.savedChildIds)];
+  // SCRUM-1024 (step F3) — the pass holder's own children by the switch, read
+  // once for this booking; the holder was just found live by its phone.
+  const familyMode = await familyProfilesMode(exec, input.operatorId);
   const rows = await exec
     .select({ id: child.id })
     .from(child)
-    .where(and(inArray(child.id, ids), eq(child.memberId, holder.memberId), isNull(child.archivedAt)));
+    .where(and(
+      inArray(child.id, ids),
+      childOfMember(familyMode, { operatorId: input.operatorId, memberId: holder.memberId, memberLive: true }),
+      isNull(child.archivedAt),
+    ));
   if (rows.length !== ids.length) throw notThisFamilysChild('booked');
   return { checkedMemberId: holder.memberId };
 }

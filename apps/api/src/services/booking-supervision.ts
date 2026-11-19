@@ -13,6 +13,7 @@ import {
 import { errors } from '../lib/errors';
 import { audit } from './audit';
 import type { BookingRow } from './booking-payment';
+import { childOfMember, familyProfilesMode } from './family';
 import type { Exec, Tx } from './tx';
 
 /**
@@ -150,10 +151,15 @@ export async function registerPaidBookingChildren(tx: Tx, row: BookingRow, now: 
     const id = (l.supervision as { savedChildId?: unknown } | undefined)?.savedChildId;
     return typeof id === 'string' ? [id] : [];
   });
+  // SCRUM-1024 (step F3): "the booking member's" by the switch, read once
+  // here; the member's own state not asked, as before.
   const linkable = new Set(
     named.length > 0 && row.memberId
       ? (await tx.select({ id: savedChild.id }).from(savedChild).where(and(
-        inArray(savedChild.id, named), eq(savedChild.memberId, row.memberId), isNull(savedChild.archivedAt),
+        inArray(savedChild.id, named),
+        childOfMember(await familyProfilesMode(tx, row.operatorId),
+          { operatorId: row.operatorId, memberId: row.memberId, memberLive: false }),
+        isNull(savedChild.archivedAt),
       ))).map((c) => c.id)
       : [],
   );

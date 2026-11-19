@@ -232,8 +232,9 @@ describe('SCRUM-643 maintenance at hand-off: mint and exchange', () => {
 describe('SCRUM-643 flags: catalogue, scope and dual control', () => {
   it('P5 critical: unknown and unsupported keys are refused on every write and the preview, and never stored', async () => {
     const unsupported = FLAG_CATALOGUE.filter(entry => !entry.supported).map(entry => entry.key);
-    // SCRUM-1024: family profiles is listed and stays off until its readers exist (plan step F3).
-    expect(unsupported.sort()).toEqual(['analytics.rollups_frozen', 'booth.stopped', 'crm.family_profiles', 'gate.closed',
+    // SCRUM-1024: family profiles is supported since its readers were switched (plan step F3); its `on`
+    // value is still refused by every write and the preview (s1024-family-readers.test.ts).
+    expect(unsupported.sort()).toEqual(['analytics.rollups_frozen', 'booth.stopped', 'gate.closed',
       'payments.card_tender_disabled', 'payments.manual_recording_forced', 'payments.qr_tender_disabled']);
     for (const key of unsupported) {
       const entry = flagCatalogueEntry(key)!;

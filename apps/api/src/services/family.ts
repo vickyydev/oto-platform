@@ -1,8 +1,22 @@
-import { and, asc, eq, isNull } from 'drizzle-orm';
-import { branch, family, familyGuardian, member, station, type FamilySource } from '@oto/db';
+import { and, asc, eq, exists, inArray, isNull, sql, type SQL } from 'drizzle-orm';
+import { alias, type AnyPgColumn } from 'drizzle-orm/pg-core';
+import {
+  branch,
+  child,
+  family,
+  familyGuardian,
+  FAMILY_PROFILES_KEY,
+  member,
+  station,
+  type FamilyProfilesMode,
+  type FamilySource,
+} from '@oto/db';
 import { newId } from '@oto/shared';
 import { errors } from '../lib/errors';
+import { effectiveFlag } from './suite-flags';
 import type { Exec, Tx } from './tx';
+
+export type { FamilyProfilesMode };
 
 /**
  * SCRUM-1024 — FAMILY PROFILES: several parents or guardians for the same
@@ -11,10 +25,11 @@ import type { Exec, Tx } from './tx';
  *
  * A child belongs to one FAMILY (`crm.child.family_id`); a family's parents
  * and guardians are members holding a live `crm.family_guardian` row on it.
- * `crm.child.member_id` keeps its meaning, "first saved under", and is still
- * what every reader uses: in this step every writer of a child gives the new
- * child a family, and nothing reads one. The read rule and the readers come
- * behind the switch `crm.family_profiles` in step F3.
+ * `crm.child.member_id` keeps its meaning, "first saved under". Every writer
+ * of a child gives the new child a family (step F1). Every reader of "a
+ * member's children" asks the switch `crm.family_profiles` which way to read
+ * (step F3, the read rule below): at `off` by `child.member_id`, as before
+ * families existed; at `read` (and later `on`) through the family.
  *
  * Not `crm.guardian` (`schema/checkin.ts`), which is a collector on one
  * drop-off registration.
@@ -202,6 +217,192 @@ export async function liveFamiliesOf(exec: Exec, operatorId: string, memberId: s
     )
     .orderBy(asc(family.createdAt), asc(family.id));
   return rows.map((r) => r.id);
+}
+
+// --- The switch -------------------------------------------------------------------
+//
+// Read ONCE per request (or per box batch) at operator scope, and the answer
+// handed to every read that request makes: one answer never mixes the two
+// ways of reading a member's children.
+
+/**
+ * What `crm.family_profiles` says for an operator: `off` (the default),
+ * `read` or `on`. An expired or malformed override is `off` (the suite's
+ * resolver). `on` cannot be set before plan step F4; a reader that meets it
+ * reads as at `read`.
+ */
+export async function familyProfilesMode(exec: Exec, operatorId: string, now = new Date()): Promise<FamilyProfilesMode> {
+  const resolved = await effectiveFlag(exec, FAMILY_PROFILES_KEY, { operatorId, branchId: null, stationId: null }, now);
+  return resolved.value as FamilyProfilesMode;
+}
+
+// --- The read rule ------------------------------------------------------------------
+//
+// The plan's one rule (section 2.2): a member sees a child when the member is
+// live, holds a live guardian row in the child's family, the family is live,
+// and the child is live and not merged into another. The family, the guardian
+// row and the member are all of ONE operator, the one the caller names: that
+// is the fence every family read stands on, and it is checked on every read.
+//
+// The readers do not each write this join. They take one of:
+//   - `childOfMember`: the condition "a child of this member" for a query on
+//     `crm.child`, by the switch: `child.member_id` at `off` (the very
+//     condition each reader wrote before, so its query does not change), the
+//     family otherwise;
+//   - `childGuardedInOperator`: "this child has a live guardian in this
+//     operator", for the owner checks of an edit or a removal, which name a
+//     child and no member;
+//   - `familyChildrenOfMembers`: which of several members sees which child,
+//     for a reader that lists many members at once (the Console register);
+//   - `childrenSeenBy` and `memberSeesChild`: the whole rule, child included.
+//
+// WHAT EACH READER ADDS ITSELF, exactly as before: whether the child must be
+// live (a removal of an already removed child answers "already removed"; a
+// walk-up event pass names a child as it was), and whether the member must be
+// live (`memberLive`). The member's state is asked where the reader asked it
+// before switching, so the same member gets the same answer either way: the
+// counter's lookup, the member page, the register and the booking site only
+// ever serve a live member; a box's replayed fact, a reprint of an old sale's
+// kitchen slip and a visit opened before its member was archived still take
+// an archived member, as they always did. The guardian ROW must be live in
+// every case: a parent taken off a family (plan step F4) sees nothing.
+//
+// Aliases need nothing of their own: a merged member's id names no guardian
+// row (a box's facts are resolved to the surviving member before they are
+// read), so through an alias the family read finds what the old read found:
+// nothing.
+
+/** The guardian row, family and member a family read joins, under names no caller's query uses. */
+const SEEN_GUARDIAN = 'family_seen_guardian';
+const SEEN_FAMILY = 'family_seen_family';
+const SEEN_MEMBER = 'family_seen_member';
+const seenGuardian = alias(familyGuardian, SEEN_GUARDIAN);
+const seenFamily = alias(family, SEEN_FAMILY);
+const seenMember = alias(member, SEEN_MEMBER);
+
+export interface FamilyReadScope {
+  /** The caller's own operator: the fence. */
+  operatorId: string;
+  /** The member whose children these are: an id, or the column naming it in the caller's query. */
+  memberId: string | AnyPgColumn;
+  /** The member must be live (not archived), as this reader asked before it read through the family. */
+  memberLive: boolean;
+}
+
+/**
+ * The live guardian rows of `memberId` (or of any member, when it is null) on
+ * the child's live family, inside the operator; and the child not merged.
+ */
+function guardianExists(operatorId: string, memberId: string | AnyPgColumn | null, memberLive: boolean): SQL {
+  return and(
+    isNull(child.mergedIntoChildId),
+    exists(
+      // An aliased table renders as its alias alone inside `sql`, so each is named as `<table> <alias>` here.
+      sql`(select 1 from ${familyGuardian} ${sql.identifier(SEEN_GUARDIAN)}
+            join ${family} ${sql.identifier(SEEN_FAMILY)}
+              on ${seenFamily.id} = ${seenGuardian.familyId} and ${seenFamily.operatorId} = ${seenGuardian.operatorId}
+            join ${member} ${sql.identifier(SEEN_MEMBER)}
+              on ${seenMember.id} = ${seenGuardian.memberId} and ${seenMember.operatorId} = ${seenGuardian.operatorId}
+           where ${seenGuardian.familyId} = ${child.familyId}
+             and ${seenGuardian.operatorId} = ${operatorId}
+             and ${seenGuardian.archivedAt} is null
+             and ${seenFamily.archivedAt} is null
+             ${memberId === null ? sql`` : sql`and ${seenGuardian.memberId} = ${memberId}`}
+             ${memberLive ? sql`and ${seenMember.archivedAt} is null` : sql``})`,
+    ),
+  )!;
+}
+
+/**
+ * "A child of this member", as a condition on `crm.child`, by the switch.
+ *
+ * At `off` it is `child.member_id = memberId`, word for word the condition
+ * the reader wrote before: the query is unchanged. Otherwise the member holds
+ * a live guardian row on the child's live family, inside the operator (and is
+ * live, when `memberLive`), and the child is not merged. The child's own
+ * `archived_at` is the reader's to add, as it always was.
+ */
+export function childOfMember(mode: FamilyProfilesMode, scope: FamilyReadScope): SQL {
+  if (mode === 'off') return eq(child.memberId, scope.memberId);
+  return guardianExists(scope.operatorId, scope.memberId, scope.memberLive);
+}
+
+/**
+ * "This child has a live guardian in this operator", as a condition on
+ * `crm.child`, for the owner checks of an edit or a removal (which name a
+ * child and no member) when the switch reads through the family. At `off`
+ * those checks keep reading the child's own member, as before.
+ */
+export function childGuardedInOperator(scope: { operatorId: string; memberLive: boolean }): SQL {
+  return guardianExists(scope.operatorId, null, scope.memberLive);
+}
+
+/**
+ * Which of `memberIds` sees which child through a family (the rule above,
+ * child's own state left to the caller): one pair per member and child. For
+ * a reader that lists many members at once, which then reads the children it
+ * needs by id, in its own order and with its own columns.
+ */
+export async function familyChildrenOfMembers(
+  exec: Exec,
+  scope: { operatorId: string; memberIds: readonly string[]; memberLive: boolean },
+): Promise<Array<{ childId: string; memberId: string }>> {
+  if (scope.memberIds.length === 0) return [];
+  return exec
+    .select({ childId: child.id, memberId: seenGuardian.memberId })
+    .from(child)
+    .innerJoin(
+      seenGuardian,
+      and(
+        eq(seenGuardian.familyId, child.familyId),
+        eq(seenGuardian.operatorId, scope.operatorId),
+        isNull(seenGuardian.archivedAt),
+        inArray(seenGuardian.memberId, [...scope.memberIds]),
+      ),
+    )
+    .innerJoin(
+      seenFamily,
+      and(eq(seenFamily.id, seenGuardian.familyId), eq(seenFamily.operatorId, seenGuardian.operatorId), isNull(seenFamily.archivedAt)),
+    )
+    .innerJoin(
+      seenMember,
+      and(
+        eq(seenMember.id, seenGuardian.memberId),
+        eq(seenMember.operatorId, seenGuardian.operatorId),
+        scope.memberLive ? isNull(seenMember.archivedAt) : undefined,
+      ),
+    )
+    .where(isNull(child.mergedIntoChildId));
+}
+
+/** The whole rule as one condition on `crm.child`: a live, unmerged child of a live member's live family. */
+export function seenThroughFamily(operatorId: string, memberId: string): SQL {
+  return and(isNull(child.archivedAt), guardianExists(operatorId, memberId, true))!;
+}
+
+/** The children a member sees through their families (the whole rule), in the order they were saved. */
+export async function childrenSeenBy(
+  exec: Exec,
+  scope: { operatorId: string; memberId: string },
+): Promise<Array<typeof child.$inferSelect>> {
+  return exec
+    .select()
+    .from(child)
+    .where(seenThroughFamily(scope.operatorId, scope.memberId))
+    .orderBy(asc(child.createdAt), asc(child.id));
+}
+
+/** Whether a member sees one child through a family (the whole rule). */
+export async function memberSeesChild(
+  exec: Exec,
+  scope: { operatorId: string; memberId: string; childId: string },
+): Promise<boolean> {
+  const [row] = await exec
+    .select({ id: child.id })
+    .from(child)
+    .where(and(eq(child.id, scope.childId), seenThroughFamily(scope.operatorId, scope.memberId)))
+    .limit(1);
+  return Boolean(row);
 }
 
 /** The two columns step F1 added to `crm.child`. */
