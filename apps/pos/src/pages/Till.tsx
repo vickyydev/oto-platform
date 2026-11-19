@@ -15,7 +15,7 @@ import { ChildReviewPromptSchema, childReviewAge, ConsentActionSchema, ConsentPr
   nameIsPhoneNumber, newId, type ChildReviewPrompt, type ConsentFormStep, type ConsentPrompt } from '@oto/shared';
 import { familyReviewChange, familyReviewChangeLine } from '@/lib/familyReviewChange';
 import { careShownFor, displayCareLine, profileCareNote, profileMedicalNote } from '@/lib/displayCareNotes';
-import { extraCreditOfSlot, includedCreditTHB } from '@/lib/dropOffFoodCredit';
+import { asksOrderWithIncluded, extraCreditOfSlot, includedCreditTHB, ordersWithIncluded } from '@/lib/dropOffFoodCredit';
 import { addedGatePlace, emptyGatePlace, gateTicketLines, savedChildrenOffForm } from '@/lib/editDetails';
 import { useCustomerTheme } from '@/lib/themePref';
 import { computeLineTotal, computeLineBreakdown, priceForTier, unpricedCartLines } from '@/lib/pricing';
@@ -2865,6 +2865,8 @@ export default function Till() {
             allergies: slot.allergiesMedical.trim() || null,
             foodRestrictions: slot.foodRestrictions.trim() || null,
             foodProvision: foodProvisionToWire(slot.foodProvision),
+            // SCRUM-1054 — the parent's tick: may order food with the ticket's included credit.
+            ...(ordersWithIncluded(slot, slotIncludedCreditTHB(slot)) ? { orderWithIncludedCredit: true } : {}),
           })),
           ...(reuses.length > 0
             ? { photoReuse: reuses.map(({ checkinId, fromCheckinId }) => ({ checkinId, fromCheckinId })) }
@@ -4034,11 +4036,13 @@ export default function Till() {
   const slotIncludedCreditTHB = (slot: SupervisedSlot): number =>
     Math.round(includedCreditTHB(slot.ticketType, tier ?? getDefaultTier().id,
       lines.some((line) => line.id === slot.sourceLineId && !!line.voucherGift)));
-  const consentSlotFood = (slot: SupervisedSlot, inCare: boolean): { includedCreditTHB?: number; extraCreditTHB?: number } => {
+  const consentSlotFood = (slot: SupervisedSlot, inCare: boolean): { includedCreditTHB?: number; extraCreditTHB?: number; orderWithIncludedCredit?: boolean } => {
     if (!inCare) return {};
     const included = slotIncludedCreditTHB(slot);
     const extra = extraCreditOfSlot(slot);
-    return { ...(included > 0 ? { includedCreditTHB: included } : {}), ...(extra !== null ? { extraCreditTHB: Math.min(100_000, extra) } : {}) };
+    return { ...(included > 0 ? { includedCreditTHB: included } : {}), ...(extra !== null ? { extraCreditTHB: Math.min(100_000, extra) } : {}),
+      // SCRUM-1054 — the parent's included-credit tick, as the till holds it; the form shows it while no extra is chosen.
+      ...(asksOrderWithIncluded(slot, included) ? { orderWithIncludedCredit: slot.orderWithIncludedCredit === true } : {}) };
   };
   const consentBase: Omit<ConsentPrompt, 'kind' | 'requestId' | 'completed'> = {
     visitorId: reviewVisitorId,

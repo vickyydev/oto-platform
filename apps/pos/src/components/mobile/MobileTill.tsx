@@ -23,7 +23,7 @@ import { makeDropOffLine, normalizeDropOffFees, resolveDropOffPricing } from '@/
 import { resolveGroupRequirements, resolveSupervisionOutcome, sortedConfirmations } from '@/lib/supervision';
 import { messagingPhoneProblem } from '@/lib/consentForm';
 import { profileGuardianName } from '@/lib/returningFamily';
-import { includedCreditTHB } from '@/lib/dropOffFoodCredit';
+import { includedCreditTHB, ordersWithIncluded } from '@/lib/dropOffFoodCredit';
 import { consentMissing } from '@/lib/consentFinish';
 import { buildSale } from '@/lib/sale';
 import { branchTradingDate } from '@/lib/pricingMode';
@@ -1524,6 +1524,8 @@ export default function MobileTill() {
             allergies: slot.allergiesMedical.trim() || null,
             foodRestrictions: slot.foodRestrictions.trim() || null,
             foodProvision: foodProvisionToWire(slot.foodProvision),
+            // SCRUM-1054 — the parent's tick: may order food with the ticket's included credit.
+            ...(ordersWithIncluded(slot, formIncludedCreditTHB(slot)) ? { orderWithIncludedCredit: true } : {}),
           })),
         });
         registrationId = reg.id;

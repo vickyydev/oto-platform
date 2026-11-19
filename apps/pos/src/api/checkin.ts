@@ -194,6 +194,13 @@ export interface RegistrationChildBody {
   allergies?: string | null;
   foodRestrictions?: string | null;
   foodProvision?: ApiFoodProvision | null;
+  /**
+   * SCRUM-1054 — the parent's tick: the child may order food with the
+   * ticket's included credit. Sent on the platform's path only: the counter
+   * box's registration does not know the field, so on that lane it is left
+   * off and the child is "no food" there, as before.
+   */
+  orderWithIncludedCredit?: boolean;
 }
 
 export interface CreateRegistrationBody {
@@ -395,7 +402,8 @@ export const checkinApi = {
             contactChannel: body.contactChannel,
             consentAcknowledged: body.consentAcknowledged,
             acknowledgedConfirmationIds: body.acknowledgedConfirmationIds,
-            children: body.children,
+            // SCRUM-1054 — the box's strict reading of a child has no tick (see `RegistrationChildBody`).
+            children: body.children.map(({ orderWithIncludedCredit: _platformOnly, ...child }) => child),
           })
         ).registration;
       },

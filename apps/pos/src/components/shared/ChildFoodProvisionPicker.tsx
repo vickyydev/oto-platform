@@ -25,6 +25,12 @@ interface ChildFoodProvisionPickerProps {
   variant?: 'dark' | 'default';
   /** The customer's language, on a customer-facing screen. Left out, English. */
   lang?: SupportedLang;
+  /**
+   * SCRUM-1054 — the "No food" choice's line that staff need a manager to
+   * take an order. Left out where the form asks the parent's included-credit
+   * tick instead (the tick says what it allows); shown everywhere else.
+   */
+  noneNote?: boolean;
 }
 
 const NONE_PROVISION: ChildFoodProvision = { mode: 'none', paidTHB: 0 };
@@ -61,6 +67,7 @@ export function ChildFoodProvisionPicker({
   onChange,
   variant = 'dark',
   lang,
+  noneNote = true,
 }: ChildFoodProvisionPickerProps) {
   const dark = variant === 'dark';
   const t = tFor(lang ?? 'en');
@@ -162,7 +169,7 @@ export function ChildFoodProvisionPicker({
       </div>
 
       {/* No food explanation */}
-      {value.mode === 'none' && (
+      {value.mode === 'none' && noneNote && (
         <p className={cn('text-sm', dark ? 'text-foreground/50' : 'text-muted-foreground')}>
           {t('food.noneNote', { name: childName || t('superviseConsent.thisChild') })}
         </p>

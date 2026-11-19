@@ -53,6 +53,34 @@ export function extraCreditOfSlot(slot: Pick<SupervisedSlot, 'foodProvision'>): 
 }
 
 /**
+ * SCRUM-1054 — THE PARENT'S TICK: "MAY ORDER FOOD WITH THE INCLUDED CREDIT"
+ * (the owner's answer of 19 November, R3). Without extra food the
+ * registration says "no food" and the food counter asks a manager, although
+ * the ticket's credit is on the band; the form asks the parent this one tick.
+ *
+ * Asked for a child whose ticket includes credit, wherever the form asks the
+ * family's extra credit (not over prepaid items staff chose): the display's
+ * form is sent the tick then, so it never comes and goes under the family's
+ * own − and + presses.
+ */
+export function asksOrderWithIncluded(slot: Pick<SupervisedSlot, 'foodProvision'>, includedTHB: number): boolean {
+  return includedTHB > 0 && extraCreditOfSlot(slot) !== null;
+}
+
+/** Shown on the form: asked, and the parent chose no extra food. With extra food the child may order as before. */
+export function showsOrderWithIncluded(slot: Pick<SupervisedSlot, 'foodProvision'>, includedTHB: number): boolean {
+  return asksOrderWithIncluded(slot, includedTHB) && extraCreditOfSlot(slot) === 0;
+}
+
+/** What the registration says for the child: the tick, only where the form shows it. */
+export function ordersWithIncluded(
+  slot: Pick<SupervisedSlot, 'foodProvision' | 'orderWithIncludedCredit'>,
+  includedTHB: number,
+): boolean {
+  return slot.orderWithIncludedCredit === true && showsOrderWithIncluded(slot, includedTHB);
+}
+
+/**
  * The family's choice on their screen, as the child's food on the till: that
  * much prepaid credit, or none. Never over prepaid items staff chose (the
  * form does not ask then). `mayOrderFood` follows the provision exactly as

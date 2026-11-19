@@ -18,6 +18,7 @@ import { CameraCapture } from '@/components/shared/CameraCapture';
 import { ChildFoodProvisionPicker } from '@/components/shared/ChildFoodProvisionPicker';
 import { Badge } from '@/components/ui/badge';
 import { slotAge, type SupervisedSlot } from './SupervisionGate';
+import { showsOrderWithIncluded } from '@/lib/dropOffFoodCredit';
 import { ChildDobPicker } from '@/components/shared/ChildDobPicker';
 import { tFor, useLanguage } from '@/i18n/LanguageContext';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
@@ -546,8 +547,28 @@ export function ConsentCapture({
                         mayOrderFood: mayOrder,
                       });
                     }}
+                    // SCRUM-1054 — the tick below says what it allows instead.
+                    noneNote={!showsOrderWithIncluded(slot, includedCreditTHB?.(slot) ?? 0)}
                     variant="dark"
                   />
+                  {/* SCRUM-1054 — no extra food chosen: the parent's one tick for the included credit. */}
+                  {showsOrderWithIncluded(slot, includedCreditTHB?.(slot) ?? 0) && (
+                    <label htmlFor={`${lineId}-included-${slot.id}`}
+                      className={cn(LINE, 'mt-3', ticksReadOnly ? 'cursor-default' : 'cursor-pointer')}>
+                      <Checkbox
+                        id={`${lineId}-included-${slot.id}`}
+                        checked={slot.orderWithIncludedCredit === true}
+                        disabled={ticksReadOnly}
+                        onCheckedChange={(v) => onUpdateChild(slot.id, { orderWithIncludedCredit: v === true })}
+                        className="mt-1 h-6 w-6 border-foreground/30 data-[state=checked]:bg-primary"
+                        data-testid="consent-order-with-included"
+                      />
+                      <span className="text-lg leading-snug text-foreground/80">
+                        {t('superviseConsent.orderWithIncluded', { name: slot.name.trim() || t('superviseConsent.thisChild') })}
+                        {ticksReadOnly && <span className="ml-2 text-sm text-foreground/50">({slot.orderWithIncludedCredit ? 'ticked by the family' : 'the family ticks this on their screen'})</span>}
+                      </span>
+                    </label>
+                  )}
                 </div>
               </div>
             )}

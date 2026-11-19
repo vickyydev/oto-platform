@@ -78,6 +78,12 @@ export interface SupervisedSlot {
   careSource?: 'display';
   /** SCRUM-1020 — the family said plainly, on the display, that this child has no allergies or medical needs. */
   careNoneConfirmed?: boolean;
+  /**
+   * SCRUM-1054 — the parent's tick on the form: this child may order food
+   * with the ticket's included credit (`lib/dropOffFoodCredit`). Read only
+   * while the ticket includes credit and no extra food is chosen.
+   */
+  orderWithIncludedCredit?: boolean;
 }
 
 // Parse the raw age input to a non-negative integer, or null if not yet valid.
