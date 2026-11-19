@@ -33,11 +33,16 @@ export function TranslationNote() {
   );
 }
 
-export function Avatar({ initials, tint, size = 40 }: { initials: string; tint: string; size?: number }) {
+/**
+ * A contact's face: their initials on their tint, a soft square (Main.dc.html,
+ * 44 px with a 14 px radius), so a face never reads as a person's round chip.
+ */
+export function Avatar({ initials, tint, size = 44 }: { initials: string; tint: string; size?: number }) {
   return (
     <div
-      className={`flex shrink-0 items-center justify-center rounded-full font-semibold ${tint}`}
-      style={{ width: size, height: size, fontSize: size * 0.35 }}
+      aria-hidden
+      className={`flex shrink-0 items-center justify-center font-bold ${tint}`}
+      style={{ width: size, height: size, fontSize: Math.round(size * 0.32), borderRadius: Math.round(size * 0.32) }}
     >
       {initials}
     </div>
@@ -121,30 +126,32 @@ export function CategoryBadge({
   );
 }
 
-export function ChannelDot({ channel }: { channel: InboxChannelKey }) {
+/** The channel's dot on a face; `ring` is the ground the face stands on, so the dot is cut out of it. */
+export function ChannelDot({ channel, ring = 'ring-card' }: { channel: InboxChannelKey; ring?: string }) {
   return (
     <span
       title={CHANNEL_LABEL[channel]}
-      className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full ring-2 ring-card ${CHANNEL_TINT[channel]}`}
+      className={`absolute -bottom-[3px] -right-[3px] h-3 w-3 rounded-full ring-2 ${ring} ${CHANNEL_TINT[channel]}`}
     />
   );
 }
 
 /**
- * The toggle pill the archive's filters use (`ConversationList`, "Handled in
- * the last" and "Resolved by"), and since the playbook build (SCRUM-220) the
- * rail's chips: white with a slate ring when off, inverted when on, the state
- * in `aria-pressed` (SCRUM-652).
+ * The toggle pill (Filters.dc.html): the archive's choices on the Handled
+ * tab, the Unread quick filter and every choice in the Filters sheet. A card
+ * with a field border when off, inverted ink when on, the state in
+ * `aria-pressed` (SCRUM-652); 44 px tall on a phone (SCRUM-1016).
  */
-export const PILL = 'rounded-full px-2.5 py-1 text-[11px] font-medium ring-1 transition';
-export const PILL_ON = 'bg-ink text-on-ink ring-ink';
-export const PILL_OFF = 'bg-card text-ink-soft ring-line hover:bg-band';
+export const PILL =
+  'inline-flex min-h-11 items-center rounded-full border px-3.5 text-[13.5px] font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral md:min-h-10';
+export const PILL_ON = 'border-ink bg-ink text-on-ink';
+export const PILL_OFF = 'border-field bg-card text-ink hover:bg-wash';
 
 /**
- * One chip of the rail's filters: a press adds it, a second press removes it.
- * `dot` is a small mark in the thing's own colour — a topic's bar colour, a
- * channel's, a status's — so the GM queue reads amber on its chip as on its
- * badge. `chipKey` names the chip for the markup tests (`dim:value`).
+ * One choice of the Filters sheet: a press adds it, a second press removes
+ * it. `dot` is a small mark in the thing's own colour — a topic's, a
+ * channel's — so the GM queue reads amber on its choice as in the views
+ * column. `chipKey` names the choice for the markup tests (`dim:value`).
  */
 export function FilterChip({
   chipKey,
@@ -168,9 +175,9 @@ export function FilterChip({
       aria-pressed={pressed}
       onClick={onClick}
       title={title ?? label}
-      className={`${PILL} ${pressed ? PILL_ON : PILL_OFF} inline-flex min-w-0 max-w-full items-center gap-1`}
+      className={`${PILL} ${pressed ? PILL_ON : PILL_OFF} min-w-0 max-w-full gap-2`}
     >
-      {dot && <span aria-hidden className={`h-1.5 w-1.5 shrink-0 rounded-full ${dot}`} />}
+      {dot && <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${dot}`} />}
       <span className="truncate">{label}</span>
     </button>
   );

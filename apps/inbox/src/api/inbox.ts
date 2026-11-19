@@ -78,7 +78,9 @@ export const inboxApi = {
       { idempotencyKey: idemKey() },
     ),
 
-  dashboard: () => api.get<ApiResponse<'/inbox/dashboard', 'get'>>('/inbox/dashboard'),
+  /** The day's figures; `replyable` leaves the till's notices out of every one, as the list does (SCRUM-1016). */
+  dashboard: (q: ApiQuery<'/inbox/dashboard', 'get'> = {}) =>
+    api.get<ApiResponse<'/inbox/dashboard', 'get'>>(`/inbox/dashboard${qs(q)}`),
 
   /** The composer's standard lines, optionally in one language. */
   templates: (language?: string) =>

@@ -13,7 +13,7 @@ import { composerTemplate, type InsertedTemplate } from '@/components/Composer';
 import { HandleConfirm } from '@/components/confirms';
 import { NewContactDialog } from '@/components/ContactDialogs';
 import { ConversationList } from '@/components/ConversationList';
-import { FiltersDialog, TemplatesDialog } from '@/components/dialogs';
+import { FiltersDialog, TemplatesDialog, showConversationsLabel } from '@/components/dialogs';
 import { Rail } from '@/components/Rail';
 import { SimulatorBody, SimulatorDialog } from '@/components/Simulator';
 import { StatsRow } from '@/components/StatsRow';
@@ -35,6 +35,19 @@ const PAGE = 50;
 const PAGE_MAX = 100;
 
 const EMPTY_THREAD: Thread = { detail: null, messages: [], olderCursor: null, loading: false, loadingOlder: false, error: null };
+
+/**
+ * "Hide till notices" is on unless this browser turned it off (SCRUM-1016):
+ * a per-browser convenience, so a refused or empty storage reads as on.
+ */
+const HIDE_NOTICES_KEY = 'oto.hideTillNotices';
+function readHideNotices(): boolean {
+  try {
+    return localStorage.getItem(HIDE_NOTICES_KEY) !== '0';
+  } catch {
+    return true;
+  }
+}
 
 function message(err: unknown, fallback: string): string {
   return err instanceof ApiError ? err.message : fallback;
@@ -106,6 +119,7 @@ export function Workspace({ me }: { me: InboxMe }) {
   const [tab, setTab] = useState<InboxTab>(landing.current ? 'mine' : arrival.tab);
   const [filters, setFilters] = useState<Filters>(() => ({
     ...EMPTY_FILTERS,
+    hideNotices: readHideNotices(),
     unanswered: arrival.unanswered,
     archiveRange: arrival.archiveRange ?? EMPTY_FILTERS.archiveRange,
     resolvedBy: arrival.resolvedBy ?? EMPTY_FILTERS.resolvedBy,
@@ -151,14 +165,21 @@ export function Workspace({ me }: { me: InboxMe }) {
   const [assistantTab, setAssistantTab] = useState<AssistantTab | null>(arrival.assistantTab);
   const [inserted, setInserted] = useState<InsertedTemplate | null>(null);
 
-  // "Mark as handled for everyone?", from the chat or a list row.
+  // "Mark as handled for everyone?", from the chat and its People and actions (SCRUM-1016 took it off the row).
   const [confirmHandleId, setConfirmHandleId] = useState<string | null>(null);
   const [handling, setHandling] = useState(false);
   const [handleError, setHandleError] = useState<string | null>(null);
 
   const patchFilters = useCallback((next: Partial<Filters>) => setFilters((f) => ({ ...f, ...next })), []);
+  useEffect(() => {
+    try {
+      localStorage.setItem(HIDE_NOTICES_KEY, filters.hideNotices ? '1' : '0');
+    } catch {
+      // per-browser only
+    }
+  }, [filters.hideNotices]);
 
-  // The numbers the Source chips offer (SCRUM-220 playbook): every number the
+  // The numbers the Channel choices offer (SCRUM-220 playbook): every number the
   // viewer may switch the assistant on (`GET /inbox/ai/channel-accounts`, read
   // once, only with inbox:ai:manage — it refuses everyone else), the
   // simulator's numbers where it runs, and every number a page of the list
@@ -265,12 +286,14 @@ export function Workspace({ me }: { me: InboxMe }) {
   }, [page, loadingMore, tab, filters, learnSources]);
 
   // --- The dashboard ---------------------------------------------------------------
+  // While the till's notices are hidden, the figures leave them out too (SCRUM-1016).
   const dashboardSeq = useRef(0);
+  const hideNotices = filters.hideNotices;
   const loadDashboard = useCallback(async () => {
     if (!me.capabilities.dashboard) return;
     const seq = ++dashboardSeq.current, accessAtRequest = accessSignature;
     try {
-      const next = await inboxApi.dashboard();
+      const next = await inboxApi.dashboard(hideNotices ? { replyable: 'true' } : {});
       if (seq !== dashboardSeq.current || accessAtRequest !== inboxAccessSignature(accessRef.current)) return;
       setDashboard(next);
       setDashboardError(null);
@@ -278,7 +301,7 @@ export function Workspace({ me }: { me: InboxMe }) {
       if (seq !== dashboardSeq.current || accessAtRequest !== inboxAccessSignature(accessRef.current)) return;
       setDashboardError(message(err, 'The dashboard could not be read.'));
     }
-  }, [me.capabilities.dashboard, accessSignature]);
+  }, [me.capabilities.dashboard, accessSignature, hideNotices]);
   useEffect(() => void loadDashboard(), [loadDashboard]);
 
   // --- The open conversation -------------------------------------------------------
@@ -617,6 +640,7 @@ export function Workspace({ me }: { me: InboxMe }) {
             me={currentMe}
             tab={tab}
             counts={page?.tabCounts ?? null}
+            topicCounts={page?.topicCounts}
             filters={filters}
             sources={visibleSources}
             onTab={chooseTab}
@@ -644,7 +668,6 @@ export function Workspace({ me }: { me: InboxMe }) {
               onTab={chooseTab}
               onOpenFilters={() => setFiltersOpen(true)}
               onSelect={select}
-              onAskHandle={askHandle}
               onMore={() => void loadMore()}
             />
           </section>
@@ -735,7 +758,17 @@ export function Workspace({ me }: { me: InboxMe }) {
         filters={filters}
         sources={visibleSources}
         onChange={patchFilters}
-        onClear={() => setFilters((f) => ({ ...EMPTY_FILTERS, q: f.q, archiveRange: f.archiveRange, resolvedBy: f.resolvedBy }))}
+        onClear={() =>
+          setFilters((f) => ({
+            ...EMPTY_FILTERS,
+            q: f.q,
+            unanswered: f.unanswered,
+            unread: f.unread,
+            archiveRange: f.archiveRange,
+            resolvedBy: f.resolvedBy,
+          }))
+        }
+        showLabel={showConversationsLabel({ loading: listLoading, count: rows.length, more: Boolean(page?.nextCursor) })}
       />
 
       {simulatorShown && (

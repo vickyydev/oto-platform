@@ -71,7 +71,6 @@ function list(filters: Filters, me: InboxMe = hana): string {
       onTab: noop,
       onOpenFilters: noop,
       onSelect: noop,
-      onAskHandle: noop,
       onMore: noop,
     }),
   );
@@ -90,31 +89,33 @@ describe('F1 — the Filters button says so, below desktop width', () => {
   });
 });
 
-describe('F1 — the applied filters as removable pills under the search line', () => {
-  const applied: Filters = { ...EMPTY_FILTERS, category: 'birthdays', branchId: CENTRAL, status: 'active', language: 'ru' };
+// SCRUM-1016 took the Status filter away (the tabs are the status), so the
+// pills are Topic, Park, Channel and Language.
+describe('F1 — the applied filters as removable pills by the list', () => {
+  const applied: Filters = { ...EMPTY_FILTERS, category: 'birthdays', branchId: CENTRAL, language: 'ru' };
 
   it('shows one pill per applied filter, labelled from the option tables FilterFields uses', () => {
     const html = list(applied);
-    for (const label of ['Birthdays &amp; Events', 'Central Floresta', 'Active', 'Russian']) {
+    for (const label of ['Birthdays &amp; Events', 'Central Floresta', 'Russian']) {
       expect(html).toContain(label);
     }
     expect(html).toContain('aria-label="Clear Birthdays &amp; Events"');
     expect(html).toContain('aria-label="Clear Central Floresta"');
-    expect(html).toContain('aria-label="Clear Active"');
     expect(html).toContain('aria-label="Clear Russian"');
+    expect(html).not.toContain('aria-label="Clear Active"');
   });
 
-  it('shows no pills when nothing is applied (the unanswered toggle and search are not filters here)', () => {
-    expect(filterPills({ ...EMPTY_FILTERS, unanswered: true, q: 'cake' }, teams)).toEqual([]);
+  it('shows no pills when nothing is applied (the quick filters, the search and the notices switch are not filters here)', () => {
+    expect(filterPills({ ...EMPTY_FILTERS, unanswered: true, unread: true, hideNotices: false, q: 'cake' }, teams)).toEqual([]);
   });
 
   it('each pill clears exactly its own filter and nothing else', () => {
     const pills = filterPills(applied, teams);
-    expect(pills.map((p) => p.key)).toEqual(['category', 'branchId', 'status', 'language']);
+    expect(pills.map((p) => p.key)).toEqual(['category', 'branchId', 'language']);
     for (const pill of pills) {
       expect(pill.clear).toEqual({ [pill.key]: '' });
       const next = { ...applied, ...pill.clear };
-      // The cleared one is empty; the other three stay as they were.
+      // The cleared one is empty; the other two stay as they were.
       expect(next[pill.key]).toBe('');
       for (const other of pills.filter((p) => p.key !== pill.key)) {
         expect(next[other.key]).toBe(applied[other.key]);
@@ -311,11 +312,10 @@ describe('SCRUM-1016 — the statistics in one slim row', () => {
         onTab: noop,
         onOpenFilters: noop,
         onSelect: noop,
-        onAskHandle: noop,
         onMore: noop,
       }),
     );
-    expect(html).toMatch(/<div class="mb-2 lg:hidden"><section aria-label="Today"/);
+    expect(html).toMatch(/<div class="lg:hidden"><section aria-label="Today"/);
     expect(html.indexOf('Needs reply')).toBeLessThan(html.indexOf('aria-label="Filters"'));
     // The old second control is gone from the list.
     expect(html).not.toContain('Unanswered only');

@@ -1,26 +1,36 @@
 import { INBOX_DAY_TIMEZONE, type InboxDepositSignal, type InboxNextAction } from '@oto/shared/inbox';
 import { bahtOf } from '@/lib/view';
 
+/**
+ * What happens next, in the row's one badge (SCRUM-992; the shorter words of
+ * SCRUM-1016, owner choice 1, approved as drawn). The deposit's words below do
+ * not change.
+ */
 export const NEXT_ACTION_LABELS: Record<InboxNextAction, string> = {
-  staff_reply_needed: 'Staff reply needed',
-  ai_replying: 'AI replying',
-  ai_previewing: 'Preparing AI preview · not sent',
-  ai_sent: 'AI sent · waiting for customer',
+  staff_reply_needed: 'Needs reply',
+  ai_replying: 'Assistant replying',
+  ai_previewing: 'Assistant preview · not sent',
+  ai_sent: 'Assistant answered',
   waiting_customer: 'Waiting for customer',
-  shadow_preview: 'AI preview · not sent',
+  shadow_preview: 'Assistant preview · not sent',
   handled: 'Handled',
   // SCRUM-996: a deposit to book or to check waits on a person, whatever the last line was.
-  staff_action_needed: 'Staff action needed',
+  staff_action_needed: 'Needs action',
 };
+/**
+ * The badge's ground and ink (SCRUM-1016): a person is needed in coral, the
+ * assistant at work in mint and teal, waiting in the tab band. Tokens only, so
+ * both themes follow (test/list-state-992.test.ts measures each pair).
+ */
 export const NEXT_ACTION_COLOURS: Record<InboxNextAction, string> = {
-  staff_reply_needed: 'bg-amber-100 text-amber-950 ring-amber-300 dark:bg-amber-950 dark:text-amber-100 dark:ring-amber-700',
-  ai_replying: 'bg-indigo-100 text-indigo-950 ring-indigo-300 dark:bg-indigo-950 dark:text-indigo-100 dark:ring-indigo-700',
-  ai_previewing: 'bg-violet-100 text-violet-950 ring-violet-300 dark:bg-violet-950 dark:text-violet-100 dark:ring-violet-700',
-  ai_sent: 'bg-emerald-100 text-emerald-950 ring-emerald-300 dark:bg-emerald-950 dark:text-emerald-100 dark:ring-emerald-700',
-  waiting_customer: 'bg-slate-100 text-slate-800 ring-slate-300 dark:bg-slate-800 dark:text-slate-100 dark:ring-slate-600',
-  shadow_preview: 'bg-violet-100 text-violet-950 ring-violet-300 dark:bg-violet-950 dark:text-violet-100 dark:ring-violet-700',
-  handled: 'bg-slate-100 text-slate-800 ring-slate-300 dark:bg-slate-800 dark:text-slate-100 dark:ring-slate-600',
-  staff_action_needed: 'bg-amber-100 text-amber-950 ring-amber-300 dark:bg-amber-950 dark:text-amber-100 dark:ring-amber-700',
+  staff_reply_needed: 'bg-needs text-needs-ink',
+  ai_replying: 'bg-mint text-teal',
+  ai_previewing: 'bg-mint text-teal',
+  ai_sent: 'bg-mint text-teal',
+  waiting_customer: 'bg-band text-ink-soft',
+  shadow_preview: 'bg-mint text-teal',
+  handled: 'bg-band text-ink-soft',
+  staff_action_needed: 'bg-needs text-needs-ink',
 };
 
 /** SCRUM-996: the deposit's words on the row, for everyone who sees the chat (owner choice 3). */
@@ -29,10 +39,11 @@ export const DEPOSIT_SIGNAL_LABELS: Record<InboxDepositSignal, string> = {
   paid_date_passed: 'Deposit paid · date passed, needs staff',
   needs_checking: 'Deposit needs checking',
 };
+/** Money in green (Main.dc.html); a deposit that needs a person in the coral of "needs reply". */
 export const DEPOSIT_SIGNAL_COLOURS: Record<InboxDepositSignal, string> = {
-  paid: 'bg-teal-100 text-teal-950 ring-teal-400 dark:bg-teal-950 dark:text-teal-100 dark:ring-teal-600',
-  paid_date_passed: 'bg-orange-100 text-orange-950 ring-orange-400 dark:bg-orange-950 dark:text-orange-100 dark:ring-orange-600',
-  needs_checking: 'bg-rose-100 text-rose-950 ring-rose-300 dark:bg-rose-950 dark:text-rose-100 dark:ring-rose-700',
+  paid: 'bg-money-badge text-money-ink',
+  paid_date_passed: 'bg-needs text-needs-ink',
+  needs_checking: 'bg-needs text-needs-ink',
 };
 
 /** The group pinned above the list (owner choice 1): paid and not yet booked; never "needs checking". */
@@ -78,9 +89,14 @@ export function depositPaidLine(
     : `Deposit ${paid} ${next}`;
 }
 
-/** Selection and per-viewer unread remain separately visible in either theme. */
-export function conversationRowColour(selected: boolean, unread: number): string {
-  return [unread > 0 ? 'border-l-4 border-l-indigo-600 dark:border-l-indigo-400' : 'border-l-4 border-l-transparent',
-    selected ? 'bg-emerald-50 ring-2 ring-inset ring-emerald-700 dark:bg-emerald-950 dark:ring-emerald-300'
-      : unread > 0 ? 'bg-indigo-50 dark:bg-indigo-950' : 'hover:bg-slate-50 dark:hover:bg-slate-800'].join(' ');
+/**
+ * A row's ground (SCRUM-1016): selected is the tab band's ground with a 2 px
+ * ink ring (never a bar at the edge); a "Ready to book" row keeps its green
+ * ground under the ring. Unread is not a ground: the row's name and preview
+ * are heavier and it carries the coral count, so selection and unread never
+ * share a marker.
+ */
+export function conversationRowColour(selected: boolean, ready = false): string {
+  const ground = ready ? 'bg-money' : selected ? 'bg-band' : 'hover:bg-wash';
+  return selected ? `${ground} ring-2 ring-inset ring-ink` : ground;
 }

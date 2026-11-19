@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { InboxMe } from '@/api/inbox';
 import { useInboxAccess } from '@/hooks/useInboxAccess';
-import { inboxAccessSignature, inboxFiltersWithinAccess, inboxItemWithinAccess, inboxMeWithinAccess, inboxSourcesWithinAccess, namedViews, type SourceOption } from '@/lib/inboxes';
+import { channelChoices, inboxAccessSignature, inboxFiltersWithinAccess, inboxItemWithinAccess, inboxMeWithinAccess, inboxSourcesWithinAccess, topicChoices, type SourceOption } from '@/lib/inboxes';
 import { EMPTY_FILTERS } from '@/lib/query';
 import { renderHook } from '../../pos/test/support/hooks';
 
@@ -27,10 +27,16 @@ describe('SCRUM-993 cached Inbox boundary state', () => {
     expect(inboxItemWithinAccess({ category: 'general', channelAccountId: 'excluded' }, restricted)).toBe(false);
     expect(inboxItemWithinAccess({ category: 'general', channelAccountId: 'allowed' }, restricted)).toBe(true);
   });
-  it('hides named category and test-line views under the same limits', () => {
-    const me = { teams: [{ kind: 'birthdays' }, { kind: 'gm' }], testLines: [{ id: 'allowed', displayName: 'ZZ TEST allowed' }, { id: 'excluded', displayName: 'ZZ TEST excluded' }], access: restricted } as Pick<InboxMe, 'teams' | 'testLines' | 'access'>;
-    expect(namedViews(me).map(view => view.key)).toEqual(['all', 'general', 'line:allowed']);
-    expect(namedViews({ ...me, access: { ...restricted, categories: [], channelAccountIds: null } }).map(view => view.key)).toEqual(['all']);
+  // SCRUM-1016: the named views became Topic and Channel choices (General is
+  // "Kept in General", a test line its own Channel choice), under the same limits.
+  it('hides Topic choices and test-line Channel choices under the same limits', () => {
+    const me = { testLines: [{ id: 'allowed', channel: 'whatsapp', displayName: 'ZZ TEST allowed' }, { id: 'excluded', channel: 'whatsapp', displayName: 'ZZ TEST excluded' }], access: restricted } as Pick<InboxMe, 'testLines' | 'access'>;
+    expect(topicChoices(restricted)).toEqual(['general', 'held']);
+    expect(topicChoices(unrestricted)).toEqual(['birthdays', 'general', 'marketing', 'gm', 'held']);
+    expect(topicChoices({ ...restricted, categories: ['birthdays'] })).toEqual(['birthdays']);
+    expect(topicChoices({ ...restricted, categories: [] })).toEqual([]);
+    expect(channelChoices([], me).map(choice => choice.id)).toEqual(['allowed']);
+    expect(channelChoices([], { ...me, access: { ...restricted, categories: [], channelAccountIds: null } })).toEqual([]);
   });
   it('removes stale simulator/contact choices immediately and waits for matching server identity before restoring contact creation', () => {
     const lines = [{ id: 'allowed', channel: 'whatsapp', displayName: 'ZZ TEST allowed', branchId: null }, { id: 'excluded', channel: 'line', displayName: 'ZZ TEST excluded', branchId: null }];

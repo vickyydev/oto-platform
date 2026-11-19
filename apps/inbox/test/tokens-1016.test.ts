@@ -40,6 +40,10 @@ const TEXT_PAIRS: Array<[ink: string, ground: string]> = [
   ['on-ink', 'ink'], ['on-coral', 'coral'], ['on-staff', 'staff'],
   ['coral-ink', 'ground'], ['coral-ink', 'card'], ['coral-ink', 'band'],
   ['teal', 'mint'], ['money-ink', 'money'], ['money-ink', 'money-badge'], ['needs-ink', 'needs'],
+  // The list (SCRUM-1016): a Ready to book row's name, time and quiet text on
+  // its green ground, the group's count pill, and the contacts' faces.
+  ['ink', 'money'], ['ink-soft', 'money'], ['money', 'money-ink'],
+  ['face-violet-ink', 'face-violet'], ['face-sky-ink', 'face-sky'],
 ];
 
 describe('SCRUM-1016: the OTO tokens', () => {
@@ -81,6 +85,16 @@ describe('SCRUM-1016: the OTO tokens', () => {
     // The pressed "Needs reply" figure's ring, and the app bar's focus outline.
     for (const ground of ['needs', 'ground', 'card']) {
       expect(contrast(theme, 'coral', ground), `coral against ${ground}`).toBeGreaterThanOrEqual(3);
+    }
+    // A list row's focus outline, on the row grounds (SCRUM-1016).
+    for (const ground of ['band', 'wash', 'money']) {
+      expect(contrast(theme, 'coral', ground), `coral against ${ground}`).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it.each([['light', light], ['dark', dark]] as const)('the selected row’s ink ring stands out at 3 : 1 (%s)', (_, theme) => {
+    for (const ground of ['band', 'money']) {
+      expect(contrast(theme, 'ink', ground), `ink ring against ${ground}`).toBeGreaterThanOrEqual(3);
     }
   });
 

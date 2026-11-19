@@ -102,14 +102,18 @@ const noop = () => undefined;
 const RAW_NEUTRAL = /(?:^|[\s"'])(?:[a-z-]+:)*(?:bg|text|border|ring|divide|decoration)-slate-\d+|(?:^|[\s"'])(?:[a-z-]+:)*(?:bg|border|ring)-white\b/;
 
 describe('the dark palette on the key surfaces', () => {
-  it('the workspace shell: the rail stands on the ground token, its tabs and count pills on card and ink', () => {
+  // SCRUM-1016: the rail is the views column — the current tab on the band
+  // token with its count in coral ink, the filters' lines washing on hover.
+  it('the workspace shell: the views column stands on the ground token, the current tab on the band', () => {
     const html = renderToStaticMarkup(
       createElement(Rail, { me, tab: 'team', counts: { team: 3 }, filters: EMPTY_FILTERS, onTab: noop, onFilters: noop }),
     );
     expect(html).toContain('bg-ground');
     expect(html).toContain('border-line');
     expect(html).toContain('text-ink');
-    expect(html).toContain('bg-ink text-on-ink'); // the active tab's count, inverted in both themes
+    expect(html).toContain('bg-band font-bold'); // the current tab
+    expect(html).toContain('text-coral-ink'); // its count
+    expect(html).toContain('hover:bg-wash');
     expect(html).not.toMatch(RAW_NEUTRAL);
   });
 
@@ -125,7 +129,9 @@ describe('the dark palette on the key surfaces', () => {
     expect(html).not.toMatch(RAW_NEUTRAL);
   });
 
-  it('a list row: name ink and the pills on tokens; selection and the staff-needed label keep their dark variants', () => {
+  // SCRUM-1016: the row's badge, selection and unread count are tokens now,
+  // so nothing on a row carries a `dark:` class of its own.
+  it('a list row: name ink, the badge, the selection and the unread count on tokens', () => {
     const html = renderToStaticMarkup(
       createElement(ConversationList, {
         me,
@@ -142,15 +148,15 @@ describe('the dark palette on the key surfaces', () => {
         onTab: noop,
         onOpenFilters: noop,
         onSelect: noop,
-        onAskHandle: noop,
         onMore: noop,
       }),
     );
     expect(html).toContain('text-ink'); // the contact's name
-    expect(html).toContain('border-line'); // the list head and its pills
-    expect(html).toContain('dark:bg-emerald-950'); // selection stays distinct from unread
-    expect(html).toContain('dark:bg-amber-950'); // staff-needed label uses the accessible palette
-    expect(html).toContain('dark:text-amber-100');
+    expect(html).toContain('border-line-soft'); // the row's rule
+    expect(html).toContain('bg-band ring-2 ring-inset ring-ink'); // selection, apart from unread
+    expect(html).toContain('bg-needs text-needs-ink'); // "Needs reply"
+    expect(html).toContain('bg-coral'); // the unread count
+    expect(html).not.toMatch(/[\s"]dark:/);
     expect(html).not.toMatch(RAW_NEUTRAL);
   });
 

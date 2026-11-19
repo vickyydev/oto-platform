@@ -1,32 +1,30 @@
 /**
- * The playbook's inbox views and chips (SCRUM-220, Tom's playbook of
- * 2026-10-28) — pure, so the unit tests read the real thing
- * (test/playbook-ui.test.ts).
+ * The list's filter choices (SCRUM-220, Tom's playbook of 2026-10-28; one
+ * place for each since SCRUM-1016) — pure, so the unit tests read the real
+ * thing (test/playbook-ui.test.ts, test/filters-1016.test.ts).
  *
- * The rail's dropdowns became rows of toggle chips (Branch, Source, Topic,
- * Status, Language), and above them sit the named inboxes the playbook works
- * in: All conversations, General (SCRUM-789), Birthdays & Events, GM and one
- * per park. A named
- * view is nothing but a saved set of chips: opening one sets the chips, and
- * the view the rail marks is read back off the chips, so a chip changed by
- * hand (or by the dashboard's category legend) lands on a "modified All"
- * unless it happens to equal another view exactly.
+ * The rail's dropdowns became rows of toggle choices — Topic, Park, Channel
+ * (the number a conversation came in on), Language — in the desktop views
+ * column and the phone's Filters sheet. The playbook's named inboxes stood
+ * above them and only repeated them: a park view was the Park choice, the
+ * Birthdays & Events and GM views the Topic choice, a test line's view its
+ * Channel choice. SCRUM-1016 removed the list of views and kept every one of
+ * them a choice: the SCRUM-789 General view is the Topic "Kept in General",
+ * and each WhatsApp test line is offered under Channel from the start.
  *
- * Each chip row is one value at a time: `GET /inbox/conversations` filters
- * one category, one branch, one number, one status and one language, so a
- * second chip in a row takes the first one's place. Across rows they combine.
+ * Each row is one value at a time: `GET /inbox/conversations` filters one
+ * category, one branch, one number and one language, so a second choice in a
+ * row takes the first one's place. Across rows they combine.
  */
-import type { InboxChannelKey } from '@oto/shared/inbox';
+import { INBOX_CATEGORY_KEYS, type InboxChannelKey } from '@oto/shared/inbox';
 import type { ConversationRow, InboxMe } from '@/api/inbox';
-import type { Filters } from './query';
-import { CATEGORY_LABEL, CHANNEL_LABEL, branchOptions } from './view';
+import type { Filters, TopicChoice } from './query';
+import { CHANNEL_LABEL } from './view';
 
 // --- The chips -----------------------------------------------------------------------
 
-/** The filters a chip row holds, in the rail's order. */
-export type ChipDim = 'branchId' | 'channelAccountId' | 'category' | 'status' | 'language' | 'inbox';
-/** `inbox` has no chip row of its own: only the General view sets it (SCRUM-789). */
-export const CHIP_DIMS: readonly ChipDim[] = ['branchId', 'channelAccountId', 'category', 'status', 'language', 'inbox'];
+/** The filters a choice row holds; `category` and `inbox` together are the Topic row. */
+export type ChipDim = 'branchId' | 'channelAccountId' | 'category' | 'language' | 'inbox';
 
 /** A chip's press: on when it was off (in place of its row's other chip), off when it was on. */
 export function toggleChip(f: Pick<Filters, ChipDim>, dim: ChipDim, value: string): Partial<Filters> {
@@ -128,75 +126,35 @@ export function sourcesOfRows(rows: readonly Pick<ConversationRow, 'channel' | '
   return rows.map((r) => ({ id: r.channelAccountId, channel: r.channel, name: r.channelAccountName }));
 }
 
-// --- The named views ----------------------------------------------------------------------------
+// --- The Topic choices --------------------------------------------------------------------
 
-export interface NamedView {
-  /** `all`, `general`, `birthdays`, `gm`, `branch:<id>`, or `line:<id>` (SCRUM-908). */
-  key: string;
-  label: string;
-  kind: 'all' | 'general' | 'category' | 'branch' | 'line';
-  /** The chips the view sets; every other chip row is cleared. */
-  chips: Partial<Pick<Filters, ChipDim>>;
+/**
+ * The topics the Topic row offers, inside the SCRUM-993 limits: every topic
+ * the account may see, then "Kept in General" (SCRUM-789) while General is
+ * one of them. An empty category list offers none.
+ */
+export function topicChoices(access: InboxMe['access']): Exclude<TopicChoice, ''>[] {
+  const allowed = INBOX_CATEGORY_KEYS.filter((k) => !access?.categories || access.categories.includes(k));
+  return allowed.includes('general') ? [...allowed, 'held'] : allowed;
 }
 
-export const ALL_VIEW_LABEL = 'All conversations';
+// --- The Channel choices ------------------------------------------------------------------
 
 /**
- * SCRUM-789: the General inbox — the general questions (prices, hours, how to
- * get there, age rules) the assistant is answering, held out of every park's
- * inbox. A park's view (the Branch chip) never shows them; All does.
+ * The numbers the Channel row offers: those known so far (the rows read, the
+ * simulator's, the assistant's list) and every WhatsApp test line the api
+ * names (SCRUM-908), so a test line is a choice before any of its threads is
+ * read — inside the SCRUM-993 limits, as every other choice.
  */
-export const GENERAL_INBOX_LABEL = 'General';
-
-/**
- * The playbook's inboxes, in its order: All conversations; General (SCRUM-789,
- * the general questions held out of the park inboxes); Birthdays & Events
- * and GM, each while the operator has that team; then one per park, named as
- * the park's reception desk names it (`branchOptions`) — a park's view holds
- * only what its local team must handle.
- */
-export function namedViews(me: Pick<InboxMe, 'teams'> & Partial<Pick<InboxMe, 'testLines' | 'access'>>): NamedView[] {
-  const out: NamedView[] = [
-    { key: 'all', label: ALL_VIEW_LABEL, kind: 'all', chips: {} },
-  ];
-  if (!me.access?.categories || me.access.categories.includes('general')) out.push({ key: 'general', label: GENERAL_INBOX_LABEL, kind: 'general', chips: { inbox: 'general' } });
-  for (const category of ['birthdays', 'gm'] as const) {
-    if ((!me.access?.categories || me.access.categories.includes(category)) && me.teams.some((t) => t.kind === category)) {
-      out.push({ key: category, label: CATEGORY_LABEL[category], kind: 'category', chips: { category } });
-    }
-  }
-  for (const b of me.access?.categories?.length === 0 ? [] : branchOptions(me.teams)) {
-    out.push({ key: `branch:${b.id}`, label: b.label, kind: 'branch', chips: { branchId: b.id } });
-  }
-  // SCRUM-908: each WhatsApp test line is an inbox of its own, last — the
-  // number's conversations and nothing else (its Source chip, saved).
-  for (const line of me.testLines ?? []) {
-    if (me.access?.categories?.length === 0) continue;
-    if (me.access?.channelAccountIds && !me.access.channelAccountIds.includes(line.id)) continue;
-    out.push({ key: `line:${line.id}`, label: line.displayName, kind: 'line', chips: { channelAccountId: line.id } });
-  }
-  return out;
+export function channelChoices(
+  sources: readonly SourceOption[],
+  me: Partial<Pick<InboxMe, 'testLines' | 'access'>>,
+): SourceOption[] {
+  const lines = (me.testLines ?? []).map((l) => ({ id: l.id, channel: l.channel, name: l.displayName }));
+  return inboxSourcesWithinAccess(mergeSources(sources, lines), me.access);
 }
 
 /** SCRUM-908: whether the viewer may press Start over on a conversation of this number. */
 export function mayStartOver(me: Partial<Pick<InboxMe, 'testLines'>>, channelAccountId: string): boolean {
   return (me.testLines ?? []).some((l) => l.id === channelAccountId && l.startOver);
-}
-
-/** Opening a view: its chips on, every other chip row off. The search, the unanswered toggle and the archive's filters stay. */
-export function applyView(view: Pick<NamedView, 'chips'>): Partial<Filters> {
-  const patch: Partial<Filters> = {};
-  for (const dim of CHIP_DIMS) Object.assign(patch, { [dim]: '' });
-  return { ...patch, ...view.chips };
-}
-
-/**
- * The view the chips stand on: the one whose chips they equal exactly, else
- * All, modified — the chips were changed by hand away from every view.
- */
-export function currentView(f: Pick<Filters, ChipDim>, views: readonly NamedView[]): { key: string; modified: boolean } {
-  for (const v of views) {
-    if (CHIP_DIMS.every((dim) => (f[dim] ?? '') === (v.chips[dim] ?? ''))) return { key: v.key, modified: false };
-  }
-  return { key: 'all', modified: true };
 }
