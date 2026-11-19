@@ -1,5 +1,5 @@
 /**
- * The four family checks (SCRUM-1024, plan step F2, "V1"), read only. The
+ * The five family checks (SCRUM-1024, plan step F2, "V1"), read only. The
  * logic is `verifyFamilies` in `src/family-verify.ts`; this is its command
  * line. Run after `family-backfill.ts --apply`; every count must be zero
  * before any reader is switched to the family. The runbook is

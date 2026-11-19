@@ -29,10 +29,12 @@ import { auditLog, child, family, familyGuardian, member } from './schema/index'
  * (`family_id is null` is in every statement that writes one).
  *
  * BATCHED BY MEMBER ID, ONE TRANSACTION PER BATCH. A batch takes its members
- * in id order with FOR NO KEY UPDATE SKIP LOCKED, the lock the writers take
- * before they read a member's families, so a till adding a first child at the
- * same moment waits for the batch and then finds the family it made (or the
- * batch skips that member and the next run takes it). Then the members'
+ * in id order with FOR NO KEY UPDATE SKIP LOCKED, the lock a writer takes
+ * before it makes a member's first family, so a till adding a first child at
+ * the same moment waits for the batch and then finds the family it made (or
+ * the batch skips that member and the next run takes it). A writer adding a
+ * child to a member who already has a family takes no lock: that child goes
+ * into the member's family, which is the one this reuses. Then the members'
  * children without a family, with the same lock and SKIP LOCKED: a child a
  * till is editing at that moment is left for the next run. The batch never
  * waits for a till's row lock, so it cannot be one side of a deadlock, and a
