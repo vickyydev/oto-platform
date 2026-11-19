@@ -3730,7 +3730,7 @@ export interface paths {
         };
         options?: never;
         head?: never;
-        /** @description Update a child (allergies etc.) — audited */
+        /** @description Update a child (allergies etc.) — audited. `source=customer_display` when the family changed the child's allergy or medical notes on the paired display (SCRUM-1020): it names the family identified at the till (`memberId`), changes the care notes only, and empties a note only with `confirmedNone`. */
         patch: {
             parameters: {
                 query?: never;
@@ -3752,6 +3752,12 @@ export interface paths {
                         dietary?: string | null;
                         foodRestrictions?: string | null;
                         notes?: string | null;
+                        /** @enum {string} */
+                        source?: "customer_display";
+                        /** Format: uuid */
+                        memberId?: string;
+                        /** @enum {boolean} */
+                        confirmedNone?: true;
                     };
                 };
             };

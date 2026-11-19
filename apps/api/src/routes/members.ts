@@ -30,6 +30,7 @@ import {
   REGISTER_PAGE_MAX,
   archiveChild,
   childCacheView,
+  displayCareRefusal,
   isEvidenceExpired,
   listRegister,
   memberCacheView,
@@ -872,13 +873,25 @@ export async function memberRoutes(app: App): Promise<void> {
     {
       config: { permission: 'pos:child:update', stationTrading: true },
       schema: {
-        description: 'Update a child (allergies etc.) — audited',
+        description:
+          'Update a child (allergies etc.) — audited. `source=customer_display` when the family changed the ' +
+          "child's allergy or medical notes on the paired display (SCRUM-1020): it names the family identified " +
+          'at the till (`memberId`), changes the care notes only, and empties a note only with `confirmedNone`.',
         params: z.object({ childId: z.string().uuid() }),
-        body: ChildBody.partial(),
+        body: ChildBody.partial().extend({
+          /** SCRUM-1020 — the family changed the care notes on the station's customer display. */
+          source: ChildSourceSchema,
+          /** SCRUM-1020 — with `source`: the family the till identified; the child must be theirs. */
+          memberId: z.string().uuid().optional(),
+          /** SCRUM-1020 — with `source`: the family said plainly the child has no allergies or medical needs. */
+          confirmedNone: z.literal(true).optional(),
+        }),
       },
     },
     async (req) => {
       const auth = req.requireAuth();
+      const fromDisplay = displayStationOf(req.body.source, auth.stationId);
+      const { source: _source, memberId: displayFamily, confirmedNone, ...b } = req.body;
       const [before] = await app.db
         .select()
         .from(child)
@@ -903,8 +916,19 @@ export async function memberRoutes(app: App): Promise<void> {
         )
         .limit(1);
       if (!owner) throw errors.notFound('Child not found');
+      // SCRUM-1020 — a change the family made on the customer display: their
+      // own child's care notes, and an empty note only on their plain word.
+      if (fromDisplay) {
+        const refusal = displayCareRefusal({
+          before,
+          memberId: displayFamily,
+          fields: Object.keys(b).filter((key) => b[key as keyof typeof b] !== undefined),
+          patch: b,
+          confirmedNone: confirmedNone === true,
+        });
+        if (refusal) throw new AppError(refusal.status, refusal.code, refusal.message);
+      }
       const patch: Partial<typeof child.$inferInsert> = {};
-      const b = req.body;
       if (b.name !== undefined) patch.name = b.name;
       if (b.dateOfBirth !== undefined) patch.dateOfBirth = b.dateOfBirth;
       if (b.ageYears !== undefined) patch.ageYears = b.ageYears;
@@ -939,8 +963,15 @@ export async function memberRoutes(app: App): Promise<void> {
           entityType: 'child',
           entityId: req.params.childId,
           before,
-          after,
+          // SCRUM-1020 — the audit row says the family made it on the customer
+          // display of this till (the session's own station), and whether they
+          // confirmed there is nothing to note.
+          after: fromDisplay
+            ? { ...after, source: CUSTOMER_DISPLAY_SOURCE, stationId: fromDisplay.stationId,
+              ...(confirmedNone ? { confirmedNone: true } : {}) }
+            : after,
           requestId: req.id,
+          ...(fromDisplay ? { origin: CUSTOMER_DISPLAY_SOURCE } : {}),
         });
         return { child: serializeChild(after!) };
       });

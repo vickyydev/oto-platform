@@ -7204,7 +7204,7 @@
     },
     "/members/children/{childId}": {
       "patch": {
-        "description": "Update a child (allergies etc.) — audited",
+        "description": "Update a child (allergies etc.) — audited. `source=customer_display` when the family changed the child's allergy or medical notes on the paired display (SCRUM-1020): it names the family identified at the till (`memberId`), changes the care notes only, and empties a note only with `confirmedNone`.",
         "requestBody": {
           "required": true,
           "content": {
@@ -7249,6 +7249,22 @@
                   "notes": {
                     "type": "string",
                     "nullable": true
+                  },
+                  "source": {
+                    "type": "string",
+                    "enum": [
+                      "customer_display"
+                    ]
+                  },
+                  "memberId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "confirmedNone": {
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ]
                   }
                 },
                 "additionalProperties": false
