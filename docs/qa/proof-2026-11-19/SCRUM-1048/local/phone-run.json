@@ -1,0 +1,9 @@
+{
+  "what": "SCRUM-1048 the order panel as the phone till draws it (Review step and cart sheet), local build, ZZ TEST data; 2 phone sizes x 2 themes x 3 states",
+  "sizes": ["390x844", "360x740"],
+  "states": ["1-offer", "2-adder-open", "3-line-added"],
+  "pictures": 12,
+  "kept": 2,
+  "sideways": 0,
+  "overflowing": "1 in every state, the line card's own corner remove button, as before the change"
+}

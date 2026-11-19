@@ -51,7 +51,8 @@ import { ApiError, isMissingRoute } from '@/api/client';
 import { apiCheckinToCheckIn, checkinApi, foodProvisionToWire, TILL_NOT_LINKED, waitingStaysOf, type ApiNanny } from '@/api/checkin';
 import { membersApi } from '@/api/platform';
 import { getSale } from '@/api/history';
-import { closedOnBox, laneSale } from '@/api/boxSales';
+import { closedOnBox, EXTRA_CREDIT_NEEDS_INTERNET, laneSale } from '@/api/boxSales';
+import { followTickets, kidLabel, withExtraCredit } from '@/lib/extraCredit';
 import { apiMemberToMember } from '@/api/mappers';
 import { rebuildResumedSale } from '@/lib/resumeSale';
 import { bahtLabel, holdButtonReasons, partPaidShown, useHeldSaleDesk, type ResumedHold } from '@/lib/heldSales';
@@ -115,7 +116,7 @@ import { MobileCartSheet } from './MobileCartSheet';
 
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ArrowLeft, CheckCircle2, Baby, Monitor, User, UtensilsCrossed, Printer, QrCode as QrCodeIcon } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, CheckCircle2, Baby, Monitor, User, UtensilsCrossed, Printer, QrCode as QrCodeIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLane } from '@/lib/lane';
 import { bahtText } from '@/lib/bahtText';
@@ -814,7 +815,8 @@ export default function MobileTill() {
         prev.map((l) => ({
           ...l,
           tier: t,
-          lineTotal: l.dropOff ? l.lineTotal : computeLineTotal({ ...l, tier: t }),
+          // An extra food credit line's total is its amount (SCRUM-1048).
+          lineTotal: l.dropOff || l.extraCredit ? l.lineTotal : computeLineTotal({ ...l, tier: t }),
         })),
         dropOffPricing,
       ),
@@ -995,6 +997,26 @@ export default function MobileTill() {
     });
     setActiveLineId((prev) => (prev === id ? null : prev));
   };
+
+  /**
+   * SCRUM-1048 — extra food credit for one child on any child ticket, as the
+   * counter offers it: its own line on the order, after that ticket
+   * (`lib/extraCredit`). The same child again sets the amount.
+   */
+  const handleAddExtraCredit = (ticketLineId: string, kidOrdinal: number, amountTHB: number) => {
+    setLines((prev) =>
+      withExtraCredit(prev, ticketLineId, kidOrdinal, amountTHB, () => Math.random().toString(36).substring(7)),
+    );
+  };
+
+  // SCRUM-1048 — an extra food credit line follows its ticket: gone with it,
+  // gone when its child is, restated with its rate. Whatever changed the cart.
+  useEffect(() => {
+    const followed = followTickets(lines);
+    if (followed === lines) return;
+    setLines(followed);
+    setManualDiscounts((mds) => dropOrphanedDiscounts(mds, followed));
+  }, [lines]);
 
   const handleApplyManualDiscount = (md: ManualDiscount) => {
     setManualDiscounts((prev) => [...prev, md]);
@@ -2327,8 +2349,12 @@ export default function MobileTill() {
   const allLengthsChosen = dropOffCartLines.every((l) => l.dropOff!.lengthChosen);
   const nannyDropOffLines = lines.filter((l) => l.dropOff?.service === 'nanny');
   const allNanniesAssigned = nannyDropOffLines.every((l) => !!l.dropOff!.nannyId);
+  // SCRUM-1048 — extra food credit is sold online only, as on the counter:
+  // on the box lane Pay waits, and says why, until the line is removed or the
+  // link is back.
+  const extraCreditOffline = lane === 'box' && lines.some((l) => l.extraCredit);
   const canPay =
-    lines.some((l) => l.kids + l.adults > 0) && allLengthsChosen && allNanniesAssigned;
+    lines.some((l) => l.kids + l.adults > 0) && allLengthsChosen && allNanniesAssigned && !extraCreditOffline;
 
   /**
    * THE PLATFORM LOOKED AT THIS CART AND OBJECTED — SCRUM-366, the rule the
@@ -2398,6 +2424,12 @@ export default function MobileTill() {
         <QuoteRefusalNote error={quoteRefusal} blocking />
         <QuoteFaultNote error={quoteFault} />
         <PriceSourceNote quote={cart.quote} pending={cart.pending} />
+        {extraCreditOffline && (
+          <p className="flex items-start gap-2 text-xs text-amber-300" data-testid="extra-credit-offline">
+            <AlertTriangle className="w-4 h-4 shrink-0" />
+            <span>{EXTRA_CREDIT_NEEDS_INTERNET}</span>
+          </p>
+        )}
       </div>
     ) : undefined;
 
@@ -2598,6 +2630,8 @@ export default function MobileTill() {
               promoError={promoError}
               onAddManualDiscount={() => setShowManualDiscountModal(true)}
               onRemoveManualDiscount={handleRemoveManualDiscount}
+              // SCRUM-1048 — not offered while the phone works through the counter's box.
+              {...(lane === 'box' ? {} : { onAddExtraCredit: handleAddExtraCredit })}
               onPay={() => setMStep('payment')}
               onCancel={() => void handleCancel()}
               canPay={payEnabled}
@@ -2857,6 +2891,8 @@ export default function MobileTill() {
           promoError={promoError}
           onAddManualDiscount={() => setShowManualDiscountModal(true)}
           onRemoveManualDiscount={handleRemoveManualDiscount}
+          // SCRUM-1048 — not offered while the phone works through the counter's box.
+          {...(lane === 'box' ? {} : { onAddExtraCredit: handleAddExtraCredit })}
           onPay={() => {
             setShowCartSheet(false);
             handleDoneAdding();
@@ -2943,9 +2979,11 @@ export default function MobileTill() {
           subtotal={lines.reduce((acc, l) => acc + l.lineTotal, 0)}
           lines={lines.map((l) => ({
             id: l.id,
-            label: `${l.ticketType.name} · ${l.kids + l.adults} ppl`,
+            label: l.extraCredit
+              ? `Extra food credit · ${kidLabel(l.extraCredit.kidOrdinal)}`
+              : `${l.ticketType.name} · ${l.kids + l.adults} ppl`,
             amount: l.lineTotal,
-            components: l.dropOff ? undefined : lineDiscountComponents(l),
+            components: l.dropOff || l.extraCredit ? undefined : lineDiscountComponents(l),
           }))}
           reasons={getDiscountReasons()}
           operatorId={operator.id}
