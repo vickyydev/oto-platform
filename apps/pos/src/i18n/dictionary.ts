@@ -633,6 +633,8 @@ export const DICTIONARY: Record<string, Record<SupportedLang, string>> = {
   'dob.month.12': { en: 'Dec', zh: '12月', th: 'ธ.ค.', ru: 'Дек', fr: 'Déc.' },
   'food.none': { en: 'No food', zh: '不含餐食', th: 'ไม่รับอาหาร', ru: 'Без еды', fr: 'Sans repas' },
   'food.prepaidCredit': { en: 'Prepaid credit', zh: '预付额度', th: 'เครดิตล่วงหน้า', ru: 'Предоплаченный кредит', fr: 'Crédit prépayé' },
+  // SCRUM-1059 — the no-extra-food choice once the family ticked "may order food with the included credit" (SCRUM-1054).
+  'food.includedCredit': { en: 'Included credit', zh: '已含餐饮额度', th: 'เครดิตอาหารที่รวมไว้', ru: 'Включённый кредит', fr: 'Crédit repas inclus' },
   'food.chooseItems': { en: 'Choose items', zh: '选择餐品', th: 'เลือกรายการ', ru: 'Выбрать блюда', fr: 'Choisir des articles' },
   'food.noneNote': { en: 'Staff will not be able to place food orders for {{name}} without a manager override.', zh: '未经经理批准，工作人员无法为{{name}}下餐食订单。', th: 'พนักงานจะไม่สามารถสั่งอาหารให้{{name}}ได้หากไม่ได้รับอนุมัติจากผู้จัดการ', ru: 'Сотрудники не смогут заказать еду для: {{name}} без разрешения менеджера.', fr: 'Le personnel ne pourra pas commander de repas pour {{name}} sans accord du responsable.' },
   'food.theChild': { en: 'the child', zh: '孩子', th: 'เด็ก', ru: 'ребёнка', fr: "l'enfant" },

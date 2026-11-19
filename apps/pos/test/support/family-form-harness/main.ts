@@ -55,6 +55,9 @@ import '../../../src/index.css';
  *                    (a returning child's last photo), as Till.tsx sends it
  *  &short=1          a returning family's short form: the agreements alone,
  *                    the child named from their profile (SCRUM-1018)
+ *  ?screen=staff     staff's copy of the form ("Private child details"),
+ *                    a child's included-credit tick given; &finished=1 once
+ *                    the family has finished
  *
  * `#till` holds what the till has: the display's last fill, or the half's state.
  */
@@ -181,6 +184,22 @@ function HalfForm() {
 }
 
 /**
+ * SCRUM-1059 — staff's copy of the form, as Till.tsx's "Private child details"
+ * draws it (read-only ticks, the dialog's dark frame): one child on a ticket
+ * with ฿1300 included whose parent ticked "may order food with the included
+ * credit", and the family finished (&finished=1) or still filling.
+ */
+function StaffCopy() {
+  const { props } = useTillForm();
+  const ticked = { ...halfSlot, name: 'ZZ TEST Nok', orderWithIncludedCredit: true };
+  return h('div', { className: 'light flex h-[100dvh] items-center justify-center bg-background p-6', id: 'ready' },
+    h('div', { className: 'flex h-full w-full max-w-4xl flex-col overflow-hidden rounded-lg border bg-background' },
+      h('div', { className: 'flex-1 min-h-0 dark' },
+        h(ConsentCapture, { ...props, onDone: undefined, slots: [ticked, { ...halfSlot, id: 'zz-slot-2', name: 'ZZ TEST Pim' }], staffScreen: true,
+          ticksReadOnly: true, familyFinished: query.get('finished') === '1', includedCreditTHB: () => 1300 }))));
+}
+
+/**
  * SCRUM-954 — the phone till's form as `MobileTill.tsx` hands it to the
  * parent: HandToCustomer's customer screen round the form, "Return phone to
  * staff" under it, the form told it is on a phone (`phoneScroll`).
@@ -296,5 +315,5 @@ createRoot(document.getElementById('root')!).render(
   screen === 'paired'
     ? h(LanguageProvider, { storageKey: 'oto.display.language', children: h(PairedScreen) })
     : h(LanguageProvider, null,
-      screen === 'half' ? h(HalfForm) : screen === 'phone' ? h(PhoneForm) : screen === 'turn' ? h(TurnScreen) : screen === 'review' ? h(ReviewScreen)
+      screen === 'half' ? h(HalfForm) : screen === 'staff' ? h(StaffCopy) : screen === 'phone' ? h(PhoneForm) : screen === 'turn' ? h(TurnScreen) : screen === 'review' ? h(ReviewScreen)
         : screen === 'gate' ? h(GateScreen) : h(DisplayForm)));

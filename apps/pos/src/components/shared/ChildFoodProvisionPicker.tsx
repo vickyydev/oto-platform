@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import { tFor } from '@/i18n/LanguageContext';
 import { resolveName } from '@/i18n/resolveTranslation';
 import type { SupportedLang } from '@/i18n/types';
-import { UtensilsCrossed, Wallet, ShoppingBasket, AlertTriangle, Plus, Minus } from 'lucide-react';
+import { Utensils, UtensilsCrossed, Wallet, ShoppingBasket, AlertTriangle, Plus, Minus } from 'lucide-react';
 
 interface ChildFoodProvisionPickerProps {
   /** Name of the child this provision applies to (for display only). */
@@ -31,6 +31,12 @@ interface ChildFoodProvisionPickerProps {
    * tick instead (the tick says what it allows); shown everywhere else.
    */
   noneNote?: boolean;
+  /**
+   * SCRUM-1059 — the parent ticked "may order food with the included credit"
+   * (SCRUM-1054) and chose no extra food: the no-food choice says what the
+   * child has, "Included credit", instead of "No food" beside that tick.
+   */
+  includedTicked?: boolean;
 }
 
 const NONE_PROVISION: ChildFoodProvision = { mode: 'none', paidTHB: 0 };
@@ -68,6 +74,7 @@ export function ChildFoodProvisionPicker({
   variant = 'dark',
   lang,
   noneNote = true,
+  includedTicked = false,
 }: ChildFoodProvisionPickerProps) {
   const dark = variant === 'dark';
   const t = tFor(lang ?? 'en');
@@ -155,8 +162,8 @@ export function ChildFoodProvisionPicker({
       {/* Mode picker */}
       <div className="flex gap-2">
         <button type="button" className={modeBtn(value.mode === 'none')} onClick={() => setMode('none')}>
-          <UtensilsCrossed className="h-5 w-5" />
-          <span className="text-sm font-semibold">{t('food.none')}</span>
+          {includedTicked ? <Utensils className="h-5 w-5" /> : <UtensilsCrossed className="h-5 w-5" />}
+          <span className="text-sm font-semibold text-center leading-tight">{t(includedTicked ? 'food.includedCredit' : 'food.none')}</span>
         </button>
         <button type="button" className={modeBtn(value.mode === 'prepaid_credit')} onClick={() => setMode('prepaid_credit')}>
           <Wallet className="h-5 w-5" />

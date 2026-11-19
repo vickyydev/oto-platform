@@ -18,7 +18,7 @@ import { CameraCapture } from '@/components/shared/CameraCapture';
 import { ChildFoodProvisionPicker } from '@/components/shared/ChildFoodProvisionPicker';
 import { Badge } from '@/components/ui/badge';
 import { slotAge, type SupervisedSlot } from './SupervisionGate';
-import { showsOrderWithIncluded } from '@/lib/dropOffFoodCredit';
+import { ordersWithIncluded, showsOrderWithIncluded } from '@/lib/dropOffFoodCredit';
 import { ChildDobPicker } from '@/components/shared/ChildDobPicker';
 import { tFor, useLanguage } from '@/i18n/LanguageContext';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
@@ -91,6 +91,11 @@ interface ConsentCaptureProps {
    * screen. Staff see whether each one is ticked; they cannot tick it.
    */
   ticksReadOnly?: boolean;
+  /**
+   * SCRUM-1059 — the family pressed Done on their screen for this form: a tick
+   * they left is "not ticked by the family", no longer one they will give.
+   */
+  familyFinished?: boolean;
   /**
    * SCRUM-857 — the family's confirmation that the number above is the one
    * for the chosen channel (the owner's ruling of 8 November). The line is
@@ -174,6 +179,16 @@ export function halfCareState(
  * SCRUM-764 — the agreements as the family has ticked them on the customer
  * screen, for reception to follow. Staff English, like the rest of the till.
  */
+/**
+ * SCRUM-1059 — what staff's copy says beside one of the family's ticks: given,
+ * still theirs to give on their screen, or, once they have finished the form,
+ * left unticked. Staff English, like the rest of the till.
+ */
+export function familyTickNote(ticked: boolean, familyFinished: boolean): string {
+  if (ticked) return 'ticked by the family';
+  return familyFinished ? 'not ticked by the family' : 'the family ticks this on their screen';
+}
+
 export function ConsentTicksStatus({
   consentRequired,
   consentAcknowledged,
@@ -253,6 +268,7 @@ export function ConsentCapture({
   onToggleConfirmation,
   staffScreen = false,
   ticksReadOnly = false,
+  familyFinished = false,
   contactConfirmed = false,
   onContactConfirmedChange,
   contactConfirmTickable = true,
@@ -560,6 +576,8 @@ export function ConsentCapture({
                     }}
                     // SCRUM-1054 — the tick below says what it allows instead.
                     noneNote={includedTickOffline || !showsOrderWithIncluded(slot, includedCreditTHB?.(slot) ?? 0)}
+                    // SCRUM-1059 — the family's tick given: the choice reads "Included credit", not "No food".
+                    includedTicked={!includedTickOffline && ordersWithIncluded(slot, includedCreditTHB?.(slot) ?? 0)}
                     variant="dark"
                   />
                   {/* SCRUM-1054 — no extra food chosen: the parent's one tick for the included credit (not on the counter box's lane). */}
@@ -576,7 +594,7 @@ export function ConsentCapture({
                       />
                       <span className="text-lg leading-snug text-foreground/80">
                         {t('superviseConsent.orderWithIncluded', { name: slot.name.trim() || t('superviseConsent.thisChild') })}
-                        {ticksReadOnly && <span className="ml-2 text-sm text-foreground/50">({slot.orderWithIncludedCredit ? 'ticked by the family' : 'the family ticks this on their screen'})</span>}
+                        {ticksReadOnly && <span className="ml-2 text-sm text-foreground/50">({familyTickNote(slot.orderWithIncludedCredit === true, familyFinished)})</span>}
                       </span>
                     </label>
                   )}
@@ -695,7 +713,7 @@ export function ConsentCapture({
               />
               <span className="text-lg leading-snug text-foreground/80">
                 {t('superviseConsent.consentText')}
-                {ticksReadOnly && <span className="ml-2 text-sm text-foreground/50">({consentAck ? 'ticked by the family' : 'the family ticks this on their screen'})</span>}
+                {ticksReadOnly && <span className="ml-2 text-sm text-foreground/50">({familyTickNote(consentAck, familyFinished)})</span>}
               </span>
             </label>
           </div>
@@ -735,7 +753,7 @@ export function ConsentCapture({
                     {!c.required && (
                       <span className="ml-2 text-sm text-foreground/40">({t('superviseConsent.optional')})</span>
                     )}
-                    {ticksReadOnly && <span className="ml-2 text-sm text-foreground/50">({checked ? 'ticked by the family' : 'the family ticks this on their screen'})</span>}
+                    {ticksReadOnly && <span className="ml-2 text-sm text-foreground/50">({familyTickNote(checked, familyFinished)})</span>}
                   </span>
                 </label>
               );
