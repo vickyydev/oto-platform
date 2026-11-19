@@ -10,6 +10,10 @@
  * Paths stored in the database:
  *   s3      →  /<bucket>/<prefix>/contracts/signed_contract_<id>.pdf
  *   local   →  /uploads/contracts/signed_contract_<id>.pdf
+ *   restored from the old system (SCRUM-1047), read from this app's own
+ *   folder by folder and file name alone (ownPdfKey):
+ *              /<old bucket>/<old folder>/contracts/signed_contract_<id>.pdf
+ *              /uploads/signed-contracts/signed_contract_<id>.pdf
  */
 
 import { OBJECT_STORAGE, STORAGE_ENV_PREFIX } from "./config/env";
@@ -53,6 +57,47 @@ function finalizedFilename(contractId: string, version: number): string {
 
 const s3BucketName = s3Bucket;
 
+// ── which key a stored path names (SCRUM-1047) ───────────────────────────────
+//
+// The database restored from the old system remembers a signed contract by
+// the old system's path: its own bucket and folder in front, or, from before
+// it used cloud storage, a folder on its own disk. The files are copied into
+// this app's own folders and the rows are not rewritten, so such a path names
+// a file by its folder and file name alone. The bucket and folders in front
+// of it are never trusted, and the name must be one this module writes.
+
+const PDF_ID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
+/** The names this module writes in each folder: s3ContractKey, finalizedFilename, s3LetterKey. */
+const PDF_NAMES: Readonly<Record<string, RegExp>> = {
+  [CONTRACTS_FOLDER]: new RegExp(`^(?:signed_contract_${PDF_ID}|finalized_contract_${PDF_ID}_v(?:0|[1-9][0-9]{0,5}))\\.pdf$`),
+  [LETTERS_FOLDER]: new RegExp(`^signed_letter_${PDF_ID}\\.pdf$`),
+};
+/** "/<old bucket>/<old folder>/<contracts or letters>/<name>" */
+const OLD_STORAGE_PATH = new RegExp(`^/[a-z0-9][a-z0-9._-]{1,61}[a-z0-9]/[a-z0-9][a-z0-9_-]{0,62}/(${CONTRACTS_FOLDER}|${LETTERS_FOLDER})/([^/]+)$`);
+/** "/uploads/signed-contracts/<name>", the old system's disk */
+const OLD_DISK_PATH = /^\/uploads\/signed-contracts\/([^/]+)$/;
+
+/**
+ * The key, in this app's own bucket, of the contract or letter a stored path
+ * names, or null. A path in the app's own bucket keeps today's rule: its own
+ * environment's contracts or letters folder. A path restored from the old
+ * system names the file of that folder and name in the app's own bucket and
+ * environment folder; anything else is refused.
+ */
+export function ownPdfKey(storagePath: string, bucket: string): string | null {
+  const ownBucket = `/${bucket}/`;
+  if (storagePath.startsWith(ownBucket)) {
+    const key = storagePath.slice(ownBucket.length);
+    const inOwnFolder = key.startsWith(`${STORAGE_ENV_PREFIX}/${CONTRACTS_FOLDER}/`) || key.startsWith(`${STORAGE_ENV_PREFIX}/${LETTERS_FOLDER}/`);
+    return inOwnFolder ? key : null;
+  }
+  const oldStorage = OLD_STORAGE_PATH.exec(storagePath);
+  const folder = oldStorage ? oldStorage[1] : CONTRACTS_FOLDER;
+  const name = oldStorage ? oldStorage[2] : OLD_DISK_PATH.exec(storagePath)?.[1];
+  if (!folder || !name || !PDF_NAMES[folder]?.test(name)) return null;
+  return `${STORAGE_ENV_PREFIX}/${folder}/${name}`;
+}
+
 // ── local helpers ─────────────────────────────────────────────────────────────
 
 function localContractPath(contractId: string): string {
@@ -95,10 +140,8 @@ export async function uploadFinalizedPdf(contractId: string, version: number, pd
 export async function presignedPdfUrl(storagePath: string, filename: string): Promise<string | null> {
   if (OBJECT_STORAGE !== "s3") return null;
   const bucket = s3BucketName();
-  const root = `/${bucket}/${STORAGE_ENV_PREFIX}/`;
-  if (!storagePath.startsWith(root)) return null;
-  const key = storagePath.slice(`/${bucket}/`.length);
-  if (!key.startsWith(`${STORAGE_ENV_PREFIX}/${CONTRACTS_FOLDER}/`) && !key.startsWith(`${STORAGE_ENV_PREFIX}/${LETTERS_FOLDER}/`)) return null;
+  const key = ownPdfKey(storagePath, bucket);
+  if (!key) return null;
   try {
     await getS3Client().send(new HeadObjectCommand({ Bucket: bucket, Key: key }));
   } catch (error) {
@@ -176,10 +219,11 @@ export async function streamSignedPdf(storagePath: string): Promise<{
   switch (OBJECT_STORAGE) {
     case "s3": {
       try {
-        const pathWithoutSlash = storagePath.startsWith("/") ? storagePath.slice(1) : storagePath;
-        const parts = pathWithoutSlash.split("/");
-        const bucket = parts[0];
-        const key = parts.slice(1).join("/");
+        // Only this app's own bucket and folders (ownPdfKey): the bucket a
+        // stored path names is never read.
+        const bucket = s3BucketName();
+        const key = ownPdfKey(storagePath, bucket);
+        if (!key) return { stream: null, exists: false };
 
         const head = await getS3Client().send(new HeadObjectCommand({ Bucket: bucket, Key: key }));
         const response = await getS3Client().send(new GetObjectCommand({ Bucket: bucket, Key: key }));
@@ -260,7 +304,9 @@ export function isObjectStoragePath(storagePath: string): boolean {
   switch (OBJECT_STORAGE) {
     case "s3": {
       const bucket = process.env.S3_BUCKET;
-      return !!bucket && (storagePath.includes(bucket) || storagePath.startsWith(`/${bucket}/`));
+      // A path restored from the old system (SCRUM-1047) is read from the
+      // app's own folder too, not from the local disk.
+      return !!bucket && (storagePath.includes(bucket) || storagePath.startsWith(`/${bucket}/`) || ownPdfKey(storagePath, bucket) !== null);
     }
     case "local":
       return false;

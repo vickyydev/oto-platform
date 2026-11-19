@@ -491,7 +491,12 @@ describe('A. fences and seams', () => {
 
   it('the gate did not move WHERE documents are kept: the PDF, file and bucket modules and the BEO and org chart routes are byte for byte main’s', () => {
     const main = {
-      'pdf-storage.ts': 'c23daf4541026ebff0bb49cce05161b76d59ad1ba2040ba913eaebe568dd43e3',
+      // SCRUM-1047: a signed contract or letter path restored from the old system (another bucket's name in
+      // front, or the old disk's /uploads/signed-contracts/) is read by its folder and file name alone from
+      // this app's own bucket, environment folder and contracts or letters folder (ownPdfKey, a name this
+      // module writes); the stream reader no longer reads a bucket a stored path names. Every write, and so
+      // where documents are kept, is unchanged (tests/contract-pdf-paths.check.ts).
+      'pdf-storage.ts': '100490072ab54e0093d65d6fb0be99eb6256b63bed1d97d3243a9b6f59a52a26',
       // SCRUM-562: only the byte-range parser moved out to storage/range.ts (suffix ranges, 206 for video); where files live is unchanged.
       'file-storage.ts': 'faa0c5c7e17f949aeb1f74e91391e019220f29cfd97bf6eefae47c46fbdd850e',
       'storage/s3Client.ts': '9d51fea745ad10e3944543ec6b9e17a36d5af128c923703b010e4be7c1c8ddcb',
