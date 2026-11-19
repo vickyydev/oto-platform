@@ -22,6 +22,12 @@ interface FoodConsentModalProps {
 // Shown when staff try to add an item to a band whose parent did NOT authorize
 // food orders (mayOrderFood:false). Adding is blocked until staff record an
 // explicit override, which is stamped onto the finalized order.
+//
+// SCRUM-1059 — the box was drawn for the dark theme only: on the light theme
+// its amber-300 title read 1.4:1 on the cream and its amber-100 warning 1:1.
+// Light takes the warning inks the F&B screen's own "Food not authorized"
+// banner beside it uses (OrderStation: amber-900 text, amber-800 title,
+// amber-700 icon); dark keeps exactly the classes it had, behind `dark:`.
 export function FoodConsentModal({
   open,
   wristband,
@@ -34,21 +40,21 @@ export function FoodConsentModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto border-amber-500/50 sm:max-w-lg">
         <DialogHeader>
-          <div className="mx-auto mb-2 flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/20 text-amber-400">
+          <div className="mx-auto mb-2 flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-400">
             <ShieldX className="h-9 w-9" />
           </div>
-          <DialogTitle className="text-center text-2xl font-bold text-amber-300">
+          <DialogTitle className="text-center text-2xl font-bold text-amber-800 dark:text-amber-300">
             Food not authorized
           </DialogTitle>
           <DialogDescription className="text-center">
-            {name}&rsquo;s parent did <span className="font-bold text-amber-300">not authorize</span>{' '}
+            {name}&rsquo;s parent did <span className="font-bold text-amber-800 dark:text-amber-300">not authorize</span>{' '}
             food orders for this child on the drop-off form.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-100/90">
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-900 dark:text-amber-100/90">
           <div className="flex items-start gap-2">
-            <UtensilsCrossed className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+            <UtensilsCrossed className="mt-0.5 h-4 w-4 shrink-0 text-amber-700 dark:text-amber-400" />
             <span>
               Only override after confirming with the parent or duty manager. The override is
               recorded against this order with your name.

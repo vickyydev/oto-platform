@@ -270,7 +270,7 @@ export function FnbConfirmation({
               <span className="tabular-nums">฿{bahtText(order.total)}</span>
             </div>
             {payment.creditUsed > 0 && (
-              <PaidRow icon={Wallet} label="F\&B credit" amount={payment.creditUsed} />
+              <PaidRow icon={Wallet} label="F&B credit" amount={payment.creditUsed} />
             )}
             {payment.cash > 0 && <PaidRow icon={Banknote} label="Cash" amount={payment.cash} />}
             {payment.card > 0 && <PaidRow icon={CreditCard} label="Card" amount={payment.card} />}
