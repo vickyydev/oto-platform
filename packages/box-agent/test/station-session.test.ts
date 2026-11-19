@@ -334,6 +334,30 @@ test('SCRUM-1021: the food credit reaches the family\'s screen, and their extra 
   } finally { h.close(); }
 });
 
+test('SCRUM-1054: the included-credit tick reaches the family\'s screen, and their tick only for a child the form asks', async () => {
+  const h = await openConsent();
+  try {
+    const prompt = consentPrompt({ slots: [{ id: 'slot', name: 'Child one', ageYears: 6, requirement: 'drop_off',
+      includedCreditTHB: 1300, extraCreditTHB: 0, orderWithIncludedCredit: false }] });
+    const published = await h.publish(prompt);
+    assert.ok(published.ok);
+    assert.deepEqual(h.manager.snapshotFor(published.document, 'customer', null).document.prompt, prompt);
+    const step = { action: 'fill', requestId: prompt.requestId, visitorId: prompt.visitorId,
+      slots: [{ id: 'slot', name: 'Child one', dateOfBirth: null, ageYears: 6, allergiesMedical: '', foodRestrictions: '',
+        extraCreditTHB: 0, orderWithIncludedCredit: true }],
+      guardianName: '', consentAcknowledged: false, acknowledgedConfirmationIds: [] };
+    const answered = await h.send(step, 'included-tick');
+    assert.ok(answered.ok);
+    // A form that does not ask the tick takes none.
+    const unasked = await h.publish({ ...prompt, requestId: 'guardian-request-no-tick',
+      slots: [{ id: 'slot', name: 'Child one', ageYears: 6, requirement: 'drop_off', includedCreditTHB: 1300, extraCreditTHB: 0 }] });
+    assert.ok(unasked.ok);
+    const refused = await h.send({ ...step, requestId: 'guardian-request-no-tick' }, 'included-tick-refused');
+    assert.equal(refused.ok, false);
+    assert.equal(h.facts.length, 0, 'a tick on the form registers nothing by itself');
+  } finally { h.close(); }
+});
+
 test('guardian acknowledgement refuses foreign prompts, stages, sources, checklist fields and premature Done', async () => {
   const h = await openConsent();
   try {

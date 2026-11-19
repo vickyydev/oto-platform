@@ -74,6 +74,17 @@ const promptObject = z.object({
     includedCreditTHB: z.number().int().nonnegative().max(1_000_000).optional(),
     extraCreditTHB: z.number().int().nonnegative().max(100_000).optional(),
     /**
+     * SCRUM-1054 — THE PARENT'S TICK FOR THE INCLUDED CREDIT (the owner's
+     * answer of 19 November, R3): "may order food with the included credit",
+     * as the till holds it. Sent for a child whose ticket includes credit and
+     * whose form asks the family's extra credit; the form shows the tick while
+     * no extra credit is chosen, and the family's tick comes back with the
+     * step. Ticked, the child may order at the food counter without a manager.
+     * Optional: a till from before it sends none, and a station from before it
+     * drops it, so the display then shows the form as it was.
+     */
+    orderWithIncludedCredit: z.boolean().optional(),
+    /**
      * SCRUM-857 — the family takes the child's photo on their own screen (the
      * owner's ruling of 8 November). Sent by a till that takes a photo from
      * the display, only for a child the photo is asked for: `needed` until
@@ -248,6 +259,12 @@ const FilledSlotSchema = z.object({
    * carries `extraCreditTHB`, so a station from before it never sees one.
    */
   extraCreditTHB: z.number().int().nonnegative().max(100_000).optional(),
+  /**
+   * SCRUM-1054 — the family's tick: may order food with the included credit.
+   * Sent only for a child whose prompt carries `orderWithIncludedCredit`, so a
+   * station from before it never sees one.
+   */
+  orderWithIncludedCredit: z.boolean().optional(),
 }).strict();
 export type FilledConsentSlot = z.infer<typeof FilledSlotSchema>;
 
@@ -325,6 +342,9 @@ export function consentActionAllowed(prompt: ConsentPrompt, action: ConsentActio
     // SCRUM-1021 — extra food credit only for a child whose form asks the family to choose it.
     if (action.action === 'fill' && !action.slots.every(slot => slot.extraCreditTHB === undefined
       || prompt.slots.some(item => item.id === slot.id && item.extraCreditTHB !== undefined))) return false;
+    // SCRUM-1054 — the included-credit tick only for a child whose form asks it.
+    if (action.action === 'fill' && !action.slots.every(slot => slot.orderWithIncludedCredit === undefined
+      || prompt.slots.some(item => item.id === slot.id && item.orderWithIncludedCredit !== undefined))) return false;
     return action.acknowledgedConfirmationIds.every(id => prompt.confirmations.some(item => item.id === id));
   }
   return true;

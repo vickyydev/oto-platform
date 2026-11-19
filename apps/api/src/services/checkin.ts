@@ -46,6 +46,7 @@ import {
   type CreateWaiverInput,
   type DropOffPricingConfig,
   type FoodProvisionInput,
+  type PlatformRegistrationChildInput,
   type RegistrationChildInput,
   type SupervisionPolicy,
   type SupervisionRequirement,
@@ -481,12 +482,18 @@ export async function registrationsAwaitingCheckIn(
  * Prototype `registerWalkInChildren` normalisation: a prepaid mode that paid
  * nothing is `none`, so ordering is never authorised without payment, and
  * `mayOrderFood` follows the provision.
+ *
+ * SCRUM-1054 — or the parent's tick that the child may order food with the
+ * ticket's included credit (the owner's answer of 19 November, R3): that
+ * credit is the payment, loaded on the child's band at check-in, so the stay's
+ * own food permission is given and the food counter asks no manager. Without
+ * the tick, a provision that paid nothing authorises nothing, as before.
  */
-function normaliseProvision(raw: FoodProvisionInput | null | undefined): {
+function normaliseProvision(raw: FoodProvisionInput | null | undefined, orderWithIncludedCredit = false): {
   provision: FoodProvisionInput | null;
   mayOrderFood: boolean;
 } {
-  if (!raw) return { provision: null, mayOrderFood: false };
+  if (!raw) return { provision: null, mayOrderFood: orderWithIncludedCredit };
   const paid = raw.mode !== 'none' && raw.paidSatang <= 0 ? { mode: 'none' as const, paidSatang: 0 } : raw;
   // SCRUM-494 — nothing has been served at registration: every prepaid item
   // starts unserved (the design's `redeemedQty: 0`, `ChildFoodProvisionPicker`).
@@ -494,7 +501,7 @@ function normaliseProvision(raw: FoodProvisionInput | null | undefined): {
     paid.mode === 'prepaid_items' && paid.items
       ? { ...paid, items: paid.items.map((it) => ({ ...it, redeemedQty: 0 })) }
       : paid;
-  return { provision, mayOrderFood: provision.mode !== 'none' && provision.paidSatang > 0 };
+  return { provision, mayOrderFood: (provision.mode !== 'none' && provision.paidSatang > 0) || orderWithIncludedCredit };
 }
 
 /**
@@ -623,7 +630,7 @@ async function insertStays(
   tx: Tx,
   actor: Actor,
   reg: { id: string; branchId: string; visitId: string | null },
-  children: readonly RegistrationChildInput[],
+  children: readonly PlatformRegistrationChildInput[],
 ): Promise<void> {
   const ids = children.map((c) => c.checkinId);
   if (new Set(ids).size !== ids.length) throw errors.badRequest('Two children were sent under the same check-in id.');
@@ -635,7 +642,7 @@ async function insertStays(
   const now = new Date();
   for (const c of children) {
     if (already.has(c.checkinId)) continue;
-    const { provision, mayOrderFood } = normaliseProvision(c.foodProvision);
+    const { provision, mayOrderFood } = normaliseProvision(c.foodProvision, c.orderWithIncludedCredit === true);
     await assertPrepaidItems(tx, actor.operatorId, reg.branchId, c.name.trim(), provision, now);
     const values = {
       id: c.checkinId,
@@ -674,6 +681,8 @@ async function insertStays(
         foodRestrictions: values.foodRestrictions,
         mayOrderFood,
         foodProvision: provision,
+        // SCRUM-1054 — the parent's tick, kept with the food it authorised.
+        ...(c.orderWithIncludedCredit === true ? { orderWithIncludedCredit: true } : {}),
       },
     });
   }
@@ -809,7 +818,7 @@ export async function addRegistrationChildren(
   tx: Tx,
   actor: Actor,
   reg: RegistrationRow,
-  children: readonly RegistrationChildInput[],
+  children: readonly PlatformRegistrationChildInput[],
 ): Promise<RegistrationView> {
   if (!reg.consentRecordedAt) {
     throw errors.conflict('CONSENT_REQUIRED', 'This registration has no consent on file — take the consent before adding a child.');

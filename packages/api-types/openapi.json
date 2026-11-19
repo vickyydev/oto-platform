@@ -55554,6 +55554,9 @@
                           ],
                           "additionalProperties": false,
                           "nullable": true
+                        },
+                        "orderWithIncludedCredit": {
+                          "type": "boolean"
                         }
                       },
                       "required": [
@@ -55754,6 +55757,9 @@
                           ],
                           "additionalProperties": false,
                           "nullable": true
+                        },
+                        "orderWithIncludedCredit": {
+                          "type": "boolean"
                         }
                       },
                       "required": [

@@ -472,6 +472,21 @@ export const RegistrationChildSchema = z
   .strict();
 export type RegistrationChildInput = z.infer<typeof RegistrationChildSchema>;
 
+/**
+ * SCRUM-1054 — ONE CHILD AS THE PLATFORM'S OWN REGISTRATION TAKES IT: the
+ * gate's child and the parent's tick that the child may order food with the
+ * ticket's included credit (the owner's answer of 19 November, R3). Ticked,
+ * the stay's own food permission (`may_order_food`) is given although no
+ * extra food was paid for, so the food counter asks no manager. Platform
+ * only: the counter box's registration and its replayed fact keep
+ * `RegistrationChildSchema` as it was, so a box is never sent a field its
+ * strict reading would refuse; the till leaves the tick off on that lane.
+ */
+export const PlatformRegistrationChildSchema = RegistrationChildSchema.extend({
+  orderWithIncludedCredit: z.boolean().optional(),
+}).strict();
+export type PlatformRegistrationChildInput = z.infer<typeof PlatformRegistrationChildSchema>;
+
 export const CreateRegistrationSchema = z
   .object({
     /** Client-minted UUIDv7 (OD-12): the same id again answers with the registration that exists. */
@@ -499,7 +514,7 @@ export const CreateRegistrationSchema = z
       .strict()
       .nullable()
       .optional(),
-    children: z.array(RegistrationChildSchema).min(1).max(20),
+    children: z.array(PlatformRegistrationChildSchema).min(1).max(20),
     /**
      * SCRUM-1018 — each returning child whose last photo staff said still
      * matches, with the earlier stay of the same child it comes from. Applied
@@ -520,7 +535,7 @@ export type CreateRegistrationInput = z.infer<typeof CreateRegistrationSchema>;
 export const PHOTO_REUSE_REFUSED = 'PHOTO_REUSE_REFUSED';
 
 export const AddRegistrationChildrenSchema = z
-  .object({ children: z.array(RegistrationChildSchema).min(1).max(20) })
+  .object({ children: z.array(PlatformRegistrationChildSchema).min(1).max(20) })
   .strict();
 
 export const CreateWaiverSchema = z
