@@ -273,15 +273,17 @@ await check("every EXTRA line shows a price box beside its count; a SET line sho
   // In the cake box's style: a click-to-edit number, "Price ฿" while empty.
   assert.equal(text("input-menu-price-kids-0"), "Price ฿");
   assert.equal(text("input-menu-price-kids-2"), "150");
-  // SCRUM-1029 (look, staging at 768 to 1440): "Price ฿" kept on one line in a box wide enough for it,
-  // and each dish's price and words in a slot of one width, so the dish names start in one column.
+  // SCRUM-1029 (look, staging at 768 to 1440): "Price ฿" kept on one line in a box of one width, the
+  // till's words in a column of one width, and on a dish the two in one slot, so the dish names of a
+  // list start in one column whatever the till says of each price.
   for (const id of ["kids-0", "kids-1", "kids-2", "bar-0"]) {
     const box = byTestId(`input-menu-price-${id}`)!.className;
-    assert.ok(box.includes("w-20") && box.includes("whitespace-nowrap"), `the price box on ${id} reads "Price ฿" on one line`);
+    assert.ok(box.includes("w-[4.5rem]") && box.includes("whitespace-nowrap"), `the price box on ${id} reads "Price ฿" on one line`);
+    assert.ok(byTestId(`text-menu-price-hint-${id}`)!.className.includes("w-[6.5rem]"), `the till's words on ${id} in their column`);
   }
   for (const id of ["kids-0", "kids-1", "kids-2"]) {
     const slot = byTestId(`menu-price-slot-${id}`);
-    assert.ok(slot && slot.className.includes("min-w-[13.75rem]"), `the price slot on ${id}`);
+    assert.ok(slot, `the price slot on ${id}`);
     assert.ok(slot!.contains(byTestId(`input-menu-price-${id}`)) && slot!.contains(byTestId(`text-menu-price-hint-${id}`)), `the box and its words in the slot on ${id}`);
   }
   absent("menu-price-slot-kids-3", "a SET line has no price slot");

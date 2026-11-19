@@ -580,9 +580,9 @@ function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab, menuTime
         </Button>
         {/* SCRUM-949: an EXTRA line's price for each item, beside its count; never on a SET line. */}
         {item.source !== "set_menu" && (
-          // SCRUM-1029 (look): the price and its words in a slot of one width, so the dish names of a
-          // list start in one column whatever the till says of each price.
-          <div className="flex min-w-[13.75rem] shrink-0 items-center gap-1" data-testid={`menu-price-slot-${menuTab}-${idx}`}>
+          // SCRUM-1029 (look): the price and its words together in one slot of one width (the box and the
+          // words' column), so the dish names of a list start in one column whatever the till says.
+          <div className="flex shrink-0 items-center gap-1" data-testid={`menu-price-slot-${menuTab}-${idx}`}>
             <ExtraPriceBox disabled={disabled}
               line={item}
               area="food"

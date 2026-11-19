@@ -49,8 +49,8 @@ export function ExtraPriceBox({ line, area, charge, onPrice, testId, disabled = 
       <EditableText
         disabled={disabled}
         type="number"
-        // SCRUM-1029 (look): wide enough for "Price ฿" on one line, as every other empty box reads.
-        className="w-20 whitespace-nowrap text-xs font-mono shrink-0"
+        // SCRUM-1029 (look): "Price ฿" on one line, as every other empty box reads.
+        className="w-[4.5rem] px-2 whitespace-nowrap text-xs font-mono shrink-0"
         value={String(line.price || "")}
         onChange={(v) => { if (!disabled) onPrice(Math.max(0, Number(v) || 0)); }}
         placeholder="Price ฿"
@@ -58,7 +58,9 @@ export function ExtraPriceBox({ line, area, charge, onPrice, testId, disabled = 
       />
       {line.billingSync === "pending" && <span className="text-xs text-destructive" role="status">Additional bill pending - Save again to resolve</span>}
       {hint && (
-        <span className="text-[10px] text-muted-foreground shrink-0 whitespace-nowrap" data-testid={`text-menu-price-hint-${testId}`}>
+        // SCRUM-1029 (look): the till's words in a column of one width, two short lines at most, so what
+        // follows the price starts at one place on every line of a list.
+        <span className="w-[6.5rem] text-[10px] leading-tight text-muted-foreground shrink-0" data-testid={`text-menu-price-hint-${testId}`}>
           {hint}
         </span>
       )}
