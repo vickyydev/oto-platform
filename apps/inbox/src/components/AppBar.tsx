@@ -61,7 +61,7 @@ export type AccountMenuProps = {
   /** The settings page open in place of the inbox, if any. */
   settings: SettingsPage | null;
   onSettings: (key: SettingsEntryKey) => void;
-  /** The simulator side panel is hidden and may be brought back (1280 px and wider). */
+  /** The simulator side panel is hidden and may be brought back; the menu offers it from 1280 px, where the panel shows. */
   showSimulator: boolean;
   onShowSimulator: () => void;
   launcherUrl?: string;
@@ -112,7 +112,7 @@ export function AccountMenuItems({
           })}
           {/* The simulator panel's way back (SCRUM-837): an entry here, never floating over the page. */}
           {me.simulator && showSimulator && (
-            <button type="button" role="menuitem" onClick={onShowSimulator} className={`${ITEM} hidden xl:flex`}>
+            <button type="button" role="menuitem" onClick={onShowSimulator} className={ITEM}>
               <PanelRight aria-hidden className="h-[18px] w-[18px] shrink-0 text-ink-soft" />
               <span className="min-w-0 flex-1 truncate">{SHOW_SIMULATOR_LABEL}</span>
             </button>
@@ -147,10 +147,23 @@ export function AccountMenuItems({
   );
 }
 
-/** The menu's items a person can reach: shown ones only (the simulator's way back is wide screens only). */
+/** The menu's items, in order: every one rendered is one a person can reach. */
 function menuItems(menu: HTMLElement | null): HTMLElement[] {
-  if (!menu) return [];
-  return [...menu.querySelectorAll<HTMLElement>('[role^="menuitem"]')].filter((el) => el.getClientRects().length > 0);
+  return menu ? [...menu.querySelectorAll<HTMLElement>('[role^="menuitem"]')] : [];
+}
+
+/** The simulator side panel shows from 1280 px (Workspace), so its way back is offered there only. */
+const WIDE = '(min-width: 1280px)';
+function useWide(): boolean {
+  const [wide, setWide] = useState(() => typeof window !== 'undefined' && window.matchMedia?.(WIDE).matches === true);
+  useEffect(() => {
+    const mq = window.matchMedia?.(WIDE);
+    if (!mq) return;
+    const on = () => setWide(mq.matches);
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, []);
+  return wide;
 }
 
 /**
@@ -164,6 +177,7 @@ export function AccountMenu(props: AccountMenuProps) {
   const [open, setOpen] = useState(false);
   const button = useRef<HTMLButtonElement>(null);
   const wrap = useRef<HTMLDivElement>(null);
+  const wide = useWide();
   const name = me.name ?? 'You';
 
   useEffect(() => {
@@ -230,6 +244,7 @@ export function AccountMenu(props: AccountMenuProps) {
         <div ref={wrap} onKeyDown={onKeyDown} className="absolute right-0 top-full z-40 mt-1">
           <AccountMenuItems
             {...props}
+            showSimulator={props.showSimulator && wide}
             onSettings={then(props.onSettings)}
             onShowSimulator={then(props.onShowSimulator)}
             onSignOut={then(props.onSignOut)}
