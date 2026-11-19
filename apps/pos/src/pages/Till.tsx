@@ -1186,7 +1186,7 @@ export default function Till() {
          * BY ITSELF (the owner's answer of 19 November), with the name the
          * family gave on the first screen; staff are not asked whether to
          * create one. With no name given, the number itself is the name until
-         * one is given (R1, `nameForNewMember`), so no "New member?" box is
+         * one is given (R1, `nameForNewMember`), so no new-member box is
          * opened for it either. A create that fails says why and leaves that
          * box open, so staff can try again or go on as a walk-in. A sale with
          * no number at all stays a walk-in, exactly as before.

@@ -106,6 +106,32 @@ describe('R1 — the customer display does not read the number out as a name', (
     expect(html).not.toContain(`${HELD}!`);
   });
 
+  it('the header strip names nobody for them through the sale, as before such a member existed', () => {
+    // The strip ("Customer  <name>") is on every screen after the number; the
+    // welcome screen and the paid screen stand for the rest (one `displayName`).
+    const paid = (member: Member | null, nickname = '') =>
+      renderToStaticMarkup(createElement(LanguageProvider, {
+        children: createElement(CustomerDisplay, {
+          stage: 'payment', sale: saleAt('tourist'), phone: '', nickname, member,
+          payment: { status: 'paid' } as never,
+          onPhoneChange: () => undefined, onNicknameChange: () => undefined, onIdentify: () => undefined,
+          onCustomerDone: () => undefined,
+        }),
+      })).replace(/&#x27;/g, "'");
+    for (const html of [welcome(held), paid(held)]) {
+      expect(html).not.toContain(HELD);
+      expect(html).not.toContain('>Customer<');
+    }
+    // A member with a name, or a name typed on the first screen, is shown there as before.
+    expect(welcome(named)).toContain('>ZZ TEST R1 Mali<');
+    expect(paid(named)).toContain('>ZZ TEST R1 Mali<');
+    expect(paid(held, 'ZZ TEST R1 Nok')).toContain('>ZZ TEST R1 Nok<');
+    const display = src('components/till/CustomerDisplay.tsx');
+    expect(display).toContain(
+      "nickname.trim() || (member && !nameIsPhoneNumber(member.nickname) ? member.nickname : '');",
+    );
+  });
+
   it('keeps "Member rate applied" for them where their rate is the sale’s', () => {
     expect(welcome(held, 'expat')).toContain('Member rate applied');
     expect(welcome(held, 'tourist')).not.toContain('Member rate applied');
