@@ -289,9 +289,14 @@ if (!RECORD) {
     const triggers = [...doc.querySelectorAll('[data-testid^="accordion-"]')].map((el) => el.getAttribute("data-testid"));
     assert.deepEqual(triggers, ["accordion-event-info", "accordion-food-drinks", "accordion-entertainment", "accordion-internal-notes", "accordion-billing", "accordion-parent-experience"]);
     assert.deepEqual(
-      ["event-info", "food-drinks", "entertainment", "internal-notes"].map((k) => text(`section-mark-${k}`)),
+      ["event-info", "food-drinks", "entertainment", "internal-notes"].map((k) => text(`accordion-${k}`)),
       ["Event Info", "Food & Drinks", "Entertainment & Program", "Internal Notes"],
-      "the four marks above them",
+      "the sections in the brief's words",
+    );
+    assert.deepEqual(
+      ["event-info", "food-drinks", "entertainment", "internal-notes"].map((k) => [text(`section-mark-${k}`), byTestId(`section-mark-${k}`)?.getAttribute("title")]),
+      [["Event", "Event Info"], ["Food & Drinks", "Food & Drinks"], ["Entertainment", "Entertainment & Program"], ["Notes", "Internal Notes"]],
+      "the four marks above them, in the drawing's tab words",
     );
     assert.equal(isOpen("event-info"), true, "Event Info open as the BEO opens, as before");
     assert.equal(isOpen("food-drinks"), false);
