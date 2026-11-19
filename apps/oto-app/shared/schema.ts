@@ -1405,6 +1405,8 @@ export const activityTypes = [
   "fix_report_deleted", // SCRUM-641: a manager or admin deleted a Fix report
   "beo_ai_fill", // SCRUM-660: a BEO's AI Fill read a message (never the text itself)
   "beo_kitchen_plan_till_edit", // SCRUM-907: a manager changed a BEO's kitchen plan on the till
+  "single_shift_invited", // SCRUM-1038: a former employee put on one shift, and how it is paid
+  "single_shift_pay_changed", // SCRUM-1038: that shift switched between the old contract and a casual day rate
 ] as const;
 export type ActivityType = typeof activityTypes[number];
 
@@ -3497,6 +3499,41 @@ export const insertScheduleAssignmentSchema = createInsertSchema(scheduleAssignm
 
 export type InsertScheduleAssignment = z.infer<typeof insertScheduleAssignmentSchema>;
 export type ScheduleAssignment = typeof scheduleAssignments.$inferSelect;
+
+// Single shifts of former employees (SCRUM-1038, migration 0054). A manager
+// puts a former employee (the employment ended: the profile Left, its login
+// in pay only) on one shift, on the same profile, without rehiring. The shift
+// itself is an ordinary schedule assignment; this row is its invitation: who,
+// which shift on which day, and how the shift is paid — on the terms of the
+// person's last contract (the default), or switched to a casual day rate the
+// manager types, in whole baht a day as a casual worker's rate is. The kiosk
+// takes the person's clock-in and clock-out at the shift's branch on its day
+// only (server/lib/singleShift.ts); the profile and the login are not changed.
+export const singleShiftPayBases = ["old_contract", "casual_day_rate"] as const;
+export type SingleShiftPayBasis = typeof singleShiftPayBases[number];
+
+export const singleShiftInvitations = pgTable("single_shift_invitations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  employeeId: varchar("employee_id").references(() => employees.id, { onDelete: "cascade" }).notNull(),
+  branchId: varchar("branch_id").references(() => branches.id).notNull(),
+  // The shift; emptied when the manager removes it, which closes the kiosk again.
+  assignmentId: varchar("assignment_id").references(() => scheduleAssignments.id, { onDelete: "set null" }),
+  shiftRowId: varchar("shift_row_id").references(() => scheduleShiftRows.id, { onDelete: "set null" }),
+  shiftDate: date("shift_date").notNull(),
+  payBasis: text("pay_basis", { enum: singleShiftPayBases }).notNull().default("old_contract"),
+  casualDayRate: integer("casual_day_rate"),
+  createdBy: varchar("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedBy: varchar("updated_by").references(() => users.id, { onDelete: "set null" }),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_single_shift_invitations_tenant_date").on(table.tenantId, table.shiftDate),
+  index("idx_single_shift_invitations_employee_date").on(table.employeeId, table.shiftDate),
+  uniqueIndex("single_shift_invitations_assignment_unique").on(table.assignmentId),
+  check("single_shift_invitations_pay_check", sql`(${table.payBasis} = 'old_contract' AND ${table.casualDayRate} IS NULL) OR (${table.payBasis} = 'casual_day_rate' AND ${table.casualDayRate} > 0)`),
+]);
+export type SingleShiftInvitation = typeof singleShiftInvitations.$inferSelect;
 
 // Schedule Shift Breaks - persisted lunch/break records per employee per shift instance
 export const breakSourceTypes = ["auto_rule", "manual_override"] as const;

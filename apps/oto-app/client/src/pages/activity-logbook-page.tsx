@@ -64,6 +64,8 @@ const activityTypeLabels: Record<string, string> = {
   fix_report_deleted: "Fix Report Deleted",
   beo_ai_fill: "BEO AI Fill",
   beo_kitchen_plan_till_edit: "BEO Kitchen Plan (Till)",
+  single_shift_invited: "Single Shift Invited",
+  single_shift_pay_changed: "Single Shift Pay Changed",
 };
 
 const activityTypeColors: Record<string, string> = {

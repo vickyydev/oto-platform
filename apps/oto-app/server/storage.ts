@@ -7186,6 +7186,10 @@ export class DatabaseStorage implements IStorage {
                                                 ),
                                 ),
                                 gt(scheduleAssignments.shiftDate, today),
+                                // SCRUM-1038: a single shift a former employee was
+                                // invited to is not a shift of the ending employment.
+                                sql`not exists (select 1 from single_shift_invitations i
+                                                 where i.assignment_id = ${scheduleAssignments.id})`,
                         ),
                 );
 
@@ -8975,7 +8979,10 @@ export class DatabaseStorage implements IStorage {
                 employeeId: string,
                 shiftRowId: string,
                 date: string,
-                options?: { isBorrowed?: boolean; excludeAssignmentId?: string }, requestedTenantId?: string,
+                // SCRUM-1038 — `singleShiftInvitation`: a former employee invited
+                // to one shift (lib/singleShift.ts), the only caller that sets it,
+                // skips the two checks below that refuse an ended employment.
+                options?: { isBorrowed?: boolean; excludeAssignmentId?: string; singleShiftInvitation?: boolean }, requestedTenantId?: string,
                 // SCRUM-777 — the undo asks inside its own transaction.
                 executor: DbExecutor = db,
         ): Promise<{
@@ -9040,8 +9047,10 @@ export class DatabaseStorage implements IStorage {
                         }
                 }
 
+                const invited = options?.singleShiftInvitation === true;
+
                 // Check last working day - cannot assign shifts after employee's last working day
-                if (employee.lastWorkingDay && !placement.planned) {
+                if (employee.lastWorkingDay && !placement.planned && !invited) {
                         const shiftDateObj = new Date(date);
                         const lastDayObj = new Date(employee.lastWorkingDay);
                         // Normalize to date-only comparison (ignore time component)
@@ -9059,7 +9068,7 @@ export class DatabaseStorage implements IStorage {
                 }
 
                 // Check if employee has LEFT (resigned/terminated after last day)
-                if (employee.employmentState === "LEFT" && !placement.planned) {
+                if (employee.employmentState === "LEFT" && !placement.planned && !invited) {
                         return {
                                 ok: false,
                                 reasonCode: "EMPLOYMENT_ENDED",
