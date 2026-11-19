@@ -8,17 +8,22 @@
 //      package includes as its snapshot stores it, its lines and the till's
 //      money (or why there is none); nothing yet for expected extra guests or
 //      socks (SCRUM-1031 fills that place);
-//   2. the ONE timeline (SCRUM-1027), with what is served and each person;
-//   3. KITCHEN on the left: the kids' menu with every dish and its count; the
-//      adults as their own list with their own counts when they eat differently,
-//      one line when they eat the kids' menu; "no food" said plainly;
+//   2. the ONE timeline (SCRUM-1027), each step with its person; the dishes and
+//      drinks are not printed there a second time;
+//   3. KITCHEN on the left: the kids' menu with every dish and its count, a set
+//      menu's choices by name without their group label; the adults as their own
+//      list with their own counts when they eat differently, one line when they
+//      eat the kids' menu; "Not Needed" when the kitchen is set so, and no Kitchen
+//      at all when the BEO holds nothing for it (no "no food" is inferred);
 //   4. SETUP, BAR, ENTERTAINMENT (each activity: time, name, person), CAKE and
-//      NOTES on the right, each only with something in it;
+//      NOTES on the right, each only with something in it; the cake as before,
+//      only with the kitchen needed; the person's column only when an act has one;
 //   5. a dish with no count prints as 1; names print as stored; prices where the
 //      page printed them before; a note's agreed amount as written;
 //   6. an old event with only hand-typed timeline rows; a long order that runs
-//      onto more pages (no part held whole, headings kept with what follows,
-//      every page's foot naming the party and its page); Thai beside English;
+//      onto more pages (no part held whole in either column, headings kept with
+//      what follows, every page's foot naming the party and its page); Thai
+//      beside English;
 //   7. the route hands the print the package snapshot and the activities.
 //
 // Run from apps/oto-app: npx tsx tests/beo-staff-print.check.ts
@@ -90,9 +95,12 @@ await check("the header: the party's name, day, times, room, status and park", a
 
 await check("the header: the child, the contact, the planned guests and the hosts, as printed before", async () => {
   const facts = textOf(part(html, "party"));
-  for (const words of ["Child: ZZ TEST Child", "Kid Turning Age: 6", "Booking Name: ZZ TEST Booking", "Parent: ZZ TEST Parent", "WhatsApp: ZZ TEST WhatsApp", "Children: 11", "Adults: 10", "Party Host: ZZ TEST Host Noi", "Backup: ZZ TEST Host Ben"]) {
-    assert.ok(facts.includes(words), `${words} in ${facts}`);
-  }
+  const order = ["Child: ZZ TEST Child", "Kid Turning Age: 6", "Children: 11", "Adults: 10", "Party Host: ZZ TEST Host Noi", "Backup: ZZ TEST Host Ben", "Booking Name: ZZ TEST Booking", "Parent: ZZ TEST Parent", "WhatsApp: ZZ TEST WhatsApp"];
+  for (const words of order) assert.ok(facts.includes(words), `${words} in ${facts}`);
+  // Read row by row in pairs, as the brief's drawing groups them: child and age, children and
+  // adults, host and backup, then the contact.
+  const at = order.map((w) => facts.indexOf(w));
+  assert.deepEqual([...at].sort((a, b) => a - b), at, facts);
   // A role prints only for a party with no named host; a host with nothing named prints no line.
   const role = textOf(part(await beoPdfHtml({ ...normalParty, partyHost: { roleName: "ZZ TEST Hosts" } }), "party"));
   assert.ok(role.includes("Host role: ZZ TEST Hosts") && !role.includes("Party Host:"));
@@ -111,6 +119,8 @@ await check("the header's package box: the package, what it includes as its snap
   // A party with only a snapshot: its name and allowance; with none of the three: no box.
   const onlySnapshot = part(await beoPdfHtml({ ...normalParty, partyDetails: undefined, till: undefined, packageSnapshot: { packageName: "ZZ TEST Snapshot package", kidsIncluded: 8, adultsIncluded: null } }), "package");
   assert.ok(onlySnapshot.includes("<h2>POS: ZZ TEST Snapshot package</h2>") && textOf(onlySnapshot).includes("Included: 8 kids"));
+  // The till's money line only where it printed before (Party Details or the till's figures).
+  assert.equal(/Party money|Till not reachable|No quote|Not settled/i.test(textOf(onlySnapshot)), false, textOf(onlySnapshot));
   assert.equal(part(await beoPdfHtml({ ...normalParty, partyDetails: undefined, till: { status: "not_linked", message: "x" }, packageSnapshot: undefined }), "package"), "");
 });
 
@@ -133,27 +143,34 @@ await check("the order of the page: header, the one timeline, Kitchen on the lef
   for (const h of ["<h2>Timeline</h2>", "<h2>Kitchen</h2>", "<h2>Setup</h2>", "<h2>Bar</h2>", "<h2>Entertainment</h2>", "<h2>Cake</h2>", "<h2>Notes</h2>"]) assert.ok(html.includes(h), h);
 });
 
-await check("the one timeline: every step in time order with what is served and its person; the untimed act listed", async () => {
+await check("the one timeline: every step in time order with its person; the order is not printed a second time; no end step", async () => {
   const tl = rowsOf(part(html, "timeline")).slice(1);
-  assert.deepEqual(tl.map((r) => r.split(" ")[0]), ["10:00", "11:00", "11:30", "11:30", "12:00", "12:15", "13:00", "13:30", "13:30", "14:00"]);
-  assert.ok(tl[2]!.startsWith("11:30 Kids' menu served 1x Hawaiian, 1x Margherita, 1x Pepperoni, 1x Fried rice, 1x Fish fingers, 3x French fries, 2x Fruit skewers, 2x Vegetable sticks, 1x Mini waffles"), tl[2]);
-  assert.equal(tl[3], "11:30 Drinks Service 2x Mors, 2x Lemonade, 1x Water");
+  assert.deepEqual(tl.map((r) => r.split(" ")[0]), ["10:00", "11:00", "11:30", "11:30", "12:00", "12:15", "13:00", "13:30", "13:30"]);
+  assert.equal(tl[2], "11:30 Kids' menu served", "the dishes print in the Kitchen, once");
+  assert.equal(tl[3], "11:30 Drinks Service", "the drinks print in the Bar, once");
   assert.equal(tl[4], "12:00 ZZ TEST Bubble show · ZZ TEST Host Noi");
-  assert.equal(tl[5], "12:15 Adults' menu served 2x Smoked Salmon Pizza, 3x Caesar salad, 1x Chicken wings");
+  assert.equal(tl[5], "12:15 Adults' menu served");
+  assert.equal(tl[7], "13:30 Cake moment Our cake: Mix flavour", "the cake keeps its words");
   assert.equal(tl[8], "13:30 ZZ TEST Pinata", "the hand-typed step at its time");
-  assert.match(part(html, "timeline"), /No time set: ZZ TEST Magic/);
+  for (const dish of ["Hawaiian", "Fruit skewers", "Mors", "Lemonade", "Smoked Salmon Pizza"]) assert.equal(part(html, "timeline").includes(dish), false, dish);
+  // The act with no time says so in Entertainment, not a second time under the timeline.
+  assert.doesNotMatch(part(html, "timeline"), /No time set/);
+  assert.match(textOf(part(html, "entertainment")), /No time set ZZ TEST Magic/);
 });
 
 // ── 3. Kitchen ───────────────────────────────────────────────────────────────
 
-await check("the kids' menu: the set menu's choices by name with their counts, then the additional items", async () => {
+await check("the kids' menu: the set menu's choices by name (no group label) with their counts, then the additional items", async () => {
   const k = part(html, "kitchen");
   assert.match(textOf(k), /Kids Menu \(11 kids\) — Service: 11:30/);
   assert.match(textOf(k), /Set Menu ZZ TEST Set Central — Received 30 Nov/);
   const rows = rowsOf(k);
+  // SCRUM-1028, the brief: "the chosen pizza names without numbering". A set line's note slot holds
+  // only its group's label in brackets, so it is not printed.
   assert.deepEqual(rows.slice(0, 6), [
-    "1x Hawaiian (Pizza 1) SET", "1x Margherita (Pizza 2) SET", "1x Pepperoni (Pizza 3) SET", "1x Fried rice (Rice) SET", "1x Fish fingers (Fish) SET", "3x French fries (Sides) SET",
+    "1x Hawaiian SET", "1x Margherita SET", "1x Pepperoni SET", "1x Fried rice SET", "1x Fish fingers SET", "3x French fries SET",
   ]);
+  assert.equal(/\(Pizza \d\)|\(Rice\)|\(Sides\)/.test(k), false, "no group label anywhere in the kitchen");
   assert.ok(k.indexOf("Additional Items") > k.indexOf("French fries"));
   assert.equal(rows[6], "2x Fruit skewers EXTRA 120฿ each");
   assert.equal(rows[7], "2x Vegetable sticks (no dip) EXTRA 90฿ each");
@@ -189,14 +206,25 @@ await check("the adults eating the kids' menu ('Same as kids'): one line under t
   assert.ok(copies.includes('data-adults="same"') && !copies.includes("Adults Menu"));
 });
 
-await check("a party with no food says so plainly: kitchen not needed, no kitchen plan, or nothing on it", async () => {
+await check("the kitchen set to Not Needed says so in its old words; no kitchen plan, or nothing on it, prints no Kitchen (nothing inferred)", async () => {
   const notNeeded = await beoPdfHtml(kitchenWith({ kids: [dish("Nuggets", 8)] }, { required: false }));
   const said = textOf(part(notNeeded, "kitchen").slice(0, part(notNeeded, "kitchen").lastIndexOf("</div>")));
-  assert.match(said, /> Kitchen No food for this party: kitchen not needed\.$/, "the line and nothing else");
-  assert.ok(part(notNeeded, "cake").includes("Our cake (provided)"), "the cake keeps its own part");
-  assert.match(textOf(part(await beoPdfHtml({ ...normalParty, kitchenPlan: undefined }), "kitchen")), /No food ordered\./);
-  assert.match(textOf(part(await beoPdfHtml(kitchenWith({ kids: [], adults: [] })), "kitchen")), /No food ordered\./);
+  assert.match(said, /> Kitchen Not Needed$/, "the heading with the stored fact, nothing else");
   assert.equal(part(notNeeded, "kitchen").includes("<tr>"), false);
+  assert.equal(part(notNeeded, "kitchen").includes("ZZ TEST kitchen note"), false, "the kitchen notes print only with the kitchen needed, as before");
+  // As before: the cake and the event's own cake notes print only with the kitchen needed (the
+  // editor hides the cake when the kitchen is Not Needed); the timeline keeps the cake moment.
+  assert.equal(part(notNeeded, "cake"), "", "no Cake part with the kitchen Not Needed");
+  assert.equal(part(await beoPdfHtml({ ...normalParty, cakeNotes: "ZZ TEST candles", kitchenPlan: undefined }), "cake"), "", "no kitchen plan: no cake notes, as before");
+  // The BEO does not store that no food was ordered: no Kitchen part, and the right column takes the width.
+  for (const page of [await beoPdfHtml({ ...normalParty, kitchenPlan: undefined }), await beoPdfHtml(kitchenWith({ kids: [], adults: [] }, { notes: undefined }))]) {
+    assert.equal(part(page, "kitchen"), "");
+    assert.equal(page.includes('class="col-left"'), false);
+    assert.equal(/No food ordered|No food for this party/.test(page), false);
+    assert.ok(page.includes('class="col-right"') && page.includes('data-part="setup"'));
+  }
+  // A needed kitchen with only its notes prints them.
+  assert.match(textOf(part(await beoPdfHtml(kitchenWith({ kids: [], adults: [] })), "kitchen")), /Kitchen ZZ TEST kitchen note: pizzas cut in eight/);
 });
 
 // ── 4. The right column ──────────────────────────────────────────────────────
@@ -223,6 +251,10 @@ await check("Entertainment: each activity with its time and its own person; one 
   // An act with no name of its own: the timeline's word for it; a time stored as 9:05: written 09:05.
   const unnamed = part(await beoPdfHtml({ ...normalParty, entertainmentActs: [{ id: "x", customName: "  ", startTime: "9:05", person: null }] }), "entertainment");
   assert.deepEqual(rowsOf(unnamed), ["09:05 Entertainment"]);
+  // No act names a person (nothing writes one yet, SCRUM-1032): no empty person's column.
+  assert.equal(unnamed.split("<td").length - 1, 2, "time and name only");
+  assert.equal(unnamed.includes('<col style="width: 34%;" />'), false);
+  assert.equal(part(html, "entertainment").includes('<col style="width: 34%;" />'), true, "with a person: the column");
 });
 
 await check("Cake: what it is, INCL or EXTRA with the price it printed with, its time and notes; the event's own cake notes", async () => {
@@ -248,7 +280,7 @@ await check("a part with nothing in it prints no heading (SCRUM-978), and an old
   assert.match(old, /15:00<\/td>\s*<td>ZZ Speech/);
   for (const h of ["Setup", "Bar", "Entertainment", "Cake", "Notes", "POS"]) assert.equal(old.includes(`<h2>${h}`), false, h);
   assert.equal(old.includes('data-part="party"'), false, "no facts: no empty box");
-  assert.match(textOf(part(old, "kitchen")), /No food ordered\./);
+  assert.equal(part(old, "kitchen"), "", "no kitchen plan: no Kitchen, no inferred words");
 });
 
 // ── 5. Counts, names, prices ─────────────────────────────────────────────────
@@ -256,7 +288,10 @@ await check("a part with nothing in it prints no heading (SCRUM-978), and an old
 await check("a dish with no count prints as 1, never null or undefined; names print as stored", async () => {
   const page = await beoPdfHtml(kitchenWith({ kids: [dish("ZZ TEST no count"), { ...dish("ZZ TEST null count"), quantity: null }, set("ZZ TEST set no count", "Pizza 1")] }, { setMenuEnabled: true }));
   const rows = rowsOf(part(page, "kitchen"));
-  assert.ok(rows.includes("1x ZZ TEST set no count (Pizza 1) SET"), JSON.stringify(rows));
+  assert.ok(rows.includes("1x ZZ TEST set no count SET"), JSON.stringify(rows));
+  // Only a note that is the group's label in brackets is left out; another note on a set line prints.
+  const noted = rowsOf(part(await beoPdfHtml(kitchenWith({ kids: [{ ...set("ZZ TEST set dish", "Pizza 1"), notes: "ZZ TEST no olives" }] }, { setMenuEnabled: true })), "kitchen"));
+  assert.ok(noted.includes("1x ZZ TEST set dish (ZZ TEST no olives) SET"), JSON.stringify(noted));
   assert.ok(rows.some((r) => r.startsWith("1x ZZ TEST no count EXTRA")) && rows.some((r) => r.startsWith("1x ZZ TEST null count EXTRA")));
   assert.equal(/nullx|undefinedx|NaNx/.test(page), false);
 });
@@ -276,6 +311,10 @@ await check("a long order: every dish, drink and act printed; nothing held whole
   // The page's rules: the kitchen and the timeline may run onto the next page; a row is never cut;
   // a heading is never left alone at a page's foot; table heads repeat; long words wrap.
   assert.equal(/class="part (?:kitchen|timeline)-part[^"]*box/.test(page), false);
+  // The right column's parts break between rows as the Kitchen does (a part held whole left page 1
+  // half empty and moved the allergies away from the kitchen).
+  assert.match(page, /\.box \{ break-inside: auto; \}/);
+  assert.equal(/\.box \{[^}]*break-inside: avoid/.test(page), false);
   assert.match(page, /tr \{ break-inside: avoid; page-break-inside: avoid; \}/);
   assert.match(page, /h2 \{[^}]*break-after: avoid; page-break-after: avoid;/);
   assert.match(page, /h3 \{[^}]*break-after: avoid; page-break-after: avoid;/);

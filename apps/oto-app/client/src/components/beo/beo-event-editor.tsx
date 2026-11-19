@@ -2677,7 +2677,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                         </div>
                       ))}
                       <p className="text-[10px] text-muted-foreground/70">
-                        Set a start time to put the act on the Timeline.
+                        Set a start time to auto-add the act to the Timeline. Changes sync when you save the BEO.
                       </p>
                     </div>
                   )}

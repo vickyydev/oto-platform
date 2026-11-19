@@ -516,14 +516,17 @@ describe('A. fences and seams', () => {
       // where the BEO's documents live is unchanged.
       // SCRUM-983: stored counts use the publication reader in the HTML; PDF generation/storage is unchanged.
       // SCRUM-1027: the Timeline section prints the one timeline the system makes (shared/beoTimeline.ts,
-      // beoPdfTimelineOf): what is served and the step's person beside each step, and the steps with no time
-      // listed under it; PDF generation and where the BEO's documents live are unchanged.
+      // beoPdfTimelineOf): each step with its person (the dishes and drinks print once, in Kitchen and Bar),
+      // and a typed step with no time listed under it; PDF generation and where the BEO's documents live are
+      // unchanged.
       // SCRUM-1028: the Staff BEO print rebuilt on the stored BEO (beoPdfHtml): the header (the party,
       // its hosts, the package box with the snapshot's allowance and the till's money as before), the one
-      // timeline, then Kitchen on the left (the adults as their own list when they eat differently) and
-      // Setup, Bar, Entertainment, Cake and Notes on the right; generateBeoPdf prints a footer naming the
-      // party and its page on every page; where the BEO's documents live is unchanged.
-      'pdf.ts': '3f71644c4ee0d75eefaa06bcd86cd8fee86fe4b7aa2948e41d6dd41bce982bef',
+      // timeline, then Kitchen on the left (set-menu choices by name, the adults as their own list when they
+      // eat differently, "Not Needed" as before, no Kitchen when the BEO holds nothing for it) and Setup,
+      // Bar, Entertainment, Cake and Notes on the right, every part breaking between rows; generateBeoPdf
+      // prints a footer naming the party and its page on every page; where the BEO's documents live is
+      // unchanged.
+      'pdf.ts': 'ffeef06d68506ee1d79a540942c0649f8a078bc52bbaf2e5ba322bf95ac454f7',
       // SCRUM-803 / SCRUM-806: Generate from BEO bills the package in baht and only the add-ons a party bought; where the BEO's documents live is unchanged.
       // SCRUM-769: the BEO's staff list leaves out a login whose employment has ended (onStaff); where documents live is unchanged.
       // SCRUM-815: the parent link's set-menu lines are resolved by server/lib/setMenuResolve.ts (moved, not changed) and the

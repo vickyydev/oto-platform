@@ -1,5 +1,5 @@
 import { beoQuantityOf } from "./beoQuantity";
-import { ADULTS_SAME_AS_KIDS, adultsDifferOf, kitchenLinesOf, type KitchenLineLike } from "./kitchenAdults";
+import { adultsDifferOf, kitchenLinesOf, type KitchenLineLike } from "./kitchenAdults";
 
 /**
  * ONE TIMELINE, MADE BY THE SYSTEM (SCRUM-1027).
@@ -13,12 +13,16 @@ import { ADULTS_SAME_AS_KIDS, adultsDifferOf, kitchenLinesOf, type KitchenLineLi
  * ticks).
  *
  * What it merges, in time order:
- *   - the party's own times: setup ready-by, guests arrive at the start, the
- *     party ends at the end (and an old event's setup items at the offset
- *     its setup plan stores);
- *   - every food service time the BEO stores, with what is served: the kids'
- *     menu, the adults' menu (their own list, or the kids' menu at a time of
- *     their own), an old event's service blocks, the bar, the cake;
+ *   - the party's own times: setup ready-by and guests arrive at the start
+ *     (and an old event's setup items at the offset its setup plan stores);
+ *   - every food service time the BEO stores: the kids' menu, the adults'
+ *     menu (their own list, or the kids' menu at a time of their own), an old
+ *     event's service blocks, the bar, the cake. A step says THAT the food is
+ *     served, not the order: the dishes and drinks are listed once, in the
+ *     Kitchen and the Bar (the brief's timeline: "drinks service and food
+ *     served"). Two keep words beside them, as they had before: the cake says
+ *     what it is, and an old event's service block names its first three
+ *     dishes (the old generator's own cut), which print nowhere else;
  *   - every Entertainment activity with its time and its person;
  *   - the rows typed by hand (or written by AI Fill): the "other timed steps".
  *
@@ -47,7 +51,7 @@ export interface BeoTimelineStep {
   minuteOfDay: number;
   kind: BeoTimelineKind;
   label: string;
-  /** What is served, for a food step. */
+  /** Words beside the step: what the cake is, or an old service block's first dishes; else none. */
   detail: string | null;
   person: string | null;
   /** The stored row's role ("PARTY_HOST", "SETUP_RESPONSIBLE", "KITCHEN_RESPONSIBLE", ...). */
@@ -121,7 +125,6 @@ export interface BeoTimelineSource {
 
 export const STEP_GUESTS_ARRIVE = "Guests arrive";
 export const STEP_SETUP_READY = "Setup ready";
-export const STEP_PARTY_ENDS = "Party ends";
 export const STEP_KIDS_MENU = "Kids' menu served";
 export const STEP_ADULTS_MENU = "Adults' menu served";
 export const STEP_FOOD_SERVICE = "F&B Service";
@@ -168,13 +171,20 @@ const text = (value: unknown): string => (typeof value === "string" ? value.trim
 const asObject = (value: unknown): Record<string, unknown> =>
   value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
 
-/** What is served: "3x Margherita, 1x French fries" (a line with no count is one). */
-export function servedOf(lines: readonly KitchenLineLike[]): string | null {
+/**
+ * What is served: "3x Margherita, 1x French fries" (a line with no count is one), at most `max`
+ * dishes (an old service block's three, as the old generator cut them).
+ */
+export function servedOf(lines: readonly KitchenLineLike[], max = Number.POSITIVE_INFINITY): string | null {
   const said = lines
     .filter((l) => text(l.itemName))
-    .map((l) => `${beoQuantityOf(l.quantity)}x ${text(l.itemName)}`);
+    .map((l) => `${beoQuantityOf(l.quantity)}x ${text(l.itemName)}`)
+    .slice(0, max);
   return said.length > 0 ? said.join(", ") : null;
 }
+
+/** An old service block's dishes beside its step: the first three, as the old generator printed them. */
+const SERVICE_BLOCK_DISHES = 3;
 
 interface MadeStep {
   key: string;
@@ -230,27 +240,22 @@ export function beoMadeSteps(src: BeoTimelineSource): MadeStep[] {
   if (start) {
     made.push({ key: "guests_arrive", kind: "party", label: STEP_GUESTS_ARRIVE, detail: null, person: null, assignedToType: "PARTY_HOST", clock: start, home: "timeline" });
   }
-  const end = beoClockOf(src.endTime);
-  if (end) {
-    made.push({ key: "party_end", kind: "party", label: STEP_PARTY_ENDS, detail: null, person: null, assignedToType: "PARTY_HOST", clock: end, home: "timeline" });
-  }
 
-  // Food: the kids' menu, the adults', an old event's service blocks, the bar, the cake.
+  // Food: the kids' menu, the adults', an old event's service blocks, the bar, the cake. The menus
+  // and the bar's drinks are listed in the Kitchen and the Bar, not again beside their step.
   const kitchen = src.kitchenPlan;
   if (kitchen?.foodRequired) {
     const menus = asObject(kitchen.menus);
     const kids = kitchenLinesOf(Array.isArray(menus.kids) ? menus.kids : asObject(kitchen.simplifiedMenus).kids);
     const kidsAt = beoClockOf(menus.kidsFoodTime);
     if (kidsAt || kids.length > 0) {
-      made.push({ key: "kids_food", kind: "food", label: STEP_KIDS_MENU, detail: servedOf(kids), person: null, assignedToType: "KITCHEN_RESPONSIBLE", clock: kidsAt, home: "kitchen" });
+      made.push({ key: "kids_food", kind: "food", label: STEP_KIDS_MENU, detail: null, person: null, assignedToType: "KITCHEN_RESPONSIBLE", clock: kidsAt, home: "kitchen" });
     }
     const adultsAt = beoClockOf(menus.adultsFoodTime);
     const differ = adultsDifferOf({ ...menus, kids });
-    if (differ) {
-      made.push({ key: "adults_food", kind: "food", label: STEP_ADULTS_MENU, detail: servedOf(kitchenLinesOf(menus.adults)), person: null, assignedToType: "KITCHEN_RESPONSIBLE", clock: adultsAt, home: "kitchen" });
-    } else if (adultsAt && adultsAt.minute !== kidsAt?.minute) {
-      // The adults eat the kids' menu, at a time of their own.
-      made.push({ key: "adults_food", kind: "food", label: STEP_ADULTS_MENU, detail: ADULTS_SAME_AS_KIDS, person: null, assignedToType: "KITCHEN_RESPONSIBLE", clock: adultsAt, home: "kitchen" });
+    if (differ || (adultsAt && adultsAt.minute !== kidsAt?.minute)) {
+      // The adults' own list, or the kids' menu at a time of their own.
+      made.push({ key: "adults_food", kind: "food", label: STEP_ADULTS_MENU, detail: null, person: null, assignedToType: "KITCHEN_RESPONSIBLE", clock: adultsAt, home: "kitchen" });
     }
     const schedule = Array.isArray(kitchen.serviceSchedule) ? kitchen.serviceSchedule : [];
     const seenBlocks = new Set<string>();
@@ -264,7 +269,8 @@ export function beoMadeSteps(src: BeoTimelineSource): MadeStep[] {
         key: `kitchen_service::${idx}`,
         kind: "food",
         label: text(b.label) || STEP_FOOD_SERVICE,
-        detail: servedOf(kitchenLinesOf(b.items)),
+        // A block's dishes print nowhere else on the page: its first three, as they printed before.
+        detail: servedOf(kitchenLinesOf(b.items), SERVICE_BLOCK_DISHES),
         person: null,
         assignedToType: "KITCHEN_RESPONSIBLE",
         clock: beoClockOf(b.time),
@@ -277,7 +283,7 @@ export function beoMadeSteps(src: BeoTimelineSource): MadeStep[] {
     const drinks = kitchenLinesOf(bar.items);
     const barAt = beoClockOf(bar.serviceTime);
     if (barAt || drinks.length > 0) {
-      made.push({ key: "bar_service", kind: "food", label: STEP_DRINKS, detail: servedOf(drinks), person: null, assignedToType: "PARTY_HOST", clock: barAt, home: "bar" });
+      made.push({ key: "bar_service", kind: "food", label: STEP_DRINKS, detail: null, person: null, assignedToType: "PARTY_HOST", clock: barAt, home: "bar" });
     }
   }
   if (kitchen?.cakeMode && kitchen.cakeMode !== "NONE") {
@@ -379,12 +385,16 @@ export function buildBeoTimeline(src: BeoTimelineSource): BeoTimeline {
   return { steps: all, untimed };
 }
 
-/** The steps with no time that no other part of the BEO shows: listed beside the timeline, never given a time. */
+/**
+ * The steps with no time that no other part of the BEO shows: a row typed by hand on a party with
+ * no start (it is kept, never given a time). An activity with no time stays where the activities
+ * are shown (the print's Entertainment part, the editor's acts), as it did before the one timeline.
+ */
 export function untimedBesideTimeline(timeline: BeoTimeline): BeoUntimedStep[] {
-  return timeline.untimed.filter((u) => u.home === "timeline" || u.home === "entertainment");
+  return timeline.untimed.filter((u) => u.home === "timeline");
 }
 
-/** A step in one line, as the readers print it: "Kids' menu served: 3x Margherita" or "Bubble show · Party host". */
+/** A step in one line, as the readers print it: "Cake moment: Our cake" or "Bubble show · Party host". */
 export function timelineStepLine(step: { label: string; detail: string | null; person: string | null }): string {
   return `${step.label}${step.detail ? `: ${step.detail}` : ""}${step.person ? ` · ${step.person}` : ""}`;
 }

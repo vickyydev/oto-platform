@@ -569,7 +569,7 @@ export interface BeoPdfData {
   till?: TillBillingReading;
   /**
    * SCRUM-1027: the party's one timeline as the system makes it (shared/beoTimeline.ts), in order:
-   * each step's time, what happens, what is served and its person.
+   * each step's time, what happens, its few words (what the cake is) and its person.
    */
   timeline?: {
     time: string;
@@ -602,9 +602,10 @@ export interface BeoPdfData {
 
 /**
  * SCRUM-1027: the party's one timeline as the PDF prints it (shared/beoTimeline.ts): each step's
- * time, what happens, what is served and its person, in the order the system made it; and the
- * steps with no time that no other part of the page shows (a typed row on a party with no start,
- * an activity with no time), listed, never given a time.
+ * time, what happens, its few words and its person, in the order the system made it (a food step
+ * says the food is served; its dishes and drinks print once, in the Kitchen and the Bar); and a
+ * typed row on a party with no start, which no other part of the page shows, listed, never given a
+ * time (an activity with no time says so in the Entertainment part).
  */
 export function beoPdfTimelineOf(timeline: BeoTimeline): Pick<BeoPdfData, "timeline" | "timelineUntimed"> {
   return {
@@ -687,12 +688,14 @@ export function beoPdfFooterTemplate(data: Pick<BeoPdfData, "eventTitle" | "even
  *      package, what it includes as its snapshot stores it, its lines and the till's money);
  *   2. the ONE timeline the system makes (SCRUM-1027);
  *   3. two columns: KITCHEN on the left (the kids' menu; the adults' menu as their own list when
- *      they eat differently, or one line when they eat the kids'; plainly "no food" when there is
- *      none); SETUP, BAR, ENTERTAINMENT, CAKE and NOTES on the right.
+ *      they eat differently, or one line when they eat the kids'; "Not Needed" when the kitchen is
+ *      set so); SETUP, BAR, ENTERTAINMENT, CAKE and NOTES on the right (the whole width when there
+ *      is no Kitchen to print).
  * Nothing is invented: every name, count, time, person and amount is the stored BEO's or the
  * till's; a dish with no count is one (beoQuantityOf); prices print where they printed before.
- * Long orders run onto the next page row by row: no part is held whole, a heading never ends a
- * page alone, and every page's foot names the party and its page (beoPdfFooterTemplate). The line
+ * Long orders run onto the next page row by row: no part is held whole (in either column), a
+ * heading never ends a page alone, and every page's foot names the party and its page
+ * (beoPdfFooterTemplate). The line
  * saying when the page was made sits under the park's name, where it can never take a page alone.
  */
 export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
@@ -728,6 +731,8 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
   // ── 1. The header ───────────────────────────────────────────────────────────────────────────────
   // The party's facts as the page printed them before (Event Details, Party Host), in one box. The
   // date, time and room print once, in the title band. SCRUM-978: a host line only with a name in it.
+  // Read row by row in pairs, as the brief's drawing groups them: the child and the age, the planned
+  // children and adults, the host and the backup; then the contact.
   const host = data.partyHost;
   // SCRUM-1031 prints the expected extra guests and the socks arrangement here once the BEO stores
   // them; until then this place holds nothing and prints nothing.
@@ -735,14 +740,14 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
   const headerFacts = [
     fact('Child', data.childName),
     fact('Kid Turning Age', data.kidTurningAge ?? undefined),
-    fact('Booking Name', data.bookingName),
-    fact('Parent', data.parentName),
-    fact('WhatsApp', data.whatsappPhone),
     fact('Children', data.numChildren || undefined),
     fact('Adults', data.numAdults || undefined),
     fact('Party Host', host?.assignedName),
-    fact('Backup', host?.backupName),
     host?.roleName && !host.assignedName ? fact('Host role', host.roleName) : '',
+    fact('Backup', host?.backupName),
+    fact('Booking Name', data.bookingName),
+    fact('Parent', data.parentName),
+    fact('WhatsApp', data.whatsappPhone),
     ...laterHeaderFacts,
   ].filter(Boolean);
   const hostNotesHtml = host?.notes ? `<p class="notes">${s(host.notes)}</p>` : '';
@@ -757,6 +762,8 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
   // Party Details' lines are printed as written, with no price and no sum of the app's own.
   // SCRUM-1028: the box sits in the header beside the party's facts and says what the package
   // includes as its snapshot stores it ("Included: 10 kids + 4 adults, <the package's summary>").
+  // The till's money line prints where it printed before (Party Details or the till's figures): a
+  // party with only a package snapshot shows the package and what it includes, nothing more.
   const packageHtml = (() => {
     const pd = data.partyDetails;
     const till = tillFiguresOf(data.till);
@@ -793,7 +800,7 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
             </tr>`).join('')}
           </table>
         ` : ''}
-        ${beoPdfTillMoneyHtml(data.till, pd?.depositDate)}
+        ${pd || till ? beoPdfTillMoneyHtml(data.till, pd?.depositDate) : ''}
         ${pd?.notes ? `<p class="notes">${s(pd.notes)}</p>` : ''}
       </div>
     `;
@@ -801,8 +808,9 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
 
   // ── 2. The one timeline ─────────────────────────────────────────────────────────────────────────
   // SCRUM-1027: the one timeline, in the order the system made it (equal times: party, food,
-  // activity, other); a sort by the clock alone keeps that order. What is served and the step's
-  // person print beside it; a step with no time is listed under it, never given one.
+  // activity, other); a sort by the clock alone keeps that order. A step's person and its few words
+  // (what the cake is) print beside it; the dishes and drinks are not repeated here, the Kitchen and
+  // the Bar list them. A typed step with no time is listed under it, never given one.
   const timelineUntimed = data.timelineUntimed ?? [];
   const timelineHtml = data.timeline?.length || timelineUntimed.length ? `
     <div class="part timeline-part" data-part="timeline">
@@ -842,13 +850,19 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
   type FoodLine = { quantity?: number; itemName?: string; notes?: string; price?: number; included?: boolean; source?: string; productCode?: string };
   // One dish: its count (none stored is one, the owner's answer), its name as stored, its note, and
   // its badge with the price words it printed before (SCRUM-906/970: an EXTRA's price for each item).
-  // A set-menu choice prints its group beside the name ("Margherita (Pizza)"), as before.
+  // SCRUM-1028, the brief: the kitchen reads the chosen dishes by name, without the set menu's
+  // numbering ("Hawaiian", not "Hawaiian (Pizza 1)"). A set-menu choice's note slot holds only its
+  // group's label in brackets (setMenuResolve, tillKitchenEdit; the editor gives a set line no note
+  // of its own), so that note is not printed; any other note prints as before.
   const foodRow = (item: FoodLine, area: "food" | "bar", charge?: BeoExtraCharge) => {
     const isSet = item.source === 'set_menu';
-    const note = item.notes?.trim()
+    const rawNote = item.notes?.trim() ?? '';
+    // Only one label in one pair of brackets: "(Fried rice) · no onion" is a note and prints whole.
+    const groupLabelOnly = isSet && area === 'food' && /^\([^()]*\)$/.test(rawNote);
+    const note = rawNote && !groupLabelOnly
       ? isSet && area === 'food'
-        ? ` ${s(noteInBrackets(item.notes))}`
-        : ` <span class="item-note">${s(noteInBrackets(item.notes))}</span>`
+        ? ` ${s(noteInBrackets(rawNote))}`
+        : ` <span class="item-note">${s(noteInBrackets(rawNote))}</span>`
       : '';
     return `<tr>
       <td class="qty">${beoQuantityOf(item.quantity)}x</td>
@@ -928,22 +942,19 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
     return `<p class="adults-same" data-adults="same">Adults: ${s(ADULTS_SAME_AS_KIDS.toLowerCase())}${adultsFoodTime ? ` &mdash; Service: ${s(adultsFoodTime)}` : ''}</p>`;
   })();
 
-  // A party with no food says so in plain words.
-  const noFoodWords = !kp
-    ? 'No food ordered.'
-    : !foodNeeded
-      ? 'No food for this party: kitchen not needed.'
-      : !kidsMenuHtml && !adultsHtml
-        ? 'No food ordered.'
-        : '';
-  const kitchenHtml = `
+  // The kitchen set to Not Needed says so, in the words it printed before ("Kitchen Plan  Not
+  // Needed"): the stored fact. No kitchen plan, or one with nothing on it, prints no Kitchen at all
+  // (SCRUM-978: a part with nothing in it prints no heading): the BEO does not store that no food
+  // was ordered, and a party whose menu is not entered yet must not tell the kitchen so.
+  const kitchenNotNeeded = !!kp && !foodNeeded;
+  const kitchenNotes = foodNeeded && kp?.notes ? `<p class="notes">${s(kp.notes)}</p>` : '';
+  const kitchenHtml = kitchenNotNeeded || kidsMenuHtml || adultsHtml || kitchenNotes ? `
     <div class="part kitchen-part" data-part="kitchen">
-      <h2>Kitchen</h2>
-      ${noFoodWords ? `<p class="plain" data-no-food>${noFoodWords}</p>` : ''}
+      <h2>Kitchen${kitchenNotNeeded ? ' <span class="badge-outline" data-no-food>Not Needed</span>' : ''}</h2>
       ${kidsMenuHtml}
       ${adultsHtml}
-      ${foodNeeded && kp?.notes ? `<p class="notes">${s(kp.notes)}</p>` : ''}
-    </div>`;
+      ${kitchenNotes}
+    </div>` : '';
 
   // ── 4. The right column: Setup, Bar, Entertainment, Cake, Notes ─────────────────────────────────
   // SCRUM-978: a part with nothing to print prints no heading.
@@ -993,20 +1004,22 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
   // one), its name (the timeline's own words for an act with none) and its own person.
   // The Program and the Activities text of Event Info print here (they printed in Event Details).
   const acts = data.entertainmentActs ?? [];
+  // The person's column only when an act names one (nothing writes a person on an act yet: SCRUM-1032).
+  const actsHavePeople = acts.some((a) => !!a.person?.trim());
   const entertainmentHtml = acts.length || data.programName || data.activities ? `
     <div class="part box" data-part="entertainment">
       <h2>Entertainment</h2>
       ${acts.length ? `
         <table class="timeline-table">
-          <colgroup><col style="width: 52px;" /><col /><col style="width: 34%;" /></colgroup>
+          <colgroup><col style="width: 66px;" /><col />${actsHavePeople ? '<col style="width: 34%;" />' : ''}</colgroup>
           <tbody>
             ${acts.map((a) => {
               const raw = typeof a.startTime === 'string' ? a.startTime.trim() : '';
               const time = beoClockOf(raw)?.time ?? raw;
               return `<tr>
-                <td style="font-weight: 600;">${time ? s(time) : '<span class="item-note">No time set</span>'}</td>
+                <td style="font-weight: 600;">${time ? s(time) : '<span class="item-note" style="white-space: nowrap;">No time set</span>'}</td>
                 <td>${s(a.customName?.trim() || STEP_ACTIVITY)}</td>
-                <td>${a.person?.trim() ? s(a.person.trim()) : ''}</td>
+                ${actsHavePeople ? `<td>${a.person?.trim() ? s(a.person.trim()) : ''}</td>` : ''}
               </tr>`;
             }).join('')}
           </tbody>
@@ -1021,8 +1034,11 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
 
   // The cake has its own part (it printed inside the kitchen before): what it is, how many, INCL or
   // EXTRA with the price it printed with, its time and its notes; and the event's own cake notes.
-  const hasCake = !!kp?.cakeMode && kp.cakeMode !== 'NONE';
-  const cakeHtml = hasCake || data.cakeNotes ? `
+  // Shown when it showed before: with a kitchen plan whose kitchen is needed (the editor hides the
+  // cake when the kitchen is Not Needed). The timeline keeps the cake moment, as it always has.
+  const hasCake = foodNeeded && !!kp?.cakeMode && kp.cakeMode !== 'NONE';
+  const eventCakeNotes = foodNeeded ? data.cakeNotes : undefined;
+  const cakeHtml = hasCake || eventCakeNotes ? `
     <div class="part box" data-part="cake">
       <h2>Cake</h2>
       ${hasCake && kp ? `
@@ -1034,7 +1050,7 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
           ${kp.cakeNotes ? ` &mdash; ${s(kp.cakeNotes)}` : ''}
         </p>
       ` : ''}
-      ${data.cakeNotes ? `<p class="notes"><strong>Cake Notes:</strong> ${s(data.cakeNotes)}</p>` : ''}
+      ${eventCakeNotes ? `<p class="notes"><strong>Cake Notes:</strong> ${s(eventCakeNotes)}</p>` : ''}
     </div>
   ` : '';
 
@@ -1066,7 +1082,7 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
     body {
       font-family: ${BEO_FONT_STACK};
       font-size: 11px;
-      line-height: 1.35;
+      line-height: 1.25;
       color: #1a202c;
     }
     td, p, .info-value, h3 { overflow-wrap: break-word; word-break: normal; }
@@ -1091,16 +1107,17 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
       display: inline-block; padding: 1px 6px; background: #ebf8ff;
       color: #2b6cb0; border-radius: 3px; font-size: 9px; font-weight: 600; text-transform: uppercase;
     }
-    .header-band { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 10px; }
+    .header-band { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 8px; }
     .facts { flex: 1 1 0; min-width: 0; border: 1px solid #cbd5e0; border-radius: 4px; padding: 6px 8px; break-inside: avoid; }
     .pos-box { flex: 0 0 44%; min-width: 0; border: 1px solid #cbd5e0; border-radius: 4px; padding: 6px 8px; background: #f7fafc; break-inside: avoid; }
     .header-band > .pos-box:only-child { flex: 1 1 auto; }
     .pkg-included { font-size: 10px; color: #4a5568; background: #edf2f7; border-radius: 3px; padding: 2px 6px; margin-bottom: 4px; }
-    .part { margin-bottom: 10px; }
-    .box { break-inside: avoid; }
+    .part { margin-bottom: 8px; }
+    .box { break-inside: auto; }
+    .badge-outline { font-size: 9px; font-weight: 600; color: #718096; border: 1px solid #cbd5e0; padding: 0 4px; border-radius: 2px; margin-left: 6px; text-transform: none; letter-spacing: 0; }
     h2 {
       font-size: 12px; font-weight: 700; color: #1a202c; text-transform: uppercase; letter-spacing: 0.5px;
-      border-bottom: 1px solid #cbd5e0; padding-bottom: 2px; margin-bottom: 5px;
+      border-bottom: 1px solid #cbd5e0; padding-bottom: 2px; margin-bottom: 4px;
       break-after: avoid; page-break-after: avoid;
     }
     .pos-box h2 { font-size: 11px; margin-bottom: 4px; }
@@ -1124,7 +1141,8 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
     .menu-table { width: 100%; border-collapse: collapse; margin: 2px 0 6px 0; table-layout: fixed; }
     .menu-table td { padding: 1px 4px; font-size: 11px; vertical-align: top; }
     .menu-table .qty-col { width: 30px; }
-    .menu-table .price-col-w { width: 34%; }
+    .menu-table .price-col-w { width: 40%; }
+    .col-right .menu-table .price-col-w { width: 46%; }
     .menu-table .qty { font-weight: 600; text-align: right; color: #4a5568; }
     .menu-table .price-col { text-align: right; }
     .pos-table .badge-col { width: 56px; text-align: right; }
@@ -1144,7 +1162,7 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
     .note-title { font-weight: 600; font-size: 10px; color: #4a5568; break-after: avoid; }
     .note-text { font-size: 11px; white-space: pre-wrap; }
     .columns { display: flex; gap: 14px; align-items: flex-start; }
-    .col-left { flex: 0 0 55%; min-width: 0; }
+    .col-left { flex: 0 0 50%; min-width: 0; }
     .col-right { flex: 1 1 0; min-width: 0; }
     .generated { font-size: 8px; color: #a0aec0; margin-top: 2px; }
   </style>
@@ -1174,9 +1192,9 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
   ${timelineHtml}
 
   <div class="columns">
-    <div class="col-left">
+    ${kitchenHtml ? `<div class="col-left">
       ${kitchenHtml}
-    </div>
+    </div>` : ''}
     <div class="col-right">
       ${setupHtml}
       ${barHtml}
