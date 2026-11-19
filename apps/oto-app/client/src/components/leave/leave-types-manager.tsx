@@ -18,6 +18,8 @@ export type LeaveType = {
   code: string;
   name: string;
   isActive: boolean;
+  /** Staff do not see the type; a manager records it for them (SCRUM-1037). */
+  managersOnly: boolean;
   accrualMethod: LeaveAccrualMethod;
   annualDays: number;
   waitingMonths: number;
@@ -31,6 +33,7 @@ const emptyForm: LeaveTypeForm = {
   code: "",
   name: "",
   isActive: true,
+  managersOnly: false,
   accrualMethod: "YEARLY",
   annualDays: 0,
   waitingMonths: 0,
@@ -88,6 +91,7 @@ export function LeaveTypesManager() {
       code: type.code,
       name: type.name,
       isActive: type.isActive,
+      managersOnly: type.managersOnly ?? false,
       accrualMethod: type.accrualMethod,
       annualDays: type.annualDays ?? 0,
       waitingMonths: type.waitingMonths ?? 0,
@@ -130,6 +134,7 @@ export function LeaveTypesManager() {
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-medium">{type.name}</span>
                       <Badge variant={type.isActive ? "default" : "secondary"}>{type.isActive ? "Active" : "Disabled"}</Badge>
+                      <Badge variant={type.managersOnly ? "secondary" : "outline"} data-testid={`leave-type-audience-${type.code}`}>{type.managersOnly ? "Managers only" : "Staff can see"}</Badge>
                       <Badge variant="outline">{type.code}</Badge>
                     </div>
                     <p className="mt-1 text-sm text-muted-foreground">
@@ -167,6 +172,10 @@ export function LeaveTypesManager() {
               <Label htmlFor="leave-type-code">Booking code</Label>
               <Input id="leave-type-code" value={form.code} onChange={(event) => setForm((current) => ({ ...current, code: event.target.value }))} placeholder="e.g. ANNUAL" maxLength={60} disabled={!!editing} />
               <p className="text-xs text-muted-foreground">Used to store time-off records. Existing codes are preserved when a name changes.</p>
+            </div>
+            <div className="flex items-center justify-between gap-3 rounded-md border p-3">
+              <div><Label htmlFor="leave-type-managers-only">Managers only</Label><p className="text-xs text-muted-foreground">Staff do not see this leave type. A manager records it for them. Leave already taken still shows to the person.</p></div>
+              <Switch id="leave-type-managers-only" data-testid="switch-leave-type-managers-only" checked={form.managersOnly} onCheckedChange={(checked) => setForm((current) => ({ ...current, managersOnly: checked }))} />
             </div>
             <div className="grid gap-2">
               <Label>How does this leave accrue?</Label>

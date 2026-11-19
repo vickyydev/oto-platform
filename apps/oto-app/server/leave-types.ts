@@ -64,7 +64,9 @@ function isWorkday(date: Date, weeklyOffDays: number[]): boolean {
 
 /**
  * A park group's catalogue, made where it is missing, and the openings of the
- * people who predate it. Runs migration 0018's functions; both leave what is
+ * people who predate it. Runs migration 0018's functions (the seed as 0053
+ * replaced it: Sick Leave, Business Days and Unpaid Leave for managers only,
+ * Training and Other made switched off, SCRUM-1037); both leave what is
  * already there alone.
  */
 export async function ensureTenantLeaveTypes(tenantId: string): Promise<void> {
@@ -127,13 +129,13 @@ export async function createTenantLeaveType(tenantId: string, input: Omit<Insert
 }
 
 type LeaveTypeChanges = Partial<Pick<InsertLeaveType,
-  "name" | "isActive" | "accrualMethod" | "annualDays" | "waitingMonths" | "prorateByStartDate" | "daysWorkedRequired" | "daysOffEarned">>;
+  "name" | "isActive" | "managersOnly" | "accrualMethod" | "annualDays" | "waitingMonths" | "prorateByStartDate" | "daysWorkedRequired" | "daysOffEarned">>;
 
 export async function updateTenantLeaveType(tenantId: string, id: string, input: LeaveTypeChanges): Promise<LeaveType | undefined> {
   await ensureTenantLeaveTypes(tenantId);
   // Only the type's own fields: a code never changes (time-off rows store it).
   const changes: LeaveTypeChanges = {};
-  for (const key of ["name", "isActive", "accrualMethod", "annualDays", "waitingMonths", "prorateByStartDate", "daysWorkedRequired", "daysOffEarned"] as const) {
+  for (const key of ["name", "isActive", "managersOnly", "accrualMethod", "annualDays", "waitingMonths", "prorateByStartDate", "daysWorkedRequired", "daysOffEarned"] as const) {
     if (input[key] !== undefined) (changes as Record<string, unknown>)[key] = input[key];
   }
   const [type] = await db.update(leaveTypes).set({ ...changes, updatedAt: new Date() })
