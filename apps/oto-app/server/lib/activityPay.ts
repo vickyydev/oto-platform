@@ -10,18 +10,17 @@ import { canViewHrSalary, containsHrPayFields, redactHrPay, type HrSalarySubject
  * a salary change, whose words and metadata carry the figures, reached anybody
  * with that branch in reach.
  *
- *  - Entries about pay (`PAY_ACTIVITY_TYPES`: a salary change, whose words
- *    carry the old and new figures) are left out for a reader below the
- *    salary roles: not listed, not counted, not found by a filter, a search
- *    or an employee's own history. A new entry type that carries pay joins
- *    this list.
+ *  - Entries about pay (`PAY_ACTIVITY_TYPES`: a salary change, and a single
+ *    shift switched between the old contract and a casual day rate) are left
+ *    out for a reader below the salary roles: not listed, not counted, not
+ *    found by a filter, a search or an employee's own history.
  *  - Any other entry whose metadata carries a pay field (the app's own list of
  *    pay keys, e.g. a contract generated with a salary change among its
  *    employee changes) is kept, with those fields taken out of the metadata,
  *    as every other HR answer withholds them (`redactHrPay`).
  *  - Nothing stored is deleted or changed: a salary role reads the log whole.
  */
-export const PAY_ACTIVITY_TYPES: readonly ActivityType[] = ["salary_change"];
+export const PAY_ACTIVITY_TYPES: readonly ActivityType[] = ["salary_change", "single_shift_pay_changed"];
 
 /** The entry types this reader is not given: none for a salary role. */
 export function activityTypesWithheldFrom(subject: HrSalarySubject): readonly ActivityType[] {
