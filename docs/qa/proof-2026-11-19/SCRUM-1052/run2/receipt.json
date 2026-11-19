@@ -1,0 +1,694 @@
+{
+  "ticket": "SCRUM-1052",
+  "sha": "2e17b1727c5e3d2cb1a8700c8f7963d9dc77f7b5",
+  "startedAt": "2026-11-19T13:54:02.822Z",
+  "phase": "finished",
+  "passes": [
+    "s",
+    "w",
+    "c",
+    "d"
+  ],
+  "points": {
+    "1053-short-form": {
+      "pass": true,
+      "pictures": [
+        "SCRUM-1053/b1-display-short-form-600x1024.png",
+        "SCRUM-1053/b2-display-short-form-600x1024-done-line.png",
+        "SCRUM-1053/b3-display-short-form-768x1024.png",
+        "SCRUM-1053/b3-display-short-form-1024x768.png",
+        "SCRUM-1053/b5-display-short-form-600x1024-th.png",
+        "SCRUM-1053/b5-display-short-form-600x1024-ru.png"
+      ],
+      "shows": "A returning family's short form: \"Welcome back\", the details-saved line, no names asked; the still-needed line names no photo while staff decide the last one",
+      "seen": {
+        "before": {
+          "heading": "Welcome back",
+          "subtitle": "Your children's details are saved. Tick the agreements below so our team can keep them safe.",
+          "missing": "Still needed before Done: your consent · each confirmation",
+          "stepPills": 0,
+          "nameBoxes": 0,
+          "checkboxes": 4,
+          "done": false
+        },
+        "staffChoice": {
+          "shown": 1,
+          "stillMatches": 1
+        },
+        "sizes": {
+          "768x1024": {
+            "sideways": false
+          },
+          "1024x768": {
+            "sideways": false
+          },
+          "600x1024": {
+            "sideways": false
+          }
+        },
+        "languages": {
+          "th": {
+            "heading": "ยินดีต้อนรับกลับมา",
+            "subtitle": "ข้อมูลของลูก ๆ ของคุณบันทึกไว้แล้ว ติ๊กข้อตกลงด้านล่าง เพื่อให้ทีมงานของเราดูแลความปลอดภัยได้"
+          },
+          "ru": {
+            "heading": "С возвращением",
+            "subtitle": "Данные ваших детей сохранены. Отметьте согласия ниже, чтобы наша команда могла обеспечить их безопасность."
+          }
+        }
+      }
+    },
+    "1052-waiver": {
+      "pass": true,
+      "pictures": [
+        "SCRUM-1052/w1-gate-waiver-offered.png",
+        "SCRUM-1052/w2-gate-waived-sibling-registered-no-fee.png",
+        "SCRUM-1053/b1-display-short-form-600x1024.png",
+        "SCRUM-1052/w3-display-sibling-agreements-ticked.png",
+        "SCRUM-1052/w4-payment-step-after-waiver.png",
+        "SCRUM-1052/w5-paid-cash-sale-saved.png",
+        "SCRUM-1052/w6-checked-in.png"
+      ],
+      "shows": "After the waiver the older sibling has the short no-fee form; the waiver names that registration; the cash sale is saved; the sibling is checked in and the younger child has her band",
+      "seen": {
+        "registrationStatus": 200,
+        "registrationId": "01a1f417-755c-7815-8f26-1f8c20941a57",
+        "sentChildren": [
+          {
+            "name": "ZZ TEST Tom 12",
+            "ageYears": 10,
+            "service": "none"
+          }
+        ],
+        "photoReuseSent": 1,
+        "afterTicks": {
+          "heading": "Welcome back",
+          "subtitle": "Your children's details are saved. Tick the agreements below so our team can keep them safe.",
+          "missing": "",
+          "stepPills": 0,
+          "nameBoxes": 0,
+          "checkboxes": 4,
+          "done": false
+        },
+        "saleId": "01a1f417-767b-71d6-a07c-6272821de525",
+        "saleStatus": "finalised",
+        "bands": [
+          {
+            "childName": "ZZ TEST Mai 12",
+            "kind": "kid"
+          },
+          {
+            "childName": "ZZ TEST Tom 12",
+            "kind": "kid"
+          }
+        ],
+        "stays": [
+          {
+            "name": "ZZ TEST Tom 12",
+            "service": "none",
+            "status": "in_park"
+          }
+        ],
+        "waivers": [
+          {
+            "namesRegistration": true,
+            "child": "ZZ TEST Mai 12",
+            "sibling": "ZZ TEST Tom 12",
+            "waivedRequirement": "drop_off"
+          }
+        ],
+        "gateSaysNoFee": true
+      }
+    },
+    "1053-own-half": {
+      "pass": true,
+      "pictures": [
+        "SCRUM-1053/c1-till-half-short-form-note-held.png",
+        "SCRUM-1053/c2-till-half-no-allergies-tick-asked.png",
+        "SCRUM-1053/c3-till-half-no-allergies-ticked.png"
+      ],
+      "shows": "The till's own customer half: emptying a saved child's note asks the \"no allergies or medical needs\" tick, and Done waits for it",
+      "seen": {
+        "held": {
+          "box": "ZZ TEST peanuts",
+          "tick": 0,
+          "ticked": null,
+          "done": false,
+          "missing": "Still needed before Done: your consent · each confirmation"
+        },
+        "emptied": {
+          "box": "",
+          "tick": 1,
+          "ticked": "unchecked",
+          "done": false,
+          "missing": "Tick that ZZ TEST Tom 12 has no allergies or medical needs, or write them in."
+        },
+        "ticked": {
+          "box": "",
+          "tick": 1,
+          "ticked": "checked",
+          "done": false,
+          "missing": "Still needed before Done: your consent · each confirmation"
+        },
+        "savedAfter": [
+          {
+            "name": "ZZ TEST Mai 12",
+            "hasAllergyNote": false
+          },
+          {
+            "name": "ZZ TEST Tom 12",
+            "hasAllergyNote": true
+          }
+        ]
+      }
+    },
+    "1053-console": {
+      "pass": true,
+      "pictures": [
+        "SCRUM-1053/d1-console-expat-no-expiry-refused.png"
+      ],
+      "shows": "The Console's member form refuses an Expat rate document with no expiry date before saving; the member keeps the Tourist rate",
+      "seen": {
+        "proof": "Passport",
+        "expiry": "",
+        "errorShown": 1,
+        "dialogStillOpen": true,
+        "tierAfter": "tourist"
+      }
+    }
+  },
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/:id/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/:id/revoke",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    }
+  ],
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1f416-0df9-7922-90e6-3757e49eb4ca",
+      "name": "ZZ TEST SCRUM-1052 proof till 1795096442831",
+      "prefix": "Z05202"
+    },
+    {
+      "kind": "display",
+      "id": "01a1f416-2469-7c2d-a625-d82dc169d608"
+    },
+    {
+      "kind": "member",
+      "id": "01a1f416-3a06-7026-aae1-bf99fbad6ebd"
+    },
+    {
+      "kind": "registration",
+      "id": "01a1f416-735b-7bbb-9af8-6ff2c8e25f56"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1f416-798f-701d-858e-ab409381715c"
+    },
+    {
+      "kind": "registration",
+      "id": "01a1f417-755c-7815-8f26-1f8c20941a57"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1f417-767b-71d6-a07c-6272821de525"
+    }
+  ],
+  "checks": {
+    "firstVisit": {
+      "registrationId": "01a1f416-735b-7bbb-9af8-6ff2c8e25f56",
+      "sentChildren": [
+        {
+          "name": "ZZ TEST Mai 12",
+          "ageYears": 6,
+          "service": "drop_off"
+        },
+        {
+          "name": "ZZ TEST Tom 12",
+          "ageYears": 10,
+          "service": "none"
+        }
+      ],
+      "saleId": "01a1f416-798f-701d-858e-ab409381715c",
+      "saved": [
+        {
+          "name": "ZZ TEST Mai 12",
+          "hasAllergyNote": false
+        },
+        {
+          "name": "ZZ TEST Tom 12",
+          "hasAllergyNote": true
+        }
+      ]
+    },
+    "waiver": {
+      "registrationStatus": 200,
+      "registrationId": "01a1f417-755c-7815-8f26-1f8c20941a57",
+      "sentChildren": [
+        {
+          "name": "ZZ TEST Tom 12",
+          "ageYears": 10,
+          "service": "none"
+        }
+      ],
+      "photoReuseSent": 1,
+      "afterTicks": {
+        "heading": "Welcome back",
+        "subtitle": "Your children's details are saved. Tick the agreements below so our team can keep them safe.",
+        "missing": "",
+        "stepPills": 0,
+        "nameBoxes": 0,
+        "checkboxes": 4,
+        "done": false
+      },
+      "saleId": "01a1f417-767b-71d6-a07c-6272821de525",
+      "saleStatus": "finalised",
+      "bands": [
+        {
+          "childName": "ZZ TEST Mai 12",
+          "kind": "kid"
+        },
+        {
+          "childName": "ZZ TEST Tom 12",
+          "kind": "kid"
+        }
+      ],
+      "stays": [
+        {
+          "name": "ZZ TEST Tom 12",
+          "service": "none",
+          "status": "in_park"
+        }
+      ],
+      "waivers": [
+        {
+          "namesRegistration": true,
+          "child": "ZZ TEST Mai 12",
+          "sibling": "ZZ TEST Tom 12",
+          "waivedRequirement": "drop_off"
+        }
+      ],
+      "gateSaysNoFee": true
+    },
+    "ownHalf": {
+      "held": {
+        "box": "ZZ TEST peanuts",
+        "tick": 0,
+        "ticked": null,
+        "done": false,
+        "missing": "Still needed before Done: your consent · each confirmation"
+      },
+      "emptied": {
+        "box": "",
+        "tick": 1,
+        "ticked": "unchecked",
+        "done": false,
+        "missing": "Tick that ZZ TEST Tom 12 has no allergies or medical needs, or write them in."
+      },
+      "ticked": {
+        "box": "",
+        "tick": 1,
+        "ticked": "checked",
+        "done": false,
+        "missing": "Still needed before Done: your consent · each confirmation"
+      },
+      "savedAfter": [
+        {
+          "name": "ZZ TEST Mai 12",
+          "hasAllergyNote": false
+        },
+        {
+          "name": "ZZ TEST Tom 12",
+          "hasAllergyNote": true
+        }
+      ]
+    },
+    "console": {
+      "proof": "Passport",
+      "expiry": "",
+      "errorShown": 1,
+      "dialogStillOpen": true,
+      "tierAfter": "tourist"
+    }
+  },
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": "reception signs in at the own till",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "console",
+      "at": "d: the Console, the member form, Expat with no expiry date",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": "clean up",
+      "kind": "http",
+      "text": "GET /api/stations/:id/displays 401"
+    }
+  ],
+  "cleanup": [
+    {
+      "kind": "released",
+      "id": "01a1f416-735b-7bbb-9af8-6ff2c8e25f56",
+      "children": [
+        "out",
+        "out"
+      ]
+    },
+    {
+      "kind": "released",
+      "id": "01a1f417-755c-7815-8f26-1f8c20941a57",
+      "children": [
+        "out"
+      ]
+    },
+    {
+      "kind": "display",
+      "id": "01a1f416-2469-7c2d-a625-d82dc169d608",
+      "revoked": true
+    },
+    {
+      "kind": "released",
+      "id": "01a1f416-735b-7bbb-9af8-6ff2c8e25f56",
+      "children": [
+        "out",
+        "out"
+      ]
+    },
+    {
+      "kind": "released",
+      "id": "01a1f417-755c-7815-8f26-1f8c20941a57",
+      "children": [
+        "out"
+      ]
+    },
+    {
+      "kind": "sales-read-back",
+      "sales": [
+        {
+          "id": "01a1f417-767b-71d6-a07c-6272821de525",
+          "status": "finalised",
+          "grossSatang": 138000
+        },
+        {
+          "id": "01a1f416-798f-701d-858e-ab409381715c",
+          "status": "finalised",
+          "grossSatang": 160500
+        }
+      ]
+    },
+    {
+      "kind": "station",
+      "id": "01a1f416-0df9-7922-90e6-3757e49eb4ca",
+      "archived": true
+    },
+    {
+      "kind": "member",
+      "id": "01a1f416-3a06-7026-aae1-bf99fbad6ebd",
+      "archived": true
+    },
+    {
+      "kind": "till-session",
+      "signedOut": true
+    },
+    {
+      "kind": "admin-session",
+      "signedOut": true
+    }
+  ],
+  "deployments": {
+    "oto-api-staging": {
+      "id": "dep-dbvfn4p5efls73dmkdv0",
+      "status": "live",
+      "sha": "2e17b1727c5e3d2cb1a8700c8f7963d9dc77f7b5",
+      "containsProvedSha": true
+    },
+    "oto-pos-staging": {
+      "id": "dep-dbvfqc6c6qcc73b5i4ng",
+      "status": "live",
+      "sha": "2e17b1727c5e3d2cb1a8700c8f7963d9dc77f7b5"
+    },
+    "oto-pos-web-staging": {
+      "id": "dep-dbvfqcd9el5s73bopvv0",
+      "status": "live",
+      "sha": "2e17b1727c5e3d2cb1a8700c8f7963d9dc77f7b5",
+      "containsProvedSha": true
+    },
+    "oto-console-staging": {
+      "id": "dep-dbvfqcrl550s739lc02g",
+      "status": "live",
+      "sha": "2e17b1727c5e3d2cb1a8700c8f7963d9dc77f7b5",
+      "containsProvedSha": true
+    }
+  },
+  "passed": true,
+  "finishedAt": "2026-11-19T13:56:20.828Z"
+}
