@@ -919,54 +919,54 @@ export function ChatPanel({
               where === 'sheet' && <p className="px-1 text-[13px] text-ink-muted">The deposit is paid: Book the date is at the top of the chat.</p>
             ) : (
               <>
-              <div className="grid grid-cols-2 gap-2">
-                {mayBook ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (where === 'sheet') onCloseDetails();
-                      askBookDate(false);
-                    }}
-                    disabled={busy !== null}
-                    title="Block this date in the Events calendar"
-                    className="inline-flex h-12 items-center justify-center gap-2 rounded-[13px] bg-coral px-3 text-[14.5px] font-bold text-on-coral hover:bg-coral/90 disabled:opacity-60"
-                  >
-                    <Calendar aria-hidden className="h-4 w-4" />
-                    Book the date
-                  </button>
-                ) : (
-                  <PendingControl
-                    reason={bookOffReason}
-                    label="Book the date"
-                    className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[13px] bg-coral px-3 text-[14.5px] font-bold text-on-coral"
-                  >
-                    <Calendar aria-hidden className="h-4 w-4" />
-                    Book the date
-                  </PendingControl>
-                )}
-                {mayBook ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (where === 'sheet') onCloseDetails();
-                      askBookDate(true);
-                    }}
-                    disabled={busy !== null}
-                    title="Book the date, then open its BEO in the OTO App"
-                    className={`${SECONDARY_BUTTON} h-12`}
-                  >
-                    {busy === 'beo' ? <Loader2 aria-hidden className="h-4 w-4 animate-spin" /> : <FileText aria-hidden className="h-4 w-4" />}
-                    Create BEO
-                  </button>
-                ) : (
-                  <PendingControl reason={bookOffReason} label="Create BEO" className={`${SECONDARY_BUTTON} h-12 w-full`}>
-                    <FileText aria-hidden className="h-4 w-4" />
-                    Create BEO
-                  </PendingControl>
-                )}
-              </div>
-              {/* Why both are off, said on the page and not only in a tooltip (SCRUM-1016). */}
-              {!mayBook && <p className="px-1 text-[12.5px] text-ink-muted" data-testid="book-off-reason">{bookOffReason}</p>}
+                <div className="grid grid-cols-2 gap-2">
+                  {mayBook ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (where === 'sheet') onCloseDetails();
+                        askBookDate(false);
+                      }}
+                      disabled={busy !== null}
+                      title="Block this date in the Events calendar"
+                      className="inline-flex h-12 items-center justify-center gap-2 rounded-[13px] bg-coral px-3 text-[14.5px] font-bold text-on-coral hover:bg-coral/90 disabled:opacity-60"
+                    >
+                      <Calendar aria-hidden className="h-4 w-4" />
+                      Book the date
+                    </button>
+                  ) : (
+                    <PendingControl
+                      reason={bookOffReason}
+                      label="Book the date"
+                      className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[13px] bg-coral px-3 text-[14.5px] font-bold text-on-coral"
+                    >
+                      <Calendar aria-hidden className="h-4 w-4" />
+                      Book the date
+                    </PendingControl>
+                  )}
+                  {mayBook ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (where === 'sheet') onCloseDetails();
+                        askBookDate(true);
+                      }}
+                      disabled={busy !== null}
+                      title="Book the date, then open its BEO in the OTO App"
+                      className={`${SECONDARY_BUTTON} h-12`}
+                    >
+                      {busy === 'beo' ? <Loader2 aria-hidden className="h-4 w-4 animate-spin" /> : <FileText aria-hidden className="h-4 w-4" />}
+                      Create BEO
+                    </button>
+                  ) : (
+                    <PendingControl reason={bookOffReason} label="Create BEO" className={`${SECONDARY_BUTTON} h-12 w-full`}>
+                      <FileText aria-hidden className="h-4 w-4" />
+                      Create BEO
+                    </PendingControl>
+                  )}
+                </div>
+                {/* Why both are off, said on the page and not only in a tooltip (SCRUM-1016). */}
+                {!mayBook && <p className="px-1 text-[12.5px] text-ink-muted" data-testid="book-off-reason">{bookOffReason}</p>}
               </>
             )}
             {event && (
