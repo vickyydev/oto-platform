@@ -20801,7 +20801,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
+          "onDelete": "restrict",
           "onUpdate": "no action"
         },
         "single_shift_invitations_branch_id_branches_id_fk": {

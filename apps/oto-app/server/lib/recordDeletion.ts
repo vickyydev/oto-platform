@@ -211,8 +211,20 @@ export const PAYROLL_KEPT = {
   column: "employee_id",
 };
 
+/**
+ * A former employee's single shifts (SCRUM-1038, ON DELETE RESTRICT): who
+ * invited them and how each shift is paid, kept for the record. Folding a
+ * duplicate profile moves them to the profile kept (lib/employeeFold.ts).
+ */
+export const SINGLE_SHIFTS_KEPT = {
+  singular: "single shift",
+  plural: "single shifts",
+  tables: ["single_shift_invitations"],
+  column: "employee_id",
+};
+
 /** What an employee delete refuses on: kept for the record, ended by offboarding. */
-export const EMPLOYEE_KEEPS = [CONTRACTS_KEPT, TIME_RECORDS_KEPT, PAYROLL_KEPT];
+export const EMPLOYEE_KEEPS = [CONTRACTS_KEPT, TIME_RECORDS_KEPT, PAYROLL_KEPT, SINGLE_SHIFTS_KEPT];
 
 /** History that names an employee: its rows are kept without the name when the employee is deleted. */
 const EMPLOYEE_HISTORY_UNNAMED = ["activity_log", "attention_items", "shifts"];
