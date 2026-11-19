@@ -382,8 +382,9 @@ export function Composer({
           <FileText aria-hidden className="h-[22px] w-[22px]" />
         </button>
         <DictateButton dictation={dictation} disabled={template !== null || busy} />
-        {/* The pill is the box's frame: the box has no padding of its own, so its height is its lines (`composerBox`). */}
-        <span className="flex min-w-0 flex-1 rounded-[22px] border border-field bg-ground px-4 py-[11px] focus-within:outline-2 focus-within:outline-coral">
+        {/* The pill is the box's frame: the box has no padding of its own, so its height is its lines (`composerBox`).
+            A label, so a press anywhere on the 44 px pill, its padding too, puts the caret in the box (SCRUM-1016 review). */}
+        <label data-reply-pill className="flex min-w-0 flex-1 cursor-text rounded-[22px] border border-field bg-ground px-4 py-[11px] focus-within:outline-2 focus-within:outline-coral">
           <textarea
             ref={inputRef}
             rows={1}
@@ -403,7 +404,7 @@ export function Composer({
             placeholder={template ? 'Sending the template above' : replyPlaceholder(conv)}
             className="block w-full min-w-0 resize-none bg-transparent text-[15px] text-ink placeholder:text-ink-muted focus:outline-none disabled:cursor-not-allowed"
           />
-        </span>
+        </label>
         <button
           type="submit"
           disabled={!canSend}
