@@ -192,7 +192,8 @@ export function ChildFoodProvisionPicker({
               onChange={(e) => handleCreditChange(e.target.value)}
               placeholder="0"
               className={cn(
-                'h-14 pl-8 text-2xl font-bold',
+                // SCRUM-1059 — `md:` too: the plain Input drops to text-sm from 768px up.
+                'h-14 pl-8 text-2xl md:text-2xl font-bold',
                 dark && 'border-foreground/10 bg-foreground/5 text-foreground placeholder:text-foreground/30',
               )}
             />
