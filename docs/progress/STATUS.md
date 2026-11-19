@@ -1,3 +1,25 @@
+## 19 November 2026, late night: the counter flow's first landing attempt held; it now lands what is built
+
+- **Drop-off counter flow (SCRUM-1018 to 1021).** All four parts were built and
+  reviewed (two blockers and fourteen major points; the faults were repaired).
+  The landing stage then refused to land because two things were still
+  open: extra food credit on any child ticket was not built, and a number
+  given with no name still shows "New member?" (the owner's choice).
+- **The lead's decision:** neither is a fault; each leaves today's behaviour in
+  place. The branch lands what is built. Extra credit on any child ticket is
+  split out as SCRUM-1048 "Extra food credit on any child ticket, as its own
+  line on the order" and is built next. SCRUM-1019 goes to Testing, not
+  Deployed, until the owner chooses for the no-name case.
+- The lane was resumed at its landing stage (same run, wf_2b410f77-dcd): full
+  gates, main, staging, proof and Jira. Branch `lane/dropoff1017-20261119`
+  at 19073d3b8, 18 commits, merges cleanly onto main.
+- **New points for the owner (his page, R21 and R22):** which food credit is
+  spent first on a band; whether a rate document saved earlier without an
+  expiry date stays valid.
+- Running besides: BEO print (repairs), HR smaller requests (repairs), inbox
+  follow-up (settings pages), family profiles (scripts), the contracts repair
+  (SCRUM-1047).
+
 ## 19 November 2026, night: the old files are copied and show in both apps; contracts do not open yet
 
 - **SCRUM-1046 (copy the old app's stored photos and documents):** production's
