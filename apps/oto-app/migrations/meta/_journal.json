@@ -372,6 +372,13 @@
       "when": 1795098683158,
       "tag": "0054_otoapp_beo_extra_guests_socks",
       "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1795100529650,
+      "tag": "0055_otoapp_beo_activity_people",
+      "breakpoints": true
     }
   ]
 }

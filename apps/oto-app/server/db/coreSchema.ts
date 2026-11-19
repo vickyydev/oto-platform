@@ -16,6 +16,7 @@ import {
   uniqueIndex,
   check,
   time,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -2619,6 +2620,8 @@ export const beoAssignmentTargetTypeEnum = pgEnum("beo_assignment_target_type", 
   "DEPARTMENT",
   "ROLE",
   "USER",
+  // SCRUM-1032: a member of staff from the park's staff list (employees), as the BEO's pickers name them.
+  "EMPLOYEE",
 ]);
 
 export const beoAssignmentTargets = pgTable(
@@ -2630,12 +2633,21 @@ export const beoAssignmentTargets = pgTable(
     departmentId: varchar("department_id").references(() => departments.id),
     roleId: varchar("role_id").references(() => roles.id),
     userId: varchar("user_id").references(() => users.id),
+    // SCRUM-1032 (app migration 0055): the people on an activity. A member of staff by the staff
+    // list's id; a role's number ("2 animators"); the activity that owns the target (its people,
+    // in `sort_order`). A target of before owns none and names one person, as it did.
+    employeeId: varchar("employee_id").references(() => employees.id),
+    headCount: integer("head_count"),
+    entertainmentItemId: uuid("entertainment_item_id").references((): AnyPgColumn => beoEntertainmentItems.id, { onDelete: "cascade" }),
+    sortOrder: integer("sort_order").notNull().default(0),
     notes: text("notes"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
   (t) => [
     index("idx_beo_assignment_targets_tenant").on(t.tenantId),
+    index("idx_beo_assignment_targets_entertainment_item").on(t.entertainmentItemId),
+    check("beo_assignment_targets_head_count_check", sql`${t.headCount} IS NULL OR (${t.headCount} >= 1 AND ${t.headCount} <= 99)`),
   ]
 );
 

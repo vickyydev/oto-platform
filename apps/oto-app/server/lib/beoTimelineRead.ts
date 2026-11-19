@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, or } from "drizzle-orm";
 import {
   beoAssignmentTargets,
   beoBarPlans,
@@ -8,10 +8,12 @@ import {
   beoTimelineItems,
   coreEvents,
   departments,
+  employees,
   roles,
   users,
 } from "@shared/schema";
 import { beoTimedMadeSteps, buildBeoTimeline, type BeoTimeline, type BeoTimelineActivity, type BeoTimelineSource } from "@shared/beoTimeline";
+import { activityPersonWords, type ActivityPerson } from "@shared/beoActivityPeople";
 import { db } from "../db";
 
 /** The event's fields the timeline reads. */
@@ -23,19 +25,43 @@ export interface BeoTimelineEvent {
   suppressedTimelineSources: string[] | null;
 }
 
+/** SCRUM-1032: a stored target's kind as the screens name it (shared/beoActivityPeople.ts). */
+const PERSON_TYPE_OF = { USER: "user", ROLE: "role", DEPARTMENT: "department", EMPLOYEE: "employee" } as const;
+
+type StoredTarget = typeof beoAssignmentTargets.$inferSelect;
+
+/** The id a stored target names, by its kind. */
+const namedIdOf = (t: StoredTarget): string | null =>
+  t.targetType === "USER" ? t.userId : t.targetType === "ROLE" ? t.roleId : t.targetType === "DEPARTMENT" ? t.departmentId : t.employeeId;
+
 /**
- * SCRUM-1027: an activity's own person, as stored for it (`beo_entertainment_items.assignment_target_id`,
- * a person, a role or a department of the event's park group), by the activity's target id. The party's
- * hosts are never put on an activity: only what the activity itself names.
+ * SCRUM-1027, SCRUM-1032: the people of the given activities, each as the screens and the print read
+ * them (shared/beoActivityPeople.ts), by activity id. First the one person an older activity names
+ * by its `assignment_target_id` (marked `kept`: it stays as it was), then the targets the activity
+ * owns (`entertainment_item_id`), in their order. A person, a role or a department of the event's
+ * park group, each named by id whatever their employment now (a member of staff who has left stays
+ * named on the party they were put on); a role with its number. A target whose name cannot be read
+ * is left out, as before. The party's hosts are never put on an activity: only what it names itself.
  */
-async function activityPeopleOf(tenantId: string, targetIds: string[]): Promise<Map<string, string>> {
-  const named = new Map<string, string>();
-  if (targetIds.length === 0) return named;
+export async function activityPeopleOf(
+  tenantId: string,
+  acts: ReadonlyArray<{ id: string; assignmentTargetId: string | null }>,
+): Promise<Map<string, ActivityPerson[]>> {
+  const people = new Map<string, ActivityPerson[]>(acts.map((a) => [a.id, []]));
+  if (acts.length === 0) return people;
+  const keptIds = [...new Set(acts.map((a) => a.assignmentTargetId).filter((id): id is string => !!id))];
+  const actIds = acts.map((a) => a.id);
+  const whose = keptIds.length
+    ? or(inArray(beoAssignmentTargets.id, keptIds), inArray(beoAssignmentTargets.entertainmentItemId, actIds))
+    : inArray(beoAssignmentTargets.entertainmentItemId, actIds);
   const targets = await db.select().from(beoAssignmentTargets)
-    .where(and(inArray(beoAssignmentTargets.id, targetIds), eq(beoAssignmentTargets.tenantId, tenantId)));
-  const userIds = targets.map((t) => t.userId).filter((id): id is string => !!id);
-  const roleIds = targets.map((t) => t.roleId).filter((id): id is string => !!id);
-  const departmentIds = targets.map((t) => t.departmentId).filter((id): id is string => !!id);
+    .where(and(eq(beoAssignmentTargets.tenantId, tenantId), whose))
+    .orderBy(asc(beoAssignmentTargets.sortOrder), asc(beoAssignmentTargets.createdAt));
+  const idsOf = (type: StoredTarget["targetType"]) => [...new Set(targets.filter((t) => t.targetType === type).map(namedIdOf).filter((id): id is string => !!id))];
+  const userIds = idsOf("USER");
+  const roleIds = idsOf("ROLE");
+  const departmentIds = idsOf("DEPARTMENT");
+  const employeeIds = idsOf("EMPLOYEE");
   const userNames = new Map(
     (userIds.length ? await db.select({ id: users.id, name: users.fullName }).from(users).where(inArray(users.id, userIds)) : [])
       .map((u) => [u.id, u.name] as const),
@@ -48,30 +74,69 @@ async function activityPeopleOf(tenantId: string, targetIds: string[]): Promise<
     (departmentIds.length ? await db.select({ id: departments.id, name: departments.name }).from(departments).where(and(inArray(departments.id, departmentIds), eq(departments.tenantId, tenantId))) : [])
       .map((d) => [d.id, d.name] as const),
   );
-  for (const t of targets) {
-    const name = t.targetType === "USER" ? userNames.get(t.userId ?? "")
-      : t.targetType === "ROLE" ? roleNames.get(t.roleId ?? "")
-      : departmentNames.get(t.departmentId ?? "");
-    if (name?.trim()) named.set(t.id, name.trim());
+  // The staff list's own name for a member of staff, as the BEO prints the party's hosts.
+  const employeeNames = new Map(
+    (employeeIds.length
+      ? await db.select({ id: employees.id, nickname: employees.nickname, fullName: employees.fullName }).from(employees).where(and(inArray(employees.id, employeeIds), eq(employees.tenantId, tenantId)))
+      : [])
+      .map((e) => [e.id, e.nickname?.trim() || e.fullName] as const),
+  );
+  const nameOf = (t: StoredTarget): string => {
+    const id = namedIdOf(t) ?? "";
+    const name = t.targetType === "USER" ? userNames.get(id)
+      : t.targetType === "ROLE" ? roleNames.get(id)
+      : t.targetType === "DEPARTMENT" ? departmentNames.get(id)
+      : employeeNames.get(id);
+    return name?.trim() ?? "";
+  };
+  const personOf = (t: StoredTarget, kept: boolean): ActivityPerson | null => {
+    const label = nameOf(t);
+    const id = namedIdOf(t);
+    if (!label || !id) return null;
+    return {
+      type: PERSON_TYPE_OF[t.targetType],
+      id,
+      targetId: t.id,
+      label,
+      count: t.targetType === "ROLE" && typeof t.headCount === "number" ? t.headCount : null,
+      ...(kept ? { kept: true } : {}),
+    };
+  };
+  for (const act of acts) {
+    const list = people.get(act.id)!;
+    const kept = act.assignmentTargetId ? targets.find((t) => t.id === act.assignmentTargetId) : undefined;
+    const keptPerson = kept ? personOf(kept, true) : null;
+    if (keptPerson) list.push(keptPerson);
+    for (const t of targets) {
+      if (t.entertainmentItemId !== act.id || t.id === act.assignmentTargetId) continue;
+      const person = personOf(t, false);
+      if (person) list.push(person);
+    }
   }
-  return named;
+  return people;
 }
 
 /**
- * SCRUM-1028: the event's activities as stored (its `beo_entertainment_items`, in their order), each
- * with its own person: what the timeline reads, and what the Staff BEO's Entertainment part prints.
+ * SCRUM-1028, SCRUM-1032: the event's activities as stored (its `beo_entertainment_items`, in their
+ * order), each with its own people and its note: what the timeline reads, and what the Staff BEO's
+ * Entertainment part prints.
  */
 export async function beoActivitiesOf(
   tenantId: string,
-  acts: ReadonlyArray<{ id: string; customName: string | null; startTime: string | null; assignmentTargetId: string | null }>,
+  acts: ReadonlyArray<{ id: string; customName: string | null; startTime: string | null; assignmentTargetId: string | null; notes?: string | null }>,
 ): Promise<BeoTimelineActivity[]> {
-  const people = await activityPeopleOf(tenantId, [...new Set(acts.map((a) => a.assignmentTargetId).filter((id): id is string => !!id))]);
-  return acts.map((a) => ({
-    id: a.id,
-    customName: a.customName,
-    startTime: a.startTime,
-    person: a.assignmentTargetId ? people.get(a.assignmentTargetId) ?? null : null,
-  }));
+  const people = await activityPeopleOf(tenantId, acts);
+  return acts.map((a) => {
+    const said = (people.get(a.id) ?? []).map(activityPersonWords);
+    return {
+      id: a.id,
+      customName: a.customName,
+      startTime: a.startTime,
+      person: said.length ? said.join(", ") : null,
+      people: said,
+      notes: a.notes ?? null,
+    };
+  });
 }
 
 /**
@@ -103,7 +168,7 @@ export async function beoTimelineSourceOf(
     barPlan: barPlan ?? null,
     activities: want.people
       ? await beoActivitiesOf(event.tenantId, acts)
-      : acts.map((a) => ({ id: a.id, customName: a.customName, startTime: a.startTime, person: null })),
+      : acts.map((a) => ({ id: a.id, customName: a.customName, startTime: a.startTime, person: null, people: [] })),
     rows: rows.map((r) => ({
       id: r.id,
       label: r.label,
