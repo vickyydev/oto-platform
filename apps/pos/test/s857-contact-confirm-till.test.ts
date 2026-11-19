@@ -182,7 +182,9 @@ describe('through a station that drops the tick (an older box)', () => {
     // The till's own check: this Done is the "unconfirmed Done" an older station brings.
     expect(consentActionAllowed(prompt, done)).toBe(false);
     expect(consentActionAllowed({ ...prompt, contactConfirmed: true }, done)).toBe(true);
-    expect(tillSource).toMatch(/const familyDone = action\.data\.action === 'done' && !unconfirmedDone;/);
+    // SCRUM-1018 — the counter till no longer sends the tick, so it never
+    // meets this Done; the rule stays for a form that still asks.
+    expect(tillSource).toMatch(/const familyDone = action\.data\.action === 'done';/);
     const t = till({ asksContactConfirmation: true, contactConfirmed: false });
     takeConsentAction(done, t);
     // Never finished: the family's Done never starts the gate, staff press Continue.

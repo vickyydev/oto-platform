@@ -16,7 +16,9 @@ import {
   UserCheck,
   ArrowLeft,
   Check,
+  Camera,
 } from 'lucide-react';
+import { slotPhotoState, type LastPhotoState } from '@/lib/returningFamily';
 
 // One anonymous kid pulled out of the cart for door-flow supervision. The whole
 // draft (names, ages, waiver + consent fields) is LIFTED in Till so the staff
@@ -55,6 +57,13 @@ export interface SupervisedSlot {
   // 'none' — see resolveSupervisionOutcome. Ignored/cleared once age makes
   // supervision mandatory; a waived-down mandatory child is unaffected.
   optIn?: boolean;
+  /**
+   * SCRUM-1018 — staff's answer on this saved child's photo from the last
+   * visit: `matches` reuses that stored photo (`childPhotoUrl` then holds its
+   * signed address, for the screens), `new` takes one today. Kept with the
+   * child it was given for: a place that changes child drops it.
+   */
+  lastPhotoChoice?: { childId: string; fromCheckinId: string; choice: 'matches' | 'new' };
 }
 
 // Parse the raw age input to a non-negative integer, or null if not yet valid.
@@ -113,6 +122,69 @@ interface SupervisionGateProps {
    * and the till decides whether it opens the form or moves the sale on.
    */
   continueOpensForm?: boolean;
+  /**
+   * SCRUM-1018 — each saved child's photo from the last visit, by child, and
+   * staff's answer on it: "Still matches" reuses it, "Take a new one" takes
+   * one today as before. Given by the counter till; absent, nothing changes.
+   */
+  lastPhotos?: Readonly<Record<string, LastPhotoState>>;
+  onPhotoChoice?: (slotId: string, choice: 'matches' | 'new') => void;
+}
+
+const SHORT_DATE = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
+/**
+ * SCRUM-1018 — the last visit's photo of a returning child, on staff's card:
+ * the photo staff compare with the child and guardian in front of them, and
+ * the two answers. Staff's own English, like the rest of the gate.
+ */
+export function LastPhotoChoice({ slot, last, onChoice }: {
+  slot: SupervisedSlot;
+  last: LastPhotoState | undefined;
+  onChoice: (choice: 'matches' | 'new') => void;
+}) {
+  const state = slotPhotoState(slot, last && slot.savedChildId ? { [slot.savedChildId]: last } : {});
+  if (last?.status === 'loading' && state === 'awaits') {
+    return <p className="mt-3 text-sm text-muted-foreground" data-testid="last-photo-loading">Looking for the photo from the last visit…</p>;
+  }
+  if (last?.status !== 'found') return null;
+  const taken = SHORT_DATE.format(new Date(last.takenAt));
+  if (state === 'today') {
+    return (
+      <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-muted-foreground" data-testid="last-photo-new">
+        <Camera className="h-4 w-4 shrink-0" />
+        <span>A new photo is taken today.</span>
+        {!slot.childPhotoUrl && (
+          <Button size="sm" variant="outline" className="h-8 text-sm" onClick={() => onChoice('matches')}>
+            Use the photo from {taken}
+          </Button>
+        )}
+      </div>
+    );
+  }
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-3 rounded-xl border border-border bg-background/40 p-3" data-testid="last-photo-choice">
+      <img src={last.url} alt={`${slot.name.trim() || 'The child'} with the guardian, ${taken}`}
+        className="h-24 w-24 shrink-0 rounded-lg object-cover" />
+      <div className="min-w-0 flex-1 space-y-2">
+        <p className="text-sm">
+          {state === 'reused'
+            ? `Using the photo from the last visit (${taken}).`
+            : `Photo from the last visit (${taken}). Does it still match the child and the guardian here?`}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {state === 'awaits' && (
+            <Button size="sm" className="h-8 text-sm" onClick={() => onChoice('matches')}>
+              <Check className="mr-1.5 h-3.5 w-3.5" /> Still matches
+            </Button>
+          )}
+          <Button size="sm" variant="outline" className="h-8 text-sm" onClick={() => onChoice('new')}>
+            <Camera className="mr-1.5 h-3.5 w-3.5" /> Take a new one
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 /**
@@ -138,6 +210,8 @@ export function SupervisionGate({
   contactConfirmed,
   contactPhoneProblem,
   continueOpensForm = false,
+  lastPhotos,
+  onPhotoChoice,
 }: SupervisionGateProps) {
   // Only resolve children with a valid age — feeding a placeholder age for a
   // not-yet-typed child would trip the policy's "no band" warning on every
@@ -176,9 +250,13 @@ export function SupervisionGate({
     !anyNeedsConsent || (parentName.trim().length > 0 && consentAck && photosOk);
   const allIdentified = rows.every((r) => r.slot.name.trim().length > 0 && r.aged);
   // Confirmations must be ticked for ANY unaccompanied registration, even one
-  // where every child ends up needing no service (e.g. an all-9+ group).
+  // where every child ends up needing no service (e.g. an all-9+ group, each
+  // registered at no fee). SCRUM-1018 — once every child is aged and none is
+  // registered (a waived child and the sibling covering them, both on normal
+  // tickets) there is no form to agree to, and Continue goes on to payment.
+  const formNeeded = anyNeedsConsent || !rows.every((r) => r.aged);
   const confirmationsOk =
-    slots.length === 0 || confirmationsSatisfied(policy, acknowledgedConfirmationIds);
+    slots.length === 0 || !formNeeded || confirmationsSatisfied(policy, acknowledgedConfirmationIds);
 
   // Build a plain-language list of everything still blocking payment.
   const blockers: string[] = [];
@@ -201,13 +279,17 @@ export function SupervisionGate({
   // take them, and the family must have confirmed it is the one for the
   // channel (the owner's ruling of 8 November). Only when the till passes
   // these, and only for a registration that will be written (consent needed).
+  // SCRUM-1018 — the counter till no longer asks the confirmation (the number
+  // is shown, not asked): it passes the number's problem alone, and the
+  // number must still be one that can take messages. The phone till passes
+  // the confirmation as before.
   const contactAsked = anyNeedsConsent && (contactConfirmed !== undefined || contactPhoneProblem !== undefined);
-  const contactOk = !contactAsked || contactPhoneProblem == null && contactConfirmed === true;
+  const contactOk = !contactAsked || contactPhoneProblem == null && contactConfirmed !== false;
   if (contactAsked && contactPhoneProblem === 'empty') {
     blockers.push('Parent must give the number for messages about their child on the customer screen.');
   } else if (contactAsked && contactPhoneProblem === 'invalid') {
     blockers.push("The parent's number doesn't look like a mobile that can receive messages — check it with them.");
-  } else if (contactAsked && contactConfirmed !== true) {
+  } else if (contactAsked && contactConfirmed === false) {
     blockers.push('Parent must confirm that the number is the one for their messaging channel on the customer screen.');
   }
   // De-dupe the generic "needs a name" line.
@@ -239,7 +321,7 @@ export function SupervisionGate({
       </div>
 
       <div className="flex-1 space-y-3 overflow-y-auto pr-1 max-[520px]:overflow-visible">
-        {rows.map(({ slot, aged, requirement, waiverEligible, effective, optedIn }) => {
+        {rows.map(({ slot, aged, requirement, waiverEligible, effective, optedIn, needsConsent }) => {
           const meta = REQUIREMENT_META[effective];
           const Icon = meta.icon;
           return (
@@ -299,6 +381,10 @@ export function SupervisionGate({
                     </Badge>
                   )}
                 </div>
+              )}
+              {aged && needsConsent && slot.savedChildId && onPhotoChoice && (
+                <LastPhotoChoice slot={slot} last={lastPhotos?.[slot.savedChildId]}
+                  onChoice={(choice) => onPhotoChoice(slot.id, choice)} />
               )}
             </div>
           );

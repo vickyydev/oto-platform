@@ -62,7 +62,7 @@ interface PhoneInputProps {
 // Compact channel selector — a row of pills (one per CONTACT_CHANNELS entry).
 // Rendered only when the parent opts in via channel + onChannelChange.
 // ---------------------------------------------------------------------------
-function ChannelSelector({
+export function ChannelSelector({
   channel,
   onChange,
   kiosk,

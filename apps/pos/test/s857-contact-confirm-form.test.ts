@@ -223,51 +223,53 @@ describe('the staff gate before payment', () => {
   });
 });
 
+/**
+ * SCRUM-1018 — THE COUNTER TILL NO LONGER ASKS THE TICK. The owner's answer
+ * of 19 November replaced the ruling of 12 November: the number on the
+ * drop-off and nanny forms is shown filled in, with no tick, and only staff
+ * change it. The pins below were the till's side of the tick; they now pin
+ * that the counter till asks none, sends none, and still writes the number
+ * the form holds. The form's own tick line (above) stays for the phone till,
+ * which passes it as before.
+ */
 describe('what the till does with it', () => {
   const till = readFileSync(path.resolve(import.meta.dirname, '..', 'src', 'pages', 'Till.tsx'), 'utf8');
   const client = readFileSync(path.resolve(import.meta.dirname, '..', 'src', 'api', 'checkin.ts'), 'utf8');
 
-  it('every gate starts unconfirmed', () => {
-    expect(till).toMatch(/setSuperParentContactMethod\(customerContactChannel\);[\s\S]{0,200}?setSuperContactConfirmation\(null\);\s*setConsentContactLegacy\(false\);/);
+  it('no gate asks the confirmation any more', () => {
+    expect(till).not.toMatch(/setSuperContactConfirmation|contactConfirmationStands|setConsentContactLegacy|onContactConfirmedChange/);
+    expect(till).toMatch(/setSuperParentContactMethod\(customerContactChannel\);\s*setConsentFamilyStep\('children'\);/);
   });
 
-  it('the confirmation stands for the number and channel the form holds, so an edit un-confirms it', () => {
-    expect(till).toMatch(/const contactConfirmed = contactConfirmationStands\(superContactConfirmation, superParentPhone, superParentContactMethod\);/);
-    // SCRUM-914 (the owner, 12 November): a change of the number or the
-    // channel withdraws the confirmation until the family ticks again, so the
-    // setters go through the rule that clears it (both copies of the form).
+  it('both copies of the form still write the registration’s contact; the family’s copy shows the number, staff change it', () => {
     expect(till.match(/onParentPhoneChange=\{changeGuardianPhone\}/g)).toHaveLength(2);
     expect(till.match(/onParentContactMethodChange=\{changeGuardianChannel\}/g)).toHaveLength(2);
+    expect(till).toContain('parentPhoneFixed={!!superParentPhone.trim()}');
   });
 
-  it('the family ticks on the customer half, staff on their copy only when the display cannot', () => {
-    expect(till).toMatch(/onContactConfirmedChange=\{\(confirmed\) => setSuperContactConfirmation\(confirmed\s*\? \{ at: new Date\(\)\.toISOString\(\), by: 'family',/);
-    expect(till).toMatch(/contactConfirmTickable=\{staffTicks \|\| consentContactLegacy\}/);
-    expect(till).toMatch(/by: 'staff', phone: consentFormPhone\(superParentPhone\), channel: superParentContactMethod/);
-  });
-
-  it('the registration is written with the confirmation when it stands, on the platform path only', () => {
-    expect(till).toMatch(/acknowledgedConfirmationIds: superAcknowledgedConfirmationIds,[\s\S]{0,300}?contactConfirmation: superContactConfirmation && contactConfirmationStands\(superContactConfirmation, superParentPhone, superParentContactMethod\)\s*\? \{ confirmedAt: superContactConfirmation\.at, by: superContactConfirmation\.by \}\s*: null,/);
+  it('the registration is written with no confirmation, on the platform path only', () => {
+    expect(till).toMatch(/acknowledgedConfirmationIds: superAcknowledgedConfirmationIds,[\s\S]{0,300}?contactConfirmation: null,/);
     // The counter box's own registration (an older box refuses a field it does not know) is not sent it.
     const boxSide = client.match(/BRIDGE_CHECKIN_INTENTS\.create, \{[\s\S]*?\}\)/)?.[0] ?? '';
     expect(boxSide).not.toContain('contactConfirmation');
     expect(boxSide).toContain('contactChannel: body.contactChannel');
   });
 
-  it('the form sent to the display carries the tick only when a registration will be written, outside canContinue', () => {
-    expect(till).toMatch(/&& consentConfirmations\.every\(item => !item\.required \|\| item\.acknowledged\),\s*\/\/[^\n]*\n(\s*\/\/[^\n]*\n)*\s*\.\.\.\(consentRequired \? \{ contactConfirmed \} : \{\}\),\s*\};/);
+  it('the form sent to the display carries no tick and says the number is shown', () => {
+    expect(till).toMatch(/&& consentConfirmations\.every\(item => !item\.required \|\| item\.acknowledged\),\s*\};/);
+    expect(till).toContain('...(superParentPhone.trim() ? { phoneFixed: true } : {}),');
   });
 
-  it('the staff gate and the agreements status are told', () => {
-    expect(till).toMatch(/busy=\{gateSaving\}\s*contactConfirmed=\{contactConfirmed\}\s*contactPhoneProblem=\{consentContactProblem\}/);
-    expect(till).toMatch(/<ConsentTicksStatus consentRequired=\{consentRequired\}[\s\S]{0,200}?contact=\{consentRequired \? \{ phone: superParentPhone, channel: superParentContactMethod, confirmed: contactConfirmed,/);
+  it('the staff gate is told only whether the number can take messages', () => {
+    expect(till).toMatch(/busy=\{gateSaving\}\s*contactPhoneProblem=\{consentContactProblem\}/);
+    expect(till).toMatch(/<ConsentTicksStatus consentRequired=\{consentRequired\} consentAcknowledged=\{superConsentAck\}\s*confirmations=\{consentConfirmations\} \/>/);
   });
 
-  it('a Done while unconfirmed is taken as not finished, never refused for ever', () => {
-    expect(till).toMatch(/const unconfirmedDone = action\.data\.action === 'done' && prompt\.data\.contactConfirmed === false\s*&& consentActionAllowed\(\{ \.\.\.prompt\.data, contactConfirmed: true \}, action\.data\);\s*if \(!unconfirmedDone && !consentActionAllowed\(prompt\.data, action\.data\)\) return false;/);
+  it('a Done is taken as any other step, and a number a family’s screen sends back is not', () => {
+    expect(till).toMatch(/if \(!consentActionAllowed\(prompt\.data, action\.data\)\) return false;/);
+    expect(till).toMatch(/const familyDone = action\.data\.action === 'done';/);
     const taken = till.match(/takeConsentAction\(action\.data, \{[\s\S]*?\}\);/)?.[0] ?? '';
-    expect(taken).toMatch(/asksContactConfirmation: prompt\.data\.contactConfirmed !== undefined,\s*contactConfirmed: prompt\.data\.contactConfirmed === true,/);
-    expect(taken).toMatch(/contactConfirmationUnsupported: \(\) => setConsentContactLegacy\(true\),/);
-    expect(till).toContain('The display cannot show the number confirmation: open Private child details and confirm the messaging number with the family here.');
+    expect(taken).toMatch(/phoneFixed: prompt\.data\.phoneFixed === true,\s*nameFixed: prompt\.data\.guardianFixed === true,/);
+    expect(till).not.toContain('The display cannot show the number confirmation');
   });
 });

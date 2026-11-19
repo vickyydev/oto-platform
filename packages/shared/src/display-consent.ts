@@ -73,8 +73,34 @@ const promptObject = z.object({
    * part of `canContinue`: that cross-check is older than this field, and a
    * station that does not know it would refuse a form whose `canContinue`
    * waited on it. The tick gates `done` instead (`consentActionAllowed`).
+   *
+   * SCRUM-1018 — the counter till no longer sends it (the number is shown,
+   * not asked: `phoneFixed`); kept for a till or station from before.
    */
   contactConfirmed: z.boolean().optional(),
+  /**
+   * SCRUM-1018 — THE NUMBER IS SHOWN, NOT ASKED (the owner's answer of 19
+   * November, replacing the tick of SCRUM-863): the form shows the number
+   * filled in, the family may still choose the app beside it, and only staff
+   * change the number, on the till. A till that sends this takes no number
+   * back from the family's steps. Absent from an older till's form, and
+   * dropped by a station from before this field, so the display then shows
+   * the form as it was.
+   */
+  phoneFixed: z.boolean().optional(),
+  /**
+   * SCRUM-1018 — the parent's name comes from the family's profile: shown,
+   * not asked; staff correct it on the till. Optional for the reason above.
+   */
+  guardianFixed: z.boolean().optional(),
+  /**
+   * SCRUM-1018 — a returning family whose children are all on their saved
+   * profile: the form is the agreements alone, with the children listed
+   * above them (the owner's answer: a returning family is asked only the
+   * three agreement ticks). Optional for the reason above: a display or
+   * station from before it shows the three steps as before.
+   */
+  agreementsOnly: z.boolean().optional(),
   /**
    * SCRUM-857 — the step the family is on, as the till last heard it from
    * their screen (the owner's ruling of 12 November: staff watch the form as

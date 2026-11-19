@@ -30,8 +30,19 @@ import { savedRateSummary } from '@/lib/tierApproval';
 import { confirmTierAtTill } from '@/lib/thaiRateConfirmation';
 import { saveDeferredVerification } from '@/lib/deferredTierVerification';
 import { routeToPayment } from '@/lib/customerContact';
-import { consentFormPhone, contactConfirmationStands, messagingPhoneProblem, staffTicksAgreements, takeConsentAction, type ContactConfirmation } from '@/lib/consentForm';
-import { consentSlotPhoto, contactChangeWithdraws, staffCameraLine } from '@/lib/consentForm';
+import { messagingPhoneProblem, staffTicksAgreements, takeConsentAction } from '@/lib/consentForm';
+import { consentSlotPhoto, staffCameraLine } from '@/lib/consentForm';
+import {
+  agreementsOnlyForm,
+  photoReuseFor,
+  prefillGate,
+  profileGuardianName,
+  slotPhotoState,
+  ticketKidsDefault,
+  waiverCovers,
+  withCoveringSiblingsPlain,
+  type LastPhotoState,
+} from '@/lib/returningFamily';
 import { useLockedFamilyFormWatch } from '@/lib/lockedFamilyForm';
 import { familyDoneDecision } from '@/lib/consentFinish';
 import { rungUpSaleOf, setSaleAtStake, setSaleOpen, setSaleRungUp } from '@/pwa/openSale';
@@ -40,11 +51,11 @@ import { refreshSellableStock } from '@/api/stock';
 import { cartStockShortfalls } from '@/lib/stockPrecheck';
 import { getDiscountReasons, recordSale, getTicketTypes, getDropOffPricing, getDefaultTier, getSupervisionPolicy, getDiscountByCode, incrementPromoUsage, ensureSaleGrantWallet, issueWalkInBands, type CheckInPaymentInput, type NewEventAttendeeInput } from '@/mockApi';
 import { useBranch } from '@/branch/BranchContext';
-import { apiCheckinToCheckIn, checkinApi, foodProvisionToWire, TILL_NOT_LINKED, waitingStaysOf, type ApiNanny } from '@/api/checkin';
+import { apiCheckinToCheckIn, checkinApi, foodProvisionToWire, photoUrlOf, TILL_NOT_LINKED, waitingStaysOf, type ApiNanny } from '@/api/checkin';
 import { validatePromoCode, resolveFreeItem } from '@/lib/promoVoucher';
 import { SavedChildrenReview } from '@/components/shared/SavedChildrenReview';
 import { LanguageProvider, tFor, useLanguage, type TFunction } from '@/i18n/LanguageContext';
-import { prefillSlots, slotPatchFromSavedChild } from '@/lib/savedChildren';
+import { slotPatchFromSavedChild } from '@/lib/savedChildren';
 import type { SavedChild } from '@/types';
 import { AddAttendeeModal } from '@/components/parties/AddAttendeeModal';
 import type { OtoEvent, EventAttendee } from '@/types';
@@ -580,18 +591,29 @@ export default function Till() {
   const [superParentPhone, setSuperParentPhone] = useState<string>('');
   const [superParentContactMethod, setSuperParentContactMethod] = useState<ContactChannel>('whatsapp');
   /**
-   * SCRUM-857 — the family's confirmation that the number is the one for the
-   * channel, kept with the number and channel it was given for: it stands
-   * only while the form still holds both (`contactConfirmationStands`), so
-   * an edit to either, on any screen, un-confirms it without a hand-off.
+   * SCRUM-1018 — THE NUMBER IS SHOWN, NOT ASKED (the owner's answer of 19
+   * November, replacing the family's tick of SCRUM-857 / SCRUM-863). The forms
+   * show the number filled in; only staff change it, on the till (Private
+   * child details). No confirmation is asked or sent: the registration's
+   * `contactConfirmation` is null.
+   *
+   * The parent's name on the form comes from the family's profile when the
+   * membership check found them (`profileGuardianName`): shown to the family,
+   * not asked; staff can still correct it on the till.
    */
-  const [superContactConfirmation, setSuperContactConfirmation] = useState<ContactConfirmation | null>(null);
+  const [superGuardianFromProfile, setSuperGuardianFromProfile] = useState(false);
   /**
-   * SCRUM-857 — the paired display (or the station between) is from before
-   * the confirmation field: a step came back without it, or a Done came while
-   * unconfirmed. Staff then confirm the number with the family on the till.
+   * SCRUM-1018 — the saved children staff ticked as visiting at the membership
+   * check, for this visitor: they become the form's children and the ticket's
+   * kids count (`prefillGate`, `ticketKidsDefault`). Null when the check was
+   * skipped; cleared by a new lookup and by `resetSale`.
    */
-  const [consentContactLegacy, setConsentContactLegacy] = useState(false);
+  const [visitingChildIds, setVisitingChildIds] = useState<string[] | null>(null);
+  /**
+   * SCRUM-1018 — each saved child's photo from the last visit at this park,
+   * read when the gate opens, for staff's "Still matches" or "Take a new one".
+   */
+  const [lastPhotos, setLastPhotos] = useState<Record<string, LastPhotoState>>({});
   /**
    * SCRUM-857 — the step the family is on, on the paired display, as their
    * last `fill` said: the till's copy of their screen opens on it for staff.
@@ -959,6 +981,9 @@ export default function Till() {
     setShowAllTiersFor(null);
     setSuperSlots([]);
     setSuperParentName('');
+    setSuperGuardianFromProfile(false);
+    setVisitingChildIds(null);
+    setLastPhotos({});
     setSuperConsentAck(false);
     setSuperAcknowledgedConfirmationIds([]);
     setConfirmedSavedIds([]);
@@ -1128,6 +1153,8 @@ export default function Till() {
         const found = phone ? (await membersApi.lookup(phone)).member : null;
         if (saleEpochRef.current !== epoch) return;
         const mapped = found ? apiMemberToMember(found) : null;
+        // SCRUM-1018 — the children ticked for the last visitor are not this one's.
+        setVisitingChildIds(null);
         // A new lookup is a new (or no) visit: the last check's visit must not
         // ride onto this visitor's sale.
         setConfirmedVisitId(null);
@@ -1861,7 +1888,8 @@ export default function Till() {
   const handleSelectTicket = (ticket: TicketType) => {
     if (!tier) return;
     const id = Math.random().toString(36).substring(7);
-    const base = { ticketType: ticket, tier, kids: 1, adults: 1, socks: 0, addOns: [] };
+    // SCRUM-1018 — the kids staff ticked as visiting are the ticket's count.
+    const base = { ticketType: ticket, tier, kids: ticketKidsDefault(lines, visitingChildIds), adults: 1, socks: 0, addOns: [] };
     const line: CartLine = {
       id,
       ...base,
@@ -2155,17 +2183,18 @@ export default function Till() {
         });
       }
     }
-    setSuperParentName('');
+    // SCRUM-1018 — the parent's name comes from the family's profile when the
+    // membership check found them; a first visit is asked it on the form, as
+    // before (the prototype started it empty at every gate).
+    const profileName = profileGuardianName(member, createdMemberId);
+    setSuperParentName(profileName ?? '');
+    setSuperGuardianFromProfile(profileName !== null);
     // SCRUM-762 — the drop-off and nanny forms start from the number and the
-    // channel given at the start (or the member's own number). SCRUM-863 — the
-    // family confirms or changes them on the form, as the prototype's form
-    // asks; that is the registration's contact, never the sale's own number.
+    // channel given at the start (or the member's own number); that is the
+    // registration's contact, never the sale's own number. SCRUM-1018 — the
+    // forms show it filled in and only staff change it, on the till.
     setSuperParentPhone(customerPhone.trim() || member?.phone || '');
     setSuperParentContactMethod(customerContactChannel);
-    // SCRUM-857 — every gate starts unconfirmed: the family confirms the
-    // number for this registration, on this form.
-    setSuperContactConfirmation(null);
-    setConsentContactLegacy(false);
     setConsentFamilyStep('children');
     setConsentDisplayCamera(null);
     gateRegistrationIdRef.current = null;
@@ -2192,15 +2221,64 @@ export default function Till() {
     // A returning member with saved children sees the re-confirm step first; their
     // details pre-fill the slots (text only, never the photo) but are applied only
     // after they confirm. First-timers / walk-ins skip straight to the gate.
+    // SCRUM-1018 — the children staff ticked as visiting fill the places, already
+    // confirmed at the membership check: when they fill every place the family
+    // is not asked again and the form follows (`prefillGate`).
     const saved = member?.savedChildren ?? [];
-    if (saved.length > 0) {
-      setSuperSlots(prefillSlots(slots, saved));
-      setStep(8);
-    } else {
-      setSuperSlots(slots);
-      setStep(7);
+    const prefill = prefillGate(slots, saved, visitingChildIds);
+    setSuperSlots(prefill.slots);
+    setConfirmedSavedIds(prefill.confirmedIds);
+    setStep(prefill.review ? 8 : 7);
+    // SCRUM-1018 — each saved child's last photo, for staff to compare.
+    readLastPhotos(saved.map((child) => child.id));
+  };
+
+  /**
+   * SCRUM-1018 — THE LAST VISIT'S PHOTO OF EACH SAVED CHILD, for staff to
+   * compare with the child and guardian at the counter ("Still matches" or
+   * "Take a new one", on the gate). Read from this park's stays through the
+   * same permission check and access log as every stay photo. Online only:
+   * offline, or when it cannot be read, the photo is taken as before. A read
+   * that lands after the sale moved on is dropped.
+   */
+  const readLastPhotos = (childIds: readonly string[]) => {
+    const platformBranchId = apiBranchIdForSlug(branch.id);
+    const epoch = saleEpochRef.current;
+    if (!platformBranchId || childIds.length === 0 || tillOffline()) {
+      setLastPhotos({});
+      return;
+    }
+    setLastPhotos(Object.fromEntries(childIds.map((id) => [id, { status: 'loading' } as LastPhotoState])));
+    for (const childId of childIds) {
+      void (async (): Promise<LastPhotoState> => {
+        const { photo } = await checkinApi.lastChildPhoto(childId, platformBranchId);
+        if (!photo) return { status: 'none' };
+        const url = await photoUrlOf(photo.fileId);
+        return url ? { status: 'found', checkinId: photo.checkinId, fileId: photo.fileId, takenAt: photo.takenAt, url } : { status: 'none' };
+      })().catch((): LastPhotoState => ({ status: 'none' })).then((state) => {
+        if (epoch !== saleEpochRef.current) return;
+        setLastPhotos((previous) => (previous[childId] ? { ...previous, [childId]: state } : previous));
+      });
     }
   };
+
+  /**
+   * SCRUM-1018 — staff's answer on a saved child's last photo: it still
+   * matches (the stay reuses that stored photo, by reference, once the
+   * registration is written) or a new one is taken today (the capture as
+   * before: the family on the display, or staff in Private child details).
+   */
+  const handlePhotoChoice = (slotId: string, choice: 'matches' | 'new') =>
+    setSuperSlots((prev) => prev.map((slot) => {
+      const childId = slot.savedChildId;
+      const last = childId ? lastPhotos[childId] : undefined;
+      if (slot.id !== slotId || !childId || last?.status !== 'found') return slot;
+      const lastPhotoChoice = { childId, fromCheckinId: last.checkinId, choice };
+      if (choice === 'matches') return { ...slot, childPhotoUrl: last.url, lastPhotoChoice };
+      // A photo taken today stays; the reused one is let go.
+      const today = slot.childPhotoUrl?.startsWith('data:') ? slot.childPhotoUrl : undefined;
+      return { ...slot, childPhotoUrl: today, lastPhotoChoice };
+    }));
 
   const handleUpdateSlot = (id: string, patch: Partial<SupervisedSlot>) =>
     setSuperSlots((prev) => {
@@ -2216,13 +2294,17 @@ export default function Till() {
         getSupervisionPolicy(),
       );
       const eligibleById = new Map(resolved.map((r) => [r.id, r.waiverEligible]));
-      return next.map((s) =>
+      // SCRUM-1018 — and the sibling covering a waived child follows the waivers.
+      return withCoveringSiblingsPlain(next.map((s) =>
         s.waived && !eligibleById.get(s.id) ? { ...s, waived: false } : s,
-      );
+      ), getSupervisionPolicy());
     });
 
+  // SCRUM-1018 — after a waiver the covering sibling plays on a normal ticket:
+  // no free drop-off form for them, and Continue goes on to payment.
   const handleToggleWaiver = (id: string) =>
-    setSuperSlots((prev) => prev.map((s) => (s.id === id ? { ...s, waived: !s.waived } : s)));
+    setSuperSlots((prev) => withCoveringSiblingsPlain(
+      prev.map((s) => (s.id === id ? { ...s, waived: !s.waived } : s)), getSupervisionPolicy()));
 
 
   const handleSupervisionBack = () => {
@@ -2322,6 +2404,8 @@ export default function Till() {
       dateOfBirth: undefined,
       allergiesMedical: '',
       foodRestrictions: '',
+      // SCRUM-1018 — the last photo was the saved child's, not the new one's.
+      lastPhotoChoice: undefined,
     });
     setConfirmedSavedIds((prev) => prev.filter((x) => x !== slotId));
   };
@@ -2481,20 +2565,15 @@ export default function Till() {
     const plainBySource = new Map<string, number>();
     const waiversToAudit: { slot: SupervisedSlot; covering: SupervisedSlot }[] = [];
 
+    // The covering sibling = the oldest OTHER child old enough to guardian
+    // (`waiverCovers`). SCRUM-1018 — that sibling plays on a normal ticket.
+    const covers = waiverCovers(superSlots, policy);
+    const coveringIds = new Set([...covers.values()].map((covering) => covering.id));
     for (const slot of superSlots) {
       const base = reqById.get(slot.id) ?? 'none';
-      const outcome = resolveSupervisionOutcome(base, slot.waived, slot.optIn);
-      if (slot.waived && base !== 'none') {
-        // The covering sibling = the oldest OTHER child old enough to guardian.
-        const covering = superSlots
-          .filter(
-            (o) =>
-              o.id !== slot.id &&
-              (slotAge(o) ?? -1) >= policy.siblingWaiver.guardianMinAge,
-          )
-          .sort((a, b) => (slotAge(b) ?? 0) - (slotAge(a) ?? 0))[0];
-        if (covering) waiversToAudit.push({ slot, covering });
-      }
+      const outcome = resolveSupervisionOutcome(base, slot.waived, slot.optIn && !coveringIds.has(slot.id));
+      const covering = covers.get(slot.id);
+      if (covering) waiversToAudit.push({ slot, covering });
       // outcome.service is 'nanny'/'drop_off' (mandatory) or 'none' (no-fee
       // opt-in) when the child should run the full flow, null when they stay a
       // plain ticket (unaffected 'none' or waived-down mandatory).
@@ -2652,11 +2731,9 @@ export default function Till() {
           contactChannel: superParentContactMethod,
           consentAcknowledged: superConsentAck,
           acknowledgedConfirmationIds: superAcknowledgedConfirmationIds,
-          // SCRUM-857 — the family's confirmation of the number for the
-          // channel, when it stands for the number and channel sent above.
-          contactConfirmation: superContactConfirmation && contactConfirmationStands(superContactConfirmation, superParentPhone, superParentContactMethod)
-            ? { confirmedAt: superContactConfirmation.at, by: superContactConfirmation.by }
-            : null,
+          // SCRUM-1018 — the number is shown, not asked: no confirmation is
+          // taken (the owner's answer of 19 November replaced SCRUM-857's tick).
+          contactConfirmation: null,
           children: supervised.map(({ slot, service }, i) => ({
             checkinId: stayIds[i]!,
             childId: guardian ? (childIdBySlot.get(slot.id) ?? null) : null,
@@ -2698,6 +2775,28 @@ export default function Till() {
             toast({
               title: `${slot.name.trim() || 'The child'}: photo not saved`,
               description: `${err instanceof Error ? err.message : 'Unknown error'} The registration is saved; take the photo again before pickup.`,
+              variant: 'destructive',
+            });
+          }
+        }
+        // SCRUM-1018 — a returning child whose last photo staff said still
+        // matches: the new stay points at that stored photo, by reference,
+        // recorded on the registration with who confirmed it. Only for the
+        // child the answer was given for (`photoReuseFor`); a stay already
+        // holding a photo keeps it. Not kept is said, as an upload is.
+        const reuses = supervised.flatMap(({ slot }, i) => {
+          const from = photoReuseFor(slot, childIdBySlot.get(slot.id));
+          const stayId = stayIds[i]!;
+          if (!from || reg.children.find((c) => c.id === stayId)?.photoFileId) return [];
+          return [{ checkinId: stayId, fromCheckinId: from, name: slot.name.trim() || 'The child' }];
+        });
+        if (reuses.length > 0) {
+          try {
+            await checkinApi.reusePhoto(reg.id, reuses.map(({ checkinId, fromCheckinId }) => ({ checkinId, fromCheckinId })));
+          } catch (err) {
+            toast({
+              title: `${reuses.map((item) => item.name).join(', ')}: last photo not kept`,
+              description: `${err instanceof Error ? err.message : 'Unknown error'} The registration is saved; take a new photo before pickup.`,
               variant: 'destructive',
             });
           }
@@ -3744,37 +3843,39 @@ export default function Till() {
   const consentRows = superSlots.map(slot => ({ slot, outcome: slotAge(slot) === null
     ? { effective: 'none' as const, needsConsent: false, service: null }
     : resolveSupervisionOutcome(consentRequirements.find(item => item.id === slot.id)?.requirement ?? 'none', slot.waived, slot.optIn) }));
+  const slotAgeOf = (slot: SupervisedSlot): number | null => {
+    const age = slotAge(slot);
+    return age === null || age > 17 ? null : age;
+  };
   const consentRequired = consentRows.some(row => row.outcome.needsConsent);
   const consentStaffReady = !gateSaving && consentRows.every(row => !row.outcome.needsConsent || !!row.slot.childPhotoUrl);
-  const consentConfirmations = sortedConfirmations(supervisionPolicy).map(item => ({ id: item.id, text: item.text,
-    required: item.required, acknowledged: superAcknowledgedConfirmationIds.includes(item.id) }));
   /**
-   * SCRUM-857 — THE NUMBER CONFIRMED FOR THE CHANNEL (the owner's ruling of
-   * 8 November). The form shows the number the child's messages go to; the
-   * family must confirm it is the one for the chosen channel before the form
-   * is finished, on the till's customer half and on the paired display alike,
-   * and the registration is not written without it. The confirmation stands
-   * for the number and channel it was given for, so an edit to either, by
-   * anyone, un-confirms it. Asked only when a registration will be written
-   * (a child needs consent); a group that needs none has no number to confirm.
+   * SCRUM-1018 — AFTER A WAIVER, NO FORM. When every child is aged and none
+   * needs the form (a waived child and the sibling covering them, both on
+   * normal tickets), nothing is registered, so there is nothing to agree to:
+   * the confirmations are not asked and Continue goes on to payment.
    */
-  const contactConfirmed = contactConfirmationStands(superContactConfirmation, superParentPhone, superParentContactMethod);
+  const consentFormNeeded = consentRequired || consentRows.some(row => slotAgeOf(row.slot) === null);
+  const consentConfirmations = consentFormNeeded ? sortedConfirmations(supervisionPolicy).map(item => ({ id: item.id, text: item.text,
+    required: item.required, acknowledged: superAcknowledgedConfirmationIds.includes(item.id) })) : [];
+  /**
+   * SCRUM-1018 — THE NUMBER IS SHOWN, NOT ASKED (the owner's answer of 19
+   * November, replacing the family's tick of SCRUM-857 / SCRUM-863). The
+   * number still has to be one that can take the child's messages; staff
+   * change it, on the till, when it cannot.
+   */
   const consentContactProblem = messagingPhoneProblem(superParentPhone);
+  const changeGuardianPhone = (next: string) => setSuperParentPhone(next);
+  const changeGuardianChannel = (next: ContactChannel) => setSuperParentContactMethod(next);
   /**
-   * SCRUM-914 — a change of the number or the channel on this till (the
-   * customer half, or staff in Private child details) withdraws the family's
-   * confirmation until they tick again, as the paired display does: changing
-   * back to the number or channel they confirmed does not bring it back.
+   * SCRUM-1018 — THE PHOTO IS STAFF'S TO DECIDE for a saved child whose last
+   * visit's photo is still kept: the family is not asked for one while staff
+   * compare it, nor once staff reuse it (`slotPhotoState`).
    */
-  const formContact = { phone: superParentPhone, channel: superParentContactMethod };
-  const changeGuardianPhone = (next: string) => {
-    if (contactChangeWithdraws(formContact, { ...formContact, phone: next })) setSuperContactConfirmation(null);
-    setSuperParentPhone(next);
-  };
-  const changeGuardianChannel = (next: ContactChannel) => {
-    if (contactChangeWithdraws(formContact, { ...formContact, channel: next })) setSuperContactConfirmation(null);
-    setSuperParentContactMethod(next);
-  };
+  const photoStateOf = (slot: SupervisedSlot) => slotPhotoState(slot, lastPhotos);
+  const staffPhotoSlotIds = superSlots.filter(slot => photoStateOf(slot) !== 'today').map(slot => slot.id);
+  /** SCRUM-1018 — a returning family whose children are all saved: the agreements alone. */
+  const consentAgreementsOnly = agreementsOnlyForm({ guardianFromProfile: superGuardianFromProfile, slots: superSlots });
   /**
    * SCRUM-764 — THE DROP-OFF AND NANNY FORMS ON THE CUSTOMER SCREEN.
    *
@@ -3787,10 +3888,6 @@ export default function Till() {
    * if anything has changed. The photo, the food choice and the waivers stay
    * with staff, and the agreement ticks are the family's alone.
    */
-  const slotAgeOf = (slot: SupervisedSlot): number | null => {
-    const age = slotAge(slot);
-    return age === null || age > 17 ? null : age;
-  };
   const consentBase: Omit<ConsentPrompt, 'kind' | 'requestId' | 'completed'> = {
     visitorId: reviewVisitorId,
     slots: consentRows.map(({ slot, outcome }) => ({ id: slot.id, name: slot.name.slice(0, 100),
@@ -3798,7 +3895,8 @@ export default function Till() {
       dateOfBirth: slot.dateOfBirth ?? null,
       // SCRUM-857 — the family takes the photo on the paired display: each
       // child the photo is asked for, and whether this till holds one yet.
-      ...consentSlotPhoto({ needsConsent: outcome.needsConsent, hasPhoto: !!slot.childPhotoUrl,
+      // SCRUM-1018 — not for a photo staff compare or reuse on the till.
+      ...consentSlotPhoto({ needsConsent: outcome.needsConsent && photoStateOf(slot) === 'today', hasPhoto: !!slot.childPhotoUrl,
         stationId: station?.stationId, throughCounterBox: hasBridgeOrigin() }),
       ...(slot.savedChildId ? { saved: true } : {
         allergiesMedical: slot.allergiesMedical.slice(0, 500), foodRestrictions: slot.foodRestrictions.slice(0, 200),
@@ -3806,10 +3904,17 @@ export default function Till() {
     guardianName: superParentName, consentRequired, consentAcknowledged: superConsentAck,
     confirmations: consentConfirmations,
     guardianPhone: superParentPhone.trim().slice(0, 32),
-    // SCRUM-863 — sent with the number, so the family's screen shows both to
-    // confirm or change and sends both back with each step.
+    // SCRUM-863 — sent with the number: the family may choose the app.
     contactChannel: superParentContactMethod,
     fees: { nannyHourlyTHB: dropOffPricing.nannyHourlyRateTHB, dropOffFeeTHB: dropOffPricing.oneTimeFeeTHB },
+    // SCRUM-1018 — the number is shown, not asked; only staff change it here.
+    // With none on the form yet the family gives it once, as before.
+    ...(superParentPhone.trim() ? { phoneFixed: true } : {}),
+    // SCRUM-1018 — the parent's name is the family's profile name: not asked.
+    ...(superGuardianFromProfile && superParentName.trim() ? { guardianFixed: true } : {}),
+    // SCRUM-1018 — a returning family is asked only the agreements (their
+    // screen opens on that one step whatever step the till last heard).
+    ...(consentAgreementsOnly ? { agreementsOnly: true } : {}),
     // SCRUM-857 — the till follows the family's step: their screen sends it
     // with every fill, and a display that re-pairs opens on it.
     familyStep: consentFamilyStep ?? 'children',
@@ -3817,10 +3922,6 @@ export default function Till() {
     canContinue: consentStaffReady && consentSlotsComplete(consentRows.map(({ slot }) => ({ name: slot.name, ageYears: slotAgeOf(slot) })))
       && (!consentRequired || !!superParentName.trim() && superConsentAck)
       && consentConfirmations.every(item => !item.required || item.acknowledged),
-    // SCRUM-857 — the tick, asked on a form that will be registered. Not part
-    // of canContinue (an older station cross-checks that against what it
-    // knows); it gates Done on the display and on this till instead.
-    ...(consentRequired ? { contactConfirmed } : {}),
   };
   // SCRUM-943 — a till that asks the display for a photo wants to hear when it
   // cannot take one, so staff are told and take it here.
@@ -3832,11 +3933,12 @@ export default function Till() {
    * SCRUM-857 — every check the staff's "Continue to payment" makes, on the
    * till's own copy of the form: each child named and aged, the name and the
    * consent, the confirmations, a photo of each child in care (canContinue),
-   * and the number confirmed for the channel and able to take messages. Only
-   * then does the family's Done write the registration and move the sale on.
+   * and a number able to take messages (SCRUM-1018: shown, not confirmed).
+   * Only then does the family's Done write the registration and move the
+   * sale on.
    */
   const familyGateReady = consentBase.canContinue
-    && (!consentRequired || contactConfirmed && consentContactProblem === null);
+    && (!consentRequired || consentContactProblem === null);
   // SCRUM-857 — while the family's Done is being saved their screen keeps the
   // form they finished, saying so; a Done that could not be saved opens it
   // again, saying that instead.
@@ -3881,23 +3983,7 @@ export default function Till() {
         || current.step !== 7 || !current.online || !current.consent || !action.success) return false;
       const prompt = ConsentPromptSchema.safeParse({ ...current.consent, kind: 'consent', requestId: action.data.requestId });
       if (!prompt.success) return false;
-      // SCRUM-857 — a Done while the number is unconfirmed is never offered by
-      // a display that shows the tick, so it comes through a display or station
-      // from before the field. It is taken, not refused (a refusal would be
-      // retried for ever): the form stays unfinished and staff confirm the
-      // number with the family here (`contactConfirmationUnsupported`).
-      const unconfirmedDone = action.data.action === 'done' && prompt.data.contactConfirmed === false
-        && consentActionAllowed({ ...prompt.data, contactConfirmed: true }, action.data);
-      if (!unconfirmedDone && !consentActionAllowed(prompt.data, action.data)) return false;
-      // SCRUM-857 — the form now travels as it is filled, so the tick comes
-      // back with every fill: it keeps the time it first arrived for this
-      // number and channel.
-      const familyContactConfirmation = (confirmed: boolean, contact: { phone: string; channel: ContactChannel }) => {
-        setSuperContactConfirmation(previous => !confirmed ? null
-          : previous && previous.by === 'family' && previous.phone === contact.phone && previous.channel === contact.channel
-            ? previous : { at: new Date().toISOString(), by: 'family', ...contact });
-        setConsentContactLegacy(false);
-      };
+      if (!consentActionAllowed(prompt.data, action.data)) return false;
       // SCRUM-857 — THE FAMILY'S DONE MOVES THE SALE ON, without staff (the
       // owner's ruling of 8 November). It is taken here only for this sale,
       // this family and the form revision it was pressed on (the checks
@@ -3906,7 +3992,7 @@ export default function Till() {
       // writes the registration and moves on, and the family's screen says it
       // is saving. Otherwise the form stays finished on their screen and staff
       // finish it here, as before.
-      const familyDone = action.data.action === 'done' && !unconfirmedDone;
+      const familyDone = action.data.action === 'done';
       const shownForm = current.consent;
       // SCRUM-764 — the family's step, mirrored here; every answer taken moves
       // their screen on to a new request, even one that changed nothing.
@@ -3914,15 +4000,14 @@ export default function Till() {
         slots: superSlots, guardianPhone: superParentPhone, signature: current.signature,
         updateSlot: handleUpdateSlot, setGuardianName: setSuperParentName, setGuardianPhone: setSuperParentPhone,
         setContactChannel: setSuperParentContactMethod,
-        // SCRUM-857 — the tick, for the number and channel the step carried;
-        // the time is this till's clock, taken as the step arrived.
         contactChannel: superParentContactMethod,
-        asksContactConfirmation: prompt.data.contactConfirmed !== undefined,
-        contactConfirmed: prompt.data.contactConfirmed === true,
-        setContactConfirmed: familyContactConfirmation,
+        // SCRUM-1018 — the number shown on the form is the till's: a number a
+        // family's screen sends back (one from before the field) is not taken.
+        // The profile's name likewise: staff correct it here.
+        phoneFixed: prompt.data.phoneFixed === true,
+        nameFixed: prompt.data.guardianFixed === true,
         setFamilyStep: setConsentFamilyStep,
         setDisplayCamera: setConsentDisplayCamera,
-        contactConfirmationUnsupported: () => setConsentContactLegacy(true),
         setConsentAcknowledged: setSuperConsentAck, setAcknowledgedConfirmationIds: setSuperAcknowledgedConfirmationIds,
         setCompletedSignature: (signature) => {
           setConsentCompletedScope(signature);
@@ -4248,8 +4333,6 @@ export default function Till() {
                   ? 'The display cannot show the form right now: open Private child details and go through it with the family, agreements included.'
                   : consentCandidate.completed
                   ? 'The family has finished the form on the display. Check the photo and details before Continue.'
-                  : consentContactLegacy && consentRequired && !contactConfirmed
-                    ? 'The display cannot show the number confirmation: open Private child details and confirm the messaging number with the family here.'
                   : consentStaffOnly
                     ? 'The family asked for help: fill the form here with them. The agreement ticks stay theirs, on the display.'
                     : 'The family is filling in the form on the display; it appears here as they go. Help with the details here if they ask.'}</p>
@@ -4257,9 +4340,7 @@ export default function Till() {
                 {consentCameraLine && <p className="w-full text-sm text-muted-foreground" data-testid="consent-staff-camera">{consentCameraLine}</p>}
               </div>}
               <ConsentTicksStatus consentRequired={consentRequired} consentAcknowledged={superConsentAck}
-                confirmations={consentConfirmations}
-                contact={consentRequired ? { phone: superParentPhone, channel: superParentContactMethod, confirmed: contactConfirmed,
-                  by: contactConfirmed ? superContactConfirmation?.by ?? null : null, problem: consentContactProblem } : undefined} />
+                confirmations={consentConfirmations} />
               <div className="flex-1 min-h-0"><SupervisionGate
               slots={superSlots}
               parentName={superParentName}
@@ -4271,8 +4352,11 @@ export default function Till() {
               onBack={handleSupervisionBack}
               onContinue={handleSupervisionContinue}
               busy={gateSaving}
-              contactConfirmed={contactConfirmed}
               contactPhoneProblem={consentContactProblem}
+              // SCRUM-1018 — each returning child's last photo, for staff to
+              // compare: "Still matches" reuses it, "Take a new one" as before.
+              lastPhotos={lastPhotos}
+              onPhotoChoice={handlePhotoChoice}
               /></div>
             </div>
           )}
@@ -4501,10 +4585,13 @@ export default function Till() {
               onParentNameChange={setSuperParentName}
               onParentPhoneChange={changeGuardianPhone}
               onParentContactMethodChange={changeGuardianChannel}
-              contactConfirmed={contactConfirmed}
-              onContactConfirmedChange={(confirmed) => setSuperContactConfirmation(confirmed
-                ? { at: new Date().toISOString(), by: 'family', phone: consentFormPhone(superParentPhone), channel: superParentContactMethod }
-                : null)}
+              // SCRUM-1018 — the family's half shows the number and the profile's
+              // name, and asks a returning family only the agreements; the photo
+              // staff compare or reuse on the till is not asked here.
+              parentPhoneFixed={!!superParentPhone.trim()}
+              parentNameFixed={superGuardianFromProfile && !!superParentName.trim()}
+              agreementsOnly={consentAgreementsOnly}
+              photoAtTillFor={staffPhotoSlotIds}
               onConsentAckChange={setSuperConsentAck}
               onUpdateChild={handleUpdateSlot}
               acknowledgedConfirmationIds={superAcknowledgedConfirmationIds}
@@ -4573,14 +4660,9 @@ export default function Till() {
             <ConsentCapture staffScreen slots={superSlots} ticksReadOnly={!staffTicks} parentName={superParentName} consentAck={superConsentAck} policy={supervisionPolicy}
               parentPhone={superParentPhone} parentContactMethod={superParentContactMethod}
               onParentNameChange={setSuperParentName} onParentPhoneChange={changeGuardianPhone}
+              // SCRUM-1018 — staff change the number and correct the profile's
+              // name here; no confirmation tick is asked (the number is shown).
               onParentContactMethodChange={changeGuardianChannel} onConsentAckChange={setSuperConsentAck}
-              // SCRUM-857 — staff see whether the family confirmed the number; they tick
-              // it here, with the family beside them, only when the display cannot show
-              // the form or does not know the tick (an older display or station).
-              contactConfirmed={contactConfirmed} contactConfirmTickable={staffTicks || consentContactLegacy}
-              onContactConfirmedChange={(confirmed) => setSuperContactConfirmation(confirmed
-                ? { at: new Date().toISOString(), by: 'staff', phone: consentFormPhone(superParentPhone), channel: superParentContactMethod }
-                : null)}
               onUpdateChild={handleUpdateSlot} acknowledgedConfirmationIds={superAcknowledgedConfirmationIds}
               onToggleConfirmation={handleToggleConfirmation} />
           </div>
@@ -4773,11 +4855,13 @@ export default function Till() {
         member={member}
         openVisitId={confirmedVisitId}
         onClose={() => setShowVisitChildren(false)}
-        onConfirmed={(children, visitId) => {
+        onConfirmed={(children, visitId, visitingIds) => {
           setMember((m) => (m ? { ...m, savedChildren: children } : m));
           // SCRUM-208 — keep the visit so the sale carries it and the kids'
           // bands are named from its children.
           setConfirmedVisitId(visitId);
+          // SCRUM-1018 — the children ticked here are the form's children.
+          setVisitingChildIds(visitingIds);
         }}
       />
 

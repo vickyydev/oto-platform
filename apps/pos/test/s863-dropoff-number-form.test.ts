@@ -129,17 +129,21 @@ describe('what the till does with it', () => {
     expect(till).toMatch(/setSuperParentPhone\(customerPhone\.trim\(\) \|\| member\?\.phone \|\| ''\);\s*setSuperParentContactMethod\(customerContactChannel\);/);
   });
 
-  it('both copies of the form write the registration’s contact, and nothing fixes the customer’s copy', () => {
-    // SCRUM-914 — through the rule that withdraws the confirmation, which
-    // writes the registration's contact (never the customer's own number).
+  it('both copies of the form write the registration’s contact; the customer’s copy shows the number (SCRUM-1018)', () => {
+    // SCRUM-1018 — the owner's answer of 19 November: the number is shown
+    // filled in and only staff change it. Both copies still write the
+    // registration's contact (never the customer's own number); the
+    // customer's copy is now told the number is fixed, staff's is not.
     expect(till.match(/onParentPhoneChange=\{changeGuardianPhone\}/g)).toHaveLength(2);
     expect(till.match(/onParentContactMethodChange=\{changeGuardianChannel\}/g)).toHaveLength(2);
-    expect(till).toMatch(/const changeGuardianPhone = \(next: string\) => \{[\s\S]{0,200}?setSuperParentPhone\(next\);/);
-    expect(till).toMatch(/const changeGuardianChannel = \(next: ContactChannel\) => \{[\s\S]{0,200}?setSuperParentContactMethod\(next\);/);
+    expect(till).toMatch(/const changeGuardianPhone = \(next: string\) => setSuperParentPhone\(next\);/);
+    expect(till).toMatch(/const changeGuardianChannel = \(next: ContactChannel\) => setSuperParentContactMethod\(next\);/);
     expect(till).not.toMatch(/parentPhoneKept|gatePhoneKept/);
-    expect(form_).not.toMatch(/parentPhoneKept|consent-kept-phone|till\.input\.phoneKept/);
-    // The field is the prototype's: the shared input, translated on the customer's side.
+    expect(till.match(/parentPhoneFixed=/g)).toHaveLength(1);
+    // The field is still the prototype's for a number not yet given, and on
+    // staff's copy: the shared input, translated on the customer's side.
     expect(form_).toMatch(/<PhoneInput\s+value=\{parentPhone \?\? ''\}\s+onChange=\{onParentPhoneChange\}\s+label=""[\s\S]*?channel=\{onParentContactMethodChange \? parentContactMethod : undefined\}\s+onChannelChange=\{onParentContactMethodChange\}\s+translate=\{!staffScreen\}/);
+    expect(form_).toMatch(/\{parentPhoneFixed && parentPhone\?\.trim\(\) \? \(/);
   });
 
   it('the registration is written with what the form holds', () => {

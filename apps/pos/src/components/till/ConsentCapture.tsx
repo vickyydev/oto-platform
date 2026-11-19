@@ -9,7 +9,7 @@ import { formatStoredPhone } from '@/lib/phoneUtils';
 import { getDropOffPricing } from '@/mockApi';
 import { resolveDropOffPricing } from '@/lib/dropoff';
 import { resolveGroupRequirements, resolveSupervisionOutcome, sortedConfirmations } from '@/lib/supervision';
-import { PhoneInput } from '@/components/shared/PhoneInput';
+import { ChannelSelector, PhoneInput } from '@/components/shared/PhoneInput';
 import { TouchText } from './TouchText';
 import { DISPLAY_TOUCH, NARROW_BAR, NARROW_HEAD, NARROW_LINE, PHONE_SCROLL, PHONE_SCROLL_FORM, PHONE_SHORT_BAR, PHONE_SHORT_LINE, SHORT_HIDE } from './consentFormLayout';
 import { kioskFlags } from '@/lib/kioskFlags';
@@ -112,6 +112,24 @@ interface ConsentCaptureProps {
    * phone, and everywhere else, the heading stands as before.
    */
   phoneScroll?: boolean;
+  /**
+   * SCRUM-1018 — the number is shown, not asked (the owner's answer of 19
+   * November): the family's half shows it filled in, with the app to choose
+   * beside it, and only staff change it (Private child details). Absent, the
+   * number is a box to type in, as before (the staff copy, the phone till and
+   * the booking site).
+   */
+  parentPhoneFixed?: boolean;
+  /** SCRUM-1018 — the parent's name is the family's profile name: shown, not asked. */
+  parentNameFixed?: boolean;
+  /**
+   * SCRUM-1018 — a returning family, every child from their saved profile:
+   * the children are shown, not asked (their names, ages and care notes are
+   * on the profile), and the family gives the agreements.
+   */
+  agreementsOnly?: boolean;
+  /** SCRUM-1018 — the children whose photo staff compare or reuse on the till: no camera here. */
+  photoAtTillFor?: readonly string[];
 }
 
 /**
@@ -203,6 +221,10 @@ export function ConsentCapture({
   doneBusy = false,
   doneNotSaved = false,
   phoneScroll = false,
+  parentPhoneFixed = false,
+  parentNameFixed = false,
+  agreementsOnly = false,
+  photoAtTillFor = [],
 }: ConsentCaptureProps) {
   const customer = useLanguage();
   // The till draws this form twice at once (the customer's half and the staff's
@@ -254,6 +276,9 @@ export function ConsentCapture({
   });
   const anyNeedsConsent = rows.some((r) => r.needsConsent);
   const allAged = rows.every((r) => r.aged);
+  // SCRUM-1018 — every child aged and none registered (a waived child and the
+  // sibling covering them, both on normal tickets): nothing to agree to.
+  const confirmationsAsked = anyNeedsConsent || !allAged;
   // SCRUM-875 — what is still missing before the family's Done, in their language.
   const missingLine = onDone
     ? consentMissingLine(t, consentMissing({
@@ -261,7 +286,7 @@ export function ConsentCapture({
       consentRequired: anyNeedsConsent,
       guardianName: parentName,
       consentAcknowledged: consentAck,
-      confirmations: confirmations.map((c) => ({ required: c.required, acknowledged: acknowledgedConfirmationIds.includes(c.id) })),
+      confirmations: confirmationsAsked ? confirmations.map((c) => ({ required: c.required, acknowledged: acknowledgedConfirmationIds.includes(c.id) })) : [],
       ...(onContactConfirmedChange ? { contact: { confirmed: contactConfirmed, problem: messagingPhoneProblem(parentPhone ?? '') } } : {}),
       photosTaken: rows.every((r) => !r.needsConsent || !!r.slot.childPhotoUrl),
     }), CHANNEL_LABEL[parentContactMethod])
@@ -300,7 +325,14 @@ export function ConsentCapture({
         const ReqIcon = meta.icon;
         return (
           <div key={slot.id} className="rounded-3xl border border-foreground/10 bg-foreground/5 p-6">
-            {/* Name + age — entered here by the parent, mirrored to the staff gate. */}
+            {/* Name + age — entered here by the parent, mirrored to the staff gate.
+                SCRUM-1018 — a returning family's saved children are shown, not asked. */}
+            {agreementsOnly ? (
+              <div className="flex items-center gap-2 text-2xl font-semibold" data-testid="consent-child-shown">
+                <Baby className="h-6 w-6 shrink-0 text-foreground/70" />
+                <span className="min-w-0 truncate">{slot.name}</span>
+              </div>
+            ) : (
             <div className="flex flex-col gap-4 sm:flex-row">
               <div className="flex-1">
                 <label className="flex items-center gap-2 text-lg text-foreground/70">
@@ -330,6 +362,7 @@ export function ConsentCapture({
                 />
               </div>
             </div>
+            )}
 
             {/* Requirement badge — appears the moment the age is entered so the
                 parent sees what's needed (nanny / drop-off / none) as they type. */}
@@ -356,7 +389,8 @@ export function ConsentCapture({
             {needsConsent && (
               <div className="mt-5 space-y-5 border-t border-foreground/10 pt-5">
                 <div className="grid gap-5 lg:grid-cols-2">
-                  <div>
+                  {/* SCRUM-1018 — a photo staff compare or reuse on the till is not asked here. */}
+                  {!photoAtTillFor.includes(slot.id) && <div>
                     <label className="flex items-center gap-2 text-lg text-foreground/70">
                       <Camera className="h-5 w-5" /> {t('superviseConsent.photoTitle')}
                     </label>
@@ -374,9 +408,11 @@ export function ConsentCapture({
                         onClear={() => onUpdateChild(slot.id, { childPhotoUrl: undefined })}
                       />
                     )}
-                  </div>
+                  </div>}
 
-                  <div className="space-y-4">
+                  {agreementsOnly && slot.savedChildId ? (
+                    <p className="text-lg text-foreground/70" data-testid="consent-care-saved">{t('superviseConsent.savedOnProfile')}</p>
+                  ) : <div className="space-y-4">
                     <div>
                       <label className="flex items-center gap-2 text-lg text-foreground/70">
                         <HeartPulse className="h-5 w-5" /> {t('superviseConsent.allergiesMedical')}
@@ -402,7 +438,7 @@ export function ConsentCapture({
                         className="mt-2 h-12 border-foreground/10 bg-foreground/5 px-4 text-lg text-foreground placeholder:text-foreground/30"
                       />
                     </div>
-                  </div>
+                  </div>}
                 </div>
 
                 {/* Food provision — replaces the old toggle with the 3-way prepaid picker. */}
@@ -441,6 +477,13 @@ export function ConsentCapture({
           <div className="rounded-3xl border border-foreground/10 bg-foreground/5 p-6 space-y-5">
             <div>
               <label className="text-lg text-foreground/70">{t('superviseConsent.parentGuardianName')}</label>
+              {/* SCRUM-1018 — the family's profile name, shown, not asked. */}
+              {parentNameFixed ? (
+                <div data-testid="consent-kept-guardian">
+                  <div className="mt-2 flex h-14 items-center rounded-md border border-foreground/10 bg-foreground/5 px-4 text-2xl font-semibold">{parentName}</div>
+                  <p className="mt-2 text-base text-foreground/50">{t('superviseConsent.savedOnProfile')}</p>
+                </div>
+              ) : (
               <TouchText
                 value={parentName}
                 onChange={onParentNameChange}
@@ -448,6 +491,7 @@ export function ConsentCapture({
                 screenKeyboard={screenKeyboard} maxLength={keysBound(100)} testId="consent-guardian"
                 className="mt-2 h-14 border-foreground/10 bg-foreground/5 px-4 text-2xl text-foreground placeholder:text-foreground/30"
               />
+              )}
             </div>
 
             {/* Phone + contact method: shown when the parent handlers are provided.
@@ -457,6 +501,17 @@ export function ConsentCapture({
                 <label className="flex items-center gap-2 text-lg text-foreground/70">
                   <Phone className="h-5 w-5" /> {t('superviseConsent.phoneNumber')}
                 </label>
+                {/* SCRUM-1018 — the number shown, not asked: only staff change it. */}
+                {parentPhoneFixed && parentPhone?.trim() ? (
+                  <div data-testid="consent-kept-phone">
+                    <div className="flex h-14 items-center rounded-md border border-foreground/10 bg-foreground/5 px-4 text-2xl font-semibold tabular-nums">{formatStoredPhone(parentPhone)}</div>
+                    {onParentContactMethodChange && (
+                      <ChannelSelector channel={parentContactMethod} onChange={onParentContactMethodChange} kiosk
+                        pillClassName={phoneScroll ? DISPLAY_TOUCH : undefined} />
+                    )}
+                    <p className="mt-2 text-base text-foreground/50">{t('till.input.phoneKept')}</p>
+                  </div>
+                ) : (
                 <PhoneInput
                   value={parentPhone ?? ''}
                   onChange={onParentPhoneChange}
@@ -469,6 +524,7 @@ export function ConsentCapture({
                   // SCRUM-963 — a finger's height on the phone till's form; the till's own half as before.
                   channelClassName={phoneScroll ? DISPLAY_TOUCH : undefined}
                 />
+                )}
                 {/* SCRUM-857 — the family confirms that this number is the one for
                     the chosen channel; the line names the channel. Not tickable
                     while the number is missing or cannot take messages, and the
@@ -536,7 +592,7 @@ export function ConsentCapture({
             of whether a paid service applies. Gated on `allAged` so it only
             appears once every child's age is entered (as part of the consent
             step below), not prematurely on the empty name/age entry. */}
-        {slots.length > 0 && allAged && confirmations.length > 0 && (
+        {slots.length > 0 && allAged && confirmationsAsked && confirmations.length > 0 && (
           <div className="rounded-3xl border border-foreground/10 bg-foreground/5 p-6 space-y-3">
             <label className="flex items-center gap-2 text-lg font-semibold text-foreground/80">
               <ClipboardCheck className="h-5 w-5 text-primary" />
