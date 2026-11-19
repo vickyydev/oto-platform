@@ -90,6 +90,15 @@ const blankUnitRow = (): UnitRow => ({
   eaches: '1',
 });
 
+/**
+ * SCRUM-1040 — the Product choice for an item linked to no product: counted,
+ * received and corrected like any other, and never sold at the till (the
+ * platform's `productId: null`, `StockItemBodySchema`). The Mystery Box a
+ * booth prize hands over is one. The form holds this value; the item saves
+ * with no linked product.
+ */
+export const NO_LINKED_PRODUCT = '__none__';
+
 /** The sellables of one kind an inventory item can link to. */
 function linkedOptionsFor(
   kind: 'merch' | 'addon' | 'menu',
@@ -233,7 +242,8 @@ export function InventoryItemFormDialogWithPorts({
       setCategory(item.category ?? '');
       setActive(item.active !== false);
       setLinkedKind(item.linkedKind);
-      setLinkedId(item.linkedId);
+      // An item already counted with no product opens on that choice.
+      setLinkedId(item.linkedId || NO_LINKED_PRODUCT);
       setVariants(item.variants.map(fromVariant));
       const unitList = item.units ? item.units.map(fromUnit) : [];
       setUnits(unitList);
@@ -323,14 +333,16 @@ export function InventoryItemFormDialogWithPorts({
 
   // The linked product's sizes (S2-14b): each inventory variant names one, and
   // a product sold in sizes is stocked in ALL of them or none (H3).
-  const productSizes = linkedId ? catalogueSizesOf(linkedId) : [];
-  const linkedName = linkedOptionsFor(linkedKind, merchItems, addOns, menuItems).find((o) => o.id === linkedId)?.label ?? '';
+  // The product the item is linked to; empty while none is picked or "none" is.
+  const productId = linkedId === NO_LINKED_PRODUCT ? '' : linkedId;
+  const productSizes = productId ? catalogueSizesOf(productId) : [];
+  const linkedName = linkedOptionsFor(linkedKind, merchItems, addOns, menuItems).find((o) => o.id === productId)?.label ?? '';
 
   const validate = (): InventoryItem | null => {
     const next: Record<string, string> = {};
     if (!name.trim()) next.name = 'Name is required.';
     if (!linkedId.trim()) next.linkedId = 'Linked product is required.';
-    else {
+    else if (linkedId !== NO_LINKED_PRODUCT) {
       const problem = partialStockLinkProblem(
         linkedName || name.trim(),
         productSizes,
@@ -427,7 +439,7 @@ export function InventoryItemFormDialogWithPorts({
         ? Number(unitCostTHB)
         : undefined;
 
-    const id = item?.id ?? `inv-${linkedId.trim().replace(/\s+/g, '-')}`;
+    const id = item?.id ?? `inv-${productId.trim().replace(/\s+/g, '-')}`;
     return {
       id,
       name: name.trim(),
@@ -435,7 +447,7 @@ export function InventoryItemFormDialogWithPorts({
       ...(category.trim() ? { category: category.trim() } : {}),
       active,
       linkedKind,
-      linkedId: linkedId.trim(),
+      linkedId: productId.trim(),
       variants: parsedVariants,
       ...(parsedUnits ? { units: parsedUnits } : {}),
       ...(photoUrl ? { photoUrl, showPhotoInPos } : {}),
@@ -463,7 +475,7 @@ export function InventoryItemFormDialogWithPorts({
   /** Picking a product sold in sizes fills a blank form with one row per size. */
   const pickLinked = (id: string) => {
     setLinkedId(id);
-    const sizes = id ? catalogueSizesOf(id) : [];
+    const sizes = id && id !== NO_LINKED_PRODUCT ? catalogueSizesOf(id) : [];
     const blank = variants.length === 1 && !variants[0]!.label.trim() && !variants[0]!.productVariantRef.trim();
     if (sizes.length > 0 && blank) {
       setVariants(sizes.map((s) => ({ ...blankVariantRow(`v-${s.id}`), label: s.label, productVariantRef: s.id })));
@@ -627,6 +639,7 @@ export function InventoryItemFormDialogWithPorts({
                   className="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
                 >
                   <option value="">— pick a product —</option>
+                  <option value={NO_LINKED_PRODUCT}>— none: counted, never sold —</option>
                   {linkedOptions.map((opt) => (
                     <option key={opt.id} value={opt.id}>{opt.label} ({opt.id})</option>
                   ))}
