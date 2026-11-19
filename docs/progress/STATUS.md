@@ -1,3 +1,39 @@
+## 20 November 2026, 04:15: the activity-log pay fix is on staging; the single shift waits for seven pay answers
+
+- **SCRUM-1058 "HR app: the activity log shows salary-change entries to staff
+  below manager": Deployed** (main 90de59969, pictures ebc9ecd45;
+  `oto-app-staging` live 03:54; hosted CI green on that commit). Salary-change
+  entries are returned only to the roles that may see salaries (administrators
+  today; managers and staff read none, by search, filter, the latest list or
+  the dashboard). The Leave Types screen no longer shows an audience badge on
+  a switched-off type.
+- **The single shift (SCRUM-1038, SCRUM-1055) stays off main, on purpose.**
+  Built and reviewed on `lane/shift1055-20261119` (wip
+  `wip/shift1055-20261119-r2`, 15aa7e48c; migration 0054 applied nowhere):
+  the old-contract shift is paid in the month it is worked as its own "Single
+  shift" line (salary divided by the days in the month), with food allowance,
+  overtime, tax and social security through the person's existing path; a
+  month without a single shift is identical for everyone (recorded run,
+  compared figure for figure); the kiosk shows the shift on the day. Not
+  payable yet: a casual day rate (the app pays no casual workers today) and
+  the service-charge share (shared in the next month's run by days employed).
+  Landing it now would let a manager invite someone payroll cannot pay in
+  full.
+- **Thirteen new points on the owner's page** (Version 9, section "New points,
+  20 November", ids n-casual, n-service, n-allow, n-contractor, n-see,
+  n-noshow, n-loans, n-midnight, n-formname, n-bandprint, n-displayremove,
+  n-mini, n-fold): seven on single-shift pay, one on a shift past midnight,
+  three on the till, two on the Inbox. Read them only when he says he has
+  answered.
+- **Launched: the till finish points** (SCRUM-1059, run wf_dc7fb888-4e4,
+  worktree `C:/oto-lanes/codex-deposit-910-20261114`, branch
+  `lane/tillfinish1059-20261120`).
+- **When the single shift resumes:** rebase the lane on main; an add/add
+  conflict in `apps/oto-app/server/lib/activityPay.ts` and the routes import
+  takes main's file plus `single_shift_pay_changed`; check the 0054 number.
+- **Running:** the BEO editor (review), family F3 (platform readers), the
+  till finish points.
+
 ## 20 November 2026, 02:40: the till lane landed: extra food credit, several displays, the number as a name, the food tick
 
 - **Landed** (main d048c9c0d, 19 commits; test and picture commits up to
