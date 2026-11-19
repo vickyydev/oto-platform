@@ -1,6 +1,6 @@
 import type { DepositSaveNote, DepositSaveReason, OneDeposit, PartyDepositAnswer } from "@shared/partyDeposit";
 import { depositMovedWords, depositWordsOf } from "@shared/partyDeposit";
-import { dayOf, sameDeposit, wholeBahtOf, type PartyDeposit } from "./partyDeposit";
+import { dayOf, depositOfBillingColumns, sameDeposit, wholeBahtOf, type PartyDeposit } from "./partyDeposit";
 
 /**
  * A SAVE NEVER LOWERS OR CLEARS A DEPOSIT IT DID NOT DELIBERATELY CHANGE (SCRUM-840).
@@ -154,6 +154,34 @@ export function depositNamedBy(partyDetails: unknown, was: PartyDeposit): PartyD
     amountThb: namesAmount ? wholeBahtOf(pd.prepaymentReceived) : was.amountThb,
     date: namesDay ? dayOf(pd.depositDate) : was.date,
   });
+}
+
+/**
+ * SCRUM-1034: the deposit typed by hand in the BEO is a manager's to type or change
+ * (shared/beoDepositManager.ts). True when a Save from anyone else would change the party's
+ * stored deposit: through Party Details (unless the form says nobody changed it), or through the
+ * billing's own deposit columns. A Save that leaves the deposit as stored goes through.
+ */
+export function depositChangeRefused(input: {
+  mayChange: boolean;
+  depositChanged: unknown;
+  partyDetails: unknown;
+  billing: Record<string, unknown> | undefined;
+  stored: PartyDeposit;
+  storedBilling: { depositPaid?: unknown; depositPaidAmount?: unknown; depositPaidAt?: unknown } | null | undefined;
+}): boolean {
+  if (input.mayChange) return false;
+  const was = noDepositDay(input.stored);
+  const named = input.depositChanged !== false ? depositNamedBy(input.partyDetails, was) : null;
+  if (named && !sameDeposit(named, was)) return true;
+  const billingKeys = ["depositPaid", "depositPaidAmount", "depositPaidAt"];
+  const billing = input.billing;
+  if (billing && billingKeys.some((k) => k in billing)) {
+    const before = depositOfBillingColumns(input.storedBilling ?? {});
+    const after = depositOfBillingColumns({ ...(input.storedBilling ?? {}), ...billing });
+    if (!sameDeposit(noDepositDay(before), noDepositDay(after))) return true;
+  }
+  return false;
 }
 
 /** Party Details as stored: the form's other keys, and the deposit as it now stands. */

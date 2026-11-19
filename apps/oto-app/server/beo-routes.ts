@@ -48,6 +48,7 @@ import { paidBeoQuantitiesOf } from "./lib/beoPaidLinesRead";
 import { currentDeposit, depositOfBillingColumns, sameDeposit, writePartyDeposit } from "./lib/partyDeposit";
 import {
   decideDepositSave,
+  depositChangeRefused,
   depositNamedBy,
   expectedDepositOf,
   lowersDeliberately,
@@ -58,8 +59,8 @@ import {
 import { gatewayDepositFloor } from "./party-deposit-routes";
 import type { DepositSaveNote } from "@shared/partyDeposit";
 import { OBJECT_STORAGE } from "./config/env";
-import { beoTimedMadeSteps } from "@shared/beoTimeline";
-import { beoActivitiesOf, beoTimelineSourceOf, readBeoTimeline } from "./lib/beoTimelineRead";
+import { beoActivitiesOf, beoTimelineSourceOf, madeStepRowsOf, readBeoTimeline, tickMadeStep } from "./lib/beoTimelineRead";
+import { BEO_DEPOSIT_MANAGERS_ONLY, mayChangeBeoDeposit } from "@shared/beoDepositManager";
 import { uploadToObjectStorage } from "./file-storage";
 import { s3PresignedGet } from "./storage/s3Storage";
 import { onStaff } from "./lib/payOnlyAccess";
@@ -401,16 +402,9 @@ export async function generateTimelineFromBeo(eventId: string): Promise<void> {
   // for the Day-of view's ticks; a step whose time the BEO does not store is not stored (no time is
   // invented: a setup task is no longer placed 30 minutes before the start, a service block with no
   // time no longer 15 after it). Offsets are from the start, as the rows have always been held.
-  const startTimeParts = event.startTime?.split(":").map(Number) || [14, 0];
-  const startTotalMin = startTimeParts[0] * 60 + startTimeParts[1];
-
-  // Build source key → {label, offset} map for all timed sources
-  const sourceMap = new Map<string, { label: string; offsetMinutes: number; assignedToType: string }>();
-  for (const step of beoTimedMadeSteps(await beoTimelineSourceOf(event))) {
-    const offsetMinutes = step.clock.minute - startTotalMin;
-    if (Number.isNaN(offsetMinutes)) continue;
-    sourceMap.set(step.key, { label: step.label, offsetMinutes, assignedToType: step.assignedToType });
-  }
+  // SCRUM-1050: the rows are made by madeStepRowsOf (server/lib/beoTimelineRead.ts), which the Day-of
+  // view's first tick of a step not stored yet stores its row with, under the same source key.
+  const sourceMap = madeStepRowsOf(event.startTime, await beoTimelineSourceOf(event));
 
   // Fetch all existing system-generated timeline items for this event
   const existingSystemItems = await db.select().from(beoTimelineItems)
@@ -1683,6 +1677,27 @@ export function registerBeoRoutes(app: Express) {
     }
   });
 
+  // SCRUM-1050: an automatic step of the one timeline ticked on the Day-of view before the BEO's next
+  // Save stored its row: the row is stored now under the generator's own source key, ticked done
+  // (tickMadeStep, server/lib/beoTimelineRead.ts). Who may tick is who may tick a stored row (above).
+  app.post("/api/events/:eventId/beo/timeline/steps/:key/complete", requireAuth, async (req, res, next) => {
+    try {
+      const { eventId, key } = req.params;
+
+      if (!(await verifyEventAccess(eventId, req.userWithAccess))) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+
+      const [event] = await db.select().from(coreEvents).where(eq(coreEvents.id, eventId));
+      if (!event) return res.status(404).json({ error: "Event not found" });
+      const row = await tickMadeStep(event, key, req.user!.id);
+      if (!row) return res.status(404).json({ error: "This step is not on the party's timeline" });
+      res.json(row);
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // Auto-generate timeline based on event settings
   app.post("/api/events/:eventId/beo/timeline/generate", requireAuth, requireManager, async (req, res, next) => {
     try {
@@ -1761,6 +1776,25 @@ export function registerBeoRoutes(app: Express) {
         }
       }
       
+      // SCRUM-1034: the deposit typed by hand is a manager's to type or change (a deposit taken in
+      // cash; shared/beoDepositManager.ts). Only managers reach this route today (requireManager);
+      // the rule is held here on the deposit itself as well, before anything is written: a Save
+      // from anyone else that would change the stored deposit is refused in words, and one that
+      // leaves it as stored goes on.
+      if (!mayChangeBeoDeposit(req.userWithAccess?.role)) {
+        const [billingNow] = await db.select().from(beoEventBilling).where(eq(beoEventBilling.eventId, eventId));
+        if (depositChangeRefused({
+          mayChange: false,
+          depositChanged: rawBody.depositChanged,
+          partyDetails: rawBody.partyDetails,
+          billing: billing as Record<string, unknown> | undefined,
+          stored: currentDeposit(billingNow, existingEvent),
+          storedBilling: billingNow,
+        })) {
+          return res.status(403).json({ error: BEO_DEPOSIT_MANAGERS_ONLY });
+        }
+      }
+
       // SCRUM-840: the party's deposit is never written from the event's own fields here. The
       // BEO's deposit is Party Details' (below), written under the rule of depositSaveGuard.ts.
       if (eventUpdates) {

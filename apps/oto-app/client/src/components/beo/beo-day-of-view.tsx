@@ -404,6 +404,24 @@ export function BeoDayOfView({ eventId, onClose }: BeoDayOfViewProps) {
     },
   });
 
+  // SCRUM-1050: an automatic step the BEO's last Save did not store yet (its row is made on the next
+  // Save) is ticked straight away: the server stores its row under the generator's own source key,
+  // ticked, so the next Save keeps the tick and stores no second row.
+  const completeStepMutation = useMutation({
+    mutationFn: async (key: string) => {
+      const res = await apiRequest("POST", `/api/events/${eventId}/beo/timeline/steps/${encodeURIComponent(key)}/complete`);
+      if (!res.ok) throw new Error("Failed to update item");
+      return res.json();
+    },
+    onSuccess: (data: { isCompleted: boolean }) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/events", eventId, "beo"] });
+      toast({ title: data.isCompleted ? "Step marked complete" : "Step marked incomplete" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed to update", description: error.message, variant: "destructive" });
+    },
+  });
+
   const toggleBeoTaskMutation = useMutation({
     mutationFn: async (taskId: string) => {
       const tasks = (beoData as BeoEventWithDetails & { beoTasks?: Array<{ id: string; title: string; status: string }> })?.beoTasks || [];
@@ -653,6 +671,7 @@ export function BeoDayOfView({ eventId, onClose }: BeoDayOfViewProps) {
   const startMinute = beoClockOf(beoData.startTime)?.minute ?? null;
   const sortedTimeline = (builtTimeline.data?.steps ?? []).map((step) => ({
     id: step.rowId ?? step.key,
+    key: step.key,
     rowId: step.rowId,
     time: step.time,
     label: step.label,
@@ -985,17 +1004,17 @@ export function BeoDayOfView({ eventId, onClose }: BeoDayOfViewProps) {
                           </div>
                         )}
                       </div>
-                      {!isLocalItem && realItem?.rowId && (
+                      {!isLocalItem && realItem && (realItem.rowId || realItem.isSystemGenerated) && (
                         <div className="flex items-center gap-0.5">
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => completeMutation.mutate(item.id)}
-                            disabled={completeMutation.isPending}
+                            onClick={() => (realItem.rowId ? completeMutation.mutate(realItem.rowId) : completeStepMutation.mutate(realItem.key))}
+                            disabled={completeMutation.isPending || completeStepMutation.isPending}
                             className="h-8 w-8"
                             data-testid={`button-complete-${index}`}
                           >
-                            {completeMutation.isPending ? (
+                            {completeMutation.isPending || completeStepMutation.isPending ? (
                               <Loader2 className="h-5 w-5 animate-spin" />
                             ) : realItem?.isCompleted ? (
                               <CheckCircle2 className="h-6 w-6 text-green-500" />
@@ -1003,7 +1022,7 @@ export function BeoDayOfView({ eventId, onClose }: BeoDayOfViewProps) {
                               <Circle className="h-5 w-5" />
                             )}
                           </Button>
-                          {canEdit && (
+                          {canEdit && realItem.rowId && (
                             <Button
                               variant="ghost"
                               size="icon"
