@@ -1,6 +1,6 @@
 # Family profiles: several parents or guardians for the same children
 
-SCRUM-1024 and SCRUM-1025. **State, 19 November 2026, evening: APPROVED, the eight questions answered; step F1 built on a lane, not landed (section 11).** The owner answered section 10 on his plan page; his answers are at the end of that section and in section 4 of ANSWERS.md. A plan written from a read of the code at main 3231ee7e3. The build starts with steps F1 and F2 when the drop-off counter flow has landed. The specification is section 4 of `ANSWERS.md` beside this file. The code comparison is `DROPOFF_AND_TILL_COMPARISON.md`: rows D15 to D17 and its section 3. Nothing here is decided beyond those answers. Where a rule still belongs to the owner, it is a numbered question in section 10, with today's behaviour as the default until he answers.
+SCRUM-1024 and SCRUM-1025. **State, 19 November 2026, evening: APPROVED, the eight questions answered; steps F1 and F2 built on a lane, not landed, and the backfill not run anywhere (section 11).** The owner answered section 10 on his plan page; his answers are at the end of that section and in section 4 of ANSWERS.md. A plan written from a read of the code at main 3231ee7e3. The build starts with steps F1 and F2 when the drop-off counter flow has landed. The specification is section 4 of `ANSWERS.md` beside this file. The code comparison is `DROPOFF_AND_TILL_COMPARISON.md`: rows D15 to D17 and its section 3. Nothing here is decided beyond those answers. Where a rule still belongs to the owner, it is a numbered question in section 10, with today's behaviour as the default until he answers.
 
 ## 1. Today's model
 
@@ -343,3 +343,19 @@ Where the code or the build differs from the text above:
 - **An archived member.** The box's `child.created` accepts a child under a member archived since it went offline, as it did before, so `ensureFamilyFor` does not refuse an archived member.
 - **Audit.** A new family writes one `family.create` row (its source, the member, the guardian row, the child it was made for, and the station). Further guardians will be `family_guardian.add` (section 4.1). `demo-reset` takes `family` audit rows with the other facts.
 - **What changed in what people see:** the Console's switch list shows one more switch, not settable. The audit rows that store the whole child row (`child.update` from the till and from the box, and `child.archive`) now carry `familyId` and `mergedIntoChildId` as well. No route answer, cache view, box bundle, receipt or report changed (`api-types --check` reports no change). The demo reset's answer keeps its fields: families are not counted in it.
+
+### Step F2, the backfill and its checks (19 November 2026, same lane, not landed, not run)
+
+Built and tested on the lane against embedded test databases only. **No script has been run on staging or on any real database**; that is a data job for the owner's separate go. How and in what order they are run is `FAMILY_BACKFILL_RUNBOOK.md` beside this file.
+
+- **Where they live.** The repository's pattern for a one-off data job (the OTO App staff accounts, SCRUM-795): the logic in `packages/db/src` (`family-backfill.ts`, `family-verify.ts`, exported from the package), a thin command line in `packages/db/scripts`, a test in `packages/db/test`, and a Render one-off job on the api image (`node scripts/agent/render.mjs job "pnpm --filter @oto/db exec tsx scripts/<name>.ts"`).
+- **The shadow compare** for step R1 is in the api (`services/family-shadow.ts`, command line `apps/api/scripts/family-shadow-compare.ts`), because it calls the read rule `childrenSeenBy` as it is rather than a second copy of it. Today's side is the counter lookup's read (`memberWithChildren`): a live member's live children by `child.member_id`, nothing for an archived member.
+- **Tests:** `packages/db/test/s1024-family-backfill.test.ts` (9) and `apps/api/test/s1024-family-shadow-compare.test.ts` (5), including the command lines run against the test database.
+
+Where the build differs from the text of section 3:
+
+- **A member's own family first.** The writers are live before the backfill runs, so a member who added a child since F1 already has a family. The backfill puts their older children in that family instead of making a second one, when that family's only live guardian is the member. A member in several families, or in a family with another guardian, is left untouched and listed as "needs a hand"; neither can happen before F4.
+- **It never waits for the till.** Members and then their children are locked `FOR NO KEY UPDATE SKIP LOCKED`, the lock `ensureFamilyFor` takes. A row a till holds is skipped, counted "busy" and done by the next run, so the backfill cannot be part of a deadlock. Measured on the laptop's test database, a batch held its locks for 40 to 75 ms at 200 members, 75 to 125 ms at 500, and about 150 ms at 1000; each applied batch prints its own time.
+- **Audit:** one `family.backfill` row per batch and operator (audit rows are scoped to one operator), with the member id range and that operator's counts, request id `script:family-backfill`, origin `job`. A run that writes nothing writes no audit row, so a second run leaves the database exactly as it was.
+- **`child.updated_at` is not changed** by the backfill: the family is not an edit of the child's details, and nothing reads that column.
+- **Check 2** counts live families only, because linking two records (F5) archives a family together with its guardian row.
