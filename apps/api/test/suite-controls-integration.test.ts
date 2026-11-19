@@ -232,13 +232,18 @@ describe('SCRUM-643 maintenance at hand-off: mint and exchange', () => {
 describe('SCRUM-643 flags: catalogue, scope and dual control', () => {
   it('P5 critical: unknown and unsupported keys are refused on every write and the preview, and never stored', async () => {
     const unsupported = FLAG_CATALOGUE.filter(entry => !entry.supported).map(entry => entry.key);
-    expect(unsupported.sort()).toEqual(['analytics.rollups_frozen', 'booth.stopped', 'gate.closed', 'payments.card_tender_disabled',
-      'payments.manual_recording_forced', 'payments.qr_tender_disabled']);
+    // SCRUM-1024: family profiles is listed and stays off until its readers exist (plan step F3).
+    expect(unsupported.sort()).toEqual(['analytics.rollups_frozen', 'booth.stopped', 'crm.family_profiles', 'gate.closed',
+      'payments.card_tender_disabled', 'payments.manual_recording_forced', 'payments.qr_tender_disabled']);
     for (const key of unsupported) {
-      const value = flagCatalogueEntry(key)!.valueType === 'enum' ? 'deny_all' : true;
+      const entry = flagCatalogueEntry(key)!;
+      // A value the switch does take, so the refusal is for the switch and not the value ('deny_all' for the gate).
+      const value = entry.valueType === 'enum' ? entry.values!.find(v => v !== entry.defaultValue)! : true;
       const body = { key, scopeType: 'operator', scopeId: oto, operatorId: oto, value, reason: 'ZZ TEST 643', expectedRevision: 0, confirmation: key };
       expect((await call(admin, 'PUT', '/console/flags', body)).body.error.code, key).toBe('FLAG_UNSUPPORTED');
-      expect((await call(admin, 'POST', '/console/flags/approvals', body)).body.error.code, key).toBe('FLAG_UNSUPPORTED');
+      // Two-person approval is for kill switches; a feature switch (SCRUM-1024's) is refused there before anything is read.
+      expect((await call(admin, 'POST', '/console/flags/approvals', body)).body.error.code, key)
+        .toBe(entry.kind === 'kill_switch' ? 'FLAG_UNSUPPORTED' : 'APPROVAL_NOT_APPLICABLE');
       expect((await call(admin, 'GET', `/console/flags/preview?key=${key}&scopeType=operator&scopeId=${oto}&operatorId=${oto}&value=${value}`)).body.error.code).toBe('FLAG_UNSUPPORTED');
     }
     const unknown = { key: 'zz.not.a.switch', scopeType: 'platform', scopeId: null, operatorId: null, value: true, reason: 'ZZ', expectedRevision: 0, confirmation: 'zz.not.a.switch' };
