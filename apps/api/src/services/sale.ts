@@ -134,7 +134,7 @@ import { refundsOfSale } from './refund-slices';
 import { applySaleExtension, cancelSaleExtension, assertSaleExtensionCollectable } from './sale-extension-lifecycle';
 import { applyEventPassHold, releaseEventPassHold } from './event-pass-hold';
 import { applyPartySettlementClose } from './party-settlement-close';
-import { assertCartStock, stockSharesForLines, takeStockForSale } from './stock';
+import { assertCartStock, stockSharesForLines, takeStockForClose, type PrizeStockTake } from './stock';
 import { printJobsOfSale, routeSalePrinting, type SalePrintingResult } from './sale-printing';
 import { debitForSale, grantSaleCredit, grantsOfSale } from './wallet';
 import type { CartBandHolderInput, CartPrepaidInput, WalletGrantView, WalletTenderInstruction } from '@oto/shared';
@@ -4267,6 +4267,8 @@ export async function commitSale(
     await assertSalePromoUsesLeft(tx, { id: saleId, operatorId: actor.operatorId, memberId: values.memberId ?? null });
   }
 
+  /** SCRUM-1040 — the hand-over prizes the close takes off their shelves with the sale's own stock. */
+  let prizeTakes: PrizeStockTake[] = [];
   /**
    * S2-10b — which voucher this sale was priced with, recorded with the sale:
    * the discount row says how much, this says which voucher, and it is what
@@ -4297,10 +4299,7 @@ export async function commitSale(
       clock.occurredAt,
     );
     if (finalising) {
-      // SCRUM-1040 — told whether this close is a box's, as the stock take below is.
-      await consumeSaleVouchers(tx, voucherScope, holder, clock.occurredAt, {
-        offline: options.printing === 'skip',
-      });
+      ({ prizes: prizeTakes } = await consumeSaleVouchers(tx, voucherScope, holder, clock.occurredAt));
     }
   }
 
@@ -4379,14 +4378,20 @@ export async function commitSale(
   /**
    * S2-14b — a ฿0 close takes its stock like any other close: the one finalise
    * point that is not `finaliseSale`. Never refuses (see `takeStockForSale`).
+   * SCRUM-1040: with it, one unit for each hand-over prize used up above.
    */
   if (finalising) {
-    await takeStockForSale(tx, written, {
-      actorAccountId: actor.accountId,
-      requestId: actor.requestId ?? null,
-      offline: options.printing === 'skip',
-      now: clock.occurredAt,
-    });
+    await takeStockForClose(
+      tx,
+      written,
+      {
+        actorAccountId: actor.accountId,
+        requestId: actor.requestId ?? null,
+        offline: options.printing === 'skip',
+        now: clock.occurredAt,
+      },
+      prizeTakes,
+    );
     // SCRUM-494 — a prepaid-only order closes here with no tender, and is served
     // here; a counter's close refuses what it cannot serve, a replay files it.
     await redeemSalePrepaid(
@@ -5130,12 +5135,11 @@ export async function finaliseSale(
    */
   // A device-rung sale (S2-20 K1) carries no voucher — only a person records
   // one against a sale (`commitSale`) — so there is nothing to use up.
-  const { consumed } = actor.accountId
-    ? await consumeSaleVouchers(tx, voucherScope, { accountId: actor.accountId, requestId: actor.requestId }, now, {
-        // SCRUM-1040 — a hand-over prize's unit leaves as the stock take below does.
-        offline: input.printing === 'skip' || row.origin === 'box',
-      })
-    : { consumed: [] as string[] };
+  // SCRUM-1040 — `prizes`: the hand-over prizes it used up whose units leave
+  // their shelves with the sale's own stock below (`takeStockForClose`).
+  const { consumed, prizes } = actor.accountId
+    ? await consumeSaleVouchers(tx, voucherScope, { accountId: actor.accountId, requestId: actor.requestId }, now)
+    : { consumed: [] as string[], prizes: [] as PrizeStockTake[] };
 
   if (!st?.codePrefix) {
     throw errors.badRequest(
@@ -5214,14 +5218,20 @@ export async function finaliseSale(
    * refuses — a card approved after another till took the last unit, an
    * offline sale arriving hours later — it records what it took and the
    * shortfall for someone to count. Keyed by the sale's own line ids, so a
-   * replayed close takes nothing twice.
+   * replayed close takes nothing twice. SCRUM-1040: with it, one unit for each
+   * hand-over prize used up above, keyed by its voucher.
    */
-  await takeStockForSale(tx, after, {
-    actorAccountId: actor.accountId,
-    requestId: actor.requestId ?? null,
-    offline: input.printing === 'skip' || after.origin === 'box',
-    now,
-  });
+  await takeStockForClose(
+    tx,
+    after,
+    {
+      actorAccountId: actor.accountId,
+      requestId: actor.requestId ?? null,
+      offline: input.printing === 'skip' || after.origin === 'box',
+      now,
+    },
+    prizes,
+  );
 
   /**
    * SCRUM-494 — THE PREPAID LINES ARE SERVED, in this transaction, once the
