@@ -533,7 +533,13 @@ describe('A. fences and seams', () => {
       // Bar, Entertainment, Cake and Notes on the right, every part breaking between rows; generateBeoPdf
       // prints a footer naming the party and its page on every page; where the BEO's documents live is
       // unchanged.
-      'pdf.ts': 'ffeef06d68506ee1d79a540942c0649f8a078bc52bbaf2e5ba322bf95ac454f7',
+      // SCRUM-1030/1031/1042/1050: the Staff BEO prints the party's socks arrangement and expected extra
+      // guests in its header (shared/beoGuestsSocks.ts), the Kitchen Notes at the top of the Kitchen, the
+      // birthday package's waffles as "Adult Waffles" (shared/beoAdultWaffles.ts, a display name only),
+      // a set-menu choice's group label again (R13), no "1x" before a set line whose name carries its
+      // count, and a mark on an EXTRA the till does not charge with its words once under its list
+      // (R24); PDF generation and where the BEO's documents live are unchanged.
+      'pdf.ts': '5b44a26709ddcf6dfa1a43a3c5509cc4e0a5f76f09011733b84f220d688f5e07',
       // SCRUM-803 / SCRUM-806: Generate from BEO bills the package in baht and only the add-ons a party bought; where the BEO's documents live is unchanged.
       // SCRUM-769: the BEO's staff list leaves out a login whose employment has ended (onStaff); where documents live is unchanged.
       // SCRUM-815: the parent link's set-menu lines are resolved by server/lib/setMenuResolve.ts (moved, not changed) and the
@@ -605,7 +611,12 @@ describe('A. fences and seams', () => {
       // POST /api/events/:eventId/beo/timeline/steps/:key/complete stores an automatic step's row on
       // its first tick, after the event's own access check, as the generator would; no PDF, file,
       // bucket or public-folder door is added; where the BEO's documents live is unchanged.
-      'beo-routes.ts': 'e5b60d05a8390d01f57327d63cd9950cfc64a5ef4cf2f2fa2bd612d666fd4cee',
+      // SCRUM-1030/1031: the BEO's Save refuses in words, before it writes anything, expected extra
+      // guests or a socks arrangement the party cannot store (guestsSocksRefusal), writes the kitchen
+      // plan's Kitchen Notes only when its body names them (kitchenPlanDbDataOf), and the PDF route hands
+      // the print the four new event fields; no PDF, file, bucket or public-folder door is added; where
+      // the BEO's documents live is unchanged.
+      'beo-routes.ts': '3677961228780fffaf628f061f99d95ee304a454f415da43fd6292440a4fab50',
       'orgChartRoutes.ts': 'eff8d4478165e8b0157ef07d37891222104f751b49932e70f525f06366fe9d90',
     };
     for (const [file, hash] of Object.entries(main)) expect(sha256(committed(join(APP_SERVER, file))), file).toBe(hash);

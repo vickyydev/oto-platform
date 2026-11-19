@@ -678,19 +678,25 @@ try {
       const open = page.indexOf('<td class="price-col">', at) + '<td class="price-col">'.length;
       return page.slice(open, page.indexOf("</td>", open)).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
     };
-    // SCRUM-1028: the set-menu choice prints by its name (its group's label left out); it is the first row.
-    assert.equal(price(read, /<td class="dish">Margherita<\/td>/), "SET", "a SET line");
+    // SCRUM-1050, R13 (the owner's answer of 19 November): the set-menu choice prints with its group's
+    // label again, as before 19 November (SCRUM-1028 had left it out); it is the first row.
+    assert.equal(price(read, /<td class="dish">Margherita \(Pizza\)<\/td>/), "SET", "a SET line");
     assert.equal(price(read, /2x<\/td>/), "EXTRA till price 450 (weekend)", "the till's weekend price, as the editor's hint");
     assert.equal(price(read, />Pepperoni(?:<| <span)/), "EXTRA 120฿ each", "the price entered, for each item");
     // SCRUM-991 (8a09885a2): the editor's hint says an unknown price, never free: so does the PDF.
-    assert.equal(price(read, />ZZ TEST mango sticky rice/), "EXTRA Price unresolved - not charged", "a typed dish the till does not sell");
+    // SCRUM-1050, R24 (the owner's answer of 19 November): the line carries a mark and the same words
+    // print once under its list (Kitchen, Bar), not on the line; this check pinned them on the line.
+    assert.equal(price(read, />ZZ TEST mango sticky rice/), "EXTRA *", "a typed dish the till does not sell");
+    const unresolvedUnder = (partHtml: string) => (partHtml.match(/<p class="mark-note" data-unresolved-note><span class="mark">\*<\/span> Price unresolved - not charged<\/p>/g) ?? []).length;
+    assert.equal(unresolvedUnder(read.slice(read.indexOf('data-part="kitchen"'), read.indexOf('data-part="setup"') > 0 ? read.indexOf('data-part="setup"') : read.indexOf('data-part="bar"'))), 1, "the words once under the Kitchen");
     assert.equal(price(read, />ZZ TEST bubble tea/), "EXTRA till price 120 (weekend) (made for this party)");
     assert.equal(price(read, />Pepperoni pizza for us/), "EXTRA till price 420 (weekend)", "the adults' own EXTRA");
     // SCRUM-1028: the Staff BEO's bar part is headed "Bar" (it was "Bar Plan"); what it prints is unchanged.
     assert.ok(read.includes("<h2>Bar</h2>"), "the bar part is printed");
     const barPart = read.slice(read.indexOf("<h2>Bar</h2>"));
     assert.equal(price(barPart, />Latte/), "EXTRA till price 155 (weekend)");
-    assert.equal(price(barPart, />Water/), "EXTRA Price unresolved - not charged");
+    assert.equal(price(barPart, />Water/), "EXTRA *");
+    assert.equal(unresolvedUnder(barPart), 1, "the words once under the Bar");
     // The very words of the editor's hint (shared/beoExtras.ts), line by line.
     const ctx = { till: { known: true, byCode }, partyDate: SATURDAY };
     assert.equal(beoExtraHintOf(beoExtraChargeOf(kids[1]!, "food", ctx)), "till price 450 (weekend)");
@@ -702,7 +708,7 @@ try {
     const unread = await pdf(undefined);
     assert.equal(price(unread, /2x<\/td>/), "EXTRA Price unresolved");
     assert.equal(price(unread, />Pepperoni(?:<| <span)/), "EXTRA 120฿ each");
-    assert.equal(price(unread, />ZZ TEST mango sticky rice/), "EXTRA Price unresolved - not charged");
+    assert.equal(price(unread, />ZZ TEST mango sticky rice/), "EXTRA *", "SCRUM-1050, R24: the mark, the words under the list");
   });
 
   await check("theBeoPdfPrintsTheParksDates", async () => {
