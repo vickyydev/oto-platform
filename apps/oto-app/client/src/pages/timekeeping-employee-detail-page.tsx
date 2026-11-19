@@ -4,6 +4,7 @@ import { useParams, useSearch, Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { formatDate } from "@/lib/format-utils";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { readsAsActive } from "@/lib/leave-balance-reading";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -552,8 +553,9 @@ export default function TimekeepingEmployeeDetailPage() {
             : !leaveQuery.data?.balances?.length ? <p className="text-sm text-muted-foreground">No leave balances are configured for this employee.</p>
             : <div className="divide-y">{leaveQuery.data.balances.map((balance) => (
               <div key={balance.leaveTypeId} className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0" data-testid={`leave-balance-${balance.code}`}>
-                <div><p className="font-medium">{balance.name}</p><p className="text-xs text-muted-foreground">{!balance.isActive ? "Not active" : !balance.canClaim ? "Not yet available to claim" : `${balance.earned} earned · ${balance.used} used`}</p></div>
-                <p className="text-right font-semibold tabular-nums">{balance.isActive ? `${balance.balance} days` : "—"}<span className="block text-xs font-normal text-muted-foreground">Balance</span></p>
+                {/* SCRUM-1037: a type switched off with days used this year reads as it did while on. */}
+                <div><p className="font-medium">{balance.name}</p><p className="text-xs text-muted-foreground">{!readsAsActive(balance) ? "Not active" : !balance.canClaim ? "Not yet available to claim" : `${balance.earned} earned · ${balance.used} used`}</p></div>
+                <p className="text-right font-semibold tabular-nums">{readsAsActive(balance) ? `${balance.balance} days` : "—"}<span className="block text-xs font-normal text-muted-foreground">Balance</span></p>
               </div>
             ))}</div>}
         </CardContent>
