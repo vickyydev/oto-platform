@@ -49,7 +49,8 @@ export function ExtraPriceBox({ line, area, charge, onPrice, testId, disabled = 
       <EditableText
         disabled={disabled}
         type="number"
-        className="w-16 text-xs font-mono shrink-0"
+        // SCRUM-1029 (look): wide enough for "Price ฿" on one line, as every other empty box reads.
+        className="w-20 whitespace-nowrap text-xs font-mono shrink-0"
         value={String(line.price || "")}
         onChange={(v) => { if (!disabled) onPrice(Math.max(0, Number(v) || 0)); }}
         placeholder="Price ฿"

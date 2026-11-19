@@ -580,13 +580,17 @@ function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab, menuTime
         </Button>
         {/* SCRUM-949: an EXTRA line's price for each item, beside its count; never on a SET line. */}
         {item.source !== "set_menu" && (
-          <ExtraPriceBox disabled={disabled}
-            line={item}
-            area="food"
-            charge={charge}
-            onPrice={(price) => changeMenu(prev => prev.map((line, i) => (i === idx ? { ...line, price } : line)))}
-            testId={`${menuTab}-${idx}`}
-          />
+          // SCRUM-1029 (look): the price and its words in a slot of one width, so the dish names of a
+          // list start in one column whatever the till says of each price.
+          <div className="flex min-w-[13.75rem] shrink-0 items-center gap-1" data-testid={`menu-price-slot-${menuTab}-${idx}`}>
+            <ExtraPriceBox disabled={disabled}
+              line={item}
+              area="food"
+              charge={charge}
+              onPrice={(price) => changeMenu(prev => prev.map((line, i) => (i === idx ? { ...line, price } : line)))}
+              testId={`${menuTab}-${idx}`}
+            />
+          </div>
         )}
         <div className="flex-1 flex items-center gap-1 min-w-[8rem]">
         {/* SCRUM-1042: the birthday package's waffles read "Adult Waffles" here; the line keeps its

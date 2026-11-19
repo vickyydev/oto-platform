@@ -273,6 +273,18 @@ await check("every EXTRA line shows a price box beside its count; a SET line sho
   // In the cake box's style: a click-to-edit number, "Price ฿" while empty.
   assert.equal(text("input-menu-price-kids-0"), "Price ฿");
   assert.equal(text("input-menu-price-kids-2"), "150");
+  // SCRUM-1029 (look, staging at 768 to 1440): "Price ฿" kept on one line in a box wide enough for it,
+  // and each dish's price and words in a slot of one width, so the dish names start in one column.
+  for (const id of ["kids-0", "kids-1", "kids-2", "bar-0"]) {
+    const box = byTestId(`input-menu-price-${id}`)!.className;
+    assert.ok(box.includes("w-20") && box.includes("whitespace-nowrap"), `the price box on ${id} reads "Price ฿" on one line`);
+  }
+  for (const id of ["kids-0", "kids-1", "kids-2"]) {
+    const slot = byTestId(`menu-price-slot-${id}`);
+    assert.ok(slot && slot.className.includes("min-w-[13.75rem]"), `the price slot on ${id}`);
+    assert.ok(slot!.contains(byTestId(`input-menu-price-${id}`)) && slot!.contains(byTestId(`text-menu-price-hint-${id}`)), `the box and its words in the slot on ${id}`);
+  }
+  absent("menu-price-slot-kids-3", "a SET line has no price slot");
 });
 
 await check("what the till will charge: the till's price for an empty coded box, each for an entered price, not charged with neither; the totals", () => {
