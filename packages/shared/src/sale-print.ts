@@ -76,6 +76,13 @@ export interface SalePrintLine {
    * Absent on every other line, and on a snapshot written before it existed.
    */
   voucherCodes?: readonly string[];
+  /**
+   * SCRUM-1048 — an extra food credit line: the band its credit is loaded on,
+   * by its short code, and the child's name when the band carries one, so the
+   * receipt says which wrist holds it. Absent on every other line, on a sale
+   * whose bands are not minted, and on a snapshot written before it existed.
+   */
+  creditBand?: { shortCode: string; childName: string | null };
 }
 
 /** Money taken, as the receipt lists it. Only tenders that took money belong here. */
@@ -400,7 +407,11 @@ function lineNote(line: SalePrintLine): string | undefined {
   const note = line.payload?.note?.trim();
   // SCRUM-798 — a gift voucher's code under the item that sold it.
   const codes = (line.voucherCodes ?? []).map((code) => `Voucher code: ${code}`);
-  const parts = [...(note ? [note] : []), ...codes];
+  // SCRUM-1048 — which band an extra food credit is on, as the band prints it.
+  const band = line.creditBand
+    ? [`On band ${line.creditBand.shortCode}${line.creditBand.childName ? ` · ${line.creditBand.childName}` : ''}`]
+    : [];
+  const parts = [...(note ? [note] : []), ...codes, ...band];
   return parts.length > 0 ? parts.join('\n  ') : undefined;
 }
 

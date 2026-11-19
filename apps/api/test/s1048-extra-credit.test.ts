@@ -1,8 +1,9 @@
 import { and, asc, eq, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { band, branch, refund, sale, saleLine, station, ticketPackage, wallet, walletEntry, walletKey } from '@oto/db';
-import { newId } from '@oto/shared';
-import { debitWallet, extraCreditActionId } from '../src/services/wallet';
+import { bandShortCode, formatTHB, newId, saleReceiptDocument } from '@oto/shared';
+import { salePrintSnapshotOf } from '../src/services/sale-printing';
+import { debitWallet, expireWalletsForDay, extraCreditActionId } from '../src/services/wallet';
 import { BRANCH_MANAGER, RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
 
 /**
@@ -188,6 +189,33 @@ describe('SCRUM-1048 — extra food credit on a child ticket, as its own line', 
     await assertLedgerTruth();
   });
 
+  it('the receipt says which band holds it, and the credit section the whole of what each QR holds', async () => {
+    const eatPlay = cartOf(eatPlayId, 2, 1, { kidOrdinal: 1, satang: 30_000 });
+    const saleId = await commitLines(eatPlay.lines);
+    await finalise(saleId);
+    const [saleRow] = await ctx.db.select().from(sale).where(eq(sale.id, saleId));
+    const snapshot = await salePrintSnapshotOf(ctx.db, saleRow!);
+    const [, second] = await kidBandsOf(saleId, eatPlay.ticket.id);
+    const receipt = saleReceiptDocument(snapshot);
+    const row = receipt.lines.find((l) => l.name === 'Prepaid food')!;
+    expect(row.note).toBe(`On band ${bandShortCode(second!.code)}`);
+    // The named child's QR holds the ticket's ฿1,300 and the ฿300 this sale loaded.
+    expect(receipt.creditVouchers!.map((v) => v.balance)).toContain(formatTHB(160_000));
+    expect(snapshot.credits!.filter((c) => c.creditSatang === 130_000)).toHaveLength(1);
+
+    // A ticket that earns the child nothing: the credit's own wallet and QR are on the receipt.
+    const twoHours = cartOf(twoHoursId, 1, 1, { kidOrdinal: 0, satang: 20_000 });
+    const ownSale = await commitLines(twoHours.lines);
+    await finalise(ownSale);
+    const [ownRow] = await ctx.db.select().from(sale).where(eq(sale.id, ownSale));
+    const ownSnapshot = await salePrintSnapshotOf(ctx.db, ownRow!);
+    const [kidBand] = await kidBandsOf(ownSale, twoHours.ticket.id);
+    const own = (await walletOnBand(kidBand!.code))!;
+    const [qr] = await ctx.db.select().from(walletKey).where(and(eq(walletKey.walletId, own.id), eq(walletKey.kind, 'voucher_qr')));
+    expect(ownSnapshot.credits!.at(-1)).toMatchObject({ creditSatang: 20_000, qrCode: qr!.value, holderName: 'Walk-in guest' });
+    expect(saleReceiptDocument(ownSnapshot).lines.find((l) => l.name === 'Prepaid food')!.note).toBe(`On band ${bandShortCode(kidBand!.code)}`);
+  });
+
   it('lands once: a retried commit, a retried close, and a commit re-sent without the child add nothing', async () => {
     const { ticket, credit, lines } = cartOf(eatPlayId, 1, 1, { kidOrdinal: 0, satang: 25_000 });
     const saleId = await commitLines(lines);
@@ -248,6 +276,84 @@ describe('SCRUM-1048 — extra food credit on a child ticket, as its own line', 
     expect(await ctx.db.select().from(refund).where(eq(refund.saleId, saleId))).toHaveLength(0);
     expect((await walletOnBand(kidBand!.code))!.balanceSatang).toBe(160_000 - 5_000);
     await assertLedgerTruth();
+  });
+
+  it('a whole-sale refund takes the credit back off the band once, with the rest of the sale', async () => {
+    const { lines } = cartOf(eatPlayId, 1, 1, { kidOrdinal: 0, satang: 30_000 });
+    const saleId = await commitLines(lines);
+    await finalise(saleId);
+    const extra = await extraLineOf(saleId);
+    const res = await post(`/sales/${saleId}/refunds`, { mode: 'whole', reason: 'Not wanted', actionId: newId() }, manager);
+    expect(res.statusCode, res.body).toBe(200);
+    const refundId = res.json().refund.id as string;
+    const backs = (await ctx.db.select().from(walletEntry).where(eq(walletEntry.refundId, refundId))).filter(
+      (e) => (e.payload as { extraCreditLineId?: string } | null)?.extraCreditLineId === extra.id,
+    );
+    expect(backs.map((e) => [e.kind, e.source, e.amountSatang])).toEqual([['spend', 'refund', -30_000]]);
+    await assertLedgerTruth();
+  });
+
+  it('a ticket that earns the child nothing: the refund empties the credit’s own wallet', async () => {
+    const { ticket, lines } = cartOf(twoHoursId, 1, 1, { kidOrdinal: 0, satang: 20_000 });
+    const saleId = await commitLines(lines);
+    await finalise(saleId);
+    const res = await refundLine(saleId, (await extraLineOf(saleId)).id);
+    expect(res.statusCode, res.body).toBe(200);
+    const [kidBand] = await kidBandsOf(saleId, ticket.id);
+    expect((await walletOnBand(kidBand!.code))!.balanceSatang).toBe(0);
+    await assertLedgerTruth();
+  });
+
+  it('a manual discount on the line loads what the line charged, and its refund takes that back', async () => {
+    const { ticket, credit, lines } = cartOf(eatPlayId, 1, 1, { kidOrdinal: 0, satang: 30_000 });
+    const saleId = newId();
+    const committed = await post(
+      '/sales',
+      {
+        id: saleId,
+        stationId,
+        lines,
+        manualDiscounts: [{ id: newId(), scope: 'line', targetLineId: credit!.id, type: 'percent', value: 50, reason: 'ZZ TEST half' }],
+      },
+      manager,
+    );
+    expect(committed.statusCode, committed.body).toBe(200);
+    await post(`/sales/${saleId}/finalise`, {}, manager);
+    const extra = await extraLineOf(saleId);
+    expect(extra.grossSatang).toBe(15_000);
+    const [load] = await ctx.db.select().from(walletEntry).where(eq(walletEntry.actionId, extraCreditActionId(saleId, extra.id)));
+    expect(load!.amountSatang).toBe(15_000);
+    const [kidBand] = await kidBandsOf(saleId, ticket.id);
+    expect((await walletOnBand(kidBand!.code))!.balanceSatang).toBe(130_000 + 15_000);
+    const res = await refundLine(saleId, extra.id);
+    expect(res.statusCode, res.body).toBe(200);
+    expect((await walletOnBand(kidBand!.code))!.balanceSatang).toBe(130_000);
+    await assertLedgerTruth();
+  });
+
+  it('once the credit has expired its refund is refused in those words, not as used', async () => {
+    const { lines } = cartOf(twoHoursId, 1, 1, { kidOrdinal: 0, satang: 20_000 });
+    const saleId = await commitLines(lines);
+    await finalise(saleId);
+    const [row] = await ctx.db.select().from(sale).where(eq(sale.id, saleId));
+    const far = new Date(Date.now() + 30 * 24 * 3600_000);
+    const expired = await expireWalletsForDay(ctx.db, branchId, row!.businessDate!, far);
+    expect(expired.expiredSatang).toBeGreaterThanOrEqual(20_000);
+    const res = await refundLine(saleId, (await extraLineOf(saleId)).id);
+    expect(res.statusCode, res.body).toBe(409);
+    expect(res.json().error).toMatchObject({
+      code: 'PREPAID_CREDIT_EXPIRED',
+      message: 'This extra food credit has expired and is no longer on the band, so this food line cannot be refunded.',
+    });
+    expect(await ctx.db.select().from(refund).where(eq(refund.saleId, saleId))).toHaveLength(0);
+    await assertLedgerTruth();
+  });
+
+  it('one line per child: a second line naming the same child is refused', async () => {
+    const c = cartOf(eatPlayId, 2, 1, { kidOrdinal: 0, satang: 10_000 });
+    const res = await post('/sales', { id: newId(), stationId, lines: [...c.lines, { ...c.credit!, id: newId() }] });
+    expect(res.statusCode, res.body).toBe(400);
+    expect(res.json().error.message).toBe('That child already has extra food credit on this order');
   });
 
   it('is priced, taxed and filed exactly as a dropped-off child’s extra credit row', async () => {

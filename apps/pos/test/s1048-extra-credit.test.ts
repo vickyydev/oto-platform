@@ -152,6 +152,26 @@ describe('SCRUM-1048 (3): the order panel', () => {
     expect(words(card)).toBe(`Extra food creditKid 2 · ${oneHour.name}฿300`);
   });
 
+  it('the card has the order’s own remove, on every lane: the credit comes off without its ticket', () => {
+    // Pay on the box lane says "Remove the food credit": the card's own trash,
+    // the corner button every order card has, takes off that line alone. It
+    // does not depend on the "Add food credit" control, which the box lane hides.
+    const lines = withExtraCredit([ticketLine('zz-remove')], 'zz-remove', 1, 300, mint);
+    const credit = lines[1]!;
+    for (const onAdd of [undefined, () => {}]) {
+      const removed: string[] = [];
+      const tree = renderHook(() => OrderSummary({ ...summaryProps(lines, onAdd), onRemoveLine: (id: string) => { removed.push(id); } })).result.current;
+      const cardOf = elements(tree).find((el) => el.key === credit.id)!;
+      expect(byTestId(cardOf, 'order-extra-credit')).toBeDefined();
+      const trash = elements(cardOf).filter((el) => typeof el.props.onClick === 'function' && elements(el.props.children).some((c) => typeof c.type !== 'string' && /trash/i.test(String((c.type as { displayName?: string }).displayName ?? ''))));
+      expect(trash).toHaveLength(1);
+      (trash[0]!.props.onClick as () => void)();
+      expect(removed).toEqual([credit.id]);
+    }
+    const till = readFileSync(path.join(import.meta.dirname, '..', 'src', 'components', 'till', 'OrderSummary.tsx'), 'utf8');
+    expect(till).toContain('onClick={() => onRemoveLine(line.id)}');
+  });
+
   it('offers "Add food credit" on a ticket with children only where the till passes the control', () => {
     const lines = [ticketLine('zz-offer'), ticketLine('zz-adults-only', 0, 2)];
     const adders = (tree: unknown) => elements(tree).filter((el) => typeof el.type === 'function' && el.type.name === 'ExtraCreditAdder');
