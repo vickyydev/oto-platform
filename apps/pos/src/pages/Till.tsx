@@ -44,7 +44,6 @@ import {
   slotPhotoState,
   ticketKidsDefault,
   waiverCovers,
-  withCoveringSiblingsPlain,
   type LastPhotoState,
 } from '@/lib/returningFamily';
 import { useLockedFamilyFormWatch } from '@/lib/lockedFamilyForm';
@@ -2348,17 +2347,16 @@ export default function Till() {
         getSupervisionPolicy(),
       );
       const eligibleById = new Map(resolved.map((r) => [r.id, r.waiverEligible]));
-      // SCRUM-1018 — and the sibling covering a waived child follows the waivers.
-      return withCoveringSiblingsPlain(next.map((s) =>
+      return next.map((s) =>
         s.waived && !eligibleById.get(s.id) ? { ...s, waived: false } : s,
-      ), getSupervisionPolicy());
+      );
     });
 
-  // SCRUM-1018 — after a waiver the covering sibling plays on a normal ticket:
-  // no free drop-off form for them, and Continue goes on to payment.
+  // SCRUM-1052 — after a waiver the covering sibling stays on the form,
+  // registered at no fee (`optIn`), as the counter did before 19 November:
+  // the sale then names a registration and the platform takes it.
   const handleToggleWaiver = (id: string) =>
-    setSuperSlots((prev) => withCoveringSiblingsPlain(
-      prev.map((s) => (s.id === id ? { ...s, waived: !s.waived } : s)), getSupervisionPolicy()));
+    setSuperSlots((prev) => prev.map((s) => (s.id === id ? { ...s, waived: !s.waived } : s)));
 
   /**
    * SCRUM-1020 — "EDIT DETAILS": A CHILD ADDED WHERE THE FORM STANDS (the
@@ -2377,7 +2375,7 @@ export default function Till() {
     if (saved && (!member?.savedChildren?.some((c) => c.id === saved.id)
       || superSlots.some((s) => s.savedChildId === saved.id))) return;
     handleUpdateLine(line.id, { kids: line.kids + 1 });
-    setSuperSlots((prev) => withCoveringSiblingsPlain([...prev, addedGatePlace(line, saved)], getSupervisionPolicy()));
+    setSuperSlots((prev) => [...prev, addedGatePlace(line, saved)]);
     // As the form's own saved children: staff compare the last visit's photo.
     if (saved) readLastPhotos([saved.id], lastPhotos);
   };
@@ -2646,12 +2644,13 @@ export default function Till() {
     const waiversToAudit: { slot: SupervisedSlot; covering: SupervisedSlot }[] = [];
 
     // The covering sibling = the oldest OTHER child old enough to guardian
-    // (`waiverCovers`). SCRUM-1018 — that sibling plays on a normal ticket.
+    // (`waiverCovers`). SCRUM-1052 — that sibling is registered at no fee
+    // (their `optIn`), so the waiver names the registration and the sale
+    // carries it, as before 19 November.
     const covers = waiverCovers(superSlots, policy);
-    const coveringIds = new Set([...covers.values()].map((covering) => covering.id));
     for (const slot of superSlots) {
       const base = reqById.get(slot.id) ?? 'none';
-      const outcome = resolveSupervisionOutcome(base, slot.waived, slot.optIn && !coveringIds.has(slot.id));
+      const outcome = resolveSupervisionOutcome(base, slot.waived, slot.optIn);
       const covering = covers.get(slot.id);
       if (covering) waiversToAudit.push({ slot, covering });
       // outcome.service is 'nanny'/'drop_off' (mandatory) or 'none' (no-fee
@@ -3950,15 +3949,8 @@ export default function Till() {
   const editTicketLines = gateTicketLines(lines, superSlots);
   const editSavedOffForm = savedChildrenOffForm(member?.savedChildren ?? [], superSlots);
   const consentStaffReady = !gateSaving && consentRows.every(row => !row.outcome.needsConsent || !!row.slot.childPhotoUrl);
-  /**
-   * SCRUM-1018 — AFTER A WAIVER, NO FORM. When every child is aged and none
-   * needs the form (a waived child and the sibling covering them, both on
-   * normal tickets), nothing is registered, so there is nothing to agree to:
-   * the confirmations are not asked and Continue goes on to payment.
-   */
-  const consentFormNeeded = consentRequired || consentRows.some(row => slotAgeOf(row.slot) === null);
-  const consentConfirmations = consentFormNeeded ? sortedConfirmations(supervisionPolicy).map(item => ({ id: item.id, text: item.text,
-    required: item.required, acknowledged: superAcknowledgedConfirmationIds.includes(item.id) })) : [];
+  const consentConfirmations = sortedConfirmations(supervisionPolicy).map(item => ({ id: item.id, text: item.text,
+    required: item.required, acknowledged: superAcknowledgedConfirmationIds.includes(item.id) }));
   /**
    * SCRUM-1018 — THE NUMBER IS SHOWN, NOT ASKED (the owner's answer of 19
    * November, replacing the family's tick of SCRUM-857 / SCRUM-863). The

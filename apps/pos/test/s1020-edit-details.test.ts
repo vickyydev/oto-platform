@@ -82,7 +82,8 @@ describe('SCRUM-1020 (3): the till adds it where the form stands', () => {
   it('one more kid on the ticket line, priced as the grid prices it, and one more place on the open form', () => {
     expect(add).toContain('const line = gateTicketLines(lines, superSlots).find((l) => l.id === lineId);');
     expect(add).toContain('handleUpdateLine(line.id, { kids: line.kids + 1 });');
-    expect(add).toContain('setSuperSlots((prev) => withCoveringSiblingsPlain([...prev, addedGatePlace(line, saved)], getSupervisionPolicy()));');
+    // SCRUM-1052 — the place joins as every place does: registered, at no fee for a child who needs no supervision.
+    expect(add).toContain('setSuperSlots((prev) => [...prev, addedGatePlace(line, saved)]);');
   });
 
   it('clears nothing: the ticks, the consent, the confirmed children, the photos and the step stay', () => {

@@ -12,7 +12,6 @@ import {
   ticketKidsDefault,
   visitingChildren,
   waiverCovers,
-  withCoveringSiblingsPlain,
   type LastPhotoState,
 } from '@/lib/returningFamily';
 import { slotPatchFromSavedChild } from '@/lib/savedChildren';
@@ -29,8 +28,10 @@ import { renderHook } from './support/hooks';
  * - The parent's name comes from the family's profile.
  * - The last visit's photo is shown to staff with "Still matches" or "Take a
  *   new one"; a child with no earlier photo has one taken as before.
- * - After a waiver the covering sibling plays on a normal ticket: no free
- *   drop-off form, straight to payment.
+ * - SCRUM-1052 — after a waiver the covering sibling is registered at no
+ *   fee, as the counter did before 19 November (the answer's "straight to
+ *   payment" left two children with no adult and no registration, and the
+ *   platform refused the sale; the owner chooses on his page).
  */
 
 vi.mock('react', async () => ({ ...await vi.importActual<typeof import('react')>('react'), ...await import('./support/hooks') }));
@@ -136,24 +137,26 @@ describe('after a waiver', () => {
     expect(waiverCovers([mai, tom], policy).size).toBe(0);
   });
 
-  it('the covering sibling plays on a normal ticket, and is registered again once the waiver is undone', () => {
-    const waived = withCoveringSiblingsPlain([{ ...mai, waived: true }, tom], policy);
-    expect(waived.map((s) => s.optIn)).toEqual([true, false]);
-    const undone = withCoveringSiblingsPlain(waived.map((s) => ({ ...s, waived: false })), policy);
-    expect(undone.map((s) => s.optIn)).toEqual([true, true]);
-  });
-
-  it('the gate then needs no form: Continue goes on to payment with no confirmation asked', () => {
-    const slots = withCoveringSiblingsPlain([{ ...mai, waived: true }, tom], policy);
-    const view = renderHook(() => SupervisionGate({ slots, parentName: '', consentAck: false, policy,
-      acknowledgedConfirmationIds: [], onUpdateSlot: () => undefined, onToggleWaiver: () => undefined,
+  it('SCRUM-1052: the covering sibling stays on the form, registered at no fee, with the confirmations asked', () => {
+    const slots = [{ ...mai, waived: true }, tom];
+    expect(slots.map((s) => s.optIn)).toEqual([true, true]);
+    const gate = (acknowledgedConfirmationIds: string[]) => renderHook(() => SupervisionGate({ slots, parentName: 'ZZ TEST Ploy',
+      consentAck: true, policy, acknowledgedConfirmationIds, onUpdateSlot: () => undefined, onToggleWaiver: () => undefined,
       onBack: () => undefined, onContinue: () => undefined, contactPhoneProblem: null }));
-    const all = nodes(view.result.current);
-    const proceed = all.find((node) => typeof node.props.onClick === 'function' && text(node.props.children).includes('Continue to payment'))!;
-    expect(proceed.props.disabled).toBe(false);
-    expect(text(view.result.current)).not.toContain('Registered for drop-off — no fee');
-    expect(text(view.result.current)).not.toContain('confirmation');
-    view.unmount();
+    const proceedOf = (tree: unknown) => nodes(tree)
+      .find((node) => typeof node.props.onClick === 'function' && text(node.props.children).includes('Continue to payment'))!;
+    const asked = gate([]);
+    expect(text(asked.result.current)).toContain('Registered for drop-off — no fee');
+    // Not before the family's agreements: the registration is written with them.
+    expect(proceedOf(asked.result.current).props.disabled).toBe(true);
+    asked.unmount();
+    // Ticked, and Tom's photo with the guardian taken: Continue writes the registration.
+    const ready = renderHook(() => SupervisionGate({ slots: [slots[0]!, { ...tom, childPhotoUrl: 'data:image/png;base64,AAAA' }],
+      parentName: 'ZZ TEST Ploy', consentAck: true, policy, acknowledgedConfirmationIds: ['confirm-15min'],
+      onUpdateSlot: () => undefined, onToggleWaiver: () => undefined, onBack: () => undefined, onContinue: () => undefined,
+      contactPhoneProblem: null }));
+    expect(proceedOf(ready.result.current).props.disabled).toBe(false);
+    ready.unmount();
   });
 
   it('without the waiver the older child is still registered free, with the confirmations, as before', () => {
@@ -260,11 +263,14 @@ describe('the till wires it', () => {
     expect(open).toContain('if (epoch !== saleEpochRef.current) return;');
   });
 
-  it('the waiver keeps the covering sibling plain, everywhere the gate is read', () => {
-    expect(till).toMatch(/const handleToggleWaiver = \(id: string\) =>\s*setSuperSlots\(\(prev\) => withCoveringSiblingsPlain\(/);
+  it('SCRUM-1052: the waiver keeps the covering sibling registered at no fee, everywhere the gate is read', () => {
+    expect(till).toMatch(/const handleToggleWaiver = \(id: string\) =>\s*setSuperSlots\(\(prev\) => prev\.map\(\(s\) => \(s\.id === id \? \{ \.\.\.s, waived: !s\.waived \} : s\)\)\);/);
     const resolve = till.slice(till.indexOf('const resolveSupervisionGate = async'), till.indexOf('const gateRunningRef'));
     expect(resolve).toContain('const covers = waiverCovers(superSlots, policy);');
-    expect(resolve).toContain('resolveSupervisionOutcome(base, slot.waived, slot.optIn && !coveringIds.has(slot.id))');
+    expect(resolve).toContain('const outcome = resolveSupervisionOutcome(base, slot.waived, slot.optIn);');
+    // The confirmations are asked whenever children are on the form.
+    expect(till).toMatch(/const consentConfirmations = sortedConfirmations\(supervisionPolicy\)\.map\(/);
+    expect(till).not.toContain('withCoveringSiblingsPlain');
   });
 
   it('the registration reuses a photo only on staff’s word, for the same child, in its own write', () => {
