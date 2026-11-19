@@ -30,6 +30,8 @@ describe('fixtures', () => {
         'kids_wristband',
         'kitchen_ticket',
         'receipt',
+        // SCRUM-1021 — a second receipt: a food sale paid from a band, with the credit left.
+        'receipt',
         'test_page',
       ].sort(),
     );

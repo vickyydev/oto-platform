@@ -1,0 +1,319 @@
+{
+  "widthDots": 512,
+  "heightDots": 639,
+  "overflow": [],
+  "items": [
+    {
+      "k": "text",
+      "x": 228,
+      "baselineY": 35,
+      "w": 56,
+      "sizeDots": 32,
+      "weight": "bold",
+      "text": "oto"
+    },
+    {
+      "k": "invert",
+      "x": 224,
+      "y": 8,
+      "w": 64,
+      "h": 35
+    },
+    {
+      "k": "text",
+      "x": 108,
+      "baselineY": 84,
+      "w": 297,
+      "sizeDots": 44,
+      "weight": "bold",
+      "text": "Oto Play Park"
+    },
+    {
+      "k": "text",
+      "x": 202,
+      "baselineY": 116,
+      "w": 108,
+      "sizeDots": 24,
+      "weight": "bold",
+      "text": "RECEIPT"
+    },
+    {
+      "k": "text",
+      "x": 154,
+      "baselineY": 145,
+      "w": 203,
+      "sizeDots": 24,
+      "weight": "bold",
+      "text": "ใบกำกับภาษีอย่างย่อ"
+    },
+    {
+      "k": "text",
+      "x": 127,
+      "baselineY": 167,
+      "w": 258,
+      "sizeDots": 24,
+      "weight": "bold",
+      "text": "Tax ID 0105500000000"
+    },
+    {
+      "k": "dashes",
+      "x": 8,
+      "y": 171,
+      "w": 496,
+      "t": 2
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 200,
+      "w": 203,
+      "sizeDots": 32,
+      "weight": "bold",
+      "text": "HKT1-000431"
+    },
+    {
+      "k": "text",
+      "x": 230,
+      "baselineY": 200,
+      "w": 274,
+      "sizeDots": 32,
+      "weight": "bold",
+      "text": "20 Sep 2026 15:05"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 230,
+      "w": 172,
+      "sizeDots": 24,
+      "weight": "bold",
+      "text": "Served by Nok"
+    },
+    {
+      "k": "dashes",
+      "x": 8,
+      "y": 239,
+      "w": 496,
+      "t": 2
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 269,
+      "w": 45,
+      "sizeDots": 32,
+      "weight": "bold",
+      "text": "1× "
+    },
+    {
+      "k": "text",
+      "x": 53,
+      "baselineY": 269,
+      "w": 127,
+      "sizeDots": 32,
+      "weight": "bold",
+      "text": "Chicken"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 296,
+      "w": 136,
+      "sizeDots": 32,
+      "weight": "bold",
+      "text": "Nuggets"
+    },
+    {
+      "k": "text",
+      "x": 430,
+      "baselineY": 269,
+      "w": 74,
+      "sizeDots": 32,
+      "weight": "bold",
+      "text": "฿120"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 332,
+      "w": 45,
+      "sizeDots": 32,
+      "weight": "bold",
+      "text": "2× "
+    },
+    {
+      "k": "text",
+      "x": 53,
+      "baselineY": 332,
+      "w": 207,
+      "sizeDots": 32,
+      "weight": "bold",
+      "text": "Thai Iced Tea"
+    },
+    {
+      "k": "text",
+      "x": 430,
+      "baselineY": 332,
+      "w": 74,
+      "sizeDots": 32,
+      "weight": "bold",
+      "text": "฿120"
+    },
+    {
+      "k": "dashes",
+      "x": 8,
+      "y": 337,
+      "w": 496,
+      "t": 2
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 367,
+      "w": 135,
+      "sizeDots": 32,
+      "weight": "bold",
+      "text": "Subtotal"
+    },
+    {
+      "k": "text",
+      "x": 430,
+      "baselineY": 367,
+      "w": 74,
+      "sizeDots": 32,
+      "weight": "bold",
+      "text": "฿240"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 397,
+      "w": 114,
+      "sizeDots": 32,
+      "weight": "bold",
+      "text": "Service"
+    },
+    {
+      "k": "text",
+      "x": 467,
+      "baselineY": 397,
+      "w": 37,
+      "sizeDots": 32,
+      "weight": "bold",
+      "text": "฿0"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 427,
+      "w": 153,
+      "sizeDots": 32,
+      "weight": "bold",
+      "text": "VAT (incl.)"
+    },
+    {
+      "k": "text",
+      "x": 403,
+      "baselineY": 427,
+      "w": 101,
+      "sizeDots": 32,
+      "weight": "bold",
+      "text": "฿15.70"
+    },
+    {
+      "k": "rect",
+      "x": 8,
+      "y": 436,
+      "w": 496,
+      "h": 2
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 473,
+      "w": 135,
+      "sizeDots": 44,
+      "weight": "bold",
+      "text": "TOTAL"
+    },
+    {
+      "k": "text",
+      "x": 403,
+      "baselineY": 475,
+      "w": 101,
+      "sizeDots": 44,
+      "weight": "bold",
+      "text": "฿240"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 510,
+      "w": 183,
+      "sizeDots": 32,
+      "weight": "bold",
+      "text": "Band credit"
+    },
+    {
+      "k": "text",
+      "x": 430,
+      "baselineY": 510,
+      "w": 74,
+      "sizeDots": 32,
+      "weight": "bold",
+      "text": "฿240"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 544,
+      "w": 160,
+      "sizeDots": 32,
+      "weight": "bold",
+      "text": "Credit left"
+    },
+    {
+      "k": "text",
+      "x": 403,
+      "baselineY": 544,
+      "w": 101,
+      "sizeDots": 32,
+      "weight": "bold",
+      "text": "฿1,060"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 572,
+      "w": 371,
+      "sizeDots": 24,
+      "weight": "bold",
+      "text": "  เครดิตคงเหลือ · Band HKT1-4822"
+    },
+    {
+      "k": "dashes",
+      "x": 8,
+      "y": 576,
+      "w": 496,
+      "t": 2
+    },
+    {
+      "k": "text",
+      "x": 76,
+      "baselineY": 600,
+      "w": 360,
+      "sizeDots": 24,
+      "weight": "bold",
+      "text": "Thank you for visiting! · Tax ID"
+    },
+    {
+      "k": "text",
+      "x": 167,
+      "baselineY": 627,
+      "w": 178,
+      "sizeDots": 24,
+      "weight": "bold",
+      "text": "0105500000000"
+    }
+  ]
+}

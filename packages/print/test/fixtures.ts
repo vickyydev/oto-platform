@@ -99,8 +99,6 @@ export const FIXTURES: Fixture[] = [
         vat: '฿71.32',
         total: '฿1,090.50',
         tenders: [{ label: 'Cash', amount: '฿1,100' }, { label: 'Change', amount: '฿9.50' }],
-        // SCRUM-1021 — the credit left on a band the sale was paid from, in English and Thai.
-        creditLeft: [{ label: 'Credit left', amount: '฿60', detail: 'เครดิตคงเหลือ · Band HKT1-4822' }],
         bandCodes: ['HKT1-4821', 'HKT1-4822'],
         creditGrants: ['฿100 credit', '2× Grip socks to collect'],
         // The sale's F&B credit, on the receipt rather than a slip of its own:
@@ -113,6 +111,36 @@ export const FIXTURES: Fixture[] = [
             bandCode: 'HKT1-4822',
           },
         ],
+      },
+    },
+  },
+  {
+    // SCRUM-1021 — a food sale paid from a band: the credit left on it, under
+    // the tenders, in English and Thai with the band's code. A ticket sale
+    // (the receipt above) never carries it.
+    name: 'fnb-receipt',
+    profiles: ['escpos576', 'escpos512'],
+    job: {
+      kind: 'receipt',
+      data: {
+        title: 'Receipt',
+        taxInvoiceLines: [
+          'ใบกำกับภาษีอย่างย่อ',
+          'Tax ID 0105500000000',
+        ],
+        receiptNumber: 'HKT1-000431',
+        dateTime: '20 Sep 2026 15:05',
+        staffName: 'Nok',
+        lines: [
+          { qty: 1, name: 'Chicken Nuggets', price: '฿120' },
+          { qty: 2, name: 'Thai Iced Tea', price: '฿120' },
+        ],
+        subtotal: '฿240',
+        service: '฿0',
+        vat: '฿15.70',
+        total: '฿240',
+        tenders: [{ label: 'Band credit', amount: '฿240' }],
+        creditLeft: [{ label: 'Credit left', amount: '฿1,060', detail: 'เครดิตคงเหลือ · Band HKT1-4822' }],
       },
     },
   },
