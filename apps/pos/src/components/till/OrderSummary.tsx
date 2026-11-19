@@ -19,6 +19,14 @@ import {
   unpricedLineReason,
 } from '@/lib/pricing';
 import { formatDiscountDetail, formatDiscountTarget } from '@/lib/manualDiscount';
+import {
+  EXTRA_CREDIT_MAX_THB,
+  EXTRA_CREDIT_STEP_THB,
+  extraCreditAmount,
+  extraCreditsOf,
+  kidLabel,
+  takesExtraCredit,
+} from '@/lib/extraCredit';
 import { Ticket, User, Baby, Trash2, Tag, BadgePercent, Footprints, Minus, Plus, HandHeart, UserCheck, Pencil, AlertTriangle, ShoppingBag, PartyPopper, Gift, Wallet, type LucideIcon } from 'lucide-react';
 import { bahtText } from '@/lib/bahtText';
 
@@ -41,6 +49,12 @@ interface OrderSummaryProps {
   /** Open a drop-off line in its dedicated config view (step 3). */
   onConfigureLine?: (id: string) => void;
   onRemoveLine: (id: string) => void;
+  /**
+   * SCRUM-1048 — add extra food credit for one child on an ordinary ticket
+   * line, as its own line (`lib/extraCredit.ts`). Absent where it is not
+   * offered: the phone till, a party tab, and a till on its box's lane.
+   */
+  onAddExtraCredit?: (ticketLineId: string, kidOrdinal: number, amountTHB: number) => void;
   /** Remove one applied promo code (by code) and its free-item line, if any. */
   onRemoveDiscount: (code: string) => void;
   /** Called when staff enter/scan a promo code and hit Apply. The parent
@@ -230,7 +244,121 @@ function AdultQtyRow({ line, onChange }: { line: CartLine; onChange: (next: numb
   );
 }
 
-export function OrderSummary({ tier, onChangeTier, customerName, lines, activeLineId, discounts, manualDiscounts, onUpdateLine, onConfigureLine, onRemoveLine, onRemoveDiscount, onApplyPromoCode, promoError, onAddManualDiscount, onRemoveManualDiscount, onPay, onCancel, canPay, payBlockedReason, chargeTarget, payLabel, totals, priceNote, tierClaimRefusal, voucherLine, voucher }: OrderSummaryProps) {
+/**
+ * SCRUM-1048 — "Add food credit" on an ordinary ticket line: which child (when
+ * the line has more than one) and how much, in the drop-off form's 50 baht
+ * steps. A child who has some already opens on that amount, and adding sets it.
+ */
+function ExtraCreditAdder({
+  line,
+  credited,
+  onAdd,
+}: {
+  line: CartLine;
+  /** The amount each child on the line already has, by place. */
+  credited: ReadonlyMap<number, number>;
+  onAdd: (kidOrdinal: number, amountTHB: number) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [kid, setKid] = useState(0);
+  const [amount, setAmount] = useState(0);
+  const choose = (next: number) => {
+    setKid(next);
+    setAmount(credited.get(next) ?? 0);
+  };
+  if (!open) {
+    return (
+      <button
+        type="button"
+        data-testid="extra-credit-open"
+        onClick={() => {
+          setOpen(true);
+          choose(0);
+        }}
+        className="flex items-center gap-2 pt-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
+      >
+        <Wallet className="w-4 h-4 shrink-0" />
+        Add food credit
+      </button>
+    );
+  }
+  const had = credited.get(kid) ?? 0;
+  return (
+    <div className="mt-1 rounded-lg border bg-background/60 p-2.5 space-y-2.5" data-testid="extra-credit-adder">
+      <div className="flex items-center gap-2 text-sm font-semibold">
+        <Wallet className="w-4 h-4 text-primary shrink-0" />
+        Extra food credit
+      </div>
+      {line.kids > 1 && (
+        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Which child">
+          {Array.from({ length: line.kids }, (_, i) => (
+            <button
+              key={i}
+              type="button"
+              aria-pressed={kid === i}
+              data-testid={`extra-credit-kid-${i + 1}`}
+              onClick={() => choose(i)}
+              className={`h-8 rounded-md border px-3 text-sm font-medium transition-colors ${
+                kid === i ? 'border-primary bg-primary/15 text-primary' : 'bg-background text-foreground hover:bg-muted'
+              }`}
+            >
+              {kidLabel(i)}
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-sm text-muted-foreground truncate">
+          {line.kids > 1 ? `For ${kidLabel(kid)}` : 'Amount'}
+        </span>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            aria-label="Less food credit"
+            data-testid="extra-credit-less"
+            disabled={amount <= 0}
+            onClick={() => setAmount((a) => extraCreditAmount(a - EXTRA_CREDIT_STEP_THB))}
+            className="w-8 h-8 rounded-md border bg-background flex items-center justify-center transition-transform hover:bg-muted active:scale-90 disabled:opacity-30 disabled:pointer-events-none"
+          >
+            <Minus className="w-4 h-4" />
+          </button>
+          <span className="w-16 text-center font-bold tabular-nums" data-testid="extra-credit-amount">
+            ฿{bahtText(amount)}
+          </span>
+          <button
+            type="button"
+            aria-label="More food credit"
+            data-testid="extra-credit-more"
+            disabled={amount >= EXTRA_CREDIT_MAX_THB}
+            onClick={() => setAmount((a) => extraCreditAmount(a + EXTRA_CREDIT_STEP_THB))}
+            className="w-8 h-8 rounded-md bg-primary text-primary-foreground flex items-center justify-center transition-transform hover:bg-primary/90 active:scale-90 disabled:opacity-30 disabled:pointer-events-none"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>
+          Cancel
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          data-testid="extra-credit-add"
+          disabled={amount === had || (amount <= 0 && had <= 0)}
+          onClick={() => {
+            onAdd(kid, amount);
+            setOpen(false);
+          }}
+        >
+          {had > 0 ? (amount > 0 ? 'Update' : 'Remove') : 'Add'}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+export function OrderSummary({ tier, onChangeTier, customerName, lines, activeLineId, discounts, manualDiscounts, onUpdateLine, onConfigureLine, onRemoveLine, onAddExtraCredit, onRemoveDiscount, onApplyPromoCode, promoError, onAddManualDiscount, onRemoveManualDiscount, onPay, onCancel, canPay, payBlockedReason, chargeTarget, payLabel, totals, priceNote, tierClaimRefusal, voucherLine, voucher }: OrderSummaryProps) {
   const [promoInput, setPromoInput] = useState('');
 
   const applyPromoInput = () => {
@@ -388,7 +516,23 @@ export function OrderSummary({ tier, onChangeTier, customerName, lines, activeLi
                   line.id === activeLineId ? 'border-primary ring-1 ring-primary shadow-md' : ''
                 }`}
               >
-                {line.promoItem ? (
+                {line.extraCredit ? (
+                  /* SCRUM-1048 — extra food credit for one child on a ticket,
+                     its own line: charged with the order, loaded on that
+                     child's band when the sale is paid. */
+                  <div className="flex justify-between items-center gap-2" data-testid="order-extra-credit">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Wallet className="w-4 h-4 text-primary shrink-0" />
+                      <div className="min-w-0">
+                        <div className="font-semibold leading-tight truncate">Extra food credit</div>
+                        <div className="text-xs text-muted-foreground truncate">
+                          {kidLabel(line.extraCredit.kidOrdinal)} · {line.ticketType.name}
+                        </div>
+                      </div>
+                    </div>
+                    <span className="font-bold text-base tabular-nums shrink-0">฿{bahtText(line.lineTotal)}</span>
+                  </div>
+                ) : line.promoItem ? (
                   /* Synthetic free-item line: shelf price is in lineTotal; the
                      matching discount.value cancels it so grandTotal is unchanged.
                      Showing ฿0 to staff mirrors what the customer pays. */
@@ -592,6 +736,19 @@ export function OrderSummary({ tier, onChangeTier, customerName, lines, activeLi
                         </div>
                       ))}
                     </div>
+                  )}
+                  {onAddExtraCredit && takesExtraCredit(line) && (
+                    <ExtraCreditAdder
+                      // A fresh adder when the line's children change.
+                      key={`${line.id}:${line.kids}`}
+                      line={line}
+                      credited={
+                        new Map(
+                          extraCreditsOf(lines, line.id).map((c) => [c.extraCredit!.kidOrdinal, c.extraCredit!.amountTHB]),
+                        )
+                      }
+                      onAdd={(kidOrdinal, amountTHB) => onAddExtraCredit(line.id, kidOrdinal, amountTHB)}
+                    />
                   )}
                 </div>
                   </>

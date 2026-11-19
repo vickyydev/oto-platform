@@ -27,6 +27,7 @@ import { gateFailureCause, gateFailureDescription, gateOnlineHold, gateSaleFailu
 import { buildSale } from '@/lib/sale';
 import { withPlatformCredit } from '@/lib/saleCredit';
 import { dropOrphanedDiscounts } from '@/lib/manualDiscount';
+import { followTickets, kidLabel, withExtraCredit } from '@/lib/extraCredit';
 import { resolveAutoTier, tierLabel } from '@/lib/membership';
 import { createMemberForNumber, newMemberName, rateStepSkippedFor } from '@/lib/membershipCheck';
 import { welcomedMember } from '@/lib/welcomeMember';
@@ -65,7 +66,7 @@ import type { OtoEvent, EventAttendee } from '@/types';
 import { StationHeader } from '@/components/shared/StationHeader';
 import { OverstayBanner } from '@/components/dropoff/OverstayBanner';
 import { Button } from '@/components/ui/button';
-import { Monitor, User } from 'lucide-react';
+import { AlertTriangle, Monitor, User } from 'lucide-react';
 
 import { useOperator } from '@/auth/OperatorContext';
 import { toast } from '@/hooks/use-toast';
@@ -153,7 +154,7 @@ import { forgetSaleOnScreen, rememberSaleOnScreen } from '@/lib/saleOnScreen';
 import { getSale } from '@/api/history';
 import { collectDisplayConsentPhoto } from '@/api/consentPhoto';
 import { hasBridgeOrigin } from '@/api/bridge';
-import { closedOnBox, laneSale } from '@/api/boxSales';
+import { closedOnBox, EXTRA_CREDIT_NEEDS_INTERNET, laneSale } from '@/api/boxSales';
 import { HeldSaleDeskDialog, HeldSaleDeskPanel, HoldSaleButtons } from '@/components/till/HeldSales';
 import { bahtLabel, holdButtonReasons, partPaidShown, useHeldSaleDesk, type ResumedHold } from '@/lib/heldSales';
 import type { CartQuoteState } from '@/lib/cartQuote';
@@ -1491,8 +1492,9 @@ export default function Till() {
         prev.map((l) => ({
           ...l,
           tier: t,
-          // Drop-off lineTotals are re-derived by normalizeDropOffFees below.
-          lineTotal: l.dropOff ? l.lineTotal : computeLineTotal({ ...l, tier: t }),
+          // Drop-off lineTotals are re-derived by normalizeDropOffFees below;
+          // an extra food credit line's total is its amount (SCRUM-1048).
+          lineTotal: l.dropOff || l.extraCredit ? l.lineTotal : computeLineTotal({ ...l, tier: t }),
         })),
         dropOffPricing,
       ),
@@ -1712,6 +1714,27 @@ export default function Till() {
     });
     setActiveLineId(prev => (prev === id ? null : prev));
   };
+
+  /**
+   * SCRUM-1048 — staff add extra food credit for one child on an ordinary
+   * ticket: its own line on the order, after that ticket (`lib/extraCredit`).
+   * The same child again sets the amount; nothing takes it off.
+   */
+  const handleAddExtraCredit = (ticketLineId: string, kidOrdinal: number, amountTHB: number) => {
+    if (orderFrozen()) return;
+    setLines((prev) =>
+      withExtraCredit(prev, ticketLineId, kidOrdinal, amountTHB, () => Math.random().toString(36).substring(7)),
+    );
+  };
+
+  // SCRUM-1048 — an extra food credit line follows its ticket: gone with it,
+  // gone when its child is, restated with its rate. Whatever changed the cart.
+  useEffect(() => {
+    const followed = followTickets(lines);
+    if (followed === lines) return;
+    setLines(followed);
+    setManualDiscounts((mds) => dropOrphanedDiscounts(mds, followed));
+  }, [lines]);
 
   const handleApplyManualDiscount = (md: ManualDiscount) => {
     if (orderFrozen()) return;
@@ -3859,11 +3882,15 @@ export default function Till() {
   /** Rung up with the voucher: it goes only with a void now, which Cancel does. */
   const voucherRungUp =
     voucher.held !== null && saleWriter.committed?.id === voucher.held.saleId;
+  // SCRUM-1048 — extra food credit is sold online only: on the box lane Pay
+  // waits, and says why, until the line is removed or the link is back.
+  const extraCreditOffline = lane === 'box' && lines.some((l) => l.extraCredit);
   const canPay =
     (lines.some((l) => l.kids + l.adults > 0) || voucherGift) &&
     allLengthsChosen &&
     allNanniesAssigned &&
-    !voucherHoldsPay;
+    !voucherHoldsPay &&
+    !extraCreditOffline;
 
   // SCRUM-883 — the platform's answer for the finished sale, read once: both
   // halves show the credit it granted, never the till's own list. SCRUM-963 —
@@ -4558,6 +4585,8 @@ export default function Till() {
             onUpdateLine={handleUpdateLine}
             onConfigureLine={handleConfigureLine}
             onRemoveLine={handleRemoveLine}
+            // SCRUM-1048 — not offered while the counter works through its box.
+            {...(lane === 'box' ? {} : { onAddExtraCredit: handleAddExtraCredit })}
             onRemoveDiscount={handleRemoveDiscount}
             onApplyPromoCode={handleApplyPromoCode}
             promoError={promoError}
@@ -4566,6 +4595,7 @@ export default function Till() {
             onPay={handlePay}
             onCancel={() => void handleCancel()}
             canPay={canPay}
+            {...(extraCreditOffline ? { payBlockedReason: EXTRA_CREDIT_NEEDS_INTERNET } : {})}
             // SCRUM-889 — a resumed sale's Pay names its balance, as Amount Due
             // does; SCRUM-902 — so does a sale part-paid on this screen.
             {...(payNamesBalance({ resumed: Boolean(resumed), step, paidOnScreenSatang: paidOnScreen }) ? { payLabel: resumedPayLabel(paymentStage.state.outstandingSatang) } : {})}
@@ -4589,7 +4619,15 @@ export default function Till() {
             // voucher goes on, the note is drawn as before.
             priceNote={
               lines.length > 0 || voucherCodes.length > 0 ? (
-                <PriceSourceNote quote={cart.quote} pending={cart.pending} />
+                <>
+                  <PriceSourceNote quote={cart.quote} pending={cart.pending} />
+                  {extraCreditOffline && (
+                    <p className="flex items-start gap-2 text-xs text-amber-300" data-testid="extra-credit-offline">
+                      <AlertTriangle className="w-4 h-4 shrink-0" />
+                      <span>{EXTRA_CREDIT_NEEDS_INTERNET}</span>
+                    </p>
+                  )}
+                </>
               ) : undefined
             }
             tierClaimRefusal={tierClaimRefusal}
@@ -4877,11 +4915,13 @@ export default function Till() {
           subtotal={lines.reduce((acc, l) => acc + l.lineTotal, 0)}
           lines={lines.map((l) => ({
             id: l.id,
-            label: `${l.ticketType.name} · ${l.kids + l.adults} ppl`,
+            label: l.extraCredit
+              ? `Extra food credit · ${kidLabel(l.extraCredit.kidOrdinal)}`
+              : `${l.ticketType.name} · ${l.kids + l.adults} ppl`,
             amount: l.lineTotal,
-            // Ticket lines drill into their component rows; drop-off lines stay
-            // whole-line only (no bundled components).
-            components: l.dropOff ? undefined : lineDiscountComponents(l),
+            // Ticket lines drill into their component rows; drop-off lines and
+            // an extra food credit line stay whole-line only.
+            components: l.dropOff || l.extraCredit ? undefined : lineDiscountComponents(l),
           }))}
           reasons={getDiscountReasons()}
           operatorId={operator.id}

@@ -271,7 +271,11 @@ function engineServiceFee(line: CartLine): TicketCartLine['serviceFee'] {
 
 /** One cart line in the engine's terms. */
 export function engineCartLine(line: CartLine): TicketCartLine {
-  const food = line.dropOff?.foodProvision;
+  // SCRUM-1048 — an extra food credit line is prepaid credit and nothing else,
+  // in the engine exactly as a dropped-off child's extra credit row is.
+  const food = line.extraCredit
+    ? { mode: 'prepaid_credit' as const, paidTHB: line.extraCredit.amountTHB }
+    : line.dropOff?.foodProvision;
   return {
     id: line.id,
     packageId: line.ticketType.id,

@@ -620,6 +620,14 @@ export interface CartLine {
    * this only says which line, and keeps the line's people off the food credit.
    */
   voucherGift?: boolean;
+  /**
+   * SCRUM-1048 — extra food credit for one child on a ticket line, as its own
+   * line on the order (`lib/extraCredit.ts`): nobody on it, the child's own
+   * ticket, `lineTotal` the amount. `forLineId` is the ticket line,
+   * `kidOrdinal` which of its children (0 is Kid 1). It loads on that child's
+   * band when the sale is paid.
+   */
+  extraCredit?: { forLineId: string; kidOrdinal: number; amountTHB: number };
 }
 
 /**

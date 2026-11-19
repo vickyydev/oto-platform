@@ -16,6 +16,7 @@ import { customerDisplayTheme } from './displayTheme';
 import { signedInAccount } from './displayAccount';
 import type { ContactChannel, Member, Sale } from '@/types';
 import { computeLineBreakdown, isAdultRulePriced, isTierPriced, unpricedCartLines } from './pricing';
+import { DICTIONARY } from '@/i18n/dictionary';
 import type { RateMode } from './pricingMode';
 import type { OrderTotals } from '@/api/sales';
 import { membersApi, type ApiChild } from '@/api/platform';
@@ -107,6 +108,17 @@ export function ticketDisplayPresentation(state: TicketDisplayState, requestId: 
     sale: {
       id: sale.id, tier: sale.tier, total: roundMoney(sale.total),
       lines: sale.lines.map(line => {
+        // SCRUM-1048 — an extra food credit line reaches a separate display
+        // under the drop-off form's words, in every language, with no rows.
+        if (line.extraCredit) {
+          const words = DICTIONARY['superviseConsent.extraFoodCredit']!;
+          return {
+            id: line.id, name: words.en,
+            translations: { th: words.th, zh: words.zh, ru: words.ru, fr: words.fr },
+            lineTotal: roundMoney(line.lineTotal), promoItem: undefined,
+            breakdown: { priced: true, lengthChosen: true, rows: [] },
+          };
+        }
         const lengthChosen = line.dropOff?.lengthChosen !== false;
         return {
           id: line.id, name: line.ticketType.name,
