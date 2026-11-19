@@ -160,32 +160,42 @@ describe('the dark palette on the key surfaces', () => {
     expect(html).not.toMatch(RAW_NEUTRAL);
   });
 
-  it('the bubbles: customer and staff on tokens, AI indigo tuned, shadow dashed indigo', () => {
+  // SCRUM-1016 (Chat.dc.html): the assistant's lines are mint with teal and a
+  // shadow suggestion is dashed on the card, both tokens now, so no bubble
+  // carries a `dark:` class of its own; the time and the delivery word sit
+  // under the bubble in the muted ink.
+  it('the bubbles: customer, staff, the assistant and a shadow suggestion, all on tokens', () => {
     const customer = renderToStaticMarkup(createElement(MessageBubble, { m: msg({}), me, now }));
     expect(customer).toContain('bg-card text-ink ring-1 ring-line');
     expect(customer).not.toMatch(RAW_NEUTRAL);
     const staff = renderToStaticMarkup(
-      createElement(MessageBubble, { m: msg({ direction: 'outbound', authorKind: 'staff', authorName: 'Demo Anya' }), me, now }),
+      createElement(MessageBubble, { m: msg({ direction: 'outbound', authorKind: 'staff', authorName: 'Demo Anya', providerStatus: 'read' }), me, now }),
     );
     // Dark in both themes (brown, then the till's navy), never inverted.
     expect(staff).toContain('bg-staff text-on-staff');
-    expect(staff).toContain('text-on-staff/75'); // its time and ticks
+    expect(staff).toContain('text-ink-muted'); // its time and delivery word, under it
+    expect(staff).toContain('Read</span>');
     expect(staff).not.toMatch(RAW_NEUTRAL);
     const ai = renderToStaticMarkup(createElement(MessageBubble, { m: msg({ direction: 'outbound', authorKind: 'ai' }), me, now }));
-    expect(ai).toContain('dark:bg-indigo-500/15');
-    expect(ai).toContain('dark:text-indigo-200');
+    expect(ai).toContain('bg-mint text-teal');
+    expect(ai).not.toMatch(/[\s"]dark:/);
+    expect(ai).not.toMatch(RAW_NEUTRAL);
     const shadow = renderToStaticMarkup(createElement(ShadowBubble, { text: 'Would have said', at: '2026-10-22T02:00:00.000Z', now }));
-    expect(shadow).toContain('dark:border-indigo-500/40');
-    expect(shadow).toContain('dark:bg-indigo-500/10');
+    expect(shadow).toContain('border-dashed border-mint-edge bg-card text-ink-soft');
+    expect(shadow).not.toMatch(/[\s"]dark:/);
+    expect(shadow).not.toMatch(RAW_NEUTRAL);
   });
 
-  it('the composer: the bar is a card, the field a ground well, the send inverted ink', () => {
+  // SCRUM-1016 (Chat.dc.html): the bar is a card, the box a cream pill, Send the coral.
+  it('the composer: the bar is a card, the field a ground well, the send in coral', () => {
     const html = renderToStaticMarkup(
       createElement(Composer, { conv: row, me, inserted: null, onOpenTemplates: noop, onSent: noop, onReopen: noop, reopening: false }),
     );
     expect(html).toContain('border-line bg-card'); // the bar
-    expect(html).toContain('bg-ground'); // the field's well
-    expect(html).toContain('bg-ink text-on-ink'); // the send
+    expect(html).toContain('border-field bg-ground'); // the box's pill
+    expect(html).toContain('bg-coral'); // the send
+    expect(html).toContain('text-on-coral');
+    expect(html).not.toMatch(/[\s"]dark:/);
     expect(html).not.toMatch(RAW_NEUTRAL);
   });
 

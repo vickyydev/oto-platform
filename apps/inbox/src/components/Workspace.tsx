@@ -584,16 +584,11 @@ export function Workspace({ me }: { me: InboxMe }) {
   // A chat open on a phone is its own full screen (Chat.dc.html): its header
   // has the way back, so the app bar steps aside below 768 px.
   const phoneChat = showChatMobile && selected !== null;
-  // The region for the customer and the next step (Desktop.dc.html), reserved
-  // from 1280 px while a chat is open; the simulator panel takes that width,
-  // so beside it the region waits for a wider screen.
+  // The chat's right panel for the customer and the next step (Desktop.dc.html)
+  // is the chat's own, from 1280 px; the simulator panel takes that width, so
+  // beside it the chat's panel waits for a wider screen (`panelWide`).
   const simulatorShown = Boolean(currentMe.simulator) && simPane;
-  const customerPanel = selected !== null;
-  const columns = !customerPanel
-    ? 'lg:grid-cols-[216px_minmax(300px,360px)_minmax(0,1fr)]'
-    : simulatorShown
-      ? 'lg:grid-cols-[216px_minmax(300px,360px)_minmax(0,1fr)] min-[1760px]:grid-cols-[216px_360px_minmax(0,1fr)_300px]'
-      : 'lg:grid-cols-[216px_minmax(300px,360px)_minmax(0,1fr)] xl:grid-cols-[216px_360px_minmax(0,1fr)_300px]';
+  const columns = 'lg:grid-cols-[216px_minmax(300px,360px)_minmax(0,1fr)] xl:grid-cols-[216px_360px_minmax(0,1fr)]';
 
   return (
     <div className="flex h-[100dvh] overflow-hidden">
@@ -691,19 +686,12 @@ export function Workspace({ me }: { me: InboxMe }) {
                 onAskHandle={() => askHandle(selected.id)}
                 onChanged={refresh}
                 inserted={inserted}
+                panelWide={simulatorShown}
               />
             ) : (
               <EmptyState icon={MessageSquare} title="Pick a conversation" subtitle="Choose one from the list to read it." />
             )}
           </section>
-
-          {customerPanel && (
-            <aside
-              aria-label="About this conversation"
-              data-region="customer-panel"
-              className={`hidden min-h-0 overflow-y-auto border-l border-line ${simulatorShown ? 'min-[1760px]:block' : 'xl:block'}`}
-            />
-          )}
         </main>
       </div>
 

@@ -69,24 +69,39 @@ const verifiedAt = (iso: string): string =>
     timeZone: INBOX_DAY_TIMEZONE,
   }).format(new Date(iso));
 
+/** The words of the next-step card for a paid deposit (SCRUM-1016, ChatPaid.dc.html). */
+export interface DepositPaidCard {
+  /** "Deposit ฿3,000 paid". */
+  title: string;
+  /** The gateway's verification and when, then what to do next. */
+  detail: string;
+  /** Said first for a simulator payment: no real money moved. */
+  simulator: string | null;
+}
+
+/** Said first on the card when the payment came from the simulator (SCRUM-996). */
+export const SIMULATOR_PAYMENT_LINE = 'Simulator test payment, no real money.';
+
 /**
- * The line beside Book Date for a person who may book (SCRUM-996 plan §2):
- * the amount, the gateway's verification and when, then what to do next. A
- * simulator payment says so first.
+ * The next-step card for a person who may book (SCRUM-996 plan §2, laid out
+ * as ChatPaid.dc.html by SCRUM-1016): the amount, the gateway's verification
+ * and when, then what to do next. A simulator payment says so first; a date
+ * that has passed says the deposit is staff's to resolve with the family.
  */
-export function depositPaidLine(
+export function depositPaidCard(
   draft: { amountSatang: number; paidAt: string | null; simulator: boolean },
   signal: InboxDepositSignal,
-): string {
+): DepositPaidCard {
   const when = draft.paidAt ? ` at ${verifiedAt(draft.paidAt)}` : '';
-  const paid = `${bahtOf(draft.amountSatang)} paid and gateway verified${when}.`;
   const next =
     signal === 'paid_date_passed'
       ? 'The party date has passed: staff must resolve the paid deposit with the family.'
-      : 'Check capacity, then Book Date.';
-  return draft.simulator
-    ? `Simulator test payment, no real money: deposit ${paid} ${next}`
-    : `Deposit ${paid} ${next}`;
+      : 'Check capacity, then book the date.';
+  return {
+    title: `Deposit ${bahtOf(draft.amountSatang)} paid`,
+    detail: `Gateway verified${when}. ${next}`,
+    simulator: draft.simulator ? SIMULATOR_PAYMENT_LINE : null,
+  };
 }
 
 /**

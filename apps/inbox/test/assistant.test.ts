@@ -131,9 +131,10 @@ describe('the withdrawn bubble (§A.3)', () => {
     // SCRUM-1016: the strike-through wears the muted ink token in place of slate-400.
     expect(html).toContain('<s class="decoration-ink-muted">We open at 10:00.</s>');
     expect(html).toContain('Not sent: a person replied');
-    expect(html).toContain('AI Assistant');
+    // SCRUM-1016: the label over the assistant's lines is "Assistant" (Chat.dc.html), and a withdrawn line is never on its mint.
+    expect(html).toContain('</svg> Assistant</span>');
     expect(html).toContain('border-dashed');
-    expect(html).not.toContain('bg-indigo-50 text-indigo-900');
+    expect(html).not.toContain('bg-mint text-teal');
   });
 
   it('leaves a sent AI line as it was, with the correction control when offered', () => {

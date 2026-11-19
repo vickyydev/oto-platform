@@ -19,7 +19,8 @@ import { describe, expect, it } from 'vitest';
 import type { ConversationDetail, ConversationRow, InboxMe } from '@/api/inbox';
 import { ChatPanel, type Thread } from '@/components/ChatPanel';
 import { ConversationList } from '@/components/ConversationList';
-import { DetailsDialog, FiltersDialog } from '@/components/dialogs';
+import { ConversationFacts } from '@/components/ChatActions';
+import { FiltersDialog } from '@/components/dialogs';
 import { FilterFields, Rail } from '@/components/Rail';
 import { StatsMore } from '@/components/StatsRow';
 import { mergeSources, sourceLabel, sourcesOfRows, toggleChip, type SourceOption } from '@/lib/inboxes';
@@ -388,13 +389,14 @@ describe('the source, everywhere a conversation shows', () => {
     expect(panel(row({ channelAccountName: null }))).toContain('>WhatsApp</span>');
   });
 
-  it('the details dialog has a Source line, with the channel kept on its own line', () => {
+  // SCRUM-1016: the details dialog's lines are People and actions' details now.
+  it('the details have a Source line, with the channel kept on its own line', () => {
     const r = row();
-    const html = renderToStaticMarkup(createElement(DetailsDialog, { open: true, onClose: noop, row: r, detail: detail(r), me: hana, now }));
+    const html = renderToStaticMarkup(createElement(ConversationFacts, { row: r, detail: detail(r), now }));
     expect(html).toMatch(/>Source<\/dt><dd[^>]*>Reception · Central Floresta<\/dd>/);
     expect(html).toMatch(/>Channel<\/dt><dd[^>]*>WhatsApp<\/dd>/);
     const bare = row({ channelAccountName: null, channel: 'instagram' });
-    const fallback = renderToStaticMarkup(createElement(DetailsDialog, { open: true, onClose: noop, row: bare, detail: detail(bare), me: hana, now }));
+    const fallback = renderToStaticMarkup(createElement(ConversationFacts, { row: bare, detail: detail(bare), now }));
     expect(fallback).toMatch(/>Source<\/dt><dd[^>]*>Instagram<\/dd>/);
   });
 

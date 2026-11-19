@@ -1,9 +1,23 @@
 import { useState } from 'react';
-import { AlertTriangle, Ban, Bot, Check, CheckCheck, Clock3, ExternalLink, EyeOff, Languages, Loader2, Mic, Paperclip, PenLine } from 'lucide-react';
+import {
+  AlertTriangle,
+  Ban,
+  Bot,
+  Check,
+  CheckCheck,
+  Clock3,
+  ExternalLink,
+  EyeOff,
+  Languages,
+  Loader2,
+  Mic,
+  Paperclip,
+  PenLine,
+  type LucideIcon,
+} from 'lucide-react';
 import { ApiError } from '@/api/client';
 import { filesApi } from '@/api/files';
 import type { InboxMe, Message } from '@/api/inbox';
-import { ChipView } from '@/components/atoms';
 import {
   SHADOW_LABEL,
   bubbleTime,
@@ -18,6 +32,10 @@ import {
 export const ATTACHMENT_FALLBACK_NAME = 'Attachment';
 /** A message's audio, named (SCRUM-824). */
 export const VOICE_NOTE_NAME = 'Voice note';
+
+/** A file's Open control: a card-coloured pill, 44 px tall on a phone (SCRUM-1016). */
+const OPEN_FILE =
+  'inline-flex min-h-11 shrink-0 items-center gap-1 rounded-lg bg-card px-2 text-[12px] font-semibold text-ink ring-1 ring-line hover:bg-wash md:min-h-0 md:py-0.5';
 
 /**
  * One attachment on a bubble (customer-AI test night, W7: the brochure showed
@@ -52,17 +70,12 @@ export function AttachmentChip({ attachment: a, muted }: { attachment: Attachmen
 
   return (
     <div className="mt-1 flex min-w-0 flex-col gap-1" data-attachment={a.fileId}>
-      <div className={`flex min-w-0 items-center gap-1.5 text-[11.5px] ${muted ? 'text-ink-muted' : ''}`}>
-        <Paperclip className="h-3 w-3 shrink-0" />
+      <div className={`flex min-w-0 items-center gap-1.5 text-[12.5px] ${muted ? 'text-ink-muted' : ''}`}>
+        <Paperclip aria-hidden className="h-3.5 w-3.5 shrink-0" />
         <span className="min-w-0 truncate font-medium">{name}</span>
         {opened ? (
-          <a
-            href={opened.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex shrink-0 items-center gap-1 rounded-md bg-card/80 px-1.5 py-0.5 text-[11px] font-medium text-ink ring-1 ring-line hover:bg-card"
-          >
-            <ExternalLink className="h-3 w-3" /> Open
+          <a href={opened.url} target="_blank" rel="noopener noreferrer" className={OPEN_FILE}>
+            <ExternalLink aria-hidden className="h-3 w-3" /> Open
           </a>
         ) : (
           <button
@@ -70,9 +83,9 @@ export function AttachmentChip({ attachment: a, muted }: { attachment: Attachmen
             onClick={() => void open()}
             disabled={busy}
             aria-label={`Open ${name}`}
-            className="inline-flex shrink-0 items-center gap-1 rounded-md bg-card/80 px-1.5 py-0.5 text-[11px] font-medium text-ink ring-1 ring-line hover:bg-card disabled:opacity-60"
+            className={`${OPEN_FILE} disabled:opacity-60`}
           >
-            {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <ExternalLink className="h-3 w-3" />} Open
+            {busy ? <Loader2 aria-hidden className="h-3 w-3 animate-spin" /> : <ExternalLink aria-hidden className="h-3 w-3" />} Open
           </button>
         )}
       </div>
@@ -82,7 +95,7 @@ export function AttachmentChip({ attachment: a, muted }: { attachment: Attachmen
         </a>
       )}
       {audio && opened && <audio controls preload="none" src={opened.url} className="h-8 w-full max-w-[260px]" />}
-      {error && <span className="text-[11px] text-rose-600 dark:text-rose-400">{error}</span>}
+      {error && <span className="rounded-md bg-danger px-1.5 py-0.5 text-[11.5px] text-danger-ink">{error}</span>}
     </div>
   );
 }
@@ -93,91 +106,95 @@ export function AttachmentChip({ attachment: a, muted }: { attachment: Attachmen
  * not when it could not be read, was too long, or no provider is configured.
  */
 export function VoiceTranscript({ view }: { view: VoiceTranscriptView }) {
-  const muted = 'text-[11.5px] italic text-ink-muted';
+  const muted = 'text-[12px] italic text-ink-muted';
   return (
-    <div
-      data-testid="voice-transcript"
-      data-state={view.state}
-      className="mt-1.5 border-t border-line-soft pt-1.5"
-    >
+    <div data-testid="voice-transcript" data-state={view.state} className="mt-1.5 border-t border-line-soft pt-1.5">
       {view.state === 'done' ? (
         <>
-          <span className="mb-0.5 flex items-center gap-1 text-[10px] uppercase tracking-wide text-ink-muted">
-            <Mic className="h-3 w-3" /> {view.label}
+          <span className="mb-0.5 flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-ink-muted">
+            <Mic aria-hidden className="h-3.5 w-3.5" /> {view.label}
           </span>
-          <span className="text-[13px]">{view.text}</span>
+          <span className="text-[14px]">{view.text}</span>
         </>
       ) : view.state === 'pending' ? (
         <span className={`inline-flex items-center gap-1 ${muted}`}>
-          <Loader2 className="h-3 w-3 animate-spin" /> {view.label}
+          <Loader2 aria-hidden className="h-3.5 w-3.5 animate-spin" /> {view.label}
         </span>
       ) : (
         <span className={`inline-flex items-center gap-1 ${muted}`}>
-          <Mic className="h-3 w-3" /> {view.label}
+          <Mic aria-hidden className="h-3.5 w-3.5" /> {view.label}
         </span>
       )}
     </div>
   );
 }
 
+/** The column a line stands in: most of a phone's width, less on a desktop (Chat.dc.html, Desktop.dc.html). */
+const COLUMN = 'flex min-w-0 max-w-[80%] flex-col gap-1 lg:max-w-[62%]';
+/** A bubble: 18 px round, the corner by its author smaller (6 px), 14.5 px words. */
+const BUBBLE = 'max-w-full whitespace-pre-line break-words rounded-[18px] px-3.5 py-2.5 text-[14.5px] leading-[1.4]';
+
+/** "Assistant" over the assistant's lines, in its teal (Chat.dc.html). */
+function AssistantLabel() {
+  return (
+    <span className="inline-flex items-center gap-1 text-[11.5px] font-bold text-teal">
+      <Bot aria-hidden className="h-3.5 w-3.5" /> Assistant
+    </span>
+  );
+}
+
 /**
  * What the assistant WOULD have said on a number in shadow mode (customer-AI
  * test night, W5: staff saw nothing and could not judge it). Staff-only, never
- * sent: a muted, dashed bubble under the AI chip, labelled so.
+ * sent: a dashed bubble on the card under the "Assistant" label, said so.
  */
 export function ShadowBubble({ text, at, now, label = SHADOW_LABEL }: { text: string; at: string; now: Date; label?: string }) {
   return (
     <div className="flex justify-end" data-shadow="true">
-      <div className="flex min-w-0 max-w-[80%] flex-col items-end gap-1">
-        <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-muted">
-          <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 dark:bg-indigo-500/15 px-1.5 py-0.5 text-indigo-600 dark:text-indigo-400 ring-1 ring-indigo-200 dark:ring-indigo-500/30">
-            <Bot className="h-2.5 w-2.5" /> AI Assistant
+      <div className={`${COLUMN} items-end`}>
+        <span className="flex flex-wrap items-center justify-end gap-x-2 gap-y-0.5 px-1">
+          <AssistantLabel />
+          <span className="inline-flex items-center gap-1 text-[11.5px] font-medium text-ink-muted">
+            <EyeOff aria-hidden className="h-3.5 w-3.5" /> {label}
           </span>
-          <span className="inline-flex items-center gap-1 normal-case tracking-normal text-ink-muted">
-            <EyeOff className="h-3 w-3" /> {label}
-          </span>
-        </div>
-        <div className="max-w-full whitespace-pre-line break-words rounded-2xl rounded-tr-sm border border-dashed border-indigo-200 dark:border-indigo-500/40 bg-indigo-50/40 dark:bg-indigo-500/10 px-3.5 py-2 text-[13.5px] leading-relaxed text-indigo-900/70 dark:text-indigo-200/70">
-          {text}
-          <div className="mt-1 flex items-center justify-end gap-1 text-[10px] text-indigo-300">
-            <span>{bubbleTime(at, now)}</span>
-          </div>
-        </div>
+        </span>
+        <div className={`${BUBBLE} rounded-tr-md border border-dashed border-mint-edge bg-card text-ink-soft`}>{text}</div>
+        <span className="px-1 text-[11.5px] text-ink-muted">{bubbleTime(at, now)}</span>
       </div>
     </div>
   );
 }
 
-/**
- * The read ticks (:2097), over the provider's delivery status: one tick sent,
- * two delivered, two in sky once read; a clock while queued, a warning when
- * the channel refused it.
- */
-function Ticks({ status }: { status: Message['providerStatus'] }) {
-  switch (status) {
-    case 'read':
-      return <CheckCheck className="h-3 w-3 text-sky-300" aria-label="Read" />;
-    case 'delivered':
-      return <CheckCheck className="h-3 w-3" aria-label="Delivered" />;
-    case 'sent':
-      return <Check className="h-3 w-3" aria-label="Sent" />;
-    case 'queued':
-      return <Clock3 className="h-3 w-3" aria-label="Sending" />;
-    case 'failed':
-      return <AlertTriangle className="h-3 w-3 text-rose-400" aria-label="Not delivered" />;
-    case 'withdrawn':
-      return <Ban className="h-3 w-3" aria-label="Not sent" />;
-    default:
-      return null;
-  }
+/** A line's delivery (:2097), over the provider's status: a mark and its word, after the time. */
+const DELIVERY: Partial<Record<NonNullable<Message['providerStatus']>, { icon: LucideIcon; word: string; tint?: string }>> = {
+  read: { icon: CheckCheck, word: 'Read', tint: 'text-teal' },
+  delivered: { icon: CheckCheck, word: 'Delivered' },
+  sent: { icon: Check, word: 'Sent' },
+  queued: { icon: Clock3, word: 'Sending' },
+  failed: { icon: AlertTriangle, word: 'Not delivered', tint: 'text-danger-ink' },
+  withdrawn: { icon: Ban, word: 'Not sent' },
+};
+
+function Delivery({ status }: { status: Message['providerStatus'] }) {
+  const d = status ? DELIVERY[status] : undefined;
+  if (!d) return null;
+  const Icon = d.icon;
+  return (
+    <span className={`inline-flex items-center gap-1 ${d.tint ?? ''}`}>
+      <Icon aria-hidden className="h-3.5 w-3.5" />
+      {d.word}
+    </span>
+  );
 }
 
 /**
- * `MessageBubble` (WhatsAppDemo.tsx :2064-2103): the customer white with a
- * ring on the left; staff dark slate on the right under their name chip; the
- * AI indigo-tinted under an "AI Assistant" chip. A platform-written line (a
- * check-in notice from the till, the out-of-hours reply) sits on the right in
- * slate under an "Automatic" chip — the prototype has no such author.
+ * `MessageBubble` (WhatsAppDemo.tsx :2064-2103), in the OTO look (SCRUM-1016,
+ * Chat.dc.html): the customer on the card on the left; staff in the brown ink
+ * on the right under their name; the assistant in mint and teal under
+ * "Assistant". A platform-written line (a check-in notice from the till, the
+ * out-of-hours reply) sits on the right on the band under "Sent
+ * automatically" — the prototype has no such author. The time and the
+ * delivery word sit under the bubble.
  *
  * SCRUM-590 A3: an AI line withdrawn before it left (a person acted first,
  * plan §A.3) stays on the timeline greyed and struck through, with the words
@@ -204,53 +221,50 @@ export function MessageBubble({
   const isCustomer = m.authorKind === 'customer';
   const isAi = m.authorKind === 'ai';
   const isSystem = m.authorKind === 'system';
+  const isStaff = !isCustomer && !isAi && !isSystem;
   const withdrawn = m.providerStatus === 'withdrawn' || withdrawnNote !== undefined;
   // SCRUM-824: a customer's voice note shows its words under the audio.
   const voice = isCustomer ? voiceTranscriptOf(m) : null;
 
   const bubble = isCustomer
-    ? 'rounded-tl-sm bg-card text-ink ring-1 ring-line'
+    ? 'rounded-tl-md bg-card text-ink ring-1 ring-line'
     : withdrawn
-      ? 'rounded-tr-sm border border-dashed border-field bg-ground text-ink-muted'
+      ? 'rounded-tr-md border border-dashed border-field bg-ground text-ink-muted'
       : isAi
-        ? 'rounded-tr-sm bg-indigo-50 dark:bg-indigo-500/15 text-indigo-900 dark:text-indigo-200 ring-1 ring-indigo-100 dark:ring-indigo-500/25'
+        ? 'rounded-tr-md bg-mint text-teal'
         : isSystem
-          ? 'rounded-tr-sm bg-band text-ink ring-1 ring-line'
-          : 'rounded-tr-sm bg-staff text-on-staff';
-  const meta = isCustomer || withdrawn ? 'text-ink-muted' : isAi ? 'text-indigo-400' : isSystem ? 'text-ink-muted' : 'text-on-staff/75';
+          ? 'rounded-tr-md bg-band text-ink'
+          : 'rounded-tr-md bg-staff text-on-staff';
+  // The translation's rule and its language mark, on the bubble's own ground.
+  const rule = isCustomer || withdrawn ? 'border-line-soft' : isAi ? 'border-mint-edge' : isSystem ? 'border-line' : 'border-on-staff/25';
+  const mark = withdrawn ? 'text-ink-muted' : isStaff ? 'text-on-staff' : isAi ? 'text-teal' : 'text-ink-muted';
 
   return (
     <div className={`flex ${isCustomer ? 'justify-start' : 'justify-end'}`} data-withdrawn={withdrawn ? 'true' : undefined}>
-      <div className={`flex min-w-0 max-w-[80%] flex-col gap-1 ${isCustomer ? 'items-start' : 'items-end'}`}>
-        {!isCustomer && (
-          <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-muted">
-            {isAi ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 dark:bg-indigo-500/15 px-1.5 py-0.5 text-indigo-600 dark:text-indigo-400 ring-1 ring-indigo-200 dark:ring-indigo-500/30">
-                <Bot className="h-2.5 w-2.5" /> AI Assistant
-              </span>
-            ) : isSystem ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-band px-1.5 py-0.5 text-ink-soft ring-1 ring-line">
-                <Bot className="h-2.5 w-2.5" /> Automatic
-              </span>
-            ) : (
-              <ChipView chip={personChip(m.id, m.authorAccountId, m.authorName, me)} />
-            )}
-          </div>
-        )}
-        <div
-          className={`max-w-full whitespace-pre-line break-words rounded-2xl px-3.5 py-2 text-[13.5px] leading-relaxed ${withdrawn ? '' : 'shadow-sm '}${bubble}`}
-        >
+      <div className={`${COLUMN} ${isCustomer ? 'items-start' : 'items-end'}`}>
+        {isAi ? (
+          <span className="px-1">
+            <AssistantLabel />
+          </span>
+        ) : isSystem ? (
+          <span className="px-1 text-[11.5px] font-bold text-ink-soft">Sent automatically</span>
+        ) : isStaff ? (
+          <span className="px-1 text-[11.5px] font-bold text-ink-soft">
+            {personChip(m.id, m.authorAccountId, m.authorName, me).name}
+          </span>
+        ) : null}
+        <div className={`${BUBBLE} ${bubble}`}>
           {m.body !== null ? (
             withdrawn ? <s className="decoration-ink-muted">{m.body}</s> : m.body
           ) : m.redacted ? (
-            <span className="italic opacity-70">Removed at the customer’s request</span>
+            <span className="italic opacity-80">Removed at the customer’s request</span>
           ) : attachments.length === 0 && !voice ? (
-            <span className="italic opacity-70">No text</span>
+            <span className="italic opacity-80">No text</span>
           ) : null}
           {m.translatedBody && (
-            <div className={`mt-1.5 border-t pt-1.5 text-[12.5px] ${isCustomer ? 'border-line-soft' : 'border-white/15'}`}>
-              <span className={`mr-1 inline-flex items-center gap-1 text-[10px] uppercase tracking-wide ${meta}`}>
-                <Languages className="h-3 w-3" /> {langLabel(m.translatedTo)}
+            <div className={`mt-1.5 border-t pt-1.5 text-[13.5px] ${rule}`}>
+              <span className={`mr-1 inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide ${mark}`}>
+                <Languages aria-hidden className="h-3.5 w-3.5" /> {langLabel(m.translatedTo)}
               </span>
               {m.translatedBody}
             </div>
@@ -263,26 +277,26 @@ export function MessageBubble({
             />
           ))}
           {voice && <VoiceTranscript view={voice} />}
-          <div className={`mt-1 flex items-center justify-end gap-1 text-[10px] ${meta}`}>
-            <span>{bubbleTime(m.sentAt ?? m.createdAt, now)}</span>
-            {m.direction === 'outbound' && <Ticks status={m.providerStatus} />}
-          </div>
         </div>
+        <span className={`flex flex-wrap items-center gap-x-2 px-1 text-[11.5px] text-ink-muted ${isCustomer ? '' : 'justify-end'}`}>
+          {isAi && onCorrect && (
+            <button
+              type="button"
+              onClick={onCorrect}
+              className="inline-flex min-h-11 items-center gap-1 font-semibold text-teal underline underline-offset-2 hover:no-underline md:min-h-0 md:py-1"
+            >
+              <PenLine aria-hidden className="h-3.5 w-3.5" />
+              Correct the assistant
+            </button>
+          )}
+          <span>{bubbleTime(m.sentAt ?? m.createdAt, now)}</span>
+          {m.direction === 'outbound' && <Delivery status={m.providerStatus} />}
+        </span>
         {withdrawn && (
-          <div className="inline-flex items-center gap-1 text-[11px] font-medium text-ink-muted">
-            <Ban className="h-3 w-3" />
+          <span className="inline-flex items-center gap-1 px-1 text-[12px] font-medium text-ink-muted">
+            <Ban aria-hidden className="h-3.5 w-3.5" />
             {withdrawnNote ?? 'Not sent: a person replied'}
-          </div>
-        )}
-        {isAi && onCorrect && (
-          <button
-            type="button"
-            onClick={onCorrect}
-            className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[11px] font-medium text-indigo-500 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/15 hover:text-indigo-700 dark:hover:text-indigo-300"
-          >
-            <PenLine className="h-3 w-3" />
-            Correct the assistant
-          </button>
+          </span>
         )}
       </div>
     </div>

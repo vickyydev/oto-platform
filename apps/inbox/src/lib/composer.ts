@@ -37,3 +37,11 @@ export function composerBox(
 export function sendsOnKey(e: { key: string; shiftKey: boolean; composing?: boolean }): boolean {
   return e.key === 'Enter' && !e.shiftKey && e.composing !== true;
 }
+
+/**
+ * A composer icon (Templates, the microphone; SCRUM-1016, Chat.dc.html):
+ * 44 px, in the soft ink. Here so the composer and its microphone share it
+ * without importing each other.
+ */
+export const COMPOSER_ICON =
+  'flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-soft hover:bg-wash hover:text-ink disabled:cursor-not-allowed disabled:opacity-60';

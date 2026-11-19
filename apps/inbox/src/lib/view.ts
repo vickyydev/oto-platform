@@ -4,8 +4,9 @@
  *
  * The labels and the colour code are the prototype's
  * (`imports/oto-asset-manager/artifacts/oto-org-chart/src/WhatsAppDemo.tsx`,
- * `CATEGORY_LABEL`, `CATEGORY_TINT`, `STATUS_*`, `CHANNEL_*`, `LANG_LABEL`,
- * :168-207) and `docs/features/inbox.md` "Colour code". The RULES — tabs,
+ * `CATEGORY_LABEL`, `STATUS_LABEL`, `CHANNEL_*`, `LANG_LABEL`, :168-207) and
+ * `docs/features/inbox.md` "Colour code"; since SCRUM-1016 the colours are
+ * the OTO tokens of src/index.css and a topic is a dot, never a whole chip. The RULES — tabs,
  * tab membership, unanswered, the move destinations — are not here: they are
  * `@oto/shared/inbox`, which the api counts with too.
  */
@@ -41,17 +42,6 @@ export const CATEGORY_LABEL: Record<InboxCategoryKey, string> = {
 };
 
 /**
- * violet = Birthdays & Events, sky = General / reception, pink = Marketing;
- * amber = the GM queue (SCRUM-220 playbook), the GM team's seeded colour.
- */
-export const CATEGORY_TINT: Record<InboxCategoryKey, string> = {
-  birthdays: 'bg-violet-50 dark:bg-violet-500/15 text-violet-700 dark:text-violet-300 ring-violet-200 dark:ring-violet-500/30',
-  general: 'bg-sky-50 dark:bg-sky-500/15 text-sky-700 dark:text-sky-300 ring-sky-200 dark:ring-sky-500/30',
-  marketing: 'bg-pink-50 dark:bg-pink-500/15 text-pink-700 dark:text-pink-300 ring-pink-200 dark:ring-pink-500/30',
-  gm: 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 ring-amber-200 dark:ring-amber-500/30',
-};
-
-/**
  * The topic as an 8 px dot in the OTO look (SCRUM-1016): the same colour code
  * (violet, sky, pink, amber), carried by the topic tokens in src/index.css,
  * so a topic never colours a whole chip.
@@ -76,11 +66,6 @@ export const CATEGORY_SHORT: Record<InboxCategoryKey, string> = {
 
 /** The IT Brief's two statuses; the prototype stores Active as "new". */
 export const STATUS_LABEL: Record<InboxStatusKey, string> = { active: 'Active', handled: 'Handled' };
-export const STATUS_TINT: Record<InboxStatusKey, string> = {
-  active: 'bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 ring-blue-200 dark:ring-blue-500/30',
-  handled: 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 ring-emerald-200 dark:ring-emerald-500/30',
-};
-export const STATUS_DOT: Record<InboxStatusKey, string> = { active: 'bg-blue-500', handled: 'bg-emerald-500' };
 
 /** The prototype's three, plus the platform's own channels in a neutral ink. */
 export const CHANNEL_LABEL: Record<InboxChannelKey, string> = {
@@ -224,12 +209,21 @@ export function tintFor(id: string): string {
   return PASTELS[h % PASTELS.length]!;
 }
 
-/** A team's chip, in its own colour (`team.colour`: violet, sky, pink). */
+/**
+ * A team's face, in a token near its own colour (`team.colour`: violet, sky,
+ * pink, amber; SCRUM-1016): violet and sky have their own face pairs, pink
+ * takes the coral pair and amber (the GM queue) the band; any other is the band.
+ */
 const TEAM_TINT: Record<string, string> = {
-  violet: 'bg-violet-100 dark:bg-violet-500/25 text-violet-700 dark:text-violet-300',
-  sky: 'bg-sky-100 dark:bg-sky-500/25 text-sky-700 dark:text-sky-300',
-  pink: 'bg-pink-100 dark:bg-pink-500/25 text-pink-700 dark:text-pink-300',
+  violet: 'bg-face-violet text-face-violet-ink',
+  sky: 'bg-face-sky text-face-sky-ink',
+  pink: 'bg-needs text-needs-ink',
+  amber: 'bg-band text-ink-soft',
 };
+/** The assistant's face: mint with teal, as on its lines (SCRUM-1016). */
+export const AI_TINT = 'bg-mint text-teal';
+/** The GM and any other operator-wide reader in no team: the ink inverted (SCRUM-1016). */
+export const MANAGER_TINT = 'bg-ink text-on-ink';
 
 export interface Chip {
   key: string;
@@ -240,26 +234,26 @@ export interface Chip {
 
 /**
  * How an assignee shows: a person in their fixed pastel — the GM and any
- * other operator-wide reader in no team in `slate-800` (the prototype's
+ * other operator-wide reader in no team in the inverted ink (the prototype's
  * "Hanna · GM", :143) — a team (a reception desk) in its team colour, the AI
- * in indigo.
+ * in mint and teal.
  */
 export function assigneeChip(a: Assignee, me: Pick<InboxMe, 'people' | 'teams'>): Chip {
   if (a.assigneeKind === 'ai') {
-    return { key: a.assignmentId, name: 'AI Assistant', initials: 'AI', tint: 'bg-indigo-100 dark:bg-indigo-500/25 text-indigo-700 dark:text-indigo-300' };
+    return { key: a.assignmentId, name: 'AI Assistant', initials: 'AI', tint: AI_TINT };
   }
   if (a.assigneeKind === 'team') {
     const team = me.teams.find((t) => t.id === a.teamId);
     const name = a.name ?? team?.name ?? 'Team';
-    return { key: a.assignmentId, name, initials: initialsOf(name), tint: TEAM_TINT[team?.colour ?? ''] ?? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200' };
+    return { key: a.assignmentId, name, initials: initialsOf(name), tint: TEAM_TINT[team?.colour ?? ''] ?? 'bg-band text-ink-soft' };
   }
   return personChip(a.assignmentId, a.accountId, a.name, me);
 }
 
 /**
  * A person's chip, the same on the strip, the list and over their bubbles:
- * their fixed pastel, or `slate-800` for the GM and any other operator-wide
- * reader in no team.
+ * their fixed pastel, or the inverted ink for the GM and any other
+ * operator-wide reader in no team.
  */
 export function personChip(
   key: string,
@@ -274,7 +268,7 @@ export function personChip(
     key,
     name: shown,
     initials: initialsOf(shown),
-    tint: manager ? 'bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900' : tintFor(accountId ?? key),
+    tint: manager ? MANAGER_TINT : tintFor(accountId ?? key),
   };
 }
 
@@ -1032,8 +1026,6 @@ export const BOOK_DATE_NOT_YOURS_REASON = 'The birthdays team or a manager books
 export function mayBookDate(me: Pick<InboxMe, 'capabilities' | 'teams'>): boolean {
   return me.capabilities.assign || me.teams.some((t) => t.kind === 'birthdays' && t.member);
 }
-/** The composer's emoji and attachment buttons: the reply route takes words and templates only. */
-export const COMPOSER_EXTRAS_REASON = 'Not in this build yet';
 
 export function writeMode(me: Pick<InboxMe, 'capabilities'>): WriteMode {
   return me.capabilities.writes ? 'live' : 'disabled';
@@ -1168,27 +1160,33 @@ export function supportCapLabel(supportCount: number): string | null {
 
 export type AiStateLine =
   | { kind: 'label'; text: string }
-  | { kind: 'control'; text: string; paused: boolean; action: 'pause' | 'resume' };
+  | { kind: 'control'; text: string; hint: string; paused: boolean; action: 'pause' | 'resume' };
+
+/** The control's own word, and its name to a screen reader (SCRUM-1016). */
+export const AI_ACTION_LABEL = { pause: 'Pause', resume: 'Resume' } as const;
+export const AI_ACTION_NAME = { pause: 'Pause the assistant', resume: 'Resume the assistant' } as const;
+
+const AI_ON: AiStateLine = { kind: 'control', text: 'Assistant on', hint: 'it answers what it knows', paused: false, action: 'pause' };
+const AI_PAUSED: AiStateLine = { kind: 'control', text: 'Assistant paused', hint: 'it stays quiet until resumed', paused: true, action: 'resume' };
 
 /**
- * What the strip says about the assistant here, from the number's mode
+ * What the chat's assistant line says (test night U5), from the number's mode
  * (`detail.aiMode`) and the thread's pause: Off is a plain label with no
- * control ("AI on · Pause" showed where the assistant was off, U5); Shadow
- * says so, with only a Resume when a pause is left on it; Live has the
- * pause control.
+ * control (a pause control showed where the assistant was off, U5); Shadow
+ * says so, with only a Resume when a pause is left on it; Live has the pause
+ * control. SCRUM-1016 words it as ChatActions.dc.html does: the state in a
+ * few words, why in a few more, then Pause or Resume.
  */
 export function aiStateLine(mode: 'off' | 'shadow' | 'live', paused: boolean): AiStateLine {
   if (mode === 'off') return { kind: 'label', text: 'Assistant off on this number' };
   if (mode === 'shadow' && !paused) return { kind: 'label', text: 'Assistant in shadow' };
-  return paused
-    ? { kind: 'control', text: 'AI paused · Resume', paused: true, action: 'resume' }
-    : { kind: 'control', text: 'AI on · Pause', paused: false, action: 'pause' };
+  return paused ? AI_PAUSED : AI_ON;
 }
 
 /**
  * The thread's assistant state as the api will say it (customer-AI test
- * night, W4a): the chip said "AI on · Pause" after a person's reply and after
- * a hand-over, when the assistant would not answer. `aiState` is the
+ * night, W4a): the line once said the assistant was on after a person's reply
+ * and after a hand-over, when it would not answer. `aiState` is the
  * customer-AI lane's field, read optionally; absent, the U5 derivation from
  * the mode and the pause stands.
  */
@@ -1203,13 +1201,13 @@ export function aiStateLineFor(d: { aiMode: 'off' | 'shadow' | 'live'; aiPaused:
     case 'shadow':
       return { kind: 'label', text: 'Assistant in shadow' };
     case 'ready':
-      return { kind: 'control', text: 'AI on · Pause', paused: false, action: 'pause' };
+      return AI_ON;
     case 'paused':
-      return { kind: 'control', text: 'AI paused · Resume', paused: true, action: 'resume' };
+      return AI_PAUSED;
     case 'left_for_team':
-      return { kind: 'control', text: 'AI handed over · Resume', paused: true, action: 'resume' };
+      return { kind: 'control', text: 'Assistant handed over', hint: 'it will stay quiet', paused: true, action: 'resume' };
     case 'person_replied':
-      return { kind: 'control', text: 'AI stopped: a person replied · Resume', paused: true, action: 'resume' };
+      return { kind: 'control', text: 'Assistant quiet', hint: 'a person replied', paused: true, action: 'resume' };
     default:
       return aiStateLine(d.aiMode, d.aiPaused);
   }

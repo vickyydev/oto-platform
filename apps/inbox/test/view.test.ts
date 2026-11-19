@@ -234,13 +234,15 @@ describe('chips and names', () => {
   it('keeps one tint per person', () => {
     expect(tintFor(ALINA)).toBe(tintFor(ALINA));
   });
-  it('paints the GM slate, a team in its colour, the AI indigo', () => {
-    expect(assigneeChip(assignee({ accountId: GM }), me).tint).toBe('bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900');
+  // SCRUM-1016: the faces are tokens now (the GM's inverted ink, a team's
+  // face pair, the assistant's mint and teal), never a raw palette class.
+  it('paints the GM in the inverted ink, a team in its face colour, the AI in mint', () => {
+    expect(assigneeChip(assignee({ accountId: GM }), me).tint).toBe('bg-ink text-on-ink');
     expect(assigneeChip(assignee({ assigneeKind: 'team', accountId: null, teamId: T_CENTRAL }), me)).toMatchObject({
       name: 'Reception · Central',
-      tint: 'bg-sky-100 dark:bg-sky-500/25 text-sky-700 dark:text-sky-300',
+      tint: 'bg-face-sky text-face-sky-ink',
     });
-    expect(assigneeChip(assignee({ assigneeKind: 'ai', accountId: null }), me).name).toBe('AI Assistant');
+    expect(assigneeChip(assignee({ assigneeKind: 'ai', accountId: null }), me)).toMatchObject({ name: 'AI Assistant', tint: 'bg-mint text-teal' });
   });
 });
 
@@ -295,29 +297,38 @@ describe('the support cap (test night U4)', () => {
   });
 });
 
+// SCRUM-1016: the line says the state in a few words, why in a few more, and
+// the control's own word ("Pause", "Resume") is a button beside it
+// (Chat.dc.html), where the strip once said "AI on · Pause" in one chip. The
+// states, the controls they carry and the U5 derivation are unchanged.
+const ON = { kind: 'control', text: 'Assistant on', hint: 'it answers what it knows', paused: false, action: 'pause' };
+const PAUSED = { kind: 'control', text: 'Assistant paused', hint: 'it stays quiet until resumed', paused: true, action: 'resume' };
+
 describe('the assistant’s state line (test night U5)', () => {
   it('derives from the number’s mode first, then the thread’s pause', () => {
     expect(aiStateLine('off', false)).toEqual({ kind: 'label', text: 'Assistant off on this number' });
     expect(aiStateLine('off', true)).toEqual({ kind: 'label', text: 'Assistant off on this number' });
     expect(aiStateLine('shadow', false)).toEqual({ kind: 'label', text: 'Assistant in shadow' });
-    expect(aiStateLine('shadow', true)).toEqual({ kind: 'control', text: 'AI paused · Resume', paused: true, action: 'resume' });
-    expect(aiStateLine('live', false)).toEqual({ kind: 'control', text: 'AI on · Pause', paused: false, action: 'pause' });
-    expect(aiStateLine('live', true)).toEqual({ kind: 'control', text: 'AI paused · Resume', paused: true, action: 'resume' });
+    expect(aiStateLine('shadow', true)).toEqual(PAUSED);
+    expect(aiStateLine('live', false)).toEqual(ON);
+    expect(aiStateLine('live', true)).toEqual(PAUSED);
   });
 
   it('says the api’s own state when it is there (customer-AI test night, W4a), each with its word', () => {
     const live = { aiMode: 'live' as const, aiPaused: false };
-    expect(aiStateLineFor({ ...live, aiState: 'ready' })).toEqual({ kind: 'control', text: 'AI on · Pause', paused: false, action: 'pause' });
-    expect(aiStateLineFor({ ...live, aiState: 'paused' })).toEqual({ kind: 'control', text: 'AI paused · Resume', paused: true, action: 'resume' });
+    expect(aiStateLineFor({ ...live, aiState: 'ready' })).toEqual(ON);
+    expect(aiStateLineFor({ ...live, aiState: 'paused' })).toEqual(PAUSED);
     expect(aiStateLineFor({ ...live, aiState: 'left_for_team' })).toEqual({
       kind: 'control',
-      text: 'AI handed over · Resume',
+      text: 'Assistant handed over',
+      hint: 'it will stay quiet',
       paused: true,
       action: 'resume',
     });
     expect(aiStateLineFor({ ...live, aiState: 'person_replied' })).toEqual({
       kind: 'control',
-      text: 'AI stopped: a person replied · Resume',
+      text: 'Assistant quiet',
+      hint: 'a person replied',
       paused: true,
       action: 'resume',
     });
@@ -327,8 +338,8 @@ describe('the assistant’s state line (test night U5)', () => {
 
   it('keeps the U5 derivation when the api says no state, or one it does not know', () => {
     expect(aiStateLineFor({ aiMode: 'off', aiPaused: false })).toEqual({ kind: 'label', text: 'Assistant off on this number' });
-    expect(aiStateLineFor({ aiMode: 'live', aiPaused: true, aiState: undefined })).toMatchObject({ text: 'AI paused · Resume' });
-    expect(aiStateLineFor({ aiMode: 'live', aiPaused: false, aiState: 'dreaming' })).toMatchObject({ text: 'AI on · Pause' });
+    expect(aiStateLineFor({ aiMode: 'live', aiPaused: true, aiState: undefined })).toEqual(PAUSED);
+    expect(aiStateLineFor({ aiMode: 'live', aiPaused: false, aiState: 'dreaming' })).toEqual(ON);
   });
 });
 
