@@ -1,0 +1,554 @@
+{
+  "unit": "SCRUM-1040",
+  "steps": {
+    "reads": {
+      "at": "2026-11-19T10:10:00.540Z",
+      "deployments": {
+        "oto-api-staging": {
+          "id": "dep-dbvcglmk1f9s73c5bet0",
+          "status": "live",
+          "sha": "c5f33c5af77075d10111ba7ba7f5ef235385080f"
+        },
+        "oto-console-staging": {
+          "id": "dep-dbvcjgp5efls73deopj0",
+          "status": "live",
+          "sha": "c5f33c5af77075d10111ba7ba7f5ef235385080f"
+        },
+        "oto-pos-staging": {
+          "id": "dep-dbvcjhgu01pc73dflat0",
+          "status": "live",
+          "sha": "c5f33c5af77075d10111ba7ba7f5ef235385080f"
+        },
+        "oto-pos-web-staging": {
+          "id": "dep-dbvcjh8u01pc73dflaj0",
+          "status": "live",
+          "sha": "c5f33c5af77075d10111ba7ba7f5ef235385080f"
+        }
+      },
+      "state": {
+        "park": {
+          "id": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "name": "Oto Play Park, Central Floresta"
+        },
+        "item": null,
+        "type": null,
+        "movements": [],
+        "attention": []
+      },
+      "meAfterSignOut": 401
+    },
+    "item": {
+      "at": "2026-11-19T10:10:34.075Z",
+      "pictures": [
+        "docs/qa/proof-2026-11-19/SCRUM-1040/01-console-new-item-no-product.png",
+        "docs/qa/proof-2026-11-19/SCRUM-1040/02-console-zz-test-delivery.png",
+        "docs/qa/proof-2026-11-19/SCRUM-1040/03-console-mystery-box-count-1.png"
+      ],
+      "session": {
+        "signOut": 200,
+        "meAfter": 401
+      },
+      "state": {
+        "park": {
+          "id": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "name": "Oto Play Park, Central Floresta"
+        },
+        "item": {
+          "id": "01a1f349-3c39-7691-8df2-0f32cf139536",
+          "name": "ZZ TEST Mystery Box SCRUM-1040",
+          "total": 1,
+          "status": "ok",
+          "productKind": null,
+          "active": true
+        },
+        "type": null,
+        "movements": [
+          {
+            "kind": "adjust",
+            "quantity": 1,
+            "levelAfter": 1,
+            "shortfall": 0,
+            "saleId": null,
+            "saleLineId": null,
+            "reason": "ZZ TEST delivery SCRUM-1040",
+            "stationId": null,
+            "offline": false,
+            "occurredAt": "2026-11-19T10:10:30.244Z"
+          }
+        ],
+        "attention": []
+      },
+      "meAfterSignOut": 401
+    },
+    "type": {
+      "at": "2026-11-19T10:11:01.766Z",
+      "chosen": "ZZ TEST Mystery Box SCRUM-1040",
+      "pictures": [
+        "docs/qa/proof-2026-11-19/SCRUM-1040/04-console-voucher-type-takes-from-item.png"
+      ],
+      "session": {
+        "signOut": 200,
+        "meAfter": 401
+      },
+      "state": {
+        "park": {
+          "id": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "name": "Oto Play Park, Central Floresta"
+        },
+        "item": {
+          "id": "01a1f349-3c39-7691-8df2-0f32cf139536",
+          "name": "ZZ TEST Mystery Box SCRUM-1040",
+          "total": 1,
+          "status": "ok",
+          "productKind": null,
+          "active": true
+        },
+        "type": {
+          "id": "01a1f349-a472-73a1-98f8-a8c157da7eba",
+          "nameEn": "ZZ TEST Mystery Box SCRUM-1040",
+          "kind": "manual",
+          "active": true,
+          "archivedAt": null,
+          "parkStock": [
+            {
+              "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+              "branchName": "Oto Play Park, Central Floresta",
+              "stockItemId": "01a1f349-3c39-7691-8df2-0f32cf139536",
+              "stockItemName": "ZZ TEST Mystery Box SCRUM-1040",
+              "live": true
+            }
+          ]
+        },
+        "movements": [
+          {
+            "kind": "adjust",
+            "quantity": 1,
+            "levelAfter": 1,
+            "shortfall": 0,
+            "saleId": null,
+            "saleLineId": null,
+            "reason": "ZZ TEST delivery SCRUM-1040",
+            "stationId": null,
+            "offline": false,
+            "occurredAt": "2026-11-19T10:10:30.244Z"
+          }
+        ],
+        "attention": []
+      },
+      "meAfterSignOut": 401
+    },
+    "tillA": {
+      "issued": {
+        "said": "issued earlier at this till through \"Issue a voucher…\" and not yet used"
+      },
+      "voidedRungUp": true,
+      "warning": null,
+      "pictures": [
+        "docs/qa/proof-2026-11-19/SCRUM-1040/05-till-voucher-scanned-count-1.png",
+        "docs/qa/proof-2026-11-19/SCRUM-1040/06-till-prize-handed-over.png"
+      ],
+      "session": {
+        "signOut": 200,
+        "meAfter": 401
+      },
+      "at": "2026-11-19T10:17:34.294Z",
+      "state": {
+        "park": {
+          "id": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "name": "Oto Play Park, Central Floresta"
+        },
+        "item": {
+          "id": "01a1f349-3c39-7691-8df2-0f32cf139536",
+          "name": "ZZ TEST Mystery Box SCRUM-1040",
+          "total": 0,
+          "status": "out",
+          "productKind": null,
+          "active": true
+        },
+        "type": {
+          "id": "01a1f349-a472-73a1-98f8-a8c157da7eba",
+          "nameEn": "ZZ TEST Mystery Box SCRUM-1040",
+          "kind": "manual",
+          "active": true,
+          "archivedAt": null,
+          "parkStock": [
+            {
+              "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+              "branchName": "Oto Play Park, Central Floresta",
+              "stockItemId": "01a1f349-3c39-7691-8df2-0f32cf139536",
+              "stockItemName": "ZZ TEST Mystery Box SCRUM-1040",
+              "live": true
+            }
+          ]
+        },
+        "movements": [
+          {
+            "kind": "sale",
+            "quantity": -1,
+            "levelAfter": 0,
+            "shortfall": 0,
+            "saleId": "01a1f34f-3869-7c0a-9c14-24e1c740783a",
+            "saleLineId": null,
+            "reason": "Prize handed over: ZZ TEST Mystery Box SCRUM-1040 (voucher …FPE9)",
+            "stationId": "01a1998f-0cf3-70e3-890b-a7ff88c71bda",
+            "offline": false,
+            "occurredAt": "2026-11-19T10:17:01.259Z"
+          },
+          {
+            "kind": "adjust",
+            "quantity": 1,
+            "levelAfter": 1,
+            "shortfall": 0,
+            "saleId": null,
+            "saleLineId": null,
+            "reason": "ZZ TEST delivery SCRUM-1040",
+            "stationId": null,
+            "offline": false,
+            "occurredAt": "2026-11-19T10:10:30.244Z"
+          }
+        ],
+        "attention": []
+      },
+      "meAfterSignOut": 401
+    },
+    "tillB": {
+      "issued": {
+        "said": "Issued ZZ TEST Mystery Box SCRUM-1040 · <code> — Voucher not printed — no receipt printer at this station"
+      },
+      "warning": "Out of stock: the count says no ZZ TEST Mystery Box SCRUM-1040 is left. You can still hand it over.",
+      "pictures": [
+        "docs/qa/proof-2026-11-19/SCRUM-1040/07-till-voucher-scanned-count-0-warning.png",
+        "docs/qa/proof-2026-11-19/SCRUM-1040/08-till-prize-handed-over-at-zero.png"
+      ],
+      "session": {
+        "signOut": 200,
+        "meAfter": 401
+      },
+      "at": "2026-11-19T10:18:38.881Z",
+      "state": {
+        "park": {
+          "id": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "name": "Oto Play Park, Central Floresta"
+        },
+        "item": {
+          "id": "01a1f349-3c39-7691-8df2-0f32cf139536",
+          "name": "ZZ TEST Mystery Box SCRUM-1040",
+          "total": 0,
+          "status": "out",
+          "productKind": null,
+          "active": true
+        },
+        "type": {
+          "id": "01a1f349-a472-73a1-98f8-a8c157da7eba",
+          "nameEn": "ZZ TEST Mystery Box SCRUM-1040",
+          "kind": "manual",
+          "active": true,
+          "archivedAt": null,
+          "parkStock": [
+            {
+              "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+              "branchName": "Oto Play Park, Central Floresta",
+              "stockItemId": "01a1f349-3c39-7691-8df2-0f32cf139536",
+              "stockItemName": "ZZ TEST Mystery Box SCRUM-1040",
+              "live": true
+            }
+          ]
+        },
+        "movements": [
+          {
+            "kind": "sale",
+            "quantity": 0,
+            "levelAfter": 0,
+            "shortfall": 1,
+            "saleId": "01a1f350-3373-7a5a-98f2-b2bbd47ba63a",
+            "saleLineId": null,
+            "reason": "Prize handed over: ZZ TEST Mystery Box SCRUM-1040 (voucher …CG3W)",
+            "stationId": "01a1998f-0cf3-70e3-890b-a7ff88c71bda",
+            "offline": false,
+            "occurredAt": "2026-11-19T10:18:05.540Z"
+          },
+          {
+            "kind": "sale",
+            "quantity": -1,
+            "levelAfter": 0,
+            "shortfall": 0,
+            "saleId": "01a1f34f-3869-7c0a-9c14-24e1c740783a",
+            "saleLineId": null,
+            "reason": "Prize handed over: ZZ TEST Mystery Box SCRUM-1040 (voucher …FPE9)",
+            "stationId": "01a1998f-0cf3-70e3-890b-a7ff88c71bda",
+            "offline": false,
+            "occurredAt": "2026-11-19T10:17:01.259Z"
+          },
+          {
+            "kind": "adjust",
+            "quantity": 1,
+            "levelAfter": 1,
+            "shortfall": 0,
+            "saleId": null,
+            "saleLineId": null,
+            "reason": "ZZ TEST delivery SCRUM-1040",
+            "stationId": null,
+            "offline": false,
+            "occurredAt": "2026-11-19T10:10:30.244Z"
+          }
+        ],
+        "attention": [
+          {
+            "id": "01a1f350-41ac-7ca4-b4e8-1e1a0cb32dd3",
+            "kind": "stock_shortfall",
+            "quantity": 1,
+            "summary": "1 ZZ TEST Mystery Box SCRUM-1040 handed over as a prize that the record did not hold — count the shelf",
+            "resolvedAt": null
+          }
+        ]
+      },
+      "meAfterSignOut": 401
+    },
+    "after": {
+      "at": "2026-11-19T10:18:57.070Z",
+      "pictures": [
+        "docs/qa/proof-2026-11-19/SCRUM-1040/09-console-mystery-box-count-after.png"
+      ],
+      "session": {
+        "signOut": 200,
+        "meAfter": 401
+      },
+      "state": {
+        "park": {
+          "id": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "name": "Oto Play Park, Central Floresta"
+        },
+        "item": {
+          "id": "01a1f349-3c39-7691-8df2-0f32cf139536",
+          "name": "ZZ TEST Mystery Box SCRUM-1040",
+          "total": 0,
+          "status": "out",
+          "productKind": null,
+          "active": true
+        },
+        "type": {
+          "id": "01a1f349-a472-73a1-98f8-a8c157da7eba",
+          "nameEn": "ZZ TEST Mystery Box SCRUM-1040",
+          "kind": "manual",
+          "active": true,
+          "archivedAt": null,
+          "parkStock": [
+            {
+              "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+              "branchName": "Oto Play Park, Central Floresta",
+              "stockItemId": "01a1f349-3c39-7691-8df2-0f32cf139536",
+              "stockItemName": "ZZ TEST Mystery Box SCRUM-1040",
+              "live": true
+            }
+          ]
+        },
+        "movements": [
+          {
+            "kind": "sale",
+            "quantity": 0,
+            "levelAfter": 0,
+            "shortfall": 1,
+            "saleId": "01a1f350-3373-7a5a-98f2-b2bbd47ba63a",
+            "saleLineId": null,
+            "reason": "Prize handed over: ZZ TEST Mystery Box SCRUM-1040 (voucher …CG3W)",
+            "stationId": "01a1998f-0cf3-70e3-890b-a7ff88c71bda",
+            "offline": false,
+            "occurredAt": "2026-11-19T10:18:05.540Z"
+          },
+          {
+            "kind": "sale",
+            "quantity": -1,
+            "levelAfter": 0,
+            "shortfall": 0,
+            "saleId": "01a1f34f-3869-7c0a-9c14-24e1c740783a",
+            "saleLineId": null,
+            "reason": "Prize handed over: ZZ TEST Mystery Box SCRUM-1040 (voucher …FPE9)",
+            "stationId": "01a1998f-0cf3-70e3-890b-a7ff88c71bda",
+            "offline": false,
+            "occurredAt": "2026-11-19T10:17:01.259Z"
+          },
+          {
+            "kind": "adjust",
+            "quantity": 1,
+            "levelAfter": 1,
+            "shortfall": 0,
+            "saleId": null,
+            "saleLineId": null,
+            "reason": "ZZ TEST delivery SCRUM-1040",
+            "stationId": null,
+            "offline": false,
+            "occurredAt": "2026-11-19T10:10:30.244Z"
+          }
+        ],
+        "attention": [
+          {
+            "id": "01a1f350-41ac-7ca4-b4e8-1e1a0cb32dd3",
+            "kind": "stock_shortfall",
+            "quantity": 1,
+            "summary": "1 ZZ TEST Mystery Box SCRUM-1040 handed over as a prize that the record did not hold — count the shelf",
+            "resolvedAt": null
+          }
+        ]
+      },
+      "meAfterSignOut": 401
+    },
+    "card": {
+      "at": "2026-11-19T10:20:02.094Z",
+      "picture": "docs/qa/proof-2026-11-19/SCRUM-1040/10-ledger-card-movements.png",
+      "state": {
+        "park": {
+          "id": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "name": "Oto Play Park, Central Floresta"
+        },
+        "item": {
+          "id": "01a1f349-3c39-7691-8df2-0f32cf139536",
+          "name": "ZZ TEST Mystery Box SCRUM-1040",
+          "total": 0,
+          "status": "out",
+          "productKind": null,
+          "active": true
+        },
+        "type": {
+          "id": "01a1f349-a472-73a1-98f8-a8c157da7eba",
+          "nameEn": "ZZ TEST Mystery Box SCRUM-1040",
+          "kind": "manual",
+          "active": true,
+          "archivedAt": null,
+          "parkStock": [
+            {
+              "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+              "branchName": "Oto Play Park, Central Floresta",
+              "stockItemId": "01a1f349-3c39-7691-8df2-0f32cf139536",
+              "stockItemName": "ZZ TEST Mystery Box SCRUM-1040",
+              "live": true
+            }
+          ]
+        },
+        "movements": [
+          {
+            "kind": "sale",
+            "quantity": 0,
+            "levelAfter": 0,
+            "shortfall": 1,
+            "saleId": "01a1f350-3373-7a5a-98f2-b2bbd47ba63a",
+            "saleLineId": null,
+            "reason": "Prize handed over: ZZ TEST Mystery Box SCRUM-1040 (voucher …CG3W)",
+            "stationId": "01a1998f-0cf3-70e3-890b-a7ff88c71bda",
+            "offline": false,
+            "occurredAt": "2026-11-19T10:18:05.540Z"
+          },
+          {
+            "kind": "sale",
+            "quantity": -1,
+            "levelAfter": 0,
+            "shortfall": 0,
+            "saleId": "01a1f34f-3869-7c0a-9c14-24e1c740783a",
+            "saleLineId": null,
+            "reason": "Prize handed over: ZZ TEST Mystery Box SCRUM-1040 (voucher …FPE9)",
+            "stationId": "01a1998f-0cf3-70e3-890b-a7ff88c71bda",
+            "offline": false,
+            "occurredAt": "2026-11-19T10:17:01.259Z"
+          },
+          {
+            "kind": "adjust",
+            "quantity": 1,
+            "levelAfter": 1,
+            "shortfall": 0,
+            "saleId": null,
+            "saleLineId": null,
+            "reason": "ZZ TEST delivery SCRUM-1040",
+            "stationId": null,
+            "offline": false,
+            "occurredAt": "2026-11-19T10:10:30.244Z"
+          }
+        ],
+        "attention": [
+          {
+            "id": "01a1f350-41ac-7ca4-b4e8-1e1a0cb32dd3",
+            "kind": "stock_shortfall",
+            "quantity": 1,
+            "summary": "1 ZZ TEST Mystery Box SCRUM-1040 handed over as a prize that the record did not hold — count the shelf",
+            "resolvedAt": null
+          }
+        ]
+      }
+    },
+    "cleanup": {
+      "unlinked": true,
+      "retired": true,
+      "session": {
+        "signOut": 200,
+        "meAfter": 401
+      },
+      "resolved": [
+        {
+          "kind": "stock_shortfall",
+          "status": 200
+        }
+      ],
+      "at": "2026-11-19T10:20:46.182Z",
+      "state": {
+        "park": {
+          "id": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "name": "Oto Play Park, Central Floresta"
+        },
+        "item": {
+          "id": "01a1f349-3c39-7691-8df2-0f32cf139536",
+          "name": "ZZ TEST Mystery Box SCRUM-1040",
+          "total": 0,
+          "status": "out",
+          "productKind": null,
+          "active": false
+        },
+        "type": {
+          "id": "01a1f349-a472-73a1-98f8-a8c157da7eba",
+          "nameEn": "ZZ TEST Mystery Box SCRUM-1040",
+          "kind": "manual",
+          "active": false,
+          "archivedAt": "2026-11-19T10:20:29.669Z",
+          "parkStock": []
+        },
+        "movements": [
+          {
+            "kind": "sale",
+            "quantity": 0,
+            "levelAfter": 0,
+            "shortfall": 1,
+            "saleId": "01a1f350-3373-7a5a-98f2-b2bbd47ba63a",
+            "saleLineId": null,
+            "reason": "Prize handed over: ZZ TEST Mystery Box SCRUM-1040 (voucher …CG3W)",
+            "stationId": "01a1998f-0cf3-70e3-890b-a7ff88c71bda",
+            "offline": false,
+            "occurredAt": "2026-11-19T10:18:05.540Z"
+          },
+          {
+            "kind": "sale",
+            "quantity": -1,
+            "levelAfter": 0,
+            "shortfall": 0,
+            "saleId": "01a1f34f-3869-7c0a-9c14-24e1c740783a",
+            "saleLineId": null,
+            "reason": "Prize handed over: ZZ TEST Mystery Box SCRUM-1040 (voucher …FPE9)",
+            "stationId": "01a1998f-0cf3-70e3-890b-a7ff88c71bda",
+            "offline": false,
+            "occurredAt": "2026-11-19T10:17:01.259Z"
+          },
+          {
+            "kind": "adjust",
+            "quantity": 1,
+            "levelAfter": 1,
+            "shortfall": 0,
+            "saleId": null,
+            "saleLineId": null,
+            "reason": "ZZ TEST delivery SCRUM-1040",
+            "stationId": null,
+            "offline": false,
+            "occurredAt": "2026-11-19T10:10:30.244Z"
+          }
+        ],
+        "attention": []
+      },
+      "meAfterSignOut": 401
+    }
+  }
+}

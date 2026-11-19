@@ -1,0 +1,104 @@
+{
+  "unit": "SCRUM-1039",
+  "steps": {
+    "reads": {
+      "at": "2026-11-19T10:09:11.650Z",
+      "deployments": {
+        "oto-api-staging": {
+          "id": "dep-dbvcglmk1f9s73c5bet0",
+          "status": "live",
+          "sha": "c5f33c5af77075d10111ba7ba7f5ef235385080f"
+        },
+        "oto-console-staging": {
+          "id": "dep-dbvcjgp5efls73deopj0",
+          "status": "live",
+          "sha": "c5f33c5af77075d10111ba7ba7f5ef235385080f"
+        }
+      },
+      "parks": [
+        {
+          "id": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "name": "Oto Play Park, Central Floresta",
+          "code": "hkt-central"
+        },
+        {
+          "id": "01a0c9ae-52cf-7aa1-baca-fc55e449148e",
+          "name": "Oto Play Park, Robinson Chalong",
+          "code": "robinson-chalong"
+        }
+      ],
+      "optionCount": 258,
+      "twoPriceOptions": [],
+      "zzGroupBefore": 0,
+      "meAfterSignOut": 401
+    },
+    "console": {
+      "at": "2026-11-19T10:09:32.566Z",
+      "fields": {
+        "nameWidth": 428,
+        "priceWidth": 64,
+        "priceFieldsPerOption": 1,
+        "oldWeekdayField": 0,
+        "oldWeekendField": 0
+      },
+      "reopened": {
+        "names": [
+          "ZZ TEST Extra-large sweet chilli and roasted garlic dipping sauce",
+          "ZZ TEST No sauce"
+        ],
+        "prices": [
+          "20",
+          "0"
+        ],
+        "costs": [
+          "6",
+          ""
+        ]
+      },
+      "pictures": [
+        "docs/qa/proof-2026-11-19/SCRUM-1039/01-console-new-group-wide-name-one-price.png",
+        "docs/qa/proof-2026-11-19/SCRUM-1039/02-console-saved-group-reopened.png"
+      ],
+      "session": {
+        "signOut": 200,
+        "meAfter": 401
+      },
+      "stored": [
+        {
+          "park": "Oto Play Park, Central Floresta",
+          "option": "ZZ TEST Extra-large sweet chilli and roasted garlic dipping sauce",
+          "priceSatang": 2000,
+          "priceWeekendSatang": null
+        },
+        {
+          "park": "Oto Play Park, Central Floresta",
+          "option": "ZZ TEST No sauce",
+          "priceSatang": 0,
+          "priceWeekendSatang": null
+        },
+        {
+          "park": "Oto Play Park, Robinson Chalong",
+          "option": "ZZ TEST Extra-large sweet chilli and roasted garlic dipping sauce",
+          "priceSatang": 2000,
+          "priceWeekendSatang": null
+        },
+        {
+          "park": "Oto Play Park, Robinson Chalong",
+          "option": "ZZ TEST No sauce",
+          "priceSatang": 0,
+          "priceWeekendSatang": null
+        }
+      ],
+      "meAfterSignOut": 401
+    },
+    "cleanup": {
+      "at": "2026-11-19T10:09:55.450Z",
+      "session": {
+        "signOut": 200,
+        "meAfter": 401
+      },
+      "zzOptionsLeft": 0,
+      "meAfterSignOut": 401
+    }
+  }
+}
