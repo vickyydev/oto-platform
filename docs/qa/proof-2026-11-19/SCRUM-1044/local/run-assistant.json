@@ -1,0 +1,24 @@
+{
+ "ticket": "SCRUM-1044",
+ "stage": "the assistant's pages: Numbers, Knowledge, Examples, Rules and Teach (second half), with Templates checked again",
+ "taken": "2026-11-19, against the production build served locally with route stubs and demo and ZZ TEST data (no api, no staging), device scale 2",
+ "viewports": ["360x740", "390x844", "430x932", "744x1133", "768x1024", "820x1180", "1024x768", "1133x744", "1366x1024", "1280x800", "1440x900", "1920x1080"],
+ "touch": "every size under 1280 wide and 1366x1024 as a touch screen; 1280x800, 1440x900 and 1920x1080 with a mouse",
+ "themes": ["light", "dark"],
+ "screens": "Numbers; Knowledge, its editor, and on a phone its row menu and the list's end; Examples and the review; Rules, the empty Drafts, and New rule refused by the server; Teach before a word and with a conversation (a rule card, a fact card, a dry run); Templates and its row menu",
+ "shots": 290,
+ "failed": 0,
+ "overflowSideways": 0,
+ "cutText": "0, apart from the message box's placeholder, which ends in an ellipsis on a phone on purpose, as the reply box's does",
+ "under44OnTouch": 0,
+ "teachMessageBox": "on screen at the foot of the window at every size, before a word and with a conversation",
+ "contentWidth": "one column of at most 768 px from 1024 px wide; 544 px at 768 and 596 px at 820, where a row's actions sit under its words; the full width less 16 px gutters on a phone",
+ "sizes": "page title 20 px on a phone, 18 px wider; row title 15, 14 and 14.5 px; chat lines 15, 14 and 14.5 px",
+ "pictures": [
+  "390x844-light-templates.png", "390x844-light-numbers.png", "390x844-light-knowledge.png", "390x844-light-examples.png", "390x844-light-rules.png", "390x844-light-teach-chat.png",
+  "1440x900-light-templates.png", "1440x900-light-numbers.png", "1440x900-light-knowledge.png", "1440x900-light-examples.png", "1440x900-light-rules.png", "1440x900-light-teach-chat.png",
+  "390x844-dark-teach-chat.png", "1024x768-dark-rules-refused.png",
+  "390x844-light-teach-empty.png", "390x844-light-rules-refused.png", "768x1024-light-knowledge.png",
+  "768x1024-light-templates.png and 360x740-dark-rules.png replaced: the earlier ones showed the layout before this stage"
+ ]
+}
