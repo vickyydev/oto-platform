@@ -77,6 +77,7 @@ import {
   Download,
 } from "lucide-react";
 import { BeoTimelineEditor } from "./beo-timeline-editor";
+import { builtTimelineKey } from "./beo-built-timeline";
 import { BeoAiReviewDialog, SourceMark, type BeoAiPending } from "./beo-ai-review";
 import { BeoFetchFromChatDialog } from "./beo-fetch-from-chat";
 import { NO_DECLINED, fetchedMarksOf, type DeclinedChanges, type FetchAnswer, type FetchChange, type FetchFormValues, type FetchHeldCatalogue } from "@/lib/beo-fetch-from-chat";
@@ -740,6 +741,12 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
     enabled: !!eventId,
   });
 
+  // SCRUM-1027: an act is written at once, and the timeline the system makes reads it as stored.
+  const actsChanged = () => {
+    queryClient.invalidateQueries({ queryKey: ["/api/events", eventId, "beo", "entertainment-items"] });
+    queryClient.invalidateQueries({ queryKey: builtTimelineKey(eventId) });
+  };
+
   const addEntItemMutation = useMutation({
     mutationFn: async (data: { customName: string; startTime?: string }) => {
       const res = await apiRequest("POST", `/api/events/${eventId}/beo/entertainment-items`, {
@@ -749,7 +756,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
       if (!res.ok) throw new Error("Failed to add entertainment item");
       return res.json();
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/events", eventId, "beo", "entertainment-items"] }),
+    onSuccess: actsChanged,
     onError: () => toast({ title: "Failed to add entertainment", variant: "destructive" }),
   });
 
@@ -759,7 +766,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
       if (!res.ok) throw new Error("Failed to update entertainment item");
       return res.json();
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/events", eventId, "beo", "entertainment-items"] }),
+    onSuccess: actsChanged,
     onError: () => toast({ title: "Failed to update entertainment", variant: "destructive" }),
   });
 
@@ -768,7 +775,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
       const res = await apiRequest("DELETE", `/api/events/${eventId}/beo/entertainment-items/${id}`);
       if (!res.ok) throw new Error("Failed to delete entertainment item");
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/events", eventId, "beo", "entertainment-items"] }),
+    onSuccess: actsChanged,
     onError: () => toast({ title: "Failed to remove entertainment", variant: "destructive" }),
   });
 
@@ -2670,7 +2677,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                         </div>
                       ))}
                       <p className="text-[10px] text-muted-foreground/70">
-                        Set a start time to auto-add the act to the Timeline. Changes sync when you save the BEO.
+                        Set a start time to put the act on the Timeline.
                       </p>
                     </div>
                   )}
