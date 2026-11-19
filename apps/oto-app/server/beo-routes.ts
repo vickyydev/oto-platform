@@ -35,7 +35,7 @@ import {
 } from "@shared/schema";
 import crypto from "crypto";
 import { eq, and, asc, desc, sql, inArray } from "drizzle-orm";
-import { generateBeoPdf, type BeoPdfData } from "./pdf";
+import { beoPdfTimelineOf, generateBeoPdf, type BeoPdfData } from "./pdf";
 import { readingFor } from "./party-billing-routes";
 import { readFillTillMenu } from "./lib/beoFillTillMenu";
 import { tillMenuIndexOf } from "@shared/tillMenu";
@@ -58,6 +58,8 @@ import {
 import { gatewayDepositFloor } from "./party-deposit-routes";
 import type { DepositSaveNote } from "@shared/partyDeposit";
 import { OBJECT_STORAGE } from "./config/env";
+import { beoTimedMadeSteps } from "@shared/beoTimeline";
+import { beoTimelineSourceOf, readBeoTimeline } from "./lib/beoTimelineRead";
 import { uploadToObjectStorage } from "./file-storage";
 import { s3PresignedGet } from "./storage/s3Storage";
 import { onStaff } from "./lib/payOnlyAccess";
@@ -395,147 +397,19 @@ export async function generateTimelineFromBeo(eventId: string): Promise<void> {
 
   const suppressed = new Set<string>(event.suppressedTimelineSources || []);
 
-  const [setupPlan] = await db.select().from(beoSetupPlans)
-    .where(eq(beoSetupPlans.eventId, eventId));
-  const [kitchenPlan] = await db.select().from(beoKitchenPlans)
-    .where(eq(beoKitchenPlans.eventId, eventId));
-  const [barPlan] = await db.select().from(beoBarPlans)
-    .where(eq(beoBarPlans.eventId, eventId));
-  const entertainmentItems = await db.select().from(beoEntertainmentItems)
-    .where(eq(beoEntertainmentItems.eventId, eventId))
-    .orderBy(asc(beoEntertainmentItems.sortOrder));
-
+  // SCRUM-1027: the automatic rows are the steps the one timeline makes (shared/beoTimeline.ts), stored
+  // for the Day-of view's ticks; a step whose time the BEO does not store is not stored (no time is
+  // invented: a setup task is no longer placed 30 minutes before the start, a service block with no
+  // time no longer 15 after it). Offsets are from the start, as the rows have always been held.
   const startTimeParts = event.startTime?.split(":").map(Number) || [14, 0];
   const startTotalMin = startTimeParts[0] * 60 + startTimeParts[1];
-  function timeToOffset(timeStr: string): number | null {
-    if (!timeStr || !/^\d{1,2}:\d{2}$/.test(timeStr)) return null;
-    const [h, m] = timeStr.split(":").map(Number);
-    const result = (h * 60 + m) - startTotalMin;
-    return isNaN(result) ? null : result;
-  }
 
   // Build source key → {label, offset} map for all timed sources
   const sourceMap = new Map<string, { label: string; offsetMinutes: number; assignedToType: string }>();
-
-  // Setup Plan items
-  if (setupPlan?.setupRequired) {
-    const setupTasksRaw = setupPlan.setupTasks as any;
-    const oldSetupItems = (setupPlan.setupItems as string[]) || [];
-    const simplifiedTasks: any[] = Array.isArray(setupTasksRaw)
-      ? setupTasksRaw
-      : (setupTasksRaw?.simplifiedTasks && Array.isArray(setupTasksRaw.simplifiedTasks)
-        ? setupTasksRaw.simplifiedTasks
-        : []);
-    const readyBy: string = (!Array.isArray(setupTasksRaw) && setupTasksRaw?.readyBy) || "";
-
-    if (simplifiedTasks.length > 0) {
-      simplifiedTasks.forEach((task: any, idx: number) => {
-        const key = `setup_task::${idx}`;
-        const deadlineOffset = -(task.deadlineOffsetMin || 30);
-        sourceMap.set(key, {
-          label: task.itemLabel || task.itemKey || "Setup task",
-          offsetMinutes: deadlineOffset,
-          assignedToType: "SETUP_RESPONSIBLE",
-        });
-      });
-    } else if (readyBy) {
-      const readyByOffset = timeToOffset(readyBy);
-      if (readyByOffset !== null) {
-        sourceMap.set("setup_ready", {
-          label: "Setup ready",
-          offsetMinutes: readyByOffset,
-          assignedToType: "SETUP_RESPONSIBLE",
-        });
-      }
-    } else if (oldSetupItems.length > 0) {
-      const setupDeadlineOffset = -(setupPlan.setupDeadlineOffsetMinutes || 30);
-      oldSetupItems.forEach((itemName: string, idx: number) => {
-        sourceMap.set(`setup_item::${idx}`, {
-          label: itemName,
-          offsetMinutes: setupDeadlineOffset,
-          assignedToType: "SETUP_RESPONSIBLE",
-        });
-      });
-    }
-  }
-
-  // Guests arrive (always present)
-  sourceMap.set("guests_arrive", {
-    label: "Guests arrive",
-    offsetMinutes: 0,
-    assignedToType: "PARTY_HOST",
-  });
-
-  // Kitchen Plan service schedule blocks
-  if (kitchenPlan?.foodRequired) {
-    const schedule = (kitchenPlan.serviceSchedule as any[]) || [];
-    const seenServiceBlocks = new Set<string>();
-    schedule.forEach((block: any, idx: number) => {
-      if (block.label || block.time) {
-        const dedupeKey = `${block.label || ""}::${block.time || ""}`;
-        if (seenServiceBlocks.has(dedupeKey)) return;
-        seenServiceBlocks.add(dedupeKey);
-        let offset = 15;
-        if (block.time) {
-          offset = timeToOffset(block.time) ?? 15;
-        }
-        const itemNames = (block.items as any[] || [])
-          .filter((i: any) => i.itemName)
-          .map((i: any) => `${i.quantity}x ${i.itemName}`)
-          .slice(0, 3);
-        const suffix = itemNames.length > 0 ? ` (${itemNames.join(", ")})` : "";
-        sourceMap.set(`kitchen_service::${idx}`, {
-          label: `${block.label || "F&B Service"}${suffix}`,
-          offsetMinutes: offset,
-          assignedToType: "KITCHEN_RESPONSIBLE",
-        });
-      }
-    });
-  }
-
-  // Kitchen Plan cake moment
-  if (kitchenPlan?.cakeMode && kitchenPlan.cakeMode !== "NONE") {
-    const cakeTime = (kitchenPlan as any).cakeTime;
-    if (cakeTime) {
-      const cakeOffset = timeToOffset(cakeTime);
-      if (cakeOffset !== null) {
-        const cakeLabel = kitchenPlan.cakeMode === "EXTERNAL"
-          ? `Cake moment (own cake${(kitchenPlan as any).cakeNotes ? `: ${(kitchenPlan as any).cakeNotes}` : ""})`
-          : "Cake moment";
-        sourceMap.set("cake", {
-          label: cakeLabel,
-          offsetMinutes: cakeOffset,
-          assignedToType: "PARTY_HOST",
-        });
-      }
-    }
-  }
-
-  // Bar Plan service time
-  if (barPlan?.serviceTime) {
-    const barOffset = timeToOffset(barPlan.serviceTime);
-    if (barOffset !== null) {
-      sourceMap.set("bar_service", {
-        label: "Drinks Service",
-        offsetMinutes: barOffset,
-        assignedToType: "PARTY_HOST",
-      });
-    }
-  }
-
-  // Entertainment items with a start time
-  for (const ei of entertainmentItems) {
-    if (ei.startTime) {
-      const entOffset = timeToOffset(ei.startTime);
-      if (entOffset !== null) {
-        const entLabel = ei.customName || "Entertainment";
-        sourceMap.set(`entertainment::${ei.id}`, {
-          label: entLabel,
-          offsetMinutes: entOffset,
-          assignedToType: "PARTY_HOST",
-        });
-      }
-    }
+  for (const step of beoTimedMadeSteps(await beoTimelineSourceOf(event))) {
+    const offsetMinutes = step.clock.minute - startTotalMin;
+    if (Number.isNaN(offsetMinutes)) continue;
+    sourceMap.set(step.key, { label: step.label, offsetMinutes, assignedToType: step.assignedToType });
   }
 
   // Fetch all existing system-generated timeline items for this event
@@ -1635,6 +1509,24 @@ export function registerBeoRoutes(app: Express) {
         .where(eq(beoTimelineItems.eventId, eventId))
         .orderBy(asc(beoTimelineItems.offsetFromStartMinutes), asc(beoTimelineItems.sortOrder));
       res.json(timeline);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // SCRUM-1027: the party's one timeline, made by the system from the stored BEO (shared/beoTimeline.ts):
+  // what the editor's preview, the Day-of view and the view-only BEO show, as the PDF prints it.
+  app.get("/api/events/:eventId/beo/timeline/built", requireAuth, async (req, res, next) => {
+    try {
+      const { eventId } = req.params;
+
+      if (!(await verifyEventAccess(eventId, req.userWithAccess))) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+
+      const [event] = await db.select().from(coreEvents).where(eq(coreEvents.id, eventId));
+      if (!event) return res.status(404).json({ error: "Event not found" });
+      res.json(await readBeoTimeline(event));
     } catch (error) {
       next(error);
     }
@@ -2866,9 +2758,8 @@ export function registerBeoRoutes(app: Express) {
       const [billing] = await db.select().from(beoEventBilling)
         .where(eq(beoEventBilling.eventId, eventId));
       
-      const timeline = await db.select().from(beoTimelineItems)
-        .where(eq(beoTimelineItems.eventId, eventId))
-        .orderBy(asc(beoTimelineItems.sortOrder));
+      // SCRUM-1027: the one timeline the system makes from the stored BEO, as every reader shows it.
+      const timeline = await readBeoTimeline(event);
 
       let location = null;
       if (event.locationId) {
@@ -2939,15 +2830,6 @@ export function registerBeoRoutes(app: Express) {
       const pdfEntSelections = await db.select().from(beoEntertainmentSelections)
         .where(eq(beoEntertainmentSelections.eventId, eventId))
         .orderBy(asc(beoEntertainmentSelections.sortOrder));
-
-      const startTimeParts = (event.startTime || "14:00").split(":").map(Number);
-      const startTotalMin = startTimeParts[0] * 60 + startTimeParts[1];
-      function offsetToTime(offsetMin: number): string {
-        const total = startTotalMin + offsetMin;
-        const h = Math.floor(total / 60) % 24;
-        const m = total % 60;
-        return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
-      }
 
       const billingAddOns = (billing as any)?.addOns;
       const partyDetails = billingAddOns?.partyDetails || null;
@@ -3028,10 +2910,8 @@ export function registerBeoRoutes(app: Express) {
         } : undefined,
         // SCRUM-822: the POS section prints the till's figures (or why there are none), as the BEO's screens show them.
         till: await readingFor(event, req.requestId),
-        timeline: timeline.map(t => ({
-          time: offsetToTime(t.offsetFromStartMinutes),
-          description: t.label,
-        })),
+        // SCRUM-1027: the one timeline, and the steps with no time that no other part of the page shows.
+        ...beoPdfTimelineOf(timeline),
         branchName: branch?.name || undefined,
         branchAddress: branch?.address || undefined,
         branchLogoUrl: branch?.logoUrl || undefined,

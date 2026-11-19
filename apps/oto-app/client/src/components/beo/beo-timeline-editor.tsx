@@ -13,6 +13,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import type { BeoTimelineItem } from "@shared/schema";
+import { BeoBuiltTimelineList, useBuiltTimeline } from "./beo-built-timeline";
 
 interface BeoTimelineEditorProps {
   eventId: string;
@@ -101,7 +102,11 @@ export function BeoTimelineEditor({ eventId, startTime }: BeoTimelineEditorProps
     },
   });
 
-  const allItems = [...(timeline || []), ...localItems];
+  // SCRUM-1027: the timeline itself is made by the system (shared/beoTimeline.ts); this control
+  // keeps only the other timed steps, the rows typed by hand (or written by AI Fill).
+  const built = useBuiltTimeline(eventId);
+  const otherSteps = (timeline || []).filter((item) => !item.isSystemGenerated);
+  const allItems = [...otherSteps, ...localItems];
   const sortedTimeline = allItems.sort((a, b) => a.offsetFromStartMinutes - b.offsetFromStartMinutes);
 
   const hasSuppressedAutoItems = (timeline || []).some(item => !('isLocal' in item) && (item as BeoTimelineItem).isSystemGenerated === false)
@@ -149,13 +154,16 @@ export function BeoTimelineEditor({ eventId, startTime }: BeoTimelineEditorProps
 
   return (
     <div className="space-y-2">
+      <p className="text-xs text-muted-foreground" data-testid="text-timeline-made-by-system">
+        The timeline is made by the system from this BEO's times: start and end, setup, food, bar, cake and activities. Add here only a timed step that is none of those.
+      </p>
       {sortedTimeline.length === 0 ? (
         <div
           className="text-sm text-muted-foreground text-center py-4 border border-dashed rounded-md cursor-pointer hover:bg-accent/30 hover:border-border transition-colors"
           onClick={handleAddInline}
           data-testid="button-add-first-timeline-item"
         >
-          No timeline steps yet. Click to add the first.
+          No other timed steps. Click to add one.
         </div>
       ) : (
         <>
@@ -213,6 +221,10 @@ export function BeoTimelineEditor({ eventId, startTime }: BeoTimelineEditorProps
         )}
         Restore auto items
       </Button>
+      <div className="rounded-md border bg-background p-2" data-testid="editor-built-timeline">
+        <p className="text-xs font-medium text-muted-foreground mb-1">The timeline as saved</p>
+        <BeoBuiltTimelineList timeline={built.data} testId="editor-built-timeline-list" />
+      </div>
     </div>
   );
 }

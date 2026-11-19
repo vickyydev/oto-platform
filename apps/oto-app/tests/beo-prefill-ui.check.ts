@@ -49,6 +49,7 @@ import { fileURLToPath } from "node:url";
 import { buildSync } from "esbuild";
 import { JSDOM } from "jsdom";
 import type { BeoAiApproveBody, BeoAiReview } from "../shared/beoAiFill";
+import { buildBeoTimeline, type BeoTimelineSource } from "../shared/beoTimeline";
 
 const APP = fileURLToPath(new URL("../", import.meta.url));
 const dom = new JSDOM("<!doctype html><html><body></body></html>", { url: "http://localhost/studio/events", pretendToBeVisual: true });
@@ -322,6 +323,12 @@ g.fetch = async (input: string | URL | Request, init?: RequestInit) => {
   const beo = /^\/api\/events\/([^/]+)\/beo$/.exec(url.pathname);
   if (beo && method === "GET") return json({ ...beos.get(beo[1]!)!, timeline: timelines.get(beo[1]!) ?? [] });
   if (beo && method === "PUT") return json({ ok: true });
+  // SCRUM-1027: the party's one timeline, made from the BEO as the server's route makes it (shared/beoTimeline.ts).
+  const madeTimeline = /^\/api\/events\/([^/]+)\/beo\/timeline\/built$/.exec(url.pathname);
+  if (madeTimeline && method === "GET") {
+    const held = beos.get(madeTimeline[1]!)! as BeoTimelineSource;
+    return json(buildBeoTimeline({ startTime: held.startTime, endTime: held.endTime, setupPlan: held.setupPlan, kitchenPlan: held.kitchenPlan, barPlan: held.barPlan, activities: [], rows: timelines.get(madeTimeline[1]!) ?? [] }));
+  }
   const timeline = /^\/api\/events\/([^/]+)\/beo\/timeline$/.exec(url.pathname);
   if (timeline && method === "GET") return json(timelines.get(timeline[1]!) ?? []);
   if (timeline && method === "POST") return json({ id: `posted_${asked.length}`, ...body }, 201);
@@ -555,7 +562,14 @@ await check("the form reads the BEO back: the chat's sections open and marked, e
   assert.ok(byTestId("button-ready-by-edit"), "the setup's ready-by is set");
   assert.equal(text("input-setup-responsible"), "Ying");
   assert.equal(text("input-setup-item-0"), "Balloon arch");
-  assert.deepEqual([...doc.querySelectorAll('[data-testid^="input-timeline-label-"]')].map((el) => el.textContent?.trim()), ["Guests arrive", "Cake"], "the BEO's own step and the chat's");
+  // SCRUM-1027: the section holds the other timed steps (the chat's); the timeline itself is made by
+  // the system and shown beside them, the BEO's own step and the chat's in time order.
+  assert.deepEqual([...doc.querySelectorAll('[data-testid^="input-timeline-label-"]')].map((el) => el.textContent?.trim()), ["Cake"], "the chat's step, the other timed step");
+  await settle();
+  const made = [...doc.querySelectorAll('[data-testid="editor-built-timeline-list-step"]')].map((el) => el.textContent?.replace(/\s+/g, " ").trim());
+  assert.ok(made.includes("14:00Guests arrive"), `the BEO's own step: ${JSON.stringify(made)}`);
+  assert.ok(made.some((m) => m?.endsWith("Cake")), `the chat's step: ${JSON.stringify(made)}`);
+  assert.ok(made.indexOf("14:00Guests arrive") < made.findIndex((m) => m?.endsWith("Cake")), "in time order");
   // Each field its own mark.
   assert.equal(labelMark("input-event-title"), "the park's default");
   assert.equal(labelMark("textarea-special-requests"), "from the family");
@@ -740,7 +754,8 @@ await check("an empty BEO's sections say plain words, never a placeholder", asyn
   assert.equal(text("text-no-entertainment-acts"), "No entertainment acts yet. Add one and give it a time to put it on the Timeline.");
   assert.equal(text("button-add-first-package-item"), "No line items yet. Click to add the first.");
   assert.equal(text("button-add-first-setup-task"), "No setup tasks yet. Click to add the first.");
-  assert.equal(text("button-add-first-timeline-item"), "No timeline steps yet. Click to add the first.");
+  // SCRUM-1027: the timeline is made by the system; the section holds only the other timed steps.
+  assert.equal(text("button-add-first-timeline-item"), "No other timed steps. Click to add one.");
   const page = doc.body.textContent ?? "";
   assert.ok(!/lorem/i.test(page), "no lorem");
   assert.ok(!page.includes("Click here to add first"), "the old words are gone");

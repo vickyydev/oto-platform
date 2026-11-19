@@ -10,6 +10,7 @@ import { tillFiguresOf, type TillBillingReading } from "@shared/tillBilling";
 import { ADULTS_ONLY_MARK, ADULTS_SAME_AS_KIDS, adultsDifferOf, kitchenAdultsMarks } from "@shared/kitchenAdults";
 import { beoExtraChargeOf, beoExtraPrintWordsOf, beoPrintFoldable, type BeoExtraContext } from "@shared/beoExtras";
 import { beoPdfTillMoneyHtml } from "./lib/beoPdfMoney";
+import { timelineStepLine, untimedBesideTimeline, type BeoTimeline } from "@shared/beoTimeline";
 
 // Resolve a stored branch logo before Chromium renders. Remote object storage
 // is the normal deployment path; the local file is kept for older dev uploads.
@@ -552,13 +553,39 @@ export interface BeoPdfData {
   };
   /** SCRUM-822: the party's money as the till answered it when the PDF was made, or why it did not. */
   till?: TillBillingReading;
+  /**
+   * SCRUM-1027: the party's one timeline as the system makes it (shared/beoTimeline.ts), in order:
+   * each step's time, what happens, what is served and its person.
+   */
   timeline?: {
     time: string;
     description: string;
+    detail?: string;
+    person?: string;
   }[];
+  /** SCRUM-1027: the steps with no time and no other part of the page to show them; never given a time. */
+  timelineUntimed?: { description: string }[];
   branchName?: string;
   branchAddress?: string;
   branchLogoUrl?: string;
+}
+
+/**
+ * SCRUM-1027: the party's one timeline as the PDF prints it (shared/beoTimeline.ts): each step's
+ * time, what happens, what is served and its person, in the order the system made it; and the
+ * steps with no time that no other part of the page shows (a typed row on a party with no start,
+ * an activity with no time), listed, never given a time.
+ */
+export function beoPdfTimelineOf(timeline: BeoTimeline): Pick<BeoPdfData, "timeline" | "timelineUntimed"> {
+  return {
+    timeline: timeline.steps.map((t) => ({
+      time: t.time,
+      description: t.label,
+      ...(t.detail ? { detail: t.detail } : {}),
+      ...(t.person ? { person: t.person } : {}),
+    })),
+    timelineUntimed: untimedBesideTimeline(timeline).map((u) => ({ description: timelineStepLine(u) })),
+  };
 }
 
 /** SCRUM-970: the park's time zone when it names one the clock knows; else the park group's default (Bangkok). */
@@ -879,9 +906,14 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
     </div>
   ` : '';
 
-  const timelineHtml = data.timeline?.length ? `
+  // SCRUM-1027: the one timeline, in the order the system made it (equal times: party, food,
+  // activity, other); a sort by the clock alone keeps that order. What is served and the step's
+  // person print beside it; a step with no time is listed under it, never given one.
+  const timelineUntimed = data.timelineUntimed ?? [];
+  const timelineHtml = data.timeline?.length || timelineUntimed.length ? `
     <div class="section">
       <h2>Timeline</h2>
+      ${data.timeline?.length ? `
       <table class="timeline-table">
         <thead>
           <tr>
@@ -893,11 +925,13 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
           ${[...data.timeline].sort((a, b) => (a.time || '').localeCompare(b.time || '')).map(item => `
             <tr>
               <td style="font-weight: 600;">${s(item.time)}</td>
-              <td>${s(item.description)}</td>
+              <td>${s(item.description)}${item.detail ? ` <span class="item-note">${s(item.detail)}</span>` : ''}${item.person ? ` <span class="item-note">· ${s(item.person)}</span>` : ''}</td>
             </tr>
           `).join('')}
         </tbody>
       </table>
+      ` : ''}
+      ${timelineUntimed.length ? `<p class="notes" data-timeline-untimed>No time set: ${timelineUntimed.map(u => s(u.description)).join('; ')}</p>` : ''}
     </div>
   ` : '';
 

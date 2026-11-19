@@ -515,7 +515,10 @@ describe('A. fences and seams', () => {
       // kids' list is read from menus first; Party Host and Setup Plan print only with something under them;
       // where the BEO's documents live is unchanged.
       // SCRUM-983: stored counts use the publication reader in the HTML; PDF generation/storage is unchanged.
-      'pdf.ts': 'cb54281507ca9a832e80ee9c98fe5037a5c4d27eaf0b2e218011b221e71bcc54',
+      // SCRUM-1027: the Timeline section prints the one timeline the system makes (shared/beoTimeline.ts,
+      // beoPdfTimelineOf): what is served and the step's person beside each step, and the steps with no time
+      // listed under it; PDF generation and where the BEO's documents live are unchanged.
+      'pdf.ts': '3cf57865578615792ae5f5117899bc300887d86b0c16f767bc87aeeca7a615c7',
       // SCRUM-803 / SCRUM-806: Generate from BEO bills the package in baht and only the add-ons a party bought; where the BEO's documents live is unchanged.
       // SCRUM-769: the BEO's staff list leaves out a login whose employment has ended (onStaff); where documents live is unchanged.
       // SCRUM-815: the parent link's set-menu lines are resolved by server/lib/setMenuResolve.ts (moved, not changed) and the
@@ -568,7 +571,12 @@ describe('A. fences and seams', () => {
       // SCRUM-1002 (ruling 3, the two other doors): paidBeoQuantitiesOf moved unchanged to
       // server/lib/beoPaidLinesRead.ts, so the till's kitchen-plan edit and the AI fill's approval read
       // the till's paid counts as the Save does; where the BEO's documents live is unchanged.
-      'beo-routes.ts': 'ea6c33c242cbb0e729fe299e4b31c2c9261abddd5e888530cf1436e036116b18',
+      // SCRUM-1027: the timeline generator stores the steps the one timeline makes (shared/beoTimeline.ts,
+      // read by server/lib/beoTimelineRead.ts), the PDF route prints that timeline instead of reading the
+      // rows itself, and GET /api/events/:eventId/beo/timeline/built answers it after the event's own
+      // access check; no PDF, file, bucket or public-folder door is added; where the BEO's documents live
+      // is unchanged.
+      'beo-routes.ts': '51fe0589c6d06ac623a245af362c61f0dd4dc36b6322111e005c4770ea401eb5',
       'orgChartRoutes.ts': 'eff8d4478165e8b0157ef07d37891222104f751b49932e70f525f06366fe9d90',
     };
     for (const [file, hash] of Object.entries(main)) expect(sha256(committed(join(APP_SERVER, file))), file).toBe(hash);

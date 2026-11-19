@@ -27,8 +27,9 @@
 //      rice Veggie, Chicken or Shrimp, never another set menu's "Fried Rice";
 //      CF-24 is "Margherita", never also "Margherita Pizza".
 //   6. the Timeline holds each moment once: no "party starts" or "party ends"
-//      step beside the automatic Guests arrive, no setup task again as a step,
-//      and one cake line at the cake's time (SCRUM-941).
+//      step beside the automatic Guests arrive and Party ends (SCRUM-1027),
+//      no setup task again as a step, and one cake line at the cake's time
+//      (SCRUM-941).
 //   6b. (the lane's reviews) a step of the party after its start is not a
 //      setup task because its words are part of a task's: "15:30 Games"
 //      beside "Set up the games corner" is kept.
@@ -743,9 +744,26 @@ try {
     const labels = steps.map((t) => t.label);
     assert.equal(labels.filter((l) => /cake/i.test(l)).length, 1, `one cake line: ${JSON.stringify(labels)}`);
     assert.equal(labels.filter((l) => /arrive|starts|from 15/i.test(l)).length, 1, `the start once (Guests arrive): ${JSON.stringify(labels)}`);
-    assert.equal(labels.filter((l) => /ends/i.test(l)).length, 0, "no party-ends step");
-    assert.equal(labels.filter((l) => /balloons/i.test(l)).length, 1, `the setup task once: ${JSON.stringify(labels)}`);
+    // SCRUM-1027: the timeline the system makes holds the party's end (Party ends at 17:30), so the
+    // chat's "party ends" is that one step, never a second; the setup's ready-by is Setup ready at
+    // 14:30, and the setup task, which the BEO stores with no time of its own, prints in the setup
+    // plan and is not placed on the timeline at an invented time (it was 30 minutes before the start).
+    assert.equal(labels.filter((l) => /ends/i.test(l)).length, 1, `the end once (Party ends): ${JSON.stringify(labels)}`);
+    assert.equal(labels.filter((l) => l === "Setup ready").length, 1, `the setup's ready-by once: ${JSON.stringify(labels)}`);
+    assert.equal(labels.filter((l) => /balloons/i.test(l)).length, 0, `the setup task is no timed step: ${JSON.stringify(labels)}`);
     assert.ok(labels.includes("Games") && labels.includes("welcome drinks"), "the chat's own steps stay");
+    // SCRUM-1027: the party's one timeline as every reader shows it, read from the route, in time order.
+    const madeRes = await fetch(`${base}/api/events/${ev.timeline}/beo/timeline/built`, { headers: { "x-test-as": "manager" } });
+    assert.equal(madeRes.status, 200);
+    const made = (await madeRes.json()) as { steps: Array<{ time: string; label: string }>; untimed: Array<{ label: string; home: string }> };
+    const known = new Set(["Setup ready", "Guests arrive", "welcome drinks", "Cake moment", "Games", "Party ends"]);
+    assert.deepEqual(
+      made.steps.filter((s) => known.has(s.label)).map((s) => [s.time, s.label]),
+      [["14:30", "Setup ready"], ["15:00", "Guests arrive"], ["15:00", "welcome drinks"], ["16:00", "Cake moment"], ["16:30", "Games"], ["17:30", "Party ends"]],
+      JSON.stringify(made.steps),
+    );
+    assert.equal(new Set(made.steps.map((s) => `${s.time} ${s.label}`)).size, made.steps.length, "each step once");
+    assert.ok(made.untimed.some((u) => u.home === "setup" && /balloons/i.test(u.label)), "the setup task, with no time, is listed for the setup plan");
 
     // The rule alone (SCRUM-941): a cake step only when no cake time carries it; another time is still the cake.
     const proposal = { entertainment: [], event: { startTime: { value: "17:00", from: familyFrom(1) }, endTime: { value: "19:30", from: familyFrom(1) } } };

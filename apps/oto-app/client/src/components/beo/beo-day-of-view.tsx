@@ -54,10 +54,12 @@ import {
   Link2,
   RefreshCw,
 } from "lucide-react";
-import type { BeoEventWithDetails, BeoTimelineItem } from "@shared/schema";
+import type { BeoEventWithDetails } from "@shared/schema";
+import { beoClockOf, untimedBesideTimeline, timelineStepLine } from "@shared/beoTimeline";
 import { ADULTS_SAME_AS_KIDS, adultsDifferOf, kitchenListsEqual } from "@shared/kitchenAdults";
 import { DayOfPosSection, type DayOfPartyDetails } from "./beo-day-of-pos";
 import { useTillBilling } from "./beo-till-billing";
+import { useBuiltTimeline } from "./beo-built-timeline";
 
 interface BeoDayOfViewProps {
   eventId: string;
@@ -370,6 +372,8 @@ export function BeoDayOfView({ eventId, onClose }: BeoDayOfViewProps) {
     refetchInterval: 30000,
     refetchOnWindowFocus: true,
   });
+  // SCRUM-1027: the party's one timeline, made by the system from the stored BEO, read as often as the BEO.
+  const builtTimeline = useBuiltTimeline(eventId, { refetchInterval: 30000 });
 
   useEffect(() => {
     const isAwaiting = setMenuSelection?.isSubmitted === false;
@@ -642,17 +646,24 @@ export function BeoDayOfView({ eventId, onClose }: BeoDayOfViewProps) {
   };
 
   const currentOffset = getCurrentMinuteOffset(beoData.startTime);
-  const deduplicatedTimeline = (() => {
-    const raw = beoData.timeline?.slice() || [];
-    const seen = new Set<string>();
-    return raw.filter(item => {
-      const key = `${item.label}::${item.offsetFromStartMinutes}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-  })();
-  const sortedTimeline = deduplicatedTimeline.sort((a, b) => a.offsetFromStartMinutes - b.offsetFromStartMinutes);
+  // SCRUM-1027: the one timeline (shared/beoTimeline.ts), in its own order, each step once. A step the
+  // system makes follows the BEO's own fields, so its time and words are not typed here; it is ticked
+  // or removed through its stored row once the BEO's Save has stored it. A row typed by hand is edited
+  // here as before.
+  const startMinute = beoClockOf(beoData.startTime)?.minute ?? null;
+  const sortedTimeline = (builtTimeline.data?.steps ?? []).map((step) => ({
+    id: step.rowId ?? step.key,
+    rowId: step.rowId,
+    time: step.time,
+    label: step.label,
+    detail: step.detail,
+    person: step.person,
+    offsetFromStartMinutes: startMinute === null ? step.minuteOfDay : step.minuteOfDay - startMinute,
+    assignedToType: step.assignedToType,
+    isSystemGenerated: step.generated,
+    isCompleted: step.isCompleted,
+  }));
+  const untimedTimeline = builtTimeline.data?.untimed ? untimedBesideTimeline(builtTimeline.data) : [];
 
   const findCurrentIndex = () => {
     for (let i = sortedTimeline.length - 1; i >= 0; i--) {
@@ -886,6 +897,7 @@ export function BeoDayOfView({ eventId, onClose }: BeoDayOfViewProps) {
                   const Icon = ROLE_ICONS[item.assignedToType] || User;
                   const isCurrent = !isLocalItem && index === currentIndex;
                   const isNext = !isLocalItem && index === currentIndex + 1;
+                  const typed = canEdit && (isLocalItem || !realItem?.isSystemGenerated);
 
                   return (
                     <div
@@ -902,7 +914,7 @@ export function BeoDayOfView({ eventId, onClose }: BeoDayOfViewProps) {
                       data-testid={`timeline-item-${index}`}
                     >
                       <div className="flex flex-col items-center">
-                        {canEdit ? (
+                        {typed ? (
                           <EditableText
                             type="time"
                             className="w-[70px] text-xs font-mono text-center"
@@ -920,7 +932,7 @@ export function BeoDayOfView({ eventId, onClose }: BeoDayOfViewProps) {
                           />
                         ) : (
                           <span className="text-sm font-mono font-medium">
-                            {formatTime(getTimeFromOffset(beoData.startTime, item.offsetFromStartMinutes))}
+                            {formatTime(realItem ? realItem.time : getTimeFromOffset(beoData.startTime, item.offsetFromStartMinutes))}
                           </span>
                         )}
                         {isCurrent && (
@@ -928,7 +940,7 @@ export function BeoDayOfView({ eventId, onClose }: BeoDayOfViewProps) {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        {canEdit ? (
+                        {typed ? (
                           <EditableText
                             className="font-medium text-sm"
                             value={item.label}
@@ -956,6 +968,11 @@ export function BeoDayOfView({ eventId, onClose }: BeoDayOfViewProps) {
                             {item.label}
                           </p>
                         )}
+                        {realItem && (realItem.detail || realItem.person) && (
+                          <p className="text-xs text-muted-foreground" data-testid={`text-timeline-detail-${index}`}>
+                            {[realItem.detail, realItem.person].filter(Boolean).join(" · ")}
+                          </p>
+                        )}
                         {realItem && (
                           <div className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Icon className="h-3 w-3" />
@@ -968,7 +985,7 @@ export function BeoDayOfView({ eventId, onClose }: BeoDayOfViewProps) {
                           </div>
                         )}
                       </div>
-                      {!isLocalItem && (
+                      {!isLocalItem && realItem?.rowId && (
                         <div className="flex items-center gap-0.5">
                           <Button
                             variant="ghost"
@@ -1020,6 +1037,11 @@ export function BeoDayOfView({ eventId, onClose }: BeoDayOfViewProps) {
                   </Button>
                 )}
               </div>
+            )}
+            {untimedTimeline.length > 0 && (
+              <p className="text-xs text-muted-foreground pt-1" data-testid="text-timeline-untimed">
+                No time set: {untimedTimeline.map(timelineStepLine).join("; ")}
+              </p>
             )}
           </div>
 
