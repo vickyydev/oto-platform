@@ -1,3 +1,28 @@
+## 19 November 2026, 23:35: hosted CI is green again; one fault found in the care-note save, being repaired
+
+- **Hosted CI on main: green** (run 44555403965 on ef3453475, every job).
+  Two test-only commits: the four till end-to-end smoke tests now drive the
+  three-step drop-off flow and keep what each pinned; the api test
+  `s504-review-recheck` waited on a condition that a later connection could
+  hold open (a race in the test, proved by reproducing CI's timeout), and now
+  waits for the ended connections themselves. The twelve end-to-end specs
+  that run after the smoke spec had not run since the review screen was
+  removed, because the step stopped at the smoke spec; they pass.
+- **Fault found by the rewritten test (SCRUM-1020's care notes on the
+  display):** after a lost reply, the family's note is not lost, but the
+  retry writes and audits it twice. The display's care-note save sends no
+  idempotency key, where the old review save retried under one key. Pinned
+  for now by an expected-failure test. **Being repaired** by the same agent
+  (worktree `C:/oto-lanes/codex-payment-choice-recovery-20261116`, branch
+  `lane/carenote-key-20261119`, Refs SCRUM-1053): the save carries a key, a
+  retry reuses it, the test turns into a normal passing one; lands, deploys
+  the till on staging, proves one audit row after a retried save.
+- **Lesson for till lanes:** the landing gates must include the till's
+  end-to-end smoke spec as CI runs it, the api-types seam walker and the api
+  text pins that read till sources. The newer lane briefs name them.
+- **Running:** the till lane (extra food credit), the BEO editor, the single
+  shift's pay, family step F3, the care-note repair.
+
 ## 19 November 2026, 22:25: old signed contracts open on staging; family step F3 launched
 
 - **SCRUM-1047 "Signed contracts from the old system do not open in the new
