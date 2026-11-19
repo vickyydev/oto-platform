@@ -532,7 +532,8 @@ export const BEO_CONVERSATION_OUTPUT_FORMAT = `"event": {
   "menuLines": [ { "notes": "the conversation's note on that dish", "option": "the catalogue's own name for the dish when its food code carries several names" } ],
   "setMenu": { "choices": [ { "notes": "the conversation's note on that dish" } ] },
   "entertainment": [ { "time": "HH:MM" } ],
-  "requests": [ { "kind": "allergy" } ]`;
+  "requests": [ { "kind": "allergy" } ],
+  "kitchenNotes": { "value": "the conversation's words for how the kitchen handles or serves the food", "said": "the conversation's words", "line": 0, "source": "team | family" }`;
 
 /**
  * SCRUM-904 (Phase B) — the rest of the form, read from the conversation
@@ -559,6 +560,7 @@ Read every field of the form below from the conversation too, from the family's 
 - A note the conversation gives about one dish ("no cheese on the pizza", "cut into squares") is that dish's "notes", on its "menuLines" entry or on its set-menu choice, in the conversation's own words: not a request
 - A "menuLines" entry whose food code carries several "names" in "food" (the options of one dish, such as "Fried rice (Veggie)", "Fried rice (Chicken)") names the one the conversation means as its "option", exactly as "food" lists it, whatever language the conversation is in. Leave "option" out when the conversation does not say which: staff choose it
 - An allergy or a food intolerance (nuts, gluten, lactose, seafood) is a "requests" entry of the kind "allergy", one for each, in the conversation's own words; it is not given again as a "special_request"
+- "kitchenNotes": what the conversation says the kitchen must know about handling or serving the food as a whole, in the conversation's own words, joined in one text: an allergy or an intolerance the food must avoid (given as its "allergy" request as well), "no chilli", "no pork", "serve the fruit after the cake", "cut everything small for the little ones". A note about one dish stays that dish's "notes"
 - A show or an act the conversation gives a time for ("the bubble show at 15:00") keeps its "entertainment" entry with that time as its "time", HH:MM, and is not given again as a "timeline" step
 
 Add these keys inside "catalogue", beside the ones above (the "event", "cake", "menuLines", "setMenu" choices, "entertainment" and "requests" entries take the keys shown here as well as their own):
@@ -613,7 +615,7 @@ Matching to the catalogue:
 - A deposit is "paid": true only when the conversation says it was received
 - The cake's "mode" is NOT_SAID when the conversation gives a cake time or cake details but does not say whether the park or the family brings the cake: never guess it
 - "requests": each wish or instruction the conversation gives beyond the catalogue, one entry each, in the conversation's own words — "special_request" for a request or a need (an allergy, a quiet corner, a surprise), "decoration" for a decoration wish (a theme, colours, balloons), "activity" for something planned that is not an entertainment line (games, a treasure hunt). A wish repeated or changed later is one entry, the later line's; a wish the team declined is left out
-- "timeline": each step the conversation gives a clock time for (the cake, a show, the food, the end), with that time as HH:MM and the conversation's words for it. Never invent a time or a step${catalogue.till && catalogue.till.length > 0 ? BEO_TILL_MENU_RULES : ""}
+- "timeline": each other moment the conversation gives a clock time for (a piñata at 13:30, a photo session at 15:00), with that time as HH:MM and the conversation's words for it. The BEO makes its own timeline step for the setup being ready, the guests arriving, the food and the drinks being served, the cake and each show of "entertainment": a time for one of those goes in that thing's own field where one is asked for below (its ready-by, the start, the food or bar time, the cake's "time", the show's "time"), never as a "timeline" step as well. Never invent a time or a step${catalogue.till && catalogue.till.length > 0 ? BEO_TILL_MENU_RULES : ""}
 
 Add this key at the top level of the JSON object, leaving out any entry the conversation does not speak to:
 ${BEO_CATALOGUE_OUTPUT_FORMAT}` +
@@ -846,6 +848,8 @@ export const BeoConversationAnswerShape = BeoCatalogueAnswerShape.extend({
       entertainmentHost: SaidText(200, "a person only as the conversation names them, without a role word or \"the\" before it; never one you choose"),
     })
     .partial(),
+  // SCRUM-1030: the Kitchen Notes, from what the conversation says of handling or serving the food.
+  kitchenNotes: SaidText(4000, "the conversation's own words for how the kitchen handles or serves the food"),
 }).partial();
 /** SCRUM-904: what the conversation's read answers: the catalogue section, the rest of the form in it. */
 export const CONVERSATION_SHAPE = z.object({ catalogue: BeoConversationAnswerShape.optional() });
@@ -1366,6 +1370,9 @@ export function resolveCatalogueAnswer(
   if (responsible) proposal.details.setup.responsible = responsible;
   const setupNotes = sourced(readOne(SaidText(4000, ""), setup.notes));
   if (setupNotes) proposal.details.setup.notes = setupNotes;
+  // SCRUM-1030: the Kitchen Notes the conversation gives (how the food is handled or served).
+  const kitchenNotes = sourced(readOne(SaidText(4000, ""), answer.kitchenNotes));
+  if (kitchenNotes) proposal.details.kitchenNotes = kitchenNotes;
   for (const t of readMany(SetupTaskAnswer, setup.tasks, 50)) {
     if (!t.label) continue;
     const entry = { itemLabel: t.label, notes: t.notes ?? null, from: fromOf(t, t.label) };
@@ -1399,6 +1406,14 @@ export function resolveCatalogueAnswer(
   // after the setup plan, so a setup task (which the Timeline places itself) is not a step again.
   for (const t of readMany(TimelineAnswer, answer.timeline, 60)) {
     if (!t.time || !t.label) continue;
+    // SCRUM-1050: a step that only names a show of the entertainment is that show, never a typed
+    // step beside the show's own: a show with no time takes the step's (unless the step is a
+    // question nobody answered, SCRUM-1035); a show with a time keeps its own.
+    const show = proposal.entertainment.find((e) => namesOnlyShows(t.label!, [e]));
+    if (show) {
+      if (!show.time && !unansweredQuestion(fromOf(t, t.label, t.time), refs, fallbackText, [t.label, t.time])) show.time = t.time;
+      continue;
+    }
     if (timedElsewhere({ time: t.time, label: t.label }, proposal)) continue;
     const entry = { time: t.time, label: t.label, from: fromOf(t, t.label, t.time) };
     merge(proposal.details.timeline, entry, (x) => fold(x.label) === fold(entry.label));
@@ -1422,7 +1437,7 @@ const DRINKS_WORDS = /(^|[^\p{L}])(drinks?|bar|beverages?)([^\p{L}]|$)|เคร
  */
 export function timedElsewhere(
   step: { time: string; label: string },
-  proposal: Pick<BeoAiProposal, "entertainment" | "event"> & Partial<Pick<BeoAiProposal, "cake" | "details">>,
+  proposal: Pick<BeoAiProposal, "entertainment" | "event"> & Partial<Pick<BeoAiProposal, "cake" | "details" | "menuLines" | "setMenu">>,
 ): boolean {
   const label = fold(step.label);
   if (!label) return false;
@@ -1430,7 +1445,15 @@ export function timedElsewhere(
     (e) => e.time === step.time && [e.name, e.said].some((n) => !!n && (fold(n).includes(label) || label.includes(fold(n)))),
   );
   if (show) return true;
+  // SCRUM-1050: a step that only names a show of the entertainment, at any time: the show's own
+  // step stands (at its own time, or listed with Entertainment while it has none).
+  if (namesOnlyShows(step.label, proposal.entertainment)) return true;
   if (proposal.event.barServiceTime?.value === step.time && DRINKS_WORDS.test(step.label)) return true;
+  // SCRUM-1050: the kids' or the adults' food served at their time ("13:00 lunch", "pizza for the
+  // kids"), which the Timeline makes its own step of ("Kids' menu served"): a step saying nothing
+  // but that, its dishes and its time aside.
+  const foodTimes = [proposal.event.kidsFoodTime?.value, proposal.event.adultsFoodTime?.value];
+  if (foodTimes.includes(step.time) && saysOnlyFood(step.label, proposal)) return true;
   // SCRUM-946 (the 12 November proof): the Timeline makes its own steps of these too.
   // The party's start ("party starts", "from 14:00") beside the automatic Guests arrive, and its
   // end ("party ends", "to 16:30"): a step that says nothing but that, at that time.
@@ -2056,6 +2079,8 @@ const SETUP_WORDS = /(^|[^\p{L}])(set ?up|ready|decorat\p{L}*)([^\p{L}]|$)|เ�
 const START_WORDS = new Set([
   "party", "the", "guests", "guest", "kids", "children", "everyone", "arrive", "arrives", "arrival", "arriving", "start", "starts", "starting",
   "begin", "begins", "beginning", "from", "at", "of", "birthday", "time", "open", "opens", "doors", "h", "pm", "am",
+  // SCRUM-1050: the guests' arrival in other words ("welcome the guests", "check-in").
+  "welcome", "welcoming", "check", "in", "checkin", "come", "comes", "coming",
   "เริ่ม", "เริ่มงาน", "งาน", "เวลา", "начало", "начинается", "праздник", "вечеринка", "гости", "приходят", "с", "в",
 ]);
 const END_WORDS = new Set([
@@ -2067,6 +2092,27 @@ const END_WORDS = new Set([
 function saysOnly(label: string, words: ReadonlySet<string>): boolean {
   const parts = label.normalize("NFC").toLowerCase().split(/[^\p{L}\p{M}\p{N}]+/u).filter(Boolean);
   return parts.length > 0 && parts.every((w) => /^\d+$/.test(w) || words.has(w));
+}
+/** SCRUM-1050: the words a step that only marks a food service is made of (its dishes and its time aside). */
+const FOOD_WORDS = new Set([
+  "food", "foods", "menu", "menus", "lunch", "dinner", "meal", "meals", "eat", "eating", "served", "serve", "serving", "service",
+  "buffet", "snack", "snacks", "kids", "kid", "children", "adults", "adult", "parents", "everyone", "the", "for", "of", "a", "an",
+  "and", "at", "time", "is", "f", "b", "h", "pm", "am",
+  "อาหาร", "เสิร์ฟอาหาร", "ทานอาหาร", "เวลา", "еда", "обед", "ужин", "меню", "подача", "питание", "для", "детей", "взрослых", "в",
+]);
+/**
+ * SCRUM-1050: whether a step says nothing but that the food is served: food words, the words of a
+ * dish the proposal holds (its kids', adults' or set menu's), and numbers. "Lunch and games" is a
+ * moment of its own, kept.
+ */
+function saysOnlyFood(label: string, proposal: Partial<Pick<BeoAiProposal, "menuLines" | "setMenu">>): boolean {
+  const dishes = [
+    ...(proposal.menuLines ?? []).filter((l) => l.menu !== "bar").flatMap((l) => [l.itemName, l.matchedName]),
+    ...(proposal.setMenu?.choices ?? []).flatMap((c) => [c.option, c.said]),
+  ];
+  const dishWords = new Set(dishes.flatMap((d) => (d ? fold(d).split(/[^\p{L}\p{M}\p{N}]+/u).filter((w) => w.length >= 3) : [])));
+  const parts = fold(label).split(/[^\p{L}\p{M}\p{N}]+/u).filter(Boolean);
+  return parts.length > 0 && parts.every((w) => /^\d+$/.test(w) || FOOD_WORDS.has(w) || dishWords.has(w));
 }
 
 /** A real calendar day, YYYY-MM-DD. */
@@ -2088,6 +2134,155 @@ export function phoneInLine(value: string, lineText: string | null): boolean {
   const digits = value.replace(/\D/g, "");
   if (digits.length < 6 || digits.length > 15 || !/^\+?[\d\s().\-]+$/.test(value.trim())) return false;
   return !!lineText && lineText.replace(/\D/g, "").includes(digits);
+}
+
+// --- SCRUM-1035: a question the team asked and the family never answered ------------------
+
+/** What ends a sentence: a question mark wherever it is; a stop, "!" or "。" before a space or the end; a new line. */
+const SENTENCE_STOP = /[?？]|[.!。](?=\s|$)|\n/g;
+/** A Thai sentence that asks with its particle and no question mark ("รับเค้กเพิ่มไหมคะ"). */
+const THAI_ASKS = /(?:ไหม|มั้ย|มั๊ย|ไม๊|หรือเปล่า|รึเปล่า|หรือไม่)\s*(?:คะ|ค่ะ|ครับ|คับ|นะ|จ๊ะ|จ้ะ|จ้า)?\s*$/u;
+
+/** The sentences of a line: where each starts and ends, and whether it asks. */
+function sentencesOfLine(line: string): Array<{ start: number; end: number; asks: boolean }> {
+  const out: Array<{ start: number; end: number; asks: boolean }> = [];
+  let from = 0;
+  for (const m of line.matchAll(SENTENCE_STOP)) {
+    const stop = m.index ?? 0;
+    const text = line.slice(from, stop);
+    if (text.trim()) out.push({ start: from, end: stop + m[0].length, asks: m[0] === "?" || m[0] === "？" || THAI_ASKS.test(text) });
+    from = stop + m[0].length;
+  }
+  const rest = line.slice(from);
+  if (rest.trim()) out.push({ start: from, end: line.length, asks: THAI_ASKS.test(rest) });
+  return out;
+}
+
+/**
+ * SCRUM-1035: whether a line ASKS a value rather than says it: the sentence holding the value's
+ * words (the first of `words` the line holds, as `quoteOf` finds them) is a question. A line that
+ * holds none of them asks it only when every sentence of it is a question; otherwise it cannot be
+ * told, and the value is not refused for it.
+ */
+export function saidAsQuestion(lineText: string, words: ReadonlyArray<string | number | null | undefined>): boolean {
+  const sentences = sentencesOfLine(lineText);
+  if (sentences.length === 0) return false;
+  const found = findInLine(lineText, words);
+  if (!found) return sentences.every((s) => s.asks);
+  return sentences.some((s) => s.asks && found.start >= s.start && found.start < s.end);
+}
+
+/**
+ * SCRUM-1035 — the owner's rule of 19 November: a question the team asked and the family never
+ * answered is never written as agreed, on any field. A proposed value is such a question when its
+ * line is the team's, its words in that line sit in a question (`saidAsQuestion`; its own words and
+ * value first, then the chat's words it carries when they are a part of the line, never the whole
+ * line), and no line of the family's comes after it. The ruling message read alone (no conversation)
+ * knows no line after it: a question it asks is unanswered. A value of the family's, the park's
+ * default or a template, or one whose line is not known, is never refused here.
+ */
+export function unansweredQuestion(
+  from: BeoAiFrom | null | undefined,
+  refs: readonly TranscriptRef[],
+  fallbackText: string | null | undefined,
+  words: ReadonlyArray<string | number | null | undefined>,
+): boolean {
+  if (!from || from.source !== "team") return false;
+  const ref = from.line !== null ? refs.find((r) => r.line === from.line) : undefined;
+  const text = ref?.text ?? (refs.length === 0 ? fallbackText ?? null : null);
+  if (!text || !text.trim()) return false;
+  const quote = from.quote?.replace(/^…|…$/g, "").trim();
+  const part = quote && foldQuote(quote) !== foldQuote(text) ? quote : null;
+  if (!saidAsQuestion(text, [...words, part])) return false;
+  return !ref || !refs.some((r) => r.source === "family" && r.line > ref.line);
+}
+
+/**
+ * SCRUM-1035: the proposal with every value a question nobody answered left out, field by field
+ * (`unansweredQuestion`), so none reaches the review, Fetch from chat or the approval as agreed.
+ * A package left out takes its add-ons and the set menu it brought with it; a set menu left out,
+ * its choices; a kids' choice left out, the adults' fold that repeated it. The deposit keeps its
+ * own rule, unchanged (a received deposit only as received; the money is the till's). Returns how
+ * many values were left out (a count for the activity row; the review has no place for them, and
+ * the team asks the family again).
+ */
+export function withoutUnansweredQuestions(
+  p: BeoAiProposal,
+  refs: readonly TranscriptRef[],
+  fallbackText?: string | null,
+): number {
+  let refused = 0;
+  const asked = (from: BeoAiFrom | null | undefined, ...words: Array<string | number | null | undefined>): boolean => {
+    const no = unansweredQuestion(from, refs, fallbackText, words);
+    if (no) refused += 1;
+    return no;
+  };
+  const keep = <T extends { from: BeoAiFrom }>(list: T[], words: (x: T) => Array<string | number | null | undefined>): T[] =>
+    list.filter((x) => !asked(x.from, ...words(x)));
+  // A value's own words before the value itself: "15 kids" is found as said, never the 15 of a "15:00".
+  const one = <T extends { value: unknown; from: BeoAiFrom }>(v: T | null | undefined, ...words: Array<string | number | null | undefined>): T | null | undefined =>
+    v && asked(v.from, ...words, typeof v.value === "string" || typeof v.value === "number" ? v.value : null) ? null : v;
+
+  if (p.package && asked(p.package.from, p.package.said)) {
+    const brought = !!p.setMenu && p.setMenu.from === p.package.from;
+    p.package = null;
+    refused += p.addOns.length;
+    p.addOns = [];
+    if (brought) {
+      refused += p.setMenu!.choices.length;
+      p.setMenu = null;
+    }
+  }
+  p.addOns = keep(p.addOns, (a) => [a.said]);
+  if (p.setMenu && p.setMenu.from !== p.package?.from && asked(p.setMenu.from)) {
+    refused += p.setMenu.choices.length;
+    p.setMenu = null;
+  }
+  const choicesBefore = p.setMenu?.choices ?? [];
+  if (p.setMenu) p.setMenu.choices = keep(p.setMenu.choices, (c) => [c.said, c.option]);
+  const choiceLeft = (itemId: string, option?: string) =>
+    choicesBefore.some((c) => c.itemId === itemId && c.option === option) && !p.setMenu?.choices.some((c) => c.itemId === itemId && c.option === option);
+  if (p.adultsFolded) {
+    p.adultsFolded = p.adultsFolded.filter((f) => !(f.itemId && choiceLeft(f.itemId, f.option)) && !asked(f.from, f.dish));
+    if (p.adultsFolded.length === 0) delete p.adultsFolded;
+  }
+  p.menuLines = keep(p.menuLines, (l) => [l.itemName, l.matchedName]);
+  p.entertainment = keep(p.entertainment, (e) => [e.said, e.name, e.time]);
+  p.otherLines = keep(p.otherLines, (o) => [o.text]);
+
+  const ev = p.event;
+  for (const key of ["childName", "startTime", "endTime", "childAge", "whatsapp", "kidsFoodTime", "adultsFoodTime", "barServiceTime"] as const) {
+    const kept = one(ev[key] as BeoAiSourced<string | number> | undefined);
+    if (!kept) delete ev[key];
+  }
+  const kids = ev.numChildren?.value;
+  if (ev.numChildren && !one(ev.numChildren, `${kids} kid`, `${kids} child`)) delete ev.numChildren;
+  const adults = ev.numAdults?.value;
+  if (ev.numAdults && !one(ev.numAdults, `${adults} adult`)) delete ev.numAdults;
+  if (ev.eventDate && asked(ev.eventDate.from, ev.eventDate.said, ev.eventDate.value)) delete ev.eventDate;
+
+  if (p.cake && asked(p.cake.from, p.cake.notes, p.cake.time)) p.cake = null;
+
+  const d = p.details;
+  d.bookingName = one(d.bookingName) ?? null;
+  d.locationText = one(d.locationText) ?? null;
+  d.requests = keep(d.requests, (r) => [r.text]);
+  d.setup.readyBy = one(d.setup.readyBy) ?? null;
+  d.setup.responsible = one(d.setup.responsible) ?? null;
+  if (d.setup.notes) d.setup.notes = one(d.setup.notes) ?? null;
+  d.setup.tasks = keep(d.setup.tasks, (t) => [t.itemLabel]);
+  d.pos.name = one(d.pos.name) ?? null;
+  d.pos.notes = one(d.pos.notes) ?? null;
+  d.pos.items = keep(d.pos.items, (i) => [i.description]);
+  d.timeline = keep(d.timeline, (t) => [t.label, t.time]);
+  if (d.kitchenNotes) d.kitchenNotes = one(d.kitchenNotes) ?? null;
+  if (d.hosts) {
+    const partyHost = one(d.hosts.partyHost);
+    const entertainmentHost = one(d.hosts.entertainmentHost);
+    d.hosts = { ...(partyHost ? { partyHost } : {}), ...(entertainmentHost ? { entertainmentHost } : {}) };
+    if (!d.hosts.partyHost && !d.hosts.entertainmentHost) delete d.hosts;
+  }
+  return refused;
 }
 
 // --- SCRUM-827: the rest of the BEO from the form's own read ------------------------------
@@ -2203,5 +2398,26 @@ export function detailsFromFill(
     }
     details.timeline.sort((a, b) => a.time.localeCompare(b.time));
   }
+  // SCRUM-1050: nor a step the Timeline makes from what the BEO already holds (the form's start, its
+  // setup's ready-by, its cake), when the fill gives no time of its own for it.
+  const formKitchen = asRecord(existing.kitchenPlan);
+  const heldTime = (v: unknown): BeoAiSourced<string> | undefined => {
+    const t = heldText(v);
+    return t && /^([01]\d|2[0-3]):[0-5]\d$/.test(t) ? { value: t, from: input.from } : undefined;
+  };
+  const start = proposal.event.startTime ?? heldTime(formEvent.startTime);
+  const end = proposal.event.endTime ?? heldTime(formEvent.endTime);
+  const readyBy = details.setup.readyBy ?? heldTime(formSetup.readyBy) ?? null;
+  const cakeMode = heldText(formKitchen.cakeMode);
+  const heldCake = cakeMode && cakeMode !== "NONE" && heldTime(formKitchen.cakeTime)
+    ? { mode: null, notes: null, time: heldTime(formKitchen.cakeTime)!.value, from: input.from }
+    : null;
+  const made = {
+    ...proposal,
+    cake: proposal.cake ?? heldCake,
+    details: { ...details, setup: { ...details.setup, readyBy } },
+    event: { ...proposal.event, ...(start ? { startTime: start } : {}), ...(end ? { endTime: end } : {}) },
+  };
+  details.timeline = details.timeline.filter((t) => !timedElsewhere(t, made));
   return details;
 }
