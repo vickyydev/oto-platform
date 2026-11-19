@@ -1056,12 +1056,20 @@ jobs:
       - name: The app's one BEO timeline check
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/beo-timeline.check.ts
+      # SCRUM-1027: the stored automatic timeline rows on the next Save — a
+      # row staff ticked done is kept with its tick when the timeline no
+      # longer makes its step, an unticked one is removed, the end time
+      # stores no step. Against the migrated database.
+      - name: The app's BEO timeline rows check
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/beo-timeline-rows.check.ts
       # SCRUM-1028: the Staff BEO print rebuilt on today's stored BEO — the
-      # header with the package box, the one timeline, Kitchen on the left
-      # (the adults' own list when they eat differently, "no food" said
-      # plainly), Setup, Bar, Entertainment, Cake and Notes on the right, a
-      # dish with no count as 1, long orders running onto more pages with
-      # every page's foot naming the party, Thai beside English. No database.
+      # header with the package box, the one timeline (no order repeated on
+      # it), Kitchen on the left (set-menu choices by name, the adults' own
+      # list when they eat differently, "Not Needed" as before), Setup, Bar,
+      # Entertainment, Cake and Notes on the right, a dish with no count as
+      # 1, long orders running onto more pages with every page's foot naming
+      # the party, Thai beside English. No database.
       - name: The app's Staff BEO print check
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/beo-staff-print.check.ts

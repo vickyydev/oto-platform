@@ -465,8 +465,13 @@ export async function generateTimelineFromBeo(eventId: string): Promise<void> {
 
   // Delete system-generated rows whose sourceKey is no longer in the generated map
   // (source was removed from BEO, or is suppressed and already in DB from before suppression)
+  // SCRUM-1027: a row staff ticked done is kept with its tick (who and when): the one timeline no
+  // longer makes some steps the old rules stored (a setup task or a service block with no time of
+  // its own, guests arriving at a start the party does not have). It is not shown again: the
+  // timeline shows only the steps it makes and the rows typed by hand.
   const orphanedIds = [...existingBySourceKey.values()]
     .filter(item => !suppressed.has(item.sourceKey!))
+    .filter(item => !item.isCompleted)
     .map(item => item.id);
   if (orphanedIds.length > 0) {
     await db.delete(beoTimelineItems)

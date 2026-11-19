@@ -588,7 +588,10 @@ describe('A. fences and seams', () => {
       // its own person (beoActivitiesOf, server/lib/beoTimelineRead.ts), after the event's own access
       // check; no PDF, file, bucket or public-folder door is added; where the BEO's documents live is
       // unchanged.
-      'beo-routes.ts': '7538903f6198eee177d3f76f645bc0604487797c780d3a6c624a19b45fd7b05f',
+      // SCRUM-1027 (the review's repair): the generator keeps a stored automatic row staff ticked done
+      // when the timeline no longer makes its step, instead of deleting the tick; no door is added; where
+      // the BEO's documents live is unchanged.
+      'beo-routes.ts': '52ffd4b9a8158d9bfbf30a9d67136ab5ce7bbaf2e72c810fff5417e07a50edce',
       'orgChartRoutes.ts': 'eff8d4478165e8b0157ef07d37891222104f751b49932e70f525f06366fe9d90',
     };
     for (const [file, hash] of Object.entries(main)) expect(sha256(committed(join(APP_SERVER, file))), file).toBe(hash);
