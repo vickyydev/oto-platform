@@ -254,6 +254,8 @@ export async function familyProfilesMode(exec: Exec, operatorId: string, now = n
 //     child and no member;
 //   - `familyChildrenOfMembers`: which of several members sees which child,
 //     for a reader that lists many members at once (the Console register);
+//   - `childrenByMemberThroughFamilies`: the children themselves, nested
+//     under every member that sees them (the counter box's bundle);
 //   - `childrenSeenBy` and `memberSeesChild`: the whole rule, child included.
 //
 // WHAT EACH READER ADDS ITSELF, exactly as before: whether the child must be
@@ -373,6 +375,67 @@ export async function familyChildrenOfMembers(
       ),
     )
     .where(isNull(child.mergedIntoChildId));
+}
+
+/**
+ * The children each of `memberIds` sees through their families, nested under
+ * every member that sees them: for a reader that answers many members with
+ * their children in one document, the counter box's bundle (`members` scope
+ * of `cacheBundle` in `sync.ts`). The rule above; the child's own state is
+ * the caller's `childWhere`, as it always was.
+ *
+ * Two statements, both plain index reads: the members' live families inside
+ * the operator (the fence: the guardian row, its family and its member all of
+ * the operator, the row and the family live, the member live when
+ * `memberLive`), then the unmerged children of those families. The second
+ * sets no order, like the `child.member_id IN (...)` read it stands in for:
+ * within one family the database returns the children in the order it holds
+ * them, which is the order that read gave within one member, so while each
+ * family has its one guardian every member's list comes back in the same
+ * order at both settings. Each member's list keeps that order.
+ */
+export async function childrenByMemberThroughFamilies(
+  exec: Exec,
+  scope: { operatorId: string; memberIds: readonly string[]; memberLive: boolean },
+  childWhere?: SQL,
+): Promise<Map<string, Array<typeof child.$inferSelect>>> {
+  const nested = new Map<string, Array<typeof child.$inferSelect>>();
+  if (scope.memberIds.length === 0) return nested;
+  const held = await exec
+    .select({ memberId: seenGuardian.memberId, familyId: seenGuardian.familyId })
+    .from(seenGuardian)
+    .innerJoin(
+      seenFamily,
+      and(eq(seenFamily.id, seenGuardian.familyId), eq(seenFamily.operatorId, seenGuardian.operatorId), isNull(seenFamily.archivedAt)),
+    )
+    .innerJoin(
+      seenMember,
+      and(
+        eq(seenMember.id, seenGuardian.memberId),
+        eq(seenMember.operatorId, seenGuardian.operatorId),
+        scope.memberLive ? isNull(seenMember.archivedAt) : undefined,
+      ),
+    )
+    .where(
+      and(
+        eq(seenGuardian.operatorId, scope.operatorId),
+        isNull(seenGuardian.archivedAt),
+        inArray(seenGuardian.memberId, [...scope.memberIds]),
+      ),
+    );
+  if (held.length === 0) return nested;
+  const holders = new Map<string, string[]>();
+  for (const h of held) holders.set(h.familyId, [...(holders.get(h.familyId) ?? []), h.memberId]);
+  const rows = await exec
+    .select()
+    .from(child)
+    .where(and(inArray(child.familyId, [...holders.keys()]), isNull(child.mergedIntoChildId), childWhere));
+  for (const row of rows) {
+    for (const memberId of holders.get(row.familyId!) ?? []) {
+      nested.set(memberId, [...(nested.get(memberId) ?? []), row]);
+    }
+  }
+  return nested;
 }
 
 /** The whole rule as one condition on `crm.child`: a live, unmerged child of a live member's live family. */
