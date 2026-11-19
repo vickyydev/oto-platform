@@ -1,8 +1,8 @@
 import type { ApiResponse } from '@oto/api-types';
-import { BRIDGE_CHECKIN_INTENTS, OFFLINE_PHOTO_POLICY, newId as newRecordId, satangFromBaht, type DropOffPricingConfig, type SupervisionPolicy, type SupervisionRequirement } from '@oto/shared';
+import { BRIDGE_CHECKIN_INTENTS, OFFLINE_PHOTO_POLICY, PHOTO_REUSE_REFUSED, newId as newRecordId, satangFromBaht, type DropOffPricingConfig, type SupervisionPolicy, type SupervisionRequirement } from '@oto/shared';
 import type { CheckIn, ChildFoodProvision, ContactChannel, DropOffServiceType } from '@/types';
 import { viaLane } from '@/lib/lane';
-import { api, idemKey } from './client';
+import { ApiError, api, idemKey } from './client';
 import { bridgeApi, bridgeStaffName } from './bridge';
 import { apiBranchIdForSlug } from './catalogBridge';
 
@@ -215,6 +215,23 @@ export interface CreateRegistrationBody {
    */
   contactConfirmation?: { confirmedAt: string; by: 'family' | 'staff' } | null;
   children: RegistrationChildBody[];
+  /**
+   * SCRUM-1018 — each returning child whose last photo staff said still
+   * matches, applied in this same write: refused (`PHOTO_REUSE_REFUSED`), the
+   * registration is not written and a new photo is taken. Platform only: the
+   * counter box cannot check a stored photo, so the box lane refuses it the
+   * same way and the counter takes a new photo.
+   */
+  photoReuse?: { checkinId: string; fromCheckinId: string }[];
+}
+
+/**
+ * SCRUM-1018 — a reuse of a stored photo the counter cannot make: refused by
+ * the platform, or asked while the till is on the counter box. The till lets
+ * the old photo go for these children and has a new one taken.
+ */
+export function photoReuseRefused(err: unknown): err is ApiError {
+  return err instanceof ApiError && err.code === PHOTO_REUSE_REFUSED;
 }
 
 /** The prototype's provision (baht) on the wire (satang). */
@@ -357,8 +374,18 @@ export const checkinApi = {
   createRegistration: (body: CreateRegistrationBody) =>
     viaLane(
       () => api.post<ApiRegistration>('/checkin/registrations', body, { idempotencyKey: idemKey() }),
-      async (stationId) =>
-        (
+      async (stationId) => {
+        // SCRUM-1018 — the box cannot check a stored photo: no reuse on its
+        // lane. Refused before anything is written, so the counter takes a
+        // new photo and the registration then goes to the box as before.
+        if (body.photoReuse && body.photoReuse.length > 0) {
+          throw new ApiError(
+            0,
+            PHOTO_REUSE_REFUSED,
+            "The last visit's photo can only be reused with the internet — take a new photo of the child with the guardian.",
+          );
+        }
+        return (
           await onBox<{ registration: ApiRegistration }>(stationId, BRIDGE_CHECKIN_INTENTS.create, {
             registrationId: body.id,
             memberId: body.memberId ?? null,
@@ -370,7 +397,8 @@ export const checkinApi = {
             acknowledgedConfirmationIds: body.acknowledgedConfirmationIds,
             children: body.children,
           })
-        ).registration,
+        ).registration;
+      },
     ),
 
   addChildren: (registrationId: string, children: RegistrationChildBody[]) =>
@@ -461,19 +489,6 @@ export const checkinApi = {
           `/checkin/children/${encodeURIComponent(childId)}/last-photo?branchId=${encodeURIComponent(assertPlatformBranchId(branchId))}`,
         ),
       async () => ({ photo: null }),
-    ),
-
-  /**
-   * SCRUM-1018 — staff confirmed each named child's last photo still matches:
-   * their new stays point at those stored photos. Platform only; offline it
-   * says so, and the counter takes a new photo before pickup.
-   */
-  reusePhoto: (registrationId: string, children: { checkinId: string; fromCheckinId: string }[]): Promise<unknown> =>
-    viaLane(
-      () => api.post(`/checkin/registrations/${registrationId}/photo-reuse`, { children }, { idempotencyKey: idemKey() }),
-      async () => {
-        throw needsInternet("Reusing the last visit's photo");
-      },
     ),
 
   /**
