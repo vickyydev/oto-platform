@@ -143,10 +143,32 @@ stays until the owner answers. Each is for the owner's page.
   credit", on the display, the till's own half and the phone till's form,
   while no extra food is chosen; ticked, the stay's food permission is given
   and the counter asks no manager. The counter box's lane does not know the
-  tick yet: a registration made there is "no food" as before (a stay
-  registered online is read from the box's copy of the board with the tick).
+  tick yet: while the till works through its box the tick is not asked (the
+  family is never asked for something that would not take effect), and a
+  registration that falls to the box after the parent ticked names the
+  children to staff ("the food counter will ask a manager"). A stay
+  registered online is read from the box's copy of the board with the tick.
+  The tick gives the stay's food permission, as paid extra food does: what
+  the child can spend is the band's balance.
+- **SCRUM-1048, which band carries an extra food credit:** the receipt's
+  "Prepaid food" row says "On band <short code>", with the child's name when
+  the band carries one, and the credit section counts the extra credit in
+  what that QR holds (or lists the credit's own wallet and QR when the ticket
+  earns no credit). The till's order still names the child "Kid 1", "Kid 2":
+  which saved child a kid band is named after is decided by the platform as
+  the bands are minted, so the till does not guess it. Printing the credit on
+  the band itself is the owner's choice and is not built.
+- **SCRUM-1041, removing a display served through a counter box:** the box
+  is asked to fetch its copy of the station's settings at once (its "apply
+  config" command, picked up within seconds), and its open display streams
+  close once the copy drops the display. The till keeps the row as
+  "Removing" until the box no longer lists it, and says "within a minute".
 - **Known limits until the next counter box release (no box release is
   made by this lane):** a box from before this change drops the form's food
   credit lines and the new care-note fields, so a display served through it
   shows the form as before; receipts the box composes while the link is down
-  print no "Credit left" line (on its paper and on the platform's copy).
+  print no "Credit left" line (on its paper and on the platform's copy); and
+  the paper a box composes itself while its link is down (receipts, kitchen
+  and bar slips, an adult's band) still prints a member held under their
+  number (R1) in full as the name, until the box runs this change's shared
+  composer.
