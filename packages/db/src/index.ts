@@ -19,6 +19,10 @@ export * from './setting-registry';
 /** SCRUM-795: a platform account for every OTO App user who has none (one-off, by script). */
 export * from './otoapp-staff-accounts';
 
+/** SCRUM-1024: the family backfill and its checks (one-off, by script). */
+export * from './family-backfill';
+export * from './family-verify';
+
 export type Db = NodePgDatabase<typeof schema>;
 
 let _pool: pg.Pool | null = null;
