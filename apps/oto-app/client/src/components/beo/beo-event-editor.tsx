@@ -104,7 +104,9 @@ import { BeoBillingSection, PartyDetailsTillTiles, tillBillingKey, useTillBillin
 import { DEPOSIT_READ_AGAIN_MS, billingNamesDeposit, depositChangedIn, eventDepositOf, loadedDepositOf, sameOneDeposit, type EventDeposit } from "@/lib/beo-deposit-buffer";
 import { depositMovedWords, type DepositSaveNote, type OneDeposit } from "@shared/partyDeposit";
 import { beoBillingMutationScope } from "@/lib/beo-deposit-buffer";
-import { bahtOfSatang, openAdditionalBillsOf, partyBillStateOf, tillFiguresOf } from "@shared/tillBilling";
+import { bahtOfSatang, isTillPartyEventType, openAdditionalBillsOf, partyBillStateOf, tillFiguresOf } from "@shared/tillBilling";
+import { BeoGuestsSocks } from "./beo-guests-socks";
+import { beoDishNameOf } from "@shared/beoAdultWaffles";
 import { additionalBillingToastOf, mayBillAtSave, type AdditionalBillingResult } from "@shared/beoBillingSource";
 import type { PartyMenuLine } from "@shared/partyMenuItem";
 import { isTemplateSetMenuLine, lineWithTillItem, lineWithoutTillItem } from "@shared/tillMenu";
@@ -350,7 +352,7 @@ function SetMenuChoiceGroups({
             {group.qty != null && <span className="font-medium ml-1">×{group.qty}</span>}
             {hasResolved && chosen.length > 0 ? (
               <span className="text-emerald-600 ml-1" data-testid={`set-menu-choice-options-${group.id}`}>
-                → {chosen.map((item) => item.itemName).join(", ")}
+                → {chosen.map((item) => beoDishNameOf(item)).join(", ")}
               </span>
             ) : (
               <span className="text-muted-foreground ml-1 italic">pending parent selection</span>
@@ -365,7 +367,7 @@ function SetMenuChoiceGroups({
           <p className="text-[10px] font-semibold uppercase text-muted-foreground tracking-wide">Other set menu items</p>
           {ungroupedItems.map((item) => (
             <div key={item.id} className="flex items-center gap-2 text-sm">
-              <span>{item.itemName}</span>
+              <span>{beoDishNameOf(item)}</span>
               <Badge variant="outline" className="text-[10px] px-1.5 bg-blue-500/10 text-blue-600 border-blue-500/30">SET</Badge>
             </div>
           ))}
@@ -574,9 +576,11 @@ function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab, charge, 
           />
         )}
         <div className="flex-1 flex items-center gap-1 min-w-[8rem]">
+        {/* SCRUM-1042: the birthday package's waffles read "Adult Waffles" here; the line keeps its
+            stored name unless a person types another one (shared/beoAdultWaffles.ts). */}
         <EditableText disabled={disabled}
           className="text-xs min-w-0"
-          value={item.itemName}
+          value={beoDishNameOf(item)}
           onChange={(v) => {
             changeMenu(prev => {
               const updated = [...prev];
@@ -727,6 +731,10 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
   const [setupNotes, setSetupNotes] = useState("");
   const [beoTasks, setBeoTasks] = useState<any[]>([]);
   const [kitchenRequired, setKitchenRequired] = useState(true);
+  // SCRUM-1030: the Kitchen Notes (the kitchen plan's own field, also typed on the Day-of view), and
+  // the notes as this form read them: Save names them only when they were changed here.
+  const [kitchenNotes, setKitchenNotes] = useState("");
+  const loadedKitchenNotes = useRef("");
   const [kidsMenu, setKidsMenu] = useState<MenuLine[]>([]);
   const [adultsMenu, setAdultsMenu] = useState<MenuLine[]>([]);
   // SCRUM-829: "Different for adults". Off, the adults eat the kids' menu and adultsMenu is
@@ -1110,6 +1118,12 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
         kidTurningAge: (beoData as any).kidTurningAge ?? undefined,
         eventType: (beoData as any).eventType,
         color: (beoData as any).color,
+        // SCRUM-1031: the expected extra guests and the socks arrangement, held only when the party
+        // stores them, so a party saved before them saves exactly what it did.
+        ...(beoData.expectedExtraKids != null ? { expectedExtraKids: beoData.expectedExtraKids } : {}),
+        ...(beoData.expectedExtraAdults != null ? { expectedExtraAdults: beoData.expectedExtraAdults } : {}),
+        ...(beoData.socksArrangement != null ? { socksArrangement: beoData.socksArrangement } : {}),
+        ...(beoData.socksNote != null ? { socksNote: beoData.socksNote } : {}),
       } as any);
       setLocationText((beoData as any).locationText || "");
       if (beoData.partyHost) setPartyHost(beoData.partyHost);
@@ -1151,6 +1165,8 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
       const kp = beoData.kitchenPlan as any;
       if (kp) {
         setKitchenRequired(kp.foodRequired !== false);
+        loadedKitchenNotes.current = typeof kp.kitchenNotes === "string" ? kp.kitchenNotes : "";
+        setKitchenNotes(loadedKitchenNotes.current);
         setCakeMode(kp.cakeMode || "NONE");
         setCakeQuantity(kp.cakeQuantity ?? 1);
         setCakeNotes(kp.cakeNotes || "");
@@ -1282,6 +1298,9 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
           // SCRUM-829: with the switch off the adults' list IS the kids' list, so none is saved for them.
           menus: { kids: kidsMenu, adults: adultsDiffer ? adultsMenu : [], adultsDiffer, kidsFoodTime, adultsFoodTime },
           serviceSchedule: [],
+          // SCRUM-1030: named only when changed in this form, so the notes typed meanwhile on the
+          // Day-of view are never written over by a Save that did not touch them.
+          ...(kitchenNotes !== loadedKitchenNotes.current ? { kitchenNotes } : {}),
         },
         barPlan: {
           serviceTime: barServiceTime,
@@ -2672,6 +2691,22 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                   </SectionPart>
                 )}
 
+                {/* SCRUM-1031: the expected extra guests and the socks arrangement, after the package as the
+                    brief's drawing has them; for a party the till settles, information only, never sent to it. */}
+                {isTillPartyEventType(beoData.eventType) && (
+                  <SectionPart
+                    testId="part-guests-socks"
+                    title="Extra guests and socks"
+                    icon={<Users className="h-4 w-4 text-pink-500" />}
+                  >
+                    <BeoGuestsSocks
+                      value={eventData}
+                      onChange={(next) => setEventData((prev) => ({ ...prev, ...next }))}
+                      readOnly={readOnly}
+                    />
+                  </SectionPart>
+                )}
+
                 <SectionPart
                   testId="part-pos"
                   title="POS"
@@ -3115,6 +3150,19 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                     </label>
                     {kitchenRequired ? (
                       <>
+                        {/* SCRUM-1030: general instructions for the kitchen, printed at the very top of the
+                            Staff BEO's Kitchen; the kitchen plan's own field, the one the Day-of view edits. */}
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground flex items-center gap-1">Kitchen Notes</Label>
+                          <EditableText
+                            value={kitchenNotes}
+                            onChange={setKitchenNotes}
+                            placeholder="e.g., Parents will order more food on arrival"
+                            multiline
+                            disabled={readOnly}
+                            data-testid="textarea-kitchen-notes"
+                          />
+                        </div>
                         <div className="space-y-2">
                           <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Menus</Label>
                           <div className="flex flex-wrap items-center gap-2">
@@ -3543,7 +3591,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                       kidsMenu.map((item, index) => (
                                         <div key={item.id} className="flex items-center gap-2 text-sm py-0.5" data-testid={`adults-mirror-item-${index}`}>
                                           <span className="w-6 text-center text-xs font-medium shrink-0">{beoQuantityOf(item.quantity)}</span>
-                                          <span className="text-xs">{item.itemName}</span>
+                                          <span className="text-xs">{beoDishNameOf(item)}</span>
                                           {item.notes?.trim() && <span className="text-xs text-muted-foreground shrink-0">{item.notes.trim()}</span>}
                                           {item.productCode && (
                                             <span className="text-[10px] font-mono text-muted-foreground shrink-0" title={tillCodeTitle(tillMenu.index, item.productCode)}>{item.productCode}</span>

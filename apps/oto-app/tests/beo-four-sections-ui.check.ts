@@ -414,8 +414,135 @@ if (!RECORD) {
     await open(none);
     assert.equal(text("badge-other-steps"), "0 steps");
   });
+
+  // ── SCRUM-1030, SCRUM-1031, SCRUM-1042: the BEO's new fields ──────────────────────────────────
+  // The party opened and saved untouched above stores none of them: its Save's body is the one the
+  // editor before them sent (the golden), so a party saved before them saves exactly as it did.
+
+  /** Set a plain input's value as a person types it, then leave it. */
+  const typeValue = async (id: string, value: string) => {
+    const input = required(id) as HTMLInputElement;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, "value")!.set!.call(input, value);
+      input.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
+    });
+    await settle();
+  };
+  const choose = async (trigger: string, option: string) => { await click(trigger); await click(option); };
+  const order = (...ids: string[]) => ids.map((id) => [...doc.querySelectorAll("[data-testid]")].indexOf(required(id)));
+
+  await check("SCRUM-1031: Event Info, after the package and before POS: the expected extra guests and the socks choice, empty on a party that stores none", async () => {
+    await open();
+    assert.equal(sectionOf("beo-guests-socks"), "event-info");
+    const at = order("part-package", "part-guests-socks", "part-pos");
+    assert.deepEqual([...at].sort((a, b) => a - b), at, "the drawing's order: package, extra guests and socks, POS");
+    assert.equal(text("beo-expected-extra")?.startsWith("Expected extra (add to POS on arrival)"), true);
+    assert.equal((required("input-expected-extra-kids") as HTMLInputElement).value, "");
+    assert.equal((required("input-expected-extra-adults") as HTMLInputElement).value, "");
+    assert.equal(text("select-socks-arrangement"), "Not set", "left for a manager to decide");
+    assert.equal(byTestId("input-socks-note"), null);
+    assert.equal(text("text-socks-hint"), "How socks will be charged (not linked to POS)");
+    // The brief's three options, in its words, and "Not set".
+    await click("select-socks-arrangement");
+    assert.deepEqual(
+      ["option-socks-not-set", "option-socks-birthday_parent", "option-socks-guests", "option-socks-other"].map(text),
+      ["Not set", "Birthday Parent Pays", "Guests Pay Individually", "Other / Custom"],
+    );
+  });
+
+  await check("SCRUM-1031: a party that stores them opens with them; an untouched Save sends them as stored; a change is saved, the note only with Other / Custom", async () => {
+    const id = "11111111-1111-4111-8111-000000010311";
+    OVER.set(id, { expectedExtraKids: 1, expectedExtraAdults: 6, socksArrangement: "other", socksNote: "ZZ TEST grandma pays" });
+    await open(id);
+    assert.equal((required("input-expected-extra-kids") as HTMLInputElement).value, "1");
+    assert.equal((required("input-expected-extra-adults") as HTMLInputElement).value, "6");
+    assert.equal(text("select-socks-arrangement"), "Other / Custom");
+    assert.equal((required("input-socks-note") as HTMLInputElement).value, "ZZ TEST grandma pays");
+    await click("button-save-beo");
+    const untouched = saves(id)[0]!.body.event as Record<string, unknown>;
+    assert.deepEqual(
+      [untouched.expectedExtraKids, untouched.expectedExtraAdults, untouched.socksArrangement, untouched.socksNote],
+      [1, 6, "other", "ZZ TEST grandma pays"],
+    );
+    await open(id);
+    await typeValue("input-expected-extra-kids", "2");
+    await typeValue("input-expected-extra-adults", "");
+    await typeValue("input-expected-extra-adults", "1.5");
+    await choose("select-socks-arrangement", "option-socks-guests");
+    assert.equal(byTestId("input-socks-note"), null, "the note belongs to Other / Custom");
+    await click("button-save-beo");
+    const changed = saves(id)[0]!.body.event as Record<string, unknown>;
+    assert.deepEqual(
+      [changed.expectedExtraKids, changed.expectedExtraAdults, changed.socksArrangement, changed.socksNote],
+      [2, null, "guests", null],
+      "a count emptied is none; a count that is not a whole number is not taken",
+    );
+    // Other / Custom again brings the note back; Not set clears both.
+    await open(id);
+    await choose("select-socks-arrangement", "option-socks-guests");
+    await choose("select-socks-arrangement", "option-socks-other");
+    assert.equal((required("input-socks-note") as HTMLInputElement).value, "ZZ TEST grandma pays");
+    await choose("select-socks-arrangement", "option-socks-not-set");
+    await click("button-save-beo");
+    const cleared = saves(id)[0]!.body.event as Record<string, unknown>;
+    assert.deepEqual([cleared.socksArrangement, cleared.socksNote], [null, null]);
+    // Nothing of them reaches the party's money: the Save's billing and Party Details are as stored.
+    assert.deepEqual(saves(id)[0]!.body.partyDetails, golden!.untouched.partyDetails);
+    assert.deepEqual(saves(id)[0]!.body.billing, golden!.untouched.billing);
+  });
+
+  await check("SCRUM-1031: only on a party the till settles; a camp shows neither", async () => {
+    const id = "11111111-1111-4111-8111-000000010312";
+    OVER.set(id, { eventType: "camp" });
+    await open(id);
+    assert.equal(byTestId("part-guests-socks"), null);
+  });
+
+  await check("SCRUM-1030: Kitchen Notes at the top of the food, in Food & Drinks; an untouched Save leaves them to the plan; a change is saved", async () => {
+    const id = "11111111-1111-4111-8111-000000010301";
+    const stored = fourSectionsBeo(id);
+    OVER.set(id, { kitchenPlan: { ...stored.kitchenPlan, kitchenNotes: "ZZ TEST ทำอาหารเด็กก่อน, then the adults" } });
+    await open(id);
+    assert.equal(sectionOf("textarea-kitchen-notes"), "food-drinks");
+    const at = order("checkbox-no-food", "textarea-kitchen-notes", "button-menu-tab-kids");
+    assert.deepEqual([...at].sort((a, b) => a - b), at, "under the No food tick, before the menus");
+    assert.equal(text("textarea-kitchen-notes"), "ZZ TEST ทำอาหารเด็กก่อน, then the adults");
+    await click("button-save-beo");
+    assert.equal("kitchenNotes" in (saves(id)[0]!.body.kitchenPlan as Record<string, unknown>), false, "not named: the plan keeps its own (the Day-of view may have changed them)");
+    await open(id);
+    await typeInto("textarea-kitchen-notes", "ZZ TEST parents order more on arrival");
+    await click("button-save-beo");
+    assert.equal((saves(id)[0]!.body.kitchenPlan as Record<string, unknown>).kitchenNotes, "ZZ TEST parents order more on arrival");
+    // Hidden with No food, never deleted.
+    await open(id);
+    await click("checkbox-no-food");
+    assert.equal(byTestId("textarea-kitchen-notes"), null);
+    await click("button-save-beo");
+    assert.equal("kitchenNotes" in (saves(id)[0]!.body.kitchenPlan as Record<string, unknown>), false);
+  });
+
+  await check("SCRUM-1042: the birthday package's waffles read Adult Waffles in the editor; the Save and every request keep Mini Waffles", async () => {
+    const id = "11111111-1111-4111-8111-000000010421";
+    const stored = fourSectionsBeo(id);
+    const waffles = { id: "set_item_zz_sweets_Mini_Waffles", itemName: "Mini Waffles", quantity: 1, notes: "(Sweets x2)", included: true, price: 0, source: "set_menu", groupId: "item_zz_sweets" };
+    const typed = { id: "menu_zz_typed", itemName: "Mini waffles", quantity: 2, notes: "", included: false, price: 0, source: "additional" };
+    const menus = { ...stored.kitchenPlan.menus, kids: [...stored.kitchenPlan.menus.kids, waffles, typed], adults: [], adultsDiffer: false };
+    OVER.set(id, { kitchenPlan: { ...stored.kitchenPlan, menus } });
+    await open(id);
+    assert.equal(text("input-menu-name-kids-2"), "Adult Waffles", "the package's item");
+    assert.equal(text("input-menu-name-kids-3"), "Mini waffles", "a dish typed by hand keeps its name");
+    assert.equal(text("input-menu-name-kids-0"), "ZZ TEST Margherita", "any other set dish keeps its name");
+    // The adults eat the kids' menu: their mirror reads the same.
+    await click("button-menu-tab-adults");
+    assert.ok(text("adults-mirror-item-2")?.includes("Adult Waffles"), text("adults-mirror-item-2") ?? "");
+    asked.length = 0;
+    await click("button-save-beo");
+    const kids = (saves(id)[0]!.body.kitchenPlan as { menus: { kids: Array<Record<string, unknown>> } }).menus.kids;
+    assert.deepEqual([kids[2]!.itemName, kids[2]!.groupId, kids[3]!.itemName], ["Mini Waffles", "item_zz_sweets", "Mini waffles"], "the stored names, unchanged");
+    assert.equal(asked.some((a) => JSON.stringify(a.body).includes("Adult Waffles")), false, "no request carries the BEO's display name");
+  });
 }
 
 await act(async () => { root.unmount(); });
 console.log(`beo-four-sections-ui.check: ${checks} checks passed`);
-process.exit(checks === (RECORD ? 2 : 10) ? 0 : 1);
+process.exit(checks === (RECORD ? 2 : 15) ? 0 : 1);
