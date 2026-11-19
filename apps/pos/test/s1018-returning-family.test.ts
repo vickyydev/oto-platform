@@ -250,9 +250,11 @@ describe('the till wires it', () => {
     const open = till.slice(till.indexOf('const openSupervisionGate = '), till.indexOf('const handleUpdateSlot = '));
     expect(open).toContain('const profileName = profileGuardianName(member, createdMemberId);');
     expect(open).toMatch(/const prefill = prefillGate\(slots, saved, visitingChildIds\);\s*setSuperSlots\(prefill\.slots\);\s*setConfirmedSavedIds\(prefill\.confirmedIds\);\s*setStep\(prefill\.review \? 8 : 7\);/);
-    expect(open).toContain('readLastPhotos(saved.map((child) => child.id));');
+    // Only the children on the form are read (each read is access-logged).
+    expect(open).toContain('readLastPhotos(prefill.slots.flatMap((slot) => (slot.savedChildId ? [slot.savedChildId] : [])), {});');
+    expect(till).toMatch(/const finishReview = \(\) => \{[\s\S]{0,300}?readLastPhotos\(superSlots\.flatMap/);
     // Online only, and a read that lands after the sale moved on is dropped.
-    expect(open).toMatch(/if \(!platformBranchId \|\| childIds\.length === 0 \|\| tillOffline\(\)\)/);
+    expect(open).toMatch(/if \(!platformBranchId \|\| toRead\.length === 0 \|\| tillOffline\(\)\) return;/);
     expect(open).toContain('if (epoch !== saleEpochRef.current) return;');
   });
 
