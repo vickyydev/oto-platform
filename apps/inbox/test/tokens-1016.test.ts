@@ -3,7 +3,7 @@
 // and a dark value, every Tailwind colour names a token, every text pair the
 // components use meets WCAG 4.5 : 1 in both themes, and the faces come from
 // this build rather than an outside host.
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -61,6 +61,8 @@ const TEXT_PAIRS: Array<[ink: string, ground: string]> = [
   // The chosen segment of a switch (SCRUM-1016 review): its words and the
   // tab's coral count.
   ['ink', 'segment'], ['coral-ink', 'segment'],
+  // The view-as banner's words (SCRUM-648), on tokens since the review.
+  ['banner-ink', 'banner'],
 ];
 
 describe('SCRUM-1016: the OTO tokens', () => {
@@ -131,6 +133,19 @@ describe('SCRUM-1016: the OTO tokens', () => {
     for (const ground of ['band', 'money']) {
       expect(contrast(theme, 'ink', ground), `ink ring against ${ground}`).toBeGreaterThanOrEqual(3);
     }
+  });
+
+  it('no source file carries a raw palette class, a raw rgba colour or a dark: variant of its own', () => {
+    // SCRUM-1016 (review): the view-as banner kept amber-400 and black, the
+    // sign-in card the old slate rgba shadow. Every colour is a token now.
+    const dir = path.resolve(import.meta.dirname, '..', 'src');
+    const files = (readdirSync(dir, { recursive: true }) as string[]).filter((f) => /\.tsx?$/.test(f));
+    expect(files.length).toBeGreaterThan(30);
+    const palette =
+      /(?:bg|text|border|ring|outline|fill|stroke|from|to|via|shadow|decoration|divide|accent|placeholder)-(?:slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-\d|\b(?:bg|text|border|ring)-(?:white|black)\b|rgba?\(|\bdark:/;
+    for (const f of files) expect(readFileSync(path.join(dir, f), 'utf8'), f).not.toMatch(palette);
+    expect(src('src/components/ImpersonationBanner.tsx')).toContain('border-banner-line bg-banner');
+    expect(src('src/components/SignOnPanels.tsx')).toContain('shadow-pop');
   });
 
   it('paints the page on the token ground, with no slate gradient left', () => {

@@ -78,6 +78,11 @@
   --oto-channel-line: #06c755;
   --oto-channel-telegram: #229ed9;
   --oto-channel-webform: #8a7a6c;
+  /* The view-as banner (SCRUM-648): the support banner every app of the suite
+     shows the same way, amber with black words, in both themes. */
+  --oto-banner: #fbbf24;
+  --oto-banner-line: #f59e0b;
+  --oto-banner-ink: #000000;
 }
 
 html.dark {
@@ -133,6 +138,9 @@ html.dark {
   --oto-channel-line: #06c755;
   --oto-channel-telegram: #39b3ea;
   --oto-channel-webform: #7d8aa0;
+  --oto-banner: #fbbf24;
+  --oto-banner-line: #f59e0b;
+  --oto-banner-ink: #000000;
 }
 
 @theme inline {
@@ -189,6 +197,9 @@ html.dark {
   --color-channel-line: var(--oto-channel-line);
   --color-channel-telegram: var(--oto-channel-telegram);
   --color-channel-webform: var(--oto-channel-webform);
+  --color-banner: var(--oto-banner);
+  --color-banner-line: var(--oto-banner-line);
+  --color-banner-ink: var(--oto-banner-ink);
 
   /* Menus, popovers and the account card float on the one shadow. */
   --shadow-pop: 0 12px 40px -16px var(--oto-shadow);

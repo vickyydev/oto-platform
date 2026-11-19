@@ -234,10 +234,14 @@ export function AccountMenu(props: AccountMenuProps) {
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={`Your account: ${name}, ${viewerRoleLabel(me)}`}
-        className={`${ICON_BUTTON} rounded-full`}
+        // From 1280 px the name beside the initials, as Desktop.dc.html draws it ("AN Anya").
+        className={`${ICON_BUTTON} rounded-full xl:w-auto xl:max-w-[14rem] xl:gap-2 xl:pl-1.5 xl:pr-3`}
       >
-        <span aria-hidden className="flex h-8 w-8 items-center justify-center rounded-full bg-mint text-[12px] font-bold text-teal">
+        <span aria-hidden className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-mint text-[12px] font-bold text-teal">
           {initialsOf(name)}
+        </span>
+        <span aria-hidden data-account-name className="hidden min-w-0 truncate text-[13.5px] font-semibold xl:inline">
+          {name}
         </span>
       </button>
       {open && (

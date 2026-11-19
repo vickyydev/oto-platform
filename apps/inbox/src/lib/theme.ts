@@ -11,17 +11,12 @@ import { ApiError, api } from '@/api/client';
 
 export type Theme = 'light' | 'dark' | 'system';
 
-export const THEME_ORDER: readonly Theme[] = ['light', 'dark', 'system'];
-
 export function isTheme(value: unknown): value is Theme {
   return value === 'light' || value === 'dark' || value === 'system';
 }
 
-/** The toggle cycles light → dark → system → light. */
-export function nextTheme(theme: Theme): Theme {
-  const at = THEME_ORDER.indexOf(theme);
-  return THEME_ORDER[(at + 1) % THEME_ORDER.length] ?? 'light';
-}
+// The cycling toggle (`nextTheme`) went with the header's theme button: the
+// account menu offers the three themes by name (SCRUM-1016, AppBar `THEME_CHOICES`).
 
 /** Whether the page shows dark, given the preference and the device's answer. */
 export function resolvedDark(theme: Theme, systemDark: boolean): boolean {

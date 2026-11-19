@@ -84,12 +84,15 @@ export function StatsRow({
     </button>
   );
 
+  // On a tablet's list column a figure is 82 px wide: its label keeps one line
+  // there ("Handled today" broke over two, SCRUM-1016 review); a phone narrower
+  // than the drawn 390 px may still wrap it rather than clip it.
   const figure = (value: string, label: string, first = false) => (
     <span
-      className={`flex flex-col items-center justify-center gap-0.5 ${bar ? 'shrink-0 px-4' : 'min-w-0 flex-1 px-1'} ${first ? '' : 'border-l border-line'}`}
+      className={`flex flex-col items-center justify-center gap-0.5 ${bar ? 'shrink-0 px-4' : 'min-w-0 flex-1 px-1 md:px-0.5'} ${first ? '' : 'border-l border-line'}`}
     >
       <span className={`${bar ? 'text-[18px]' : 'text-[19px]'} font-extrabold leading-none tracking-[-0.02em] text-ink`}>{value}</span>
-      <span className={`text-center text-[11.5px] leading-tight text-ink-muted ${bar ? 'whitespace-nowrap' : ''}`}>{label}</span>
+      <span className={`text-center text-[11.5px] leading-tight text-ink-muted ${bar ? 'whitespace-nowrap' : 'md:whitespace-nowrap md:tracking-[-0.01em]'}`}>{label}</span>
     </span>
   );
 

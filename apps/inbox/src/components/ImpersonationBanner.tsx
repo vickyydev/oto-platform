@@ -33,7 +33,7 @@ export function ImpersonationBannerView({ mark, now }: { mark: ViewAsMark | null
   if (!mark) return null;
   return (
     <div role="status" aria-live="polite" data-testid="impersonation-banner"
-      className="fixed inset-x-0 top-0 z-[60] flex h-9 items-center justify-center gap-2 overflow-hidden whitespace-nowrap border-b border-amber-500 bg-amber-400 px-4 text-sm font-semibold text-black">
+      className="fixed inset-x-0 top-0 z-[60] flex h-9 items-center justify-center gap-2 overflow-hidden whitespace-nowrap border-b border-banner-line bg-banner px-4 text-sm font-semibold text-banner-ink">
       <Eye className="h-4 w-4 shrink-0" aria-hidden="true" />
       <span className="min-w-0 truncate">{viewAsLine(mark)}</span>
       <span className="shrink-0 tabular-nums">· ends in {timeLeft(mark.expiresAt, now)}</span>

@@ -36,9 +36,6 @@ export const BTN_ICON = `inline-flex h-11 w-11 shrink-0 items-center justify-cen
 export const INPUT =
   'min-h-12 w-full min-w-0 rounded-xl border border-field bg-card px-3 text-[15px] text-ink placeholder:text-ink-muted focus:border-ink focus:outline-none focus:ring-1 focus:ring-ink disabled:bg-band disabled:text-ink-muted md:min-h-10 md:text-[13.5px]';
 
-/** A text area on the field's look; its height is its rows. */
-export const TEXTAREA = `${INPUT} resize-y py-2.5`;
-
 /** A field's label over it. */
 export const LABEL = 'text-[13px] font-semibold text-ink';
 
