@@ -77,7 +77,6 @@ type Employee = {
   weeklyOffDays?: number[] | null;
   profilePhotoPath?: string | null;
   displayOrder?: number;
-  createdAt?: string | null;
   lastWorkingDay?: string | null;
   schedulingTransferInfo?: {
     transferredFromBranch: string;
@@ -1798,8 +1797,8 @@ function SchedulingPageInner() {
     if (activeData?.type === "employee" && active.id !== over.id) {
       const departmentId = activeData.departmentId;
       // SCRUM-1036: the order is worked out on the list as it is shown
-      // (displayOrder, the same tie-break), over the whole department so a
-      // search that hides some staff does not scramble them.
+      // (displayOrder; ties in the server's order, as drawn), over the whole
+      // department so a search that hides some staff does not scramble them.
       const view = employeeOrderViewRef.current;
       const shownIds = (view.byDepartment.get(departmentId || "unassigned") || [])
         .filter((e) => !(e as { isCasualWorker?: boolean }).isCasualWorker && !e.isPlannedRow)
