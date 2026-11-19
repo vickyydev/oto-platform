@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { BOX_CHECKIN_REFUSALS, type PickupView, type ReleaseView } from '@oto/shared';
 import { type PrepaidFoodReconciliation } from '@/lib/dropoff';
-import { FoodReconciliationSummary } from '@/components/shared/FoodReconciliationSummary';
+import { BandCreditRemaining, FoodReconciliationSummary } from '@/components/shared/FoodReconciliationSummary';
 import {
   pickupFromView,
   reconciliationFromWire,
@@ -196,6 +196,7 @@ export function MobileCheckOutView({
     () => (context?.reconciliation ? reconciliationFromWire(context.reconciliation) : null),
     [context?.reconciliation],
   );
+  const bandCreditTHB = context?.bandCreditSatang != null ? context.bandCreditSatang / 100 : null;
   // Required unless the box said photos are switched off; the platform never says so.
   const photosEnabled = context?.photosEnabled !== false;
   const policy = context?.prepaidPolicy ?? prepaidFoodPolicy;
@@ -551,8 +552,11 @@ export function MobileCheckOutView({
               <FoodReconciliationSummary
                 reconciliation={reconciliation}
                 policy={policy}
+                bandCreditTHB={bandCreditTHB}
               />
             )}
+            {/* SCRUM-1021 — a band with credit and no prepaid food (Eat & Play's own credit). */}
+            {reconciliation === null && (bandCreditTHB ?? 0) > 0 && <BandCreditRemaining remainingTHB={bandCreditTHB!} />}
           </>
         )}
       </div>
