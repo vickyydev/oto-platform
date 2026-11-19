@@ -56,6 +56,7 @@ import { apiMemberToMember } from '@/api/mappers';
 import { rebuildResumedSale } from '@/lib/resumeSale';
 import { bahtLabel, holdButtonReasons, partPaidShown, useHeldSaleDesk, type ResumedHold } from '@/lib/heldSales';
 import { HeldSaleDeskDialog, HeldSaleDeskPanel, HoldSaleButtons } from '@/components/till/HeldSales';
+import { PairedDisplaysDialog } from '@/components/till/PairedDisplays';
 import { lookupMember } from '@/api/members';
 import { type PlatformBooking, type RedeemOutcome, type ScannedBooking } from '@/api/bookings';
 import { announceBookingRedemption, redeemBookingOnPlatform, redeemedOutcome } from '@/lib/bookingRedemption';
@@ -2258,6 +2259,8 @@ export default function MobileTill() {
   // phone has no equivalent of.
   const displayOnline = (typeof navigator === 'undefined' || navigator.onLine !== false)
     && cart.quote.source === 'platform' && !cart.pending && !cart.error;
+  /** SCRUM-1041 — the list of this till's displays, each with its own Remove. */
+  const [displaysOpen, setDisplaysOpen] = useState(false);
   const linkedDisplay = useTicketDisplay(station?.stationId ?? null, {
     stage: displayStage.stage, step: displayStage.step, sessionKey: `${saleEpochRef.current}`,
     saleKey: saleKeyRef.current,
@@ -2771,8 +2774,17 @@ export default function MobileTill() {
           <span className="truncate">
             {`Display connected: ${linkedDisplay.connected.map((display) => display.name).join(', ')}`}
           </span>
+          {/* SCRUM-1041 — the displays paired to this till, each with its own Remove. */}
+          {!!linkedDisplay.paired?.length && (
+            <button type="button" onClick={() => setDisplaysOpen(true)} data-testid="paired-displays-open"
+              className="ml-auto shrink-0 rounded px-1.5 py-0.5 font-medium hover:bg-amber-500/20">
+              Displays ({linkedDisplay.paired.length})
+            </button>
+          )}
         </div>
       )}
+      <PairedDisplaysDialog open={displaysOpen} onOpenChange={setDisplaysOpen} displays={linkedDisplay.paired}
+        timeZone={branch.timezone} />
       {linkedDisplay.error && (
         <p role="status" className="shrink-0 bg-amber-100 px-3 py-1.5 text-xs text-amber-950">
           Display connection: {linkedDisplay.error} The team can continue using this screen.

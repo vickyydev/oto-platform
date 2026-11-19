@@ -156,6 +156,7 @@ import { collectDisplayConsentPhoto } from '@/api/consentPhoto';
 import { hasBridgeOrigin } from '@/api/bridge';
 import { closedOnBox, EXTRA_CREDIT_NEEDS_INTERNET, laneSale } from '@/api/boxSales';
 import { HeldSaleDeskDialog, HeldSaleDeskPanel, HoldSaleButtons } from '@/components/till/HeldSales';
+import { PairedDisplaysDialog } from '@/components/till/PairedDisplays';
 import { bahtLabel, holdButtonReasons, partPaidShown, useHeldSaleDesk, type ResumedHold } from '@/lib/heldSales';
 import type { CartQuoteState } from '@/lib/cartQuote';
 import { formatVoucherStamp } from '@/lib/tillVoucher';
@@ -585,6 +586,8 @@ export default function Till() {
     childNames: string[];
   } | null>(null);
   const [showCustomerDisplay, setShowCustomerDisplay] = useCustomerDisplayPref();
+  /** SCRUM-1041 — the list of this till's displays, each with its own Remove. */
+  const [displaysOpen, setDisplaysOpen] = useState(false);
   const [customerTheme] = useCustomerTheme();
   const [pendingPaymentMethod, setPendingPaymentMethod] = useState<string | null>(null);
 
@@ -4735,6 +4738,16 @@ export default function Till() {
           </span>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          {/* SCRUM-1041 — the displays paired to this till, each with its own Remove. */}
+          {!!linkedDisplay.paired?.length && <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-amber-800 hover:text-amber-900 dark:text-amber-300 dark:hover:text-amber-200 hover:bg-amber-500/20"
+            onClick={() => setDisplaysOpen(true)}
+            data-testid="paired-displays-open"
+          >
+            Displays ({linkedDisplay.paired.length})
+          </Button>}
           <Button
             variant="ghost"
             size="sm"
@@ -4747,6 +4760,8 @@ export default function Till() {
       </div>
 
       {linkedDisplay.error && <p role="status" className="shrink-0 bg-amber-100 px-4 py-2 text-sm text-amber-950">Display connection: {linkedDisplay.error} The team can continue using this screen.</p>}
+      <PairedDisplaysDialog open={displaysOpen} onOpenChange={setDisplaysOpen} displays={linkedDisplay.paired}
+        timeZone={branch.timezone} />
 
       <div className="contents" inert={step === 5 && (completionRetry !== null || !paymentStage.canBack)}>
         <StationHeader active="tickets" />
