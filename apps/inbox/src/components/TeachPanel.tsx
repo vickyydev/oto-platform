@@ -26,9 +26,9 @@ import { branchLabel, langLabel } from '@/lib/view';
 
 // The Assistant page's button styles (AssistantSettings.tsx keeps its own copy).
 const BUTTON =
-  'inline-flex items-center gap-1 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100 disabled:opacity-60';
+  'inline-flex items-center gap-1 rounded-md border border-line bg-card px-2 py-0.5 text-[11px] font-medium text-ink-soft hover:bg-wash hover:text-ink disabled:opacity-60';
 const PRIMARY =
-  'inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-[13px] font-medium text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white disabled:opacity-60';
+  'inline-flex items-center gap-1.5 rounded-lg bg-ink px-3 py-1.5 text-[13px] font-medium text-on-ink hover:bg-ink/90 disabled:opacity-60';
 
 /** "Not on your access" politely; every other refusal is the server's own sentence. */
 function said(err: unknown, fallback: string): string {
@@ -171,27 +171,27 @@ export function TeachPanel({ me, active = true, onTab }: { me: InboxMe; active?:
 
   return (
     <div className="mt-4">
-      <p className="text-[12.5px] text-slate-500 dark:text-slate-400">{TEACH_INTRO}</p>
+      <p className="text-[12.5px] text-ink-muted">{TEACH_INTRO}</p>
 
       <div
         ref={scrollRef}
-        className="mt-3 max-h-[60vh] min-h-[12rem] space-y-3 overflow-y-auto overflow-x-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/40 p-3"
+        className="mt-3 max-h-[60vh] min-h-[12rem] space-y-3 overflow-y-auto overflow-x-hidden rounded-xl border border-line bg-ground p-3"
       >
         {lines.length === 0 && !busy && (
-          <p className="py-6 text-center text-[12.5px] text-slate-400">
+          <p className="py-6 text-center text-[12.5px] text-ink-muted">
             For example: “If someone says they lost something, first ask which park they visited.”
           </p>
         )}
         {lines.map((l, i) =>
           l.role === 'user' ? (
             <div key={i} className="flex justify-end">
-              <p className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-br-md bg-slate-900 px-3 py-2 text-[13px] text-white dark:bg-slate-100 dark:text-slate-900">
+              <p className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-br-md bg-ink px-3 py-2 text-[13px] text-on-ink">
                 {l.text}
               </p>
             </div>
           ) : (
             <div key={i} className="flex flex-col items-start gap-1.5">
-              <p className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-bl-md bg-slate-100 px-3 py-2 text-[13px] text-slate-800 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-100 dark:ring-slate-700">
+              <p className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-bl-md bg-band px-3 py-2 text-[13px] text-ink ring-1 ring-line">
                 {l.text}
               </p>
               {l.cards?.map((c) => (
@@ -215,7 +215,7 @@ export function TeachPanel({ me, active = true, onTab }: { me: InboxMe; active?:
         )}
         {busy && (
           <div className="flex justify-start">
-            <p className="inline-flex items-center gap-1.5 rounded-2xl rounded-bl-md bg-slate-100 px-3 py-2 text-[12.5px] text-slate-500 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:ring-slate-700">
+            <p className="inline-flex items-center gap-1.5 rounded-2xl rounded-bl-md bg-band px-3 py-2 text-[12.5px] text-ink-muted ring-1 ring-line">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
               Thinking…
             </p>
@@ -241,7 +241,7 @@ export function TeachPanel({ me, active = true, onTab }: { me: InboxMe; active?:
           Send
         </button>
       </div>
-      <p className="mt-1 text-[11px] text-slate-400">Enter sends; Shift+Enter starts a new line.</p>
+      <p className="mt-1 text-[11px] text-ink-muted">Enter sends; Shift+Enter starts a new line.</p>
 
       <TeachApproveConfirm
         me={me}
@@ -323,9 +323,9 @@ export function TeachCardView({
   const readable = content !== undefined && content.kind !== 'gone';
   const canApprove = !approved && readable && (content.kind === 'fact' ? content.entry.canManage : content.rule.canManage);
   return (
-    <div className="w-full max-w-[85%] min-w-0 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-2.5">
+    <div className="w-full max-w-[85%] min-w-0 rounded-xl border border-line bg-card p-2.5">
       <div className="flex flex-wrap items-center gap-1.5">
-        <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-1.5 text-[10px] font-semibold text-slate-600 dark:text-slate-300">
+        <span className="rounded-full bg-band px-1.5 text-[10px] font-semibold text-ink-soft">
           {card.kind === 'fact' ? 'Fact' : 'Rule'}
         </span>
         {content?.kind !== 'gone' && (
@@ -335,30 +335,30 @@ export function TeachCardView({
         )}
         {content?.kind === 'fact' && (
           <>
-            <span className="min-w-0 break-all font-mono text-[11px] text-slate-700 dark:text-slate-200">{content.entry.key}</span>
-            <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-1.5 text-[10px] font-semibold text-slate-600 dark:text-slate-300">
+            <span className="min-w-0 break-all font-mono text-[11px] text-ink">{content.entry.key}</span>
+            <span className="rounded-full bg-band px-1.5 text-[10px] font-semibold text-ink-soft">
               {langLabel(content.entry.language)}
             </span>
-            <span className="text-[11px] text-slate-500 dark:text-slate-400">{parkOf(content.entry.branchId, me)}</span>
+            <span className="text-[11px] text-ink-muted">{parkOf(content.entry.branchId, me)}</span>
           </>
         )}
         {content?.kind === 'rule' && (
           <>
-            <span className="text-[11.5px] font-semibold text-slate-800 dark:text-slate-100">{ruleIntentLabel(content.rule.intent)}</span>
-            <span className="text-[11px] text-slate-500 dark:text-slate-400">{parkOf(content.rule.branchId, me)}</span>
+            <span className="text-[11.5px] font-semibold text-ink">{ruleIntentLabel(content.rule.intent)}</span>
+            <span className="text-[11px] text-ink-muted">{parkOf(content.rule.branchId, me)}</span>
           </>
         )}
       </div>
 
       {content?.kind === 'fact' && (
         <>
-          <p className="mt-1.5 break-words text-[12.5px] font-medium text-slate-800 dark:text-slate-200">{content.entry.question}</p>
-          <p className="mt-1 whitespace-pre-line break-words text-[12.5px] text-slate-600 dark:text-slate-300">{content.entry.body}</p>
+          <p className="mt-1.5 break-words text-[12.5px] font-medium text-ink">{content.entry.question}</p>
+          <p className="mt-1 whitespace-pre-line break-words text-[12.5px] text-ink-soft">{content.entry.body}</p>
         </>
       )}
       {content?.kind === 'rule' && (
         <>
-          <p className="mt-1.5 whitespace-pre-line break-words text-[12.5px] text-slate-700 dark:text-slate-200">{content.rule.instruction}</p>
+          <p className="mt-1.5 whitespace-pre-line break-words text-[12.5px] text-ink">{content.rule.instruction}</p>
           {content.rule.askFirst ? (
             <div className="mt-1 break-words rounded-lg bg-indigo-50/60 dark:bg-indigo-500/10 px-2 py-1 text-[12.5px] text-indigo-900 dark:text-indigo-200">
               <p>
@@ -373,14 +373,14 @@ export function TeachCardView({
               ))}
             </div>
           ) : (
-            <p className="mt-1 text-[11.5px] text-slate-500 dark:text-slate-400">Asks nothing first.</p>
+            <p className="mt-1 text-[11.5px] text-ink-muted">Asks nothing first.</p>
           )}
         </>
       )}
-      {!readable && <p className="mt-1 break-words text-[12.5px] text-slate-800 dark:text-slate-200">{card.title}</p>}
-      {content?.kind === 'gone' && <p className="mt-1 text-[11.5px] text-slate-500 dark:text-slate-400">{TEACH_CARD_GONE}</p>}
+      {!readable && <p className="mt-1 break-words text-[12.5px] text-ink">{card.title}</p>}
+      {content?.kind === 'gone' && <p className="mt-1 text-[11.5px] text-ink-muted">{TEACH_CARD_GONE}</p>}
       {content === undefined && !readError && (
-        <p className="mt-1 inline-flex items-center gap-1 text-[11.5px] text-slate-400">
+        <p className="mt-1 inline-flex items-center gap-1 text-[11.5px] text-ink-muted">
           <Loader2 className="h-3 w-3 animate-spin" /> Reading the whole draft…
         </p>
       )}
@@ -404,15 +404,15 @@ export function TeachCardView({
 /** A dry run: what the assistant would do now with one customer message (decision and checks), and what it leaves out. */
 export function DryRun({ run }: { run: TeachDryRun }) {
   return (
-    <div className="w-full max-w-[85%] min-w-0 rounded-xl border border-indigo-200 dark:border-indigo-500/30 bg-white dark:bg-slate-900 p-2.5">
+    <div className="w-full max-w-[85%] min-w-0 rounded-xl border border-indigo-200 dark:border-indigo-500/30 bg-card p-2.5">
       <Eyebrow className="flex items-center gap-1.5">
         <FlaskConical className="h-3 w-3" />
         Dry run · what the assistant would do now
       </Eyebrow>
-      <p className="mt-1.5 break-words text-[12.5px] italic text-slate-600 dark:text-slate-300">“{run.message}”</p>
-      <p className="mt-1 text-[12.5px] text-slate-800 dark:text-slate-200">
+      <p className="mt-1.5 break-words text-[12.5px] italic text-ink-soft">“{run.message}”</p>
+      <p className="mt-1 text-[12.5px] text-ink">
         <span className="font-semibold">{TEACH_OUTCOME_LABEL[run.outcome]}</span>
-        {run.intent && <span className="text-slate-500 dark:text-slate-400"> · {ruleIntentLabel(run.intent)}</span>}
+        {run.intent && <span className="text-ink-muted"> · {ruleIntentLabel(run.intent)}</span>}
         {run.ruleFired && <span className="text-indigo-700 dark:text-indigo-300"> · A rule fired</span>}
       </p>
       {run.bubbles.map((b, i) => (
@@ -420,7 +420,7 @@ export function DryRun({ run }: { run: TeachDryRun }) {
           {b}
         </p>
       ))}
-      <p className="mt-1.5 text-[11px] text-slate-400">{TEACH_DRY_RUN_NOTE}</p>
+      <p className="mt-1.5 text-[11px] text-ink-muted">{TEACH_DRY_RUN_NOTE}</p>
     </div>
   );
 }

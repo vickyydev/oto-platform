@@ -136,7 +136,7 @@ export function DictateButton({ dictation, disabled }: { dictation: Dictation; d
       aria-label={busy ? DICTATION_TRANSCRIBING : 'Dictate a reply'}
       title={DICTATION_TOOLTIP}
       data-testid="dictation-start"
-      className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 disabled:cursor-not-allowed disabled:opacity-60"
+      className="text-ink-muted hover:text-ink-soft disabled:cursor-not-allowed disabled:opacity-60"
     >
       {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mic className="h-4 w-4" />}
     </button>
@@ -150,7 +150,7 @@ export function DictationLine({ dictation }: { dictation: Dictation }) {
       <p
         role="status"
         data-testid="dictation-line"
-        className="mt-1.5 flex items-center gap-2 px-1 text-[11.5px] text-slate-500 dark:text-slate-400"
+        className="mt-1.5 flex items-center gap-2 px-1 text-[11.5px] text-ink-muted"
       >
         <span aria-hidden="true" className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-rose-500" />
         <span className="shrink-0 font-medium tabular-nums text-rose-600 dark:text-rose-400">
@@ -162,7 +162,7 @@ export function DictationLine({ dictation }: { dictation: Dictation }) {
   }
   if (dictation.phase === 'starting' || dictation.phase === 'transcribing') {
     return (
-      <p role="status" data-testid="dictation-line" className="mt-1.5 flex items-center gap-2 px-1 text-[11.5px] text-slate-500 dark:text-slate-400">
+      <p role="status" data-testid="dictation-line" className="mt-1.5 flex items-center gap-2 px-1 text-[11.5px] text-ink-muted">
         <Loader2 className="h-3 w-3 shrink-0 animate-spin" />
         {dictation.phase === 'starting' ? 'Opening the microphone…' : DICTATION_TRANSCRIBING}
       </p>

@@ -10,11 +10,11 @@ import { clockOf } from '@/lib/dictation';
 import { CATEGORY_LABEL, CHANNEL_LABEL, LANGUAGE_OPTIONS } from '@/lib/view';
 
 const FIELD =
-  'w-full min-w-0 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2.5 py-1.5 text-[12.5px] text-slate-800 dark:text-slate-200 focus:border-slate-300 dark:focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200 dark:focus:ring-slate-600';
+  'w-full min-w-0 rounded-lg border border-line bg-card px-2.5 py-1.5 text-[12.5px] text-ink focus:border-field focus:outline-none focus:ring-2 focus:ring-field';
 const PRIMARY_BUTTON =
-  'inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-[12.5px] font-medium text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white disabled:opacity-60';
+  'inline-flex items-center gap-1.5 rounded-lg bg-ink px-3 py-1.5 text-[12.5px] font-medium text-on-ink hover:bg-ink/90 disabled:opacity-60';
 const RECORD_BUTTON =
-  'inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-1.5 text-[12.5px] font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60';
+  'inline-flex items-center gap-1.5 rounded-lg border border-line bg-card px-3 py-1.5 text-[12.5px] font-medium text-ink hover:bg-wash disabled:opacity-60';
 const STOP_BUTTON =
   'inline-flex items-center gap-1.5 rounded-lg border border-rose-200 dark:border-rose-500/30 bg-rose-50 dark:bg-rose-500/15 px-3 py-1.5 text-[12.5px] font-medium text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-500/25';
 
@@ -218,7 +218,7 @@ export function SimulatorBody({
   return (
       <div className="space-y-5">
         <Section title="Demo conversations">
-          <p className="text-[12.5px] text-slate-500 dark:text-slate-400">
+          <p className="text-[12.5px] text-ink-muted">
             Plays the ten demo threads, the six demo staff and the four simulator channel accounts. Playing it again
             writes nothing.
           </p>
@@ -230,7 +230,7 @@ export function SimulatorBody({
 
         <Section title="A customer writes">
           {accounts.length === 0 ? (
-            <p className="text-[12.5px] text-slate-500 dark:text-slate-400">No simulator channel account yet — play the demo first.</p>
+            <p className="text-[12.5px] text-ink-muted">No simulator channel account yet — play the demo first.</p>
           ) : (
             <form onSubmit={sendInbound} className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <Field label="Channel account" wide>
@@ -271,7 +271,7 @@ export function SimulatorBody({
               <Field label="Message" wide>
                 <textarea value={text} onChange={(e) => setText(e.target.value)} rows={3} className={`${FIELD} resize-y`} />
               </Field>
-              <div className="flex min-w-0 flex-col gap-1 text-[11px] font-medium text-slate-500 dark:text-slate-400 sm:col-span-2">
+              <div className="flex min-w-0 flex-col gap-1 text-[11px] font-medium text-ink-muted sm:col-span-2">
                 <label className="flex min-w-0 flex-col gap-1">
                   {recorder.supported
                     ? 'Voice note (optional): an audio file or a recording, played as a WhatsApp voice message'
@@ -317,7 +317,7 @@ export function SimulatorBody({
                     </span>
                   )}
                   {voice && (
-                    <span data-testid="simulator-voice-name" className="inline-flex items-center gap-1 text-[11.5px] font-normal text-slate-600 dark:text-slate-300">
+                    <span data-testid="simulator-voice-name" className="inline-flex items-center gap-1 text-[11.5px] font-normal text-ink-soft">
                       <Mic className="h-3 w-3" /> {voice.name}
                       <button
                         type="button"
@@ -353,10 +353,10 @@ export function SimulatorBody({
 
         <Section title="Delivery receipts">
           {accounts.length === 0 ? (
-            <p className="text-[12.5px] text-slate-500 dark:text-slate-400">No simulator channel account yet — play the demo first.</p>
+            <p className="text-[12.5px] text-ink-muted">No simulator channel account yet — play the demo first.</p>
           ) : (
             <>
-              <p className="text-[12.5px] text-slate-500 dark:text-slate-400">
+              <p className="text-[12.5px] text-ink-muted">
                 Marks the replies sent on {account ? accountLabel(account) : 'the account'} delivered, then read.
               </p>
               <button type="button" onClick={pushReceipts} disabled={busy !== null} className={`mt-2 ${PRIMARY_BUTTON}`}>
@@ -417,7 +417,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 
 function Field({ label, wide = false, children }: { label: string; wide?: boolean; children: ReactNode }) {
   return (
-    <label className={`flex min-w-0 flex-col gap-1 text-[11px] font-medium text-slate-500 dark:text-slate-400 ${wide ? 'sm:col-span-2' : ''}`}>
+    <label className={`flex min-w-0 flex-col gap-1 text-[11px] font-medium text-ink-muted ${wide ? 'sm:col-span-2' : ''}`}>
       {label}
       {children}
     </label>

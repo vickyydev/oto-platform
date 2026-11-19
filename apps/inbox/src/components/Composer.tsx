@@ -177,8 +177,8 @@ export function Composer({
 
   if (!conv.canReply) {
     return (
-      <div className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3">
-        <div className="flex items-center gap-2 rounded-lg bg-slate-50 dark:bg-slate-950/60 px-3 py-2 text-[12.5px] text-slate-500 dark:text-slate-400">
+      <div className="border-t border-line bg-card px-4 py-3">
+        <div className="flex items-center gap-2 rounded-lg bg-ground px-3 py-2 text-[12.5px] text-ink-muted">
           <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
           Notices from the till — this thread cannot take a reply.
         </div>
@@ -188,8 +188,8 @@ export function Composer({
 
   if (conv.status === 'handled') {
     return (
-      <div className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3">
-        <div className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 dark:bg-slate-950/60 px-3 py-2 text-[12.5px] text-slate-500 dark:text-slate-400">
+      <div className="border-t border-line bg-card px-4 py-3">
+        <div className="flex items-center justify-between gap-2 rounded-lg bg-ground px-3 py-2 text-[12.5px] text-ink-muted">
           <span className="flex items-center gap-2">
             <AlertTriangle className="h-3.5 w-3.5 shrink-0" /> Handled — composer disabled
           </span>
@@ -198,14 +198,14 @@ export function Composer({
               type="button"
               onClick={onReopen}
               disabled={reopening}
-              className="inline-flex items-center gap-1 text-[12px] font-medium text-slate-700 dark:text-slate-200 hover:underline disabled:opacity-60"
+              className="inline-flex items-center gap-1 text-[12px] font-medium text-ink hover:underline disabled:opacity-60"
             >
               {reopening && <Loader2 className="h-3 w-3 animate-spin" />}
               Reopen
             </button>
           ) : (
             // Reopening is a manager's (the rails' rights); the screen said nothing (test night U7).
-            <span className="text-[12px] text-slate-500 dark:text-slate-400">{MANAGER_REOPENS}</span>
+            <span className="text-[12px] text-ink-muted">{MANAGER_REOPENS}</span>
           )}
         </div>
       </div>
@@ -252,18 +252,18 @@ export function Composer({
   // at the top, the other languages folded away (test night U1).
   const offered = offeredTemplates(refused?.details?.qualifyingTemplates ?? [], conv.language);
   const offer = (t: QualifyingTemplate) => (
-    <li key={t.id} className="flex min-w-0 items-start gap-2 rounded-md bg-white/70 dark:bg-slate-900/60 px-2 py-1.5 ring-1 ring-amber-100 dark:ring-amber-500/25">
+    <li key={t.id} className="flex min-w-0 items-start gap-2 rounded-md bg-card/70 px-2 py-1.5 ring-1 ring-amber-100 dark:ring-amber-500/25">
       <span className="min-w-0 flex-1">
-        <span className="flex flex-wrap items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+        <span className="flex flex-wrap items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-muted">
           {t.key.replace(/[_.]/g, ' ')} · {langLabel(t.language)}
           {needsTranslation(t) && <TranslationNote />}
         </span>
-        <span className="block truncate text-[12px] text-slate-700 dark:text-slate-200">{t.body}</span>
+        <span className="block truncate text-[12px] text-ink">{t.body}</span>
       </span>
       <button
         type="button"
         onClick={() => pickTemplate({ id: t.id, key: t.key, language: t.language, body: t.body, needsTranslation: needsTranslation(t) })}
-        className="shrink-0 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2 py-0.5 text-[11px] font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+        className="shrink-0 rounded-md border border-line bg-card px-2 py-0.5 text-[11px] font-medium text-ink hover:bg-wash"
       >
         Insert
       </button>
@@ -271,7 +271,7 @@ export function Composer({
   );
 
   return (
-    <div className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3">
+    <div className="border-t border-line bg-card px-4 py-3">
       {refused && (
         <div
           role="alert"
@@ -331,13 +331,13 @@ export function Composer({
               <X className="h-3.5 w-3.5" />
             </button>
           </div>
-          <p className="mt-1 whitespace-pre-line break-words text-[12.5px] text-slate-700 dark:text-slate-200">
+          <p className="mt-1 whitespace-pre-line break-words text-[12.5px] text-ink">
             {renderTemplate(template.body, Object.fromEntries(Object.entries(values).filter(([, v]) => v.trim()))).text}
           </p>
           {variables.length > 0 && (
             <div className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
               {variables.map((v) => (
-                <label key={v} className="flex min-w-0 items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                <label key={v} className="flex min-w-0 items-center gap-1.5 text-[11px] text-ink-muted">
                   <span className="shrink-0 font-mono">{v}</span>
                   <input
                     value={values[v] ?? ''}
@@ -345,7 +345,7 @@ export function Composer({
                       touch();
                       setValues((o) => ({ ...o, [v]: e.target.value }));
                     }}
-                    className="min-w-0 flex-1 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2 py-0.5 text-[12px] text-slate-800 dark:text-slate-200 focus:border-slate-300 dark:focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200 dark:focus:ring-slate-600"
+                    className="min-w-0 flex-1 rounded-md border border-line bg-card px-2 py-0.5 text-[12px] text-ink focus:border-field focus:outline-none focus:ring-2 focus:ring-field"
                   />
                 </label>
               ))}
@@ -354,7 +354,7 @@ export function Composer({
         </div>
       )}
 
-      <form onSubmit={(e) => void send(e)} className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 px-3 py-2">
+      <form onSubmit={(e) => void send(e)} className="flex items-center gap-2 rounded-xl border border-line bg-ground px-3 py-2">
         <ComposerExtra icon={Smile} label="Emoji" />
         <ComposerExtra icon={Paperclip} label="Attach a file" />
         <button
@@ -362,7 +362,7 @@ export function Composer({
           onClick={onOpenTemplates}
           aria-label="Templates"
           title="Templates"
-          className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+          className="text-ink-muted hover:text-ink-soft"
         >
           <FileText className="h-4 w-4" />
         </button>
@@ -384,13 +384,13 @@ export function Composer({
           style={{ lineHeight: `${COMPOSER_LINE_PX}px` }}
           aria-label="Reply"
           placeholder={template ? 'Sending the template above' : `Reply as ${me.name ?? 'you'}…`}
-          className="min-w-0 flex-1 resize-none bg-transparent text-[13px] placeholder:text-slate-400 focus:outline-none disabled:cursor-not-allowed"
+          className="min-w-0 flex-1 resize-none bg-transparent text-[13px] placeholder:text-ink-muted focus:outline-none disabled:cursor-not-allowed"
         />
         <button
           type="submit"
           disabled={!canSend}
           aria-label="Send"
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white disabled:opacity-50"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ink text-on-ink hover:bg-ink/90 disabled:opacity-50"
         >
           {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
         </button>
@@ -403,7 +403,7 @@ export function Composer({
 /** The prototype's emoji and attachment buttons: there, but the reply route takes words and templates only. */
 function ComposerExtra({ icon: Icon, label }: { icon: LucideIcon; label: string }) {
   return (
-    <PendingControl reason={COMPOSER_EXTRAS_REASON} label={label} className="text-slate-400">
+    <PendingControl reason={COMPOSER_EXTRAS_REASON} label={label} className="text-ink-muted">
       <Icon className="h-4 w-4" />
     </PendingControl>
   );

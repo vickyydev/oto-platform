@@ -88,7 +88,7 @@ export function Dashboard({
         icon={Clock3}
         label="Avg response"
         value={data ? durationLabel(data.averageFirstResponseSeconds) : '—'}
-        tint="text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800"
+        tint="text-ink bg-band"
         hint={scope ?? undefined}
       />
       <CategoryMixCard
@@ -127,7 +127,7 @@ export function DashboardStrip({
 }) {
   if (error) return null;
   return (
-    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-500 dark:text-slate-400 lg:hidden" aria-busy={data === null}>
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-ink-muted lg:hidden" aria-busy={data === null}>
       <button
         type="button"
         onClick={onToggleUnanswered}
@@ -141,11 +141,11 @@ export function DashboardStrip({
         Unanswered {v(data?.unanswered)}
       </button>
       <span>
-        Active <span className="font-semibold text-slate-700 dark:text-slate-200">{v(data?.active)}</span>
+        Active <span className="font-semibold text-ink">{v(data?.active)}</span>
       </span>
       <span aria-hidden>·</span>
       <span>
-        Avg response <span className="font-semibold text-slate-700 dark:text-slate-200">{data ? durationLabel(data.averageFirstResponseSeconds) : '—'}</span>
+        Avg response <span className="font-semibold text-ink">{data ? durationLabel(data.averageFirstResponseSeconds) : '—'}</span>
       </span>
     </div>
   );

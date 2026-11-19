@@ -1,9 +1,18 @@
 // SCRUM-653 — the dark palette, smoke-pinned: the key surfaces rendered to
-// markup (Node, no DOM, as the test-night file renders) carry dark: variants,
-// so a refactor that drops the inverted classes fails here rather than on
-// the floor. Covered: the shell's rail and header menu, a conversation row
-// with its search and pills, the bubbles (customer, staff, AI, shadow), the
-// composer with its send, the dashboard cards, and a dialog.
+// markup (Node, no DOM, as the test-night file renders).
+//
+// SCRUM-1016 rewrote these pins for the OTO tokens. A surface no longer
+// carries a light class and a `dark:` class side by side: it names a token
+// (`bg-card`, `text-ink`, `border-line`, ...) whose light and dark values
+// both live in src/index.css and swap with the `dark` class on <html>
+// (tokens-1016.test.ts holds every pair's contrast in both themes). So a
+// surface is pinned two ways: it wears the tokens, and it carries no raw
+// neutral palette class — a stray `bg-white` or `slate-*` would stay light
+// in the dark theme, which is exactly the regression these pins once caught
+// with `dark:` variants. Accent hues not yet moved to tokens keep their
+// `dark:` pins. Covered: the shell's rail and header menu, a conversation
+// row with its search and pills, the bubbles (customer, staff, AI, shadow),
+// the composer with its send, the dashboard cards, and a dialog.
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
@@ -89,23 +98,30 @@ const msg = (over: Partial<Message>): Message => ({
 const now = new Date('2026-10-22T03:00:00.000Z');
 const noop = () => undefined;
 
+/** A neutral palette class that would not follow the theme: slate in any shade, or white as a surface. */
+const RAW_NEUTRAL = /(?:^|[\s"'])(?:[a-z-]+:)*(?:bg|text|border|ring|divide|decoration)-slate-\d+|(?:^|[\s"'])(?:[a-z-]+:)*(?:bg|border|ring)-white\b/;
+
 describe('the dark palette on the key surfaces', () => {
-  it('the workspace shell: the rail inverts its ground, tabs and count pills', () => {
+  it('the workspace shell: the rail stands on the ground token, its tabs and count pills on card and ink', () => {
     const html = renderToStaticMarkup(
       createElement(Rail, { me, tab: 'team', counts: { team: 3 }, filters: EMPTY_FILTERS, onTab: noop, onFilters: noop }),
     );
-    expect(html).toContain('dark:bg-slate-950/40');
-    expect(html).toContain('dark:border-slate-800');
-    expect(html).toContain('dark:text-slate-100');
+    expect(html).toContain('bg-ground');
+    expect(html).toContain('border-line');
+    expect(html).toContain('text-ink');
+    expect(html).toContain('bg-ink text-on-ink'); // the active tab's count, inverted in both themes
+    expect(html).not.toMatch(RAW_NEUTRAL);
   });
 
-  it('the header: the settings menu card inverts', () => {
+  it('the header: the settings menu card is a token card', () => {
     const html = renderToStaticMarkup(createElement(SettingsMenuItems, { me, onChoose: noop }));
-    expect(html).toContain('dark:bg-slate-900');
-    expect(html).toContain('dark:hover:bg-slate-800');
+    expect(html).toContain('bg-card');
+    expect(html).toContain('border-line');
+    expect(html).toContain('hover:bg-wash');
+    expect(html).not.toMatch(RAW_NEUTRAL);
   });
 
-  it('a list row: ground, name ink, preview and the unanswered chip invert', () => {
+  it('a list row: name ink and the search on tokens; selection and the staff-needed label keep their dark variants', () => {
     const html = renderToStaticMarkup(
       createElement(ConversationList, {
         me,
@@ -128,20 +144,25 @@ describe('the dark palette on the key surfaces', () => {
         onMore: noop,
       }),
     );
+    expect(html).toContain('text-ink'); // the contact's name
+    expect(html).toContain('border-line'); // search and pills
     expect(html).toContain('dark:bg-emerald-950'); // selection stays distinct from unread
-    expect(html).toContain('dark:text-slate-100'); // the contact's name
-    expect(html).toContain('dark:ring-slate-700'); // search and pills
-    expect(html).toContain('dark:bg-amber-950'); // staff-needed label uses the accessible OTO palette
+    expect(html).toContain('dark:bg-amber-950'); // staff-needed label uses the accessible palette
     expect(html).toContain('dark:text-amber-100');
+    expect(html).not.toMatch(RAW_NEUTRAL);
   });
 
-  it('the bubbles: customer white to slate-800, staff tuned, AI indigo tuned, shadow dashed indigo', () => {
+  it('the bubbles: customer and staff on tokens, AI indigo tuned, shadow dashed indigo', () => {
     const customer = renderToStaticMarkup(createElement(MessageBubble, { m: msg({}), me, now }));
-    expect(customer).toContain('bg-white dark:bg-slate-800');
+    expect(customer).toContain('bg-card text-ink ring-1 ring-line');
+    expect(customer).not.toMatch(RAW_NEUTRAL);
     const staff = renderToStaticMarkup(
       createElement(MessageBubble, { m: msg({ direction: 'outbound', authorKind: 'staff', authorName: 'Demo Anya' }), me, now }),
     );
-    expect(staff).toContain('bg-slate-900 text-white dark:bg-slate-700');
+    // Dark in both themes (brown, then the till's navy), never inverted.
+    expect(staff).toContain('bg-staff text-on-staff');
+    expect(staff).toContain('text-on-staff/75'); // its time and ticks
+    expect(staff).not.toMatch(RAW_NEUTRAL);
     const ai = renderToStaticMarkup(createElement(MessageBubble, { m: msg({ direction: 'outbound', authorKind: 'ai' }), me, now }));
     expect(ai).toContain('dark:bg-indigo-500/15');
     expect(ai).toContain('dark:text-indigo-200');
@@ -150,16 +171,17 @@ describe('the dark palette on the key surfaces', () => {
     expect(shadow).toContain('dark:bg-indigo-500/10');
   });
 
-  it('the composer: the bar, the field and the send invert', () => {
+  it('the composer: the bar is a card, the field a ground well, the send inverted ink', () => {
     const html = renderToStaticMarkup(
       createElement(Composer, { conv: row, me, inserted: null, onOpenTemplates: noop, onSent: noop, onReopen: noop, reopening: false }),
     );
-    expect(html).toContain('dark:bg-slate-900'); // the bar
-    expect(html).toContain('dark:bg-slate-950/60'); // the field's well
-    expect(html).toContain('dark:bg-slate-100 dark:text-slate-900'); // the send, inverted
+    expect(html).toContain('border-line bg-card'); // the bar
+    expect(html).toContain('bg-ground'); // the field's well
+    expect(html).toContain('bg-ink text-on-ink'); // the send
+    expect(html).not.toMatch(RAW_NEUTRAL);
   });
 
-  it('the dashboard: the cards and their accent tints invert', () => {
+  it('the dashboard: the cards on tokens, their accent tints still inverting', () => {
     const data: DashboardData = {
       newToday: 1,
       unanswered: 2,
@@ -176,17 +198,19 @@ describe('the dark palette on the key surfaces', () => {
     const html = renderToStaticMarkup(
       createElement(Dashboard, { data, error: null, unansweredOnly: false, onToggleUnanswered: noop }),
     );
-    expect(html).toContain('dark:bg-slate-900'); // the card ground
+    expect(html).toContain('bg-card'); // the card ground
     expect(html).toContain('dark:bg-rose-500/15'); // the unanswered tint
     expect(html).toContain('dark:bg-emerald-500/15'); // handled today
+    expect(html).not.toMatch(RAW_NEUTRAL);
   });
 
-  it('a dialog: the card, header rule and close control invert', () => {
+  it('a dialog: the scrim, the card, the header rule and the close control on tokens', () => {
     const html = renderToStaticMarkup(
       createElement(Dialog, { open: true, onClose: noop, icon: MessagesSquare, title: 'A dialog', children: 'body' }),
     );
-    expect(html).toContain('dark:bg-slate-950/60'); // the overlay
-    expect(html).toContain('dark:bg-slate-900'); // the card
-    expect(html).toContain('dark:border-slate-800');
+    expect(html).toContain('bg-scrim'); // the overlay
+    expect(html).toContain('bg-card'); // the card
+    expect(html).toContain('border-line-soft');
+    expect(html).not.toMatch(RAW_NEUTRAL);
   });
 });

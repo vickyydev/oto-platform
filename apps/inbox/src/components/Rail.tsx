@@ -52,13 +52,13 @@ export function viewerRoleLabel(me: Pick<InboxMe, 'roles' | 'teams'>): string {
 
 /** The row button the rail's tabs are (:1418-1438), shared by the named views. */
 const RAIL_ITEM = 'mb-0.5 flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left text-[13px] transition';
-const RAIL_ITEM_ON = 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm ring-1 ring-slate-200 dark:ring-slate-700';
-const RAIL_ITEM_OFF = 'text-slate-600 dark:text-slate-300 hover:bg-white/70 dark:hover:bg-slate-800/70';
+const RAIL_ITEM_ON = 'bg-card text-ink shadow-sm ring-1 ring-line';
+const RAIL_ITEM_OFF = 'text-ink-soft hover:bg-card/70';
 
 /** The rail's section heading: the Filters eyebrow (:1442-1444). */
 function RailHeading({ icon: Icon, children }: { icon: LucideIcon; children: ReactNode }) {
   return (
-    <div className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+    <div className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-muted">
       <Icon className="h-3 w-3" /> {children}
     </div>
   );
@@ -68,7 +68,7 @@ function RailHeading({ icon: Icon, children }: { icon: LucideIcon; children: Rea
 function ChipRow({ icon: Icon, title, label, children }: { icon: LucideIcon; title: string; label: string; children: ReactNode }) {
   return (
     <div role="group" aria-label={label} className="mb-2.5 last:mb-0">
-      <div className="mb-1 flex items-center gap-1 text-[10px] font-medium text-slate-500 dark:text-slate-400">
+      <div className="mb-1 flex items-center gap-1 text-[10px] font-medium text-ink-muted">
         <Icon className="h-3 w-3" /> {title}
       </div>
       <div className="flex flex-wrap gap-1">{children}</div>
@@ -176,11 +176,11 @@ export function InboxViews({
             className={`${RAIL_ITEM} ${active ? RAIL_ITEM_ON : RAIL_ITEM_OFF}`}
           >
             <span className="flex min-w-0 items-center gap-2">
-              <Icon className={`h-4 w-4 shrink-0 ${active ? 'text-slate-900 dark:text-slate-100' : 'text-slate-400'}`} />
+              <Icon className={`h-4 w-4 shrink-0 ${active ? 'text-ink' : 'text-ink-muted'}`} />
               <span className="truncate">{v.label}</span>
             </span>
             {active && at.modified && (
-              <span className="shrink-0 text-[10px] font-medium italic text-slate-400">Filtered</span>
+              <span className="shrink-0 text-[10px] font-medium italic text-ink-muted">Filtered</span>
             )}
           </button>
         );
@@ -209,18 +209,18 @@ export function Rail({
 }) {
   const name = me.name ?? 'You';
   return (
-    <aside className="hidden min-h-0 flex-col border-r border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/40 lg:flex">
-      <div className="border-b border-slate-200 dark:border-slate-800 px-4 py-3">
+    <aside className="hidden min-h-0 flex-col border-r border-line bg-ground lg:flex">
+      <div className="border-b border-line px-4 py-3">
         <Eyebrow>Viewing as</Eyebrow>
         <div className="mt-1 flex items-center gap-2">
           <Avatar
             initials={initialsOf(name)}
-            tint={me.roles.includes('owner') ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900' : tintFor(me.accountId)}
+            tint={me.roles.includes('owner') ? 'bg-ink text-on-ink' : tintFor(me.accountId)}
             size={28}
           />
           <div className="min-w-0">
-            <div className="truncate text-[13px] font-semibold text-slate-900 dark:text-slate-100">{name}</div>
-            <div className="truncate text-[11px] text-slate-500 dark:text-slate-400">{viewerRoleLabel(me)}</div>
+            <div className="truncate text-[13px] font-semibold text-ink">{name}</div>
+            <div className="truncate text-[11px] text-ink-muted">{viewerRoleLabel(me)}</div>
           </div>
         </div>
       </div>
@@ -237,14 +237,14 @@ export function Rail({
               className={`${RAIL_ITEM} ${active ? RAIL_ITEM_ON : RAIL_ITEM_OFF}`}
             >
               <span className="flex items-center gap-2">
-                <Icon className={`h-4 w-4 ${active ? 'text-slate-900 dark:text-slate-100' : 'text-slate-400'}`} />
+                <Icon className={`h-4 w-4 ${active ? 'text-ink' : 'text-ink-muted'}`} />
                 {TAB_LABEL[t]}
               </span>
               {/* The prototype counts the working tabs, not the archive (:1434). */}
               {t !== 'handled' && counts?.[t] !== undefined && (
                 <span
                   className={`rounded-full px-1.5 text-[10px] font-semibold ${
-                    active ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                    active ? 'bg-ink text-on-ink' : 'bg-line text-ink-soft'
                   }`}
                 >
                   {counts[t]}
@@ -257,13 +257,13 @@ export function Rail({
       {/* The named inboxes and the chips scroll together under the tabs: the
           chips run longer than the prototype's four selects. */}
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="border-t border-slate-200 dark:border-slate-800 px-2 py-2">
+        <div className="border-t border-line px-2 py-2">
           <div className="px-1">
             <RailHeading icon={Layers}>Inboxes</RailHeading>
           </div>
           <InboxViews me={me} filters={filters} onChange={onFilters} />
         </div>
-        <div className="border-t border-slate-200 dark:border-slate-800 p-3">
+        <div className="border-t border-line p-3">
           <RailHeading icon={Filter}>Filters</RailHeading>
           <FilterFields me={me} filters={filters} onChange={onFilters} sources={sources} />
         </div>

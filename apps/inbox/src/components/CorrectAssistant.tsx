@@ -27,7 +27,7 @@ import {
 const knownLanguage = (v: string | null): string => (v !== null && KB_LANGUAGES.some(([l]) => l === v) ? v : '');
 
 export const FIELD =
-  'w-full min-w-0 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2.5 py-1.5 text-[12.5px] text-slate-800 dark:text-slate-200 focus:border-slate-300 dark:focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200 dark:focus:ring-slate-600';
+  'w-full min-w-0 rounded-lg border border-line bg-card px-2.5 py-1.5 text-[12.5px] text-ink focus:border-field focus:outline-none focus:ring-2 focus:ring-field';
 
 /** What the dialog corrects: an AI line (by id), or the silence an `ai_silent` pill marks (by its time). */
 export type CorrectionTarget = { messageId: string } | { at: string };
@@ -134,7 +134,7 @@ export function CorrectAssistant({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg bg-slate-900 px-3 py-1.5 text-[13px] font-medium text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
+            className="rounded-lg bg-ink px-3 py-1.5 text-[13px] font-medium text-on-ink hover:bg-ink/90"
           >
             Done
           </button>
@@ -144,7 +144,7 @@ export function CorrectAssistant({
               type="button"
               onClick={onClose}
               disabled={busy}
-              className="rounded-lg border border-slate-200 dark:border-slate-800 px-3 py-1.5 text-[13px] font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+              className="rounded-lg border border-line px-3 py-1.5 text-[13px] font-medium text-ink hover:bg-wash"
             >
               Cancel
             </button>
@@ -152,7 +152,7 @@ export function CorrectAssistant({
               type="submit"
               form={formId}
               disabled={busy || problem !== null || !sourceMessageId}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-[13px] font-medium text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-ink px-3 py-1.5 text-[13px] font-medium text-on-ink hover:bg-ink/90 disabled:opacity-60"
             >
               {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               Propose example
@@ -162,7 +162,7 @@ export function CorrectAssistant({
       }
     >
       {saved ? (
-        <p className="text-[12.5px] text-slate-600 dark:text-slate-300">Thank you. Approved examples are what the assistant answers from next.</p>
+        <p className="text-[12.5px] text-ink-soft">Thank you. Approved examples are what the assistant answers from next.</p>
       ) : (
         <form id={formId} onSubmit={(e) => void save(e)} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="What should it have done?" wide>
@@ -205,7 +205,7 @@ export function CorrectAssistant({
               ))}
             </select>
             {turn && (
-              <span className="text-[11px] font-normal text-slate-400" data-topic-source={turn.intent ? 'turn' : 'turn-unclassified'}>
+              <span className="text-[11px] font-normal text-ink-muted" data-topic-source={turn.intent ? 'turn' : 'turn-unclassified'}>
                 {turn.intent ? 'As the assistant classified this message.' : 'The assistant did not classify this message: pick its topic.'}
               </span>
             )}
@@ -220,9 +220,9 @@ export function CorrectAssistant({
               ))}
             </select>
           </Field>
-          {problem && <p className="text-[11.5px] text-slate-500 dark:text-slate-400 sm:col-span-2">{problem}</p>}
+          {problem && <p className="text-[11.5px] text-ink-muted sm:col-span-2">{problem}</p>}
           {!sourceMessageId && (
-            <p className="text-[11.5px] text-slate-500 dark:text-slate-400 sm:col-span-2">
+            <p className="text-[11.5px] text-ink-muted sm:col-span-2">
               The customer’s message is on an earlier page: load the earlier messages first.
             </p>
           )}
@@ -235,7 +235,7 @@ export function CorrectAssistant({
 
 export function Field({ label, wide = false, children }: { label: string; wide?: boolean; children: ReactNode }) {
   return (
-    <label className={`flex min-w-0 flex-col gap-1 text-[11px] font-medium text-slate-500 dark:text-slate-400 ${wide ? 'sm:col-span-2' : ''}`}>
+    <label className={`flex min-w-0 flex-col gap-1 text-[11px] font-medium text-ink-muted ${wide ? 'sm:col-span-2' : ''}`}>
       {label}
       {children}
     </label>

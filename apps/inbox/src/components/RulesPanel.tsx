@@ -26,10 +26,10 @@ import { branchLabel, branchOptions } from '@/lib/view';
 
 // The Assistant page's button styles (AssistantSettings.tsx keeps its own copy).
 const BUTTON =
-  'inline-flex items-center gap-1 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100 disabled:opacity-60';
+  'inline-flex items-center gap-1 rounded-md border border-line bg-card px-2 py-0.5 text-[11px] font-medium text-ink-soft hover:bg-wash hover:text-ink disabled:opacity-60';
 const PRIMARY =
-  'inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-[13px] font-medium text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white disabled:opacity-60';
-const CANCEL = 'rounded-lg border border-slate-200 dark:border-slate-800 px-3 py-1.5 text-[13px] font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800';
+  'inline-flex items-center gap-1.5 rounded-lg bg-ink px-3 py-1.5 text-[13px] font-medium text-on-ink hover:bg-ink/90 disabled:opacity-60';
+const CANCEL = 'rounded-lg border border-line px-3 py-1.5 text-[13px] font-medium text-ink hover:bg-wash';
 
 /** "Not on your access" politely; every other refusal is the server's own sentence. */
 function said(err: unknown, fallback: string): string {
@@ -95,13 +95,13 @@ export function RulesPanel({ me }: { me: InboxMe }) {
   return (
     <div className="mt-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <p className="min-w-0 text-[12.5px] text-slate-500 dark:text-slate-400">
+        <p className="min-w-0 text-[12.5px] text-ink-muted">
           How the assistant handles a kind of message: an instruction it follows and, if you want, one question it asks
           first. Only approved rules reach the assistant. A rule adds to its own rules and never overrides them: it cannot
           grant a price, a discount, a refund, a date or a booking.
         </p>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
-          <div className="flex gap-1 rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
+          <div className="flex gap-1 rounded-xl bg-band p-1">
             {RULE_TABS.map(([s, label]) => (
               <button
                 key={s}
@@ -109,7 +109,7 @@ export function RulesPanel({ me }: { me: InboxMe }) {
                 aria-pressed={status === s}
                 onClick={() => setStatus(s)}
                 className={`rounded-lg px-2.5 py-1 text-[12px] font-medium ${
-                  status === s ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm ring-1 ring-slate-200 dark:ring-slate-700' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100'
+                  status === s ? 'bg-card text-ink shadow-sm ring-1 ring-line' : 'text-ink-soft hover:text-ink'
                 }`}
               >
                 {label}
@@ -125,20 +125,20 @@ export function RulesPanel({ me }: { me: InboxMe }) {
 
       {error && <Refusal text={error} tone={error === NOT_ON_YOUR_ACCESS ? 'amber' : 'rose'} />}
       {!error && rules === null && (
-        <div className="flex justify-center py-8 text-slate-400">
+        <div className="flex justify-center py-8 text-ink-muted">
           <Loader2 className="h-5 w-5 animate-spin" />
         </div>
       )}
-      {rules?.length === 0 && <p className="mt-4 text-[12.5px] text-slate-500 dark:text-slate-400">Nothing here.</p>}
+      {rules?.length === 0 && <p className="mt-4 text-[12.5px] text-ink-muted">Nothing here.</p>}
       <ul className="mt-4 grid grid-cols-1 gap-2 lg:grid-cols-2">
         {rules?.map((r) => (
-          <li key={r.id} className={`min-w-0 rounded-xl border border-slate-200 dark:border-slate-800 p-3 ${r.status === 'archived' ? 'opacity-60' : ''}`}>
+          <li key={r.id} className={`min-w-0 rounded-xl border border-line p-3 ${r.status === 'archived' ? 'opacity-60' : ''}`}>
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-[11.5px] font-semibold text-slate-800 dark:text-slate-100">{ruleIntentLabel(r.intent)}</span>
-              <span className="text-[11px] text-slate-500 dark:text-slate-400">{r.branchId ? branchLabel(r.branchId, me.teams) : 'Both parks'}</span>
+              <span className="text-[11.5px] font-semibold text-ink">{ruleIntentLabel(r.intent)}</span>
+              <span className="text-[11px] text-ink-muted">{r.branchId ? branchLabel(r.branchId, me.teams) : 'Both parks'}</span>
               <span className={`rounded-full px-1.5 text-[10px] font-medium ring-1 ${KB_STATUS_TINT[r.status]}`}>{KB_STATUS_LABEL[r.status]}</span>
             </div>
-            <p className="mt-1.5 whitespace-pre-line break-words text-[12.5px] text-slate-700 dark:text-slate-200">{r.instruction}</p>
+            <p className="mt-1.5 whitespace-pre-line break-words text-[12.5px] text-ink">{r.instruction}</p>
             {r.askFirst && (
               <p className="mt-1 break-words rounded-lg bg-indigo-50/60 dark:bg-indigo-500/10 px-2 py-1 text-[12.5px] text-indigo-900 dark:text-indigo-200">
                 <span className="font-medium">Ask first:</span> {r.askFirst.question.en}
@@ -146,7 +146,7 @@ export function RulesPanel({ me }: { me: InboxMe }) {
               </p>
             )}
             {r.taughtFrom && (
-              <p className="mt-1 line-clamp-3 break-words text-[11.5px] italic text-slate-500 dark:text-slate-400">Taught from: “{r.taughtFrom}”</p>
+              <p className="mt-1 line-clamp-3 break-words text-[11.5px] italic text-ink-muted">Taught from: “{r.taughtFrom}”</p>
             )}
             {r.status !== 'archived' && r.canManage && (
               <div className="mt-2 flex flex-wrap items-center gap-1.5">
@@ -294,7 +294,7 @@ export function RuleEditor({
           </select>
         </Field>
         {askFirstIgnored(intent) && (
-          <p className="text-[11.5px] text-slate-500 dark:text-slate-400 sm:col-span-2">{ASK_FIRST_IGNORED_LINE}</p>
+          <p className="text-[11.5px] text-ink-muted sm:col-span-2">{ASK_FIRST_IGNORED_LINE}</p>
         )}
         <Field label={`What the assistant should do · ${[...instruction].length}/${RULE_INSTRUCTION_MAX}`} wide>
           <textarea
@@ -306,7 +306,7 @@ export function RuleEditor({
             className={`${FIELD} resize-y`}
           />
         </Field>
-        <label className="inline-flex items-center gap-1.5 text-[12px] text-slate-600 dark:text-slate-300 sm:col-span-2">
+        <label className="inline-flex items-center gap-1.5 text-[12px] text-ink-soft sm:col-span-2">
           <input type="checkbox" checked={askFirst} onChange={(e) => setAskFirst(e.target.checked)} />
           Ask one question first, before anything else
         </label>
@@ -332,7 +332,7 @@ export function RuleEditor({
             </Field>
           </>
         )}
-        {problem && (intent || instruction) && <p className="text-[11.5px] text-slate-500 dark:text-slate-400 sm:col-span-2">{problem}</p>}
+        {problem && (intent || instruction) && <p className="text-[11.5px] text-ink-muted sm:col-span-2">{problem}</p>}
       </form>
       {error && <Refusal text={error} tone={error === NOT_ON_YOUR_ACCESS ? 'amber' : 'rose'} />}
     </Dialog>

@@ -33,12 +33,12 @@ import {
 } from '@/lib/beo';
 
 const CANCEL =
-  'rounded-lg border border-slate-200 dark:border-slate-800 px-3 py-1.5 text-[13px] font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60';
+  'rounded-lg border border-line px-3 py-1.5 text-[13px] font-medium text-ink hover:bg-wash disabled:opacity-60';
 /** "Fetch from chat" (SCRUM-826): the Cancel button's language, at the header row's size. */
 const FETCH =
-  'inline-flex items-center gap-1 rounded-lg border border-slate-200 dark:border-slate-800 px-2 py-0.5 text-[11px] font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60';
+  'inline-flex items-center gap-1 rounded-lg border border-line px-2 py-0.5 text-[11px] font-medium text-ink hover:bg-wash disabled:opacity-60';
 const INPUT =
-  'w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/60 px-2.5 py-1.5 text-[13px] text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:border-slate-300 dark:focus:border-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-100 dark:focus:ring-amber-500/20';
+  'w-full rounded-lg border border-line bg-card px-2.5 py-1.5 text-[13px] text-ink placeholder:text-ink-muted focus:border-field focus:outline-none focus:ring-2 focus:ring-amber-100 dark:focus:ring-amber-500/20';
 
 /** What Save sends: the draft read into the route's fields. */
 export interface BookDateValues {
@@ -88,13 +88,13 @@ export function readDraft(d: BookDateDraft): { values: BookDateValues } | { prob
 export function SourceMark({ source }: { source: FieldSource['source'] }) {
   if (!source) return null;
   return (
-    <span className="ml-1 inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-800 px-1.5 py-px text-[10px] font-medium text-slate-600 dark:text-slate-300">
+    <span className="ml-1 inline-flex items-center rounded-full bg-band px-1.5 py-px text-[10px] font-medium text-ink-soft">
       {source === 'team' ? 'from the team' : 'from the family'}
     </span>
   );
 }
 
-const HINT = 'text-[11px] text-slate-500 dark:text-slate-400';
+const HINT = 'text-[11px] text-ink-muted';
 
 /** The chat's own words for a value, and whose line they are. */
 function Says({ text, source }: { text: string; source: FieldSource['source'] }) {
@@ -149,11 +149,11 @@ function Choice({
             key={`${o.by}-${o.value}`}
             type="button"
             onClick={() => onPick(o)}
-            className="inline-flex max-w-full items-center gap-1 rounded-lg border border-amber-200 dark:border-amber-500/40 bg-amber-50 dark:bg-amber-500/10 px-2 py-1 text-left text-[12px] text-slate-800 dark:text-slate-100 hover:bg-amber-100 dark:hover:bg-amber-500/20"
+            className="inline-flex max-w-full items-center gap-1 rounded-lg border border-amber-200 dark:border-amber-500/40 bg-amber-50 dark:bg-amber-500/10 px-2 py-1 text-left text-[12px] text-ink hover:bg-amber-100 dark:hover:bg-amber-500/20"
           >
             <span className="font-medium">{shown(field, o.value, branches)}</span>
             {o.text && (
-              <span className="truncate text-slate-500 dark:text-slate-400">“{o.text}”</span>
+              <span className="truncate text-ink-muted">“{o.text}”</span>
             )}
             <SourceMark source={o.source} />
           </button>
@@ -178,8 +178,8 @@ function Field({
 }) {
   return (
     <label className={`flex min-w-0 flex-col gap-1 ${full ? 'sm:col-span-2' : ''}`}>
-      <span className="flex items-center gap-1.5 text-[11px] font-medium text-slate-600 dark:text-slate-300">
-        <Icon className="h-3 w-3 text-slate-400" /> {label}
+      <span className="flex items-center gap-1.5 text-[11px] font-medium text-ink-soft">
+        <Icon className="h-3 w-3 text-ink-muted" /> {label}
       </span>
       {children}
       {hint}
@@ -545,7 +545,7 @@ export function BookDateDialog({
         </span>
         {reading && (
           <span
-            className="inline-flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400"
+            className="inline-flex items-center gap-1 text-[11px] text-ink-muted"
             data-testid="book-date-reading"
           >
             <Loader2 className="h-3 w-3 animate-spin" /> Reading the whole chat…

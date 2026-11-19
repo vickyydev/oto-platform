@@ -8,8 +8,8 @@ import { branchLabel, langLabel } from '@/lib/view';
 
 // The Assistant page's button styles (AssistantSettings.tsx keeps its own copy).
 const PRIMARY =
-  'inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-[13px] font-medium text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white disabled:opacity-60';
-const CANCEL = 'rounded-lg border border-slate-200 dark:border-slate-800 px-3 py-1.5 text-[13px] font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800';
+  'inline-flex items-center gap-1.5 rounded-lg bg-ink px-3 py-1.5 text-[13px] font-medium text-on-ink hover:bg-ink/90 disabled:opacity-60';
+const CANCEL = 'rounded-lg border border-line px-3 py-1.5 text-[13px] font-medium text-ink hover:bg-wash';
 
 export type AssistantAct = 'approve' | 'archive';
 
@@ -47,13 +47,13 @@ export function KbConfirm({ acting, busy, error, onCancel, onConfirm }: ConfirmP
         </>
       }
     >
-      <p className="text-[12.5px] text-slate-500 dark:text-slate-400">
+      <p className="text-[12.5px] text-ink-muted">
         {acting?.what === 'approve'
           ? 'The assistant may answer customers from these words from now on, on every number that is live. You are recorded as the approver.'
           : 'The assistant stops using it, and its key is free for a new entry.'}
       </p>
       {acting?.what === 'approve' && (
-        <p className="mt-2 whitespace-pre-line break-words rounded-lg bg-slate-50 dark:bg-slate-950/60 px-3 py-2 text-[12.5px] text-slate-700 dark:text-slate-200">
+        <p className="mt-2 whitespace-pre-line break-words rounded-lg bg-ground px-3 py-2 text-[12.5px] text-ink">
           {acting.entry.body}
         </p>
       )}
@@ -94,13 +94,13 @@ export function RuleConfirm({
         </>
       }
     >
-      <p className="text-[12.5px] text-slate-500 dark:text-slate-400">
+      <p className="text-[12.5px] text-ink-muted">
         {acting?.what === 'approve'
           ? 'The assistant follows this rule from now on, on every number that is live. You are recorded as the approver.'
           : 'The assistant stops following it. It stays under Archived.'}
       </p>
       {acting && (
-        <p className="mt-2 whitespace-pre-line break-words rounded-lg bg-slate-50 dark:bg-slate-950/60 px-3 py-2 text-[12.5px] text-slate-700 dark:text-slate-200">
+        <p className="mt-2 whitespace-pre-line break-words rounded-lg bg-ground px-3 py-2 text-[12.5px] text-ink">
           {acting.rule.instruction}
         </p>
       )}

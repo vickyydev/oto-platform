@@ -6,16 +6,16 @@ import { Eyebrow } from '@/components/atoms';
 const LAUNCHER_URL = import.meta.env.VITE_LAUNCHER_URL?.trim();
 
 const FIELD =
-  'w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-[14px] placeholder:text-slate-400 focus:border-slate-300 dark:focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200 dark:focus:ring-slate-600';
+  'w-full rounded-xl border border-line bg-card px-3.5 py-2.5 text-[14px] placeholder:text-ink-muted focus:border-field focus:outline-none focus:ring-2 focus:ring-field';
 const PRIMARY =
-  'inline-flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-[14px] font-medium text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white disabled:opacity-60';
+  'inline-flex w-full items-center justify-center gap-2 rounded-xl bg-ink px-4 py-2.5 text-[14px] font-medium text-on-ink hover:bg-ink/90 disabled:opacity-60';
 const SECONDARY =
-  'inline-flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-2 text-[13px] font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800';
+  'inline-flex items-center justify-center rounded-xl border border-line bg-card px-4 py-2 text-[13px] font-medium text-ink hover:bg-wash';
 
 function Card({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-[100dvh] items-center justify-center px-4 py-10">
-      <div className="w-full max-w-md rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-[0_12px_40px_-16px_rgba(15,23,42,0.18)] sm:p-8">
+      <div className="w-full max-w-md rounded-2xl border border-line bg-card p-6 shadow-[0_12px_40px_-16px_rgba(15,23,42,0.18)] sm:p-8">
         {children}
       </div>
     </div>
@@ -24,7 +24,7 @@ function Card({ children }: { children: ReactNode }) {
 
 export function Splash() {
   return (
-    <div className="flex min-h-[100dvh] items-center justify-center text-slate-400">
+    <div className="flex min-h-[100dvh] items-center justify-center text-ink-muted">
       <Loader2 className="h-5 w-5 animate-spin" />
     </div>
   );
@@ -60,16 +60,16 @@ export function SignInPanel() {
 
   return (
     <Card>
-      <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+      <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-ink-muted">
         <MessagesSquare className="h-3.5 w-3.5" />
         Unified Customer Inbox
       </div>
-      <h1 className="mt-1 text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">Sign in</h1>
-      <p className="mt-1 mb-5 text-[13px] text-slate-500 dark:text-slate-400">Every message from a family in one place, routed to the right team.</p>
+      <h1 className="mt-1 text-xl font-semibold tracking-tight text-ink">Sign in</h1>
+      <p className="mt-1 mb-5 text-[13px] text-ink-muted">Every message from a family in one place, routed to the right team.</p>
 
       {/* A refused hand-off from the launcher: why this screen appeared at all. */}
       {handoffError && (
-        <p className="mb-4 rounded-xl border border-dashed border-slate-300 dark:border-slate-600 px-3 py-2 text-[13px] text-slate-600 dark:text-slate-300">{handoffError}</p>
+        <p className="mb-4 rounded-xl border border-dashed border-field px-3 py-2 text-[13px] text-ink-soft">{handoffError}</p>
       )}
 
       <form onSubmit={submit} className="flex flex-col gap-3">
@@ -102,11 +102,11 @@ export function SignInPanel() {
           {busy ? 'Signing in…' : 'Sign in'}
         </button>
       </form>
-      <p className="mt-4 text-[12.5px] text-slate-500 dark:text-slate-400">
+      <p className="mt-4 text-[12.5px] text-ink-muted">
         {LAUNCHER_URL ? (
           <>
             First shift, or a forgotten password?{' '}
-            <a href={LAUNCHER_URL} className="font-medium text-slate-700 dark:text-slate-200 hover:underline">
+            <a href={LAUNCHER_URL} className="font-medium text-ink hover:underline">
               Start at the suite front door
             </a>
             .
@@ -145,8 +145,8 @@ export function LockedPanel() {
       <span className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400">
         <Lock className="h-5 w-5" />
       </span>
-      <h1 className="mt-3 text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">This session is locked</h1>
-      <p className="mt-1 mb-5 text-[13px] text-slate-500 dark:text-slate-400">
+      <h1 className="mt-3 text-xl font-semibold tracking-tight text-ink">This session is locked</h1>
+      <p className="mt-1 mb-5 text-[13px] text-ink-muted">
         It locked after a quiet spell on another app. Your password opens it again, here and there.
       </p>
       <form onSubmit={submit} className="flex flex-col gap-3">
@@ -178,13 +178,13 @@ export function BlockedPanel({ reason }: { reason: 'must-change-password' | 'no-
   const changing = reason === 'must-change-password';
   return (
     <Card>
-      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-band text-ink-soft">
         {changing ? <KeyRound className="h-5 w-5" /> : <ShieldOff className="h-5 w-5" />}
       </span>
-      <h1 className="mt-3 text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
+      <h1 className="mt-3 text-xl font-semibold tracking-tight text-ink">
         {changing ? 'Choose a password first' : 'The inbox is not on your access'}
       </h1>
-      <p className="mt-1 text-[13px] text-slate-500 dark:text-slate-400">
+      <p className="mt-1 text-[13px] text-ink-muted">
         {changing ? (
           'This account is on a temporary password. The inbox stays closed until it is changed.'
         ) : (
