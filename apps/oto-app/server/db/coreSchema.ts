@@ -1927,6 +1927,14 @@ export const coreEvents = pgTable(
     numChildren: integer("num_children"),
     numAdults: integer("num_adults"),
 
+    // SCRUM-1031: the guests the family expects beyond the planned counts, and how the socks are
+    // paid for (shared/beoGuestsSocks.ts). Information for reception on the BEO and its print
+    // only: no view the till reads names them, nothing is charged from them. Null: not said.
+    expectedExtraKids: integer("expected_extra_kids"),
+    expectedExtraAdults: integer("expected_extra_adults"),
+    socksArrangement: text("socks_arrangement"),
+    socksNote: text("socks_note"),
+
     programName: text("program_name"),
     programDetails: text("program_details"),
 
@@ -1975,6 +1983,14 @@ export const coreEvents = pgTable(
     check(
       "core_events_entry_price_check",
       sql`(${t.entryPriceWeekdayThb} IS NULL OR ${t.entryPriceWeekdayThb} >= 0) AND (${t.entryPriceWeekendThb} IS NULL OR ${t.entryPriceWeekendThb} >= 0)`,
+    ),
+    check(
+      "core_events_expected_extra_check",
+      sql`(${t.expectedExtraKids} IS NULL OR ${t.expectedExtraKids} >= 0) AND (${t.expectedExtraAdults} IS NULL OR ${t.expectedExtraAdults} >= 0)`,
+    ),
+    check(
+      "core_events_socks_arrangement_check",
+      sql`${t.socksArrangement} IS NULL OR ${t.socksArrangement} IN ('birthday_parent', 'guests', 'other')`,
     ),
   ]
 );
