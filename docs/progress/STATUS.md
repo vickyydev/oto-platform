@@ -1,3 +1,50 @@
+## 20 November 2026, 02:40: the till lane landed: extra food credit, several displays, the number as a name, the food tick
+
+- **Landed** (main d048c9c0d, 19 commits; test and picture commits up to
+  a21f68bb2). Deployed at 01:38 to 01:44: `oto-api-staging`,
+  `oto-pos-staging`, `oto-pos-web-staging`, `oto-console-staging`. Migration
+  0137 (a till may hold up to three displays) applied on staging. Hosted CI
+  is green at a21f68bb2 (run 44604893515); it was red twice just after the
+  landing on tests of the old behaviour (a db migration test, three smoke
+  cases waiting for "New member?"), both repaired by the lane.
+- **Deployed, each with staging pictures the lead opened in part**
+  (`docs/qa/proof-2026-11-19/`):
+  - SCRUM-1048 "Extra food credit on any child ticket": its own line on the
+    order and the display; the band held 1,600 baht; food paid from it with
+    "Credit left" on the receipt; the line refunded by a manager before any
+    was spent.
+  - SCRUM-1041 "More than one customer display on a till": three displays
+    showing the same sale; a tick on one shows on the others and the till; a
+    fourth is refused; a manager removes one at the till. Reception sees the
+    list and "A manager can remove a display".
+  - SCRUM-1019 "Drop-off: the number, the rate, the document": a number with
+    no name makes the member with the number as its name (R1); no number on
+    the display or the receipt; the name given later in the Console shows
+    everywhere.
+  - SCRUM-1054 "Drop-off: the parent ticks whether the child may order food
+    with the included credit" (R3): ticked, the child orders with no manager
+    asked; not ticked, as before.
+- **The api-test shard that timed out on 44bbb5a9d passed when re-run.**
+- **Not shown on staging (tests only):** removing a display at a till served
+  by a real counter box; the food tick and the extra credit on the box's
+  offline lane and on the phone till. Paper a counter box prints offline
+  still shows a number-named member's number and no "Credit left" until a
+  box release.
+- **Open with the owner:** should the parent's name typed on the drop-off
+  form also name a member still held under their number (today only the
+  Console renames); should the extra food credit also be printed on the
+  child's band; removal of a display is a manager's, not reception's.
+- **Filed: SCRUM-1059 "Till and display: finish points seen in the staging
+  checks of the counter flow"** (nine points: a retry key on the visiting
+  window, extra credit on a line that becomes drop-off, a cut "History" tab,
+  an unreadable F&B warning, a stray backslash, small typed text on wide
+  displays, a waiting line on the short form, the bracelet card after
+  check-in, staff's copy of the food line). Its lane script is ready in the
+  session scratchpad (`till-finish-points.workflow.js`) and starts when
+  memory allows (2.3 GB free at 02:30, three lanes in review).
+- **Lesson, now in the lane briefs:** a till landing runs the till
+  end-to-end on a built till and the db package's suite before the push.
+
 ## 20 November 2026, 00:50: the care-note save is written once after a lost reply (on staging)
 
 - **Repaired under SCRUM-1053 "Drop-off counter flow: consistency points"**
