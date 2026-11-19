@@ -106,7 +106,13 @@ describe('anonymous display pairing constraints (SCRUM-201)', () => {
     await expect(insert(newId(), `fixture-token-${newId()}`, codeHash)).resolves.toBeDefined();
   });
 
-  it('limits live paired displays while retaining revoked and unredeemed history', async () => {
+  // SCRUM-1041 — 0137 dropped 0031's one-display index: a station may now have
+  // several live paired displays at the database, and the limit of three is
+  // kept where a display is paired (refuseDisplayPastLimit in
+  // apps/api/src/services/display.ts, pinned by apps/api's
+  // s1041-multi-display and fleet-api tests). 0031's own guard is still
+  // rehearsed here, and the revoked and unredeemed history is still kept.
+  it('keeps revoked and unredeemed display history; after 0137 the limit is the pairing service’s', async () => {
     const { rows } = await client.query<{ id: string; operator_id: string; branch_id: string }>(
       `with o as (
          insert into core.operator (id, name) values (gen_random_uuid(), 'Display constraint op') returning id
@@ -128,25 +134,35 @@ describe('anonymous display pairing constraints (SCRUM-201)', () => {
     await insert(newId(), 'display', false);
     const first = newId();
     await insert(first, 'display', true);
-    // Rehearse 0031 against conflicting historical rows without altering them.
-    // Rolling back also restores the index removed only in this test database.
+    // 0137 removed the index 0031 made.
+    const index = await client.query(
+      "select 1 from pg_indexes where schemaname = 'core' and indexname = 'device_credential_active_display_unique'",
+    );
+    expect(index.rowCount).toBe(0);
+    // Rehearse 0031 against conflicting historical rows without altering them:
+    // its guard still refuses, before it would make the index. Rolled back.
     await client.query('begin');
     try {
-      await client.query('drop index core.device_credential_active_display_unique');
       await insert(newId(), 'display', true);
       const migration = readFileSync(new URL('../migrations/0031_active_station_display.sql', import.meta.url), 'utf8');
       await expect(client.query(migration)).rejects.toThrow(/1 station\(s\) have multiple live paired displays/);
     } finally {
       await client.query('rollback');
     }
-    await expect(insert(newId(), 'display', true)).rejects.toThrow(/device_credential_active_display_unique/);
+    // A second live paired display is the database's to keep since 0137.
+    await expect(insert(newId(), 'display', true)).resolves.toBeDefined();
     await expect(insert(newId(), 'kiosk', true)).resolves.toBeDefined();
     await client.query('update core.device_credential set revoked_at = now(), secret_hash = null where id = $1', [first]);
     await expect(insert(newId(), 'display', true)).resolves.toBeDefined();
+    const live = await client.query<{ count: number }>(
+      `select count(*)::integer as count from core.device_credential where station_id = $1 and kind = 'display'
+         and revoked_at is null and paired_at is not null and secret_hash is not null`, [target.id],
+    );
+    expect(live.rows[0]!.count).toBe(2);
     const history = await client.query<{ count: number }>(
       "select count(*)::integer as count from core.device_credential where station_id = $1 and kind = 'display'", [target.id],
     );
-    expect(history.rows[0]!.count).toBe(4);
+    expect(history.rows[0]!.count).toBe(5);
   });
 });
 
