@@ -225,6 +225,13 @@ describe('SCRUM-1054 — not ticked, or extra food paid for: as before', () => {
     for (const tick of [undefined, true]) {
       const { checkinId } = await register(tick === undefined ? { food } : { food, tick });
       expect((await stayOf(checkinId)).mayOrderFood).toBe(true);
+      // The form never asks the tick beside paid food: one sent anyway is
+      // not the parent's answer and is not recorded as given.
+      const [logged] = await ctx.db
+        .select()
+        .from(auditLog)
+        .where(and(eq(auditLog.entityId, checkinId), eq(auditLog.action, 'checkin.create')));
+      expect(logged!.after).not.toHaveProperty('orderWithIncludedCredit');
     }
   });
 

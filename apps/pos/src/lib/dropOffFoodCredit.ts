@@ -72,6 +72,33 @@ export function showsOrderWithIncluded(slot: Pick<SupervisedSlot, 'foodProvision
   return asksOrderWithIncluded(slot, includedTHB) && extraCreditOfSlot(slot) === 0;
 }
 
+/**
+ * SCRUM-1054 — the children whose tick the registration did not keep. The
+ * counter box's lane does not carry the tick (`checkinApi.createRegistration`),
+ * so a registration that went to the box after the parent ticked has the child
+ * as "no food": the stay the registration answers with says so, and the till
+ * tells staff with these names that the food counter will ask a manager.
+ */
+export function includedTicksDropped(
+  sent: readonly { checkinId: string; name: string; orderWithIncludedCredit?: boolean }[],
+  kept: readonly { id: string; mayOrderFood: boolean }[],
+): string[] {
+  return sent.flatMap((child) => {
+    if (child.orderWithIncludedCredit !== true) return [];
+    const stay = kept.find((item) => item.id === child.checkinId);
+    return stay && !stay.mayOrderFood ? [child.name || 'A child'] : [];
+  });
+}
+
+/** What staff are told when `includedTicksDropped` names any child. */
+export function includedTicksDroppedNotice(names: readonly string[]): { title: string; description: string } {
+  const who = names.length === 1 ? names[0]! : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]!}`;
+  return {
+    title: 'Food with the included credit needs the internet',
+    description: `${who} ${names.length === 1 ? 'is' : 'are'} registered without the family’s tick: the food counter will ask a manager before an order.`,
+  };
+}
+
 /** What the registration says for the child: the tick, only where the form shows it. */
 export function ordersWithIncluded(
   slot: Pick<SupervisedSlot, 'foodProvision' | 'orderWithIncludedCredit'>,
