@@ -9,6 +9,7 @@ import {
   loadVoucherDefinition,
   restoreVoucherDefinition,
   setVoucherParkProduct,
+  setVoucherParkStock,
   updateVoucherDefinition,
   voucherDefinitionLinkOptions,
 } from '../services/voucher-definitions';
@@ -171,6 +172,16 @@ const DefinitionSchema = z.object({
       live: z.boolean(),
     }),
   ),
+  /** SCRUM-1040 — a hand-over prize's stock item at each park that has one linked (the Mystery Box). */
+  parkStock: z.array(
+    z.object({
+      branchId: z.string().uuid(),
+      branchName: z.string(),
+      stockItemId: z.string().uuid(),
+      stockItemName: z.string(),
+      live: z.boolean(),
+    }),
+  ),
   /** Its vouchers still unredeemed — issued, not used, not void, not past their date — when it was read. */
   unredeemedVouchers: z.number().int().min(0),
   /** S2-14a round 5 — the promotional rules as stored (null target: the ticket rows). */
@@ -225,6 +236,15 @@ export async function voucherDefinitionRoutes(app: App): Promise<void> {
               }),
             ),
             packages: z.array(
+              z.object({
+                id: z.string().uuid(),
+                name: z.string(),
+                branchId: z.string().uuid(),
+                branchName: z.string(),
+              }),
+            ),
+            /** SCRUM-1040 — each live park's counted stock items, for a hand-over prize. */
+            stockItems: z.array(
               z.object({
                 id: z.string().uuid(),
                 name: z.string(),
@@ -339,6 +359,32 @@ export async function voucherDefinitionRoutes(app: App): Promise<void> {
         before,
         req.params.branchId,
         req.body.productId,
+      );
+    },
+  );
+
+  app.put(
+    '/voucher-definitions/:id/park-stock/:branchId',
+    {
+      config: { permission: 'admin:booth:manage', target: { branchId: 'params.branchId' } },
+      schema: {
+        description:
+          'SCRUM-1040 — the stock item a hand-over prize takes one from at one park (the Mystery Box). When a voucher of this type is used up at a till of that park, one unit leaves that item’s count in the same transaction — once per voucher — and at zero the prize is still handed over, the count stays at zero and the shortfall is recorded for a person to count the shelf. `stockItemId` null clears the park’s link, and the prize there then takes nothing, as before. The item must be counted at that park: its own, not archived, not retired (400 VOUCHER_PARK_STOCK_NOT_HERE otherwise); only a hand-over prize takes one (400 VOUCHER_PARK_STOCK_KIND). Audited when it changes anything.',
+        params: z.object({ id: z.string().uuid(), branchId: z.string().uuid() }),
+        body: z.object({ stockItemId: z.string().uuid().nullable() }),
+        response: { 200: OneDefinition },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const before = await loadVoucherDefinition(app.db, auth.operatorId, req.params.id);
+      return setVoucherParkStock(
+        app.db,
+        opCtx(req),
+        { accountId: auth.accountId, operatorId: auth.operatorId },
+        before,
+        req.params.branchId,
+        req.body.stockItemId,
       );
     },
   );

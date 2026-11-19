@@ -11,6 +11,7 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
+  type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import { archivedAt, idPk, promo, timestamps } from './helpers';
 import { account, branch, operator } from './tenancy';
@@ -18,6 +19,7 @@ import { station } from './fleet';
 import { member } from './members';
 import { product, ticketPackage } from './catalog';
 import { sale } from './sales';
+import { stockItem } from './stock';
 
 // --- Vouchers (schema `promo`) ----------------------------------------------
 //
@@ -335,6 +337,47 @@ export const voucherProductLink = promo.table(
     index('voucher_product_link_operator_idx').on(t.operatorId),
     index('voucher_product_link_branch_idx').on(t.branchId),
     index('voucher_product_link_product_idx').on(t.productId),
+  ],
+);
+
+/**
+ * SCRUM-1040 (owner's answer, 19 November 2026) — WHICH STOCK ITEM A
+ * HAND-OVER PRIZE TAKES ONE FROM AT EACH PARK. The Mystery Box is a stock item
+ * whose count is received and corrected in the Console like any other; a
+ * hand-over (`manual`) voucher type linked here takes one off that park's
+ * count when its voucher is used up at the till (`consumeSaleVouchers` in
+ * `apps/api/src/services/vouchers.ts`, through `takeStockForPrize` in
+ * `stock.ts`). One link per definition and park, beside
+ * `voucher_product_link`; the stock item must be one of that park's own, which
+ * the service checks on save. A park with no link takes nothing, as before.
+ */
+export const voucherStockLink = promo.table(
+  'voucher_stock_link',
+  {
+    id: idPk(),
+    operatorId: uuid('operator_id')
+      .notNull()
+      .references(() => operator.id, { onDelete: 'restrict' }),
+    /** Its foreign key is declared below under a short name (63-character identifiers). */
+    voucherDefinitionId: uuid('voucher_definition_id').notNull(),
+    branchId: uuid('branch_id')
+      .notNull()
+      .references(() => branch.id, { onDelete: 'restrict' }),
+    stockItemId: uuid('stock_item_id')
+      .notNull()
+      .references((): AnyPgColumn => stockItem.id, { onDelete: 'restrict' }),
+    ...timestamps,
+  },
+  (t) => [
+    foreignKey({
+      columns: [t.voucherDefinitionId],
+      foreignColumns: [voucherDefinition.id],
+      name: 'voucher_stock_link_definition_fk',
+    }).onDelete('restrict'),
+    uniqueIndex('voucher_stock_link_unique').on(t.voucherDefinitionId, t.branchId),
+    index('voucher_stock_link_operator_idx').on(t.operatorId),
+    index('voucher_stock_link_branch_idx').on(t.branchId),
+    index('voucher_stock_link_stock_item_idx').on(t.stockItemId),
   ],
 );
 

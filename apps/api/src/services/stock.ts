@@ -1103,6 +1103,180 @@ export async function takeStockForSale(
   return result;
 }
 
+// --- A prize handed over ----------------------------------------------------------------
+
+/** What `takeStockForPrize` did for one voucher. */
+export interface PrizeStockResult {
+  /** The movement written now; null when an earlier run wrote it, or the branch has never had a place. */
+  movement: AppliedMovement | null;
+  /** 1 when the record held none to take — handed over all the same; 0 otherwise. */
+  shortfall: number;
+  /** True when this voucher's unit had already been taken: nothing moved. */
+  replayed: boolean;
+}
+
+/** The movement's identity for one prize: one per voucher, wherever the unit came from. */
+export const prizeStockActionId = (voucherId: string): string => `prize:${voucherId}`;
+
+/**
+ * A stock item as a person reads it: its name, and its size where it has one.
+ * An item counted in one size and linked to no product carries the size label
+ * "Default" (the Console's inventory form, `InventoryItemFormDialog`), which
+ * the stock screens leave out (`StockReplenishFlow`, `StockPurchasing`); so
+ * does this — "Mystery Box", never "Mystery Box Default".
+ */
+export function stockItemDisplayName(name: string, variantLabel: string | null): string {
+  return stockSizeName(name, variantLabel === 'Default' ? null : variantLabel);
+}
+
+/**
+ * SCRUM-1040 — A HAND-OVER PRIZE TAKES ONE OFF ITS SHELF (owner, 19 November
+ * 2026: "a stock item, and the scan takes one off"). Called from the one place
+ * a voucher is used up (`consumeSaleVouchers`), in that transaction, for a
+ * hand-over voucher type linked to a stock item at the redeeming park
+ * (`promo.voucher_stock_link`).
+ *
+ * The same moment, and the same rules, as a sale's own decrement
+ * (`takeStockForSale`): the sell point first, then back of house, then bulk,
+ * from levels held locked; and it NEVER REFUSES. The family has won the prize
+ * and the count can be behind the shelf, so when the record holds none the
+ * prize is handed over all the same: the level stays at zero (the ledger never
+ * goes below it), the movement carries the unit as its `shortfall` at the
+ * place a sale takes from first, and a `stock_shortfall` attention row asks a
+ * person to count the shelf — the oversell record every paid sale writes.
+ *
+ * The movement is a `sale` (`offline_sale` when the close came from a box) on
+ * the ฿0 sale that used the voucher, with no sale line — the prize puts nothing
+ * on the bill — and its reason names the prize and the voucher's last four
+ * characters. EXACTLY ONCE per voucher: its action id is the voucher's
+ * (`prizeStockActionId`), whichever place the unit came from, and a voucher
+ * that already has one moves nothing again.
+ */
+export async function takeStockForPrize(
+  tx: Tx,
+  input: {
+    operatorId: string;
+    branchId: string;
+    stockItemId: string;
+    voucherId: string;
+    /** "Mystery Box (voucher …8H2J)" — never the whole code. */
+    prizeLabel: string;
+    saleId: string;
+    businessDate: string;
+    stationId: string | null;
+    boxId: string | null;
+    actorAccountId: string | null;
+    requestId?: string | null;
+    offline: boolean;
+    now: Date;
+  },
+): Promise<PrizeStockResult> {
+  const actionId = prizeStockActionId(input.voucherId);
+  const [already] = await tx
+    .select({ shortfall: stockMovement.shortfall })
+    .from(stockMovement)
+    .where(and(eq(stockMovement.operatorId, input.operatorId), eq(stockMovement.actionId, actionId)))
+    .limit(1);
+  if (already) return { movement: null, shortfall: already.shortfall, replayed: true };
+
+  const [item] = await tx
+    .select()
+    .from(stockItem)
+    .where(and(eq(stockItem.id, input.stockItemId), eq(stockItem.branchId, input.branchId)))
+    .limit(1);
+  if (!item) throw new Error(`stock item ${input.stockItemId} is not one of this branch's`);
+  const name = stockItemDisplayName(item.name, item.variantLabel);
+
+  const locations = await branchLocations(tx, input.branchId);
+  const levels = await lockLevels(
+    tx,
+    locations.map((loc) => ({ stockItemId: item.id, stockLocationId: loc.id })),
+  );
+  const heldBefore = locations.reduce((sum, loc) => sum + (levels.get(pairKey(item.id, loc.id)) ?? 0), 0);
+  const kind: StockMovementKind = input.offline ? 'offline_sale' : 'sale';
+  const base = {
+    stockItemId: item.id,
+    kind,
+    actionId,
+    saleId: input.saleId,
+    saleLineId: null,
+    reason: `Prize handed over: ${input.prizeLabel}`,
+    unitCostSatang: item.unitCostSatang,
+  };
+  const from = locations.find((loc) => (levels.get(pairKey(item.id, loc.id)) ?? 0) > 0) ?? null;
+  // Where the record held none: where a sale takes from first, or — no live
+  // place at all — the retired place the record last was (`takeStockForSale`).
+  const shortfallPlace = from
+    ? null
+    : (locations.find((loc) => loc.sellPoint) ?? locations[0] ?? (await retiredShortfallPlace(tx, input.branchId)));
+  const draft: MovementDraft | null = from
+    ? { ...base, stockLocationId: from.id, quantity: -1 }
+    : shortfallPlace
+      ? { ...base, stockLocationId: shortfallPlace.id, quantity: 0, shortfall: 1 }
+      : null;
+  const shortfall = from ? 0 : 1;
+
+  const applied = draft
+    ? await applyMovements(
+        tx,
+        {
+          operatorId: input.operatorId,
+          branchId: input.branchId,
+          businessDate: input.businessDate,
+          occurredAt: input.now,
+          actorAccountId: input.actorAccountId,
+          stationId: input.stationId,
+          boxId: input.boxId,
+          offline: input.offline,
+        },
+        [draft],
+      )
+    : [];
+  const movement = applied[0] ?? null;
+
+  if (shortfall > 0) {
+    await raiseStockAttention(tx, {
+      operatorId: input.operatorId,
+      branchId: input.branchId,
+      stockItemId: item.id,
+      kind: 'stock_shortfall',
+      dedupeKey: `shortfall:prize:${input.voucherId}:${item.id}`,
+      quantity: shortfall,
+      summary: `1 ${name} handed over as a prize that the record did not hold${input.offline ? ' (offline)' : ''} — count the shelf`,
+      detail: { saleId: input.saleId, voucherId: input.voucherId, requested: 1, shortfall, offline: input.offline },
+      saleId: input.saleId,
+    });
+  }
+  await audit.record(tx, {
+    actorAccountId: input.actorAccountId,
+    operatorId: input.operatorId,
+    branchId: input.branchId,
+    action: 'stock.prize_hand_over',
+    entityType: 'stock_item',
+    entityId: item.id,
+    requestId: input.requestId ?? null,
+    before: { held: heldBefore },
+    after: {
+      held: heldBefore - (from ? 1 : 0),
+      voucherId: input.voucherId,
+      saleId: input.saleId,
+      prize: input.prizeLabel,
+      movement: movement
+        ? { stockLocationId: movement.stockLocationId, quantity: movement.quantity, shortfall: movement.shortfall, levelAfter: movement.levelAfter }
+        : null,
+      shortfall,
+      offline: input.offline,
+    },
+  });
+  await syncStockAttention(
+    tx,
+    { operatorId: input.operatorId, branchId: input.branchId, accountId: input.actorAccountId },
+    input.now,
+    [item.id],
+  );
+  return { movement, shortfall, replayed: false };
+}
+
 // --- The restock on a refund -------------------------------------------------------------
 
 /**

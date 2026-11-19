@@ -17774,6 +17774,15 @@ export interface paths {
                                     productName: string;
                                     live: boolean;
                                 }[];
+                                parkStock: {
+                                    /** Format: uuid */
+                                    branchId: string;
+                                    branchName: string;
+                                    /** Format: uuid */
+                                    stockItemId: string;
+                                    stockItemName: string;
+                                    live: boolean;
+                                }[];
                                 unredeemedVouchers: number;
                                 target: ({
                                     /** @enum {string} */
@@ -17966,6 +17975,15 @@ export interface paths {
                                     productName: string;
                                     live: boolean;
                                 }[];
+                                parkStock: {
+                                    /** Format: uuid */
+                                    branchId: string;
+                                    branchName: string;
+                                    /** Format: uuid */
+                                    stockItemId: string;
+                                    stockItemName: string;
+                                    live: boolean;
+                                }[];
                                 unredeemedVouchers: number;
                                 target: ({
                                     /** @enum {string} */
@@ -18083,6 +18101,15 @@ export interface paths {
                                     productName: string;
                                     live: boolean;
                                 }[];
+                                parkStock: {
+                                    /** Format: uuid */
+                                    branchId: string;
+                                    branchName: string;
+                                    /** Format: uuid */
+                                    stockItemId: string;
+                                    stockItemName: string;
+                                    live: boolean;
+                                }[];
                                 unredeemedVouchers: number;
                                 target: ({
                                     /** @enum {string} */
@@ -18161,6 +18188,14 @@ export interface paths {
                                 priceSatang: number;
                             }[];
                             packages: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                                /** Format: uuid */
+                                branchId: string;
+                                branchName: string;
+                            }[];
+                            stockItems: {
                                 /** Format: uuid */
                                 id: string;
                                 name: string;
@@ -18284,6 +18319,15 @@ export interface paths {
                                     /** Format: uuid */
                                     productId: string;
                                     productName: string;
+                                    live: boolean;
+                                }[];
+                                parkStock: {
+                                    /** Format: uuid */
+                                    branchId: string;
+                                    branchName: string;
+                                    /** Format: uuid */
+                                    stockItemId: string;
+                                    stockItemName: string;
                                     live: boolean;
                                 }[];
                                 unredeemedVouchers: number;
@@ -18481,6 +18525,15 @@ export interface paths {
                                     productName: string;
                                     live: boolean;
                                 }[];
+                                parkStock: {
+                                    /** Format: uuid */
+                                    branchId: string;
+                                    branchName: string;
+                                    /** Format: uuid */
+                                    stockItemId: string;
+                                    stockItemName: string;
+                                    live: boolean;
+                                }[];
                                 unredeemedVouchers: number;
                                 target: ({
                                     /** @enum {string} */
@@ -18630,6 +18683,178 @@ export interface paths {
                                     productName: string;
                                     live: boolean;
                                 }[];
+                                parkStock: {
+                                    /** Format: uuid */
+                                    branchId: string;
+                                    branchName: string;
+                                    /** Format: uuid */
+                                    stockItemId: string;
+                                    stockItemName: string;
+                                    live: boolean;
+                                }[];
+                                unredeemedVouchers: number;
+                                target: ({
+                                    /** @enum {string} */
+                                    kind: "tickets";
+                                } | {
+                                    /** @enum {string} */
+                                    kind: "ticketType";
+                                    /** Format: uuid */
+                                    ticketTypeId: string;
+                                } | {
+                                    /** @enum {string} */
+                                    kind: "fnb";
+                                } | {
+                                    /** @enum {string} */
+                                    kind: "fnbCategory";
+                                    /** Format: uuid */
+                                    category: string;
+                                } | {
+                                    /** @enum {string} */
+                                    kind: "menuItems";
+                                    menuItemIds: string[];
+                                } | {
+                                    /** @enum {string} */
+                                    kind: "merch";
+                                }) | null;
+                                usageLimit: number | null;
+                                perCustomerLimit: number | null;
+                                validFrom: string | null;
+                                validUntil: string | null;
+                                redeemedVouchers: number;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/voucher-definitions/{id}/park-stock/{branchId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description SCRUM-1040 — the stock item a hand-over prize takes one from at one park (the Mystery Box). When a voucher of this type is used up at a till of that park, one unit leaves that item’s count in the same transaction — once per voucher — and at zero the prize is still handed over, the count stays at zero and the shortfall is recorded for a person to count the shelf. `stockItemId` null clears the park’s link, and the prize there then takes nothing, as before. The item must be counted at that park: its own, not archived, not retired (400 VOUCHER_PARK_STOCK_NOT_HERE otherwise); only a hand-over prize takes one (400 VOUCHER_PARK_STOCK_KIND). Audited when it changes anything. */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    branchId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        stockItemId: string | null;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            definition: {
+                                /** Format: uuid */
+                                id: string;
+                                code: string;
+                                nameEn: string;
+                                nameTh: string | null;
+                                /** @enum {string} */
+                                kind: "discount" | "free_item" | "free_ticket" | "wallet_credit" | "manual";
+                                /** @enum {string} */
+                                valueType: "amount" | "percent" | "item" | "none";
+                                valueSatang: number | null;
+                                valueBp: number | null;
+                                /** Format: uuid */
+                                productId: string | null;
+                                /** Format: uuid */
+                                ticketPackageId: string | null;
+                                expiryDays: number | null;
+                                /** @enum {string} */
+                                offlinePolicy: "allow" | "refuse";
+                                singleUse: boolean;
+                                costSatang: number;
+                                titleEn: string | null;
+                                titleTh: string | null;
+                                instructionEn: string | null;
+                                instructionTh: string | null;
+                                termsEn: string | null;
+                                termsTh: string | null;
+                                active: boolean;
+                                /** @enum {string} */
+                                codeMode: "generated" | "fixed";
+                                fixedCode: string | null;
+                                legacyQrPayload: string | null;
+                                createdAt: string;
+                                updatedAt: string;
+                                archivedAt: string | null;
+                                product: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                    code: string | null;
+                                    /** Format: uuid */
+                                    branchId: string | null;
+                                    branchName: string | null;
+                                    live: boolean;
+                                } | null;
+                                ticketPackage: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                    code: string | null;
+                                    /** Format: uuid */
+                                    branchId: string | null;
+                                    branchName: string | null;
+                                    live: boolean;
+                                } | null;
+                                usedBy: {
+                                    /** Format: uuid */
+                                    boothId: string;
+                                    boothName: string;
+                                    /** Format: uuid */
+                                    branchId: string;
+                                    /** Format: uuid */
+                                    prizeId: string;
+                                    prizeName: string;
+                                    prizeNameTh: string | null;
+                                    active: boolean;
+                                }[];
+                                parkProducts: {
+                                    /** Format: uuid */
+                                    branchId: string;
+                                    branchName: string;
+                                    /** Format: uuid */
+                                    productId: string;
+                                    productName: string;
+                                    live: boolean;
+                                }[];
+                                parkStock: {
+                                    /** Format: uuid */
+                                    branchId: string;
+                                    branchName: string;
+                                    /** Format: uuid */
+                                    stockItemId: string;
+                                    stockItemName: string;
+                                    live: boolean;
+                                }[];
                                 unredeemedVouchers: number;
                                 target: ({
                                     /** @enum {string} */
@@ -18775,6 +19000,15 @@ export interface paths {
                                     /** Format: uuid */
                                     productId: string;
                                     productName: string;
+                                    live: boolean;
+                                }[];
+                                parkStock: {
+                                    /** Format: uuid */
+                                    branchId: string;
+                                    branchName: string;
+                                    /** Format: uuid */
+                                    stockItemId: string;
+                                    stockItemName: string;
                                     live: boolean;
                                 }[];
                                 unredeemedVouchers: number;
