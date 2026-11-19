@@ -140,7 +140,8 @@ describe('SCRUM-728 durable action replay review', () => {
     const f = await family();
     let caller = await prepareBox();
     const verificationId = newId();
-    const body = { verificationId, toTier: 'expat', evidenceType: 'Passport' };
+    // SCRUM-1019: every document check carries its expiry date.
+    const body = { verificationId, toTier: 'expat', evidenceType: 'Passport', evidenceExpiresAt: `${new Date().getUTCFullYear() + 1}-06-30` };
     const grants = await Promise.all([call('POST', `/members/${f.memberId}/tier-verification`, body), call('POST', `/members/${f.memberId}/tier-verification`, body)]);
     expect(grants.map((r) => r.statusCode)).toEqual([200, 200]);
     await queue(caller, 'member.tier_change', { ...body, memberId: f.memberId, direction: 'upgrade' });

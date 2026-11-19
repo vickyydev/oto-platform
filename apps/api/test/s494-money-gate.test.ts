@@ -46,6 +46,8 @@ let stationId: string;
 let receptionId: string;
 let twoHoursId: string;
 const productIds = new Map<string, string>();
+/** SCRUM-1019 — every document check carries its expiry date. */
+const NEXT_YEAR = `${new Date().getUTCFullYear() + 1}-06-30`;
 
 const ticketLine = (kids: number, adults: number, addOns: unknown[] = []) => ({
   id: newId(),
@@ -178,7 +180,9 @@ describe('s494 money gate — 1: an expired document keeps the rate and flags re
     expect(row!.status).toBe('finalised');
   });
 
-  it('a verification with no expiry is replayed under one Idempotency-Key, written once', async () => {
+  // SCRUM-1019: this sent a verification with no expiry; the date is now
+  // required on every document, so the replay is pinned with one.
+  it('a verification is replayed under one Idempotency-Key, written once', async () => {
     const memberId = await newMember('0634941002');
     const key = newId();
     const send = () =>
@@ -186,7 +190,7 @@ describe('s494 money gate — 1: an expired document keeps the rate and flags re
         method: 'POST',
         url: `/members/${memberId}/tier-verification`,
         headers: { cookie, 'idempotency-key': key },
-        payload: { toTier: 'expat', evidenceType: 'Passport' },
+        payload: { toTier: 'expat', evidenceType: 'Passport', evidenceExpiresAt: NEXT_YEAR },
       });
     const a = await send();
     const b = await send();
@@ -195,7 +199,7 @@ describe('s494 money gate — 1: an expired document keeps the rate and flags re
     expect(b.json()).toEqual(a.json());
     const rows = await ctx.db.select().from(memberTierVerification).where(eq(memberTierVerification.memberId, memberId));
     expect(rows).toHaveLength(1);
-    expect(rows[0]!.evidenceExpiresAt).toBeNull();
+    expect(rows[0]!.evidenceExpiresAt?.toISOString().slice(0, 10)).toBe(NEXT_YEAR);
   });
 });
 
@@ -213,7 +217,7 @@ describe('s494 money gate — 2: Tourist for a verified member; an unverified ti
       method: 'POST',
       url: `/members/${verifiedMember}/tier-verification`,
       headers: { cookie, 'idempotency-key': newId() },
-      payload: { toTier: 'expat', evidenceType: 'Passport' },
+      payload: { toTier: 'expat', evidenceType: 'Passport', evidenceExpiresAt: NEXT_YEAR },
     });
     const expatPrice = await quote({ memberId: verifiedMember, tier: 'expat', lines: [cartLine] });
     expect(expatPrice.json().tier).toBe('expat');
@@ -235,7 +239,7 @@ describe('s494 money gate — 2: Tourist for a verified member; an unverified ti
       method: 'POST',
       url: `/members/${memberId}/tier-verification`,
       headers: { cookie, 'idempotency-key': newId() },
-      payload: { toTier: 'thai', evidenceType: 'Driving licence' },
+      payload: { toTier: 'thai', evidenceType: 'Driving licence', evidenceExpiresAt: NEXT_YEAR },
     });
     const cartLine = ticketLine(1, 2);
     const q = await quote({ memberId, tier: 'tourist', lines: [cartLine] });

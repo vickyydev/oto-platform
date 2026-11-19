@@ -23,9 +23,11 @@ import { TIER_PROOF_OTHER } from '@oto/shared';
 
 export {
   TIER_PROOF_CHOICES,
+  TIER_PROOF_EXPIRY_PROBLEMS,
   TIER_PROOF_NOTE_MAX,
   TIER_PROOF_OTHER,
   TIER_PROOF_TYPES,
+  tierProofExpiryProblem,
   tierProofLabel,
   tierProofNoteProblem,
 } from '@oto/shared';

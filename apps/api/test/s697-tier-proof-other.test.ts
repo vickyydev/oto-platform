@@ -20,6 +20,10 @@ import {
  * required (two words at least), never a document number, needs no expiry,
  * and is saved as the verification's note and as the sale claim's note. The
  * audit rows carry the kind only.
+ *
+ * SCRUM-1019 (the owner's answer of 19 November 2026): the expiry date is now
+ * required on every document, Other included, so every check here carries
+ * one and the "no expiry" pins below read the date back instead.
  */
 
 let ctx: TestContext;
@@ -30,13 +34,14 @@ let twoHoursId: string;
 let memberId: string;
 
 const DESCRIPTION = 'Thai driving licence';
+const NEXT_YEAR = `${new Date().getUTCFullYear() + 1}-06-30`;
 
 function verify(payload: Record<string, unknown>) {
   return ctx.app.inject({
     method: 'POST',
     url: `/members/${memberId}/tier-verification`,
     headers: { cookie, 'idempotency-key': newId() },
-    payload: { toTier: 'thai', evidenceType: 'Other', ...payload },
+    payload: { toTier: 'thai', evidenceType: 'Other', evidenceExpiresAt: NEXT_YEAR, ...payload },
   });
 }
 
@@ -45,7 +50,7 @@ function claim(payload: Record<string, unknown>) {
     method: 'POST',
     url: '/sales/tier-claims',
     headers: { cookie },
-    payload: { branchId, toTier: 'thai', evidenceType: 'Other', ...payload },
+    payload: { branchId, toTier: 'thai', evidenceType: 'Other', evidenceExpiresAt: NEXT_YEAR, ...payload },
   });
 }
 
@@ -102,7 +107,7 @@ describe('SCRUM-697 — verify a member on an Other document', () => {
     });
   });
 
-  it('records Other with its description and no expiry, and reads it back on the member', async () => {
+  it('records Other with its description and its expiry, and reads it back on the member', async () => {
     const res = await verify({ note: `  ${DESCRIPTION} ` });
     expect(res.statusCode, res.body).toBe(200);
     expect(res.json().member.tierCode).toBe('thai');
@@ -110,7 +115,7 @@ describe('SCRUM-697 — verify a member on an Other document', () => {
       tier: 'thai',
       proofType: 'Other',
       note: DESCRIPTION,
-      expiresAt: null,
+      expiresAt: NEXT_YEAR,
       reverifyDue: false,
     });
 
@@ -120,7 +125,8 @@ describe('SCRUM-697 — verify a member on an Other document', () => {
       .where(eq(memberTierVerification.memberId, memberId))
       .orderBy(desc(memberTierVerification.createdAt))
       .limit(1);
-    expect(row).toMatchObject({ evidenceType: 'Other', note: DESCRIPTION, evidenceExpiresAt: null });
+    expect(row).toMatchObject({ evidenceType: 'Other', note: DESCRIPTION });
+    expect(row!.evidenceExpiresAt?.toISOString().slice(0, 10)).toBe(NEXT_YEAR);
 
     // The audit row names the kind; the free text stays out of the log.
     const [logged] = await ctx.db
@@ -159,7 +165,7 @@ describe('SCRUM-697 — a walk-in claim on an Other document', () => {
     expect(res.json().claim).toMatchObject({
       toTier: 'thai',
       evidenceType: 'Other',
-      evidenceExpiresAt: null,
+      evidenceExpiresAt: NEXT_YEAR,
       note: DESCRIPTION,
     });
 

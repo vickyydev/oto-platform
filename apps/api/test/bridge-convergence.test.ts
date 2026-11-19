@@ -506,45 +506,54 @@ describe('a tier changed at a counter with no internet (OD-11)', () => {
     expect(evidence!.verifiedByAccountId).toBe(receptionAccountId);
   });
 
-  it('a document with no expiry date replays as evidence that never expires', async () => {
+  // SCRUM-1019 (the owner's answer of 19 November 2026): this pinned that a
+  // document with no expiry date verified a tier at the box offline and
+  // replayed as evidence that never expires. Every new document check now
+  // carries its date, offline as online, so the box refuses one without it
+  // and nothing reaches the platform. A dateless check an earlier box already
+  // recorded still files on replay (sync-api.test.ts, the "Earlier check").
+  it('a document with no expiry date is refused at the box offline, as online; nothing reaches the platform', async () => {
     const [seeded] = await ctx.db.select().from(member).where(eq(member.phone, '+66844444444'));
     const verificationId = newId();
     link.cut = true;
     await agentB.setOffline(true, { reason: 'tier change offline, no expiry' });
-    const bridge = agentB.bridge()!;
-    const opened = await bridge.unlock(counterId, {
-      token: tokenB.token,
-      password: RECEPTION.password,
-    });
-    const caller = (await bridge.authenticate(counterId, opened.session)) as BridgeTillCaller;
-    const answer = await bridge.intent(
-      counterId,
-      caller,
-      intent('member.tier_change', {
-        direction: 'upgrade',
-        memberId: seeded!.id,
-        verificationId,
-        toTier: 'thai',
-        evidenceType: 'Driving licence',
-      }),
-    );
-    expect((answer.result as { member: { tierCode: string } }).member.tierCode).toBe('thai');
-    link.cut = false;
-    await agentB.setOffline(false);
+    try {
+      const bridge = agentB.bridge()!;
+      const opened = await bridge.unlock(counterId, {
+        token: tokenB.token,
+        password: RECEPTION.password,
+      });
+      const caller = (await bridge.authenticate(counterId, opened.session)) as BridgeTillCaller;
+      await expect(
+        bridge.intent(
+          counterId,
+          caller,
+          intent('member.tier_change', {
+            direction: 'upgrade',
+            memberId: seeded!.id,
+            verificationId,
+            toTier: 'thai',
+            evidenceType: 'Driving licence',
+          }),
+        ),
+      ).rejects.toMatchObject({ status: 400, message: "Enter the document's expiry date." });
+    } finally {
+      link.cut = false;
+      await agentB.setOffline(false);
+    }
     await agentB.outbox()!.flush();
     const [after] = await ctx.db.select().from(member).where(eq(member.id, seeded!.id));
-    expect(after!.tierCode).toBe('thai');
-    const [evidence] = await ctx.db
+    expect(after!.tierCode).toBe(seeded!.tierCode);
+    const evidence = await ctx.db
       .select()
       .from(memberTierVerification)
       .where(eq(memberTierVerification.id, verificationId));
-    expect(evidence).toMatchObject({ toTier: 'thai', evidenceType: 'Driving licence' });
-    expect(evidence!.evidenceExpiresAt).toBeNull();
-    const [row] = await ctx.db
+    expect(evidence).toHaveLength(0);
+    const rows = await ctx.db
       .select()
       .from(auditLog)
       .where(and(eq(auditLog.entityId, verificationId), eq(auditLog.action, 'member.tier_verify')));
-    expect((row!.after as { evidenceExpiresAt: unknown }).evidenceExpiresAt).toBeNull();
+    expect(rows).toHaveLength(0);
   });
 });
 

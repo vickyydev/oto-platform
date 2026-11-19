@@ -779,7 +779,10 @@ test('OD-11: a tier upgraded on a document at the counter prices the next cart; 
   r.t.close();
 });
 
-test('OD-11: a document with no expiry date verifies a tier offline; an expired one is refused', async () => {
+// SCRUM-1019 (the owner's answer of 19 November 2026): this test pinned that a
+// document with no expiry date verified a tier offline. Every document now
+// carries its date, Other included, offline as online; it pins that instead.
+test('OD-11 / SCRUM-1019: a document verifies a tier offline only with its expiry date, never an expired one', async () => {
   const r = await rig();
   const { caller } = await r.bridge.unlock(STATION_ID, {
     token: token(r.now.at),
@@ -806,6 +809,22 @@ test('OD-11: a document with no expiry date verifies a tier offline; an expired 
     ),
     (err: unknown) => err instanceof BridgeError && err.status === 400,
   );
+  await assert.rejects(
+    r.bridge.intent(
+      STATION_ID,
+      caller,
+      intent('member.tier_change', {
+        direction: 'upgrade',
+        memberId,
+        verificationId: '018f0000-0000-7000-8000-0000000000eb',
+        toTier: 'thai',
+        evidenceType: 'Driving licence',
+      }),
+    ),
+    (err: unknown) =>
+      err instanceof BridgeError && err.status === 400 && err.message === "Enter the document's expiry date.",
+    'a document with no expiry date is refused, in the platform’s words',
+  );
   const upgraded = await r.bridge.intent(
     STATION_ID,
     caller,
@@ -815,12 +834,18 @@ test('OD-11: a document with no expiry date verifies a tier offline; an expired 
       verificationId: '018f0000-0000-7000-8000-0000000000ea',
       toTier: 'thai',
       evidenceType: 'Driving licence',
+      evidenceExpiresAt: '2027-09-30',
     }),
   );
   assert.equal((upgraded.result?.member as { tierCode: string }).tierCode, 'thai');
   const [, factTier] = (await r.t.store.takeBatch(BOX_ID)).events;
   assert.equal(factTier!.type, 'member.tier_changed');
-  assert.equal(factTier!.payload.evidenceExpiresAt, undefined);
+  assert.equal(factTier!.payload.evidenceExpiresAt, '2027-09-30');
+  assert.equal(
+    OfflineMemberTierChangedSchema.safeParse({ ...factTier!.payload, evidenceExpiresAt: undefined }).success,
+    true,
+    'a check an earlier counter recorded with no date still replays',
+  );
   r.t.close();
 });
 
@@ -846,6 +871,8 @@ test('SCRUM-697: an Other document verifies a tier offline only with what staff 
         verificationId,
         toTier: 'thai',
         evidenceType: 'Other',
+        // SCRUM-1019: every document, Other included, carries its expiry date.
+        evidenceExpiresAt: '2027-09-30',
         ...(note === undefined ? {} : { note }),
       }),
     );
@@ -869,7 +896,7 @@ test('SCRUM-697: an Other document verifies a tier offline only with what staff 
   assert.equal(factTier!.type, 'member.tier_changed');
   assert.equal(factTier!.payload.evidenceType, 'Other');
   assert.equal(factTier!.payload.note, 'Thai driving licence');
-  assert.equal(factTier!.payload.evidenceExpiresAt, undefined, 'none was entered, so none is carried');
+  assert.equal(factTier!.payload.evidenceExpiresAt, '2027-09-30', 'the date entered is carried');
   assert.equal(OfflineMemberTierChangedSchema.safeParse(factTier!.payload).success, true);
   r.t.close();
 });

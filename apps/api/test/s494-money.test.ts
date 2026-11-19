@@ -35,7 +35,9 @@ import {
  *   1. A tier verification needs no document expiry (VerifyTierModal.tsx:43
  *      in the approved design: proof type only). A recorded expiry that has
  *      passed keeps the rate and raises `reverifyDue`; the member's sales go
- *      through at the rate the till shows.
+ *      through at the rate the till shows. SCRUM-1019 (the owner's answer of
+ *      19 November 2026) made the expiry date required on every document;
+ *      the entry-1 tests below pin that now, and "does not lapse" stands.
  *   2. The tier staff pick is honoured downwards: a verified member sold at the
  *      default tier (StepCustomerType, Till.tsx handlePickTier) is priced at
  *      it. A tier the member is not verified for prices nothing.
@@ -52,6 +54,8 @@ let receptionId: string;
 let twoHoursId: string;
 let memberId: string;
 const productIds = new Map<string, string>();
+/** SCRUM-1019 — every document check carries its expiry date. */
+const NEXT_YEAR = `${new Date().getUTCFullYear() + 1}-06-30`;
 
 const ticketLine = (kids: number, adults: number, addOns: unknown[] = []) => ({
   id: newId(),
@@ -143,20 +147,29 @@ afterAll(async () => {
   await teardownAll();
 });
 
-describe('s494 money — entry 1: a verification needs no expiry and does not lapse', () => {
-  it('records a verification with the proof type only, audited', async () => {
-    const res = await ctx.app.inject({
+describe('s494 money — entry 1: a verification carries its expiry (SCRUM-1019) and does not lapse', () => {
+  // SCRUM-1019: this pinned "the proof type only"; the date is now required.
+  it('records a verification with its document expiry, audited; none without the date', async () => {
+    const undated = await ctx.app.inject({
       method: 'POST',
       url: `/members/${memberId}/tier-verification`,
       headers: { cookie, 'idempotency-key': newId() },
       payload: { toTier: 'expat', evidenceType: 'Passport' },
+    });
+    expect(undated.statusCode, undated.body).toBe(400);
+    expect(undated.json().error.code).toBe('TIER_PROOF_EXPIRY');
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: `/members/${memberId}/tier-verification`,
+      headers: { cookie, 'idempotency-key': newId() },
+      payload: { toTier: 'expat', evidenceType: 'Passport', evidenceExpiresAt: NEXT_YEAR },
     });
     expect(res.statusCode, res.body).toBe(200);
     expect(res.json().member.tierCode).toBe('expat');
     expect(res.json().member.tierVerification).toMatchObject({
       tier: 'expat',
       proofType: 'Passport',
-      expiresAt: null,
+      expiresAt: NEXT_YEAR,
       reverifyDue: false,
     });
     const audits = await ctx.db
@@ -215,21 +228,25 @@ describe('s494 money — entry 1: a verification needs no expiry and does not la
   });
 });
 
-describe('s494 money — entry 1, walk-in: a tier claim needs no expiry either', () => {
+describe('s494 money — entry 1, walk-in: a tier claim carries its expiry too (SCRUM-1019)', () => {
   async function claim(payload: Record<string, unknown>) {
     return ctx.app.inject({
       method: 'POST',
       url: '/sales/tier-claims',
       headers: { cookie, 'idempotency-key': newId() },
-      payload: { branchId, toTier: 'thai', evidenceType: 'Driving licence', ...payload },
+      payload: { branchId, toTier: 'thai', evidenceType: 'Driving licence', evidenceExpiresAt: NEXT_YEAR, ...payload },
     });
   }
 
-  it('records a claim with the proof type only, audited, and it prices the walk-in sale', async () => {
+  // SCRUM-1019: this pinned "the proof type only"; the date is now required.
+  it('records a claim with its document expiry, audited, and it prices the walk-in sale', async () => {
+    const undated = await claim({ actionId: newId(), evidenceExpiresAt: null });
+    expect(undated.statusCode, undated.body).toBe(400);
+    expect(undated.json().error.code).toBe('TIER_PROOF_EXPIRY');
     const actionId = newId();
     const res = await claim({ actionId });
     expect(res.statusCode, res.body).toBe(200);
-    expect(res.json().claim).toMatchObject({ toTier: 'thai', evidenceExpiresAt: null });
+    expect(res.json().claim).toMatchObject({ toTier: 'thai', evidenceExpiresAt: NEXT_YEAR });
 
     // The same tap again is the same claim, not a second decision.
     const again = await claim({ actionId });
@@ -237,13 +254,13 @@ describe('s494 money — entry 1, walk-in: a tier claim needs no expiry either',
     expect(again.json().claim.id).toBe(res.json().claim.id);
 
     const [row] = await ctx.db.select().from(saleTierClaim).where(eq(saleTierClaim.actionId, actionId));
-    expect(row!.evidenceExpiresAt).toBeNull();
+    expect(row!.evidenceExpiresAt).toBe(NEXT_YEAR);
     const trail = await ctx.db
       .select()
       .from(auditLog)
       .where(and(eq(auditLog.entityType, 'sale_tier_claim'), eq(auditLog.actionId, actionId)));
     expect(trail).toHaveLength(1);
-    expect((trail[0]!.after as { evidenceExpiresAt: unknown }).evidenceExpiresAt).toBeNull();
+    expect((trail[0]!.after as { evidenceExpiresAt: unknown }).evidenceExpiresAt).toBe(NEXT_YEAR);
 
     const cartLine = ticketLine(2, 1);
     const quoted = await quote({ tier: 'thai', tierClaimActionId: actionId, lines: [cartLine] });
