@@ -1,3 +1,26 @@
+## 19 November 2026, late: the domains and the old stored files (cutover)
+
+- **Domains (SCRUM-923, switch the domains):** the previous developer
+  unlocked the first of the two domains and gave the owner its transfer code;
+  the second follows after 22 November. Public DNS shows both on his AWS DNS
+  zones, pointing at the old app, with no mail records. The owner requests
+  the transfer at his registrar (he is weighing the GM's existing account);
+  nameservers stay as they are; the DNS zone moves to the owner's hosting
+  days before the switch so that switch day is one record change.
+- **Old stored files (SCRUM-1046, copy the old app's stored photos and
+  documents into the new app's storage):** the owner put the read access in
+  `C:\oto-data\s3-old.env` (outside the repository). Counted, looking only:
+  10,311 files, 13.7 GB in the live storage; the database's paths match the
+  file names once the new app's own top folder is put in front, so a plain
+  copy repairs the links with no database change. 998 files the database
+  names are not there (848 check-in photos): to settle. An older storage in
+  another AWS account, named in the old app's first configuration, cannot be
+  opened with this access. Face clock-in data lives in a separate store.
+  Nothing is copied yet; the copy to staging waits for the owner's go.
+- Inventory files (file names, private): `C:\oto-data\work\s3-inventory-*`.
+  Scripts: session scratchpad `s3-old-*.cjs`, `s3-inventory2.cjs`,
+  `s3-match-dump.cjs` (to be moved into `tools/data/` when the copy is built).
+
 ## 19 November 2026, late: six lanes; family profiles' first steps started
 
 - **Family profiles, steps F1 and F2 (SCRUM-1024):** started without waiting
