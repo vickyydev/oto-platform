@@ -10,7 +10,7 @@ import {
   roles,
   users,
 } from "@shared/schema";
-import { buildBeoTimeline, type BeoTimeline, type BeoTimelineSource } from "@shared/beoTimeline";
+import { buildBeoTimeline, type BeoTimeline, type BeoTimelineActivity, type BeoTimelineSource } from "@shared/beoTimeline";
 import { db } from "../db";
 
 /** The event's fields the timeline reads. */
@@ -57,6 +57,23 @@ async function activityPeopleOf(tenantId: string, targetIds: string[]): Promise<
 }
 
 /**
+ * SCRUM-1028: the event's activities as stored (its `beo_entertainment_items`, in their order), each
+ * with its own person: what the timeline reads, and what the Staff BEO's Entertainment part prints.
+ */
+export async function beoActivitiesOf(
+  tenantId: string,
+  acts: ReadonlyArray<{ id: string; customName: string | null; startTime: string | null; assignmentTargetId: string | null }>,
+): Promise<BeoTimelineActivity[]> {
+  const people = await activityPeopleOf(tenantId, [...new Set(acts.map((a) => a.assignmentTargetId).filter((id): id is string => !!id))]);
+  return acts.map((a) => ({
+    id: a.id,
+    customName: a.customName,
+    startTime: a.startTime,
+    person: a.assignmentTargetId ? people.get(a.assignmentTargetId) ?? null : null,
+  }));
+}
+
+/**
  * SCRUM-1027: the stored BEO as the timeline reads it. `rows` adds the stored timeline rows (the
  * typed steps, and the automatic rows' ticks); `people` adds each activity's own person. The
  * generator that stores the automatic rows asks for neither.
@@ -76,9 +93,6 @@ export async function beoTimelineSourceOf(
       .where(eq(beoTimelineItems.eventId, event.id))
       .orderBy(asc(beoTimelineItems.sortOrder))
     : [];
-  const people = want.people
-    ? await activityPeopleOf(event.tenantId, [...new Set(acts.map((a) => a.assignmentTargetId).filter((id): id is string => !!id))])
-    : new Map<string, string>();
   return {
     startTime: event.startTime,
     endTime: event.endTime,
@@ -86,12 +100,9 @@ export async function beoTimelineSourceOf(
     setupPlan: setupPlan ?? null,
     kitchenPlan: kitchenPlan ?? null,
     barPlan: barPlan ?? null,
-    activities: acts.map((a) => ({
-      id: a.id,
-      customName: a.customName,
-      startTime: a.startTime,
-      person: a.assignmentTargetId ? people.get(a.assignmentTargetId) ?? null : null,
-    })),
+    activities: want.people
+      ? await beoActivitiesOf(event.tenantId, acts)
+      : acts.map((a) => ({ id: a.id, customName: a.customName, startTime: a.startTime, person: null })),
     rows: rows.map((r) => ({
       id: r.id,
       label: r.label,

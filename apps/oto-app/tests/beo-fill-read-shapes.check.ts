@@ -685,7 +685,9 @@ try {
     assert.equal(price(read, />ZZ TEST mango sticky rice/), "EXTRA Price unresolved - not charged", "a typed dish the till does not sell");
     assert.equal(price(read, />ZZ TEST bubble tea/), "EXTRA till price 120 (weekend) (made for this party)");
     assert.equal(price(read, />Pepperoni pizza for us/), "EXTRA till price 420 (weekend)", "the adults' own EXTRA");
-    const barPart = read.slice(read.indexOf("<h2>Bar Plan</h2>"));
+    // SCRUM-1028: the Staff BEO's bar part is headed "Bar" (it was "Bar Plan"); what it prints is unchanged.
+    assert.ok(read.includes("<h2>Bar</h2>"), "the bar part is printed");
+    const barPart = read.slice(read.indexOf("<h2>Bar</h2>"));
     assert.equal(price(barPart, />Latte/), "EXTRA till price 155 (weekend)");
     assert.equal(price(barPart, />Water/), "EXTRA Price unresolved - not charged");
     // The very words of the editor's hint (shared/beoExtras.ts), line by line.

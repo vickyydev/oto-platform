@@ -518,7 +518,12 @@ describe('A. fences and seams', () => {
       // SCRUM-1027: the Timeline section prints the one timeline the system makes (shared/beoTimeline.ts,
       // beoPdfTimelineOf): what is served and the step's person beside each step, and the steps with no time
       // listed under it; PDF generation and where the BEO's documents live are unchanged.
-      'pdf.ts': '3cf57865578615792ae5f5117899bc300887d86b0c16f767bc87aeeca7a615c7',
+      // SCRUM-1028: the Staff BEO print rebuilt on the stored BEO (beoPdfHtml): the header (the party,
+      // its hosts, the package box with the snapshot's allowance and the till's money as before), the one
+      // timeline, then Kitchen on the left (the adults as their own list when they eat differently) and
+      // Setup, Bar, Entertainment, Cake and Notes on the right; generateBeoPdf prints a footer naming the
+      // party and its page on every page; where the BEO's documents live is unchanged.
+      'pdf.ts': '3f71644c4ee0d75eefaa06bcd86cd8fee86fe4b7aa2948e41d6dd41bce982bef',
       // SCRUM-803 / SCRUM-806: Generate from BEO bills the package in baht and only the add-ons a party bought; where the BEO's documents live is unchanged.
       // SCRUM-769: the BEO's staff list leaves out a login whose employment has ended (onStaff); where documents live is unchanged.
       // SCRUM-815: the parent link's set-menu lines are resolved by server/lib/setMenuResolve.ts (moved, not changed) and the
@@ -576,7 +581,11 @@ describe('A. fences and seams', () => {
       // rows itself, and GET /api/events/:eventId/beo/timeline/built answers it after the event's own
       // access check; no PDF, file, bucket or public-folder door is added; where the BEO's documents live
       // is unchanged.
-      'beo-routes.ts': '51fe0589c6d06ac623a245af362c61f0dd4dc36b6322111e005c4770ea401eb5',
+      // SCRUM-1028: the PDF route hands the Staff BEO the party's package snapshot and each activity with
+      // its own person (beoActivitiesOf, server/lib/beoTimelineRead.ts), after the event's own access
+      // check; no PDF, file, bucket or public-folder door is added; where the BEO's documents live is
+      // unchanged.
+      'beo-routes.ts': '7538903f6198eee177d3f76f645bc0604487797c780d3a6c624a19b45fd7b05f',
       'orgChartRoutes.ts': 'eff8d4478165e8b0157ef07d37891222104f751b49932e70f525f06366fe9d90',
     };
     for (const [file, hash] of Object.entries(main)) expect(sha256(committed(join(APP_SERVER, file))), file).toBe(hash);

@@ -59,7 +59,7 @@ import { gatewayDepositFloor } from "./party-deposit-routes";
 import type { DepositSaveNote } from "@shared/partyDeposit";
 import { OBJECT_STORAGE } from "./config/env";
 import { beoTimedMadeSteps } from "@shared/beoTimeline";
-import { beoTimelineSourceOf, readBeoTimeline } from "./lib/beoTimelineRead";
+import { beoActivitiesOf, beoTimelineSourceOf, readBeoTimeline } from "./lib/beoTimelineRead";
 import { uploadToObjectStorage } from "./file-storage";
 import { s3PresignedGet } from "./storage/s3Storage";
 import { onStaff } from "./lib/payOnlyAccess";
@@ -2912,6 +2912,15 @@ export function registerBeoRoutes(app: Express) {
         till: await readingFor(event, req.requestId),
         // SCRUM-1027: the one timeline, and the steps with no time that no other part of the page shows.
         ...beoPdfTimelineOf(timeline),
+        // SCRUM-1028: the header's package as the party's snapshot stores it, and the Entertainment
+        // part's activities, each with its time and its own person (as the timeline reads them).
+        packageSnapshot: pdfPkgSnapshot ? {
+          packageName: pdfPkgSnapshot.packageName,
+          kidsIncluded: pdfPkgSnapshot.kidsIncluded,
+          adultsIncluded: pdfPkgSnapshot.adultsIncluded,
+          includedSummary: pdfPkgSnapshot.includedSummary,
+        } : undefined,
+        entertainmentActs: await beoActivitiesOf(event.tenantId, entertainmentItems),
         branchName: branch?.name || undefined,
         branchAddress: branch?.address || undefined,
         branchLogoUrl: branch?.logoUrl || undefined,
