@@ -1,3 +1,28 @@
+## 19 November 2026, night: family profiles answered; the inbox follow-up builds
+
+- **Family profiles (SCRUM-1024, 1025):** the owner answered the plan's eight
+  rules. They are in `ANSWERS.md` section 4 and at the end of
+  `FAMILY_PROFILES_PLAN.md`. Shared rate, shared credit, removal by any
+  reception staff, a message to the existing parents, a notice to the other
+  parent, camp numbers including the people allowed to collect; collecting a
+  child is unchanged. One point is open: the rate when two parents hold
+  different verified rates. The build starts with the tables and the backfill
+  when the counter flow has landed.
+- **Inbox follow-up (owner's word after seeing the redesign):** SCRUM-1043
+  "Unified Inbox: clearer field and button borders, and small layout repairs
+  after the redesign" and SCRUM-1044 "Unified Inbox: the settings pages
+  redesigned to match the new Inbox". Workflow wf_51ed8906-c56,
+  `C:/oto-lanes/codex-inbox-feedback-20261116`, branch
+  `lane/inbox1043-20261119`, checkpoints on `wip/inbox1043-20261119`.
+- **Lanes now:** drop-off counter flow (second of four build stages), BEO
+  timeline and print (print stage), HR smaller requests (third stage), till
+  smaller requests (Mystery Box stage), inbox follow-up (first stage).
+- **Reported by the lanes, for the owner:** the phone till's drop-off form
+  still lets whoever holds the phone change the number; "holidays" for staff
+  was read as the Days Off type, and staff cannot request leave in the HR app
+  today (managers record it); on old events the printed timeline shows one
+  "Setup ready" step instead of a row per setup task.
+
 ## 19 November 2026, evening: the inbox redesign is on staging (SCRUM-1016, Deployed)
 
 - **Landed** at main 7547eace2 (22 commits), proof pictures at b9cde6bd6

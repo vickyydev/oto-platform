@@ -1,6 +1,6 @@
 # Family profiles: several parents or guardians for the same children
 
-SCRUM-1024 and SCRUM-1025. **State, 19 November 2026: PROPOSED.** A plan written from a read of the code at main 3231ee7e3; nothing is built. The eight questions of section 10 are the owner's to answer before the build starts. The specification is section 4 of `ANSWERS.md` beside this file. The code comparison is `DROPOFF_AND_TILL_COMPARISON.md`: rows D15 to D17 and its section 3. Nothing here is decided beyond those answers. Where a rule still belongs to the owner, it is a numbered question in section 10, with today's behaviour as the default until he answers.
+SCRUM-1024 and SCRUM-1025. **State, 19 November 2026, evening: APPROVED, the eight questions answered; nothing is built yet.** The owner answered section 10 on his plan page; his answers are at the end of that section and in section 4 of ANSWERS.md. A plan written from a read of the code at main 3231ee7e3. The build starts with steps F1 and F2 when the drop-off counter flow has landed. The specification is section 4 of `ANSWERS.md` beside this file. The code comparison is `DROPOFF_AND_TILL_COMPARISON.md`: rows D15 to D17 and its section 3. Nothing here is decided beyond those answers. Where a rule still belongs to the owner, it is a numbered question in section 10, with today's behaviour as the default until he answers.
 
 ## 1. Today's model
 
@@ -308,3 +308,16 @@ Lanes A, C and D touch different files: `services/family.ts` is read-only to C, 
 6. **When a parent or guardian is added, do the existing parents get a short message saying so?** A. No. B. Yes. Today: A.
 7. **The other parent's check-in message.** A. The same connection check, asking them to confirm their number. B. A notice naming the children and who dropped them off. Today: only the drop-off number is messaged.
 8. **Which camp numbers find a child?** A. The main contact and the additional parent contacts. B. Also numbers written under authorised pickup persons (the HR app's own code check accepts them). Today: no camp child is offered.
+
+### The owner's answers (19 November 2026)
+
+1. A (unchanged: staff add a collector for that stay). 2. B: the family shares one verified rate. 3. B: either parent's number finds the family's credit. 4. B: any reception staff, recorded with who and when. 5. A: the same as the first parent. 6. B: the parents already on the family get a short message. 7. B: a notice naming the children and who dropped them off. 8. B: also the numbers written under people allowed to collect.
+
+What the answers add to the plan:
+
+- **Answer 2** makes the rate a family matter: section 8 and step F4 gain the rule for reading a rate through the family. Still open with him: which rate applies when two parents each hold a different verified rate. The working reading is a parent's own valid rate first, otherwise a valid rate held by another parent on the family.
+- **Answer 3** adds a step after F3: credit vouchers and ticket credit are found through the family, not only through the member whose sale made them. A child's prepaid food is unchanged.
+- **Answer 4** adds removal to F4: any reception staff, audited; the removed parent's number stops finding the children at once, and on the counter box at its next pull.
+- **Answer 6** adds one message to F4 and F6, with the same once-only guard as the check-in copies.
+- **Answer 7** fixes the wording of F6.
+- **Answer 8** widens the camp view of F7a to numbers found in the free text of people allowed to collect; a number is taken only when it normalises to a valid phone number.

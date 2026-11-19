@@ -99,6 +99,31 @@ switches on with the payment gateway.
 - The line on the form about linking another parent is added with family
   profiles, not before.
 
+The eight rules the plan raised (`FAMILY_PROFILES_PLAN.md`, section 10),
+answered the same evening:
+
+1. **Collecting a child:** unchanged. A parent on the family who did not drop
+   the child off is added by staff as a collector for that stay, or recorded
+   on the spot.
+2. **The rate:** the family shares one verified rate.
+3. **Credit vouchers and ticket credit:** either parent's number finds the
+   family's credit.
+4. **Taking a parent or guardian off a family:** any reception staff,
+   recorded with who and when.
+5. **What the added parent may do:** the same as the first parent.
+6. **When a parent or guardian is added,** the parents already on the family
+   get a short message saying so.
+7. **The other parent's check-in message:** a notice naming the children and
+   who dropped them off.
+8. **Camp numbers that find a child:** the main contact, the additional
+   parent contacts, and also the numbers written under people allowed to
+   collect.
+
+One point inside answer 2 is still his to settle before that step is built:
+which rate the family takes when two parents each hold a different verified
+rate. Until then the plan's reading is: a parent's own valid rate first,
+otherwise a valid rate held by another parent on the family.
+
 ## 5. The BEO
 
 Kept as today by his answers (so three of the plan's ten steps fall away):
