@@ -3,6 +3,7 @@ import { child, member, type Db } from '@oto/db';
 import type { FamilyOnlineChild } from '@oto/shared';
 import { AppError, errors } from '../lib/errors';
 import { audit } from './audit';
+import { ensureFamilyFor } from './family';
 import { familyPassMember, publicSavedChildrenOf, type PublicSavedChild } from './member-code';
 import { BOOKING_SITE_SOURCE, archiveChild, childCacheView, memberCacheView } from './members';
 import { recordChange } from './sync';
@@ -227,9 +228,12 @@ export async function saveFamilyOnline(
             medicalAlert: Boolean(allergies),
             foodRestrictions: blank(sent.foodRestrictions),
           };
+          // SCRUM-1024 — the child's family (nothing reads it yet).
+          const { familyId } = await ensureFamilyFor(tx, { operatorId: input.operatorId, memberId, childId: id, source: 'booking',
+            context: { accountId: null, branchId: input.branchId, stationId: null, requestId: ctx.requestId ?? null, origin: BOOKING_SITE_SOURCE } });
           const [created] = await tx
             .insert(child)
-            .values({ id, memberId, ...details, consentRecordedAt: now })
+            .values({ id, memberId, familyId, ...details, consentRecordedAt: now })
             .returning();
           await recordChange(tx, { operatorId: input.operatorId, branchId: null }, {
             scope: 'members',

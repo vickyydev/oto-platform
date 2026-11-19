@@ -96,6 +96,7 @@ import { AppError } from '../lib/errors';
 import { pgErrorOf } from '../lib/scrub';
 import type { BranchReach } from './access-control';
 import { audit } from './audit';
+import { ensureFamilyFor } from './family';
 import { addVisitChildren } from './visit-children';
 import { readStationsSellingReadiness } from './payments/terminal';
 /**
@@ -1768,11 +1769,16 @@ const HANDLERS: Record<string, EventHandler> = {
         }
       }
 
+      // SCRUM-1024 — the child lands in the (surviving) member's family; nothing reads it yet.
+      const { familyId } = await ensureFamilyFor(tx, { operatorId: scope.auth.operatorId, memberId, childId: payload.childId,
+        source: 'sync', context: { accountId: event.envelope.actorAccountId ?? null, branchId: scope.auth.branchId,
+          stationId: event.envelope.stationId ?? null, actionId: event.envelope.actionId ?? null, sourceEventId: event.envelope.eventId } });
       const [created] = await tx
         .insert(child)
         .values({
           id: payload.childId,
           memberId,
+          familyId,
           name: payload.name.trim(),
           dateOfBirth: payload.dateOfBirth ?? null,
           ageYears: payload.ageYears ?? null,
