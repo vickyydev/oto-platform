@@ -533,7 +533,8 @@ export const SEGMENT_BAND = 'flex min-w-0 gap-1 rounded-[14px] bg-band p-1';
 /**
  * Which part of a list shows (Drafts, Approved, Archived; To review, …): one
  * switch of pressed buttons on the band, the width of the page on a phone
- * with equal segments, its own width from 768 px.
+ * with equal segments (no wider than 28 rem on a large one), its own width
+ * from 768 px.
  */
 export function ViewSwitch<T extends string>({
   label,
@@ -547,7 +548,7 @@ export function ViewSwitch<T extends string>({
   onChange: (v: T) => void;
 }) {
   return (
-    <div role="group" aria-label={label} className={`${SEGMENT_BAND} max-md:w-full`}>
+    <div role="group" aria-label={label} className={`${SEGMENT_BAND} max-md:w-full sm:max-w-md`}>
       {options.map(([v, words]) => (
         <button
           key={v}
