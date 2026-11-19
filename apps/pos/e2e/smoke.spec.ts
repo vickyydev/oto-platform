@@ -497,7 +497,9 @@ async function staffTakesPhoto(page: Page): Promise<void> {
  * member, and they go on as a walk-in at the Tourist rate (SCRUM-762).
  */
 function freshDigits(): string {
-  return `6${String(Math.floor(10_000_000 + Math.random() * 89_999_999))}`;
+  // A Thai mobile (09x): the form's number has to be one that can take the
+  // child's messages, or the family's Done waits for staff to change it.
+  return `9${String(Math.floor(10_000_000 + Math.random() * 89_999_999))}`;
 }
 
 async function walkInOnDisplay(page: Page, display: Page, digits: string): Promise<void> {
