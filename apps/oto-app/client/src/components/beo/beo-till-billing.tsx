@@ -168,7 +168,7 @@ export function PartyDetailsTillTiles({
   const readAt = figures ? readAtOf(reading) : null;
   return (
     <div className="space-y-2" data-testid="party-details-till">
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="space-y-1 p-3 rounded-md bg-primary/5 border">
           <Label className="text-xs text-muted-foreground">Total · from the till</Label>
           <p className={`font-bold font-mono ${figures ? "text-lg" : "text-sm text-amber-600"}`} data-testid="text-package-total">

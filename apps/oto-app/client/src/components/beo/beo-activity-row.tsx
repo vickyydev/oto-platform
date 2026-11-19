@@ -107,7 +107,7 @@ export function BeoActivityRow({
         ) : (
           <input
             type="time"
-            className="h-8 w-[6.75rem] shrink-0 rounded-md border border-input bg-background px-2 font-mono text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="h-8 w-[6.75rem] shrink-0 [@media(pointer:coarse)]:h-9 rounded-md border border-input bg-background px-2 font-mono text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             value={act.startTime || ""}
             onChange={(e) => onField({ startTime: e.target.value || null })}
             title="Its time puts the activity on the timeline"
@@ -120,7 +120,7 @@ export function BeoActivityRow({
             type="button"
             variant="ghost"
             size="icon"
-            className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
+            className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive [@media(pointer:coarse)]:h-9 [@media(pointer:coarse)]:w-9"
             onClick={onDelete}
             aria-label="Remove activity"
             data-testid={`button-delete-entertainment-act-${idx}`}
@@ -217,11 +217,11 @@ export function ActivityPeoplePicker({
         {people.map((p, at) => {
           const Icon = PERSON_ICON[p.type];
           const isRole = p.type === "role";
-          const stepper = "flex h-7 w-7 shrink-0 items-center justify-center rounded-full hover:bg-amber-500/20 disabled:opacity-40 disabled:hover:bg-transparent";
+          const stepper = "flex h-7 w-7 [@media(pointer:coarse)]:h-9 [@media(pointer:coarse)]:w-9 shrink-0 items-center justify-center rounded-full hover:bg-amber-500/20 disabled:opacity-40 disabled:hover:bg-transparent";
           return (
             <span
               key={`${keyOf(p)}:${at}`}
-              className={`inline-flex h-8 max-w-full items-center gap-1 rounded-full border pl-2.5 text-xs ${disabled ? "pr-2.5" : "pr-0.5"} ${
+              className={`inline-flex h-8 max-w-full items-center gap-1 rounded-full [@media(pointer:coarse)]:h-10 border pl-2.5 text-xs ${disabled ? "pr-2.5" : "pr-0.5"} ${
                 isRole ? "border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-300" : "border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300"
               }`}
               data-testid={`${testId}-chip-${at}`}
@@ -246,7 +246,7 @@ export function ActivityPeoplePicker({
                 </span>
               )}
               {!disabled && (
-                <button type="button" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full opacity-70 hover:bg-black/5 hover:opacity-100 dark:hover:bg-white/10" onClick={() => remove(at)} aria-label={`Remove ${p.label}`} data-testid={`${testId}-remove-${at}`}>
+                <button type="button" className="flex h-7 w-7 [@media(pointer:coarse)]:h-9 [@media(pointer:coarse)]:w-9 shrink-0 items-center justify-center rounded-full opacity-70 hover:bg-black/5 hover:opacity-100 dark:hover:bg-white/10" onClick={() => remove(at)} aria-label={`Remove ${p.label}`} data-testid={`${testId}-remove-${at}`}>
                   <X className="h-3 w-3" />
                 </button>
               )}
