@@ -175,6 +175,7 @@ function cartLineOf(
   // Each add-on's rows by its id, in the order the ledger first names it.
   const addOnRows = new Map<string, ApiSaleLine[]>();
   let promoItem: CartLine['promoItem'];
+  let creditFor: ApiSaleLine['creditFor'] = null;
   let supervised = false;
   let gross = 0;
   for (const row of rows) {
@@ -205,9 +206,16 @@ function cartLineOf(
           priceTHB: toBaht(row.unitSatang),
         };
         break;
-      case 'service_fee':
       case 'food_provision':
+        // SCRUM-1048 — extra food credit for a child on a ticket: its own line.
+        if (row.creditFor) {
+          creditFor = row.creditFor;
+          break;
+        }
         // Charged on a supervised child's line; its registration is the board's.
+        supervised = true;
+        break;
+      case 'service_fee':
         supervised = true;
         break;
       default:
@@ -230,6 +238,9 @@ function cartLineOf(
       addOns,
       lineTotal: toBaht(gross),
       ...(promoItem ? { promoItem } : {}),
+      ...(creditFor
+        ? { extraCredit: { forLineId: creditFor.cartLineId, kidOrdinal: creditFor.kidOrdinal, amountTHB: toBaht(gross) } }
+        : {}),
     },
     supervised: supervised || rows.some((r) => r.supervised === true),
   };

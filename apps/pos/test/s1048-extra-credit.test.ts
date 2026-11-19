@@ -2,7 +2,9 @@ import * as React from 'react';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ApiSaleDetail, ApiSaleLine } from '@/api/history';
 import { buildCartPayload, localQuote, type CartIdentity } from '@/api/sales';
+import { rebuildResumedSale } from '@/lib/resumeSale';
 import { EXTRA_CREDIT_NEEDS_INTERNET, finaliseOnBox, rungUpOnBox } from '@/api/boxSales';
 import { OrderSummary } from '@/components/till/OrderSummary';
 import { EXTRA_CREDIT_STEP_THB as FORM_STEP_THB } from '@/components/till/PublicConsentCapture';
@@ -177,6 +179,41 @@ describe('SCRUM-1048 (3): the order panel', () => {
     press('extra-credit-add');
     expect(added).toEqual([['zz-pick', 1, 250]]);
     expect(byTestId(view.result.current, 'extra-credit-adder')).toBeUndefined();
+  });
+});
+
+describe('SCRUM-1048 (3b): a sale left unpaid and resumed', () => {
+  const row = (over: Partial<ApiSaleLine> & Pick<ApiSaleLine, 'kind' | 'quantity' | 'unitSatang' | 'label' | 'cartLineId'>): ApiSaleLine => ({
+    id: `row-${over.cartLineId}-${over.kind}`, lineNo: 1, componentKey: null, ticketPackageId: oneHour.id,
+    revenueCategory: 'tickets', taxableCategory: 'tickets', baseSatang: over.unitSatang * over.quantity, discountSatang: 0,
+    netSatang: over.unitSatang * over.quantity, serviceChargeSatang: 0, taxSatang: 0, taxMode: 'inclusive', taxRateBp: 700,
+    taxName: 'VAT', grossSatang: over.unitSatang * over.quantity, customerTier: 'tourist', kidCount: 0, adultCount: 0,
+    freeAdultCount: 0, stayHours: 1, stayDurationLabel: '1 hour', ...over,
+  });
+
+  it('comes back as its own extra credit line for the same child, not as a supervised child', () => {
+    const ticketId = '0192a1b2-c3d4-7e5f-8a6b-7c8d9e0f1a01';
+    const creditId = '0192a1b2-c3d4-7e5f-8a6b-7c8d9e0f1a02';
+    const detail = {
+      sale: { id: 'zz-resumed', branchId: 'branch-1', stationId: 'station-1', memberId: null, visitId: null, businessDate: '2026-11-19',
+        occurredAt: '2026-11-19T03:10:00.000Z', status: 'tendering', pricingMode: 'weekday', pricingModeReason: 'Weekday pricing',
+        customerTier: 'tourist', engineVersion: 'engine-1', receiptNumber: null, receiptSeries: null, receiptSeq: null, finalisedAt: null, note: null,
+        totals: { subtotalSatang: 0, manualDiscountSatang: 0, promoDiscountSatang: 0, discountSatang: 0, netSatang: 0, serviceChargeSatang: 0,
+          taxInclusiveSatang: 0, taxExclusiveSatang: 0, grossSatang: 0, unappliedDiscountSatang: 0, refundedSatang: 0 } },
+      taxBreakdown: null,
+      lines: [
+        row({ cartLineId: ticketId, kind: 'kids', quantity: 2, unitSatang: 39_000, label: 'Kids' }),
+        row({ cartLineId: ticketId, kind: 'adults_paid', quantity: 1, unitSatang: 0, label: 'Adults' }),
+        row({ cartLineId: creditId, kind: 'food_provision', quantity: 1, unitSatang: 30_000, label: 'Prepaid food',
+          taxableCategory: 'stored_value', revenueCategory: 'stored_value', creditFor: { cartLineId: ticketId, kidOrdinal: 1 } }),
+      ],
+      discounts: [], attempts: [],
+    } as unknown as ApiSaleDetail;
+    const rebuilt = rebuildResumedSale(detail, { ticketTypes: [oneHour], addOns: [], discountByCode: () => null })!;
+    expect(rebuilt.supervised).toBe(false);
+    const credit = rebuilt.lines.find((l) => l.id === creditId)!;
+    expect(credit).toMatchObject({ kids: 0, adults: 0, lineTotal: 300, extraCredit: { forLineId: ticketId, kidOrdinal: 1, amountTHB: 300 } });
+    expect(followTickets(rebuilt.lines)).toBe(rebuilt.lines);
   });
 });
 
