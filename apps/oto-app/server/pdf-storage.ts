@@ -64,7 +64,8 @@ const s3BucketName = s3Bucket;
 // it used cloud storage, a folder on its own disk. The files are copied into
 // this app's own folders and the rows are not rewritten, so such a path names
 // a file by its folder and file name alone. The bucket and folders in front
-// of it are never trusted, and the name must be one this module writes.
+// of it are never trusted, and the name must be one this module writes; a
+// path in the app's own bucket is held to the same names.
 
 const PDF_ID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 /** The names this module writes in each folder: s3ContractKey, finalizedFilename, s3LetterKey. */
@@ -79,17 +80,21 @@ const OLD_DISK_PATH = /^\/uploads\/signed-contracts\/([^/]+)$/;
 
 /**
  * The key, in this app's own bucket, of the contract or letter a stored path
- * names, or null. A path in the app's own bucket keeps today's rule: its own
- * environment's contracts or letters folder. A path restored from the old
- * system names the file of that folder and name in the app's own bucket and
+ * names, or null. A path in the app's own bucket is its own key, when it is
+ * its own environment's contracts or letters folder and a name this module
+ * writes there, with nothing between. A path restored from the old system
+ * names the file of that folder and name in the app's own bucket and
  * environment folder; anything else is refused.
  */
 export function ownPdfKey(storagePath: string, bucket: string): string | null {
   const ownBucket = `/${bucket}/`;
   if (storagePath.startsWith(ownBucket)) {
     const key = storagePath.slice(ownBucket.length);
-    const inOwnFolder = key.startsWith(`${STORAGE_ENV_PREFIX}/${CONTRACTS_FOLDER}/`) || key.startsWith(`${STORAGE_ENV_PREFIX}/${LETTERS_FOLDER}/`);
-    return inOwnFolder ? key : null;
+    for (const folder of [CONTRACTS_FOLDER, LETTERS_FOLDER]) {
+      const ownFolder = `${STORAGE_ENV_PREFIX}/${folder}/`;
+      if (key.startsWith(ownFolder)) return PDF_NAMES[folder]?.test(key.slice(ownFolder.length)) ? key : null;
+    }
+    return null;
   }
   const oldStorage = OLD_STORAGE_PATH.exec(storagePath);
   const folder = oldStorage ? oldStorage[1] : CONTRACTS_FOLDER;

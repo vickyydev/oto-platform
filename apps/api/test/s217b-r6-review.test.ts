@@ -496,7 +496,9 @@ describe('A. fences and seams', () => {
       // this app's own bucket, environment folder and contracts or letters folder (ownPdfKey, a name this
       // module writes); the stream reader no longer reads a bucket a stored path names. Every write, and so
       // where documents are kept, is unchanged (tests/contract-pdf-paths.check.ts).
-      'pdf-storage.ts': '100490072ab54e0093d65d6fb0be99eb6256b63bed1d97d3243a9b6f59a52a26',
+      // SCRUM-1047 (the lane's review): a path in the app's own bucket is held to the same names, with no
+      // folder between the contracts or letters folder and the name; every name the app writes still opens.
+      'pdf-storage.ts': 'fdda3a74ae639fba5714f107d0a2d8a3660481e5486d511bdbb464e266069007',
       // SCRUM-562: only the byte-range parser moved out to storage/range.ts (suffix ranges, 206 for video); where files live is unchanged.
       'file-storage.ts': 'faa0c5c7e17f949aeb1f74e91391e019220f29cfd97bf6eefae47c46fbdd850e',
       'storage/s3Client.ts': '9d51fea745ad10e3944543ec6b9e17a36d5af128c923703b010e4be7c1c8ddcb',

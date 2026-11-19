@@ -11,17 +11,19 @@
 // into this app's own contracts folder; the stored rows are not rewritten.
 // This check drives server/pdf-storage.ts against the stand-in bucket:
 //
-//   1. the app's own path opens exactly as before;
+//   1. every path the app itself writes, through its own upload functions,
+//      opens exactly as before;
 //   2. a path of the old system's storage opens the file of that name in this
 //      app's own bucket, environment folder and contracts or letters folder;
 //   3. a path of the old system's disk opens the same way once the file is
 //      there, and is "not found", never an error, until then;
-//   4. anything else a stored path says is refused before the bucket is asked:
-//      another folder or environment, "..", separators in the name, encoded or
+//   4. anything else a stored path says is refused before the bucket is asked,
+//      in the app's own bucket too: another folder or environment, a folder
+//      inside the contracts folder, "..", separators in the name, encoded or
 //      not, a name the app never writes, an empty or a very long name;
 //   5. the stream reader reads only from this app's own bucket, the same way.
 import assert from "node:assert/strict";
-import { createServer } from "node:http";
+import { createServer, type IncomingMessage } from "node:http";
 import type { AddressInfo } from "node:net";
 import { randomBytes, randomUUID } from "node:crypto";
 import type { Readable } from "node:stream";
@@ -36,10 +38,35 @@ const PREFIX = "zz-test";
 // Private, as the real one is: it answers only a request the SDK signed — an
 // Authorization header, or a presigned URL's query. It serves any bucket's
 // path it holds, so a read of another bucket would show in the log and work.
+// It keeps what the app puts, so the app's own writes can be read back.
 
 const objects = new Map<string, Buffer>();
 const log: string[] = [];
-const bucketServer = createServer((req, res) => {
+
+/** The SDK may stream a body as aws-chunked (`<hex>[;ext]\r\n<data>\r\n ... 0\r\n<trailers>\r\n\r\n`). */
+function decodeAwsChunked(raw: Buffer): Buffer {
+  const out: Buffer[] = [];
+  let at = 0;
+  for (;;) {
+    const eol = raw.indexOf("\r\n", at);
+    if (eol < 0) break;
+    const size = parseInt(raw.subarray(at, eol).toString("latin1").split(";")[0]!, 16);
+    if (!size) break;
+    out.push(raw.subarray(eol + 2, eol + 2 + size));
+    at = eol + 2 + size + 2;
+  }
+  return Buffer.concat(out);
+}
+
+const readBody = (req: IncomingMessage) =>
+  new Promise<Buffer>((resolve, reject) => {
+    const parts: Buffer[] = [];
+    req.on("data", (c: Buffer) => parts.push(c));
+    req.on("end", () => resolve(Buffer.concat(parts)));
+    req.on("error", reject);
+  });
+
+const bucketServer = createServer(async (req, res) => {
   const url = new URL(req.url ?? "/", "http://bucket");
   const path = decodeURIComponent(url.pathname);
   const signed = url.searchParams.has("X-Amz-Signature") || /^AWS4-HMAC-SHA256 /.test(String(req.headers.authorization ?? ""));
@@ -47,6 +74,15 @@ const bucketServer = createServer((req, res) => {
   if (!signed) {
     res.writeHead(403, { "content-type": "application/xml" });
     res.end("<Error><Code>AccessDenied</Code><Message>Access Denied</Message></Error>");
+    return;
+  }
+  if (req.method === "PUT") {
+    const raw = await readBody(req);
+    const chunked = /aws-chunked/.test(String(req.headers["content-encoding"] ?? "")) ||
+      String(req.headers["x-amz-content-sha256"] ?? "").startsWith("STREAMING-");
+    objects.set(path, chunked ? decodeAwsChunked(raw) : raw);
+    res.writeHead(200, { etag: '"zz"' });
+    res.end();
     return;
   }
   const body = objects.get(path);
@@ -142,13 +178,37 @@ try {
     }
   });
 
-  await check("the app's own rule is kept byte for byte: its folder, under its own environment, any file name", async () => {
-    // Today's rule for the app's own path checks the folder, not the name;
-    // SCRUM-1047 leaves it as it is. Its file there opens, a missing one is
-    // "not found" after one question to the bucket.
-    const path = put(own("contracts", "zz-test-any-name.pdf"));
-    await assertOpens(await storage.presignedPdfUrl(path, "ZZ TEST.pdf"), path, path);
-    const missing = own("letters", contractName());
+  await check("every path the app writes, through its own upload functions, is its own key and opens", async () => {
+    // The stored path the app hands back is read back unchanged: the key is
+    // the path without its bucket, the URL and the stream serve what was put.
+    const writes: Array<[string, string, Buffer, () => Promise<string>]> = [];
+    for (const id of [randomUUID(), randomUUID()]) {
+      const bytes = pdf(`written ${id}`);
+      writes.push(
+        ["contracts", `signed_contract_${id}.pdf`, bytes, () => storage.uploadSignedPdf(id, bytes)],
+        ["contracts", `finalized_contract_${id}_v1.pdf`, bytes, () => storage.uploadFinalizedPdf(id, 1, bytes)],
+        ["contracts", `finalized_contract_${id}_v0.pdf`, bytes, () => storage.uploadFinalizedPdf(id, 0, bytes)],
+        ["contracts", `finalized_contract_${id}_v999999.pdf`, bytes, () => storage.uploadFinalizedPdf(id, 999999, bytes)],
+        ["letters", `signed_letter_${id}.pdf`, bytes, () => storage.uploadSignedLetterPdf(id, bytes)],
+      );
+    }
+    for (const [folder, name, bytes, write] of writes) {
+      const path = await write();
+      assert.equal(path, own(folder, name), "where the app writes is unchanged");
+      assert.deepEqual(objects.get(path), bytes, `${path}: the bucket holds what was written`);
+      assert.equal(storage.ownPdfKey(path, OWN), path.slice(`/${OWN}/`.length), path);
+      assert.equal(storage.isObjectStoragePath(path), true, path);
+      const { value, requests } = await asked(() => storage.presignedPdfUrl(path, "ZZ TEST.pdf"));
+      assert.deepEqual(requests, [`HEAD ${path}`], path);
+      await assertOpens(value, path, path);
+      const streamed = await storage.streamSignedPdf(path);
+      assert.equal(streamed.exists, true, path);
+      assert.deepEqual(await readAll(streamed.stream!), objects.get(path), path);
+    }
+  });
+
+  await check("a missing file at the app's own path is \"not found\" after one question to the bucket", async () => {
+    const missing = own("letters", letterName());
     const { value, requests } = await asked(() => storage.presignedPdfUrl(missing, "ZZ TEST.pdf"));
     assert.equal(value, null);
     assert.deepEqual(requests, [`HEAD ${missing}`]);
@@ -235,12 +295,31 @@ try {
     put(own(folder, name));
     put(own(folder, letter));
     put(`/${OWN}/production/${folder}/${name}`);
+    put(own(folder, `sub/${name}`));
+    put(own(folder, "zz-test-any-name.pdf"));
   }
   const hostile: Array<[string, string]> = [
     ["the app's own bucket, another environment's folder", `/${OWN}/production/contracts/${name}`],
     ["the app's own bucket, a prefix that only starts like its own", `/${OWN}/${PREFIX}x/contracts/${name}`],
     ["the app's own bucket and environment, another folder", `/${OWN}/${PREFIX}/photos/${name}`],
     ["the app's own bucket and environment, a folder that only starts like its own", `/${OWN}/${PREFIX}/contractsx/${name}`],
+    ["the app's own contracts folder, a name the app never writes", own("contracts", "zz-test-any-name.pdf")],
+    ["the app's own letters folder, a name the app never writes", own("letters", "zz-test-any-name.pdf")],
+    ["the app's own contracts folder, a folder inside it", own("contracts", `sub/${name}`)],
+    ["the app's own letters folder, a folder inside it", own("letters", `sub/${letter}`)],
+    ["the app's own contracts folder, \"..\" out of it", own("contracts", `../photos/${name}`)],
+    ["the app's own contracts folder, \"..\" back into it", own("contracts", `../contracts/${name}`)],
+    ["the app's own contracts folder, \"..\" as the name", own("contracts", "..")],
+    ["the app's own contracts folder, an encoded slash in the name", own("contracts", `sub%2F${name}`)],
+    ["the app's own contracts folder, a backslash in the name", own("contracts", `..\\${name}`)],
+    ["the app's own contracts folder, a NUL after the name", own("contracts", `${name}\0`)],
+    ["the app's own contracts folder, a newline after the name", own("contracts", `${name}\n`)],
+    ["the app's own contracts folder, an empty name", own("contracts", "")],
+    ["the app's own contracts folder, a letter's name", own("contracts", letter)],
+    ["the app's own letters folder, a contract's name", own("letters", name)],
+    ["the app's own contracts folder, a second extension", own("contracts", `${name}.html`)],
+    ["the app's own contracts folder, a name in capitals", own("contracts", `signed_contract_${id.toUpperCase()}.pdf`)],
+    ["the app's own environment twice", `/${OWN}/${PREFIX}/${PREFIX}/contracts/${name}`],
     ["the old bucket, another folder", `/${OLD}/staging/photos/${name}`],
     ["the old bucket, the old disk's folder name", `/${OLD}/staging/signed-contracts/${name}`],
     ["the old bucket with no environment folder", `/${OLD}/contracts/${name}`],
