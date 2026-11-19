@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Loader2, Monitor } from 'lucide-react';
+import { hasBridgeOrigin } from '@/api/bridge';
 import { api, ApiError } from '@/api/client';
 import { useOperator } from '@/auth/OperatorContext';
 import {
@@ -23,6 +24,11 @@ import { noteDisplayRemoved, type PairedDisplay } from '@/lib/displaySession';
  * Remove for each. Remove revokes that display's pairing alone: the others
  * stay paired and showing. Removing a display is a manager's, as it is in the
  * Console (`admin:device:revoke`); pairing one stays in the Console.
+ *
+ * A till served through a counter box: the box cuts the display off when its
+ * copy of the station's settings drops it (asked at once, at most within a
+ * minute), so the row stays, as being removed, until the box no longer lists
+ * it (`pairedRows`), and the confirmation says "within a minute".
  */
 
 /** "Connected", or when it was last seen in the park's time: the time today, the day and time before. */
@@ -50,7 +56,9 @@ export function PairedDisplaysDialog({ open, onOpenChange, displays, timeZone }:
   const [confirming, setConfirming] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
-  const shown = (displays ?? []).filter((display) => !removed.has(display.id));
+  const viaBox = hasBridgeOrigin();
+  const shown = (displays ?? []).filter((display) => viaBox || !removed.has(display.id));
+  const removingNow = (display: PairedDisplay) => viaBox && (removed.has(display.id) || display.removing === true);
 
   const remove = async (display: PairedDisplay) => {
     if (busy) return;
@@ -99,26 +107,36 @@ export function PairedDisplaysDialog({ open, onOpenChange, displays, timeZone }:
               {shown.map((display) => {
                 const asking = confirming === display.id;
                 const working = busy === display.id;
+                const removing = removingNow(display);
                 return (
                   <li key={display.id} className="rounded-xl border border-border bg-card px-4 py-3" data-testid="paired-display">
                     <div className="flex items-center gap-3">
                       <Monitor className="h-5 w-5 shrink-0 text-muted-foreground" />
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-medium" data-testid="paired-display-name">{display.name}</p>
-                        <p className="flex items-center gap-1.5 text-sm text-muted-foreground" data-testid="paired-display-seen">
-                          <span aria-hidden className={cn('h-2 w-2 shrink-0 rounded-full',
-                            display.connected ? 'bg-emerald-500' : 'bg-muted-foreground/40')} />
-                          {displaySeenLine(display, timeZone)}
-                        </p>
+                        {removing ? (
+                          <p className="flex items-center gap-1.5 text-sm text-muted-foreground" role="status" data-testid="paired-display-removing">
+                            <Loader2 aria-hidden className="h-3.5 w-3.5 shrink-0 animate-spin" />
+                            Removing — it stops showing within a minute
+                          </p>
+                        ) : (
+                          <p className="flex items-center gap-1.5 text-sm text-muted-foreground" data-testid="paired-display-seen">
+                            <span aria-hidden className={cn('h-2 w-2 shrink-0 rounded-full',
+                              display.connected ? 'bg-emerald-500' : 'bg-muted-foreground/40')} />
+                            {displaySeenLine(display, timeZone)}
+                          </p>
+                        )}
                       </div>
-                      {mayRemove && !asking && (
+                      {mayRemove && !asking && !removing && (
                         <Button size="sm" variant="outline" disabled={!!busy} onClick={() => { setFailed(null); setConfirming(display.id); }}
                           data-testid="paired-display-remove">Remove</Button>
                       )}
                     </div>
                     {mayRemove && asking && (
                       <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-border pt-3">
-                        <p className="mr-auto text-sm text-muted-foreground">It stops showing this till&apos;s sales.</p>
+                        <p className="mr-auto text-sm text-muted-foreground">
+                          {viaBox ? 'It stops showing this till’s sales within a minute.' : 'It stops showing this till’s sales.'}
+                        </p>
                         <div className="ml-auto flex shrink-0 gap-2">
                           <Button size="sm" variant="outline" disabled={working} onClick={() => setConfirming(null)}>Keep</Button>
                           <Button size="sm" variant="destructive" disabled={working} onClick={() => { void remove(display); }}

@@ -430,6 +430,8 @@ interface ConnectedDisplay { id: string; name: string; connected: boolean }
 export interface PairedDisplay extends ConnectedDisplay {
   /** When it last called; null when the platform or box does not say. */
   lastSeenAt: string | null;
+  /** Removed at this till, and still listed by the counter box serving it (`pairedRows`). */
+  removing?: boolean;
 }
 
 /**
@@ -452,13 +454,28 @@ export function labelDisplays<T extends { id: string; name: string }>(displays: 
   return displays.map((display) => labelled.get(display.id)!);
 }
 
-/**
- * SCRUM-1041 — displays this till removed in this tab. A counter box drops a
- * removed display at its next copy of the station's settings (within a
- * minute); until then the till no longer names it or lists it.
- */
+/** SCRUM-1041 — displays this till removed in this tab. */
 const removedDisplays = new Set<string>();
 export function noteDisplayRemoved(id: string): void { removedDisplays.add(id); }
+
+/**
+ * SCRUM-1041 — the till's list of its displays, from what the platform or
+ * the counter box lists. A display removed here is cut off at once on the
+ * platform (its next call is refused), so it leaves the list at once. Through
+ * a counter box it keeps showing until the box's copy of the station's
+ * settings drops it (the removal asks the box to fetch it now; at most its
+ * minute's refresh): until then it stays listed and connected, marked as
+ * being removed, and leaves the list when the box no longer lists it.
+ */
+export function pairedRows(
+  displays: readonly (ConnectedDisplay & { lastSeenAt?: string | null })[],
+  viaBox: boolean,
+  removed: ReadonlySet<string> = removedDisplays,
+): PairedDisplay[] {
+  return labelDisplays(displays.filter(display => viaBox || !removed.has(display.id))
+    .map(({ id, name, connected, lastSeenAt }) => ({ id, name, connected, lastSeenAt: lastSeenAt ?? null,
+      ...(viaBox && removed.has(id) ? { removing: true } : {}) })));
+}
 
 const POLL_MS = 1_500;
 /** A refused claim waits this long, doubling to the cap, unless the till itself changes. */
@@ -737,8 +754,7 @@ export function useStationDisplay(stationId: string | null, state: StationDispla
      * whether any display is watching, as before.
      */
     const listed = (displays: readonly (ConnectedDisplay & { lastSeenAt?: string | null })[]): ConnectedDisplay[] => {
-      const shown = labelDisplays(displays.filter(display => !removedDisplays.has(display.id))
-        .map(({ id, name, connected, lastSeenAt }) => ({ id, name, connected, lastSeenAt: lastSeenAt ?? null })));
+      const shown = pairedRows(displays, hasBridgeOrigin());
       if (!paused()) setPaired(shown);
       return shown.filter(display => display.connected).map(({ id, name, connected }) => ({ id, name, connected }));
     };

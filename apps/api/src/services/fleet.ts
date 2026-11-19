@@ -2765,6 +2765,29 @@ export async function revokeCredential(
         pairingCodeExpiresAt: null,
       })
       .where(eq(deviceCredential.id, before.id));
+    /**
+     * SCRUM-1041 — a display served through a counter box is checked against
+     * the box's copy of the station's settings, which the box refreshes once
+     * a minute. Removing one asks that box to fetch its copy now (the same
+     * "apply config" a Console press queues, picked up at its next command
+     * poll), so the display is cut off within seconds rather than a minute;
+     * a box whose link is down fetches it when the link is back.
+     */
+    const [served] = before.kind === 'display' && before.stationId
+      ? await tx.select({ boxId: station.boxId }).from(station).where(eq(station.id, before.stationId)).limit(1)
+      : [];
+    const refreshCommandId = served?.boxId ? newId() : null;
+    if (served?.boxId && refreshCommandId) {
+      await tx.insert(boxCommand).values({
+        id: refreshCommandId,
+        boxId: served.boxId,
+        kind: 'config_apply',
+        payload: { reason: 'display_revoked', credentialId: before.id } as never,
+        requestedByAccountId: actor.accountId,
+        actionId: ctx.requestId ?? null,
+        expiresAt: new Date(Date.now() + boxSettings().commandTtlS * 1000),
+      });
+    }
     await audit.record(tx, {
       actorAccountId: actor.accountId,
       operatorId: actor.operatorId,
@@ -2773,7 +2796,11 @@ export async function revokeCredential(
       entityType: 'device_credential',
       entityId: before.id,
       before: credentialView(before),
-      after: { revokedAt: new Date().toISOString(), revokedReason: reason },
+      after: {
+        revokedAt: new Date().toISOString(),
+        revokedReason: reason,
+        ...(refreshCommandId ? { boxRefreshCommandId: refreshCommandId } : {}),
+      },
       requestId: ctx.requestId,
     });
   });
