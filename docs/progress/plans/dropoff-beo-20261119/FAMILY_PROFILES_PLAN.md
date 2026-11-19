@@ -354,6 +354,8 @@ Where the code or the build differs from the text above:
 2. Regenerate `0136_snapshot.json` on top of 0135's (prevId `c0acd661-9756-4403-b771-ea6660471850`) and confirm the SQL is unchanged.
 3. Run `s1024-family-migration.test.ts` and `verify-schema` again.
 
+Done on the rebase onto `main` (19 November). The file keeps the name `0136`, its journal entry is index 136 after `0135_voucher_stock_link`, and `0136_snapshot.json` was regenerated with prevId `c0acd661-9756-4403-b771-ea6660471850`. `drizzle-kit generate` against 0135's snapshot wrote the same statements as the committed SQL, which differs only in its header comment. In the new snapshot the family tables and `crm.child` match the old snapshot, and every other table matches 0135's. `s1024-family-migration.test.ts` and `verify-schema` pass on the result. The same rebase met the drop-off counter flow's customer-display audit on the till's child edit (SCRUM-1020): both are kept, with the family columns left out of that row too.
+
 ### Step F2, the backfill and its checks (19 November 2026, same lane, not landed, not run)
 
 Built and tested on the lane against embedded test databases only. **No script has been run on staging or on any real database**; that is a data job for the owner's separate go. How and in what order they are run is `FAMILY_BACKFILL_RUNBOOK.md` beside this file.
