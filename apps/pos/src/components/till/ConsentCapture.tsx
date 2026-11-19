@@ -522,7 +522,7 @@ export function ConsentCapture({
                       <ChannelSelector channel={parentContactMethod} onChange={onParentContactMethodChange} kiosk
                         pillClassName={phoneScroll ? DISPLAY_TOUCH : undefined} />
                     )}
-                    <p className="mt-2 text-base text-foreground/50">{t('till.input.phoneKept')}</p>
+                    <p className="mt-2 text-base text-foreground/50">{t('superviseConsent.phoneShown')}</p>
                   </div>
                 ) : (
                 <PhoneInput

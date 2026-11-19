@@ -857,7 +857,8 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
               {/* SCRUM-1018 — the app is still the family's to choose. */}
               {phoneFixed && <ChannelSelector channel={contactChannel} kiosk pillClassName={touch}
                 onChange={(next) => { if (!locked && !readOnly) choose((current) => ({ ...current, contactChannel: next })); }} />}
-              <p className="mt-2 text-base text-foreground/50">{t('till.input.phoneKept')}</p>
+              {/* SCRUM-1018 — a fixed number may have come from the profile or staff: a neutral line. */}
+              <p className="mt-2 text-base text-foreground/50">{t(phoneFixed ? 'superviseConsent.phoneShown' : 'till.input.phoneKept')}</p>
             </div> : <PhoneInput value={consentPhoneShown(draft.guardianPhone)} onChange={(guardianPhone) => { if (!locked) edit((current) => ({ ...current, guardianPhone, ...(current.contactConfirmed !== undefined ? { contactConfirmed: false } : {}) })); }}
               label="" showKeypad={kioskFlags.screenKeyboard} disabled={locked} translate
               channel={takesContact ? draft.contactChannel ?? prompt.contactChannel : undefined}

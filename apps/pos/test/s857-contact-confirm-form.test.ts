@@ -212,7 +212,7 @@ describe('the staff gate before payment', () => {
     expect(continueButton(html)).not.toContain('disabled=""');
   });
 
-  it('a till that passes neither (the phone till) is gated as before', () => {
+  it('a caller that passes neither is gated as before', () => {
     expect(continueButton(gate())).not.toContain('disabled=""');
   });
 
@@ -229,8 +229,9 @@ describe('the staff gate before payment', () => {
  * drop-off and nanny forms is shown filled in, with no tick, and only staff
  * change it. The pins below were the till's side of the tick; they now pin
  * that the counter till asks none, sends none, and still writes the number
- * the form holds. The form's own tick line (above) stays for the phone till,
- * which passes it as before.
+ * the form holds. The phone till asks none either (c77cfa7a5). The form's
+ * own tick line (above) stays only for a caller that still passes it; no
+ * till in this repository does.
  */
 describe('what the till does with it', () => {
   const till = readFileSync(path.resolve(import.meta.dirname, '..', 'src', 'pages', 'Till.tsx'), 'utf8');

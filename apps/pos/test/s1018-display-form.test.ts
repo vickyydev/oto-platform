@@ -81,6 +81,9 @@ describe('the form a returning family is shown', () => {
     expect(form.byTest('consent-kept-phone')).toHaveLength(1);
     expect(form.byTest('public-consent-contact-confirm')).toHaveLength(0);
     expect(form.text()).not.toContain('superviseConsent.confirmContact');
+    // The neutral line under a fixed number (fix round), not "the number you gave at the start".
+    expect(form.text()).toContain('superviseConsent.phoneShown');
+    expect(form.text()).not.toContain('till.input.phoneKept');
     const pills = form.all().find((node) => node.type === ChannelSelector)!;
     expect(pills.props.channel).toBe('whatsapp');
     (pills.props.onChange as (c: string) => void)('telegram');
