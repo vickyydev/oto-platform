@@ -1048,6 +1048,14 @@ jobs:
         env:
           TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
         run: npx tsx tests/beo-983-968-ui.check.ts
+      # SCRUM-1027: one timeline made by the system from the stored BEO — each
+      # source alone and all together in time order, nothing given a time the
+      # BEO does not store, the same step once, and every reader (the PDF, the
+      # generator, the read route, the editor's preview, the Day-of view, the
+      # view-only BEO) building it from shared/beoTimeline.ts. No database.
+      - name: The app's one BEO timeline check
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/beo-timeline.check.ts
       # SCRUM-827: the BEO pre-filled in one pass, the form under jsdom: Create
       # BEO's review opens with every section proposed and marked (the chat's
       # lines, the park's default for the title), a value the form holds kept

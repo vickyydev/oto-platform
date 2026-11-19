@@ -31,11 +31,13 @@ import {
   Wine,
   Download,
 } from "lucide-react";
-import type { BeoEventWithDetails, BeoTimelineItem } from "@shared/schema";
+import type { BeoEventWithDetails } from "@shared/schema";
+import { timelineStepLine, untimedBesideTimeline } from "@shared/beoTimeline";
 import { bahtOfSatang, tillFiguresOf } from "@shared/tillBilling";
 import { ADULTS_SAME_AS_KIDS, adultsDifferOf } from "@shared/kitchenAdults";
 import { BeoPackageModule } from "./beo-package-module";
 import { TillMoneyRows, useTillBilling } from "./beo-till-billing";
+import { useBuiltTimeline } from "./beo-built-timeline";
 
 interface BeoViewOnlyProps {
   eventId: string;
@@ -259,14 +261,8 @@ export function BeoViewOnly({ eventId, showHeader = true }: BeoViewOnlyProps) {
     refetchOnWindowFocus: true,
   });
 
-  const { data: timeline } = useQuery<BeoTimelineItem[]>({
-    queryKey: ['/api/events', eventId, 'beo', 'timeline'],
-    queryFn: async () => {
-      const res = await fetch(`/api/events/${eventId}/beo/timeline`, { credentials: "include" });
-      if (!res.ok) return [];
-      return res.json();
-    },
-  });
+  // SCRUM-1027: the party's one timeline, made by the system from the stored BEO (shared/beoTimeline.ts).
+  const { data: timeline } = useBuiltTimeline(eventId);
 
   // SCRUM-822: the party's money is the till's, as in the editor, the Day-of view and the BEO PDF.
   const tillBilling = useTillBilling(eventId);
@@ -360,14 +356,11 @@ export function BeoViewOnly({ eventId, showHeader = true }: BeoViewOnlyProps) {
   const barPlan = (beoData as any).barPlan as any;
   const billing = beoData.billing as any;
   const partyDetails = (beoData as any).partyDetails as any;
-  const sortedTimeline = timeline?.slice().sort((a, b) => a.offsetFromStartMinutes - b.offsetFromStartMinutes) || [];
+  const sortedTimeline = timeline?.steps ?? [];
+  const untimedTimeline = timeline?.untimed ? untimedBesideTimeline(timeline) : [];
 
-  const formatTimelineTime = (offsetMinutes: number) => {
-    if (!beoData?.startTime) return "";
-    const [h, m] = beoData.startTime.split(":").map(Number);
-    const totalMins = h * 60 + m + offsetMinutes;
-    const hours = Math.floor(((totalMins % 1440) + 1440) % 1440 / 60);
-    const mins = ((totalMins % 60) + 60) % 60;
+  const formatTimelineTime = (time: string) => {
+    const [hours, mins] = time.split(":").map(Number);
     const hour12 = hours % 12 || 12;
     const ampm = hours >= 12 ? "PM" : "AM";
     return `${hour12}:${mins.toString().padStart(2, "0")} ${ampm}`;
@@ -394,7 +387,7 @@ export function BeoViewOnly({ eventId, showHeader = true }: BeoViewOnlyProps) {
   const hasBar = !!(barPlan?.serviceTime || barItems.length > 0);
 
   const hasPartyDetails = partyDetails && (partyDetails.packageName || packageItems.length > 0);
-  const hasTimeline = sortedTimeline.length > 0;
+  const hasTimeline = sortedTimeline.length > 0 || untimedTimeline.length > 0;
   const hasNotes = beoData.allergiesNotes || beoData.cakeNotes || beoData.specialRequests || beoData.internalStaffNotes || partyDetails?.notes;
   const kidTurningAge = (beoData as any).kidTurningAge as number | null | undefined;
 
@@ -801,12 +794,21 @@ export function BeoViewOnly({ eventId, showHeader = true }: BeoViewOnlyProps) {
             </AccordionTrigger>
             <AccordionContent className="pb-4">
               <div className="space-y-1">
-                {sortedTimeline.map((item, idx) => (
-                  <div key={idx} className="flex items-center gap-3 py-1">
-                    <span className="text-sm font-mono font-medium text-primary w-16 shrink-0">{formatTimelineTime(item.offsetFromStartMinutes)}</span>
-                    <span className="text-sm flex-1">{item.label}</span>
+                {sortedTimeline.map((item) => (
+                  <div key={item.key} className="flex items-center gap-3 py-1">
+                    <span className="text-sm font-mono font-medium text-primary w-16 shrink-0">{formatTimelineTime(item.time)}</span>
+                    <span className="text-sm flex-1">
+                      {item.label}
+                      {item.detail && <span className="text-muted-foreground"> {item.detail}</span>}
+                      {item.person && <span className="text-muted-foreground"> · {item.person}</span>}
+                    </span>
                   </div>
                 ))}
+                {untimedTimeline.length > 0 && (
+                  <p className="text-xs text-muted-foreground pt-1" data-testid="text-view-timeline-untimed">
+                    No time set: {untimedTimeline.map(timelineStepLine).join("; ")}
+                  </p>
+                )}
               </div>
             </AccordionContent>
           </AccordionItem>

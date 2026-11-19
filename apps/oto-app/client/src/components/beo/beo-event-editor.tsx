@@ -4040,15 +4040,15 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
             </AccordionContent>
           </AccordionItem>
 
-          {/* 7. Timeline (manual only) */}
+          {/* 7. Other timed steps (SCRUM-1027: the timeline itself is made by the system) */}
           <AccordionItem value="timeline" className="border rounded-lg border-l-4 border-l-cyan-500 bg-cyan-500/5">
             <AccordionTrigger className="px-4 hover:no-underline" data-testid="accordion-timeline">
               <div className="flex items-center gap-2">
                 <ListTodo className="h-4 w-4 text-cyan-500" />
-                <span>Timeline</span>
+                <span>Other timed steps</span>
                 <StatusIcon status={getSectionStatus("timeline")} />
                 {aiSectionMark("timeline")}
-                <Badge variant="secondary" className="ml-2 text-xs">{beoData?.timeline?.length || 0} steps</Badge>
+                <Badge variant="secondary" className="ml-2 text-xs">{beoData?.timeline?.filter((t) => !t.isSystemGenerated).length || 0} steps</Badge>
               </div>
             </AccordionTrigger>
             <AccordionContent className={`px-4 pb-4 ${readOnly ? "opacity-75 cursor-not-allowed" : ""}`}>
