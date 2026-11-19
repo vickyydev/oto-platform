@@ -1,3 +1,44 @@
+## 19 November 2026, 21:40: the HR smaller requests are on staging; the single shift's pay is being built
+
+- **Landed** (main 209b45251, pictures f16acc725; `oto-app-staging` live
+  21:18, HR app migration 0053 applied): SCRUM-1036 "Scheduling: the
+  employee order is saved as shown" and SCRUM-1037 "Leave types: Training and
+  Other off, staff see annual leave and days off, the rest for managers",
+  both Deployed. The lead opened the Leave Types screen and the Scheduling
+  picture after the drag. On staging: Sick, Business and Unpaid are managers
+  only; Training and Other are switched off; nothing deleted, no balance
+  changed.
+- **Held off main on purpose:** SCRUM-1038 "A former employee invited to a
+  single shift". Its invitation, schedule entry, kiosk clock-in and pay choice
+  were built but payroll could not pay it. The owner has since answered the
+  pay rules (R7 to R11), so the rest is being built now.
+- **Launched: the single-shift lane** (run wf_163066a8-f72, worktree
+  `C:/oto-lanes/codex-app-reliability-983-20261114`, branch
+  `lane/shift1055-20261119`, from the held branch
+  `wip/hrsmall1038-held-20261119`): SCRUM-1055 "Single shift: the pay reaches
+  payroll, and the person sees that day's schedule", then SCRUM-1058 and a
+  badge, review, land, prove. Its brief: no pay rule is invented; a month
+  without a single shift must be identical for everyone; payroll on staging
+  only as a draft that touches no confirmed run, pictures of ZZ TEST rows
+  only.
+- **Filed: SCRUM-1058 "HR app: the activity log shows salary-change entries
+  to staff below manager"** (High). The log's list checks only sign-in and
+  branch reach, and salary-change entries carry figures. Repaired in the
+  single-shift lane by the app's own rule for who may see salaries.
+- **Effects of migration 0053 to know:** a payroll run the GM confirmed but
+  has not paid reads as stale once and must be confirmed again, with the same
+  amounts; staff still see their own Sick and Business records and balances
+  on their own pages.
+- **Still open with the owner:** a clock-out after midnight on a single shift
+  is refused, as today on a last working day (today's behaviour kept).
+- **Both running lanes were resumed with the owner's answers at a stage
+  boundary:** the till lane (task w9n8vr3ya: the waiver repair is built and
+  landing; then extra credit, displays, the two counter answers) and the BEO
+  editor (task whvg4qd2u: four sections built; fields with R13 and R24
+  running).
+- **Hosted CI on 209b45251:** the HR app job and the till tests passed; the
+  api jobs were still running at the lane's last reading.
+
 ## 19 November 2026, 20:05: the owner answered the 25 open points; the family backfill ran on staging; the Inbox follow-up is on staging
 
 - **The 25 points the builds raised are all answered** (his page, read at
