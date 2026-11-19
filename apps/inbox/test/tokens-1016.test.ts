@@ -63,11 +63,12 @@ describe('SCRUM-1016: the OTO tokens', () => {
     });
   });
 
-  it('hands every token to Tailwind as a colour, and nothing else', () => {
+  it('hands every colour token to Tailwind under its own name, and the shadow as one shadow', () => {
     const theme = css.slice(css.indexOf('@theme inline {'), css.indexOf('}', css.indexOf('@theme inline {')));
     const colours = [...theme.matchAll(/--color-([a-z-]+):\s*var\(--oto-([a-z-]+)\);/g)];
     expect(colours.map((m) => m[1])).toEqual(colours.map((m) => m[2]));
-    expect(colours.map((m) => m[2]).sort()).toEqual(Object.keys(light).sort());
+    expect(colours.map((m) => m[2]).sort()).toEqual(Object.keys(light).filter((k) => k !== 'shadow').sort());
+    expect(theme).toContain('--shadow-pop: 0 12px 40px -16px var(--oto-shadow);');
   });
 
   it.each([['light', light], ['dark', dark]] as const)('every text pair meets 4.5 : 1 (%s)', (_, theme) => {

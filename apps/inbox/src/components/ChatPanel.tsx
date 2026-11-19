@@ -555,7 +555,7 @@ export function ChatPanel({
           type="button"
           onClick={onBack}
           aria-label="Back to the conversations"
-          className="rounded-lg p-1.5 text-ink-muted hover:bg-band lg:hidden"
+          className="rounded-lg p-1.5 text-ink-muted hover:bg-band md:hidden"
         >
           <ArrowLeft className="h-4 w-4" />
         </button>

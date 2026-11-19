@@ -73,8 +73,8 @@ function list(rows: ConversationRow[], viewer = me()) {
   return renderToStaticMarkup(
     createElement(ConversationList, {
       me: viewer, tab: 'team', page: null, rows, loading: false, loadingMore: false, error: null,
-      filters: EMPTY_FILTERS, search: '', selectedId: null, now: new Date('2026-11-19T06:00:00Z'),
-      onSearch: noop, onFilters: noop, onTab: noop, onOpenFilters: noop, onSelect: noop, onAskHandle: noop, onMore: noop,
+      filters: EMPTY_FILTERS, selectedId: null, now: new Date('2026-11-19T06:00:00Z'),
+      onFilters: noop, onTab: noop, onOpenFilters: noop, onSelect: noop, onAskHandle: noop, onMore: noop,
     }),
   );
 }

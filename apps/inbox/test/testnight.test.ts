@@ -11,7 +11,7 @@ import { TranslationNote } from '@/components/atoms';
 import { ChatPanel, type Thread } from '@/components/ChatPanel';
 import { newDraftId } from '@/components/Composer';
 import { PrimaryMoveConfirm, TeamMoveConfirm } from '@/components/confirms';
-import { Dashboard } from '@/components/Dashboard';
+import { StatsMore } from '@/components/StatsRow';
 import { DetailsDialog, MANAGERS_ADD_SUPPORT, type DetailsActions } from '@/components/dialogs';
 import { MessageBubble } from '@/components/MessageBubble';
 import { FilterFields } from '@/components/Rail';
@@ -468,8 +468,8 @@ describe('the wording (U9)', () => {
       beosThisWeek: 0,
       weekStart: '2026-10-19',
     };
-    const card = (d: DashboardData) =>
-      renderToStaticMarkup(createElement(Dashboard, { data: d, error: null, unansweredOnly: false, onToggleUnanswered: noop }));
+    // SCRUM-1016: whose average it is now reads beside "Avg reply" under More figures.
+    const card = (d: DashboardData) => renderToStaticMarkup(createElement(StatsMore, { data: d }));
     expect(card(data)).toContain('your average');
     expect(card({ ...data, scope: 'team' })).toContain('the team’s average');
     // An api that says no scope (an older deployment) leaves the card as it was.

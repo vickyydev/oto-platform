@@ -41,6 +41,7 @@
   --oto-staff: #3b281c;
   --oto-on-staff: #fbf5ef;
   --oto-scrim: rgb(59 40 28 / 0.4);
+  --oto-shadow: rgb(59 40 28 / 0.28);
   --oto-topic-birthdays: #6d28d9;
   --oto-topic-general: #0369a1;
   --oto-topic-marketing: #be185d;
@@ -73,6 +74,7 @@ html.dark {
   --oto-staff: #2a3a5c;
   --oto-on-staff: #f8fafc;
   --oto-scrim: rgb(2 6 23 / 0.6);
+  --oto-shadow: rgb(2 6 23 / 0.6);
   --oto-topic-birthdays: #a78bfa;
   --oto-topic-general: #38bdf8;
   --oto-topic-marketing: #f472b6;
@@ -111,6 +113,9 @@ html.dark {
   --color-topic-general: var(--oto-topic-general);
   --color-topic-marketing: var(--oto-topic-marketing);
   --color-topic-gm: var(--oto-topic-gm);
+
+  /* Menus, popovers and the account card float on the one shadow. */
+  --shadow-pop: 0 12px 40px -16px var(--oto-shadow);
 }
 
 /* Dark mode by class, not by media query (SCRUM-653): `lib/theme.ts` puts

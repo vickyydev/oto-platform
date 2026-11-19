@@ -1,14 +1,14 @@
 // The prototype's small UI atoms (WhatsAppDemo.tsx :727-1026, :1773-1868),
 // ported with their classes as they are and their data moved onto the api's
 // shapes: `Avatar`, `StaffChip` (here `ChipView`), `StatusBadge`,
-// `CategoryBadge`, `ChannelDot`, `MetricCard`, `CategoryMixCard`,
-// `EmptyState`; and the toggle pill as the rail's `FilterChip`, which took
-// the place of the prototype's `FilterSelect` (SCRUM-220 playbook).
+// `CategoryBadge`, `ChannelDot`, `EmptyState`; and the toggle pill as the
+// rail's `FilterChip`, which took the place of the prototype's
+// `FilterSelect` (SCRUM-220 playbook). The dashboard's `MetricCard` and
+// `CategoryMixCard` gave way to the statistics row (SCRUM-1016).
 import type { ReactNode } from 'react';
-import { Briefcase, Building2, ChevronDown, Megaphone, PartyPopper, TrendingUp, type LucideIcon } from 'lucide-react';
+import { ChevronDown, type LucideIcon } from 'lucide-react';
 import type { InboxCategoryKey, InboxChannelKey, InboxStatusKey } from '@oto/shared/inbox';
 import {
-  CATEGORY_BAR,
   CATEGORY_LABEL,
   CATEGORY_TINT,
   CHANNEL_LABEL,
@@ -130,141 +130,11 @@ export function ChannelDot({ channel }: { channel: InboxChannelKey }) {
   );
 }
 
-export function MetricCard({
-  icon: Icon,
-  label,
-  value,
-  tint,
-  active,
-  onClick,
-  hint,
-}: {
-  icon: LucideIcon;
-  label: string;
-  value: number | string;
-  tint: string;
-  active?: boolean;
-  onClick?: () => void;
-  hint?: string;
-}) {
-  const clickable = Boolean(onClick);
-  const Cmp: 'button' | 'div' = clickable ? 'button' : 'div';
-  return (
-    <Cmp
-      type={clickable ? 'button' : undefined}
-      onClick={onClick}
-      aria-pressed={clickable ? Boolean(active) : undefined}
-      className={`min-w-0 rounded-xl border bg-card p-3 text-left transition ${
-        active
-          ? 'border-rose-300 dark:border-rose-500/50 ring-2 ring-rose-200 dark:ring-rose-500/30'
-          : clickable
-            ? 'border-line hover:border-field hover:shadow-sm'
-            : 'border-line'
-      }`}
-    >
-      <div className="flex items-center gap-2">
-        <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${tint}`}>
-          <Icon className="h-3.5 w-3.5" />
-        </span>
-        <div className="min-w-0 text-[10px] font-semibold uppercase leading-snug tracking-[0.16em] text-ink-muted">{label}</div>
-      </div>
-      <div className="mt-2 flex items-baseline justify-between gap-2">
-        <div className="text-xl font-semibold tracking-tight text-ink">{value}</div>
-        {hint && (
-          <span className={`hidden text-[10px] sm:inline ${active ? 'font-medium text-rose-600 dark:text-rose-400' : 'text-ink-muted'}`}>
-            {hint}
-          </span>
-        )}
-      </div>
-    </Cmp>
-  );
-}
-
-const CATEGORY_ICON: Record<InboxCategoryKey, LucideIcon> = {
-  birthdays: PartyPopper,
-  general: Building2,
-  marketing: Megaphone,
-  gm: Briefcase,
-};
-const CATEGORY_ICON_INK: Record<InboxCategoryKey, string> = {
-  birthdays: 'text-violet-500 dark:text-violet-400',
-  general: 'text-sky-500',
-  marketing: 'text-pink-500',
-  gm: 'text-amber-500',
-};
-
-/** "By category": the stacked violet / sky / pink bar with its icon-and-count legend (:1813-1836). */
-export function CategoryMixCard({
-  data,
-  selected = '',
-  onPick,
-}: {
-  data: Record<InboxCategoryKey, number>;
-  /** The category the list is filtered to, if any: its legend entry reads as pressed. */
-  selected?: InboxCategoryKey | '';
-  /** Present, each legend entry filters the list to its category (a second press clears it). */
-  onPick?: (category: InboxCategoryKey) => void;
-}) {
-  const keys: InboxCategoryKey[] = ['birthdays', 'general', 'marketing', 'gm'];
-  const total = Math.max(1, data.birthdays + data.general + data.marketing + data.gm);
-  const w = (n: number) => `${Math.round((n / total) * 100)}%`;
-  return (
-    <div className="min-w-0 rounded-xl border border-line bg-card p-3">
-      <div className="flex items-center gap-2">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-band text-ink-soft">
-          <TrendingUp className="h-3.5 w-3.5" />
-        </span>
-        <div className="min-w-0 text-[10px] font-semibold uppercase leading-snug tracking-[0.16em] text-ink-muted">By category</div>
-      </div>
-      <div
-        className="mt-2 flex h-2 overflow-hidden rounded-full bg-band"
-        role="img"
-        aria-label={keys.map((k) => `${CATEGORY_LABEL[k]} ${data[k]}`).join(', ')}
-      >
-        {keys.map((k) => (
-          <div key={k} className={CATEGORY_BAR[k]} style={{ width: w(data[k]) }} />
-        ))}
-      </div>
-      <div className="mt-1.5 flex items-center justify-between text-[10px] text-ink-muted">
-        {keys.map((k) => {
-          const Icon = CATEGORY_ICON[k];
-          if (!onPick) {
-            return (
-              <span key={k} className="flex items-center gap-1" title={CATEGORY_LABEL[k]}>
-                <Icon className={`h-3 w-3 ${CATEGORY_ICON_INK[k]}`} />
-                {data[k]}
-              </span>
-            );
-          }
-          const on = selected === k;
-          return (
-            <button
-              key={k}
-              type="button"
-              onClick={() => onPick(k)}
-              aria-pressed={on}
-              title={on ? `Showing ${CATEGORY_LABEL[k]} only — click to clear` : `Show ${CATEGORY_LABEL[k]} only`}
-              className={`flex items-center gap-1 rounded-full px-1.5 py-0.5 transition ${
-                on
-                  ? 'bg-ink text-on-ink'
-                  : 'hover:bg-band hover:text-ink'
-              }`}
-            >
-              <Icon className={`h-3 w-3 ${on ? '' : CATEGORY_ICON_INK[k]}`} />
-              {data[k]}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 /**
  * The toggle pill the archive's filters use (`ConversationList`, "Handled in
  * the last" and "Resolved by"), and since the playbook build (SCRUM-220) the
  * rail's chips: white with a slate ring when off, inverted when on, the state
- * in `aria-pressed` as the dashboard tiles carry it (SCRUM-652).
+ * in `aria-pressed` (SCRUM-652).
  */
 export const PILL = 'rounded-full px-2.5 py-1 text-[11px] font-medium ring-1 transition';
 export const PILL_ON = 'bg-ink text-on-ink ring-ink';

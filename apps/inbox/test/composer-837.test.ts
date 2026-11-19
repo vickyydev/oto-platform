@@ -313,15 +313,23 @@ describe('the reply box in the composer', () => {
 
 describe('the "Show simulator" button', () => {
   const workspace = readFileSync(path.resolve(import.meta.dirname, '../src/components/Workspace.tsx'), 'utf8');
+  const appBar = readFileSync(path.resolve(import.meta.dirname, '../src/components/AppBar.tsx'), 'utf8');
 
-  it('is in the header’s bar of controls, never floating over the page', () => {
-    expect(workspace.match(/Show simulator/g)).toHaveLength(1);
-    const header = workspace.slice(workspace.indexOf('<header'), workspace.indexOf('</header>'));
-    expect(header).toContain('Show simulator');
-    const at = header.indexOf('Show simulator');
-    const button = header.slice(header.lastIndexOf('<button', at), at);
-    expect(button).toContain('toggleSimPane(true)');
+  // SCRUM-1016: the header's bar of controls became the account menu, so the
+  // side panel's way back is an entry there — still in the bar, still never
+  // floating over the page or the composer.
+  it('is an entry of the account menu in the app bar, never floating over the page', () => {
+    expect(appBar.match(/SHOW_SIMULATOR_LABEL = 'Show simulator'/g)).toHaveLength(1);
+    const menu = appBar.slice(appBar.indexOf('export function AccountMenuItems'), appBar.indexOf('function menuItems'));
+    const at = menu.indexOf('{SHOW_SIMULATOR_LABEL}');
+    expect(at).toBeGreaterThan(0);
+    const button = menu.slice(menu.lastIndexOf('<button', at), at);
+    expect(button).toContain('role="menuitem"');
+    expect(button).toContain('onClick={onShowSimulator}');
     expect(button).not.toMatch(/\bfixed\b|\babsolute\b|\bsticky\b/);
+    // The workspace hands it the panel's own switch.
+    expect(workspace).toContain('onShowSimulator={() => toggleSimPane(true)}');
+    expect(workspace).not.toMatch(/Show simulator/);
     // Nothing in the workspace floats at the page's lower right any more.
     expect(workspace).not.toMatch(/fixed bottom-\d+ right-\d+/);
   });

@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import type { InboxTab } from '@oto/shared/inbox';
 import type { ConversationList, InboxMe } from '@/api/inbox';
-import { Avatar, Eyebrow, FilterChip } from '@/components/atoms';
+import { FilterChip } from '@/components/atoms';
 import { applyView, currentView, namedViews, sourceLabel, toggleChip, type ChipDim, type NamedView, type SourceOption } from '@/lib/inboxes';
 import type { Filters } from '@/lib/query';
 import {
@@ -31,24 +31,9 @@ import {
   STATUS_OPTIONS,
   TAB_LABEL,
   branchOptions,
-  initialsOf,
-  tintFor,
 } from '@/lib/view';
 
 export const TAB_ICON: Record<InboxTab, LucideIcon> = { mine: Inbox, team: Users, handled: Archive };
-
-/**
- * Who the rail says is reading (the prototype's "Viewing as", :1407-1416):
- * the owner view, else the teams they are in, else a staff member who sees
- * only what they are put on.
- */
-export function viewerRoleLabel(me: Pick<InboxMe, 'roles' | 'teams'>): string {
-  // 'Owner view' names the view, not the person (SCRUM-652 polish): the GM
-  // reads under it too.
-  if (me.roles.includes('owner')) return 'Owner view';
-  const teams = me.teams.filter((t) => t.member).map((t) => t.name);
-  return teams.length > 0 ? teams.join(' · ') : 'Staff';
-}
 
 /** The row button the rail's tabs are (:1418-1438), shared by the named views. */
 const RAIL_ITEM = 'mb-0.5 flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left text-[13px] transition';
@@ -189,7 +174,11 @@ export function InboxViews({
   );
 }
 
-/** The 220 px left rail on `slate-50` (:1406-1460): viewer, tabs with counts, the named inboxes, the filter chips. */
+/**
+ * The desktop's views column (:1406-1460): the tabs with counts, the named
+ * inboxes, the filter chips. The viewer's name is said once, in the account
+ * menu (SCRUM-1016), so the prototype's "Viewing as" block is gone from here.
+ */
 export function Rail({
   me,
   tab,
@@ -207,23 +196,8 @@ export function Rail({
   onTab: (t: InboxTab) => void;
   onFilters: (next: Partial<Filters>) => void;
 }) {
-  const name = me.name ?? 'You';
   return (
     <aside className="hidden min-h-0 flex-col border-r border-line bg-ground lg:flex">
-      <div className="border-b border-line px-4 py-3">
-        <Eyebrow>Viewing as</Eyebrow>
-        <div className="mt-1 flex items-center gap-2">
-          <Avatar
-            initials={initialsOf(name)}
-            tint={me.roles.includes('owner') ? 'bg-ink text-on-ink' : tintFor(me.accountId)}
-            size={28}
-          />
-          <div className="min-w-0">
-            <div className="truncate text-[13px] font-semibold text-ink">{name}</div>
-            <div className="truncate text-[11px] text-ink-muted">{viewerRoleLabel(me)}</div>
-          </div>
-        </div>
-      </div>
       <nav className="shrink-0 px-2 py-2" aria-label="Tabs">
         {me.tabs.map((t) => {
           const Icon = TAB_ICON[t];

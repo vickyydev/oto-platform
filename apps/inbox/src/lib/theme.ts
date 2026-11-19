@@ -28,11 +28,6 @@ export function resolvedDark(theme: Theme, systemDark: boolean): boolean {
   return theme === 'dark' || (theme === 'system' && systemDark);
 }
 
-/** The control's title: what is set now, and what one press does. */
-export function themeTitle(theme: Theme): string {
-  return `Theme: ${theme} — switch to ${nextTheme(theme)}`;
-}
-
 /** The account's saved preference out of the `GET /me` body, when it is there. */
 export function themeFromMe(me: unknown): Theme | null {
   if (typeof me !== 'object' || me === null) return null;

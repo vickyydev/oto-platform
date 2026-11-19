@@ -1,15 +1,17 @@
 // SCRUM-653 — the dark theme's plumbing, pinned without a browser: the
-// controller against a fake root and media query, and the header toggle
+// controller against a fake root and media query, and the theme control
 // rendered to markup. What is pinned: light when nothing is saved, the saved
 // preference applied on init, `set` applying at once and writing back when
 // the preferences route exists, a 404 from a not-yet-landed route held in
 // memory, and `system` following the device through its change listener.
+// SCRUM-1016 moved the control from the header's cycling icon into the
+// account menu as three choices; its pins at the end follow it there.
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { ApiError } from '@/api/client';
-import { ThemeToggle } from '@/components/Workspace';
-import { createThemeController, nextTheme, resolvedDark, themeFromMe, themeTitle, type Theme, type ThemeEnv } from '@/lib/theme';
+import { AccountMenuItems } from '@/components/AppBar';
+import { createThemeController, nextTheme, resolvedDark, themeFromMe, type Theme, type ThemeEnv } from '@/lib/theme';
 
 /** A fake `<html>` + `(prefers-color-scheme: dark)` + api, all observable. */
 function env(overrides: Partial<ThemeEnv> & { systemDark?: boolean } = {}) {
@@ -140,21 +142,63 @@ describe('the cycle and its words', () => {
   });
 });
 
-describe('the header toggle', () => {
-  const render = (theme: Theme) => renderToStaticMarkup(createElement(ThemeToggle, { theme, onTheme: () => undefined }));
-
-  it('renders one compact control naming the current theme and the next', () => {
-    expect(render('light')).toContain(themeTitle('light'));
-    expect(render('light')).toContain('switch to dark');
-    expect(render('dark')).toContain('switch to system');
-    expect(render('system')).toContain('switch to light');
+describe('the theme in the account menu (SCRUM-1016)', () => {
+  const me = {
+    accountId: '018f0000-0000-7000-8000-000000000001',
+    name: 'ZZ TEST viewer',
+    roles: ['owner'],
+    tabs: ['team', 'handled'],
+    teams: [],
+    people: [],
+    defaultReceptionBranchId: null,
+    simulator: null,
+    capabilities: { writes: true, dashboard: true, assign: false, move: false, reopen: false, templates: false, kb: false, ai: false },
+  } satisfies Parameters<typeof AccountMenuItems>[0]['me'];
+  const props = (theme: Theme, onTheme: (t: Theme) => void = () => undefined): Parameters<typeof AccountMenuItems>[0] => ({
+    me,
+    theme,
+    onTheme,
+    settings: null,
+    onSettings: () => undefined,
+    showSimulator: false,
+    onShowSimulator: () => undefined,
+    onSignOut: () => undefined,
   });
+  const render = (theme: Theme) => renderToStaticMarkup(createElement(AccountMenuItems, props(theme)));
+  const LABEL: Record<Theme, string> = { light: 'Light', dark: 'Dark', system: 'System' };
 
-  it('is a button with the theme-appropriate icon', () => {
+  it('offers light, dark and system as one group, the current one checked', () => {
     for (const theme of ['light', 'dark', 'system'] as const) {
       const html = render(theme);
-      expect(html).toContain('<button');
-      expect(html).toContain('lucide');
+      expect(html).toContain('role="group" aria-label="Theme"');
+      expect(html.match(/role="menuitemradio"/g)).toHaveLength(3);
+      expect(html.match(/aria-checked="true"/g)).toHaveLength(1);
+      const checked = html.match(/role="menuitemradio" aria-checked="true"[^>]*>([\s\S]*?)<\/button>/)![1]!;
+      expect(checked).toContain(`>${LABEL[theme]}</span>`);
     }
+  });
+
+  it('is a button per theme with the theme-appropriate icon', () => {
+    const items = render('light').match(/<button type="button" role="menuitemradio"[\s\S]*?<\/button>/g) ?? [];
+    expect(items).toHaveLength(3);
+    items.forEach((item, i) => {
+      expect(item).toContain('lucide');
+      expect(item).toContain(`>${LABEL[(['light', 'dark', 'system'] as const)[i]!]}</span>`);
+    });
+  });
+
+  it('a press sets that theme, which the controller then applies and saves (see set, above)', () => {
+    const chosen: Theme[] = [];
+    const radios: Array<() => void> = [];
+    const walk = (node: unknown): void => {
+      if (Array.isArray(node)) return node.forEach(walk);
+      if (!node || typeof node !== 'object' || !('props' in node)) return;
+      const p = (node as { props: { role?: string; onClick?: () => void; children?: unknown } }).props;
+      if (p.role === 'menuitemradio' && p.onClick) radios.push(p.onClick);
+      walk(p.children);
+    };
+    walk(AccountMenuItems(props('light', (t) => chosen.push(t))));
+    radios.forEach((press) => press());
+    expect(chosen).toEqual(['light', 'dark', 'system']);
   });
 });

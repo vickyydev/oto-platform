@@ -1,7 +1,7 @@
 import { isValidElement, type ReactElement, type ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Dashboard as DashboardData, InboxMe } from '@/api/inbox';
-import { Dashboard } from '@/components/Dashboard';
+import { StatsRow } from '@/components/StatsRow';
 import { Workspace } from '@/components/Workspace';
 import { renderHook } from '../../pos/test/support/hooks';
 
@@ -54,9 +54,10 @@ describe('SCRUM-993 actual workspace request ordering', () => {
     // the old request and request new counts, without an unrelated view change.
     hook.rerender({ me: restricted }); await flush();
     old.resolve(counts(42)); await flush();
-    expect(elements(hook.result.current).find(element => element.type === Dashboard)!.props.data).toBeNull();
+    // SCRUM-1016: the counts are the statistics row's, in the app bar.
+    expect(elements(hook.result.current).find(element => element.type === StatsRow)!.props.data).toBeNull();
     expect(calls.dashboard).toHaveBeenCalledTimes(2);
     fresh.resolve({ ...counts(0), byCategory: { general: 0, birthdays: 0, marketing: 0, gm: 0 } }); await flush();
-    expect(elements(hook.result.current).find(element => element.type === Dashboard)!.props.data?.active).toBe(0);
+    expect(elements(hook.result.current).find(element => element.type === StatsRow)!.props.data?.active).toBe(0);
   });
 });
