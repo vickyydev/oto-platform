@@ -584,3 +584,44 @@ export const AttachRegistrationPhotoSchema = z
     checkinIds: z.array(uuid).max(20).default([]),
   })
   .strict();
+
+/**
+ * SCRUM-1018 — A RETURNING CHILD'S LAST PHOTO, REUSED ON STAFF'S WORD.
+ *
+ * The owner's answer of 19 November: the photo of child and guardian is
+ * what staff compare at pickup, and the last visit's photo may be reused
+ * when staff confirm it still matches. The till reads the child's last
+ * stay that has a photo (`GET /checkin/children/:childId/last-photo`), shows
+ * it to staff with "Still matches" and "Take a new one", and on "Still
+ * matches" names that stay here once the registration is written
+ * (`POST /checkin/registrations/:id/photo-reuse`): each child's new stay
+ * points at the same stored photo, by reference, and the registration's
+ * audit row says who confirmed it. The photo stays owned by the
+ * registration it was taken for, so it is read through the same
+ * permission check as before and can never stand in for a pickup photo.
+ */
+export const LastChildPhotoSchema = z.object({
+  photo: z
+    .object({
+      /** The earlier stay the photo was on: what a reuse names. */
+      checkinId: uuid,
+      registrationId: uuid,
+      fileId: uuid,
+      /** When that stay was registered. */
+      takenAt: z.string(),
+    })
+    .nullable(),
+});
+export type LastChildPhoto = z.infer<typeof LastChildPhotoSchema>;
+
+export const ReuseRegistrationPhotoSchema = z
+  .object({
+    /** Each child on this registration, with the earlier stay of the same child whose photo still matches. */
+    children: z
+      .array(z.object({ checkinId: uuid, fromCheckinId: uuid }).strict())
+      .min(1)
+      .max(20)
+      .refine((value) => new Set(value.map((item) => item.checkinId)).size === value.length, 'Each child once'),
+  })
+  .strict();
+export type ReuseRegistrationPhotoInput = z.infer<typeof ReuseRegistrationPhotoSchema>;

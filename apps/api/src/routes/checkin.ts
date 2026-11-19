@@ -8,7 +8,9 @@ import {
   CheckInNowSchema,
   CreateRegistrationSchema,
   CreateWaiverSchema,
+  LastChildPhotoSchema,
   LeaveAsBookedSchema,
+  ReuseRegistrationPhotoSchema,
 } from '@oto/shared';
 import type { FastifyRequest } from 'fastify';
 import type { Logger } from 'pino';
@@ -44,6 +46,7 @@ import {
   waiverViewOf,
   type Actor,
 } from '../services/checkin';
+import { lastChildPhoto, reuseRegistrationPhoto } from '../services/photo-reuse';
 import { buildNoticeSender, type SmsSender } from '../services/sms';
 import { opCtx, withTx } from '../services/tx';
 
@@ -223,6 +226,50 @@ export async function checkinRoutes(app: App): Promise<void> {
       await req.requirePermission('pos:checkin:update', { branchId: reg.branchId });
       return withTx(app.db, { ...opCtx(req), branchId: reg.branchId }, 'registration.photo', (tx) =>
         attachRegistrationPhoto(tx, actor, reg, req.body),
+      );
+    },
+  );
+
+  // SCRUM-1018 — a returning child's last photo, shown to staff, and its
+  // reuse once staff confirm it still matches (services/photo-reuse.ts).
+  app.get(
+    '/children/:childId/last-photo',
+    {
+      config: { permission: 'pos:checkin:read', target: { branchId: 'query.branchId' } },
+      schema: {
+        description:
+          "A saved child's last stay at this park that holds a photo still kept under the retention rule, " +
+          'for staff to compare with the child and guardian at the counter. Null when there is none.',
+        params: z.object({ childId: z.string().uuid() }),
+        querystring: z.object({ branchId: z.string().uuid() }),
+        response: { 200: LastChildPhotoSchema },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      await assertBranchOfOperator(app, auth.operatorId, req.query.branchId);
+      return lastChildPhoto(app.db, auth.operatorId, req.query.branchId, req.params.childId);
+    },
+  );
+
+  app.post(
+    '/registrations/:id/photo-reuse',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          "Staff confirmed a returning child's last photo still matches: the child's new stay points at that " +
+          'stored photo. Refused when the earlier stay is another child\'s, another park\'s, or its photo is no longer kept.',
+        params: z.object({ id: z.string().uuid() }),
+        body: ReuseRegistrationPhotoSchema,
+      },
+    },
+    async (req) => {
+      const actor = actorOf(req);
+      const reg = await loadRegistration(app.db, actor.operatorId, req.params.id);
+      await req.requirePermission('pos:checkin:update', { branchId: reg.branchId });
+      return withTx(app.db, { ...opCtx(req), branchId: reg.branchId }, 'registration.photo_reused', (tx) =>
+        reuseRegistrationPhoto(tx, actor, reg, req.body),
       );
     },
   );

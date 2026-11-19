@@ -450,6 +450,33 @@ export const checkinApi = {
     ),
 
   /**
+   * SCRUM-1018 — a returning child's last stay at this park with a photo still
+   * kept, for staff to compare with the child and guardian at the counter.
+   * Platform only: offline the counter takes a new photo, as before (null).
+   */
+  lastChildPhoto: (childId: string, branchId: string) =>
+    viaLane(
+      () =>
+        api.get<ApiResponse<'/checkin/children/{childId}/last-photo', 'get'>>(
+          `/checkin/children/${encodeURIComponent(childId)}/last-photo?branchId=${encodeURIComponent(assertPlatformBranchId(branchId))}`,
+        ),
+      async () => ({ photo: null }),
+    ),
+
+  /**
+   * SCRUM-1018 — staff confirmed each named child's last photo still matches:
+   * their new stays point at those stored photos. Platform only; offline it
+   * says so, and the counter takes a new photo before pickup.
+   */
+  reusePhoto: (registrationId: string, children: { checkinId: string; fromCheckinId: string }[]): Promise<unknown> =>
+    viaLane(
+      () => api.post(`/checkin/registrations/${registrationId}/photo-reuse`, { children }, { idempotencyKey: idemKey() }),
+      async () => {
+        throw needsInternet("Reusing the last visit's photo");
+      },
+    ),
+
+  /**
    * `service` on an entry is the Drop-Off / Nanny switch as the paid cart
    * line carried it: the platform, and the box with the link down, apply it
    * to the stay in the check-in's own write and check the nanny against it;
