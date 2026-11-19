@@ -34,6 +34,9 @@ const props = {
   onSave: () => undefined,
 };
 const paid = paidPrebookingFixture(PARK);
+// SCRUM-1016: Save names what it books (BookDate.dc.html, "Book Sat 20 Dec, 14:00"), with the year.
+const SAVE_WORDS = 'Book Sat 21 Nov 2099, 14:00';
+const SAVE_DISABLED = /<button[^>]*disabled=""[^>]*data-testid="book-date-save"[^>]*>[^]*?Book Sat 21 Nov 2099, 14:00<\/button>/;
 let root: Root | null = null;
 let host: HTMLDivElement | null = null;
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -53,7 +56,7 @@ describe('SCRUM-987 payment gate in Book Date', () => {
           initialDeposit: state ? { ...paid, state } : null,
         }),
       );
-      expect(html).toMatch(/<button[^>]*disabled=""[^>]*>[^]*?Book date<\/button>/);
+      expect(html).toMatch(SAVE_DISABLED);
       if (state === null || state === 'requested')
         expect(html).toContain('A payment slip or staff receipt does not unlock booking.');
     }
@@ -62,11 +65,9 @@ describe('SCRUM-987 payment gate in Book Date', () => {
     const html = renderToStaticMarkup(
       createElement(BookDateDialog, { ...props, initialDeposit: paid }),
     );
-    const button =
-      (html.match(/<button\b[^>]*>[\s\S]*?<\/button>/g) ?? []).find((b) =>
-        />Book date<\/button>$/.test(b),
-      ) ?? '';
+    const button = /<button\b[^>]*data-testid="book-date-save"[^>]*>[\s\S]*?<\/button>/.exec(html)?.[0] ?? '';
     expect(button).not.toBe('');
+    expect(button.replace(/<[^>]+>/g, '')).toBe(SAVE_WORDS);
     expect(button).not.toMatch(/\sdisabled=/);
     expect(html).toContain('check park capacity before booking');
     expect(html).toContain('Simulator test payment: no real bank deposit has been received.');
@@ -79,7 +80,10 @@ describe('SCRUM-987 payment gate in Book Date', () => {
         },
       }),
     );
-    expect(foreign).toMatch(/<button[^>]*disabled=""[^>]*>[^]*?Book date<\/button>/);
+    expect(foreign).toMatch(SAVE_DISABLED);
+    // The deposit says which park it unlocks (SCRUM-1016).
+    expect(foreign).toContain('Paid for another park');
+    expect(foreign).toContain('booking unlocks at that park only.');
   });
   it('Check payment unlocks the button without saving; only the later staff press creates a booking', async () => {
     host = document.createElement('div');
@@ -101,16 +105,16 @@ describe('SCRUM-987 payment gate in Book Date', () => {
     });
     const button = (name: string) =>
       Array.from(host!.querySelectorAll('button')).find((b) => b.textContent?.trim() === name)!;
-    expect(button('Book date').disabled).toBe(true);
+    expect(button(SAVE_WORDS).disabled).toBe(true);
     expect(save).not.toHaveBeenCalled();
     answer = { draft: { ...pending.draft!, state: 'paid', paidAt: paid.paidAt } };
     await act(async () => {
       button('Check payment').click();
     });
-    expect(button('Book date').disabled).toBe(false);
+    expect(button(SAVE_WORDS).disabled).toBe(false);
     expect(save).not.toHaveBeenCalled();
     await act(async () => {
-      button('Book date').click();
+      button(SAVE_WORDS).click();
     });
     expect(save).toHaveBeenCalledTimes(1);
   });

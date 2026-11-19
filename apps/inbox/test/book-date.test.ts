@@ -323,18 +323,22 @@ describe('the dialog opens with the reading and checks before it saves', () => {
         onSave: noop,
       }),
     );
-    expect(html).toContain('Book Date — Olga Demo');
+    // SCRUM-1016 (BookDate.dc.html): the title is "Book the date" with the
+    // family under it, and Save names the day it books; with no start time yet
+    // it names the day alone.
+    expect(html).toContain('>Book the date</h2>');
+    expect(html).toContain('Olga Demo · birthday party');
     expect(html).toContain('The chat says “21/mar”');
     expect(html).toContain('value="2027-03-21"');
     expect(html).toContain('Central Floresta');
-    expect(html).toContain('>Book date</button>');
+    expect(html).toContain('>Book Sun 21 Mar 2027</button>');
   });
 });
 
 // SCRUM-1016: the button reads "Book the date" (ChatPaid.dc.html, approved as
 // drawn) and sits in People and actions — the sheet on a phone, the panel on
 // a desktop — with Create BEO beside it; who may press them, and why not, is
-// unchanged. The dialog it opens keeps its title, "Book Date — <name>".
+// unchanged. The dialog it opens is titled "Book the date" (BookDate.dc.html).
 describe('Book Date and Create BEO in the conversation', () => {
   it('for the birthdays team: both live, no event yet', () => {
     const html = panel(me(), null);

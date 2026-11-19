@@ -9,7 +9,7 @@
 // is a full-height sheet (BookDate.dc.html); from 768 px the centred card.
 //
 // FICTIONAL TEST DATA: no customer, no account.
-import { act, createElement, useState } from 'react';
+import { act, createElement, Fragment, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -63,28 +63,30 @@ function Page({ onFirstClose }: { onFirstClose?: () => void }) {
     null,
     createElement('button', { type: 'button', onClick: () => setOpen(true) }, 'Open'),
     createElement('button', { type: 'button' }, 'Behind'),
-    createElement(
-      Dialog,
-      {
-        open,
-        onClose: () => {
-          onFirstClose?.();
-          setOpen(false);
-        },
-        icon: Calendar,
-        title: 'ZZ TEST dialog',
-        subtitle: 'What it is for',
-        footer: createElement('button', { type: 'button', onClick: () => setOver(true) }, 'Ask over it'),
+    createElement(Dialog, {
+      open,
+      onClose: () => {
+        onFirstClose?.();
+        setOpen(false);
       },
-      createElement('input', { 'aria-label': 'First field' }),
-      createElement('button', { type: 'button', disabled: true }, 'Off'),
-      createElement('select', { 'aria-label': 'A choice' }, createElement('option', null, 'one')),
-    ),
-    createElement(
-      Dialog,
-      { open: over, onClose: () => setOver(false), title: 'ZZ TEST confirmation' },
-      createElement('button', { type: 'button' }, 'Inner'),
-    ),
+      icon: Calendar,
+      title: 'ZZ TEST dialog',
+      subtitle: 'What it is for',
+      footer: createElement('button', { type: 'button', onClick: () => setOver(true) }, 'Ask over it'),
+      children: createElement(
+        Fragment,
+        null,
+        createElement('input', { 'aria-label': 'First field' }),
+        createElement('button', { type: 'button', disabled: true }, 'Off'),
+        createElement('select', { 'aria-label': 'A choice' }, createElement('option', null, 'one')),
+      ),
+    }),
+    createElement(Dialog, {
+      open: over,
+      onClose: () => setOver(false),
+      title: 'ZZ TEST confirmation',
+      children: createElement('button', { type: 'button' }, 'Inner'),
+    }),
   );
 }
 

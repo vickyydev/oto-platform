@@ -167,12 +167,13 @@ describe('the pattern reading first, the model after', () => {
 
   it('the dialog shows the model’s values with "The chat says “…”" and a source mark', () => {
     const html = dialog(pattern, ENGLISH_MODEL);
-    expect(html).toMatch(/aria-label="Kids"[^>]*value="12"/);
+    // SCRUM-1016: the fields are labelled as BookDate.dc.html draws them — "Children", "Birthday child", "Turning" — and the box is named by its label.
+    expect(html).toMatch(/aria-label="Children"[^>]*value="12"/);
     expect(html).toContain('The chat says “12 kds”');
     expect(html).toMatch(/aria-label="Adults"[^>]*value="4"/);
     expect(html).toContain('The chat says “4 adust”');
     expect(html).toContain('from the family');
-    expect(html).toMatch(/aria-label="Child&#x27;s name"[^>]*value="Emma"/);
+    expect(html).toMatch(/aria-label="Birthday child"[^>]*value="Emma"/);
     expect(html).toMatch(/aria-label="Start time"[^>]*value="14:00"/);
     expect(html).toContain('The chat says “2pm”');
   });
@@ -188,7 +189,7 @@ describe('the pattern reading first, the model after', () => {
   it('while the model reads, the dialog says so; the pattern values are already there', () => {
     const html = dialog(pattern, null, true);
     expect(html).toContain('Reading the whole chat…');
-    expect(html).toMatch(/aria-label="Kids"[^>]*value=""/);
+    expect(html).toMatch(/aria-label="Children"[^>]*value=""/);
     expect(html).toMatch(/aria-label="Booking name"[^>]*value="ZZ TEST Olga"/);
   });
 });
