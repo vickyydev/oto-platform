@@ -2285,6 +2285,63 @@ export function withoutUnansweredQuestions(
   return refused;
 }
 
+/**
+ * SCRUM-1035: the same rule on the form's own read (`BeoFill`), whose every value is read from ONE
+ * message of the team's (the ruling confirmation, or a pasted one): a value whose words sit in a
+ * question of that message is left out, so neither Load into Editor nor Fetch from chat (which
+ * offers the form's read where the conversation's gives nothing) brings it back. Called only when
+ * no line of the family's follows that message. The deposit's fields keep their own rule; the
+ * Final Message to Parent is the message itself. Returns how many values were left out.
+ */
+export function fillWithoutUnansweredQuestions(fill: BeoFill, messageText: string): number {
+  let refused = 0;
+  const asks = (...words: Array<string | number | null | undefined>): boolean => {
+    if (!words.some((w) => w !== null && w !== undefined && String(w).trim() !== "")) return false;
+    const no = saidAsQuestion(messageText, words);
+    if (no) refused += 1;
+    return no;
+  };
+  const event = fill.event;
+  if (event) {
+    for (const key of ["childName", "bookingName", "startTime", "endTime", "locationText", "specialRequests", "activities", "decoration"] as const) {
+      if (event[key] !== undefined && asks(event[key])) delete event[key];
+    }
+    if (event.eventDate !== undefined && asks(event.eventDateText, event.eventDate)) {
+      delete event.eventDate;
+      delete event.eventDateText;
+    }
+    if (event.numChildren !== undefined && asks(`${event.numChildren} kid`, `${event.numChildren} child`, event.numChildren)) delete event.numChildren;
+    if (event.numAdults !== undefined && asks(`${event.numAdults} adult`, event.numAdults)) delete event.numAdults;
+  }
+  const setup = fill.setupPlan;
+  if (setup) {
+    if (setup.readyBy !== undefined && asks(setup.readyBy)) delete setup.readyBy;
+    if (setup.responsible !== undefined && asks(setup.responsible)) delete setup.responsible;
+    if (setup.simplifiedTasks) setup.simplifiedTasks = setup.simplifiedTasks.filter((t) => !asks(t.itemLabel));
+  }
+  const kitchen = fill.kitchenPlan;
+  if (kitchen) {
+    if (kitchen.kidsMenu) kitchen.kidsMenu = kitchen.kidsMenu.filter((l) => !asks(l.itemName));
+    if (kitchen.adultsMenu) kitchen.adultsMenu = kitchen.adultsMenu.filter((l) => !asks(l.itemName));
+    if ((kitchen.cakeNotes !== undefined || kitchen.cakeTime !== undefined) && asks(kitchen.cakeNotes, kitchen.cakeTime)) {
+      for (const key of ["cakeMode", "cakeNotes", "cakeTime", "cakeIncluded", "cakePrice", "cakeQuantity"] as const) delete kitchen[key];
+    }
+  }
+  const party = fill.partyDetails;
+  if (party) {
+    if (party.packageName !== undefined && asks(party.packageName)) delete party.packageName;
+    if (party.notes !== undefined && asks(party.notes)) delete party.notes;
+    if (party.items) party.items = party.items.filter((i) => !asks(i.description));
+  }
+  if (fill.timeline) fill.timeline = fill.timeline.filter((t) => !asks(t.label, t.time));
+  const team = fill.team;
+  if (team) {
+    if (team.partyHost !== undefined && asks(team.partyHost)) delete team.partyHost;
+    if (team.entertainmentHost !== undefined && asks(team.entertainmentHost)) delete team.entertainmentHost;
+  }
+  return refused;
+}
+
 // --- SCRUM-827: the rest of the BEO from the form's own read ------------------------------
 
 const asRecord = (v: unknown): Record<string, unknown> =>
