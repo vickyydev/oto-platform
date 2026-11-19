@@ -105,3 +105,21 @@ Build in steps, each proved on staging: the tokens and the page frame; the
 list and filters; the chat and composer; people and actions; Book Date; the
 desktop and tablet layouts; then the settings pages. One test file pins exact
 colour classes and is rewritten for the new palette, not deleted.
+
+## 8. Open with the owner after the iPad round (SCRUM-1045)
+
+Landed on staging 19 November 2026 (main 5ce8dafc3). Two layout questions
+stand; the build keeps the brief's behaviour until he answers.
+
+1. **An iPad mini 6 held upright (744 px).** It still shows one pane at a
+   time, because the brief puts the list beside the chat from 768 px. Both
+   panes would fit (a list of about 268 px beside a chat of about 476 px).
+   Lower the split to about 704 px, or keep one pane there.
+2. **The views column on a 1024 px upright iPad.** It cannot be folded, so
+   the chat is 512 px by default (536 px with the list at its narrowest).
+   Add a fold control kept per browser, show the column only from 1280 px on
+   touch tablets, or keep it as it is.
+
+A browser-level touch-target test is not committed (the inbox package has no
+Playwright); the measurement is in
+`docs/qa/proof-2026-11-19/SCRUM-1045/local/review-run.json`.

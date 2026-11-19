@@ -1,0 +1,1369 @@
+{
+  "what": "SCRUM-1045 / 1043 / 1044 staging proof of the inbox at main 5ce8dafc31f58bc54a10d94a818d26f1d08a5819 (oto-inbox-staging deploy dep-dbveohijnfac73deqvvg, live by 12:34 UTC on 19 Nov 2026).",
+  "how": "Playwright Chromium, deviceScaleFactor 2; tablets and phone with touch emulated (hasTouch, isMobile), 1440 x 900 without. Dark is the dark class put on the page, never the theme control. Every non-GET api request a page made was logged and blocked in the browser. Sessions: one sign-in each for the seeded admin, the GM and a birthdays agent, by the api, before the pages.",
+  "pagesWrote": {
+    "nonGetRequests": 0,
+    "blockedInBrowser": 0
+  },
+  "chatsOpened": {
+    "distinct": 2,
+    "loads": [
+      {
+        "chat": "ZZ TEST 825 family",
+        "unreadForViewer": 0,
+        "where": "tablet",
+        "at": "2026-11-19T12:38:02.758Z"
+      },
+      {
+        "chat": "ZZ TEST 825 family",
+        "unreadForViewer": 0,
+        "where": "tablet",
+        "at": "2026-11-19T12:40:23.241Z"
+      },
+      {
+        "chat": "ZZ TEST 825 family",
+        "unreadForViewer": 0,
+        "where": "phone",
+        "at": "2026-11-19T12:40:51.139Z"
+      },
+      {
+        "chat": "ZZ TEST 825 family",
+        "unreadForViewer": 0,
+        "where": "desktop",
+        "at": "2026-11-19T12:41:04.186Z"
+      },
+      {
+        "chat": "second ZZ TEST birthdays chat",
+        "unreadForViewer": 0,
+        "where": "book 768",
+        "at": "2026-11-19T12:41:14.619Z"
+      },
+      {
+        "chat": "second ZZ TEST birthdays chat",
+        "unreadForViewer": 0,
+        "where": "book 390",
+        "at": "2026-11-19T12:41:28.928Z"
+      },
+      {
+        "chat": "ZZ TEST 825 family",
+        "unreadForViewer": 0,
+        "where": "desktop",
+        "at": "2026-11-19T12:45:01.899Z"
+      },
+      {
+        "chat": "ZZ TEST 825 family",
+        "unreadForViewer": 0,
+        "where": "tablet 1133 at rest",
+        "at": "2026-11-19T12:48:19.059Z"
+      }
+    ]
+  },
+  "signIns": [
+    {
+      "who": "gm",
+      "status": 200,
+      "at": "2026-11-19T12:35:23.388Z"
+    },
+    {
+      "who": "bday_enru",
+      "status": 200,
+      "at": "2026-11-19T12:35:25.483Z"
+    },
+    {
+      "who": "admin",
+      "status": 200,
+      "at": "2026-11-19T12:35:27.470Z"
+    }
+  ],
+  "covered": "Non Demo / ZZ TEST names in list rows (face, name, preview), any run of nine or more digits (phone numbers) in text and text boxes, and the customer line of each assistant example.",
+  "shots": [
+    {
+      "shot": "768x1024-list-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:37:57.993Z"
+    },
+    {
+      "shot": "768x1024-list-dark.png",
+      "covered": 91,
+      "at": "2026-11-19T12:37:58.467Z"
+    },
+    {
+      "shot": "768x1024-filters-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:37:59.963Z"
+    },
+    {
+      "shot": "768x1024-filters-dark.png",
+      "covered": 91,
+      "at": "2026-11-19T12:38:00.415Z"
+    },
+    {
+      "shot": "768x1024-chat-default-light.png",
+      "covered": 96,
+      "at": "2026-11-19T12:38:10.466Z"
+    },
+    {
+      "shot": "768x1024-chat-default-dark.png",
+      "covered": 96,
+      "at": "2026-11-19T12:38:10.946Z"
+    },
+    {
+      "shot": "768x1024-chat-dragged-narrower-light.png",
+      "covered": 96,
+      "at": "2026-11-19T12:38:12.209Z"
+    },
+    {
+      "shot": "768x1024-chat-dragged-wider-light.png",
+      "covered": 96,
+      "at": "2026-11-19T12:38:13.073Z"
+    },
+    {
+      "shot": "1024x1366-chat-default-light.png",
+      "covered": 96,
+      "at": "2026-11-19T12:38:15.563Z"
+    },
+    {
+      "shot": "1024x1366-chat-default-dark.png",
+      "covered": 96,
+      "at": "2026-11-19T12:38:16.143Z"
+    },
+    {
+      "shot": "1024x1366-chat-dragged-narrower-light.png",
+      "covered": 96,
+      "at": "2026-11-19T12:38:17.523Z"
+    },
+    {
+      "shot": "1024x1366-chat-dragged-wider-light.png",
+      "covered": 96,
+      "at": "2026-11-19T12:38:18.503Z"
+    },
+    {
+      "shot": "1133x744-chat-default-light.png",
+      "covered": 98,
+      "at": "2026-11-19T12:38:52.047Z"
+    },
+    {
+      "shot": "1133x744-chat-default-dark.png",
+      "covered": 98,
+      "at": "2026-11-19T12:38:52.527Z"
+    },
+    {
+      "shot": "768x1024-list-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:40:18.447Z"
+    },
+    {
+      "shot": "768x1024-list-dark.png",
+      "covered": 91,
+      "at": "2026-11-19T12:40:18.913Z"
+    },
+    {
+      "shot": "768x1024-filters-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:40:20.423Z"
+    },
+    {
+      "shot": "768x1024-filters-dark.png",
+      "covered": 91,
+      "at": "2026-11-19T12:40:20.899Z"
+    },
+    {
+      "shot": "768x1024-chat-default-light.png",
+      "covered": 93,
+      "at": "2026-11-19T12:40:30.944Z"
+    },
+    {
+      "shot": "768x1024-chat-default-dark.png",
+      "covered": 93,
+      "at": "2026-11-19T12:40:31.420Z"
+    },
+    {
+      "shot": "768x1024-chat-dragged-narrower-light.png",
+      "covered": 93,
+      "at": "2026-11-19T12:40:32.686Z"
+    },
+    {
+      "shot": "768x1024-chat-dragged-wider-light.png",
+      "covered": 93,
+      "at": "2026-11-19T12:40:33.566Z"
+    },
+    {
+      "shot": "1024x1366-chat-default-light.png",
+      "covered": 93,
+      "at": "2026-11-19T12:40:36.014Z"
+    },
+    {
+      "shot": "1024x1366-chat-default-dark.png",
+      "covered": 93,
+      "at": "2026-11-19T12:40:36.583Z"
+    },
+    {
+      "shot": "1024x1366-chat-dragged-narrower-light.png",
+      "covered": 93,
+      "at": "2026-11-19T12:40:37.884Z"
+    },
+    {
+      "shot": "1024x1366-chat-dragged-wider-light.png",
+      "covered": 93,
+      "at": "2026-11-19T12:40:38.815Z"
+    },
+    {
+      "shot": "1133x744-chat-default-light.png",
+      "covered": 93,
+      "at": "2026-11-19T12:40:41.172Z"
+    },
+    {
+      "shot": "1133x744-chat-default-dark.png",
+      "covered": 93,
+      "at": "2026-11-19T12:40:41.671Z"
+    },
+    {
+      "shot": "390x844-list-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:40:46.374Z"
+    },
+    {
+      "shot": "390x844-list-dark.png",
+      "covered": 91,
+      "at": "2026-11-19T12:40:46.812Z"
+    },
+    {
+      "shot": "390x844-filters-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:40:48.276Z"
+    },
+    {
+      "shot": "390x844-filters-dark.png",
+      "covered": 91,
+      "at": "2026-11-19T12:40:48.708Z"
+    },
+    {
+      "shot": "390x844-chat-light.png",
+      "covered": 93,
+      "at": "2026-11-19T12:40:57.577Z"
+    },
+    {
+      "shot": "390x844-chat-dark.png",
+      "covered": 93,
+      "at": "2026-11-19T12:40:57.993Z"
+    },
+    {
+      "shot": "1440x900-chat-default-light.png",
+      "covered": 93,
+      "at": "2026-11-19T12:41:10.712Z"
+    },
+    {
+      "shot": "1440x900-chat-default-dark.png",
+      "covered": 93,
+      "at": "2026-11-19T12:41:11.245Z"
+    },
+    {
+      "shot": "768x1024-book-the-date-light.png",
+      "covered": 92,
+      "at": "2026-11-19T12:41:25.744Z"
+    },
+    {
+      "shot": "768x1024-book-the-date-dark.png",
+      "covered": 92,
+      "at": "2026-11-19T12:41:26.241Z"
+    },
+    {
+      "shot": "390x844-book-the-date-light.png",
+      "covered": 92,
+      "at": "2026-11-19T12:41:40.023Z"
+    },
+    {
+      "shot": "390x844-book-the-date-dark.png",
+      "covered": 92,
+      "at": "2026-11-19T12:41:40.483Z"
+    },
+    {
+      "shot": "1440x900-settings-templates-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:41:53.119Z"
+    },
+    {
+      "shot": "1440x900-settings-numbers-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:41:58.521Z"
+    },
+    {
+      "shot": "1440x900-settings-knowledge-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:42:04.405Z"
+    },
+    {
+      "shot": "1440x900-settings-examples-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:42:10.254Z"
+    },
+    {
+      "shot": "1440x900-settings-rules-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:42:15.567Z"
+    },
+    {
+      "shot": "1440x900-settings-teach-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:42:22.451Z"
+    },
+    {
+      "shot": "1440x900-settings-numbers-dark.png",
+      "covered": 91,
+      "at": "2026-11-19T12:42:28.302Z"
+    },
+    {
+      "shot": "1440x900-settings-teach-dark.png",
+      "covered": 91,
+      "at": "2026-11-19T12:42:34.635Z"
+    },
+    {
+      "shot": "1440x900-settings-knowledge-edit-open-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:42:41.182Z"
+    },
+    {
+      "shot": "1440x900-settings-knowledge-edit-cancelled-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:42:42.275Z"
+    },
+    {
+      "shot": "390x844-settings-templates-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:42:47.425Z"
+    },
+    {
+      "shot": "390x844-settings-numbers-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:42:53.177Z"
+    },
+    {
+      "shot": "390x844-settings-knowledge-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:42:58.463Z"
+    },
+    {
+      "shot": "390x844-settings-examples-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:43:04.067Z"
+    },
+    {
+      "shot": "390x844-settings-rules-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:43:09.303Z"
+    },
+    {
+      "shot": "390x844-settings-teach-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:43:16.055Z"
+    },
+    {
+      "shot": "390x844-settings-rules-dark.png",
+      "covered": 91,
+      "at": "2026-11-19T12:43:21.467Z"
+    },
+    {
+      "shot": "768x1024-settings-knowledge-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:43:26.970Z"
+    },
+    {
+      "shot": "768x1024-settings-templates-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:43:32.348Z"
+    },
+    {
+      "shot": "1024x1366-settings-examples-dark.png",
+      "covered": 91,
+      "at": "2026-11-19T12:43:37.979Z"
+    },
+    {
+      "shot": "1133x744-settings-numbers-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:43:43.941Z"
+    },
+    {
+      "shot": "1440x900-manager-account-menu-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:43:49.128Z"
+    },
+    {
+      "shot": "1440x900-manager-assistant-address-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:43:54.794Z"
+    },
+    {
+      "shot": "1440x900-manager-settings-templates-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:43:59.399Z"
+    },
+    {
+      "shot": "390x844-birthdays-agent-account-menu-light.png",
+      "covered": 27,
+      "at": "2026-11-19T12:44:02.578Z"
+    },
+    {
+      "shot": "390x844-birthdays-agent-assistant-address-light.png",
+      "covered": 27,
+      "at": "2026-11-19T12:44:08.206Z"
+    },
+    {
+      "shot": "1440x900-chat-default-light.png",
+      "covered": 93,
+      "at": "2026-11-19T12:45:08.500Z"
+    },
+    {
+      "shot": "1440x900-chat-default-dark.png",
+      "covered": 93,
+      "at": "2026-11-19T12:45:09.052Z"
+    },
+    {
+      "shot": "1440x900-settings-templates-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:45:16.145Z"
+    },
+    {
+      "shot": "1440x900-settings-numbers-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:45:21.787Z"
+    },
+    {
+      "shot": "1440x900-settings-knowledge-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:45:27.122Z"
+    },
+    {
+      "shot": "1440x900-settings-examples-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:45:32.425Z"
+    },
+    {
+      "shot": "1440x900-settings-rules-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:45:37.728Z"
+    },
+    {
+      "shot": "1440x900-settings-teach-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:45:44.543Z"
+    },
+    {
+      "shot": "1440x900-settings-numbers-dark.png",
+      "covered": 91,
+      "at": "2026-11-19T12:45:50.351Z"
+    },
+    {
+      "shot": "1440x900-settings-teach-dark.png",
+      "covered": 91,
+      "at": "2026-11-19T12:45:56.164Z"
+    },
+    {
+      "shot": "1440x900-settings-knowledge-edit-open-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:46:02.786Z"
+    },
+    {
+      "shot": "1440x900-settings-knowledge-edit-cancelled-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:46:03.887Z"
+    },
+    {
+      "shot": "390x844-settings-templates-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:46:09.483Z"
+    },
+    {
+      "shot": "390x844-settings-numbers-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:46:14.711Z"
+    },
+    {
+      "shot": "390x844-settings-knowledge-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:46:19.988Z"
+    },
+    {
+      "shot": "390x844-settings-examples-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:46:25.280Z"
+    },
+    {
+      "shot": "390x844-settings-rules-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:46:30.512Z"
+    },
+    {
+      "shot": "390x844-settings-teach-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:46:37.246Z"
+    },
+    {
+      "shot": "390x844-settings-rules-dark.png",
+      "covered": 91,
+      "at": "2026-11-19T12:46:42.660Z"
+    },
+    {
+      "shot": "768x1024-settings-knowledge-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:46:48.121Z"
+    },
+    {
+      "shot": "768x1024-settings-templates-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:46:53.516Z"
+    },
+    {
+      "shot": "1024x1366-settings-examples-dark.png",
+      "covered": 91,
+      "at": "2026-11-19T12:46:59.094Z"
+    },
+    {
+      "shot": "1133x744-settings-numbers-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:47:04.618Z"
+    },
+    {
+      "shot": "1440x900-manager-account-menu-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:47:10.047Z"
+    },
+    {
+      "shot": "1440x900-manager-assistant-address-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:47:15.841Z"
+    },
+    {
+      "shot": "1440x900-manager-settings-templates-light.png",
+      "covered": 91,
+      "at": "2026-11-19T12:47:20.578Z"
+    },
+    {
+      "shot": "390x844-birthdays-agent-account-menu-light.png",
+      "covered": 27,
+      "at": "2026-11-19T12:47:24.205Z"
+    },
+    {
+      "shot": "390x844-birthdays-agent-assistant-address-light.png",
+      "covered": 27,
+      "at": "2026-11-19T12:47:29.830Z"
+    },
+    {
+      "shot": "1133x744-chat-default-light.png",
+      "covered": 93,
+      "at": "2026-11-19T12:48:25.617Z"
+    },
+    {
+      "shot": "1133x744-chat-default-dark.png",
+      "covered": 93,
+      "at": "2026-11-19T12:48:26.164Z"
+    },
+    {
+      "shot": "1440x900-settings-examples-light.png",
+      "covered": 93,
+      "at": "2026-11-19T12:49:40.499Z"
+    },
+    {
+      "shot": "390x844-settings-examples-light.png",
+      "covered": 93,
+      "at": "2026-11-19T12:49:45.921Z"
+    },
+    {
+      "shot": "1024x1366-settings-examples-dark.png",
+      "covered": 93,
+      "at": "2026-11-19T12:49:51.371Z"
+    }
+  ],
+  "bookDate": [
+    {
+      "at": "2026-11-19T12:41:27.322Z",
+      "bookDate": "768x1024-book-the-date",
+      "via": "people-and-actions",
+      "closedWith": "Cancel",
+      "dialogsLeft": 0
+    },
+    {
+      "at": "2026-11-19T12:41:41.572Z",
+      "bookDate": "390x844-book-the-date",
+      "via": "people-and-actions",
+      "closedWith": "Cancel",
+      "dialogsLeft": 0
+    }
+  ],
+  "editCancel": [
+    {
+      "at": "2026-11-19T12:42:42.278Z",
+      "editCancel": "knowledge",
+      "dialogsLeft": 0
+    },
+    {
+      "at": "2026-11-19T12:46:03.891Z",
+      "editCancel": "knowledge",
+      "dialogsLeft": 0
+    }
+  ],
+  "measure": {
+    "768-list": {
+      "panes": {
+        "viewport": [
+          768,
+          1024
+        ],
+        "list": 276,
+        "chat": 492,
+        "rail": 0,
+        "divider": {
+          "x": 276,
+          "now": "276",
+          "min": "264",
+          "max": "408"
+        },
+        "sideways": false,
+        "coarse": true
+      },
+      "figures": {
+        "box": [
+          12,
+          123,
+          251,
+          65
+        ],
+        "vals": [
+          {
+            "text": "72",
+            "top": 132,
+            "h": 15,
+            "fs": 15
+          },
+          {
+            "text": "0",
+            "top": 132,
+            "h": 15,
+            "fs": 15
+          },
+          {
+            "text": "10m 40s",
+            "top": 132,
+            "h": 15,
+            "fs": 15
+          },
+          {
+            "text": "0",
+            "top": 132,
+            "h": 15,
+            "fs": 15
+          }
+        ],
+        "caps": [
+          {
+            "text": "Needs reply",
+            "h": 28,
+            "fs": 11
+          },
+          {
+            "text": "New today",
+            "h": 28,
+            "fs": 11
+          },
+          {
+            "text": "Avg reply",
+            "h": 28,
+            "fs": 11
+          },
+          {
+            "text": "Handled today",
+            "h": 28,
+            "fs": 11
+          }
+        ],
+        "oneRow": true,
+        "valuesOneLine": true
+      },
+      "sizes": {
+        "rowName": 14,
+        "rowHeight": 86,
+        "bubble": null,
+        "chatName": null,
+        "search": 20,
+        "unreadPill": 63,
+        "filtersBtn": 32,
+        "reply": null,
+        "figureFs": 15
+      }
+    },
+    "768x1024-default": {
+      "panes": {
+        "viewport": [
+          768,
+          1024
+        ],
+        "list": 276,
+        "chat": 492,
+        "rail": 0,
+        "divider": {
+          "x": 276,
+          "now": "276",
+          "min": "264",
+          "max": "408"
+        },
+        "sideways": false,
+        "coarse": true
+      },
+      "figures": {
+        "box": [
+          12,
+          123,
+          251,
+          65
+        ],
+        "vals": [
+          {
+            "text": "72",
+            "top": 132,
+            "h": 15,
+            "fs": 15
+          },
+          {
+            "text": "0",
+            "top": 132,
+            "h": 15,
+            "fs": 15
+          },
+          {
+            "text": "10m 40s",
+            "top": 132,
+            "h": 15,
+            "fs": 15
+          },
+          {
+            "text": "0",
+            "top": 132,
+            "h": 15,
+            "fs": 15
+          }
+        ],
+        "caps": [
+          {
+            "text": "Needs reply",
+            "h": 28,
+            "fs": 11
+          },
+          {
+            "text": "New today",
+            "h": 28,
+            "fs": 11
+          },
+          {
+            "text": "Avg reply",
+            "h": 28,
+            "fs": 11
+          },
+          {
+            "text": "Handled today",
+            "h": 28,
+            "fs": 11
+          }
+        ],
+        "oneRow": true,
+        "valuesOneLine": true
+      },
+      "sizes": {
+        "rowName": 14,
+        "rowHeight": 86,
+        "bubble": null,
+        "chatName": {
+          "fs": 15,
+          "cut": false
+        },
+        "search": 20,
+        "unreadPill": 63,
+        "filtersBtn": 32,
+        "reply": 20,
+        "figureFs": 15
+      }
+    },
+    "768x1024-narrower": {
+      "viewport": [
+        768,
+        1024
+      ],
+      "list": 264,
+      "chat": 504,
+      "rail": 0,
+      "divider": {
+        "x": 264,
+        "now": "264",
+        "min": "264",
+        "max": "408"
+      },
+      "sideways": false,
+      "coarse": true
+    },
+    "768x1024-wider": {
+      "viewport": [
+        768,
+        1024
+      ],
+      "list": 408,
+      "chat": 360,
+      "rail": 0,
+      "divider": {
+        "x": 408,
+        "now": "408",
+        "min": "264",
+        "max": "408"
+      },
+      "sideways": false,
+      "coarse": true
+    },
+    "768x1024-reset": {
+      "viewport": [
+        768,
+        1024
+      ],
+      "list": 276,
+      "chat": 492,
+      "rail": 0,
+      "divider": {
+        "x": 276,
+        "now": "276",
+        "min": "264",
+        "max": "408"
+      },
+      "sideways": false,
+      "coarse": true
+    },
+    "1024x1366-default": {
+      "panes": {
+        "viewport": [
+          1024,
+          1366
+        ],
+        "list": 288,
+        "chat": 512,
+        "rail": 199,
+        "divider": {
+          "x": 512,
+          "now": "288",
+          "min": "264",
+          "max": "440"
+        },
+        "sideways": false,
+        "coarse": true
+      },
+      "figures": {
+        "box": [
+          504,
+          9,
+          374,
+          43
+        ],
+        "vals": [
+          {
+            "text": "72",
+            "top": 13,
+            "h": 17,
+            "fs": 17
+          },
+          {
+            "text": "0",
+            "top": 13,
+            "h": 17,
+            "fs": 17
+          },
+          {
+            "text": "10m 40s",
+            "top": 13,
+            "h": 17,
+            "fs": 17
+          },
+          {
+            "text": "0",
+            "top": 13,
+            "h": 17,
+            "fs": 17
+          }
+        ],
+        "caps": [
+          {
+            "text": "Needs reply",
+            "h": 14,
+            "fs": 11
+          },
+          {
+            "text": "New today",
+            "h": 14,
+            "fs": 11
+          },
+          {
+            "text": "Avg reply",
+            "h": 14,
+            "fs": 11
+          },
+          {
+            "text": "Handled today",
+            "h": 14,
+            "fs": 11
+          }
+        ],
+        "oneRow": true,
+        "valuesOneLine": true
+      },
+      "sizes": {
+        "rowName": 14,
+        "rowHeight": 86,
+        "bubble": null,
+        "chatName": {
+          "fs": 15,
+          "cut": false
+        },
+        "search": 20,
+        "unreadPill": 32,
+        "filtersBtn": null,
+        "reply": 20,
+        "figureFs": 17
+      }
+    },
+    "1024x1366-narrower": {
+      "viewport": [
+        1024,
+        1366
+      ],
+      "list": 264,
+      "chat": 536,
+      "rail": 199,
+      "divider": {
+        "x": 488,
+        "now": "264",
+        "min": "264",
+        "max": "440"
+      },
+      "sideways": false,
+      "coarse": true
+    },
+    "1024x1366-wider": {
+      "viewport": [
+        1024,
+        1366
+      ],
+      "list": 440,
+      "chat": 360,
+      "rail": 199,
+      "divider": {
+        "x": 664,
+        "now": "440",
+        "min": "264",
+        "max": "440"
+      },
+      "sideways": false,
+      "coarse": true
+    },
+    "1024x1366-reset": {
+      "viewport": [
+        1024,
+        1366
+      ],
+      "list": 288,
+      "chat": 512,
+      "rail": 199,
+      "divider": {
+        "x": 512,
+        "now": "288",
+        "min": "264",
+        "max": "440"
+      },
+      "sideways": false,
+      "coarse": true
+    },
+    "1133x744-default": {
+      "panes": {
+        "viewport": [
+          1133,
+          744
+        ],
+        "list": 327,
+        "chat": 582,
+        "rail": 199,
+        "divider": {
+          "x": 551,
+          "now": "327",
+          "min": "264",
+          "max": "549"
+        },
+        "sideways": false,
+        "coarse": true
+      },
+      "figures": {
+        "box": [
+          613,
+          9,
+          374,
+          43
+        ],
+        "vals": [
+          {
+            "text": "72",
+            "top": 13,
+            "h": 17,
+            "fs": 17
+          },
+          {
+            "text": "0",
+            "top": 13,
+            "h": 17,
+            "fs": 17
+          },
+          {
+            "text": "10m 40s",
+            "top": 13,
+            "h": 17,
+            "fs": 17
+          },
+          {
+            "text": "0",
+            "top": 13,
+            "h": 17,
+            "fs": 17
+          }
+        ],
+        "caps": [
+          {
+            "text": "Needs reply",
+            "h": 14,
+            "fs": 11
+          },
+          {
+            "text": "New today",
+            "h": 14,
+            "fs": 11
+          },
+          {
+            "text": "Avg reply",
+            "h": 14,
+            "fs": 11
+          },
+          {
+            "text": "Handled today",
+            "h": 14,
+            "fs": 11
+          }
+        ],
+        "oneRow": true,
+        "valuesOneLine": true
+      },
+      "sizes": {
+        "rowName": 14,
+        "rowHeight": 86,
+        "bubble": null,
+        "chatName": {
+          "fs": 15,
+          "cut": false
+        },
+        "search": 20,
+        "unreadPill": 32,
+        "filtersBtn": null,
+        "reply": 20,
+        "figureFs": 17
+      }
+    },
+    "390-list": {
+      "panes": {
+        "viewport": [
+          390,
+          844
+        ],
+        "list": 390,
+        "chat": 0,
+        "rail": 0,
+        "divider": null,
+        "sideways": false,
+        "coarse": true
+      },
+      "figures": {
+        "box": [
+          16,
+          124,
+          358,
+          55
+        ],
+        "vals": [
+          {
+            "text": "72",
+            "top": 133,
+            "h": 19,
+            "fs": 19
+          },
+          {
+            "text": "0",
+            "top": 133,
+            "h": 19,
+            "fs": 19
+          },
+          {
+            "text": "10m 40s",
+            "top": 133,
+            "h": 19,
+            "fs": 19
+          },
+          {
+            "text": "0",
+            "top": 133,
+            "h": 19,
+            "fs": 19
+          }
+        ],
+        "caps": [
+          {
+            "text": "Needs reply",
+            "h": 14,
+            "fs": 11.5
+          },
+          {
+            "text": "New today",
+            "h": 14,
+            "fs": 11.5
+          },
+          {
+            "text": "Avg reply",
+            "h": 14,
+            "fs": 11.5
+          },
+          {
+            "text": "Handled today",
+            "h": 14,
+            "fs": 11.5
+          }
+        ],
+        "oneRow": true,
+        "valuesOneLine": true
+      },
+      "sizes": {
+        "rowName": 15,
+        "rowHeight": 91,
+        "bubble": null,
+        "chatName": null,
+        "search": null,
+        "unreadPill": 53,
+        "filtersBtn": 44,
+        "reply": null,
+        "figureFs": 19
+      }
+    },
+    "390-chat": {
+      "panes": {
+        "viewport": [
+          390,
+          844
+        ],
+        "list": 0,
+        "chat": 390,
+        "rail": 0,
+        "divider": null,
+        "sideways": false,
+        "coarse": true
+      },
+      "sizes": {
+        "rowName": null,
+        "rowHeight": null,
+        "bubble": null,
+        "chatName": {
+          "fs": 16,
+          "cut": false
+        },
+        "search": null,
+        "unreadPill": null,
+        "filtersBtn": null,
+        "reply": 20,
+        "figureFs": null
+      }
+    },
+    "1440x900-default": {
+      "panes": {
+        "viewport": [
+          1440,
+          900
+        ],
+        "list": 330,
+        "chat": 886,
+        "rail": 199,
+        "divider": {
+          "x": 558,
+          "now": "330",
+          "min": "264",
+          "max": "560"
+        },
+        "sideways": false,
+        "coarse": false
+      },
+      "figures": {
+        "box": [
+          768,
+          8,
+          378,
+          44
+        ],
+        "vals": [
+          {
+            "text": "72",
+            "top": 12,
+            "h": 18,
+            "fs": 18
+          },
+          {
+            "text": "0",
+            "top": 12,
+            "h": 18,
+            "fs": 18
+          },
+          {
+            "text": "10m 40s",
+            "top": 12,
+            "h": 18,
+            "fs": 18
+          },
+          {
+            "text": "0",
+            "top": 12,
+            "h": 18,
+            "fs": 18
+          }
+        ],
+        "caps": [
+          {
+            "text": "Needs reply",
+            "h": 14,
+            "fs": 11
+          },
+          {
+            "text": "New today",
+            "h": 14,
+            "fs": 11
+          },
+          {
+            "text": "Avg reply",
+            "h": 14,
+            "fs": 11
+          },
+          {
+            "text": "Handled today",
+            "h": 14,
+            "fs": 11
+          }
+        ],
+        "oneRow": true,
+        "valuesOneLine": true
+      },
+      "sizes": {
+        "rowName": 14,
+        "rowHeight": 86,
+        "bubble": null,
+        "chatName": {
+          "fs": 16,
+          "cut": false
+        },
+        "search": 20,
+        "unreadPill": 32,
+        "filtersBtn": null,
+        "reply": 20,
+        "figureFs": 18
+      }
+    },
+    "1440-templates": {
+      "sideways": false,
+      "settingsWidth": 1216,
+      "h1": null
+    },
+    "1440-numbers": {
+      "sideways": false,
+      "settingsWidth": 1216,
+      "h1": null
+    },
+    "1440-knowledge": {
+      "sideways": false,
+      "settingsWidth": 1216,
+      "h1": null
+    },
+    "1440-examples": {
+      "sideways": false,
+      "settingsWidth": 1216,
+      "h1": null
+    },
+    "1440-rules": {
+      "sideways": false,
+      "settingsWidth": 1216,
+      "h1": null
+    },
+    "1440-teach": {
+      "sideways": false,
+      "settingsWidth": 1216,
+      "h1": null
+    },
+    "390-templates": {
+      "sideways": false,
+      "settingsWidth": 390,
+      "h1": null
+    },
+    "390-numbers": {
+      "sideways": false,
+      "settingsWidth": 390,
+      "h1": null
+    },
+    "390-knowledge": {
+      "sideways": false,
+      "settingsWidth": 390,
+      "h1": null
+    },
+    "390-examples": {
+      "sideways": false,
+      "settingsWidth": 390,
+      "h1": null
+    },
+    "390-rules": {
+      "sideways": false,
+      "settingsWidth": 390,
+      "h1": null
+    },
+    "390-teach": {
+      "sideways": false,
+      "settingsWidth": 390,
+      "h1": null
+    },
+    "768-knowledge": {
+      "sideways": false,
+      "settingsWidth": 544,
+      "h1": null
+    },
+    "768-templates": {
+      "sideways": false,
+      "settingsWidth": 544,
+      "h1": null
+    },
+    "1024-examples": {
+      "sideways": false,
+      "settingsWidth": 800,
+      "h1": null
+    },
+    "1133-numbers": {
+      "sideways": false,
+      "settingsWidth": 909,
+      "h1": null
+    },
+    "gm-menu": [
+      "Templates",
+      "Back to the suite",
+      "Sign out"
+    ],
+    "gm-assistant-address": {
+      "settingsShown": 0,
+      "h1": null
+    },
+    "bday_enru-menu": [
+      "Back to the suite",
+      "Sign out"
+    ],
+    "bday_enru-assistant-address": {
+      "settingsShown": 0,
+      "h1": null
+    }
+  },
+  "errors": []
+}
