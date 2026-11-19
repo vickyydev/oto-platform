@@ -653,25 +653,34 @@ describe('time, on the parks’ day', () => {
 
 describe('the list query', () => {
   const now = new Date('2026-10-20T03:00:00.000Z');
+  // SCRUM-1016: "Hide till notices" is on unless turned off, so a plain list
+  // asks for the threads that can take a reply.
+  const plain = { ...EMPTY_FILTERS, hideNotices: false };
   it('sends only the filters that are set', () => {
-    expect(listQuery('team', EMPTY_FILTERS, { now })).toEqual({ tab: 'team' });
+    expect(listQuery('team', plain, { now })).toEqual({ tab: 'team' });
+    expect(listQuery('team', EMPTY_FILTERS, { now })).toEqual({ tab: 'team', replyable: 'true' });
     expect(
-      listQuery('mine', { ...EMPTY_FILTERS, category: 'birthdays', language: 'ru', q: '  olga ', unanswered: true }, { now }),
-    ).toEqual({ tab: 'mine', category: 'birthdays', language: 'ru', q: 'olga', unanswered: 'true' });
+      listQuery('mine', { ...plain, category: 'birthdays', language: 'ru', q: '  olga ', unanswered: true, unread: true }, { now }),
+    ).toEqual({ tab: 'mine', category: 'birthdays', language: 'ru', q: 'olga', unanswered: 'true', unread: 'true' });
   });
   it('applies the archive range and resolver on Handled only', () => {
     const f = { ...EMPTY_FILTERS, archiveRange: '7d' as const, resolvedBy: 'ai' as const };
-    expect(listQuery('team', f, { now })).toEqual({ tab: 'team' });
+    expect(listQuery('team', f, { now })).toEqual({ tab: 'team', replyable: 'true' });
     expect(listQuery('handled', f, { now, cursor: 'c1', limit: 50 })).toEqual({
       tab: 'handled',
       handledFrom: '2026-10-13T03:00:00.000Z',
       resolvedBy: 'ai',
+      replyable: 'true',
       cursor: 'c1',
       limit: 50,
     });
   });
-  it('counts the rail’s filters for the phone’s button', () => {
-    expect(activeFilterCount({ ...EMPTY_FILTERS, branchId: CENTRAL, status: 'active', q: 'x' })).toBe(2);
+  it('counts the Filters sheet’s choices for the phone’s button, and nothing else', () => {
+    expect(activeFilterCount({ ...EMPTY_FILTERS, branchId: CENTRAL, language: 'ru', q: 'x' })).toBe(2);
+    // The quick filters and the notices switch are not counted.
+    expect(activeFilterCount({ ...EMPTY_FILTERS, unanswered: true, unread: true, hideNotices: false })).toBe(0);
+    // "Kept in General" counts as the Topic choice it is.
+    expect(activeFilterCount({ ...EMPTY_FILTERS, inbox: 'general' })).toBe(1);
   });
 });
 

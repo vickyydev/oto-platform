@@ -561,9 +561,12 @@ describe('the phone’s team and status controls (U10)', () => {
 });
 
 describe('two controls labelled "Branch" (U12)', () => {
+  // SCRUM-1016: the filter's visible word is "Park" (approved as drawn); it
+  // stays named apart from the chat's "Conversation branch" select.
   it('names the filter apart from the strip’s select', () => {
     const html = renderToStaticMarkup(createElement(FilterFields, { me: hana, filters: EMPTY_FILTERS, onChange: noop }));
-    expect(html).toContain('aria-label="Filter by branch"');
+    expect(html).toContain('aria-label="Filter by park"');
     expect(html).not.toContain('aria-label="Branch"');
+    expect(html).not.toContain('aria-label="Conversation branch"');
   });
 });

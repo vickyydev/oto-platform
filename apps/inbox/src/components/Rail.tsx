@@ -1,172 +1,102 @@
-import type { ReactNode } from 'react';
-import {
-  Activity,
-  Archive,
-  Briefcase,
-  Filter,
-  FlaskConical,
-  Globe2,
-  Inbox,
-  Layers,
-  MapPin,
-  MessageCircle,
-  MessagesSquare,
-  PartyPopper,
-  Tag,
-  Users,
-  type LucideIcon,
-} from 'lucide-react';
+import { useRef, type KeyboardEvent, type ReactNode } from 'react';
 import type { InboxTab } from '@oto/shared/inbox';
 import type { ConversationList, InboxMe } from '@/api/inbox';
 import { FilterChip } from '@/components/atoms';
-import { applyView, currentView, namedViews, sourceLabel, toggleChip, type ChipDim, type NamedView, type SourceOption } from '@/lib/inboxes';
-import type { Filters } from '@/lib/query';
-import {
-  CATEGORY_BAR,
-  CATEGORY_OPTIONS,
-  CHANNEL_LABEL,
-  CHANNEL_TINT,
-  LANGUAGE_OPTIONS,
-  STATUS_DOT,
-  STATUS_OPTIONS,
-  TAB_LABEL,
-  branchOptions,
-} from '@/lib/view';
+import { channelChoices, sourceLabel, toggleChip, topicChoices, type ChipDim, type SourceOption } from '@/lib/inboxes';
+import { HELD_TOPIC_HINT, HELD_TOPIC_LABEL, topicOf, topicPatch, type Filters, type TopicChoice } from '@/lib/query';
+import { CATEGORY_DOT, CATEGORY_LABEL, CHANNEL_LABEL, CHANNEL_TINT, LANGUAGE_OPTIONS, TAB_LABEL, branchOptions } from '@/lib/view';
 
-export const TAB_ICON: Record<InboxTab, LucideIcon> = { mine: Inbox, team: Users, handled: Archive };
+type TabCounts = ConversationList['tabCounts'];
+type TopicCounts = NonNullable<ConversationList['topicCounts']>;
 
-/** The row button the rail's tabs are (:1418-1438), shared by the named views. */
-const RAIL_ITEM = 'mb-0.5 flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left text-[13px] transition';
-const RAIL_ITEM_ON = 'bg-card text-ink shadow-sm ring-1 ring-line';
-const RAIL_ITEM_OFF = 'text-ink-soft hover:bg-card/70';
+/** The prototype counts the working tabs, not the archive (:1434). */
+const countOf = (counts: TabCounts | null | undefined, t: InboxTab) => (t !== 'handled' ? counts?.[t] : undefined);
 
-/** The rail's section heading: the Filters eyebrow (:1442-1444). */
-function RailHeading({ icon: Icon, children }: { icon: LucideIcon; children: ReactNode }) {
-  return (
-    <div className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-muted">
-      <Icon className="h-3 w-3" /> {children}
-    </div>
-  );
-}
-
-/** One row of chips under its small label, in the archive filters' layout (`ConversationList`, "Handled in the last"). */
-function ChipRow({ icon: Icon, title, label, children }: { icon: LucideIcon; title: string; label: string; children: ReactNode }) {
-  return (
-    <div role="group" aria-label={label} className="mb-2.5 last:mb-0">
-      <div className="mb-1 flex items-center gap-1 text-[10px] font-medium text-ink-muted">
-        <Icon className="h-3 w-3" /> {title}
-      </div>
-      <div className="flex flex-wrap gap-1">{children}</div>
-    </div>
-  );
-}
+// --- Mine / Team / Handled: one switch --------------------------------------------------
 
 /**
- * The filters as rows of toggle chips (SCRUM-220 playbook, in place of the
- * prototype's four selects, :1447-1458), shared by the rail and the phone's
- * filter dialog: Branch, Source (each number by its display name, Instagram
- * and Facebook among them), Topic, Status, Language. A press adds a chip, a
- * second press removes it; rows combine. One chip per row is on at a time —
- * the list filters one value per row (`toggleChip`).
+ * The scope switch on a phone and a tablet (Main.dc.html): Mine, Team and
+ * Handled in one segmented band, each with its count; the one place the tab
+ * is chosen below 1024 px (SCRUM-1016 removed the header's Handled button and
+ * the tiles that did the same). A tab list: the arrow keys, Home and End move
+ * between the tabs and choose them.
  */
-export function FilterFields({
-  me,
-  filters,
-  onChange,
-  sources = [],
+export function ScopeTabs({
+  tabs,
+  tab,
+  counts,
+  onTab,
 }: {
-  me: InboxMe;
-  filters: Filters;
-  onChange: (next: Partial<Filters>) => void;
-  /** The numbers known so far (`GET /inbox/ai/channel-accounts`, and the rows read); no row while there are none. */
-  sources?: readonly SourceOption[];
+  tabs: readonly InboxTab[];
+  tab: InboxTab;
+  counts: TabCounts | null;
+  onTab: (t: InboxTab) => void;
 }) {
-  const chip = (dim: ChipDim, value: string, label: string, dot?: string, title?: string) => (
-    <FilterChip
-      key={`${dim}:${value}`}
-      chipKey={`${dim}:${value}`}
-      label={label}
-      pressed={filters[dim] === value}
-      onClick={() => onChange(toggleChip(filters, dim, value))}
-      dot={dot}
-      title={title}
-    />
-  );
-  const branches = branchOptions(me.teams);
+  const refs = useRef<Partial<Record<InboxTab, HTMLButtonElement | null>>>({});
+  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    const at = tabs.indexOf(tab);
+    const to =
+      e.key === 'ArrowRight' ? at + 1 : e.key === 'ArrowLeft' ? at - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : null;
+    if (to === null) return;
+    e.preventDefault();
+    const next = tabs[(to + tabs.length) % tabs.length]!;
+    onTab(next);
+    refs.current[next]?.focus();
+  };
   return (
-    <>
-      {/* "Filter by branch", not "Branch": the strip's branch select is "Conversation branch" (test night U12). */}
-      {branches.length > 0 && (
-        <ChipRow icon={MapPin} title="Branch" label="Filter by branch">
-          {branches.map((b) => chip('branchId', b.id, b.label))}
-        </ChipRow>
-      )}
-      {sources.length > 0 && (
-        <ChipRow icon={MessageCircle} title="Source" label="Filter by source">
-          {sources.filter(s => !me.access?.channelAccountIds || me.access.channelAccountIds.includes(s.id)).map((s) => {
-            const label = sourceLabel(s.channel, s.name);
-            return chip('channelAccountId', s.id, label, CHANNEL_TINT[s.channel], s.name ? `${label} · ${CHANNEL_LABEL[s.channel]}` : label);
-          })}
-        </ChipRow>
-      )}
-      <ChipRow icon={Tag} title="Topic" label="Filter by topic">
-        {CATEGORY_OPTIONS.filter(([k]) => !me.access?.categories || me.access.categories.includes(k)).map(([k, label]) => chip('category', k, label, CATEGORY_BAR[k]))}
-      </ChipRow>
-      <ChipRow icon={Activity} title="Status" label="Filter by status">
-        {STATUS_OPTIONS.map(([k, label]) => chip('status', k, label, STATUS_DOT[k]))}
-      </ChipRow>
-      <ChipRow icon={Globe2} title="Language" label="Filter by language">
-        {LANGUAGE_OPTIONS.map(([k, label]) => chip('language', k, label))}
-      </ChipRow>
-    </>
-  );
-}
-
-const VIEW_ICON: Record<NamedView['kind'], LucideIcon> = { all: MessagesSquare, general: MessageCircle, category: Tag, branch: MapPin, line: FlaskConical };
-const CATEGORY_VIEW_ICON: Record<string, LucideIcon> = { birthdays: PartyPopper, gm: Briefcase };
-
-/**
- * The playbook's named inboxes (SCRUM-220), above the filters: All
- * conversations, General (SCRUM-789: the general questions held out of the
- * park inboxes), Birthdays & Events, GM, one per park. Each is a saved set of
- * chips — opening one sets them — and the one marked is read back off the
- * chips (`currentView`): a chip changed by hand lands on All, marked
- * "Filtered". No counts: nothing the shell already reads counts unread or
- * unanswered per view, and the playbook build adds no polling for it.
- */
-export function InboxViews({
-  me,
-  filters,
-  onChange,
-}: {
-  me: Pick<InboxMe, 'teams'> & Partial<Pick<InboxMe, 'testLines'>>;
-  filters: Filters;
-  onChange: (next: Partial<Filters>) => void;
-}) {
-  const views = namedViews(me);
-  const at = currentView(filters, views);
-  return (
-    <nav aria-label="Inbox views">
-      {views.map((v) => {
-        const Icon = CATEGORY_VIEW_ICON[v.key] ?? VIEW_ICON[v.kind];
-        const active = at.key === v.key;
+    <div
+      role="tablist"
+      aria-label="Which conversations"
+      onKeyDown={onKeyDown}
+      className="grid gap-1 rounded-[14px] bg-band p-1"
+      style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}
+    >
+      {tabs.map((t) => {
+        const active = t === tab;
+        const count = countOf(counts, t);
         return (
           <button
-            key={v.key}
+            key={t}
+            ref={(el) => {
+              refs.current[t] = el;
+            }}
             type="button"
-            data-view={v.key}
-            aria-current={active ? 'true' : undefined}
-            onClick={() => onChange(applyView(v))}
-            title={active && at.modified ? 'Filtered by hand — press to clear the filters' : undefined}
-            className={`${RAIL_ITEM} ${active ? RAIL_ITEM_ON : RAIL_ITEM_OFF}`}
+            role="tab"
+            aria-selected={active}
+            tabIndex={active ? 0 : -1}
+            onClick={() => onTab(t)}
+            className={`flex min-h-11 min-w-0 items-center justify-center gap-1.5 rounded-[10px] px-2 text-[14px] transition focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-coral ${
+              active ? 'bg-card font-bold text-ink shadow-[0_1px_2px_var(--oto-shadow)]' : 'font-semibold text-ink-soft hover:bg-wash'
+            }`}
           >
-            <span className="flex min-w-0 items-center gap-2">
-              <Icon className={`h-4 w-4 shrink-0 ${active ? 'text-ink' : 'text-ink-muted'}`} />
-              <span className="truncate">{v.label}</span>
-            </span>
-            {active && at.modified && (
-              <span className="shrink-0 text-[10px] font-medium italic text-ink-muted">Filtered</span>
-            )}
+            <span className="truncate">{TAB_LABEL[t]}</span>
+            {count !== undefined && <span className={`text-[12px] font-bold ${active ? 'text-coral-ink' : ''}`}>{count}</span>}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** The same switch at the top of the desktop's views column (Desktop.dc.html). */
+function ScopeNav({ tabs, tab, counts, onTab }: { tabs: readonly InboxTab[]; tab: InboxTab; counts: TabCounts | null; onTab: (t: InboxTab) => void }) {
+  return (
+    <nav aria-label="Which conversations" className="flex flex-col gap-0.5">
+      {tabs.map((t) => {
+        const active = t === tab;
+        const count = countOf(counts, t);
+        return (
+          <button
+            key={t}
+            type="button"
+            onClick={() => onTab(t)}
+            aria-current={active ? 'page' : undefined}
+            className={`flex min-h-10 items-center justify-between gap-2 rounded-[10px] px-3 text-left text-[14px] text-ink transition focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-coral ${
+              active ? 'bg-band font-bold' : 'font-medium hover:bg-wash'
+            }`}
+          >
+            {TAB_LABEL[t]}
+            {count !== undefined && <span className={`text-[12.5px] ${active ? 'text-coral-ink' : 'text-ink-muted'}`}>{count}</span>}
           </button>
         );
       })}
@@ -174,15 +104,199 @@ export function InboxViews({
   );
 }
 
+// --- The filters, each once ----------------------------------------------------------------
+
+/** One filter choice, by where it shows: a pill in the sheet, a line in the views column. */
+interface Choice {
+  /** `dim:value` for the markup tests; `dim:all` for a row's "all". */
+  key: string;
+  label: string;
+  pressed: boolean;
+  onPress: () => void;
+  dot?: string;
+  title?: string;
+  count?: number;
+}
+
+/** A line of the desktop's views column (Desktop.dc.html): its dot, its words, its count. */
+function ColumnChoice({ c }: { c: Choice }) {
+  return (
+    <button
+      type="button"
+      data-chip={c.key}
+      aria-pressed={c.pressed}
+      onClick={c.onPress}
+      title={c.title ?? c.label}
+      className={`flex min-h-9 w-full min-w-0 items-center gap-2.5 rounded-[10px] px-3 text-left text-[14px] text-ink transition hover:bg-wash focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-coral ${
+        c.pressed ? 'bg-wash font-bold' : ''
+      }`}
+    >
+      {c.dot && <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${c.dot}`} />}
+      <span className="min-w-0 flex-1 truncate">{c.label}</span>
+      {c.count !== undefined && <span className="shrink-0 text-[12.5px] font-normal text-ink-muted">{c.count}</span>}
+    </button>
+  );
+}
+
+function Group({ label, title, layout, children }: { label: string; title: string; layout: 'sheet' | 'column'; children: ReactNode }) {
+  return layout === 'sheet' ? (
+    <div role="group" aria-label={label}>
+      <h3 className="mb-2.5 text-[13px] font-bold text-ink-soft">{title}</h3>
+      <div className="flex flex-wrap gap-2">{children}</div>
+    </div>
+  ) : (
+    <div role="group" aria-label={label} className="flex flex-col gap-0.5">
+      <h3 className="mb-1 px-3 text-[12px] font-bold text-ink-muted">{title}</h3>
+      {children}
+    </div>
+  );
+}
+
 /**
- * The desktop's views column (:1406-1460): the tabs with counts, the named
- * inboxes, the filter chips. The viewer's name is said once, in the account
- * menu (SCRUM-1016), so the prototype's "Viewing as" block is gone from here.
+ * The filters in one place (SCRUM-1016, Filters.dc.html): Topic, Park,
+ * Channel, Language — each row once, in the phone's sheet (`sheet`) or the
+ * desktop's views column (`column`), never both on one screen. Each row
+ * starts with its "all"; a press chooses, a second press goes back to all;
+ * rows combine (`toggleChip`).
+ *
+ * Topic holds every topic and "Kept in General" (the SCRUM-789 General view,
+ * folded in). Channel holds every number known so far and each WhatsApp test
+ * line (SCRUM-908). The SCRUM-993 limits decide which topics and numbers are
+ * offered. The column shows each topic's count when the list read sends them.
+ */
+export function FilterFields({
+  me,
+  filters,
+  onChange,
+  sources = [],
+  layout = 'sheet',
+  topicCounts,
+}: {
+  me: InboxMe;
+  filters: Filters;
+  onChange: (next: Partial<Filters>) => void;
+  /** The numbers known so far (the rows read, the simulator's, the assistant's list). */
+  sources?: readonly SourceOption[];
+  layout?: 'sheet' | 'column';
+  /** Each topic's count for this list (`topicCounts`); shown in the column only. */
+  topicCounts?: TopicCounts;
+}) {
+  const render = (c: Choice) =>
+    layout === 'sheet' ? (
+      <FilterChip key={c.key} chipKey={c.key} label={c.label} pressed={c.pressed} onClick={c.onPress} dot={c.dot} title={c.title} />
+    ) : (
+      <ColumnChoice key={c.key} c={c} />
+    );
+  const counted = layout === 'column' ? topicCounts : undefined;
+
+  // Topic: one choice of category or the held view, inside the limits.
+  const topic = topicOf(filters);
+  const pickTopic = (choice: TopicChoice) => onChange(topicPatch(topic === choice ? '' : choice));
+  const topics: Choice[] = [
+    {
+      key: 'category:all',
+      label: 'All topics',
+      pressed: topic === '',
+      onPress: () => onChange(topicPatch('')),
+      count: counted ? counted.birthdays + counted.general + counted.marketing + counted.gm : undefined,
+    },
+    ...topicChoices(me.access).map((k): Choice =>
+      k === 'held'
+        ? { key: 'inbox:general', label: HELD_TOPIC_LABEL, pressed: topic === 'held', onPress: () => pickTopic('held'), dot: CATEGORY_DOT.general, title: HELD_TOPIC_HINT, count: counted?.heldInGeneral }
+        : { key: `category:${k}`, label: CATEGORY_LABEL[k], pressed: topic === k, onPress: () => pickTopic(k), dot: CATEGORY_DOT[k], count: counted?.[k] },
+    ),
+  ];
+
+  const row = (dim: ChipDim, all: string, options: { value: string; label: string; dot?: string; title?: string }[]): Choice[] => [
+    { key: `${dim}:all`, label: all, pressed: filters[dim] === '', onPress: () => onChange({ [dim]: '' } as Partial<Filters>) },
+    ...options.map((o): Choice => ({
+      key: `${dim}:${o.value}`,
+      label: o.label,
+      pressed: filters[dim] === o.value,
+      onPress: () => onChange(toggleChip(filters, dim, o.value)),
+      dot: o.dot,
+      title: o.title,
+    })),
+  ];
+  const parks = branchOptions(me.teams);
+  const channels = channelChoices(sources, me);
+
+  return (
+    <div className={layout === 'sheet' ? 'flex flex-col gap-5' : 'flex flex-col gap-[18px]'}>
+      <Group label="Filter by topic" title="Topic" layout={layout}>
+        {topics.map(render)}
+      </Group>
+      {/* "Filter by park", apart from the chat's branch select ("Conversation branch", test night U12). */}
+      {parks.length > 0 && (
+        <Group label="Filter by park" title="Park" layout={layout}>
+          {row('branchId', 'All parks', parks.map((b) => ({ value: b.id, label: b.label }))).map(render)}
+        </Group>
+      )}
+      {channels.length > 0 && (
+        <Group label="Filter by channel" title="Channel" layout={layout}>
+          {row(
+            'channelAccountId',
+            'All channels',
+            channels.map((s) => {
+              const label = sourceLabel(s.channel, s.name);
+              return { value: s.id, label, dot: CHANNEL_TINT[s.channel], title: s.name ? `${label} · ${CHANNEL_LABEL[s.channel]}` : label };
+            }),
+          ).map(render)}
+        </Group>
+      )}
+      <Group label="Filter by language" title="Language" layout={layout}>
+        {row('language', 'Any', LANGUAGE_OPTIONS.map(([value, label]) => ({ value, label }))).map(render)}
+      </Group>
+    </div>
+  );
+}
+
+export const HIDE_NOTICES_LABEL = 'Hide till notices';
+export const HIDE_NOTICES_HINT = 'Check-in messages sent by the till. They cannot take a reply.';
+
+/**
+ * "Hide till notices" (SCRUM-1016): on by default, so a manager's list is
+ * the customers' chats, not the till's check-in notices; the workspace
+ * remembers it per browser. The api leaves the notices out of the list and
+ * its counts while it is on (`replyable=true`).
+ */
+export function HideNoticesSwitch({ on, onChange, compact = false }: { on: boolean; onChange: (on: boolean) => void; compact?: boolean }) {
+  const input = (
+    <input
+      type="checkbox"
+      role="switch"
+      data-switch="hide-notices"
+      checked={on}
+      onChange={(e) => onChange(e.target.checked)}
+      className={`shrink-0 accent-coral ${compact ? 'h-[18px] w-[18px]' : 'h-[22px] w-[22px]'}`}
+    />
+  );
+  return compact ? (
+    <label title={HIDE_NOTICES_HINT} className="flex min-h-10 cursor-pointer items-center gap-2.5 px-3 text-[13px] text-ink-soft">
+      {input}
+      {HIDE_NOTICES_LABEL}
+    </label>
+  ) : (
+    <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-line bg-card px-3.5 py-3">
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="text-[14px] font-semibold text-ink">{HIDE_NOTICES_LABEL}</span>
+        <span className="text-[12.5px] text-ink-muted">{HIDE_NOTICES_HINT}</span>
+      </span>
+      {input}
+    </label>
+  );
+}
+
+/**
+ * The desktop's views column (Desktop.dc.html, from 1024 px): the scope
+ * switch with its counts, then every filter once with the topics' counts,
+ * then "Hide till notices". It scrolls on its own; the page never does.
  */
 export function Rail({
   me,
   tab,
   counts,
+  topicCounts,
   filters,
   sources = [],
   onTab,
@@ -190,56 +304,20 @@ export function Rail({
 }: {
   me: InboxMe;
   tab: InboxTab;
-  counts: ConversationList['tabCounts'] | null;
+  counts: TabCounts | null;
+  topicCounts?: TopicCounts;
   filters: Filters;
   sources?: readonly SourceOption[];
   onTab: (t: InboxTab) => void;
   onFilters: (next: Partial<Filters>) => void;
 }) {
   return (
-    <aside className="hidden min-h-0 flex-col border-r border-line bg-ground lg:flex">
-      <nav className="shrink-0 px-2 py-2" aria-label="Tabs">
-        {me.tabs.map((t) => {
-          const Icon = TAB_ICON[t];
-          const active = tab === t;
-          return (
-            <button
-              key={t}
-              type="button"
-              onClick={() => onTab(t)}
-              aria-current={active ? 'page' : undefined}
-              className={`${RAIL_ITEM} ${active ? RAIL_ITEM_ON : RAIL_ITEM_OFF}`}
-            >
-              <span className="flex items-center gap-2">
-                <Icon className={`h-4 w-4 ${active ? 'text-ink' : 'text-ink-muted'}`} />
-                {TAB_LABEL[t]}
-              </span>
-              {/* The prototype counts the working tabs, not the archive (:1434). */}
-              {t !== 'handled' && counts?.[t] !== undefined && (
-                <span
-                  className={`rounded-full px-1.5 text-[10px] font-semibold ${
-                    active ? 'bg-ink text-on-ink' : 'bg-line text-ink-soft'
-                  }`}
-                >
-                  {counts[t]}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </nav>
-      {/* The named inboxes and the chips scroll together under the tabs: the
-          chips run longer than the prototype's four selects. */}
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="border-t border-line px-2 py-2">
-          <div className="px-1">
-            <RailHeading icon={Layers}>Inboxes</RailHeading>
-          </div>
-          <InboxViews me={me} filters={filters} onChange={onFilters} />
-        </div>
-        <div className="border-t border-line p-3">
-          <RailHeading icon={Filter}>Filters</RailHeading>
-          <FilterFields me={me} filters={filters} onChange={onFilters} sources={sources} />
+    <aside aria-label="Views" className="hidden min-h-0 flex-col border-r border-line bg-ground lg:flex">
+      <div className="flex min-h-0 flex-1 flex-col gap-[18px] overflow-y-auto px-3 py-4">
+        <ScopeNav tabs={me.tabs} tab={tab} counts={counts} onTab={onTab} />
+        <FilterFields me={me} filters={filters} onChange={onFilters} sources={sources} layout="column" topicCounts={topicCounts} />
+        <div className="mt-auto">
+          <HideNoticesSwitch compact on={filters.hideNotices} onChange={(hideNotices) => onFilters({ hideNotices })} />
         </div>
       </div>
     </aside>

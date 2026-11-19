@@ -63,12 +63,15 @@ export const CATEGORY_DOT: Record<InboxCategoryKey, string> = {
   gm: 'bg-topic-gm',
 };
 
-/** The filter chips' and pills' topic marks (SCRUM-220). */
-export const CATEGORY_BAR: Record<InboxCategoryKey, string> = {
-  birthdays: 'bg-violet-500',
-  general: 'bg-sky-500',
-  marketing: 'bg-pink-500',
-  gm: 'bg-amber-500',
+/**
+ * The topic as the row's quiet text says it ("Birthdays · Central Floresta",
+ * Main.dc.html): the short name, the full one being in the filters.
+ */
+export const CATEGORY_SHORT: Record<InboxCategoryKey, string> = {
+  birthdays: 'Birthdays',
+  general: 'General',
+  marketing: 'Marketing',
+  gm: 'GM',
 };
 
 /** The IT Brief's two statuses; the prototype stores Active as "new". */
@@ -88,13 +91,14 @@ export const CHANNEL_LABEL: Record<InboxChannelKey, string> = {
   telegram: 'Telegram',
   webform: 'Web form',
 };
+/** Each channel's dot (SCRUM-1016): its own colour, as a token in src/index.css. */
 export const CHANNEL_TINT: Record<InboxChannelKey, string> = {
-  whatsapp: 'bg-emerald-500',
-  instagram: 'bg-gradient-to-tr from-amber-400 via-pink-500 to-purple-500',
-  facebook: 'bg-blue-600',
-  line: 'bg-green-600',
-  telegram: 'bg-sky-500',
-  webform: 'bg-slate-400',
+  whatsapp: 'bg-channel-whatsapp',
+  instagram: 'bg-channel-instagram',
+  facebook: 'bg-channel-facebook',
+  line: 'bg-channel-line',
+  telegram: 'bg-channel-telegram',
+  webform: 'bg-channel-webform',
 };
 
 /** The filter's languages (`FilterSelect` options, :1456-1458). */
@@ -172,7 +176,12 @@ export function voiceTranscriptOf(
   }
 }
 
-export const TAB_LABEL: Record<InboxTab, string> = INBOX_TAB_LABELS;
+/**
+ * The scope switch's words (SCRUM-1016, approved as drawn): Mine, Team,
+ * Handled — the shared vocabulary's "My Inbox" and "Team Inbox", shortened
+ * for the one switch that holds them.
+ */
+export const TAB_LABEL: Record<InboxTab, string> = { ...INBOX_TAB_LABELS, mine: 'Mine', team: 'Team' };
 
 // --- People, teams and chips -------------------------------------------------------
 
@@ -194,21 +203,19 @@ export function initialsOf(name: string | null | undefined): string {
 }
 
 /**
- * The pastel tints the prototype gives its people and contacts (:135-144,
- * `avatarTint`). Each person keeps one for good: picked from their id, so the
- * same person is the same colour on every screen and every day.
+ * The tints the prototype gives its people and contacts (:135-144,
+ * `avatarTint`), in the OTO look since SCRUM-1016: the five warm pairs of
+ * Main.dc.html, every one a token whose light and dark values are held to
+ * 4.5 : 1 (test/tokens-1016.test.ts). Each person keeps one for good: picked
+ * from their id, so the same person is the same colour on every screen and
+ * every day.
  */
 export const PASTELS = [
-  'bg-violet-100 dark:bg-violet-500/25 text-violet-700 dark:text-violet-300',
-  'bg-teal-100 dark:bg-teal-500/25 text-teal-700 dark:text-teal-300',
-  'bg-emerald-100 dark:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300',
-  'bg-lime-100 dark:bg-lime-500/25 text-lime-700 dark:text-lime-300',
-  'bg-orange-100 dark:bg-orange-500/25 text-orange-700 dark:text-orange-300',
-  'bg-pink-100 dark:bg-pink-500/25 text-pink-700 dark:text-pink-300',
-  'bg-amber-100 dark:bg-amber-500/25 text-amber-700 dark:text-amber-300',
-  'bg-fuchsia-100 dark:bg-fuchsia-500/25 text-fuchsia-700 dark:text-fuchsia-300',
-  'bg-rose-100 dark:bg-rose-500/25 text-rose-700 dark:text-rose-300',
-  'bg-cyan-100 dark:bg-cyan-500/25 text-cyan-700 dark:text-cyan-300',
+  'bg-face-violet text-face-violet-ink',
+  'bg-mint text-teal',
+  'bg-face-sky text-face-sky-ink',
+  'bg-band text-ink-soft',
+  'bg-needs text-needs-ink',
 ] as const;
 
 export function tintFor(id: string): string {

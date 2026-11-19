@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
-import { FileText, Filter, Info, Layers, Loader2 } from 'lucide-react';
+import { FileText, Info, Loader2 } from 'lucide-react';
 import type { InboxStatusKey } from '@oto/shared/inbox';
 import { ApiError } from '@/api/client';
 import { inboxApi, type ConversationDetail, type ConversationRow, type InboxMe, type Template } from '@/api/inbox';
 import { Eyebrow, TranslationNote } from '@/components/atoms';
 import { FIELD } from '@/components/CorrectAssistant';
 import { Dialog } from '@/components/Dialog';
-import { FilterFields, InboxViews } from '@/components/Rail';
+import { FilterFields, HideNoticesSwitch } from '@/components/Rail';
 import { PendingControl } from '@/components/writes';
 import { sourceLabel, type SourceOption } from '@/lib/inboxes';
 import type { Filters } from '@/lib/query';
@@ -263,7 +263,25 @@ export function TemplatesDialog({
   );
 }
 
-/** The rail's named inboxes and filter chips, at phone width where the rail is hidden. */
+/**
+ * What the sheet's main button says (SCRUM-1016): the filters apply as they
+ * are chosen, so the list behind the sheet is already read again; its count
+ * is said only when the read gives it whole — "50+" while a next page waits,
+ * and no number at all while the read is out.
+ */
+export function showConversationsLabel(list: { loading: boolean; count: number; more: boolean }): string {
+  if (list.loading) return 'Show conversations';
+  return `Show ${list.count}${list.more ? '+' : ''} conversation${list.count === 1 && !list.more ? '' : 's'}`;
+}
+
+/**
+ * The filters on a phone and a tablet (SCRUM-1016, Filters.dc.html): a
+ * sheet with Topic, Park, Channel and Language, each once, and "Hide till
+ * notices". The named inboxes it used to list are gone — each was one of
+ * these choices. Clear puts every choice here back to all (and hides the
+ * notices again); the quick filters, the search and the archive's choices
+ * stay as they are.
+ */
 export function FiltersDialog({
   open,
   onClose,
@@ -272,6 +290,7 @@ export function FiltersDialog({
   sources = [],
   onChange,
   onClear,
+  showLabel = 'Show conversations',
 }: {
   open: boolean;
   onClose: () => void;
@@ -280,40 +299,39 @@ export function FiltersDialog({
   sources?: readonly SourceOption[];
   onChange: (next: Partial<Filters>) => void;
   onClear: () => void;
+  /** `showConversationsLabel` over the list read behind the sheet. */
+  showLabel?: string;
 }) {
   return (
     <Dialog
       open={open}
       onClose={onClose}
-      icon={Filter}
+      sheet
       title="Filters"
+      closeLabel="Close filters"
       footer={
         <>
           <button
             type="button"
             onClick={onClear}
-            className="rounded-lg border border-line px-3 py-1.5 text-[13px] font-medium text-ink hover:bg-wash"
+            className="min-h-12 rounded-xl px-4 text-[15px] font-semibold text-ink hover:bg-wash focus-visible:outline-2 focus-visible:outline-coral"
           >
             Clear
           </button>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg bg-ink px-3 py-1.5 text-[13px] font-medium text-on-ink hover:bg-ink/90"
+            className="min-h-12 flex-1 rounded-[14px] bg-coral px-4 text-[15px] font-bold text-on-coral hover:bg-coral/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral"
           >
-            Show conversations
+            {showLabel}
           </button>
         </>
       }
     >
-      <div className="mb-3 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-muted">
-        <Layers className="h-3 w-3" /> Inboxes
+      <div className="flex flex-col gap-5">
+        <FilterFields me={me} filters={filters} onChange={onChange} sources={sources} layout="sheet" />
+        <HideNoticesSwitch on={filters.hideNotices} onChange={(hideNotices) => onChange({ hideNotices })} />
       </div>
-      <InboxViews me={me} filters={filters} onChange={onChange} />
-      <div className="mb-2 mt-3 flex items-center gap-1.5 border-t border-line-soft pt-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-muted">
-        <Filter className="h-3 w-3" /> Filters
-      </div>
-      <FilterFields me={me} filters={filters} onChange={onChange} sources={sources} />
     </Dialog>
   );
 }

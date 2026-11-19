@@ -3,8 +3,16 @@
 // them, every conversation labelled with the number it came in on, and the GM
 // queue's label and colour wherever a category shows. Node, no DOM, as the
 // other markup files: the components rendered with react-dom/server, and the
-// chips' and views' presses read through the same pure functions the
-// components call, so what is pinned is what the page would say after a tap.
+// choices' presses read through the same pure functions the components call,
+// so what is pinned is what the page would say after a tap.
+//
+// SCRUM-1016 (the approved redesign) rewrote these pins where the design
+// changed what they pinned: the filters are Topic, Park, Channel and
+// Language, each once (the Status row only repeated the tabs); the named
+// views are gone and each is one of those choices (General is the Topic
+// "Kept in General", a test line its Channel choice); the row's quiet text is
+// "Topic · Park", with the number in its accessible name; a topic's colour is
+// its dot.
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
@@ -12,19 +20,10 @@ import type { ConversationDetail, ConversationRow, InboxMe } from '@/api/inbox';
 import { ChatPanel, type Thread } from '@/components/ChatPanel';
 import { ConversationList } from '@/components/ConversationList';
 import { DetailsDialog, FiltersDialog } from '@/components/dialogs';
-import { FilterFields, InboxViews, Rail } from '@/components/Rail';
+import { FilterFields, Rail } from '@/components/Rail';
 import { StatsMore } from '@/components/StatsRow';
-import {
-  applyView,
-  currentView,
-  mergeSources,
-  namedViews,
-  sourceLabel,
-  sourcesOfRows,
-  toggleChip,
-  type SourceOption,
-} from '@/lib/inboxes';
-import { EMPTY_FILTERS, activeFilterCount, filterPills, listQuery, type Filters } from '@/lib/query';
+import { mergeSources, sourceLabel, sourcesOfRows, toggleChip, type SourceOption } from '@/lib/inboxes';
+import { EMPTY_FILTERS, activeFilterCount, filterPills, listQuery, topicOf, topicPatch, type Filters, type TopicChoice } from '@/lib/query';
 
 const CENTRAL = '00000000-0000-7000-8000-00000000000c';
 const CHALONG = '00000000-0000-7000-8000-0000000000c2';
@@ -140,7 +139,6 @@ function list(rows: ConversationRow[], filters: Filters = EMPTY_FILTERS, withSou
       onTab: noop,
       onOpenFilters: noop,
       onSelect: noop,
-      onAskHandle: noop,
       onMore: noop,
     }),
   );
@@ -169,81 +167,93 @@ function panel(r: ConversationRow, detailsOpen = false): string {
 const fields = (filters: Filters, withSources: readonly SourceOption[] = sources) =>
   renderToStaticMarkup(createElement(FilterFields, { me: hana, filters, onChange: noop, sources: withSources }));
 
-/** The `<button …>` tag of one chip or view, by its data key. */
-function tagOf(html: string, attr: 'data-chip' | 'data-view', key: string): string {
-  const m = new RegExp(`<button[^>]*${attr}="${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"[^>]*>`).exec(html);
-  if (!m) throw new Error(`no ${attr}="${key}" in the markup`);
+/** The `<button …>` tag of one choice, by its data key. */
+function tagOf(html: string, key: string): string {
+  const m = new RegExp(`<button[^>]*data-chip="${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"[^>]*>`).exec(html);
+  if (!m) throw new Error(`no data-chip="${key}" in the markup`);
   return m[0];
 }
-const pressed = (html: string, key: string) => tagOf(html, 'data-chip', key).includes('aria-pressed="true"');
-const current = (html: string, key: string) => tagOf(html, 'data-view', key).includes('aria-current="true"');
+const pressed = (html: string, key: string) => tagOf(html, key).includes('aria-pressed="true"');
 
 /** Apply a patch the way the workspace does (`patchFilters`). */
 const tap = (f: Filters, patch: Partial<Filters>): Filters => ({ ...f, ...patch });
+/** A Topic press, as FilterFields makes it: that choice, or back to all when it was the one chosen. */
+const pressTopic = (f: Filters, choice: TopicChoice): Filters => tap(f, topicPatch(topicOf(f) === choice ? '' : choice));
+/** Each row's "all". */
+const ALLS = ['category:all', 'branchId:all', 'channelAccountId:all', 'language:all'];
 
-describe('the chip filters in place of the dropdowns', () => {
-  it('renders five rows of toggle chips — Branch, Source, Topic, Status, Language — and no selects', () => {
+describe('the choice filters in place of the dropdowns', () => {
+  it('renders four rows of choices — Topic, Park, Channel, Language — each with its "all", and no selects', () => {
     const html = fields(EMPTY_FILTERS);
     expect(html).not.toContain('<select');
-    for (const label of ['Filter by branch', 'Filter by source', 'Filter by topic', 'Filter by status', 'Filter by language']) {
+    for (const label of ['Filter by topic', 'Filter by park', 'Filter by channel', 'Filter by language']) {
       expect(html).toContain(`role="group" aria-label="${label}"`);
     }
-    // Source: one chip per number, by its display name, Instagram and Facebook among them; a nameless number by its channel.
+    // SCRUM-1016: no Status row — the tabs are the status.
+    expect(html).not.toContain('Filter by status');
+    // Channel: one choice per number, by its display name, Instagram and Facebook among them; a nameless number by its channel.
     for (const label of ['Reception · Central Floresta', 'Reception · Robinson Chalong', 'OTO Park Instagram', 'OTO Park Facebook']) {
       expect(html).toContain(label);
     }
-    expect(tagOf(html, 'data-chip', `channelAccountId:${WA_COUNTER}`)).toBeTruthy();
-    // Topic: every category, the GM queue among them.
-    for (const label of ['Birthdays &amp; Events', 'General', 'Marketing', 'GM']) expect(html).toContain(label);
-    // Nothing applied: nothing pressed.
-    expect(html).not.toContain('aria-pressed="true"');
+    expect(tagOf(html, `channelAccountId:${WA_COUNTER}`)).toBeTruthy();
+    // Topic: every category, the GM queue among them, and the General questions kept out of the parks.
+    for (const label of ['Birthdays &amp; Events', 'General', 'Marketing', 'GM', 'Kept in General']) expect(html).toContain(label);
+    // Nothing applied: each row stands on its "all", and nothing else is pressed.
+    for (const key of ALLS) expect(pressed(html, key)).toBe(true);
+    expect(html.match(/aria-pressed="true"/g)).toHaveLength(4);
   });
 
-  it('a tap adds the chip, a second tap on it removes it', () => {
-    const on = tap(EMPTY_FILTERS, toggleChip(EMPTY_FILTERS, 'category', 'birthdays'));
+  it('a tap chooses, a second tap on it goes back to all', () => {
+    const on = pressTopic(EMPTY_FILTERS, 'birthdays');
     expect(on.category).toBe('birthdays');
     expect(pressed(fields(on), 'category:birthdays')).toBe(true);
-    const off = tap(on, toggleChip(on, 'category', 'birthdays'));
+    expect(pressed(fields(on), 'category:all')).toBe(false);
+    const off = pressTopic(on, 'birthdays');
     expect(off.category).toBe('');
     expect(pressed(fields(off), 'category:birthdays')).toBe(false);
+    expect(pressed(fields(off), 'category:all')).toBe(true);
+    // The same in every other row.
+    const ru = tap(EMPTY_FILTERS, toggleChip(EMPTY_FILTERS, 'language', 'ru'));
+    expect(pressed(fields(ru), 'language:ru')).toBe(true);
+    expect(tap(ru, toggleChip(ru, 'language', 'ru')).language).toBe('');
   });
 
-  it('chips in different rows combine, and the list asks for all of them at once', () => {
+  it('choices in different rows combine, and the list asks for all of them at once', () => {
     let f = EMPTY_FILTERS;
     f = tap(f, toggleChip(f, 'branchId', CHALONG));
     f = tap(f, toggleChip(f, 'channelAccountId', WA_CHALONG));
-    f = tap(f, toggleChip(f, 'category', 'gm'));
-    f = tap(f, toggleChip(f, 'status', 'active'));
+    f = pressTopic(f, 'gm');
     f = tap(f, toggleChip(f, 'language', 'th'));
     const html = fields(f);
-    for (const key of [`branchId:${CHALONG}`, `channelAccountId:${WA_CHALONG}`, 'category:gm', 'status:active', 'language:th']) {
+    for (const key of [`branchId:${CHALONG}`, `channelAccountId:${WA_CHALONG}`, 'category:gm', 'language:th']) {
       expect(pressed(html, key)).toBe(true);
     }
-    expect(html.match(/aria-pressed="true"/g)).toHaveLength(5);
+    expect(html.match(/aria-pressed="true"/g)).toHaveLength(4);
+    // "Hide till notices" is on unless turned off: the list asks for the threads that can take a reply.
     expect(listQuery('team', f)).toEqual({
       tab: 'team',
       branchId: CHALONG,
       channelAccountId: WA_CHALONG,
       category: 'gm',
-      status: 'active',
       language: 'th',
+      replyable: 'true',
     });
-    expect(activeFilterCount(f)).toBe(5);
+    expect(activeFilterCount(f)).toBe(4);
     // Removing one leaves the others.
-    const less = tap(f, toggleChip(f, 'category', 'gm'));
-    expect(less).toMatchObject({ branchId: CHALONG, channelAccountId: WA_CHALONG, category: '', status: 'active', language: 'th' });
+    const less = pressTopic(f, 'gm');
+    expect(less).toMatchObject({ branchId: CHALONG, channelAccountId: WA_CHALONG, category: '', language: 'th' });
   });
 
-  it('within one row a second chip takes the first one’s place: the list filters one value per row', () => {
-    const one = tap(EMPTY_FILTERS, toggleChip(EMPTY_FILTERS, 'category', 'birthdays'));
-    const two = tap(one, toggleChip(one, 'category', 'gm'));
+  it('within one row a second choice takes the first one’s place: the list filters one value per row', () => {
+    const one = pressTopic(EMPTY_FILTERS, 'birthdays');
+    const two = pressTopic(one, 'gm');
     expect(two.category).toBe('gm');
     const html = fields(two);
     expect(pressed(html, 'category:gm')).toBe(true);
     expect(pressed(html, 'category:birthdays')).toBe(false);
   });
 
-  it('the applied-filter pills under the search say the same as the chips, the source by its name', () => {
+  it('the applied-filter pills by the list say the same as the choices, the number by its name', () => {
     const f: Filters = { ...EMPTY_FILTERS, category: 'gm', channelAccountId: WA_CENTRAL, branchId: CENTRAL };
     const pills = filterPills(f, teams, sources);
     expect(pills.map((p) => [p.key, p.label])).toEqual([
@@ -255,78 +265,74 @@ describe('the chip filters in place of the dropdowns', () => {
     const html = list([], f);
     expect(html).toContain('aria-label="Clear Reception · Central Floresta"');
     // A number not (yet) in the known sources still gets a pill that clears it.
-    expect(filterPills({ ...EMPTY_FILTERS, channelAccountId: IG }, teams, []).map((p) => p.label)).toEqual(['Source']);
+    expect(filterPills({ ...EMPTY_FILTERS, channelAccountId: IG }, teams, []).map((p) => p.label)).toEqual(['Channel']);
   });
 
-  it('the rail carries the chips at desktop width and the phone’s filter dialog the same chips', () => {
+  it('the views column carries the choices at desktop width and the phone’s sheet the same choices', () => {
     const f: Filters = { ...EMPTY_FILTERS, language: 'ru' };
     const rail = renderToStaticMarkup(
       createElement(Rail, { me: hana, tab: 'team', counts: { team: 3 }, filters: f, sources, onTab: noop, onFilters: noop }),
     );
     expect(pressed(rail, 'language:ru')).toBe(true);
-    expect(rail).toContain('role="group" aria-label="Filter by source"');
+    expect(rail).toContain('role="group" aria-label="Filter by channel"');
     const dialog = renderToStaticMarkup(
       createElement(FiltersDialog, { open: true, onClose: noop, me: hana, filters: f, sources, onChange: noop, onClear: noop }),
     );
     expect(pressed(dialog, 'language:ru')).toBe(true);
-    expect(dialog).toContain('aria-label="Inbox views"');
+    // The named inboxes are gone from both: each was one of these choices.
+    expect(dialog).not.toContain('aria-label="Inbox views"');
+    expect(rail).not.toContain('aria-label="Inbox views"');
+    expect(dialog).toContain('Hide till notices');
+    expect(rail).toContain('Hide till notices');
   });
 
-  it('leaves the Source row out while no number is known yet', () => {
-    expect(fields(EMPTY_FILTERS, [])).not.toContain('Filter by source');
+  it('leaves the Channel row out while no number is known yet, and offers a test line from the start', () => {
+    expect(fields(EMPTY_FILTERS, [])).not.toContain('Filter by channel');
+    const line = renderToStaticMarkup(
+      createElement(FilterFields, {
+        me: { ...hana, testLines: [{ id: WA_COUNTER, channel: 'whatsapp', displayName: 'WhatsApp test line', branchId: null, startOver: false }] },
+        filters: EMPTY_FILTERS,
+        onChange: noop,
+        sources: [],
+      }),
+    );
+    expect(line).toContain('aria-label="Filter by channel"');
+    expect(line).toMatch(new RegExp(`data-chip="channelAccountId:${WA_COUNTER}"[\\s\\S]*?WhatsApp test line`));
   });
 });
 
-describe('the named inbox views above the filters', () => {
-  const views = namedViews(hana);
-
-  it('offers All, General, Birthdays & Events, GM, then one per park, in that order', () => {
-    // SCRUM-789: General — the general questions held out of the park inboxes.
-    expect(views.map((v) => v.label)).toEqual(['All conversations', 'General', 'Birthdays & Events', 'GM', 'Central Floresta', 'Robinson Chalong']);
-    // The GM view needs the GM team; an operator without it has no GM view.
-    expect(namedViews({ teams: teams.filter((t) => t.kind !== 'gm') }).map((v) => v.key)).not.toContain('gm');
-  });
-
-  it('each view applies its own filter set and clears the other chips', () => {
-    const busy: Filters = { ...EMPTY_FILTERS, language: 'ru', status: 'active', channelAccountId: IG, q: 'cake', unanswered: true };
-    const expected: Record<string, Partial<Filters>> = {
-      all: { category: '', branchId: '', inbox: '' },
-      // SCRUM-789: the General inbox is its own filter, not the General topic chip.
-      general: { category: '', branchId: '', inbox: 'general' },
-      birthdays: { category: 'birthdays', branchId: '', inbox: '' },
-      gm: { category: 'gm', branchId: '', inbox: '' },
-      [`branch:${CENTRAL}`]: { category: '', branchId: CENTRAL, inbox: '' },
-      [`branch:${CHALONG}`]: { category: '', branchId: CHALONG, inbox: '' },
-    };
-    for (const v of views) {
-      const f = tap(busy, applyView(v));
-      expect(f).toMatchObject({ ...expected[v.key], language: '', status: '', channelAccountId: '' });
-      // The search and the unanswered toggle are not the view's: they stay.
+describe('SCRUM-1016: each named view is one choice now', () => {
+  it('All, General, Birthdays & Events, GM and each park: the filters the view set, one choice pressed in each row', () => {
+    const busy: Filters = { ...EMPTY_FILTERS, q: 'cake', unanswered: true };
+    const cases: Array<[string, Filters, Partial<Filters>, string[]]> = [
+      ['All conversations', busy, { category: '', branchId: '', inbox: '' }, ALLS],
+      // SCRUM-789: the General inbox is its own filter, not the General topic.
+      ['General (held)', pressTopic(busy, 'held'), { category: '', branchId: '', inbox: 'general' }, ['inbox:general', 'branchId:all', 'channelAccountId:all', 'language:all']],
+      ['Birthdays & Events', pressTopic(busy, 'birthdays'), { category: 'birthdays', inbox: '' }, ['category:birthdays', 'branchId:all', 'channelAccountId:all', 'language:all']],
+      ['GM', pressTopic(busy, 'gm'), { category: 'gm', inbox: '' }, ['category:gm', 'branchId:all', 'channelAccountId:all', 'language:all']],
+      ['Central Floresta', tap(busy, toggleChip(busy, 'branchId', CENTRAL)), { category: '', branchId: CENTRAL, inbox: '' }, ['category:all', `branchId:${CENTRAL}`, 'channelAccountId:all', 'language:all']],
+    ];
+    for (const [name, f, expected, keys] of cases) {
+      expect(f, name).toMatchObject(expected);
+      // The search and the unanswered toggle are not the choice's: they stay.
       expect(f.q).toBe('cake');
       expect(f.unanswered).toBe(true);
-      expect(currentView(f, views)).toEqual({ key: v.key, modified: false });
-      // The chips reflect the view.
       const html = fields(f);
-      if (f.category) expect(pressed(html, `category:${f.category}`)).toBe(true);
-      if (f.branchId) expect(pressed(html, `branchId:${f.branchId}`)).toBe(true);
-      // The General view has no chip of its own (SCRUM-789): the rail's view row is its mark.
-      expect((html.match(/aria-pressed="true"/g) ?? []).length).toBe(v.key === 'all' || v.key === 'general' ? 0 : 1);
-      // And the rail marks the view as the one open.
-      const rail = renderToStaticMarkup(createElement(InboxViews, { me: hana, filters: f, onChange: noop }));
-      expect(current(rail, v.key)).toBe(true);
-      expect((rail.match(/aria-current="true"/g) ?? []).length).toBe(1);
+      for (const key of keys) expect(pressed(html, key), `${name}: ${key}`).toBe(true);
+      expect((html.match(/aria-pressed="true"/g) ?? []).length, name).toBe(4);
     }
   });
 
-  it('SCRUM-789: the General view asks the list for the General inbox, and a park view never does', () => {
-    const general = tap(EMPTY_FILTERS, applyView(views.find((v) => v.key === 'general')!));
+  it('SCRUM-789: "Kept in General" asks the list for the General inbox, never with a topic, and shows as one pill', () => {
+    const general = pressTopic(EMPTY_FILTERS, 'held');
     expect(listQuery('team', general)).toMatchObject({ inbox: 'general' });
     expect(listQuery('team', general)).not.toHaveProperty('category');
-    const park = tap(general, applyView(views.find((v) => v.key === `branch:${CENTRAL}`)!));
-    expect(listQuery('team', park)).toMatchObject({ branchId: CENTRAL });
-    expect(listQuery('team', park)).not.toHaveProperty('inbox');
-    // On the phone the applied view shows as a removable pill.
-    expect(filterPills(general, teams).map((p) => p.label)).toEqual(['General']);
+    // A topic chosen after it takes its place.
+    const birthdays = pressTopic(general, 'birthdays');
+    expect(listQuery('team', birthdays)).toMatchObject({ category: 'birthdays' });
+    expect(listQuery('team', birthdays)).not.toHaveProperty('inbox');
+    expect(filterPills(general, teams).map((p) => p.label)).toEqual(['Kept in General']);
+    expect(filterPills(general, teams)[0]!.clear).toEqual({ inbox: '' });
     expect(activeFilterCount(general)).toBe(1);
   });
 
@@ -338,25 +344,24 @@ describe('the named inbox views above the filters', () => {
     expect(panel(row({ category: 'general', teamId: T_CENTRAL }))).not.toMatch(/<option value="" disabled=""[^>]*>General<\/option>/);
   });
 
-  it('changing a chip away from a view moves to a modified All', () => {
-    const birthdays = tap(EMPTY_FILTERS, applyView(views.find((v) => v.key === 'birthdays')!));
-    const changed = tap(birthdays, toggleChip(birthdays, 'language', 'ru'));
-    expect(currentView(changed, views)).toEqual({ key: 'all', modified: true });
-    const rail = renderToStaticMarkup(createElement(InboxViews, { me: hana, filters: changed, onChange: noop }));
-    expect(current(rail, 'all')).toBe(true);
-    expect(current(rail, 'birthdays')).toBe(false);
-    expect(rail).toContain('Filtered');
-    // A chip that lands exactly on a view's set is that view.
-    expect(currentView(tap(EMPTY_FILTERS, toggleChip(EMPTY_FILTERS, 'category', 'gm')), views)).toEqual({ key: 'gm', modified: false });
-    // Plain All says nothing extra.
-    expect(renderToStaticMarkup(createElement(InboxViews, { me: hana, filters: EMPTY_FILTERS, onChange: noop }))).not.toContain('Filtered');
-  });
-
-  it('ships without per-view counts: nothing cheap counts unread or unanswered per view', () => {
-    const rail = renderToStaticMarkup(createElement(InboxViews, { me: hana, filters: EMPTY_FILTERS, onChange: noop }));
-    // The tabs' count pill (`rounded-full px-1.5 text-[10px] font-semibold`) is not on any view.
-    expect(rail).not.toContain('rounded-full px-1.5 text-[10px] font-semibold');
-    expect(rail).not.toMatch(/>\d+<\/span>/);
+  it('the views column counts each topic from the list read; the sheet and a read without counts show none', () => {
+    const topicCounts = { birthdays: 9, general: 5, marketing: 1, gm: 2, heldInGeneral: 3 };
+    const rail = renderToStaticMarkup(
+      createElement(Rail, { me: hana, tab: 'team', counts: { team: 17 }, topicCounts, filters: EMPTY_FILTERS, sources, onTab: noop, onFilters: noop }),
+    );
+    const countIn = (html: string, key: string) =>
+      new RegExp(`data-chip="${key}"(?:(?!</button>)[\\s\\S])*?>(\\d+)</span></button>`).exec(html)?.[1];
+    expect(countIn(rail, 'category:birthdays')).toBe('9');
+    expect(countIn(rail, 'category:gm')).toBe('2');
+    expect(countIn(rail, 'inbox:general')).toBe('3');
+    // "All topics" is the four topics together.
+    expect(countIn(rail, 'category:all')).toBe('17');
+    const sheet = renderToStaticMarkup(createElement(FilterFields, { me: hana, filters: EMPTY_FILTERS, onChange: noop, sources, topicCounts }));
+    expect(countIn(sheet, 'category:birthdays')).toBeUndefined();
+    const uncounted = renderToStaticMarkup(
+      createElement(Rail, { me: hana, tab: 'team', counts: null, filters: EMPTY_FILTERS, sources, onTab: noop, onFilters: noop }),
+    );
+    expect(countIn(uncounted, 'category:birthdays')).toBeUndefined();
   });
 });
 
@@ -367,12 +372,15 @@ describe('the source, everywhere a conversation shows', () => {
     expect(sourceLabel('instagram', '   ')).toBe('Instagram');
   });
 
-  it('the list row says the number, not the bare channel; with no name, the channel', () => {
+  // SCRUM-1016: the row's quiet text is "Topic · Park" (approved as drawn);
+  // its number is said with the rest of the row, its channel is the dot.
+  it('the list row says the number in its accessible name, not the bare channel; with no name, the channel', () => {
     const named = list([row()]);
-    expect(named).toContain(' · Reception · Central Floresta</span>');
-    expect(named).not.toContain(' · WhatsApp</span>');
+    expect(named).toMatch(/aria-label="Olga Demo, [^"]*, on Reception · Central Floresta, /);
+    expect(named).toContain('>General · Central Floresta</span>');
+    expect(named).toContain('title="WhatsApp"');
     const nameless = list([row({ channelAccountName: null })]);
-    expect(nameless).toContain(' · WhatsApp</span>');
+    expect(nameless).toMatch(/aria-label="Olga Demo, [^"]*, on WhatsApp, /);
   });
 
   it('the chat header says the number; with no name, the channel', () => {
@@ -405,14 +413,16 @@ describe('the source, everywhere a conversation shows', () => {
 });
 
 describe('the GM queue’s label and colour wherever a category shows', () => {
-  it('the list row’s category badge: GM in amber', () => {
-    const html = list([row({ category: 'gm', teamId: T_GM })]);
-    expect(html).toMatch(/bg-amber-50[^"]*text-amber-700[^"]*"[^>]*>GM</);
+  // SCRUM-1016: no category chip on the row; the GM queue is named in its quiet text.
+  it('the list row names the GM queue in its quiet text, without a chip', () => {
+    const html = list([row({ category: 'gm', teamId: T_GM, branchId: null })]);
+    expect(html).toMatch(/text-ink-muted">GM<\/span>/);
+    expect(html).not.toMatch(/bg-amber-50/);
   });
 
   // SCRUM-1016: the dashboard's legend became "By topic" under More figures:
   // a read-out with the topic's dot (the GM queue's amber token), the filter
-  // by topic staying under Filters (the chip pinned in the next test).
+  // by topic staying under Filters (the choice pinned in the next test).
   it('the statistics legend: GM named in the bar’s label, its amber dot in the bar and the list', () => {
     const html = renderToStaticMarkup(
       createElement(StatsMore, {
@@ -428,13 +438,13 @@ describe('the GM queue’s label and colour wherever a category shows', () => {
     expect(html).toMatch(/data-topic="gm"[^>]*><span aria-hidden="true" class="[^"]*bg-topic-gm"><\/span><span[^>]*>GM<\/span><span[^>]*>3</);
   });
 
-  it('the applied-filter pill and the topic chip: GM, with the amber mark', () => {
+  it('the applied-filter pill and the topic choice: GM, with the amber dot', () => {
     const f: Filters = { ...EMPTY_FILTERS, category: 'gm' };
     const html = list([], f);
     expect(html).toContain('aria-label="Clear GM"');
-    expect(html).toMatch(/bg-amber-50[^"]*"[^>]*>GM</);
+    expect(html).toMatch(/<span aria-hidden="true" class="[^"]*bg-topic-gm"><\/span><span[^>]*>GM</);
     const chips = fields(EMPTY_FILTERS);
-    expect(tagOf(chips, 'data-chip', 'category:gm')).toBeTruthy();
-    expect(chips).toMatch(/data-chip="category:gm"[^>]*>\s*<span[^>]*bg-amber-500/);
+    expect(tagOf(chips, 'category:gm')).toBeTruthy();
+    expect(chips).toMatch(/data-chip="category:gm"[^>]*>\s*<span[^>]*bg-topic-gm/);
   });
 });

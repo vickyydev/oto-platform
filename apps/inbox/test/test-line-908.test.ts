@@ -1,14 +1,16 @@
-// SCRUM-908 — the WhatsApp test line in the inbox. Node, no DOM: the rail's
-// named inboxes and the Start over gate as the pure functions the rail and
-// ChatPanel call, and the confirmation rendered with react-dom/server on its
-// first paint.
+// SCRUM-908 — the WhatsApp test line in the inbox. Node, no DOM: the
+// Channel choice and the Start over gate as the pure functions the filters
+// and ChatPanel call, and the confirmation rendered with react-dom/server on
+// its first paint. SCRUM-1016 removed the list of named inboxes; the test
+// line, which was one of them, is a Channel choice of its own.
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import type { InboxMe } from '@/api/inbox';
 import { START_OVER_LABEL, StartOverConfirm } from '@/components/confirms';
-import { applyView, currentView, mayStartOver, namedViews } from '@/lib/inboxes';
-import { EMPTY_FILTERS } from '@/lib/query';
+import { FilterFields } from '@/components/Rail';
+import { channelChoices, mayStartOver, toggleChip } from '@/lib/inboxes';
+import { EMPTY_FILTERS, listQuery } from '@/lib/query';
 
 const LINE = '0192f0a0-1234-7abc-8def-0000000009a1';
 const OTHER = '0192f0a0-1234-7abc-8def-0000000009a2';
@@ -21,24 +23,27 @@ const line = (startOver: boolean): NonNullable<InboxMe['testLines']>[number] => 
   startOver,
 });
 
-describe('the test line is an inbox of its own', () => {
-  it('comes last in the rail, as a saved Source chip, and only when the api names one', () => {
-    expect(namedViews({ teams }).map((v) => v.key)).toEqual(['all', 'general']);
-    const views = namedViews({ teams, testLines: [line(false)] });
-    expect(views.at(-1)).toEqual({
-      key: `line:${LINE}`,
-      label: 'WhatsApp test line',
-      kind: 'line',
-      chips: { channelAccountId: LINE },
-    });
+const viewer = (testLines: NonNullable<InboxMe['testLines']>): InboxMe => ({
+  accountId: '0192f0a0-1234-7abc-8def-0000000009b1', name: 'ZZ TEST viewer', roles: ['owner'], tabs: ['team', 'handled'],
+  teams, people: [], defaultReceptionBranchId: null, simulator: null, testLines,
+  capabilities: { writes: true, dashboard: true, assign: true, move: true, reopen: true, templates: false, kb: false, ai: false },
+});
+
+describe('the test line is a Channel choice of its own', () => {
+  it('is offered under Channel as soon as the api names one, before any of its threads is read', () => {
+    expect(channelChoices([], { testLines: [] })).toEqual([]);
+    expect(channelChoices([], { testLines: [line(false)] })).toEqual([{ id: LINE, channel: 'whatsapp', name: 'WhatsApp test line' }]);
+    const html = renderToStaticMarkup(createElement(FilterFields, { me: viewer([line(false)]), filters: EMPTY_FILTERS, onChange: () => undefined }));
+    expect(html).toMatch(new RegExp(`data-chip="channelAccountId:${LINE}"[^>]*aria-pressed="false"[^>]*>(?:<[^>]*>)*WhatsApp test line<`));
   });
 
-  it('opening it shows that number only, and the rail marks it', () => {
-    const views = namedViews({ teams, testLines: [line(false)] });
-    const opened = { ...EMPTY_FILTERS, ...applyView(views.at(-1)!) };
+  it('choosing it shows that number only, and the choice is marked', () => {
+    const opened = { ...EMPTY_FILTERS, ...toggleChip(EMPTY_FILTERS, 'channelAccountId', LINE) };
     expect(opened.channelAccountId).toBe(LINE);
     expect(opened.inbox).toBe('');
-    expect(currentView(opened, views)).toEqual({ key: `line:${LINE}`, modified: false });
+    expect(listQuery('team', opened)).toMatchObject({ channelAccountId: LINE });
+    const html = renderToStaticMarkup(createElement(FilterFields, { me: viewer([line(false)]), filters: opened, onChange: () => undefined }));
+    expect(html).toMatch(new RegExp(`data-chip="channelAccountId:${LINE}"[^>]*aria-pressed="true"`));
   });
 });
 

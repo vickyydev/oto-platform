@@ -46,6 +46,18 @@
   --oto-topic-general: #0369a1;
   --oto-topic-marketing: #be185d;
   --oto-topic-gm: #b45309;
+  /* A contact's face (SCRUM-1016, Main.dc.html): five warm pairs, one per contact for good. */
+  --oto-face-violet: #ebe4fb;
+  --oto-face-violet-ink: #4c2a9c;
+  --oto-face-sky: #dcedf7;
+  --oto-face-sky-ink: #0c4a6e;
+  /* The channel dots on a face: the channel's own colour, never text. */
+  --oto-channel-whatsapp: #1fa855;
+  --oto-channel-instagram: #c13584;
+  --oto-channel-facebook: #1877f2;
+  --oto-channel-line: #06c755;
+  --oto-channel-telegram: #229ed9;
+  --oto-channel-webform: #8a7a6c;
 }
 
 html.dark {
@@ -79,6 +91,16 @@ html.dark {
   --oto-topic-general: #38bdf8;
   --oto-topic-marketing: #f472b6;
   --oto-topic-gm: #f59e0b;
+  --oto-face-violet: #2d2458;
+  --oto-face-violet-ink: #d6cbff;
+  --oto-face-sky: #16324d;
+  --oto-face-sky-ink: #bfe0ff;
+  --oto-channel-whatsapp: #25d366;
+  --oto-channel-instagram: #e1578f;
+  --oto-channel-facebook: #4c9bff;
+  --oto-channel-line: #06c755;
+  --oto-channel-telegram: #39b3ea;
+  --oto-channel-webform: #7d8aa0;
 }
 
 @theme inline {
@@ -113,6 +135,16 @@ html.dark {
   --color-topic-general: var(--oto-topic-general);
   --color-topic-marketing: var(--oto-topic-marketing);
   --color-topic-gm: var(--oto-topic-gm);
+  --color-face-violet: var(--oto-face-violet);
+  --color-face-violet-ink: var(--oto-face-violet-ink);
+  --color-face-sky: var(--oto-face-sky);
+  --color-face-sky-ink: var(--oto-face-sky-ink);
+  --color-channel-whatsapp: var(--oto-channel-whatsapp);
+  --color-channel-instagram: var(--oto-channel-instagram);
+  --color-channel-facebook: var(--oto-channel-facebook);
+  --color-channel-line: var(--oto-channel-line);
+  --color-channel-telegram: var(--oto-channel-telegram);
+  --color-channel-webform: var(--oto-channel-webform);
 
   /* Menus, popovers and the account card float on the one shadow. */
   --shadow-pop: 0 12px 40px -16px var(--oto-shadow);

@@ -74,7 +74,7 @@ function list(rows: ConversationRow[], viewer = me()) {
     createElement(ConversationList, {
       me: viewer, tab: 'team', page: null, rows, loading: false, loadingMore: false, error: null,
       filters: EMPTY_FILTERS, selectedId: null, now: new Date('2026-11-19T06:00:00Z'),
-      onFilters: noop, onTab: noop, onOpenFilters: noop, onSelect: noop, onAskHandle: noop, onMore: noop,
+      onFilters: noop, onTab: noop, onOpenFilters: noop, onSelect: noop, onMore: noop,
     }),
   );
 }
@@ -87,15 +87,20 @@ describe('SCRUM-996: the words on the row', () => {
       needs_checking: 'Deposit needs checking',
     });
     expect(Object.keys(DEPOSIT_SIGNAL_LABELS).sort()).toEqual([...INBOX_DEPOSIT_SIGNALS].sort());
-    expect(NEXT_ACTION_LABELS.staff_action_needed).toBe('Staff action needed');
+    // SCRUM-1016: the shorter words for the action (owner choice 1); the deposit's words above are unchanged.
+    expect(NEXT_ACTION_LABELS.staff_action_needed).toBe('Needs action');
   });
-  it.each(INBOX_DEPOSIT_SIGNALS)('%s stands beside the next-action label and is read out by screen readers', (signal) => {
+  // SCRUM-1016: a row carries ONE badge for what happens next — with a
+  // deposit, the deposit's words — and says the next action with the rest of
+  // the row to a screen reader.
+  it.each(INBOX_DEPOSIT_SIGNALS)('%s is the row’s one badge, and the next action is read out with it', (signal) => {
     const r = row({ depositSignal: signal, nextAction: 'staff_action_needed' });
     const html = list([r]);
     expect(html).toContain(`data-deposit-signal="${signal}"`);
     expect(html).toContain(`>${DEPOSIT_SIGNAL_LABELS[signal]}<`);
-    expect(html).toContain('>Staff action needed<');
-    expect(html).toMatch(new RegExp(`aria-label="[^"]*${DEPOSIT_SIGNAL_LABELS[signal]}[^"]*"`));
+    expect(html).not.toContain('>Needs action<');
+    expect(html).toMatch(new RegExp(`aria-label="[^"]*Needs action, ${DEPOSIT_SIGNAL_LABELS[signal]}[^"]*"`));
+    expect(html).toContain('data-next-action="staff_action_needed"');
   });
   it('no label and no group without a signal, as before', () => {
     const html = list([row(), row({ depositSignal: undefined })]);
