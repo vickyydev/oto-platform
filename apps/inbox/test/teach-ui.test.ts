@@ -10,6 +10,7 @@ import { AssistantSettings } from '@/components/AssistantSettings';
 import { KbConfirm, RuleConfirm } from '@/components/AssistantConfirms';
 import { ASK_FIRST_IGNORED_LINE, RuleEditor, RulesPanel } from '@/components/RulesPanel';
 import { SettingsFrame } from '@/components/SettingsFrame';
+import { intentTitle } from '@/components/assistant-parts';
 import {
   DryRun,
   TEACH_CARD_GONE,
@@ -23,7 +24,6 @@ import {
   askFirstIgnored,
   ruleAskFirst,
   ruleDraftProblem,
-  ruleIntentLabel,
   teachDraftContents,
   teachPayload,
   uniqueTeachCards,
@@ -186,7 +186,9 @@ describe('a teach card shows the whole draft before Approve', () => {
   it('a rule: its kind of message, park, instruction, condition and the question in each language', () => {
     const html = card(ruleCard, { kind: 'rule', rule: draftRule });
     for (const part of [
-      ruleIntentLabel('lost_item'),
+      // SCRUM-1044: the settings pages say a kind of message in sentence case (`intentTitle`); the value sent is unchanged.
+      intentTitle('lost_item'),
+      'Lost item',
       'Both parks',
       draftRule.instruction,
       'When the park is not known yet',
@@ -252,7 +254,8 @@ describe('the teach chat survives a tab switch', () => {
     for (const tab of ['rules', 'knowledge'] as const) {
       expect(settings(tab)).toMatch(/<div class="hidden" data-teach-chat="true">[\s\S]*Brief the assistant like a new receptionist/);
     }
-    expect(settings('teach')).toMatch(/<div data-teach-chat="true">[\s\S]*Brief the assistant like a new receptionist/);
+    // SCRUM-1044: shown, the chat fills the page area (a class of its own), and is never hidden.
+    expect(settings('teach')).toMatch(/<div class="(?![^"]*\bhidden\b)[^"]*" data-teach-chat="true">[\s\S]*Brief the assistant like a new receptionist/);
   });
 
   it('stays mounted, hidden, while the frame shows Templates (SCRUM-1044), and nothing else of the assistant is drawn', () => {

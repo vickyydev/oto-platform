@@ -3,7 +3,7 @@ import { ArrowLeft, BookOpen, FileText, GraduationCap, MessageSquareQuote, Radio
 import type { InboxMe } from '@/api/inbox';
 import { assistantCapabilities } from '@/api/assistant';
 import { AssistantSettings, assistantSections } from '@/components/AssistantSettings';
-import { FOCUS_INSIDE } from '@/components/settings-parts';
+import { FOCUS_INSIDE, PAGE_COLUMN } from '@/components/settings-parts';
 import { TemplateSettings } from '@/components/TemplateSettings';
 import { BTN_ICON, SEGMENT, SEGMENT_OFF, SEGMENT_ON } from '@/components/ui';
 import type { AssistantTab, SettingsPage } from '@/lib/url';
@@ -244,7 +244,8 @@ export function SettingsFrame({
       </div>
 
       <section data-pane="settings" aria-label="Settings page" className="min-h-0 min-w-0 flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-3xl px-4 pb-8 pt-4 md:px-6 md:pt-6">
+        {/* Each page in the centred column; Teach, a chat, takes the whole area and its height, its message box at the foot. */}
+        <div className={current === 'teach' ? 'flex min-h-full w-full flex-col' : `${PAGE_COLUMN} pb-8 pt-4 md:pt-6`}>
           {current === 'templates' && <TemplateSettings me={me} />}
           {/* The assistant's pages, or its own "You do not manage the assistant."; mounted for Teach while Templates shows. */}
           {(caps.kb || caps.ai || page === 'assistant') && (

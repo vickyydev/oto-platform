@@ -1,5 +1,18 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { Archive, BookOpen, CheckCircle2, Loader2, Pencil, Plus, Radio, ShieldCheck, Trash2, Undo2, X } from 'lucide-react';
+import {
+  Archive,
+  BookOpen,
+  CheckCircle2,
+  Loader2,
+  MessageSquareQuote,
+  Pencil,
+  Plus,
+  Radio,
+  ShieldCheck,
+  Trash2,
+  Undo2,
+  X,
+} from 'lucide-react';
 import { newId } from '@oto/shared/ids';
 import { ApiError } from '@/api/client';
 import {
@@ -19,26 +32,29 @@ import {
 import type { InboxMe } from '@/api/inbox';
 import type { AssistantTab } from '@/lib/url';
 import { KbConfirm } from '@/components/AssistantConfirms';
-import { Eyebrow } from '@/components/atoms';
-import { Refusal } from '@/components/confirms';
-import { FIELD, Field } from '@/components/CorrectAssistant';
+import { ASSISTANT_HELP, AssistantHeader, StatusBadge, countWords, intentTitle, kbLanguageName, quoteFor } from '@/components/assistant-parts';
 import { Dialog } from '@/components/Dialog';
 import {
-  BADGE,
-  BTN_MAIN,
-  BTN_QUIET,
-  BTN_SMALL,
-  CHECK_BOX,
-  CHECK_LINE,
-  HINT,
-  ITEM_CARD,
-  SEGMENT,
-  SEGMENT_OFF,
-  SEGMENT_ON,
-  TONE,
-} from '@/components/ui';
+  ControlRow,
+  EmptyNote,
+  Field,
+  FormRefusal,
+  InlineError,
+  InlineNote,
+  LoadingNote,
+  MetaLine,
+  PAGE_COLUMN,
+  PageHeader,
+  SECTION_CARD,
+  SEGMENT_BAND,
+  SectionCard,
+  SettingsRow,
+  ViewSwitch,
+  type MetaPart,
+  type RowAction,
+} from '@/components/settings-parts';
+import { BADGE, BTN_MAIN, BTN_QUIET, CHECK_BOX, CHECK_LINE, CHECK_LINES, HINT, INPUT, SEGMENT, SEGMENT_OFF, SEGMENT_ON, TONE } from '@/components/ui';
 import { RulesPanel } from '@/components/RulesPanel';
-import { PageHeader } from '@/components/settings-parts';
 import { TeachPanel } from '@/components/TeachPanel';
 import {
   AI_MODE_OPTIONS,
@@ -50,8 +66,6 @@ import {
   KB_KEY_MAX,
   KB_LANGUAGES,
   KB_QUESTION_MAX,
-  KB_STATUS_LABEL,
-  KB_STATUS_TINT,
   KB_TOPICS,
   VERDICT_LABEL,
   VERDICT_OPTIONS,
@@ -60,7 +74,6 @@ import {
   exampleDraftProblem,
   exampleIntent,
   exampleLanguage,
-  intentLabel,
   kbDraftProblem,
   kbGroups,
   modeChangeNeedsConfirm,
@@ -68,10 +81,13 @@ import {
 } from '@/lib/assistant';
 import { CHANNEL_LABEL, branchLabel, branchOptions, langLabel } from '@/lib/view';
 
+export { ASSISTANT_HELP };
+
 // The house controls (SCRUM-1016, components/ui.ts): the page looks part of the Inbox, and does what it did.
-const BUTTON = BTN_SMALL;
-const PRIMARY = BTN_MAIN;
-const CANCEL = BTN_QUIET;
+// A one-line box and a select share one height (the scale's field); a box of
+// several lines takes the padding of its lines (SCRUM-1044, as the template editor).
+const FIELD = INPUT;
+const AREA = `${INPUT} resize-y py-2 leading-relaxed`;
 
 /**
  * A part of the page the viewer's grant does not reach (a 403: the examples
@@ -83,6 +99,7 @@ function said(err: unknown, fallback: string): string {
   if (notOnAccess(err)) return NOT_ON_YOUR_ACCESS;
   return err instanceof ApiError ? err.message : fallback;
 }
+const toneOf = (text: string) => (text === NOT_ON_YOUR_ACCESS ? 'ask' : 'danger');
 
 /**
  * The page's tabs, by the viewer's rights (owner UI round 2026-10-22, F2):
@@ -104,10 +121,6 @@ export function assistantSections(caps: { ai: boolean; kb: boolean }): [Assistan
   ];
 }
 
-/** The assistant's line at the head of each of its pages, as the page has said it since SCRUM-590. */
-export const ASSISTANT_HELP =
-  'The assistant answers simple questions from the approved knowledge base and hands everything else to the team. A person replying always takes over.';
-
 /**
  * The Assistant's pages (plan §C.2, §E; R7): beside the template settings, for
  * the people who run the assistant —
@@ -120,7 +133,12 @@ export const ASSISTANT_HELP =
  * The section lives in the URL (`?settings=assistant&section=…`, UI round
  * 2026-10-22, F2); null is the default, the first the viewer may see. Since
  * SCRUM-1044 the settings frame (SettingsFrame) holds the way back and the
- * choice of section, and this renders the chosen one under its header.
+ * choice of section, and each page starts with its own header (its main
+ * action, New entry or New rule, on the right of its title).
+ *
+ * Teach is a chat (SETTINGS.md): it fills the page area, its thread scrolling
+ * and its message box held at the foot, as the Inbox's chat does; the frame
+ * gives it the whole area (`fills`).
  *
  * `shown` false (another settings page is open, Templates) renders only the
  * Teach chat, hidden: it stays mounted while any settings page shows, so a
@@ -142,23 +160,24 @@ export function AssistantSettings({
   const section: AssistantTab = tab !== null && sections.some(([s]) => s === tab) ? tab : (sections[0]?.[0] ?? 'knowledge');
   const label = sections.find(([s]) => s === section)?.[1];
   const on = (s: AssistantTab) => shown && section === s;
+  const teaching = on('teach') && caps.kb;
 
   return (
-    <div className={shown ? 'flex min-w-0 flex-col' : 'contents'}>
-      {shown &&
-        (label ? (
-          <PageHeader eyebrow="Assistant" title={label} help={ASSISTANT_HELP} />
-        ) : (
-          <PageHeader title="Assistant" help="You do not manage the assistant." />
-        ))}
+    <div className={!shown ? 'contents' : teaching ? 'flex min-w-0 flex-1 flex-col' : 'flex min-w-0 flex-col gap-5'}>
+      {shown && !label && <PageHeader title="Assistant" help="You do not manage the assistant." />}
       {on('numbers') && caps.ai && <ChannelModes me={me} />}
       {on('knowledge') && caps.kb && <KnowledgeBase me={me} />}
       {on('examples') && caps.kb && <ExamplesQueue me={me} />}
       {on('rules') && caps.kb && <RulesPanel me={me} />}
+      {teaching && (
+        <div className={`${PAGE_COLUMN} pt-4 md:pt-6`}>
+          <AssistantHeader title="Teach" />
+        </div>
+      )}
       {/* The teach chat stays mounted, hidden, while another page shows, so a
           card's "Open in Rules" and the way back keep the conversation. */}
       {caps.kb && (
-        <div className={on('teach') ? undefined : 'hidden'} data-teach-chat>
+        <div className={teaching ? 'flex min-w-0 flex-1 flex-col' : 'hidden'} data-teach-chat>
           <TeachPanel me={me} active={on('teach')} onTab={onTab} />
         </div>
       )}
@@ -166,7 +185,10 @@ export function AssistantSettings({
   );
 }
 
-// --- Channels: the per-number switch -------------------------------------------------------
+// --- Numbers: the per-number switch --------------------------------------------------------
+
+/** Numbers' first words, in the assistant's mint: what Live means, and the safe way there. */
+export const NUMBERS_NOTE_LEAD = 'Live means customers hear it.';
 
 function ChannelModes({ me }: { me: InboxMe }) {
   const [accounts, setAccounts] = useState<AiChannelAccount[] | null>(null);
@@ -207,61 +229,83 @@ function ChannelModes({ me }: { me: InboxMe }) {
   };
 
   return (
-    <div className="mt-4 space-y-3">
-      <div className="rounded-xl bg-mint px-3 py-2 text-ui text-teal ring-1 ring-mint-edge">
-        <span className="font-semibold">Live means customers hear it.</span> Run a number in Shadow first: the assistant
-        records what it would have said, and nobody sees it.
-      </div>
-      <dl className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-        {AI_MODE_OPTIONS.map((o) => (
-          <div key={o.value} className={ITEM_CARD}>
-            <dt>
-              <span className={`${BADGE} ring-1 ${AI_MODE_TINT[o.value]}`}>{o.label}</span>
-            </dt>
-            <dd className="mt-1.5 text-meta text-ink-soft">{o.description}</dd>
-          </div>
-        ))}
-      </dl>
+    <>
+      <AssistantHeader title="Numbers" />
+      <InlineNote tone="assistant" live={false}>
+        <span className="font-semibold">{NUMBERS_NOTE_LEAD}</span> Run a number in Shadow first: the assistant records what
+        it would have said, and nobody sees it.
+      </InlineNote>
 
-      {error && <Refusal text={error} tone={error === NOT_ON_YOUR_ACCESS ? 'ask' : 'danger'} />}
-      {!error && accounts === null && <Spinner />}
-      {accounts?.length === 0 && <p className="text-ui leading-relaxed text-ink-muted">No channel numbers yet.</p>}
-      <ul className="space-y-2">
-        {accounts?.map((a) => (
-          <li key={a.id} className={ITEM_CARD}>
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div className="min-w-0">
-                <div className="truncate text-note font-semibold text-ink">{a.displayName}</div>
-                <div className="text-note text-ink-muted">
-                  {CHANNEL_LABEL[a.channel]} · {a.branchId ? branchLabel(a.branchId, me.teams) : 'Both parks'}
-                </div>
-              </div>
-              <div role="radiogroup" aria-label={`Assistant mode for ${a.displayName}`} className="flex shrink-0 gap-1 rounded-xl bg-band p-1">
-                {AI_MODE_OPTIONS.map((o) => (
-                  <button
-                    key={o.value}
-                    type="button"
-                    role="radio"
-                    aria-checked={a.aiMode === o.value}
-                    disabled={busyId !== null}
-                    onClick={() => choose(a, o.value)}
-                    className={`${SEGMENT} ${
-                      a.aiMode === o.value ? (o.value === 'live' ? 'bg-teal text-mint shadow-sm' : SEGMENT_ON) : SEGMENT_OFF
-                    }`}
-                  >
-                    {o.label}
-                  </button>
-                ))}
-              </div>
+      {error && <InlineError text={error} tone={toneOf(error)} />}
+      {!error && accounts === null && <LoadingNote label="Reading the channel numbers" />}
+      {accounts?.length === 0 && <EmptyNote icon={Radio} title="No channel numbers yet." />}
+      {accounts && accounts.length > 0 && (
+        <SectionCard title="Channel numbers" aside={accounts.length}>
+          <ul>
+            {accounts.map((a) => (
+              <ControlRow
+                key={a.id}
+                title={a.displayName}
+                meta={
+                  <MetaLine
+                    parts={[{ text: CHANNEL_LABEL[a.channel] }, { text: a.branchId ? branchLabel(a.branchId, me.teams) : 'Both parks' }]}
+                  />
+                }
+                help={
+                  busyId === a.id ? (
+                    <span role="status" className="inline-flex items-center gap-1.5 text-ink-muted">
+                      <Loader2 aria-hidden className="h-3.5 w-3.5 shrink-0 animate-spin" />
+                      Saving…
+                    </span>
+                  ) : undefined
+                }
+                control={
+                  <div role="radiogroup" aria-label={`Assistant mode for ${a.displayName}`} className={`${SEGMENT_BAND} max-md:w-full`}>
+                    {AI_MODE_OPTIONS.map((o) => (
+                      <button
+                        key={o.value}
+                        type="button"
+                        role="radio"
+                        aria-checked={a.aiMode === o.value}
+                        disabled={busyId !== null}
+                        onClick={() => choose(a, o.value)}
+                        className={`${SEGMENT} justify-center rounded-[10px] max-md:flex-1 ${
+                          a.aiMode === o.value ? (o.value === 'live' ? 'bg-teal text-mint shadow-sm' : SEGMENT_ON) : SEGMENT_OFF
+                        }`}
+                      >
+                        {o.label}
+                      </button>
+                    ))}
+                  </div>
+                }
+              >
+                {rowError?.id === a.id && (
+                  <div>
+                    <InlineError text={rowError.text} tone={toneOf(rowError.text)} />
+                  </div>
+                )}
+              </ControlRow>
+            ))}
+          </ul>
+        </SectionCard>
+      )}
+
+      {/* Off, Shadow and Live, explained once, under the numbers: side by side from 768 px, one under another on a phone. */}
+      <SectionCard title="What each mode does">
+        <dl className="grid grid-cols-1 md:grid-cols-3">
+          {AI_MODE_OPTIONS.map((o) => (
+            <div
+              key={o.value}
+              className="flex min-w-0 flex-col items-start gap-1.5 border-b border-line-soft px-pane py-row last:border-b-0 md:border-b-0 md:border-r md:last:border-r-0"
+            >
+              <dt>
+                <span className={`${BADGE} ring-1 ${AI_MODE_TINT[o.value]}`}>{o.label}</span>
+              </dt>
+              <dd className="text-note leading-relaxed text-ink-soft">{o.description}</dd>
             </div>
-            <p className="mt-1.5 flex items-start gap-1.5 text-note text-ink-muted">
-              {busyId === a.id && <Loader2 aria-hidden className="mt-0.5 h-3.5 w-3.5 shrink-0 animate-spin" />}
-              <span className="min-w-0">{aiModeOption(a.aiMode).description}</span>
-            </p>
-            {rowError?.id === a.id && <Refusal text={rowError.text} />}
-          </li>
-        ))}
-      </ul>
+          ))}
+        </dl>
+      </SectionCard>
 
       <Dialog
         open={confirm !== null}
@@ -272,7 +316,7 @@ function ChannelModes({ me }: { me: InboxMe }) {
         subtitle={confirm ? `${confirm.account.displayName} · ${CHANNEL_LABEL[confirm.account.channel]}` : undefined}
         footer={
           <>
-            <button type="button" onClick={() => setConfirm(null)} disabled={busyId !== null} className={CANCEL}>
+            <button type="button" onClick={() => setConfirm(null)} disabled={busyId !== null} className={BTN_QUIET}>
               Cancel
             </button>
             <button
@@ -287,14 +331,18 @@ function ChannelModes({ me }: { me: InboxMe }) {
           </>
         }
       >
-        <p className="text-note text-ink-soft">{aiModeOption('live').description}</p>
+        <p className="text-ui leading-relaxed text-ink-soft">{aiModeOption('live').description}</p>
         <p className="mt-2 text-note text-ink-muted">You can switch it back to Shadow or Off at any time.</p>
       </Dialog>
-    </div>
+    </>
   );
 }
 
 // --- The knowledge base -------------------------------------------------------------------
+
+/** What the knowledge page is for, word for word as it has said it. */
+export const KNOWLEDGE_NOTE =
+  'Only approved entries reach the assistant. Opening hours, addresses and ticket prices come from the platform itself; write notes beside them here, never the numbers. Editing an approved entry replaces it at once; the previous words stay in the archive.';
 
 function KnowledgeBase({ me }: { me: InboxMe }) {
   const [archived, setArchived] = useState(false);
@@ -335,90 +383,56 @@ function KnowledgeBase({ me }: { me: InboxMe }) {
   };
 
   return (
-    <div className="mt-4">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <p className="min-w-0 text-note text-ink-muted">
-          Only approved entries reach the assistant. Opening hours, addresses and ticket prices come from the platform
-          itself; write notes beside them here, never the numbers. Editing an approved entry replaces it at once; the
-          previous words stay in the archive.
-        </p>
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
-          <label className={CHECK_LINE}>
-            <input type="checkbox" checked={archived} onChange={(e) => setArchived(e.target.checked)} className={CHECK_BOX} />
-            Show archived
-          </label>
-          <button
-            type="button"
-            onClick={() => setEditing('new')}
-            className={BTN_MAIN}
-          >
-            <Plus className="h-3.5 w-3.5" />
+    <>
+      <AssistantHeader
+        title="Knowledge"
+        actions={
+          <button type="button" onClick={() => setEditing('new')} className={BTN_MAIN}>
+            <Plus aria-hidden className="h-4 w-4" />
             New entry
           </button>
-        </div>
+        }
+      />
+      <InlineNote tone="assistant" live={false}>
+        {KNOWLEDGE_NOTE}
+      </InlineNote>
+
+      <div className="-my-1 flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 border-y border-line py-1">
+        <p className="text-note text-ink-muted" aria-live="polite">
+          {entries === null || entries.length === 0
+            ? ' '
+            : countWords(entries.length, 'entry', 'entries', entries.filter((e) => e.status === 'archived').length)}
+        </p>
+        <label className={CHECK_LINE}>
+          <input type="checkbox" checked={archived} onChange={(e) => setArchived(e.target.checked)} className={CHECK_BOX} />
+          Show archived
+        </label>
       </div>
 
-      {error && <Refusal text={error} tone={error === NOT_ON_YOUR_ACCESS ? 'ask' : 'danger'} />}
-      {!error && entries === null && <Spinner />}
-      {entries?.length === 0 && <p className="mt-4 text-note text-ink-muted">No entries yet.</p>}
+      {error && <InlineError text={error} tone={toneOf(error)} />}
+      {!error && entries === null && <LoadingNote label="Reading the knowledge base" />}
+      {entries?.length === 0 && (
+        <EmptyNote icon={BookOpen} title="No entries yet." line="New entry adds the first fact; it reaches the assistant once approved." />
+      )}
 
-      <div className="mt-4 space-y-5">
-        {kbGroups(entries ?? []).map((g) => (
-          <section key={g.topic} className="min-w-0">
-            <Eyebrow className="mb-2">{topicLabel(g.topic)}</Eyebrow>
-            <ul className="grid grid-cols-1 gap-2 lg:grid-cols-2">
-              {g.entries.map((e) => (
-                <li key={e.id} className={`min-w-0 rounded-xl border border-line p-3 ${e.status === 'archived' ? 'opacity-60' : ''}`}>
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="min-w-0 break-all font-mono text-meta text-ink">{e.key}</span>
-                    <span className={`${BADGE} ${TONE.neutral}`}>{langLabel(e.language)}</span>
-                    <span className="text-meta text-ink-muted">{e.branchId ? branchLabel(e.branchId, me.teams) : 'Both parks'}</span>
-                    <span className={`${BADGE} ring-1 ${KB_STATUS_TINT[e.status]}`}>
-                      {KB_STATUS_LABEL[e.status]}
-                    </span>
-                    {e.needsTranslation && (
-                      <span className={`${BADGE} ${TONE.ask}`}>
-                        English source, to translate
-                      </span>
-                    )}
-                  </div>
-                  <p className="mt-1.5 break-words text-note font-medium text-ink">{e.question}</p>
-                  <p className="mt-1 line-clamp-4 whitespace-pre-line break-words text-note text-ink-soft">{e.body}</p>
-                  {e.status !== 'archived' && e.canManage && (
-                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                      <button type="button" onClick={() => setEditing(e)} className={BUTTON}>
-                        <Pencil aria-hidden className="h-3.5 w-3.5" /> Edit
-                      </button>
-                      {e.status === 'draft' && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setActError(null);
-                            setActing({ entry: e, what: 'approve' });
-                          }}
-                          className={BUTTON}
-                        >
-                          <CheckCircle2 aria-hidden className="h-3.5 w-3.5" /> Approve
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setActError(null);
-                          setActing({ entry: e, what: 'archive' });
-                        }}
-                        className={BUTTON}
-                      >
-                        <Archive aria-hidden className="h-3.5 w-3.5" /> Archive
-                      </button>
-                    </div>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </section>
-        ))}
-      </div>
+      {kbGroups(entries ?? []).map((g) => (
+        <SectionCard key={g.topic} title={topicLabel(g.topic)} aside={g.entries.length}>
+          <ul>
+            {g.entries.map((e) => (
+              <KbRow
+                key={e.id}
+                me={me}
+                entry={e}
+                onEdit={() => setEditing(e)}
+                onAct={(what) => {
+                  setActError(null);
+                  setActing({ entry: e, what });
+                }}
+              />
+            ))}
+          </ul>
+        </SectionCard>
+      ))}
 
       {editing !== null && (
         <KbEditor
@@ -433,7 +447,53 @@ function KnowledgeBase({ me }: { me: InboxMe }) {
       )}
 
       <KbConfirm acting={acting} busy={busy} error={actError} onCancel={() => setActing(null)} onConfirm={() => void act()} />
-    </div>
+    </>
+  );
+}
+
+/**
+ * One entry: the customer's question as the main text, the answer under it
+ * with its line breaks (four lines, then the editor has the rest), its status
+ * as the one badge, the language, the park and the key as quiet meta. Edit,
+ * Approve (a draft) and Archive for a person who manages it, none once
+ * archived — as the card offered them.
+ */
+export function KbRow({
+  me,
+  entry: e,
+  onEdit,
+  onAct,
+}: {
+  me: InboxMe;
+  entry: KbEntry;
+  onEdit: () => void;
+  onAct: (what: 'approve' | 'archive') => void;
+}) {
+  const meta: MetaPart[] = [
+    { text: kbLanguageName(e.language) },
+    { text: e.branchId ? branchLabel(e.branchId, me.teams) : 'Both parks' },
+    { text: e.key, tone: 'code' },
+    ...(e.needsTranslation ? [{ text: 'English source, to translate', tone: 'ask' as const }] : []),
+  ];
+  const actions: RowAction[] =
+    e.status !== 'archived' && e.canManage
+      ? [
+          { label: 'Edit', icon: Pencil, onSelect: onEdit },
+          ...(e.status === 'draft' ? [{ label: 'Approve', icon: CheckCircle2, onSelect: () => onAct('approve') }] : []),
+          { label: 'Archive', icon: Archive, onSelect: () => onAct('archive') },
+        ]
+      : [];
+  return (
+    <SettingsRow
+      title={e.question}
+      name={`${quoteFor(e.question)}, ${kbLanguageName(e.language)}`}
+      preview={e.body}
+      previewLines={4}
+      keepBreaks
+      badge={<StatusBadge status={e.status} />}
+      meta={<MetaLine parts={meta} />}
+      actions={actions}
+    />
   );
 }
 
@@ -515,17 +575,24 @@ function KbEditor({
       wide
       footer={
         <>
-          <button type="button" onClick={onClose} disabled={busy} className={CANCEL}>
+          <button type="button" onClick={onClose} disabled={busy} className={BTN_QUIET}>
             Cancel
           </button>
-          <button type="submit" form={formId} disabled={busy || problem !== null} className={PRIMARY}>
+          <button type="submit" form={formId} disabled={busy || problem !== null} className={BTN_MAIN}>
             {busy && <Loader2 aria-hidden className="h-4 w-4 animate-spin" />}
             Save
           </button>
         </>
       }
     >
-      <form id={formId} onSubmit={(e) => void save(e)} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <form id={formId} onSubmit={(e) => void save(e)} className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <FormRefusal text={error} tone={error ? toneOf(error) : 'danger'} />
+        <Field label={`The question, as a customer would ask it · ${question.length}/${KB_QUESTION_MAX}`} wide>
+          <input value={question} onChange={(e) => setQuestion(e.target.value)} maxLength={KB_QUESTION_MAX} className={FIELD} />
+        </Field>
+        <Field label={`The answer · ${body.length}/${KB_BODY_MAX}`} wide>
+          <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={6} maxLength={KB_BODY_MAX} className={AREA} />
+        </Field>
         <Field label="Topic">
           <select value={topic} onChange={(e) => setTopic(e.target.value as KbTopic)} className={FIELD}>
             {KB_TOPICS.map((t) => (
@@ -545,11 +612,7 @@ function KbEditor({
           />
         </Field>
         <Field label="Language">
-          <select
-            value={language}
-            onChange={(e) => setLanguage(exampleLanguage(e.target.value))}
-            className={FIELD}
-          >
+          <select value={language} onChange={(e) => setLanguage(exampleLanguage(e.target.value))} className={FIELD}>
             {KB_LANGUAGES.map(([v, l]) => (
               <option key={v} value={v}>
                 {l}
@@ -558,11 +621,7 @@ function KbEditor({
           </select>
         </Field>
         <Field label="Park">
-          <select
-            value={branchId}
-            onChange={(e) => setBranchId(e.target.value)}
-            className={FIELD}
-          >
+          <select value={branchId} onChange={(e) => setBranchId(e.target.value)} className={FIELD}>
             <option value="">Both parks</option>
             {branchOptions(me.teams).map((b) => (
               <option key={b.id} value={b.id}>
@@ -571,19 +630,17 @@ function KbEditor({
             ))}
           </select>
         </Field>
-        <Field label={`The question, as a customer would ask it · ${question.length}/${KB_QUESTION_MAX}`} wide>
-          <input value={question} onChange={(e) => setQuestion(e.target.value)} maxLength={KB_QUESTION_MAX} className={FIELD} />
-        </Field>
-        <Field label={`The answer · ${body.length}/${KB_BODY_MAX}`} wide>
-          <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={6} maxLength={KB_BODY_MAX} className={`${FIELD} resize-y`} />
-        </Field>
-        <label className={`${CHECK_LINE} sm:col-span-2`}>
-          <input type="checkbox" checked={needsTranslation} onChange={(e) => setNeedsTranslation(e.target.checked)} className={CHECK_BOX} />
-          English source, to translate (the assistant uses the English entry until this one is translated)
+        <label className={`${CHECK_LINES} md:col-span-2`}>
+          <input
+            type="checkbox"
+            checked={needsTranslation}
+            onChange={(e) => setNeedsTranslation(e.target.checked)}
+            className={`${CHECK_BOX} mt-0.5`}
+          />
+          <span>English source, to translate (the assistant uses the English entry until this one is translated)</span>
         </label>
-        {problem && (key || question || body) && <p className={`${HINT} sm:col-span-2`}>{problem}</p>}
+        {problem && (key || question || body) && <p className={`${HINT} md:col-span-2`}>{problem}</p>}
       </form>
-      {error && <Refusal text={error} tone={error === NOT_ON_YOUR_ACCESS ? 'ask' : 'danger'} />}
     </Dialog>
   );
 }
@@ -595,6 +652,10 @@ const EXAMPLE_TABS: [ExampleStatus, string][] = [
   ['approved', 'Approved'],
   ['rejected', 'Rejected'],
 ];
+
+/** What the examples page is for, word for word as it has said it. */
+export const EXAMPLES_NOTE =
+  'Corrections staff proposed from the conversations. An approved example is what the assistant answers from next; approve only once it holds no names, numbers or children’s details.';
 
 function ExamplesQueue({ me }: { me: InboxMe }) {
   const [status, setStatus] = useState<ExampleStatus>('proposed');
@@ -636,45 +697,46 @@ function ExamplesQueue({ me }: { me: InboxMe }) {
     }
   };
 
+  const shownLabel = EXAMPLE_TABS.find(([s]) => s === status)?.[1] ?? '';
   return (
-    <div className="mt-4">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <p className="min-w-0 text-ui leading-relaxed text-ink-muted">
-          Corrections staff proposed from the conversations. An approved example is what the assistant answers from next;
-          approve only once it holds no names, numbers or children’s details.
+    <>
+      <AssistantHeader title="Examples" />
+      <InlineNote tone="assistant" live={false}>
+        {EXAMPLES_NOTE}
+      </InlineNote>
+
+      <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <ViewSwitch label="Examples to show" options={EXAMPLE_TABS} value={status} onChange={setStatus} />
+        <p className="text-note text-ink-muted" aria-live="polite">
+          {examples && examples.length > 0 ? countWords(examples.length, 'example', 'examples') : ' '}
         </p>
-        <div className="flex shrink-0 gap-1 rounded-xl bg-band p-1">
-          {EXAMPLE_TABS.map(([s, label]) => (
-            <button
-              key={s}
-              type="button"
-              aria-pressed={status === s}
-              onClick={() => setStatus(s)}
-              className={`${SEGMENT} ${status === s ? SEGMENT_ON : SEGMENT_OFF}`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
       </div>
 
-      {error && <Refusal text={error} tone={error === NOT_ON_YOUR_ACCESS ? 'ask' : 'danger'} />}
-      {!error && examples === null && <Spinner />}
-      {examples?.length === 0 && <p className="mt-4 text-note text-ink-muted">Nothing here.</p>}
-      <ul className="mt-4 grid grid-cols-1 gap-2 lg:grid-cols-2">
-        {examples?.map((x) => (
-          <ExampleCard
-            key={x.id}
-            example={x}
-            proposer={proposer(x)}
-            onReview={() => setOpen(x)}
-            onWithdraw={() => {
-              setWithdrawError(null);
-              setWithdrawing(x);
-            }}
-          />
-        ))}
-      </ul>
+      {error && <InlineError text={error} tone={toneOf(error)} />}
+      {!error && examples === null && <LoadingNote label="Reading the examples" />}
+      {examples?.length === 0 && (
+        <EmptyNote
+          icon={MessageSquareQuote}
+          title="Nothing here."
+          line={status === 'proposed' ? 'A correction made with “Correct the assistant” in a conversation arrives here to review.' : undefined}
+        />
+      )}
+      {examples && examples.length > 0 && (
+        <ul aria-label={shownLabel} className={SECTION_CARD}>
+          {examples.map((x) => (
+            <ExampleCard
+              key={x.id}
+              example={x}
+              proposer={proposer(x)}
+              onReview={() => setOpen(x)}
+              onWithdraw={() => {
+                setWithdrawError(null);
+                setWithdrawing(x);
+              }}
+            />
+          ))}
+        </ul>
+      )}
 
       {open && (
         <ExampleReview
@@ -694,13 +756,16 @@ function ExamplesQueue({ me }: { me: InboxMe }) {
         onCancel={() => setWithdrawing(null)}
         onConfirm={() => void withdraw()}
       />
-    </div>
+    </>
   );
 }
 
 /**
- * One example in the queue: Review while proposed; Withdraw once approved
- * (test night U2 — an approved example could not be pulled back on screen).
+ * One example in the queue, as a row: the topic of the question as the main
+ * text, the customer's words under it, the good reply in the assistant's
+ * mint, then the verdict as the one badge with the language and who proposed
+ * it. Review while proposed; Withdraw once approved (test night U2 — an
+ * approved example could not be pulled back on screen).
  */
 export function ExampleCard({
   example: x,
@@ -713,37 +778,29 @@ export function ExampleCard({
   onReview: () => void;
   onWithdraw: () => void;
 }) {
+  const actions: RowAction[] = [
+    ...(x.status === 'proposed' ? [{ label: 'Review', icon: Pencil, onSelect: onReview }] : []),
+    ...(x.status === 'approved' ? [{ label: 'Withdraw', icon: Undo2, onSelect: onWithdraw }] : []),
+  ];
   return (
-    <li className={ITEM_CARD}>
-      <div className="flex flex-wrap items-center gap-1.5">
-        <span className={`${BADGE} ${TONE.neutral}`}>{langLabel(x.language)}</span>
-        <span className="text-meta text-ink-muted">{intentLabel(x.intent)}</span>
-        <span className={`${BADGE} ${TONE.assistant}`}>
-          {VERDICT_LABEL[x.verdict]}
-        </span>
-        {proposer && <span className="text-meta text-ink-muted">by {proposer}</span>}
-      </div>
-      <p className="mt-1.5 line-clamp-3 whitespace-pre-line break-words text-note text-ink">{x.customerText}</p>
-      {x.goodReply && (
-        <p className="mt-1 line-clamp-3 whitespace-pre-line break-words rounded-xl bg-mint px-2.5 py-1.5 text-ui text-teal">
-          {x.goodReply}
-        </p>
-      )}
-      {x.status === 'proposed' && (
-        <div className="mt-2">
-          <button type="button" onClick={onReview} className={BUTTON}>
-            <Pencil className="h-3 w-3" /> Review
-          </button>
-        </div>
-      )}
-      {x.status === 'approved' && (
-        <div className="mt-2">
-          <button type="button" onClick={onWithdraw} className={BUTTON}>
-            <Undo2 className="h-3 w-3" /> Withdraw
-          </button>
-        </div>
-      )}
-    </li>
+    <SettingsRow
+      title={intentTitle(x.intent)}
+      name={quoteFor(x.customerText)}
+      preview={x.customerText}
+      previewLines={3}
+      keepBreaks
+      detail={
+        x.goodReply ? (
+          <p className="mt-1.5 max-w-prose rounded-[14px] rounded-tl-md bg-mint px-3 py-2 text-ui leading-relaxed text-teal">
+            {/* Cut on its own span, so a cut line never shows through the padding. */}
+            <span className="line-clamp-3 whitespace-pre-line break-words">{x.goodReply}</span>
+          </p>
+        ) : undefined
+      }
+      badge={<span className={`${BADGE} ${TONE.assistant}`}>{VERDICT_LABEL[x.verdict]}</span>}
+      meta={<MetaLine parts={[{ text: kbLanguageName(x.language) }, ...(proposer ? [{ text: `by ${proposer}` }] : [])]} />}
+      actions={actions}
+    />
   );
 }
 
@@ -770,27 +827,31 @@ export function WithdrawExampleConfirm({
       icon={Undo2}
       tone="ask"
       title="Withdraw this example?"
-      subtitle={example ? `${intentLabel(example.intent)} · ${langLabel(example.language)}` : undefined}
+      subtitle={example ? `${intentTitle(example.intent)} · ${langLabel(example.language)}` : undefined}
       footer={
         <>
-          <button type="button" onClick={onCancel} disabled={busy} className={CANCEL}>
+          <button type="button" onClick={onCancel} disabled={busy} className={BTN_QUIET}>
             Cancel
           </button>
-          <button type="button" onClick={onConfirm} disabled={busy} className={PRIMARY}>
+          <button type="button" onClick={onConfirm} disabled={busy} className={BTN_MAIN}>
             {busy && <Loader2 aria-hidden className="h-4 w-4 animate-spin" />}
             Yes, withdraw
           </button>
         </>
       }
     >
-      <p className="text-note text-ink">{WITHDRAW_EXAMPLE_LINE}</p>
+      <p className="text-ui leading-relaxed text-ink">{WITHDRAW_EXAMPLE_LINE}</p>
       <p className="mt-2 text-note text-ink-muted">It moves to Rejected and stays there; propose a new one to replace it.</p>
       {example && (
-        <p className="mt-2 line-clamp-4 whitespace-pre-line break-words rounded-xl border border-line bg-card px-3 py-2 text-ui text-ink md:bg-ground">
+        <p className="mt-3 line-clamp-4 whitespace-pre-line break-words rounded-xl border border-line bg-card px-3 py-2 text-ui text-ink md:bg-ground">
           {example.customerText}
         </p>
       )}
-      {error && <Refusal text={error} />}
+      {error && (
+        <div className="mt-3">
+          <InlineError text={error} />
+        </div>
+      )}
     </Dialog>
   );
 }
@@ -891,18 +952,19 @@ export function ExampleReview({
             type="button"
             onClick={() => void run('save')}
             disabled={busy !== null || problem !== null || !changed}
-            className={CANCEL}
+            className={BTN_QUIET}
           >
             Save
           </button>
-          <button type="button" onClick={() => void run('approve')} disabled={!approvable} className={PRIMARY}>
+          <button type="button" onClick={() => void run('approve')} disabled={!approvable} className={BTN_MAIN}>
             {busy === 'approve' && <Loader2 aria-hidden className="h-4 w-4 animate-spin" />}
             Approve
           </button>
         </>
       }
     >
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <FormRefusal text={error} tone={error ? toneOf(error) : 'danger'} />
         <Field label="What should it have done?" wide>
           <select value={verdict} onChange={(e) => setVerdict(e.target.value as ExampleVerdict)} className={FIELD}>
             {VERDICT_OPTIONS.map(([v, l]) => (
@@ -918,23 +980,17 @@ export function ExampleReview({
             onChange={(e) => setCustomerText(e.target.value)}
             rows={3}
             maxLength={EXAMPLE_CUSTOMER_MAX}
-            className={`${FIELD} resize-y`}
+            className={AREA}
           />
         </Field>
         <Field label={`The good reply${verdict === 'should_answer' ? '' : ' (optional)'} · ${goodReply.length}/${EXAMPLE_REPLY_MAX}`} wide>
-          <textarea
-            value={goodReply}
-            onChange={(e) => setGoodReply(e.target.value)}
-            rows={4}
-            maxLength={EXAMPLE_REPLY_MAX}
-            className={`${FIELD} resize-y`}
-          />
+          <textarea value={goodReply} onChange={(e) => setGoodReply(e.target.value)} rows={4} maxLength={EXAMPLE_REPLY_MAX} className={AREA} />
         </Field>
         <Field label="Topic of the question">
           <select value={intent} onChange={(e) => setIntent(exampleIntent(e.target.value))} className={FIELD}>
             {INTENTS.map((i) => (
               <option key={i} value={i}>
-                {intentLabel(i)}
+                {intentTitle(i)}
               </option>
             ))}
           </select>
@@ -948,8 +1004,8 @@ export function ExampleReview({
             ))}
           </select>
         </Field>
-        {problem && <p className={`${HINT} sm:col-span-2`}>{problem}</p>}
-        <label className="hit flex min-h-ctl cursor-pointer items-start gap-2.5 rounded-xl bg-ask px-3 py-2.5 text-ui text-ask-ink ring-1 ring-ask-line sm:col-span-2">
+        {problem && <p className={`${HINT} md:col-span-2`}>{problem}</p>}
+        <label className="hit flex min-h-ctl cursor-pointer items-start gap-2.5 rounded-xl bg-ask px-3 py-2.5 text-ui leading-relaxed text-ask-ink ring-1 ring-ask-line md:col-span-2">
           <input
             type="checkbox"
             checked={deidentified}
@@ -966,15 +1022,6 @@ export function ExampleReview({
           </span>
         </label>
       </div>
-      {error && <Refusal text={error} tone={error === NOT_ON_YOUR_ACCESS ? 'ask' : 'danger'} />}
     </Dialog>
-  );
-}
-
-function Spinner() {
-  return (
-    <div className="flex justify-center py-8 text-ink-muted">
-      <Loader2 className="h-5 w-5 animate-spin" />
-    </div>
   );
 }
