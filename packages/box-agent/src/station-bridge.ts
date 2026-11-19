@@ -1008,6 +1008,12 @@ export class StationBridge {
   private readonly held = new Map<string, HeldSession>();
   private readonly displaySeen = new Map<string, number>();
   /**
+   * SCRUM-1041 — when each paired display last called this box, kept past the
+   * ten-second presence window so the till can say when a display that is not
+   * connected was last seen. Since this box started; nothing is stored.
+   */
+  private readonly displayLastSeen = new Map<string, number>();
+  /**
    * Named crash points inside a box redemption (S2-12 round 5), called in
    * order. A test throws from one to prove a restart there recovers to exactly
    * one sale; nothing else sets it.
@@ -1464,6 +1470,7 @@ export class StationBridge {
       const display = rec(raw);
       if (display && display.credentialHash === hash && typeof display.id === 'string') {
         this.displaySeen.set(`${stationId}:${hash}`, this.host.now().getTime());
+        this.displayLastSeen.set(`${stationId}:${hash}`, this.host.now().getTime());
         return { kind: 'display', credentialId: display.id };
       }
     }
@@ -1479,11 +1486,20 @@ export class StationBridge {
     for (const [key, seen] of this.displaySeen) if (seen < cutoff) this.displaySeen.delete(key);
     const entry = itemsOf(await this.bundle('station_config')).map(rec).find(row => row?.id === stationId);
     const displays = Array.isArray(entry?.displays) ? entry.displays : [];
-    return { displays: displays.map(rec).filter((row): row is Record<string, unknown> =>
-      !!row && typeof row.id === 'string' && typeof row.credentialHash === 'string').map(row => ({
-      id: row.id as string, name: typeof row.name === 'string' ? row.name : 'Customer display',
-      connected: (this.displaySeen.get(`${stationId}:${row.credentialHash as string}`) ?? -Infinity) >= cutoff,
-    })) };
+    const paired = displays.map(rec).filter((row): row is Record<string, unknown> =>
+      !!row && typeof row.id === 'string' && typeof row.credentialHash === 'string');
+    // A display revoked since forgets when it was seen with it.
+    const keys = new Set(paired.map(row => `${stationId}:${row.credentialHash as string}`));
+    for (const key of this.displayLastSeen.keys()) if (key.startsWith(`${stationId}:`) && !keys.has(key)) this.displayLastSeen.delete(key);
+    return { displays: paired.map(row => {
+      const key = `${stationId}:${row.credentialHash as string}`;
+      const last = this.displayLastSeen.get(key);
+      return {
+        id: row.id as string, name: typeof row.name === 'string' ? row.name : 'Customer display',
+        connected: (this.displaySeen.get(key) ?? -Infinity) >= cutoff,
+        lastSeenAt: last === undefined ? null : new Date(last).toISOString(),
+      };
+    }) };
   }
 
   /**
