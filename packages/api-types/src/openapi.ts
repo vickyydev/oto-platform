@@ -22879,6 +22879,7 @@ export interface paths {
                                     redeemedQty?: number;
                                 }[];
                             } | null;
+                            orderWithIncludedCredit?: boolean;
                         }[];
                         photoReuse?: {
                             /** Format: uuid */
@@ -22989,6 +22990,7 @@ export interface paths {
                                     redeemedQty?: number;
                                 }[];
                             } | null;
+                            orderWithIncludedCredit?: boolean;
                         }[];
                     };
                 };
