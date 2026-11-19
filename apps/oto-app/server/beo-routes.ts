@@ -59,7 +59,10 @@ import {
 import { gatewayDepositFloor } from "./party-deposit-routes";
 import type { DepositSaveNote } from "@shared/partyDeposit";
 import { OBJECT_STORAGE } from "./config/env";
-import { beoActivitiesOf, beoTimelineSourceOf, madeStepRowsOf, readBeoTimeline, tickMadeStep } from "./lib/beoTimelineRead";
+import { activityPeopleOf, beoActivitiesOf, beoTimelineSourceOf, madeStepRowsOf, readBeoTimeline, tickMadeStep } from "./lib/beoTimelineRead";
+import { writeActivityPeople } from "./lib/beoActivityPeopleWrite";
+import { activityPeopleOfBody } from "@shared/beoActivityPeople";
+import { servingRefusal } from "@shared/beoServingTimes";
 import { BEO_DEPOSIT_MANAGERS_ONLY, mayChangeBeoDeposit } from "@shared/beoDepositManager";
 import { guestsSocksRefusal } from "@shared/beoGuestsSocks";
 import { uploadToObjectStorage } from "./file-storage";
@@ -842,7 +845,33 @@ export function registerBeoRoutes(app: Express) {
       const items = await db.select().from(beoEntertainmentItems)
         .where(eq(beoEntertainmentItems.eventId, eventId))
         .orderBy(asc(beoEntertainmentItems.sortOrder));
-      res.json(items);
+      // SCRUM-1032: each activity with its people as stored, each named as the print names them
+      // (server/lib/beoTimelineRead.ts): a member of staff who has left stays named.
+      const people = await activityPeopleOf(req.userWithAccess?.tenantId ?? "", items);
+      res.json(items.map((item) => ({ ...item, people: people.get(item.id) ?? [] })));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // SCRUM-1032: an activity's people (staff by name, one or several, or a role with its number), written
+  // at once as the activity's other fields are, all of them in their order (server/lib/beoActivityPeopleWrite.ts).
+  // The BEO's record only: nothing is sent to scheduling, payroll or a chat.
+  app.put("/api/events/:eventId/beo/entertainment-items/:id/people", requireAuth, async (req, res, next) => {
+    try {
+      const { eventId, id } = req.params;
+      const tenantId = req.userWithAccess?.tenantId;
+
+      if (!tenantId || !await verifyEventAccess(eventId, req.userWithAccess)) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const asked = activityPeopleOfBody(req.body);
+      if (!asked.ok) return res.status(400).json({ error: asked.reason });
+      const written = await writeActivityPeople({ tenantId, operatorId: req.userWithAccess?.operatorId ?? null }, eventId, id, asked.people);
+      if (!written.ok) return res.status(written.status).json({ error: written.reason });
+      const people = await activityPeopleOf(tenantId, [written.item]);
+      res.json({ ...written.item, people: people.get(written.item.id) ?? [] });
     } catch (error) {
       next(error);
     }
@@ -1773,6 +1802,13 @@ export function registerBeoRoutes(app: Express) {
       // (shared/beoGuestsSocks.ts); a Save that names none of them is not asked.
       const guestsSocksRefused = guestsSocksRefusal(eventUpdates as Record<string, unknown> | undefined);
       if (guestsSocksRefused) return res.status(400).json({ error: guestsSocksRefused });
+
+      // SCRUM-1033: a dish's or a drink's own serving time and its group, as the form names them, are
+      // refused in words before anything is written when they are not a time of day and a short name
+      // (shared/beoServingTimes.ts); a line with neither (every line of before) is never asked.
+      const servingMenus = (kitchenPlan as { menus?: { kids?: unknown; adults?: unknown } } | undefined)?.menus;
+      const servingRefused = servingRefusal([servingMenus?.kids, servingMenus?.adults, (barPlan as { items?: unknown } | undefined)?.items].map((list) => (Array.isArray(list) ? list : null)));
+      if (servingRefused) return res.status(400).json({ error: servingRefused });
 
       // Validate times: endTime must be after startTime
       if (eventUpdates?.startTime && eventUpdates?.endTime) {
