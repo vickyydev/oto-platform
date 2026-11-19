@@ -5,11 +5,18 @@ import {
   ShoppingCart,
   TrendingDown,
   DollarSign,
+  Download,
   Info,
 } from 'lucide-react';
-import type { StockReports as StockReportsData } from '@oto/shared';
+import {
+  stockReasonTypeLabel,
+  type StockLossEvent as LossEvent,
+  type StockReports as StockReportsData,
+  type StockShrinkageRow as ShrinkageRow,
+} from '@oto/shared';
 import { InventoryItem, StockLocation } from '@/types';
 import { fetchStockReports, stockErrorWords } from '@/api/stock';
+import { downloadCsv } from '@/lib/csv';
 
 /*
  * S2-14b round 4 — THE REPORTS, FROM THE LEDGER (plan §2.5). The prototype's
@@ -366,20 +373,236 @@ function UsageReport({ branchId }: { branchId: string | null }) {
 }
 
 // ── Shrinkage report (from the ledger: count variances + corrections down) ─
-function ShrinkageReport({ branchId }: { branchId: string | null }) {
-  const today = isoToday();
-  const [from, setFrom] = useState(() => isoDaysBefore(today, 29));
-  const [to, setTo] = useState(today);
-  const { data, error, loading } = useStockReports(branchId, from || BEGINNING, to || today);
+//
+// SCRUM-1012 — today's figure (the tiles' loss and each card's "−N ea") is
+// kept exactly; the owner's six additions sit beside it: corrections up and
+// the net (E1), the period columns (E2), each place with a place filter (E3),
+// the four warnings (E4), the causes (E5) and the list of write-downs and
+// count differences with a download (E6). Money only to a manager, as before.
+
+type ShrinkageFigures = Omit<ShrinkageRow, 'byPlace' | 'byCause' | 'stockItemId' | 'name' | 'variantLabel' | 'groupId' | 'productKind'> & {
+  movedIn?: number;
+  movedOut?: number;
+};
+
+/** A size's figures for the branch, or at one place; null when the size did not move there. */
+export function shrinkageFiguresAt(row: ShrinkageRow, placeId: string): ShrinkageFigures | null {
+  if (!placeId) return row;
+  return row.byPlace.find((p) => p.locationId === placeId) ?? null;
+}
+
+/** Every place the report names, in its order. */
+function shrinkagePlaces(rows: readonly ShrinkageRow[]): Array<{ id: string; name: string }> {
+  const seen = new Map<string, string>();
+  for (const r of rows) for (const p of r.byPlace) if (!seen.has(p.locationId)) seen.set(p.locationId, p.locationName);
+  return [...seen].map(([id, name]) => ({ id, name }));
+}
+
+const signed = (n: number) => `${n > 0 ? '+' : ''}${n}`;
+
+const LOSS_CSV_HEADERS = ['Business date', 'When', 'Item', 'Size', 'Place', 'What', 'Quantity', 'Expected', 'Counted', 'Type', 'Reason', 'By'];
+
+/** Local "yyyy-mm-dd hh:mm", as the device shows the time. */
+function localStamp(iso: string): string {
+  const d = new Date(iso);
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+/** E6 — the list as a spreadsheet: who, when, where and why; the loss at cost only to a manager. */
+export function lossEventsCsv(
+  events: readonly LossEvent[],
+  withCost: boolean,
+): { headers: string[]; rows: (string | number)[][] } {
+  const headers = withCost ? [...LOSS_CSV_HEADERS, 'Loss at cost (THB)'] : LOSS_CSV_HEADERS;
+  const rows = events.map((e) => {
+    const row: (string | number)[] = [
+      e.businessDate,
+      localStamp(e.occurredAt),
+      e.name,
+      e.variantLabel ?? '',
+      e.locationName,
+      e.kind === 'count' ? 'Count difference' : 'Write-down',
+      e.quantity,
+      e.expectedQuantity ?? '',
+      e.countedQuantity ?? '',
+      e.reasonType ? stockReasonTypeLabel(e.reasonType) : '',
+      e.reason ?? '',
+      e.by ?? '',
+    ];
+    if (withCost) row.push(e.lossSatang === null ? '' : e.lossSatang / 100);
+    return row;
+  });
+  return { headers, rows };
+}
+
+function ShrinkageWarning({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-[11px] text-amber-500 dark:text-amber-400 flex items-start gap-1">
+      <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0" />
+      <span>{children}</span>
+    </p>
+  );
+}
+
+function ShrinkageCard({
+  row,
+  figures,
+  placeId,
+  withCost,
+  counts,
+  loss,
+}: {
+  row: ShrinkageRow;
+  figures: ShrinkageFigures;
+  placeId: string;
+  withCost: boolean;
+  counts: Map<string, number>;
+  loss: boolean;
+}) {
+  const notes = [
+    ...(figures.countedShort > 0 ? [`Counted short ${figures.countedShort}×`] : []),
+    ...(figures.countVariance > 0 ? [`counts found ${figures.countVariance} more`] : []),
+    ...(figures.adjustedDown < 0 ? [`corrections ${figures.adjustedDown}`] : []),
+  ];
+  const period: Array<[string, number]> = [
+    ['Opening', figures.opening],
+    ['Received', figures.received],
+    ['Sold', figures.sold],
+    ['Closing', figures.closing],
+    ['Not explained', figures.notExplained],
+  ];
+  const causes = placeId ? [] : row.byCause;
+  const places = placeId ? [] : row.byPlace.filter((p) => p.total !== 0 || p.correctedUp !== 0 || p.movedIn !== 0 || p.movedOut !== 0);
+  const firstCountAt = (placeId ? [figures] : row.byPlace).filter((p) => p.firstCountWithoutOpening);
+  return (
+    <div
+      className={`rounded-xl border p-3 flex flex-col gap-1 ${
+        loss ? 'border-destructive/20 bg-destructive/[0.03]' : 'border-foreground/10 bg-foreground/[0.02]'
+      }`}
+    >
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-medium">{row.name}{sizeSuffix(counts, row.groupId, row.variantLabel)}</p>
+        <span className={`text-sm font-bold ${loss ? 'text-destructive' : 'text-foreground/70'}`}>{figures.total} ea</span>
+      </div>
+      <div className="flex items-center justify-between text-xs text-foreground/40">
+        <span>{notes.join(' · ')}</span>
+        {withCost && figures.lossSatang !== null && (loss || figures.costMissing || figures.lossSatang !== 0) && (
+          <span>
+            {figures.costMissing
+              ? 'no cost set'
+              : !loss && figures.lossSatang < 0
+                ? `+${baht(-figures.lossSatang)} at cost`
+                : `-${baht(figures.lossSatang)} at cost`}
+          </span>
+        )}
+      </div>
+      {figures.correctedUp !== 0 && (
+        <p className="text-xs text-foreground/50">
+          Corrected up {signed(figures.correctedUp)} · net {signed(figures.net)}
+          {withCost && figures.correctedUpSatang !== null && figures.correctedUpSatang !== 0 ? ` · +${baht(figures.correctedUpSatang)} at cost` : ''}
+        </p>
+      )}
+      <div className="grid grid-cols-5 gap-1 mt-1">
+        {period.map(([label, value]) => (
+          <div key={label} className="rounded-lg bg-foreground/[0.03] px-1 py-1 text-center">
+            <p className="text-xs font-semibold">{value}</p>
+            <p className="text-[9px] text-foreground/40 leading-tight">{label}</p>
+          </div>
+        ))}
+      </div>
+      {(figures.openingCounted !== 0 || (figures.movedIn ?? 0) !== 0 || (figures.movedOut ?? 0) !== 0) && (
+        <p className="text-[11px] text-foreground/40">
+          {[
+            ...(figures.openingCounted !== 0 ? [`opening incl. ${figures.openingCounted} first counted`] : []),
+            ...((figures.movedIn ?? 0) !== 0 ? [`moved in ${figures.movedIn}`] : []),
+            ...((figures.movedOut ?? 0) !== 0 ? [`moved out ${figures.movedOut}`] : []),
+          ].join(' · ')}
+        </p>
+      )}
+      {causes.length > 0 && (
+        <p className="text-[11px] text-foreground/50">
+          By cause: {causes.map((c) => `${c.cause === 'count' ? 'counts' : stockReasonTypeLabel(c.cause).toLowerCase()} ${c.quantity}`).join(' · ')}
+        </p>
+      )}
+      {places.length > 0 && (
+        <div className="flex flex-col gap-0.5 mt-0.5">
+          {places.map((p) => (
+            <div key={p.locationId} className="flex items-center justify-between text-[11px] text-foreground/50">
+              <span>{p.locationName}</span>
+              <span>
+                {[
+                  `${p.total} ea`,
+                  ...(p.correctedUp !== 0 ? [`up ${signed(p.correctedUp)}`] : []),
+                  ...(p.movedIn !== 0 ? [`in ${p.movedIn}`] : []),
+                  ...(p.movedOut !== 0 ? [`out ${p.movedOut}`] : []),
+                ].join(' · ')}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+      {firstCountAt.length > 0 && (
+        <ShrinkageWarning>
+          {placeId ? '' : `${firstCountAt.map((p) => ('locationName' in p ? p.locationName : '')).filter(Boolean).join(', ')}: `}
+          First count at this place, with no opening count before it
+        </ShrinkageWarning>
+      )}
+      {figures.countedWithUnsentSales && <ShrinkageWarning>Counted while a counter box had sales it had not sent</ShrinkageWarning>}
+      {figures.soldBeyondRecord > 0 && <ShrinkageWarning>Sold beyond the record: {figures.soldBeyondRecord}</ShrinkageWarning>}
+    </div>
+  );
+}
+
+/** The figures, the cards and the list for one read of the reports. Pure: rendered from `data`. */
+export function ShrinkageReportBody({
+  data,
+  loading,
+  initialPlaceId = '',
+}: {
+  data: StockReportsData | null;
+  loading: boolean;
+  initialPlaceId?: string;
+}) {
+  const [placeId, setPlaceId] = useState(initialPlaceId);
   const counts = useMemo(() => sizeCounts(data), [data]);
-  const rows = (data?.shrinkage ?? []).filter((r) => r.total < 0);
+  const all = data?.shrinkage ?? [];
+  const places = useMemo(() => shrinkagePlaces(data?.shrinkage ?? []), [data]);
   const withCost = data?.withCost ?? false;
-  const totalLoss = rows.reduce((s, r) => s + (r.lossSatang ?? 0), 0);
+  const shown = all.flatMap((row) => {
+    const figures = shrinkageFiguresAt(row, placeId);
+    return figures ? [{ row, figures }] : [];
+  });
+  const rows = shown.filter((r) => r.figures.total < 0);
+  const others = shown.filter((r) => r.figures.total >= 0 && (r.figures.correctedUp !== 0 || r.figures.countVariance !== 0));
+  const totalLoss = rows.reduce((s, r) => s + (r.figures.lossSatang ?? 0), 0);
+  const correctedUp = shown.reduce((s, r) => s + r.figures.correctedUp, 0);
+  const correctedUpCost = shown.reduce((s, r) => s + (r.figures.correctedUpSatang ?? 0), 0);
+  const net = shown.reduce((s, r) => s + r.figures.net, 0);
+  // The net at cost: what came back by corrections up, less what every count and write-down took.
+  const netCost = shown.reduce((s, r) => s + (r.figures.correctedUpSatang ?? 0) - (r.figures.lossSatang ?? 0), 0);
+  const noCost = rows.filter((r) => r.figures.costMissing).length;
+  const events = (data?.shrinkageEvents ?? []).filter((e) => !placeId || e.locationId === placeId);
+  const beyond = data?.shrinkageSummary.soldBeyondRecord ?? 0;
+
+  const download = () => {
+    const { headers, rows: lines } = lossEventsCsv(events, withCost);
+    downloadCsv(`loss-report-${data?.from ?? ''}-to-${data?.to ?? ''}`, headers, lines);
+  };
 
   return (
     <div className="flex flex-col gap-4">
-      <LoadState loading={loading} error={error} />
-      <DateRange from={from} to={to} onFrom={setFrom} onTo={setTo} />
+      {places.length > 0 && (
+        <select
+          value={placeId}
+          onChange={(e) => setPlaceId(e.target.value)}
+          className="h-9 rounded-lg border border-input bg-background px-2 text-sm"
+          aria-label="Place"
+        >
+          <option value="">All places</option>
+          {places.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+        </select>
+      )}
 
       <div className="grid grid-cols-2 gap-2">
         <div className="rounded-xl border border-foreground/10 bg-foreground/[0.02] p-3 text-center">
@@ -389,36 +612,105 @@ function ShrinkageReport({ branchId }: { branchId: string | null }) {
         <div className="rounded-xl border border-foreground/10 bg-foreground/[0.02] p-3 text-center">
           <p className="text-xl font-bold text-destructive">{withCost ? `-${baht(totalLoss)}` : '—'}</p>
           <p className="text-[10px] text-foreground/40 mt-0.5">Est. loss at cost</p>
+          {withCost && noCost > 0 && (
+            <p className="text-[10px] text-amber-500 dark:text-amber-400 mt-1 leading-tight">
+              {noCost} size{noCost === 1 ? ' has' : 's have'} no cost: the loss leaves {noCost === 1 ? 'it' : 'them'} out
+            </p>
+          )}
+        </div>
+        <div className="rounded-xl border border-foreground/10 bg-foreground/[0.02] p-3 text-center">
+          <p className="text-xl font-bold">{signed(correctedUp)}</p>
+          <p className="text-[10px] text-foreground/40 mt-0.5">Corrected up{withCost && correctedUpCost !== 0 ? ` · +${baht(correctedUpCost)}` : ''}</p>
+        </div>
+        <div className="rounded-xl border border-foreground/10 bg-foreground/[0.02] p-3 text-center">
+          <p className={`text-xl font-bold ${net < 0 ? 'text-destructive' : ''}`}>{signed(net)} ea</p>
+          <p className="text-[10px] text-foreground/40 mt-0.5">
+            Net{withCost && netCost !== 0 ? ` · ${netCost < 0 ? '-' : '+'}${baht(Math.abs(netCost))}` : ''}
+          </p>
         </div>
       </div>
+
+      {beyond > 0 && (
+        <div className="rounded-xl border border-amber-500/25 bg-amber-500/[0.06] px-3 py-2">
+          <ShrinkageWarning>
+            Sold beyond the record: {beyond} ({data?.shrinkageSummary.soldBeyondRecordSizes ?? 0} size{(data?.shrinkageSummary.soldBeyondRecordSizes ?? 0) === 1 ? '' : 's'}) — paid sales took units the record did not hold; they are on the stock alerts, not in the loss
+          </ShrinkageWarning>
+        </div>
+      )}
 
       {rows.length === 0 && !loading ? (
         <p className="text-sm text-foreground/40 text-center py-6">No shrinkage in this range.</p>
       ) : (
         <div className="flex flex-col gap-2">
-          {rows.map((row) => {
-            const notes = [
-              ...(row.countedShort > 0 ? [`Counted short ${row.countedShort}×`] : []),
-              ...(row.countVariance > 0 ? [`counts found ${row.countVariance} more`] : []),
-              ...(row.adjustedDown < 0 ? [`corrections ${row.adjustedDown}`] : []),
-            ];
-            return (
-              <div key={row.stockItemId} className="rounded-xl border border-destructive/20 bg-destructive/[0.03] p-3 flex flex-col gap-1">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium">{row.name}{sizeSuffix(counts, row.groupId, row.variantLabel)}</p>
-                  <span className="text-sm font-bold text-destructive">{row.total} ea</span>
-                </div>
-                <div className="flex items-center justify-between text-xs text-foreground/40">
-                  <span>{notes.join(' · ')}</span>
-                  {withCost && row.lossSatang !== null && (
-                    <span>{row.costMissing ? 'no cost set' : `-${baht(row.lossSatang)} at cost`}</span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+          {rows.map(({ row, figures }) => (
+            <ShrinkageCard key={row.stockItemId} row={row} figures={figures} placeId={placeId} withCost={withCost} counts={counts} loss />
+          ))}
         </div>
       )}
+
+      {others.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <p className="text-xs font-semibold uppercase tracking-wider text-foreground/40">Corrected up or found, no loss</p>
+          {others.map(({ row, figures }) => (
+            <ShrinkageCard key={row.stockItemId} row={row} figures={figures} placeId={placeId} withCost={withCost} counts={counts} loss={false} />
+          ))}
+        </div>
+      )}
+
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs font-semibold uppercase tracking-wider text-foreground/40">
+            Write-downs and count differences ({events.length})
+          </p>
+          <button
+            type="button"
+            onClick={download}
+            disabled={events.length === 0}
+            className="shrink-0 h-8 px-3 rounded-lg border border-foreground/20 text-xs font-medium text-foreground/60 flex items-center gap-1 disabled:opacity-40"
+          >
+            <Download className="w-3.5 h-3.5" />
+            Download CSV
+          </button>
+        </div>
+        {events.map((e) => (
+          <div key={e.id} className="rounded-xl border border-foreground/10 p-3 flex flex-col gap-1">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm font-medium truncate">{e.name}{sizeSuffix(counts, e.groupId, e.variantLabel)}</p>
+              <span className={`text-sm font-bold shrink-0 ${e.quantity < 0 ? 'text-destructive' : 'text-amber-400'}`}>{signed(e.quantity)}</span>
+            </div>
+            <p className="text-xs text-foreground/50">
+              {e.kind === 'count'
+                ? `Count · exp ${e.expectedQuantity ?? '—'} → got ${e.countedQuantity ?? '—'}`
+                : `Write-down · ${e.reasonType ? stockReasonTypeLabel(e.reasonType) : ''}${e.reason ? ` — ${e.reason}` : ''}`}
+            </p>
+            <div className="flex items-center gap-3 text-xs text-foreground/40">
+              <span>{e.locationName}</span>
+              <span>{e.by ?? 'Staff'}</span>
+              <span className="ml-auto">
+                {new Date(e.occurredAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+              </span>
+            </div>
+            {withCost && e.lossSatang !== null && e.lossSatang !== 0 && (
+              <p className="text-xs text-foreground/40">{e.lossSatang > 0 ? '-' : '+'}{baht(Math.abs(e.lossSatang))} at cost</p>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ShrinkageReport({ branchId }: { branchId: string | null }) {
+  const today = isoToday();
+  const [from, setFrom] = useState(() => isoDaysBefore(today, 29));
+  const [to, setTo] = useState(today);
+  const { data, error, loading } = useStockReports(branchId, from || BEGINNING, to || today);
+
+  return (
+    <div className="flex flex-col gap-4">
+      <LoadState loading={loading} error={error} />
+      <DateRange from={from} to={to} onFrom={setFrom} onTo={setTo} />
+      <ShrinkageReportBody data={data} loading={loading} />
     </div>
   );
 }
