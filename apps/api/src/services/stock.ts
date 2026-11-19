@@ -1229,7 +1229,15 @@ export function stockItemDisplayName(name: string, variantLabel: string | null):
  * on the bill — and its reason names the prize and the voucher's last four
  * characters. EXACTLY ONCE per voucher: its action id is the voucher's
  * (`prizeStockActionId`), whichever place the unit came from, and a voucher
- * that already has one moves nothing again.
+ * that already has one moves nothing again. `sale` and `offline_sale` are the
+ * movements a close writes, and the only kinds that may carry a shortfall
+ * (`stock_movement_shortfall_check`).
+ *
+ * IN THE REPORTS: stock usage (with its unit cost) and the daily stock fact
+ * read movements, so they count a prize as sold. The per-product cost of goods
+ * (`stockCostOfGoods`), the line margin and the offline oversold check
+ * (`shortLinesOf`) read sale lines, and a prize has none, so they leave it
+ * out. Whether prizes are reported apart from sales is the owner's question.
  */
 export async function takeStockForPrize(
   tx: Tx,
