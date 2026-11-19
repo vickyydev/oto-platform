@@ -1,8 +1,9 @@
 # Inbox settings pages: the design note (SCRUM-1044)
 
-State, 19 November 2026: the frame, the shared parts and Templates are built
-on lane/inbox1043-20261119. Numbers, Knowledge, Examples, Rules and Teach are
-the second half and follow this note. Layout and look only: no request body,
+State, 19 November 2026: all six pages are built on lane/inbox1043-20261119:
+the frame, the shared parts and Templates first, then Numbers, Knowledge,
+Examples, Rules and Teach, which follow the section "The assistant pages" as
+corrected below. Layout and look only: no request body,
 field order, default, permission or word sent to the server or the model
 changes.
 
@@ -66,6 +67,11 @@ the conversations stay mounted underneath, hidden, as before.
   note in money's green or the assistant's mint; an error in the refusal's
   red or the polite amber of "not on your access". Every control carries
   `hit` and a scale size; every text pair is tested (settings-1044).
+- **ControlRow, ViewSwitch, FormRefusal** (the second half): a setting's
+  row with its control at the end; a list's switch of pressed segments; a
+  form's refusal at its top. The assistant pages' own header, status badge,
+  counts and sentence-case kinds of message are in `assistant-parts.tsx`;
+  their new text pairs are tested in assistant-pages-1044.
 
 ## Templates
 
@@ -95,23 +101,55 @@ sheet with its own fixed Save than in a row growing inside a long list.
 ## The assistant pages (the second half)
 
 Each starts with PageHeader: eyebrow "Assistant", its name, the assistant's
-line as today; its own explanation moves into a note or a section's help,
-its New button into the header.
+line as today, and its main action (New entry, New rule) on the right. Its
+own explanation, word for word, is a mint note under the header, read in
+place and never announced.
 
-- **Numbers:** the "Live means customers hear it" note in mint; Off, Shadow
-  and Live explained once; a row per number with its three-way switch at
-  its end (under the name on a phone); the Live confirmation kept.
-- **Knowledge:** "Show archived" and the count under the header; a
-  SectionCard per topic; a row per entry (question, answer as preview, one
-  status badge); Edit, Approve and Archive with their confirmations.
-- **Examples:** the To review, Approved and Rejected switch under the
-  header; a row per example; Review keeps the no-personal-data tick;
+- **Numbers:** the "Live means customers hear it" note; a section
+  "Channel numbers" with a row per number (its name, channel and park) and
+  Off, Shadow and Live at its end, under the name on a phone. The three
+  modes are explained once, in a section under the numbers ("What each mode
+  does"), not again on every row; a row says "Saving…" while its change
+  is sent. The Live confirmation is kept.
+- **Knowledge:** the count and "Show archived" in the bar under the note;
+  a section per topic; a row per entry: the question, the answer with its
+  line breaks (four lines), one status badge, the language, park and key as
+  meta, "English source, to translate" in amber words. Edit, Approve and
+  Archive with their confirmations; none for an entry the person may not
+  manage or one archived. The editor asks for the question and the answer
+  first, then topic, key, language and park.
+- **Examples:** To review, Approved and Rejected as one switch with the
+  count beside it; a row per example: the kind of message as its title, the
+  customer's words, the good reply in mint, the verdict as its badge, the
+  language and who proposed it. Review keeps the no-personal-data tick;
   Withdraw keeps its confirmation.
-- **Rules:** Drafts, Approved and Archived as a switch; New rule in the
-  header; a row per rule (kind of message, instruction, ask-first in mint);
-  the editor keeps every refusal and the "never asks first" line.
-- **Teach:** a chat like the Inbox's: the thread fills the page area, the
-  message box fixed at its foot, cards keeping their words and actions.
+- **Rules:** Drafts, Approved and Archived as a switch with the count; a row
+  per rule: the kind of message, the whole instruction, "Ask first" with its
+  condition above the question in mint, the words it was taught from, its
+  status and park. The editor keeps every refusal; the "never asks first"
+  line under the picker is an amber note.
+- **Teach:** laid out as the Inbox lays out a chat. The page area gives it
+  its whole height; the briefing opens the thread (in the middle of the page
+  until the first line, with the example); the person's lines on the right
+  in the staff colour, the curator's on the left in mint under "Assistant";
+  drafts and dry runs as cards in the thread with their Approve and Open in
+  actions. The message box sits in a bar held at the foot of the page area
+  on every width, grows with its words as the reply box does, and keeps its
+  words, its Enter and Shift+Enter, and its line about them.
+
+Shared rules the second half added:
+
+- **Actions under the words on a narrow page area.** From 768 px a row's
+  buttons sit at its end while the page area is at least 768 px wide; below
+  that (a tablet held upright, 544 to 596 px) they sit under the row's
+  words, so three buttons never squeeze the words into a column. Templates
+  follows the same rule. A phone keeps the three-dot menu.
+- **A refusal at the top of the form.** The server's refusal of a save shows
+  at the top of the editor, word for word, and is brought into view.
+- **Kinds of message in sentence case** on these pages ("Lost item",
+  "FAQ", "Any message"); the value sent is the intent, as before.
+- **Switches** take the page's width on a phone and stop at 28 rem from
+  640 px.
 
 **What stays exactly:** every control, state, message, confirmation and
 test id in sections 2.3 and 9 of `INVENTORY.md`; the R8 guarantee; every
