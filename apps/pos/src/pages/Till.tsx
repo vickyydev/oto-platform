@@ -4897,7 +4897,7 @@ export default function Till() {
             <DialogDescription>Complete the child and guardian checks on this staff screen before continuing.</DialogDescription>
           </DialogHeader>
           <div className="flex-1 min-h-0 dark" inert={gateSaving}>
-            <ConsentCapture staffScreen slots={superSlots} includedCreditTHB={slotIncludedCreditTHB} includedTickOffline={lane === 'box'} ticksReadOnly={!staffTicks} parentName={superParentName} consentAck={superConsentAck} policy={supervisionPolicy}
+            <ConsentCapture staffScreen slots={superSlots} includedCreditTHB={slotIncludedCreditTHB} includedTickOffline={lane === 'box'} ticksReadOnly={!staffTicks} familyFinished={consentCandidate.completed} parentName={superParentName} consentAck={superConsentAck} policy={supervisionPolicy}
               parentPhone={superParentPhone} parentContactMethod={superParentContactMethod}
               onParentNameChange={setSuperParentName} onParentPhoneChange={changeGuardianPhone}
               // SCRUM-1018 — staff change the number and correct the profile's
@@ -4934,7 +4934,7 @@ export default function Till() {
             ))}
           </div>}
           <div className="flex-1 min-h-0 dark" inert={gateSaving}>
-            <ConsentCapture staffScreen ticksReadOnly slots={superSlots} includedCreditTHB={slotIncludedCreditTHB} includedTickOffline={lane === 'box'} parentName={superParentName} consentAck={superConsentAck} policy={supervisionPolicy}
+            <ConsentCapture staffScreen ticksReadOnly slots={superSlots} includedCreditTHB={slotIncludedCreditTHB} includedTickOffline={lane === 'box'} familyFinished={consentCandidate.completed} parentName={superParentName} consentAck={superConsentAck} policy={supervisionPolicy}
               parentPhone={superParentPhone} parentContactMethod={superParentContactMethod}
               onParentNameChange={setSuperParentName} onParentPhoneChange={changeGuardianPhone}
               onParentContactMethodChange={changeGuardianChannel} onConsentAckChange={setSuperConsentAck}
