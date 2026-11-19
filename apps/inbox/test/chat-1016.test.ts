@@ -346,8 +346,12 @@ describe('SCRUM-1016 (review): the desktop panel is laid out for its width', () 
     expect(p).not.toContain('w-20 shrink-0');
     expect(p).toContain('<span class="min-w-0 break-words">Central Floresta</span>');
     expect(p).not.toMatch(/<span class="truncate">(?:Central Floresta|Birthdays)/);
-    // The sheet keeps its label column.
+    // The sheet keeps its label column; its values keep their whole words too,
+    // and the row's chevron takes only its own width (the whole row is the target).
     expect(sheet).toContain('<span class="w-20 shrink-0 text-[13.5px] text-ink-muted">Team</span>');
+    expect(sheet).toContain('<span class="min-w-0 break-words">Central Floresta</span>');
+    expect(sheet).not.toMatch(/<span class="truncate">(?:Central Floresta|Birthdays|Assistant)/);
+    expect(sheet).toMatch(/<span class="inline-flex h-11 w-6 shrink-0 items-center justify-center rounded-xl">(?:<svg[^]*?<\/svg>)<select aria-label="Conversation branch" class="absolute inset-0 /);
   });
 
   it('the party’s Book the date and Create BEO stand one over the other', () => {

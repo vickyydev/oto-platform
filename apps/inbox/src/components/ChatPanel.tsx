@@ -624,12 +624,13 @@ export function ChatPanel({
   const actions = (where: 'sheet' | 'panel') => {
     const panel = where === 'panel';
     const footerWord = panel ? FOOTER_WORD_STACKED : FOOTER_WORD;
-    // A row's value: one line on the sheet, its whole words in the panel.
-    const value = panel ? 'min-w-0 break-words' : 'truncate';
-    // The select laid over a row: the whole row is the target, the chevron only shows it.
-    const rowChoice = panel
-      ? 'inline-flex h-11 w-6 shrink-0 items-center justify-center rounded-xl'
-      : 'inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl';
+    // A row's value keeps its whole words, on a second line when it needs one
+    // ("Reception · Central Floresta" read "Reception · Central F…" at 390 px).
+    const value = 'min-w-0 break-words';
+    // The select laid over a row (`cover`): the whole row is the target, so the
+    // chevron needs only its own width, as ChatActions.dc.html draws it; the
+    // value keeps the room ("Reception · Central Floresta" whole at 390 px).
+    const rowChoice = 'inline-flex h-11 w-6 shrink-0 items-center justify-center rounded-xl';
     // The party's two buttons: side by side on the sheet, one over the other in the panel (as the next-step card).
     const pair = panel ? 'flex flex-col gap-2' : 'grid grid-cols-2 gap-2';
     return (
@@ -870,7 +871,7 @@ export function ChatPanel({
               )
             }
           >
-            <span className="truncate">{aiLine.text}</span>
+            <span className={value}>{aiLine.text}</span>
           </ActionRow>
         )}
       </ActionSection>
