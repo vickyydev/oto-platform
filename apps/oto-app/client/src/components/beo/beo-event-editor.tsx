@@ -177,13 +177,14 @@ type AiFillInboxSource = {
 /**
  * SCRUM-1029: the BEO editor's four sections, in the operations brief's order and words. Under
  * them the Billing section and Parent Experience stay as they were. Every field of the editor
- * before keeps its stored home; only where it sits on the screen moved.
+ * before keeps its stored home; only where it sits on the screen moved. `tab` is the drawing's
+ * word for each in the row of marks above them (its full name is the mark's title).
  */
 export const BEO_SECTIONS = [
-  { key: "event-info", label: "Event Info" },
-  { key: "food-drinks", label: "Food & Drinks" },
-  { key: "entertainment", label: "Entertainment & Program" },
-  { key: "internal-notes", label: "Internal Notes" },
+  { key: "event-info", label: "Event Info", tab: "Event" },
+  { key: "food-drinks", label: "Food & Drinks", tab: "Food & Drinks" },
+  { key: "entertainment", label: "Entertainment & Program", tab: "Entertainment" },
+  { key: "internal-notes", label: "Internal Notes", tab: "Notes" },
 ] as const;
 export type BeoSectionKey = (typeof BEO_SECTIONS)[number]["key"];
 
@@ -509,7 +510,7 @@ function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab, charge, 
   };
   return (
     <div className="space-y-0.5" data-testid={`menu-item-${menuTab}-${idx}`}>
-      <div className="flex items-center gap-1">
+      <div className="flex flex-wrap items-center gap-1">
         <button disabled={disabled}
           type="button"
           className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-colors ${
@@ -572,7 +573,7 @@ function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab, charge, 
             testId={`${menuTab}-${idx}`}
           />
         )}
-        <div className="flex-1 flex items-center gap-1 min-w-0">
+        <div className="flex-1 flex items-center gap-1 min-w-[8rem]">
         <EditableText disabled={disabled}
           className="text-xs min-w-0"
           value={item.itemName}
@@ -2307,7 +2308,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
 
         {/* SCRUM-1029: the four sections the operations brief draws, each with its mark; a press opens it. */}
         <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4" data-testid="beo-section-marks">
-          {BEO_SECTIONS.map(({ key, label }) => (
+          {BEO_SECTIONS.map(({ key, label, tab }) => (
             <button
               type="button"
               key={key}
@@ -2317,7 +2318,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
               data-testid={`section-mark-${key}`}
             >
               <StatusIcon status={sectionStatus(key)} />
-              <span className="truncate">{label}</span>
+              <span className="truncate">{tab}</span>
             </button>
           ))}
         </div>
@@ -2344,7 +2345,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
             <AccordionContent className={`px-4 pb-4 overflow-visible ${readOnly ? "opacity-75 cursor-not-allowed" : ""}`}>
               <div>
                 <SectionPart testId="part-event">
-                  <div className="grid gap-4">
+                  <div className="grid grid-cols-1 gap-4">
                     <div className="space-y-1">
                       <Label className="text-xs text-muted-foreground flex items-center gap-1">Title{aiMark("title")}</Label>
                       <EditableText
@@ -2584,7 +2585,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                         />
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">WhatsApp Number</Label>
+                        <Label className="text-xs text-muted-foreground flex items-center gap-1">WhatsApp Number</Label>
                         <div className="flex items-center gap-2">
                           <EditableText
                             value={eventData.whatsappPhoneRaw || ""}
@@ -2608,7 +2609,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                     </div>
                     {(eventData as any).eventType === "studio_event" && (
                       <div className="space-y-2">
-                        <Label className="text-xs text-muted-foreground">Calendar Color</Label>
+                        <Label className="text-xs text-muted-foreground flex items-center gap-1">Calendar Color</Label>
                         <div className="flex flex-wrap gap-2" data-testid="picker-event-color">
                           {ONE_OFF_EVENT_COLOR_OPTIONS.map((c) => (
                             <button
@@ -3100,7 +3101,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                     </>
                   }
                 >
-                  <div className="grid gap-4">
+                  <div className="grid grid-cols-1 gap-4">
                     {/* SCRUM-1029: the kitchen plan's "food required", ticked off as "No food for this party". The menus
                         and the cake are hidden while it is ticked, never deleted; the print says the kitchen is Not Needed. */}
                     <label className="flex min-h-9 w-fit cursor-pointer items-center gap-2 text-sm" data-testid="label-no-food">
@@ -3860,7 +3861,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                     <div className="space-y-2">
                       {barItems.map((item, idx) => (
                         <div key={item.id} className="space-y-0.5" data-testid={`bar-item-${idx}`}>
-                          <div className="flex items-center gap-1">
+                          <div className="flex flex-wrap items-center gap-1">
                             <button
                               type="button"
                               className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-colors ${
@@ -3881,7 +3882,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                               {item.source === "set_menu" ? "SET" : "EXTRA"}
                             </button>
                             <EditableText
-                              className="min-w-[40px] flex-1 text-xs"
+                              className="min-w-[8rem] flex-1 text-xs"
                               placeholder="Item name…"
                               value={item.itemName}
                               onChange={(v) => setBarItems(prev => { const u = [...prev]; u[idx] = { ...u[idx], itemName: v }; return u; })}
@@ -3941,14 +3942,16 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                               <X className="h-3.5 w-3.5" />
                             </Button>
                           </div>
-                          <EditableText
-                            className="ml-14 text-xs text-muted-foreground"
-                            placeholder="Notes (optional)…"
-                            value={item.notes || ""}
-                            onChange={(v) => setBarItems(prev => { const u = [...prev]; u[idx] = { ...u[idx], notes: v }; return u; })}
-                            disabled={readOnly}
-                            data-testid={`bar-item-notes-${idx}`}
-                          />
+                          <div className="pl-14">
+                            <EditableText
+                              className="text-xs text-muted-foreground"
+                              placeholder="Notes (optional)…"
+                              value={item.notes || ""}
+                              onChange={(v) => setBarItems(prev => { const u = [...prev]; u[idx] = { ...u[idx], notes: v }; return u; })}
+                              disabled={readOnly}
+                              data-testid={`bar-item-notes-${idx}`}
+                            />
+                          </div>
                         </div>
                       ))}
                       <div className="flex gap-2 pt-1">
@@ -4008,7 +4011,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
             <AccordionContent className={`px-4 pb-4 overflow-visible ${readOnly ? "opacity-75 cursor-not-allowed" : ""}`}>
               <div>
                 <SectionPart testId="part-activities">
-                  <div className="grid gap-4">
+                  <div className="grid grid-cols-1 gap-4">
                     <div className="space-y-1">
                       <Label className="text-xs text-muted-foreground flex items-center gap-1">Activities{aiMark("activities")}</Label>
                       <EditableText
@@ -4035,7 +4038,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                         {!readOnly && (
                           <button
                             type="button"
-                            className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-pink-500/15 text-pink-600 border-pink-500/30 dark:text-pink-400 hover:bg-pink-500/25 transition-colors"
+                            className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-violet-500/15 text-violet-600 border-violet-500/30 dark:text-violet-400 hover:bg-violet-500/25 transition-colors"
                             onClick={() => addEntItemMutation.mutate({ customName: "" })}
                             disabled={addEntItemMutation.isPending}
                             data-testid="button-add-entertainment-act"
@@ -4140,7 +4143,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
               </div>
             </AccordionTrigger>
             <AccordionContent className={`px-4 pb-4 ${readOnly ? "opacity-75 cursor-not-allowed" : ""}`}>
-              <div className="grid gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 {/* SCRUM-827: the special requests the chat gave (and anything typed here), saved with the BEO. */}
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground flex items-center gap-1">Special Requests{aiMark("specialRequests")}</Label>
