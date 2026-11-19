@@ -7,6 +7,7 @@ import { assistantApi, type ExampleVerdict } from '@/api/assistant';
 import type { InboxEvent, Message } from '@/api/inbox';
 import { Refusal } from '@/components/confirms';
 import { Dialog } from '@/components/Dialog';
+import { BTN_MAIN, BTN_QUIET, HINT, INPUT, LABEL } from '@/components/ui';
 import {
   EXAMPLE_CUSTOMER_MAX,
   EXAMPLE_REPLY_MAX,
@@ -26,8 +27,8 @@ import {
 /** The thread's own language as a starting choice, only when it is one the assistant speaks. */
 const knownLanguage = (v: string | null): string => (v !== null && KB_LANGUAGES.some(([l]) => l === v) ? v : '');
 
-export const FIELD =
-  'w-full min-w-0 rounded-lg border border-line bg-card px-2.5 py-1.5 text-[12.5px] text-ink focus:border-field focus:outline-none focus:ring-2 focus:ring-field';
+/** A field of the assistant's forms (SCRUM-1016): the house field, with room for a text area's lines. */
+export const FIELD = `${INPUT} py-2`;
 
 /** What the dialog corrects: an AI line (by id), or the silence an `ai_silent` pill marks (by its time). */
 export type CorrectionTarget = { messageId: string } | { at: string };
@@ -121,7 +122,7 @@ export function CorrectAssistant({
       open
       onClose={onClose}
       icon={saved ? CheckCircle2 : PenLine}
-      iconTint={saved ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : 'bg-indigo-50 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-400'}
+      tone={saved ? 'money' : 'assistant'}
       title={saved ? 'Sent for approval' : 'Correct the assistant'}
       subtitle={
         saved
@@ -134,7 +135,7 @@ export function CorrectAssistant({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg bg-ink px-3 py-1.5 text-[13px] font-medium text-on-ink hover:bg-ink/90"
+            className={BTN_MAIN}
           >
             Done
           </button>
@@ -144,7 +145,7 @@ export function CorrectAssistant({
               type="button"
               onClick={onClose}
               disabled={busy}
-              className="rounded-lg border border-line px-3 py-1.5 text-[13px] font-medium text-ink hover:bg-wash"
+              className={BTN_QUIET}
             >
               Cancel
             </button>
@@ -152,9 +153,9 @@ export function CorrectAssistant({
               type="submit"
               form={formId}
               disabled={busy || problem !== null || !sourceMessageId}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-ink px-3 py-1.5 text-[13px] font-medium text-on-ink hover:bg-ink/90 disabled:opacity-60"
+              className={BTN_MAIN}
             >
-              {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              {busy && <Loader2 aria-hidden className="h-4 w-4 animate-spin" />}
               Propose example
             </button>
           </>
@@ -162,7 +163,7 @@ export function CorrectAssistant({
       }
     >
       {saved ? (
-        <p className="text-[12.5px] text-ink-soft">Thank you. Approved examples are what the assistant answers from next.</p>
+        <p className="text-[14px] text-ink-soft md:text-[13px]">Thank you. Approved examples are what the assistant answers from next.</p>
       ) : (
         <form id={formId} onSubmit={(e) => void save(e)} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="What should it have done?" wide>
@@ -205,7 +206,7 @@ export function CorrectAssistant({
               ))}
             </select>
             {turn && (
-              <span className="text-[11px] font-normal text-ink-muted" data-topic-source={turn.intent ? 'turn' : 'turn-unclassified'}>
+              <span className={HINT} data-topic-source={turn.intent ? 'turn' : 'turn-unclassified'}>
                 {turn.intent ? 'As the assistant classified this message.' : 'The assistant did not classify this message: pick its topic.'}
               </span>
             )}
@@ -220,9 +221,9 @@ export function CorrectAssistant({
               ))}
             </select>
           </Field>
-          {problem && <p className="text-[11.5px] text-ink-muted sm:col-span-2">{problem}</p>}
+          {problem && <p className={`${HINT} sm:col-span-2`}>{problem}</p>}
           {!sourceMessageId && (
-            <p className="text-[11.5px] text-ink-muted sm:col-span-2">
+            <p className={`${HINT} sm:col-span-2`}>
               The customer’s message is on an earlier page: load the earlier messages first.
             </p>
           )}
@@ -233,10 +234,11 @@ export function CorrectAssistant({
   );
 }
 
+/** A field with its label over it, the label the field's name (BookDate.dc.html). */
 export function Field({ label, wide = false, children }: { label: string; wide?: boolean; children: ReactNode }) {
   return (
-    <label className={`flex min-w-0 flex-col gap-1 text-[11px] font-medium text-ink-muted ${wide ? 'sm:col-span-2' : ''}`}>
-      {label}
+    <label className={`flex min-w-0 flex-col gap-1.5 ${wide ? 'sm:col-span-2' : ''}`}>
+      <span className={LABEL}>{label}</span>
       {children}
     </label>
   );

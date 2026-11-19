@@ -48,6 +48,12 @@
   --oto-danger: #fdecea;
   --oto-danger-ink: #a1251b;
   --oto-danger-line: #f3c4bf;
+  /* A choice waiting on a person (BookDate.dc.html "Which start time is right?"),
+     a draft or an approval to come: amber, apart from the coral of "needs reply". */
+  --oto-ask: #fdf4e1;
+  --oto-ask-line: #e6c98f;
+  --oto-ask-edge: #b45309;
+  --oto-ask-ink: #6b3f00;
   --oto-staff: #3b281c;
   --oto-on-staff: #fbf5ef;
   --oto-scrim: rgb(59 40 28 / 0.4);
@@ -100,6 +106,10 @@ html.dark {
   --oto-danger: #3b1418;
   --oto-danger-ink: #ffc4c4;
   --oto-danger-line: #6a2a30;
+  --oto-ask: #2b2112;
+  --oto-ask-line: #5c4520;
+  --oto-ask-edge: #f59e0b;
+  --oto-ask-ink: #ffd9a0;
   --oto-staff: #2a3a5c;
   --oto-on-staff: #f8fafc;
   --oto-scrim: rgb(2 6 23 / 0.6);
@@ -152,6 +162,10 @@ html.dark {
   --color-danger: var(--oto-danger);
   --color-danger-ink: var(--oto-danger-ink);
   --color-danger-line: var(--oto-danger-line);
+  --color-ask: var(--oto-ask);
+  --color-ask-line: var(--oto-ask-line);
+  --color-ask-edge: var(--oto-ask-edge);
+  --color-ask-ink: var(--oto-ask-ink);
   --color-staff: var(--oto-staff);
   --color-on-staff: var(--oto-on-staff);
   --color-scrim: var(--oto-scrim);

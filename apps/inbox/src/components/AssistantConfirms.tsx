@@ -3,13 +3,13 @@ import type { AiRule, KbEntry } from '@/api/assistant';
 import type { InboxMe } from '@/api/inbox';
 import { Refusal } from '@/components/confirms';
 import { Dialog } from '@/components/Dialog';
+import { BTN_MAIN, BTN_QUIET } from '@/components/ui';
 import { ruleIntentLabel } from '@/lib/assistant';
 import { branchLabel, langLabel } from '@/lib/view';
 
-// The Assistant page's button styles (AssistantSettings.tsx keeps its own copy).
-const PRIMARY =
-  'inline-flex items-center gap-1.5 rounded-lg bg-ink px-3 py-1.5 text-[13px] font-medium text-on-ink hover:bg-ink/90 disabled:opacity-60';
-const CANCEL = 'rounded-lg border border-line px-3 py-1.5 text-[13px] font-medium text-ink hover:bg-wash';
+// The house controls (SCRUM-1016, components/ui.ts).
+const PRIMARY = BTN_MAIN;
+const CANCEL = BTN_QUIET;
 
 export type AssistantAct = 'approve' | 'archive';
 
@@ -32,7 +32,7 @@ export function KbConfirm({ acting, busy, error, onCancel, onConfirm }: ConfirmP
       open={acting !== null}
       onClose={onCancel}
       icon={acting?.what === 'approve' ? CheckCircle2 : Archive}
-      iconTint={acting?.what === 'approve' ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : undefined}
+      tone={acting?.what === 'approve' ? 'money' : 'neutral'}
       title={acting?.what === 'approve' ? 'Approve this entry?' : 'Archive this entry?'}
       subtitle={acting ? `${acting.entry.key} · ${langLabel(acting.entry.language)}` : undefined}
       footer={
@@ -41,19 +41,19 @@ export function KbConfirm({ acting, busy, error, onCancel, onConfirm }: ConfirmP
             Cancel
           </button>
           <button type="button" onClick={onConfirm} disabled={busy} className={PRIMARY}>
-            {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            {busy && <Loader2 aria-hidden className="h-4 w-4 animate-spin" />}
             {acting?.what === 'approve' ? 'Yes, approve' : 'Yes, archive'}
           </button>
         </>
       }
     >
-      <p className="text-[12.5px] text-ink-muted">
+      <p className="text-[14px] leading-relaxed text-ink-soft md:text-[13px]">
         {acting?.what === 'approve'
           ? 'The assistant may answer customers from these words from now on, on every number that is live. You are recorded as the approver.'
           : 'The assistant stops using it, and its key is free for a new entry.'}
       </p>
       {acting?.what === 'approve' && (
-        <p className="mt-2 whitespace-pre-line break-words rounded-lg bg-ground px-3 py-2 text-[12.5px] text-ink">
+        <p className="mt-2 whitespace-pre-line break-words rounded-xl border border-line bg-card px-3 py-2 text-[13.5px] text-ink md:bg-ground">
           {acting.entry.body}
         </p>
       )}
@@ -79,7 +79,7 @@ export function RuleConfirm({
       open={acting !== null}
       onClose={onCancel}
       icon={acting?.what === 'approve' ? CheckCircle2 : Archive}
-      iconTint={acting?.what === 'approve' ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : undefined}
+      tone={acting?.what === 'approve' ? 'money' : 'neutral'}
       title={acting?.what === 'approve' ? 'Approve this rule?' : 'Archive this rule?'}
       subtitle={acting ? `${ruleIntentLabel(acting.rule.intent)} · ${acting.rule.branchId ? branchLabel(acting.rule.branchId, me.teams) : 'Both parks'}` : undefined}
       footer={
@@ -88,19 +88,19 @@ export function RuleConfirm({
             Cancel
           </button>
           <button type="button" onClick={onConfirm} disabled={busy} className={PRIMARY}>
-            {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            {busy && <Loader2 aria-hidden className="h-4 w-4 animate-spin" />}
             {acting?.what === 'approve' ? 'Yes, approve' : 'Yes, archive'}
           </button>
         </>
       }
     >
-      <p className="text-[12.5px] text-ink-muted">
+      <p className="text-[14px] leading-relaxed text-ink-soft md:text-[13px]">
         {acting?.what === 'approve'
           ? 'The assistant follows this rule from now on, on every number that is live. You are recorded as the approver.'
           : 'The assistant stops following it. It stays under Archived.'}
       </p>
       {acting && (
-        <p className="mt-2 whitespace-pre-line break-words rounded-lg bg-ground px-3 py-2 text-[12.5px] text-ink">
+        <p className="mt-2 whitespace-pre-line break-words rounded-xl border border-line bg-card px-3 py-2 text-[13.5px] text-ink md:bg-ground">
           {acting.rule.instruction}
         </p>
       )}

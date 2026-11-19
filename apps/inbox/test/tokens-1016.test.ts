@@ -50,6 +50,12 @@ const TEXT_PAIRS: Array<[ink: string, ground: string]> = [
   ['teal', 'mint-soft'], ['teal', 'card'], ['teal', 'ground'],
   ['danger-ink', 'danger'], ['money-ink', 'card'],
   ['ink-muted', 'money'], ['ink-soft', 'mint-soft'],
+  // The dialogs and settings (SCRUM-1016): a choice waiting on a person (the
+  // amber of Book the date's two readings, a draft, an approval to come) on
+  // its ground and under its field; the filled red of a confirmation that
+  // cannot be undone; a disabled main button's muted words on the band.
+  ['ask-ink', 'ask'], ['ask-ink', 'ground'], ['ask-ink', 'card'], ['ink', 'ask'],
+  ['danger', 'danger-ink'], ['ink-muted', 'band'],
 ];
 
 describe('SCRUM-1016: the OTO tokens', () => {
@@ -95,6 +101,12 @@ describe('SCRUM-1016: the OTO tokens', () => {
     // A list row's focus outline, on the row grounds (SCRUM-1016).
     for (const ground of ['band', 'wash', 'money']) {
       expect(contrast(theme, 'coral', ground), `coral against ${ground}`).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it.each([['light', light], ['dark', dark]] as const)('a field read two ways stands out by its amber edge at 3 : 1 (%s)', (_, theme) => {
+    for (const ground of ['card', 'ground']) {
+      expect(contrast(theme, 'ask-edge', ground), `ask-edge against ${ground}`).toBeGreaterThanOrEqual(3);
     }
   });
 

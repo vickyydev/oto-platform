@@ -4,7 +4,9 @@ import { ApiError } from '@/api/client';
 import { inboxApi, type InboxMe, type Template } from '@/api/inbox';
 import { TranslationNote } from '@/components/atoms';
 import { Dialog } from '@/components/Dialog';
+import { Refusal } from '@/components/confirms';
 import { FilterFields, HideNoticesSwitch } from '@/components/Rail';
+import { BTN_SMALL, TONE } from '@/components/ui';
 import { PendingControl } from '@/components/writes';
 import type { SourceOption } from '@/lib/inboxes';
 import type { Filters } from '@/lib/query';
@@ -54,34 +56,33 @@ export function TemplatesDialog({
       open={open}
       onClose={onClose}
       icon={FileText}
-      iconTint="bg-violet-50 dark:bg-violet-500/15 text-violet-600 dark:text-violet-400"
       title="Templates"
       subtitle={language ? `In ${langLabel(language)}, the conversation’s language` : 'Every language'}
       wide
     >
-      {error && <p className="rounded-lg bg-rose-50 dark:bg-rose-500/15 px-3 py-2 text-[12.5px] text-rose-700 dark:text-rose-300 ring-1 ring-rose-200 dark:ring-rose-500/30">{error}</p>}
+      {error && <Refusal text={error} />}
       {!error && templates === null && (
         <div className="flex justify-center py-6 text-ink-muted">
           <Loader2 className="h-5 w-5 animate-spin" />
         </div>
       )}
-      {templates?.length === 0 && <p className="text-[12.5px] text-ink-muted">No templates in this language yet.</p>}
+      {templates?.length === 0 && <p className="text-[13.5px] text-ink-muted">No templates in this language yet.</p>}
       <ul className="space-y-2">
         {/* `follow_up` first, and a row still in English marked (test night U1). */}
         {offeredTemplates(templates ?? [], null).own.map((t) => (
-          <li key={t.id} className="rounded-xl border border-line p-3">
+          <li key={t.id} className="rounded-2xl border border-line bg-card p-3.5">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-muted">
+              <span className="text-[13px] font-bold capitalize text-ink">
                 {t.key.replace(/[_.]/g, ' ')}
               </span>
-              <span className="rounded-full bg-band px-1.5 text-[10px] font-semibold text-ink-soft">{langLabel(t.language)}</span>
+              <span className={`rounded-lg px-1.5 py-px text-[11px] font-semibold ${TONE.neutral}`}>{langLabel(t.language)}</span>
               {t.needsTranslation && <TranslationNote />}
               {pending ? (
                 <span className="ml-auto">
                   <PendingControl
                     reason={WRITES_PENDING_REASON}
                     label="Insert into the reply"
-                    className="rounded-md border border-line bg-card px-2 py-0.5 text-[11px] font-medium text-ink-soft"
+                    className={BTN_SMALL}
                   >
                     Insert
                   </PendingControl>
@@ -92,14 +93,14 @@ export function TemplatesDialog({
                     type="button"
                     onClick={() => onInsert(t)}
                     aria-label={`Insert ${t.key.replace(/[_.]/g, ' ')} into the reply`}
-                    className="ml-auto rounded-md border border-line bg-card px-2 py-0.5 text-[11px] font-medium text-ink-soft hover:bg-wash hover:text-ink"
+                    className={`${BTN_SMALL} ml-auto`}
                   >
                     Insert
                   </button>
                 )
               )}
             </div>
-            <p className="mt-1.5 whitespace-pre-line break-words text-[12.5px] text-ink">{t.body}</p>
+            <p className="mt-1.5 whitespace-pre-line break-words text-[14px] leading-relaxed text-ink md:text-[13px]">{t.body}</p>
           </li>
         ))}
       </ul>

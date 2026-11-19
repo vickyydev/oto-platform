@@ -366,7 +366,7 @@ function TemplateEditor({
       open
       onClose={onClose}
       icon={FileText}
-      iconTint="bg-violet-50 dark:bg-violet-500/15 text-violet-600 dark:text-violet-400"
+      tone="neutral"
       title={template ? 'Edit template' : 'New template'}
       subtitle={template ? `${keyLabel(template.key)} · ${langLabel(template.language)}` : undefined}
       wide

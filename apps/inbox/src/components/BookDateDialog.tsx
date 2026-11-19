@@ -434,7 +434,7 @@ export function BookDateDialog({
       open={open}
       onClose={busy ? () => undefined : onCancel}
       icon={Calendar}
-      iconTint="bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400"
+      tone="money"
       title={`Book Date — ${customer}`}
       subtitle="Request the agreed deposit first. After gateway verification, check capacity and create the booking. A draft reserves no date."
       wide

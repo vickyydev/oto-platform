@@ -1,10 +1,13 @@
 import { ArrowRightLeft, CheckCircle2, Loader2, RotateCcw, ShieldAlert } from 'lucide-react';
 import type { InboxCategoryKey } from '@oto/shared/inbox';
 import { Dialog } from '@/components/Dialog';
+import { BTN_DANGER, BTN_FOOTER_MAIN, BTN_QUIET } from '@/components/ui';
 import { CATEGORY_LABEL } from '@/lib/view';
 
-const CANCEL =
-  'rounded-lg border border-line px-3 py-1.5 text-[13px] font-medium text-ink hover:bg-wash disabled:opacity-60';
+/** Cancel in every confirmation: the quiet words (BookDate.dc.html). */
+const CANCEL = BTN_QUIET;
+/** A confirmation's words, readable at arm's length on a phone. */
+const SAYS = 'text-[14px] leading-relaxed md:text-[13px]';
 
 /**
  * "Mark as handled for everyone?" — the prototype's confirmation (:1734-1764),
@@ -30,7 +33,7 @@ export function HandleConfirm({
       open={open}
       onClose={onCancel}
       icon={CheckCircle2}
-      iconTint="bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+      tone="money"
       title="Mark as handled for everyone?"
       footer={
         <>
@@ -41,15 +44,15 @@ export function HandleConfirm({
             type="button"
             onClick={onConfirm}
             disabled={busy}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-[13px] font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
+            className={BTN_FOOTER_MAIN}
           >
-            {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            {busy && <Loader2 aria-hidden className="h-4 w-4 animate-spin" />}
             Yes, mark as handled
           </button>
         </>
       }
     >
-      <p className="text-[12.5px] text-ink-muted">
+      <p className={`${SAYS} text-ink-soft`}>
         This conversation will leave Active Messages for the whole team and move to the Handled tab. It returns
         automatically only if the customer sends a new message — or a manager reopens it.
       </p>
@@ -94,7 +97,7 @@ export function PrimaryMoveConfirm({
       open={pending !== null}
       onClose={onCancel}
       icon={ShieldAlert}
-      iconTint="bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400"
+      tone="ask"
       title="Change primary owner?"
       footer={
         <>
@@ -105,16 +108,16 @@ export function PrimaryMoveConfirm({
             type="button"
             onClick={onConfirm}
             disabled={busy}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-ink px-3 py-1.5 text-[13px] font-medium text-on-ink hover:bg-ink/90 disabled:opacity-60"
+            className={BTN_FOOTER_MAIN}
           >
-            {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            {busy && <Loader2 aria-hidden className="h-4 w-4 animate-spin" />}
             Yes, move to {to}
           </button>
         </>
       }
     >
       {pending && (
-        <p className="text-[12.5px] text-ink">
+        <p className={`${SAYS} text-ink`}>
           Setting <strong>{pending.name}</strong> as primary will move this conversation
           {pending.fromCategory && (
             <>
@@ -161,7 +164,7 @@ export function TeamMoveConfirm({
       open={pending !== null}
       onClose={onCancel}
       icon={ArrowRightLeft}
-      iconTint="bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400"
+      tone="ask"
       title="Move to another team?"
       footer={
         <>
@@ -172,16 +175,16 @@ export function TeamMoveConfirm({
             type="button"
             onClick={onConfirm}
             disabled={busy}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-ink px-3 py-1.5 text-[13px] font-medium text-on-ink hover:bg-ink/90 disabled:opacity-60"
+            className={BTN_FOOTER_MAIN}
           >
-            {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            {busy && <Loader2 aria-hidden className="h-4 w-4 animate-spin" />}
             Yes, move to {pending?.toTeamName ?? 'the team'}
           </button>
         </>
       }
     >
       {pending && (
-        <p className="text-[12.5px] text-ink">
+        <p className={`${SAYS} text-ink`}>
           Moving this conversation
           {pending.fromTeamName && (
             <>
@@ -198,13 +201,16 @@ export function TeamMoveConfirm({
   );
 }
 
-/** A refusal from the server, as it was said. */
-export function Refusal({ text, tone = 'rose' }: { text: string; tone?: 'rose' | 'amber' }) {
+/**
+ * A refusal from the server, as it was said: red, or the amber of a polite
+ * "not on your access" on the settings pages; both tested token pairs.
+ */
+export function Refusal({ text, tone = 'danger' }: { text: string; tone?: 'danger' | 'ask' }) {
   return (
     <p
       role="alert"
-      className={`mt-3 break-words rounded-lg px-3 py-2 text-[12.5px] ring-1 ${
-        tone === 'rose' ? 'bg-rose-50 dark:bg-rose-500/15 text-rose-700 dark:text-rose-300 ring-rose-200 dark:ring-rose-500/30' : 'bg-amber-50 dark:bg-amber-500/15 text-amber-800 dark:text-amber-200 ring-amber-200 dark:ring-amber-500/30'
+      className={`mt-3 break-words rounded-xl px-3 py-2 text-[13px] ring-1 ${
+        tone === 'danger' ? 'bg-danger text-danger-ink ring-danger-line' : 'bg-ask text-ask-ink ring-ask-line'
       }`}
     >
       {text}
@@ -242,7 +248,7 @@ export function StartOverConfirm({
       open={open}
       onClose={onCancel}
       icon={RotateCcw}
-      iconTint="bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400"
+      tone="danger"
       title="Start over with this number?"
       subtitle={lineName}
       footer={
@@ -254,15 +260,15 @@ export function StartOverConfirm({
             type="button"
             onClick={onConfirm}
             disabled={busy}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-1.5 text-[13px] font-medium text-white hover:bg-amber-700 disabled:opacity-60"
+            className={BTN_DANGER}
           >
-            {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            {busy && <Loader2 aria-hidden className="h-4 w-4 animate-spin" />}
             Yes, start over
           </button>
         </>
       }
     >
-      <p className="text-[12.5px] text-ink-muted">
+      <p className={`${SAYS} text-ink-soft`}>
         This test conversation leaves the inbox and its messages are erased. The assistant forgets this number: the
         next message from it starts a new conversation, as from a new customer. This cannot be undone.
       </p>
