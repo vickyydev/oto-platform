@@ -53,6 +53,7 @@ import { currentBandKey } from './bands';
 import type { BoxAuth } from './box';
 import { boxPrepaidFiled } from './band-food';
 import { autoSendRegistrationContact, boardOf, supervisionConfigOf } from './checkin';
+import { childOfMember } from './family';
 import { buildNoticeSender } from './sms';
 import type { FileStorage } from './files';
 import { raiseAlert } from './ops';
@@ -193,12 +194,29 @@ async function applyCheckinCreated(
   }
   const savedIds = payload.children.map((c) => c.childId).filter((id): id is string => !!id);
   if (savedIds.length > 0) {
-    const rows = await tx
-      .select({ id: child.id, memberId: child.memberId })
-      .from(child)
-      .where(inArray(child.id, savedIds));
-    if (rows.length !== new Set(savedIds).size || rows.some((r) => r.memberId !== memberId)) {
-      throw retry('SYNC_CHECKIN_CHILD_UNKNOWN', 'A child on this registration is not on the guardian’s list on the platform yet');
+    // SCRUM-1024 (step F3) — "on the guardian's list" by the batch's switch:
+    // at `off` the child's own `member_id`, exactly as before; otherwise the
+    // guardian's families, inside this operator. Neither asks whether the
+    // child was removed from the saved list or the member archived since, as
+    // this never did; a saved child with no guardian named is refused either way.
+    if (scope.familyMode === 'off') {
+      const rows = await tx
+        .select({ id: child.id, memberId: child.memberId })
+        .from(child)
+        .where(inArray(child.id, savedIds));
+      if (rows.length !== new Set(savedIds).size || rows.some((r) => r.memberId !== memberId)) {
+        throw retry('SYNC_CHECKIN_CHILD_UNKNOWN', 'A child on this registration is not on the guardian’s list on the platform yet');
+      }
+    } else {
+      const held = memberId
+        ? await tx
+          .select({ id: child.id })
+          .from(child)
+          .where(and(inArray(child.id, savedIds), childOfMember(scope.familyMode, { operatorId, memberId, memberLive: false })))
+        : [];
+      if (held.length !== new Set(savedIds).size) {
+        throw retry('SYNC_CHECKIN_CHILD_UNKNOWN', 'A child on this registration is not on the guardian’s list on the platform yet');
+      }
     }
   }
   let guardianPhone: string | null = null;
