@@ -1059,6 +1059,18 @@ jobs:
         env:
           TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
         run: npx tsx tests/beo-fill-read-shapes.check.ts
+      # SCRUM-1035, SCRUM-1030, SCRUM-1050: a question the team asked and the
+      # family never answered is never written as agreed, on any field (the
+      # rule in both reads, under a saved advice too, and in the code that
+      # accepts a proposal: the review, the team's names, the approval and the
+      # activity row's count); the Kitchen Notes proposed, shown beside what
+      # the form holds and written only on approval; no typed timeline row for
+      # a step the Timeline makes itself, a piñata kept.
+      - name: The app's AI fill questions and kitchen notes checks
+        if: steps.changes.outputs.app == 'true'
+        env:
+          TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
+        run: npx tsx tests/beo-fill-questions.check.ts
       # SCRUM-978: what the read-fix lane's staging proof and the last two
       # BEO lanes' reviews left — the BEO PDF prints the adults' own extra
       # at its own price and no empty heading; the editor's Save writes the
