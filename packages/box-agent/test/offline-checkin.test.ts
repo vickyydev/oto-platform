@@ -296,6 +296,59 @@ test('the gate on the box: one registration, its stays and its consent in one fa
   }
 });
 
+test('SCRUM-1052 — after a sibling waiver on the box lane: the covering sibling registered at no fee, the waiver naming it, the children-only sale paid', async () => {
+  // What the till sends the box with the link down, as before 19 November:
+  // Mai (6, drop-off) waived because Tom (10) covers her; Tom is registered at
+  // no fee, the waiver names his registration, and the sale carries his line
+  // under his stay beside Mai's plain ticket. The platform reads the stay on
+  // replay; nothing on the box is loosened for a waiver.
+  const box = await openCheckinBox();
+  try {
+    const tomStay = uuidv7();
+    const body = registrationBody({ children: [{ checkinId: tomStay, name: 'ZZ TEST Tom', ageYears: 10, service: 'none' }] });
+    const registered = await ask(box, 'checkin.create', body);
+    assert.equal(registered.registration.children[0].status, 'registered');
+    const waiver = await ask(box, 'waiver.create', {
+      waiverId: uuidv7(),
+      registrationId: body.registrationId,
+      child: { name: 'ZZ TEST Mai', ageYears: 6 },
+      sibling: { name: 'ZZ TEST Tom', ageYears: 10 },
+      waivedRequirement: 'drop_off',
+    });
+    assert.equal(waiver.siblingName, 'ZZ TEST Tom');
+
+    const cart = { lines: [{ id: tomStay, packageId: PACKAGE, kids: 1, adults: 0 }, { id: uuidv7(), packageId: PACKAGE, kids: 1, adults: 0 }] };
+    const quote = await ask(box, 'cart.quote', cart);
+    const gross = quote.quote.totals.grossSatang as number;
+    const saleId = uuidv7();
+    const paid = await ask(box, 'sale.finalise', {
+      saleId,
+      actionId: `pay-${saleId.slice(-8)}`,
+      cart: { ...cart, expectedTotalSatang: gross },
+      tender: { actionId: `cash-${saleId.slice(-8)}`, method: 'cash', kind: 'cash', amountSatang: gross },
+    });
+    assert.deepEqual(paid.bands.length, 1, 'Mai’s plain ticket gets her band; Tom’s waits for "Check in now", as online');
+
+    const held = await facts(box);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- the test reads into the queued sale's shape
+    const sold = held.filter((e) => e.type === 'sale.finalised').map((e) => e.payload as Record<string, any>);
+    assert.equal(sold.length, 1);
+    assert.equal(sold[0]!.saleId, saleId);
+    assert.ok(sold[0]!.cart.lines.some((line: { id: string; adults: number }) => line.id === tomStay && line.adults === 0),
+      'the sale names Tom’s stay, which the platform reads on replay');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- the test reads into the queued facts' shapes
+    const created = held.filter((e) => e.type === CHECKIN_FACTS.created).map((e) => e.payload as Record<string, any>);
+    assert.equal(created.length, 1);
+    assert.deepEqual(created[0]!.children.map((c: { id?: string; checkinId?: string; serviceType?: string; service?: string }) => c.service ?? c.serviceType), ['none']);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- as above
+    const waivers = held.filter((e) => e.type === CHECKIN_FACTS.waiver).map((e) => e.payload as Record<string, any>);
+    assert.equal(waivers.length, 1);
+    assert.equal(waivers[0]!.registrationId, body.registrationId, 'the waiver names the registration');
+  } finally {
+    box.close();
+  }
+});
+
 test('s494 prepaid food at the box gate: every item starts unserved, and an amount paid that is not the items’ sum is refused in the platform’s words', async () => {
   const box = await openCheckinBox();
   try {

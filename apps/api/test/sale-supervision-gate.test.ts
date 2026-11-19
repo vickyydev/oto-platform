@@ -346,6 +346,62 @@ describe('SCRUM-478 — children are not sold tickets on their own (POST /sales)
   });
 });
 
+describe('SCRUM-1052 — a sale after a sibling waiver', () => {
+  /**
+   * Two children with no adult: Mai, 6, needs drop-off; staff waive it
+   * because Tom, 10, covers her. The till registers Tom at no fee and the
+   * waiver names that registration (as the counter did before 19 November),
+   * so the sale carries Tom's line under his stay. The rule itself is not
+   * loosened: a waiver is never evidence on its own.
+   */
+  async function waive(registrationId: string | null) {
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: '/checkin/waivers',
+      headers: { cookie },
+      payload: {
+        id: newId(),
+        branchId,
+        stationId,
+        registrationId,
+        child: { name: 'ZZ TEST Mai', ageYears: 6 },
+        sibling: { name: 'ZZ TEST Tom', ageYears: 10 },
+        waivedRequirement: 'drop_off',
+      },
+    });
+    expect(res.statusCode, res.body).toBe(200);
+  }
+
+  it('is accepted: children only, the covering sibling registered at no fee, the waived child on a plain ticket', async () => {
+    const reg = await register([child({ name: 'ZZ TEST Tom', ageYears: 10, service: 'none' })]);
+    await waive(reg.id);
+    const saleId = newId();
+    const res = await commit({ id: saleId, lines: [kidLine(reg.children[0]!.id), kidLine()] });
+    expect(res.statusCode, res.body).toBe(200);
+    const [created] = await auditOf(saleId, 'sale.create');
+    expect(created!.after).toMatchObject({ registrationIds: [reg.id] });
+    expect(await auditOf(saleId, 'sale.supervision_unverified')).toHaveLength(0);
+  });
+
+  it('a children-only sale with no registration is still refused, a waiver recorded or not', async () => {
+    await waive(null);
+    const saleId = newId();
+    const res = await commit({ id: saleId, lines: [kidLine(), kidLine()] });
+    expect(res.statusCode, res.body).toBe(409);
+    expect(res.json().error).toMatchObject({ code: SALE_KIDS_WITHOUT_REGISTRATION, details: { kids: 2, adults: 0, reason: 'no_registration' } });
+    expect(await saleRow(saleId)).toBeUndefined();
+  });
+
+  it('the sale reads no waiver: one sent on it changes nothing, and the children-only sale is refused', async () => {
+    const reg = await register([child({ name: 'ZZ TEST Tom', ageYears: 10, service: 'none' })]);
+    const saleId = newId();
+    const res = await commit({ id: saleId, lines: [kidLine(), kidLine()], waiver: { registrationId: reg.id } });
+    expect(res.statusCode, res.body).toBe(409);
+    expect(res.json().error.code).toBe(SALE_KIDS_WITHOUT_REGISTRATION);
+    expect(await saleRow(saleId)).toBeUndefined();
+  });
+});
+
 describe('SCRUM-478 — a registration named on the service input', () => {
   it('passes when it is real and this park’s', async () => {
     const reg = await register([child({ name: 'Bee' })]);
