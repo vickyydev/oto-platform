@@ -605,10 +605,10 @@ try {
     }, true);
     const setAdults = set.indexOf('data-adults="differ"');
     // SCRUM-958 (SCRUM-940 point 3) printed the set-menu choice's group in one pair of brackets;
-    // SCRUM-1028 (the brief: the chosen dishes by name, without the set menu's numbering) leaves a
-    // note that is only that label out, so the choice prints by its name.
-    assert.deepEqual(rowsFrom(set, 0, setAdults), ["3x Margherita", "2x Fruit skewers"]);
-    assert.equal(set.includes("(Pizza)"), false, "never the group's label");
+    // SCRUM-1028 left that label out, and SCRUM-1050, R13 (the owner's answer of 19 November) brings
+    // it back beside the dish, as before 19 November: these rows follow it.
+    assert.deepEqual(rowsFrom(set, 0, setAdults), ["3x Margherita (Pizza)", "2x Fruit skewers"]);
+    assert.equal(set.includes("((Pizza))"), false, "one pair of brackets");
     assert.deepEqual(rowsFrom(set, setAdults), ["2x Fruit skewers"]);
     // A BEO saved before the switch with two different lists: their list as saved, as their own.
     const before = await pdf({ kids: KIDS, adults: [line("a1", "Steak", 4)] });

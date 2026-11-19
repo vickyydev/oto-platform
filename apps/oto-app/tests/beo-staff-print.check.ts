@@ -6,12 +6,12 @@
 //   1. the header: the party's name, day, times, room and park; the child, the
 //      contact, the planned guests and the hosts; the package box with what the
 //      package includes as its snapshot stores it, its lines and the till's
-//      money (or why there is none); nothing yet for expected extra guests or
-//      socks (SCRUM-1031 fills that place);
+//      money (or why there is none); nothing for expected extra guests or socks
+//      on a party that stores none (SCRUM-1031: tests/beo-print-fields.check.ts);
 //   2. the ONE timeline (SCRUM-1027), each step with its person; the dishes and
 //      drinks are not printed there a second time;
 //   3. KITCHEN on the left: the kids' menu with every dish and its count, a set
-//      menu's choices by name without their group label; the adults as their own
+//      menu's choices by name with their group label (SCRUM-1050, R13); the adults as their own
 //      list with their own counts when they eat differently, one line when they
 //      eat the kids' menu; "Not Needed" when the kitchen is set so, and no Kitchen
 //      at all when the BEO holds nothing for it (no "no food" is inferred);
@@ -128,10 +128,13 @@ await check("the header's package box: the package, what it includes as its snap
   assert.equal(part(await beoPdfHtml({ ...normalParty, partyDetails: undefined, till: { status: "not_linked", message: "x" }, packageSnapshot: undefined }), "package"), "");
 });
 
-await check("nothing prints yet for expected extra guests or socks: their place in the header is empty", async () => {
+// SCRUM-1031 filled the place this check kept empty: the header says the socks arrangement and the
+// expected extra guests when the party stores them (tests/beo-print-fields.check.ts). A party that
+// stores neither, as every party saved before them, still prints nothing of them.
+await check("a party that stores no expected extra guests and no socks arrangement prints neither", async () => {
   const head = textOf(html.slice(0, html.indexOf('data-part="timeline"')));
   assert.equal(/expected extra|socks/i.test(head), false, head);
-  assert.match(code(read("server/pdf.ts")), /const laterHeaderFacts: string\[\] = \[\];/);
+  assert.match(code(read("server/pdf.ts")), /const laterHeaderFacts: string\[\] = \[wideFact\(SOCKS_PRINT_LABEL, socksWords\)\];/);
 });
 
 // ── 2. The parts in their places ─────────────────────────────────────────────
@@ -164,17 +167,18 @@ await check("the one timeline: every step in time order with its person; the ord
 
 // ── 3. Kitchen ───────────────────────────────────────────────────────────────
 
-await check("the kids' menu: the set menu's choices by name (no group label) with their counts, then the additional items", async () => {
+await check("the kids' menu: the set menu's choices by name with their group's label and their counts, then the additional items", async () => {
   const k = part(html, "kitchen");
   assert.match(textOf(k), /Kids Menu \(11 kids\) — Service: 11:30/);
   assert.match(textOf(k), /Set Menu ZZ TEST Set Central — Received 30 Nov/);
   const rows = rowsOf(k);
-  // SCRUM-1028, the brief: "the chosen pizza names without numbering". A set line's note slot holds
-  // only its group's label in brackets, so it is not printed.
+  // SCRUM-1050, R13 (the owner's answer of 19 November): the set menu's group label is back beside
+  // a dish, "Margherita (Pizza 2)", as the print showed before 19 November. This check pinned the
+  // label dropped (SCRUM-1028); that rule is undone and the pin follows it.
   assert.deepEqual(rows.slice(0, 6), [
-    "1x Hawaiian SET", "1x Margherita SET", "1x Pepperoni SET", "1x Fried rice SET", "1x Fish fingers SET", "3x French fries SET",
+    "1x Hawaiian (Pizza 1) SET", "1x Margherita (Pizza 2) SET", "1x Pepperoni (Pizza 3) SET", "1x Fried rice (Rice) SET", "1x Fish fingers (Fish) SET", "3x French fries (Sides) SET",
   ]);
-  assert.equal(/\(Pizza \d\)|\(Rice\)|\(Sides\)/.test(k), false, "no group label anywhere in the kitchen");
+  assert.equal(/\(\(/.test(k), false, "one pair of brackets (SCRUM-958)");
   assert.ok(k.indexOf("Additional Items") > k.indexOf("French fries"));
   assert.equal(rows[6], "2x Fruit skewers EXTRA 120฿ each");
   assert.equal(rows[7], "2x Vegetable sticks (no dip) EXTRA 90฿ each");
@@ -227,8 +231,8 @@ await check("the kitchen set to Not Needed says so in its old words; no kitchen 
     assert.equal(/No food ordered|No food for this party/.test(page), false);
     assert.ok(page.includes('class="col-right"') && page.includes('data-part="setup"'));
   }
-  // A needed kitchen with only its notes prints them.
-  assert.match(textOf(part(await beoPdfHtml(kitchenWith({ kids: [], adults: [] })), "kitchen")), /Kitchen ZZ TEST kitchen note: pizzas cut in eight/);
+  // A needed kitchen with only its notes prints them (SCRUM-1030: under their label, at the top).
+  assert.match(textOf(part(await beoPdfHtml(kitchenWith({ kids: [], adults: [] })), "kitchen")), /Kitchen Kitchen Notes: ZZ TEST kitchen note: pizzas cut in eight/);
 });
 
 // ── 4. The right column ──────────────────────────────────────────────────────
@@ -292,8 +296,9 @@ await check("a part with nothing in it prints no heading (SCRUM-978), and an old
 await check("a dish with no count prints as 1, never null or undefined; names print as stored", async () => {
   const page = await beoPdfHtml(kitchenWith({ kids: [dish("ZZ TEST no count"), { ...dish("ZZ TEST null count"), quantity: null }, set("ZZ TEST set no count", "Pizza 1")] }, { setMenuEnabled: true }));
   const rows = rowsOf(part(page, "kitchen"));
-  assert.ok(rows.includes("1x ZZ TEST set no count SET"), JSON.stringify(rows));
-  // Only a note that is the group's label in brackets is left out; another note on a set line prints.
+  // SCRUM-1050, R13: the set line's group label prints beside it again.
+  assert.ok(rows.includes("1x ZZ TEST set no count (Pizza 1) SET"), JSON.stringify(rows));
+  // Any other note on a set line prints too, in one pair of brackets.
   const noted = rowsOf(part(await beoPdfHtml(kitchenWith({ kids: [{ ...set("ZZ TEST set dish", "Pizza 1"), notes: "ZZ TEST no olives" }] }, { setMenuEnabled: true })), "kitchen"));
   assert.ok(noted.includes("1x ZZ TEST set dish (ZZ TEST no olives) SET"), JSON.stringify(noted));
   assert.ok(rows.some((r) => r.startsWith("1x ZZ TEST no count EXTRA")) && rows.some((r) => r.startsWith("1x ZZ TEST null count EXTRA")));

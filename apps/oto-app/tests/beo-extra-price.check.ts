@@ -162,7 +162,7 @@ await check("the BEO PDF prints a drink's EXTRA price for each item, as the kitc
   assert.equal((bar.match(/ each<\/span>/g) ?? []).length, 1, "a line with no price prints none");
 });
 
-await check("the BEO PDF prints a set-menu choice by its name (SCRUM-1028), a longer note in single brackets, never ((Pizza)) (SCRUM-940 point 3)", async () => {
+await check("the BEO PDF prints a set-menu choice with its group's label again (SCRUM-1050, R13), single brackets, never ((Pizza)) (SCRUM-940 point 3)", async () => {
   const kids = [
     { quantity: 1, itemName: "Margherita", notes: "(Pizza)", source: "set_menu", groupId: "g-pizza" },
     { quantity: 1, itemName: "Chicken", notes: "(Fried rice) · no onion", source: "set_menu", groupId: "g-rice" },
@@ -173,10 +173,10 @@ await check("the BEO PDF prints a set-menu choice by its name (SCRUM-1028), a lo
     kitchenPlan: { required: true, setMenuEnabled: true, setMenuTemplateName: "ZZ TEST set", menus: { kids } },
     barPlan: { items: [{ quantity: 1, itemName: "Juice", notes: "(Drinks pitcher)", source: "set_menu" }] },
   } as Parameters<typeof beoPdfHtml>[0]);
-  // SCRUM-1028 (the brief: the chosen dishes by name, without the set menu's numbering): a note
-  // that is only the group's label is left out; a note with more in it prints as before.
-  assert.ok(html.includes('<td class="dish">Margherita</td>'), "the choice by its name");
-  assert.equal(html.includes("Margherita (Pizza)"), false, "not its group's label");
+  // SCRUM-1050, R13 (the owner's answer of 19 November): the set menu's group label is back beside a
+  // dish, as the print showed before 19 November; SCRUM-1028 had left it out and this check pinned
+  // that. A note with more in it prints as before.
+  assert.ok(html.includes('<td class="dish">Margherita (Pizza)</td>'), "the choice and its group");
   assert.ok(html.includes("Chicken (Fried rice) · no onion"), "a note after the group keeps one pair");
   assert.ok(html.includes("Juice <span class=\"item-note\">(Drinks pitcher)</span>"), "the bar too");
   assert.ok(html.includes("<span class=\"item-note\">(cut small)</span>"), "a plain note in brackets, as before");
