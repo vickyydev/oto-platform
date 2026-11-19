@@ -346,10 +346,8 @@ async function writeBatch(db: Db, scanned: ScannedMember[], frame: BatchFrame): 
       if (updated.rowCount !== pairs.length) {
         throw new Error(`expected to give ${pairs.length} children a family, the database changed ${updated.rowCount}`);
       }
-      for (const p of pairs) {
-        const operatorId = locked.find((m) => m.id === p.memberId)!.operatorId;
-        countsOf(operatorId).childrenSet += 1;
-      }
+      const operatorOf = new Map(locked.map((m) => [m.id, m.operatorId]));
+      for (const p of pairs) countsOf(operatorOf.get(p.memberId)!).childrenSet += 1;
     }
 
     // One row per operator that this batch wrote for; a batch that wrote
