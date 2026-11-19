@@ -1,6 +1,13 @@
 # Drop-off and the BEO form: the plan from the park team's requests
 
-**State, 19 November 2026: PROPOSED, not approved, nothing built.** The owner
+**State, 19 November 2026, afternoon: ANSWERED IN PART AND APPROVED TO BUILD.**
+The owner answered 47 of the 56 questions and said to start on what is cleared.
+His answers are the build specification in `ANSWERS.md` beside this file; the
+tickets are SCRUM-1017 (drop-off) and SCRUM-1026 (the BEO) with the steps as
+sub-tasks. Three BEO steps of section 4 fall away by his answers (4, 9, 10),
+and no layout example is drawn first. The text below is the plan as proposed.
+
+**State when proposed: not approved, nothing built.** The owner
 asked for the park team's requests of 20 October to 19 November to be compared
 with what is built, and for a plan with questions on its own page. No ticket is
 filed and no code changes before his answers. A tick on the page is the go for

@@ -1,3 +1,32 @@
+## 19 November 2026, afternoon: the owner answered the drop-off and BEO plan; two lanes build
+
+- **His answers:** 47 of 56 on the plan page, all of drop-off and all of the
+  BEO. He said to start on what is cleared. The answers are the build
+  specification: `docs/progress/plans/dropoff-beo-20261119/ANSWERS.md`.
+- **Tickets filed:** SCRUM-1017 "Drop-off and nanny check-in: the flow the park
+  team agreed" with sub-tasks SCRUM-1018 to 1025; SCRUM-1026 "BEO: the
+  simplified editor and the new Staff BEO print" with sub-tasks SCRUM-1027 to
+  1035.
+- **Building now, side by side:** the counter flow (SCRUM-1018 to 1021) in
+  `C:/oto-lanes/codex-payment-choice-recovery-20261116`, branch
+  `lane/dropoff1017-20261119`, checkpoints on `wip/dropoff1017-20261119`; the
+  timeline and the Staff BEO print (SCRUM-1027, 1028) in
+  `C:/oto-lanes/codex-whatsapp-908-20261116`, branch `lane/beo1026-20261119`,
+  checkpoints on `wip/beo1026-20261119`.
+- **Changed rulings to remember:** the number on the drop-off and nanny forms
+  is shown with no tick (replaces 12 November, SCRUM-863); the Billing section
+  of the BEO stays; "Mini Waffles" keeps its name; service charge inside food
+  prices is "not now".
+- **Not answered (nothing built):** nine smaller questions (VAT on the service
+  charge, extra party guest price, Mystery Box stock, option editor,
+  scheduling order, several displays, the booth with nobody on shift, a single
+  shift for a former employee, leave types).
+- **Next after these two lanes:** the BEO editor and its fields (SCRUM-1029 to
+  1035); the phone form (SCRUM-1022, 1023) once the SMS sender is proved;
+  then family profiles (SCRUM-1024, 1025) with their own migration plan.
+- The inbox redesign (SCRUM-1016) is at its review stage; nothing of it is on
+  main or staging yet. The older decisions page stays untouched.
+
 ## 19 November 2026, midday: the drop-off and BEO plan is on its own page; nothing built
 
 - **The plan page** (private, 56 questions, answers saved in the page):
