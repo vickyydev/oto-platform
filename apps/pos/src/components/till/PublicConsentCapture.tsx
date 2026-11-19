@@ -122,6 +122,8 @@ interface ChildDraft {
   medicalNotes?: string;
   /** SCRUM-1021 — the extra prepaid food credit the family chose, in baht, where the form asks them. */
   extraCreditTHB?: number;
+  /** SCRUM-1054 — the family's tick: may order food with the included credit, where the form asks it. */
+  orderWithIncludedCredit?: boolean;
 }
 
 /** SCRUM-1021 — one press of the extra food credit's − or +, in baht: the step of the till's own credit box. */
@@ -174,6 +176,7 @@ function draftOf(prompt: ConsentPrompt): FormDraft {
       ...(careShown(slot) ? { allergiesNone: slot.allergiesNone === true } : {}),
       ...(careShown(slot) && slot.medicalNotes !== undefined ? { medicalNotes: slot.medicalNotes } : {}),
       ...(slot.extraCreditTHB !== undefined ? { extraCreditTHB: slot.extraCreditTHB } : {}),
+      ...(slot.orderWithIncludedCredit !== undefined ? { orderWithIncludedCredit: slot.orderWithIncludedCredit } : {}),
     }])),
     guardianName: prompt.guardianName,
     guardianPhone: prompt.guardianPhone ?? '',
@@ -207,7 +210,8 @@ function isFormDraft(value: unknown): value is FormDraft {
       && (child.ageYears === null || typeof child.ageYears === 'number') && isText(child.allergiesMedical) && isText(child.foodRestrictions)
       && (child.allergiesNone === undefined || typeof child.allergiesNone === 'boolean')
       && (child.medicalNotes === undefined || isText(child.medicalNotes))
-      && (child.extraCreditTHB === undefined || (typeof child.extraCreditTHB === 'number' && Number.isInteger(child.extraCreditTHB)));
+      && (child.extraCreditTHB === undefined || (typeof child.extraCreditTHB === 'number' && Number.isInteger(child.extraCreditTHB)))
+      && (child.orderWithIncludedCredit === undefined || typeof child.orderWithIncludedCredit === 'boolean');
   }) && isText(form.guardianName) && isText(form.guardianPhone)
     && (form.contactChannel === undefined || form.contactChannel === 'whatsapp' || form.contactChannel === 'telegram' || form.contactChannel === 'line')
     && (form.contactConfirmed === undefined || typeof form.contactConfirmed === 'boolean')
@@ -289,6 +293,9 @@ export function mergeConsentDraft(local: FormDraft, base: FormDraft, next: FormD
       // SCRUM-1021 — the family's extra food credit, on a child whose form asks them.
       ...(theirs.extraCreditTHB !== undefined ? { extraCreditTHB: pick(mine.extraCreditTHB ?? 0, was.extraCreditTHB ?? 0,
         theirs.extraCreditTHB, gone.map((child) => child?.extraCreditTHB)) } : {}),
+      // SCRUM-1054 — the family's included-credit tick, on a child whose form asks it.
+      ...(theirs.orderWithIncludedCredit !== undefined ? { orderWithIncludedCredit: pick(mine.orderWithIncludedCredit === true,
+        was.orderWithIncludedCredit === true, theirs.orderWithIncludedCredit, gone.map((child) => child?.orderWithIncludedCredit)) } : {}),
     };
   }
   // SCRUM-863 — a number is the same number typed with its leading zero or
@@ -594,6 +601,8 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
         ...(careShown(slot) && child.medicalNotes !== undefined ? { medicalNotes: child.medicalNotes.slice(0, 500) } : {}),
         // SCRUM-1021 — the extra food credit, only where the form asks for it.
         ...(slot.extraCreditTHB !== undefined ? { extraCreditTHB: Math.max(0, Math.min(EXTRA_CREDIT_MAX_THB, child.extraCreditTHB ?? 0)) } : {}),
+        // SCRUM-1054 — the included-credit tick, only where the form asks it.
+        ...(slot.orderWithIncludedCredit !== undefined ? { orderWithIncludedCredit: child.orderWithIncludedCredit === true } : {}),
       };
     }),
     guardianName: form.guardianName.trim().slice(0, 100),
@@ -763,6 +772,15 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
         </div>
         {extra > 0 && <p className="mt-2 text-base font-semibold text-primary">{t('food.creditAdded', { amount: extra })}</p>}
       </div>}
+      {/* SCRUM-1054 — no extra food chosen: the parent's one tick for the included credit, under the − and +. */}
+      {included > 0 && slot.orderWithIncludedCredit !== undefined && extra === 0 && <label
+        className="flex w-full items-start gap-4 rounded-2xl border border-foreground/10 bg-foreground/5 p-4 text-left">
+        <Checkbox checked={draft.slots[slot.id]?.orderWithIncludedCredit === true} disabled={locked} data-testid="public-consent-order-with-included"
+          onCheckedChange={(value) => choose((current) => ({ ...current,
+            slots: { ...current.slots, [slot.id]: { ...current.slots[slot.id]!, orderWithIncludedCredit: value === true } } }))}
+          className="mt-1 h-6 w-6 border-foreground/30 data-[state=checked]:bg-primary" />
+        <span className="text-lg leading-snug text-foreground/80">
+          {t('superviseConsent.orderWithIncluded', { name: draft.slots[slot.id]?.name.trim() || t('superviseConsent.thisChild') })}</span></label>}
     </div>;
   };
   const index = STEPS.indexOf(step);

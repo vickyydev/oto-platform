@@ -256,6 +256,8 @@ export const DICTIONARY: Record<string, Record<SupportedLang, string>> = {
   // SCRUM-1021 — the food credit on the drop-off and nanny form: the ticket's own, and the extra the parent chooses.
   'superviseConsent.foodIncluded': { en: 'Food credit ฿{{amount}} — included, no extra charge', zh: '餐饮额度 ฿{{amount}} — 已包含，无需额外付费', th: 'เครดิตอาหาร ฿{{amount}} — รวมแล้ว ไม่มีค่าใช้จ่ายเพิ่ม', ru: 'Кредит на еду ฿{{amount}} — включён, без доплаты', fr: 'Crédit repas ฿{{amount}} — inclus, sans supplément' },
   'superviseConsent.extraFoodCredit': { en: 'Extra food credit', zh: '额外餐饮额度', th: 'เครดิตอาหารเพิ่มเติม', ru: 'Дополнительный кредит на еду', fr: 'Crédit repas supplémentaire' },
+  // SCRUM-1054 — the parent's one tick when no extra food is chosen: the child may order with the ticket's included credit.
+  'superviseConsent.orderWithIncluded': { en: '{{name}} may order food with the included credit', zh: '{{name}} 可以使用已包含的餐饮额度点餐', th: '{{name}} สั่งอาหารได้ด้วยเครดิตอาหารที่รวมไว้แล้ว', ru: '{{name}} может заказывать еду за счёт включённого кредита на еду', fr: '{{name}} peut commander à manger avec le crédit repas inclus' },
   'superviseConsent.careFromProfile': { en: "From your profile. Update it if anything has changed.", zh: "来自您的资料。如有变化，请在此更新。", th: "ข้อมูลจากโปรไฟล์ของคุณ แก้ไขได้หากมีอะไรเปลี่ยนแปลง", ru: "Из вашего профиля. Обновите, если что-то изменилось.", fr: "Depuis votre profil. Mettez-le à jour si quelque chose a changé." },
   // SCRUM-1020 fix round — the saved child's medical notes beside the allergy line, and the alert staff set.
   'superviseConsent.medicalNotes': { en: "Medical notes", zh: "医疗备注", th: "บันทึกทางการแพทย์", ru: "Медицинские заметки", fr: "Notes médicales" },

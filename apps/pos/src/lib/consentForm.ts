@@ -21,6 +21,9 @@ import type { ContactChannel } from '@/types';
  *
  * SCRUM-1021 — and the extra prepaid food credit: the parent chooses it on
  * their screen (the owner's answer of 19 November), and the till takes it.
+ *
+ * SCRUM-1054 — and the parent's tick that the child may order food with the
+ * included credit (R3), on a child whose form asked it.
  */
 export function consentSlotPatches(
   slots: readonly SupervisedSlot[],
@@ -44,6 +47,7 @@ export function consentSlotPatches(
       age: child.ageYears === null ? '' : String(child.ageYears),
       ...(slot.savedChildId ? savedCare : { allergiesMedical: child.allergiesMedical, foodRestrictions: child.foodRestrictions }),
       ...food,
+      ...(child.orderWithIncludedCredit !== undefined ? { orderWithIncludedCredit: child.orderWithIncludedCredit } : {}),
     };
     return [{ id: slot.id, patch }];
   });
