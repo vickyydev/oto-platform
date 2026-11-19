@@ -1,0 +1,238 @@
+{
+  "ticket": "SCRUM-1024",
+  "sha": "f223c08e548799e8d87ca3b76e2c6bc56016ca9b",
+  "run": 1,
+  "startedAt": "2026-11-19T12:06:30.620Z",
+  "phase": "audit rows: the child is audited as before, no family row in the trail",
+  "requests": [
+    {
+      "by": "admin",
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "by": "admin",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "by": "admin",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "by": "admin",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "by": "till",
+      "method": "POST",
+      "path": "/members/:id/children",
+      "status": 200
+    },
+    {
+      "by": "till",
+      "method": "POST",
+      "path": "/members/:id/children (same key)",
+      "status": 200
+    },
+    {
+      "by": "admin",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "by": "admin",
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "by": "admin",
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "by": "admin",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "by": "admin",
+      "method": "GET",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "by": "admin",
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "by": "admin",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    }
+  ],
+  "created": [
+    {
+      "kind": "member",
+      "id": "01a1f3b3-b645-7bac-9c8a-82ce5cd11de2",
+      "via": "till membership check"
+    },
+    {
+      "kind": "child",
+      "id": "01a1f3b3-b816-74ca-99e5-17f392acd36f",
+      "name": "ZZ TEST Mali 1"
+    }
+  ],
+  "checks": {
+    "health": {
+      "status": 200,
+      "body": {
+        "status": "ok"
+      }
+    },
+    "ready": {
+      "status": 200,
+      "state": "ready",
+      "database": {
+        "ok": true,
+        "latencyMs": 1
+      }
+    },
+    "leaseFree": true,
+    "memberMade": {
+      "nickname": "ZZ TEST SCRUM-1024 family 1",
+      "children": 0
+    },
+    "childAnswer": {
+      "keys": [
+        "ageYears",
+        "allergies",
+        "dateOfBirth",
+        "dietary",
+        "foodRestrictions",
+        "id",
+        "lastConfirmedAt",
+        "medicalAlert",
+        "medicalNotes",
+        "name",
+        "notes"
+      ],
+      "hasFamilyField": false,
+      "replay": {
+        "status": 200,
+        "sameChild": true
+      }
+    },
+    "lookup": {
+      "children": [
+        "ZZ TEST Mali 1"
+      ],
+      "childKeys": [
+        "ageYears",
+        "allergies",
+        "dateOfBirth",
+        "dietary",
+        "foodRestrictions",
+        "id",
+        "lastConfirmedAt",
+        "medicalAlert",
+        "medicalNotes",
+        "name",
+        "notes"
+      ],
+      "memberKeys": [
+        "children",
+        "childrenReviewSince",
+        "email",
+        "id",
+        "name",
+        "nickname",
+        "notes",
+        "phone",
+        "preferredChannel",
+        "tierCode",
+        "tierVerification"
+      ],
+      "hasFamilyField": false
+    },
+    "audit": {
+      "child": [
+        {
+          "action": "child.create",
+          "entityType": "child",
+          "afterHasFamily": false
+        }
+      ],
+      "member": [
+        {
+          "action": "member.create",
+          "entityType": "member"
+        }
+      ]
+    }
+  },
+  "cleanup": [
+    {
+      "kind": "sales-checked",
+      "open": 0
+    },
+    {
+      "kind": "member",
+      "id": "01a1f3b3-b645-7bac-9c8a-82ce5cd11de2",
+      "archived": true
+    },
+    {
+      "kind": "till-session",
+      "signedOut": true
+    },
+    {
+      "kind": "admin-session",
+      "signedOut": true
+    }
+  ],
+  "pictures": [
+    "01-till-new-member-offer-run1.png",
+    "02-till-member-made-run1.png",
+    "03-till-lookup-offers-saved-child-run1.png"
+  ],
+  "pageErrors": [
+    {
+      "at": "the till signs in at the ZZ TEST station",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    }
+  ],
+  "deployments": {
+    "oto-api-staging": {
+      "id": "dep-dbve9ne7bikc738cb0a0",
+      "status": "live",
+      "sha": "f223c08e548799e8d87ca3b76e2c6bc56016ca9b",
+      "finishedAt": "2026-11-19T12:06:00.511016Z"
+    },
+    "oto-pos-web-staging": {
+      "id": "dep-dbvdv0etlv9c738jfftg",
+      "status": "live",
+      "sha": "a7630e73dccf44bc0d774ce251321167398bca38",
+      "note": "not redeployed: the lane changed no screen"
+    }
+  },
+  "station": {
+    "id": "01a1998f-0cf3-70e3-890b-a7ff88c71bda",
+    "name": "ZZ TEST setup traps 20261102"
+  },
+  "passed": true,
+  "finishedAt": "2026-11-19T12:06:48.628Z"
+}
