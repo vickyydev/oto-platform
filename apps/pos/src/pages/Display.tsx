@@ -34,6 +34,10 @@ export const FILL_RESEND_MS = 3_000;
 function actionOf(value: unknown): unknown {
   return (value as { action?: unknown } | null | undefined)?.action;
 }
+/** SCRUM-1041 — a language this screen can show, as the station names it. */
+function isDisplayLanguage(value: string): value is SupportedLang {
+  return LANGUAGES.some((option) => option.code === value);
+}
 
 function asDisplayError(failure: unknown): unknown {
   if (failure instanceof DisplayError) return failure;
@@ -62,6 +66,7 @@ async function readThroughBox(stationId: string | null, bearer: string, signal: 
 import { CustomerDisplay } from '@/components/till/CustomerDisplay';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { LANGUAGES, type SupportedLang } from '@/i18n/types';
 import type { ContactChannel } from '@/types';
 import { readTicketDisplayView } from '@/lib/displaySession';
 import { useHeldSaleKey, useLanguageChoice } from '@/lib/languageChoice';
@@ -78,7 +83,7 @@ import { displayIdleForUpdate, setDisplayIdle } from '@/pwa/displayIdle';
 
 /** Pairing and station polling deliberately live outside every staff provider. */
 export default function Display() {
-  const { lang, t } = useLanguage();
+  const { lang, setLang, t } = useLanguage();
   const [connection, setConnection] = useState<'connected' | 'reconnecting' | 'paused'>('connected');
   /** SCRUM-973 — nothing heard from the box for `DISPLAY_SILENCE_MS`: "Reconnecting" is said, the grace untouched. */
   const [silent, setSilent] = useState(false);
@@ -404,8 +409,43 @@ export default function Display() {
   }, [connection, send]);
 
   const pairedDeviceId = session?.device.id;
+  /**
+   * SCRUM-1041 — ONE LANGUAGE FOR THE SALE, ON EVERY DISPLAY. A till may have
+   * up to three displays; the station's document holds the one language of
+   * its sale (one sale, one customer). A change another display made there
+   * is followed here — the guest chose it on that screen, so the language
+   * choice of this sale's first screen is made here too — and is never told
+   * back over. Only a change that moved forward is followed: a box that fell
+   * back to an earlier copy is told this screen's language, as before. With
+   * one display nothing else changes the language, so this screen tells the
+   * station its own, exactly as it did.
+   */
+  const heardLanguage = useRef<{ language: string | null; sequence: number } | null>(null);
+  const toldLanguage = useRef<string | null>(null);
+  const followChoice = useRef<() => void>(() => undefined);
+  const followLanguage = useRef(setLang);
+  followLanguage.current = setLang;
   useEffect(() => {
-    if (pairedDeviceId && !pending.current && sessionRef.current?.document.language !== lang) void send('display.set_language', { language: lang });
+    if (!pairedDeviceId) { heardLanguage.current = null; toldLanguage.current = null; return; }
+    if (pending.current) return;
+    const held = sessionRef.current?.document;
+    const station = held?.language ?? null;
+    const before = heardLanguage.current;
+    heardLanguage.current = { language: station, sequence: held?.sequence ?? 0 };
+    // The language this screen told the station, now held there: its own, not another's.
+    const own = station !== null && station === toldLanguage.current;
+    if (own) toldLanguage.current = null;
+    if (before && station && !own && station !== before.language && station !== lang
+      && (held?.sequence ?? 0) >= before.sequence && isDisplayLanguage(station)) {
+      toldLanguage.current = null;
+      followChoice.current();
+      followLanguage.current(station);
+      return;
+    }
+    if (station !== lang) {
+      toldLanguage.current = lang;
+      void send('display.set_language', { language: lang });
+    }
   }, [lang, pairedDeviceId, session?.document.sequence, session?.document.language, languageRetry, send]);
 
   const document = session?.document;
@@ -518,6 +558,8 @@ export default function Display() {
   const firstScreen = view?.stage === 'identify';
   const saleKey = useHeldSaleKey(firstScreen, view?.saleKey);
   const language = useLanguageChoice(firstScreen, saleKey);
+  // SCRUM-1041 — a language the guest chose on another display is this sale's choice here too.
+  followChoice.current = language.choose;
   // SCRUM-929 — the look the till's Display switch last told this screen, kept through a reload.
   const theme = useDisplayTheme(document?.theme);
   // SCRUM-975 — whether a new build may be taken now (`pwa/DisplayUpdater.tsx`): the welcome screen, nobody on it.
