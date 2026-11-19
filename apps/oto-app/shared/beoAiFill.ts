@@ -437,6 +437,12 @@ export interface BeoAiDetails {
    * park's roster (the review's team), and they are assigned only when ticked.
    */
   hosts?: { partyHost?: BeoAiSourced<string>; entertainmentHost?: BeoAiSourced<string> };
+  /**
+   * SCRUM-1030: the Kitchen Notes the conversation gives (what the kitchen must know about
+   * handling or serving the food: an allergy, "no chilli", a serving wish), with its line; written
+   * to the kitchen plan only when approved. Absent from a server before this rule.
+   */
+  kitchenNotes?: BeoAiSourced<string> | null;
 }
 
 /** No details at all: the shape every proposal starts from. */
@@ -847,6 +853,8 @@ export const BeoAiApproveBodySchema = z
         setupTasks: z.array(z.object({ itemLabel: text(300), notes: z.string().max(1000).nullable() }).strict()).max(50).optional(),
         /** SCRUM-904: the setup plan's general notes. */
         setupNotes: text(4000).optional(),
+        /** SCRUM-1030: the kitchen plan's Kitchen Notes, as the reviewer left them. */
+        kitchenNotes: text(4000).optional(),
         posName: text(300).optional(),
         posNotes: text(4000).optional(),
         /** SCRUM-904: `price`, whole baht, only a price the chat names for the item. */
