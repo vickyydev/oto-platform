@@ -13,26 +13,24 @@ interface FoodReconciliationSummaryProps {
   bandCreditTHB?: number | null;
 }
 
-/** SCRUM-1021 — the owner's words for the credit left on the band, for staff to tell the parent. */
-export const BAND_CREDIT_REMAINING_NOTE = "Usable for a take-away until the end of the park's day.";
-
 /**
  * SCRUM-1021 — "You still have X baht remaining" (the owner's answer of 19
  * November), for staff to tell the parent at pickup. Wording and one figure:
  * nothing is printed or sent, and what happens to the money is the park's
  * refund-or-forfeit setting, unchanged. Shown on its own for a child whose
  * band holds credit but who prepaid no food (an Eat & Play ticket's credit).
+ * No line about how long it lasts: that is the park's wallet expiry setting,
+ * unchanged ("as today" in the owner's answer).
  */
 export function BandCreditRemaining({ remainingTHB }: { remainingTHB: number }) {
   return (
-    <div className="rounded-xl border bg-muted/30 px-4 py-3 space-y-2">
+    <div className="rounded-xl border bg-muted/30 px-4 py-3">
       <div className="rounded-lg px-3 py-2.5 flex items-center justify-between bg-sky-500/10 border border-sky-500/20">
         <span className="flex items-center gap-2 text-sm font-semibold text-sky-800 dark:text-sky-200">
           <Wallet className="w-4 h-4 text-sky-700 dark:text-sky-300 shrink-0" />
           You still have ฿{remainingTHB} remaining
         </span>
       </div>
-      <p className="text-xs text-muted-foreground">{BAND_CREDIT_REMAINING_NOTE}</p>
     </div>
   );
 }
@@ -56,6 +54,11 @@ export function FoodReconciliationSummary({
   // band: staff say what is left, in place of "Forfeited".
   const remainingTHB = bandCreditTHB ?? reconciliation.totalUnusedTHB;
   const showRemaining = !isRefund && remainingTHB > 0;
+  // Where the park refunds, the refund takes back the unused prepaid food and
+  // the rest stays on the band (the ticket's own credit): staff say that too,
+  // once the platform answered what the band holds.
+  const leftAfterRefundTHB = isRefund && bandCreditTHB != null
+    ? Math.max(0, bandCreditTHB - reconciliation.totalUnusedTHB) : 0;
 
   return (
     <div className="rounded-xl border bg-muted/30 overflow-hidden">
@@ -142,17 +145,22 @@ export function FoodReconciliationSummary({
           </div>
         )}
 
+        {leftAfterRefundTHB > 0 && (
+          <div className="rounded-lg px-3 py-2.5 flex items-center justify-between bg-sky-500/10 border border-sky-500/20">
+            <span className="flex items-center gap-2 text-sm font-semibold text-sky-800 dark:text-sky-200">
+              <Wallet className="w-4 h-4 text-sky-700 dark:text-sky-300 shrink-0" />
+              You still have ฿{leftAfterRefundTHB} remaining
+            </span>
+          </div>
+        )}
+
         {/* Policy note */}
-        {showRemaining ? (
-          <p className="text-xs text-muted-foreground">{BAND_CREDIT_REMAINING_NOTE}</p>
-        ) : (
-          hasUnused && (
-            <p className="text-xs text-muted-foreground">
-              {isRefund
-                ? 'A refund will be recorded in Order History and returned to the original payment method.'
-                : 'The unused amount is forfeited per venue policy and recorded for the end-of-day report.'}
-            </p>
-          )
+        {!showRemaining && hasUnused && (
+          <p className="text-xs text-muted-foreground">
+            {isRefund
+              ? 'A refund will be recorded in Order History and returned to the original payment method.'
+              : 'The unused amount is forfeited per venue policy and recorded for the end-of-day report.'}
+          </p>
         )}
       </div>
     </div>

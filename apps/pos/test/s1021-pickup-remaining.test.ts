@@ -1,19 +1,16 @@
 import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  BAND_CREDIT_REMAINING_NOTE,
-  BandCreditRemaining,
-  FoodReconciliationSummary,
-} from '@/components/shared/FoodReconciliationSummary';
+import { BandCreditRemaining, FoodReconciliationSummary } from '@/components/shared/FoodReconciliationSummary';
 import type { PrepaidFoodReconciliation } from '@/lib/dropoff';
 
 /**
  * SCRUM-1021 — AT PICKUP, "You still have X baht remaining" (the owner's
  * answer of 19 November 2026): for staff to tell the parent, in place of
- * "Forfeited" where the park does not refund; one short line says the credit
- * pays for a take-away until the park's day ends. Wording and one figure:
- * where the park refunds, the card is as it was.
+ * "Forfeited" where the park does not refund. Fix round: where the park
+ * refunds, the refund line is as it was and the credit left on the band
+ * after it (the ticket's own) is said too; no line about how long the
+ * credit lasts (that is the park's wallet expiry setting, "as today").
  */
 
 beforeEach(() => { vi.stubGlobal('React', React); });
@@ -31,11 +28,10 @@ const credit = (unusedTHB: number): PrepaidFoodReconciliation => ({
 });
 
 describe('SCRUM-1021 — the pickup screen says what is left on the band', () => {
-  it('forfeit: "You still have" the band’s figure, with the one line, and never "Forfeited"', () => {
+  it('forfeit: "You still have" the band’s figure, and never "Forfeited"', () => {
     const out = html(React.createElement(FoodReconciliationSummary, { reconciliation: credit(150), policy: 'forfeit', bandCreditTHB: 1450 }));
     expect(out).toContain('You still have ฿1450 remaining');
-    expect(out).toContain(BAND_CREDIT_REMAINING_NOTE);
-    expect(BAND_CREDIT_REMAINING_NOTE).toBe("Usable for a take-away until the end of the park's day.");
+    expect(out).not.toContain('take-away');
     expect(out).not.toContain('Forfeited');
     expect(out).not.toContain('forfeited per venue policy');
   });
@@ -51,16 +47,25 @@ describe('SCRUM-1021 — the pickup screen says what is left on the band', () =>
     expect(out).not.toContain('You still have');
   });
 
-  it('refund: unchanged — the refund to the parent, no remaining line', () => {
+  it('refund: the refund to the parent as before, then what stays on the band after it', () => {
     const out = html(React.createElement(FoodReconciliationSummary, { reconciliation: credit(150), policy: 'refund', bandCreditTHB: 1450 }));
     expect(out).toContain('Refund to parent');
     expect(out).toContain('−฿150');
-    expect(out).not.toContain('You still have');
+    // ฿1,450 on the band less the ฿150 handed back: the ticket's ฿1,300.
+    expect(out).toContain('You still have ฿1300 remaining');
+  });
+
+  it('refund with nothing else on the band, or no figure from the platform: no remaining line', () => {
+    const none = html(React.createElement(FoodReconciliationSummary, { reconciliation: credit(150), policy: 'refund', bandCreditTHB: 150 }));
+    expect(none).toContain('Refund to parent');
+    expect(none).not.toContain('You still have');
+    const offline = html(React.createElement(FoodReconciliationSummary, { reconciliation: credit(150), policy: 'refund' }));
+    expect(offline).not.toContain('You still have');
   });
 
   it('a band with credit and no prepaid food gets the line on its own', () => {
     const out = html(React.createElement(BandCreditRemaining, { remainingTHB: 1300 }));
     expect(out).toContain('You still have ฿1300 remaining');
-    expect(out).toContain(BAND_CREDIT_REMAINING_NOTE);
+    expect(out).not.toContain('take-away');
   });
 });

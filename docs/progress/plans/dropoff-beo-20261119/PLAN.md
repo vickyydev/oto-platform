@@ -89,3 +89,40 @@ The owner promised the operations lead a layout example before the drop-off
 changes are built. Proposed: clickable screens for drop-off and the BEO drawn
 from his answers, shown to her, then tickets (one story each, the steps as
 sub-tasks), then the builds: one till lane and one HR app lane side by side.
+
+## 7. Questions from the counter build (19 November)
+
+The counter flow (SCRUM-1018 to 1021) met these while it was built and
+reviewed. None is built on a guess: today's behaviour, or the reading named,
+stays until the owner answers. Each is for the owner's page.
+
+- **Q-F1 (SCRUM-1019) A number the system does not know, with no name.** The
+  answer says the customer is created by itself and the name is added when it
+  is known. A member record needs a name today (`crm.member.nickname` is
+  required). Built: a member is created by itself when the display's nickname
+  box was filled. Not built: with no nickname the till still opens the "New
+  member?" box. Options: A. Hold the member under the number as its name
+  until the real name is known (no migration). B. Allow a member with no name
+  (a migration). C. Keep the box only when no name was given (today's build).
+- **Q-F2 (SCRUM-1021) Which credit a counter spend uses first.** A
+  dropped-off Eat & Play child's ticket credit and any extra prepaid food sit
+  on one band (a band names one wallet). Today a spend counts against the
+  prepaid food first, so at pickup under "refund" the family gets back only
+  what is left of the prepaid food, and a refund of the food line from
+  History is refused once the prepaid part is spent. Example: ฿1,300
+  included, ฿500 prepaid, ฿500 spent: ฿0 back. A. Prepaid food first (today's
+  build, kept as the default). B. The ticket's credit first: in the example
+  ฿500 back and ฿800 left on the band.
+- **Q-F3 (SCRUM-1019) A rate document recorded before the expiry date became
+  required, with no date.** Built reading: it still counts as a valid Expat
+  rate and skips the rate step, as it did; documents recorded from now on
+  must carry a date. A. Keep (built). B. Ask the rate again at the next visit.
+- **Q-F4 (SCRUM-1020, for awareness) A saved child's allergy and medical
+  notes now show on the customer display** to whoever typed that family's
+  number at the counter, beside the children's names SCRUM-1014 already shows
+  there. This follows the answer; nothing to change unless the owner asks.
+- **Known limits until the next counter box release (no box release is
+  made by this lane):** a box from before this change drops the form's food
+  credit lines and the new care-note fields, so a display served through it
+  shows the form as before; receipts the box composes while the link is down
+  print no "Credit left" line (on its paper and on the platform's copy).
