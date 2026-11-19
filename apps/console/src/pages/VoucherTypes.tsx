@@ -225,6 +225,32 @@ export function VoucherTypes() {
     }
   };
 
+  /**
+   * SCRUM-1040 — the stock item a hand-over prize takes one from at a park
+   * (the Mystery Box). Saved at once on its own, the drawer staying open on
+   * the answer, exactly as a park's product above.
+   */
+  const setParkStock = async (row: VoucherDefinitionRow, branchId: string, stockItemId: string | null) => {
+    if (!working.isCurrent() || !mounted.current || !manageRef.current || busyRef.current) return;
+    const owner = authorityEpoch.current, editor = editorEpoch.current;
+    busyRef.current = true;
+    setBusy(true);
+    setWriteError(null);
+    try {
+      const answer = await working.run(() => boothApi.setParkStock(row.id, branchId, stockItemId));
+      if (!working.isCurrent() || !mounted.current || !manageRef.current || authorityEpoch.current !== owner) return;
+      if (editorEpoch.current === editor) selectEditor(answer.definition);
+      await load(showArchivedRef.current);
+    } catch (reason) {
+      if (working.isCurrent() && mounted.current && manageRef.current && authorityEpoch.current === owner && editorEpoch.current === editor) setWriteError(readFailureMessage(reason));
+    } finally {
+      if (authorityEpoch.current === owner) {
+        busyRef.current = false;
+        if (mounted.current) setBusy(false);
+      }
+    }
+  };
+
   const newButton = canManage ? (
     <Button
       size="sm"
@@ -475,6 +501,7 @@ export function VoucherTypes() {
           onArchive={(row) => void write(() => working.run(() => boothApi.archiveDefinition(row.id)))}
           onRestore={(row) => void write(() => working.run(() => boothApi.restoreDefinition(row.id)))}
           onSetParkProduct={(row, branchId, productId) => void setParkProduct(row, branchId, productId)}
+          onSetParkStock={(row, branchId, stockItemId) => void setParkStock(row, branchId, stockItemId)}
           onClose={() => selectEditor(null)}
         />
       )}

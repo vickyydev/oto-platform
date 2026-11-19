@@ -108,7 +108,7 @@ export function Money({ page }: { page: MoneyPage }) {
     const api = createMoneyAdminApi({ ...working.api, href: apiUrl });
     const next: Snapshot = { contextVersion: version, api, discounts: [], discountIds: new Map(), methods: [], attempts: new Map(),
       targets: { ticketTypes: [], addOns: [], menuItems: [], menuCategories: [] }, merchItems: [], taxConfig: null,
-      pricing: null, definitions: [], campaigns: [], links: { products: [], packages: [] }, categories: [], notice: null };
+      pricing: null, definitions: [], campaigns: [], links: { products: [], packages: [], stockItems: [] }, categories: [], notice: null };
     let discountRows: Parameters<typeof api.menu.mapDiscounts>[0] = [];
     try {
       if (page === 'discounts') {

@@ -121,6 +121,30 @@ describe('voucher type shared authority and editor lifecycle', () => {
     context.editorEpoch.current++; pending.release(); await outcome;
     expect(context.setOpen).not.toHaveBeenCalled();
   });
+
+  it('a late park-stock response cannot reopen the previous voucher drawer (SCRUM-1040)', async () => {
+    const pending = voucherPending(), context = voucherLifecycle();
+    const old = row({ id: 'zz-old-type', kind: 'manual', valueType: 'none', valueSatang: null });
+    const setParkStock = runInNewContext(voucherCallback('setParkStock'), {
+      ...context, boothApi: { setParkStock: async () => { await pending.promise; return { definition: old }; } },
+    }) as (definition: VoucherDefinitionRow, branchId: string, stockItemId: string | null) => Promise<void>;
+    const outcome = setParkStock(old, 'zz-park', 'zz-stock-item');
+    context.editorEpoch.current++; pending.release(); await outcome;
+    expect(context.setOpen).not.toHaveBeenCalled();
+  });
+
+  it('a current park-stock answer keeps the drawer open on it and reads the list back (SCRUM-1040)', async () => {
+    const context = voucherLifecycle();
+    const answered = row({ id: 'zz-type', kind: 'manual', valueType: 'none', valueSatang: null });
+    const sent: unknown[] = [];
+    const setParkStock = runInNewContext(voucherCallback('setParkStock'), {
+      ...context, boothApi: { setParkStock: async (...args: unknown[]) => { sent.push(args); return { definition: answered }; } },
+    }) as (definition: VoucherDefinitionRow, branchId: string, stockItemId: string | null) => Promise<void>;
+    await setParkStock(answered, 'zz-park', null);
+    expect(sent).toEqual([['zz-type', 'zz-park', null]]);
+    expect(context.setOpen).toHaveBeenCalledWith(answered);
+    expect(context.load).toHaveBeenCalledWith(false);
+  });
 });
 
 it('keeps a current-POS QR exact and allows clearing it without changing code mode', () => {
