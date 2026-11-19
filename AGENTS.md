@@ -65,7 +65,7 @@ not a generator.
   This supersedes older main-red/CI waiting blocks. "Force push Render" means trigger
   a deployment, NEVER force Git history. All other safeguards and local gates remain.
 - **Typecheck output is read whole:** the api must print zero lines; the OTO App's ratchet
-  (`npm run check:ratchet`) holds at its committed baseline (currently 413 diagnostics in 54 files) and that count may never rise. Eslint every
+  (`npm run check:ratchet`) holds at its committed baseline (currently 412 diagnostics in 54 files) and that count may never rise. Eslint every
   touched file. Never use `vitest -t` on serial suites.
 - **Be honest about lost or partial work.** Never claim something is built, tested or
   deployed that you did not see built, tested or deployed. Three answers only to "is X
