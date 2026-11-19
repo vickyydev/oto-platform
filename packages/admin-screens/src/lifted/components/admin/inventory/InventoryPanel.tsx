@@ -1,6 +1,6 @@
 import { useAdminScreenRuntime } from '../../../runtime/AdminScreenRuntime';
 import { isApiError, idemKey } from "../../../api/client";
-import { type StockItemBody } from "@oto/shared";
+import { type StockAdjustReasonType, type StockItemBody } from "@oto/shared";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { InventoryPanelPorts } from '../../../runtime/operations';
 import { Package, AlertTriangle, Pencil, Plus, MapPin } from "lucide-react";
@@ -107,12 +107,12 @@ export function InventoryPanelWithPorts({ ports }: { ports: InventoryPanelPorts 
     setAdjusting({ item, variant });
   };
 
-  const handleAdjust = async (delta: number, reason: string) => {
+  const handleAdjust = async (delta: number, reasonType: StockAdjustReasonType, reason: string) => {
     if (!adjusting || !branchId || !current()) return;
     try {
       // An increase lands at the sell point; a decrease takes from the sell
       // point first and then the cascade — never past what the branch holds.
-      await stockApi.adjust(branchId, { stockItemId: adjusting.variant.id, delta, reason });
+      await stockApi.adjust(branchId, { stockItemId: adjusting.variant.id, delta, reasonType, reason });
       if (current()) setAdjusting(null);
     } catch (err) {
       if (current()) window.alert(stockErrorWords(err));
@@ -330,8 +330,9 @@ export function InventoryPanelWithPorts({ ports }: { ports: InventoryPanelPorts 
               stock, refunds put it back, and each adjustment is a movement with
               the reason and the person who made it. */}
           <p className="text-xs text-foreground/35">
-            Sale decrements and refund restores happen automatically. Use "Adjust" for receive,
-            shrinkage, or recount corrections — these are stamped with your operator ID.
+            Sale decrements and refund restores happen automatically. Deliveries go in through
+            Receive in the stock module. Use "Adjust" for shrinkage or recount corrections and pick
+            its type — these are stamped with your operator ID.
           </p>
         </>
       )}
@@ -364,7 +365,7 @@ export function InventoryPanelWithPorts({ ports }: { ports: InventoryPanelPorts 
           variantLabel={adjusting.variant.label}
           currentStock={adjusting.variant.stock}
           onClose={() => setAdjusting(null)}
-          onAdjust={(delta, reason) => void handleAdjust(delta, reason)}
+          onAdjust={(delta, reasonType, reason) => void handleAdjust(delta, reasonType, reason)}
         />
       )}
     </div>

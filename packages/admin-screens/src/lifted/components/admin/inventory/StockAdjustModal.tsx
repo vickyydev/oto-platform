@@ -1,6 +1,11 @@
 
 import { useState } from "react";
-import { STOCK_ADJUST_QUICK_REASONS } from "@oto/shared";
+import {
+  STOCK_ADJUST_QUICK_REASONS,
+  STOCK_ADJUST_REASON_TYPES,
+  STOCK_ADJUST_REASON_TYPE_LABELS,
+  type StockAdjustReasonType,
+} from "@oto/shared";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "../../ui/dialog";
 import { Button } from "../../ui/button";
 import { Input } from "../../ui/input";
@@ -12,8 +17,8 @@ interface StockAdjustModalProps {
   variantLabel: string;
   currentStock: number;
   onClose: () => void;
-  /** Called with the signed delta and a required reason note. */
-  onAdjust: (delta: number, reason: string) => void;
+  /** Called with the signed delta, the correction's type and a required reason note. */
+  onAdjust: (delta: number, reasonType: StockAdjustReasonType, reason: string) => void;
 }
 
 // The prototype's four quick reasons, then SCRUM-799's "Complimentary / staff
@@ -21,10 +26,50 @@ interface StockAdjustModalProps {
 // words tapped are the reason the movement records, as before.
 export const QUICK_REASONS: readonly string[] = STOCK_ADJUST_QUICK_REASONS.map((r) => r.label);
 
+/** What stops a correction being applied, in the dialog's words; null when it can go. */
+export function stockAdjustProblem(input: { deltaStr: string; reasonType: StockAdjustReasonType | null; reason: string }): string | null {
+  const delta = Number(input.deltaStr);
+  if (input.deltaStr.trim() === '' || isNaN(delta) || delta === 0) return 'Enter a non-zero adjustment amount.';
+  if (!input.reasonType) return 'Pick the type of correction.';
+  if (!input.reason.trim()) return 'A reason is required.';
+  return null;
+}
+
+/** SCRUM-1012 (E5) — the seven types, one tap each, in the reasons' own chip style. */
+export function StockAdjustTypePicker({
+  value,
+  onChange,
+}: {
+  value: StockAdjustReasonType | null;
+  onChange: (type: StockAdjustReasonType) => void;
+}) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {STOCK_ADJUST_REASON_TYPES.map((t) => (
+        <button
+          key={t}
+          type="button"
+          aria-pressed={value === t}
+          onClick={() => onChange(t)}
+          className={`rounded-full border px-3 py-1 text-xs transition-all ${
+            value === t
+              ? 'border-primary bg-primary/10 text-primary'
+              : 'border-foreground/20 text-foreground/60 hover:border-foreground/40'
+          }`}
+        >
+          {STOCK_ADJUST_REASON_TYPE_LABELS[t]}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 /**
  * Stamped stock adjustment modal for the Inventory admin panel. Supports both
  * positive (receive) and negative (shrinkage / correction) deltas. The reason
- * is required and logged with the operator name.
+ * is required and logged with the operator name; so is the type of correction
+ * (SCRUM-1012): the loss report splits losses by it, and a delivery typed as
+ * one is never counted as a find.
  */
 export function StockAdjustModal({
   open,
@@ -35,11 +80,13 @@ export function StockAdjustModal({
   onAdjust,
 }: StockAdjustModalProps) {
   const [deltaStr, setDeltaStr] = useState('');
+  const [reasonType, setReasonType] = useState<StockAdjustReasonType | null>(null);
   const [reason, setReason] = useState('');
   const [error, setError] = useState('');
 
   const reset = () => {
     setDeltaStr('');
+    setReasonType(null);
     setReason('');
     setError('');
   };
@@ -54,9 +101,9 @@ export function StockAdjustModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isValid) { setError('Enter a non-zero adjustment amount.'); return; }
-    if (!reason.trim()) { setError('A reason is required.'); return; }
-    onAdjust(delta, reason.trim());
+    const problem = stockAdjustProblem({ deltaStr, reasonType, reason });
+    if (problem || !reasonType) { setError(problem ?? 'Pick the type of correction.'); return; }
+    onAdjust(delta, reasonType, reason.trim());
     reset();
   };
 
@@ -85,6 +132,11 @@ export function StockAdjustModal({
                 New stock after adjustment: <strong className="text-foreground">{newStock}</strong>
               </p>
             )}
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Label>Type *</Label>
+            <StockAdjustTypePicker value={reasonType} onChange={(t) => { setReasonType(t); setError(''); }} />
           </div>
 
           <div className="flex flex-col gap-2">

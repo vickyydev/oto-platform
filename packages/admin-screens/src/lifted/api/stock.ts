@@ -1,5 +1,5 @@
 import type { ApiResponse } from '@oto/api-types';
-import type {StockAttentionView, StockCostOfGoods, StockItemBody, StockPlaceOpening, StockReports} from '@oto/shared';
+import type {StockAdjustReasonType, StockAttentionView, StockCostOfGoods, StockItemBody, StockPlaceOpening, StockReports} from '@oto/shared';
 import type { InventoryItem,StockLocation,PurchaseOrder,MerchItem } from '../model/types';
 import type { LiftedAdminApi } from '../../api/lifted-api';
 import {idemKey,isApiError} from './client';
@@ -151,7 +151,7 @@ const stockApi = {
   commitStockTake: (branchId: string, lines: Array<{ stockItemId: string; locationId: string; countedQuantity: number }>) =>
     writeThenRead(branchId, () => api.post<ApiResponse<'/branches/{branchId}/stock/stock-takes', 'post'>>(`${stockBase(branchId)}/stock-takes`, { lines }, once())),
 
-  adjust: (branchId: string, body: { stockItemId: string; locationId?: string; delta: number; reason: string }) =>
+  adjust: (branchId: string, body: { stockItemId: string; locationId?: string; delta: number; reasonType: StockAdjustReasonType; reason: string }) =>
     writeThenRead(branchId, () => api.post<ApiResponse<'/branches/{branchId}/stock/adjustments', 'post'>>(`${stockBase(branchId)}/adjustments`, body, once())),
 
   createLocation: (branchId: string, body: { name: string; type: StockLocation['type'] }) =>

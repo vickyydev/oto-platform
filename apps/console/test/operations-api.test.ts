@@ -41,7 +41,7 @@ describe('Admin operational hosts retain native contracts and current ownership'
     const reload = vi.fn(), api = createOperationsApi(() => false, reload);
     await expect(api.membersApi.list()).rejects.toThrow('changed');
     await expect(api.walletApi.reactivateWallet('zz-wallet', 'ZZ TEST reason')).rejects.toThrow('changed');
-    await expect(api.stockApi.adjust('zz-park', { stockItemId: 'zz-item', delta: 1, reason: 'ZZ TEST reason' })).rejects.toThrow('changed');
+    await expect(api.stockApi.adjust('zz-park', { stockItemId: 'zz-item', delta: 1, reasonType: 'found', reason: 'ZZ TEST reason' })).rejects.toThrow('changed');
     expect(fetcher).not.toHaveBeenCalled(); expect(reload).not.toHaveBeenCalled();
   });
   it('rejects a late read instead of handing old rows to a new host', async () => {
@@ -54,14 +54,14 @@ describe('Admin operational hosts retain native contracts and current ownership'
   it('does not refresh a new host after an old write has already committed', async () => {
     let current = true; const pending = hold<Response>(), reload = vi.fn(); fetcher.mockReturnValueOnce(pending.promise);
     const api = createOperationsApi(() => current, reload);
-    const write = api.stockApi.adjust('zz-old-park', { stockItemId: 'zz-item', delta: 1, reason: 'ZZ TEST reason' }); void write.catch(() => undefined);
+    const write = api.stockApi.adjust('zz-old-park', { stockItemId: 'zz-item', delta: 1, reasonType: 'found', reason: 'ZZ TEST reason' }); void write.catch(() => undefined);
     current = false; pending.resolve(new Response('{}'));
     await expect(write).rejects.toThrow('changed'); expect(reload).not.toHaveBeenCalled();
   });
   it('waits for the confirmed stock reread and preserves its failure', async () => {
     const failure = new Error('ZZ TEST saved but refresh refused'), reload = vi.fn().mockRejectedValueOnce(failure);
     const api = createOperationsApi(() => true, reload); answer({ ok: true });
-    await expect(api.stockApi.adjust('zz-selected-park', { stockItemId: 'zz-item', delta: 1, reason: 'ZZ TEST reason' })).rejects.toBe(failure);
+    await expect(api.stockApi.adjust('zz-selected-park', { stockItemId: 'zz-item', delta: 1, reasonType: 'found', reason: 'ZZ TEST reason' })).rejects.toBe(failure);
     expect(reload).toHaveBeenCalledExactlyOnceWith('zz-selected-park'); expect(fetcher).toHaveBeenCalledTimes(1);
   });
   it('preserves server refusal without inventing empty stock or member data', async () => {
