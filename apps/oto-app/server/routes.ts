@@ -7,6 +7,7 @@ import { registerTimekeepingReviewRoutes } from "./timekeeping-review-routes";
 import { registerPayrollRoutes } from "./payroll/routes";
 import { registerEmployeeActionRoutes } from "./employee-action-routes";
 import { registerEmployeeOnboardAgainRoutes } from "./employee-onboard-again-routes";
+import { registerSingleShiftRoutes } from "./single-shift-routes";
 import { bangkokToday, dayBefore, leaverStatusOf } from "./lib/engagementDates";
 import { linkContractToEngagement, planOfSignedContract, plannedEngagementForContract } from "./lib/onboardAgain";
 import { registerQaRoutes } from "./qa/routes";
@@ -4909,6 +4910,10 @@ export async function registerRoutes(
       next(error);
     }
   });
+
+  // SCRUM-1038: a former employee invited to one shift, paid on the old
+  // contract or switched to a casual day rate (lib/singleShift.ts).
+  registerSingleShiftRoutes(app);
 
   // SCRUM-794: Onboard Again on the same profile, fold a duplicate profile
   // into the original, and match the stray "Unscheduled work" approvals after
@@ -10616,7 +10621,7 @@ OTO Company Limited`,
       }
       // SCRUM-769: an ended employment is refused before any clock door is reached;
       // one of a person still employed under another profile is sent to the phone road.
-      if (await kioskEmploymentEnded(employee)) {
+      if (await kioskEmploymentEnded(employee, undefined, branchId)) {
         if (await workingProfileBesides(employee)) {
           return res.json({ success: true, matched: false, confidence: 0, livenessScore, message: "No matching face found. Please clock in with your phone number." });
         }
@@ -10751,7 +10756,7 @@ OTO Company Limited`,
         return refuseKiosk(res);
       }
       // SCRUM-769: an ended employment clocks neither in nor out; nothing is written.
-      if (await kioskEmploymentEnded(employee)) {
+      if (await kioskEmploymentEnded(employee, undefined, branchId)) {
         return refuseEndedEmployment(res, { employeeId: employee.id, branchId, kioskDeviceId, method: "FACE" });
       }
 
@@ -10978,7 +10983,7 @@ OTO Company Limited`,
         return refuseKiosk(res);
       }
       // SCRUM-769: an ended employment clocks neither in nor out; nothing is written.
-      if (await kioskEmploymentEnded(employee)) {
+      if (await kioskEmploymentEnded(employee, undefined, branchId)) {
         return refuseEndedEmployment(res, { employeeId: employee.id, branchId, kioskDeviceId, method: "FACE" });
       }
 
@@ -11116,7 +11121,7 @@ OTO Company Limited`,
         return refuseKiosk(res);
       }
       // SCRUM-769: an ended employment clocks neither in nor out; nothing is written.
-      if (await kioskEmploymentEnded(employee)) {
+      if (await kioskEmploymentEnded(employee, undefined, branchId)) {
         return refuseEndedEmployment(res, { employeeId: employee.id, branchId, kioskDeviceId, method: "FACE" });
       }
 
@@ -11255,7 +11260,7 @@ OTO Company Limited`,
         return refuseKiosk(res);
       }
       // SCRUM-769: an ended employment clocks neither in nor out; nothing is written.
-      if (await kioskEmploymentEnded(employee)) {
+      if (await kioskEmploymentEnded(employee, undefined, branchId)) {
         return refuseEndedEmployment(res, { employeeId: employee.id, branchId, kioskDeviceId, method: "FACE" });
       }
 
@@ -11503,7 +11508,7 @@ OTO Company Limited`,
       // another park's staff reads here exactly like a number that belongs to
       // nobody, and cannot be clocked in at this branch.
       // SCRUM-769: of the profiles carrying the number, the one still employed.
-      const employee = await kioskProfileByPhone(normalized, device.tenantId);
+      const employee = await kioskProfileByPhone(normalized, device.tenantId, undefined, device.branchId);
 
       if (!employee) {
         await storage.createKioskAuthAttempt({
@@ -11523,7 +11528,7 @@ OTO Company Limited`,
         return res.status(400).json({ message: "Branch ID required" });
       }
       // SCRUM-769: an ended employment clocks neither in nor out; nothing is written.
-      if (await kioskEmploymentEnded(employee)) {
+      if (await kioskEmploymentEnded(employee, undefined, branchId)) {
         return refuseEndedEmployment(res, { employeeId: employee.id, branchId, kioskDeviceId, method: "PHONE_FALLBACK", photoEvidenceUrl, sessionId });
       }
 
@@ -11660,7 +11665,7 @@ OTO Company Limited`,
         return res.status(400).json({ message: "Branch ID required" });
       }
       // SCRUM-769: an ended employment clocks neither in nor out; nothing is written.
-      if (await kioskEmploymentEnded(employee)) {
+      if (await kioskEmploymentEnded(employee, undefined, branchId)) {
         return refuseEndedEmployment(res, { employeeId: employee.id, branchId, kioskDeviceId, method: "PIN", photoEvidenceUrl, sessionId });
       }
 

@@ -42,6 +42,7 @@ import { ShiftCard, EmployeeShiftCard, MinimalShiftBlock, LeaveCard, OffDayCard,
 import { DutyShiftMark, DutyShiftTime } from "@/components/scheduling/DutyShiftMark";
 import { EmployeeRowHeader, DaysOffRowHeader } from "@/components/scheduling";
 import { TimelineView, getEmployeeColor, getShiftColorByIndex, BorrowStaffModal, DutyBlocksSheet } from "@/components/scheduling";
+import { SingleShiftInviteDialog, fetchSingleShifts, singleShiftsKey, type SingleShift } from "@/components/scheduling/SingleShiftInviteDialog";
 import type { DutyBlock } from "@shared/schema";
 import { EmployeeInfoPopup } from "@/components/scheduling/EmployeeInfoPopup";
 import { cn } from "@/lib/utils";
@@ -463,6 +464,13 @@ function SchedulingPageInner() {
   const [borrowModalData, setBorrowModalData] = useState<{
     shiftRowId: string;
     weekPlanId: string;
+    date: string;
+    shiftLabel?: string;
+    shiftTime: string;
+    departmentName: string;
+  } | null>(null);
+  const [singleShiftData, setSingleShiftData] = useState<{
+    shiftRowId: string;
     date: string;
     shiftLabel?: string;
     shiftTime: string;
@@ -1029,6 +1037,18 @@ function SchedulingPageInner() {
     },
     enabled: !!selectedBranchId && !!visibleStartDate && !!visibleEndDate,
   });
+
+  // SCRUM-1038: the single shifts of former employees in the visible days, so
+  // their shifts carry the mark (managers only, as the invitation is).
+  const singleShiftsQuery = useQuery<SingleShift[]>({
+    queryKey: singleShiftsKey(selectedBranchId || "", visibleStartDate, visibleEndDate),
+    queryFn: () => fetchSingleShifts(selectedBranchId!, visibleStartDate, visibleEndDate),
+    enabled: isManager && !!selectedBranchId && !!visibleStartDate && !!visibleEndDate,
+  });
+  const singleShiftAssignmentIds = useMemo(
+    () => new Set((singleShiftsQuery.data ?? []).map((s) => s.assignmentId)),
+    [singleShiftsQuery.data],
+  );
 
   const ensureWeekPlanMutation = useMutation({
     mutationFn: async () => {
@@ -4655,9 +4675,11 @@ function SchedulingPageInner() {
                                   const assignmentsData = cellAssignments.map((a) => {
                                     const isCasual = a.assigneeType === "casual" || !!a.casualWorkerId;
                                     const assigneeId = isCasual ? a.casualWorkerId : a.employeeId;
-                                    const assigneeName = isCasual 
+                                    const shownName = isCasual
                                       ? (a.casualWorker?.nickname || a.casualWorker?.fullName || "Casual Worker")
                                       : (a.employee?.nickname || a.employee?.fullName || "Unknown");
+                                    // SCRUM-1038: a former employee's single shift carries the mark.
+                                    const assigneeName = singleShiftAssignmentIds.has(a.id) ? `${shownName} · single shift` : shownName;
                                     const timeOff = !isCasual && a.employeeId ? getTimeOffForDate(a.employeeId, day) : undefined;
                                     const empBranchId = a.employee?.branchId;
                                     const isBorrowed = !isCasual && empBranchId && empBranchId !== selectedBranchId;
@@ -4861,6 +4883,24 @@ function SchedulingPageInner() {
                                               >
                                                 Find staff from other branches
                                               </Button>
+                                              <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="w-full text-xs mt-1"
+                                                onClick={() => {
+                                                  setAssignmentPopover(null);
+                                                  setSingleShiftData({
+                                                    shiftRowId: row.id,
+                                                    date: dateStr,
+                                                    shiftLabel: row.label || undefined,
+                                                    shiftTime: rowTimeRange,
+                                                    departmentName: group.name,
+                                                  });
+                                                }}
+                                                data-testid={`button-single-shift-${row.id}-${dateStr}`}
+                                              >
+                                                Invite a former employee
+                                              </Button>
                                             </div>
                                           </PopoverContent>
                                         </Popover>
@@ -4985,9 +5025,12 @@ function SchedulingPageInner() {
                                   const isCasual = a.assigneeType === "casual" || !!a.casualWorkerId;
                                   const assigneeId = isCasual ? a.casualWorkerId : a.employeeId;
                                   const matchedEmp = isCasual ? null : activeEmployees.find(e => e.id === assigneeId);
+                                  // SCRUM-1038: a former employee is not among the active staff; their single shift carries the mark.
                                   const assigneeName = isCasual
                                     ? casualWorkers?.find((cw: any) => cw.id === assigneeId)?.nickname || "Casual"
-                                    : (matchedEmp?.nickname || matchedEmp?.fullName || "?");
+                                    : singleShiftAssignmentIds.has(a.id)
+                                      ? `${a.employee?.nickname || a.employee?.fullName || "?"} · single shift`
+                                      : (matchedEmp?.nickname || matchedEmp?.fullName || "?");
                                   return { ...a, isCasual, assigneeId, assigneeName };
                                 });
 
@@ -5993,6 +6036,20 @@ function SchedulingPageInner() {
           shiftLabel={borrowModalData?.shiftLabel}
           shiftTime={borrowModalData?.shiftTime || ""}
           departmentName={borrowModalData?.departmentName || ""}
+        />
+      )}
+
+      {selectedBranchId && isManager && (
+        <SingleShiftInviteDialog
+          open={!!singleShiftData}
+          onOpenChange={(open) => !open && setSingleShiftData(null)}
+          branchId={selectedBranchId}
+          shiftRowId={singleShiftData?.shiftRowId || ""}
+          date={singleShiftData?.date || ""}
+          weekStartFormatted={weekStartFormatted}
+          shiftLabel={singleShiftData?.shiftLabel}
+          shiftTime={singleShiftData?.shiftTime || ""}
+          departmentName={singleShiftData?.departmentName || ""}
         />
       )}
       
