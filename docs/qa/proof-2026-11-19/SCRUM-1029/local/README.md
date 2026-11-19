@@ -56,3 +56,50 @@ Seen while looking, not of this stage: on every width the POS box's line
 item note (`input-item-notes-*`, an older row) is 56 pixels wider than its
 row, so a long note would be cut at the sheet's edge; and on a phone the
 Deposit tile's date runs past its tile.
+
+## People on an activity and a time per dish or group (SCRUM-1032, SCRUM-1033)
+
+Rendered the same way on 19 November 2026, from ZZ TEST parties only: the
+print from `generateBeoPdf` with the fixture party of
+`apps/oto-app/tests/fixtures/beo-staff-print.ts` given activities with people
+and notes and dishes with times of their own; the editor in the 672-pixel
+sheet with local stand-in answers. Pictured at 390, 768, 820, 1024, 1133,
+1366 and 1920 pixels wide; at every width nothing ran past the sheet's edge
+and the page raised no error. The ones kept are below; each was looked at.
+
+- `scrum-1032-1033-staff-beo-activities-times.png`: the timeline names each
+  activity's people ("ZZ TEST Bubble show · ZZ TEST Nok, ZZ TEST Ploy, 2 ×
+  Animator", "ZZ TEST Treasure hunt · 1 × Host") and makes one short step at
+  each dish's own time ("12:15 Kids' menu served", "12:45 Adults' menu
+  served", "13:00 Kids' menu served Dessert", "13:30 Drinks Service Coffee &
+  tea"). The Kitchen carries a small blue tag beside a dish served at its own
+  time ("Dessert · 13:00" beside the Adult Waffles and the fruit skewers,
+  "12:15" beside the juice, "12:45" beside the salad); a dish served with its
+  menu carries none. The Bar's coffee carries "Coffee & tea · 13:30".
+  Entertainment prints each activity's people in their own column and its note
+  in grey under its name (one in Thai); an activity with no one prints an
+  empty cell. Page 2 holds the Notes only.
+- `scrum-1032-1033-staff-beo-older-party.png`: the party of before prints as
+  it did: one person per activity, no note, no tag beside any dish.
+- `scrum-1032-editor-activities-people-820.png` and `-390.png`: Entertainment
+  & Program: each activity a light card with its name, one time box and a bin;
+  its people as chips in one box (staff in green, a role in amber reading "2 ×
+  Animator" with its own minus and plus); its note under them. On a phone the
+  chips wrap and the search box takes its own line.
+- `scrum-1032-editor-people-picker-1024.png`: the people box opened: the staff
+  list, then the park group's roles ("Role (a number, names later)").
+- `scrum-1033-editor-serving-times-820.png` and
+  `scrum-1033-editor-bar-serving-1366.png`: Food & Drinks: every dish and drink
+  row keeps one line, with a clock the size of its other buttons; the clock is
+  tinted on a row with a time of its own, and "Served at 13:00 · Dessert" reads
+  under the row, aligned with the row's note.
+- `scrum-1033-editor-serving-panel-1024.png`: the clock opened: "Served at"
+  with its time box ("Empty: served with the menu at 11:30."), an optional
+  group with the list's groups to pick ("Dessert · 13:00"), then Clear, Cancel
+  and Done.
+
+Seen while looking, not of this stage: the menus' own service times and the
+bar's still show the time chip with a gear and a clear button (one time box
+each is part of SCRUM-1029); the Entertainment Host picker in the same section
+shows "Unknown" in the preview because its stand-in staff list does not hold
+the fixture's backup host.
