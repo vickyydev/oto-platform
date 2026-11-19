@@ -163,8 +163,27 @@ export function closedOnBox(saleId: string): boolean {
   return sales.get(saleId)?.answer?.finalised === true;
 }
 
+/**
+ * SCRUM-1048 — EXTRA FOOD CREDIT IS SOLD ONLINE ONLY. The counter box's copy
+ * of a cart does not carry which child an extra food credit line is for, so a
+ * sale it took would charge the credit and load it on no band. The till keeps
+ * that line off the box lane and says so in the counter's words.
+ */
+export const EXTRA_CREDIT_NEEDS_INTERNET =
+  'Extra food credit needs the internet — this counter is offline. Remove the food credit, or take the payment when the connection is back.';
+
+/** Whether a cart carries an extra food credit line (`creditFor`). */
+export function cartHasExtraCredit(cart: Pick<SaleCartPayload, 'lines'>): boolean {
+  return (cart.lines ?? []).some((line) => !!line.creditFor);
+}
+
+function refuseExtraCreditOnBox(cart: Pick<SaleCartPayload, 'lines'>): void {
+  if (cartHasExtraCredit(cart)) throw new Error(EXTRA_CREDIT_NEEDS_INTERNET);
+}
+
 /** The sale as rung up on the box: priced there, not yet paid, no number yet. */
 export async function rungUpOnBox(sale: Omit<BoxLaneSale, 'answer' | 'lane'>): Promise<ApiSale> {
+  refuseExtraCreditOnBox(sale.cart);
   const priced = await bridgeApi.intent<{ quote: ApiSaleQuote }>(
     sale.stationId,
     BRIDGE_CART_QUOTE_INTENT,
@@ -210,6 +229,7 @@ export async function finaliseOnBox(
   tender: SaleTenderPayload | undefined,
   actionId: string,
 ): Promise<BridgeSaleAnswer> {
+  refuseExtraCreditOnBox(sale.cart);
   const money =
     tender && tender.amountSatang > 0
       ? {

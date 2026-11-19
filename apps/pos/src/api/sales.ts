@@ -132,6 +132,8 @@ export interface SaleCartLinePayload {
   stayDurationLabel?: string;
   /** SCRUM-798 — the line a Golden Ticket admits; the voucher's worth is the platform's. */
   voucherGift?: boolean;
+  /** SCRUM-1048 — an extra food credit line: the child's ticket line and which of its children. */
+  creditFor?: { cartLineId: string; kidOrdinal: number };
 }
 
 /**
@@ -993,6 +995,14 @@ export function buildCartPayload(
         ...(source ? { stayHours: source.ticketType.hours } : {}),
         ...(source ? { stayDurationLabel: source.ticketType.durationLabel } : {}),
         ...(source?.voucherGift ? { voucherGift: true } : {}),
+        ...(source?.extraCredit
+          ? {
+              creditFor: {
+                cartLineId: platformId(source.extraCredit.forLineId),
+                kidOrdinal: source.extraCredit.kidOrdinal,
+              },
+            }
+          : {}),
       };
     }),
     promos: promoPayload(cart.promos),

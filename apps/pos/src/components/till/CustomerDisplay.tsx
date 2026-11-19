@@ -409,6 +409,18 @@ function OrderLineCards({
             md.targetLineId === line.id &&
             md.targetComponent
         );
+        // SCRUM-1048 — extra food credit for a child on a ticket: its own
+        // line, as the order shows it, in the words of the drop-off form.
+        if (line.extraCredit) {
+          return (
+            <div key={line.id} className="bg-foreground/5 rounded-3xl p-6 border border-foreground/10" data-testid="display-extra-credit">
+              <div className="flex items-center justify-between">
+                <div className="text-2xl font-bold">{t('superviseConsent.extraFoodCredit')}</div>
+                <div className="text-2xl font-bold text-primary">฿{bahtText(line.lineTotal)}</div>
+              </div>
+            </div>
+          );
+        }
         // promoItem lines are synthetic (free item at ฿0 net); render
         // as a simple grant card rather than a ticket breakdown card.
         if (line.promoItem) {
