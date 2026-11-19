@@ -4,10 +4,12 @@ import {
   branch,
   product,
   station,
+  stockItem,
   ticketPackage,
   voucher,
   voucherDefinition,
   voucherProductLink,
+  voucherStockLink,
   type Db,
   type VoucherCodeMode,
   type VoucherKind,
@@ -18,6 +20,7 @@ import { newId, VoucherTargetSchema, type VoucherTarget } from '@oto/shared';
 import { AppError } from '../lib/errors';
 import { pgErrorOf } from '../lib/scrub';
 import { audit } from './audit';
+import { stockItemDisplayName } from './stock';
 import { withTx, type Exec, type OpContext } from './tx';
 import { CREDIT_VOUCHER_KIND } from './voucher-credit-approval';
 import {
@@ -191,6 +194,19 @@ export interface VoucherParkProduct {
 }
 
 /**
+ * SCRUM-1040 — the stock item a hand-over prize takes one from at one park
+ * (the Mystery Box), named with its size where it has one.
+ */
+export interface VoucherParkStock {
+  branchId: string;
+  branchName: string;
+  stockItemId: string;
+  stockItemName: string;
+  /** Counted at that park: not archived and not retired. The till takes from it only then. */
+  live: boolean;
+}
+
+/**
  * A definition as the Console reads it: the row, JSON-safe, with the product
  * or package it points at named and the booth prizes that point at it.
  */
@@ -230,6 +246,11 @@ export interface VoucherDefinitionView {
    * administrator linked one for. Empty for every other kind.
    */
   parkProducts: VoucherParkProduct[];
+  /**
+   * SCRUM-1040 — for a hand-over prize, the stock item it takes one from at
+   * each park an administrator linked one for. Empty for every other kind.
+   */
+  parkStock: VoucherParkStock[];
   /**
    * Vouchers of this type still in families' hands — issued, not yet used,
    * not voided and not past their date — counted when the type was read. It
@@ -513,6 +534,25 @@ async function viewsOf(
     .where(and(eq(voucherProductLink.operatorId, operatorId), inArray(voucherProductLink.voucherDefinitionId, ids)))
     .orderBy(asc(branch.name));
 
+  // SCRUM-1040 — the stock item each park's hand-over prize takes one from.
+  const stockLinks = await exec
+    .select({
+      definitionId: voucherStockLink.voucherDefinitionId,
+      branchId: voucherStockLink.branchId,
+      branchName: branch.name,
+      stockItemId: stockItem.id,
+      name: stockItem.name,
+      variantLabel: stockItem.variantLabel,
+      itemBranchId: stockItem.branchId,
+      active: stockItem.active,
+      archivedAt: stockItem.archivedAt,
+    })
+    .from(voucherStockLink)
+    .innerJoin(stockItem, eq(stockItem.id, voucherStockLink.stockItemId))
+    .innerJoin(branch, eq(branch.id, voucherStockLink.branchId))
+    .where(and(eq(voucherStockLink.operatorId, operatorId), inArray(voucherStockLink.voucherDefinitionId, ids)))
+    .orderBy(asc(branch.name));
+
   const productById = new Map(products.map((p) => [p.id, p]));
   const packageById = new Map(packages.map((p) => [p.id, p]));
   const unredeemedById = new Map(unredeemed.map((u) => [u.definitionId, u.vouchers]));
@@ -589,6 +629,16 @@ async function viewsOf(
           productName: l.productName,
           // On sale at that park: the till honours it only then.
           live: l.active && l.archivedAt === null && (l.productBranchId === null || l.productBranchId === l.branchId),
+        })),
+      parkStock: stockLinks
+        .filter((l) => row.kind === 'manual' && l.definitionId === row.id)
+        .map((l) => ({
+          branchId: l.branchId,
+          branchName: l.branchName,
+          stockItemId: l.stockItemId,
+          stockItemName: stockItemDisplayName(l.name, l.variantLabel),
+          // Taken from only while it is counted at that park (`prizeStockItemAt`).
+          live: l.active && l.archivedAt === null && l.itemBranchId === l.branchId,
         })),
       unredeemedVouchers: unredeemedById.get(row.id) ?? 0,
       target: storedTarget(row.target),
@@ -678,6 +728,8 @@ export interface VoucherLinkOptions {
     priceSatang: number;
   }>;
   packages: Array<{ id: string; name: string; branchId: string; branchName: string }>;
+  /** SCRUM-1040 — each park's counted stock items, for a hand-over prize to take one from. */
+  stockItems: Array<{ id: string; name: string; branchId: string; branchName: string }>;
 }
 
 /**
@@ -741,9 +793,36 @@ export async function voucherDefinitionLinkOptions(
       ),
     )
     .orderBy(asc(branch.name), asc(ticketPackage.name));
+  // SCRUM-1040 — what a hand-over prize can take one from: each live park's
+  // counted stock items (not archived, not retired), the Mystery Box among them.
+  const items = await db
+    .select({
+      id: stockItem.id,
+      name: stockItem.name,
+      variantLabel: stockItem.variantLabel,
+      branchId: stockItem.branchId,
+      branchName: branch.name,
+    })
+    .from(stockItem)
+    .innerJoin(branch, eq(branch.id, stockItem.branchId))
+    .where(
+      and(
+        eq(stockItem.operatorId, operatorId),
+        eq(stockItem.active, true),
+        isNull(stockItem.archivedAt),
+        isNull(branch.archivedAt),
+      ),
+    )
+    .orderBy(asc(branch.name), asc(stockItem.name), asc(stockItem.variantLabel));
   return {
     products: products.map((p) => ({ ...p, branchName: p.branchName ?? null })),
     packages,
+    stockItems: items.map((i) => ({
+      id: i.id,
+      name: stockItemDisplayName(i.name, i.variantLabel),
+      branchId: i.branchId,
+      branchName: i.branchName,
+    })),
   };
 }
 
@@ -1095,6 +1174,91 @@ export async function setVoucherParkProduct(
         entityId: before.id,
         before: { branchId, productId: existing?.productId ?? null },
         after: { branchId, productId },
+        requestId: ctx.requestId,
+      });
+    }
+    return { definition: await viewOne(tx, actor.operatorId, before) };
+  });
+}
+
+/**
+ * SCRUM-1040 (owner's answer, 19 November 2026) — SET OR CLEAR THE STOCK ITEM
+ * A HAND-OVER PRIZE TAKES ONE FROM AT ONE PARK: the Mystery Box, a stock item
+ * whose count is received and corrected in the Console like any other. When a
+ * voucher of this type is used up at a till of that park, one unit leaves that
+ * item's count (`takeStockForPrize`). `stockItemId` null clears the park's
+ * link, and the park's prize then takes nothing, as before. The item must be
+ * counted at that park — its own, not archived, not retired. Only a hand-over
+ * prize takes one; every other kind already says what it does at the till.
+ * One transaction, audited when it changes anything.
+ */
+export async function setVoucherParkStock(
+  db: Db,
+  ctx: OpContext,
+  actor: Actor,
+  before: DefinitionRow,
+  branchId: string,
+  stockItemId: string | null,
+): Promise<{ definition: VoucherDefinitionView }> {
+  if (before.kind !== 'manual') {
+    throw new AppError(400, 'VOUCHER_PARK_STOCK_KIND', 'Only a hand-over prize takes one off a stock item.');
+  }
+  const [park] = await db
+    .select({ id: branch.id })
+    .from(branch)
+    .where(and(eq(branch.id, branchId), eq(branch.operatorId, actor.operatorId)))
+    .limit(1);
+  if (!park) throw new AppError(404, 'BRANCH_NOT_FOUND', 'No park with that id at this operator.');
+  return withTx(db, ctx, 'voucher_definition.park_stock', async (tx) => {
+    if (stockItemId !== null) {
+      const [item] = await tx
+        .select({ id: stockItem.id, branchId: stockItem.branchId, active: stockItem.active, archivedAt: stockItem.archivedAt })
+        .from(stockItem)
+        .where(and(eq(stockItem.id, stockItemId), eq(stockItem.operatorId, actor.operatorId)))
+        .limit(1)
+        // The item must not be retired or removed under the link being written.
+        .for('share');
+      if (!item || item.branchId !== branchId || !item.active || item.archivedAt) {
+        throw new AppError(
+          400,
+          'VOUCHER_PARK_STOCK_NOT_HERE',
+          'That stock item is not counted at this park — pick one of the park’s own stock items.',
+        );
+      }
+    }
+    const [existing] = await tx
+      .select()
+      .from(voucherStockLink)
+      .where(and(eq(voucherStockLink.voucherDefinitionId, before.id), eq(voucherStockLink.branchId, branchId)))
+      .limit(1);
+    const now = new Date();
+    if (stockItemId === null) {
+      if (existing) await tx.delete(voucherStockLink).where(eq(voucherStockLink.id, existing.id));
+    } else if (existing) {
+      if (existing.stockItemId !== stockItemId) {
+        await tx.update(voucherStockLink).set({ stockItemId, updatedAt: now }).where(eq(voucherStockLink.id, existing.id));
+      }
+    } else {
+      await tx.insert(voucherStockLink).values({
+        id: newId(),
+        operatorId: actor.operatorId,
+        voucherDefinitionId: before.id,
+        branchId,
+        stockItemId,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+    if ((existing?.stockItemId ?? null) !== stockItemId) {
+      await audit.record(tx, {
+        actorAccountId: actor.accountId,
+        operatorId: actor.operatorId,
+        branchId,
+        action: 'voucher_definition.park_stock',
+        entityType: 'voucher_definition',
+        entityId: before.id,
+        before: { branchId, stockItemId: existing?.stockItemId ?? null },
+        after: { branchId, stockItemId },
         requestId: ctx.requestId,
       });
     }

@@ -12,12 +12,14 @@ import {
   sale,
   spin,
   station,
+  stockItem,
   ticketPackage,
   voucher,
   voucherDefinition,
   voucherProductLink,
   voucherMiss,
   voucherRedemption,
+  voucherStockLink,
   type Db,
   type VoucherMissResult,
   type VoucherReleaseReason,
@@ -55,6 +57,7 @@ import { AppError } from '../lib/errors';
 import { audit } from './audit';
 import { SPIN_LABEL_JOINS, SPIN_STAFF_LABEL } from './booth-attribution';
 import { raiseAlert } from './ops';
+import { availableFor, stockItemDisplayName, takeStockForPrize } from './stock';
 import type { Exec, Tx } from './tx';
 import { CREDIT_VOUCHER_KIND, creditVoucherErrors } from './voucher-credit-approval';
 import {
@@ -1165,6 +1168,61 @@ export interface VoucherView {
    * `staffLabel` null too, the voucher is unattributed.
    */
   issuedBy: { name: string | null; code: string } | null;
+  /**
+   * SCRUM-1040 — for a hand-over prize whose type takes one off a stock item at
+   * this till's park (`promo.voucher_stock_link`): that item, and what the
+   * count says the park holds of it now, every place together. Null for any
+   * other voucher, and for a hand-over prize with no stock item here. At zero
+   * the till warns staff and the prize is still handed over
+   * (`takeStockForPrize` records what the count did not hold).
+   */
+  prizeStock: { name: string; available: number } | null;
+}
+
+/**
+ * SCRUM-1040 — the stock item a hand-over voucher type takes one from at a
+ * park: the link an administrator set for that park, while the item is live
+ * there (not archived, not retired — the selling paths leave a retired item
+ * out too). Null when the park has no link, which leaves the prize as it was.
+ */
+export async function prizeStockItemAt(
+  db: Exec,
+  operatorId: string,
+  definitionId: string,
+  branchId: string,
+): Promise<{ id: string; name: string; variantLabel: string | null } | null> {
+  const [row] = await db
+    .select({ id: stockItem.id, name: stockItem.name, variantLabel: stockItem.variantLabel })
+    .from(voucherStockLink)
+    .innerJoin(stockItem, eq(stockItem.id, voucherStockLink.stockItemId))
+    .where(
+      and(
+        eq(voucherStockLink.operatorId, operatorId),
+        eq(voucherStockLink.voucherDefinitionId, definitionId),
+        eq(voucherStockLink.branchId, branchId),
+        eq(stockItem.branchId, branchId),
+        eq(stockItem.active, true),
+        isNull(stockItem.archivedAt),
+      ),
+    )
+    .limit(1);
+  return row ?? null;
+}
+
+/** What the till's card says about a hand-over prize's stock at this park (`VoucherView.prizeStock`). */
+async function prizeStockOf(
+  db: Exec,
+  def: DefinitionRow,
+  branchId: string,
+): Promise<VoucherView['prizeStock']> {
+  if (def.kind !== 'manual') return null;
+  const item = await prizeStockItemAt(db, def.operatorId, def.id, branchId);
+  if (!item) return null;
+  const held = await availableFor(db, branchId, [item.id]);
+  return {
+    name: stockItemDisplayName(item.name, item.variantLabel),
+    available: held.get(item.id)?.available ?? 0,
+  };
 }
 
 /** The Staff-row label a booth voucher's slip printed, through its spin; null otherwise. */
@@ -1196,6 +1254,8 @@ async function viewOf(
   effect: VoucherEffect,
   state: VoucherView['state'],
   legacyFormat: boolean,
+  /** The park of the till asking: a hand-over prize's stock is read there (SCRUM-1040). */
+  atBranchId: string,
 ): Promise<VoucherView> {
   const [issuedBranch] = await db
     .select({ id: branch.id, name: branch.name })
@@ -1242,6 +1302,7 @@ async function viewOf(
     redeemableOffline: redeemableOffline(v, def),
     staffLabel: booth ? await spinStaffLabelOf(db, v.id) : null,
     issuedBy: await issuedByOf(db, v.issuedByAccountId),
+    prizeStock: effect.type === 'hand_over' ? await prizeStockOf(db, def, atBranchId) : null,
   };
 }
 
@@ -1546,7 +1607,7 @@ export async function lookupVoucher(
   const promo = await promoRefusal(db, v, def, at.branchId, now);
   if (promo) throw promo;
   const state = v.heldStationId === at.id && hold.kind !== 'free' ? 'held_here' : 'available';
-  return { voucher: await viewOf(db, v, def, effect, state, legacyFormat) };
+  return { voucher: await viewOf(db, v, def, effect, state, legacyFormat, at.branchId) };
 }
 
 /** The two characters a till-minted row for a fixed-code redemption starts with. */
@@ -1855,7 +1916,7 @@ export async function holdVoucher(
 
   if (hold.kind === 'mine') {
     return {
-      voucher: await viewOf(tx, v, def, effect, 'held_here', legacyFormat),
+      voucher: await viewOf(tx, v, def, effect, 'held_here', legacyFormat, at.branchId),
       saleId,
       alreadyHeld: true,
     };
@@ -1972,7 +2033,7 @@ export async function holdVoucher(
     heldAt: now,
   };
   return {
-    voucher: await viewOf(tx, held, def, effect, 'held_here', legacyFormat),
+    voucher: await viewOf(tx, held, def, effect, 'held_here', legacyFormat, at.branchId),
     saleId,
     alreadyHeld: false,
   };
@@ -2895,20 +2956,25 @@ export async function consumeSaleVouchers(
   scope: SaleVoucherScope,
   actor: { accountId: string; requestId?: string },
   now: Date,
+  /**
+   * SCRUM-1040 — the close came from a box (a replayed tender or sale), as
+   * `takeStockForSale` is told: a prize's unit then leaves as `offline_sale`.
+   */
+  opts: { offline?: boolean } = {},
 ): Promise<{ consumed: string[]; walletLoads: VoucherWalletLoad[] }> {
   const applied = await appliedVoucherIds(tx, scope);
   const consumed: string[] = [];
   const walletLoads: VoucherWalletLoad[] = [];
-  /** The closing sale: whose it is (per-customer limits, the wallet's member) and where. */
-  let closing: { memberId: string | null; boxId: string | null } | null = null;
+  /** The closing sale: whose it is (per-customer limits, the wallet's member), where, and its trading day. */
+  let closing: { memberId: string | null; boxId: string | null; businessDate: string | null } | null = null;
   const closingSale = async () => {
     if (closing) return closing;
     const [row] = await tx
-      .select({ memberId: sale.memberId, boxId: sale.boxId })
+      .select({ memberId: sale.memberId, boxId: sale.boxId, businessDate: sale.businessDate })
       .from(sale)
       .where(eq(sale.id, scope.saleId))
       .limit(1);
-    closing = { memberId: row?.memberId ?? null, boxId: row?.boxId ?? null };
+    closing = { memberId: row?.memberId ?? null, boxId: row?.boxId ?? null, businessDate: row?.businessDate ?? null };
     return closing;
   };
   for (const voucherId of applied) {
@@ -3015,6 +3081,38 @@ export async function consumeSaleVouchers(
         amountSatang: loaded.entry.amountSatang,
         replayed: loaded.replayed,
       });
+    }
+
+    /*
+     * SCRUM-1040 — A HAND-OVER PRIZE TAKES ONE OFF ITS SHELF HERE, in the
+     * transaction that used the voucher up, when its type is linked to a stock
+     * item at this park (the Mystery Box). Once per voucher: the guarded update
+     * above uses a voucher up once, and the movement is keyed by the voucher.
+     * It never refuses — at zero the prize is still handed over and the
+     * shortfall is recorded (`takeStockForPrize`). A type with no stock item
+     * here takes nothing, as before; the bill is not touched either way.
+     */
+    if (def.kind === 'manual') {
+      const item = await prizeStockItemAt(tx, scope.operatorId, def.id, scope.branchId);
+      if (item) {
+        const { boxId, businessDate } = await closingSale();
+        if (!businessDate) throw new Error('the closing sale was not found');
+        await takeStockForPrize(tx, {
+          operatorId: scope.operatorId,
+          branchId: scope.branchId,
+          stockItemId: item.id,
+          voucherId,
+          prizeLabel: voucherLineLabel(def.nameEn, usedRow.code),
+          saleId: scope.saleId,
+          businessDate,
+          stationId: scope.stationId,
+          boxId,
+          actorAccountId: actor.accountId,
+          requestId: actor.requestId ?? null,
+          offline: opts.offline ?? false,
+          now,
+        });
+      }
     }
   }
 

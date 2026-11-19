@@ -38592,6 +38592,39 @@
                               "additionalProperties": false
                             }
                           },
+                          "parkStock": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "branchId": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "branchName": {
+                                  "type": "string"
+                                },
+                                "stockItemId": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "stockItemName": {
+                                  "type": "string"
+                                },
+                                "live": {
+                                  "type": "boolean"
+                                }
+                              },
+                              "required": [
+                                "branchId",
+                                "branchName",
+                                "stockItemId",
+                                "stockItemName",
+                                "live"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
                           "unredeemedVouchers": {
                             "type": "integer",
                             "minimum": 0
@@ -38764,6 +38797,7 @@
                           "ticketPackage",
                           "usedBy",
                           "parkProducts",
+                          "parkStock",
                           "unredeemedVouchers",
                           "target",
                           "usageLimit",
@@ -39359,6 +39393,39 @@
                             "additionalProperties": false
                           }
                         },
+                        "parkStock": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "branchId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "branchName": {
+                                "type": "string"
+                              },
+                              "stockItemId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "stockItemName": {
+                                "type": "string"
+                              },
+                              "live": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "branchId",
+                              "branchName",
+                              "stockItemId",
+                              "stockItemName",
+                              "live"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
                         "unredeemedVouchers": {
                           "type": "integer",
                           "minimum": 0
@@ -39531,6 +39598,7 @@
                         "ticketPackage",
                         "usedBy",
                         "parkProducts",
+                        "parkStock",
                         "unredeemedVouchers",
                         "target",
                         "usageLimit",
@@ -39832,6 +39900,39 @@
                             "additionalProperties": false
                           }
                         },
+                        "parkStock": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "branchId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "branchName": {
+                                "type": "string"
+                              },
+                              "stockItemId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "stockItemName": {
+                                "type": "string"
+                              },
+                              "live": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "branchId",
+                              "branchName",
+                              "stockItemId",
+                              "stockItemName",
+                              "live"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
                         "unredeemedVouchers": {
                           "type": "integer",
                           "minimum": 0
@@ -40004,6 +40105,7 @@
                         "ticketPackage",
                         "usedBy",
                         "parkProducts",
+                        "parkStock",
                         "unredeemedVouchers",
                         "target",
                         "usageLimit",
@@ -40109,11 +40211,41 @@
                         ],
                         "additionalProperties": false
                       }
+                    },
+                    "stockItems": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "branchId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "branchName": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "branchId",
+                          "branchName"
+                        ],
+                        "additionalProperties": false
+                      }
                     }
                   },
                   "required": [
                     "products",
-                    "packages"
+                    "packages",
+                    "stockItems"
                   ],
                   "additionalProperties": false
                 }
@@ -40703,6 +40835,39 @@
                             "additionalProperties": false
                           }
                         },
+                        "parkStock": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "branchId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "branchName": {
+                                "type": "string"
+                              },
+                              "stockItemId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "stockItemName": {
+                                "type": "string"
+                              },
+                              "live": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "branchId",
+                              "branchName",
+                              "stockItemId",
+                              "stockItemName",
+                              "live"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
                         "unredeemedVouchers": {
                           "type": "integer",
                           "minimum": 0
@@ -40875,6 +41040,7 @@
                         "ticketPackage",
                         "usedBy",
                         "parkProducts",
+                        "parkStock",
                         "unredeemedVouchers",
                         "target",
                         "usageLimit",
@@ -41192,6 +41358,39 @@
                             "additionalProperties": false
                           }
                         },
+                        "parkStock": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "branchId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "branchName": {
+                                "type": "string"
+                              },
+                              "stockItemId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "stockItemName": {
+                                "type": "string"
+                              },
+                              "live": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "branchId",
+                              "branchName",
+                              "stockItemId",
+                              "stockItemName",
+                              "live"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
                         "unredeemedVouchers": {
                           "type": "integer",
                           "minimum": 0
@@ -41364,6 +41563,7 @@
                         "ticketPackage",
                         "usedBy",
                         "parkProducts",
+                        "parkStock",
                         "unredeemedVouchers",
                         "target",
                         "usageLimit",
@@ -41713,6 +41913,39 @@
                             "additionalProperties": false
                           }
                         },
+                        "parkStock": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "branchId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "branchName": {
+                                "type": "string"
+                              },
+                              "stockItemId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "stockItemName": {
+                                "type": "string"
+                              },
+                              "live": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "branchId",
+                              "branchName",
+                              "stockItemId",
+                              "stockItemName",
+                              "live"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
                         "unredeemedVouchers": {
                           "type": "integer",
                           "minimum": 0
@@ -41885,6 +42118,562 @@
                         "ticketPackage",
                         "usedBy",
                         "parkProducts",
+                        "parkStock",
+                        "unredeemedVouchers",
+                        "target",
+                        "usageLimit",
+                        "perCustomerLimit",
+                        "validFrom",
+                        "validUntil",
+                        "redeemedVouchers"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "definition"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/voucher-definitions/{id}/park-stock/{branchId}": {
+      "put": {
+        "description": "SCRUM-1040 — the stock item a hand-over prize takes one from at one park (the Mystery Box). When a voucher of this type is used up at a till of that park, one unit leaves that item’s count in the same transaction — once per voucher — and at zero the prize is still handed over, the count stays at zero and the shortfall is recorded for a person to count the shelf. `stockItemId` null clears the park’s link, and the prize there then takes nothing, as before. The item must be counted at that park: its own, not archived, not retired (400 VOUCHER_PARK_STOCK_NOT_HERE otherwise); only a hand-over prize takes one (400 VOUCHER_PARK_STOCK_KIND). Audited when it changes anything.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "stockItemId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "stockItemId"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "branchId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "definition": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "code": {
+                          "type": "string"
+                        },
+                        "nameEn": {
+                          "type": "string"
+                        },
+                        "nameTh": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "discount",
+                            "free_item",
+                            "free_ticket",
+                            "wallet_credit",
+                            "manual"
+                          ]
+                        },
+                        "valueType": {
+                          "type": "string",
+                          "enum": [
+                            "amount",
+                            "percent",
+                            "item",
+                            "none"
+                          ]
+                        },
+                        "valueSatang": {
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "valueBp": {
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "productId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "ticketPackageId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "expiryDays": {
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "offlinePolicy": {
+                          "type": "string",
+                          "enum": [
+                            "allow",
+                            "refuse"
+                          ]
+                        },
+                        "singleUse": {
+                          "type": "boolean"
+                        },
+                        "costSatang": {
+                          "type": "integer"
+                        },
+                        "titleEn": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "titleTh": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "instructionEn": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "instructionTh": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "termsEn": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "termsTh": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "active": {
+                          "type": "boolean"
+                        },
+                        "codeMode": {
+                          "type": "string",
+                          "enum": [
+                            "generated",
+                            "fixed"
+                          ]
+                        },
+                        "fixedCode": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "legacyQrPayload": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "type": "string"
+                        },
+                        "archivedAt": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "product": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "code": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "branchId": {
+                              "type": "string",
+                              "format": "uuid",
+                              "nullable": true
+                            },
+                            "branchName": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "live": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name",
+                            "code",
+                            "branchId",
+                            "branchName",
+                            "live"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true
+                        },
+                        "ticketPackage": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "code": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "branchId": {
+                              "type": "string",
+                              "format": "uuid",
+                              "nullable": true
+                            },
+                            "branchName": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "live": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name",
+                            "code",
+                            "branchId",
+                            "branchName",
+                            "live"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true
+                        },
+                        "usedBy": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "boothId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "boothName": {
+                                "type": "string"
+                              },
+                              "branchId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "prizeId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "prizeName": {
+                                "type": "string"
+                              },
+                              "prizeNameTh": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "active": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "boothId",
+                              "boothName",
+                              "branchId",
+                              "prizeId",
+                              "prizeName",
+                              "prizeNameTh",
+                              "active"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "parkProducts": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "branchId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "branchName": {
+                                "type": "string"
+                              },
+                              "productId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "productName": {
+                                "type": "string"
+                              },
+                              "live": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "branchId",
+                              "branchName",
+                              "productId",
+                              "productName",
+                              "live"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "parkStock": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "branchId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "branchName": {
+                                "type": "string"
+                              },
+                              "stockItemId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "stockItemName": {
+                                "type": "string"
+                              },
+                              "live": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "branchId",
+                              "branchName",
+                              "stockItemId",
+                              "stockItemName",
+                              "live"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "unredeemedVouchers": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "target": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "tickets"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "kind"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "ticketType"
+                                  ]
+                                },
+                                "ticketTypeId": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "ticketTypeId"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "fnb"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "kind"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "fnbCategory"
+                                  ]
+                                },
+                                "category": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "category"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "menuItems"
+                                  ]
+                                },
+                                "menuItemIds": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  "minItems": 1,
+                                  "maxItems": 50
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "menuItemIds"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "merch"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "kind"
+                              ],
+                              "additionalProperties": false
+                            }
+                          ],
+                          "nullable": true
+                        },
+                        "usageLimit": {
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "perCustomerLimit": {
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "validFrom": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "validUntil": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "redeemedVouchers": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "code",
+                        "nameEn",
+                        "nameTh",
+                        "kind",
+                        "valueType",
+                        "valueSatang",
+                        "valueBp",
+                        "productId",
+                        "ticketPackageId",
+                        "expiryDays",
+                        "offlinePolicy",
+                        "singleUse",
+                        "costSatang",
+                        "titleEn",
+                        "titleTh",
+                        "instructionEn",
+                        "instructionTh",
+                        "termsEn",
+                        "termsTh",
+                        "active",
+                        "codeMode",
+                        "fixedCode",
+                        "legacyQrPayload",
+                        "createdAt",
+                        "updatedAt",
+                        "archivedAt",
+                        "product",
+                        "ticketPackage",
+                        "usedBy",
+                        "parkProducts",
+                        "parkStock",
                         "unredeemedVouchers",
                         "target",
                         "usageLimit",
@@ -42204,6 +42993,39 @@
                             "additionalProperties": false
                           }
                         },
+                        "parkStock": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "branchId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "branchName": {
+                                "type": "string"
+                              },
+                              "stockItemId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "stockItemName": {
+                                "type": "string"
+                              },
+                              "live": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "branchId",
+                              "branchName",
+                              "stockItemId",
+                              "stockItemName",
+                              "live"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
                         "unredeemedVouchers": {
                           "type": "integer",
                           "minimum": 0
@@ -42376,6 +43198,7 @@
                         "ticketPackage",
                         "usedBy",
                         "parkProducts",
+                        "parkStock",
                         "unredeemedVouchers",
                         "target",
                         "usageLimit",
