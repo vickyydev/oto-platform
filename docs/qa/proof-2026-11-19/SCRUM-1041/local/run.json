@@ -1,0 +1,9 @@
+{
+  "what": "SCRUM-1041 the till's list of its displays (PairedDisplaysDialog), local build, ZZ TEST data; 4 sizes x 2 themes x 5 states",
+  "sizes": ["desk 1366x768", "tablet upright 768x1024", "tablet on its side 1024x768", "phone 390x844"],
+  "states": ["1-list", "2-confirm", "3-error", "4-staff", "5-none"],
+  "pictures": 40,
+  "kept": 4,
+  "sideways": 0,
+  "overflowing": 0
+}
