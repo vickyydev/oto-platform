@@ -2229,8 +2229,10 @@ export default function Till() {
     setSuperSlots(prefill.slots);
     setConfirmedSavedIds(prefill.confirmedIds);
     setStep(prefill.review ? 8 : 7);
-    // SCRUM-1018 — each saved child's last photo, for staff to compare.
-    readLastPhotos(saved.map((child) => child.id));
+    // SCRUM-1018 — the last photo of each saved child on the form, for staff
+    // to compare (a child swapped in at the review is read when it ends).
+    setLastPhotos({});
+    readLastPhotos(prefill.slots.flatMap((slot) => (slot.savedChildId ? [slot.savedChildId] : [])), {});
   };
 
   /**
@@ -2239,17 +2241,17 @@ export default function Till() {
    * "Take a new one", on the gate). Read from this park's stays through the
    * same permission check and access log as every stay photo. Online only:
    * offline, or when it cannot be read, the photo is taken as before. A read
-   * that lands after the sale moved on is dropped.
+   * that lands after the sale moved on is dropped. Only the children on the
+   * form are read: every read of a stay photo is access-logged.
    */
-  const readLastPhotos = (childIds: readonly string[]) => {
+  const readLastPhotos = (childIds: readonly string[], known: Readonly<Record<string, LastPhotoState>>) => {
     const platformBranchId = apiBranchIdForSlug(branch.id);
     const epoch = saleEpochRef.current;
-    if (!platformBranchId || childIds.length === 0 || tillOffline()) {
-      setLastPhotos({});
-      return;
-    }
-    setLastPhotos(Object.fromEntries(childIds.map((id) => [id, { status: 'loading' } as LastPhotoState])));
-    for (const childId of childIds) {
+    const toRead = [...new Set(childIds)].filter((id) => !known[id]);
+    if (!platformBranchId || toRead.length === 0 || tillOffline()) return;
+    setLastPhotos((previous) => ({ ...previous,
+      ...Object.fromEntries(toRead.map((id) => [id, { status: 'loading' } as LastPhotoState])) }));
+    for (const childId of toRead) {
       void (async (): Promise<LastPhotoState> => {
         const { photo } = await checkinApi.lastChildPhoto(childId, platformBranchId);
         if (!photo) return { status: 'none' };
@@ -2510,7 +2512,12 @@ export default function Till() {
         slotAge(s) !== null &&
         (!s.savedChildId || confirmedSavedIds.includes(s.id)),
     );
-  const finishReview = () => { if (reviewCanContinue && !staffLocked.current) setStep(7); };
+  const finishReview = () => {
+    if (!reviewCanContinue || staffLocked.current) return;
+    // SCRUM-1018 — a saved child chosen at the review: its last photo too.
+    readLastPhotos(superSlots.flatMap((slot) => (slot.savedChildId ? [slot.savedChildId] : [])), lastPhotos);
+    setStep(7);
+  };
   const reviewSaveNotice = (t: TFunction) => reviewSave.save.status === 'idle' ? null : (
     <div className="mx-6 my-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4" role="status">
       <p>{reviewSave.save.status === 'saving' ? t('childReview.savingOne') : t('childReview.saveReplyFailed')}</p>
