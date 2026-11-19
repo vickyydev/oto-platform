@@ -1,0 +1,22 @@
+{
+ "ticket": "SCRUM-1044",
+ "stage": "the settings frame, the shared parts and Templates (first half)",
+ "taken": "2026-11-19, against the production build served locally with route stubs and ZZ TEST data (no api, no staging), device scale 2",
+ "viewports": ["360x740", "390x844", "430x932", "744x1133", "768x1024", "820x1180", "1024x768", "1024x1366", "1133x744", "1366x1024", "1280x800", "1440x900", "1920x1080"],
+ "touch": "every size under 1280 wide and 1366x1024 as a touch screen; 1280x800, 1440x900 and 1920x1080 with a mouse",
+ "themes": ["light", "dark"],
+ "screens": "Templates for an admin (every page in the frame) and for a manager with Templates only; empty; New template; Edit; the archive confirmation; Show archived; Numbers and Rules inside the frame; on a phone the row's three-dot menu and the list's end",
+ "shots": 250,
+ "failed": 0,
+ "overflowSideways": 0,
+ "cutText": 0,
+ "under44OnTouch": 0,
+ "contentWidth": "one column of at most 768 px from 1024 px wide; 544 px at 768, 596 px at 820; the full width less 16 px gutters on a phone",
+ "sizes": "page title 18 px from 768 px; row title 15 px on a phone, 14 px on a tablet, 14.5 px on a wide screen; preview 13.5, 13 and 13 px",
+ "pictures": [
+  "390x844-light-templates.png", "390x844-dark-templates.png", "390x844-light-menu.png", "390x844-light-new.png",
+  "360x740-dark-rules.png", "744x1133-light-templates.png", "768x1024-light-templates.png", "1024x768-light-edit.png",
+  "1133x744-light-gm.png", "1440x900-light-templates.png", "1440x900-dark-edit.png", "1366x1024-dark-archived.png",
+  "1920x1080-light-templates.png"
+ ]
+}
