@@ -77,6 +77,13 @@ describe('SCRUM-1016: the OTO tokens', () => {
     }
   });
 
+  it.each([['light', light], ['dark', dark]] as const)('the coral ring and focus outline stand out at 3 : 1 (%s)', (_, theme) => {
+    // The pressed "Needs reply" figure's ring, and the app bar's focus outline.
+    for (const ground of ['needs', 'ground', 'card']) {
+      expect(contrast(theme, 'coral', ground), `coral against ${ground}`).toBeGreaterThanOrEqual(3);
+    }
+  });
+
   it('paints the page on the token ground, with no slate gradient left', () => {
     expect(css).toMatch(/body\s*{[^}]*background: var\(--oto-ground\);/);
     expect(css).not.toContain('linear-gradient');
