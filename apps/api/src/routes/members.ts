@@ -884,7 +884,8 @@ export async function memberRoutes(app: App): Promise<void> {
           "child's allergy or medical notes on the paired display (SCRUM-1020): it names the family identified " +
           'at the till (`memberId`), changes the care notes only, and empties a note only with `confirmedNone`. ' +
           '`actionId` (SCRUM-1060) names this one change on both lanes: the same change already written under it, ' +
-          "online or from the counter box's fact, answers with the child as it stands under x-oto-replay.",
+          "online or from the counter box's fact, answers with the child as it stands under x-oto-replay; " +
+          'an `actionId` already naming a different change to this child is refused 409 ID_IN_USE.',
         params: z.object({ childId: z.string().uuid() }),
         body: ChildBody.partial().extend({
           /** SCRUM-1020 — the family changed the care notes on the station's customer display. */
@@ -958,8 +959,19 @@ export async function memberRoutes(app: App): Promise<void> {
       return withTx(app.db, opCtx(req), 'child.update', async (tx) => {
         // SCRUM-1060 — the same change already written under its action id
         // (this route under another key, or the counter box's fact for it):
-        // answered with the child as it stands, nothing written again.
-        if (await childChangeWritten(tx, { operatorId: auth.operatorId, childId: req.params.childId, actionId })) {
+        // answered with the child as it stands, nothing written again. The
+        // id already naming a different change is refused, nothing written.
+        const seen = await childChangeWritten(tx, {
+          operatorId: auth.operatorId, childId: req.params.childId, actionId, change: patch,
+        });
+        if (seen === 'other') {
+          throw errors.conflict(
+            'ID_IN_USE',
+            'That action id already names another change to this child, so nothing was saved — send the change again with a new id',
+            { actionId },
+          );
+        }
+        if (seen === 'written') {
           const [current] = await tx.select().from(child).where(eq(child.id, req.params.childId)).limit(1);
           reply.header(REPLAY_HEADER, 'true');
           return { child: serializeChild(current!) };
