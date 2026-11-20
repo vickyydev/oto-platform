@@ -19,7 +19,6 @@ import {
   SINGLE_SHIFT_REFUSALS,
   singleShiftPayLabel,
   singleShiftWayWords,
-  validCasualDayRate,
   type SingleShiftKioskView,
   type SingleShiftPayWay,
 } from "@shared/singleShift";
@@ -272,9 +271,9 @@ export async function inviteToSingleShift(input: InviteInput): Promise<SingleShi
   const today = bangkokToday(now);
   const { employee, shiftRow, shiftDate } = input;
   if (input.shiftDate < today) throw new SingleShiftRefusal(400, SINGLE_SHIFT_REFUSALS.pastDate);
-  if (input.way === "casual_day_rate" ? !validCasualDayRate(input.casualDayRate) : input.casualDayRate != null) {
-    throw new SingleShiftRefusal(400, SINGLE_SHIFT_REFUSALS.rate);
-  }
+  // How a casual day rate is paid is not decided (the owner's N1): the choice is shown and not taken.
+  if (input.way === "casual_day_rate") throw new SingleShiftRefusal(400, SINGLE_SHIFT_REFUSALS.casualHeld, "CASUAL_DAY_RATE_HELD");
+  if (input.casualDayRate != null) throw new SingleShiftRefusal(400, SINGLE_SHIFT_REFUSALS.rate);
   if (!employmentEndedOn(employee, today)) throw new SingleShiftRefusal(400, SINGLE_SHIFT_REFUSALS.notFormer, "NOT_FORMER_EMPLOYEE");
   if (input.way === "old_contract" && await payrollLockedFor(input.tenantId, employee.id, shiftDate)) {
     throw new SingleShiftRefusal(409, SINGLE_SHIFT_REFUSALS.payrollLocked, "PAYROLL_LOCKED");
@@ -341,9 +340,9 @@ export async function changeSingleShiftPay(input: {
   casualDayRate: number | null;
   now?: Date;
 }): Promise<SingleShiftInvitation> {
-  if (input.way === "casual_day_rate" ? !validCasualDayRate(input.casualDayRate) : input.casualDayRate != null) {
-    throw new SingleShiftRefusal(400, SINGLE_SHIFT_REFUSALS.rate);
-  }
+  // A shift stored on a casual day rate before the hold keeps it and can be switched back; none is switched to it.
+  if (input.way === "casual_day_rate") throw new SingleShiftRefusal(400, SINGLE_SHIFT_REFUSALS.casualHeld, "CASUAL_DAY_RATE_HELD");
+  if (input.casualDayRate != null) throw new SingleShiftRefusal(400, SINGLE_SHIFT_REFUSALS.rate);
   const today = bangkokToday(input.now ?? new Date());
   return db.transaction(async (tx) => {
     const [before] = await tx.select().from(singleShiftInvitations)

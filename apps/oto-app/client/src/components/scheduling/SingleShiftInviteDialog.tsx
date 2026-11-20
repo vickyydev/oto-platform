@@ -15,6 +15,7 @@ import {
   NO_PAYROLL_PROFILE_HINT,
   OLD_CONTRACT_LABEL,
   SINGLE_SHIFT_MARK,
+  SINGLE_SHIFT_REFUSALS,
   type SingleShiftPayWay,
 } from "@shared/singleShift";
 
@@ -84,9 +85,10 @@ function PayWayFields({ idPrefix, way, onWay, rate, onRate }: {
           <Label htmlFor={`${idPrefix}-old-contract`} className="font-normal">{OLD_CONTRACT_LABEL}</Label>
         </div>
         <div className="flex items-center gap-2">
-          <RadioGroupItem value="casual_day_rate" id={`${idPrefix}-casual`} data-testid={`${idPrefix}-casual`} />
-          <Label htmlFor={`${idPrefix}-casual`} className="font-normal">{CASUAL_DAY_RATE_LABEL}</Label>
+          <RadioGroupItem value="casual_day_rate" id={`${idPrefix}-casual`} data-testid={`${idPrefix}-casual`} disabled />
+          <Label htmlFor={`${idPrefix}-casual`} className="font-normal text-muted-foreground">{CASUAL_DAY_RATE_LABEL}</Label>
         </div>
+        <p className="text-xs text-muted-foreground pl-6" data-testid={`${idPrefix}-casual-held`}>{SINGLE_SHIFT_REFUSALS.casualHeld}</p>
       </RadioGroup>
       {way === "casual_day_rate" && (
         <div className="space-y-1 pl-6">
@@ -128,7 +130,8 @@ function InvitedRow({ shift, onSaved }: { shift: SingleShift; onSaved: () => voi
     },
     onError: (error: Error) => toast({ title: "Could not change the pay", description: error.message, variant: "destructive" }),
   });
-  const canSave = way === "old_contract" || rateOf(rate) !== null;
+  // Only the old contract is saved while the casual day rate's pay rule is being confirmed.
+  const canSave = way === "old_contract";
   return (
     <div className="rounded-md border p-2 space-y-1.5" data-testid={`single-shift-${shift.employeeId}`}>
       <div className="flex items-center justify-between gap-2">
@@ -216,8 +219,7 @@ export function SingleShiftInviteDialog({
     onError: (error: Error) => toast({ title: "Could not add the single shift", description: error.message, variant: "destructive" }),
   });
 
-  const rateMissing = way === "casual_day_rate" && rateOf(rate) === null;
-  const canInvite = !!chosen && !rateMissing && !invite.isPending;
+  const canInvite = !!chosen && way === "old_contract" && !invite.isPending;
   const chosenPerson = (former.data ?? []).find((person) => person.id === chosen);
 
   return (
