@@ -354,4 +354,31 @@ export const SLIP_FIXTURES: Fixture[] = [
       },
     },
   },
+  // SCRUM-1051 — a party's kitchen slip with serving times: the untimed lines
+  // as before, a dish with its own time beside it, two groups each under a
+  // small heading of its name and time (one in Thai), a long name that wraps
+  // inside its own column, and a note under a timed line.
+  {
+    name: 'party-kitchen-times',
+    profiles: ['escpos576'],
+    job: {
+      kind: 'kitchen_ticket',
+      data: {
+        title: 'Kitchen',
+        heading: 'Birthday party',
+        orderRef: "Mali's 6th",
+        time: '11:00',
+        details: ['Room: Party room 1', 'Children: 10'],
+        readyBy: '13:40',
+        lines: [
+          { qty: 3, name: 'Pizza: Margherita' },
+          { qty: 2, name: 'French fries' },
+          { qty: 10, name: `Chicken nuggets · ${THAI_HELLO}`, time: '12:30' },
+          { qty: 2, name: 'Fruit skewers', note: 'not on the till menu', time: '13:00', group: 'ZZ Dessert' },
+          { qty: 10, name: `Mini waffles with whipped cream and strawberries · ${THAI_HELLO}`, time: '13:00', group: 'ZZ Dessert' },
+          { qty: 1, name: 'Our Cake', note: 'Cake time 15:00', time: '15:00', group: 'ของหวาน' },
+        ],
+      },
+    },
+  },
 ];

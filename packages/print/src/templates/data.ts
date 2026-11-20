@@ -112,6 +112,17 @@ export interface PrepLine {
   qty?: number;
   name: string;
   note?: string;
+  /**
+   * SCRUM-1051 — a party dish's own serving time, "HH:MM", and the group it
+   * is served under (`PartySlipLine` in `@oto/shared`). Lines sharing a group
+   * and time print together under a small heading of the group's name and
+   * time; a dish with a time and no group prints the time beside it. Absent
+   * on a sale's line and on a party line served at its menu's time, which
+   * print as they always have. A box whose renderer predates these fields
+   * prints the lines without them, in the order the slip gives them.
+   */
+  time?: string;
+  group?: string;
 }
 
 export type SupervisionMode = 'DROP-OFF' | 'NANNY';

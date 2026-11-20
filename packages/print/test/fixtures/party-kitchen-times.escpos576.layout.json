@@ -1,0 +1,264 @@
+{
+  "widthDots": 576,
+  "heightDots": 412,
+  "overflow": [],
+  "items": [
+    {
+      "k": "text",
+      "x": 244,
+      "baselineY": 22,
+      "w": 87,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "KITCHEN"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 48,
+      "w": 252,
+      "sizeDots": 30,
+      "weight": "bold",
+      "text": "BIRTHDAY PARTY"
+    },
+    {
+      "k": "dashes",
+      "x": 8,
+      "y": 51,
+      "w": 560,
+      "t": 1
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 78,
+      "w": 144,
+      "sizeDots": 30,
+      "weight": "bold",
+      "text": "Mali's 6th"
+    },
+    {
+      "k": "text",
+      "x": 491,
+      "baselineY": 77,
+      "w": 77,
+      "sizeDots": 30,
+      "weight": "bold",
+      "text": "11:00"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 98,
+      "w": 206,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "Room: Party room 1"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 124,
+      "w": 124,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "Children: 10"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 152,
+      "w": 229,
+      "sizeDots": 30,
+      "weight": "bold",
+      "text": "READY BY 13:40"
+    },
+    {
+      "k": "dashes",
+      "x": 8,
+      "y": 156,
+      "w": 560,
+      "t": 1
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 177,
+      "w": 31,
+      "sizeDots": 22,
+      "weight": "bold",
+      "text": "3× "
+    },
+    {
+      "k": "text",
+      "x": 39,
+      "baselineY": 177,
+      "w": 179,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "Pizza: Margherita"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 203,
+      "w": 31,
+      "sizeDots": 22,
+      "weight": "bold",
+      "text": "2× "
+    },
+    {
+      "k": "text",
+      "x": 39,
+      "baselineY": 203,
+      "w": 121,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "French fries"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 225,
+      "w": 43,
+      "sizeDots": 22,
+      "weight": "bold",
+      "text": "10× "
+    },
+    {
+      "k": "text",
+      "x": 51,
+      "baselineY": 225,
+      "w": 343,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "Chicken nuggets · สวัสดี OTO Park"
+    },
+    {
+      "k": "text",
+      "x": 511,
+      "baselineY": 223,
+      "w": 57,
+      "sizeDots": 22,
+      "weight": "bold",
+      "text": "12:30"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 251,
+      "w": 94,
+      "sizeDots": 18,
+      "weight": "bold",
+      "text": "ZZ Dessert"
+    },
+    {
+      "k": "text",
+      "x": 522,
+      "baselineY": 252,
+      "w": 46,
+      "sizeDots": 18,
+      "weight": "bold",
+      "text": "13:00"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 273,
+      "w": 31,
+      "sizeDots": 22,
+      "weight": "bold",
+      "text": "2× "
+    },
+    {
+      "k": "text",
+      "x": 39,
+      "baselineY": 273,
+      "w": 137,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "Fruit skewers"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 291,
+      "w": 176,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "  not on the till menu"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 312,
+      "w": 43,
+      "sizeDots": 22,
+      "weight": "bold",
+      "text": "10× "
+    },
+    {
+      "k": "text",
+      "x": 51,
+      "baselineY": 312,
+      "w": 385,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "Mini waffles with whipped cream and"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 339,
+      "w": 300,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "strawberries · สวัสดี OTO Park"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 360,
+      "w": 72,
+      "sizeDots": 18,
+      "weight": "bold",
+      "text": "ของหวาน"
+    },
+    {
+      "k": "text",
+      "x": 522,
+      "baselineY": 361,
+      "w": 46,
+      "sizeDots": 18,
+      "weight": "bold",
+      "text": "15:00"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 382,
+      "w": 31,
+      "sizeDots": 22,
+      "weight": "bold",
+      "text": "1× "
+    },
+    {
+      "k": "text",
+      "x": 39,
+      "baselineY": 382,
+      "w": 96,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "Our Cake"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 400,
+      "w": 144,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "  Cake time 15:00"
+    }
+  ]
+}

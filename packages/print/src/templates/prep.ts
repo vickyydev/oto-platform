@@ -31,9 +31,17 @@ import {
   footerBlocks,
   headerBlocks,
   small,
+  smallBold,
   space,
   text,
 } from './common';
+
+/**
+ * SCRUM-1051 — the column a serving time ("13:00") takes at the right of a
+ * dish or a group heading: wide enough for five bold body digits, so a long
+ * dish name wraps inside its own column and never under the time.
+ */
+const SERVING_TIME_DOTS = Math.round(SIZE.body * 3.3);
 
 export interface PrepInput {
   template?: PrintTemplate;
@@ -130,16 +138,40 @@ export function buildPrepTicket({ template, type, data, device }: PrepInput): Pr
   if (fieldOn(template, type, 'itemizedLines') && data.lines.length > 0) {
     blocks.push(divider());
     const showNotes = fieldOn(template, type, 'orderNotes');
+    // SCRUM-1051 — the group heading the previous line printed under, so lines
+    // of one group at one time share one heading and a new group gets its own.
+    let heading: string | null = null;
     for (const line of data.lines) {
-      blocks.push({
-        k: 'text',
-        align: 'left',
-        style: bodyBold,
-        runs:
-          line.qty === undefined
-            ? [{ text: line.name, style: { weight: 'regular' } }]
-            : [{ text: `${line.qty}× ` }, { text: line.name, style: { weight: 'regular' } }],
-      });
+      const group = line.time && line.group ? `${line.group}\u0000${line.time}` : null;
+      if (group && group !== heading) {
+        blocks.push(space(4));
+        blocks.push({
+          k: 'columns',
+          gapDots: 8,
+          cells: [
+            { runs: [{ text: line.group! }], align: 'left', style: smallBold, flex: 1 },
+            { runs: [{ text: line.time! }], align: 'right', style: smallBold, widthDots: SERVING_TIME_DOTS },
+          ],
+        });
+      }
+      heading = group;
+      const runs =
+        line.qty === undefined
+          ? [{ text: line.name, style: { weight: 'regular' as const } }]
+          : [{ text: `${line.qty}× ` }, { text: line.name, style: { weight: 'regular' as const } }];
+      if (line.time && !line.group) {
+        // A dish with a time of its own and no group: the time beside it.
+        blocks.push({
+          k: 'columns',
+          gapDots: 8,
+          cells: [
+            { runs, align: 'left', style: bodyBold, flex: 1 },
+            { runs: [{ text: line.time }], align: 'right', style: bodyBold, widthDots: SERVING_TIME_DOTS },
+          ],
+        });
+      } else {
+        blocks.push({ k: 'text', align: 'left', style: bodyBold, runs });
+      }
       if (line.note && showNotes) blocks.push(text(`  ${line.note}`, small));
     }
   }
