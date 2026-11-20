@@ -16,7 +16,7 @@
 //   4. the timeline makes one short food step at each other time, named by
 //      its groups, for the kids', the adults' own and the bar's lists;
 //   5. the print shows the time beside the dish, or its group with its time;
-//   6. app migration 0055 expand only; nothing of either reaches the till: no
+//   6. app migration 0055 expand only; an activity's people reach nothing of the till; serving times reach it only as the party view's two keys: no
 //      view the till reads names them and no platform file does.
 //
 // Run from apps/oto-app: npx tsx tests/beo-activities-times.check.ts
@@ -353,16 +353,24 @@ const sourcesUnder = (dir: string): string[] => {
   return out;
 };
 
-await check("nothing of either reaches the till: no view the till reads names them; no file of the platform does", () => {
+await check("an activity's people reach no view the till reads and no file of the platform; serving times reach the till only as the party view's two keys (SCRUM-1051)", () => {
   const views = readdirSync(join(APP, "migrations")).filter((f) => f.endsWith(".sql") && /otoapp_v|CREATE (OR REPLACE )?VIEW/i.test(read(`migrations/${f}`)));
   assert.ok(views.length > 0, "the till's views are read");
   for (const f of views) {
-    assert.doesNotMatch(read(`migrations/${f}`), /serviceTime'|serviceGroup|head_count|entertainment_item_id|beo_assignment_targets|beo_entertainment_items/, f);
+    assert.doesNotMatch(read(`migrations/${f}`), /head_count|entertainment_item_id|beo_assignment_targets|beo_entertainment_items/, f);
+  }
+  // SCRUM-1051: the party view carries a line's serving time and group, as two keys, and nothing else of them.
+  const carrying = views.filter((f) => /serviceTime'|serviceGroup|service_time|service_group/.test(read(`migrations/${f}`)));
+  assert.ok(carrying.length >= 1, "one view migration carries the serving time and group");
+  for (const f of carrying) {
+    assert.match(read(`migrations/${f}`), /VIEWs+otoapp_v.event_packages/i, f);
+    assert.match(read(`migrations/${f}`), /service_time/, f);
+    assert.match(read(`migrations/${f}`), /service_group/, f);
   }
   const hits: string[] = [];
   for (const root of ["apps/api/src", "apps/pos/src", "packages"]) {
     for (const path of sourcesUnder(join(REPO, root))) {
-      if (/serviceGroup|head_count|entertainment_item_id|beoServingTimes|beoActivityPeople/.test(readFileSync(path, "utf8"))) hits.push(path.slice(REPO.length));
+      if (/head_count|entertainment_item_id|beoActivityPeople/.test(readFileSync(path, "utf8"))) hits.push(path.slice(REPO.length));
     }
   }
   assert.deepEqual(hits, []);

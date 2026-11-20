@@ -111,7 +111,7 @@ describe('serving times on a party slip', () => {
       { qty: 1, name: 'Our Cake', note: 'Cake time 15:00', time: '15:00', group: 'ของหวาน' },
     ],
   };
-  type Placed = { k: 'text'; text: string; x: number; baselineY: number; widthDots: number; style: { sizeDots: number } };
+  type Placed = Extract<ReturnType<typeof renderJob>['layout']['items'][number], { k: 'text' }>;
   const items = (data: PrepTicketData) =>
     renderJob({ kind: 'kitchen_ticket', data }, { device: escpos576, templates: [] }).layout.items.filter(
       (i): i is Placed => i.k === 'text',
