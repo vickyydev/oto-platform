@@ -1,0 +1,136 @@
+{
+  "picture": "1038-2-schedule-single-shift.png",
+  "sha": "57b8ac5859f358cb602229f3325f5fc46f69ac76",
+  "startedAt": "2026-11-20T03:09:34.367Z",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/api/qa-reports/config",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/employees/:id",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/employees/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/branches/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/schedule/shift-groups",
+      "status": 201
+    },
+    {
+      "method": "POST",
+      "path": "/api/schedule/shift-rows",
+      "status": 201
+    },
+    {
+      "method": "POST",
+      "path": "/api/schedule/single-shift/invitations",
+      "status": 201
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/kiosk-devices/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/kiosk-devices/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/schedule/assignments/:id",
+      "status": 204
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/schedule/shift-rows/:id",
+      "status": 204
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/schedule/shift-groups/:id",
+      "status": 204
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/employees/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/logout",
+      "status": 200
+    }
+  ],
+  "made": [
+    {
+      "kind": "shift group",
+      "id": "c537c6be-4a12-40ca-b3ef-fa23cd339d92"
+    },
+    {
+      "kind": "shift row",
+      "id": "a997244e-cf6b-41d3-bcd2-b33dff59657a"
+    },
+    {
+      "kind": "single shift invitation",
+      "id": "c2e54902-7b58-4eb0-84fb-9f89ebcb6da1",
+      "assignmentId": "11b92889-16d0-4d8a-8b06-ecc0e7c16018"
+    }
+  ],
+  "steps": {
+    "nickname": {
+      "status": 200,
+      "from": "ZZ TEST 1038 faf2 Former",
+      "to": "ZZ TEST faf2"
+    },
+    "invite": {
+      "status": 201,
+      "payLabel": "On the old contract"
+    },
+    "chip": "ZZ TEST faf2 · single shift",
+    "kioskDevice": {
+      "patch": 200,
+      "name": "ZZ TEST 1038 faf2 tablet",
+      "isActive": false
+    }
+  },
+  "cleanup": [
+    {
+      "label": "the single shift taken off the schedule",
+      "del": 204
+    },
+    {
+      "label": "ZZ TEST shift row removed",
+      "del": 204
+    },
+    {
+      "label": "ZZ TEST shift group removed",
+      "del": 204
+    },
+    {
+      "label": "nickname restored",
+      "patch": 200
+    },
+    {
+      "label": "admin sign-out",
+      "app": 200,
+      "launcher": 200
+    }
+  ],
+  "passed": true,
+  "branch": "Head Office",
+  "behaviorPassed": true,
+  "finishedAt": "2026-11-20T03:09:43.983Z"
+}

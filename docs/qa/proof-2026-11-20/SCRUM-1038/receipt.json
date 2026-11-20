@@ -1,0 +1,261 @@
+{
+  "tickets": [
+    "SCRUM-1038",
+    "SCRUM-1055"
+  ],
+  "sha": "57b8ac5859f358cb602229f3325f5fc46f69ac76",
+  "startedAt": "2026-11-20T03:07:37.947Z",
+  "phase": "clean-up",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/api/qa-reports/config",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/user",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/departments",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/employees/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/employees/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/schedule/shift-groups",
+      "status": 201
+    },
+    {
+      "method": "POST",
+      "path": "/api/schedule/shift-rows",
+      "status": 201
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/schedule/single-shift/invitations/:id",
+      "status": 400
+    },
+    {
+      "method": "POST",
+      "path": "/api/schedule/single-shift/invitations",
+      "status": 400
+    },
+    {
+      "method": "POST",
+      "path": "/api/kiosk-devices",
+      "status": 201
+    },
+    {
+      "method": "POST",
+      "path": "/api/kiosk/clock-phone",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/kiosk/clock-phone",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/schedule/assignments/:id",
+      "status": 204
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/schedule/shift-rows/:id",
+      "status": 204
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/schedule/shift-groups/:id",
+      "status": 204
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/kiosk-devices/:id",
+      "status": 500
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/employees/:id",
+      "status": 409
+    },
+    {
+      "method": "GET",
+      "path": "/api/employees/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/logout",
+      "status": 200
+    }
+  ],
+  "made": [
+    {
+      "kind": "shift group",
+      "id": "d82a0bb1-0448-49c9-bd14-ee22c3a91d7b"
+    },
+    {
+      "kind": "shift row",
+      "id": "d3bd8b6f-677b-409b-9ee3-8032678e846a"
+    },
+    {
+      "kind": "single shift invitation",
+      "id": "09dded04-97eb-43a5-9e97-8bbc67df6bbd",
+      "assignmentId": "8fa29ad3-8e33-458d-9c14-d121c0fefe5a"
+    },
+    {
+      "kind": "kiosk device",
+      "id": "5961b3ff-3770-4f91-a8ef-4574cd6017e2"
+    }
+  ],
+  "steps": {
+    "adminHandoff": 200,
+    "profile": {
+      "status": "resigned",
+      "employmentState": "LEFT",
+      "lastWorkingDay": "2026-11-19"
+    },
+    "dialogListMasked": 1,
+    "dialog": {
+      "oldContractChecked": true,
+      "casualDisabled": true,
+      "heldLine": "The pay rule for a casual day rate is being confirmed; use the old contract for now.",
+      "noPayrollProfileHint": 1
+    },
+    "invite": {
+      "status": 201,
+      "payWay": "old_contract",
+      "payLabel": "On the old contract",
+      "shiftDate": "2026-11-20"
+    },
+    "scheduleChip": "ZZ TEST 1038 faf2 Former · single shift",
+    "casualRefused": {
+      "status": 400,
+      "message": "The pay rule for a casual day rate is being confirmed; use the old contract for now.",
+      "reasonCode": "CASUAL_DAY_RATE_HELD"
+    },
+    "casualNewRefused": {
+      "status": 400,
+      "message": "The pay rule for a casual day rate is being confirmed; use the old contract for now."
+    },
+    "kiosk": {
+      "route": "POST /api/kiosk/clock-phone",
+      "clockIn": {
+        "status": 200,
+        "success": true,
+        "eventType": "IN",
+        "keys": [
+          "employee",
+          "eventTime",
+          "eventType",
+          "singleShifts",
+          "success"
+        ],
+        "singleShifts": [
+          {
+            "shiftDate": "2026-11-20",
+            "startTime": "09:00",
+            "endTime": "15:00",
+            "label": "ZZ TEST 1038 faf2 Morning",
+            "department": null,
+            "role": null,
+            "branchName": "Head Office",
+            "breaks": [
+              {
+                "startTime": "11:30",
+                "endTime": "12:30"
+              }
+            ]
+          }
+        ]
+      },
+      "clockOut": {
+        "status": 200,
+        "success": true,
+        "eventType": "OUT",
+        "keys": [
+          "employee",
+          "eventTime",
+          "eventType",
+          "singleShifts",
+          "success"
+        ],
+        "singleShifts": [
+          {
+            "shiftDate": "2026-11-20",
+            "startTime": "09:00",
+            "endTime": "15:00",
+            "label": "ZZ TEST 1038 faf2 Morning",
+            "department": null,
+            "role": null,
+            "branchName": "Head Office",
+            "breaks": [
+              {
+                "startTime": "11:30",
+                "endTime": "12:30"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "cleanup": [
+    {
+      "label": "the single shift taken off the schedule",
+      "del": 204
+    },
+    {
+      "label": "ZZ TEST shift row removed",
+      "del": 204
+    },
+    {
+      "label": "ZZ TEST shift group removed",
+      "del": 204
+    },
+    {
+      "label": "ZZ TEST kiosk device removed",
+      "del": 500
+    },
+    {
+      "label": "ZZ TEST profile delete attempted",
+      "del": 409,
+      "says": "{\"reason\":\"has_records\",\"message\":\"ZZ TEST 1038 faf2 Former cannot be deleted: they have 2 time records and 2 single shifts. Their history is kept for the record; offboard them instead to end their employment.\",\"blocking\":[{\"label\":\"time re",
+      "read": 200
+    },
+    {
+      "label": "admin sign-out",
+      "app": 200,
+      "launcher": 200
+    }
+  ],
+  "passed": true,
+  "adminRole": "global_admin",
+  "branch": "Head Office",
+  "reused": {
+    "kind": "employee",
+    "id": "586a3c85-2793-4760-ad02-9b859ed1ad7b",
+    "name": "ZZ TEST 1038 faf2 Former"
+  },
+  "behaviorPassed": true,
+  "finishedAt": "2026-11-20T03:08:14.528Z"
+}

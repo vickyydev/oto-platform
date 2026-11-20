@@ -1,0 +1,161 @@
+{
+  "tickets": [
+    "SCRUM-1038",
+    "SCRUM-1055"
+  ],
+  "sha": "9f4dcf9ca8a523d4f4704c533877117e7ba851fa",
+  "startedAt": "2026-11-20T02:55:43.148Z",
+  "phase": "clean-up",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/api/qa-reports/config",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/user",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/departments",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/employees",
+      "status": 201
+    },
+    {
+      "method": "POST",
+      "path": "/api/employees/:id/offboarding",
+      "status": 201
+    },
+    {
+      "method": "GET",
+      "path": "/api/employees/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/schedule/shift-groups",
+      "status": 201
+    },
+    {
+      "method": "POST",
+      "path": "/api/schedule/shift-rows",
+      "status": 201
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/schedule/assignments/:id",
+      "status": 204
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/schedule/shift-rows/:id",
+      "status": 204
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/schedule/shift-groups/:id",
+      "status": 204
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/employees/:id",
+      "status": 409
+    },
+    {
+      "method": "GET",
+      "path": "/api/employees/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/logout",
+      "status": 200
+    }
+  ],
+  "made": [
+    {
+      "kind": "employee",
+      "id": "586a3c85-2793-4760-ad02-9b859ed1ad7b",
+      "name": "ZZ TEST 1038 faf2 Former"
+    },
+    {
+      "kind": "shift group",
+      "id": "a0a1ab40-8eb2-423a-a03f-83b600639c42"
+    },
+    {
+      "kind": "shift row",
+      "id": "43cd16d9-4dba-4ee4-8fd7-62cfab818f45"
+    },
+    {
+      "kind": "single shift invitation",
+      "id": "1b76f454-8a92-4f06-b275-dd4aa689bd83",
+      "assignmentId": "1119963f-02d3-4aaa-a6b3-dff472951cd1"
+    }
+  ],
+  "steps": {
+    "adminHandoff": 200,
+    "offboarding": 201,
+    "profile": {
+      "status": "resigned",
+      "employmentState": "LEFT",
+      "lastWorkingDay": "2026-11-19"
+    },
+    "dialogListMasked": 1,
+    "dialog": {
+      "oldContractChecked": true,
+      "casualDisabled": true,
+      "heldLine": "The pay rule for a casual day rate is being confirmed; use the old contract for now.",
+      "noPayrollProfileHint": 1
+    },
+    "invite": {
+      "status": 201,
+      "payWay": "old_contract",
+      "payLabel": "On the old contract",
+      "shiftDate": "2026-11-20"
+    }
+  },
+  "cleanup": [
+    {
+      "label": "the single shift taken off the schedule",
+      "del": 204
+    },
+    {
+      "label": "ZZ TEST shift row removed",
+      "del": 204
+    },
+    {
+      "label": "ZZ TEST shift group removed",
+      "del": 204
+    },
+    {
+      "label": "ZZ TEST profile delete attempted",
+      "del": 409,
+      "says": "{\"reason\":\"has_records\",\"message\":\"ZZ TEST 1038 faf2 Former cannot be deleted: they have 1 single shift. Their history is kept for the record; offboard them instead to end their employment.\",\"blocking\":[{\"label\":\"single shifts\",\"count\":1}]}",
+      "read": 200
+    },
+    {
+      "label": "admin sign-out",
+      "app": 200,
+      "launcher": 200
+    }
+  ],
+  "passed": false,
+  "adminRole": "global_admin",
+  "branch": "Head Office",
+  "failure": {
+    "phase": "invite",
+    "message": "expect(locator).toBeHidden() failed\n\nLocator:  getByText('Invite a Former Employee')\nExpected: hidden\nReceived: visible\nTimeout:  5000ms\n\nCall log:\n  - Expect \"toBeHidden\" getByText('Invite a Former Employee') with timeout 5000ms\n  - waiting for getByText('Invite a Former Employee')\n    14 × locator resolved to <h2 id=\"radix-:r1d:\" class=\"text-lg font-semibold leading-none tracking-tight flex items-center gap-2\">…</h2>\n       - unexpected value \"visible\"\n"
+  },
+  "finishedAt": "2026-11-20T02:56:15.927Z"
+}
