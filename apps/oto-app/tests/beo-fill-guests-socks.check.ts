@@ -366,8 +366,10 @@ try {
     const state = initialReviewState(review, {});
     assert.deepEqual([state.expectedExtraKids?.value, state.expectedExtraAdults, state.socks?.value], [2, null, { arrangement: "other", note: "grandma pays for everyone's socks" }]);
     const page = html(review, state);
-    assert.ok(page.includes("Extra children:") && page.includes('data-testid="input-ai-review-expectedExtraKids"'), "the extra children row");
-    assert.ok(!page.includes("Extra adults:"), "no row for what the chat does not give");
+    // One row in the editor's words: "Expected extra: + 2 children + … adults", the count the chat does not give left empty.
+    assert.ok(page.includes('data-testid="ai-review-expected-extra"') && page.includes("Expected extra:"), "the expected extra row");
+    assert.match(page, /<input[^>]*aria-label="Expected extra children"[^>]*data-testid="input-ai-review-expectedExtraKids"[^>]*value="2"/);
+    assert.match(page, /<input[^>]*aria-label="Expected extra adults"[^>]*data-testid="input-ai-review-expectedExtraAdults"[^>]*value=""/, "no count the chat does not give");
     assert.ok(page.includes("Socks:") && page.includes('data-testid="select-ai-review-socks"'), "the socks row");
     assert.match(page, /<option value="other" selected="">Other \/ Custom<\/option>/, "the chat's option chosen");
     for (const option of ["Not set", "Birthday Parent Pays", "Guests Pay Individually"]) assert.ok(page.includes(`>${option}</option>`), option);
@@ -375,7 +377,7 @@ try {
     assert.ok(page.includes("The chat says “My sister may bring her 2 kids too”"), "the chat's words under the count");
     assert.ok(page.includes("The chat says “grandma pays for everyone&#x27;s socks”"), "and under the socks");
     // In the Package part, after the package, as the editor's Event Info has them.
-    assert.ok(page.indexOf("Extra children:") > page.indexOf('data-testid="select-ai-review-package"'));
+    assert.ok(page.indexOf("Expected extra:") > page.indexOf('data-testid="select-ai-review-package"'));
     assert.ok(page.indexOf("Socks:") < page.indexOf("POS name:"));
     // Approve and create sends them, each with its source; the chip is Event Info's.
     const body = approveBodyOf(review, state, ids);
@@ -454,7 +456,7 @@ try {
     const state = initialReviewState(review, { fill: res.body.fill });
     assert.deepEqual([state.expectedExtraKids, state.expectedExtraAdults, state.socks], [null, null, null]);
     const page = html(review, state);
-    for (const label of ["Extra children:", "Extra adults:", "Socks:"]) assert.ok(!page.includes(label), `no ${label} row`);
+    for (const label of ["Expected extra:", "Socks:"]) assert.ok(!page.includes(label), `no ${label} row`);
     const body = approveBodyOf(review, state, ids);
     for (const k of ["expectedExtraKids", "expectedExtraAdults", "socksArrangement", "socksNote"]) assert.equal(k in body.event, false, `${k} not sent`);
     const ok = await approve("older", body);
