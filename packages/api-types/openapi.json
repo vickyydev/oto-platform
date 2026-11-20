@@ -67430,6 +67430,15 @@
                               },
                               "onTillMenu": {
                                 "type": "boolean"
+                              },
+                              "serviceTime": {
+                                "type": "string",
+                                "pattern": "^\\d{2}:\\d{2}$"
+                              },
+                              "serviceGroup": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 60
                               }
                             },
                             "required": [
@@ -67485,6 +67494,15 @@
                               },
                               "onTillMenu": {
                                 "type": "boolean"
+                              },
+                              "serviceTime": {
+                                "type": "string",
+                                "pattern": "^\\d{2}:\\d{2}$"
+                              },
+                              "serviceGroup": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 60
                               }
                             },
                             "required": [
@@ -67705,6 +67723,15 @@
                               },
                               "onTillMenu": {
                                 "type": "boolean"
+                              },
+                              "serviceTime": {
+                                "type": "string",
+                                "pattern": "^\\d{2}:\\d{2}$"
+                              },
+                              "serviceGroup": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 60
                               }
                             },
                             "required": [
@@ -67760,6 +67787,15 @@
                               },
                               "onTillMenu": {
                                 "type": "boolean"
+                              },
+                              "serviceTime": {
+                                "type": "string",
+                                "pattern": "^\\d{2}:\\d{2}$"
+                              },
+                              "serviceGroup": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 60
                               }
                             },
                             "required": [
@@ -71225,6 +71261,15 @@
                               },
                               "onTillMenu": {
                                 "type": "boolean"
+                              },
+                              "serviceTime": {
+                                "type": "string",
+                                "pattern": "^\\d{2}:\\d{2}$"
+                              },
+                              "serviceGroup": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 60
                               }
                             },
                             "required": [
@@ -71280,6 +71325,15 @@
                               },
                               "onTillMenu": {
                                 "type": "boolean"
+                              },
+                              "serviceTime": {
+                                "type": "string",
+                                "pattern": "^\\d{2}:\\d{2}$"
+                              },
+                              "serviceGroup": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 60
                               }
                             },
                             "required": [
@@ -71500,6 +71554,15 @@
                               },
                               "onTillMenu": {
                                 "type": "boolean"
+                              },
+                              "serviceTime": {
+                                "type": "string",
+                                "pattern": "^\\d{2}:\\d{2}$"
+                              },
+                              "serviceGroup": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 60
                               }
                             },
                             "required": [
@@ -71555,6 +71618,15 @@
                               },
                               "onTillMenu": {
                                 "type": "boolean"
+                              },
+                              "serviceTime": {
+                                "type": "string",
+                                "pattern": "^\\d{2}:\\d{2}$"
+                              },
+                              "serviceGroup": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 60
                               }
                             },
                             "required": [

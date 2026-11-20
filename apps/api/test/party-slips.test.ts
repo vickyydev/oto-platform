@@ -23,6 +23,7 @@ import {
   PARTY_CHOICE_NOT_MADE,
   PARTY_PLAN_CHANGED,
   PARTY_PLAN_LINE_QTY_MAX,
+  PARTY_SLIP_COMPOSER,
   PARTY_KIDS_ONLY,
   PARTY_NO_KIDS_FOOD_TIME,
   PARTY_NOT_ON_TILL_MENU,
@@ -1464,8 +1465,8 @@ describe('SCRUM-906 — the whole kitchen plan, through the OTO App view (0050)'
     expect((await slipsOf(id)).map((r) => r.status)).toEqual(['printed', 'printed']);
     // Every slip this release prints is marked with its composer and the run that printed it.
     expect((await baselinesOf(id)).map((b) => [b.station, b.composer, b.source, b.rebased])).toEqual([
-      ['bar', '3:kitchen_plan_1', 'print:1', false],
-      ['kitchen', '3:kitchen_plan_1', 'print:1', false],
+      ['bar', `${PARTY_SLIP_COMPOSER}:kitchen_plan_1`, 'print:1', false],
+      ['kitchen', `${PARTY_SLIP_COMPOSER}:kitchen_plan_1`, 'print:1', false],
     ]);
     await asPrintedBeforeTheRelease(id);
 
@@ -1476,8 +1477,8 @@ describe('SCRUM-906 — the whole kitchen plan, through the OTO App view (0050)'
     expect(await changesOf(id)).toEqual([]);
     const rebased = await baselinesOf(id);
     expect(rebased.map((b) => [b.station, b.composer, b.source, b.rebased])).toEqual([
-      ['bar', '3:kitchen_plan_1', 'print:1', true],
-      ['kitchen', '3:kitchen_plan_1', 'print:1', true],
+      ['bar', `${PARTY_SLIP_COMPOSER}:kitchen_plan_1`, 'print:1', true],
+      ['kitchen', `${PARTY_SLIP_COMPOSER}:kitchen_plan_1`, 'print:1', true],
     ]);
     expect((rebased[1]!.held as { lines: unknown[] }).lines).toEqual([
       { qty: 3, name: 'Pizza: Margherita' },
@@ -1488,7 +1489,7 @@ describe('SCRUM-906 — the whole kitchen plan, through the OTO App view (0050)'
       .select()
       .from(auditLog)
       .where(and(eq(auditLog.action, 'party.slips_rebase'), eq(auditLog.entityId, id)));
-    expect(audited?.after).toMatchObject({ partyDate: T, composer: '3:kitchen_plan_1' });
+    expect(audited?.after).toMatchObject({ partyDate: T, composer: `${PARTY_SLIP_COMPOSER}:kitchen_plan_1` });
     // Nor on the looks after it.
     await runPartySlipsJob(ctx.db, atBangkok(T, '16:04'));
     expect(await changesOf(id)).toEqual([]);
@@ -1542,7 +1543,7 @@ describe('SCRUM-906 — the whole kitchen plan, through the OTO App view (0050)'
     expect(docOf(rows[1]!).lines[0]).toEqual({ qty: 3, name: 'Pizza: Hawaiian' });
     const marks = await baselinesOf(id);
     expect(marks.map((m) => [m.station, m.composer, m.source])).toEqual([
-      ['bar', '3:kitchen_plan_1', 'print:1'], ['kitchen', '3:kitchen_plan_1', 'change:1'],
+      ['bar', `${PARTY_SLIP_COMPOSER}:kitchen_plan_1`, 'print:1'], ['kitchen', `${PARTY_SLIP_COMPOSER}:kitchen_plan_1`, 'change:1'],
     ]);
     await runPartySlipsJob(ctx.db, atBangkok(T, '17:12'));
     expect(await changesOf(id)).toHaveLength(2);
@@ -1573,7 +1574,7 @@ describe('SCRUM-906 — the whole kitchen plan, through the OTO App view (0050)'
     await olderComposer(id);
     await runPartySlipsJob(ctx.db, atBangkok(T, '17:16'));
     expect(await changesOf(id)).toEqual([]);
-    expect((await baselinesOf(id)).every((m) => m.composer === '3:kitchen_plan_1')).toBe(true);
+    expect((await baselinesOf(id)).every((m) => m.composer === `${PARTY_SLIP_COMPOSER}:kitchen_plan_1`)).toBe(true);
     await runPartySlipsJob(ctx.db, atBangkok(T, '17:17'));
     expect(await changesOf(id)).toEqual([]);
     await staffChoose(id, ['Hawaiian']);
@@ -1592,7 +1593,7 @@ describe('SCRUM-906 — the whole kitchen plan, through the OTO App view (0050)'
       expect(missing.status).toBe('no_package');
       await runPartySlipsJob(ctx.db, atBangkok(T, '17:21'));
       expect((await changesOf(id)).map((r) => [r.station, r.variant])).toEqual([['kitchen', 'void'], ['bar', 'void']]);
-      expect((await baselinesOf(id)).every((m) => m.composer === '3:kitchen_plan_1')).toBe(true);
+      expect((await baselinesOf(id)).every((m) => m.composer === `${PARTY_SLIP_COMPOSER}:kitchen_plan_1`)).toBe(true);
     } finally {
       await ctx.db.execute(sql`drop view if exists otoapp_v.event_packages`);
       await ctx.db.execute(sql`alter view otoapp_v.event_packages_slip_review_original rename to event_packages`);
@@ -1724,7 +1725,7 @@ describe('SCRUM-906 — the whole kitchen plan, through the OTO App view (0050)'
       expect(old).toMatchObject({ source: 'legacy', rowPresent: true });
       expect(old.kitchen!.setMenu.some((m) => m.name === extra[0]!.itemName)).toBe(false);
       await runPartySlipsJob(ctx.db, atBangkok(T, '18:00'));
-      expect((await baselinesOf(id)).every((m) => m.composer === '3:legacy')).toBe(true);
+      expect((await baselinesOf(id)).every((m) => m.composer === `${PARTY_SLIP_COMPOSER}:legacy`)).toBe(true);
     } finally {
       await ctx.db.execute(sql`drop view if exists otoapp_v.event_packages`);
       await ctx.db.execute(sql`alter view otoapp_v.event_packages_slip_review_original rename to event_packages`);
@@ -1736,7 +1737,7 @@ describe('SCRUM-906 — the whole kitchen plan, through the OTO App view (0050)'
     expect(await changesOf(id)).toEqual([]);
     const audits = await ctx.db.select().from(auditLog).where(and(eq(auditLog.action, 'party.slips_rebase'), eq(auditLog.entityId, id)));
     expect(audits.at(-1)?.after).toMatchObject({ stations: expect.arrayContaining([expect.objectContaining({ reason: 'historical_publication_transition' })]) });
-    expect((await baselinesOf(id)).every((m) => m.composer === '3:kitchen_plan_1')).toBe(true);
+    expect((await baselinesOf(id)).every((m) => m.composer === `${PARTY_SLIP_COMPOSER}:kitchen_plan_1`)).toBe(true);
     await staffChoose(id, ['Hawaiian']);
     await addExtra();
     await runPartySlipsJob(ctx.db, atBangkok(T, '18:02'));

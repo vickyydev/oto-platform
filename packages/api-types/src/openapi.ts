@@ -27158,6 +27158,8 @@ export interface paths {
                                     origin?: "set_menu" | "extra" | "party_only";
                                     unitPriceSatang?: number;
                                     onTillMenu?: boolean;
+                                    serviceTime?: string;
+                                    serviceGroup?: string;
                                 }[];
                                 barItems: {
                                     chargeApproved?: boolean;
@@ -27170,6 +27172,8 @@ export interface paths {
                                     origin?: "set_menu" | "extra" | "party_only";
                                     unitPriceSatang?: number;
                                     onTillMenu?: boolean;
+                                    serviceTime?: string;
+                                    serviceGroup?: string;
                                 }[];
                                 kitchen: {
                                     kidsFoodTime: string | null;
@@ -27216,6 +27220,8 @@ export interface paths {
                                     origin?: "set_menu" | "extra" | "party_only";
                                     unitPriceSatang?: number;
                                     onTillMenu?: boolean;
+                                    serviceTime?: string;
+                                    serviceGroup?: string;
                                 }[];
                                 barItems: {
                                     chargeApproved?: boolean;
@@ -27228,6 +27234,8 @@ export interface paths {
                                     origin?: "set_menu" | "extra" | "party_only";
                                     unitPriceSatang?: number;
                                     onTillMenu?: boolean;
+                                    serviceTime?: string;
+                                    serviceGroup?: string;
                                 }[];
                                 kitchen: {
                                     kidsFoodTime: string | null;
@@ -28066,6 +28074,8 @@ export interface paths {
                                     origin?: "set_menu" | "extra" | "party_only";
                                     unitPriceSatang?: number;
                                     onTillMenu?: boolean;
+                                    serviceTime?: string;
+                                    serviceGroup?: string;
                                 }[];
                                 barItems: {
                                     chargeApproved?: boolean;
@@ -28078,6 +28088,8 @@ export interface paths {
                                     origin?: "set_menu" | "extra" | "party_only";
                                     unitPriceSatang?: number;
                                     onTillMenu?: boolean;
+                                    serviceTime?: string;
+                                    serviceGroup?: string;
                                 }[];
                                 kitchen: {
                                     kidsFoodTime: string | null;
@@ -28124,6 +28136,8 @@ export interface paths {
                                     origin?: "set_menu" | "extra" | "party_only";
                                     unitPriceSatang?: number;
                                     onTillMenu?: boolean;
+                                    serviceTime?: string;
+                                    serviceGroup?: string;
                                 }[];
                                 barItems: {
                                     chargeApproved?: boolean;
@@ -28136,6 +28150,8 @@ export interface paths {
                                     origin?: "set_menu" | "extra" | "party_only";
                                     unitPriceSatang?: number;
                                     onTillMenu?: boolean;
+                                    serviceTime?: string;
+                                    serviceGroup?: string;
                                 }[];
                                 kitchen: {
                                     kidsFoodTime: string | null;

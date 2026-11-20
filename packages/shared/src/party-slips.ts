@@ -97,8 +97,15 @@ export const PARTY_NOT_ON_TILL_MENU = 'not on the till menu';
  * the BEO gives one, so a bar slip printed before this release under the
  * kitchen's READY BY is taken as the plan now composes it, and no VOID or
  * UPDATED slip goes to the bar for the release alone.
+ *
+ * 4 (SCRUM-1051): a dish's or group's own serving time rides on its line
+ * (`time`, `group`, from app migration 0056) and the timed lines print after
+ * the rest in time order, so a slip printed before this release for a party
+ * whose BEO already named times is taken as the plan now composes it, and no
+ * UPDATED slip goes out for the release alone. A plan with no times composes
+ * exactly as before.
  */
-export const PARTY_SLIP_COMPOSER = 3;
+export const PARTY_SLIP_COMPOSER = 4;
 
 /** "Fried rice: Veggie": a chosen dish under its group's name. */
 export const partyChoiceName = (group: string, choice: string): string => `${group.trim()}: ${choice.trim()}`;
@@ -173,6 +180,17 @@ export interface PartySlipLine {
   qty?: number;
   name: string;
   note?: string;
+  /**
+   * SCRUM-1051 — the dish's own serving time, "HH:MM" on the park's clock, and
+   * the group it is served under, as the BEO names them (the owner's answer of
+   * 19 November: on the BEO, its print and the till's slips). The renderer
+   * prints lines sharing a group and time together under a small heading of
+   * the group's name and time, and a dish with a time and no group with the
+   * time beside it. Absent on a line served at its menu's time, which prints
+   * as it always has; a group is only ever carried with a time.
+   */
+  time?: string;
+  group?: string;
 }
 
 /**
@@ -218,13 +236,51 @@ interface SlipLineDraft {
   /** Where the line came from (SCRUM-906), so an adults' copy folds into the line it copies. */
   origin?: string | undefined;
   notes: string[];
+  /** SCRUM-1051: the line's own serving time and group, when the BEO names them. */
+  serving: Pick<PartySlipLine, 'time' | 'group'>;
 }
+
+/** SCRUM-1051: the line's own time and group as the plan carries them; nothing for a line served at its menu's time. */
+const servingOf = (item: { serviceTime?: string; serviceGroup?: string }): Pick<PartySlipLine, 'time' | 'group'> => {
+  const minutes = clockMinutes(item.serviceTime ?? null);
+  if (minutes === null) return {};
+  const group = item.serviceGroup?.trim().replace(/\s+/g, ' ');
+  return { time: clockOf(minutes), ...(group ? { group } : {}) };
+};
 
 const draftToLine = (d: SlipLineDraft): PartySlipLine => ({
   ...(d.qty === null ? {} : { qty: d.qty }),
   name: d.name,
   ...(d.notes.length ? { note: d.notes.join(' · ') } : {}),
+  ...d.serving,
 });
+
+/**
+ * SCRUM-1051 — the slip's lines in serving order: the lines with no time of
+ * their own first, exactly as before, then the timed lines in time order, the
+ * lines of one group at one time together (a block's place among the blocks
+ * of one minute is where the plan first named it). A slip with no timed line
+ * is returned as it came.
+ */
+function inServingOrder(lines: PartySlipLine[]): PartySlipLine[] {
+  if (!lines.some((l) => l.time)) return lines;
+  const blockOf = (l: PartySlipLine) => `${l.time}|${l.group ? foldName(l.group) : ''}`;
+  const firstSeen = new Map<string, number>();
+  lines.forEach((l, i) => {
+    if (l.time && !firstSeen.has(blockOf(l))) firstSeen.set(blockOf(l), i);
+  });
+  const timed = lines
+    .map((l, i) => ({ l, i }))
+    .filter(({ l }) => l.time)
+    .sort(
+      (a, b) =>
+        (clockMinutes(a.l.time) ?? 0) - (clockMinutes(b.l.time) ?? 0) ||
+        (firstSeen.get(blockOf(a.l)) ?? 0) - (firstSeen.get(blockOf(b.l)) ?? 0) ||
+        a.i - b.i,
+    )
+    .map(({ l }) => l);
+  return [...lines.filter((l) => !l.time), ...timed];
+}
 
 /**
  * The party's two slips; null for a station the plan has nothing for. Lines
@@ -269,6 +325,7 @@ export function composePartySlips(input: PartySlipInput): Record<PartySlipStatio
         dish,
         origin: item.origin,
         notes: [PARTY_ADULTS_ONLY, ...(note ? [note] : []), ...(offMenu ? [offMenu] : [])],
+        serving: servingOf(item),
       });
       continue;
     }
@@ -280,7 +337,7 @@ export function composePartySlips(input: PartySlipInput): Record<PartySlipStatio
       item.adultsNote === undefined ? null : partyAdultsNoteMark(item.adultsNote),
       offMenu,
     ].filter((n): n is string => !!n);
-    drafts[station].push({ qty: item.qty, name, dish, origin: item.origin, notes });
+    drafts[station].push({ qty: item.qty, name, dish, origin: item.origin, notes, serving: servingOf(item) });
   }
   const lines: Record<PartySlipStation, PartySlipLine[]> = {
     kitchen: drafts.kitchen.map(draftToLine),
@@ -297,7 +354,7 @@ export function composePartySlips(input: PartySlipInput): Record<PartySlipStatio
       (n): n is string => !!n,
     );
     const station: PartySlipStation = place === 'kitchen' ? 'kitchen' : 'bar';
-    lines[station].push({ qty: item.qty, name, ...(notes.length ? { note: notes.join(' · ') } : {}) });
+    lines[station].push({ qty: item.qty, name, ...(notes.length ? { note: notes.join(' · ') } : {}), ...servingOf(item) });
   }
   // SCRUM-906: the cake, as the BEO's cake choice says it (decision 4).
   if (input.plan.cake) lines.kitchen.push(partyCakeSlipLine(input.plan.cake));
@@ -321,7 +378,7 @@ export function composePartySlips(input: PartySlipInput): Record<PartySlipStatio
           time: input.printedAt,
           details,
           ...(ready[station] ? { readyBy: ready[station] } : { readyByNote: PARTY_NO_KIDS_FOOD_TIME }),
-          lines: lines[station],
+          lines: inServingOrder(lines[station]),
         };
   return { kitchen: slip('kitchen'), bar: slip('bar') };
 }

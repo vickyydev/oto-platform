@@ -209,6 +209,15 @@ export const PartyPlanMenuItemSchema = z.object({
    * ("not on the till menu"). Set by the api where it read the catalogue.
    */
   onTillMenu: z.boolean().optional(),
+  /**
+   * SCRUM-1051: the dish's own serving time, "HH:MM" on the park's clock, and
+   * the group it is served under ("Dessert"), as the BEO stores them on the
+   * line and app migration 0056 publishes them. Read-only here. Absent when
+   * the line has no time of its own: it is served at its menu's time, as
+   * before; a group is only ever named with a time.
+   */
+  serviceTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+  serviceGroup: z.string().min(1).max(60).optional(),
 });
 export type PartyPlanMenuItem = z.infer<typeof PartyPlanMenuItemSchema>;
 
@@ -224,6 +233,9 @@ export const PartyPlanBarItemSchema = z.object({
   origin: z.enum(PARTY_MENU_ORIGINS).optional(),
   unitPriceSatang: Satang.optional(),
   onTillMenu: z.boolean().optional(),
+  /** SCRUM-1051: the drink's own serving time and group, as on a food line. */
+  serviceTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+  serviceGroup: z.string().min(1).max(60).optional(),
 });
 export type PartyPlanBarItem = z.infer<typeof PartyPlanBarItemSchema>;
 

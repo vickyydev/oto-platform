@@ -4,6 +4,7 @@ import {
   PARTY_PLAN_LINE_QTY_MAX,
   PartyKitchenPlanSchema,
   PartyPlanSchema,
+  clockMinutes,
   isPartyMenuCode,
   type PartyKitchenPlan,
   type PartyMenuOrigin,
@@ -100,6 +101,20 @@ function originOf(code: string | null, source: unknown): PartyMenuOrigin {
   return source === 'set_menu' ? 'set_menu' : 'extra';
 }
 
+/**
+ * SCRUM-1051: the line's own serving time and group, as the view gives them
+ * (app migration 0056: `service_time` "HH:MM", `service_group` beside it).
+ * None for a line of before, or one the BEO gave no time: it is served at its
+ * menu's time. Read as every seam field is: a value that is no clock time is
+ * none, and a group is carried only with a time.
+ */
+function servingOf(m: Json): Pick<PartyPlanMenuItem, 'serviceTime' | 'serviceGroup'> {
+  const time = text(m.service_time);
+  if (!time || !/^\d{2}:\d{2}$/.test(time) || clockMinutes(time) === null) return {};
+  const group = text(m.service_group);
+  return { serviceTime: time, ...(group ? { serviceGroup: group.slice(0, 60) } : {}) };
+}
+
 /** One food line in the platform's words; the whole kitchen plan's lines carry where they came from. */
 function menuItemOf(m: Json, whole906: boolean): PartyPlanMenuItem {
   const productCode = text(m.product_code);
@@ -121,6 +136,7 @@ function menuItemOf(m: Json, whole906: boolean): PartyPlanMenuItem {
           ...(lineId ? { lineId } : {}),
           origin: originOf(productCode, m.source),
           ...(price === null ? {} : { unitPriceSatang: price }),
+          ...servingOf(m),
         }
       : {}),
   };
@@ -142,6 +158,7 @@ function barItemOf(b: Json, whole906: boolean): PartyPlanBarItem {
           ...(lineId ? { lineId } : {}),
           origin: originOf(productCode, b.source),
           ...(price === null ? {} : { unitPriceSatang: price }),
+          ...servingOf(b),
         }
       : {}),
   };
