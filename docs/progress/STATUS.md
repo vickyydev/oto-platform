@@ -1,3 +1,47 @@
+## 20 November 2026, 10:15: what was left from 19 November is landed and on staging
+
+The owner asked for less ceremony ("only focus on clear build and then
+straight forward testing ... get it done"). The three lanes waiting in review
+were stopped (builds committed) and one four-track workflow landed the rest in
+about an hour (run wf_50388716-5a9). Gates were the touched tests, typechecks
+and one plain staging check each; hosted CI was not watched by the tracks.
+
+- **Family profiles, step F3** (SCRUM-1024, In Progress): main 10f03cd4c;
+  `oto-api-staging` and `oto-console-staging`. Readers go through the family
+  behind the switch, which is OFF. On staging: verify all zero; shadow compare
+  191 members, 225 children each way, no difference. Next: the owner's word
+  to switch reading on for staging, then the second parent (F4).
+- **BEO editor, the rest of the brief**: main f986953f9; `oto-app-staging`.
+  SCRUM-1029 "the editor in four sections", SCRUM-1030 "Kitchen Notes" and
+  SCRUM-1031 "expected extra guests and the Socks choice": Deployed. Plain
+  time boxes, Food & Drinks as four one-line parts, no "Mark ... Done"
+  buttons; the assistant proposes extra guests, socks and Kitchen Notes.
+  Fetch from chat was shown locally only (the test party has no chat linked).
+- **Till**: SCRUM-1060 "a save retried after a lost connection is written
+  once, the remaining paths": Deployed (main 65d81dd33). SCRUM-1051 "the time
+  per dish or group on the till's kitchen and bar slips": built and on
+  staging (main 57b8ac585; HR app view migration 0057; the party route
+  carries the times; slips group timed dishes under the group's name and
+  time), in Testing: the slip was rendered, not printed, because the staging
+  park names no party-slip printer. The park's counter box prints the new
+  slips after its next box release. Not built: an adults' copy of a kids'
+  dish at another time still folds into the kids' line on the slip.
+- **Single shift** (SCRUM-1038, SCRUM-1055, Testing): main 9f4dcf9ca, HR app
+  migration 0056; `oto-app-staging`. On the old contract it works end to end
+  (invitation, schedule mark, kiosk clock-in with the shift shown, pay in the
+  month's run). The lead's decision to get it onto staging: "Casual day rate"
+  is shown but cannot be chosen, and no service-charge share is paid, until
+  the owner answers N1 and N2 on his page.
+- **Hosted CI:** the runs of the three earlier pushes were replaced in the
+  queue; the run on 57b8ac585 (which contains everything) was in progress at
+  10:10.
+- **Seen and not changed:** the desk gate's name rows fall below the fold at
+  1024x768 with the customer half on screen; a kiosk device cannot be deleted
+  once it has time events (500); the schedule cell cuts "single shift" off
+  after a long name at 1440.
+- **Next:** the payment gateway set-up (2C2P): a plan with its decisions for
+  the owner first.
+
 ## 20 November 2026, 07:30: the till finish points are on staging; the slips lane is running
 
 - **SCRUM-1059 "Till and display: finish points seen in the staging checks of
