@@ -561,7 +561,7 @@ function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab, menuTime
         <Button disabled={disabled}
           variant="outline"
           size="icon"
-          className="h-7 w-7 shrink-0"
+          className="h-7 w-7 shrink-0 [@media(pointer:coarse)]:h-9 [@media(pointer:coarse)]:w-9"
           onClick={() => {
             if (refusedAsPaid(stepBeoQuantity(item.quantity, -1))) return;
             changeMenu(prev => {
@@ -580,7 +580,7 @@ function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab, menuTime
         <Button disabled={disabled}
           variant="outline"
           size="icon"
-          className="h-7 w-7 shrink-0"
+          className="h-7 w-7 shrink-0 [@media(pointer:coarse)]:h-9 [@media(pointer:coarse)]:w-9"
           onClick={() => {
             changeMenu(prev => {
               const updated = [...prev];
@@ -710,7 +710,7 @@ function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab, menuTime
         <div className={`${ROW_LINE} gap-1`}>
         {!item.notes && (
           <button disabled={disabled}
-            className="h-7 w-7 shrink-0 flex items-center justify-center text-muted-foreground hover:text-foreground rounded-md hover:bg-accent"
+            className="h-7 w-7 shrink-0 [@media(pointer:coarse)]:h-9 [@media(pointer:coarse)]:w-9 flex items-center justify-center text-muted-foreground hover:text-foreground rounded-md hover:bg-accent"
             onClick={() => {
               changeMenu(prev => {
                 const updated = [...prev];
@@ -740,7 +740,7 @@ function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab, menuTime
         <Button disabled={disabled}
           variant="ghost"
           size="icon"
-          className="h-7 w-7 shrink-0 text-destructive hover:text-destructive"
+          className="h-7 w-7 shrink-0 [@media(pointer:coarse)]:h-9 [@media(pointer:coarse)]:w-9 text-destructive hover:text-destructive"
           onClick={() => { if (!refusedAsPaid(null)) changeMenu(menuItems.filter((_, i) => i !== idx)); }}
           data-testid={`button-remove-menu-item-${menuTab}-${idx}`}
         >
@@ -3752,7 +3752,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                               type="button"
                               variant="ghost"
                               size="icon"
-                              className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                              className="h-7 w-7 shrink-0 [@media(pointer:coarse)]:h-9 [@media(pointer:coarse)]:w-9 text-muted-foreground hover:text-destructive"
                               onClick={() => (paidLines.has(item.id) ? refusePaidLine(item) : setBarItems(prev => prev.filter((_, i) => i !== idx)))}
                               disabled={readOnly}
                               data-testid={`bar-item-delete-${idx}`}
