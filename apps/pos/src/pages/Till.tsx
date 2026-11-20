@@ -23,7 +23,7 @@ import { branchTradingDate, resolveRateToday } from '@/lib/pricingMode';
 import { makeDropOffLine, normalizeDropOffFees, resolveDropOffPricing } from '@/lib/dropoff';
 import { resolveGroupRequirements, resolveSupervisionOutcome, sortedConfirmations } from '@/lib/supervision';
 import { gateChildPatch, saveGateChildren, type HeldWriteKey } from '@/lib/gateChildren';
-import { heldVisitWrite } from '@/lib/visitChildren';
+import { confirmHeldVisit } from '@/lib/visitChildren';
 import { gateFailureCause, gateFailureDescription, gateOnlineHold, gateSaleFailure } from '@/lib/gateOnline';
 import { buildSale } from '@/lib/sale';
 import { withPlatformCredit } from '@/lib/saleCredit';
@@ -2810,10 +2810,10 @@ export default function Till() {
           const openVisitId = member && member.id === guardian.id ? confirmedVisitId : null;
           // SCRUM-1060 — under the identity this gate holds for these
           // children: Continue pressed again after a lost reply replays the
-          // visit already opened rather than opening a second one.
+          // visit already opened rather than opening a second one, and after
+          // a later step failed sends the same children to it no second time.
           const visit = { memberId: guardian.id, childIds: confirmedChildIds };
-          gateVisitId = await confirmVisitChildren(openVisitId, visit,
-            heldVisitWrite(gateWriteKeysRef.current, openVisitId, visit));
+          gateVisitId = await confirmHeldVisit(gateWriteKeysRef.current, openVisitId, visit, confirmVisitChildren);
           if (ownSale()) gateOnline.noteWrite();
           if (ownSale()) setConfirmedVisitId(gateVisitId);
         }
