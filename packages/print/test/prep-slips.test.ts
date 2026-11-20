@@ -82,10 +82,12 @@ describe('a void or updated slip on the prep ticket', () => {
     expect(textOf(plain)).not.toMatch(/VOID|UPDATED/);
   });
 
-  it('the committed fixtures are a void kitchen slip and an updated bar slip', () => {
+  it('the committed fixtures are a void kitchen slip, an updated bar slip and a party kitchen slip with serving times', () => {
     expect(SLIP_FIXTURES.map((f) => [f.name, f.job.kind, (f.job.data as PrepTicketData).variant])).toEqual([
       ['void-kitchen', 'kitchen_ticket', 'void'],
       ['updated-bar', 'bar_ticket', 'updated'],
+      // SCRUM-1051 — a plain party slip whose lines carry serving times and groups.
+      ['party-kitchen-times', 'kitchen_ticket', undefined],
     ]);
   });
 });
