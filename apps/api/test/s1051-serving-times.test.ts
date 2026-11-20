@@ -29,7 +29,7 @@ import {
  *
  * The BEO stores the time on each food line (`serviceTime` "HH:MM",
  * `serviceGroup`) in the kitchen plan's lists and the bar plan's items. The
- * app's migration 0056 publishes them through the till's plan view as
+ * app's migration 0057 publishes them through the till's plan view as
  * `service_time` and `service_group` on each kitchen line and bar line, only
  * when the line stores a valid clock time, so every row of before reads
  * unchanged. The platform reads the two keys read-only, the party page's route
@@ -37,7 +37,7 @@ import {
  * order, the lines of one group at one time together.
  *
  * The OTO App's tables are built by its own migrations, the view is its
- * migration 0056 exactly, and the party is written into the app's own BEO
+ * migration 0057 exactly, and the party is written into the app's own BEO
  * tables, so every read here is the read staging makes.
  */
 
@@ -136,7 +136,7 @@ afterAll(async () => {
 });
 
 // =============================================================================
-// The view (app migration 0056): the two keys, only with a valid clock time
+// The view (app migration 0057): the two keys, only with a valid clock time
 // =============================================================================
 
 describe('the till plan view carries each BEO line’s serving time and group', () => {

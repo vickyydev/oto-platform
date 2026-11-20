@@ -212,7 +212,7 @@ export const PartyPlanMenuItemSchema = z.object({
   /**
    * SCRUM-1051: the dish's own serving time, "HH:MM" on the park's clock, and
    * the group it is served under ("Dessert"), as the BEO stores them on the
-   * line and app migration 0056 publishes them. Read-only here. Absent when
+   * line and app migration 0057 publishes them. Read-only here. Absent when
    * the line has no time of its own: it is served at its menu's time, as
    * before; a group is only ever named with a time.
    */

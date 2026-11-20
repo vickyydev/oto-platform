@@ -99,7 +99,7 @@ export const PARTY_NOT_ON_TILL_MENU = 'not on the till menu';
  * UPDATED slip goes to the bar for the release alone.
  *
  * 4 (SCRUM-1051): a dish's or group's own serving time rides on its line
- * (`time`, `group`, from app migration 0056) and the timed lines print after
+ * (`time`, `group`, from app migration 0057) and the timed lines print after
  * the rest in time order, so a slip printed before this release for a party
  * whose BEO already named times is taken as the plan now composes it, and no
  * UPDATED slip goes out for the release alone. A plan with no times composes

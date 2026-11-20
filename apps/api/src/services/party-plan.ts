@@ -103,7 +103,7 @@ function originOf(code: string | null, source: unknown): PartyMenuOrigin {
 
 /**
  * SCRUM-1051: the line's own serving time and group, as the view gives them
- * (app migration 0056: `service_time` "HH:MM", `service_group` beside it).
+ * (app migration 0057: `service_time` "HH:MM", `service_group` beside it).
  * None for a line of before, or one the BEO gave no time: it is served at its
  * menu's time. Read as every seam field is: a value that is no clock time is
  * none, and a group is carried only with a time.
