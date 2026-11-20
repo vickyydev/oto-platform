@@ -140,6 +140,10 @@ const required = (id: string) => { const el = byTestId(id); assert.ok(el, `the s
 /** The screen does not show `id` (a node is never handed to `assert`: see tests/till-menu-ui.check.ts). */
 const absent = (id: string, why = "not on the screen") => assert.ok(byTestId(id) === null, `${why}: ${id} is on the screen`);
 const click = async (id: string) => { await act(async () => { required(id).click(); }); await settle(); };
+/** SCRUM-1029: Food & Drinks lines opened (the menus were tabs; each line opens its part under it and stays open). */
+const openLines = async (...lines: string[]) => {
+  for (const line of lines) if (byTestId(`food-line-${line}`)?.getAttribute("data-state") === "closed") await click(`button-food-line-${line}`);
+};
 const text = (id: string) => required(id).textContent?.trim() ?? "";
 
 const host = doc.createElement("div");
@@ -159,6 +163,7 @@ const openBeo = async (eventId: string, readOnly = false) => {
   assert.ok(byTestId("accordion-food-drinks"), `the BEO ${eventId} is open`);
   // SCRUM-1029: the kitchen and the bar are parts of Food & Drinks.
   await click("accordion-food-drinks");
+  await openLines("setup", "kids", "bar");
 };
 const saved = async () => {
   const before = asked.length;
@@ -242,15 +247,15 @@ await check("HIGH 983: day-of text two steps to numeric three and writes that co
 });
 await check("MEDIUM review fix: read-only menu tabs still reveal the adults own dish while edits remain blocked",async()=>{
   const id="66666666-6666-4666-8666-666666666983";BEOS.set(id,{date:WEEKDAY,kids:[line("k1","ZZ TEST kids noodles")],adults:[line("a1","ZZ TEST adults salad",{quantity:4,price:180})],adultsDiffer:true,bar:[]});
-  await openBeo(id,true);assert.equal((required("button-menu-tab-adults") as HTMLButtonElement).disabled,false);await click("button-menu-tab-adults");
+  await openBeo(id,true);assert.equal((required("button-food-line-adults") as HTMLButtonElement).disabled,false);await openLines("adults");
   assert.ok(text("input-menu-name-adults-0").includes("ZZ TEST adults salad"));assert.equal((required("button-qty-plus-adults-0") as HTMLButtonElement).disabled,true);
   await click("input-menu-name-adults-0");assert.notEqual(required("input-menu-name-adults-0").tagName,"INPUT");
-  await click("button-menu-tab-kids");assert.ok(text("input-menu-name-kids-0").includes("ZZ TEST kids noodles"));
+  await openLines("kids");assert.ok(text("input-menu-name-kids-0").includes("ZZ TEST kids noodles"));
 });
 
 await check("MEDIUM review fix: mixed stored text and number counts infer the same menu in editor and day-of",async()=>{
   const id="77777777-7777-4777-8777-777777777983";BEOS.set(id,{date:WEEKDAY,kids:[line("k1","ZZ TEST same dish",{quantity:"2" as unknown as number,productCode:"CF-24"})],adults:[line("a1","ZZ TEST same dish",{quantity:2,productCode:"CF-24"})],bar:[]});
-  await openBeo(id);await click("button-menu-tab-adults");assert.ok(byTestId("adults-menu-mirror"),"legacy equal published counts keep the same inferred menu");
+  await openBeo(id);await openLines("adults");assert.ok(byTestId("adults-menu-mirror"),"legacy equal published counts keep the same inferred menu");
   queryClient.clear();await act(async()=>{root.render(React.createElement(QueryClientProvider,{client:queryClient},React.createElement(AuthContext.Provider,{value:auth},React.createElement(BeoDayOfView,{eventId:id,onClose:()=>undefined}))));});await settle(10);await click("button-toggle-kitchen-plan");
   await click("button-menu-tab-adults");assert.ok(byTestId("adults-menu-mirror"),"day-of agrees with editor and PDF counts");
 });

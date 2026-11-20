@@ -171,6 +171,10 @@ const required = (id: string) => { const el = byTestId(id); assert.ok(el, `the s
  */
 const absent = (id: string, why = "not on the screen") => assert.ok(byTestId(id) === null, `${why}: ${id} is on the screen`);
 const click = async (id: string) => { await act(async () => { required(id).click(); }); await settle(); };
+/** SCRUM-1029: Food & Drinks lines opened (the menus were tabs; each line opens its part under it and stays open). */
+const openLines = async (...lines: string[]) => {
+  for (const line of lines) if (byTestId(`food-line-${line}`)?.getAttribute("data-state") === "closed") await click(`button-food-line-${line}`);
+};
 const setValue = async (input: HTMLInputElement, value: string) => {
   await act(async () => {
     Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, "value")!.set!.call(input, value);
@@ -255,6 +259,7 @@ await check("nothing is asked of the till until Food & Drinks opens; then the pa
   assert.equal(tillAsks().length, 0, "a closed Food & Drinks asks nothing");
   // SCRUM-1029: the kitchen and the bar are parts of Food & Drinks.
   await click("accordion-food-drinks");
+  await openLines("setup", "kids", "bar");
   assert.equal(tillAsks().length, 1);
   assert.equal(tillAsks()[0]!.search, `?parkId=${PARK}`, "the party's park");
   assert.ok(byTestId("button-till-menu-bar-0"), "the bar's search is on the same section");
@@ -324,6 +329,7 @@ await check("a till that does not answer: the search says so and no line is mark
   BEOS.set(E2, { kids: [line("k1", "Old nuggets", { productCode: "CF-99" })], bar: [] });
   await openBeo(E2);
   await click("accordion-food-drinks");
+  await openLines("setup", "kids", "bar");
   absent("text-menu-code-dead-kids-0", "an unknown menu marks nothing");
   await click("button-till-menu-kids-0");
   assert.equal(text("button-till-menu-kids-0-unavailable"), "The till did not answer, so its menu cannot be offered. Type the item, or try again in a moment.");
@@ -333,6 +339,7 @@ await check("a till that does not answer: the search says so and no line is mark
   tillAnswer = (parkId) => okReading(parkId ?? PARK);
   await openBeo(E2, true);
   await click("accordion-food-drinks");
+  await openLines("setup", "kids", "bar");
   absent("button-till-menu-kids-0", "read-only: no search");
   assert.equal(text("text-menu-code-dead-kids-0"), "No longer on the till");
 });
@@ -363,6 +370,7 @@ await check("a set menu the parent chose: no search on a dish the template resol
   });
   await openBeo(E3);
   await click("accordion-food-drinks");
+  await openLines("setup", "kids", "bar");
   for (const i of [0, 1]) {
     assert.ok(byTestId(`menu-item-kids-${i}`), `the template's dish ${i} is on the screen, editable`);
     absent(`button-till-menu-kids-${i}`, `no search on the template's dish ${i}`);
@@ -379,7 +387,7 @@ await check("a set menu the parent chose: no search on a dish the template resol
     ["French fries", "", null, "CF-12", 120],
   ], "the parent's choice as it was; the added line part of the package, the EXTRA at the till's price");
 
-  await click("button-menu-tab-adults");
+  await openLines("adults");
   await click("switch-adults-differ");
   for (const i of [0, 1]) {
     assert.ok(byTestId(`menu-item-adults-${i}`), `the adults' copy of the template's dish ${i} is on the screen`);
@@ -454,6 +462,7 @@ await check("two listed items of one name each show their category beside it; a 
   });
   await openBeo(E1);
   await click("accordion-food-drinks");
+  await openLines("setup", "kids", "bar");
   await click("button-till-menu-bar-0");
   await setValue(required("button-till-menu-bar-0-search") as HTMLInputElement, "latte");
   assert.deepEqual(options("button-till-menu-bar-0"), ["CF-58-4", "CF-FREE-58-4"]);
