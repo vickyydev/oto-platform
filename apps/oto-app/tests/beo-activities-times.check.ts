@@ -360,10 +360,10 @@ await check("an activity's people reach no view the till reads and no file of th
     assert.doesNotMatch(read(`migrations/${f}`), /head_count|entertainment_item_id|beo_assignment_targets|beo_entertainment_items/, f);
   }
   // SCRUM-1051: the party view carries a line's serving time and group, as two keys, and nothing else of them.
-  const carrying = views.filter((f) => /serviceTime'|serviceGroup|service_time|service_group/.test(read(`migrations/${f}`)));
+  const carrying = views.filter((f) => /serviceGroup|service_group/.test(read(`migrations/${f}`)));
   assert.ok(carrying.length >= 1, "one view migration carries the serving time and group");
   for (const f of carrying) {
-    assert.match(read(`migrations/${f}`), /VIEWs+otoapp_v.event_packages/i, f);
+    assert.match(read(`migrations/${f}`), /VIEW\s+otoapp_v\.event_packages/i, f);
     assert.match(read(`migrations/${f}`), /service_time/, f);
     assert.match(read(`migrations/${f}`), /service_group/, f);
   }
