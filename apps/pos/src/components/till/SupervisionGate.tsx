@@ -346,11 +346,13 @@ export function SupervisionGate({
             >
               <div className="flex items-center gap-3 max-[520px]:flex-wrap">
                 <Baby className="h-5 w-5 shrink-0 text-muted-foreground" />
+                {/* SCRUM-1060 — `md:` too: the plain Input drops to text-sm from
+                    768px up, so a typed name was small inside the large box. */}
                 <Input
                   value={slot.name}
                   onChange={(e) => onUpdateSlot(slot.id, { name: e.target.value })}
                   placeholder="Child's name"
-                  className="h-12 flex-1 text-lg"
+                  className="h-12 flex-1 text-lg md:text-lg"
                 />
                 <div className="w-36 shrink-0 max-[520px]:w-full">
                   <ChildDobPicker
