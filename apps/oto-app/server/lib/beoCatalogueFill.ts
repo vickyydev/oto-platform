@@ -34,6 +34,8 @@ import {
   type BeoAiSource,
   type BeoAiSourced,
 } from "@shared/beoAiFill";
+import { EXPECTED_EXTRA_MAX, SOCKS_ARRANGEMENTS, SOCKS_NOTE_MAX } from "@shared/beoGuestsSocks";
+import { isTillPartyEventType } from "@shared/tillBilling";
 import { BeoFillSchema, parkClockAt, type BeoFill } from "./aiFill";
 import type { InboxTranscriptLine } from "./inboxConfirmation";
 import type { DbExecutor } from "./packageSnapshot";
@@ -511,7 +513,10 @@ export const BEO_CONVERSATION_OUTPUT_FORMAT = `"event": {
     "whatsapp": { "value": "the number as written", "said": "the conversation's words", "line": 0, "source": "team | family" },
     "kidsFoodTime": { "value": "HH:MM", "said": "the conversation's words", "line": 0, "source": "team | family" },
     "adultsFoodTime": { "value": "HH:MM", "said": "the conversation's words", "line": 0, "source": "team | family" },
-    "barServiceTime": { "value": "HH:MM", "said": "the conversation's words", "line": 0, "source": "team | family" }
+    "barServiceTime": { "value": "HH:MM", "said": "the conversation's words", "line": 0, "source": "team | family" },
+    "expectedExtraKids": { "value": 0, "said": "the family's words", "line": 0, "source": "family" },
+    "expectedExtraAdults": { "value": 0, "said": "the family's words", "line": 0, "source": "family" },
+    "socks": { "value": "birthday_parent | guests | other", "note": "the conversation's words, only for other", "said": "the conversation's words", "line": 0, "source": "team | family" }
   },
   "setup": {
     "readyBy": { "value": "HH:MM", "said": "the conversation's words", "line": 0, "source": "team | family" },
@@ -553,6 +558,8 @@ Read every field of the form below from the conversation too, from the family's 
 - "event.childAge": the age the child turns at this party, a whole number
 - "event.whatsapp": a phone number the conversation writes out for reaching the family on WhatsApp, its digits exactly as written; never a number of the park's
 - "event.kidsFoodTime" and "event.adultsFoodTime": when the kids' and the adults' food is served, HH:MM; "event.barServiceTime": when the drinks are served, HH:MM
+- "event.expectedExtraKids" and "event.expectedExtraAdults": how many more children and adults than the party's planned guests the family says may come, a whole number, only a number the family itself writes, with the family's own line that writes it even when the team repeats it later: "My sister may bring her 2 kids too" is 2 children. A number the team offers or asks about ("We can welcome up to 5 more kids", "How many extra guests?") is not given unless a line of the family's writes it, and words with no number ("a few friends may come") give none. Never the planned guests themselves
+- "event.socks": how the socks are paid for, as the family stated or agreed it: "birthday_parent" when the birthday child's family pays for every child's socks, "guests" when each guest pays for their own, "other" for any other arrangement, with "note", the conversation's own words for it in at most 200 characters: "The guests will buy their own socks" is "guests". An offer or a question of the team's that nobody answered ("Shall we put all the socks on your bill?") is not an arrangement
 - "setup": "readyBy", the time the room must be ready, HH:MM; "responsible", a person or a role the conversation names for the setup, as written, without a role word or "the" before it; "notes", what the conversation says about the setup that is not a task; "tasks", each setup task ("a balloon arch", "a long table for 12") with its notes
 - "pos": the party's bill on the park's till. "name", the package or bill name the conversation gives it; "items", each item the bill includes or charges ("type": "included" or "extra"; "price" only a price the conversation names for it, in baht); "notes", what the conversation says of the bill or the payment
 - "team": "partyHost" and "entertainmentHost", a person the conversation names for that role, as written, without a role word or "the" before it. Never one you choose
@@ -784,6 +791,19 @@ const MenuLineWithNotes = MenuLineAnswer.extend({
   option: optStr(300).describe('one of that food code\'s "names", exactly as listed, when it carries several; left out when the conversation does not say which'),
 });
 const EntertainmentWithTime = EntertainmentAnswer.extend({ time: optTime });
+/**
+ * SCRUM-1031: the socks arrangement as the editor's Socks field stores it — one of its three
+ * options, case and spaces aside (anything else is no arrangement); "note" the conversation's own
+ * words, only with "other", at most what the field holds.
+ */
+const SocksAnswer = z.object({
+  value: z
+    .preprocess((v) => (typeof v === "string" ? v.trim().toLowerCase().replace(/[\s-]+/g, "_") : undefined), z.enum(SOCKS_ARRANGEMENTS).optional())
+    .describe('one of "birthday_parent", "guests", "other"'),
+  note: optStr(SOCKS_NOTE_MAX).describe("the conversation's own words for another arrangement, only with \"other\""),
+  said: saidWords,
+  ...ref,
+});
 
 /**
  * SCRUM-904: what the conversation's read answers — the catalogue section,
@@ -811,6 +831,10 @@ export const BeoConversationAnswerShape = BeoCatalogueAnswerShape.extend({
       kidsFoodTime: SaidTime,
       adultsFoodTime: SaidTime,
       barServiceTime: SaidTime,
+      // SCRUM-1031: the expected extra guests (only a count the family writes) and the socks arrangement.
+      expectedExtraKids: SaidCount,
+      expectedExtraAdults: SaidCount,
+      socks: SocksAnswer,
     })
     .partial(),
   cake: CakeAnswer.extend({
@@ -1158,6 +1182,20 @@ export function resolveCatalogueAnswer(
   for (const key of ["kidsFoodTime", "adultsFoodTime", "barServiceTime"] as const) {
     const v = readOne(SaidTime, ev[key]);
     if (v?.value) proposal.event[key] = { value: v.value, from: fromOf(v, v.said, v.value) };
+  }
+  // SCRUM-1031: the expected extra children and adults, only a count the family itself writes
+  // (`guestCountStated`: never the team's offer or question, never a number the model worked out),
+  // and the socks arrangement, one of the editor's options, its note only with "other".
+  for (const key of ["expectedExtraKids", "expectedExtraAdults"] as const) {
+    const v = readOne(SaidCount, ev[key]);
+    if (!v || v.value === undefined || v.value < 1 || v.value > EXPECTED_EXTRA_MAX) continue;
+    const from = fromOf(v, v.said, v.value);
+    if (guestCountStated(v.value, from, refs, refs.length === 0 ? fallbackText : null)) proposal.event[key] = { value: v.value, from };
+  }
+  const socks = readOne(SocksAnswer, ev.socks);
+  if (socks?.value) {
+    const note = socks.value === "other" ? socks.note : undefined;
+    proposal.event.socks = { value: socks.value, ...(note ? { note } : {}), from: fromOf(socks, socks.said ?? note, note) };
   }
 
   // SCRUM-904: a kids' dish that is a set-menu choice already is that choice, not a second line
@@ -2135,6 +2173,55 @@ export function phoneInLine(value: string, lineText: string | null): boolean {
   return !!lineText && lineText.replace(/\D/g, "").includes(digits);
 }
 
+/** SCRUM-1031: "one" written out, in the languages the park's chats are written in (2 to 10: `COUNT_WORDS`). */
+const ONE_WORDS = new Set(["one", "один", "одна", "одного", "одну", "одной"]);
+const THAI_ONE = "หนึ่ง";
+
+/**
+ * SCRUM-1031: whether a line writes the count `n`: as a figure that is no part of a date or a
+ * clock time ("2 kids", "+2", never the 2 of "2 pm" or "2/12"), or as a word ("two", "both",
+ * "สอง", "два"; "one", "หนึ่ง", "один").
+ */
+export function countWritten(text: string, n: number): boolean {
+  const line = text.normalize("NFC");
+  for (const m of line.matchAll(/(?<![\d.,:/])\d{1,3}(?!\d)/g)) {
+    if (Number(m[0]) !== n) continue;
+    const at = m.index ?? 0;
+    if (!partOfDateOrTime(line, at, at + m[0].length, false)) return true;
+  }
+  const words = line.toLowerCase().split(/[^\p{L}\p{M}]+/u).filter(Boolean);
+  if (n === 1 && (words.some((w) => ONE_WORDS.has(w)) || line.includes(THAI_ONE))) return true;
+  if (words.some((w) => countWordOf(w) === n)) return true;
+  // Thai is written without spaces between its words: the word is looked for in the line.
+  const thai = COUNT_WORDS[n]?.split("|").find((w) => /\p{Script=Thai}/u.test(w));
+  return !!thai && line.includes(thai);
+}
+
+/**
+ * SCRUM-1031 — the owner's answer kept the expected extra guests as information on the BEO and
+ * its print, and the SCRUM-1035 rule holds for them: a number is proposed only when the FAMILY
+ * stated it. Kept when the value's line is the family's and writes the number (`countWritten`),
+ * or when it is a pasted text that writes it (a paste names no author the app can tell: the person
+ * who pasted it vouches for it, and the review shows it as the team's for them to check). A count
+ * only the team writes (an offer, a question, a confirmation of the team's own), one the line does
+ * not write (worked out of "my sister and her husband"), or one whose line is not held is never
+ * the family's: left out.
+ */
+export function guestCountStated(
+  value: number,
+  from: BeoAiFrom,
+  refs: readonly TranscriptRef[],
+  /** The ruling message read alone (no conversation): the team's, so it states no family's count. */
+  fallbackText?: string | null,
+): boolean {
+  const ref = from.line !== null ? refs.find((r) => r.line === from.line) : undefined;
+  const text = ref?.text ?? (refs.length === 0 ? fallbackText ?? null : null);
+  if (!text) return false;
+  const pasted = ref?.id === PASTED_LINE_ID;
+  if (from.source !== "family" && !pasted) return false;
+  return countWritten(text, value);
+}
+
 // --- SCRUM-1035: a question the team asked and the family never answered ------------------
 
 /** What ends a sentence: a question mark wherever it is; a stop, "!" or "。" before a space or the end; a new line. */
@@ -2423,6 +2510,16 @@ export function withoutUnansweredQuestions(
   const adults = ev.numAdults?.value;
   if (ev.numAdults && !one(ev.numAdults, `${adults} adult`)) delete ev.numAdults;
   if (ev.eventDate && askedOf(ev.eventDate.from, [ev.eventDate.said, ev.eventDate.value], [ev.eventDate.said, ev.eventDate.value])) delete ev.eventDate;
+  // SCRUM-1031: the expected extra guests (a count the family stated, `guestCountStated`; asked in a
+  // question nobody answered, as a pasted text may) and a socks arrangement the team only asked
+  // about. The word "socks" finds the question; only the arrangement's own words are a read-back
+  // of the family's (the family naming socks before is no answer to "Shall we put the socks on
+  // your bill?").
+  for (const [key, words] of [["expectedExtraKids", ["kid", "child"]], ["expectedExtraAdults", ["adult"]]] as const) {
+    const n = ev[key]?.value;
+    if (ev[key] && !one(ev[key], ...words.flatMap((w) => [`${n} more ${w}`, `${n} extra ${w}`, `${n} ${w}`]))) delete ev[key];
+  }
+  if (ev.socks && askedOf(ev.socks.from, [ev.socks.note, "socks", "sock"], [ev.socks.note])) delete ev.socks;
 
   if (p.cake && asked(p.cake.from, p.cake.notes, p.cake.time)) p.cake = null;
 
@@ -2446,6 +2543,18 @@ export function withoutUnansweredQuestions(
     if (!d.hosts.partyHost && !d.hosts.entertainmentHost) delete d.hosts;
   }
   return refused;
+}
+
+/**
+ * SCRUM-1031: the expected extra guests and the socks arrangement belong to a party the till
+ * settles (the editor's Event Info holds them for such a party alone, and the approval writes them
+ * there alone): on any other event (a camp, a workshop) neither is proposed.
+ */
+export function withoutGuestsSocksOffParty(p: BeoAiProposal, eventType: string | null | undefined): void {
+  if (isTillPartyEventType(eventType)) return;
+  delete p.event.expectedExtraKids;
+  delete p.event.expectedExtraAdults;
+  delete p.event.socks;
 }
 
 /**

@@ -22,6 +22,7 @@ import { adultsLinesRepeatKids, CHOICE_FROM_CHAT, codedLineNameOf, foodNameFor, 
 import { adultsCopiesOf, adultsDifferOf, foldDishName } from "@shared/kitchenAdults";
 import { keepPaidBeoLines, type BeoPaidLineKept } from "@shared/beoPaidLines";
 import type { DepositSaveReason } from "@shared/partyDeposit";
+import { isTillPartyEventType } from "@shared/tillBilling";
 import type { db as appDb } from "../db";
 import { normalizeThaiPhone, validatePhoneInput } from "../phone-utils";
 import type { ActivityLogInput } from "../storage";
@@ -45,7 +46,8 @@ import { resolveSetMenuLines, type SetMenuChoice } from "./setMenuResolve";
  *     the reviewer ticked the one the confirmation names (SCRUM-814); Final
  *     Message to Parent (the ruling message) only while the BEO's is empty;
  *     lines the catalogue lacks that the reviewer kept, added to Special
- *     Requests;
+ *     Requests; SCRUM-1031: on a party the till settles, the expected extra
+ *     guests and the socks arrangement (information only, never the till's);
  *   - the package, applied as the package module applies it
  *     (`applyPackageSnapshot`), with the add-on quantities bought;
  *   - the kitchen plan: the set menu and its choices (the lines the parent
@@ -458,6 +460,22 @@ export async function approveBeoAiFill(
     // SCRUM-927: another WhatsApp number is written with its stored international form too, so
     // the links that use it reach the new number.
     if (body.event.whatsappPhoneRaw !== undefined) Object.assign(eventUpdates, whatsappColumnsOf(body.event.whatsappPhoneRaw));
+    // SCRUM-1031: the expected extra guests and the socks arrangement, as the reviewer left them, on
+    // the party's own four columns (information for the BEO and its print: nothing goes to the till,
+    // the quote or a price), on a party the till settles only, as the editor holds them. The note
+    // goes with "Other / Custom" alone, as the editor's Socks field keeps it; "Other / Custom" sent
+    // with no note keeps the party's own.
+    if (isTillPartyEventType(ev?.eventType)) {
+      for (const key of ["expectedExtraKids", "expectedExtraAdults"] as const) {
+        if (body.event[key] !== undefined) eventUpdates[key] = body.event[key];
+      }
+      const socks = body.event.socksArrangement;
+      if (socks !== undefined) {
+        eventUpdates.socksArrangement = socks;
+        if (socks !== "other") eventUpdates.socksNote = null;
+        else if (body.event.socksNote !== undefined) eventUpdates.socksNote = body.event.socksNote;
+      }
+    }
     if (body.event.internalStaffNotes && !(ev?.internalStaffNotes ?? "").trim()) {
       eventUpdates.internalStaffNotes = body.event.internalStaffNotes;
     }

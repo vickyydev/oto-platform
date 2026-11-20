@@ -47,6 +47,7 @@ import {
   renderTranscript,
   resolveCatalogueAnswer,
   unansweredQuestion,
+  withoutGuestsSocksOffParty,
   withoutUnansweredQuestions,
   type BeoCatalogue,
   type TranscriptRef,
@@ -292,7 +293,8 @@ const catalogueCounts = (p: BeoAiProposal, c?: BeoCatalogue | null) => ({
     + p.details.setup.tasks.length + p.details.pos.items.length,
   // SCRUM-904: the rest of the event the conversation gave, the allergies and the timed shows, as counts
   // (never their values), each only when there is one.
-  ...countOf("event", (["eventDate", "childAge", "whatsapp", "kidsFoodTime", "adultsFoodTime", "barServiceTime"] as const).filter((k) => p.event[k] !== undefined).length),
+  // SCRUM-1031: the expected extra guests and the socks arrangement among them.
+  ...countOf("event", (["eventDate", "childAge", "whatsapp", "kidsFoodTime", "adultsFoodTime", "barServiceTime", "expectedExtraKids", "expectedExtraAdults", "socks"] as const).filter((k) => p.event[k] !== undefined).length),
   ...countOf("allergies", p.details.requests.filter((r) => r.kind === "allergy").length),
   ...countOf("acts", p.entertainment.filter((e) => e.time).length),
   // SCRUM-944: the dishes and drinks matched to the till's menu, as a count. SCRUM-958 (the proof read
@@ -463,6 +465,8 @@ export async function runBeoFill(
       });
       // SCRUM-1035: and none of what the ruling message's own read adds.
       unanswered += withoutUnansweredQuestions(proposal, readRefs, readAlone);
+      // SCRUM-1031: the expected extra guests and the socks, on a party the till settles only.
+      withoutGuestsSocksOffParty(proposal, input.event?.eventType);
     }
   }
   // SCRUM-1035: the form's own read is the ruling message's (or the pasted one's): a question it
