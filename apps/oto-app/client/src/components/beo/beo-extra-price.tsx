@@ -72,11 +72,11 @@ export function ExtraPriceBox({ line, area, charge, onPrice, testId, disabled = 
  * The plan's extras total, as the till will charge them; nothing when the plan
  * holds no EXTRA line or one the till's menu could not price.
  */
-export function BeoExtrasTotal({ charges, testId }: { charges: readonly BeoExtraCharge[]; testId: string }) {
+export function BeoExtrasTotal({ charges, testId, className = "" }: { charges: readonly BeoExtraCharge[]; testId: string; className?: string }) {
   const total = beoExtrasTotalOf(charges);
   if (!hasExtraLines(charges) || total === null) return null;
   return (
-    <p className="text-xs text-muted-foreground" data-testid={testId}>
+    <p className={`text-xs text-muted-foreground ${className}`.trim()} data-testid={testId}>
       {beoExtrasTotalWords(total)}
     </p>
   );

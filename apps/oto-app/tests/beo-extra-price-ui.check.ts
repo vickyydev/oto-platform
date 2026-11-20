@@ -188,6 +188,10 @@ const required = (id: string) => { const el = byTestId(id); assert.ok(el, `the s
 /** The screen does not show `id` (a node is never handed to `assert`: see tests/till-menu-ui.check.ts). */
 const absent = (id: string, why = "not on the screen") => assert.ok(byTestId(id) === null, `${why}: ${id} is on the screen`);
 const click = async (id: string) => { await act(async () => { required(id).click(); }); await settle(); };
+/** SCRUM-1029: Food & Drinks lines opened (the menus were tabs; each line opens its part under it and stays open). */
+const openLines = async (...lines: string[]) => {
+  for (const line of lines) if (byTestId(`food-line-${line}`)?.getAttribute("data-state") === "closed") await click(`button-food-line-${line}`);
+};
 const setValue = async (input: HTMLInputElement, value: string) => {
   await act(async () => {
     Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, "value")!.set!.call(input, value);
@@ -227,6 +231,7 @@ const openBeo = async (eventId: string) => {
   assert.ok(byTestId("accordion-food-drinks"), `the BEO ${eventId} is open`);
   // SCRUM-1029: the kitchen and the bar are parts of Food & Drinks.
   await click("accordion-food-drinks");
+  await openLines("setup", "kids", "bar");
 };
 const saved = async () => {
   const before = asked.length;
@@ -287,6 +292,14 @@ await check("every EXTRA line shows a price box beside its count; a SET line sho
     assert.ok(slot!.contains(byTestId(`input-menu-price-${id}`)) && slot!.contains(byTestId(`text-menu-price-hint-${id}`)), `the box and its words in the slot on ${id}`);
   }
   absent("menu-price-slot-kids-3", "a SET line has no price slot");
+  // SCRUM-1029 (look): in a list that holds EXTRA lines, a SET line keeps an empty gap the slot's width,
+  // so its name starts where theirs do; the bar's counts and clocks stand in columns the same way.
+  for (const [gap, slot] of [["menu-price-gap-kids-3", "menu-price-slot-kids-0"], ["bar-price-gap-1", "bar-price-slot-0"]]) {
+    const empty = byTestId(gap);
+    assert.ok(empty && empty.childElementCount === 0 && empty.className.includes("w-[11.25rem]"), `an empty gap: ${gap}`);
+    assert.ok(byTestId(slot)!.className.includes("min-w-[11.25rem]"), `the slot is as wide: ${slot}`);
+  }
+  absent("menu-price-gap-kids-0", "an EXTRA line has its slot, no gap");
 });
 
 await check("what the till will charge: the till's price for an empty coded box, each for an entered price, not charged with neither; the totals", () => {
@@ -323,7 +336,7 @@ await check("a weekend party: the till's weekend price, said so; the adults' cop
   });
   await openBeo(E2);
   assert.equal(text("text-menu-price-hint-kids-0"), "till price 310 (weekend)");
-  await click("button-menu-tab-adults");
+  await openLines("adults");
   assert.equal(text("text-menu-price-hint-adults-0"), "charged once, with the kids' line");
   assert.equal(text("text-menu-price-hint-adults-1"), "till price 310 (weekend)");
   // 2 × 310 for the kids, 3 × 310 for the adults' own.
@@ -402,7 +415,7 @@ await check("SCRUM-998: switched on and an item added to the adults' list, close
   const E6 = "66666666-6666-4666-8666-666666666949";
   BEOS.set(E6, { date: WEEKDAY, kids: [line("k1", "ZZ TEST kids pasta", { quantity: 2, price: 120, source: "additional", chargeApproved: true })], adults: [], adultsDiffer: false, bar: [] });
   await openBeo(E6);
-  await click("button-menu-tab-adults");
+  await openLines("adults");
   assert.equal(required("switch-adults-differ").getAttribute("aria-checked"), "false", "saved off");
   await click("switch-adults-differ");
   assert.deepEqual(adultsNames(), ["ZZ TEST kids pasta"], "the kids' dish copied on screen");
@@ -424,7 +437,7 @@ await check("SCRUM-998: switched on and an item added to the adults' list, close
   const readsBefore = reads();
   await openBeo(E6);
   assert.equal(reads(), readsBefore + 1, "read afresh, not the copy the editor first opened with");
-  await click("button-menu-tab-adults");
+  await openLines("adults");
   assert.equal(required("switch-adults-differ").getAttribute("aria-checked"), "true", "the switch on");
   assert.deepEqual(adultsNames(), screen, "the copied dish and the item, as the screen showed them");
   // The saved list (written as the route writes it) is the screen's, line for line.
@@ -479,7 +492,7 @@ await check("SCRUM-1002: a paid line's minus at its paid count, its delete, a lo
   assert.ok(said(BEO_PAID_LINE_REFUSAL));
   await wordsDown();
   // The adults' own list holds a paid line: the switch stays on.
-  await click("button-menu-tab-adults");
+  await openLines("adults");
   await click("switch-adults-differ");
   assert.equal(required("switch-adults-differ").getAttribute("aria-checked"), "true");
   assert.ok(said("ZZ TEST paid satay: 1 billed and paid at the till."));

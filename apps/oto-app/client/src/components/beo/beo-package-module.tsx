@@ -1146,7 +1146,8 @@ export function BeoSlipsTime({ eventId, readOnly }: { eventId: string; readOnly?
           if (e.target.value === (snapshot.slipsTime ?? "").slice(0, 5)) return;
           updateSlipsTimeMutation.mutate(e.target.value);
         }}
-        className="h-9 w-28 text-sm"
+        // SCRUM-1029 (look): the size of the BEO editor's other time boxes (beo-time-box.tsx).
+        className="h-9 w-32 font-mono text-sm tabular-nums"
         disabled={readOnly}
         data-testid="input-package-slips-time"
       />

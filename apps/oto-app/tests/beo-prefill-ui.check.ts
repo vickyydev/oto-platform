@@ -559,7 +559,8 @@ await check("the form reads the BEO back: the chat's sections open and marked, e
   assert.equal(text("input-num-adults"), "6");
   assert.equal(text("input-location-text"), "Jungle Room");
   assert.equal(text("input-package-name"), "Floresta");
-  assert.ok(byTestId("button-ready-by-edit"), "the setup's ready-by is set");
+  // SCRUM-1029: in its one time box, the Setup / Table line opened by the approval.
+  assert.equal((required("input-setup-ready-by") as HTMLInputElement).value, "13:30", "the setup's ready-by is set");
   assert.equal(text("input-setup-responsible"), "Ying");
   assert.equal(text("input-setup-item-0"), "Balloon arch");
   // SCRUM-1027: the section holds the other timed steps (the chat's); the timeline itself is made by
@@ -727,23 +728,29 @@ await check("a time, the cake or the setup's who edited after the approval says 
     for (let i = 0; i < levels; i += 1) block = block.parentElement!;
     return byTestId("ai-review-source", block)?.textContent?.trim() ?? null;
   };
-  assert.equal(markAbove("button-start-time-edit", 2), "from the team");
-  assert.equal(markAbove("button-end-time-edit", 2), "from the team");
-  assert.equal(markAbove("button-cake-external", 2), "from the family");
+  /** SCRUM-1029: a time box set as a person types or picks a time, then left (it hands the time over then, as Confirm did). */
+  const setTime = async (id: string, value: string) => {
+    const box = required(id) as HTMLInputElement;
+    await setValue(box, value);
+    await act(async () => { box.dispatchEvent(new dom.window.FocusEvent("focusout", { bubbles: true })); });
+    await settle();
+  };
+  assert.equal(markAbove("input-start-time", 2), "from the team");
+  assert.equal(markAbove("input-end-time", 2), "from the team");
+  // SCRUM-1029: the cake's mark sits by its name, beside its buttons.
+  assert.equal(markAbove("button-cake-external", 3), "from the family");
   assert.equal(markAbove("button-clear-responsible", 2), "from the team");
   // The start time, set again: changed here; the end time keeps its mark.
-  await click("button-start-time-edit");
-  await setValue(required("input-start-time") as HTMLInputElement, "14:30");
-  await click("button-confirm-start-time");
-  assert.equal(byTestId("button-confirm-start-time"), null, "the picker closed");
-  assert.equal(markAbove("button-start-time-edit", 2), "changed here");
-  assert.equal(markAbove("button-end-time-edit", 2), "from the team", "the end time keeps its mark");
-  // The end time, cleared: changed here.
-  await click("button-end-time-clear");
-  assert.equal(markAbove("button-end-time", 2), "changed here");
+  await setTime("input-start-time", "14:30");
+  assert.equal((required("input-start-time") as HTMLInputElement).value, "14:30");
+  assert.equal(markAbove("input-start-time", 2), "changed here");
+  assert.equal(markAbove("input-end-time", 2), "from the team", "the end time keeps its mark");
+  // The end time, emptied: changed here.
+  await setTime("input-end-time", "");
+  assert.equal(markAbove("input-end-time", 2), "changed here");
   // The cake, made the family's own: changed here.
   await click("button-cake-external");
-  assert.equal(markAbove("button-cake-external", 2), "changed here");
+  assert.equal(markAbove("button-cake-external", 3), "changed here");
   // The setup's who, cleared: changed here (the search opens in its place).
   await click("button-clear-responsible");
   assert.equal(markAbove("input-setup-responsible-search", 3), "changed here");
@@ -755,6 +762,13 @@ await check("an empty BEO's sections say plain words, never a placeholder", asyn
   // SCRUM-1029: the host and the POS box are parts of Event Info (open as the BEO opens); the setup,
   // the acts and the other timed steps are in Food & Drinks and Entertainment & Program.
   for (const section of ["food-drinks", "entertainment"]) await click(`accordion-${section}`);
+  // SCRUM-1029: Food & Drinks' parts open under their lines; the setup's is opened to read its words.
+  await click("button-food-line-setup");
+  // Folded, each line says in plain words what it holds.
+  assert.deepEqual(
+    ["setup", "kids", "adults", "bar"].map((line) => text(`text-food-line-${line}`)),
+    ["Nothing set yet", "Nothing on the kids' menu yet", "Same as the kids' menu", "Nothing at the bar yet"],
+  );
   assert.equal(text("text-no-entertainment-acts"), "No entertainment acts yet. Add one and give it a time to put it on the Timeline.");
   assert.equal(text("button-add-first-package-item"), "No line items yet. Click to add the first.");
   assert.equal(text("button-add-first-setup-task"), "No setup tasks yet. Click to add the first.");

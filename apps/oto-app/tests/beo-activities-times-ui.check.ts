@@ -158,6 +158,10 @@ const settle = async (rounds = 6) => { for (let i = 0; i < rounds; i++) await ac
 const byTestId = (id: string) => doc.querySelector(`[data-testid="${id}"]`) as HTMLElement | null;
 const required = (id: string) => { const el = byTestId(id); assert.ok(el, `the screen shows ${id}`); return el; };
 const click = async (id: string) => { await act(async () => { required(id).click(); }); await settle(); };
+/** SCRUM-1029: Food & Drinks lines opened (the menus were tabs; each line opens its part under it and stays open). */
+const openLines = async (...lines: string[]) => {
+  for (const line of lines) if (byTestId(`food-line-${line}`)?.getAttribute("data-state") === "closed") await click(`button-food-line-${line}`);
+};
 const text = (id: string) => byTestId(id)?.textContent?.replace(/\s+/g, " ").trim() ?? null;
 const setValue = async (el: HTMLInputElement | HTMLTextAreaElement, value: string) => {
   const proto = el.tagName === "INPUT" ? dom.window.HTMLInputElement.prototype : dom.window.HTMLTextAreaElement.prototype;
@@ -298,7 +302,7 @@ const serve = async (row: string, time: string, group = "") => {
 
 await check("a dish's own time and a group, set from its row: shown on the row and saved with the line; the other lines as they were", async () => {
   await open();
-  await click("button-menu-tab-kids");
+  await openLines("kids", "bar");
   assert.equal(clockOf("kids-1"), null, "no time of its own: a clock only");
   assert.equal(byTestId("text-serving-kids-1"), null, "and nothing under the row");
   await serve("kids-1", "13:00", "ZZ Dessert");
@@ -330,7 +334,7 @@ await check("a group's dishes share one time: a dish joining the group takes it,
       },
     },
   });
-  await click("button-menu-tab-kids");
+  await openLines("kids", "bar");
   assert.equal(text("text-serving-kids-1"), "Served at 13:00 · ZZ Dessert", "stored: opens with its time and group");
   await click("button-serving-kids-2");
   assert.match(text("button-serving-kids-2-panel") ?? "", /ZZ Dessert · 13:00/, "the list's groups to pick from");

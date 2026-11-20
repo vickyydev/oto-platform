@@ -8,7 +8,7 @@
 //   1. the Adults Menu tab opens pre-filled with the kids' chosen items — the
 //      same lines, read-only, under "Same as the kids' menu" — with no option
 //      list of its own, no "+ EXTRA" and no "New item"; the "Different for
-//      adults" switch is off; the tab counts the kids' lines;
+//      adults" switch is off; its line says "Same as the kids' menu" (SCRUM-1029);
 //   2. the switch on: the adults' list is an editable copy of the kids'
 //      (the same names and counts, its own line ids), with "+ EXTRA" and
 //      "New item"; one line changed for the adults leaves the kids' line as it
@@ -189,9 +189,13 @@ const open = async (eventId: string) => {
   });
   await settle(10);
   assert.ok(byTestId("accordion-food-drinks"), `the BEO ${eventId} is open`);
-  // SCRUM-1029: the kitchen plan is part of Food & Drinks.
+  // SCRUM-1029: the kitchen plan is part of Food & Drinks, its menus two lines that open.
   await click("accordion-food-drinks");
-  await click("button-menu-tab-adults");
+  await showMenu("adults");
+};
+/** SCRUM-1029: a menu's line opened (the menus were tabs; each line now opens its part and stays open). */
+const showMenu = async (menu: "kids" | "adults") => {
+  if (required(`food-line-${menu}`).getAttribute("data-state") === "closed") await click(`button-food-line-${menu}`);
 };
 const savedMenus = async () => {
   const before = asked.length;
@@ -223,7 +227,10 @@ await check("the adults' tab opens pre-filled with the kids' items, read-only, w
   assert.equal(byTestId("button-add-first-menu-adults"), null, "nothing to type");
   assert.equal(doc.querySelectorAll('[data-testid^="input-menu-name-adults-"]').length, 0, "no editable adults' line");
   assert.equal(doc.querySelectorAll('[data-testid^="set-menu-choice-group-"]').length, 0, "no option list");
-  assert.match(text("button-menu-tab-adults"), /Adults Menu \(3\)/, "the tab counts the kids' lines");
+  // SCRUM-1029: the Adults Menu line says the adults eat the kids' menu (counted on the Kids Menu line).
+  assert.equal(text("text-food-line-adults"), "Same as the kids' menu");
+  assert.equal(byTestId("badge-food-line-adults"), null, "no count of its own");
+  assert.equal(text("badge-food-line-kids"), "3 dishes");
   const saved = await savedMenus();
   assert.deepEqual(saved.adults, [], "nothing saved for the adults: their list is the kids'");
   assert.equal(saved.adultsDiffer, false);
@@ -242,10 +249,10 @@ await check("the switch on: an editable copy of the kids' list; one line changed
   await click("button-qty-minus-adults-0");
   assert.deepEqual(adultsRows(), ["Pasta", "French fries", "ZZ unicorn cake"]);
   assert.equal(text("text-menu-qty-adults-0"), "7");
-  await click("button-menu-tab-kids");
+  await showMenu("kids");
   assert.deepEqual(kidsRows(), ["Chicken nuggets", "French fries", "ZZ unicorn cake"], "the kids' line is as it was");
   assert.equal(text("text-menu-qty-kids-0"), "8");
-  await click("button-menu-tab-adults");
+  await showMenu("adults");
   const saved = await savedMenus();
   assert.equal(saved.adultsDiffer, true);
   const adults = saved.adults as Line[];
@@ -266,12 +273,13 @@ await check("the switch off again asks, then drops the adults' changes: the mirr
 });
 
 await check("a line added to the kids' list shows in the adults' mirror at once", async () => {
-  await click("button-menu-tab-kids");
+  await showMenu("kids");
   await click("button-add-menu-extra-kids");
   await typeInto("input-menu-name-kids-3", "Fruit skewers");
-  await click("button-menu-tab-adults");
+  await showMenu("adults");
   assert.deepEqual(mirrorRows(), ["8 Chicken nuggets", "2 French fries no salt", "1 ZZ unicorn cake PARTY-ZZ829A", "1 Fruit skewers"]);
-  assert.match(text("button-menu-tab-adults"), /Adults Menu \(4\)/);
+  assert.equal(text("badge-food-line-kids"), "4 dishes");
+  assert.equal(text("text-food-line-adults"), "Same as the kids' menu");
 });
 
 await check("a BEO saved before with two different lists opens with the switch on and its adults' list as saved", async () => {
@@ -279,7 +287,7 @@ await check("a BEO saved before with two different lists opens with the switch o
   await open(E2);
   assert.equal(switchOn(), true);
   assert.deepEqual(adultsRows(), ["Steak", "French fries"], "as saved, not a copy of the kids'");
-  assert.match(text("button-menu-tab-adults"), /Adults Menu \(2\)/);
+  assert.equal(text("badge-food-line-adults"), "2 dishes");
   const saved = await savedMenus();
   assert.equal(saved.adultsDiffer, true);
   assert.deepEqual((saved.adults as Line[]).map((l) => l.itemName), ["Steak", "French fries"]);
@@ -326,7 +334,7 @@ await check("AI Fill from a pasted message: an adults' list that only repeats th
     await click("button-ai-fill-confirm");
     await settle(10);
     assert.equal(byTestId("button-ai-fill-confirm"), null, "Load into Editor closed the dialog");
-    await click("button-menu-tab-adults");
+    await showMenu("adults");
   };
 
   // The staging proof's answer, unfolded (an older server, or whatever reaches the client): the

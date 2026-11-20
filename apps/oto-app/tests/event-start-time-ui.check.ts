@@ -5,12 +5,14 @@
 // SCRUM-836 — a party has a start time; the BEO form's half (the routes' is
 // tests/event-start-time.check.ts):
 //
-//   1. emptying Start Time (the × beside it) on a BEO that holds one shows a
+//   1. emptying Start Time (since SCRUM-1029 its one time box, emptied and
+//      left; before, the × beside the chip) on a BEO that holds one shows a
 //      plain line under the field at once — "A party needs a start time", and
 //      the time it was — and Save writes NOTHING (it used to drop the emptied
 //      time from the save and say "saved", the old time still there);
-//   2. the time picker cannot confirm an empty time; a time set again takes
-//      the line away and Save sends the form once, the new start in it;
+//   2. leaving the box empty again changes nothing (the picker could not
+//      confirm an empty time); a time set again takes the line away and Save
+//      sends the form once, the new start in it;
 //   3. a BEO from before the rule that holds no start yet (SCRUM-827's
 //      `no_start_time` case) shows no line and still saves its other fields,
 //      its empty start echoed as it is held, never invented.
@@ -155,6 +157,14 @@ const setValue = async (el: HTMLInputElement, value: string) => {
   });
   await settle();
 };
+/** SCRUM-1029: the time box set as a person types or picks a time, then left (it hands the time over then). */
+const setTime = async (id: string, value: string) => {
+  const box = required(id) as HTMLInputElement;
+  assert.equal(box.type, "time", `${id} is a time box`);
+  await setValue(box, value);
+  await act(async () => { box.dispatchEvent(new dom.window.FocusEvent("focusout", { bubbles: true })); });
+  await settle();
+};
 const text = (id: string) => byTestId(id)?.textContent?.replace(/\s+/g, " ").trim() ?? null;
 const saves = (eventId: string) => asked.filter((a) => a.method === "PUT" && a.path === `/api/events/${eventId}/beo`);
 
@@ -184,9 +194,9 @@ const check = async (title: string, fn: () => Promise<void> | void) => {
 await check("emptying Start Time says so under the field at once, and Save writes nothing", async () => {
   await open(E_PARTY);
   assert.equal(byTestId("text-start-time-needed"), null, "a party with its start shows no line");
-  await click("button-start-time-clear");
+  await setTime("input-start-time", "");
   assert.equal(text("text-start-time-needed"), `${PARTY_NEEDS_START_TIME}. It was 14:00: nothing is saved until a time is set.`);
-  assert.ok(byTestId("button-start-time"), "Set Time is offered in its place");
+  assert.equal((required("input-start-time") as HTMLInputElement).value, "", "the box is empty, ready for a time");
   asked.length = 0;
   await click("button-save-beo");
   assert.equal(saves(E_PARTY).length, 0, "nothing sent: the form does not pretend to save");
@@ -194,16 +204,10 @@ await check("emptying Start Time says so under the field at once, and Save write
   assert.ok(byTestId("text-start-time-needed"), "the line stays until a time is set");
 });
 
-await check("the picker confirms no empty time; a time set again takes the line away and Save sends it once", async () => {
-  await click("button-start-time");
-  const input = required("input-start-time") as HTMLInputElement;
-  await setValue(input, "");
-  assert.equal((required("button-confirm-start-time") as HTMLButtonElement).disabled, true, "an empty time cannot be confirmed");
-  await click("button-confirm-start-time");
-  assert.ok(byTestId("button-confirm-start-time"), "the picker stays open");
-  await setValue(input, "15:30");
-  assert.equal((required("button-confirm-start-time") as HTMLButtonElement).disabled, false);
-  await click("button-confirm-start-time");
+await check("the empty box left again changes nothing; a time set again takes the line away and Save sends it once", async () => {
+  await setTime("input-start-time", "");
+  assert.ok(byTestId("text-start-time-needed"), "still empty, still said");
+  await setTime("input-start-time", "15:30");
   assert.equal(byTestId("text-start-time-needed"), null, "the line is gone");
   asked.length = 0;
   await click("button-save-beo");
@@ -215,7 +219,7 @@ await check("the picker confirms no empty time; a time set again takes the line 
 await check("a BEO that holds no start yet shows no line and still saves, its empty start echoed and never invented", async () => {
   await open(E_LEGACY);
   assert.equal(byTestId("text-start-time-needed"), null, "nothing was emptied here");
-  assert.ok(byTestId("button-start-time"), "Set Time is offered");
+  assert.equal((required("input-start-time") as HTMLInputElement).value, "", "an empty time box is offered");
   asked.length = 0;
   await click("button-save-beo");
   assert.equal(saves(E_LEGACY).length, 1, "the other fields save");

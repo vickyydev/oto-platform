@@ -106,6 +106,8 @@ import { depositMovedWords, type DepositSaveNote, type OneDeposit } from "@share
 import { beoBillingMutationScope } from "@/lib/beo-deposit-buffer";
 import { bahtOfSatang, isTillPartyEventType, openAdditionalBillsOf, partyBillStateOf, tillFiguresOf } from "@shared/tillBilling";
 import { BeoGuestsSocks } from "./beo-guests-socks";
+import { BeoTimeBox, beoTimeBoxValueOf } from "./beo-time-box";
+import { BEO_FOOD_LINES_OF_PART, BeoFoodLine, countWords, type BeoFoodLineKey } from "./beo-food-line";
 import { BeoActivityRow, type BeoActivity } from "./beo-activity-row";
 import { ServingTimeButton, ServingTimeLine } from "./beo-serving-time";
 import { lineServingTagOf, servingKeysOf } from "@shared/beoServingTimes";
@@ -504,8 +506,17 @@ function PackageLineItemRow({ item, idx, packageItems, setPackageItems }: {
   );
 }
 
-function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab, menuTime, charge, paid, disabled = false }: {
+/**
+ * SCRUM-1029 (look): one line's height in a dish's or a drink's row (the name box's 32 px, 36 px on a touch
+ * screen where the row's buttons grow), so the controls of a row that grows under its name (a note, a
+ * serving time) stay on the name's line.
+ */
+const ROW_LINE = "flex min-h-8 shrink-0 items-center [@media(pointer:coarse)]:min-h-9";
+
+function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab, menuTime, charge, paid, priceColumn = false, disabled = false }: {
   item: MenuLine; idx: number; menuItems: MenuLine[]; setMenuItems: React.Dispatch<React.SetStateAction<MenuLine[]>>; menuTab: string;
+  /** SCRUM-1029 (look): the list holds EXTRA lines, so a SET line keeps their price slot empty. */
+  priceColumn?: boolean;
   /** SCRUM-1033: the menu's own service time, beside which a dish may have one of its own. */
   menuTime?: string;
   /** SCRUM-949: the line's charge as its list decides it (the adults' copy of a kids' line). */
@@ -524,11 +535,14 @@ function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab, menuTime
     return true;
   };
   return (
-    <div className="space-y-0.5" data-testid={`menu-item-${menuTab}-${idx}`}>
-      <div className="flex flex-wrap items-center gap-1">
+    // SCRUM-1029 (look): the dish's name, its note and its "Served at" line in one column, so the note sits under
+    // the name; the badge, the count and the price on the name's line to its left, the row's buttons to its right.
+    <div data-testid={`menu-item-${menuTab}-${idx}`}>
+      <div className="flex flex-wrap items-start gap-1">
+        <div className={`${ROW_LINE} gap-1`}>
         <button disabled={disabled}
           type="button"
-          className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-colors ${
+          className={`w-[3.25rem] shrink-0 text-center text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-colors ${
             item.source === "set_menu"
               ? "bg-blue-500/15 text-blue-600 border-blue-500/30 dark:text-blue-400 cursor-pointer"
               : "bg-amber-500/15 text-amber-600 border-amber-500/30 dark:text-amber-400 cursor-pointer"
@@ -579,10 +593,11 @@ function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab, menuTime
           <Plus className="h-3 w-3" />
         </Button>
         {/* SCRUM-949: an EXTRA line's price for each item, beside its count; never on a SET line. */}
-        {item.source !== "set_menu" && (
+        {item.source !== "set_menu" ? (
           // SCRUM-1029 (look): the price and its words together in one slot of one width (the box and the
-          // words' column), so the dish names of a list start in one column whatever the till says.
-          <div className="flex shrink-0 items-center gap-1" data-testid={`menu-price-slot-${menuTab}-${idx}`}>
+          // words' column), so the dish names of a list start in one column whatever the till says; a SET
+          // line of a list that holds EXTRA lines keeps the slot empty, so its name starts there too.
+          <div className="flex min-w-[11.25rem] shrink-0 items-center gap-1" data-testid={`menu-price-slot-${menuTab}-${idx}`}>
             <ExtraPriceBox disabled={disabled}
               line={item}
               area="food"
@@ -591,8 +606,12 @@ function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab, menuTime
               testId={`${menuTab}-${idx}`}
             />
           </div>
-        )}
-        <div className="flex-1 flex items-center gap-1 min-w-[8rem]">
+        ) : priceColumn ? (
+          <div className="w-[11.25rem] shrink-0" aria-hidden="true" data-testid={`menu-price-gap-${menuTab}-${idx}`} />
+        ) : null}
+        </div>
+        <div className="flex min-w-[8rem] flex-1 flex-col">
+        <div className={`${ROW_LINE} gap-1`}>
         {/* SCRUM-1042: the birthday package's waffles read "Adult Waffles" here; the line keeps its
             stored name unless a person types another one (shared/beoAdultWaffles.ts). */}
         <EditableText disabled={disabled}
@@ -653,6 +672,42 @@ function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab, menuTime
         )}
         <TillCodeMark code={item.productCode} testId={`text-menu-code-dead-${menuTab}-${idx}`} />
         </div>
+        {item.notes && item.source !== "set_menu" && (
+          <div className="flex items-center gap-1">
+            <EditableText disabled={disabled}
+              className="flex-1 text-xs"
+              value={item.notes}
+              onChange={(v) => {
+                changeMenu(prev => {
+                  const updated = [...prev];
+                  updated[idx] = { ...updated[idx], notes: v };
+                  return updated;
+                });
+              }}
+              placeholder="Notes..."
+              data-testid={`input-menu-notes-${menuTab}-${idx}`}
+            />
+            <Button disabled={disabled}
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 shrink-0 text-muted-foreground"
+              onClick={() => {
+                changeMenu(prev => {
+                  const updated = [...prev];
+                  updated[idx] = { ...updated[idx], notes: "" };
+                  return updated;
+                });
+              }}
+              data-testid={`button-clear-menu-notes-${menuTab}-${idx}`}
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          </div>
+        )}
+        {/* SCRUM-1033: the dish's own serving time, read under its name. */}
+        <ServingTimeLine line={item} className="px-3" testId={`text-serving-${menuTab}-${idx}`} />
+        </div>
+        <div className={`${ROW_LINE} gap-1`}>
         {!item.notes && (
           <button disabled={disabled}
             className="h-7 w-7 shrink-0 flex items-center justify-center text-muted-foreground hover:text-foreground rounded-md hover:bg-accent"
@@ -691,41 +746,8 @@ function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab, menuTime
         >
           <Trash2 className="h-3 w-3" />
         </Button>
-      </div>
-      {item.notes && item.source !== "set_menu" && (
-        <div className="flex items-center gap-1 pl-[3.25rem]">
-          <EditableText disabled={disabled}
-            className="flex-1 text-xs"
-            value={item.notes}
-            onChange={(v) => {
-              changeMenu(prev => {
-                const updated = [...prev];
-                updated[idx] = { ...updated[idx], notes: v };
-                return updated;
-              });
-            }}
-            placeholder="Notes..."
-            data-testid={`input-menu-notes-${menuTab}-${idx}`}
-          />
-          <Button disabled={disabled}
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6 shrink-0 text-muted-foreground"
-            onClick={() => {
-              changeMenu(prev => {
-                const updated = [...prev];
-                updated[idx] = { ...updated[idx], notes: "" };
-                return updated;
-              });
-            }}
-            data-testid={`button-clear-menu-notes-${menuTab}-${idx}`}
-          >
-            <X className="h-3 w-3" />
-          </Button>
         </div>
-      )}
-      {/* SCRUM-1033: the dish's own serving time, read under its row. */}
-      <ServingTimeLine line={item} className="pl-[3.25rem]" testId={`text-serving-${menuTab}-${idx}`} />
+      </div>
     </div>
   );
 }
@@ -735,11 +757,15 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
   const { user } = useAuth();
   const [expandedSections, setExpandedSections] = useState<string[]>(["event-info"]);
   const [isSaving, setIsSaving] = useState(false);
-  
-  const [showStartTimePicker, setShowStartTimePicker] = useState(false);
-  const [showEndTimePicker, setShowEndTimePicker] = useState(false);
-  const [tempStartTime, setTempStartTime] = useState("10:00");
-  const [tempEndTime, setTempEndTime] = useState("12:00");
+  // SCRUM-1029 (the brief's E5): the Food & Drinks parts open under their lines; all folded as the BEO opens.
+  const [openFoodLines, setOpenFoodLines] = useState<ReadonlySet<BeoFoodLineKey>>(new Set());
+  const toggleFoodLine = (line: BeoFoodLineKey) => setOpenFoodLines((prev) => {
+    const next = new Set(prev);
+    if (next.has(line)) next.delete(line); else next.add(line);
+    return next;
+  });
+  const openFoodLine = (...lines: BeoFoodLineKey[]) => setOpenFoodLines((prev) => (lines.every((l) => prev.has(l)) ? prev : new Set([...prev, ...lines])));
+
   const [timeError, setTimeError] = useState<string | null>(null);
 
   const [eventData, setEventData] = useState<Partial<Event>>({});
@@ -757,7 +783,6 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
   const [setupResponsibleId, setSetupResponsibleId] = useState<string | null>(null);
   const [setupResponsibleType, setSetupResponsibleType] = useState<string | null>(null);
   const [setupNotes, setSetupNotes] = useState("");
-  const [beoTasks, setBeoTasks] = useState<any[]>([]);
   const [kitchenRequired, setKitchenRequired] = useState(true);
   // SCRUM-1030: the Kitchen Notes (the kitchen plan's own field, also typed on the Day-of view), and
   // the notes as this form read them: Save names them only when they were changed here.
@@ -770,9 +795,6 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
   const [adultsDiffer, setAdultsDiffer] = useState(false);
   const [barItems, setBarItems] = useState<MenuLine[]>([]);
   const [barServiceTime, setBarServiceTime] = useState("");
-  const [showBarTimePicker, setShowBarTimePicker] = useState(false);
-  const [tempBarTime, setTempBarTime] = useState("12:00");
-  const [menuTab, setMenuTab] = useState<"kids" | "adults">("kids");
   // SCRUM-828: the food list a "New item" is being made for; null while its dialog is closed.
   const [newItemMenu, setNewItemMenu] = useState<"kids" | "adults" | "bar" | null>(null);
   const [setMenuEnabled, setSetMenuEnabled] = useState(false);
@@ -789,13 +811,6 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
   const [locationText, setLocationText] = useState("");
   const [setupResponsibleSearch, setSetupResponsibleSearch] = useState("");
   const [showResponsibleDropdown, setShowResponsibleDropdown] = useState(false);
-  const [showFoodTimePicker, setShowFoodTimePicker] = useState(false);
-  const [tempFoodTime, setTempFoodTime] = useState("12:00");
-  const [foodTimeTarget, setFoodTimeTarget] = useState<"kids" | "adults">("kids");
-  const [showCakeTimePicker, setShowCakeTimePicker] = useState(false);
-  const [tempCakeTime, setTempCakeTime] = useState("14:00");
-  const [showReadyByTimePicker, setShowReadyByTimePicker] = useState(false);
-  const [tempReadyByTime, setTempReadyByTime] = useState("09:00");
   const [showAiFill, setShowAiFill] = useState(false);
   const [aiFillStep, setAiFillStep] = useState<"paste" | "preview">("paste");
   const [aiFillText, setAiFillText] = useState("");
@@ -1284,10 +1299,6 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
         setDepositDate(pd.depositDate || "");
         setPackageNotes(pd.notes || "");
       }
-
-      if ((beoData as any).beoTasks) {
-        setBeoTasks((beoData as any).beoTasks);
-      }
     }
   }, [beoData]);
 
@@ -1462,7 +1473,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
       ...(line.source ? { source: line.source } : {}),
     };
     setMenu((prev) => (prev.some((m) => m.id === shown.id) ? prev.map((m) => (m.id === shown.id ? shown : m)) : [...prev, shown]));
-    if (menu !== "bar") setMenuTab(menu);
+    openFoodLine(menu);
     void queryClient.invalidateQueries({ queryKey: tillMenuQueryKey(beoData?.branchId) });
     toast({ title: line.billingSync === "pending" ? "Item added; additional bill pending" : "New item added", description: line.billingSync === "pending" ? "Save the BEO again to resolve billing. The item is not confirmed charged." : `${line.itemName} is available in this park's BEO menu as ${line.productCode}.` });
   };
@@ -1500,6 +1511,28 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
     return { kitchen: beoKitchenChargesOf(kidsMenu, adultsMenu, adultsDiffer, ctx), bar: barItems.map((line) => beoExtraChargeOf(line, "bar", ctx)) };
   }, [tillMenu.index, eventData.eventDate, kidsMenu, adultsMenu, adultsDiffer, barItems]);
 
+  // SCRUM-1029 (the brief's E5): what each Food & Drinks line says while it is folded: its times, the set
+  // menu, whether the adults eat the kids' menu (the counts sit beside them).
+  const timeWordsOf = (stored: string | null | undefined) => beoTimeBoxValueOf(stored) || (stored ?? "").trim();
+  const lineWords = (parts: ReadonlyArray<string | false | null | undefined>, empty: string) => parts.filter(Boolean).join(" · ") || empty;
+  const setupLineSummary = lineWords(
+    [timeWordsOf(setupReadyBy) && `Ready by ${timeWordsOf(setupReadyBy)}`, setupResponsible.trim()],
+    setupTasks.length > 0 ? "No ready-by time yet" : "Nothing set yet",
+  );
+  const setMenuName = setMenuEnabled ? setMenuTemplates.find((t) => t.id === setMenuTemplateId)?.name ?? null : null;
+  const kidsLineSummary = lineWords(
+    [setMenuName, timeWordsOf(kidsFoodTime) && `Service ${timeWordsOf(kidsFoodTime)}`],
+    kidsMenu.length > 0 ? "No service time yet" : "Nothing on the kids' menu yet",
+  );
+  const adultsLineSummary = lineWords(
+    [!adultsDiffer && ADULTS_SAME_AS_KIDS, timeWordsOf(adultsFoodTime) && `Service ${timeWordsOf(adultsFoodTime)}`],
+    adultsMenu.length > 0 ? "No service time yet" : "Nothing on the adults' menu yet",
+  );
+  const barLineSummary = lineWords(
+    [timeWordsOf(barServiceTime) && `Service ${timeWordsOf(barServiceTime)}`],
+    barItems.length > 0 ? "No service time yet" : "Nothing at the bar yet",
+  );
+
   // SCRUM-1002 ruling 3: the lines the till has billed and paid, by id, each with its paid count
   // (shared/beoPaidLines.ts). Their minus stops at that count and their delete is answered.
   const paidLines = useMemo(
@@ -1526,48 +1559,48 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
   /** The deposit typed in Party Details and not saved yet: the till reads the saved one. */
   const depositUnsaved = !!tillFigures && tillFigures.kind === "quote" && Math.round(prepaymentReceived * 100) !== tillFigures.depositSatang;
 
-  const getBeoTaskStatus = (prefix: string) => {
-    const task = beoTasks.find((t: any) => t.title?.startsWith(prefix));
-    if (!task) return null;
-    return task;
+  /**
+   * SCRUM-1029 (the brief's E1): what each time box stores when the person leaves it, exactly what
+   * its Confirm and its clear stored before (the clock chip, its gear and its Confirm row): "" is
+   * the box emptied. The "Mark POS / Setup / Kitchen Done" buttons went with them: the BEO's tasks
+   * they ticked are kept as stored and are still ticked on the Day-of view.
+   */
+  const commitStartTime = (next: string): boolean => {
+    if (next === "") {
+      setEventData({ ...eventData, startTime: undefined });
+      aiTouched("startTime");
+      return true;
+    }
+    // As Confirm did: only a clock time is taken (Confirm was greyed out for anything else).
+    if (!isStartTime(next)) return false;
+    const updates: Partial<Event> = { startTime: next };
+    // As Confirm did: a party with no end time ends three hours after its start (at the latest 23:59).
+    if (!eventData.endTime) {
+      const endMins = Math.min(timeToMinutes(next) + 180, 23 * 60 + 59);
+      updates.endTime = `${Math.floor(endMins / 60).toString().padStart(2, "0")}:${(endMins % 60).toString().padStart(2, "0")}`;
+    }
+    setEventData({ ...eventData, ...updates });
+    setTimeError(null);
+    aiTouched("startTime");
+    if (updates.endTime) aiTouched("endTime");
+    return true;
   };
-
-  const toggleBeoTaskMutation = useMutation({
-    mutationFn: async (taskId: string) => {
-      const task = beoTasks.find((t: any) => t.id === taskId);
-      const newStatus = task?.status === "completed" ? "pending" : "completed";
-      const res = await apiRequest("PATCH", `/api/tasks/${taskId}`, { status: newStatus });
-      if (!res.ok) throw new Error("Failed to update task");
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/events", eventId, "beo"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
-    },
-  });
-
-  const BeoTaskBadge = ({ prefix, label }: { prefix: string; label: string }) => {
-    const task = getBeoTaskStatus(prefix);
-    if (!task) return null;
-    const isCompleted = task.status === "completed";
-    return (
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          toggleBeoTaskMutation.mutate(task.id);
-        }}
-        className={`ml-auto flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border transition-colors ${
-          isCompleted
-            ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30 dark:text-emerald-400"
-            : "bg-muted text-muted-foreground border-border hover:bg-accent"
-        }`}
-        data-testid={`beo-task-toggle-${prefix.replace(/[^a-z]/gi, "").toLowerCase()}`}
-      >
-        {isCompleted ? <CheckCircle2 className="h-3 w-3" /> : <Circle className="h-3 w-3" />}
-        {isCompleted ? "Done" : label}
-      </button>
-    );
+  const commitEndTime = (next: string): boolean => {
+    if (next === "") {
+      setEventData({ ...eventData, endTime: undefined });
+      setTimeError(null);
+      aiTouched("endTime");
+      return true;
+    }
+    // As Confirm did: an end that is not after the start (10:00 when none is set) is not taken, and said.
+    if (timeToMinutes(next) <= timeToMinutes(eventData.startTime || "10:00")) {
+      setTimeError("End time must be after start time");
+      return false;
+    }
+    setEventData({ ...eventData, endTime: next });
+    setTimeError(null);
+    aiTouched("endTime");
+    return true;
   };
 
   const responsibleSearchResults = useMemo(() => {
@@ -2429,47 +2462,10 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                           data-testid="input-event-date"
                         />
                       </div>
+                      {/* SCRUM-1029 (the brief's E1): one plain time box each. */}
                       <div className="space-y-1">
                         <MandatoryLabel>Start Time{aiMark("startTime")}</MandatoryLabel>
-                        <div className="flex items-center gap-1">
-                          {eventData.startTime ? (
-                            <>
-                              <span className="text-sm font-mono bg-muted px-2 py-1 rounded">{eventData.startTime}</span>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 text-muted-foreground"
-                                onClick={() => { setTempStartTime(eventData.startTime || "10:00"); setShowStartTimePicker(true); }}
-                                data-testid="button-start-time-edit"
-                              >
-                                <Settings className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                                onClick={() => { setEventData({ ...eventData, startTime: undefined }); aiTouched("startTime"); }}
-                                data-testid="button-start-time-clear"
-                              >
-                                <X className="h-3.5 w-3.5" />
-                              </Button>
-                            </>
-                          ) : (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="h-7 text-xs"
-                              onClick={() => { setTempStartTime("10:00"); setShowStartTimePicker(true); }}
-                              data-testid="button-start-time"
-                            >
-                              <Clock className="h-3 w-3 mr-1" />
-                              Set Time
-                            </Button>
-                          )}
-                        </div>
+                        <BeoTimeBox value={eventData.startTime} onCommit={commitStartTime} label="Start time" disabled={readOnly} testId="input-start-time" />
                         {startTimeMissing && (
                           <p className="text-xs text-destructive" data-testid="text-start-time-needed">
                             {startTimeLine}. It was {beoData?.startTime}: nothing is saved until a time is set.
@@ -2478,112 +2474,10 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                       </div>
                       <div className="space-y-1">
                         <Label className="text-xs text-muted-foreground flex items-center gap-1">End Time{aiMark("endTime")}</Label>
-                        <div className="flex items-center gap-1">
-                          {eventData.endTime ? (
-                            <>
-                              <span className="text-sm font-mono bg-muted px-2 py-1 rounded">{eventData.endTime}</span>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 text-muted-foreground"
-                                onClick={() => { setTempEndTime(eventData.endTime || "17:00"); setShowEndTimePicker(true); }}
-                                data-testid="button-end-time-edit"
-                              >
-                                <Settings className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                                onClick={() => { setEventData({ ...eventData, endTime: undefined }); setTimeError(null); aiTouched("endTime"); }}
-                                data-testid="button-end-time-clear"
-                              >
-                                <X className="h-3.5 w-3.5" />
-                              </Button>
-                            </>
-                          ) : (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="h-7 text-xs"
-                              onClick={() => {
-                                if (eventData.startTime) {
-                                  const sm = timeToMinutes(eventData.startTime);
-                                  const em = Math.min(sm + 180, 23 * 60 + 59);
-                                  setTempEndTime(`${Math.floor(em / 60).toString().padStart(2, '0')}:${(em % 60).toString().padStart(2, '0')}`);
-                                } else {
-                                  setTempEndTime("17:00");
-                                }
-                                setShowEndTimePicker(true);
-                              }}
-                              data-testid="button-end-time"
-                            >
-                              <Clock className="h-3 w-3 mr-1" />
-                              Set Time
-                            </Button>
-                          )}
-                        </div>
-                        {timeError && <p className="text-xs text-destructive">{timeError}</p>}
+                        <BeoTimeBox value={eventData.endTime} onCommit={commitEndTime} label="End time" disabled={readOnly} testId="input-end-time" />
+                        {timeError && <p className="text-xs text-destructive" data-testid="text-time-error">{timeError}</p>}
                       </div>
                     </div>
-
-                    {showStartTimePicker && (
-                      <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/30">
-                        <input
-                          type="time"
-                          className="text-sm border rounded px-2 py-1 bg-background"
-                          value={tempStartTime}
-                          onChange={(e) => setTempStartTime(e.target.value)}
-                          data-testid="input-start-time"
-                        />
-                        <Button type="button" size="sm" className="h-7 text-xs" disabled={!isStartTime(tempStartTime)} onClick={() => {
-                          const updates: any = { startTime: tempStartTime };
-                          if (!eventData.endTime) {
-                            const startMins = timeToMinutes(tempStartTime);
-                            const endMins = Math.min(startMins + 180, 23 * 60 + 59);
-                            const endH = Math.floor(endMins / 60).toString().padStart(2, '0');
-                            const endM = (endMins % 60).toString().padStart(2, '0');
-                            updates.endTime = `${endH}:${endM}`;
-                          }
-                          setEventData({ ...eventData, ...updates });
-                          setTimeError(null);
-                          setShowStartTimePicker(false);
-                          aiTouched("startTime");
-                          if (updates.endTime) aiTouched("endTime");
-                        }} data-testid="button-confirm-start-time">Confirm</Button>
-                        <Button type="button" size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowStartTimePicker(false)}>Cancel</Button>
-                      </div>
-                    )}
-
-                    {showEndTimePicker && (
-                      <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/30">
-                        <input
-                          type="time"
-                          className="text-sm border rounded px-2 py-1 bg-background"
-                          value={tempEndTime}
-                          onChange={(e) => setTempEndTime(e.target.value)}
-                          data-testid="input-end-time"
-                        />
-                        <Button type="button" size="sm" className="h-7 text-xs" onClick={() => {
-                          const startTime = eventData.startTime || "10:00";
-                          const startMinutes = timeToMinutes(startTime);
-                          const endMinutes = timeToMinutes(tempEndTime);
-                          if (endMinutes <= startMinutes) {
-                            setTimeError("End time must be after start time");
-                            setShowEndTimePicker(false);
-                            return;
-                          }
-                          setEventData({ ...eventData, endTime: tempEndTime });
-                          setTimeError(null);
-                          setShowEndTimePicker(false);
-                          aiTouched("endTime");
-                        }} data-testid="button-confirm-end-time">Confirm</Button>
-                        <Button type="button" size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowEndTimePicker(false)}>Cancel</Button>
-                      </div>
-                    )}
 
                     <div className="grid sm:grid-cols-2 gap-4">
                       <div className="space-y-1">
@@ -2597,13 +2491,13 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                       </div>
                       <div className="space-y-1">
                         <MandatoryLabel>Kid Turning Age</MandatoryLabel>
-                        <input
+                        {/* SCRUM-1029 (look): typed as the fields around it are; stored as before (empty is none). */}
+                        <EditableText
                           type="number"
-                          min={1}
-                          value={(eventData as any).kidTurningAge ?? ""}
-                          onChange={(e) => setEventData({ ...eventData, kidTurningAge: e.target.value === "" ? undefined : parseInt(e.target.value, 10) } as any)}
+                          value={(eventData as any).kidTurningAge == null ? "" : String((eventData as any).kidTurningAge)}
+                          onChange={(v) => setEventData({ ...eventData, kidTurningAge: v === "" ? undefined : parseInt(v, 10) } as any)}
                           placeholder="e.g., 5"
-                          className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                          disabled={readOnly}
                           data-testid="input-kid-turning-age"
                         />
                       </div>
@@ -2767,7 +2661,6 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                           {bahtOfSatang(tillFigures.expectedSatang)}
                         </Badge>
                       )}
-                      <BeoTaskBadge prefix="💰 POS Setup:" label="Mark POS Done" />
                     </>
                   }
                 >
@@ -2891,65 +2784,31 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
               </div>
             </AccordionTrigger>
             <AccordionContent className={`px-4 pb-4 overflow-visible ${readOnly ? "opacity-75 cursor-not-allowed" : ""}`}>
-              <div>
-                <SectionPart
-                  testId="part-setup"
-                  title="Setup / Table"
-                  icon={<Settings className="h-4 w-4 text-blue-500" />}
-                  aside={
-                    <>
-                      <StatusIcon status={getSectionStatus("setup-plan")} />
-                      {aiSectionMark("setup-plan")}
-                      {setupTasks.length > 0 && (
-                        <Badge variant="secondary" className="text-xs">{setupTasks.length} tasks</Badge>
-                      )}
-                      <BeoTaskBadge prefix="🔧 Setup:" label="Mark Setup Done" />
-                    </>
-                  }
+              {/* SCRUM-1029 (the brief's E5): Setup / Table, Kids Menu, Adults Menu and Bar, each one line that
+                  opens; the kitchen's own fields (No food, the slips' time, Kitchen Notes) before the menus and
+                  the cake after them, where they were. */}
+              <div className="divide-y divide-border/60" data-testid="food-drinks-lines">
+                <BeoFoodLine
+                  line="setup"
+                  icon={<Settings className="h-4 w-4 shrink-0 text-blue-500" />}
+                  aside={aiSectionMark("setup-plan")}
+                  summary={setupLineSummary}
+                  count={setupTasks.length > 0 ? countWords(setupTasks.length, "task", "tasks") : null}
+                  open={openFoodLines.has("setup")}
+                  onToggle={() => toggleFoodLine("setup")}
                 >
-                  <div className="space-y-4">
+                  <div className="space-y-4" data-testid="part-setup">
                     <div className="grid sm:grid-cols-2 gap-3">
                       <div className="flex items-center gap-2">
                         <Label className="text-xs text-muted-foreground whitespace-nowrap flex items-center gap-1">Ready by{aiMark("setupReadyBy")}</Label>
-                        <div className="flex items-center gap-1">
-                          {setupReadyBy ? (
-                            <>
-                              <span className="text-sm font-mono bg-muted px-2 py-1 rounded">{setupReadyBy}</span>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 text-muted-foreground"
-                                onClick={() => { setTempReadyByTime(setupReadyBy); setShowReadyByTimePicker(true); }}
-                                data-testid="button-ready-by-edit"
-                              >
-                                <Settings className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                                onClick={() => setSetupReadyBy("")}
-                                data-testid="button-ready-by-clear"
-                              >
-                                <X className="h-3.5 w-3.5" />
-                              </Button>
-                            </>
-                          ) : (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="h-7 text-xs"
-                              onClick={() => { setTempReadyByTime("09:00"); setShowReadyByTimePicker(true); }}
-                              data-testid="input-setup-ready-by"
-                            >
-                              <Clock className="h-3 w-3 mr-1" />
-                              Set Time
-                            </Button>
-                          )}
-                        </div>
+                        {/* As Confirm stored it, and as its clear stored "" (the clear never took AI Fill's mark off). */}
+                        <BeoTimeBox
+                          value={setupReadyBy}
+                          onCommit={(next) => { setSetupReadyBy(next); if (next) aiTouched("setupReadyBy"); }}
+                          label="Ready by"
+                          disabled={readOnly}
+                          testId="input-setup-ready-by"
+                        />
                       </div>
                       <div className="flex items-center gap-2 relative">
                         <Label className="text-xs text-muted-foreground whitespace-nowrap flex items-center gap-1">Who{aiMark(aiMarks["team:setupResponsible"] ? "team:setupResponsible" : "setupResponsible")}</Label>
@@ -3056,20 +2915,6 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                       </div>
                     </div>
 
-                    {showReadyByTimePicker && (
-                      <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/30">
-                        <input
-                          type="time"
-                          className="text-sm border rounded px-2 py-1 bg-background"
-                          value={tempReadyByTime}
-                          onChange={(e) => setTempReadyByTime(e.target.value)}
-                          data-testid="input-ready-by-time"
-                        />
-                        <Button type="button" size="sm" className="h-7 text-xs" onClick={() => { setSetupReadyBy(tempReadyByTime); setShowReadyByTimePicker(false); aiTouched("setupReadyBy"); }} data-testid="button-confirm-ready-by-time">Confirm</Button>
-                        <Button type="button" size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowReadyByTimePicker(false)}>Cancel</Button>
-                      </div>
-                    )}
-
                     <div className="space-y-1">
                       <Label className="text-xs text-muted-foreground flex items-center gap-1">Decoration{aiMark("decoration")}</Label>
                       <EditableText
@@ -3166,807 +3011,647 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                       />
                     </details>
                   </div>
-                </SectionPart>
+                </BeoFoodLine>
 
-                <SectionPart
-                  testId="part-food"
-                  title="Food"
-                  icon={<Cake className="h-4 w-4 text-blue-500" />}
-                  aside={
-                    <>
-                      <StatusIcon status={getSectionStatus("kitchen-plan")} />
-                      {aiSectionMark("kitchen-plan")}
-                      <BeoTaskBadge prefix="🍽️ Kitchen:" label="Mark Kitchen Done" />
-                    </>
-                  }
-                >
-                  <div className="grid grid-cols-1 gap-4">
-                    {/* SCRUM-1029: the kitchen plan's "food required", ticked off as "No food for this party". The menus
-                        and the cake are hidden while it is ticked, never deleted; the print says the kitchen is Not Needed. */}
-                    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-                      <label className="flex min-h-9 w-fit cursor-pointer items-center gap-2 text-sm" data-testid="label-no-food">
-                        <Checkbox
-                          checked={!kitchenRequired}
-                          onCheckedChange={(ticked) => setKitchenRequired(ticked !== true)}
-                          disabled={readOnly}
-                          data-testid="checkbox-no-food"
-                        />
-                        No food for this party
-                      </label>
-                      {/* The time the party's kitchen and bar slips print: the package snapshot's own field, moved here. */}
-                      {beoData.eventType === "birthday" && <BeoSlipsTime eventId={eventId} readOnly={readOnly} />}
+                {/* SCRUM-1029: the kitchen's own fields before its menus, where they were: the kitchen plan's "food
+                    required", ticked off as "No food for this party" (the menus and the cake are hidden while it is
+                    ticked, never deleted; the print says the kitchen is Not Needed), the slips' time, Kitchen Notes. */}
+                <div className="space-y-3 py-4" data-testid="part-food">
+                  <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                    <label className="flex min-h-9 w-fit cursor-pointer items-center gap-2 text-sm" data-testid="label-no-food">
+                      <Checkbox
+                        checked={!kitchenRequired}
+                        onCheckedChange={(ticked) => setKitchenRequired(ticked !== true)}
+                        disabled={readOnly}
+                        data-testid="checkbox-no-food"
+                      />
+                      No food for this party
+                    </label>
+                    {/* The time the party's kitchen and bar slips print: the package snapshot's own field, moved here. */}
+                    {beoData.eventType === "birthday" && <BeoSlipsTime eventId={eventId} readOnly={readOnly} />}
+                  </div>
+                  {kitchenRequired ? (
+                    // SCRUM-1030: general instructions for the kitchen, printed at the very top of the Staff BEO's
+                    // Kitchen; the kitchen plan's own field, the one the Day-of view edits.
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground flex items-center gap-1">Kitchen Notes</Label>
+                      <EditableText
+                        value={kitchenNotes}
+                        onChange={setKitchenNotes}
+                        placeholder="e.g., Parents will order more food on arrival"
+                        multiline
+                        disabled={readOnly}
+                        data-testid="textarea-kitchen-notes"
+                      />
                     </div>
-                    {kitchenRequired ? (
-                      <>
-                        {/* SCRUM-1030: general instructions for the kitchen, printed at the very top of the
-                            Staff BEO's Kitchen; the kitchen plan's own field, the one the Day-of view edits. */}
-                        <div className="space-y-1">
-                          <Label className="text-xs text-muted-foreground flex items-center gap-1">Kitchen Notes</Label>
-                          <EditableText
-                            value={kitchenNotes}
-                            onChange={setKitchenNotes}
-                            placeholder="e.g., Parents will order more food on arrival"
-                            multiline
-                            disabled={readOnly}
-                            data-testid="textarea-kitchen-notes"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Menus</Label>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <div className="flex gap-1">
-                              <Button
-                                variant={menuTab === "kids" ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => setMenuTab("kids")}
-                                data-testid="button-menu-tab-kids"
-                              >
-                                Kids Menu ({kidsMenu.length})
-                              </Button>
-                              <Button
-                                variant={menuTab === "adults" ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => setMenuTab("adults")}
-                                data-testid="button-menu-tab-adults"
-                              >
-                                Adults Menu ({adultsDiffer ? adultsMenu.length : kidsMenu.length})
-                              </Button>
-                            </div>
-                            <div className="flex items-center gap-2 ml-auto">
-                              <span className="text-xs text-muted-foreground">Service:</span>
-                              {(menuTab === "kids" ? kidsFoodTime : adultsFoodTime) ? (
-                                <div className="flex items-center gap-1">
-                                  <span className="text-sm font-mono bg-muted px-2 py-1 rounded">{menuTab === "kids" ? kidsFoodTime : adultsFoodTime}</span>
-                                  <Button disabled={readOnly}
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-7 w-7 text-muted-foreground"
-                                    onClick={() => { setFoodTimeTarget(menuTab); setTempFoodTime((menuTab === "kids" ? kidsFoodTime : adultsFoodTime) || "12:00"); setShowFoodTimePicker(true); }}
-                                    data-testid={`button-food-time-edit-${menuTab}`}
-                                  >
-                                    <Settings className="h-3.5 w-3.5" />
-                                  </Button>
-                                  <Button disabled={readOnly}
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                                    onClick={() => menuTab === "kids" ? setKidsFoodTime("") : setAdultsFoodTime("")}
-                                    data-testid={`button-food-time-clear-${menuTab}`}
-                                  >
-                                    <X className="h-3.5 w-3.5" />
-                                  </Button>
-                                </div>
-                              ) : (
-                                <Button disabled={readOnly}
-                                  type="button"
-                                  variant="outline"
-                                  size="sm"
-                                  className="h-7 text-xs"
-                                  onClick={() => { setFoodTimeTarget(menuTab); setTempFoodTime("12:00"); setShowFoodTimePicker(true); }}
-                                  data-testid={`input-food-service-time-${menuTab}`}
-                                >
-                                  <Clock className="h-3 w-3 mr-1" />
-                                  Set Time
-                                </Button>
-                              )}
+                  ) : (
+                    <p className="text-sm text-muted-foreground" data-testid="text-no-food">
+                      The kitchen is not needed for this party. Its menus and cake are kept and show again when the tick is taken off.
+                    </p>
+                  )}
+                </div>
+
+                {kitchenRequired && (
+                  <div data-testid="food-menus">
+                  <div className="divide-y divide-border/60">
+                  <BeoFoodLine
+                    line="kids"
+                    icon={<UtensilsCrossed className="h-4 w-4 shrink-0 text-blue-500" />}
+                    aside={aiSectionMark("kitchen-plan")}
+                    summary={kidsLineSummary}
+                    count={kidsMenu.length > 0 ? countWords(kidsMenu.length, "dish", "dishes") : null}
+                    open={openFoodLines.has("kids")}
+                    onToggle={() => toggleFoodLine("kids")}
+                  >
+                    <div className="flex items-center gap-2" data-testid="kids-service-time">
+                      <Label className="text-xs text-muted-foreground whitespace-nowrap">Service time</Label>
+                      {/* As Confirm stored it; emptied, "" as its clear stored. */}
+                      <BeoTimeBox value={kidsFoodTime} onCommit={setKidsFoodTime} label="Kids' service time" disabled={readOnly} testId="input-food-service-time-kids" />
+                    </div>
+                    {(() => {
+                      const currentMenu = kidsMenu;
+                      const setCurrentMenu = setKidsMenu;
+                      const activeTemplates = setMenuTemplates.filter(t => t.isActive);
+                      const selectedTemplate = setMenuTemplates.find(t => t.id === setMenuTemplateId);
+
+                      return (
+                        <div className="space-y-3">
+                          {/* Set Menu Toggle */}
+                          <div className="flex items-center gap-3 p-3 border rounded-md bg-muted/30">
+                            <Switch disabled={readOnly}
+                              checked={setMenuEnabled}
+                              onCheckedChange={(v) => {
+                                if (!v) {
+                                  const hasSetMenuItems = [...kidsMenu, ...adultsMenu].some(m => m.source === "set_menu");
+                                  if (hasSetMenuItems && !window.confirm("Disabling Set Menu will keep existing set-menu items in the menu. To clear them, use Reset Selections beside the parent link first; that also clears the parent's submitted choices and replaces the parent link with a new one. Continue?")) {
+                                    return;
+                                  }
+                                  setSetMenuTemplateId("");
+                                }
+                                setSetMenuEnabled(v);
+                              }}
+                              data-testid="switch-set-menu-enabled"
+                            />
+                            <div>
+                              <Label className="text-sm font-medium">Set Menu</Label>
+                              <p className="text-xs text-muted-foreground">Attach a birthday package set menu and send a link to parents for their choices</p>
                             </div>
                           </div>
 
-                          {showFoodTimePicker && foodTimeTarget === menuTab && (
-                            <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/30">
-                              <input
-                                type="time"
-                                className="text-sm border rounded px-2 py-1 bg-background"
-                                value={tempFoodTime}
-                                onChange={(e) => setTempFoodTime(e.target.value)}
-                                data-testid="input-food-time"
-                              />
-                              <Button disabled={readOnly} type="button" size="sm" className="h-7 text-xs" onClick={() => { if (foodTimeTarget === "kids") setKidsFoodTime(tempFoodTime); else setAdultsFoodTime(tempFoodTime); setShowFoodTimePicker(false); }} data-testid="button-confirm-food-time">Confirm</Button>
-                              <Button disabled={readOnly} type="button" size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowFoodTimePicker(false)}>Cancel</Button>
-                            </div>
-                          )}
-
-                          {(() => {
-                            const isKids = menuTab === "kids";
-                            const currentMenu = isKids ? kidsMenu : adultsMenu;
-                            const setCurrentMenu = isKids ? setKidsMenu : setAdultsMenu;
-
-                            if (isKids) {
-                              const activeTemplates = setMenuTemplates.filter(t => t.isActive);
-                              const selectedTemplate = setMenuTemplates.find(t => t.id === setMenuTemplateId);
-
-                              return (
-                                <div className="space-y-3">
-                                  {/* Set Menu Toggle */}
-                                  <div className="flex items-center gap-3 p-3 border rounded-md bg-muted/30">
-                                    <Switch disabled={readOnly}
-                                      checked={setMenuEnabled}
-                                      onCheckedChange={(v) => {
-                                        if (!v) {
-                                          const hasSetMenuItems = [...kidsMenu, ...adultsMenu].some(m => m.source === "set_menu");
-                                          if (hasSetMenuItems && !window.confirm("Disabling Set Menu will keep existing set-menu items in the menu. To clear them, use Reset Selections beside the parent link first; that also clears the parent's submitted choices and replaces the parent link with a new one. Continue?")) {
-                                            return;
-                                          }
-                                          setSetMenuTemplateId("");
-                                        }
-                                        setSetMenuEnabled(v);
-                                      }}
-                                      data-testid="switch-set-menu-enabled"
-                                    />
-                                    <div>
-                                      <Label className="text-sm font-medium">Set Menu</Label>
-                                      <p className="text-xs text-muted-foreground">Attach a birthday package set menu and send a link to parents for their choices</p>
-                                    </div>
-                                  </div>
-
-                                  {setMenuEnabled && (
-                                    <>
-                                      {/* Template Picker */}
-                                      <div className="space-y-1">
-                                        <Label className="text-xs text-muted-foreground">Set Menu Template</Label>
-                                        <Select disabled={readOnly} value={setMenuTemplateId} onValueChange={setSetMenuTemplateId}>
-                                          <SelectTrigger disabled={readOnly} className="text-sm" data-testid="select-set-menu-template">
-                                            <SelectValue placeholder="Pick a template..." />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                            {activeTemplates.length === 0 ? (
-                                              <SelectItem value="__none__" disabled>No templates — add one in Event Settings</SelectItem>
-                                            ) : (
-                                              activeTemplates.map(t => (
-                                                <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                                              ))
-                                            )}
-                                          </SelectContent>
-                                        </Select>
-                                      </div>
-
-                                      {selectedTemplate && (
-                                        <>
-                                          {/* SET MENU block */}
-                                          {(() => {
-                                            const resolvedMenu = kidsMenu.some((item) => item.source === "set_menu")
-                                              ? kidsMenu
-                                              : adultsMenu;
-                                            const resolvedMenuTab = resolvedMenu === kidsMenu ? "kids" : "adults";
-                                            const setResolvedMenu = resolvedMenuTab === "kids" ? setKidsMenu : setAdultsMenu;
-                                            const resolvedSetMenuItems = resolvedMenu.filter(m => m.source === "set_menu");
-                                            const hasResolved = setMenuSelection?.isSubmitted === true;
-                                            return (
-                                              <div className="border-2 border-emerald-500/40 rounded-lg overflow-hidden">
-                                                <div className="bg-emerald-500/15 px-3 py-1.5 flex items-center gap-2">
-                                                  <ListChecks className="h-3.5 w-3.5 text-emerald-600" />
-                                                  <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">Set Menu</span>
-                                                  <Badge variant="outline" className="text-[10px] px-1.5 bg-emerald-500/10 text-emerald-600 border-emerald-500/30 ml-1">{selectedTemplate.name}</Badge>
-                                                  {/* SCRUM-927: choices read from the chat are not a parent's: no "Selections received". */}
-                                                  {setMenuSelection?.isSubmitted && (
-                                                    <Badge className="text-[10px] px-1.5 bg-emerald-500 text-white ml-auto" data-testid="badge-set-menu-selection">
-                                                      {choicesFromChatOnly(setMenuSelection.selections) ? SET_MENU_CHOSEN_FROM_CHAT : "Selections received"}
-                                                    </Badge>
-                                                  )}
-                                                  {setMenuSelection && !setMenuSelection.isSubmitted && (
-                                                    <Badge variant="outline" className="text-[10px] px-1.5 ml-auto text-amber-600 border-amber-500/30 bg-amber-500/10">Awaiting parent</Badge>
-                                                  )}
-                                                </div>
-
-                                                <SetMenuChoiceGroups
-                                                  template={selectedTemplate}
-                                                  resolvedItems={resolvedSetMenuItems}
-                                                  hasResolved={hasResolved}
-                                                />
-
-                                                {/* Manager override: editable resolved items */}
-                                                <div className="p-3 space-y-1.5">
-                                                  <div className="flex items-center gap-2">
-                                                    <p className="text-[10px] font-semibold uppercase text-muted-foreground tracking-wide">
-                                                      {hasResolved ? "Resolved Items (editable)" : "Manual Override"}
-                                                    </p>
-                                                  </div>
-                                                  {hasResolved ? (
-                                                    <>
-                                                      {resolvedSetMenuItems.map((item, idx) => {
-                                                        const absIdx = resolvedMenu.findIndex(m => m === item);
-                                                        return (
-                                                          <MenuLineItemRow disabled={readOnly}
-                                                            key={item.id}
-                                                            item={item}
-                                                            idx={absIdx >= 0 ? absIdx : idx}
-                                                            menuItems={resolvedMenu}
-                                                            setMenuItems={setResolvedMenu}
-                                                            menuTab={resolvedMenuTab}
-                                                            menuTime={resolvedMenuTab === "kids" ? kidsFoodTime : adultsFoodTime}
-                                                          />
-                                                        );
-                                                      })}
-                                                    </>
-                                                  ) : (
-                                                    <p className="text-xs text-muted-foreground italic">Parent selections appear here after submission. You can also add items manually below.</p>
-                                                  )}
-                                                  <button disabled={readOnly}
-                                                    className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-emerald-500/15 text-emerald-600 border-emerald-500/30 dark:text-emerald-400 hover:bg-emerald-500/25 transition-colors"
-                                                    onClick={() => {
-                                                      const newItem: MenuLine = {
-                                                        id: `menu_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-                                                        itemName: "",
-                                                        quantity: 1,
-                                                        notes: "",
-                                                        included: true,
-                                                        price: 0,
-                                                        source: "set_menu",
-                                                      };
-                                                      setResolvedMenu(prev => [...prev, newItem]);
-                                                    }}
-                                                    data-testid="button-add-set-menu-item"
-                                                  >
-                                                    + Add item
-                                                  </button>
-                                                </div>
-                                              </div>
-                                            );
-                                          })()}
-
-                                          {/* Parent link controls */}
-                                          <div className="flex items-center gap-2 flex-wrap">
-                                            <Button
-                                              variant="outline"
-                                              size="sm"
-                                              className="text-xs h-8"
-                                              onClick={() => {
-                                                if (setMenuSelection && setMenuSelection.templateId === setMenuTemplateId) {
-                                                  setShowParentLinkDialog(true);
-                                                } else {
-                                                  generateLinkMutation.mutate();
-                                                }
-                                              }}
-                                              disabled={!setMenuTemplateId || generateLinkMutation.isPending}
-                                              data-testid="button-get-parent-link"
-                                            >
-                                              {generateLinkMutation.isPending ? (
-                                                <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                                              ) : (
-                                                <Link2 className="h-3.5 w-3.5 mr-1.5" />
-                                              )}
-                                              Get Parent Link
-                                            </Button>
-                                            {setMenuSelection && (
-                                              <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="text-xs h-8 text-muted-foreground"
-                                                onClick={() => resetSelectionMutation.mutate()}
-                                                disabled={resetSelectionMutation.isPending}
-                                                data-testid="button-reset-selections"
-                                              >
-                                                {resetSelectionMutation.isPending ? (
-                                                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                                                ) : (
-                                                  <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
-                                                )}
-                                                Reset Selections
-                                              </Button>
-                                            )}
-                                            {setMenuSelection?.isSubmitted && setMenuSelection.submittedAt && (
-                                              <span className="text-xs text-muted-foreground" data-testid="text-set-menu-selection-date">
-                                                {choicesFromChatOnly(setMenuSelection.selections) ? "Chosen from the chat" : "Received"} {parkDayOf(setMenuSelection.submittedAt)}
-                                              </span>
-                                            )}
-                                          </div>
-                                        </>
-                                      )}
-                                    </>
-                                  )}
-
-                                  {/* Additional Items section */}
-                                  <div className="space-y-2">
-                                    {setMenuEnabled && (
-                                      <div className="flex items-center gap-2">
-                                        <Label className="text-xs text-muted-foreground uppercase tracking-wide">Additional Items</Label>
-                                      </div>
+                          {setMenuEnabled && (
+                            <>
+                              {/* Template Picker */}
+                              <div className="space-y-1">
+                                <Label className="text-xs text-muted-foreground">Set Menu Template</Label>
+                                <Select disabled={readOnly} value={setMenuTemplateId} onValueChange={setSetMenuTemplateId}>
+                                  <SelectTrigger disabled={readOnly} className="text-sm" data-testid="select-set-menu-template">
+                                    <SelectValue placeholder="Pick a template..." />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {activeTemplates.length === 0 ? (
+                                      <SelectItem value="__none__" disabled>No templates — add one in Event Settings</SelectItem>
+                                    ) : (
+                                      activeTemplates.map(t => (
+                                        <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                                      ))
                                     )}
-                                    {(() => {
-                                      const additionalItems = setMenuEnabled
-                                        ? currentMenu.filter(m => m.source !== "set_menu")
-                                        : currentMenu;
-                                      const setAdditionalItems = (updater: (prev: MenuLine[]) => MenuLine[]) => {
-                                        if (setMenuEnabled) {
-                                          setKidsMenu(prev => {
-                                            const setMenuItems = prev.filter(m => m.source === "set_menu");
-                                            const additional = prev.filter(m => m.source !== "set_menu");
-                                            const updatedAdditional = updater(additional);
-                                            return [...setMenuItems, ...updatedAdditional];
-                                          });
-                                        } else {
-                                          setKidsMenu(updater);
-                                        }
-                                      };
-                                      return (
-                                        <>
-                                          {additionalItems.length === 0 && !setMenuEnabled ? (
-                                            <div
-                                              className="text-sm text-muted-foreground text-center py-4 border border-dashed rounded-md cursor-pointer hover:bg-accent/30 hover:border-border transition-colors"
-                                              onClick={() => {
-                                                if (readOnly) return;
-                                                // SCRUM-958 (SCRUM-940 point 2): the first line shows the EXTRA badge, so it is saved as one.
-                                                setCurrentMenu([{
-                                                  id: `menu_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-                                                  itemName: "",
-                                                  quantity: 1,
-                                                  notes: "",
-                                                  included: false,
-                                                  chargeApproved: true,
-                                                  price: 0,
-                                                  source: "additional",
-                                                }]);
-                                                setTimeout(() => {
-                                                  const el = document.querySelector(`[data-testid="input-menu-name-kids-0"]`) as HTMLElement;
-                                                  if (el) el.click();
-                                                }, 50);
-                                              }}
-                                              data-testid="button-add-first-menu-kids"
-                                            >
-                                              Nothing on the kids' menu yet. Click to add the first item.
-                                            </div>
-                                          ) : (
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              {selectedTemplate && (
+                                <>
+                                  {/* SET MENU block */}
+                                  {(() => {
+                                    const resolvedMenu = kidsMenu.some((item) => item.source === "set_menu")
+                                      ? kidsMenu
+                                      : adultsMenu;
+                                    const resolvedMenuTab = resolvedMenu === kidsMenu ? "kids" : "adults";
+                                    const setResolvedMenu = resolvedMenuTab === "kids" ? setKidsMenu : setAdultsMenu;
+                                    const resolvedSetMenuItems = resolvedMenu.filter(m => m.source === "set_menu");
+                                    const hasResolved = setMenuSelection?.isSubmitted === true;
+                                    return (
+                                      <div className="border-2 border-emerald-500/40 rounded-lg overflow-hidden">
+                                        <div className="bg-emerald-500/15 px-3 py-1.5 flex items-center gap-2">
+                                          <ListChecks className="h-3.5 w-3.5 text-emerald-600" />
+                                          <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">Set Menu</span>
+                                          <Badge variant="outline" className="text-[10px] px-1.5 bg-emerald-500/10 text-emerald-600 border-emerald-500/30 ml-1">{selectedTemplate.name}</Badge>
+                                          {/* SCRUM-927: choices read from the chat are not a parent's: no "Selections received". */}
+                                          {setMenuSelection?.isSubmitted && (
+                                            <Badge className="text-[10px] px-1.5 bg-emerald-500 text-white ml-auto" data-testid="badge-set-menu-selection">
+                                              {choicesFromChatOnly(setMenuSelection.selections) ? SET_MENU_CHOSEN_FROM_CHAT : "Selections received"}
+                                            </Badge>
+                                          )}
+                                          {setMenuSelection && !setMenuSelection.isSubmitted && (
+                                            <Badge variant="outline" className="text-[10px] px-1.5 ml-auto text-amber-600 border-amber-500/30 bg-amber-500/10">Awaiting parent</Badge>
+                                          )}
+                                        </div>
+
+                                        <SetMenuChoiceGroups
+                                          template={selectedTemplate}
+                                          resolvedItems={resolvedSetMenuItems}
+                                          hasResolved={hasResolved}
+                                        />
+
+                                        {/* Manager override: editable resolved items */}
+                                        <div className="p-3 space-y-1.5">
+                                          <div className="flex items-center gap-2">
+                                            <p className="text-[10px] font-semibold uppercase text-muted-foreground tracking-wide">
+                                              {hasResolved ? "Resolved Items (editable)" : "Manual Override"}
+                                            </p>
+                                          </div>
+                                          {hasResolved ? (
                                             <>
-                                              {additionalItems.map((item, idx) => {
-                                                const absIdx = setMenuEnabled
-                                                  ? currentMenu.findIndex(m => m === item)
-                                                  : idx;
+                                              {resolvedSetMenuItems.map((item, idx) => {
+                                                const absIdx = resolvedMenu.findIndex(m => m === item);
                                                 return (
                                                   <MenuLineItemRow disabled={readOnly}
                                                     key={item.id}
                                                     item={item}
                                                     idx={absIdx >= 0 ? absIdx : idx}
-                                                    menuItems={currentMenu}
-                                                    setMenuItems={setCurrentMenu}
-                                                    menuTab="kids"
-                                                    menuTime={kidsFoodTime}
-                                                    paid={paidLines.get(item.id)}
+                                                    menuItems={resolvedMenu}
+                                                    setMenuItems={setResolvedMenu}
+                                                    menuTab={resolvedMenuTab}
+                                                    menuTime={resolvedMenuTab === "kids" ? kidsFoodTime : adultsFoodTime}
                                                   />
                                                 );
                                               })}
                                             </>
+                                          ) : (
+                                            <p className="text-xs text-muted-foreground italic">Parent selections appear here after submission. You can also add items manually below.</p>
                                           )}
-                                          <div className={`flex gap-2 pt-1 ${additionalItems.length === 0 && !setMenuEnabled ? "hidden" : ""}`}>
-                                            <button disabled={readOnly}
-                                              className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-amber-500/15 text-amber-600 border-amber-500/30 dark:text-amber-400 hover:bg-amber-500/25 transition-colors"
-                                              onClick={() => {
-                                                const newItem: MenuLine = {
-                                                  id: `menu_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-                                                  itemName: "",
-                                                  quantity: 1,
-                                                  notes: "",
-                                                  included: false,
-                                                  chargeApproved: true,
-                                                  price: 0,
-                                                  source: "additional",
-                                                };
-                                                setCurrentMenu(prev => [...prev, newItem]);
-                                              }}
-                                              data-testid="button-add-menu-extra-kids"
-                                            >
-                                              + EXTRA
-                                            </button>
-                                          </div>
-                                          {!readOnly && (
-                                            <div className="flex gap-2 pt-1">
-                                              <button disabled={readOnly}
-                                                type="button"
-                                                className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-violet-500/15 text-violet-600 border-violet-500/30 dark:text-violet-400 hover:bg-violet-500/25 transition-colors"
-                                                onClick={() => setNewItemMenu("kids")}
-                                                title="An item the till's menu does not have yet: it is added to the till for this party only"
-                                                data-testid="button-add-party-menu-item-kids"
-                                              >
-                                                + NEW ITEM (not in the menu)
-                                              </button>
-                                            </div>
-                                          )}
-                                        </>
-                                      );
-                                    })()}
-                                  </div>
-                                </div>
-                              );
-                            }
-
-                            // SCRUM-829: the adults' section starts from the kids' menu. With "Different
-                            // for adults" off it IS the kids' list (shown as such, no option list of its
-                            // own and nothing to type); on, it is the adults' own list, started as a copy
-                            // of the kids' and changed here.
-                            const switchAdults = (on: boolean) => {
-                              if (on) {
-                                setAdultsMenu(kidsMenu.map((line, index) => ({ ...line, id: `menu_${Date.now()}_${index}_${Math.random().toString(36).slice(2, 6)}` })));
-                                setAdultsDiffer(true);
-                                return;
-                              }
-                              // SCRUM-1002 ruling 3: off drops the adults' own list, and a paid line in it stays.
-                              const paidAdults = adultsMenu.find((line) => paidLines.has(line.id));
-                              if (paidAdults) {
-                                refusePaidLine(paidAdults);
-                                return;
-                              }
-                              if (
-                                adultsMenu.length > 0 &&
-                                !kitchenListsEqual(kidsMenu, adultsMenu) &&
-                                !window.confirm("Turning this off makes the adults' menu the kids' menu again: the adults' own changes are dropped. Continue?")
-                              ) {
-                                return;
-                              }
-                              setAdultsMenu([]);
-                              setAdultsDiffer(false);
-                            };
-
-                            return (
-                              <div className="space-y-3">
-                                <div className="flex items-center gap-3 p-3 border rounded-md bg-muted/30">
-                                  <Switch
-                                    checked={adultsDiffer}
-                                    onCheckedChange={switchAdults}
-                                    disabled={readOnly}
-                                    data-testid="switch-adults-differ"
-                                  />
-                                  <div>
-                                    <Label className="text-sm font-medium">Different for adults</Label>
-                                    <p className="text-xs text-muted-foreground">Off: the adults eat what was chosen for the kids. On: start from the kids' menu and change it for the adults.</p>
-                                  </div>
-                                </div>
-
-                                {!adultsDiffer ? (
-                                  <div className="space-y-1" data-testid="adults-menu-mirror">
-                                    <p className="text-xs text-muted-foreground italic" data-testid="text-adults-same-as-kids">{ADULTS_SAME_AS_KIDS}</p>
-                                    {kidsMenu.length === 0 ? (
-                                      <p className="text-sm text-muted-foreground text-center py-4 border border-dashed rounded-md">Nothing on the kids' menu yet</p>
-                                    ) : (
-                                      kidsMenu.map((item, index) => (
-                                        <div key={item.id} className="flex items-center gap-2 text-sm py-0.5" data-testid={`adults-mirror-item-${index}`}>
-                                          <span className="w-6 text-center text-xs font-medium shrink-0">{beoQuantityOf(item.quantity)}</span>
-                                          <span className="text-xs">{beoDishNameOf(item)}</span>
-                                          {item.notes?.trim() && <span className="text-xs text-muted-foreground shrink-0">{item.notes.trim()}</span>}
-                                          {item.productCode && (
-                                            <span className="text-[10px] font-mono text-muted-foreground shrink-0" title={tillCodeTitle(tillMenu.index, item.productCode)}>{item.productCode}</span>
-                                          )}
-                                          <TillCodeMark code={item.productCode} testId={`adults-mirror-code-dead-${index}`} />
-                                          {lineServingTagOf(item, kidsFoodTime) && (
-                                            <span className="shrink-0 rounded-full border border-sky-500/30 bg-sky-500/10 px-2 font-mono text-[11px] text-sky-700 dark:text-sky-300" data-testid={`adults-mirror-serving-${index}`}>{lineServingTagOf(item, kidsFoodTime)}</span>
-                                          )}
+                                          <button disabled={readOnly}
+                                            className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-emerald-500/15 text-emerald-600 border-emerald-500/30 dark:text-emerald-400 hover:bg-emerald-500/25 transition-colors"
+                                            onClick={() => {
+                                              const newItem: MenuLine = {
+                                                id: `menu_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+                                                itemName: "",
+                                                quantity: 1,
+                                                notes: "",
+                                                included: true,
+                                                price: 0,
+                                                source: "set_menu",
+                                              };
+                                              setResolvedMenu(prev => [...prev, newItem]);
+                                            }}
+                                            data-testid="button-add-set-menu-item"
+                                          >
+                                            + Add item
+                                          </button>
                                         </div>
-                                      ))
+                                      </div>
+                                    );
+                                  })()}
+
+                                  {/* Parent link controls */}
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="text-xs h-8"
+                                      onClick={() => {
+                                        if (setMenuSelection && setMenuSelection.templateId === setMenuTemplateId) {
+                                          setShowParentLinkDialog(true);
+                                        } else {
+                                          generateLinkMutation.mutate();
+                                        }
+                                      }}
+                                      disabled={!setMenuTemplateId || generateLinkMutation.isPending}
+                                      data-testid="button-get-parent-link"
+                                    >
+                                      {generateLinkMutation.isPending ? (
+                                        <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                                      ) : (
+                                        <Link2 className="h-3.5 w-3.5 mr-1.5" />
+                                      )}
+                                      Get Parent Link
+                                    </Button>
+                                    {setMenuSelection && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-xs h-8 text-muted-foreground"
+                                        onClick={() => resetSelectionMutation.mutate()}
+                                        disabled={resetSelectionMutation.isPending}
+                                        data-testid="button-reset-selections"
+                                      >
+                                        {resetSelectionMutation.isPending ? (
+                                          <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                                        ) : (
+                                          <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                                        )}
+                                        Reset Selections
+                                      </Button>
+                                    )}
+                                    {setMenuSelection?.isSubmitted && setMenuSelection.submittedAt && (
+                                      <span className="text-xs text-muted-foreground" data-testid="text-set-menu-selection-date">
+                                        {choicesFromChatOnly(setMenuSelection.selections) ? "Chosen from the chat" : "Received"} {parkDayOf(setMenuSelection.submittedAt)}
+                                      </span>
                                     )}
                                   </div>
-                                ) : (
-                                  <>
-                                    {currentMenu.length === 0 ? (
-                                      <div
-                                        className="text-sm text-muted-foreground text-center py-4 border border-dashed rounded-md cursor-pointer hover:bg-accent/30 hover:border-border transition-colors"
-                                        onClick={() => {
-                                                if (readOnly) return;
-                                          // SCRUM-958 (SCRUM-940 point 2): the first line shows the EXTRA badge, so it is saved as one.
-                                          setCurrentMenu([{
-                                            id: `menu_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-                                            itemName: "",
-                                            quantity: 1,
-                                            notes: "",
-                                            included: false,
-                                            chargeApproved: true,
-                                            price: 0,
-                                            source: "additional",
-                                          }]);
-                                          setTimeout(() => {
-                                            const el = document.querySelector(`[data-testid="input-menu-name-adults-0"]`) as HTMLElement;
-                                            if (el) el.click();
-                                          }, 50);
-                                        }}
-                                        data-testid="button-add-first-menu-adults"
-                                      >
-                                        Nothing on the adults' menu yet. Click to add the first item.
-                                      </div>
-                                    ) : (
-                                      <>
-                                        {currentMenu.map((item, index) => (
+                                </>
+                              )}
+                            </>
+                          )}
+
+                          {/* Additional Items section */}
+                          <div className="space-y-2">
+                            {setMenuEnabled && (
+                              <div className="flex items-center gap-2">
+                                <Label className="text-xs text-muted-foreground uppercase tracking-wide">Additional Items</Label>
+                              </div>
+                            )}
+                            {(() => {
+                              const additionalItems = setMenuEnabled
+                                ? currentMenu.filter(m => m.source !== "set_menu")
+                                : currentMenu;
+                              const setAdditionalItems = (updater: (prev: MenuLine[]) => MenuLine[]) => {
+                                if (setMenuEnabled) {
+                                  setKidsMenu(prev => {
+                                    const setMenuItems = prev.filter(m => m.source === "set_menu");
+                                    const additional = prev.filter(m => m.source !== "set_menu");
+                                    const updatedAdditional = updater(additional);
+                                    return [...setMenuItems, ...updatedAdditional];
+                                  });
+                                } else {
+                                  setKidsMenu(updater);
+                                }
+                              };
+                              return (
+                                <>
+                                  {additionalItems.length === 0 && !setMenuEnabled ? (
+                                    <div
+                                      className="text-sm text-muted-foreground text-center py-4 border border-dashed rounded-md cursor-pointer hover:bg-accent/30 hover:border-border transition-colors"
+                                      onClick={() => {
+                                        if (readOnly) return;
+                                        // SCRUM-958 (SCRUM-940 point 2): the first line shows the EXTRA badge, so it is saved as one.
+                                        setCurrentMenu([{
+                                          id: `menu_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+                                          itemName: "",
+                                          quantity: 1,
+                                          notes: "",
+                                          included: false,
+                                          chargeApproved: true,
+                                          price: 0,
+                                          source: "additional",
+                                        }]);
+                                        setTimeout(() => {
+                                          const el = document.querySelector(`[data-testid="input-menu-name-kids-0"]`) as HTMLElement;
+                                          if (el) el.click();
+                                        }, 50);
+                                      }}
+                                      data-testid="button-add-first-menu-kids"
+                                    >
+                                      Nothing on the kids' menu yet. Click to add the first item.
+                                    </div>
+                                  ) : (
+                                    <>
+                                      {additionalItems.map((item, idx) => {
+                                        const absIdx = setMenuEnabled
+                                          ? currentMenu.findIndex(m => m === item)
+                                          : idx;
+                                        return (
                                           <MenuLineItemRow disabled={readOnly}
                                             key={item.id}
                                             item={item}
-                                            idx={index}
+                                            idx={absIdx >= 0 ? absIdx : idx}
                                             menuItems={currentMenu}
                                             setMenuItems={setCurrentMenu}
-                                            menuTab="adults"
-                                            menuTime={adultsFoodTime}
-                                            charge={extraCharges.kitchen.adults[index]}
+                                            menuTab="kids"
+                                            menuTime={kidsFoodTime}
                                             paid={paidLines.get(item.id)}
+                                            priceColumn={additionalItems.some((line) => line.source !== "set_menu")}
                                           />
-                                        ))}
-                                      </>
-                                    )}
-                                    <div className={`flex gap-2 pt-1 ${currentMenu.length === 0 ? "hidden" : ""}`}>
+                                        );
+                                      })}
+                                    </>
+                                  )}
+                                  <div className={`flex gap-2 pt-1 ${additionalItems.length === 0 && !setMenuEnabled ? "hidden" : ""}`}>
+                                    <button disabled={readOnly}
+                                      className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-amber-500/15 text-amber-600 border-amber-500/30 dark:text-amber-400 hover:bg-amber-500/25 transition-colors"
+                                      onClick={() => {
+                                        const newItem: MenuLine = {
+                                          id: `menu_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+                                          itemName: "",
+                                          quantity: 1,
+                                          notes: "",
+                                          included: false,
+                                          chargeApproved: true,
+                                          price: 0,
+                                          source: "additional",
+                                        };
+                                        setCurrentMenu(prev => [...prev, newItem]);
+                                      }}
+                                      data-testid="button-add-menu-extra-kids"
+                                    >
+                                      + EXTRA
+                                    </button>
+                                  </div>
+                                  {!readOnly && (
+                                    <div className="flex gap-2 pt-1">
                                       <button disabled={readOnly}
-                                        className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-amber-500/15 text-amber-600 border-amber-500/30 dark:text-amber-400 hover:bg-amber-500/25 transition-colors"
-                                        onClick={() => {
-                                          setCurrentMenu([...currentMenu, {
-                                            id: `menu_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-                                            itemName: "",
-                                            quantity: 1,
-                                            notes: "",
-                                            included: false,
-                                            chargeApproved: true,
-                                            price: 0,
-                                            source: "additional",
-                                          }]);
-                                        }}
-                                        data-testid="button-add-menu-extra-adults"
+                                        type="button"
+                                        className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-violet-500/15 text-violet-600 border-violet-500/30 dark:text-violet-400 hover:bg-violet-500/25 transition-colors"
+                                        onClick={() => setNewItemMenu("kids")}
+                                        title="An item the till's menu does not have yet: it is added to the till for this party only"
+                                        data-testid="button-add-party-menu-item-kids"
                                       >
-                                        + EXTRA
+                                        + NEW ITEM (not in the menu)
                                       </button>
                                     </div>
-                                    {!readOnly && (
-                                      <div className="flex gap-2 pt-1">
-                                        <button disabled={readOnly}
-                                          type="button"
-                                          className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-violet-500/15 text-violet-600 border-violet-500/30 dark:text-violet-400 hover:bg-violet-500/25 transition-colors"
-                                          onClick={() => setNewItemMenu("adults")}
-                                          title="An item the till's menu does not have yet: it is added to the till for this party only"
-                                          data-testid="button-add-party-menu-item-adults"
-                                        >
-                                          + NEW ITEM (not in the menu)
-                                        </button>
-                                      </div>
-                                    )}
-                                  </>
-                                )}
-                              </div>
-                            );
-                          })()}
-                          {/* SCRUM-949: the kitchen's EXTRA lines as the till will charge them (the kids', and the adults' own). */}
-                          <BeoExtrasTotal charges={[...extraCharges.kitchen.kids, ...extraCharges.kitchen.adults]} testId="text-kitchen-extras-total" />
+                                  )}
+                                </>
+                              );
+                            })()}
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </BeoFoodLine>
+
+                  <BeoFoodLine
+                    line="adults"
+                    icon={<UtensilsCrossed className="h-4 w-4 shrink-0 text-blue-500" />}
+                    summary={adultsLineSummary}
+                    count={adultsDiffer && adultsMenu.length > 0 ? countWords(adultsMenu.length, "dish", "dishes") : null}
+                    open={openFoodLines.has("adults")}
+                    onToggle={() => toggleFoodLine("adults")}
+                  >
+                    <div className="flex items-center gap-2" data-testid="adults-service-time">
+                      <Label className="text-xs text-muted-foreground whitespace-nowrap">Service time</Label>
+                      <BeoTimeBox value={adultsFoodTime} onCommit={setAdultsFoodTime} label="Adults' service time" disabled={readOnly} testId="input-food-service-time-adults" />
+                    </div>
+                    {(() => {
+                      const currentMenu = adultsMenu;
+                      const setCurrentMenu = setAdultsMenu;
+                    // SCRUM-829: the adults' section starts from the kids' menu. With "Different
+                    // for adults" off it IS the kids' list (shown as such, no option list of its
+                    // own and nothing to type); on, it is the adults' own list, started as a copy
+                    // of the kids' and changed here.
+                    const switchAdults = (on: boolean) => {
+                      if (on) {
+                        setAdultsMenu(kidsMenu.map((line, index) => ({ ...line, id: `menu_${Date.now()}_${index}_${Math.random().toString(36).slice(2, 6)}` })));
+                        setAdultsDiffer(true);
+                        return;
+                      }
+                      // SCRUM-1002 ruling 3: off drops the adults' own list, and a paid line in it stays.
+                      const paidAdults = adultsMenu.find((line) => paidLines.has(line.id));
+                      if (paidAdults) {
+                        refusePaidLine(paidAdults);
+                        return;
+                      }
+                      if (
+                        adultsMenu.length > 0 &&
+                        !kitchenListsEqual(kidsMenu, adultsMenu) &&
+                        !window.confirm("Turning this off makes the adults' menu the kids' menu again: the adults' own changes are dropped. Continue?")
+                      ) {
+                        return;
+                      }
+                      setAdultsMenu([]);
+                      setAdultsDiffer(false);
+                    };
+
+                    return (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-3 p-3 border rounded-md bg-muted/30">
+                          <Switch
+                            checked={adultsDiffer}
+                            onCheckedChange={switchAdults}
+                            disabled={readOnly}
+                            data-testid="switch-adults-differ"
+                          />
+                          <div>
+                            <Label className="text-sm font-medium">Different for adults</Label>
+                            <p className="text-xs text-muted-foreground">Off: the adults eat what was chosen for the kids. On: start from the kids' menu and change it for the adults.</p>
+                          </div>
                         </div>
 
-                        <Separator />
-
-                        <div className="space-y-2">
-                          <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground flex items-center gap-1">Cake{aiMark("cake")}</Label>
-                          <div className="flex gap-2 flex-wrap">
-                            {["NONE", "INTERNAL", "EXTERNAL"].map((mode) => (
-                              <Button disabled={readOnly}
-                                key={mode}
-                                variant={cakeMode === mode ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => { setCakeMode(mode); aiTouched("cake"); }}
-                                data-testid={`button-cake-${mode.toLowerCase()}`}
-                              >
-                                {mode === "NONE" ? "No Cake" : mode === "INTERNAL" ? "Our Cake" : "Own Cake"}
-                              </Button>
-                            ))}
-                          </div>
-                          {/* SCRUM-787: a cake time or notes held under No Cake stays in sight, with what to choose to keep it. */}
-                          <CakeUnderNoCake
-                            cakeMode={cakeMode}
-                            cakeTime={cakeTime}
-                            cakeNotes={cakeNotes}
-                            onClear={() => { setCakeTime(""); setCakeNotes(""); aiTouched("cake"); }}
-                            disabled={readOnly}
-                          />
-                          {cakeMode !== "NONE" && (
-                            <div className="space-y-2 mt-2">
-                              <div className="flex gap-2 items-center flex-wrap">
-                                <div className="flex items-center gap-1">
-                                  <Label className="text-xs text-muted-foreground whitespace-nowrap">Qty</Label>
-                                  <div className="flex items-center border rounded-md overflow-hidden">
-                                    {[1, 2, 3].map((q) => (
-                                      <button disabled={readOnly}
-                                        key={q}
-                                        type="button"
-                                        onClick={() => setCakeQuantity(q)}
-                                        data-testid={`button-cake-qty-${q}`}
-                                        className={`px-2 py-0.5 text-xs font-semibold transition-colors ${cakeQuantity === q ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted text-foreground"}`}
-                                      >
-                                        {q}
-                                      </button>
-                                    ))}
-                                  </div>
-                                </div>
-                                <button disabled={readOnly}
-                                  type="button"
-                                  className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer transition-colors ${
-                                    cakeIncluded
-                                      ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30 dark:text-emerald-400"
-                                      : "bg-amber-500/15 text-amber-600 border-amber-500/30 dark:text-amber-400"
-                                  }`}
-                                  onClick={() => setCakeIncluded(!cakeIncluded)}
-                                  data-testid="button-cake-incl-toggle"
-                                >
-                                  {cakeIncluded ? "INCL" : "EXTRA"}
-                                </button>
-                                <div className="flex items-center gap-1">
-                                  <Label className="text-xs text-muted-foreground whitespace-nowrap">Cake Time</Label>
-                                  {cakeTime ? (
-                                    <div className="flex items-center gap-1">
-                                      <span className="text-sm font-mono bg-muted px-2 py-1 rounded">{cakeTime}</span>
-                                      <Button disabled={readOnly}
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-6 w-6 text-muted-foreground"
-                                        onClick={() => { setTempCakeTime(cakeTime); setShowCakeTimePicker(true); }}
-                                        data-testid="button-cake-time-edit"
-                                      >
-                                        <Settings className="h-3 w-3" />
-                                      </Button>
-                                      <Button disabled={readOnly}
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                                        onClick={() => { setCakeTime(""); aiTouched("cake"); }}
-                                        data-testid="button-cake-time-clear"
-                                      >
-                                        <X className="h-3 w-3" />
-                                      </Button>
-                                    </div>
-                                  ) : (
-                                    <Button disabled={readOnly}
-                                      type="button"
-                                      variant="outline"
-                                      size="sm"
-                                      className="h-7 text-xs"
-                                      onClick={() => { setTempCakeTime("14:00"); setShowCakeTimePicker(true); }}
-                                      data-testid="input-cake-time"
-                                    >
-                                      <Clock className="h-3 w-3 mr-1" />
-                                      Set Time
-                                    </Button>
+                        {!adultsDiffer ? (
+                          <div className="space-y-1" data-testid="adults-menu-mirror">
+                            <p className="text-xs text-muted-foreground italic" data-testid="text-adults-same-as-kids">{ADULTS_SAME_AS_KIDS}</p>
+                            {kidsMenu.length === 0 ? (
+                              <p className="text-sm text-muted-foreground text-center py-4 border border-dashed rounded-md">Nothing on the kids' menu yet</p>
+                            ) : (
+                              kidsMenu.map((item, index) => (
+                                <div key={item.id} className="flex items-center gap-2 text-sm py-0.5" data-testid={`adults-mirror-item-${index}`}>
+                                  <span className="w-6 text-center text-xs font-medium shrink-0">{beoQuantityOf(item.quantity)}</span>
+                                  <span className="text-xs">{beoDishNameOf(item)}</span>
+                                  {item.notes?.trim() && <span className="text-xs text-muted-foreground shrink-0">{item.notes.trim()}</span>}
+                                  {item.productCode && (
+                                    <span className="text-[10px] font-mono text-muted-foreground shrink-0" title={tillCodeTitle(tillMenu.index, item.productCode)}>{item.productCode}</span>
+                                  )}
+                                  <TillCodeMark code={item.productCode} testId={`adults-mirror-code-dead-${index}`} />
+                                  {lineServingTagOf(item, kidsFoodTime) && (
+                                    <span className="shrink-0 rounded-full border border-sky-500/30 bg-sky-500/10 px-2 font-mono text-[11px] text-sky-700 dark:text-sky-300" data-testid={`adults-mirror-serving-${index}`}>{lineServingTagOf(item, kidsFoodTime)}</span>
                                   )}
                                 </div>
-                                {!cakeIncluded && (
-                                  <EditableText disabled={readOnly}
-                                    type="number"
-                                    className="w-24 text-xs font-mono"
-                                    value={String(cakePrice || "")}
-                                    onChange={(v) => setCakePrice(Number(v) || 0)}
-                                    placeholder="Price ฿"
-                                    data-testid="input-cake-price"
-                                  />
-                                )}
-                              </div>
-                              {showCakeTimePicker && (
-                                <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/30">
-                                  <input
-                                    type="time"
-                                    className="text-sm border rounded px-2 py-1 bg-background"
-                                    value={tempCakeTime}
-                                    onChange={(e) => setTempCakeTime(e.target.value)}
-                                    data-testid="input-cake-time-picker"
-                                  />
-                                  <Button disabled={readOnly} type="button" size="sm" className="h-7 text-xs" onClick={() => { setCakeTime(tempCakeTime); setShowCakeTimePicker(false); aiTouched("cake"); }} data-testid="button-confirm-cake-time">Confirm</Button>
-                                  <Button disabled={readOnly} type="button" size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowCakeTimePicker(false)}>Cancel</Button>
-                                </div>
-                              )}
-                              <EditableText disabled={readOnly}
-                                className="flex-1 min-w-[150px] text-sm"
-                                value={cakeNotes}
-                                onChange={(v) => { setCakeNotes(v); aiTouched("cake"); }}
-                                placeholder="e.g., Dairy Queen (ordered on event day)"
-                                data-testid="input-cake-notes"
-                              />
-                            </div>
-                          )}
-                        </div>
-                      </>
-                    ) : (
-                      <p className="text-sm text-muted-foreground" data-testid="text-no-food">
-                        The kitchen is not needed for this party. Its menus and cake are kept and show again when the tick is taken off.
-                      </p>
-                    )}
-                  </div>
-                </SectionPart>
-
-                <SectionPart
-                  testId="part-bar"
-                  title="Bar"
-                  icon={<Wine className="h-4 w-4 text-blue-500" />}
-                  aside={
-                    <>
-                      <StatusIcon status={barItems.length > 0 ? "complete" : "empty"} />
-                      {barItems.length > 0 && (
-                        <Badge variant="secondary" className="text-xs">{barItems.length} item{barItems.length !== 1 ? "s" : ""}</Badge>
-                      )}
-                    </>
-                  }
-                >
-                  <div className="space-y-4">
-                    {/* Service Time */}
-                    <div className="flex items-center gap-3">
-                      <Label className="text-xs text-muted-foreground shrink-0">Service Time</Label>
-                      <div className="flex items-center gap-2">
-                        {barServiceTime ? (
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-mono bg-muted px-2 py-1 rounded">{barServiceTime}</span>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-muted-foreground"
-                              onClick={() => { setTempBarTime(barServiceTime || "12:00"); setShowBarTimePicker(true); }}
-                              disabled={readOnly}
-                              data-testid="button-bar-time-edit"
-                            >
-                              <Settings className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                              onClick={() => setBarServiceTime("")}
-                              disabled={readOnly}
-                              data-testid="button-bar-time-clear"
-                            >
-                              <X className="h-3.5 w-3.5" />
-                            </Button>
+                              ))
+                            )}
                           </div>
                         ) : (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="h-7 text-xs"
-                            onClick={() => { setTempBarTime("12:00"); setShowBarTimePicker(true); }}
-                            disabled={readOnly}
-                            data-testid="button-bar-time-set"
-                          >
-                            <Clock className="h-3 w-3 mr-1" />
-                            Set Time
-                          </Button>
+                          <>
+                            {currentMenu.length === 0 ? (
+                              <div
+                                className="text-sm text-muted-foreground text-center py-4 border border-dashed rounded-md cursor-pointer hover:bg-accent/30 hover:border-border transition-colors"
+                                onClick={() => {
+                                        if (readOnly) return;
+                                  // SCRUM-958 (SCRUM-940 point 2): the first line shows the EXTRA badge, so it is saved as one.
+                                  setCurrentMenu([{
+                                    id: `menu_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+                                    itemName: "",
+                                    quantity: 1,
+                                    notes: "",
+                                    included: false,
+                                    chargeApproved: true,
+                                    price: 0,
+                                    source: "additional",
+                                  }]);
+                                  setTimeout(() => {
+                                    const el = document.querySelector(`[data-testid="input-menu-name-adults-0"]`) as HTMLElement;
+                                    if (el) el.click();
+                                  }, 50);
+                                }}
+                                data-testid="button-add-first-menu-adults"
+                              >
+                                Nothing on the adults' menu yet. Click to add the first item.
+                              </div>
+                            ) : (
+                              <>
+                                {currentMenu.map((item, index) => (
+                                  <MenuLineItemRow disabled={readOnly}
+                                    key={item.id}
+                                    item={item}
+                                    idx={index}
+                                    menuItems={currentMenu}
+                                    setMenuItems={setCurrentMenu}
+                                    menuTab="adults"
+                                    menuTime={adultsFoodTime}
+                                    charge={extraCharges.kitchen.adults[index]}
+                                    paid={paidLines.get(item.id)}
+                                    priceColumn={currentMenu.some((line) => line.source !== "set_menu")}
+                                  />
+                                ))}
+                              </>
+                            )}
+                            <div className={`flex gap-2 pt-1 ${currentMenu.length === 0 ? "hidden" : ""}`}>
+                              <button disabled={readOnly}
+                                className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-amber-500/15 text-amber-600 border-amber-500/30 dark:text-amber-400 hover:bg-amber-500/25 transition-colors"
+                                onClick={() => {
+                                  setCurrentMenu([...currentMenu, {
+                                    id: `menu_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+                                    itemName: "",
+                                    quantity: 1,
+                                    notes: "",
+                                    included: false,
+                                    chargeApproved: true,
+                                    price: 0,
+                                    source: "additional",
+                                  }]);
+                                }}
+                                data-testid="button-add-menu-extra-adults"
+                              >
+                                + EXTRA
+                              </button>
+                            </div>
+                            {!readOnly && (
+                              <div className="flex gap-2 pt-1">
+                                <button disabled={readOnly}
+                                  type="button"
+                                  className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-violet-500/15 text-violet-600 border-violet-500/30 dark:text-violet-400 hover:bg-violet-500/25 transition-colors"
+                                  onClick={() => setNewItemMenu("adults")}
+                                  title="An item the till's menu does not have yet: it is added to the till for this party only"
+                                  data-testid="button-add-party-menu-item-adults"
+                                >
+                                  + NEW ITEM (not in the menu)
+                                </button>
+                              </div>
+                            )}
+                          </>
                         )}
                       </div>
-                    </div>
+                    );
+                    })()}
+                  </BeoFoodLine>
+                  </div>
+                  {/* SCRUM-949: the kitchen's EXTRA lines as the till will charge them (the kids', and the adults' own), under the menus. */}
+                  <BeoExtrasTotal charges={[...extraCharges.kitchen.kids, ...extraCharges.kitchen.adults]} testId="text-kitchen-extras-total" className="pb-3 text-right" />
+                  </div>
+                )}
 
-                    {/* Time picker dialog */}
-                    {showBarTimePicker && (
-                      <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/30">
-                        <input
-                          type="time"
-                          className="text-sm border rounded px-2 py-1 bg-background"
-                          value={tempBarTime}
-                          onChange={(e) => setTempBarTime(e.target.value)}
-                          data-testid="input-bar-time"
-                        />
-                        <Button type="button" size="sm" className="h-7 text-xs" onClick={() => { setBarServiceTime(tempBarTime); setShowBarTimePicker(false); }}>
-                          Confirm
-                        </Button>
-                        <Button type="button" size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowBarTimePicker(false)}>
-                          Cancel
-                        </Button>
+                {/* The cake, after the menus as before; its name in the lines' column, its fields beside it. */}
+                {kitchenRequired && (
+                  <div className="flex flex-col gap-2 py-4 sm:flex-row sm:items-start sm:gap-3" data-testid="part-cake">
+                    <div className="flex min-h-9 w-32 shrink-0 items-center gap-2 sm:w-36">
+                      <Cake className="h-4 w-4 shrink-0 text-blue-500" />
+                      <span className="text-sm font-semibold leading-tight">Cake</span>
+                      {aiMark("cake")}
+                    </div>
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <div className="flex gap-2 flex-wrap">
+                        {["NONE", "INTERNAL", "EXTERNAL"].map((mode) => (
+                          <Button disabled={readOnly}
+                            key={mode}
+                            variant={cakeMode === mode ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => { setCakeMode(mode); aiTouched("cake"); }}
+                            data-testid={`button-cake-${mode.toLowerCase()}`}
+                          >
+                            {mode === "NONE" ? "No Cake" : mode === "INTERNAL" ? "Our Cake" : "Own Cake"}
+                          </Button>
+                        ))}
                       </div>
-                    )}
+                      {/* SCRUM-787: a cake time or notes held under No Cake stays in sight, with what to choose to keep it. */}
+                      <CakeUnderNoCake
+                        cakeMode={cakeMode}
+                        cakeTime={cakeTime}
+                        cakeNotes={cakeNotes}
+                        onClear={() => { setCakeTime(""); setCakeNotes(""); aiTouched("cake"); }}
+                        disabled={readOnly}
+                      />
+                      {cakeMode !== "NONE" && (
+                        <div className="space-y-2 mt-2">
+                          <div className="flex gap-2 items-center flex-wrap">
+                            <div className="flex items-center gap-2">
+                              <Label className="text-xs text-muted-foreground whitespace-nowrap">Qty</Label>
+                              <div className="flex items-center divide-x border rounded-md overflow-hidden">
+                                {[1, 2, 3].map((q) => (
+                                  <button disabled={readOnly}
+                                    key={q}
+                                    type="button"
+                                    onClick={() => setCakeQuantity(q)}
+                                    data-testid={`button-cake-qty-${q}`}
+                                    className={`h-9 w-9 text-sm font-semibold transition-colors ${cakeQuantity === q ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted text-foreground"}`}
+                                  >
+                                    {q}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                            <button disabled={readOnly}
+                              type="button"
+                              className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer transition-colors ${
+                                cakeIncluded
+                                  ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30 dark:text-emerald-400"
+                                  : "bg-amber-500/15 text-amber-600 border-amber-500/30 dark:text-amber-400"
+                              }`}
+                              onClick={() => setCakeIncluded(!cakeIncluded)}
+                              data-testid="button-cake-incl-toggle"
+                            >
+                              {cakeIncluded ? "INCL" : "EXTRA"}
+                            </button>
+                            <div className="flex items-center gap-2">
+                              <Label className="text-xs text-muted-foreground whitespace-nowrap">Cake Time</Label>
+                              {/* As Confirm stored it and as its clear stored "" (both took AI Fill's mark off). */}
+                              <BeoTimeBox value={cakeTime} onCommit={(next) => { setCakeTime(next); aiTouched("cake"); }} label="Cake time" disabled={readOnly} testId="input-cake-time" />
+                            </div>
+                            {!cakeIncluded && (
+                              <EditableText disabled={readOnly}
+                                type="number"
+                                className="w-24 text-xs font-mono"
+                                value={String(cakePrice || "")}
+                                onChange={(v) => setCakePrice(Number(v) || 0)}
+                                placeholder="Price ฿"
+                                data-testid="input-cake-price"
+                              />
+                            )}
+                          </div>
+                          <EditableText disabled={readOnly}
+                            className="flex-1 min-w-[150px] text-sm"
+                            value={cakeNotes}
+                            onChange={(v) => { setCakeNotes(v); aiTouched("cake"); }}
+                            placeholder="e.g., Dairy Queen (ordered on event day)"
+                            data-testid="input-cake-notes"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <BeoFoodLine
+                  line="bar"
+                  icon={<Wine className="h-4 w-4 shrink-0 text-blue-500" />}
+                  summary={barLineSummary}
+                  count={barItems.length > 0 ? countWords(barItems.length, "item", "items") : null}
+                  open={openFoodLines.has("bar")}
+                  onToggle={() => toggleFoodLine("bar")}
+                >
+                  <div className="space-y-4" data-testid="part-bar">
+                    <div className="flex items-center gap-2">
+                      <Label className="text-xs text-muted-foreground whitespace-nowrap">Service time</Label>
+                      <BeoTimeBox value={barServiceTime} onCommit={setBarServiceTime} label="Bar service time" disabled={readOnly} testId="input-bar-time" />
+                    </div>
 
                     {/* Bar Items */}
                     <div className="space-y-2">
                       {barItems.map((item, idx) => (
-                        <div key={item.id} className="space-y-0.5" data-testid={`bar-item-${idx}`}>
-                          <div className="flex flex-wrap items-center gap-1">
+                        // SCRUM-1029 (look): as a dish's row, the drink's name, its note and its "Served at" line in one column.
+                        <div key={item.id} data-testid={`bar-item-${idx}`}>
+                          <div className="flex flex-wrap items-start gap-1">
+                            <div className={ROW_LINE}>
                             <button
                               type="button"
-                              className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-colors ${
+                              className={`w-[3.25rem] shrink-0 text-center text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-colors ${
                                 item.source === "set_menu"
                                   ? "bg-blue-500/15 text-blue-600 border-blue-500/30 dark:text-blue-400 cursor-pointer"
                                   : "bg-amber-500/15 text-amber-600 border-amber-500/30 dark:text-amber-400 cursor-pointer"
@@ -3983,8 +3668,11 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                             >
                               {item.source === "set_menu" ? "SET" : "EXTRA"}
                             </button>
+                            </div>
+                            <div className="flex min-w-[8rem] flex-1 flex-col">
+                            <div className={`${ROW_LINE} gap-1`}>
                             <EditableText
-                              className="min-w-[8rem] flex-1 text-xs"
+                              className="min-w-0 flex-1 text-xs"
                               placeholder="Item name…"
                               value={item.itemName}
                               onChange={(v) => setBarItems(prev => { const u = [...prev]; u[idx] = { ...u[idx], itemName: v }; return u; })}
@@ -4009,6 +3697,19 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                               </span>
                             )}
                             <TillCodeMark code={item.productCode} testId={`text-bar-code-dead-${idx}`} />
+                            </div>
+                            <EditableText
+                              className="text-xs text-muted-foreground"
+                              placeholder="Notes (optional)…"
+                              value={item.notes || ""}
+                              onChange={(v) => setBarItems(prev => { const u = [...prev]; u[idx] = { ...u[idx], notes: v }; return u; })}
+                              disabled={readOnly}
+                              data-testid={`bar-item-notes-${idx}`}
+                            />
+                            {/* SCRUM-1033: the drink's own serving time, read under its name. */}
+                            <ServingTimeLine line={item} className="px-3" testId={`text-serving-bar-${idx}`} />
+                            </div>
+                            <div className={`${ROW_LINE} gap-1`}>
                             <EditableText
                               type="number"
                               className="w-16 text-xs font-mono shrink-0"
@@ -4022,16 +3723,22 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                               disabled={readOnly}
                               data-testid={`bar-item-qty-${idx}`}
                             />
-                            {/* SCRUM-949: an EXTRA drink's price for each item, beside its count; never on a SET line. */}
-                            {item.source !== "set_menu" && (
-                              <ExtraPriceBox disabled={readOnly}
-                                line={item}
-                                area="bar"
-                                charge={extraCharges.bar[idx]}
-                                onPrice={(price) => setBarItems(prev => prev.map((line, i) => (i === idx ? { ...line, price } : line)))}
-                                testId={`bar-${idx}`}
-                              />
-                            )}
+                            {/* SCRUM-949: an EXTRA drink's price for each item, beside its count; never on a SET line.
+                                SCRUM-1029 (look): in one slot of one width, kept empty on a SET line of a bar that holds
+                                EXTRA lines, so the counts and the clocks of the bar stand in columns. */}
+                            {item.source !== "set_menu" ? (
+                              <div className="flex min-w-[11.25rem] shrink-0 items-center gap-1" data-testid={`bar-price-slot-${idx}`}>
+                                <ExtraPriceBox disabled={readOnly}
+                                  line={item}
+                                  area="bar"
+                                  charge={extraCharges.bar[idx]}
+                                  onPrice={(price) => setBarItems(prev => prev.map((line, i) => (i === idx ? { ...line, price } : line)))}
+                                  testId={`bar-${idx}`}
+                                />
+                              </div>
+                            ) : barItems.some((line) => line.source !== "set_menu") ? (
+                              <div className="w-[11.25rem] shrink-0" aria-hidden="true" data-testid={`bar-price-gap-${idx}`} />
+                            ) : null}
                             {/* SCRUM-1033: the drink's own serving time, or the group it is served under. */}
                             <ServingTimeButton
                               lines={barItems}
@@ -4052,19 +3759,8 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                             >
                               <X className="h-3.5 w-3.5" />
                             </Button>
+                            </div>
                           </div>
-                          <div className="pl-14">
-                            <EditableText
-                              className="text-xs text-muted-foreground"
-                              placeholder="Notes (optional)…"
-                              value={item.notes || ""}
-                              onChange={(v) => setBarItems(prev => { const u = [...prev]; u[idx] = { ...u[idx], notes: v }; return u; })}
-                              disabled={readOnly}
-                              data-testid={`bar-item-notes-${idx}`}
-                            />
-                          </div>
-                          {/* SCRUM-1033: the drink's own serving time, read under its row. */}
-                          <ServingTimeLine line={item} className="pl-[4.25rem]" testId={`text-serving-bar-${idx}`} />
                         </div>
                       ))}
                       <div className="flex gap-2 pt-1">
@@ -4107,7 +3803,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                       <BeoExtrasTotal charges={extraCharges.bar} testId="text-bar-extras-total" />
                     </div>
                   </div>
-                </SectionPart>
+                </BeoFoodLine>
               </div>
             </AccordionContent>
           </AccordionItem>
@@ -4676,6 +4372,8 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
           setAiReview(null);
           setAiMarks(marks);
           setExpandedSections((prev) => [...new Set([...prev, ...approvedSectionsOf(marks).flatMap((part) => BEO_SECTIONS_OF_PART[part] ?? [])])]);
+          // SCRUM-1029: and, in Food & Drinks, the parts whose fields the chat filled (they all showed before the lines).
+          openFoodLine(...approvedSectionsOf(marks).flatMap((part) => BEO_FOOD_LINES_OF_PART[part] ?? []));
         }}
       />
 
