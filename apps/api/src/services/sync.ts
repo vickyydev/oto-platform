@@ -1888,16 +1888,6 @@ const HANDLERS: Record<string, EventHandler> = {
       if (!guardian) {
         throw new RefuseEvent('poison', 'SYNC_CHILD_NOT_OURS', 'That child belongs elsewhere');
       }
-      /**
-       * SCRUM-1060 — the till gave this change the action id it sent online
-       * too. Already written under it (the online write whose answer was
-       * lost, or this fact's twin): applied once, nothing published again.
-       */
-      if (await childChangeWritten(tx, { operatorId: scope.auth.operatorId, childId: payload.childId,
-        actionId: event.envelope.actionId })) {
-        return { entityType: 'child', entityId: payload.childId };
-      }
-
       const patch: Partial<typeof child.$inferInsert> = {};
       if (payload.name !== undefined) patch.name = payload.name.trim();
       if (payload.dateOfBirth !== undefined) patch.dateOfBirth = payload.dateOfBirth ?? null;
@@ -1914,6 +1904,22 @@ const HANDLERS: Record<string, EventHandler> = {
       }
       if (payload.notes !== undefined) patch.notes = payload.notes ?? null;
       patch.lastConfirmedAt = event.occurredAt;
+
+      /**
+       * SCRUM-1060 — the till gave this change the action id it sent online
+       * too. Already written under it (the online write whose answer was
+       * lost, or this fact's twin): applied once, nothing published again.
+       * The action id already naming a different change to this child is
+       * poison: kept in quarantine, never applied or acked as written.
+       */
+      const seen = await childChangeWritten(tx, { operatorId: scope.auth.operatorId, childId: payload.childId,
+        actionId: event.envelope.actionId, change: patch });
+      if (seen === 'other') {
+        throw new RefuseEvent('poison', 'ID_IN_USE', 'That action id already names another change to this child');
+      }
+      if (seen === 'written') {
+        return { entityType: 'child', entityId: payload.childId };
+      }
 
       const [after] = await tx
         .update(child)

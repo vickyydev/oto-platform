@@ -183,3 +183,79 @@ describe("SCRUM-1060 (2): a child's change counted once on both lanes", () => {
     expect(await changesOf(childId)).toHaveLength(0);
   });
 });
+
+describe('SCRUM-1060 (2), review: the same action id is the same change, or it is refused', () => {
+  const quarantinedFor = async (childId: string) =>
+    (await ctx.db.select().from(syncQuarantine)).filter(
+      // The quarantined row keeps the box's whole signed envelope.
+      (row) => row.type === 'child.updated' && (row.payload as { payload?: { childId?: string } }).payload?.childId === childId,
+    );
+
+  it('online, a different allergy note under an action id already written is refused 409 ID_IN_USE; nothing written', async () => {
+    const { childId } = await family();
+    const published = await publishedOf(childId);
+    const actionId = newId();
+    expect((await patchChild(childId, { allergies: 'ZZ TEST cashews', actionId }, `visit-child:${actionId}`)).statusCode).toBe(200);
+    const other = await patchChild(childId, { allergies: 'ZZ TEST cashews, shellfish', actionId }, `gate-child:${newId()}`);
+    expect(other.statusCode, other.body).toBe(409);
+    expect(other.json().error.code).toBe('ID_IN_USE');
+    expect(other.headers['x-oto-replay']).toBeUndefined();
+    expect((await ctx.db.select().from(child).where(eq(child.id, childId)))[0]!.allergies).toBe('ZZ TEST cashews');
+    expect(await changesOf(childId)).toHaveLength(1);
+    expect(await publishedOf(childId)).toBe(published + 1);
+    // The same change under that id, text spaced differently, is still the change written.
+    const same = await patchChild(childId, { allergies: ' ZZ TEST cashews ', actionId }, `gate-child:${newId()}`);
+    expect(same.statusCode, same.body).toBe(200);
+    expect(same.headers['x-oto-replay']).toBe('true');
+    expect(await changesOf(childId)).toHaveLength(1);
+  });
+
+  it("from the box, a different allergy note under an action id already written is poison in quarantine; nothing written", async () => {
+    const { childId } = await family();
+    const published = await publishedOf(childId);
+    const actionId = newId();
+    expect((await patchChild(childId, { allergies: 'ZZ TEST lentils', actionId }, `visit-child:${actionId}`)).statusCode).toBe(200);
+    const caller = await openBox();
+    await onBox(caller, actionId, { childId, allergies: 'ZZ TEST lentils, soy' });
+    const flushed = await flush();
+    expect(flushed).toMatchObject({ applied: 0, quarantined: 1 });
+    const held = await quarantinedFor(childId);
+    expect(held).toHaveLength(1);
+    expect(held[0]!.reason).toBe('poison');
+    expect(held[0]!.errorCode).toBe('ID_IN_USE');
+    expect((await ctx.db.select().from(child).where(eq(child.id, childId)))[0]!.allergies).toBe('ZZ TEST lentils');
+    expect(await changesOf(childId)).toHaveLength(1);
+    expect(await publishedOf(childId)).toBe(published + 1);
+  });
+
+  it("two tills: till 1's change written online (answer lost), till 2 changes the child, till 1's box fact comes late: skipped, till 2's value stands", async () => {
+    const { childId } = await family();
+    const published = await publishedOf(childId);
+    const actionId = newId();
+    expect((await patchChild(childId, { allergies: 'ZZ TEST till one', actionId }, `visit-child:${actionId}`)).statusCode).toBe(200);
+    const tillTwo = newId();
+    expect((await patchChild(childId, { allergies: 'ZZ TEST till two', actionId: tillTwo }, `gate-child:${tillTwo}`)).statusCode).toBe(200);
+    const caller = await openBox();
+    await onBox(caller, actionId, { childId, allergies: 'ZZ TEST till one' });
+    await flush();
+    expect((await ctx.db.select().from(child).where(eq(child.id, childId)))[0]!.allergies).toBe('ZZ TEST till two');
+    expect(await changesOf(childId)).toHaveLength(2);
+    expect(await publishedOf(childId)).toBe(published + 2);
+    expect(await quarantinedFor(childId)).toHaveLength(0);
+  });
+
+  it("the box's twin of a change written online leaves the child as the online write alone left it, its last-confirmed time included", async () => {
+    const { childId } = await family();
+    const actionId = newId();
+    expect((await patchChild(childId, { allergies: 'ZZ TEST barley', actionId }, `visit-child:${actionId}`)).statusCode).toBe(200);
+    const [online] = await ctx.db.select().from(child).where(eq(child.id, childId));
+    const caller = await openBox();
+    await onBox(caller, actionId, { childId, allergies: 'ZZ TEST barley' });
+    await flush();
+    const [afterTwin] = await ctx.db.select().from(child).where(eq(child.id, childId));
+    expect(afterTwin!.allergies).toBe(online!.allergies);
+    expect(afterTwin!.lastConfirmedAt).toEqual(online!.lastConfirmedAt);
+    expect(afterTwin!.updatedAt).toEqual(online!.updatedAt);
+    expect(await quarantinedFor(childId)).toHaveLength(0);
+  });
+});
