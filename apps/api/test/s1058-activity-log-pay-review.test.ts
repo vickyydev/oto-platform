@@ -34,7 +34,8 @@ describe('SCRUM-1058: pay entries of the activity log reach the salary roles onl
 
   it('CRITICAL control: the rule is the app\'s own salary rule, not a new one', () => {
     expect(rule).toContain('import { canViewHrSalary, containsHrPayFields, redactHrPay, type HrSalarySubject } from "@shared/hr-salary-permission";');
-    expect(rule).toContain('export const PAY_ACTIVITY_TYPES: readonly ActivityType[] = ["salary_change"];');
+    // SCRUM-1038: a single shift's pay switch joined the list; the rule and its two readers are unchanged.
+    expect(rule).toContain('export const PAY_ACTIVITY_TYPES: readonly ActivityType[] = ["salary_change", "single_shift_pay_changed"];');
     expect(rule).toContain('return canViewHrSalary(subject) ? [] : PAY_ACTIVITY_TYPES;');
     expect(rule).toContain('if (canViewHrSalary(subject)) return logs;');
     expect(rule).toContain('return containsHrPayFields(metadata) ? { ...log, metadataJson: JSON.stringify(redactHrPay(metadata)) } : log;');
