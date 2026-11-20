@@ -19,12 +19,14 @@
 //      twice is refused by the schedule's own check, sent twice at once too
 //      (SCRUM-1055: one invitation, one assignment); and the ordinary
 //      assignment route still refuses a former employee.
-//   3. The pay: no figure is worked out for anyone. Switched to a casual day
-//      rate of 1,200 and back, each switch in the activity log with who and
-//      from/to way, never the rate; the rate read back by the salary roles
-//      only, a manager reads the way in words (SCRUM-1055); two single shifts
-//      on one day are accepted. The dialog's list marks a former employee
-//      payroll has no profile for.
+//   3. The pay: no figure is worked out for anyone. A switch to a casual day
+//      rate is refused in the held words (the owner's N1 is open; the choice
+//      is shown and not taken); a casual day rate stored before the hold
+//      stays, its rate read back by the salary roles only, a manager reads
+//      the way in words (SCRUM-1055); switched back to the old contract, in
+//      the activity log with who and from/to way, never the rate; two single
+//      shifts on one day are accepted. The dialog's list marks a former
+//      employee payroll has no profile for.
 //   4. The kiosk: on the shift's day at its branch the former employee clocks
 //      in and out; at another branch that day, and on any other day, refused
 //      as before with nothing written; the next day it is closed again by
@@ -46,11 +48,11 @@
 //      employee's answer is as before. A clock-out after midnight is refused
 //      as on a last working day, and the 00:01 batch closes the open
 //      clock-in at midnight with a missing clock-out for the managers.
-//  10. SCRUM-1058: the activity log's pay entries (a salary change, a single
-//      shift's pay switched) reach the salary roles only: staff and a
-//      manager get the log without them by list, filter, employee, search
-//      and summary; pay fields in other entries' metadata are taken out for
-//      them; an administrator reads it whole; nothing stored changes.
+//  10. SCRUM-1058: the single shift's pay switch reaches the salary roles
+//      only: staff and a manager get the log without it by list, filter,
+//      employee, search and summary, the invitations still in it; an
+//      administrator reads it whole; nothing stored changes. The rule
+//      itself is tests/activity-log-pay.check.ts's.
 //
 // Usage, from apps/oto-app, with DATABASE_URL naming a database whose otoapp
 // schema the app's migrator has built (CI's OTO App job runs exactly this):
@@ -349,18 +351,15 @@ try {
     assert.deepEqual(await invitationsOf(current), []);
     assert.deepEqual(await assignmentsOf(current), []);
   });
-  await check("a past day, a casual rate missing or not whole baht, and a rate on the old contract are refused", async () => {
+  await check("a past day, the casual day rate (its pay rule not yet confirmed), and a rate on the old contract are refused", async () => {
     const past = await invite(origin, asManager, { ...base, shiftDate: plus(-1) });
     assert.deepEqual([past.status, past.body.message], [400, SINGLE_SHIFT_REFUSALS.pastDate], show(past));
-    for (const body of [
-      { ...base, payWay: "casual_day_rate" },
-      { ...base, payWay: "casual_day_rate", casualDayRate: 0 },
-      { ...base, payWay: "casual_day_rate", casualDayRate: 950.5 },
-      { ...base, payWay: "old_contract", casualDayRate: 900 },
-    ]) {
+    for (const body of [{ ...base, payWay: "casual_day_rate" }, { ...base, payWay: "casual_day_rate", casualDayRate: 1200 }]) {
       const res = await invite(origin, asManager, body);
-      assert.deepEqual([res.status, res.body.message], [400, SINGLE_SHIFT_REFUSALS.rate], `${JSON.stringify(body)}: ${show(res)}`);
+      assert.deepEqual([res.status, res.body.message, res.body.reasonCode], [400, SINGLE_SHIFT_REFUSALS.casualHeld, "CASUAL_DAY_RATE_HELD"], `${JSON.stringify(body)}: ${show(res)}`);
     }
+    const stray = await invite(origin, asManager, { ...base, payWay: "old_contract", casualDayRate: 900 });
+    assert.deepEqual([stray.status, stray.body.message], [400, SINGLE_SHIFT_REFUSALS.rate], show(stray));
     assert.deepEqual(await invitationsOf(former), []);
   });
   await check("a profile with Onboard Again planned is a former employee until it starts: invited on a day before the start", async () => {
@@ -437,8 +436,10 @@ try {
 
   // ── 3. The pay ─────────────────────────────────────────────────────────────
   console.log("3. how the shift is paid:");
+  // The ids in the metadata are random hex and can spell a figure by chance; they are taken out first.
+  const ID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g;
   const noFigure = (entries: { summary_text: string; metadata_json: string }[]) => {
-    for (const e of entries) assert.doesNotMatch(`${e.summary_text} ${e.metadata_json}`, /1,?200|800|฿/, e.summary_text);
+    for (const e of entries) assert.doesNotMatch(`${e.summary_text} ${e.metadata_json}`.replace(ID, "(id)"), /1,?200|800|฿/, e.summary_text);
   };
   await check("no figure is worked out for anyone: a payroll role and a manager see the way, never an amount", async () => {
     for (const cookie of [asAdmin, asManager]) {
@@ -449,47 +450,55 @@ try {
       assert.equal(Object.hasOwn(mine, "pay"), false);
     }
   });
-  await check("switched to a casual day rate of ฿1,200 by the manager: stored on the invitation; the rate read back by the salary roles only; the activity log has the way from/to, not the rate", async () => {
-    const res = await call(origin, "PATCH", `/api/schedule/single-shift/invitations/${invitationId}`, asManager, { payWay: "casual_day_rate", casualDayRate: 1200 });
-    assert.equal(res.status, 200, show(res));
+  await check("switching to a casual day rate is refused in the held words, by the manager and the administrator alike; nothing is written", async () => {
+    for (const [cookie, body] of [
+      [asManager, { payWay: "casual_day_rate", casualDayRate: 1200 }],
+      [asManager, { payWay: "casual_day_rate" }],
+      [asAdmin, { payWay: "casual_day_rate", casualDayRate: 1200 }],
+    ] as const) {
+      const res = await call(origin, "PATCH", `/api/schedule/single-shift/invitations/${invitationId}`, cookie, body);
+      assert.deepEqual([res.status, res.body.message, res.body.reasonCode], [400, SINGLE_SHIFT_REFUSALS.casualHeld, "CASUAL_DAY_RATE_HELD"], show(res));
+    }
+    const [row] = await invitationsOf(former);
+    assert.deepEqual([row!.pay_basis, row!.casual_day_rate, row!.updated_by], ["old_contract", null, manager.id]);
+    assert.equal((await activityOf(former)).length, 1);
+  });
+  await check("a casual day rate stored before the hold stays as it is: the rate read back by the salary roles only; a manager reads the way in words", async () => {
+    await q("update single_shift_invitations set pay_basis = 'casual_day_rate', casual_day_rate = 1200 where id = $1", [invitationId]);
     // SCRUM-1055: a manager is below the roles that may see salaries (canViewHrSalary): the way in words, no rate.
-    assert.deepEqual([res.body.payWay, res.body.casualDayRate, res.body.payLabel], ["casual_day_rate", null, "Casual day rate"]);
     const asManagerList = (await shiftsOn(origin, asManager, BRANCH, SHIFT_DAY, SHIFT_DAY)).body as { id: string; casualDayRate: number | null; payLabel: string }[];
     assert.deepEqual(asManagerList.filter((x) => x.id === invitationId).map((x) => [x.casualDayRate, x.payLabel]), [[null, "Casual day rate"]]);
     assert.doesNotMatch(JSON.stringify(asManagerList), /1,?200|฿/);
     const asAdminList = (await shiftsOn(origin, asAdmin, BRANCH, SHIFT_DAY, SHIFT_DAY)).body as { id: string; casualDayRate: number | null; payLabel: string }[];
     assert.deepEqual(asAdminList.filter((x) => x.id === invitationId).map((x) => [x.casualDayRate, x.payLabel]), [[1200, "Casual day rate ฿1,200 a day"]]);
-    const [row] = await invitationsOf(former);
-    assert.deepEqual([row!.pay_basis, row!.casual_day_rate, row!.updated_by], ["casual_day_rate", 1200, manager.id]);
-    const entries = await activityOf(former);
-    assert.equal(entries.length, 2);
-    assert.equal(entries[1]!.activity_type, "single_shift_pay_changed");
-    assert.equal(entries[1]!.created_by, manager.id);
-    assert.deepEqual([entries[1]!.metadata.from, entries[1]!.metadata.to], [{ payWay: "old_contract" }, { payWay: "casual_day_rate" }]);
-    assert.match(entries[1]!.summary_text, /single shift on .*, on a casual day rate$/);
-    noFigure(entries);
   });
-  await check("the same way again writes nothing; a bad rate is refused; switched back to the old contract by the administrator", async () => {
-    const same = await call(origin, "PATCH", `/api/schedule/single-shift/invitations/${invitationId}`, asManager, { payWay: "casual_day_rate", casualDayRate: 1200 });
-    assert.equal(same.status, 200, show(same));
-    assert.equal((await activityOf(former)).length, 2);
-    const bad = await call(origin, "PATCH", `/api/schedule/single-shift/invitations/${invitationId}`, asManager, { payWay: "casual_day_rate", casualDayRate: -5 });
-    assert.deepEqual([bad.status, bad.body.message], [400, SINGLE_SHIFT_REFUSALS.rate], show(bad));
+  await check("switched back to the old contract by the administrator: in the activity log with who and from/to, never the rate; the same way again writes nothing; a manager outside the branch is refused", async () => {
     const outside = await call(origin, "PATCH", `/api/schedule/single-shift/invitations/${invitationId}`, asOtherManager, { payWay: "old_contract" });
     assert.equal(outside.status, 404, show(outside));
+    const stray = await call(origin, "PATCH", `/api/schedule/single-shift/invitations/${invitationId}`, asAdmin, { payWay: "old_contract", casualDayRate: 900 });
+    assert.deepEqual([stray.status, stray.body.message], [400, SINGLE_SHIFT_REFUSALS.rate], show(stray));
     const back = await call(origin, "PATCH", `/api/schedule/single-shift/invitations/${invitationId}`, asAdmin, { payWay: "old_contract" });
-    assert.deepEqual([back.status, back.body.payLabel, Object.hasOwn(back.body, "pay")], [200, "On the old contract", false], show(back));
+    assert.deepEqual([back.status, back.body.payWay, back.body.payLabel, Object.hasOwn(back.body, "pay")], [200, "old_contract", "On the old contract", false], show(back));
+    const same = await call(origin, "PATCH", `/api/schedule/single-shift/invitations/${invitationId}`, asManager, { payWay: "old_contract" });
+    assert.equal(same.status, 200, show(same));
+    const [row] = await invitationsOf(former);
+    assert.deepEqual([row!.pay_basis, row!.casual_day_rate, row!.updated_by], ["old_contract", null, admin.id]);
     const entries = await activityOf(former);
-    assert.deepEqual(entries.map((e) => e.activity_type), ["single_shift_invited", "single_shift_pay_changed", "single_shift_pay_changed"]);
-    assert.equal(entries[2]!.created_by, admin.id);
-    assert.deepEqual(entries[2]!.metadata.to, { payWay: "old_contract" });
+    assert.deepEqual(entries.map((e) => e.activity_type), ["single_shift_invited", "single_shift_pay_changed"]);
+    assert.equal(entries[1]!.created_by, admin.id);
+    assert.deepEqual([entries[1]!.metadata.from, entries[1]!.metadata.to], [{ payWay: "casual_day_rate" }, { payWay: "old_contract" }]);
+    assert.match(entries[1]!.summary_text, /single shift on .*, on the old contract$/);
+    assert.equal("casualDayRate" in entries[1]!.metadata, false);
     noFigure(entries);
   });
-  await check("two single shifts on one day are accepted, each its own way; a day-rate contract's shift is on the old contract by default", async () => {
+  await check("two single shifts on one day are accepted, on the old contract; a day-rate contract's shift too; a casual day rate stored before the hold is read as such", async () => {
     const dr = await invite(origin, asManager, { employeeId: dayRater, shiftRowId: EVENING, shiftDate: SHIFT_DAY });
     assert.deepEqual([dr.status, dr.body.payLabel], [201, "On the old contract"], show(dr));
-    const np = await invite(origin, asManager, { employeeId: noProfile, shiftRowId: EVENING, shiftDate: SHIFT_DAY, payWay: "casual_day_rate", casualDayRate: 800 });
-    assert.deepEqual([np.status, np.body.payLabel, np.body.casualDayRate], [201, "Casual day rate", null], show(np));
+    const np = await invite(origin, asManager, { employeeId: noProfile, shiftRowId: EVENING, shiftDate: SHIFT_DAY });
+    assert.deepEqual([np.status, np.body.payLabel, np.body.casualDayRate], [201, "On the old contract", null], show(np));
+    const held = await invite(origin, asManager, { employeeId: noProfile, shiftRowId: EARLY, shiftDate: SHIFT_DAY, payWay: "casual_day_rate", casualDayRate: 800 });
+    assert.deepEqual([held.status, held.body.message], [400, SINGLE_SHIFT_REFUSALS.casualHeld], show(held));
+    await q("update single_shift_invitations set pay_basis = 'casual_day_rate', casual_day_rate = 800 where id = $1", [np.body.id]);
     const read = (await shiftsOn(origin, asAdmin, BRANCH, SHIFT_DAY, SHIFT_DAY)).body as { id: string; payLabel: string }[];
     assert.equal(read.find((x) => x.id === np.body.id)!.payLabel, "Casual day rate ฿800 a day", "the administrator reads the rate");
     const early = await invite(origin, asManager, { employeeId: noProfile, shiftRowId: EARLY, shiftDate: SHIFT_DAY });
@@ -757,95 +766,49 @@ try {
   });
 
 
-  // ── 10. Pay in the activity log (SCRUM-1058) ───────────────────────────────
-  console.log("10. pay in the activity log:");
-  // ZZ TEST entries of the kinds that carry pay: a salary change, as the
-  // employee editor writes it, and a contract generated with a salary change
-  // among its employee changes, beside the single shift's own pay switches.
-  const SALARY_ENTRY = randomUUID();
-  const CONTRACT_ENTRY = randomUUID();
-  await q(
-    `insert into activity_log (id, tenant_id, branch_id, employee_id, activity_type, summary_text, metadata_json, created_by)
-     values ($1, $2, $3, $4, 'salary_change', $5, $6, $7)`,
-    [SALARY_ENTRY, TENANT, BRANCH, current, "ZZ TEST salary changed from ฿10,000 to ฿11,000", JSON.stringify({ oldValue: 10000, newValue: 11000 }), admin.id],
-  );
-  await q(
-    `insert into activity_log (id, tenant_id, branch_id, employee_id, activity_type, summary_text, metadata_json, created_by)
-     values ($1, $2, $3, $4, 'employee_updated', 'Employee updated during contract generation', $5, $6)`,
-    [CONTRACT_ENTRY, TENANT, BRANCH, current, JSON.stringify({
-      source: "contract_generation",
-      changes: { defaultMergeData: { old: { salaryThb: 10000, positionTitle: "ZZ TEST A" }, new: { salaryThb: 11000, positionTitle: "ZZ TEST B" } } },
-    }), admin.id],
-  );
+  // ── 10. The single shift's pay switch in the activity log (SCRUM-1058) ────
+  // The rule itself — a salary change, pay fields in other entries' metadata,
+  // the doors on the log — is tests/activity-log-pay.check.ts's. Here only the
+  // single shift's own entries: the pay switch reaches the salary roles alone,
+  // the invitation reaches every reader of the branch.
+  console.log("10. the single shift's pay switch in the activity log:");
+  const PAY_SWITCH = "single_shift_pay_changed";
   const stored = async () => q<{ id: string; activity_type: string; summary_text: string; metadata_json: string | null }>(
     "select id, activity_type, summary_text, metadata_json from activity_log where tenant_id = $1 order by id", [TENANT]);
   const asStaffNow = await signIn(origin, staff.email);
   const asManagerNow = await signIn(origin, manager.email);
   const asAdminNow = await signIn(origin, admin.email);
   const before = await stored();
-  const PAY_TYPES = ["salary_change", "single_shift_pay_changed"];
   const logs = async (cookie: string, query: string) => {
     const res = await call(origin, "GET", `/api/activity-logs?limit=500${query}`, cookie);
     assert.equal(res.status, 200, show(res));
     return res.body as { logs: { id: string; activityType: string; summaryText: string; metadataJson: string | null }[]; totalCount: number };
   };
-  const payFree = (text: string) => assert.doesNotMatch(text, /10,000|11,000|10000|11000|salaryThb/, text);
   const readers: [string, string][] = [["staff", asStaffNow], ["a manager", asManagerNow]];
-  await check("staff and a manager get the log without its pay entries, the count too; an administrator gets them", async () => {
+  await check("staff and a manager get the log without the shift's pay switch, the count too; its invitations reach them; an administrator gets it whole", async () => {
     const all = await logs(asAdminNow, `&branchId=${BRANCH}`);
-    const pay = all.logs.filter((l) => PAY_TYPES.includes(l.activityType));
-    assert.ok(pay.some((l) => l.id === SALARY_ENTRY), "the salary change is the administrator's to read");
-    assert.equal(pay.filter((l) => l.activityType === "single_shift_pay_changed").length, 2, "the single shift's two pay switches");
+    const switches = all.logs.filter((l) => l.activityType === PAY_SWITCH);
+    assert.equal(switches.length, 1, "the one switch back to the old contract");
+    const invited = all.logs.filter((l) => l.activityType === "single_shift_invited").map((l) => l.id).sort();
+    assert.ok(invited.length >= 1, "the invitations are in the log");
     for (const [who, cookie] of readers) {
       const theirs = await logs(cookie, `&branchId=${BRANCH}`);
-      assert.deepEqual(theirs.logs.filter((l) => PAY_TYPES.includes(l.activityType)), [], who);
-      assert.equal(theirs.totalCount, all.totalCount - pay.length, who);
-      assert.deepEqual(theirs.logs.map((l) => l.id).sort(), all.logs.filter((l) => !PAY_TYPES.includes(l.activityType)).map((l) => l.id).sort(), `${who}: the rest unchanged`);
-      payFree(JSON.stringify(theirs));
+      assert.deepEqual(theirs.logs.filter((l) => l.activityType === PAY_SWITCH), [], who);
+      assert.equal(theirs.totalCount, all.totalCount - switches.length, who);
+      assert.deepEqual(theirs.logs.filter((l) => l.activityType === "single_shift_invited").map((l) => l.id).sort(), invited, `${who}: the invitations`);
+      assert.deepEqual(theirs.logs.map((l) => l.id).sort(), all.logs.filter((l) => l.activityType !== PAY_SWITCH).map((l) => l.id).sort(), `${who}: the rest unchanged`);
     }
   });
-  await check("not by filter, employee, search or summary either", async () => {
+  await check("not by filter, employee or search either; the administrator finds it by filter; nothing stored is deleted or changed", async () => {
     for (const [who, cookie] of readers) {
-      for (const query of [
-        "&types=salary_change", "&types=single_shift_pay_changed", "&types=salary_change,single_shift_pay_changed",
-        `&employeeId=${current}&types=salary_change`, `&employeeId=${former}&types=single_shift_pay_changed`,
-        "&search=salary", "&search=" + encodeURIComponent("฿"),
-      ]) {
+      for (const query of [`&types=${PAY_SWITCH}`, `&employeeId=${former}&types=${PAY_SWITCH}`, `&employeeId=${former}`, "&search=" + encodeURIComponent("single shift")]) {
         const res = await logs(cookie, query);
-        assert.deepEqual(res.logs.filter((l) => PAY_TYPES.includes(l.activityType)), [], `${who} ${query}`);
+        assert.deepEqual(res.logs.filter((l) => l.activityType === PAY_SWITCH), [], `${who} ${query}`);
         if (query.includes("types=")) assert.deepEqual([res.logs.length, res.totalCount], [0, 0], `${who} ${query}`);
-        payFree(JSON.stringify(res));
       }
-      const mine = await logs(cookie, `&employeeId=${current}`);
-      assert.ok(!mine.logs.some((l) => l.id === SALARY_ENTRY), who);
-      const summary = await call(origin, "GET", `/api/activity-logs/summary?branchId=${BRANCH}&sinceDays=30`, cookie);
-      assert.deepEqual([summary.status, summary.body.salary_change], [200, 0], `${who}: ${show(summary)}`);
     }
-    const adminSummary = await call(origin, "GET", `/api/activity-logs/summary?branchId=${BRANCH}&sinceDays=30`, asAdminNow);
-    assert.deepEqual([adminSummary.status, adminSummary.body.salary_change], [200, 1], show(adminSummary));
-    const adminFiltered = await logs(asAdminNow, "&types=salary_change");
-    assert.deepEqual(adminFiltered.logs.map((l) => [l.id, l.summaryText]), [[SALARY_ENTRY, "ZZ TEST salary changed from ฿10,000 to ฿11,000"]]);
-  });
-  await check("another entry's pay fields are taken out of its metadata for them; the entry and its other fields stay", async () => {
-    for (const [who, cookie] of readers) {
-      const entry = (await logs(cookie, `&employeeId=${current}`)).logs.find((l) => l.id === CONTRACT_ENTRY);
-      assert.ok(entry, who);
-      assert.equal(entry!.summaryText, "Employee updated during contract generation");
-      assert.deepEqual(JSON.parse(entry!.metadataJson!), {
-        source: "contract_generation",
-        changes: { defaultMergeData: { old: { positionTitle: "ZZ TEST A" }, new: { positionTitle: "ZZ TEST B" } } },
-      }, who);
-    }
-    const whole = (await logs(asAdminNow, `&employeeId=${current}`)).logs.find((l) => l.id === CONTRACT_ENTRY);
-    assert.equal(JSON.parse(whole!.metadataJson!).changes.defaultMergeData.new.salaryThb, 11000);
-  });
-  await check("no other door reads the log: no entry by id, no export; the stored entries are unchanged", async () => {
-    const byId = await call(origin, "GET", `/api/activity-logs/${SALARY_ENTRY}`, asStaffNow);
-    assert.notEqual(byId.status, 200, show(byId));
-    payFree(JSON.stringify(byId.body));
-    const routes = readFileSync(join(APP_DIR, "server", "routes.ts"), "utf8");
-    const doors = Array.from(routes.matchAll(/app\.(get|post|put|patch|delete)\("(\/api\/activity-log[^"]*)"/g)).map((m) => `${m[1]} ${m[2]}`);
-    assert.deepEqual(doors, ["get /api/activity-logs", "get /api/activity-logs/summary", "post /api/activity-logs/backfill-departures"], "a new door on the log takes the same rule");
+    const adminFiltered = await logs(asAdminNow, `&types=${PAY_SWITCH}`);
+    assert.deepEqual([adminFiltered.totalCount, adminFiltered.logs.map((l) => l.activityType)], [1, [PAY_SWITCH]]);
     assert.deepEqual(await stored(), before, "nothing stored is deleted or changed");
   });
 

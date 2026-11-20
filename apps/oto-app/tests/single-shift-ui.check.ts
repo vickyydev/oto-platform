@@ -8,11 +8,12 @@
 //   1. The dialog lists the branch's former employees; the pay starts "On the
 //      old contract"; inviting one sends that shift and day, the old contract
 //      and no rate.
-//   2. Switched to "Casual day rate", the rate is asked for: no invite until a
-//      whole number is typed; then the POST carries the casual day rate.
+//   2. "Casual day rate" is shown, disabled, with its line (the owner's N1 is
+//      open): a click leaves the old contract; the POST carries no rate.
 //   3. A single shift already on this shift is listed with how it is paid, and
-//      no figure. "Change pay" switches it to a casual day rate (PATCH with the
-//      rate) and back to the old contract.
+//      no figure. "Change pay" cannot switch it to a casual day rate; one
+//      stored on a casual day rate before the hold is switched back to the
+//      old contract (PATCH), and nothing else is saved.
 //   4. Nobody is locked out by a rule of the dialog's own: somebody already on
 //      a single shift that day can be picked (the schedule's checks decide).
 //
@@ -23,7 +24,7 @@ import { createRequire, Module } from "node:module";
 import { fileURLToPath } from "node:url";
 import { buildSync } from "esbuild";
 import { JSDOM } from "jsdom";
-import { NO_PAYROLL_PROFILE_HINT } from "../shared/singleShift";
+import { NO_PAYROLL_PROFILE_HINT, SINGLE_SHIFT_REFUSALS } from "../shared/singleShift";
 
 const app = fileURLToPath(new URL("../", import.meta.url));
 const dom = new JSDOM("<!doctype html><html><body></body></html>", { url: "http://localhost/scheduling", pretendToBeVisual: true });
@@ -178,23 +179,24 @@ const cases: Record<string, () => Promise<void>> = {
     assert.deepEqual(writes[0]!.body, { employeeId: NOK, shiftRowId: ROW, shiftDate: DAY, payWay: "old_contract", casualDayRate: null });
     assert.equal(required(`single-shift-pay-${NOK}`).textContent, "On the old contract");
   },
-  "a casual day rate asks for the rate, whole baht, before the invite goes; then sends it": async () => {
+  // The owner's N1 is open: the casual day rate is shown, disabled, with its line, and cannot be chosen.
+  "the casual day rate is shown but cannot be chosen, with its line; a click leaves the old contract; the invite goes on the old contract": async () => {
     former = [{ id: NOK, name: "ZZ Nok", lastWorkingDay: "2026-11-01", payrollProfile: true }];
     shifts = [];
     await mount();
+    const casual = required("single-shift-invite-casual") as HTMLButtonElement;
+    assert.equal(casual.disabled, true, "the choice is disabled");
+    assert.equal(required("single-shift-invite-casual-held").textContent, SINGLE_SHIFT_REFUSALS.casualHeld);
     await click(required(`button-single-shift-${NOK}`));
-    await click(required("single-shift-invite-casual"));
-    assert.equal(checked("single-shift-invite-casual"), true);
-    required("single-shift-invite-rate");
-    assert.equal((required("button-single-shift-invite") as HTMLButtonElement).disabled, true, "no rate yet");
-    await fill("single-shift-invite-rate", "950.5");
-    assert.equal((required("button-single-shift-invite") as HTMLButtonElement).disabled, true, "not whole baht");
-    await fill("single-shift-invite-rate", "1200");
+    await click(casual);
+    assert.equal(checked("single-shift-invite-casual"), false);
+    assert.equal(checked("single-shift-invite-old-contract"), true);
+    assert.equal(byTestId("single-shift-invite-rate"), null, "no rate asked for");
     await click(required("button-single-shift-invite"));
-    assert.deepEqual(writes.map((w) => [w.method, w.body.payWay, w.body.casualDayRate]), [["POST", "casual_day_rate", 1200]]);
-    assert.equal(required(`single-shift-pay-${NOK}`).textContent, "Casual day rate ฿1,200 a day");
+    assert.deepEqual(writes.map((w) => [w.method, w.body.payWay, w.body.casualDayRate]), [["POST", "old_contract", null]]);
+    assert.equal(required(`single-shift-pay-${NOK}`).textContent, "On the old contract");
   },
-  "a shift already made shows how it is paid and no figure; Change pay switches both ways": async () => {
+  "a shift already made shows how it is paid and no figure; Change pay cannot switch it to the casual day rate": async () => {
     former = [{ id: NOK, name: "ZZ Nok", lastWorkingDay: "2026-11-01", payrollProfile: true }];
     shifts = [shift("s-1", NOK, "ZZ Nok", "old_contract", null)];
     await mount();
@@ -203,17 +205,13 @@ const cases: Record<string, () => Promise<void>> = {
     assert.equal(byTestId(`single-shift-amount-${NOK}`), null);
     assert.doesNotMatch(doc.body.textContent!, /for the shift|÷/);
     await click(button("Change pay"));
-    await click(required(`single-shift-change-${NOK}-casual`));
-    await fill(`single-shift-change-${NOK}-rate`, "1100");
-    await click(button("Save pay"));
-    assert.deepEqual(writes.at(-1), { method: "PATCH", path: "/api/schedule/single-shift/invitations/s-1", body: { payWay: "casual_day_rate", casualDayRate: 1100 } });
-    assert.equal(required(`single-shift-pay-${NOK}`).textContent, "Casual day rate ฿1,100 a day");
-    await click(button("Change pay"));
-    assert.equal(checked(`single-shift-change-${NOK}-casual`), true, "opens on the way it is paid now");
-    await click(required(`single-shift-change-${NOK}-old-contract`));
-    await click(button("Save pay"));
-    assert.deepEqual(writes.at(-1)!.body, { payWay: "old_contract", casualDayRate: null });
-    assert.equal(required(`single-shift-pay-${NOK}`).textContent, "On the old contract");
+    const casual = required(`single-shift-change-${NOK}-casual`) as HTMLButtonElement;
+    assert.equal(casual.disabled, true, "the choice is disabled");
+    assert.equal(required(`single-shift-change-${NOK}-casual-held`).textContent, SINGLE_SHIFT_REFUSALS.casualHeld);
+    await click(casual);
+    assert.equal(checked(`single-shift-change-${NOK}-old-contract`), true, "stays on the old contract");
+    assert.equal(byTestId(`single-shift-change-${NOK}-rate`), null, "no rate asked for");
+    assert.deepEqual(writes, [], "nothing sent");
   },
   "the casual way shows its rate and no figure; somebody already on a single shift that day can still be picked": async () => {
     former = [{ id: NOK, name: "ZZ Nok", lastWorkingDay: "2026-11-01", payrollProfile: true }, { id: PIM, name: "ZZ Pim", lastWorkingDay: null, payrollProfile: true }];
@@ -226,16 +224,21 @@ const cases: Record<string, () => Promise<void>> = {
     assert.equal(required(`button-single-shift-${NOK}`).textContent, "ZZ NokLeft after 2026-11-01");
   },
   // SCRUM-1055: a reader below the salary roles gets the casual way in words, the rate withheld by the server.
-  "the casual way without its rate, as a manager reads it: the words alone; Change pay asks for the rate again": async () => {
+  "the casual way without its rate, as a manager reads it: the words alone; Change pay opens on it and saves the old contract only": async () => {
     former = [{ id: NOK, name: "ZZ Nok", lastWorkingDay: "2026-11-01", payrollProfile: true }];
     shifts = [{ ...shift("s-1", NOK, "ZZ Nok", "casual_day_rate", 900), casualDayRate: null, payLabel: "Casual day rate" }];
     await mount();
     assert.equal(required(`single-shift-pay-${NOK}`).textContent, "Casual day rate");
     assert.doesNotMatch(doc.body.textContent!, /฿/);
     await click(button("Change pay"));
-    assert.equal(checked(`single-shift-change-${NOK}-casual`), true);
+    assert.equal(checked(`single-shift-change-${NOK}-casual`), true, "opens on the way it is paid now");
     assert.equal((required(`single-shift-change-${NOK}-rate`) as HTMLInputElement).value, "", "no rate to show");
-    assert.equal(button("Save pay").disabled, true, "a casual way needs a rate typed");
+    assert.equal(button("Save pay").disabled, true, "the casual way is not saved again");
+    await click(required(`single-shift-change-${NOK}-old-contract`));
+    assert.equal(button("Save pay").disabled, false);
+    await click(button("Save pay"));
+    assert.deepEqual(writes.at(-1), { method: "PATCH", path: "/api/schedule/single-shift/invitations/s-1", body: { payWay: "old_contract", casualDayRate: null } });
+    assert.equal(required(`single-shift-pay-${NOK}`).textContent, "On the old contract");
   },
   // SCRUM-1055: payroll pays the old contract from the payroll profile; without one it cannot.
   "a former employee with no payroll profile is marked, and the old contract says payroll cannot pay it yet": async () => {
@@ -248,8 +251,7 @@ const cases: Record<string, () => Promise<void>> = {
     await click(required(`button-single-shift-${NOK}`));
     assert.equal(required("single-shift-no-payroll-profile").textContent, NO_PAYROLL_PROFILE_HINT);
     await click(required("single-shift-invite-casual"));
-    assert.equal(byTestId("single-shift-no-payroll-profile"), null, "not on a casual day rate");
-    await click(required("single-shift-invite-old-contract"));
+    assert.equal(required("single-shift-no-payroll-profile").textContent, NO_PAYROLL_PROFILE_HINT, "the casual day rate cannot take it away");
     await click(required(`button-single-shift-${PIM}`));
     assert.equal(byTestId("single-shift-no-payroll-profile"), null, "not for somebody payroll has a profile for");
   },

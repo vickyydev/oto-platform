@@ -74,7 +74,12 @@ export function projectRun(calc: CompanyCalculation, names: { ids: Map<string, s
   if (unknown.size) throw new Error(`the run names ids this projection cannot name: ${[...unknown].join(", ")}`);
   // When a reward assignment was saved is a time of the run that entered it, never a figure.
   text = text.replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/g, "(saved at)");
-  return canonical(JSON.parse(text));
+  return canonical(JSON.parse(withoutRunDay(text)));
+}
+
+/** The demo POS source names the day it was read ("sample sync 2026-11-19"): the run's day, never a figure. */
+export function withoutRunDay(text: string): string {
+  return text.replace(/sample sync \d{4}-\d{2}-\d{2}/g, "sample sync (run day)");
 }
 
 /** The people of one projected entity, by stable name. */

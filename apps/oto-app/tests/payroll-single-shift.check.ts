@@ -43,7 +43,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
 import { gunzipSync, gzipSync, strFromU8, strToU8 } from "fflate";
-import { projectRun, stableNames } from "./payroll/run-projection";
+import { projectRun, stableNames, withoutRunDay } from "./payroll/run-projection";
 import { SINGLE_SHIFT_REFUSALS } from "../shared/singleShift";
 
 // The engine's answer depends on the ORDER of the people's ids (the world is
@@ -86,7 +86,8 @@ try {
     console.log(`payroll-single-shift.check: baseline recorded on ${recordedOn}`);
     process.exit(0);
   }
-  const baseline = JSON.parse(strFromU8(gunzipSync(new Uint8Array(readFileSync(BASELINE))))) as { recordedOn: string; month: string; projection: unknown };
+  // The baseline was recorded on another day: the demo source's sync day is masked on both sides.
+  const baseline = JSON.parse(withoutRunDay(strFromU8(gunzipSync(new Uint8Array(readFileSync(BASELINE)))))) as { recordedOn: string; month: string; projection: unknown };
   // DUMP_PROJECTION=<file> writes both sides, to read a difference whole.
   if (process.env.DUMP_PROJECTION) writeFileSync(process.env.DUMP_PROJECTION, JSON.stringify({ now: projection, then: baseline.projection }, null, 1));
   await check(`the golden month is the run recorded before the change (${baseline.recordedOn.slice(0, 9)}), figure for figure and line for line`, () => {
@@ -278,7 +279,12 @@ try {
     const made = await callDuring(gDuring, "admin", "POST", "/api/schedule/single-shift/invitations", { employeeId: monthly, shiftRowId: row.id, shiftDate: `${MONTH}-20` });
     assert.deepEqual([made.status, made.body.reasonCode, made.body.message], [409, "PAYROLL_LOCKED", SINGLE_SHIFT_REFUSALS.payrollLocked], JSON.stringify(made.body));
     const changed = await callDuring(gDuring, "admin", "PATCH", `/api/schedule/single-shift/invitations/${shiftA.invitation}`, { payWay: "casual_day_rate", casualDayRate: 900 });
-    assert.deepEqual([changed.status, changed.body.reasonCode], [409, "PAYROLL_LOCKED"], JSON.stringify(changed.body));
+    assert.deepEqual([changed.status, changed.body.reasonCode, changed.body.message], [400, "CASUAL_DAY_RATE_HELD", SINGLE_SHIFT_REFUSALS.casualHeld], JSON.stringify(changed.body));
+    // A casual day rate stored before the hold: switching it back would pay the locked month, so that is refused too.
+    await setWay("casual_day_rate", 900);
+    const back = await callDuring(gDuring, "admin", "PATCH", `/api/schedule/single-shift/invitations/${shiftA.invitation}`, { payWay: "old_contract" });
+    assert.deepEqual([back.status, back.body.reasonCode], [409, "PAYROLL_LOCKED"], JSON.stringify(back.body));
+    await setWay("old_contract", null);
     assert.deepEqual(await q("select id, pay_basis, casual_day_rate from single_shift_invitations where tenant_id = $1 order by id", [tenant]), before);
     assert.deepEqual(await q("select id from schedule_assignments where tenant_id = $1 order by id", [tenant]), assignments);
   });

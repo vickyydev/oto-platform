@@ -58,6 +58,13 @@ export const SINGLE_SHIFT_REFUSALS = {
   pastDate: "A single shift cannot be added on a past date.",
   rate: "Enter the casual day rate in whole baht, more than zero.",
   pastChange: "The pay of a shift on a past date cannot be changed.",
+  /**
+   * How a casual day rate is paid is not decided (the owner's N1; the app
+   * pays no casual workers today): the choice stays on the dialog, disabled,
+   * and the routes take no new invitation or change of pay to it. A shift
+   * stored on one before the hold keeps it and can be switched back.
+   */
+  casualHeld: "The pay rule for a casual day rate is being confirmed; use the old contract for now.",
   /** SCRUM-1055: the month's run that would pay the old contract is already locked (or paid). */
   payrollLocked: "Payroll for this month is locked, so a shift on the old contract could not be paid. The Owner must reopen the month in Payroll first.",
 } as const;

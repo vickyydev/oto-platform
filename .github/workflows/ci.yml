@@ -849,8 +849,8 @@ jobs:
           TSX_TSCONFIG_PATH=tests/tsconfig.jsx.json npx tsx tests/leave-types-manager-ui.check.ts
       # SCRUM-1038: a former employee invited to one shift (migration 0056) —
       # by a manager of the shift's branch, with the schedule's own checks;
-      # paid on the old contract or switched to a casual day rate, each choice
-      # in the activity log without a figure, no figure worked out anywhere;
+      # paid on the old contract (the casual day rate shown, not taken, until
+      # its pay rule is confirmed), each choice in the log without a figure;
       # payroll names every single shift it cannot pay, and why; the kiosk open
       # at that branch on that day alone, missed clocks for that day only; the
       # profile Left and the login in pay only throughout; the night batch and
