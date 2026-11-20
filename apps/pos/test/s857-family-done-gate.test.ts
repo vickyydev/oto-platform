@@ -151,7 +151,8 @@ describe('a gate run whose sale was cancelled while it saved', () => {
     expect(gate).toMatch(/guardian = await findOrCreateGateMember\([^)]*\)\);\s*if \(ownSale\(\)\) setMember\(guardian\);/);
     // (Where the SCRUM-887 hold is on the till, its `gateOnline.noteWrite()` is guarded the same way.)
     expect(gate).toMatch(/onSaved: \(slotId, child, guardianId\) => \{\s*if \(!ownSale\(\)\) return;\s*(?:gateOnline\.noteWrite\(\);\s*)?applySavedChild\(child, guardianId\);/);
-    expect(gate).toMatch(/gateVisitId = await confirmVisitChildren\([\s\S]*?\);\s*(?:if \(ownSale\(\)\) gateOnline\.noteWrite\(\);\s*)?if \(ownSale\(\)\) setConfirmedVisitId\(gateVisitId\);/);
+    // (SCRUM-1060: the gate's visit goes through `confirmHeldVisit`, which calls `confirmVisitChildren`.)
+    expect(gate).toMatch(/gateVisitId = await confirmHeldVisit\([\s\S]*?confirmVisitChildren\);\s*(?:if \(ownSale\(\)\) gateOnline\.noteWrite\(\);\s*)?if \(ownSale\(\)\) setConfirmedVisitId\(gateVisitId\);/);
     expect(gate).not.toMatch(/^\s*setMember\(guardian\);/m);
     expect(gate).not.toMatch(/^\s*setConfirmedVisitId\(gateVisitId\);/m);
   });

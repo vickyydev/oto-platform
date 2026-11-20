@@ -7,7 +7,7 @@ import { childDetailsDraft } from '@/components/shared/ChildDetailsFields';
 import type { SupervisedSlot } from '@/components/till/SupervisionGate';
 import { saveGateChildren, type HeldWriteKey } from '@/lib/gateChildren';
 import { currentLane, setLaneStation } from '@/lib/lane';
-import { heldVisitWrite, saveVisitChildren } from '@/lib/visitChildren';
+import { confirmHeldVisit, heldVisitWrite, saveVisitChildren } from '@/lib/visitChildren';
 import type { Member, SavedChild } from '@/types';
 
 /**
@@ -237,6 +237,44 @@ describe('SCRUM-1060 (1): the visit "Who\'s visiting today?" opens is held while
     expect(world.visits.size).toBe(2);
   });
 
+  /** One press of the drop-off gate's visit step, as Till.tsx wires it. */
+  const gateVisit = (keys: Map<string, HeldWriteKey>, openVisitId: string | null, childIds: string[]) =>
+    confirmHeldVisit(keys, openVisitId, { memberId: MEMBER, childIds }, confirmVisitChildren);
+
+  it('the gate: a lost reply and Continue again replays the visit, held as the window holds it', async () => {
+    const keys = new Map<string, HeldWriteKey>();
+    world.lose = 'gateway';
+    await expect(gateVisit(keys, null, [CHILD_A])).rejects.toMatchObject({ status: 504 });
+    const id = await gateVisit(keys, null, [CHILD_A]);
+    const sent = world.online.filter((c) => c.url === '/api/visits');
+    expect(sent.map((c) => c.body.id)).toEqual([id, id]);
+    expect(sent[1]!.key).toBe(sent[0]!.key);
+    expect(world.visits.size).toBe(1);
+  });
+
+  it('the gate: its visit answered, a later step failed, Continue again with that visit open sends the same children no second time', async () => {
+    const keys = new Map<string, HeldWriteKey>();
+    const id = await gateVisit(keys, null, [CHILD_A]);
+    // The till now holds the visit it was answered with (`confirmedVisitId`).
+    expect(await gateVisit(keys, id, [CHILD_A])).toBe(id);
+    expect(world.online.filter((c) => c.url === `/api/visits/${id}/children`)).toHaveLength(0);
+    expect(world.operations.size).toBe(0);
+    // Another child confirmed there is sent, onto that visit.
+    expect(await gateVisit(keys, id, [CHILD_A, CHILD_B])).toBe(id);
+    expect(world.online.filter((c) => c.url === `/api/visits/${id}/children`)).toHaveLength(1);
+    expect(world.visits.size).toBe(1);
+  });
+
+  it('the gate: a visit the membership check opened is sent to once for the same children, then not again', async () => {
+    const keys = new Map<string, HeldWriteKey>();
+    expect(await gateVisit(keys, OPEN_VISIT, [CHILD_A])).toBe(OPEN_VISIT);
+    expect(await gateVisit(keys, OPEN_VISIT, [CHILD_A])).toBe(OPEN_VISIT);
+    expect(world.online.filter((c) => c.url === `/api/visits/${OPEN_VISIT}/children`)).toHaveLength(1);
+    // A new sale's gate starts with a new map: sent again, as a new confirmation.
+    expect(await gateVisit(new Map(), OPEN_VISIT, [CHILD_A])).toBe(OPEN_VISIT);
+    expect(world.online.filter((c) => c.url === `/api/visits/${OPEN_VISIT}/children`)).toHaveLength(2);
+  });
+
   it('the window and the gate send their visit under the identity they hold', () => {
     const read = (...parts: string[]) => readFileSync(path.resolve(import.meta.dirname, '..', 'src', ...parts), 'utf8');
     const modal = read('components', 'till', 'VisitChildrenModal.tsx');
@@ -244,7 +282,8 @@ describe('SCRUM-1060 (1): the visit "Who\'s visiting today?" opens is held while
     expect(modal).toContain('writeKeys.current = new Map();');
     const till = read('pages', 'Till.tsx');
     const gate = till.slice(till.indexOf('const resolveSupervisionGate'), till.indexOf('const runSupervisionGate'));
-    expect(gate).toMatch(/gateVisitId = await confirmVisitChildren\(openVisitId, visit,\s+heldVisitWrite\(gateWriteKeysRef\.current, openVisitId, visit\)\);/);
+    // The gate's visit goes through `confirmHeldVisit`, which sends it under `heldVisitWrite` (below).
+    expect(gate).toContain('gateVisitId = await confirmHeldVisit(gateWriteKeysRef.current, openVisitId, visit, confirmVisitChildren);');
     // No visit is opened anywhere at the counter without one.
     expect(`${modal}${till}`).not.toMatch(/confirmVisitChildren\([^)]*\{\s*memberId/);
   });
