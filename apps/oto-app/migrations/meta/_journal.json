@@ -386,6 +386,13 @@
       "when": 1795140987385,
       "tag": "0056_single_shift_invitations",
       "breakpoints": true
+    },
+    {
+      "idx": 57,
+      "version": "7",
+      "when": 1795143098486,
+      "tag": "0057_otoapp_v_event_packages_serving_times",
+      "breakpoints": true
     }
   ]
 }
