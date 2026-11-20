@@ -215,9 +215,10 @@ export function BeoFetchFromChatDialog({
                   >
                     <span className="text-muted-foreground w-28 shrink-0">{c.label}:</span>
                     <span className="flex-1 min-w-[10rem] flex items-center gap-1.5 flex-wrap">
-                      <span className="line-through text-muted-foreground" data-testid="text-fetch-was">{c.was}</span>
+                      {/* SCRUM-1030: a note's lines each on their own line (the chat's added under the typed text). */}
+                      <span className="line-through text-muted-foreground whitespace-pre-line" data-testid="text-fetch-was">{c.was}</span>
                       <span aria-hidden="true">→</span>
-                      <span className="font-medium" data-testid="text-fetch-now">{c.now}</span>
+                      <span className="font-medium whitespace-pre-line" data-testid="text-fetch-now">{c.now}</span>
                       {c.said && <span className="text-xs text-muted-foreground">{`— the chat says "${c.said}"`}</span>}
                       <SourceMark field={{ from: c.from, changed: false }} />
                     </span>

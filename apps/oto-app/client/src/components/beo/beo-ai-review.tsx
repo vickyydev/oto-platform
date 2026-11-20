@@ -415,23 +415,38 @@ function ReviewSections({
   const pkg = packageOf(review, state.packageId.value);
   const proposedPkg = review.proposal.package;
   const groups = choiceGroupsOf(review, state.setMenuId.value);
-  // SCRUM-1031: the expected extra children and adults are counts of the same kind, at most the editor's 999.
-  const count = (field: Reviewed<number> | null, key: "numChildren" | "numAdults" | "expectedExtraKids" | "expectedExtraAdults", label: string) => (
+  const count = (field: Reviewed<number> | null, key: "numChildren" | "numAdults", label: string) => (
     <Row label={label} field={field} says={field?.from}>
       <Input
         type="number"
         min={0}
-        max={key === "expectedExtraKids" || key === "expectedExtraAdults" ? EXPECTED_EXTRA_MAX : undefined}
         className="h-8 w-24"
         value={field?.value ?? ""}
-        onChange={(e) => {
-          const n = Math.max(0, parseInt(e.target.value, 10) || 0);
-          set({ [key]: e.target.value === "" ? null : edited(field, key === "expectedExtraKids" || key === "expectedExtraAdults" ? Math.min(EXPECTED_EXTRA_MAX, n) : n) });
-        }}
+        onChange={(e) => set({ [key]: e.target.value === "" ? null : edited(field, Math.max(0, parseInt(e.target.value, 10) || 0)) })}
         data-testid={`input-ai-review-${key}`}
       />
     </Row>
   );
+  // SCRUM-1031: one expected extra count as the editor's Event Info writes it ("+ 2 children"), at most its 999.
+  const extra = (field: Reviewed<number> | null, key: "expectedExtraKids" | "expectedExtraAdults", words: string) => (
+    <span className="inline-flex items-center gap-1.5 mr-3">
+      <span className="text-muted-foreground" aria-hidden="true">+</span>
+      <Input
+        type="number"
+        min={0}
+        max={EXPECTED_EXTRA_MAX}
+        className="h-8 w-20 tabular-nums"
+        value={field?.value ?? ""}
+        onChange={(e) => set({ [key]: e.target.value === "" ? null : edited(field, Math.min(EXPECTED_EXTRA_MAX, Math.max(0, parseInt(e.target.value, 10) || 0))) })}
+        aria-label={`Expected extra ${words}`}
+        data-testid={`input-ai-review-${key}`}
+      />
+      <span>{words}</span>
+      <SourceMark field={field} />
+    </span>
+  );
+  const kidsExtra = state.expectedExtraKids ?? null;
+  const adultsExtra = state.expectedExtraAdults ?? null;
   const socks = state.socks ?? null;
   const time = (field: Reviewed<string> | null, key: "startTime" | "endTime" | "kidsFoodTime" | "adultsFoodTime" | "barServiceTime", label: string) => (
     <Row label={label} field={field} says={field?.from}>
@@ -645,8 +660,17 @@ function ReviewSections({
         })}
         {/* SCRUM-1031: the expected extra guests and the socks arrangement, after the package as the editor's
             Event Info has them; each only where the chat gives it. Information for reception, never the till's. */}
-        {(state.expectedExtraKids || review.proposal.event.expectedExtraKids) && count(state.expectedExtraKids ?? null, "expectedExtraKids", "Extra children")}
-        {(state.expectedExtraAdults || review.proposal.event.expectedExtraAdults) && count(state.expectedExtraAdults ?? null, "expectedExtraAdults", "Extra adults")}
+        {(kidsExtra || adultsExtra || review.proposal.event.expectedExtraKids || review.proposal.event.expectedExtraAdults) && (
+          <div className="space-y-0.5" data-testid="ai-review-expected-extra">
+            <div className="flex items-center gap-2 text-sm flex-wrap">
+              <span className="text-muted-foreground w-28 shrink-0">Expected extra:</span>
+              {extra(kidsExtra, "expectedExtraKids", "children")}
+              {extra(adultsExtra, "expectedExtraAdults", "adults")}
+            </div>
+            <ChatSays from={kidsExtra?.from} />
+            <ChatSays from={adultsExtra?.from} />
+          </div>
+        )}
         {(socks || review.proposal.event.socks) && (
           <Row label="Socks" field={socks?.value.arrangement ? socks : null} says={socks?.from}>
             <select
