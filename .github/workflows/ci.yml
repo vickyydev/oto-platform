@@ -1071,6 +1071,18 @@ jobs:
         env:
           TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
         run: npx tsx tests/beo-fill-questions.check.ts
+      # SCRUM-1031, SCRUM-1030: AI Fill reads the expected extra guests (a
+      # count only when the family states it) and the socks arrangement (an
+      # offer or a question nobody answered is never agreed), shows them in
+      # the review and writes them only on approval, on a party alone and
+      # never to the till; Fetch from chat offers the Kitchen Notes beside
+      # what the form holds, and the guests and socks too; an older party and
+      # a chat that names neither get no proposal.
+      - name: The app's AI fill extra guests, socks and fetched Kitchen Notes checks
+        if: steps.changes.outputs.app == 'true'
+        env:
+          TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
+        run: npx tsx tests/beo-fill-guests-socks.check.ts
       # SCRUM-978: what the read-fix lane's staging proof and the last two
       # BEO lanes' reviews left — the BEO PDF prints the adults' own extra
       # at its own price and no empty heading; the editor's Save writes the
