@@ -17,6 +17,7 @@ import {
   type BeoAiReview,
   type BeoAiSetMenuItem,
 } from "@shared/beoAiFill";
+import { EXPECTED_EXTRA_MAX, type SocksArrangement } from "@shared/beoGuestsSocks";
 import { paidLinesKeptWords, type BeoPaidLineKept } from "@shared/beoPaidLines";
 import { aiFillDateLine, type AiFillDateLine } from "./beo-ai-date";
 
@@ -250,6 +251,14 @@ export interface BeoAiReviewState {
   kidsFoodTime: Reviewed<string> | null;
   adultsFoodTime: Reviewed<string> | null;
   barServiceTime: Reviewed<string> | null;
+  /**
+   * SCRUM-1031: the expected extra children and adults the family states, and the socks
+   * arrangement (one of the editor's options; `note` with "other"); null where the chat gives
+   * none. Optional: a state made before this rule holds none.
+   */
+  expectedExtraKids?: Reviewed<number> | null;
+  expectedExtraAdults?: Reviewed<number> | null;
+  socks?: Reviewed<{ arrangement: SocksArrangement | null; note: string }> | null;
   /** The read date replaces the booked one only when this is ticked (and they differ). */
   useDate: boolean;
   /** SCRUM-827: the rest of the BEO, in the same pass. */
@@ -450,6 +459,10 @@ export function initialReviewState(
     kidsFoodTime: sourced(p.event.kidsFoodTime),
     adultsFoodTime: sourced(p.event.adultsFoodTime),
     barServiceTime: sourced(p.event.barServiceTime),
+    // SCRUM-1031: the expected extra guests and the socks arrangement, as the chat gives them.
+    expectedExtraKids: sourced(p.event.expectedExtraKids),
+    expectedExtraAdults: sourced(p.event.expectedExtraAdults),
+    socks: p.event.socks ? fresh({ arrangement: p.event.socks.value, note: p.event.socks.note ?? "" }, p.event.socks.from) : null,
     details: {
       title: text("title", d.title),
       bookingName: text("bookingName", d.bookingName),
@@ -1207,6 +1220,23 @@ export function approveBodyOf(
     event.whatsappPhoneRaw = phone.value.trim();
     note("whatsapp", phone);
   }
+  // SCRUM-1031: the expected extra guests and the socks arrangement, only where the chat (or the
+  // reviewer) gives them; "Not set" sends none (the party keeps its own), and the note goes with
+  // "Other / Custom" alone.
+  for (const k of ["expectedExtraKids", "expectedExtraAdults"] as const) {
+    const f = state[k];
+    if (f && Number.isInteger(f.value) && f.value >= 0 && f.value <= EXPECTED_EXTRA_MAX) {
+      event[k] = f.value;
+      note(k, f);
+    }
+  }
+  const socks = state.socks;
+  if (socks?.value.arrangement) {
+    event.socksArrangement = socks.value.arrangement;
+    const socksNote = socks.value.note.trim();
+    if (socks.value.arrangement === "other" && socksNote) event.socksNote = socksNote;
+    note("socksArrangement", socks);
+  }
   // SCRUM-904: when the food and the drinks are served, only where the chat (or the reviewer) gives a time.
   const service: NonNullable<BeoAiApproveBody["service"]> = {};
   for (const k of ["kidsFoodTime", "adultsFoodTime", "barServiceTime"] as const) {
@@ -1284,7 +1314,8 @@ export function approvedMarksOf(sources: BeoAiApproveBody["sources"]): ApprovedM
 
 /** The editor's sections, and the approved fields each one wears the "from the chat" chip for. */
 export const APPROVED_SECTIONS: Record<string, (field: string) => boolean> = {
-  "event-info": (f) => ["title", "childName", "numChildren", "numAdults", "startTime", "endTime", "eventDate", "bookingName", "locationText", "specialRequests", "activities", "decoration", "kidTurningAge", "whatsapp"].includes(f),
+  // SCRUM-1031: the expected extra guests and the socks arrangement are Event Info's too.
+  "event-info": (f) => ["title", "childName", "numChildren", "numAdults", "startTime", "endTime", "eventDate", "bookingName", "locationText", "specialRequests", "activities", "decoration", "kidTurningAge", "whatsapp", "expectedExtraKids", "expectedExtraAdults", "socksArrangement"].includes(f),
   // SCRUM-904: the shows approved are the Party Host section's Entertainment Acts too.
   "party-host": (f) => f.startsWith("team:partyHost") || f.startsWith("team:entertainmentHost") || f.startsWith("entertainment:"),
   "birthday-package": (f) => f === "package" || f.startsWith("addOn:") || f.startsWith("entertainment:"),

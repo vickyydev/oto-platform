@@ -7,6 +7,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
 import { AlertCircle, CalendarDays, CheckCircle2, ClipboardPaste, Gift, ListTodo, Loader2, MessageSquare, Music, Settings, Sparkles, Trash2, Users, Utensils, Wallet } from "lucide-react";
 import { BEO_AI_MENUS, adultsSetMenuLineWords, beoAiMatchLabel, beoAiSourceLabel, chatTotalWords, type BeoAiApproveBody, type BeoAiCakeMode, type BeoAiFrom, type BeoAiMenu, type BeoAiReview } from "@shared/beoAiFill";
+import { EXPECTED_EXTRA_MAX, SOCKS_ARRANGEMENTS, SOCKS_ARRANGEMENT_LABELS, SOCKS_NOTE_MAX, isSocksArrangement } from "@shared/beoGuestsSocks";
 import { dayLabel } from "@/lib/beo-ai-date";
 import { aiReviewCakeNotSaidNote } from "@/lib/beo-ai-preview";
 import {
@@ -414,18 +415,24 @@ function ReviewSections({
   const pkg = packageOf(review, state.packageId.value);
   const proposedPkg = review.proposal.package;
   const groups = choiceGroupsOf(review, state.setMenuId.value);
-  const count = (field: Reviewed<number> | null, key: "numChildren" | "numAdults", label: string) => (
+  // SCRUM-1031: the expected extra children and adults are counts of the same kind, at most the editor's 999.
+  const count = (field: Reviewed<number> | null, key: "numChildren" | "numAdults" | "expectedExtraKids" | "expectedExtraAdults", label: string) => (
     <Row label={label} field={field} says={field?.from}>
       <Input
         type="number"
         min={0}
+        max={key === "expectedExtraKids" || key === "expectedExtraAdults" ? EXPECTED_EXTRA_MAX : undefined}
         className="h-8 w-24"
         value={field?.value ?? ""}
-        onChange={(e) => set({ [key]: e.target.value === "" ? null : edited(field, Math.max(0, parseInt(e.target.value, 10) || 0)) })}
+        onChange={(e) => {
+          const n = Math.max(0, parseInt(e.target.value, 10) || 0);
+          set({ [key]: e.target.value === "" ? null : edited(field, key === "expectedExtraKids" || key === "expectedExtraAdults" ? Math.min(EXPECTED_EXTRA_MAX, n) : n) });
+        }}
         data-testid={`input-ai-review-${key}`}
       />
     </Row>
   );
+  const socks = state.socks ?? null;
   const time = (field: Reviewed<string> | null, key: "startTime" | "endTime" | "kidsFoodTime" | "adultsFoodTime" | "barServiceTime", label: string) => (
     <Row label={label} field={field} says={field?.from}>
       <Input
@@ -636,6 +643,40 @@ function ReviewSections({
             </div>
           );
         })}
+        {/* SCRUM-1031: the expected extra guests and the socks arrangement, after the package as the editor's
+            Event Info has them; each only where the chat gives it. Information for reception, never the till's. */}
+        {(state.expectedExtraKids || review.proposal.event.expectedExtraKids) && count(state.expectedExtraKids ?? null, "expectedExtraKids", "Extra children")}
+        {(state.expectedExtraAdults || review.proposal.event.expectedExtraAdults) && count(state.expectedExtraAdults ?? null, "expectedExtraAdults", "Extra adults")}
+        {(socks || review.proposal.event.socks) && (
+          <Row label="Socks" field={socks?.value.arrangement ? socks : null} says={socks?.from}>
+            <select
+              className={cn(SELECT, "w-56 max-w-full")}
+              value={socks?.value.arrangement ?? ""}
+              onChange={(e) => {
+                const arrangement = isSocksArrangement(e.target.value) ? e.target.value : null;
+                set({ socks: edited(socks, { note: socks?.value.note ?? "", arrangement }) });
+              }}
+              aria-label="Socks (payment)"
+              data-testid="select-ai-review-socks"
+            >
+              <option value="">Not set</option>
+              {SOCKS_ARRANGEMENTS.map((a) => (
+                <option key={a} value={a}>{SOCKS_ARRANGEMENT_LABELS[a]}</option>
+              ))}
+            </select>
+            {socks?.value.arrangement === "other" && (
+              <Input
+                className="h-8 flex-1 min-w-[10rem]"
+                maxLength={SOCKS_NOTE_MAX}
+                placeholder="The arrangement, in a few words"
+                value={socks.value.note}
+                onChange={(e) => set({ socks: edited(socks, { ...socks.value, note: e.target.value }) })}
+                aria-label="The socks arrangement"
+                data-testid="input-ai-review-socks-note"
+              />
+            )}
+          </Row>
+        )}
       </Section>
 
       {/* SCRUM-827: the POS box (Party Details) and the setup plan, from the team's confirmation. */}

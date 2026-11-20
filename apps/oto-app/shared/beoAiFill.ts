@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { EXPECTED_EXTRA_MAX, SOCKS_ARRANGEMENTS, SOCKS_NOTE_MAX, type SocksArrangement } from "./beoGuestsSocks";
 import { foldDishName, sameKitchenDishNames, type KitchenLineLike } from "./kitchenAdults";
 import type { OneDeposit } from "./partyDeposit";
 
@@ -355,6 +356,18 @@ export interface BeoAiProposal {
     kidsFoodTime?: BeoAiSourced<string>;
     adultsFoodTime?: BeoAiSourced<string>;
     barServiceTime?: BeoAiSourced<string>;
+    /**
+     * SCRUM-1031 — the operations brief's E3 and E4, as the owner kept them (information on the
+     * BEO and the Staff BEO only, never the till's): how many children and adults the family
+     * expects beyond the party's planned guests, only a count the family itself writes
+     * (`guestCountStated`), and how the socks are paid for, one of the editor's three options
+     * ("other" with the chat's words for it). Written only on approval, into the party's own
+     * four columns; absent from a server before this rule, and on an event the till does not
+     * settle as a party.
+     */
+    expectedExtraKids?: BeoAiSourced<number>;
+    expectedExtraAdults?: BeoAiSourced<number>;
+    socks?: BeoAiSourced<SocksArrangement> & { note?: string };
   };
   /**
    * SCRUM-787: `mode` null is a cake the chat times or describes without saying who brings it ("not said").
@@ -790,6 +803,15 @@ export const BeoAiApproveBodySchema = z
         /** SCRUM-904: the age the child turns, and the family's WhatsApp number as the reviewer left it. */
         kidTurningAge: z.number().int().min(0).max(120).optional(),
         whatsappPhoneRaw: z.string().trim().min(1).max(60).optional(),
+        /**
+         * SCRUM-1031: the expected extra children and adults and the socks arrangement, as the
+         * reviewer left them; the note only with "other" (absent: the party keeps its own note).
+         * Written on a party the till settles only, never sent to the till.
+         */
+        expectedExtraKids: z.number().int().min(0).max(EXPECTED_EXTRA_MAX).optional(),
+        expectedExtraAdults: z.number().int().min(0).max(EXPECTED_EXTRA_MAX).optional(),
+        socksArrangement: z.enum(SOCKS_ARRANGEMENTS).optional(),
+        socksNote: z.string().trim().min(1).max(SOCKS_NOTE_MAX).optional(),
       })
       .strict(),
     /**
