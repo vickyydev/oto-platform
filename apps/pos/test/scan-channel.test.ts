@@ -394,7 +394,10 @@ describe('SCRUM-201 — separate display transport and station presentation', ()
     await expect(childSaveHook.result.current.confirm('slot-1', 'child-1', patch, 'confirm-2')).resolves.toBe(false);
     await expect(childSaveHook.result.current.retry('slot-1', 'wrong-action')).resolves.toBe(false);
     await expect(childSaveHook.result.current.retry('slot-1', 'confirm-1')).resolves.toBe(true);
-    expect(writes.map(write => JSON.parse(String(write.body)))).toEqual([{ name: 'Child corrected' }, { name: 'Child corrected' }]);
+    // SCRUM-1060 — the keyed change names itself by the action id after its key's prefix, on both sends.
+    expect(writes.map(write => JSON.parse(String(write.body)))).toEqual([
+      { name: 'Child corrected', actionId: 'confirm-1' }, { name: 'Child corrected', actionId: 'confirm-1' },
+    ]);
     expect(writes.map(write => (write.headers as Record<string, string>)['idempotency-key']))
       .toEqual(['child-review:confirm-1', 'child-review:confirm-1']);
     expect(onSaved).toHaveBeenCalledExactlyOnceWith('slot-1', apiChild);
