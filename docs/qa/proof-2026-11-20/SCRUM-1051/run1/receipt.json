@@ -1,0 +1,525 @@
+{
+  "ticket": "SCRUM-1051",
+  "sha": "57b8ac5859f358cb602229f3325f5fc46f69ac76",
+  "startedAt": "2026-11-20T03:07:36.124Z",
+  "phase": "finished",
+  "points": {
+    "1-route-carries-times": {
+      "pass": true,
+      "pictures": [],
+      "shows": "GET /parties/:id for the party: Fruit skewers and Mini waffles each carry serviceTime 13:00 and serviceGroup \"ZZ Dessert\"; the other lines carry what the BEO stores",
+      "seen": {
+        "skewers": {
+          "name": "Fruit skewers",
+          "qty": 2,
+          "note": null,
+          "serviceTime": "13:00",
+          "serviceGroup": "ZZ Dessert"
+        },
+        "waffles": {
+          "name": "Mini waffles",
+          "qty": 1,
+          "note": null,
+          "serviceTime": "13:00",
+          "serviceGroup": "ZZ Dessert"
+        }
+      }
+    },
+    "2-slips-rendered": {
+      "pass": true,
+      "pictures": [
+        "SCRUM-1051/run1/p2-kitchen-slip-rendered.png",
+        "SCRUM-1051/run1/p2-bar-slip-rendered.png"
+      ],
+      "shows": "The kitchen slip composed from the route's answer prints the two ZZ Dessert dishes together under \"ZZ Dessert 13:00\", after the lines with no time, with nothing cut off on 80 mm paper; the bar slip beside it",
+      "seen": {
+        "dessert": [
+          "Fruit skewers",
+          "Mini waffles"
+        ],
+        "kitchenLines": [
+          {
+            "qty": 1,
+            "name": "Pizza 1: Hawaii",
+            "note": "not on the till menu"
+          },
+          {
+            "qty": 1,
+            "name": "Pizza 2: Hawaii",
+            "note": "not on the till menu"
+          },
+          {
+            "qty": 1,
+            "name": "Pizza 3: Hawaii",
+            "note": "not on the till menu"
+          },
+          {
+            "qty": 1,
+            "name": "Fried Rice: Chicken",
+            "note": "not on the till menu"
+          },
+          {
+            "qty": 1,
+            "name": "Sweets x2: Mini Waffles",
+            "note": "not on the till menu"
+          },
+          {
+            "qty": 1,
+            "name": "Mains 1: Chicken schnitzel",
+            "note": "not on the till menu"
+          },
+          {
+            "qty": 1,
+            "name": "Mains 2: Chicken Schnitzel",
+            "note": "not on the till menu"
+          },
+          {
+            "qty": 1,
+            "name": "French fries x3",
+            "note": "not on the till menu"
+          },
+          {
+            "qty": 1,
+            "name": "Fruit skewers x2",
+            "note": "not on the till menu"
+          },
+          {
+            "qty": 1,
+            "name": "Vegetable sticks x2",
+            "note": "not on the till menu"
+          },
+          {
+            "qty": 1,
+            "name": "Drink 1: Apple Juice",
+            "note": "not on the till menu"
+          },
+          {
+            "qty": 1,
+            "name": "Drink 2: Apple Juice",
+            "note": "not on the till menu"
+          },
+          {
+            "qty": 2,
+            "name": "Margherita pizza",
+            "note": "kids only · not on the till menu"
+          },
+          {
+            "qty": 2,
+            "name": "Fried rice",
+            "note": "no chilli · kids only · not on the till menu"
+          },
+          {
+            "qty": 3,
+            "name": "Fish fingers",
+            "note": "kids only · not on the till menu"
+          },
+          {
+            "qty": 3,
+            "name": "French fries",
+            "note": "kids only · not on the till menu"
+          },
+          {
+            "qty": 3,
+            "name": "Caesar salad",
+            "note": "adults only · not on the till menu"
+          },
+          {
+            "qty": 2,
+            "name": "Chicken wings",
+            "note": "adults only · not on the till menu"
+          },
+          {
+            "qty": 1,
+            "name": "Smoked salmon pizza",
+            "note": "adults only · not on the till menu"
+          },
+          {
+            "qty": 1,
+            "name": "Our Cake",
+            "note": "Cake time 13:30 · ZZ TEST chocolate, no nuts"
+          },
+          {
+            "qty": 2,
+            "name": "Fruit skewers",
+            "note": "kids only · not on the till menu",
+            "time": "13:00",
+            "group": "ZZ Dessert"
+          },
+          {
+            "qty": 1,
+            "name": "Mini waffles",
+            "note": "adults: (Sweets x2) · not on the till menu",
+            "time": "13:00",
+            "group": "ZZ Dessert"
+          }
+        ]
+      }
+    }
+  },
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/events/",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    }
+  ],
+  "odd": [],
+  "deployments": {
+    "oto-app-staging": {
+      "id": "dep-dbvrc62fngtc73a88fqg",
+      "status": "live",
+      "sha": "57b8ac5859f358cb602229f3325f5fc46f69ac76",
+      "containsProvedSha": true
+    },
+    "oto-api-staging": {
+      "id": "dep-dbvrdo740ujc73eksf9g",
+      "status": "live",
+      "sha": "57b8ac5859f358cb602229f3325f5fc46f69ac76",
+      "containsProvedSha": true
+    },
+    "oto-pos-staging": {
+      "id": "dep-dbvrg3afngtc73a8kh3g",
+      "status": "live",
+      "sha": "57b8ac5859f358cb602229f3325f5fc46f69ac76",
+      "containsProvedSha": true
+    },
+    "oto-pos-web-staging": {
+      "id": "dep-dbvrg3ks728c73bocsmg",
+      "status": "live",
+      "sha": "57b8ac5859f358cb602229f3325f5fc46f69ac76",
+      "containsProvedSha": true
+    }
+  },
+  "branch": {
+    "name": "Oto Play Park, Central Floresta",
+    "partySlipsStationId": null
+  },
+  "party": {
+    "id": "6f9d8d71-1d0e-4cb3-adb5-87947c89a52f",
+    "title": "ZZ TEST 1028 Staff BEO"
+  },
+  "checks": {
+    "routeLines": [
+      {
+        "name": "Pizza 1",
+        "qty": 1,
+        "note": null,
+        "serviceTime": null,
+        "serviceGroup": null
+      },
+      {
+        "name": "Pizza 2",
+        "qty": 1,
+        "note": null,
+        "serviceTime": null,
+        "serviceGroup": null
+      },
+      {
+        "name": "Pizza 3",
+        "qty": 1,
+        "note": null,
+        "serviceTime": null,
+        "serviceGroup": null
+      },
+      {
+        "name": "Fried Rice",
+        "qty": 1,
+        "note": null,
+        "serviceTime": null,
+        "serviceGroup": null
+      },
+      {
+        "name": "Sweets x2",
+        "qty": 1,
+        "note": null,
+        "serviceTime": null,
+        "serviceGroup": null
+      },
+      {
+        "name": "Mains 1",
+        "qty": 1,
+        "note": null,
+        "serviceTime": null,
+        "serviceGroup": null
+      },
+      {
+        "name": "Mains 2",
+        "qty": 1,
+        "note": null,
+        "serviceTime": null,
+        "serviceGroup": null
+      },
+      {
+        "name": "French fries x3",
+        "qty": 1,
+        "note": null,
+        "serviceTime": null,
+        "serviceGroup": null
+      },
+      {
+        "name": "Fruit skewers x2",
+        "qty": 1,
+        "note": null,
+        "serviceTime": null,
+        "serviceGroup": null
+      },
+      {
+        "name": "Vegetable sticks x2",
+        "qty": 1,
+        "note": null,
+        "serviceTime": null,
+        "serviceGroup": null
+      },
+      {
+        "name": "Drink 1",
+        "qty": 1,
+        "note": null,
+        "serviceTime": null,
+        "serviceGroup": null
+      },
+      {
+        "name": "Drink 2",
+        "qty": 1,
+        "note": null,
+        "serviceTime": null,
+        "serviceGroup": null
+      },
+      {
+        "name": "Margherita pizza",
+        "qty": 2,
+        "note": null,
+        "serviceTime": null,
+        "serviceGroup": null
+      },
+      {
+        "name": "Fried rice",
+        "qty": 2,
+        "note": "no chilli",
+        "serviceTime": null,
+        "serviceGroup": null
+      },
+      {
+        "name": "Fish fingers",
+        "qty": 3,
+        "note": null,
+        "serviceTime": null,
+        "serviceGroup": null
+      },
+      {
+        "name": "French fries",
+        "qty": 3,
+        "note": null,
+        "serviceTime": null,
+        "serviceGroup": null
+      },
+      {
+        "name": "Fruit skewers",
+        "qty": 2,
+        "note": null,
+        "serviceTime": "13:00",
+        "serviceGroup": "ZZ Dessert"
+      },
+      {
+        "name": "Mini waffles",
+        "qty": 1,
+        "note": null,
+        "serviceTime": "13:00",
+        "serviceGroup": "ZZ Dessert"
+      },
+      {
+        "name": "Caesar salad",
+        "qty": 3,
+        "note": null,
+        "serviceTime": null,
+        "serviceGroup": null
+      },
+      {
+        "name": "Chicken wings",
+        "qty": 2,
+        "note": null,
+        "serviceTime": null,
+        "serviceGroup": null
+      },
+      {
+        "name": "Smoked salmon pizza",
+        "qty": 1,
+        "note": null,
+        "serviceTime": null,
+        "serviceGroup": null
+      }
+    ],
+    "routeBar": [
+      {
+        "name": "Lemonade",
+        "qty": 4,
+        "serviceTime": null,
+        "serviceGroup": null
+      },
+      {
+        "name": "Orange juice",
+        "qty": 3,
+        "serviceTime": null,
+        "serviceGroup": null
+      },
+      {
+        "name": "Water",
+        "qty": 1,
+        "serviceTime": null,
+        "serviceGroup": null
+      }
+    ],
+    "slips": {
+      "slipsTime": "11:00",
+      "station": null
+    },
+    "composed": {
+      "kitchen": [
+        {
+          "qty": 1,
+          "name": "Pizza 1: Hawaii",
+          "note": "not on the till menu"
+        },
+        {
+          "qty": 1,
+          "name": "Pizza 2: Hawaii",
+          "note": "not on the till menu"
+        },
+        {
+          "qty": 1,
+          "name": "Pizza 3: Hawaii",
+          "note": "not on the till menu"
+        },
+        {
+          "qty": 1,
+          "name": "Fried Rice: Chicken",
+          "note": "not on the till menu"
+        },
+        {
+          "qty": 1,
+          "name": "Sweets x2: Mini Waffles",
+          "note": "not on the till menu"
+        },
+        {
+          "qty": 1,
+          "name": "Mains 1: Chicken schnitzel",
+          "note": "not on the till menu"
+        },
+        {
+          "qty": 1,
+          "name": "Mains 2: Chicken Schnitzel",
+          "note": "not on the till menu"
+        },
+        {
+          "qty": 1,
+          "name": "French fries x3",
+          "note": "not on the till menu"
+        },
+        {
+          "qty": 1,
+          "name": "Fruit skewers x2",
+          "note": "not on the till menu"
+        },
+        {
+          "qty": 1,
+          "name": "Vegetable sticks x2",
+          "note": "not on the till menu"
+        },
+        {
+          "qty": 1,
+          "name": "Drink 1: Apple Juice",
+          "note": "not on the till menu"
+        },
+        {
+          "qty": 1,
+          "name": "Drink 2: Apple Juice",
+          "note": "not on the till menu"
+        },
+        {
+          "qty": 2,
+          "name": "Margherita pizza",
+          "note": "kids only · not on the till menu"
+        },
+        {
+          "qty": 2,
+          "name": "Fried rice",
+          "note": "no chilli · kids only · not on the till menu"
+        },
+        {
+          "qty": 3,
+          "name": "Fish fingers",
+          "note": "kids only · not on the till menu"
+        },
+        {
+          "qty": 3,
+          "name": "French fries",
+          "note": "kids only · not on the till menu"
+        },
+        {
+          "qty": 3,
+          "name": "Caesar salad",
+          "note": "adults only · not on the till menu"
+        },
+        {
+          "qty": 2,
+          "name": "Chicken wings",
+          "note": "adults only · not on the till menu"
+        },
+        {
+          "qty": 1,
+          "name": "Smoked salmon pizza",
+          "note": "adults only · not on the till menu"
+        },
+        {
+          "qty": 1,
+          "name": "Our Cake",
+          "note": "Cake time 13:30 · ZZ TEST chocolate, no nuts"
+        },
+        {
+          "qty": 2,
+          "name": "Fruit skewers",
+          "note": "kids only · not on the till menu",
+          "time": "13:00",
+          "group": "ZZ Dessert"
+        },
+        {
+          "qty": 1,
+          "name": "Mini waffles",
+          "note": "adults: (Sweets x2) · not on the till menu",
+          "time": "13:00",
+          "group": "ZZ Dessert"
+        }
+      ],
+      "bar": [
+        {
+          "qty": 4,
+          "name": "Lemonade",
+          "note": "not on the till menu"
+        },
+        {
+          "qty": 3,
+          "name": "Orange juice",
+          "note": "not on the till menu"
+        },
+        {
+          "qty": 1,
+          "name": "Water",
+          "note": "not on the till menu"
+        }
+      ]
+    },
+    "kitchenOverflow": [],
+    "barOverflow": []
+  },
+  "passed": true,
+  "finishedAt": "2026-11-20T03:07:41.456Z"
+}
