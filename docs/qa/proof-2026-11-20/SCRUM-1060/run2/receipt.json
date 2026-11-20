@@ -1,0 +1,183 @@
+{
+  "ticket": "SCRUM-1060",
+  "sha": "65d81dd33210166286cd55d346dbfc5d252353ed",
+  "startedAt": "2026-11-20T02:59:33.433Z",
+  "phase": "finished",
+  "points": {
+    "3-gate-typed-size": {
+      "pass": true,
+      "pictures": [
+        "SCRUM-1060/run2/p3-desk-gate-1024-wide-name-typed.png"
+      ],
+      "shows": "The desk gate at 1024 wide: a name typed in \"Child's name\" draws at the box's own 18 px inside the 48 px box",
+      "seen": {
+        "typed": true,
+        "fontSize": "18px",
+        "boxHeight": 48,
+        "windowWidth": 1024,
+        "sideways": false
+      }
+    }
+  },
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/members",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    }
+  ],
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1f6e5-2dcd-7aa0-b86c-4c5eaa515471",
+      "name": "ZZ TEST SCRUM-1060 proof till 1795143573441",
+      "prefix": "Z06008"
+    },
+    {
+      "kind": "member",
+      "id": "01a1f6e5-2e24-7e7b-857b-d983ca7807d5"
+    }
+  ],
+  "checks": {
+    "gateBoxes": {
+      "viewport": {
+        "width": 1024,
+        "height": 1100
+      },
+      "boxes": [
+        {
+          "h": 48,
+          "top": 515,
+          "visible": true
+        },
+        {
+          "h": 48,
+          "top": 617,
+          "visible": true
+        }
+      ]
+    },
+    "gate": {
+      "typed": true,
+      "fontSize": "18px",
+      "boxHeight": 48,
+      "windowWidth": 1024,
+      "sideways": false
+    }
+  },
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": "reception signs in at the own till",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    }
+  ],
+  "cleanup": [
+    {
+      "kind": "sales-read-back",
+      "sales": []
+    },
+    {
+      "kind": "station",
+      "id": "01a1f6e5-2dcd-7aa0-b86c-4c5eaa515471",
+      "archived": true
+    },
+    {
+      "kind": "member",
+      "id": "01a1f6e5-2e24-7e7b-857b-d983ca7807d5",
+      "archived": true
+    },
+    {
+      "kind": "till-session",
+      "signedOut": true
+    },
+    {
+      "kind": "admin-session",
+      "signedOut": true
+    }
+  ],
+  "deployments": {
+    "oto-api-staging": {
+      "id": "dep-dbvquvfbuf8c73bciaj0",
+      "status": "live",
+      "sha": "65d81dd33210166286cd55d346dbfc5d252353ed",
+      "containsProvedSha": true
+    },
+    "oto-pos-staging": {
+      "id": "dep-dbvr3crrjlhs73fghetg",
+      "status": "live",
+      "sha": "65d81dd33210166286cd55d346dbfc5d252353ed",
+      "containsProvedSha": true
+    },
+    "oto-pos-web-staging": {
+      "id": "dep-dbvr3dd9fdbs73bp0770",
+      "status": "live",
+      "sha": "65d81dd33210166286cd55d346dbfc5d252353ed",
+      "containsProvedSha": true
+    }
+  },
+  "passed": true,
+  "finishedAt": "2026-11-20T02:59:55.860Z"
+}

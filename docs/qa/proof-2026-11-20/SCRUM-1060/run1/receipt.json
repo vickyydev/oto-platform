@@ -1,0 +1,381 @@
+{
+  "ticket": "SCRUM-1060",
+  "sha": "65d81dd33210166286cd55d346dbfc5d252353ed",
+  "startedAt": "2026-11-20T02:40:44.434Z",
+  "phase": "finished",
+  "points": {
+    "1-visit-create-once": {
+      "pass": true,
+      "pictures": [
+        "SCRUM-1060/run1/p1a-visiting-window-visit-reply-lost.png",
+        "SCRUM-1060/run1/p1b-visit-confirmed-after-retry.png"
+      ],
+      "shows": "\"Who's visiting today?\": the platform opened the visit and the reply was lost; Confirm again sent the same visit id under the same key, the platform answered with that visit, and the family has one visit and one visit.create row",
+      "seen": {
+        "sends": [
+          {
+            "attempt": 1,
+            "sameKeyAsFirst": true,
+            "sameIdAsFirst": true,
+            "platformStatus": 200,
+            "replayed": false,
+            "answeredWithFirstId": true
+          },
+          {
+            "attempt": 2,
+            "sameKeyAsFirst": true,
+            "sameIdAsFirst": true,
+            "platformStatus": 200,
+            "replayed": true,
+            "answeredWithFirstId": true
+          }
+        ],
+        "visitRows": [
+          {
+            "action": "visit.create",
+            "fromThisTillOnline": true
+          }
+        ],
+        "distinctVisits": 1
+      }
+    },
+    "2-box-lane-once": {
+      "pass": true,
+      "pictures": [
+        "SCRUM-1060/run1/p2a-visit-confirmed-on-the-box-lane.png"
+      ],
+      "shows": "The allergy change reached the platform but its reply never came; the till moved the change to the counter box under the same action id; once the box's facts were on the platform (its visit, outbox empty), the child has one child.update row, the online one, nothing in quarantine",
+      "seen": {
+        "patches": [
+          {
+            "keyNamed": true,
+            "actionIdIsKeyTail": true,
+            "platformStatus": 200
+          }
+        ],
+        "intents": [
+          {
+            "type": "child.update",
+            "actionIdIsTheOnlineOnes": true
+          },
+          {
+            "type": "visit.create",
+            "actionIdIsTheOnlineOnes": null
+          }
+        ],
+        "outboxDepthsSeen": [
+          2,
+          0
+        ],
+        "visitRowsFromTheBox": [
+          "visit.create"
+        ],
+        "childUpdateRows": [
+          {
+            "fromThisTillOnline": true,
+            "allergiesIsTheChange": true
+          }
+        ],
+        "quarantineReadStatus": 200,
+        "quarantinedForThisChange": 0,
+        "allergyNowIsTheChange": true
+      }
+    }
+  },
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/members",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/members/:id/children",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/:id/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/box/v1/station/:id/status",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/box/v1/station/:id/status",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/box/v1/station/:id/status",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/ops/quarantine",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/:id/revoke",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    }
+  ],
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1f6d3-f381-7a54-b321-cd6f8dc91c07",
+      "name": "ZZ TEST SCRUM-1060 proof till 1795142444442",
+      "prefix": "Z06001"
+    },
+    {
+      "kind": "member",
+      "id": "01a1f6d3-f406-72d0-b738-98745946a576"
+    },
+    {
+      "kind": "child",
+      "id": "01a1f6d3-f461-7911-9a17-2b05b53c46a2"
+    },
+    {
+      "kind": "display",
+      "id": "01a1f6d4-057d-7468-a97f-0bfa72e3b0e9",
+      "name": "ZZ TEST SCRUM-1060 display A"
+    }
+  ],
+  "checks": {
+    "visit": {
+      "sends": [
+        {
+          "attempt": 1,
+          "sameKeyAsFirst": true,
+          "sameIdAsFirst": true,
+          "platformStatus": 200,
+          "replayed": false,
+          "answeredWithFirstId": true
+        },
+        {
+          "attempt": 2,
+          "sameKeyAsFirst": true,
+          "sameIdAsFirst": true,
+          "platformStatus": 200,
+          "replayed": true,
+          "answeredWithFirstId": true
+        }
+      ],
+      "visitRows": [
+        {
+          "action": "visit.create",
+          "fromThisTillOnline": true
+        }
+      ],
+      "distinctVisits": 1
+    },
+    "boxBefore": {
+      "lane": "platform",
+      "up": true,
+      "outboxDepth": 0,
+      "membersAppliedAt": "2026-11-20T02:41:46.057Z"
+    },
+    "boxLane": {
+      "patches": [
+        {
+          "keyNamed": true,
+          "actionIdIsKeyTail": true,
+          "platformStatus": 200
+        }
+      ],
+      "intents": [
+        {
+          "type": "child.update",
+          "actionIdIsTheOnlineOnes": true
+        },
+        {
+          "type": "visit.create",
+          "actionIdIsTheOnlineOnes": null
+        }
+      ],
+      "outboxDepthsSeen": [
+        2,
+        0
+      ],
+      "visitRowsFromTheBox": [
+        "visit.create"
+      ],
+      "childUpdateRows": [
+        {
+          "fromThisTillOnline": true,
+          "allergiesIsTheChange": true
+        }
+      ],
+      "quarantineReadStatus": 200,
+      "quarantinedForThisChange": 0,
+      "allergyNowIsTheChange": true
+    }
+  },
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": "reception signs in at the own till",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": "1: Confirm; the platform opens the visit, its reply is lost at the edge",
+      "kind": "http",
+      "text": "POST /api/visits 504"
+    }
+  ],
+  "cleanup": [
+    {
+      "kind": "display",
+      "id": "01a1f6d4-057d-7468-a97f-0bfa72e3b0e9",
+      "revoked": true
+    },
+    {
+      "kind": "sales-read-back",
+      "sales": []
+    },
+    {
+      "kind": "station",
+      "id": "01a1f6d3-f381-7a54-b321-cd6f8dc91c07",
+      "archived": true
+    },
+    {
+      "kind": "member",
+      "id": "01a1f6d3-f406-72d0-b738-98745946a576",
+      "archived": true
+    },
+    {
+      "kind": "till-session",
+      "signedOut": true
+    },
+    {
+      "kind": "admin-session",
+      "signedOut": true
+    }
+  ],
+  "deployments": {
+    "oto-api-staging": {
+      "id": "dep-dbvquvfbuf8c73bciaj0",
+      "status": "live",
+      "sha": "65d81dd33210166286cd55d346dbfc5d252353ed",
+      "containsProvedSha": true
+    },
+    "oto-pos-staging": {
+      "id": "dep-dbvr3crrjlhs73fghetg",
+      "status": "live",
+      "sha": "65d81dd33210166286cd55d346dbfc5d252353ed",
+      "containsProvedSha": true
+    },
+    "oto-pos-web-staging": {
+      "id": "dep-dbvr3dd9fdbs73bp0770",
+      "status": "live",
+      "sha": "65d81dd33210166286cd55d346dbfc5d252353ed",
+      "containsProvedSha": true
+    }
+  },
+  "failures": [
+    {
+      "point": "3",
+      "failedAt": "3: Eat & Play for two children, no adult; the desk gate at 1024 wide",
+      "failure": "TimeoutError: locator.waitFor: Timeout 30000ms exceeded."
+    }
+  ],
+  "passed": false,
+  "finishedAt": "2026-11-20T02:42:16.070Z"
+}
