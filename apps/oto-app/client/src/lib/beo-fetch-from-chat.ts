@@ -1,4 +1,5 @@
 import { asksForMore, beoAiMatchLabel, foodNamesFor, laterLineWins, setMenuOptionOf, type BeoAiFrom, type BeoAiMenu, type BeoAiRequestKind, type BeoAiReview, type BeoAiSetMenuItem, type BeoAiSourced } from "@shared/beoAiFill";
+import { isSocksArrangement, socksWordsOf } from "@shared/beoGuestsSocks";
 import { aiFillDateLine, dayLabel } from "./beo-ai-date";
 import { AI_FILL_CAKE_TYPE } from "./beo-ai-preview";
 import { namesPhone, requestLineText, requestsOfField, reviewDateLine, samePhone, thb, tillMatchOf, type ApprovedMarks } from "./beo-ai-review";
@@ -39,6 +40,11 @@ import { namesPhone, requestLineText, requestsOfField, reviewDateLine, samePhone
  * decoration a fetch offers are the conversation's own requests, each with
  * its line. Every change's `from` carries the chat's words for it, shown
  * under the row.
+ *
+ * SCRUM-1030 and SCRUM-1031: a fetch offers what AI Fill's review proposes of
+ * the Kitchen Notes (beside what the form holds, as the setup notes are), the
+ * expected extra children and adults the family states, and the socks
+ * arrangement with its note, each as its own change.
  */
 
 /**
@@ -83,6 +89,17 @@ export interface FetchFormValues {
   kidsFoodTime?: string;
   adultsFoodTime?: string;
   barServiceTime?: string;
+  /** SCRUM-1030: the kitchen plan's Kitchen Notes. */
+  kitchenNotes?: string;
+  /**
+   * SCRUM-1031: the expected extra children and adults (null: none), and the socks arrangement
+   * ("" none) with its note, which only "other" keeps (null: none). The note is never offered on
+   * its own: it comes with the arrangement (`FetchChange.note`).
+   */
+  expectedExtraKids?: number | null;
+  expectedExtraAdults?: number | null;
+  socksArrangement?: string;
+  socksNote?: string | null;
 }
 export type FetchField = keyof FetchFormValues;
 
@@ -107,6 +124,11 @@ export interface FetchChange {
    */
   line?: string;
   base?: string;
+  /**
+   * SCRUM-1031: the socks arrangement's note that comes with it (Other / Custom's words), null
+   * for none; only on the socks arrangement's change.
+   */
+  note?: string | null;
 }
 
 /**
@@ -163,6 +185,11 @@ export const FETCH_LABELS: Record<FetchField, string> = {
   whatsappPhoneRaw: "WhatsApp",
   numChildren: "Children",
   numAdults: "Adults",
+  // SCRUM-1031: the expected extra guests and the socks arrangement, Event Info's, after the counts.
+  expectedExtraKids: "Extra children",
+  expectedExtraAdults: "Extra adults",
+  socksArrangement: "Socks",
+  socksNote: "Socks note",
   startTime: "Start time",
   endTime: "End time",
   locationText: "Location",
@@ -172,6 +199,8 @@ export const FETCH_LABELS: Record<FetchField, string> = {
   setupReadyBy: "Setup ready by",
   setupResponsible: "Setup who",
   setupNotes: "Setup notes",
+  // SCRUM-1030: Food & Drinks holds the Kitchen Notes before the menus and the cake.
+  kitchenNotes: "Kitchen notes",
   cakeMode: "Cake",
   cakeNotes: "Cake notes",
   cakeTime: "Cake time",
@@ -271,7 +300,7 @@ export function fetchChangesOf(answer: Pick<FetchAnswer, "fill" | "review">, for
    * stays, the chat's lines it lacks are added under it — never in its
    * place; nothing when the form holds every line already.
    */
-  const beside = (field: Extract<FetchField, "specialRequests" | "activities" | "decoration" | "setupNotes" | "packageNotes">, lines: Array<{ text: string; from: BeoAiFrom }>) => {
+  const beside = (field: Extract<FetchField, "specialRequests" | "activities" | "decoration" | "setupNotes" | "kitchenNotes" | "packageNotes">, lines: Array<{ text: string; from: BeoAiFrom }>) => {
     const held = (form[field] ?? "").trim();
     // SCRUM-946: by what is said, never twice (two lines of the chat saying one thing are one).
     const missing: typeof lines = [];
@@ -340,6 +369,34 @@ export function fetchChangesOf(answer: Pick<FetchAnswer, "fill" | "review">, for
       offer(field, form[field] === null ? NONE : String(form[field]), String(read.value), read.value, read.from);
     }
   }
+  // SCRUM-1031: the expected extra guests the family states and the socks arrangement, from the
+  // conversation's read only (the review's own; the form's read never gives them); the socks'
+  // note comes with the arrangement as one change, so the form never holds a note without it.
+  for (const field of ["expectedExtraKids", "expectedExtraAdults"] as const) {
+    const read = proposal?.event[field];
+    const typed = form[field];
+    const held = typeof typed === "number" ? typed : null;
+    if (read && Number.isInteger(read.value) && read.value >= 0 && read.value !== held) offer(field, held === null ? NONE : String(held), String(read.value), read.value, read.from);
+  }
+  const socks = proposal?.event.socks;
+  if (socks && isSocksArrangement(socks.value)) {
+    const note = socks.value === "other" ? socks.note?.trim() || null : null;
+    const heldSocks = isSocksArrangement(form.socksArrangement) ? form.socksArrangement : null;
+    const heldNote = heldSocks === "other" ? form.socksNote?.trim() || null : null;
+    // The same option read with no words of its own changes nothing: the form's note stays.
+    if (socks.value !== heldSocks || (note !== null && !sameText(note, heldNote ?? ""))) {
+      changes.push({
+        field: "socksArrangement",
+        label: FETCH_LABELS.socksArrangement,
+        was: socksWordsOf({ socksArrangement: heldSocks, socksNote: heldNote }) ?? NONE,
+        now: socksWordsOf({ socksArrangement: socks.value, socksNote: note }) ?? NONE,
+        value: socks.value,
+        from: socks.from,
+        said: null,
+        note,
+      });
+    }
+  }
   for (const field of ["startTime", "endTime"] as const) {
     const read = proposal?.event[field] ? { value: time(proposal.event[field]!.value), from: proposal.event[field]!.from } : { value: time(event[field]), from: ruling };
     if (read.value && read.value !== form[field]) offer(field, shownText(form[field]), read.value, read.value, read.from);
@@ -363,6 +420,10 @@ export function fetchChangesOf(answer: Pick<FetchAnswer, "fill" | "review">, for
   // SCRUM-904: the setup plan's notes, beside what is typed.
   const setupNotes = proposal?.details.setup.notes;
   if (setupNotes) beside("setupNotes", [{ text: setupNotes.value, from: setupNotes.from }]);
+  // SCRUM-1030: the Kitchen Notes the conversation gives, as AI Fill's review proposes them: beside
+  // what is typed, never in its place.
+  const kitchenNotes = proposal?.details.kitchenNotes;
+  if (kitchenNotes?.value.trim()) beside("kitchenNotes", [{ text: kitchenNotes.value.trim(), from: kitchenNotes.from }]);
 
   // The cake: whose it is only when the chat says so, its notes and its time.
   // The whole conversation's reading leaves the cake out when the chat does
@@ -641,7 +702,7 @@ export function rememberDeclined(declined: DeclinedChanges, chatMark: string | n
 
 /** The accepted changes as a patch of the form. */
 export function applyFetchChanges(accepted: FetchChange[]): Partial<FetchFormValues> {
-  const patch: Record<string, string | number> = {};
+  const patch: Record<string, string | number | null> = {};
   // SCRUM-946: the lines accepted for one field, added together under what it holds. A line naming
   // the WhatsApp number accepted with it is that number, not a request as well.
   const lines = new Map<FetchField, { base: string; lines: string[] }>();
@@ -651,6 +712,8 @@ export function applyFetchChanges(accepted: FetchChange[]): Partial<FetchFormVal
     if (c.line !== undefined && c.field === "specialRequests" && typeof takenPhone === "string" && namesPhone(c.line, [takenPhone])) continue;
     if (c.line === undefined) {
       patch[c.field] = c.value;
+      // SCRUM-1031: the socks arrangement brings its note (Other / Custom's words), or none.
+      if (c.field === "socksArrangement") patch.socksNote = c.value === "other" ? c.note ?? null : null;
       continue;
     }
     const held = lines.get(c.field) ?? { base: c.base ?? "", lines: [] };
@@ -691,6 +754,12 @@ export const FETCH_MARK_KEYS: Record<FetchField, string> = {
   cakePrice: "cake",
   kidTurningAge: "kidTurningAge",
   whatsappPhoneRaw: "whatsapp",
+  // SCRUM-1030, SCRUM-1031: as the approval's sources key them.
+  kitchenNotes: "kitchenNotes",
+  expectedExtraKids: "expectedExtraKids",
+  expectedExtraAdults: "expectedExtraAdults",
+  socksArrangement: "socksArrangement",
+  socksNote: "socksArrangement",
   kidsFoodTime: "kidsFoodTime",
   adultsFoodTime: "adultsFoodTime",
   barServiceTime: "barServiceTime",

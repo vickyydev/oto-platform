@@ -1912,6 +1912,12 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
     kidsFoodTime,
     adultsFoodTime,
     barServiceTime,
+    // SCRUM-1030: the Kitchen Notes; SCRUM-1031: the expected extra guests and the socks arrangement.
+    kitchenNotes,
+    expectedExtraKids: typeof eventData.expectedExtraKids === "number" ? eventData.expectedExtraKids : null,
+    expectedExtraAdults: typeof eventData.expectedExtraAdults === "number" ? eventData.expectedExtraAdults : null,
+    socksArrangement: typeof eventData.socksArrangement === "string" ? eventData.socksArrangement : "",
+    socksNote: typeof eventData.socksNote === "string" ? eventData.socksNote : null,
   });
 
   /**
@@ -1954,8 +1960,10 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
    */
   const applyFetched = (patch: Partial<FetchFormValues>, accepted: FetchChange[] = []) => {
     // SCRUM-904: the setup notes, the cake's count, package and price, the food and bar times; the age and the number are the event's.
-    const { setupNotes: setupNote, cakeQuantity: cakes, cakeIncluded: cakeIn, cakePrice: cakeCost, kidsFoodTime: kidsAt, adultsFoodTime: adultsAt, barServiceTime: barAt, ...rest } = patch;
+    // SCRUM-1030: the Kitchen Notes are the kitchen plan's; SCRUM-1031's extra guests and socks are the event's (below).
+    const { setupNotes: setupNote, kitchenNotes: kitchenNote, cakeQuantity: cakes, cakeIncluded: cakeIn, cakePrice: cakeCost, kidsFoodTime: kidsAt, adultsFoodTime: adultsAt, barServiceTime: barAt, ...rest } = patch;
     if (setupNote !== undefined) setSetupNotes(setupNote);
+    if (kitchenNote !== undefined) setKitchenNotes(kitchenNote);
     if (typeof cakes === "number") setCakeQuantity(cakes);
     if (cakeIn) setCakeIncluded(cakeIn === "included");
     if (cakeCost !== undefined) setCakePrice(cakeCost);
