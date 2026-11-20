@@ -1,3 +1,4 @@
+import { newId } from '@oto/shared';
 import type { ApiChild } from '@/api/platform';
 import { apiChildToSavedChild } from '@/api/mappers';
 import type { SupervisedSlot } from '@/components/till/SupervisionGate';
@@ -226,6 +227,8 @@ export function matchSlotsToSavedChildren(
 export interface HeldWriteKey {
   change: string;
   key: string;
+  /** SCRUM-1060 — the client-minted id held with the key, for a write that names its record (`heldWriteIdentity`). */
+  id?: string;
 }
 
 /**
@@ -271,6 +274,29 @@ export function heldWriteKey(
   const key = `${prefix}:${mint()}`;
   held.set(write, { change: signature, key });
   return key;
+}
+
+/**
+ * SCRUM-1060 — `heldWriteKey` for a write that names its own record: the
+ * client-minted id (UUIDv7, as every id the till mints) is held with the key
+ * and kept with it while `change` is the change being sent, so the same write
+ * sent again carries the same id and the same key, and another change takes
+ * a new pair. The key is the screen's prefix and that id.
+ */
+export function heldWriteIdentity(
+  held: Map<string, HeldWriteKey>,
+  write: string,
+  change: unknown,
+  prefix: string,
+  mint: () => string = newId,
+): { id: string; key: string } {
+  const signature = JSON.stringify(change);
+  const known = held.get(write);
+  if (known?.change === signature && known.id) return { id: known.id, key: known.key };
+  const id = mint();
+  const key = `${prefix}:${id}`;
+  held.set(write, { change: signature, key, id });
+  return { id, key };
 }
 
 export interface SaveGateChildrenInput {

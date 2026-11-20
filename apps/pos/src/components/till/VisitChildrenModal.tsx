@@ -19,7 +19,7 @@ import {
   type ChildDetailsDraft,
 } from '@/components/shared/ChildDetailsFields';
 import type { HeldWriteKey } from '@/lib/gateChildren';
-import { saveVisitChildren } from '@/lib/visitChildren';
+import { heldVisitWrite, saveVisitChildren } from '@/lib/visitChildren';
 
 interface VisitChildrenModalProps {
   open: boolean;
@@ -68,7 +68,7 @@ export function VisitChildrenModal({ open, member, openVisitId = null, onClose, 
   const [drafts, setDrafts] = useState<Record<string, ChildDetailsDraft>>({});
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [busy, setBusy] = useState(false);
-  /** SCRUM-1059 — the key each child's change goes under, while the window is open for this family. */
+  /** SCRUM-1059 — the key each child's change goes under, while the window is open for this family; SCRUM-1060 — and the visit's. */
   const writeKeys = useRef(new Map<string, HeldWriteKey>());
 
   useEffect(() => {
@@ -131,7 +131,10 @@ export function VisitChildrenModal({ open, member, openVisitId = null, onClose, 
         children, records: recordById, drafts, allergyDrafts, writeKeys: writeKeys.current,
         updateChild: (childId, patch, key) => membersApi.updateChild(childId, patch, key),
       });
-      const visitId = await confirmVisitChildren(openVisitId, { memberId: member.id, childIds: selectedIds });
+      // SCRUM-1060 — and the visit under the identity this window holds for
+      // these children, so a press again opens no second visit.
+      const visit = { memberId: member.id, childIds: selectedIds };
+      const visitId = await confirmVisitChildren(openVisitId, visit, heldVisitWrite(writeKeys.current, openVisitId, visit));
       toast({
         title: 'Visit confirmed',
         description:

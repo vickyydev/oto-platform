@@ -14,10 +14,36 @@ import { tierNeedsProof } from '@/lib/membership';
 /**
  * A record write on the box lane (offline plan Round 3): the bridge intent
  * with the till's own id, answered in the shape the platform route answers.
+ * `actionId` — the action id the same write was given online (SCRUM-1060);
+ * without one, a fresh id for this call.
  */
-async function onBox<R>(stationId: string, type: string, payload: Record<string, unknown>): Promise<R> {
-  const answer = await bridgeApi.intent<R>(stationId, type, payload, { actionId: `${type}:${newRecordId()}` });
+async function onBox<R>(stationId: string, type: string, payload: Record<string, unknown>, actionId?: string): Promise<R> {
+  const answer = await bridgeApi.intent<R>(stationId, type, payload, { actionId: actionId ?? `${type}:${newRecordId()}` });
   return answer.result as R;
+}
+
+/**
+ * SCRUM-1060 — THE ONE IDENTITY A CHANGE TO A CHILD CARRIES ON BOTH LANES.
+ *
+ * A screen that holds a key for a change to a child (the drop-off gate and
+ * the "Who's visiting today?" window, `heldWriteKey`; the display's review,
+ * `child-review:`) sends it again under that key, and the platform answers the
+ * same key once. But a call that reaches nothing at all moves to the counter
+ * box (`viaLane`), which kept the change as a `child.update` fact of its own
+ * under a fresh action id: if the platform had in fact written the first
+ * attempt, the box's fact, synced later, was a second change.
+ *
+ * The till's keys are `<screen>:<action id>`, the action id being what was
+ * minted for the change (as `tier-claim:`, `party-slips:` are). That action id
+ * now goes with the change on both lanes — in the body online, and as the box
+ * intent's action id, which the box copies onto its fact — and the platform
+ * writes a change once per action id, whichever lane brought it first. Cut to
+ * the 64 characters the box's journal keeps, alike on both lanes. A change
+ * sent with no key is sent as before.
+ */
+export function childChangeActionId(idempotencyKey: string | undefined): string | undefined {
+  if (!idempotencyKey) return undefined;
+  return idempotencyKey.slice(idempotencyKey.indexOf(':') + 1).slice(0, 64) || undefined;
 }
 
 // --- auth / me -------------------------------------------------------------
@@ -214,8 +240,12 @@ addChild: (memberId: string, body: Record<string, unknown>, id: string = newReco
           { idempotencyKey: idemKey() },
         );
   },
-updateChild: (childId: string, patch: Record<string, unknown>, idempotencyKey?: string, signal?: AbortSignal) =>
-    api.patch<{ child: ApiChild }>(`/members/children/${childId}`, patch, { idempotencyKey, signal }),
+updateChild: (childId: string, patch: Record<string, unknown>, idempotencyKey?: string, signal?: AbortSignal) => {
+    // SCRUM-1060 — a keyed change names itself, as the box's fact for it does.
+    const actionId = childChangeActionId(idempotencyKey);
+    return api.patch<{ child: ApiChild }>(`/members/children/${childId}`, actionId ? { ...patch, actionId } : patch,
+      { idempotencyKey, signal });
+  },
 verifyTier: (memberId: string, body: { verificationId: string; toTier: string; evidenceType: string; evidenceExpiresAt?: string; note?: string }) =>
     api.post<{ member: ApiMember }>(`/members/${memberId}/tier-verification`, body, {
           idempotencyKey: idemKey(),
@@ -265,7 +295,9 @@ addChild: (memberId: string, body: Record<string, unknown>, id: string = newReco
 updateChild: (childId: string, patch: Record<string, unknown>, idempotencyKey?: string, signal?: AbortSignal) =>
     viaLane(
       () => cloudMembersApi.updateChild(childId, patch, idempotencyKey, signal),
-      (stationId) => onBox<{ child: ApiChild }>(stationId, 'child.update', { childId, ...patch }),
+      // SCRUM-1060 — under the action id the platform was given for it.
+      (stationId) => onBox<{ child: ApiChild }>(stationId, 'child.update', { childId, ...patch },
+        childChangeActionId(idempotencyKey)),
     ),
 /**
  * SCRUM-1020 — a saved child's allergy and medical notes the family changed
@@ -289,7 +321,7 @@ updateChildCareFromDisplay: (
         childId,
         ...(care.allergies !== undefined ? { allergies: care.allergies } : {}),
         ...(care.medicalNotes !== undefined ? { medicalNotes: care.medicalNotes } : {}),
-      }),
+      }, childChangeActionId(idempotencyKey)),
     ),
 verifyTier: (memberId: string, body: { toTier: string; evidenceType: string; evidenceExpiresAt?: string; note?: string }) => {
     const verificationId = newRecordId();
@@ -321,16 +353,29 @@ revokeTierVerification: (memberId: string, body: { reason: string }) => {
   },
 };
 
+/**
+ * SCRUM-1060 — a visit write a screen holds for as long as it is open: the
+ * client-minted id (the visit's, or the operation's that adds children to
+ * one) and the key it is sent under, kept while the same children are
+ * confirmed (`heldVisitWrite`), so a Confirm pressed again after a lost reply
+ * replays the visit the platform already opened instead of opening another.
+ */
+export interface HeldVisitWrite {
+  id: string;
+  key: string;
+}
+
 export const visitsApi = {
-  /** Client-minted id, for the reason given on membersApi.create; either lane. */
-  create: (body: { memberId?: string | null; childIds: string[] }) => {
-    const id = newRecordId();
+  /** Client-minted id, for the reason given on membersApi.create; either lane. `held`: the screen's own (SCRUM-1060). */
+  create: (body: { memberId?: string | null; childIds: string[] }, held?: HeldVisitWrite) => {
+    const id = held?.id ?? newRecordId();
+    const idempotencyKey = held?.key ?? idemKey();
     return viaLane(
       () =>
         api.post<{ id: string; visitDate: string; status: string }>(
           '/visits',
           { id, ...body },
-          { idempotencyKey: idemKey() },
+          { idempotencyKey },
         ),
       (stationId) =>
         onBox<{ id: string; visitDate: string; status: string }>(stationId, 'visit.create', {
@@ -346,15 +391,18 @@ export const visitsApi = {
    * Answers with that visit's id.
    *
    * The same action and visit ids survive a lost online answer and box replay.
+   * `held` (SCRUM-1060): the screen's own operation id and key, so a press
+   * again after a lost reply is the same operation too.
    */
-  addChildren: (visitId: string, body: { memberId: string; childIds: string[] }) => {
-    const operationId = newRecordId();
+  addChildren: (visitId: string, body: { memberId: string; childIds: string[] }, held?: HeldVisitWrite) => {
+    const operationId = held?.id ?? newRecordId();
+    const idempotencyKey = held?.key ?? idemKey();
     return viaLane(
       () =>
         api.post<ApiResponse<'/visits/{id}/children', 'post'>>(
           `/visits/${visitId}/children`,
           { operationId, childIds: body.childIds },
-          { idempotencyKey: idemKey() },
+          { idempotencyKey },
         ),
       (stationId) =>
         onBox<{ id: string; visitDate: string; status: string }>(stationId, 'visit.children_add', {
@@ -371,16 +419,18 @@ export const visitsApi = {
  * SCRUM-339 — the one place a counter screen confirms children for a visit:
  * onto the family's open visit when the till already holds one for this
  * member, otherwise as a new visit. Returns the visit id the sale should carry.
+ * `held` (SCRUM-1060): the identity the screen holds for this confirmation.
  */
 export async function confirmVisitChildren(
   openVisitId: string | null,
   body: { memberId: string; childIds: string[] },
+  held?: HeldVisitWrite,
 ): Promise<string> {
   if (openVisitId && body.childIds.length > 0) {
-    return (await visitsApi.addChildren(openVisitId, body)).id;
+    return (await visitsApi.addChildren(openVisitId, body, held)).id;
   }
   if (openVisitId) return openVisitId;
-  return (await visitsApi.create(body)).id;
+  return (await visitsApi.create(body, held)).id;
 }
 
 // --- branches / catalog -----------------------------------------------------

@@ -991,3 +991,28 @@ test('SCRUM-773: the box offers Driving licence, not Residence certificate, and 
   );
   r.t.close();
 });
+
+test("SCRUM-1060: a child's change keeps the till's action id on its fact, the same id on every retry", async () => {
+  // The till sends a change to a child under the action id it also gave the
+  // platform for it: the platform writes the change once per action id, so the
+  // box carries that id onto its fact untouched, retry after retry. Boxes have
+  // done so since the bridge's first round; this pins it.
+  const r = await rig();
+  const { caller } = await r.bridge.unlock(STATION_ID, {
+    token: token(r.now.at),
+    password: 'open-sesame',
+  });
+  const childId = '018f0000-0000-7000-8000-00000000c0c1';
+  const actionId = '0b6f6a8e-3c55-4a39-9e7e-5d3c9f0a1b2c';
+  const change = { type: 'child.update', lastSeenSequence: 0, payload: { childId, allergies: 'Peanuts, sesame' }, actionId };
+  const answered = await r.bridge.intent(STATION_ID, caller, change);
+  assert.equal((answered.result?.child as { allergies: string }).allergies, 'Peanuts, sesame');
+  await r.bridge.intent(STATION_ID, caller, change);
+  const { events } = await r.t.store.takeBatch(BOX_ID);
+  assert.deepEqual(events.map((e) => [e.type, e.actionId]), [
+    ['child.updated', actionId],
+    ['child.updated', actionId],
+  ]);
+  assert.deepEqual(events[0]!.payload, { childId, allergies: 'Peanuts, sesame' });
+  r.t.close();
+});

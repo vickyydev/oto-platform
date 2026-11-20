@@ -23,6 +23,7 @@ import {
 import type { App } from '../app';
 import { AppError, errors } from '../lib/errors';
 import { audit } from '../services/audit';
+import { childChangeWritten } from '../services/child-change';
 import { ClientIdSchema, REPLAY_HEADER, claimClientId } from '../services/client-id';
 import { childAuditView, ensureFamilyFor } from '../services/family';
 import {
@@ -881,7 +882,9 @@ export async function memberRoutes(app: App): Promise<void> {
         description:
           'Update a child (allergies etc.) — audited. `source=customer_display` when the family changed the ' +
           "child's allergy or medical notes on the paired display (SCRUM-1020): it names the family identified " +
-          'at the till (`memberId`), changes the care notes only, and empties a note only with `confirmedNone`.',
+          'at the till (`memberId`), changes the care notes only, and empties a note only with `confirmedNone`. ' +
+          '`actionId` (SCRUM-1060) names this one change on both lanes: the same change already written under it, ' +
+          "online or from the counter box's fact, answers with the child as it stands under x-oto-replay.",
         params: z.object({ childId: z.string().uuid() }),
         body: ChildBody.partial().extend({
           /** SCRUM-1020 — the family changed the care notes on the station's customer display. */
@@ -890,13 +893,19 @@ export async function memberRoutes(app: App): Promise<void> {
           memberId: z.string().uuid().optional(),
           /** SCRUM-1020 — with `source`: the family said plainly the child has no allergies or medical needs. */
           confirmedNone: z.literal(true).optional(),
+          /**
+           * SCRUM-1060 — the change's own action id, the one the till also gives
+           * the counter box's `child.update` for it (the box's journal keeps 64
+           * characters): written once whichever lane brings it first.
+           */
+          actionId: z.string().min(1).max(64).optional(),
         }),
       },
     },
-    async (req) => {
+    async (req, reply) => {
       const auth = req.requireAuth();
       const fromDisplay = displayStationOf(req.body.source, auth.stationId);
-      const { source: _source, memberId: displayFamily, confirmedNone, ...b } = req.body;
+      const { source: _source, memberId: displayFamily, confirmedNone, actionId, ...b } = req.body;
       const [before] = await app.db
         .select()
         .from(child)
@@ -947,6 +956,14 @@ export async function memberRoutes(app: App): Promise<void> {
       if (b.foodRestrictions !== undefined) patch.foodRestrictions = b.foodRestrictions;
       if (b.notes !== undefined) patch.notes = b.notes;
       return withTx(app.db, opCtx(req), 'child.update', async (tx) => {
+        // SCRUM-1060 — the same change already written under its action id
+        // (this route under another key, or the counter box's fact for it):
+        // answered with the child as it stands, nothing written again.
+        if (await childChangeWritten(tx, { operatorId: auth.operatorId, childId: req.params.childId, actionId })) {
+          const [current] = await tx.select().from(child).where(eq(child.id, req.params.childId)).limit(1);
+          reply.header(REPLAY_HEADER, 'true');
+          return { child: serializeChild(current!) };
+        }
         const [after] = await tx
           .update(child)
           .set(patch)
@@ -976,6 +993,8 @@ export async function memberRoutes(app: App): Promise<void> {
               ...(confirmedNone ? { confirmedNone: true } : {}) }
             : childAuditView(after),
           requestId: req.id,
+          // SCRUM-1060 — what the box's fact for the same change is matched by.
+          actionId: actionId ?? null,
           ...(fromDisplay ? { origin: CUSTOMER_DISPLAY_SOURCE } : {}),
         });
         return { child: serializeChild(after!) };
