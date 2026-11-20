@@ -3730,7 +3730,7 @@ export interface paths {
         };
         options?: never;
         head?: never;
-        /** @description Update a child (allergies etc.) — audited. `source=customer_display` when the family changed the child's allergy or medical notes on the paired display (SCRUM-1020): it names the family identified at the till (`memberId`), changes the care notes only, and empties a note only with `confirmedNone`. */
+        /** @description Update a child (allergies etc.) — audited. `source=customer_display` when the family changed the child's allergy or medical notes on the paired display (SCRUM-1020): it names the family identified at the till (`memberId`), changes the care notes only, and empties a note only with `confirmedNone`. `actionId` (SCRUM-1060) names this one change on both lanes: the same change already written under it, online or from the counter box's fact, answers with the child as it stands under x-oto-replay. */
         patch: {
             parameters: {
                 query?: never;
@@ -3758,6 +3758,7 @@ export interface paths {
                         memberId?: string;
                         /** @enum {boolean} */
                         confirmedNone?: true;
+                        actionId?: string;
                     };
                 };
             };

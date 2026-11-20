@@ -96,6 +96,7 @@ import { AppError } from '../lib/errors';
 import { pgErrorOf } from '../lib/scrub';
 import type { BranchReach } from './access-control';
 import { audit } from './audit';
+import { childChangeWritten } from './child-change';
 import {
   childAuditView,
   childGuardedInOperator,
@@ -1886,6 +1887,15 @@ const HANDLERS: Record<string, EventHandler> = {
           .limit(1);
       if (!guardian) {
         throw new RefuseEvent('poison', 'SYNC_CHILD_NOT_OURS', 'That child belongs elsewhere');
+      }
+      /**
+       * SCRUM-1060 — the till gave this change the action id it sent online
+       * too. Already written under it (the online write whose answer was
+       * lost, or this fact's twin): applied once, nothing published again.
+       */
+      if (await childChangeWritten(tx, { operatorId: scope.auth.operatorId, childId: payload.childId,
+        actionId: event.envelope.actionId })) {
+        return { entityType: 'child', entityId: payload.childId };
       }
 
       const patch: Partial<typeof child.$inferInsert> = {};

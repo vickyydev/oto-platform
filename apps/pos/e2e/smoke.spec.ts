@@ -636,8 +636,13 @@ async function careNoteLostReply(page: Page, browser: Browser, baseURL: string):
     page.on('request', observeWrites);
     await done.click();
     await committed;
-    // The family's change alone, named as theirs, for the family identified here.
-    expect(seen.firstPatch?.body).toEqual({ source: 'customer_display', memberId: original.id, allergies: edited });
+    // The family's change alone, named as theirs, for the family identified here,
+    // under the action id its key was minted for (SCRUM-1060: the box's fact
+    // for the same change carries it too).
+    const firstKey = seen.firstPatch?.key ?? '';
+    expect(seen.firstPatch?.body).toEqual({ source: 'customer_display', memberId: original.id, allergies: edited,
+      actionId: firstKey.slice(firstKey.indexOf(':') + 1) });
+    expect(firstKey).toMatch(/^gate-child:[0-9a-f-]{36}$/);
     // On the child's record before anything is registered or the sale moves on.
     const profile = await fixture.admin.get(`/api/members/${original.id}`);
     expect(profile.status()).toBe(200);

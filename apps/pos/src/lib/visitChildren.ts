@@ -1,8 +1,30 @@
-import type { ApiChild } from '@/api/platform';
+import type { ApiChild, HeldVisitWrite } from '@/api/platform';
 import { apiChildToSavedChild } from '@/api/mappers';
 import { childDetailsDraft, childDetailsPatch, type ChildDetailsDraft } from '@/components/shared/ChildDetailsFields';
-import { heldWriteKey, type HeldWriteKey } from '@/lib/gateChildren';
+import { heldWriteIdentity, heldWriteKey, type HeldWriteKey } from '@/lib/gateChildren';
 import type { SavedChild } from '@/types';
+
+/**
+ * SCRUM-1060 — THE VISIT ITSELF, UNDER ONE HELD IDENTITY.
+ *
+ * After the children's changes, Confirm opens the family's visit (or adds the
+ * children to the one the gate opened, `confirmVisitChildren`). Each press
+ * minted a fresh visit id and key, so a press again after the visit's reply
+ * was lost opened a second draft visit for the same family. The screen now
+ * holds the visit's identity — the client-minted id and its key — beside the
+ * children's keys while it is open, kept while the same children are
+ * confirmed: a press again replays the visit the platform (or the counter
+ * box, which takes the same id) already has. Other children ticked are
+ * another confirmation, under a new identity; the screen opened again starts
+ * afresh. The drop-off gate's own visit is held the same way, in its map.
+ */
+export function heldVisitWrite(
+  writeKeys: Map<string, HeldWriteKey>,
+  openVisitId: string | null,
+  body: { memberId: string; childIds: readonly string[] },
+): HeldVisitWrite {
+  return heldWriteIdentity(writeKeys, 'visit', { openVisitId, memberId: body.memberId, childIds: body.childIds }, 'visit');
+}
 
 /**
  * SCRUM-1059 — "WHO'S VISITING TODAY?" SAVES A CHILD'S CHANGE UNDER ONE KEY.
