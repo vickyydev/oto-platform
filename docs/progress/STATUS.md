@@ -1,3 +1,39 @@
+## 21 November 2026, 18:05: the old address now opens the new app
+
+- **DNS:** the owner moved `otoplay.org` to GoDaddy's nameservers (registry
+  changed 17:07) with three records: `@` A to Render, `www` and `app` CNAME to
+  the production launcher and HR app. By 18:03 Google and Cloudflare gave the
+  new answers for all three names; Quad9 still held the old one for the apex.
+- **Render:** `otoplay.org` and `www.otoplay.org` on
+  `oto-launcher-production` (www redirects to the apex), `app.otoplay.org` on
+  `oto-app-production`. The first certificates did not arrive within 35
+  minutes; the three addresses were removed and added again, and the
+  certificates came within minutes.
+- **Settings switched at 17:25** (`C:\oto-data\golive\scripts\switch-domains.mjs
+  --apply`): the api's accepted origins gained the three new ones (the Render
+  addresses stay), the hand-off origin of the HR app moved to
+  `https://app.otoplay.org`, the HR app's own address and launcher address and
+  the launcher's tile address changed; all three services redeployed at
+  2cdd670bd.
+- **Checked at 18:02:** the administrator signs in at `https://otoplay.org`,
+  is handed into `https://app.otoplay.org` and reads the HR app's areas (78
+  employees, 82 users, 99 contracts, 3 birthday packages).
+- **Night jobs on:** one `jobs:run` key issued by the production HR app for
+  its one park group and set as `OTOAPP_JOBS_KEYS` on the api
+  (`issue-jobs-key.mjs`; the key was never shown), api redeployed 18:02.
+- **Old files:** 149 files added to the old storage since 19 November copied;
+  production's folder holds all 10,434.
+- **Password reset by SMS:** the production api uses the Twilio sender (all
+  four settings present). A reset code is sent only to an active account whose
+  phone is verified; the request answers "ok" either way. No reset SMS has yet
+  been seen sent by production; the administrator's phone is not marked
+  verified.
+- **The old app** still runs in the old developer's AWS and cannot be stopped
+  from here; it is reachable only at its raw AWS address once caches expire.
+- **Left:** SCRUM-922 (one real staff member signs in), 2 active staff with no
+  phone number, face clock-in (SCRUM-1056), the 55 older contracts
+  (SCRUM-1057), `otoplay.dev` (not moved).
+
 ## 21 November 2026, 15:50: production runs today's version on today's data; the domain switch waits for DNS
 
 On the owner's word ("go live on what staging runs now", "seed all the latest
