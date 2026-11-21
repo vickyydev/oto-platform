@@ -129,12 +129,13 @@ interface Answer {
 }
 
 let ORIGIN = "";
-async function call(method: string, path: string, opts: { cookie?: string; body?: unknown } = {}): Promise<Answer> {
+async function call(method: string, path: string, opts: { cookie?: string; deviceSecret?: string; body?: unknown } = {}): Promise<Answer> {
   const res = await fetch(`${ORIGIN}${path}`, {
     method,
     headers: {
       ...(opts.body !== undefined ? { "content-type": "application/json" } : {}),
       ...(opts.cookie ? { cookie: opts.cookie } : {}),
+      ...(opts.deviceSecret ? { "x-kiosk-device-secret": opts.deviceSecret } : {}),
     },
     body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
   });
@@ -168,6 +169,13 @@ const check = async (name: string, fn: () => void | Promise<void>) => {
 
 try {
   ORIGIN = await serve();
+  await check("the tablet learns that face clock-in is off when it reads its branch", async () => {
+    const branch = await call("GET", `/api/public/branches/${A.branch}`);
+    assert.equal(branch.status, 200);
+    assert.equal(branch.body.faceClockInEnabled, false);
+    assert.equal(branch.body.tabletRegistered, false);
+    assert.equal((await call("POST", "/api/kiosk-devices", { body: { branchId: A.branch, name: "ZZ TEST" } })).status, 401);
+  });
   const cookie = await signIn(admin.email);
   let deviceId = "";
   let deviceSecret = "";
@@ -195,6 +203,14 @@ try {
     await mint();
     const sessions = await q<{ tenant_id: string }>("select tenant_id from kiosk_sessions where kiosk_device_id = $1", [deviceId]);
     assert.deepEqual(sessions.map((s) => s.tenant_id), [A.tenant]);
+  });
+
+  await check("the signed-out tablet is approved only at its own branch and only while active", async () => {
+    const registered = async (branch: string) => (await call("GET", `/api/public/branches/${branch}`, { deviceSecret })).body.tabletRegistered;
+    assert.equal(await registered(A.branch), true);
+    assert.equal(await registered(B.branch), false);
+    assert.equal((await call("PATCH", `/api/kiosk-devices/${deviceId}`, { cookie, body: { isActive: false } })).status, 200);
+    assert.equal(await registered(A.branch), false);
   });
 
   await check("another park group's branch is a 404, and no device is written", async () => {

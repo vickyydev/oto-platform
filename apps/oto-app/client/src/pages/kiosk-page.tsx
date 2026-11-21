@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { EMPLOYMENT_ENDED } from "@shared/payOnly";
 import { kioskShiftTimes, type SingleShiftKioskView } from "@shared/singleShift";
 import { normalizeEnrollmentIdentity, type KioskEnrollmentIdentity } from "@/lib/kiosk-enrollment";
+import { readTimeClockBranch, timeClockSecret } from "@/lib/time-clock-tablet";
 import { Camera, QrCode, Clock, CheckCircle, XCircle, User, ArrowLeft, AlertTriangle, Keyboard, RefreshCw, Loader2 } from "lucide-react";
 import { Html5Qrcode } from "html5-qrcode";
 
@@ -82,9 +83,12 @@ export default function KioskPage({ branchId }: KioskPageProps) {
   const [screen, setScreen] = useState<KioskScreen>("home");
   
   // Fetch branch info from public endpoint (no auth required for kiosk)
-  const { data: branch, isLoading: branchLoading, error: branchError } = useQuery<{ id: string; name: string; logoUrl: string | null }>({
+  const { data: branch, isLoading: branchLoading, error: branchError } = useQuery({
     queryKey: [`/api/public/branches/${branchId}`],
+    queryFn: () => readTimeClockBranch(branchId!),
     enabled: !!branchId,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
   
   const branchName = branch?.name || "Loading...";
@@ -226,7 +230,7 @@ export default function KioskPage({ branchId }: KioskPageProps) {
   };
 
   const handleClockStart = async () => {
-    setScreen("clock");
+    setScreen(branch?.faceClockInEnabled === false ? "phone-photo" : "clock");
     setFaceAttempts(0);
     await startCamera();
   };
@@ -267,7 +271,7 @@ export default function KioskPage({ branchId }: KioskPageProps) {
       const res = await apiRequest("POST", "/api/kiosk/identify-face", {
         faceImageBase64,
         faceFramesBase64,
-        deviceSecret: localStorage.getItem("kiosk_device_secret") || undefined,
+        deviceSecret: timeClockSecret(branchId) || undefined,
       });
       const result = await res.json();
 
@@ -278,12 +282,12 @@ export default function KioskPage({ branchId }: KioskPageProps) {
           identificationProof: result.identificationProof,
           confidenceScore: result.confidence,
           livenessScore: result.livenessScore,
-          deviceSecret: localStorage.getItem("kiosk_device_secret") || undefined,
+          deviceSecret: timeClockSecret(branchId) || undefined,
         } : {
           employeeId: result.employee.id,
           confidenceScore: result.confidence,
           livenessScore: result.livenessScore,
-          deviceSecret: localStorage.getItem("kiosk_device_secret") || undefined,
+          deviceSecret: timeClockSecret(branchId) || undefined,
         });
         const clockData = await clockRes.json();
         
@@ -431,7 +435,7 @@ export default function KioskPage({ branchId }: KioskPageProps) {
           formData.append("photo", failedPhotoFile);
           const uploadRes = await fetch("/api/kiosk/upload-pin-photo", {
             method: "POST",
-            headers: { "x-kiosk-device-secret": localStorage.getItem("kiosk_device_secret") || "" },
+            headers: { "x-kiosk-device-secret": timeClockSecret(branchId) || "" },
             body: formData,
           });
           if (uploadRes.ok) {
@@ -449,7 +453,7 @@ export default function KioskPage({ branchId }: KioskPageProps) {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              "x-kiosk-device-secret": localStorage.getItem("kiosk_device_secret") || "",
+              "x-kiosk-device-secret": timeClockSecret(branchId) || "",
             },
             body: JSON.stringify({ photoData: failedPhotoData }),
           });
@@ -465,7 +469,7 @@ export default function KioskPage({ branchId }: KioskPageProps) {
       const res = await apiRequest("POST", "/api/kiosk/clock-phone", {
         phone: phoneValue,
         photoEvidenceUrl,
-        deviceSecret: localStorage.getItem("kiosk_device_secret") || undefined,
+        deviceSecret: timeClockSecret(branchId) || undefined,
       });
       const data = await res.json();
       if (data.success) {
@@ -500,7 +504,7 @@ export default function KioskPage({ branchId }: KioskPageProps) {
         confidenceScore: missedClockInData.confidenceScore,
         livenessScore: missedClockInData.livenessScore,
         kioskDeviceId: missedClockInData.kioskDeviceId,
-        deviceSecret: localStorage.getItem("kiosk_device_secret") || undefined,
+        deviceSecret: timeClockSecret(branchId) || undefined,
       });
       const data = await res.json();
       
@@ -548,7 +552,7 @@ export default function KioskPage({ branchId }: KioskPageProps) {
         confidenceScore: missedClockInData.confidenceScore,
         livenessScore: missedClockInData.livenessScore,
         kioskDeviceId: missedClockInData.kioskDeviceId,
-        deviceSecret: localStorage.getItem("kiosk_device_secret") || undefined,
+        deviceSecret: timeClockSecret(branchId) || undefined,
       }, attendanceEvidence);
       const data = await res.json();
       
@@ -587,7 +591,7 @@ export default function KioskPage({ branchId }: KioskPageProps) {
         confidenceScore: unscheduledWorkData.confidenceScore,
         livenessScore: unscheduledWorkData.livenessScore,
         kioskDeviceId: unscheduledWorkData.kioskDeviceId,
-        deviceSecret: localStorage.getItem("kiosk_device_secret") || undefined,
+        deviceSecret: timeClockSecret(branchId) || undefined,
       }, attendanceEvidence);
       const data = await res.json();
       
@@ -810,7 +814,17 @@ export default function KioskPage({ branchId }: KioskPageProps) {
           </Badge>
         </div>
 
-        {screen === "home" && (
+        {screen === "home" && branch.tabletRegistered === false && (
+          <Card className="p-6 text-center">
+            <CardHeader><CardTitle>Register this time clock</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <p>An HR administrator must register this browser for {branchName} before staff can clock in or out.</p>
+              <p>Sign in to HR on this tablet, open Branches and choose Set up time clock for {branchName}.</p>
+              <Button asChild><a href="/branches">Open HR Branches</a></Button>
+            </CardContent>
+          </Card>
+        )}
+        {screen === "home" && branch.tabletRegistered !== false && (
           <Card className="p-8">
             <CardContent className="space-y-6 pt-6">
               <h1 className="text-4xl font-bold text-center mb-8">Time Clock</h1>
@@ -912,7 +926,9 @@ export default function KioskPage({ branchId }: KioskPageProps) {
             </CardHeader>
             <CardContent className="space-y-6">
               <p className="text-lg text-center">
-                Face recognition failed 3 times. A photo is required before phone entry.
+                {faceAttempts === 0
+                  ? "Take a photo, then enter your phone number."
+                  : "Face recognition failed 3 times. A photo is required before phone entry."}
               </p>
               <div className="relative aspect-[3/4] bg-black rounded-lg overflow-hidden">
                 <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover" style={{ transform: "scaleX(-1)" }} />

@@ -1981,10 +1981,15 @@ export async function registerRoutes(
         return res.status(404).json({ message: "Branch not found" });
       }
       // Return only public info (no sensitive data)
+      const device = await resolveKioskDevice(req.get("x-kiosk-device-secret"));
+      res.set("Cache-Control", "private, no-store");
       res.json({
         id: branch.id,
         name: branch.name,
         logoUrl: branch.logoUrl,
+        faceClockInEnabled: faceClockInOn(),
+        tabletRegistered: device?.branchId === branch.id &&
+          (device.kioskType === "face_recognition" || device.kioskType === null),
       });
     } catch (error) {
       next(error);
@@ -9550,7 +9555,8 @@ OTO Company Limited`,
       const callerTenantId = req.userWithAccess?.tenantId ?? null;
       const deviceBranch = await storage.getBranch(validationResult.data.branchId);
       const deviceTenantId = deviceBranch ? (deviceBranch.tenantId ?? callerTenantId) : null;
-      if (!deviceBranch || !deviceTenantId || deviceTenantId !== callerTenantId) {
+      if (!deviceBranch || !deviceTenantId || deviceTenantId !== callerTenantId ||
+          !(await canAccessBranchRecord(req.userWithAccess, deviceBranch))) {
         return res.status(404).json({ message: "Branch not found" });
       }
 

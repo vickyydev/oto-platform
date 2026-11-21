@@ -1,3 +1,19 @@
+## 21 November 2026, 19:07 Bangkok — production HR time clock (SCRUM-1063)
+
+Six face-clock requests on app.otoplay.org between 18:32 and 18:42 returned
+401 before face recognition. The live HR app has face recognition switched
+off. The owner approved registration by an HR administrator on the park
+tablet and requested the sign-in and approval pictures.
+
+The candidate adds Set up time clock to HR Branches. An active registration
+belongs to the selected branch and survives signing out. Staff take a photo
+and enter their phone number when face recognition is off. A browser without
+a valid registration shows setup instructions. Local kiosk route checks
+passed (7), including signed-out, wrong-branch and inactive tablets. The
+tablet UI checks passed and the app compiler held its 411/411 baseline.
+Candidate CI, staging and production verification are pending. The park's
+physical tablet still needs an administrator to register it.
+
 ## 21 November 2026, 18:05: the old address now opens the new app
 
 - **DNS:** the owner moved `otoplay.org` to GoDaddy's nameservers (registry

@@ -41,6 +41,7 @@ import { Plus, Pencil, Trash2, Loader2, Building2, MapPin, Image, X, Upload, Cop
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatDate } from "@/lib/format-utils";
+import { TimeClockSetup } from "@/components/time-clock-setup";
 
 const TIMEZONE_OPTIONS = [
   { value: 'Asia/Bangkok', label: 'Asia/Bangkok (UTC+7)' },
@@ -110,6 +111,7 @@ export default function BranchesPage() {
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const [copiedBranchId, setCopiedBranchId] = useState<string | null>(null);
+  const [timeClockBranch, setTimeClockBranch] = useState<Branch | null>(null);
   const [qrDialogOpen, setQrDialogOpen] = useState(false);
   const [selectedQrBranch, setSelectedQrBranch] = useState<Branch | null>(null);
   const [qrData, setQrData] = useState<{ qrDataUrl: string; formUrl: string } | null>(null);
@@ -576,6 +578,9 @@ export default function BranchesPage() {
                             <p className="font-mono text-xs">/kiosk/{branch.id}</p>
                           </TooltipContent>
                         </Tooltip>
+                        <Button variant="outline" size="sm" onClick={() => setTimeClockBranch(branch)}>
+                          Set up time clock
+                        </Button>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -755,6 +760,7 @@ export default function BranchesPage() {
         </DialogContent>
       </Dialog>
 
+      {timeClockBranch && <TimeClockSetup key={timeClockBranch.id} branch={timeClockBranch} onClose={() => setTimeClockBranch(null)} />}
       <Dialog open={qrDialogOpen} onOpenChange={setQrDialogOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
