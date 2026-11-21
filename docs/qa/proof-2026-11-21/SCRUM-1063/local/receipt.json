@@ -1,0 +1,16 @@
+{
+  "environment": "Disposable local database, built HR app, simulated camera",
+  "events": [
+    {
+      "event_type": "IN",
+      "auth_method": "PHONE_FALLBACK",
+      "photo": true
+    },
+    {
+      "event_type": "OUT",
+      "auth_method": "PHONE_FALLBACK",
+      "photo": true
+    }
+  ],
+  "sha": "63e9f5b628f8bb09ec9690fc76d4e5379017f470"
+}

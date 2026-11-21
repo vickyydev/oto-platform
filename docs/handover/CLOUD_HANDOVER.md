@@ -19,6 +19,19 @@ work is landed and proven, and the tools. Kept current at every landing._
 
 ## 2. Where the work stands
 
+**21 November 2026, 19:45 Bangkok — SCRUM-1063 is live on the production
+HR domain.** An HR administrator registers the park tablet under Branches.
+The registered browser opens photo and phone entry after sign-out. Production
+and staging registration, sign-out, reload, camera and phone-entry screens
+were verified. Each temporary device was removed. Both real attendance
+directions were verified with a synthetic employee in a disposable database.
+The park administrator registers the physical tablet once. Source
+63e9f5b628f8bb09ec9690fc76d4e5379017f470 passed full candidate CI
+44902322386. Main CI 44905041162 is running. See the
+[production screenshot guide](../qa/proof-2026-11-21/SCRUM-1063/production/hr-tablet-registration.png)
+and [receipts](../qa/proof-2026-11-21/SCRUM-1063/README.md).
+
+
 **18 November 2026 (evening) - THE OWNER ANSWERED HIS DECISIONS PAGE; SCRUM-995 AND THE SCRUM-994 CHIP LANDED AND DEPLOYED; HOSTED CHECKS GREEN (run 44295622730, a6877cccf); main 6ed200912.** Read the two newest blocks of docs/progress/STATUS.md: they hold his answers ticket by ticket, what was done on his word (SCRUM-921 on production, SCRUM-996 to SCRUM-998 filed, the plans written), what is running (the fuller staging test of SCRUM-990) and the ids of the choices still with him. The owner-review halt stands for everything he has not ticked; a tick is the go for that item only. The work folders cirepair-20261118 and fnbrows-20261113 no longer exist.
 
 **18 November 2026 - CLAUDE BACK AS LEAD; TWO OWNER-APPROVED UNITS LANDED (main c6b69a71f); SCRUM-994 DEPLOYED WITH STAGING PICTURES; SCRUM-995 FILED, NOT FIXED.** The owner approved the takeover plan on 18 November. Landed in one normal push: a test-only repair of the red hosted checks (five commits) and SCRUM-994, the till's F&B sub-categories in aligned rows with no sideways scroll (four commits, apps/pos only). Runtime now: both staging tills at c6b69a71f5d4a89819cd81793f57ef2c0a3bc94f; app, API, Inbox and Console unchanged at 0bc4be94a. SCRUM-994 reads Deployed with attachments 13578 to 13581 (desk 1440, desk 1024, split 1440, phone 390, all read from the live staging till as a guest order with nothing written). The OTO App check job stays red at the party menu item checks on a real product fault, SCRUM-995 (the new-party-item answer carries a billing state the saved line does not have); it waits for the owner's go. Everything else stays under the owner-review halt: SCRUM-986 to 993 Deployed, never Done. Details and the resume line: the newest block of docs/progress/STATUS.md.

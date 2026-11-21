@@ -1,0 +1,32 @@
+{
+  "mode": "production",
+  "sha": "63e9f5b628f8bb09ec9690fc76d4e5379017f470",
+  "app": "https://app.otoplay.org",
+  "started": "2026-11-21T12:43:51.987Z",
+  "marker": "ZZ TEST HR tablet 3b3d62bf",
+  "steps": [
+    "Administrator signs in through the launcher",
+    "Administrator approves this browser for the branch",
+    "HR and launcher both refuse the signed-out administrator session",
+    "Signed-out tablet reached phone entry after the required photo with zero face requests"
+  ],
+  "images": [
+    "01-administrator-sign-in.png",
+    "02-open-hr.png",
+    "03-select-branch.png",
+    "04-approve-tablet.png",
+    "05-registered-tablet.png",
+    "06-staff-clock.png",
+    "07-required-photo.png",
+    "08-enter-phone.png"
+  ],
+  "cleanup": {
+    "testTabletsRemoved": 1,
+    "hrStatus": 401,
+    "launcherStatus": 401
+  },
+  "deviceId": "2f505a95-fcf4-4bd3-8114-93023d3e8991",
+  "branchName": "Oto Play Park, Central Floresta ",
+  "passed": true,
+  "finished": "2026-11-21T12:44:15.586Z"
+}

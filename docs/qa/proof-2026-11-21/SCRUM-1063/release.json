@@ -1,0 +1,42 @@
+{
+    "source":  "63e9f5b628f8bb09ec9690fc76d4e5379017f470",
+    "gate":  "https://github.com/vickyydev/oto-platform/actions/runs/44902322386",
+    "conclusion":  "success",
+    "jobs":  [
+                 {
+                     "name":  "pos-tests",
+                     "conclusion":  "success",
+                     "completedAt":  "2026-11-21T12:12:18Z"
+                 },
+                 {
+                     "name":  "api-tests (3)",
+                     "conclusion":  "success",
+                     "completedAt":  "2026-11-21T12:37:24Z"
+                 },
+                 {
+                     "name":  "ci",
+                     "conclusion":  "success",
+                     "completedAt":  "2026-11-21T12:34:45Z"
+                 },
+                 {
+                     "name":  "api-tests (1)",
+                     "conclusion":  "success",
+                     "completedAt":  "2026-11-21T12:38:53Z"
+                 },
+                 {
+                     "name":  "oto-app",
+                     "conclusion":  "success",
+                     "completedAt":  "2026-11-21T12:24:15Z"
+                 },
+                 {
+                     "name":  "api-tests (2)",
+                     "conclusion":  "success",
+                     "completedAt":  "2026-11-21T12:37:02Z"
+                 }
+             ],
+    "stagingDeployment":  "dep-dc0oj0t9el5s73ep17p0",
+    "productionRequest":  "dep-dc0p2bs0916s73cdoth0",
+    "productionLiveUtc":  "2026-11-21T12:43:22.789576Z",
+    "productionProof":  "production/receipt.json",
+    "mainRun":  "https://github.com/vickyydev/oto-platform/actions/runs/44905041162"
+}

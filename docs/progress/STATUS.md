@@ -1,3 +1,19 @@
+## 21 November 2026, 19:45 Bangkok — HR time clock live on production (SCRUM-1063)
+
+The HR administrator can register the park tablet in Branches. Staff use
+Clock In / Out, take a photo and enter their registered phone number.
+Production HR deployment dep-dc0p2bs0916s73cdoth0 went live at 19:43 on
+63e9f5b628f8bb09ec9690fc76d4e5379017f470. The full candidate run
+44902322386 passed all six jobs. The same source passed the staging and
+production administrator-to-signed-out-tablet checks. Both temporary
+registrations were removed and their device reads returned 404. A disposable
+database recorded an IN and an OUT with photo evidence. No real attendance
+was submitted on production. The park administrator still needs to register
+each physical tablet once. Face re-enrolment remains SCRUM-1056.
+
+[Production screenshots and receipts](../qa/proof-2026-11-21/SCRUM-1063/README.md).
+The same-source main run 44905041162 is in progress. Release slot free.
+
 ## 21 November 2026, 19:07 Bangkok — production HR time clock (SCRUM-1063)
 
 Six face-clock requests on app.otoplay.org between 18:32 and 18:42 returned
