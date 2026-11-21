@@ -1,3 +1,17 @@
+## 21 November 2026, 20:35 Bangkok — HR tablet release checks complete
+
+SCRUM-1063 is Deployed. Production HR runs source
+63e9f5b628f8bb09ec9690fc76d4e5379017f470. The administrator registration
+and signed-out clock were verified on app.otoplay.org. The
+[production screenshot guide](../qa/proof-2026-11-21/SCRUM-1063/production/hr-tablet-registration.png)
+shows the one-time approval the park still needs to perform on its own tablet.
+Candidate CI 44902322386 and main CI 44905041162 both finished green across
+all six jobs. On main, an unrelated voucher test read its audit rows out of
+order. Its whole file passed locally on the exact SHA (108/108), and the
+single failed job passed on retry. The first result is preserved in the
+[release receipt](../qa/proof-2026-11-21/SCRUM-1063/release.json).
+Jira has five inspected pictures, attachments 13865–13869. Slot free.
+
 ## 21 November 2026, 19:45 Bangkok — HR time clock live on production (SCRUM-1063)
 
 The HR administrator can register the park tablet in Branches. Staff use

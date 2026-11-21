@@ -27,7 +27,7 @@ were verified. Each temporary device was removed. Both real attendance
 directions were verified with a synthetic employee in a disposable database.
 The park administrator registers the physical tablet once. Source
 63e9f5b628f8bb09ec9690fc76d4e5379017f470 passed full candidate CI
-44902322386. Main CI 44905041162 is running. See the
+44902322386. Main CI 44905041162 passed all six jobs after one unrelated voucher test retry. Jira is Deployed with pictures 13865–13869. See the
 [production screenshot guide](../qa/proof-2026-11-21/SCRUM-1063/production/hr-tablet-registration.png)
 and [receipts](../qa/proof-2026-11-21/SCRUM-1063/README.md).
 
