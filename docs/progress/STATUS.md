@@ -1,3 +1,50 @@
+## 21 November 2026, 15:50: production runs today's version on today's data; the domain switch waits for DNS
+
+On the owner's word ("go live on what staging runs now", "seed all the latest
+data ... into the production"), in this order:
+
+- **Dump:** his Navicat dump of 21 November 15:17 (184 tables, 69,083 rows,
+  sha256 `469c32b9ccc6ef22…`), copied to `C:\oto-data\dumps\`. Rehearsed on
+  the laptop first: the 12 November data migrated to today's app (48 to 56
+  migrations) and the fresh dump loaded and migrated, 183 of 184 tables equal.
+- **Backup:** the whole production database before any change:
+  `C:\oto-data\work\prod-before-switch-20261121.dump` (29 MB). The restore
+  also kept its own copy of the HR app's data in
+  `C:\oto-data\work\restore-20261121T082251\`.
+- **Version:** `oto-api-production`, `oto-app-production` and
+  `oto-launcher-production` deployed at 2cdd670bd, the commit all three run
+  on staging (platform ledger 121 to 138, app ledger 48 to 56). Settings were
+  NOT copied from staging again: staging has since gained the WhatsApp test
+  line's settings, which production must not have.
+- **Data:** loaded with `tools/data/restore-otoapp.mjs` from the go-live
+  worktree (its three local commits rebased onto main): 183 of 184 tables hold
+  the dump's counts (sessions cleared on purpose), verify ok. The company and
+  the two parks were already there; the till's 301 products and 27 categories
+  are untouched; the launcher still shows only the HR app.
+- **Put back on top:** the printed birthday catalogue (3 set menus, 19
+  entertainment lines, 3 packages; a second run changes nothing); the
+  administrator's profile in the HR app; the 13 phone numbers of 18 November;
+  staff logins (65 already linked, 1 new, 14 switched off in the app, 2 active
+  staff with no phone number).
+- **Checked on the Render addresses:** the administrator signs in at the
+  launcher and reads the HR app's areas (78 employees, 82 users, 3 branches).
+- **Database access closed again** (allow list empty); the tools container
+  removed.
+- **Addresses added on Render, not yet verified:** `otoplay.org` and
+  `www.otoplay.org` on the launcher, `app.otoplay.org` on the HR app. The
+  settings change is one command, `C:\oto-data\golive\scripts\switch-domains.mjs
+  --apply` (api origins, the hand-off origin, the app's and launcher's
+  addresses, then a redeploy of all three), to run once `app.otoplay.org`
+  resolves and has its certificate.
+- **Open:** the domain's nameservers are still the old developer's AWS ones,
+  so records typed at GoDaddy do nothing until that changes (put to the
+  owner); the night jobs are still held (switch them on after the address
+  switch is seen working); files added to the old storage since 19 November
+  are being copied to production's storage.
+- **Roll-back:** `otoplay.org` A `52.74.27.113`; `www.otoplay.org` CNAME
+  `sdqze2a43a.ap-southeast-1.awsapprunner.com` (the old app, as read on 21
+  November before any change).
+
 ## 20 November 2026, 10:15: what was left from 19 November is landed and on staging
 
 The owner asked for less ceremony ("only focus on clear build and then
