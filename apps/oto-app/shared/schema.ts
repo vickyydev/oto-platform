@@ -877,6 +877,13 @@ export const employees = pgTable("employees", {
   check("employees_birthday_valid", validBirthdayCheck),
 ]);
 
+/** An explicitly approved second attendance number, bound to the same linked login. */
+export const employeeClockAlternatePhones = pgTable("employee_clock_alternate_phones", {
+  employeeId: varchar("employee_id").primaryKey().references(() => employees.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  phoneE164: text("phone_e164").notNull(),
+}, table => [index("idx_employee_clock_alternate_phone").on(table.phoneE164)]);
+
 export const employeesRelations = relations(employees, ({ one, many }) => ({
   person: one(people, {
     fields: [employees.personId],

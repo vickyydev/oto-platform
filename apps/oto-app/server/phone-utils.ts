@@ -49,3 +49,10 @@ export function identifyEmployeeByPhoneInput(phoneInput: string, defaultCountryC
   const normalized = normalizeThaiPhone(phoneInput, defaultCountryCode);
   return { normalized };
 }
+
+/** Accept a Thai country prefix on the tablet, including a retained domestic trunk zero. */
+export function identifyClockPhone(input: string): { normalized: string; error?: string } {
+  const compact = input.replace(/[\s().-]/g, "");
+  const thai = /^(?:\+?66)0?([689]\d{8}|[2-7]\d{7})$/.exec(compact);
+  return identifyEmployeeByPhoneInput(thai ? "+66" + thai[1] : compact);
+}

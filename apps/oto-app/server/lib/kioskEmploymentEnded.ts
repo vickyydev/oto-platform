@@ -1,6 +1,6 @@
 import type { Response } from "express";
 import { and, asc, eq, lte, ne, or } from "drizzle-orm";
-import { employeeEngagements, employees, type AuthMethod, type Employee } from "@shared/schema";
+import { employeeClockAlternatePhones, employeeEngagements, employees, users, type AuthMethod, type Employee } from "@shared/schema";
 import { EMPLOYMENT_ENDED, KIOSK_EMPLOYMENT_ENDED_MESSAGE } from "@shared/payOnly";
 import { db } from "../db";
 import { storage } from "../storage";
@@ -63,18 +63,34 @@ export async function kioskEmploymentEnded(
   return !(atBranchId && await singleShiftOpenOn(profile.id, atBranchId, today));
 }
 
-/** Return the sole eligible employee. A shared number cannot identify who clocked. */
-export async function kioskProfileByPhone(phoneE164: string, tenantId: string, now: Date = new Date(), atBranchId?: string): Promise<Employee | undefined> {
-  const profiles = await db.select().from(employees)
-    .where(and(eq(employees.phoneE164, phoneE164), eq(employees.tenantId, tenantId)))
+/** Both clock numbers name the employment record. The alternate is valid only
+ * while the approved login is active, is still linked, and still has that number. */
+export async function kioskPhoneMatches(phoneE164: string, tenantId: string) {
+  return db.select({ employee: employees, alternateUserId: users.id }).from(employees)
+    .leftJoin(employeeClockAlternatePhones, and(
+      eq(employeeClockAlternatePhones.employeeId, employees.id),
+      eq(employeeClockAlternatePhones.userId, employees.userId),
+      eq(employeeClockAlternatePhones.phoneE164, phoneE164),
+    ))
+    .leftJoin(users, and(eq(users.id, employeeClockAlternatePhones.userId),
+      eq(users.phoneE164, phoneE164), eq(users.isActive, true)))
+    .where(and(eq(employees.tenantId, tenantId), or(
+      eq(employees.phoneE164, phoneE164), eq(users.phoneE164, phoneE164),
+    )))
     .orderBy(asc(employees.createdAt), asc(employees.id));
+}
+
+/** A number shared by two eligible employees cannot identify who clocked. */
+export async function eligibleKioskPhoneProfile(
+  matches: Awaited<ReturnType<typeof kioskPhoneMatches>>, now: Date, atBranchId: string,
+): Promise<Employee | undefined> {
   let eligible: Employee | undefined;
-  for (const profile of profiles) {
-    if (await kioskEmploymentEnded(profile, now, atBranchId)) continue;
+  for (const { employee } of matches) {
+    if (await kioskEmploymentEnded(employee, now, atBranchId)) continue;
     if (eligible) return undefined;
-    eligible = profile;
+    eligible = employee;
   }
-  return eligible ?? profiles[0];
+  return eligible ?? matches[0]?.employee;
 }
 
 /**
@@ -82,7 +98,7 @@ export async function kioskProfileByPhone(phoneE164: string, tenantId: string, n
  * under another one: a profile in the same park group sharing its phone number
  * or its login whose employment has not ended. The face road then answers as
  * for no match, so the tablet falls to the phone road, which clocks the profile
- * the person works under (`kioskProfileByPhone`); the ended profile is refused
+ * the person works under (`eligibleKioskPhoneProfile`); the ended profile is refused
  * only when it is the person's last.
  */
 export async function workingProfileBesides(

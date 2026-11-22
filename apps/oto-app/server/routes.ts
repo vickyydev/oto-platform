@@ -191,7 +191,7 @@ import { SHIFT_GROUP_DELETE_NEEDS_TARGET, SHIFT_GROUP_REQUIRED, noShiftGroup, sh
 import { archivedBranchIds } from "./lib/platformBranches";
 import { branchAddedAt, branchesAddedByEdit, checklistRunStartDate } from "./lib/checklistBranchStart";
 import { liftPayOnlyIfWorkingWithin, payOnlyFence, restrictLoginWithin } from "./lib/payOnlyAccess";
-import { kioskEmploymentEnded, kioskProfileByPhone, refuseEndedEmployment, workingProfileBesides } from "./lib/kioskEmploymentEnded";
+import { kioskEmploymentEnded, kioskPhoneMatches, eligibleKioskPhoneProfile, refuseEndedEmployment, workingProfileBesides } from "./lib/kioskEmploymentEnded";
 import { singleShiftsShownAtKiosk } from "./lib/singleShift";
 import {
   BRANCH_NOT_FOUND,
@@ -11420,7 +11420,7 @@ OTO Company Limited`,
   // Kiosk - Clock with phone number fallback (after photo capture)
   app.post("/api/kiosk/clock-phone", async (req, res, next) => {
     try {
-      const { normalizeThaiPhone, validatePhoneInput } = await import("./phone-utils");
+      const { identifyClockPhone } = await import("./phone-utils");
       const phoneSchema = z.object({
         phone: z.string().min(1),
         photoEvidenceUrl: z.string(),
@@ -11462,12 +11462,9 @@ OTO Company Limited`,
         return res.status(429).json({ message: "Too many attempts. Please wait a few minutes and try again." });
       }
 
-      const phoneValidation = validatePhoneInput(phone);
-      if (!phoneValidation.valid) {
-        return res.status(400).json({ message: phoneValidation.error });
-      }
+      const { normalized, error } = identifyClockPhone(phone);
+      if (error) return res.status(400).json({ message: error });
 
-      const normalized = normalizeThaiPhone(phone);
       // A provisioned advisor can verify their phone on either the people identity
       // or its Core user. Join by coreUserId first, then case-insensitive email for
       // linked-existing accounts where coreUserId intentionally remains null.
@@ -11487,7 +11484,9 @@ OTO Company Limited`,
             and(eq(users.phoneE164, normalized), eq(users.phoneVerified, true), eq(users.isActive, true)),
           ),
         ));
+      const phoneMatches = await kioskPhoneMatches(normalized, device.tenantId);
       if (advisorCandidates.length > 0) {
+        if (phoneMatches.some(match => match.alternateUserId !== null)) return refuseKioskPhone(res);
         // Reuse the advisor clock endpoint semantics here rather than creating a
         // time_events row, since advisor sessions have no employee/schedule FK.
         // The kiosk was already verified above, so use it rather than resolving
@@ -11531,7 +11530,7 @@ OTO Company Limited`,
       // another park's staff reads here exactly like a number that belongs to
       // nobody, and cannot be clocked in at this branch.
       // SCRUM-769: of the profiles carrying the number, the one still employed.
-      const employee = await kioskProfileByPhone(normalized, device.tenantId, undefined, device.branchId);
+      const employee = await eligibleKioskPhoneProfile(phoneMatches, new Date(), device.branchId);
 
       if (!employee) {
         await storage.createKioskAuthAttempt({

@@ -504,6 +504,29 @@ try {
     assert.equal((await written(first)).timeEvents, 0);
     assert.equal((await written(second)).timeEvents, 0);
   });
+  await check("an approved second number clocks the same employee and stops when its login number changes", async () => {
+    const primary = phoneOf();
+    const alternate = phoneOf();
+    const canonical = "+66" + alternate.slice(1);
+    const login = await user("staff", "alternate-clock", "selected_branches");
+    const employeeId = await employee("alternate-clock", login.id, primary);
+    const secret = randomBytes(32).toString("hex");
+    await q(`insert into kiosk_devices (id,tenant_id,branch_id,name,device_secret_hash,kiosk_type,is_active)
+      values ($1,$2,$3,'ZZ TEST alternate tablet',$4,'face_recognition',true)`, [randomUUID(), TENANT, BRANCH, sha256(secret)]);
+    const clock = (phone: string) => call(night, "POST", "/api/kiosk/clock-phone", "", { phone, photoEvidenceUrl: "", deviceSecret: secret });
+    await q("update users set phone_e164=$2 where id=$1", [login.id, canonical]);
+    assert.equal((await clock(alternate)).status, 401);
+    await q("insert into employee_clock_alternate_phones (employee_id,user_id,phone_e164) values ($1,$2,$3)", [employeeId, login.id, canonical]);
+    const entered = await clock("66" + primary.slice(1));
+    const left = await clock("+66" + alternate);
+    assert.deepEqual([entered.body.eventType, entered.body.employee?.id, left.body.eventType, left.body.employee?.id], ["IN", employeeId, "OUT", employeeId]);
+    const collision = await employee("alternate-collision", null, alternate);
+    assert.equal((await clock(alternate)).status, 401);
+    await q("update employees set phone_e164=null where id=$1", [collision]);
+    await q("update users set phone_e164=null where id=$1", [login.id]);
+    assert.equal((await clock(alternate)).status, 401);
+    assert.equal((await written(employeeId)).timeEvents, 2);
+  });
   const faceOn = await serve(threeAmBangkok(NIGHT_AFTER), { USE_AWS_REKOGNITION: "true" }, "tests/harness/serve-routes-face.ts");
   const identify = (matched: string) => call(faceOn, "POST", "/api/kiosk/identify-face", "", {
     faceImageBase64: matched, faceFramesBase64: ["zz-1", "zz-2", "zz-3"], deviceSecret: DEVICE_SECRET,

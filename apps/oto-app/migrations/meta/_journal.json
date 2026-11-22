@@ -400,6 +400,13 @@
       "when": 1795336535534,
       "tag": "0058_employee_clock_contact",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1795343621860,
+      "tag": "0059_employee_clock_alternate_phone",
+      "breakpoints": true
     }
   ]
 }
