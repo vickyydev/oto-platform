@@ -41,6 +41,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
+  useEffect(() => {
+    if (user && window.history.state?.otoHandoff) {
+      const state = { ...window.history.state };
+      delete state.otoHandoff;
+      window.history.replaceState(state, "");
+    }
+  }, [user]);
+
   // SCRUM-653 — a session opened from the launcher carries the person's theme
   // from their suite account; the app paints it and its toggles write back.
   const adoptPlatformTheme = useThemeOptional()?.adoptPlatformTheme;

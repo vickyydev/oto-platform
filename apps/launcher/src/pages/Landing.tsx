@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Loader2, Radar, Settings, Store } from 'lucide-react';
 import { Backdrop } from '@/components/Backdrop';
 import { BrandMark } from '@/components/BrandMark';
@@ -10,6 +10,8 @@ import { AppTile } from '@/components/AppTile';
 import { SignOutNote } from '@/components/SignOutNote';
 import { ThemeCycleButton } from '@/components/ThemeCycleButton';
 import { launcherTiles, SUITE_APPS, type RegistryTile } from '@/suite/apps';
+import { readHandoffTarget } from '@oto/shared/handoff-target';
+import { openApp } from '@/suite/handoff';
 import { suiteApi } from '@/api/platform';
 import { useSession, displayName } from '@/auth/SessionContext';
 import { greeting, inWords } from '@/lib/greeting';
@@ -156,6 +158,31 @@ function SignedIn() {
   );
 }
 
+function ResumeHr() {
+  const { has } = useSession();
+  const started = useRef(false);
+  const [message, setMessage] = useState('');
+  useEffect(() => {
+    if (started.current) return;
+    started.current = true;
+    async function resume() {
+      const registry = await suiteApi.apps();
+      const tile = launcherTiles(has, registry.apps).find(({ app }) => app.key === 'oto_app');
+      if (!tile || !tile.app.origin || tile.state !== 'open') {
+        setMessage(tile?.maintenance?.message || 'The OTO App is unavailable for this account.');
+        return;
+      }
+      const target = readHandoffTarget(window.location.hash);
+      await openApp(tile.app, target, true);
+    }
+    void resume().catch(() => setMessage('Could not open the OTO App. Please try again.'));
+  }, [has]);
+  if (!message) return <Splash />;
+  return <Centred><div role="alert" className="space-y-4 text-center">
+    <p>{message}</p><a className="underline" href={window.location.pathname}>Back to the launcher</a>
+  </div></Centred>;
+}
+
 export function Landing() {
   const { state, me, locked } = useSession();
 
@@ -173,5 +200,6 @@ export function Landing() {
         <ChangePasswordPanel />
       </Centred>
     );
+  if (window.location.hash.split('&')[0] === '#resume=oto_app') return <ResumeHr />;
   return <SignedIn />;
 }

@@ -369,7 +369,7 @@ function ProtectedRoute({
   if (!user) {
     return (
       <Route path={path}>
-        <Redirect to="/auth" />
+        <AuthPage />
       </Route>
     );
   }

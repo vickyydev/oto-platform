@@ -1,3 +1,9 @@
+## 22 November 2026, staff sign-in and attendance follow-up
+
+Production confirmed one exact active Central Floresta attendance match for the reported employee on the registered tablet. The tablet recorded a photo and a phone lookup failure between two successful punches. The failed lookup kept no phone digits. The employee’s subsequent launcher attempt failed on the password. A replacement was verified through the live sign-in API and presented in the private manager handoff. Twilio reported that its trial account expired. All 61 active employee records now have a primary clock number.
+
+SCRUM-1064 adds an explicitly approved second attendance number for the same employment and accepts common Thai country-code input forms. SCRUM-1066 preserves the staff page during launcher sign-in. Production reproduced the old launcher screen with an active suite session. A test browser using the updated builds and the live sign-in service returned to the requested Check-ins page. These source changes await the deployment gate. Guest QR routing has not changed.
+
 ## 22 November 2026, production HR clock and staff recovery
 
 The HR service at app.otoplay.org runs `81c7642abbc2ea9b0739d045a8d4e36f6b9e3125`

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Link, Redirect } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { useForm } from "react-hook-form";
@@ -29,6 +29,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { Loader2, ChevronDown, Check, Phone, Mail } from "lucide-react";
+import { safeTargetPath } from "@/lib/handoff-target";
 import { useSignInOptions } from "@/lib/sign-in-options";
 
 // ─── Country code data ────────────────────────────────────────────────────────
@@ -209,6 +210,17 @@ function ModeToggle({
  * launcher's address, is one button away from it. Same frame as the form.
  */
 function OpenFromLauncherCard({ launcherUrl }: { launcherUrl: string | null }) {
+  const target = safeTargetPath(window.location.pathname + window.location.search) ?? "/";
+  const resume = launcherUrl ? new URL(launcherUrl) : null;
+  if (resume) resume.hash = "resume=oto_app&to=" + encodeURIComponent(target === "/auth" ? "/" : target);
+  const resumeUrl = resume?.href;
+  const justReturned = window.history.state?.otoHandoff === true;
+  useEffect(() => {
+    if (resumeUrl && !justReturned) window.location.replace(resumeUrl);
+  }, [resumeUrl, justReturned]);
+  if (resumeUrl && !justReturned) {
+    return <div role="status" className="p-8 text-center">Opening the OTO App...</div>;
+  }
   return (
     <div className="min-h-screen flex items-center justify-center bg-black p-8">
       <Card className="w-full max-w-md" data-testid="card-open-from-launcher">
@@ -219,15 +231,14 @@ function OpenFromLauncherCard({ launcherUrl }: { launcherUrl: string | null }) {
         </CardHeader>
         <CardContent className="space-y-4">
           <h1 className="text-lg font-semibold" data-testid="text-open-from-launcher-title">
-            Open the OTO App from the OTO launcher
+            Sign in to the OTO App
           </h1>
           <p className="text-sm text-muted-foreground" data-testid="text-open-from-launcher-detail">
-            You are signed out. The OTO App opens from the launcher: sign in there and choose the
-            OTO App tile, and you will land here signed in.
+            {justReturned ? "The app could not keep your sign-in. Check that this browser allows cookies, then try again." : "Contact your administrator for the park's sign-in link."}
           </p>
-          {launcherUrl && (
+          {resumeUrl && (
             <Button asChild className="w-full" data-testid="button-open-launcher">
-              <a href={launcherUrl}>Open the launcher</a>
+              <a href={resumeUrl}>Try sign-in again</a>
             </Button>
           )}
         </CardContent>
@@ -239,7 +250,7 @@ function OpenFromLauncherCard({ launcherUrl }: { launcherUrl: string | null }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AuthPage() {
-  const { user, loginMutation } = useAuth();
+  const { user, isLoading, error, loginMutation } = useAuth();
   const signInOptions = useSignInOptions();
   const [mode, setMode] = useState<"email" | "phone">("phone");
   const [selectedCountry, setSelectedCountry] = useState(DEFAULT_COUNTRY);
@@ -257,7 +268,11 @@ export default function AuthPage() {
     return <Redirect to="/core/today" />;
   }
 
-  if (signInOptions === undefined) {
+  if (error) {
+    return <div role="alert" className="p-8 text-center">Could not check your sign-in. <Button onClick={() => window.location.reload()}>Try again</Button></div>;
+  }
+
+  if (isLoading || signInOptions === undefined) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black p-8">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />

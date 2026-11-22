@@ -141,6 +141,6 @@ export const handoffArrival: Promise<HandoffProblem | null> | null =
         pathname: window.location.pathname,
         search: window.location.search,
         base: import.meta.env.BASE_URL,
-        replaceUrl: (url) => window.history.replaceState(null, "", url),
+        replaceUrl: (url) => window.history.replaceState({ otoHandoff: true }, "", url),
         exchange: redeem,
       });

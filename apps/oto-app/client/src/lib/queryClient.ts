@@ -85,19 +85,14 @@ export const queryClient = new QueryClient({
   },
 });
 
-// When any query returns 401 it means the session has expired or was never
-// established (e.g. cookie blocked in Replit iframe).  Clear the cached user
-// so the auth context sees null and ProtectedRoute redirects to /auth.  Without
-// this the user appears logged in (the login response populated the cache)
-// while every data fetch silently fails.
+// A refused feature request can have its own credential. Recheck the HR session.
 queryClient.getQueryCache().subscribe((event) => {
   if (event.type === "updated" && event.action.type === "error") {
     const err = event.action.error;
     const queryKey = event.query.queryKey;
     authDiag(`[auth-diag] query cache error event: key=${JSON.stringify(queryKey)} error=${err instanceof ApiError ? `ApiError(${err.status})` : String(err)}`);
-    if (err instanceof ApiError && err.status === 401) {
-      authDiag(`[auth-diag] 401 from key=${JSON.stringify(queryKey)}, clearing /api/user cache`);
-      queryClient.setQueryData(["/api/user"], null);
+    if (err instanceof ApiError && err.status === 401 && queryKey[0] !== "/api/user") {
+      void queryClient.invalidateQueries({ queryKey: ["/api/user"], exact: true }, { cancelRefetch: false });
     }
     // SCRUM-769: the employment ended while this page was open (the 03:00
     // batch moved the login to pay only). Read the user again, so the app

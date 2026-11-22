@@ -74,7 +74,7 @@ export function clearOpened(): void {
  * target that is not plainly a same-app path is dropped and the app opens at
  * its home, exactly as it did before.
  */
-export async function openApp(app: SuiteApp, target?: string | null): Promise<void> {
+export async function openApp(app: SuiteApp, target?: string | null, replace = false): Promise<void> {
   if (!app.origin) throw new Error(`${app.name} has no address on this deployment`);
   // An app that takes no hand-off (SCRUM-694, the Lucky Wheel) is opened
   // directly, and nothing is minted for it.
@@ -86,7 +86,9 @@ export async function openApp(app: SuiteApp, target?: string | null): Promise<vo
   }
   const issued = await handoffApi.issue(app.key);
   recordOpen(app.key);
-  window.location.assign(withHandoffTarget(issued.launchUrl || `${app.origin}/#handoff=${issued.token}`, target));
+  const url = withHandoffTarget(issued.launchUrl || `${app.origin}/#handoff=${issued.token}`, target);
+  if (replace) window.location.replace(url);
+  else window.location.assign(url);
 }
 
 /** Open an app without a hand-off, leaving it to ask for its own sign-in. */
