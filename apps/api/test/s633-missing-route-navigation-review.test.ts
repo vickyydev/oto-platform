@@ -78,10 +78,11 @@ describe('SCRUM-633 unsupported navigation release review', () => {
       expect(roles).toEqual(path.startsWith('/studio/') ? ['manager', 'admin'] : undefined);
       const renderGuard = (user: { role: string; mustChangePassword?: boolean } | null) => evaluate(`${guard}
         ProtectedRoute({path:${JSON.stringify(path)},requiredRole:${JSON.stringify(roles)},component:()=>null});`, {
-        useAuth: () => ({ user, isLoading: false }), useLocation: () => [path], console: { log() {} },
+        AuthPage: 'AuthPage', useAuth: () => ({ user, isLoading: false }), useLocation: () => [path], console: { log() {} },
       });
       const anonymous = renderGuard(null);
-      expect(anonymous.props.children).toEqual([{ type: 'Redirect', props: { to: '/auth' } }]);
+      expect(anonymous.props.path).toBe(path);
+      expect(anonymous.props.children).toEqual([{ type: 'AuthPage', props: {} }]);
       const password = renderGuard({ role: 'admin', mustChangePassword: true });
       expect(password.props.children).toEqual([{ type: 'Redirect', props: { to: '/change-password' } }]);
       for (const role of ['manager', 'admin', 'operator_admin', 'global_admin']) expect(typeof renderGuard({ role }).props.component).toBe('function');

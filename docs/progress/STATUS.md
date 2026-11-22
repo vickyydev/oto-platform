@@ -1,3 +1,9 @@
+## 22 November 2026, production SMS and recovery
+
+Production now uses the paid Twilio Verify service. The provider confirmed delivery of one approved Thai test message at 18:11 Bangkok time. It was a provider test using the deployed settings. The production password-reset route requires a previously verified phone. Eleven of 59 active launcher accounts linked to active HR staff lack that marker. A further reported employee already has a verified number, experienced a password lockout, and had no reset challenge in the last 48 hours when checked. The employee who received the earlier private password handoff set a personal password and clocked in at Central Floresta at 18:05.
+
+SCRUM-1066 candidate CI caught an old navigation test that still required losing the original signed-out address. Its corrected assertion verifies that each protected address opens the sign-in screen in place. All seven checks in that file pass locally. The alternate-number and launcher changes await a new full candidate run.
+
 ## 22 November 2026, staff sign-in and attendance follow-up
 
 Production confirmed one exact active Central Floresta attendance match for the reported employee on the registered tablet. The tablet recorded a photo and a phone lookup failure between two successful punches. The failed lookup kept no phone digits. The employee’s subsequent launcher attempt failed on the password. A replacement was verified through the live sign-in API and presented in the private manager handoff. Twilio reported that its trial account expired. All 61 active employee records now have a primary clock number.
