@@ -1,14 +1,16 @@
 import { z } from 'zod';
 import { and, eq, isNull } from 'drizzle-orm';
-import { account, station } from '@oto/db';
+import { account, appIdentity, employee, role, roleAssignment, rolePermission, station } from '@oto/db';
 import type { App } from '../app';
 import { AppError, errors } from '../lib/errors';
-import { BENEFIT_QR_NOT_A_SIGN_IN, hasBenefitCredentialHeader } from '@oto/shared';
+import { BENEFIT_QR_NOT_A_SIGN_IN, hasBenefitCredentialHeader, normalizePhone } from '@oto/shared';
 import { clearSessionCookie, setSessionCookie, SESSION_COOKIE } from '../plugins/session';
 import { runWithAuditContext } from '../services/audit-context';
 import {
   codeRefusalForUnknownPhone,
   consumeCode,
+  mintCode,
+  deliverCode,
   verifyCode,
   findAccountByPhone,
   invalidateAllSessions,
@@ -29,9 +31,10 @@ import {
   issueHandoffAudited,
   type HandoffConfig,
 } from '../services/handoff';
+import { isActiveRecoveryStaff, recordLinkedPhoneProof } from '../services/oto-app-users';
 import { holdsAtOwnDepartment } from '../services/access-control';
 import { audit } from '../services/audit';
-import { opCtx, withTx } from '../services/tx';
+import { opCtx, withTx, type Exec } from '../services/tx';
 import { limitPrincipal } from '../services/throttle';
 import { ipLimited } from '../plugins/rate-limit';
 import { verify } from '@node-rs/argon2';
@@ -74,6 +77,41 @@ const HandoffExchangeResponseSchema = z.union([
   }),
   HandoffExchangeBaseSchema.extend({ audience: z.enum(HANDOFF_APPS).exclude(['booth', 'oto_app']) }),
 ]);
+
+/** Public recovery must resolve a single assigned login number across operators. */
+async function recoveryAccount(db: Exec, raw: string, lock = false) {
+  const phone = normalizePhone(raw);
+  if (!phone) throw errors.badRequest('Invalid phone number');
+  const lookup = db.select().from(account).where(eq(account.phone, phone)).limit(2);
+  const rows = await (lock ? lookup.for('update') : lookup);
+  const candidate = rows.length === 1 ? rows[0] : undefined;
+  if (candidate?.status !== 'active') return { phone, eligible: undefined };
+  if (candidate.phoneVerifiedAt) return { phone, eligible: candidate };
+
+  // Staff imported from HR may have a registered login number without an OTP date.
+  // A bootstrap account or an administrator still needs a confirmed recovery number.
+  const [identity] = await db.select({ id: appIdentity.externalUserId }).from(appIdentity)
+    .where(and(eq(appIdentity.accountId, candidate.id), eq(appIdentity.app, 'oto_app'))).limit(1);
+  if (identity) {
+    if (!(await isActiveRecoveryStaff(db, identity.id, candidate.id))) return { phone, eligible: undefined };
+  } else {
+    if (!candidate.employeeId) return { phone, eligible: undefined };
+    const [activeEmployee] = await db.select({ id: employee.id }).from(employee)
+      .where(and(eq(employee.id, candidate.employeeId), eq(employee.operatorId, candidate.operatorId), isNull(employee.archivedAt)));
+    if (!activeEmployee) return { phone, eligible: undefined };
+  }
+  const grants = await db.select({
+    name: role.name, system: role.isSystem, scope: roleAssignment.scopeType,
+    scopeId: roleAssignment.scopeId, permission: rolePermission.permission,
+  }).from(roleAssignment).innerJoin(role, eq(role.id, roleAssignment.roleId))
+    .innerJoin(rolePermission, eq(rolePermission.roleId, role.id))
+    .where(and(eq(roleAssignment.accountId, candidate.id), isNull(roleAssignment.archivedAt)));
+  const staff = grants.length > 0 && grants.every(grant =>
+    !(grant.scope === 'operator' && grant.scopeId === null) &&
+    ((grant.system && (grant.name === 'staff' || grant.name === 'branch_manager')) ||
+      /^app:[a-z_]+:access$/.test(grant.permission)));
+  return { phone, eligible: staff ? candidate : undefined };
+}
 
 export async function authRoutes(app: App): Promise<void> {
   /**
@@ -499,17 +537,17 @@ export async function authRoutes(app: App): Promise<void> {
     '/password-reset/request',
     {
       config: { ...ipLimited, public: true },
-      schema: { description: 'Send a reset code to a verified phone', body: z.object({ phone: PhoneSchema }) },
+      schema: { description: 'Send a reset code to the registered recovery phone', body: z.object({ phone: PhoneSchema }) },
     },
     async (req) => {
-      const { account: acc, phone } = await findAccountByPhone(app.db, req.body.phone);
+      const { eligible: acc, phone } = await recoveryAccount(app.db, req.body.phone);
       await limitPrincipal(
         app.db,
         `reset:${phone}`,
         app.env.RATE_LIMIT_CODE_MAX,
         app.env.RATE_LIMIT_CODE_WINDOW_SECONDS,
       );
-      if (acc && acc.status === 'active' && acc.phoneVerifiedAt) {
+      if (acc) {
         await issueCode(app.db, app.sms, acc.id, phone, 'password_reset');
       }
       return { ok: true }; // never leak account existence
@@ -526,7 +564,7 @@ export async function authRoutes(app: App): Promise<void> {
       },
     },
     async (req) => {
-      const { account: acc, phone } = await findAccountByPhone(app.db, req.body.phone);
+      const { eligible: acc, phone } = await recoveryAccount(app.db, req.body.phone);
       // SCRUM-251 — already the same sentence a wrong code gets; now it also
       // costs the same guess, so the two cannot be told apart by how many
       // times they can be asked.
@@ -558,14 +596,20 @@ export async function authRoutes(app: App): Promise<void> {
         app.env.CODE_MAX_ATTEMPTS,
         // SCRUM-455 — with twilio_verify the guess is put to Twilio, not to a
         // stored hash. Harmless on console/twilio: they carry no checker.
-        { sms: app.sms, phone },
+        { sms: app.sms, phone, requireBoundDestination: !acc.phoneVerifiedAt },
       );
       await withTx(
         app.db,
         { ...opCtx(req), actorAccountId: acc.id, operatorId: acc.operatorId },
         'auth.password_reset',
         async (tx) => {
+          const { eligible } = await recoveryAccount(tx, phone, true);
+          if (eligible?.id !== acc.id) throw errors.badRequest('Invalid code');
           await consumeCode(tx, verified);
+          if (!eligible.phoneVerifiedAt) {
+            await tx.update(account).set({ phoneVerifiedAt: new Date() }).where(eq(account.id, acc.id));
+          }
+          await recordLinkedPhoneProof(tx, acc.id, phone);
           await setPassword(tx, acc.id, req.body.password);
           await invalidateAllSessions(tx, acc.id);
           // The phone's sign-in cooldown goes with the old password: the
@@ -586,6 +630,52 @@ export async function authRoutes(app: App): Promise<void> {
       return { ok: true };
     },
   );
+
+  async function ownUnverifiedAccount(req: import('fastify').FastifyRequest) {
+    const auth = req.requireAuth();
+    if (auth.impersonation) throw errors.forbidden('Verify your number in your own session.');
+    const [acc] = await app.db.select({ id: account.id, phone: account.phone, verified: account.phoneVerifiedAt })
+      .from(account).where(and(eq(account.id, auth.accountId), eq(account.status, 'active')));
+    if (!acc || acc.verified) throw errors.badRequest('This account does not need phone verification.');
+    return acc;
+  }
+
+  app.post('/phone-verification/request', {
+    config: { auth: 'session' },
+    schema: { description: 'Send a code to the signed-in account’s registered phone',
+      response: { 200: z.object({ ok: z.literal(true) }) } },
+  }, async req => {
+    const acc = await ownUnverifiedAccount(req);
+    await limitPrincipal(app.db, `rl-phone-verification:${acc.phone}`, app.env.RATE_LIMIT_CODE_MAX, app.env.RATE_LIMIT_CODE_WINDOW_SECONDS);
+    const pending = await withTx(app.db, opCtx(req), 'auth.phone_verification_request', tx =>
+      mintCode(tx, acc.id, acc.phone, 'verify_phone', app.sms));
+    const delivery = await deliverCode(app.sms, pending, req.log);
+    if (!delivery.codeSent) throw new AppError(503, 'SMS_DELIVERY_FAILED', 'The verification code could not be sent. Please try again.');
+    return { ok: true as const };
+  });
+
+  app.post('/phone-verification/complete', {
+    config: { auth: 'session' },
+    schema: { description: 'Confirm the signed-in account’s registered phone',
+      body: z.object({ code: z.string().regex(/^\d{6}$/) }).strict(),
+      response: { 200: z.object({ ok: z.literal(true) }) } },
+  }, async req => {
+    const acc = await ownUnverifiedAccount(req);
+    const checked = await verifyCode(app.db, acc.id, 'verify_phone', req.body.code, app.env.CODE_MAX_ATTEMPTS,
+      { sms: app.sms, phone: acc.phone, requireBoundDestination: true });
+    await withTx(app.db, opCtx(req), 'auth.phone_verified', async tx => {
+      const changed = await tx.update(account).set({ phoneVerifiedAt: new Date() })
+        .where(and(eq(account.id, acc.id), eq(account.phone, acc.phone), eq(account.status, 'active'), isNull(account.phoneVerifiedAt)))
+        .returning({ id: account.id });
+      if (!changed.length) throw errors.badRequest('The account changed. Request a new code.');
+      await consumeCode(tx, checked);
+      await recordLinkedPhoneProof(tx, acc.id, acc.phone);
+      const auth = req.requireAuth();
+      await audit.record(tx, { actorAccountId: acc.id, operatorId: auth.operatorId, action: 'auth.phone_verified',
+        entityType: 'account', entityId: acc.id, requestId: req.id });
+    });
+    return { ok: true as const };
+  });
 
   // Forced change for temporary passwords (SCRUM-28) and voluntary changes.
   app.post(

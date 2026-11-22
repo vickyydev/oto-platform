@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import { and, desc, eq, gt, isNull, ne } from 'drizzle-orm';
 import { account, branch, employee, fileObject, session as sessionTable } from '@oto/db';
@@ -54,6 +55,7 @@ const MeShape = z.object({
     mustChangePassword: z.boolean(), operatorId: z.string().uuid() }),
   employee: z.object({ id: z.string().uuid(), name: z.string(), nickname: z.string().nullable() }).nullable(),
   branch: z.object({ id: z.string().uuid(), name: z.string(), code: z.string(), timezone: z.string() }).nullable(),
+  phoneVerificationReminder: z.string().nullable(),
   isPlatformAdmin: z.boolean(),
   photoFileId: z.string().uuid().nullable(),
   sessionLocked: z.boolean(),
@@ -113,6 +115,10 @@ export async function meRoutes(app: App): Promise<void> {
       },
       employee: emp ? { id: emp.id, name: emp.name, nickname: emp.nickname } : null,
       branch: br ? { id: br.id, name: br.name, code: br.code, timezone: br.timezone } : null,
+      // An opaque per-login dismissal key lets the launcher remember “later” through a reload.
+      phoneVerificationReminder: !acc.phoneVerifiedAt && !auth.impersonation
+        ? createHash('sha256').update('phone-reminder:' + auth.sessionId + ':' + acc.phone).digest('hex')
+        : null,
       isPlatformAdmin: isPlatformWide(permissions),
       photoFileId: photo?.id ?? null,
       // So a reload inside a locked session comes back LOCKED rather than

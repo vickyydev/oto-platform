@@ -16,6 +16,7 @@ export interface MeResponse {
   };
   employee: { id: string; name: string; nickname: string | null } | null;
   branch: { id: string; name: string; code: string; timezone: string } | null;
+  phoneVerificationReminder?: string | null;
   isPlatformAdmin: boolean;
   photoFileId: string | null;
   /** True when this session is locked on inactivity (S2-01a). */
@@ -53,6 +54,8 @@ export const preferencesApi = {
 };
 
 export const authApi = {
+  requestPhoneVerification: () => api.post<{ ok: true }>('/auth/phone-verification/request', {}),
+  confirmPhoneVerification: (code: string) => api.post<{ ok: true }>('/auth/phone-verification/complete', { code }),
   signIn: (phone: string, password: string) =>
     api.post<{ accountId: string; mustChangePassword: boolean }>('/auth/sign-in', { phone, password }),
   signOut: () => api.post<{ ok: true }>('/auth/sign-out'),

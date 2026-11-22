@@ -1,3 +1,13 @@
+## 22 November 2026, staff phone recovery (SCRUM-1067)
+
+The launcher currently skips password-reset SMS when a registered staff account
+has no phone verification date. The release candidate allows an active member of
+staff to reset their password using a code sent to their unique assigned login
+number. Successful code entry verifies that number. Staff who know their password
+can verify by text after signing in or defer until the next sign-in. No employee
+SMS is sent on opening or dismissing the reminder. The release still requires CI
+and staging and production checks. No staff passwords were changed for this test.
+
 ## 22 November 2026, production SMS and recovery
 
 Production now uses the paid Twilio Verify service. The provider confirmed delivery of one approved Thai test message at 18:11 Bangkok time. It was a provider test using the deployed settings. The production password-reset route requires a previously verified phone. Eleven of 59 active launcher accounts linked to active HR staff lack that marker. A further reported employee already has a verified number, experienced a password lockout, and had no reset challenge in the last 48 hours when checked. The employee who received the earlier private password handoff set a personal password and clocked in at Central Floresta at 18:05.

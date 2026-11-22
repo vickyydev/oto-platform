@@ -813,7 +813,7 @@
     },
     "/auth/password-reset/request": {
       "post": {
-        "description": "Send a reset code to a verified phone",
+        "description": "Send a reset code to the registered recovery phone",
         "requestBody": {
           "required": true,
           "content": {
@@ -880,6 +880,84 @@
         "responses": {
           "200": {
             "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/auth/phone-verification/request": {
+      "post": {
+        "description": "Send a code to the signed-in account’s registered phone",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/phone-verification/complete": {
+      "post": {
+        "description": "Confirm the signed-in account’s registered phone",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "pattern": "^\\d{6}$"
+                  }
+                },
+                "required": [
+                  "code"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -1012,6 +1090,10 @@
                         "timezone"
                       ],
                       "additionalProperties": false,
+                      "nullable": true
+                    },
+                    "phoneVerificationReminder": {
+                      "type": "string",
                       "nullable": true
                     },
                     "isPlatformAdmin": {
@@ -1278,6 +1360,7 @@
                     "account",
                     "employee",
                     "branch",
+                    "phoneVerificationReminder",
                     "isPlatformAdmin",
                     "photoFileId",
                     "sessionLocked",

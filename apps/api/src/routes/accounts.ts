@@ -477,7 +477,10 @@ export async function accountRoutes(app: App): Promise<void> {
             await assertNotLastOperatorAdmin(tx as typeof app.db, auth.operatorId, { accountId: req.params.id });
           }
         }
-        const [after] = await tx.update(account).set(patch).where(eq(account.id, req.params.id)).returning();
+        const [after] = await tx.update(account).set({
+          ...patch,
+          ...(patch.phone ? { phoneVerifiedAt: sql`case when ${account.phone} = ${patch.phone} then ${account.phoneVerifiedAt} else null end` } : {}),
+        }).where(eq(account.id, req.params.id)).returning();
         // SCRUM-288: and the OTO App user stamped with this account, with any
         // session open there, in the same transaction.
         let otoApp: OtoAppUserDeactivation | OtoAppUserActivation | null = null;

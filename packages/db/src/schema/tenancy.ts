@@ -514,7 +514,7 @@ export const appIdentity = core.table(
   ],
 );
 
-export const VERIFICATION_PURPOSES = ['setup', 'password_reset'] as const;
+export const VERIFICATION_PURPOSES = ['setup', 'password_reset', 'verify_phone'] as const;
 export type VerificationPurpose = (typeof VERIFICATION_PURPOSES)[number];
 
 export const verificationCode = core.table(
@@ -525,6 +525,7 @@ export const verificationCode = core.table(
       .notNull()
       .references(() => account.id, { onDelete: 'cascade' }),
     purpose: text('purpose').$type<VerificationPurpose>().notNull(),
+    destinationDigest: text('destination_digest'),
     codeHash: text('code_hash').notNull(),
     expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }).notNull(),
     consumedAt: timestamp('consumed_at', { withTimezone: true, mode: 'date' }),
@@ -532,6 +533,6 @@ export const verificationCode = core.table(
   },
   (t) => [
     index('verification_code_account_idx').on(t.accountId),
-    check('verification_code_purpose_check', sql`${t.purpose} in ('setup','password_reset')`),
+    check('verification_code_purpose_check', sql`${t.purpose} in ('setup','password_reset','verify_phone')`),
   ],
 );

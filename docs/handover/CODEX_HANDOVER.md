@@ -1,3 +1,9 @@
+**22 November 2026, staff account recovery.** SCRUM-1067 adds self-service reset
+for eligible unverified staff and an optional phone check at sign-in. A successful
+code updates HR when the linked user has that same number. See the newest
+[status entry](../progress/STATUS.md) for the release state. The paid SMS sender
+has a delivery receipt. Send no password-reset texts on behalf of employees.
+
 **22 November 2026, production HR attendance and staff sign-in.** SCRUM-1064 is Deployed. Source 81c7642abbc2ea9b0739d045a8d4e36f6b9e3125 passed the full source gate and signed-out production clock-in and clock-out. The current contact repair covers 60 of 61 active employees. SCRUM-1065 has both reported accounts ready for private temporary-password handoff. Check the newest [status entry](../progress/STATUS.md) for the one phone conflict, the SMS sender authentication failure and employee sign-in confirmation. No guest QR routing changes were approved or deployed.
 
 **21 November 2026, 19:45 Bangkok — SCRUM-1063 is live on the production

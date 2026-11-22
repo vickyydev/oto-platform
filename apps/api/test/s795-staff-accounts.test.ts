@@ -23,6 +23,7 @@ import {
   branchIdByCode,
   createTestContext,
   operatorIdByName,
+  lastCode,
   teardownAll,
   type TestContext,
 } from './helpers';
@@ -46,8 +47,8 @@ import {
  * And the two owner questions the script carries as safe defaults: a user the
  * app still owes a password change (an administrator's temporary password)
  * adopts it, is told to change it, and can do nothing else until they have —
- * the hand-off included; and an SMS reset is sent only to a phone the app
- * proves, while an unproven one still signs in with the app password.
+ * the hand-off included; and a migrated member of staff can now recover through their
+ * registered login number. Successful code entry verifies it (SCRUM-1067).
  */
 
 // --- `hashPassword` from apps/oto-app/server/auth.ts, verbatim ---------------
@@ -250,14 +251,14 @@ describe('SCRUM-795: a password the app still wants changed is changed at the fi
   });
 });
 
-describe('SCRUM-795: an SMS reset goes only to a phone the app proves', () => {
+describe('SMS recovery for migrated staff accounts', () => {
   const resetCodes = (key: Key) =>
     ctx.db
       .select({ id: verificationCode.id })
       .from(verificationCode)
       .where(and(eq(verificationCode.accountId, accountIds[key]), eq(verificationCode.purpose, 'password_reset')));
 
-  it('sends no code to an unproven phone, which still signs in with the app password', async () => {
+  it('offers a reset to the assigned staff phone while leaving the account unverified until code entry', async () => {
     const [acc] = await ctx.db
       .select({ phoneVerifiedAt: account.phoneVerifiedAt })
       .from(account)
@@ -269,7 +270,9 @@ describe('SCRUM-795: an SMS reset goes only to a phone the app proves', () => {
       payload: { phone: PEOPLE.wrong.phone },
     });
     expect(res.statusCode).toBe(200);
-    expect(await resetCodes('wrong')).toEqual([]);
+    expect(await resetCodes('wrong')).toHaveLength(1);
+    const [pending] = await ctx.db.select().from(account).where(eq(account.id, accountIds.wrong));
+    expect(pending?.phoneVerifiedAt).toBeNull();
   });
 
   it('sends one to a phone the app proves', async () => {
@@ -375,8 +378,59 @@ describe('SCRUM-795: the first sign-in adopts the OTO App password', () => {
   it('takes nothing from a user the app has switched off', async () => {
     const res = await signIn(PEOPLE.off.phone, PEOPLE.off.appPassword);
     expect(res.statusCode).toBe(401);
+    const before = ctx.smsLog.length;
+    const reset = await ctx.app.inject({ method: 'POST', url: '/auth/password-reset/request', payload: { phone: PEOPLE.off.phone } });
+    expect(reset.statusCode).toBe(200);
+    expect(ctx.smsLog).toHaveLength(before);
     expect(await storedHash('off')).toBeNull();
     expect(await adoptions('off')).toHaveLength(0);
     await _resetThrottle(ctx.db);
+  });
+});
+
+describe('SCRUM-1067 registered phone recovery', () => {
+  const verifyRequest = '/auth/phone-verification/request';
+  const verifyComplete = '/auth/phone-verification/complete';
+  it('verifies on a signed-in OTP, scopes the reminder to a login, and stops prompting after proof', async () => {
+    const phone = PEOPLE.wrong.phone;
+    const cookie = cookieOf(await signIn(phone, PEOPLE.wrong.appPassword));
+    const read = async (session: string) => (await ctx.app.inject({ url: '/me', headers: { cookie: session } })).json().phoneVerificationReminder;
+    const key = await read(cookie);
+    expect(key).toMatch(/^[a-f0-9]{64}$/);
+    expect(await read(cookie)).toBe(key);
+    const other = cookieOf(await signIn(phone, PEOPLE.wrong.appPassword));
+    expect(await read(other)).not.toBe(key);
+    expect((await ctx.app.inject({ method: 'POST', url: verifyRequest })).statusCode).toBe(401);
+    const send = await ctx.app.inject({ method: 'POST', url: verifyRequest, headers: { cookie } });
+    expect(send.statusCode).toBe(200);
+    const code = lastCode(ctx.smsLog);
+    const complete = (guess: string) => ctx.app.inject({ method: 'POST', url: verifyComplete, headers: { cookie }, payload: { code: guess } });
+    expect((await complete(code === '000000' ? '000001' : '000000')).statusCode).toBe(400);
+    expect(await read(cookie)).toBe(key);
+    expect((await complete(code)).statusCode).toBe(200);
+    expect(await read(other)).toBeNull();
+    const [hr] = await ctx.db.select({ verified: otoappUsers.phoneVerified }).from(otoappUsers).where(eq(otoappUsers.id, userIds.wrong));
+    expect(hr?.verified).toBe(true);
+    expect((await complete(code)).statusCode).toBe(400);
+  });
+
+  it('lets active staff without an old verification date set a new password only after a valid reset code', async () => {
+    const id = accountIds.wrong;
+    const phone = PEOPLE.wrong.phone;
+    await ctx.db.update(account).set({ phoneVerifiedAt: null }).where(eq(account.id, id));
+    await ctx.db.update(otoappUsers).set({ phoneVerified: false, phoneE164: '+66811795099' }).where(eq(otoappUsers.id, userIds.wrong));
+    const sent = await ctx.app.inject({ method: 'POST', url: '/auth/password-reset/request', payload: { phone } });
+    expect(sent.statusCode).toBe(200);
+    const code = lastCode(ctx.smsLog);
+    const password = 'new-synthetic-staff-password';
+    const reset = (value: string) => ctx.app.inject({ method: 'POST', url: '/auth/password-reset/complete', payload: { phone, code: value, password } });
+    expect((await reset(code === '000000' ? '000001' : '000000')).statusCode).toBe(400);
+    expect((await reset(code)).statusCode).toBe(200);
+    const [updated] = await ctx.db.select().from(account).where(eq(account.id, id));
+    expect(updated?.phoneVerifiedAt).toBeInstanceOf(Date);
+    const [hr] = await ctx.db.select({ verified: otoappUsers.phoneVerified }).from(otoappUsers).where(eq(otoappUsers.id, userIds.wrong));
+    expect(hr?.verified).toBe(false);
+    expect((await signIn(phone, password)).statusCode).toBe(200);
+    expect((await reset(code)).statusCode).toBe(400);
   });
 });

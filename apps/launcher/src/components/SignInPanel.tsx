@@ -99,7 +99,9 @@ export function SignInPanel() {
       if (mode === 'setup') await authApi.setupStart(phone.trim());
       else await authApi.resetRequest(phone.trim());
       setCodeSent(true);
-      setNotice('Code sent by SMS. It lasts 10 minutes and works once.');
+      setNotice(mode === 'setup'
+        ? 'If this account is waiting for setup, a code will arrive by SMS.'
+        : 'If this number is eligible, a reset code will arrive by SMS. It lasts 10 minutes.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not send the code');
     } finally {

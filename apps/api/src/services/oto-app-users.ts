@@ -96,6 +96,25 @@ export async function findOtoAppUser(
   return row ?? null;
 }
 
+// A stale link or a disabled HR user cannot establish staff recovery eligibility.
+export async function isActiveRecoveryStaff(exec: Exec, externalId: string, accountId: string) {
+  if (!(await relationInstalled(exec, 'otoapp.users'))) return false;
+  const user = await findOtoAppUser(exec, { id: externalId });
+  return !!user && user.isActive && user.platformUserId === accountId &&
+    (user.role === 'staff' || user.role === 'manager');
+}
+
+// HR displays its own verification status in My Account and the employee editor.
+export async function recordLinkedPhoneProof(exec: Exec, accountId: string, phone: string) {
+  if (!(await relationInstalled(exec, 'otoapp.users'))) return;
+  await exec.execute(sql`update otoapp.users u
+    set phone_verified = true, phone_verified_at = now(), updated_at = now()
+    from core.app_identity i
+    where i.app = 'oto_app' and i.account_id = ${accountId} and i.external_user_id = u.id
+      and u.platform_user_id = i.account_id and u.is_active and u.phone_e164 = ${phone}
+      and not u.phone_verified`);
+}
+
 /**
  * Stamp an existing OTO App user with the platform account they are — the
  * case where the person already works in that app and is only now being given

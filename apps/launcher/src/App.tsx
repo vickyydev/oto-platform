@@ -9,6 +9,7 @@ import { BrandMark } from '@/components/BrandMark';
 import { SuiteAssistant } from '@/components/assistant/AssistantDock';
 import { ImpersonationBanner } from '@/components/ImpersonationBanner';
 import { SessionProvider, useSession } from '@/auth/SessionContext';
+import { PhoneVerificationPrompt } from '@/components/PhoneVerificationPrompt';
 import { accountTheme } from '@/lib/accountTheme';
 
 function NotFound() {
@@ -74,7 +75,9 @@ export default function App() {
       <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
         {/* SCRUM-648: above every page for the whole view-as window; never dismissible. */}
         <ImpersonationBanner />
-        <Routes />
+        <PhoneVerificationPrompt>
+          <Routes />
+        </PhoneVerificationPrompt>
         {/* The internal assistant's floating button and chat popup (SCRUM-591), on every
             signed-in page and mounted once, so what is open and typed survives a move
             between them. */}

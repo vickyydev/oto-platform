@@ -169,7 +169,7 @@ async function codeMatches(storedHash: string, code: string): Promise<boolean> {
  */
 const CODE_CANDIDATES = 10;
 
-export type CodePurpose = 'setup' | 'password_reset';
+export type CodePurpose = (typeof verificationCode.$inferSelect)['purpose'];
 
 /**
  * A code that has been stored but not yet delivered.
@@ -187,13 +187,14 @@ export interface PendingCode {
   message: string;
 }
 
-const codeMessage = (purpose: CodePurpose, code: string): string =>
-  purpose === 'setup'
-    ? `Your OTO account setup code is ${code}`
-    : `Your OTO password reset code is ${code}`;
+const codeMessage = (purpose: CodePurpose, code: string): string => {
+  const label = { setup: 'account setup', password_reset: 'password reset', verify_phone: 'phone verification' }[purpose];
+  return `Your OTO ${label} code is ${code}`;
+};
 
 /** What reception is told when the account is there but the code is not. */
 const UNDELIVERED: Record<CodePurpose, string> = {
+  verify_phone: 'The verification code could not be sent. Try again later.',
   setup:
     'The account was created, but its setup code could not be sent. Ask them to tap ' +
     '"First shift? Set up account" on the sign-in screen for a new code, or issue a ' +
@@ -246,6 +247,7 @@ export async function mintCode(
     id: newId(),
     accountId,
     purpose,
+    destinationDigest: createHash('sha256').update(phone).digest('hex'),
     // Argon2id with a per-code salt (SCRUM-347). `code_hash` is `text`, so the
     // ~97-character encoded hash — or the marker (SCRUM-455) — needs no schema
     // change.
@@ -390,7 +392,7 @@ export async function verifyCode(
    * Absent — and on the console and twilio adapters — the local hash comparison
    * runs exactly as before.
    */
-  external?: { sms: SmsSender; phone: string },
+  external?: { sms: SmsSender; phone: string; requireBoundDestination?: boolean },
 ): Promise<VerifiedCode> {
   const attemptKey = `code:${accountId}:${purpose}`;
   /**
@@ -407,6 +409,8 @@ export async function verifyCode(
       and(
         eq(verificationCode.accountId, accountId),
         eq(verificationCode.purpose, purpose),
+        external ? sql`(${verificationCode.destinationDigest} = ${createHash('sha256').update(external.phone).digest('hex')}
+          or (${!external.requireBoundDestination} and ${verificationCode.destinationDigest} is null))` : undefined,
         isNull(verificationCode.consumedAt),
       ),
     )
