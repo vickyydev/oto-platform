@@ -1,3 +1,7 @@
+## 22 November 2026, HR production clock phone repair (SCRUM-1064)
+
+60 of 61 active employee clock numbers populated in production. One identity conflict remains. The signed-out registered browser recorded synthetic IN and OUT, verified in the database. Both test photos and all synthetic rows were removed. The permanent contact synchronization change is in its release checks. See [production evidence](../qa/proof-2026-11-22/SCRUM-1064/README.md).
+
 ## 21 November 2026, 20:35 Bangkok — HR tablet release checks complete
 
 SCRUM-1063 is Deployed. Production HR runs source

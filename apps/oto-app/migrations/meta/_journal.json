@@ -393,6 +393,13 @@
       "when": 1795143098486,
       "tag": "0057_otoapp_v_event_packages_serving_times",
       "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1795336535534,
+      "tag": "0058_employee_clock_contact",
+      "breakpoints": true
     }
   ]
 }

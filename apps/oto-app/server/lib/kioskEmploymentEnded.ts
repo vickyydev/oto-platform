@@ -63,24 +63,18 @@ export async function kioskEmploymentEnded(
   return !(atBranchId && await singleShiftOpenOn(profile.id, atBranchId, today));
 }
 
-/**
- * The profile a phone number names at the kiosk's park group: of every profile
- * there carrying the number (`employees.phone_e164` is not unique), the first
- * whose employment has not ended, and only when every one of them has ended,
- * the first of those — which the kiosk then refuses. A person whose old
- * profile has ended and who works under a second one (the duplicate shape
- * SCRUM-794's fold resolves) clocks in on the one they work under, as they
- * did before the kiosk refused ended profiles. In a fixed order, so one number
- * names the same profile every time.
- */
+/** Return the sole eligible employee. A shared number cannot identify who clocked. */
 export async function kioskProfileByPhone(phoneE164: string, tenantId: string, now: Date = new Date(), atBranchId?: string): Promise<Employee | undefined> {
   const profiles = await db.select().from(employees)
     .where(and(eq(employees.phoneE164, phoneE164), eq(employees.tenantId, tenantId)))
     .orderBy(asc(employees.createdAt), asc(employees.id));
+  let eligible: Employee | undefined;
   for (const profile of profiles) {
-    if (!(await kioskEmploymentEnded(profile, now, atBranchId))) return profile;
+    if (await kioskEmploymentEnded(profile, now, atBranchId)) continue;
+    if (eligible) return undefined;
+    eligible = profile;
   }
-  return profiles[0];
+  return eligible ?? profiles[0];
 }
 
 /**

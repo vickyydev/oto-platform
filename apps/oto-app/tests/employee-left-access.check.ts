@@ -496,6 +496,14 @@ try {
     assert.equal((await written(duplicate)).timeEvents, 1);
     assert.deepEqual(await written(original), NOTHING);
   });
+  await check("a shared number cannot clock either of two currently working employees", async () => {
+    const shared = phoneOf();
+    const first = await employee("shared-first", null, shared);
+    const second = await employee("shared-second", null, shared);
+    assert.equal((await phoneClock(shared)).status, 401);
+    assert.equal((await written(first)).timeEvents, 0);
+    assert.equal((await written(second)).timeEvents, 0);
+  });
   const faceOn = await serve(threeAmBangkok(NIGHT_AFTER), { USE_AWS_REKOGNITION: "true" }, "tests/harness/serve-routes-face.ts");
   const identify = (matched: string) => call(faceOn, "POST", "/api/kiosk/identify-face", "", {
     faceImageBase64: matched, faceFramesBase64: ["zz-1", "zz-2", "zz-3"], deviceSecret: DEVICE_SECRET,
