@@ -19,6 +19,12 @@ work is landed and proven, and the tools. Kept current at every landing._
 
 ## 2. Where the work stands
 
+**22 November, 21:00 Bangkok.** The production API, launcher and HR app run
+`669e1c00f1662813a66d067f061a3c1beff9b9eb`, including platform migration 0138.
+Recovery, the optional phone prompt, alternate attendance and HR redirects
+passed their [hosted checks](../qa/proof-2026-11-22/SCRUM-1067/README.md).
+
+
 **22 November, SCRUM-1067.** The staff recovery release adds platform migration
 0138, the API's registered-number reset and the launcher's optional verification
 prompt. Deploy the API and its migration before the launcher. Exercise the prompt

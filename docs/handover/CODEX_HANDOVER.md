@@ -1,3 +1,11 @@
+**22 November 2026, 21:00 Bangkok.** Staff self-service recovery, alternate
+attendance numbers and returning to the requested HR page are live on
+production. The [release evidence](../qa/proof-2026-11-22/SCRUM-1067/README.md)
+includes the exact source, both CI runs, the staging reminder and actual
+production clock results. The next external inputs are a scan preview of
+the old guest QR and activation of the park's own AWS account. The admin
+with an unverified number can verify in an existing authenticated session.
+
 **22 November 2026, staff account recovery.** SCRUM-1067 adds self-service reset
 for eligible unverified staff and an optional phone check at sign-in. A successful
 code updates HR when the linked user has that same number. See the newest

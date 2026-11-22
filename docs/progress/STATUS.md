@@ -1,3 +1,23 @@
+## 22 November 2026, production staff recovery, attendance and HR navigation
+
+At 21:00 Bangkok, the public launcher, platform API and HR app serve
+`669e1c00f1662813a66d067f061a3c1beff9b9eb`. Staff can recover on their unique
+registered login number and optionally verify it after sign-in. A fresh sign-in
+asks again after a deferral. A signed-in employee opening an HR link returns to
+the requested page. Both approved numbers now resolve to one employment. A
+registered production test tablet clocked in with one and out with the other.
+Both photos and the synthetic fixture were removed.
+
+SCRUM-1064, SCRUM-1066 and SCRUM-1067 are Deployed for owner review.
+[Release evidence and screenshots](../qa/proof-2026-11-22/SCRUM-1067/README.md).
+The paid SMS sender previously confirmed delivery of the approved Thai test.
+The reported verified account with the earlier lockout opened a staff session
+at 19:04. The bootstrap administrator's phone still needs confirmation through
+an authenticated session or independently established owner recovery. The new
+public branch QR forms use the production database. The destination encoded
+in the park's old printout is still unknown. Face clocking awaits a park-owned
+AWS account. The current storage credentials belong to Cloudflare R2.
+
 ## 22 November 2026, staff recovery release checks (SCRUM-1067)
 
 A browser using the production build and a disposable database completed a
