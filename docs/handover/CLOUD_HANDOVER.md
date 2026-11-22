@@ -19,6 +19,13 @@ work is landed and proven, and the tools. Kept current at every landing._
 
 ## 2. Where the work stands
 
+**23 November 2026, staging payment setup (SCRUM-709).** Central Floresta has
+the one-baht item and a dedicated home Digio test till. The owner enters the
+live merchant values on the staging API. Keep demo reset disabled and check
+pending payments before changing providers. Live settlement, electronic
+refund, the BEO paid notification and physical terminal proof remain open.
+See the [staging checkpoint](../progress/STATUS.md).
+
 **22 November, 21:00 Bangkok.** The production API, launcher and HR app run
 `669e1c00f1662813a66d067f061a3c1beff9b9eb`, including platform migration 0138.
 Recovery, the optional phone prompt, alternate attendance and HR redirects

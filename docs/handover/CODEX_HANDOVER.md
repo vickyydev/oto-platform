@@ -1,3 +1,10 @@
+**23 November 2026, staging real payments (SCRUM-709).** The one-baht item
+and home Digio test till are prepared. Demo reset is disabled, the guest
+return routes were checked, and the staging API still runs the simulator
+pending the owner's private 2C2P credentials. The home Pi has yet to claim its
+box. See the [payment checkpoint](../progress/STATUS.md) for the deployment,
+cross-app checks and remaining bank and hardware proof.
+
 **22 November 2026, 21:00 Bangkok.** Staff self-service recovery, alternate
 attendance numbers and returning to the requested HR page are live on
 production. The [release evidence](../qa/proof-2026-11-22/SCRUM-1067/README.md)

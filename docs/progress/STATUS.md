@@ -1,3 +1,34 @@
+## 23 November 2026, staging payment preparation (SCRUM-709)
+
+Central Floresta has one active shop item, `ZZPAY1` (ZZ TEST real payment), at
+100 satang on weekdays and weekends. The staging till catalogue returned it.
+The restricted home test till `ZDIG` uses hosted QR and a physical card
+terminal. Its counter box is unclaimed. Bind the Digio PAX A920Pro after the
+Pi identifies the terminal over USB. The NEXGO N5 is the separate park test.
+
+The staging API runs `669e1c00f1662813a66d067f061a3c1beff9b9eb`, Render
+deploy `dep-dc1htaec6qcc73atjlm0`. The administrator's demo reset reports
+unavailable. The gateway reports simulator, PPQR, a configured backend
+notification URL, zero pending gateway attempts for the operator, and both
+merchant credential names missing. The electronic refund keys are also absent.
+The saved booking return uses the staging POS origin and
+`/api/public/bookings/return`. GET and form POST returned 303 to the guest
+booking page, which returned 200. The party deposit return page answered 200.
+
+An authenticated Radar dashboard request for Floresta returned the POS figures.
+The guest catalogue, booking ledger and Inbox conversation list answered.
+Payment inquiry, payment reconciliation, party deposit follow-up and reporting
+jobs reported successful runs. These reads do not exercise paid settlement.
+After the owner saves the merchant ID and signing key, recheck pending
+attempts, switch the staging gateway to 2C2P production and disable the
+simulator controls. Verify the selected provider and mint and cancel an
+unpaid QR before the owner's paid test. Track the bank result and any refund
+separately. A POS sale exercises the till. Use a dedicated test booking and
+BEO with controlled recipients to prove the hosted links, deposit write-back
+and manager notification. Verify the POS revenue in Radar after rollup.
+The [gateway connection plan](plans/real-payment-test/GATEWAY_CONNECTION_PLAN.md)
+records which merchant permissions and refund keys the park must confirm.
+
 ## 22 November 2026, production staff recovery, attendance and HR navigation
 
 At 21:00 Bangkok, the public launcher, platform API and HR app serve
