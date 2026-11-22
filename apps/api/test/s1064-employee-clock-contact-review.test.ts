@@ -24,6 +24,9 @@ describe('SCRUM-1064 | employee contact numbers on the attendance tablet', () =>
     const edited = await ctx.db.execute(sql`update otoapp.employees set phone='+66 (0)92-345-6789'
       where id=${id} returning phone_e164`);
     expect(edited.rows[0]?.phone_e164).toBe('+66923456789');
+    const landline = await ctx.db.execute(sql`update otoapp.employees set phone='02 123 4567'
+      where id=${id} returning phone_e164`);
+    expect(landline.rows[0]?.phone_e164).toBe('+6621234567');
     const cleared = await ctx.db.execute(sql`update otoapp.employees set phone=null where id=${id} returning phone_e164`);
     expect(cleared.rows[0]?.phone_e164).toBeNull();
   });

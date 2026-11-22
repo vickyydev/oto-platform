@@ -3,6 +3,8 @@
 CREATE OR REPLACE FUNCTION employee_clock_contact_number(raw_phone text)
 RETURNS text LANGUAGE sql IMMUTABLE STRICT AS $$
   SELECT CASE
+    WHEN digits ~ '^0[2-7][0-9]{7}$' THEN '+66' || substr(digits, 2)
+    WHEN digits ~ '^\+?660?[2-7][0-9]{7}$' THEN '+66' || right(digits, 8)
     WHEN digits ~ '^0[689][0-9]{8}$' THEN '+66' || substr(digits, 2)
     WHEN digits ~ '^[689][0-9]{8}$' THEN '+66' || digits
     WHEN digits ~ '^66[689][0-9]{8}$' THEN '+' || digits
