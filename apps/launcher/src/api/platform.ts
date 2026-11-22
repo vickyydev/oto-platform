@@ -54,8 +54,10 @@ export const preferencesApi = {
 };
 
 export const authApi = {
-  requestPhoneVerification: () => api.post<{ ok: true }>('/auth/phone-verification/request', {}),
-  confirmPhoneVerification: (code: string) => api.post<{ ok: true }>('/auth/phone-verification/complete', { code }),
+  requestPhoneVerification: () =>
+    api.post<ApiResponse<'/auth/phone-verification/request', 'post'>>('/auth/phone-verification/request', {}),
+  confirmPhoneVerification: (code: string) =>
+    api.post<ApiResponse<'/auth/phone-verification/complete', 'post'>>('/auth/phone-verification/complete', { code }),
   signIn: (phone: string, password: string) =>
     api.post<{ accountId: string; mustChangePassword: boolean }>('/auth/sign-in', { phone, password }),
   signOut: () => api.post<{ ok: true }>('/auth/sign-out'),

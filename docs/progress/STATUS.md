@@ -1,3 +1,15 @@
+## 22 November 2026, staff recovery release checks (SCRUM-1067)
+
+A browser using the production build and a disposable database completed a
+password reset with an unverified staff number. It also deferred the reminder,
+saw it again on the next sign-in and confirmed the number. A simulated SMS
+provider exercised the send and check steps. All 11 active linked staff
+accounts missing a verification date qualify in the production directory.
+
+Candidate CI found two launcher calls declaring their reply types locally.
+The launcher now uses the API's generated definitions for both calls. The
+public release still awaits the full build and hosted checks.
+
 ## 22 November 2026, staff phone recovery (SCRUM-1067)
 
 The launcher currently skips password-reset SMS when a registered staff account
