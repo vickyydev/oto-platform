@@ -1,6 +1,30 @@
-## 22 November 2026, HR production clock phone repair (SCRUM-1064)
+## 22 November 2026, production HR clock and staff recovery
 
-60 of 61 active employee clock numbers populated in production. One identity conflict remains. The signed-out registered browser recorded synthetic IN and OUT, verified in the database. Both test photos and all synthetic rows were removed. The permanent contact synchronization change is in its release checks. See [production evidence](../qa/proof-2026-11-22/SCRUM-1064/README.md).
+The HR service at app.otoplay.org runs `81c7642abbc2ea9b0739d045a8d4e36f6b9e3125`
+on production deployment `dep-dc1bind6e07s73ctk9k0`. SCRUM-1064 is Deployed.
+Both staging and production proved that importing, changing and clearing a
+contact updates its clock number. A signed-out production test tablet clocked
+IN and OUT with separate photos for an employee imported with only a contact
+number. Cleanup left no test employee, device, event, attempt or photo.
+
+60 of 61 active employees have an attendance number. One employee's HR contact
+and login numbers differ. Await HR's confirmed choice before setting their
+attendance number. The three original rejected punches were not reconstructed.
+[Production and staging evidence](../qa/proof-2026-11-22/SCRUM-1064/README.md).
+
+All six exact-source jobs passed before landing. The repeated main gate is rerunning the print-template API shard after all 26 tests in that file passed locally. [Main run](https://github.com/vickyydev/oto-platform/actions/runs/45008509623).
+
+SCRUM-1065 remains In Progress. Both reported launcher accounts are active,
+verified, and linked to the current HR employment and branch. The first is a
+returning employee whose former employment remains in history. The second
+was reset through the authorized administrator API. The production SMS
+sender received HTTP 401 from Twilio. A private administrator handoff is
+available on the owner's PC. Employee completion of first sign-in is pending.
+Two additional active HR users have no suite identity or usable login phone.
+
+The three newly generated branch guest QR links open the new HR guest form
+without authentication. Its backend uses the production platform database.
+The park group currently uses the built-in form. Guest routing was not changed.
 
 ## 21 November 2026, 20:35 Bangkok — HR tablet release checks complete
 

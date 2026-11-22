@@ -19,6 +19,8 @@ work is landed and proven, and the tools. Kept current at every landing._
 
 ## 2. Where the work stands
 
+22 November 2026. The production HR clock repair is live at 81c7642abbc2ea9b0739d045a8d4e36f6b9e3125. See [STATUS](../progress/STATUS.md) for the two employee account recoveries and the remaining contact ownership check. [Clock evidence](../qa/proof-2026-11-22/SCRUM-1064/README.md).
+
 **21 November 2026, 19:45 Bangkok — SCRUM-1063 is live on the production
 HR domain.** An HR administrator registers the park tablet under Branches.
 The registered browser opens photo and phone entry after sign-out. Production
