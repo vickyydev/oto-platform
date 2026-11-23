@@ -1,3 +1,7 @@
+## 23 November 2026, SCB payment routing
+
+**23 November 2026, SCRUM-709.** Live bank probes verified the card and PromptPay child accounts. SCB00 alone could not find the unpaid invoice. Including SCB02 returned its correct pending status and amount. The API now stores the channel's child account on the attempt. See the real-payment connection plan for evidence and settings. The staging release and a paid park test are separate checks.
+
 ## 23 November 2026, 2C2P production endpoint check (SCRUM-709)
 
 The staging API has the two merchant settings. A live 2C2P inquiry verified the signature. Payment token requests for PromptPay and hosted cards returned 9058. The staging gateway remains on its simulator. The [connection plan](plans/real-payment-test/GATEWAY_CONNECTION_PLAN.md) contains the two support references and the next merchant-routing check.

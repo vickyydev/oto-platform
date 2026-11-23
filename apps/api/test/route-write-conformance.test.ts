@@ -1040,6 +1040,7 @@ const OPEN_WITHOUT_A_KEY = [
    */
   'POST /public/saved-children/save',
   'POST /public/saved-children/verify',
+  'POST /webhooks/2c2p/checkout/:attemptId/:key/:method',
   'POST /webhooks/2c2p/hosted/:attemptId',
   /**
    *   - **the delivery is its own unique key** — `POST /webhooks/2c2p/payment`

@@ -495,6 +495,7 @@ describe('route guards (S2-01b)', () => {
        * 2C2P's own public page. 404 on any deployment with the real gateway,
        * which is every live park (`assertProductionSafe`).
        */
+      'GET /webhooks/2c2p/checkout/:attemptId/:key',
       'GET /webhooks/2c2p/hosted/:attemptId',
       /**
        * S2-19 I2d — Meta's webhook subscription challenge for one inbox
@@ -563,6 +564,7 @@ describe('route guards (S2-01b)', () => {
       'POST /public/saved-children/save',
       'POST /public/saved-children/verify',
       /** S2-12 — a press of pay / fail on the simulated hosted page. Simulator only. */
+      'POST /webhooks/2c2p/checkout/:attemptId/:key/:method',
       'POST /webhooks/2c2p/hosted/:attemptId',
       /**
        * S2-10a — what the payment gateway posts to us.

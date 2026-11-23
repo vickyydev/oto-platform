@@ -4,6 +4,7 @@ import type { App } from '../app';
 import { ipLimited } from '../plugins/rate-limit';
 import { formatTHB } from '@oto/shared';
 import {
+  gatewayFor,
   gatewayStatus,
   handleNotification,
   hostedLinkStanding,
@@ -11,6 +12,7 @@ import {
   simulateGatewayEvent,
   simulatorHostedPage,
 } from '../services/payments/gateway';
+import { hostedChoicePage, selectHostedMethod } from '../services/payments/hosted-choice';
 import { errors } from '../lib/errors';
 import { sendHtmlPage } from './public';
 
@@ -244,6 +246,31 @@ export function webhookRoutes(app: App): Promise<void> {
       }
     },
   );
+
+  const checkoutParams = z.object({ attemptId: z.string().uuid(), key: z.string().uuid() });
+  app.get('/2c2p/checkout/:attemptId/:key', {
+    config: { public: true, ...ipLimited }, schema: { params: checkoutParams },
+  }, async (req, reply) => {
+    const { attemptId, key } = req.params;
+    const page = await hostedChoicePage(app.db, attemptId, key);
+    const form = (method: string, label: string) =>
+      `<form method="post" action="/webhooks/2c2p/checkout/${attemptId}/${key}/${method}"><button>${label}</button></form>`;
+    reply.header('referrer-policy', 'no-referrer');
+    return sendHtmlPage(reply, 'Choose how to pay', '<h1>Choose how to pay</h1>' +
+      `<p>OTO Play Park &middot; ${escapeHtml(formatTHB(page.amount))}</p>` +
+      (page.method === 'card' ? '' : form('qr', 'PromptPay QR')) +
+      (page.method === 'qr' ? '' : form('card', 'Credit or debit card')));
+  });
+  app.post('/2c2p/checkout/:attemptId/:key/:method', {
+    config: { public: true, ...ipLimited },
+    schema: { params: checkoutParams.extend({ method: z.enum(['card', 'qr']) }) },
+  }, async (req, reply) => {
+    const { attemptId, key, method } = req.params;
+    const gateway = gatewayFor(app.env, req.log);
+    if (gateway.selection.provider !== '2c2p') throw errors.notFound('Payment link');
+    const url = await selectHostedMethod(app.db, gateway.qr, attemptId, key, method);
+    return reply.header('referrer-policy', 'no-referrer').header('cache-control', 'no-store').redirect(url, 303);
+  });
 
   app.get(
     '/2c2p/hosted/:attemptId',

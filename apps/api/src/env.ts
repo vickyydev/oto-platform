@@ -581,6 +581,9 @@ const EnvSchema = z.object({
    */
   PGW_WEBHOOK_SECRET: z.string().default(''),
   /** `PPQR`. `THQR` is a CATEGORY code in the Payment Option answer and is wrong. */
+  PGW_MERCHANT_BRANCH_ID: z.string().uuid().optional(),
+  PGW_QR_CHILD_MERCHANT_ID: z.string().regex(/^[A-Za-z0-9]{1,25}$/).optional(),
+  PGW_CARD_CHILD_MERCHANT_ID: z.string().regex(/^[A-Za-z0-9]{1,25}$/).optional(),
   PGW_QR_CHANNEL_CODE: z.string().default('PPQR'),
   /** `RAW`, so the display renders the payload itself and needs no outbound internet. */
   PGW_QR_TYPE: z.enum(['ALL', 'RAW', 'BASE64', 'URL']).default('RAW'),

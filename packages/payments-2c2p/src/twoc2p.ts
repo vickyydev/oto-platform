@@ -131,6 +131,7 @@ export class TwoC2PQrPayment implements QrPayment {
 
     const token = await this.post('paymentToken', {
       merchantID: this.config.merchantId,
+      ...(input.childMerchantId ? { childMerchantID: input.childMerchantId, paymentChannel: [this.config.qrChannelCode] } : {}),
       invoiceNo: input.invoiceNo,
       description: input.description,
       amount: toWireAmount(input.amountSatang),
@@ -218,9 +219,10 @@ export class TwoC2PQrPayment implements QrPayment {
     if (input.paymentChannels.length === 0) {
       throw new Error('a hosted payment page has to be restricted to at least one channel');
     }
-    const expiresAt = new Date(this.now().getTime() + input.expiryMinutes * 60_000);
+    const expiresAt = input.expiresAt ?? new Date(this.now().getTime() + input.expiryMinutes * 60_000);
     const token = await this.post('paymentToken', {
       merchantID: this.config.merchantId,
+      ...(input.childMerchantId ? { childMerchantID: input.childMerchantId } : {}),
       invoiceNo: input.invoiceNo,
       description: input.description,
       amount: toWireAmount(input.amountSatang),
@@ -249,12 +251,20 @@ export class TwoC2PQrPayment implements QrPayment {
   }
 
   /** The truth. One call, `invoiceNo` only (`:345-360`). */
-  async inquire({ invoiceNo }: { invoiceNo: string }): Promise<QrPaymentFacts> {
+  async inquire({ invoiceNo, childMerchantId }: { invoiceNo: string; childMerchantId?: string }): Promise<QrPaymentFacts> {
     const answer = await this.post('paymentInquiry', {
       merchantID: this.config.merchantId,
+      childMerchantID: childMerchantId,
       invoiceNo,
     });
-    return factsOf(answer.claims, invoiceNo);
+    const facts = factsOf(answer.claims, invoiceNo);
+    if (childMerchantId && (facts.state === 'paid' || facts.state === 'late_paid')) {
+      if (answer.claims.merchantID !== this.config.merchantId ||
+          answer.claims.childMerchantID !== childMerchantId || answer.claims.invoiceNo !== invoiceNo) {
+        throw new Error('Payment inquiry returned a different merchant or invoice');
+      }
+    }
+    return facts;
   }
 
   /**
@@ -265,10 +275,11 @@ export class TwoC2PQrPayment implements QrPayment {
    * either way, and a gateway that would not cancel simply leaves a QR nobody
    * will scan to expire on its own.
    */
-  async cancel({ invoiceNo }: { invoiceNo: string }): Promise<CancelResult> {
+  async cancel({ invoiceNo, childMerchantId }: { invoiceNo: string; childMerchantId?: string }): Promise<CancelResult> {
     try {
       const answer = await this.post('canceltransaction', {
         merchantID: this.config.merchantId,
+        childMerchantID: childMerchantId,
         invoiceNo,
       });
       const respCode = stringOf(answer.claims.respCode) ?? '';
@@ -288,6 +299,9 @@ export class TwoC2PQrPayment implements QrPayment {
         respDesc: 'no maintenance key pair is configured (PGW_MAINT_*)',
         providerRefundRef: null,
       };
+    }
+    if (input.childMerchantId) {
+      return { state: 'failed', respCode: '', respDesc: 'bank maintenance routing for this sub-account has not been confirmed', providerRefundRef: null };
     }
     return this.maintenance.action(input);
   }

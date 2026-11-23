@@ -254,3 +254,28 @@ describe('the simulator\'s hosted page', () => {
     await expect(sim.createHostedPayment({ ...HOSTED, paymentChannels: [] })).rejects.toThrow(/at least one channel/);
   });
 });
+
+describe('SCB child merchants', () => {
+  it('keeps the signing merchant and routes a card token to its card account', async () => {
+    const wire = fakeGateway({ paymentToken: { respCode: '0000', webPaymentUrl: 'https://bank.invalid/pay' } });
+    await new TwoC2PQrPayment(CONFIG, { fetch: wire.fetch }).createHostedPayment({ ...HOSTED, childMerchantId: 'CARDS' });
+    expect(wire.calls[0]?.claims).toMatchObject({ merchantID: CONFIG.merchantId, childMerchantID: 'CARDS', paymentChannel: ['CC'] });
+  });
+
+  it('requests the QR channel and looks up the invoice under the same child', async () => {
+    const wire = fakeGateway({ paymentToken: { respCode: '9058' }, paymentInquiry: { respCode: '2001' } });
+    const client = new TwoC2PQrPayment(CONFIG, { fetch: wire.fetch });
+    await client.createQr({ ...HOSTED, childMerchantId: 'QRS' });
+    await client.inquire({ invoiceNo: HOSTED.invoiceNo, childMerchantId: 'QRS' });
+    expect(wire.calls.map(call => call.claims.childMerchantID)).toEqual(['QRS', 'QRS']);
+    expect(wire.calls[0]?.claims.paymentChannel).toEqual(['PPQR']);
+    expect(wire.calls[1]?.claims.merchantID).toBe(CONFIG.merchantId);
+  });
+
+  it('refuses a signed paid response from another child', async () => {
+    const wire = fakeGateway({ paymentInquiry: { respCode: '0000', invoiceNo: HOSTED.invoiceNo,
+      merchantID: CONFIG.merchantId, childMerchantID: 'OTHER' } });
+    const client = new TwoC2PQrPayment(CONFIG, { fetch: wire.fetch });
+    await expect(client.inquire({ invoiceNo: HOSTED.invoiceNo, childMerchantId: 'QRS' })).rejects.toThrow('merchant or invoice');
+  });
+});

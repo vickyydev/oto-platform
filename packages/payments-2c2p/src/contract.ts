@@ -114,6 +114,7 @@ export const QR_TERMINAL_STATES: readonly QrState[] = [
 ];
 
 export interface CreateQrInput {
+  childMerchantId?: string;
   /** Our attempt id, carried through `userDefined1` so a support case can be traced. */
   attemptId: string;
   /** OUR number, one per attempt, unique for ever (`buildInvoiceNo` in `@oto/shared`). */
@@ -179,6 +180,7 @@ export interface QrPaymentFacts {
 export type CancelResult = { ok: true } | { ok: false; reason: 'unsupported' | 'failed'; detail?: string };
 
 export interface RefundInput {
+  childMerchantId?: string;
   invoiceNo: string;
   amountSatang: number;
   /**
@@ -209,6 +211,8 @@ export interface RefundResult {
  * the same `invoiceNo` and through the same code as a till's QR.
  */
 export interface CreateHostedPaymentInput {
+  expiresAt?: Date;
+  childMerchantId?: string;
   /** Our attempt id, carried through `userDefined1` and `idempotencyID`. */
   attemptId: string;
   /** OUR number — the `WEB` segment in place of a station's (§3.10). */
@@ -263,9 +267,9 @@ export interface QrPayment {
    * (`PAYMENT_GATEWAY.md:668-670`). Called by the poller, and called again by
    * the webhook before anything is released.
    */
-  inquire(input: { invoiceNo: string }): Promise<QrPaymentFacts>;
+  inquire(input: { invoiceNo: string; childMerchantId?: string }): Promise<QrPaymentFacts>;
   /** Staff abandoned the tender. Best effort: QR support is UNCERTAIN (U4). */
-  cancel(input: { invoiceNo: string }): Promise<CancelResult>;
+  cancel(input: { invoiceNo: string; childMerchantId?: string }): Promise<CancelResult>;
   /** Maintenance, on its own host and in its own crypto envelope. S2-11 calls it. */
   refund(input: RefundInput): Promise<RefundResult>;
 }

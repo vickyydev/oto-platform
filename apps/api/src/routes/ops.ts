@@ -19,7 +19,7 @@ import { hasPermission, isPlatformWide } from '../services/permissions';
 import { PermissionDeniedError } from '../plugins/session';
 import { branchReach, reachCovers, type BranchReach } from '../services/access-control';
 import { operatorBranches, rollupFreshnessOf } from '../services/analytics-summary';
-import { DEMO_RESET_CONFIRMATION, resetDemoData } from '../services/demo-reset';
+import { DEMO_RESET_CONFIRMATION, hasGatewayHistory, resetDemoData } from '../services/demo-reset';
 import {
   AlertAcknowledgedResponse, AnomaliesResponse, DemoResetResponse, DemoResetStatusResponse,
   FailuresResponse, QuarantineDiscardResponse, QuarantineReplayResponse, QuarantineResponse,
@@ -1286,7 +1286,7 @@ export async function opsRoutes(app: App): Promise<void> {
       req.requireAuth();
       const effective = await req.effectivePermissions();
       return {
-        available: app.env.OPS_TEST_CONTROLS && isPlatformWide(effective),
+        available: app.env.OPS_TEST_CONTROLS && isPlatformWide(effective) && app.env.PGW_PROVIDER !== '2c2p' && !(await hasGatewayHistory(app.db)),
         confirmationPhrase: DEMO_RESET_CONFIRMATION,
         // SCRUM-515 — the deployment's half of the gate on its own, for any
         // signed-in caller: the till shows its demo wristbands only where the
@@ -1308,6 +1308,7 @@ export async function opsRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const auth = await requirePlatform(req);
+      if (app.env.PGW_PROVIDER === '2c2p') throw errors.conflict('LIVE_GATEWAY', 'A demo reset is disabled while the bank gateway is connected.');
       if (req.body.confirm !== DEMO_RESET_CONFIRMATION) {
         throw errors.badRequest(`Type "${DEMO_RESET_CONFIRMATION}" to confirm`);
       }

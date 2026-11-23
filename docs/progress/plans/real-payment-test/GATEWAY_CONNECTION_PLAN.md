@@ -1,5 +1,11 @@
 # Connecting the real payment gateway: the plan
 
+## 23 November 2026, Central Floresta bank routing verified
+
+SCB00 signs v4.3 requests. SCB02 issued a live one-baht PromptPay QR and SCB01 issued a hosted card checkout token. For the same unpaid QR invoice, the signed status was 2002 under the parent alone and 2001 under the parent with SCB02. The master also generated a single-use QuickPay link. No customer paid in these checks. The earlier 9058 investigation below is resolved.
+
+The staging settings are PGW_MERCHANT_ID and PGW_SECRET_KEY for the signing account, PGW_MERCHANT_BRANCH_ID for Central Floresta, PGW_CARD_CHILD_MERCHANT_ID for SCB01 and PGW_QR_CHILD_MERCHANT_ID for SCB02. The API saves the selected child on the payment attempt for subsequent inquiries. A deposit link offering both methods lets the guest select one before opening the bank page. Keep electronic refunds pending separate maintenance credentials and a bank-confirmed child refund route. The physical Digio terminal and payout reports need separate tests.
+
 ## 23 November 2026, live credential check
 
 The two merchant settings were saved and verified on the staging API. The live 2C2P v4.3 inquiry endpoint returned a signed 2002 for a fresh, unused invoice and the signature verified with the configured key. The token endpoint returned 9058 for an unrestricted payment request, an explicit PPQR request and an explicit CC request. The two channel-specific requests had invoice references SBXCKMWT03BQ8C065 and SBXCKMWT03BZA08B6 respectively. All were token checks; the card terminal was not involved. No payment token, QR or charge resulted.

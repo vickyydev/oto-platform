@@ -1,5 +1,5 @@
 import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, lte, or, sql } from 'drizzle-orm';
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import type { FastifyBaseLogger } from 'fastify';
 import { partyDepositRequest, paymentAttempt, paymentNotification, sale, station, type Db } from '@oto/db';
 import {
@@ -58,6 +58,7 @@ import { assertSaleExtensionCollectable, extensionHoldsClose } from '../sale-ext
 import { assertSaleBenefitsLive } from '../benefit-checkout';
 import { refuseTenderOnStaysPaidAtTill } from '../checkin-paid-at-till';
 import {
+  attemptChildMerchant,
   attemptView,
   failAttempt,
   findAttemptByAction,
@@ -320,6 +321,15 @@ export function gatewayProviderOf(env: Env): '2c2p' | 'simulator' {
   return gatewayFor(env).selection.provider === '2c2p' ? '2c2p' : 'simulator';
 }
 
+function assertMerchantBranch(env: Env, branchId: string) {
+  if (env.PGW_MERCHANT_BRANCH_ID && env.PGW_MERCHANT_BRANCH_ID !== branchId) {
+    throw errors.badRequest('Online payments are not configured for this branch.');
+  }
+  if (Boolean(env.PGW_QR_CHILD_MERCHANT_ID) !== Boolean(env.PGW_CARD_CHILD_MERCHANT_ID)) {
+    throw errors.badRequest('Both bank sub-accounts must be configured.');
+  }
+}
+
 export interface HostedPaymentRequest {
   /** The attempt already written and committed — act 1 is the caller's. */
   attempt: AttemptRow;
@@ -358,12 +368,42 @@ export async function requestHostedPayment(
   input: HostedPaymentRequest,
 ): Promise<HostedPaymentOpened> {
   const { qr } = gatewayFor(env, log);
-  const { attempt } = input;
+  let { attempt } = input;
+  if (attempt.provider === '2c2p') assertMerchantBranch(env, attempt.branchId);
+  if (attempt.provider === '2c2p' && (env.PGW_CARD_CHILD_MERCHANT_ID || env.PGW_QR_CHILD_MERCHANT_ID)) {
+    const card = env.PGW_CARD_CHILD_MERCHANT_ID;
+    const qrMerchant = env.PGW_QR_CHILD_MERCHANT_ID;
+    if (!card || !qrMerchant || input.channels.some(c => c !== 'CC' && c !== env.PGW_QR_CHANNEL_CODE)) {
+      throw errors.badRequest('The bank account for this payment method is not configured.');
+    }
+    if (input.channels.length > 1 && card !== qrMerchant) {
+      const key = randomUUID();
+      const url = new URL(`/webhooks/2c2p/checkout/${attempt.id}/${key}`, env.PGW_BACKEND_RETURN_URL);
+      const expiresAt = new Date(Date.now() + input.expiryMinutes * 60_000);
+      const hostedChoice = {
+        key, card, qrMerchant, qrChannel: env.PGW_QR_CHANNEL_CODE, description: input.description,
+        frontendReturnUrl: input.frontendReturnUrl, locale: input.locale,
+      };
+      const shown = await withTx(db, ctx, 'payment.hosted.choice', tx => showAttempt(tx, attempt.id, {
+        expiresAt, payload: mergePayload(attempt.payload, { hostedChoice, webPaymentUrl: url.href }),
+      }));
+      if (!shown) throw errors.conflict('BOOKING_PAYMENT_CLOSED', 'This payment has already closed.');
+      return { webPaymentUrl: url.href, expiresAt };
+    }
+    const childMerchantId = input.channels[0] === 'CC' ? card : qrMerchant;
+    const [routed] = await db.update(paymentAttempt)
+      .set({ payload: mergePayload(attempt.payload, { childMerchantId }) })
+      .where(and(eq(paymentAttempt.id, attempt.id), eq(paymentAttempt.status, 'created')))
+      .returning();
+    if (!routed) throw errors.conflict('BOOKING_PAYMENT_CLOSED', 'This payment has already closed.');
+    attempt = routed;
+  }
   const operationCtx = { ...ctx, idempotency: undefined };
   const startedAt = new Date();
   let opened: CreateHostedPaymentResult;
   try {
     opened = await qr.createHostedPayment({
+      childMerchantId: attemptChildMerchant(attempt.payload),
       attemptId: attempt.id,
       invoiceNo: attempt.invoiceNo!,
       amountSatang: attempt.amountSatang,
@@ -529,6 +569,7 @@ export async function openQrAttempt(
   input: OpenQrAttemptInput,
 ): Promise<OpenQrAttemptResult> {
   const { qr, selection } = gatewayFor(env, log);
+  if (selection.provider === '2c2p') assertMerchantBranch(env, input.branchId);
   if (input.amountSatang <= 0) throw errors.badRequest('A QR tender has to settle something');
   const methodCode = input.methodCode ?? 'promptpay';
   const operationCtx = { ...ctx, idempotency: undefined };
@@ -668,6 +709,8 @@ export async function openQrAttempt(
         takenByAccountId: input.accountId,
         ...(input.actionId ? { actionId: input.actionId } : {}),
         ...input.payload,
+        ...(selection.provider === '2c2p' && env.PGW_QR_CHILD_MERCHANT_ID
+          ? { childMerchantId: env.PGW_QR_CHILD_MERCHANT_ID } : {}),
       },
     });
     await input.attach?.(tx, row);
@@ -709,6 +752,7 @@ export async function openQrAttempt(
   try {
     minted = await qr.createQr({
       attemptId: opened.id,
+      childMerchantId: attemptChildMerchant(opened.payload),
       invoiceNo: opened.invoiceNo!,
       amountSatang: input.amountSatang,
       description: input.description ?? 'OTO Park',
@@ -965,7 +1009,7 @@ export async function cancelQrAttempt(
     const startedAt = new Date();
     let answer: CancelResult;
     try {
-      answer = await qr.cancel({ invoiceNo: row.invoiceNo! });
+      answer = await qr.cancel({ invoiceNo: row.invoiceNo!, childMerchantId: attemptChildMerchant(row.payload) });
     } catch (err) {
       answer = { ok: false, reason: 'failed', detail: (err as Error).name };
     }
@@ -1767,6 +1811,14 @@ export async function handleNotification(
       return await record('unmatched_payment', { envelope: jwt, claims: facts.raw });
     }
 
+    const child = attemptChildMerchant(matched.payload);
+    if (!child && (matched.payload as { hostedChoice?: unknown } | null)?.hostedChoice) {
+      return await record('wrong_merchant', { envelope: jwt, merchantID: merchantId });
+    }
+    if (child && claims.childMerchantID !== undefined && claims.childMerchantID !== child) {
+      return await record('wrong_merchant', { envelope: jwt, merchantID: merchantId });
+    }
+
     /**
      * 4b. IDEMPOTENCY, IN THE DATABASE rather than in a branch of this
      *     handler. `(invoiceNo, tranRef)` falling back to `(invoiceNo,
@@ -1964,7 +2016,7 @@ async function actOn(
   let truth: QrPaymentFacts;
   const startedAt = new Date();
   try {
-    truth = await qr.inquire({ invoiceNo: attempt.invoiceNo! });
+    truth = await qr.inquire({ invoiceNo: attempt.invoiceNo!, childMerchantId: attemptChildMerchant(attempt.payload) });
     await recordRun(db, {
       kind: 'adapter',
       name: 'adapter:2c2p.inquiry',
@@ -2295,13 +2347,19 @@ export async function pollPendingAttempts(
 
   for (const attempt of rows) {
     summary.examined += 1;
+    if (!attemptChildMerchant(attempt.payload) && (attempt.payload as { hostedChoice?: unknown } | null)?.hostedChoice) {
+      if (attempt.expiresAt && attempt.expiresAt <= now) {
+        await applyNonPaidState(db, attempt, factsOf({ respCode: '9020' }, attempt.invoiceNo!), now);
+      }
+      continue;
+    }
     if (isStillOpening(attempt, now)) continue;
     if (!isInquiryDue(attempt, now, env)) continue;
     summary.inquired += 1;
     const startedAt = new Date();
     let facts: QrPaymentFacts;
     try {
-      facts = await qr.inquire({ invoiceNo: attempt.invoiceNo! });
+      facts = await qr.inquire({ invoiceNo: attempt.invoiceNo!, childMerchantId: attemptChildMerchant(attempt.payload) });
       await recordRun(db, {
         kind: 'adapter',
         name: 'adapter:2c2p.inquiry',

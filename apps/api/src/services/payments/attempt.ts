@@ -65,6 +65,11 @@ const TAKEN = PAYMENT_ATTEMPT_TAKEN_STATUSES;
  */
 export const TENDER_APPROVED: PaymentAttemptStatus = 'approved';
 
+export function attemptChildMerchant(payload: unknown): string | undefined {
+  if (!payload || typeof payload !== 'object' || !('childMerchantId' in payload)) return undefined;
+  return typeof payload.childMerchantId === 'string' ? payload.childMerchantId : undefined;
+}
+
 export type AttemptRow = typeof paymentAttempt.$inferSelect;
 
 /**

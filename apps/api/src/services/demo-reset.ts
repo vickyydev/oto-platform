@@ -55,6 +55,7 @@ import {
   walletEntry,
   walletKey,
 } from '@oto/db';
+import { errors } from '../lib/errors';
 import type { Exec, Tx } from './tx';
 
 /**
@@ -152,6 +153,12 @@ export type DemoResetCounts = Record<string, number>;
  * statement runs on the caller's transaction handle, so a failure anywhere
  * leaves the deployment exactly as it was rather than half-wiped.
  */
+export async function hasGatewayHistory(exec: Exec): Promise<boolean> {
+  const [row] = await exec.select({ id: paymentAttempt.id }).from(paymentAttempt)
+    .where(eq(paymentAttempt.provider, '2c2p')).limit(1);
+  return Boolean(row);
+}
+
 export async function resetDemoData(exec: Exec): Promise<DemoResetCounts> {
   // One transaction of its own (a savepoint inside the caller's), so the stock
   // ledger's purge flag below is local to it whichever handle the caller holds.
@@ -159,6 +166,9 @@ export async function resetDemoData(exec: Exec): Promise<DemoResetCounts> {
 }
 
 async function resetDemoDataIn(tx: Tx): Promise<DemoResetCounts> {
+  if (await hasGatewayHistory(tx)) {
+    throw errors.conflict('GATEWAY_HISTORY_PRESENT', 'A demo reset would erase bank payment records.');
+  }
   const counts: DemoResetCounts = {};
 
   // The members the session created. Collected first: the facts below are

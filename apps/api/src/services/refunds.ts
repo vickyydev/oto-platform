@@ -34,7 +34,7 @@ import { releaseSaleBenefits } from './benefit-checkout';
 import { releaseRefundedStays } from './checkin-paid-at-till';
 import { restoreTierClaimOf } from './sale-tier';
 import { auditVoidReleases, lockVouchersHeldFor } from './vouchers';
-import { failAttempt } from './payments/attempt';
+import { attemptChildMerchant, failAttempt } from './payments/attempt';
 import { queueTerminalCommand } from './payments/terminal';
 import { accountNames, refundViewOf, settleRefundSlice, type RefundView } from './refund-slices';
 import { allocateReceipt, saleViewOf, type SaleView } from './sale';
@@ -874,10 +874,10 @@ export async function settleGatewayRefunds(
       const first: 'V' | 'R' = sameDay ? 'V' : 'R';
       const second: 'V' | 'R' = first === 'V' ? 'R' : 'V';
       let processType = first;
-      let answer = await callRefund(qr, invoiceNo, slice.amountSatang, first);
+      let answer = await callRefund(qr, invoiceNo, slice.amountSatang, first, attemptChildMerchant(attempt.payload));
       if (answer.state === 'failed' && answer.respCode === '4121') {
         processType = second;
-        answer = await callRefund(qr, invoiceNo, slice.amountSatang, second);
+        answer = await callRefund(qr, invoiceNo, slice.amountSatang, second, attemptChildMerchant(attempt.payload));
       }
       const ok = answer.respCode === '00' && answer.state !== 'failed';
       update = ok
@@ -926,9 +926,10 @@ async function callRefund(
   invoiceNo: string,
   amountSatang: number,
   processType: 'V' | 'R',
+  childMerchantId?: string,
 ): Promise<{ state: string; respCode: string; respDesc: string | null; providerRefundRef: string | null }> {
   try {
-    return await qr.refund({ invoiceNo, amountSatang, processType });
+    return await qr.refund({ invoiceNo, amountSatang, processType, childMerchantId });
   } catch (err) {
     return {
       state: 'failed',

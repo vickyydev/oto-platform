@@ -49,7 +49,7 @@ import { getEventAtBranches, type SeamEvent } from './otoapp-events';
 import { pushPartyEdit, seamRead } from './parties';
 import { actorAccountOf } from './party-menu';
 import { lockParty } from './party-tab';
-import { failAttempt, openAttempt, type AttemptRow } from './payments/attempt';
+import { attemptChildMerchant, failAttempt, openAttempt, type AttemptRow } from './payments/attempt';
 import { gatewayFor, gatewayProviderOf, mintWebInvoiceNo, requestHostedPayment } from './payments/gateway';
 import { withTx, type Exec, type OpContext, type Tx } from './tx';
 
@@ -679,9 +679,11 @@ async function withdrawWithin(
 }
 
 /** The gateway's own cancel, best effort (QR support is UNCERTAIN, U4): the row is closed either way. */
-async function tellGatewayClosed(env: Env, log: FastifyBaseLogger | undefined, invoiceNo: string): Promise<void> {
+async function tellGatewayClosed(db: Db, env: Env, log: FastifyBaseLogger | undefined, invoiceNo: string): Promise<void> {
   try {
-    await gatewayFor(env, log).qr.cancel({ invoiceNo });
+    const [row] = await db.select({ payload: paymentAttempt.payload }).from(paymentAttempt)
+      .where(eq(paymentAttempt.invoiceNo, invoiceNo)).limit(1);
+    await gatewayFor(env, log).qr.cancel({ invoiceNo, childMerchantId: attemptChildMerchant(row?.payload) });
   } catch (err) {
     log?.warn({ err, invoiceNo }, 'the gateway could not be told a deposit link was cancelled');
   }
@@ -753,7 +755,7 @@ async function closeIfPartyRemoved(
       return live ? closeIfPartyRemovedWithin(tx, live, seenAt, now, requestId) : null;
     },
   );
-  if (closed?.closedAttempt) await tellGatewayClosed(env, log, closed.invoiceNo);
+  if (closed?.closedAttempt) await tellGatewayClosed(db, env, log, closed.invoiceNo);
   return closed;
 }
 
@@ -920,7 +922,7 @@ export async function cancelPartyDeposit(
     });
     return { row: withdrawn.row ?? live, replayed: false, closedAttempt: withdrawn.closedAttempt };
   });
-  if (done.closedAttempt) await tellGatewayClosed(env, log, row.invoiceNo);
+  if (done.closedAttempt) await tellGatewayClosed(db, env, log, row.invoiceNo);
   return { request: await viewOf(db, done.row), replayed: done.replayed };
 }
 
@@ -1284,7 +1286,7 @@ export async function runPartyDepositFollowUpJob(
       const step = await remindOne(db, env, due, now);
       if (step && typeof step !== 'string') {
         sweep.removedClosed += 1;
-        if (step.closedAttempt) await tellGatewayClosed(env, log, step.invoiceNo);
+        if (step.closedAttempt) await tellGatewayClosed(db, env, log, step.invoiceNo);
         continue;
       }
       if (step) sweep.reminded += 1;
@@ -1320,7 +1322,7 @@ export async function runPartyDepositFollowUpJob(
       }
       if ('standing' in handed) {
         sweep.removedClosed += 1;
-        if (handed.closedAttempt) await tellGatewayClosed(env, log, handed.invoiceNo);
+        if (handed.closedAttempt) await tellGatewayClosed(db, env, log, handed.invoiceNo);
         continue;
       }
       sweep.handedOver += 1;
