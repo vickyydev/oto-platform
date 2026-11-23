@@ -1,7 +1,9 @@
 /**
  * `oto-box` — the booth box's command line (SCRUM-223).
  *
- *   oto-box claim --api <url> [--home <dir>] [--hostname <name>] [--force]
+ *   oto-box digio-info [--port <COM or /dev/serial/by-id path>]
+      List serial ports, or ask one Digio terminal for its status without opening a sale.
+  oto-box claim --api <url> [--home <dir>] [--hostname <name>] [--force]
  *   oto-box run [--api <url>] [--home <dir>] [--port <n>] [--page <dir>]
  *   oto-box status [--home <dir>]
  *   oto-box version
@@ -270,6 +272,34 @@ export async function main(argv: readonly string[], io: CliStreams = {}): Promis
   const err = (text: string) => stderr.write(`${text}\n`);
 
   switch (parsed.command) {
+    case 'digio-info': {
+      const port = parsed.flags.get('port');
+      if (!port) {
+        const { SerialPort } = await import('serialport');
+        const ports = await SerialPort.list();
+        out(ports.map(p => [p.path, p.manufacturer, p.vendorId && `VID ${p.vendorId}`].filter(Boolean).join('  ')).join('\n') || 'No serial ports detected.');
+        return 0;
+      }
+      if (typeof port !== 'string' || !port.trim()) {
+        err('Usage: oto-box digio-info --port <serial port>');
+        return 2;
+      }
+      const { digioTerminal } = await import('../terminal/digio');
+      const { openNativeSerial } = await import('../terminal/native-serial');
+      const { openSerialChannel, SERIAL_DEFAULTS } = await import('../terminal/serial-channel');
+      const terminal = digioTerminal({
+        deviceId: 'local-probe', label: 'Digio PAX', terminalId: null, merchantId: null,
+        open: () => openSerialChannel({ path: port, ...SERIAL_DEFAULTS.digio_tlv }, openNativeSerial),
+        nextRef: async () => { throw new Error('No sale reference for a terminal-info probe'); }, now: () => new Date(),
+      });
+      const info = await terminal.health();
+      if (info.reachability !== 'reachable' || info.lastError) {
+        err(info.lastError ?? 'The terminal did not answer.');
+        return 1;
+      }
+      out('Digio acknowledged terminal info. No payment was initiated.');
+      return 0;
+    }
     case 'version':
     case '--version':
       // `oto-box 0.1.0 build 2026-10-29 b25b644 (2026-10-29T05:38:23Z)`: the

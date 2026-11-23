@@ -39,18 +39,13 @@ ProtectSystem=strict
 ProtectHome=yes
 ReadWritePaths=/var/lib/oto-box -/mnt/oto-mirror/box
 PrivateTmp=yes
-# Devices: the counter scanner only (SCRUM-700). Printing is over the network.
-# The box reads the Zebra cradle itself — its input event node in HID mode, or
-# /dev/ttyACM* in CDC mode — so /dev is the host's, and the device allow-list
-# below lets the agent open the standard pseudo-devices, input event nodes and
-# USB serial ports, read-only, and nothing else; of those, file permissions
-# give its user the cradle alone (the udev rule the installer writes,
-# 61-oto-box-scanner.rules). The serial driver is loaded at boot
-# (modules-load.d) so its group is known when this starts.
+# The scanner reads input devices. The Digio terminal reads and writes USB CDC.
+# The installer's udev rules grant the service user read access to the scanner
+# and read/write access to the PAX terminal.
 PrivateDevices=no
 DevicePolicy=closed
 DeviceAllow=char-input r
-DeviceAllow=char-ttyACM r
+DeviceAllow=char-ttyACM rw
 CapabilityBoundingSet=~CAP_MKNOD CAP_SYS_RAWIO
 ProtectKernelTunables=yes
 ProtectKernelModules=yes

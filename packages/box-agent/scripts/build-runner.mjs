@@ -23,9 +23,7 @@
  *   fonts/          the receipt faces `@oto/print` reads at runtime (OFL; the
  *                   licence files travel with them).
  *   booth/          the built booth page the kiosk serves.
- *   package.json    one dependency: @node-rs/argon2, pinned. It is the only
- *                   native module, and npm fetches the prebuilt binary for the
- *                   machine it runs on (linux-arm64-gnu on a Pi 5).
+ *   package.json    pinned dependencies for PIN checks and terminal USB.
  *   pi/             install.sh and the systemd units.
  *   PI_BOOTH.md     the set-up guide.
  *   VERSION         one line: `oto-box <build id> built <ISO time>`.
@@ -130,7 +128,7 @@ await build({
   platform: 'node',
   format: 'esm',
   target: 'node22',
-  external: ['@node-rs/argon2'],
+  external: ['@node-rs/argon2', 'serialport'],
   plugins: [fontDirPlugin],
   // What `src/build.ts` reads: from source both are unset and the agent is
   // the bare version; in this bundle they are these literals.
@@ -203,7 +201,7 @@ writeFileSync(
       description: 'The OTO booth box: agent, runner and kiosk server for a Raspberry Pi',
       bin: { 'oto-box': 'oto-box.mjs' },
       engines: { node: '>=22.13' },
-      dependencies: { '@node-rs/argon2': argon2Version },
+      dependencies: { '@node-rs/argon2': argon2Version, serialport: JSON.parse(readFileSync(join(PKG, 'package.json'), 'utf8')).dependencies.serialport },
     },
     null,
     2,
@@ -220,7 +218,7 @@ writeFileSync(join(OUT, 'VERSION'), `oto-box ${buildId} built ${builtAt.toISOStr
 
 if (args.has('--pack')) {
   /**
-   * A lockfile for the one dependency, so a Pi installs exactly what was
+   * A lockfile for the native dependencies, so a Pi installs exactly what was
    * tested, checked against the registry's integrity hashes. Needs the npm
    * registry; without it the tarball ships without one and the Pi resolves
    * the same pinned version on its own.

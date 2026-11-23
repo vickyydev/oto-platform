@@ -19,6 +19,8 @@ work is landed and proven, and the tools. Kept current at every landing._
 
 ## 2. Where the work stands
 
+**23 November 2026, SCRUM-709 Digio USB.** The counter runner now has the native Digio serial driver for Windows and Pi, with a read-only terminal-info command. The one-baht card request and matching approval passed over a mock serial port. Windows saw only Bluetooth ports at the bench. The physical PAX handshake, card-present approval and Pi installation are pending. The staging PromptPay route remains available.
+
 **23 November 2026, SCRUM-709.** The Central Floresta staging POS now uses the live 2C2P gateway. Render deployment dep-dc1vt2qvcj2c739r8mc0 served 06566b70458107570f149ce37e9b08dcaba8a890. On the restricted ZDIG till, ZZPAY1 generated invoice SBXCU8261123000001. The bank signed a pending SCB02 inquiry for exactly THB 1.00. The POS cancelled the unpaid attempt and voided the sale. The SCB01 online card token was checked separately. The home Digio PAX is assigned in the till settings. Its USB connection, a paid receipt, bank posting, paid downstream events and electronic refunds remain outstanding. See the [staging test receipt](../qa/jira-comments/attachments/SCRUM-709/scb-pos-unpaid-20261123.png).
 
 **23 November 2026, SCRUM-709.** The staging API has the two merchant settings. A live 2C2P inquiry verified the signature. Payment token requests for PromptPay and hosted cards returned 9058. The staging gateway remains on its simulator. The [connection plan](../progress/plans/real-payment-test/GATEWAY_CONNECTION_PLAN.md) contains the two support references and the next merchant-routing check.

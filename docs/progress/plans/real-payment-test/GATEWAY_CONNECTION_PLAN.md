@@ -1,5 +1,11 @@
 # Connecting the real payment gateway: the plan
 
+## 23 November 2026, Digio USB bench
+
+The Windows laptop or Raspberry Pi can run the counter box agent. The agent polls staging and writes the card amount to the assigned PAX over serial. The till and agent must use the same registered box. Start with the included `oto-box digio-info` command to list ports. On Windows use `oto-box digio-info --port COM7` with the actual PAX port. On the Pi use the terminal's `/dev/serial/by-id/` path. This sends Digio terminal info (T0) and checks the matching T1 response without creating a sale. Save the verified path as the terminal address in Console. The customer still presents a card and follows the bank's prompts.
+
+The software test sends 100 satang through the serial transport, rejects a reply from another sale and accepts the matching approval. Hardware acceptance requires the amount on the PAX screen after pressing Card at the staging till. A test of the amount can stop there with cancellation on the terminal. A paid test additionally requires matching the bank approval and till receipt. The cloud PromptPay route works independently of the box. On the initial Windows port check only two Bluetooth ports were present.
+
 ## 23 November 2026, Central Floresta bank routing verified
 
 On staging the restricted ZDIG till opened a sale for the one-baht test item through the normal POS sale and QR APIs. Invoice SBXCU8261123000001 returned a real PromptPay QR. Its signed SCB02 inquiry confirmed THB 1.00 pending. The test attempt was cancelled and the unpaid sale voided. Render served commit 06566b70458107570f149ce37e9b08dcaba8a890. Radar, Inbox and the booking ledger answered authenticated reads, and the inquiry and party deposit follow-up jobs last reported success. The first paid receipt and its downstream posting require an actual payment.

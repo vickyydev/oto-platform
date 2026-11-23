@@ -24,13 +24,8 @@
  *     setting the Console already edits.
  *  3. **The 120-second budget** (`:948`) belongs to the READ, not to the port.
  *     Opening is 2 s and an idle read is 500 ms; a guest is two minutes.
- *  4. **The box does not ship a serial driver.** Node has no serial port of its
- *     own, this package carries no native dependency on purpose, and this
- *     ticket's scope is the simulators. So the opener is INJECTED: a Pi that
- *     drives real terminals passes one in, and a box without one says so by
- *     name instead of pretending a `/dev` path it cannot configure is open.
- *     What is ours and is tested here is the part that is ours — resolving the
- *     path, carrying the parameters, framing, and the deadlines.
+ *  4. The host selects the serial driver. The shipped Digio host uses the
+ *     native USB driver, and the simulator supplies its own byte transport.
  */
 
 import fs from 'node:fs';
@@ -131,6 +126,8 @@ const nodeFs: SerialFs = {
  * which is what a terminal that has been picked up looks like from here.
  */
 export function resolveSerialPath(target: string, io: SerialFs = nodeFs): string {
+  // Windows COM ports are device names. fs.existsSync and realpath cannot enumerate them.
+  if (process.platform === 'win32' && /^COM[1-9]\d*$/i.test(target)) return target.toUpperCase();
   if (!io.existsSync(target)) {
     throw new TerminalError(
       'TERMINAL_UNREACHABLE',
@@ -166,6 +163,7 @@ export interface TerminalTransport {
   write(bytes: Uint8Array): Promise<void>;
   /** Called once. Every byte from the far end goes to this sink. */
   onData(sink: (bytes: Uint8Array) => void): void;
+  onDisconnect?(sink: () => void): void;
   close(): Promise<void>;
 }
 
@@ -212,6 +210,11 @@ export function terminalChannel(
   let buffer = new Uint8Array(0);
   let waiter: (() => void) | null = null;
   let closed = false;
+
+  transport.onDisconnect?.(() => {
+    closed = true;
+    waiter?.();
+  });
 
   transport.onData((bytes) => {
     if (bytes.length === 0) return;

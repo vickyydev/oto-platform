@@ -754,6 +754,7 @@ export function digioTerminal(deps: DigioDeps): PaymentTerminal {
     budgetMs: number,
     startedAt: number,
     onProgress?: TerminalSaleRequest['onProgress'],
+    saleAction?: string,
   ): Promise<TerminalResult> {
     let qrPayload: string | null = null;
     const deadline = Date.now() + budgetMs;
@@ -801,6 +802,11 @@ export function digioTerminal(deps: DigioDeps): PaymentTerminal {
           { terminalRef: ref, qrPayload },
         );
       }
+      // A frame left from a previous exchange cannot approve this sale.
+      if (exchange === 'sale' && parsed.fields.ref !== ref) continue;
+      if (exchange === 'sale' && parsed.fields.responseCode === DIGIO_RESPONSE.SUCCESS &&
+          !isInterim(parsed.action, parsed.fields.responseCode) &&
+          (parsed.action !== saleAction || digioSatang(parsed.fields.amount) === null)) continue;
       if (parsed.action === 'A18') {
         qrPayload = parsed.fields.qrPayload ?? qrPayload;
         if (qrPayload) {
@@ -861,6 +867,7 @@ export function digioTerminal(deps: DigioDeps): PaymentTerminal {
           saleMs,
           startedAt,
           request.onProgress,
+          paymentTypeFor(request.tender, request.wallet),
         );
       });
     },
@@ -976,6 +983,9 @@ export function digioTerminal(deps: DigioDeps): PaymentTerminal {
             };
           }
           const parsed = readDigioResponse(decodeDigioFrame(answer));
+          if (parsed.action !== 'T1' || parsed.fields.ref !== DIGIO_PROBE_REF) {
+            throw new Error('The serial device did not acknowledge the Digio terminal-info request.');
+          }
           return {
             /**
              * `T0`/`T1` is the vendor's own "test connect edc device" (§5.1)

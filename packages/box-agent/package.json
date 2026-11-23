@@ -27,7 +27,8 @@
     "zod": "catalog:",
     "@node-rs/argon2": "^2.2.1",
     "@oto/print": "workspace:*",
-    "@oto/shared": "workspace:*"
+    "@oto/shared": "workspace:*",
+    "serialport": "13.0.0"
   },
   "devDependencies": {
     "@types/node": "catalog:",

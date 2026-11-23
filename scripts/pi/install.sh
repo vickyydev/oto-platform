@@ -631,15 +631,24 @@ cat >"$SCANNER_RULE" <<'EOF'
 ACTION!="remove", SUBSYSTEM=="input", KERNEL=="event*", ATTRS{idVendor}=="05e0", GROUP:="oto-box", MODE:="0640", ENV{LIBINPUT_IGNORE_DEVICE}="1"
 # CDC mode (after scanning "USB CDC Host"): the box's user reads the serial port;
 # ModemManager does not probe it. Final for the same reason.
-ACTION!="remove", SUBSYSTEM=="tty", KERNEL=="ttyACM*", ATTRS{idVendor}=="05e0", GROUP:="oto-box", MODE:="0660", ENV{ID_MM_DEVICE_IGNORE}="1"
+ACTION!="remove", SUBSYSTEM=="tty", KERNEL=="ttyACM*", ATTRS{idVendor}=="05e0", GROUP:="oto-box", MODE:="0640", ENV{ID_MM_DEVICE_IGNORE}="1"
 ACTION!="remove", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="05e0", ENV{ID_MM_DEVICE_IGNORE}="1"
 EOF
 chmod 0644 "$SCANNER_RULE"
+PAX_RULE="/etc/udev/rules.d/62-oto-box-pax.rules"
+cat >"$PAX_RULE" <<'EOF'
+# Digio PAX USB-CDC terminal. The service can write only terminals granted by file permissions.
+ACTION!="remove", SUBSYSTEM=="tty", KERNEL=="ttyACM*", ATTRS{idVendor}=="2fb8", GROUP:="oto-box", MODE:="0660", ENV{ID_MM_DEVICE_IGNORE}="1"
+ACTION!="remove", SUBSYSTEM=="tty", KERNEL=="ttyACM*", ATTRS{idVendor}=="9908", ATTRS{idProduct}=="9030", GROUP:="oto-box", MODE:="0660", ENV{ID_MM_DEVICE_IGNORE}="1"
+EOF
+chmod 0644 "$PAX_RULE"
 printf '# Written by the OTO box installer (SCRUM-700): the USB serial driver a scanner in CDC mode needs.\ncdc_acm\n' >/etc/modules-load.d/oto-box-scanner.conf
 chmod 0644 /etc/modules-load.d/oto-box-scanner.conf
 modprobe cdc_acm 2>/dev/null || true
 SCANNER_NOTE="the udev rule is in place (vendor 05e0). Plug the cradle into the box, add it in the Console (Devices -> this box -> Add a device -> Scanner), give it to the station's Scanner job"
 if udevadm control --reload-rules 2>/dev/null; then
+  udevadm trigger --action=change --subsystem-match=tty --property-match=ID_VENDOR_ID=2fb8 2>/dev/null || true
+  udevadm trigger --action=change --subsystem-match=tty --property-match=ID_VENDOR_ID=9908 --property-match=ID_MODEL_ID=9030 2>/dev/null || true
   udevadm trigger --action=change --subsystem-match=input --subsystem-match=tty --property-match=ID_VENDOR_ID=05e0 2>/dev/null || true
 else
   warn "udev did not reload its rules; the scanner rule takes effect at the next boot"
@@ -663,7 +672,8 @@ chown -R root:root "$TARGET.new"
   else
     npm install --omit=dev --no-audit --no-fund --loglevel=error
   fi
-  # The one native module: prove it loads on THIS machine before switching.
+  "$NODE_BIN" -e "import('serialport').then(m=>m.SerialPort.list()).catch(()=>process.exit(1))"
+  # The PIN module: prove it loads on THIS machine before switching.
   "$NODE_BIN" -e "import('@node-rs/argon2').then(()=>console.log('argon2: ok')).catch((e)=>{console.error('argon2 failed:',e.message);process.exit(1)})"
 )
 rm -rf "$TARGET"

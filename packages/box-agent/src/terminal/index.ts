@@ -220,7 +220,9 @@ export function createTerminals(options: TerminalsOptions): TerminalController {
           `${device.label} has no serial path, so there is nothing to open`,
         );
       }
-      return openSerialChannel(target, openSerial);
+      const opener = openSerial ?? (protocol === 'digio_tlv'
+        ? (await import('./native-serial')).openNativeSerial : undefined);
+      return openSerialChannel(target, opener);
     };
   }
 
