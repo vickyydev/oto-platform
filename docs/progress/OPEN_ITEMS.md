@@ -1,3 +1,10 @@
+**23 November 2026, SCRUM-1068.** The rota hides retired shift rows by effective
+date while the overlap check counts assignments still attached to them. At
+Central Floresta this blocks replacement shifts for a row ending 22 November.
+Preserve past work, review assignments after retirement and keep the active
+shift overlap guard. Confirm replacement booking for an employee and a casual
+worker; verify history and unaffected active shifts separately.
+
 **16 November 2026: owner-approved Tom feedback round is active under SCRUM-987 through993; exact payment-choice defect SCRUM-986 precedes its release. SCRUM-966 point6 now uses new additional bills linked to the same main party after settlement; unrelated historical holds remain. Same-slot parties are permitted with staff capacity checks. See plans/tom-feedback-20261116/PLAN.md.**
 
 **13 November 2026, 17:50 Bangkok, TAKEOVER AUDIT RECONCILED INTO AN APPROVED THREE-STAGE ROUND (SCRUM-985).** The active order is979 ->977/975 ->978/976 proof/cleanup ->982 with scoped981 ->844/983 and relevant945/966/968 plus910. The owner ruled910's deposit stays with the party on a full settlement refund. Stop after this round for review. See [execution plan](plans/takeover-2026-11-13/PLAN.md). The old open-register entries below are historical where superseded; 75 audited tickets below Deployed/Done are individually assessed in docs/qa/takeover-2026-11-13/open-work-assessment.json. No later hardware, production or unrelated work is resumed.

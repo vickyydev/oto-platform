@@ -1,3 +1,9 @@
+**23 November 2026, HR incident review.** The production manager catalogue
+contains the migrated checklists. The two Reception cards were reproduced on
+the personal Today screen. SCRUM-1068 is the open rota defect concerning
+assignments on retired shifts. The [status entry](../progress/STATUS.md)
+records the production browser results and scope.
+
 **23 November 2026, staging real payments (SCRUM-709).** The one-baht item
 and home Digio test till are prepared. Demo reset is disabled, the guest
 return routes were checked, and the staging API still runs the simulator

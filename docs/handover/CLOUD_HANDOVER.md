@@ -19,6 +19,10 @@ work is landed and proven, and the tools. Kept current at every landing._
 
 ## 2. Where the work stands
 
+**23 November 2026, HR incident review.** Production checklist access was
+verified through the browser. SCRUM-1068 tracks the hidden assignments on a
+retired rota row. See the [status entry](../progress/STATUS.md) for scope.
+
 **23 November 2026, staging payment setup (SCRUM-709).** Central Floresta has
 the one-baht item and a dedicated home Digio test till. The owner enters the
 live merchant values on the staging API. Keep demo reset disabled and check

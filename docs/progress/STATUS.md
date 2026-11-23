@@ -1,3 +1,26 @@
+## 23 November 2026, HR checklist visibility and a retired rota shift
+
+The production account behind the 11:56 Central Floresta scheduling report has
+the HR admin role and all-branches access. A separate account with the same
+access rendered 17 distinct template cards in Ops > Checklists > List of
+Checklists. All 16 staging templates were in production by ID, with the same
+item counts (72 items across the 16). A Central Floresta manager rendered 15
+template cards. A branch-scoped staff login reached Today and could not open the
+management list. Both branch-scoped test logins were refused data for the other
+park. On staging an eligible staff checklist appeared on Today.
+
+The reporting account's personal checklist rules match the two Reception
+opening and closing templates through a job role. A test admin with that role
+reproduced two cards on Today and all 16 on the staging management list.
+Production request logs record visits to both areas but do not record which
+list the reporter was looking at. No checklist transfer was needed.
+
+SCRUM-1068 records the separate rota defect. Retiring a shift ends its row but
+leaves assignments attached. The scheduling overlap check reads those
+assignments without applying the row's end date. One retired row still holds
+six assignments for two employees during 23-29 November. No live rota or
+attendance records were edited. See the open-defect register.
+
 ## 23 November 2026, staging payment preparation (SCRUM-709)
 
 Central Floresta has one active shop item, `ZZPAY1` (ZZ TEST real payment), at
