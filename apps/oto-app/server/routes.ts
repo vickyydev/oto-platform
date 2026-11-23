@@ -1,4 +1,5 @@
 import { shiftRowEffectiveOn } from "./lib/shiftRowEffectiveOn";
+import { TillVerificationUnavailable } from "@shared/beoPaidLines";
 import { requireSchedulePark, ScheduleScopeError, scheduleParkPredicate, assertScheduleChangeSetScope } from "./schedule-scope";
 import { deleteWeekPlanNoting, readScheduleChangeSet, recordScheduleChange, scheduleChangeSetOf, undoScheduleChangeSet, weekScope } from "./lib/scheduleChangeSet";
 import { newScheduleWriteLog, noteScheduleWrites } from "./lib/scheduleWriteLog";
@@ -28774,6 +28775,9 @@ ${context}`;
 
   // General error handler for non-Directory API routes
   app.use(async (err: Error, req: Request, res: Response, _next: NextFunction) => {
+    if (err instanceof TillVerificationUnavailable) {
+      return res.status(503).json({ code: "TILL_VERIFICATION_UNAVAILABLE", message: err.message });
+    }
     if (err instanceof ScheduleScopeError) {
       return res.status(404).json({ message: err.message });
     }

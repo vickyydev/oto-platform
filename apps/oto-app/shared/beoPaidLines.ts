@@ -43,6 +43,12 @@ type Line = Record<string, unknown>;
 const record = (value: unknown): Line => (value && typeof value === "object" && !Array.isArray(value) ? (value as Line) : {});
 const records = (value: unknown): Line[] => (Array.isArray(value) ? value.filter((line): line is Line => !!line && typeof line === "object" && !Array.isArray(line)) : []);
 
+export class TillVerificationUnavailable extends Error {
+  constructor() {
+    super("The till could not verify paid items. Retry the price or quantity change when the till is available.");
+  }
+}
+
 // Compare only billing fields so notes, serving times and display order can still be saved.
 function financialLines(menus: unknown, barItems: unknown): string {
   const food = record(menus);
@@ -98,7 +104,7 @@ export function keepPaidBeoLines(
     const before = financialLines(stored.menus, stored.barItems);
     const after = financialLines(incoming.menus ?? stored.menus, incoming.barItems ?? stored.barItems);
     if (before !== after) {
-      throw Object.assign(new Error("The till could not verify paid items. Retry the price or quantity change when the till is available."), { status: 503 });
+      throw new TillVerificationUnavailable();
     }
     return { ...incoming, kept: [] };
   }
