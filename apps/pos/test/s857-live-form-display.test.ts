@@ -318,7 +318,7 @@ describe('the till’s copy of the family’s screen (`mirror`)', () => {
     expect(ConsentPromptSchema.safeParse(prompt).success).toBe(true);
     const form = open({ prompt, mirror: { step: 'agreements' } });
     expect(form.root().props['data-testid']).toBe('consent-mirror');
-    expect(form.root().props.inert).toBe(true);
+    expect(form.root().props.inert).toBeUndefined();
     expect(form.root().props.onBlurCapture).toBeUndefined();
     expect(form.text()).toContain('superviseConsent.mirrorFilling');
     expect(form.byId('public-consent-guardian')!.props.value).toBe('ZZ TEST Ploy');

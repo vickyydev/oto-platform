@@ -810,17 +810,24 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
     return meta;
   };
 
-  return <div className="relative flex h-full w-full min-h-0 flex-col bg-[image:var(--cd-gradient)] text-foreground"
-    data-testid={mirror ? 'consent-mirror' : 'display-consent'} inert={mirror ? true : undefined}
+  return <div className={cn('relative flex h-full w-full min-h-0 flex-col text-foreground',
+    mirror ? 'rounded-xl border bg-card' : 'bg-[image:var(--cd-gradient)]')}
+    data-testid={mirror ? 'consent-mirror' : 'display-consent'}
     onBlurCapture={mirror ? undefined : () => { urgent.current = true; flush.current(); }}>
     {/* SCRUM-857 — staff's copy says whose screen this is, above the form
         (where the family's has its language button: staff read in theirs). */}
     {mirror
-      ? <div className="shrink-0 flex justify-center px-8 pt-4"><div className="inline-flex items-center gap-2 rounded-full border border-foreground/15 bg-foreground/5 px-3 py-1.5 text-sm font-semibold text-foreground/70" data-testid="consent-mirror-status">
-        <Eye className="h-4 w-4" />{t('superviseConsent.mirrorFilling')}</div></div>
+      ? <header className="flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-2 sm:px-6">
+          <h2 className="text-lg font-semibold">{t(step === 'children' ? 'superviseConsent.stepChildren'
+            : step === 'care' ? 'superviseConsent.stepCare' : 'superviseConsent.stepAgreements')}
+            {!agreementsOnly && <span className="ml-2 text-sm font-normal text-muted-foreground">{t('superviseConsent.stepOf', { n: index + 1, total: STEPS.length })}</span>}
+          </h2>
+          <span className="inline-flex items-center gap-2 text-sm text-muted-foreground" data-testid="consent-mirror-status">
+            <Eye className="h-4 w-4" />{t(prompt.completed ? (prompt.finishing ? 'superviseConsent.finishing' : 'superviseConsent.waitForTeam') : 'superviseConsent.mirrorFilling')}</span>
+        </header>
       : <div className="absolute top-4 right-4 z-40"><LanguageSwitcher variant="dark" buttonClassName={DISPLAY_TOUCH} /></div>}
     {/* SCRUM-943 — at phone width the language button sits above the heading, not over it. */}
-    <div className={cn('shrink-0 px-8 pb-4 text-center', mirror ? 'pt-3' : `pt-8 ${NARROW_HEAD} ${NARROW_HEAD_TOUCH}`)}>
+    {!mirror && <div className={cn('shrink-0 px-8 pb-4 text-center', `pt-8 ${NARROW_HEAD} ${NARROW_HEAD_TOUCH}`)}>
       {/* SCRUM-975 — the line stays clear of the language button beside it
           (the reconnecting line's 9rem at each side), wrapping when long
           ("EN TRAIN DE JOUER CHEZ NOUS AUJOURD'HUI" at 600 wide). Under 520
@@ -834,7 +841,7 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
         : prompt.slots.length === 1 ? 'superviseConsent.subtitleReturningOne' : 'superviseConsent.subtitleReturningMany')}</p>
       {!agreementsOnly && <div className="mt-4 flex items-center justify-center gap-2" data-testid="consent-steps">
         {STEPS.map((name, at) => (
-          <button key={name} type="button" disabled={locked || at > index && !childrenComplete}
+          <button key={name} type="button" disabled={readOnly || locked || at > index && !childrenComplete}
             onClick={() => { if (at !== index) goTo(name); }}
             className={cn('rounded-full border px-4 py-1.5 text-base font-semibold transition-colors', touch,
               at === index ? 'border-primary bg-primary text-primary-foreground' : 'border-foreground/15 bg-foreground/5 text-foreground/70')}>
@@ -844,9 +851,12 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
       </div>}
       <p className="mt-2 text-sm text-foreground/50">{agreementsOnly ? t('superviseConsent.teamFollowing')
         : `${t('superviseConsent.stepOf', { n: index + 1, total: STEPS.length })} · ${t('superviseConsent.teamFollowing')}`}</p>
-    </div>
+    </div>}
 
-    <div ref={scroller} {...viewportEvents} className="[&_[data-guest-active]]:outline-2 [&_[data-guest-active]]:outline-primary [&_[data-guest-active]]:outline-offset-2 flex-1 min-h-0 space-y-5 overflow-y-auto px-8 pb-6">
+    <div ref={scroller} {...viewportEvents} tabIndex={mirror ? 0 : undefined} aria-label={mirror ? 'Guest form' : undefined}
+      className={cn('min-h-0 flex-1 overflow-y-auto', mirror ? 'touch-pan-y overscroll-contain px-4 pb-4 sm:px-6' : 'px-8 pb-6')}>
+      <div inert={mirror ? true : undefined} data-testid={mirror ? 'read-only-guest-fields' : undefined}
+        className="space-y-5 [&_[data-guest-active]]:outline-2 [&_[data-guest-active]]:outline-primary [&_[data-guest-active]]:outline-offset-2">
       {shows('children') && prompt.slots.map((slot, at) => {
         const child = draft.slots[slot.id]!;
         const meta = requirementOf(slot);
@@ -974,9 +984,9 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
           </label>)}
         </div>}
       </>}
-    </div>
+    </div></div>
 
-    <div className={cn('shrink-0 border-t border-foreground/10 px-8 py-4 flex flex-wrap items-center justify-end gap-3', NARROW_BAR)}>
+    {!mirror && <div className={cn('shrink-0 border-t border-foreground/10 px-8 py-4 flex flex-wrap items-center justify-end gap-3', NARROW_BAR)}>
       {prompt.completed ? <p role="status" data-testid="consent-finished">{t(prompt.finishing ? 'superviseConsent.finishing' : 'superviseConsent.waitForTeam')}</p> : <>
         {prompt.notSaved && <p role="status" className="w-full text-right text-base text-(--cd-amber)" data-testid="consent-not-saved">{t('superviseConsent.notSaved')}</p>}
         {shows('agreements') && doneLine && <p className={cn('w-full text-right text-base text-foreground/60', NARROW_LINE)} data-testid="consent-missing">{doneLine}</p>}
@@ -991,6 +1001,6 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
             ? <Button className={touch} disabled={readOnly || locked || answerPending || !prompt.canContinue || asksConfirm && !prompt.contactConfirmed || !!pendingCare} onClick={() => onAction({ ...fence, action: 'done' })}>{t('common.done')}</Button>
             : <Button className={touch} disabled={readOnly || locked || prompt.consentRequired && draft.consentAcknowledged && !draft.guardianName.trim()} onClick={next}>{t('common.continue')}</Button>}
       </>}
-    </div>
+    </div>}
   </div>;
 }

@@ -672,6 +672,7 @@ export default function Till() {
   const [reviewDisplayChange, setReviewDisplayChange] = useState<string | null>(null);
   const reviewDisplaySlotsRef = useRef(new Set<string>());
   const [consentStaffOnly, setConsentStaffOnly] = useState(false);
+  const [staffChecksOpen, setStaffChecksOpen] = useState(false);
   const [consentPrivateOpen, setConsentPrivateOpen] = useState(false);
   /** SCRUM-1020 — reception's "Edit details" on the drop-off form: add a child, correct details, ticks kept. */
   const [editDetailsOpen, setEditDetailsOpen] = useState(false);
@@ -1019,6 +1020,7 @@ export default function Till() {
     setReviewDisplayChange(null);
     reviewDisplaySlotsRef.current = new Set();
     setConsentStaffOnly(false);
+    setStaffChecksOpen(false);
     setConsentPrivateOpen(false);
     setEditDetailsOpen(false);
     setConsentCompletedScope(null);
@@ -2305,6 +2307,7 @@ export default function Till() {
     setReviewDisplayChange(null);
     reviewDisplaySlotsRef.current = new Set();
     setConsentStaffOnly(false);
+    setStaffChecksOpen(false);
     setConsentPrivateOpen(false);
     setEditDetailsOpen(false);
     setConsentCompletedScope(null);
@@ -4348,15 +4351,7 @@ export default function Till() {
   // a price still being worked out), staff go through them with the family here.
   const staffTicks = staffTicksAgreements({ formPublished: !!consent, displayConnected: linkedDisplay.connected.length > 0,
     displaySupported: linkedDisplay.supported, displayError: !!linkedDisplay.error });
-  /**
-   * SCRUM-857 — STAFF WATCH THE FAMILY FILL THE FORM (the owner's ruling of
-   * 12 November). While the drop-off or nanny form is on the paired display,
-   * the till shows the same form beside the staff gate, where the prototype's
-   * split view puts the customer's half: as the till holds it, which is what
-   * the family has typed (their screen sends it as they go), on the step they
-   * are on, read-only, in the staff's language. Staff help from the gate and
-   * Private child details, and see the family's screen follow.
-   */
+  // The paired guest form occupies the staff tablet while the family fills it.
   const consentMirror = step === 7 && !!consent && !staffTicks && !inlineDisplay;
   // SCRUM-943 — staff are told when the family's screen cannot take a photo
   // still needed, and that it is taken here.
@@ -4556,12 +4551,14 @@ export default function Till() {
                   ? 'The family has finished the form on the display. Check the photo and details before Continue.'
                   : consentStaffOnly
                     ? 'The family asked for help: fill the form here with them. The agreement ticks stay theirs, on the display.'
-                    : 'The family is filling in the form on the display; it appears here as they go. Help with the details here if they ask.'}</p>
+                    : 'Following the guest’s form.'}</p>
                 <div className="flex flex-wrap gap-2">
+                  {consentMirror && <Button variant="outline" className="min-h-11" aria-pressed={staffChecksOpen}
+                    onClick={() => setStaffChecksOpen(open => !open)}>{staffChecksOpen ? 'Return to guest form' : 'Staff checks'}</Button>}
                   {/* SCRUM-1020 — reception's "Edit details", beside the private details. */}
-                  <Button size="sm" variant="outline" disabled={gateSaving} data-testid="edit-details-open"
+                  <Button size="sm" className="min-h-11" variant="outline" disabled={gateSaving} data-testid="edit-details-open"
                     onClick={() => setEditDetailsOpen(true)}>Edit details</Button>
-                  <Button size="sm" variant="outline" disabled={gateSaving} onClick={() => setConsentPrivateOpen(true)}>Private child details</Button>
+                  <Button size="sm" className="min-h-11" variant="outline" disabled={gateSaving} onClick={() => setConsentPrivateOpen(true)}>Private child details</Button>
                 </div>
                 {consentCameraLine && <p className="w-full text-sm text-muted-foreground" data-testid="consent-staff-camera">{consentCameraLine}</p>}
               </div>}
@@ -4573,9 +4570,13 @@ export default function Till() {
               {/* SCRUM-1020 — each change the family makes to a saved child's care notes on the display, as it happens. */}
               {displayCareLines.map(({ id, line }) => <p key={id} className="mb-3 text-sm text-muted-foreground" role="status"
                 data-testid="consent-display-care">{line}</p>)}
-              <ConsentTicksStatus consentRequired={consentRequired} consentAcknowledged={superConsentAck}
-                confirmations={consentConfirmations} />
+              {(!consentMirror || staffChecksOpen) && <ConsentTicksStatus consentRequired={consentRequired} consentAcknowledged={superConsentAck}
+                confirmations={consentConfirmations} />}
               <div className="flex-1 min-h-0"><SupervisionGate
+              guestForm={consentMirror && consent && !staffChecksOpen ? (
+                <LanguageProvider><PublicConsentCapture prompt={{ ...consent, kind: 'consent', requestId: 'staff-mirror' }} busy={false}
+                  onAction={() => undefined} mirror={{ step: consentFamilyStep, photos: consentMirrorPhotos }} /></LanguageProvider>
+              ) : undefined}
               slots={superSlots}
               parentName={superParentName}
               consentAck={superConsentAck}
@@ -4800,14 +4801,14 @@ export default function Till() {
           >
             Displays ({linkedDisplay.paired.length})
           </Button>}
-          <Button
+          {!consentMirror && <Button
             variant="ghost"
             size="sm"
             className="h-7 text-amber-800 hover:text-amber-900 dark:text-amber-300 dark:hover:text-amber-200 hover:bg-amber-500/20"
             onClick={() => setShowCustomerDisplay(v => !v)}
           >
             {showCustomerDisplay ? 'Hide' : 'Show'} customer display
-          </Button>
+          </Button>}
         </div>
       </div>
 
@@ -4823,17 +4824,9 @@ export default function Till() {
       </div>
 
       <div className="flex-1 flex min-h-0">
-        <div className={`${inlineDisplay || consentMirror ? 'w-1/2 border-r border-foreground/10' : 'w-full'} h-full min-w-0`}>
+        <div className={`${inlineDisplay ? 'w-1/2 border-r border-foreground/10' : 'w-full'} h-full min-w-0`}>
           {staffTill}
         </div>
-        {consentMirror && consent && (
-          <div className={`w-1/2 h-full min-w-0 ${customerTheme === 'dark' ? 'dark' : 'light'}`}>
-            <LanguageProvider>
-              <PublicConsentCapture prompt={{ ...consent, kind: 'consent', requestId: 'staff-mirror' }} busy={false}
-                onAction={() => undefined} mirror={{ step: consentFamilyStep, photos: consentMirrorPhotos }} />
-            </LanguageProvider>
-          </div>
-        )}
         {inlineDisplay && step === 7 && (
           <div className={`w-1/2 h-full min-w-0 ${customerTheme === 'dark' ? 'dark' : 'light'}`}>
             <ConsentCapture

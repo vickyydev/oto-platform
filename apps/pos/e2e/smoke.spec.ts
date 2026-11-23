@@ -655,7 +655,7 @@ async function careNoteLostReply(page: Page, browser: Browser, baseURL: string):
     // the form and the family's note stay, and staff are told why.
     await expect(consent.getByTestId('consent-not-saved')).toBeVisible({ timeout: 20_000 });
     await expect(page.getByTestId('consent-staff-status')).toContainText('could not be saved');
-    await expect(page.getByRole('heading', { name: 'Children playing alone', exact: true })).toBeVisible();
+    await expect(page.getByTestId('staff-guest-form')).toBeVisible();
     await expect(allergies).toHaveValue(edited);
     expect(writes).toEqual(['care']);
     await captureLocalCheck(fixture.display, 'ticket-display-care-retry-local.png');
@@ -1126,7 +1126,7 @@ test('separate display drop-off form is mirrored live on the till and survives a
     await expect(mirror).toBeVisible({ timeout: 20_000 });
     await expect(mirror.getByTestId('consent-mirror-status')).toHaveText('The customer is filling this in');
     await expect(mirror.getByTestId('consent-child')).toHaveCount(1);
-    expect(await mirror.evaluate(element => element.hasAttribute('inert'))).toBe(true);
+    await expect(mirror.getByTestId('read-only-guest-fields')).toHaveAttribute('inert', '');
     // The family names the child on their screen; the till's copy follows.
     await nameChildOnDisplay(fixture.display, consent, 'ZZ TEST Live child', 6);
     await expect(mirror.getByTestId('consent-child-name')).toHaveValue('ZZ TEST Live child', { timeout: 3_000 });
@@ -1154,7 +1154,7 @@ test('separate display drop-off form is mirrored live on the till and survives a
     await fixture.display.getByRole('button', { name: 'ไทย', exact: true }).click();
     await expect(consent.getByText('ข้อตกลง', { exact: false }).first()).toBeVisible({ timeout: 5_000 });
     await expect(mirror.getByTestId('consent-mirror-status')).toHaveText('The customer is filling this in');
-    await expect(mirror.getByText('3. Agreements', { exact: true })).toBeVisible();
+    await expect(mirror.getByRole('heading', { name: /Agreements/ })).toBeVisible();
     await expect(staffName).toHaveValue('Live guardian');
     await captureLocalCheck(page, 's857-mirror-agreements-local.png');
 

@@ -169,14 +169,15 @@ describe('(c) the number is drawn one way on both screens', () => {
 });
 
 describe('(e) the till’s read-only copy', () => {
-  it('draws Ask the team, Back and Done as not available', () => {
+  it('keeps guest actions off the staff tablet and puts the read-only fields inside a scrollable region', () => {
     const copy = form(prompt({ familyStep: 'agreements', guardianName: 'ZZ TEST Ploy', consentAcknowledged: true, staffReady: true,
       canContinue: true, contactConfirmed: true, slots: [{ id: 'a', name: 'ZZ TEST Mai', ageYears: 6, requirement: 'drop_off',
         dateOfBirth: null, allergiesMedical: '', foodRestrictions: '' }] }), { step: 'agreements' });
     const buttons = copy.all().filter((node) => node.type === Button);
     const labels = buttons.map((node) => words(node.props.children));
-    expect(labels).toEqual(['superviseConsent.askTeam', 'common.back', 'common.done']);
-    expect(buttons.every((node) => node.props.disabled === true)).toBe(true);
+    expect(labels).toEqual([]);
+    expect(copy.all().find(node => node.props['aria-label'] === 'Guest form')?.props.tabIndex).toBe(0);
+    expect(copy.all().find(node => node.props['data-testid'] === 'read-only-guest-fields')?.props.inert).toBe(true);
     copy.view.unmount();
   });
 

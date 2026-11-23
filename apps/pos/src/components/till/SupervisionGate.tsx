@@ -113,6 +113,7 @@ const REQUIREMENT_META = {
 };
 
 interface SupervisionGateProps {
+  guestForm?: React.ReactNode;
   slots: SupervisedSlot[];
   parentName: string;
   consentAck: boolean;
@@ -214,6 +215,7 @@ export function LastPhotoChoice({ slot, last, onChoice }: {
  * per child plus the parent's name and explicit consent.
  */
 export function SupervisionGate({
+  guestForm,
   slots,
   parentName,
   consentAck,
@@ -322,7 +324,7 @@ export function SupervisionGate({
    */
   return (
     <div className="flex h-full flex-col">
-      <div className="contents max-[520px]:flex max-[520px]:min-h-0 max-[520px]:flex-1 max-[520px]:flex-col max-[520px]:overflow-y-auto" data-testid="gate-scroll">
+      {guestForm ? <div className="min-h-0 flex-1" data-testid="staff-guest-form">{guestForm}</div> : <div className="contents max-[520px]:flex max-[520px]:min-h-0 max-[520px]:flex-1 max-[520px]:flex-col max-[520px]:overflow-y-auto" data-testid="gate-scroll">
       <div className="mb-4 flex items-center gap-3">
         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-400">
           <ShieldAlert className="h-6 w-6" />
@@ -420,7 +422,7 @@ export function SupervisionGate({
           </ul>
         </div>
       )}
-      </div>
+      </div>}
 
       {/* SCRUM-954 — on a phone "Continue to payment" was wider than what the
           row left it and ran to the screen's edge: it may now take less than

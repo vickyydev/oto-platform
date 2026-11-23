@@ -58,25 +58,28 @@ export function useConsentViewport({ scroller, step, prompt, mirror, canSend, on
   }, [canSend, localView, acknowledged, prompt.requestId]);
 
   const remote = mirror ? prompt.familyView : null;
+  // A poll can supply a new object for the same guest position. Staff may
+  // scroll independently until the guest moves again or the tablet rotates.
+  const { step: remoteStep, anchor, offset, progress, active: activeField } = remote ?? {};
   useEffect(() => {
     const box = scroller.current;
-    if (!box || !remote || remote.step !== step) return;
+    if (!box || remoteStep !== step || offset === undefined || progress === undefined) return;
     const fields = box.querySelectorAll<HTMLElement>(selector);
-    const marked = remote.active === null ? undefined : fields[remote.active];
+    const marked = activeField == null ? undefined : fields[activeField];
     marked?.setAttribute('data-guest-active', '');
     const follow = () => {
-      const anchor = remote.anchor === null ? undefined : fields[remote.anchor];
-      if (anchor && anchor.getBoundingClientRect().height > 0) {
-        box.scrollTop += anchor.getBoundingClientRect().top - box.getBoundingClientRect().top
-          - box.clientHeight * remote.offset / 1000;
+      const element = anchor == null ? undefined : fields[anchor];
+      if (element && element.getBoundingClientRect().height > 0) {
+        box.scrollTop += element.getBoundingClientRect().top - box.getBoundingClientRect().top
+          - box.clientHeight * offset / 1000;
       } else {
-        box.scrollTop = (box.scrollHeight - box.clientHeight) * remote.progress / 1000;
+        box.scrollTop = (box.scrollHeight - box.clientHeight) * progress / 1000;
       }
     };
     follow();
     const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(follow);
     observer?.observe(box);
     return () => { observer?.disconnect(); marked?.removeAttribute('data-guest-active'); };
-  }, [remote, scroller, step]);
+  }, [remoteStep, anchor, offset, progress, activeField, scroller, step]);
   return { localView, events: enabled ? { onScroll: sample, onFocusCapture: sample, onPointerDownCapture: sample } : {} };
 }
