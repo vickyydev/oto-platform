@@ -2,6 +2,8 @@
 
 ## 23 November 2026, Central Floresta bank routing verified
 
+On staging the restricted ZDIG till opened a sale for the one-baht test item through the normal POS sale and QR APIs. Invoice SBXCU8261123000001 returned a real PromptPay QR. Its signed SCB02 inquiry confirmed THB 1.00 pending. The test attempt was cancelled and the unpaid sale voided. Render served commit 06566b70458107570f149ce37e9b08dcaba8a890. Radar, Inbox and the booking ledger answered authenticated reads, and the inquiry and party deposit follow-up jobs last reported success. The first paid receipt and its downstream posting require an actual payment.
+
 SCB00 signs v4.3 requests. SCB02 issued a live one-baht PromptPay QR and SCB01 issued a hosted card checkout token. For the same unpaid QR invoice, the signed status was 2002 under the parent alone and 2001 under the parent with SCB02. The master also generated a single-use QuickPay link. No customer paid in these checks. The earlier 9058 investigation below is resolved.
 
 The staging settings are PGW_MERCHANT_ID and PGW_SECRET_KEY for the signing account, PGW_MERCHANT_BRANCH_ID for Central Floresta, PGW_CARD_CHILD_MERCHANT_ID for SCB01 and PGW_QR_CHILD_MERCHANT_ID for SCB02. The API saves the selected child on the payment attempt for subsequent inquiries. A deposit link offering both methods lets the guest select one before opening the bank page. Keep electronic refunds pending separate maintenance credentials and a bank-confirmed child refund route. The physical Digio terminal and payout reports need separate tests.

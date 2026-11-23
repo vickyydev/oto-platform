@@ -1,6 +1,6 @@
 ## 23 November 2026, SCB payment routing
 
-**23 November 2026, SCRUM-709.** Live bank probes verified the card and PromptPay child accounts. SCB00 alone could not find the unpaid invoice. Including SCB02 returned its correct pending status and amount. The API now stores the channel's child account on the attempt. See the real-payment connection plan for evidence and settings. The staging release and a paid park test are separate checks.
+**23 November 2026, SCRUM-709.** The Central Floresta staging POS now uses the live 2C2P gateway. Render deployment dep-dc1vt2qvcj2c739r8mc0 served 06566b70458107570f149ce37e9b08dcaba8a890. On the restricted ZDIG till, ZZPAY1 generated invoice SBXCU8261123000001. The bank signed a pending SCB02 inquiry for exactly THB 1.00. The POS cancelled the unpaid attempt and voided the sale. The SCB01 online card token was checked separately. The home Digio PAX is assigned in the till settings. Its USB connection, a paid receipt, bank posting, paid downstream events and electronic refunds remain outstanding. See the [staging test receipt](../qa/jira-comments/attachments/SCRUM-709/scb-pos-unpaid-20261123.png).
 
 ## 23 November 2026, 2C2P production endpoint check (SCRUM-709)
 
