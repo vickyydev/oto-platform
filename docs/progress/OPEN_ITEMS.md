@@ -1,3 +1,5 @@
+**23 November 2026, SCRUM-1068 deployed to HR production.** Replacement scheduling passed on staging and all four affected dates for Hanna were verified on production. History is retained. See the newest scheduling entry in [STATUS](STATUS.md). Awaiting owner acceptance.
+
 **23 November 2026, SCRUM-1068.** The rota hides retired shift rows by effective
 date while the overlap check counts assignments still attached to them. At
 Central Floresta this blocks replacement shifts for a row ending 22 November.

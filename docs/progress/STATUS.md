@@ -1,3 +1,11 @@
+## 23 November 2026, retired shift scheduling fix live (SCRUM-1068)
+
+Mariia can choose a replacement for a retired shift at Central Floresta. On production, the deleted 09:30–18:30 opening no longer counts against Hanna on November 23, 25, 26 or 27. Her November 28 closing assignment remains. No replacement was chosen and the original records are retained.
+
+On staging, selecting a replacement from the employee rota reproduced the overlap refusal before the fix and saved the shift afterwards. A casual worker could also be assigned. Both still refused a real overlap and accepted a shift starting at the previous shift's end. The existing weekly grid labels two local assignments on the same day as conflicts even when they touch. A single replacement for a retired shift rendered normally. The test branch and its fixtures were removed and independently checked.
+
+The scheduling source is c3a44b3f2da253b5b95a1906c745ff2a9bcf8596. [Hosted checks](https://github.com/vickyydev/oto-platform/actions/runs/45132942181) were still running at verification of commit `92264da39da245e13bf2a94af5a166e57914ed5f`. The HR staging deploy was `dep-dc1v156q1p3s73ba3jbg` and the HR production deploy was `dep-dc1v2oavcj2c739p71g0`. [Original staging refusal](../../docs/qa/jira-comments/attachments/SCRUM-1068/01-retired-shift-blocked.png) · [Saved staging replacement](../../docs/qa/jira-comments/attachments/SCRUM-1068/02-replacement-saved.png).
+
 ## 23 November 2026, scheduling release check (SCRUM-1068)
 
 The HR checks passed. A separate pricing test in CI run 45127855708 created a holiday on the same day as the seeded Loy Krathong holiday. It received the correct weekend price and the existing holiday name. The same failure reproduced locally. The check now uses a branch with the same trading clock and its own calendar. All 24 catalog checks pass, with the original date, price and holiday-name assertions intact. Staging and production verification remain pending.

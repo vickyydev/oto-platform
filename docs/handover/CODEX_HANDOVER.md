@@ -1,3 +1,5 @@
+**23 November 2026, SCRUM-1068 deployed.** The retired-shift fix passed the staging rota check and is live in HR. Hanna's four November 23–27 dates are clear and her November 28 closing shift remains. The most recent scheduling entry in [STATUS](../progress/STATUS.md) records both deployments and screenshots. Owner acceptance is pending.
+
 **23 November 2026, SCRUM-1068.** The retired shift fix passed its database regression. Check CI for the source commit, then verify a replacement and an active overlap on staging. No production assignments were cleared.
 
 **23 November 2026, HR incident review.** The production manager catalogue
