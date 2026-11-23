@@ -38,15 +38,13 @@ interface Variant {
   shortPark?: boolean;
   /** No account permission for a paid-out: the Cash button is not drawn. */
   noCash?: boolean;
-  /** Usual content: from 1280 up the header is the prototype's one 64px row. */
-  oneRowFromXl?: boolean;
 }
 
 const VARIANTS: Variant[] = [
-  { label: 'a short park name, Som, a live gate', query: 'park=HKT%20Central&gate=live&operator=Som', shortPark: true, oneRowFromXl: true },
+  { label: 'a short park name, Som, a live gate', query: 'park=HKT%20Central&gate=live&operator=Som', shortPark: true },
   { label: 'a long nickname beside a stale gate', query: 'operator=Khun%20Siriporn&gate=stale' },
   { label: 'a printer low on paper', query: 'printer=low&gate=live&operator=Som' },
-  { label: 'one park, no Cash action', query: 'parks=one&cash=no&gate=live&operator=Som', noCash: true, oneRowFromXl: true },
+  { label: 'one park, no Cash action', query: 'parks=one&cash=no&gate=live&operator=Som', noCash: true },
   {
     label: 'a long full name with every chip at its longest',
     query: 'operator=Siriporn%20Wattanakulchai&printer=bad&pricing=holiday&gate=stale',
@@ -215,13 +213,11 @@ describe.skipIf(!browser)('SCRUM-505 review — the header at the widths that ch
 
           const band = r.controls.find((c) => c.name === 'tab band')!;
           const logo = r.controls.find((c) => c.name === 'Oto home')!;
-          if (width < 1024) expect(band.top).toBeGreaterThanOrEqual(logo.bottom);
-          else expect(band.top).toBeLessThan(logo.bottom);
+          expect(band.top).toBeGreaterThanOrEqual(logo.bottom);
 
           if (width >= 1280) {
             // The prototype's labels, as it drew them from 1280 up.
             expect(labels).toEqual({ cash: !variant.noCash, inPark: true, pricing: true });
-            if (variant.oneRowFromXl) expect(r.row.height).toBeCloseTo(64, 0);
           }
         });
       }

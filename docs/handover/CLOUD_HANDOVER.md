@@ -1,4 +1,4 @@
-**23 November 2026, BEO follow-up.** Central Floresta staging now uses the seeded staging administrator for the birthday manager bell. The notification opens the matching Inbox conversation. A failed till read holds financial menu edits while serving details can still be saved. The till tabs have a dedicated row, the Inbox splits at 704 px and its views column can be folded. Targeted staging checks in progress.
+**23 November 2026, BEO follow-up verified on staging.** Central Floresta’s birthday manager contact is the seeded staging administrator. The staging integration now has the HR notification write permission. Two calls to the paid-deposit handler for a test conversation produced one bell alert. Opening it took the recipient through the launcher to that conversation. HR build `8356e9345` refused price and quantity changes on an isolated party with an unavailable till. Both requests returned 503, the original ฿100 item and party title stayed intact, and a serving note saved. Launcher, Inbox and both POS sites run `b7e002e1a`. All eight POS tabs were visible at 1024, 1440 and 1680 px. The Inbox showed two panes at 744 px and remembered the folded Views column at 1024 px. The BEO balance was visible at both tablet widths. These checks used a simulated payment callback.
 
 **23 November 2026, birthday BEO feedback on staging.** Build `bf60a2f36` is live on the API, HR app and both POS staging services. Party Details and the POS Entry Checklist agreed on the balance. A ฿200 item discounted by ฿50 raised the outstanding amount by ฿150. Settling it cleared that amount, produced a ฿150 receipt and blocked a manager refund. Inbox queued the deposit request, payment acknowledgement and date confirmation once each on replay. The kitchen slip showed 12:30 and 13:30 for one billed dish. Render staging job `job-dc2186k9v7es73bvtlpg` passed with its test writes rolled back. Central Floresta has no staging birthday manager contact. Staff notification delivery and physical printing still need a recipient and a printer check.
 
@@ -23,7 +23,7 @@ work is landed and proven, and the tools. Kept current at every landing._
 
 ## 2. Where the work stands
 
-The 23 November BEO release and its staging test are recorded at the top of this file. Begin the next payment notification check by setting the birthday manager contact on the test branch.
+The 23 November BEO release and its staging test are recorded at the top of this file. The test recipient is configured and the alert-to-conversation path passed.
 
 **23 November 2026, SCRUM-709 Digio USB.** The counter runner now has the native Digio serial driver for Windows and Pi, with a read-only terminal-info command. The one-baht card request and matching approval passed over a mock serial port. Windows saw only Bluetooth ports at the bench. The physical PAX handshake, card-present approval and Pi installation are pending. The staging PromptPay route remains available.
 

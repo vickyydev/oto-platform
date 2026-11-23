@@ -106,7 +106,11 @@ list and filters; the chat and composer; people and actions; Book Date; the
 desktop and tablet layouts; then the settings pages. One test file pins exact
 colour classes and is rewritten for the new palette, not deleted.
 
-## 8. Open with the owner after the iPad round (SCRUM-1045)
+## 8. Tablet layout decisions
+
+On 23 November the owner approved the two tablet changes. Staging at 744 px shows a 268 px conversation list next to a 476 px chat. At 1024 px, **Hide views** enlarged the chat from 512 px to 655 px. The browser remembered the setting after reload.
+
+### Earlier options, 19 November
 
 Landed on staging 19 November 2026 (main 5ce8dafc3). Two layout questions
 stand; the build keeps the brief's behaviour until he answers.

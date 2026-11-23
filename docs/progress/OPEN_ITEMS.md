@@ -1,3 +1,5 @@
+**23 November 2026, BEO staging checks.** The birthday manager received the test deposit alert and opened the matching Inbox conversation. See the latest [staging results](STATUS.md). A real bank payment and physical kitchen slip are separate park checks.
+
 **23 November 2026, birthday BEO.** Staging verification for SCRUM-1006 through SCRUM-1009 and the shared-dish timing fix in SCRUM-1051 is recorded in [STATUS](STATUS.md). Remaining operational checks include reaching a designated birthday manager and printing the kitchen slip at the park. The owner ruled that additional-bill receipts cannot be refunded.
 
 **23 November 2026, SCRUM-1068 deployed to HR production.** Replacement scheduling passed on staging and all four affected dates for Hanna were verified on production. History is retained. See the newest scheduling entry in [STATUS](STATUS.md). Awaiting owner acceptance.

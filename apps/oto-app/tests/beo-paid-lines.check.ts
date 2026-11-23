@@ -26,7 +26,7 @@
 //     is written — never the whole approval refused;
 //   - a raise goes through and reaches the till at its new count; a line
 //     billed on a bill not yet paid, or not billed, is lowered and removed as
-//     before; the till not answering leaves the Save as sent.
+//     before. A missing till reading holds a financial change for retry.
 //
 // Usage, from apps/oto-app, with DATABASE_URL set:
 //   npx tsx tests/beo-paid-lines.check.ts
@@ -434,14 +434,15 @@ try {
     assert.equal(read.body.specialRequests, "ZZ TEST 1002 approved with the rest", "the rest of the approval written");
   });
 
-  await check("the till not answering: the Save is written as sent, as before the rule", async () => {
+  await check("a financial Save waits for the till and preserves the stored lines", async () => {
     const id = await settledParty("till down");
+    const before = await storedOf(id);
     tillDown = true;
     try {
       const res = await save(id, { kids: [{ ...k1, quantity: 1 }], adults: [a1], adultsDiffer: true });
-      assert.equal(res.status, 200, JSON.stringify(res.body));
-      assert.equal(res.body.paidLinesKept, undefined);
-      assert.deepEqual(counts((await storedOf(id)).kids), [["k1", 1]]);
+      assert.equal(res.status, 503, JSON.stringify(res.body));
+      assert.match(res.body.message, /Retry the price or quantity change/);
+      assert.deepEqual(await storedOf(id), before);
     } finally {
       tillDown = false;
     }
