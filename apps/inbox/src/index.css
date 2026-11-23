@@ -164,9 +164,9 @@ html.dark {
  * face of the Inbox, in three densities. A component writes `text-body`,
  * `min-h-ctl`, `px-pane`, never a size of its own (test/scale-1045.test.ts).
  *
- * - comfortable: a phone's single column (below 768 px), the approved phone
+ * - comfortable: a phone's single column (below 704 px), the approved phone
  *   look: 15 px names and bubbles, 44 to 48 px controls;
- * - compact: tablets and split panes (768 px and up): 14 px names and
+ * - compact: tablets and split panes (704 px and up): 14 px names and
  *   bubbles, 32 to 36 px controls, 11 px captions;
  * - regular: a pane at least 720 px wide on a screen of 1280 px and more.
  *
@@ -200,7 +200,7 @@ html.dark {
   --ui-face-sm: 40px;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 704px) {
   :root,
   .density-window,
   [data-pane] > * {
@@ -251,7 +251,7 @@ html.dark {
     --ui-face-sm: 36px;
   }
   /* A narrow pane on a wide screen (the list, the views column) keeps the
-     compact values the 768 px rule gave it; a wide one turns regular. */
+     compact values the 704 px rule gave it; a wide one turns regular. */
   @container pane (min-width: 720px) {
     [data-pane] > * {
       --ui-fs-caption: 11px;

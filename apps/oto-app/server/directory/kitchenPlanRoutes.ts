@@ -95,7 +95,7 @@ export function directoryKitchenPlanRouter(pool: Pool, deps: KitchenPlanRouteDep
         .select({ id: coreEvents.id, tenantId: coreEvents.tenantId, branchId: coreEvents.branchId, eventType: coreEvents.eventType })
         .from(coreEvents)
         .where(and(eq(coreEvents.id, event.id), eq(coreEvents.tenantId, event.tenantId)));
-      const paid = party ? await paidBeoQuantitiesOf(party, req.requestId) : new Map<string, number>();
+      const paid = party ? await paidBeoQuantitiesOf(party, req.requestId) : null;
       const outcome = await applyTillKitchenEdit(deps.db, deps.writers, { id: event.id, tenantId: event.tenantId }, parsed.data, paid);
       if (!outcome.ok) return res.status(outcome.status).json({ error: outcome.error, message: outcome.message });
       if (outcome.wrote && deps.afterWrite) await deps.afterWrite(event.id);

@@ -27,9 +27,11 @@ import {
 } from '@/lib/panes';
 
 describe('SCRUM-1045: the layouts', () => {
-  it('a phone below 768 px, a tablet’s two panes to 1023 px, the desktop’s three from 1024 px', () => {
+  it('a phone below 704 px, a tablet’s two panes to 1023 px, the desktop’s three from 1024 px', () => {
     expect(layoutFor(390)).toBe('phone');
-    expect(layoutFor(767)).toBe('phone');
+    expect(layoutFor(703)).toBe('phone');
+    expect(layoutFor(704)).toBe('tablet');
+    expect(layoutFor(744)).toBe('tablet');
     expect(layoutFor(768)).toBe('tablet');
     expect(layoutFor(1023)).toBe('tablet');
     expect(layoutFor(1024)).toBe('desktop');

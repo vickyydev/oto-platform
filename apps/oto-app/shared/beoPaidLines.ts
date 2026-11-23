@@ -43,6 +43,19 @@ type Line = Record<string, unknown>;
 const record = (value: unknown): Line => (value && typeof value === "object" && !Array.isArray(value) ? (value as Line) : {});
 const records = (value: unknown): Line[] => (Array.isArray(value) ? value.filter((line): line is Line => !!line && typeof line === "object" && !Array.isArray(line)) : []);
 
+// Compare only billing fields so notes, serving times and display order can still be saved.
+function financialLines(menus: unknown, barItems: unknown): string {
+  const food = record(menus);
+  const lines: string[] = [];
+  for (const [area, items] of [["kids", food.kids], ["adults", adultsDifferOf(food) ? food.adults : []], ["bar", barItems]] as const) {
+    for (const line of records(items)) {
+      lines.push(JSON.stringify([area, line.id, line.productCode ?? "", line.itemName, beoQuantityOf(line.quantity),
+        Number(line.price ?? 0), line.included === true, line.chargeApproved === true, line.source ?? ""]));
+    }
+  }
+  return JSON.stringify([Number(food.cakePrice ?? 0), food.cakeIncluded !== false, lines.sort()]);
+}
+
 /** The till's `beoLines`, as each line's paid count: only the lines with one. */
 export function paidQuantitiesOf(beoLines: unknown): Map<string, number> {
   const paid = new Map<string, number>();
@@ -79,8 +92,16 @@ export function mayHoldPaidLines(menus: unknown, barItems: unknown): boolean {
 export function keepPaidBeoLines(
   stored: { menus: unknown; barItems: unknown },
   incoming: { menus?: Line; barItems?: unknown },
-  paid: ReadonlyMap<string, number>,
+  paid: ReadonlyMap<string, number> | null,
 ): { menus?: Line; barItems?: unknown; kept: BeoPaidLineKept[] } {
+  if (paid === null) {
+    const before = financialLines(stored.menus, stored.barItems);
+    const after = financialLines(incoming.menus ?? stored.menus, incoming.barItems ?? stored.barItems);
+    if (before !== after) {
+      throw Object.assign(new Error("The till could not verify paid items. Retry the price or quantity change when the till is available."), { status: 503 });
+    }
+    return { ...incoming, kept: [] };
+  }
   const held = paidLinesOf(stored.menus, stored.barItems, paid);
   const kept: BeoPaidLineKept[] = [];
   if (held.size === 0) return { ...incoming, kept };

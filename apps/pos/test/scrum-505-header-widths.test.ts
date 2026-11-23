@@ -50,17 +50,14 @@ const PARK = 'Oto Play Park, Central Floresta';
 interface Variant {
   label: string;
   query: string;
-  /** From xl (1280) up this content keeps the prototype's one 64px row. */
-  oneRowFromXl: boolean;
 }
 
 const VARIANTS: Variant[] = [
-  { label: "staging's own header (no gate reporting, Khun Anan)", query: '', oneRowFromXl: true },
-  { label: 'a live gate and a short name (Som)', query: 'gate=live&operator=Som', oneRowFromXl: true },
+  { label: "staging's own header (no gate reporting, Khun Anan)", query: '' },
+  { label: 'a live gate and a short name (Som)', query: 'gate=live&operator=Som' },
   {
     label: 'everything long at once (a printer fault, a holiday, a stale gate)',
     query: 'printer=bad&pricing=holiday&gate=stale',
-    oneRowFromXl: false,
   },
 ];
 
@@ -191,15 +188,8 @@ describe.skipIf(!browser)('SCRUM-505 — the header at nine widths', () => {
 
           const band = named(r, 'tab band')!;
           const logo = named(r, 'Oto home')!;
-          if (width < 1024) {
-            // An upright tablet: the tabs have a row of their own under the bar.
-            expect(band.top).toBeGreaterThanOrEqual(logo.bottom);
-          }
-          if (width >= 1280 && variant.oneRowFromXl) {
-            // The prototype's one 64px row, tabs between the clusters.
-            expect(r.row.height).toBeCloseTo(64, 0);
-            expect(band.left).toBeGreaterThan(logo.right);
-          }
+          expect(band.top).toBeGreaterThanOrEqual(logo.bottom);
+          if (width >= 1024) expect(nav.wholeTabsVisible).toBe(nav.tabs);
         });
       }
     });

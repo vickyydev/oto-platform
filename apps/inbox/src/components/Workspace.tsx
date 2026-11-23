@@ -68,7 +68,7 @@ function mergeNewest(loaded: Message[], newest: Message[], loadedCursor: string 
 
 /**
  * The Inbox page (SCRUM-1016): the compact app bar, then the work filling the
- * rest of the screen — on a phone the list or the chat; from 768 px the list
+ * rest of the screen — on a phone the list or the chat; from 704 px the list
  * and the chat side by side; from 1024 px the views column beside them; from
  * 1280 px a region for the customer and the next step. The page itself never
  * scrolls: only the list, the thread and a settings page do. The prototype's
@@ -183,12 +183,20 @@ export function Workspace({ me }: { me: InboxMe }) {
   const visibleSources = inboxSourcesWithinAccess(sources, currentAccess);
   sourcesRef.current = visibleSources;
   const currentMe = inboxMeWithinAccess(me, currentAccess);
-  // The list and the chat side by side from 768 px with a divider between
+  // The list and the chat side by side from 704 px with a divider between
   // them (SCRUM-1045, `lib/panes.ts`); below that, or when the room cannot
   // give both their minimum, one of them at a time, the prototype's
   // `showChatMobile` (:1047). An open chat counts as on screen only when it is.
   const simulatorShown = Boolean(currentMe.simulator) && simPane;
-  const panes = usePanes(simulatorShown);
+  const [railFolded, setRailFolded] = useState(() => {
+    try { return localStorage.getItem('oto.inbox.viewsFolded') === '1'; } catch { return false; }
+  });
+  const toggleViews = () => {
+    const next = !railFolded;
+    setRailFolded(next);
+    try { localStorage.setItem('oto.inbox.viewsFolded', next ? '1' : '0'); } catch { /* session only */ }
+  };
+  const panes = usePanes(simulatorShown, railFolded);
   const sideBySide = panes.split;
   useEffect(() => {
     setSources(known => inboxSourcesWithinAccess(known, currentAccess));
@@ -640,7 +648,7 @@ export function Workspace({ me }: { me: InboxMe }) {
           style={{ gridTemplateColumns: panes.columns, ['--list-w' as string]: `${panes.width}px` }}
           className={`${settings !== null ? 'hidden ' : ''}relative grid min-h-0 flex-1 overflow-hidden`}
         >
-          <Rail
+          {!railFolded && <Rail
             me={currentMe}
             tab={tab}
             counts={page?.tabCounts ?? null}
@@ -649,7 +657,7 @@ export function Workspace({ me }: { me: InboxMe }) {
             sources={visibleSources}
             onTab={chooseTab}
             onFilters={patchFilters}
-          />
+          />}
 
           <section
             id="inbox-list"
@@ -657,6 +665,10 @@ export function Workspace({ me }: { me: InboxMe }) {
             className={`min-h-0 min-w-0 flex-col border-line ${sideBySide ? 'flex border-r' : showChatMobile ? 'hidden' : 'flex'}`}
             aria-label="Conversations"
           >
+            <button type="button" aria-expanded={!railFolded} onClick={toggleViews}
+              className="hidden min-h-ctl shrink-0 items-center border-b border-line px-pane text-caption text-ink-muted lg:flex">
+              {railFolded ? 'Show views' : 'Hide views'}
+            </button>
             <ConversationList
               me={currentMe}
               tab={tab}

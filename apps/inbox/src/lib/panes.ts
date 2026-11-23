@@ -1,5 +1,5 @@
 // THE PANES AND THE DIVIDER BETWEEN THEM (SCRUM-1045): how wide the list is
-// beside the chat. From 768 px the two sit side by side, the list the
+// beside the chat. From 704 px the two sit side by side, the list the
 // narrower: about 36 % of the room by default, never under 264 px and, by
 // default, never over 380 px; the chat takes the rest and never less than
 // 360 px. Between them a divider a person can drag; the width chosen is
@@ -10,7 +10,7 @@
 // Plain arithmetic, apart from the two storage helpers, so the tests pin it.
 
 /** Below this window width the Inbox is a phone: one pane at a time. */
-export const SPLIT_FROM = 768;
+export const SPLIT_FROM = 704;
 /** From this window width the views column stands left of the list. */
 export const RAIL_FROM = 1024;
 /** The views column's width: "Birthdays & Events" whole beside its count. */

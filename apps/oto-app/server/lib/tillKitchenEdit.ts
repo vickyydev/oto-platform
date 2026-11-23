@@ -403,7 +403,7 @@ export async function applyTillKitchenEdit(
   writers: BeoSaveWriters,
   event: { id: string; tenantId: string },
   body: KitchenPlanEditBody,
-  paid: ReadonlyMap<string, number> = new Map(),
+  paid: ReadonlyMap<string, number> | null = new Map(),
 ): Promise<TillKitchenEditOutcome> {
   const hash = tillKitchenEditHash(body);
   return db.transaction(async (tx: any): Promise<TillKitchenEditOutcome> => {

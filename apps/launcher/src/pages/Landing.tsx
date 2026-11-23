@@ -158,7 +158,8 @@ function SignedIn() {
   );
 }
 
-function ResumeHr() {
+function ResumeApp({ appKey }: { appKey: 'oto_app' | 'inbox' }) {
+  const name = appKey === 'inbox' ? 'Inbox' : 'OTO App';
   const { has } = useSession();
   const started = useRef(false);
   const [message, setMessage] = useState('');
@@ -167,16 +168,16 @@ function ResumeHr() {
     started.current = true;
     async function resume() {
       const registry = await suiteApi.apps();
-      const tile = launcherTiles(has, registry.apps).find(({ app }) => app.key === 'oto_app');
+      const tile = launcherTiles(has, registry.apps).find(({ app }) => app.key === appKey);
       if (!tile || !tile.app.origin || tile.state !== 'open') {
-        setMessage(tile?.maintenance?.message || 'The OTO App is unavailable for this account.');
+        setMessage(tile?.maintenance?.message || `The ${name} is unavailable for this account.`);
         return;
       }
       const target = readHandoffTarget(window.location.hash);
       await openApp(tile.app, target, true);
     }
-    void resume().catch(() => setMessage('Could not open the OTO App. Please try again.'));
-  }, [has]);
+    void resume().catch(() => setMessage(`Could not open the ${name}. Please try again.`));
+  }, [has, appKey, name]);
   if (!message) return <Splash />;
   return <Centred><div role="alert" className="space-y-4 text-center">
     <p>{message}</p><a className="underline" href={window.location.pathname}>Back to the launcher</a>
@@ -200,6 +201,7 @@ export function Landing() {
         <ChangePasswordPanel />
       </Centred>
     );
-  if (window.location.hash.split('&')[0] === '#resume=oto_app') return <ResumeHr />;
+  if (window.location.hash.split('&')[0] === '#resume=oto_app') return <ResumeApp appKey="oto_app" />;
+  if (window.location.hash.split('&')[0] === '#resume=inbox') return <ResumeApp appKey="inbox" />;
   return <SignedIn />;
 }

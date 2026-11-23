@@ -389,7 +389,7 @@ export async function approveBeoAiFill(
      * SCRUM-1002 ruling 3: each BEO line's paid count, as the till holds it (server/lib/beoPaidLinesRead.ts),
      * asked only when the approval writes the kitchen or the bar's lines; none known, nothing is held.
      */
-    paidLines?: () => Promise<ReadonlyMap<string, number>>;
+    paidLines?: () => Promise<ReadonlyMap<string, number> | null>;
   },
 ): Promise<ApproveOutcome> {
   const { event, body } = input;
@@ -400,7 +400,7 @@ export async function approveBeoAiFill(
   // SCRUM-1002 ruling 3, as on the BEO's Save: the till's paid counts, read before anything is held. A
   // billed and paid line the review would lower below its paid count stays as stored; the rest is written.
   const writesLines = !!body.setMenu || body.menuLines.length > 0 || !!body.cake || !!body.service?.kidsFoodTime || !!body.service?.adultsFoodTime;
-  const paid: ReadonlyMap<string, number> = writesLines && input.paidLines ? await input.paidLines() : new Map();
+  const paid: ReadonlyMap<string, number> | null = writesLines && input.paidLines ? await input.paidLines() : new Map();
   const paidLinesKept: BeoPaidLineKept[] = [];
   const [current] = await db
     .select({ startTime: coreEvents.startTime, endTime: coreEvents.endTime })

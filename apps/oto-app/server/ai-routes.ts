@@ -139,7 +139,7 @@ export interface AiRouteDeps {
    * SCRUM-1002 ruling 3: each BEO line's billed and paid count, as the till holds it
    * (server/lib/beoPaidLinesRead.ts), which an approval may not lower; none when it cannot say.
    */
-  paidLines: (event: BeoFillEvent, requestId?: string) => Promise<ReadonlyMap<string, number>>;
+  paidLines: (event: BeoFillEvent, requestId?: string) => Promise<ReadonlyMap<string, number> | null>;
 }
 
 const PARKS_ZONE: ParkPlace = { name: null, timeZone: DEFAULT_PARK_TIME_ZONE };
@@ -253,11 +253,11 @@ export const defaultAiRouteDeps: AiRouteDeps = {
       ? gatewayDepositFloor({ id: event.id, tenantId: event.tenantId, branchId: event.branchId, eventType: event.eventType }, requestId)
       : { known: false },
   tillMenu: (event, requestId) => readFillTillMenu(db, event, requestId),
-  // An event whose kind is not known here holds no line the till settles.
+  // A missing event type cannot establish whether the till has collected.
   paidLines: async (event, requestId) =>
     event.eventType
       ? paidBeoQuantitiesOf({ id: event.id, tenantId: event.tenantId, branchId: event.branchId, eventType: event.eventType }, requestId)
-      : new Map(),
+      : null,
 };
 
 /** The run's schema with the catalogue section the model adds when it is handed the catalogue (read apart, leniently). */

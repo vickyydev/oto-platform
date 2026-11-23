@@ -27,6 +27,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { useSignInOptions } from "@/lib/sign-in-options";
 import { notificationTarget } from "@/lib/notification-target";
 
 interface NotificationItem {
@@ -94,6 +95,8 @@ export function NotificationPanel({ open, onOpenChange }: { open: boolean; onOpe
     },
   });
 
+  const signInOptions = useSignInOptions();
+
   async function handleNotificationClick(notification: NotificationItem) {
     if (!notification.isRead) {
       try {
@@ -104,7 +107,7 @@ export function NotificationPanel({ open, onOpenChange }: { open: boolean; onOpe
     }
     if (notification.type === "timekeeping_ping") return;
     onOpenChange(false);
-    const target = notificationTarget(notification);
+    const target = notificationTarget(notification, signInOptions?.launcherUrl);
     if (target) window.location.href = target;
   }
 
@@ -253,6 +256,9 @@ function NotificationRow({
             <span className="text-[10px] text-primary/70 flex items-center gap-0.5">
               Open task <ArrowRight className="h-2.5 w-2.5" />
             </span>
+          )}
+          {notification.referenceType === "inbox_conversation" && notification.referenceId && (
+            <span className="text-[10px] text-primary/70">Open conversation</span>
           )}
           {notification.referenceType === "fix_report" && notification.referenceId && (
             <span className="text-[10px] text-primary/70 flex items-center gap-0.5">

@@ -51,7 +51,7 @@ export interface Panes {
  * panel, a rotation or a resized window are all seen), the list's width from
  * what this browser chose for this layout, clamped to the room every time.
  */
-export function usePanes(simulatorShown: boolean): Panes {
+export function usePanes(simulatorShown: boolean, railFolded = false): Panes {
   const shell = useRef<HTMLElement | null>(null);
   const [win, setWin] = useState(windowWidth);
   const [measured, setMeasured] = useState<number | null>(null);
@@ -82,8 +82,9 @@ export function usePanes(simulatorShown: boolean): Panes {
   }, []);
 
   const layout = layoutFor(win);
+  const gridLayout = layout === 'desktop' && railFolded ? 'tablet' : layout;
   const estimate = win - (simulatorShown && win >= 1280 ? SIMULATOR_WIDTH : 0);
-  const room = roomFor(measured ?? estimate, layout);
+  const room = roomFor(measured ?? estimate, gridLayout);
   const split = canSplit(layout, room);
   // The chat's right panel shows from 1280 px (1760 px beside the simulator's):
   // the default share leaves it out, so the conversation keeps its room.
@@ -113,8 +114,8 @@ export function usePanes(simulatorShown: boolean): Panes {
     room,
     width,
     max: listMax(room),
-    columns: paneColumns(layout, split),
-    edge: layout === 'desktop' ? `calc(${RAIL_WIDTH}px + var(--list-w))` : 'var(--list-w)',
+    columns: paneColumns(gridLayout, split),
+    edge: gridLayout === 'desktop' ? `calc(${RAIL_WIDTH}px + var(--list-w))` : 'var(--list-w)',
     live,
     commit,
   };

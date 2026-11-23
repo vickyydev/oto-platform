@@ -29,7 +29,7 @@ function declared(block: string): Record<string, number> {
 /** The three densities' blocks, in the order the stylesheet gives them. */
 function densities() {
   const comfortable = /:root,\s*\.density-window \{([^}]*)\}/.exec(css)![1]!;
-  const compact = /@media \(min-width: 768px\) \{\s*:root,\s*\.density-window,\s*\[data-pane\] > \* \{([^}]*)\}/.exec(css)![1]!;
+  const compact = /@media \(min-width: 704px\) \{\s*:root,\s*\.density-window,\s*\[data-pane\] > \* \{([^}]*)\}/.exec(css)![1]!;
   const regular = /@media \(min-width: 1280px\) \{\s*:root,\s*\.density-window \{([^}]*)\}/.exec(css)![1]!;
   const regularPane = /@container pane \(min-width: 720px\) \{\s*\[data-pane\] > \* \{([^}]*)\}/.exec(css)![1]!;
   return { comfortable: declared(comfortable), compact: declared(compact), regular: declared(regular), regularPane: declared(regularPane) };
