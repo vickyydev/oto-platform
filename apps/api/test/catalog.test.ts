@@ -175,6 +175,17 @@ describe('SCRUM-36 — pricing-mode resolver (prototype pricingMode.ts rules)', 
    * above, so this signs in again under the faked clock and uses that cookie.
    */
   it('at 00:30 the chip prices the trading day a sale would be priced on: the new calendar day (SCRUM-1010)', async () => {
+    // Use the park's trading clock with an empty holiday calendar. A seeded
+    // holiday on the same date would make the returned holiday name ambiguous.
+    const [clock] = await ctx.db
+      .select({ operatorId: branch.operatorId, timezone: branch.timezone, businessDayStart: branch.businessDayStart })
+      .from(branch)
+      .where(eq(branch.id, branchId));
+    const testBranchId = newId();
+    await ctx.db.insert(branch).values({
+      ...clock!, id: testBranchId, code: 'midnight-pricing-test', name: 'ZZ TEST midnight pricing',
+    });
+
     // The next 00:30 Asia/Bangkok (UTC+7) after real now: 17:30 UTC today or tomorrow.
     const real = new Date();
     const at = new Date(Date.UTC(real.getUTCFullYear(), real.getUTCMonth(), real.getUTCDate(), 17, 30));
@@ -189,7 +200,7 @@ describe('SCRUM-36 — pricing-mode resolver (prototype pricingMode.ts rules)', 
     // answer differently whatever weekday they fall on.
     const made = await ctx.app.inject({
       method: 'POST',
-      url: `/branches/${branchId}/holidays`,
+      url: `/branches/${testBranchId}/holidays`,
       headers: { cookie },
       payload: { name: 'Trading-day holiday (SCRUM-308)', startsOn: tradingDay, endsOn: tradingDay },
     });
@@ -200,7 +211,7 @@ describe('SCRUM-36 — pricing-mode resolver (prototype pricingMode.ts rules)', 
       const lateCookie = await signInAs(ctx.app, ADMIN.phone, ADMIN.password);
       const res = await ctx.app.inject({
         method: 'GET',
-        url: `/branches/${branchId}/pricing-mode`,
+        url: `/branches/${testBranchId}/pricing-mode`,
         headers: { cookie: lateCookie },
       });
       expect(res.statusCode, res.body).toBe(200);
@@ -215,7 +226,7 @@ describe('SCRUM-36 — pricing-mode resolver (prototype pricingMode.ts rules)', 
 
     await ctx.app.inject({
       method: 'DELETE',
-      url: `/branches/${branchId}/holidays/${made.json().holiday?.id ?? made.json().id}`,
+      url: `/branches/${testBranchId}/holidays/${made.json().holiday?.id ?? made.json().id}`,
       headers: { cookie },
     });
   });

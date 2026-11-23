@@ -1,3 +1,7 @@
+## 23 November 2026, scheduling release check (SCRUM-1068)
+
+The HR checks passed. A separate pricing test in CI run 45127855708 created a holiday on the same day as the seeded Loy Krathong holiday. It received the correct weekend price and the existing holiday name. The same failure reproduced locally. The check now uses a branch with the same trading clock and its own calendar. All 24 catalog checks pass, with the original date, price and holiday-name assertions intact. Staging and production verification remain pending.
+
 ## 23 November 2026, retired shift assignment fix (SCRUM-1068)
 
 The picker, assignment checks and conflict scan now apply the shift row's effective dates to the day being scheduled. Active overlaps still block, back-to-back shifts remain available, and old assignment records stay in the database. The focused database regression passed for employees and casual workers. The HR typecheck stayed at its recorded 411 diagnostics. CI and staging acceptance are pending.
