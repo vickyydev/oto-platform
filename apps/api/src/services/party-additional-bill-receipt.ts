@@ -12,7 +12,7 @@ import { AppError } from '../lib/errors';
 import { audit } from './audit';
 import { beoAdditionKeysOf, beoTaxCategoryOf } from './beo-additional-charges';
 import { lockParty, partyLedgersOf } from './party-tab';
-import { commitSale, finaliseSale, type PartySettlementCartLine, type SaleActor } from './sale';
+import { commitSale, finaliseSale, type ManualDiscountInput, type PartySettlementCartLine, type SaleActor } from './sale';
 import { salePrintSnapshotOf, type SalePrintingResult } from './sale-printing';
 import type { Exec, Tx } from './tx';
 
@@ -69,6 +69,7 @@ export async function receiptsOfBills(db: Exec, billIds: readonly string[]): Pro
         ...(paper.dateTime ? { dateTime: paper.dateTime } : {}),
         ...(paper.staffName ? { staffName: paper.staffName } : {}),
         lines: paper.lines.map((l) => ({ qty: l.qty, name: l.name, ...(l.price ? { price: l.price } : {}), ...(l.note ? { note: l.note } : {}) })),
+        ...(paper.discounts?.length ? { discounts: paper.discounts } : {}),
         ...(paper.subtotal ? { subtotal: paper.subtotal } : {}),
         ...(paper.service ? { service: paper.service } : {}),
         ...(paper.vat ? { vat: paper.vat } : {}),
@@ -99,7 +100,8 @@ async function receiptLinesOf(
   operatorId: string,
   branchId: string,
   charges: readonly (typeof partyCharge.$inferSelect)[],
-): Promise<PartySettlementCartLine[]> {
+): Promise<{ lines: PartySettlementCartLine[]; manualDiscounts: ManualDiscountInput[] }> {
+  const manualDiscounts: ManualDiscountInput[] = [];
   const lines: PartySettlementCartLine[] = [];
   for (const charge of charges) {
     const items: StoredItem[] = Array.isArray(charge.items) ? (charge.items as StoredItem[]) : [];
@@ -122,9 +124,17 @@ async function receiptLinesOf(
       return [{ id: `party-charge:${charge.id}:${at}`, name: even ? name : `${qty} x ${name}`, quantity: even ? qty : 1,
         unitSatang: even ? total / qty : total, taxCategory, role: 'add_on' as const }];
     });
-    if (addOns.length > 0) lines.push({ ...blank, id: deriveId(charge.id, 'additional-bill-receipt-line'), role: 'add_on', ticket: false, addOns });
+    if (addOns.length === 0) continue;
+    const id = deriveId(charge.id, 'additional-bill-receipt-line');
+    lines.push({ ...blank, id, role: 'add_on', ticket: false, addOns });
+    const gross = addOns.reduce((sum, item) => sum + item.unitSatang * item.quantity, 0);
+    const discount = gross - charge.totalSatang;
+    if (discount > 0) {
+      manualDiscounts.push({ id: deriveId(charge.id, 'receipt-discount'), scope: 'line', targetLineId: id,
+        type: 'fixed', value: discount, reason: 'Discount recorded at the till' });
+    }
   }
-  return lines;
+  return { lines, manualDiscounts };
 }
 
 export interface AdditionalBillReceiptOutcome {
@@ -185,12 +195,13 @@ export async function issueAdditionalBillReceipt(
         const charges = await sp.select().from(partyCharge)
           .where(and(eq(partyCharge.operatorId, q.operatorId), eq(partyCharge.additionalBillId, bill.id)))
           .orderBy(asc(partyCharge.chargedAt), asc(partyCharge.id));
-        const lines = await receiptLinesOf(sp, q.operatorId, q.branchId, charges);
+        const { lines, manualDiscounts } = await receiptLinesOf(sp, q.operatorId, q.branchId, charges);
         if (lines.length === 0) throw new AppError(409, 'ADDITIONAL_BILL_NO_LINES', 'the bill has no lines a receipt can name');
         await commitSale(sp, actor, {
           id: saleId,
           branchId: q.branchId,
           stationId: q.stationId,
+          manualDiscounts,
           partySettlement: { eventId: q.eventId, settlementId: bill.id, hours: null, lines },
           note: q.title ? `Party: ${q.title} · ${name}` : `Party ${name.toLowerCase()}`,
           // What the bill charged and what was paid: a receipt for any other figure is not this bill's.

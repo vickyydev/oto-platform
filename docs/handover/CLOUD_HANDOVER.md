@@ -1,3 +1,5 @@
+**23 November 2026, BEO feedback staging release.** SCRUM-1006 through SCRUM-1009 and SCRUM-1051: prebooking messages distinguish deposit and booking; the party balance includes additional bills; discounted additional bills carry the till discount on their receipt; refunds of additional-bill receipts are refused by owner decision. Separate adult serving times are carried on the existing billed dish. Targeted staging verification pending.
+
 # Hosted session handover — the platform lane
 
 **19 November 2026, 10:00 Bangkok.** The build work is paused on the owner's word until he has answered his decisions page; every approved build is landed and main is green on the hosted checks at 178a86457. The open work is a redesign proposal of the Unified Inbox (SCRUM-1016): nothing in apps/inbox changes before his approval. Read the newest blocks of docs/progress/STATUS.md first; they hold the state, the lane folders, the page item ids and the method.

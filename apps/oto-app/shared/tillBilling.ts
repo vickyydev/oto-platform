@@ -226,10 +226,11 @@ export function openAdditionalBillsOf(reading: TillBillingReading | null | undef
 export function partyBillStateOf(reading: TillBillingReading | null | undefined): { words: string; paid: boolean; outstandingSatang: number } | null {
   const figures = tillFiguresOf(reading);
   if (!figures) return null;
-  if (figures.outstandingSatang > 0) {
-    return { words: `${bahtOfSatang(figures.outstandingSatang)} outstanding`, paid: false, outstandingSatang: figures.outstandingSatang };
-  }
   const open = openAdditionalBillsOf(reading);
+  const outstandingSatang = figures.outstandingSatang + open.outstandingSatang;
+  if (figures.outstandingSatang > 0) {
+    return { words: `${bahtOfSatang(outstandingSatang)} outstanding`, paid: false, outstandingSatang };
+  }
   if (open.words) return { words: `${open.words} · ${bahtOfSatang(open.outstandingSatang)} outstanding`, paid: false, outstandingSatang: open.outstandingSatang };
   return { words: "Paid", paid: true, outstandingSatang: 0 };
 }

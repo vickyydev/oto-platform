@@ -454,6 +454,8 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
           });
           return;
         }
+        const kept = kitchen.answer.kitchenEdit.paidLinesKept ?? [];
+        if (kept.length) toast({ title: 'Paid items kept on the BEO', description: kept.map(line => `${line.itemName} (${line.paidQuantity} paid)`).join(', ') });
         if (kitchen.answer.kitchenEdit.billingPending) toast({ title: "Plan saved; additional bill needs resolution", description: "The new item is pending billing in the BEO. Open the BEO and save again to retry the same source line without a duplicate charge.", variant: "destructive" });
         setFresh(kitchen.party);
         onChanged();
@@ -463,7 +465,7 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
         if (Object.keys(fields).length === 0) {
           ids.current.kitchen = undefined;
           closeEdit();
-          toast({ title: kitchen.answer?.kitchenEdit.billingPending ? 'Kitchen plan saved; additional billing needs resolution' : 'Kitchen plan saved', description: `The BEO in the OTO App now has the change.${keptSentence ? ` ${keptSentence}` : ''}` });
+          if (!kept.length) toast({ title: kitchen.answer?.kitchenEdit.billingPending ? 'Kitchen plan saved; additional billing needs resolution' : 'Kitchen plan saved', description: `The BEO in the OTO App now has the change.${keptSentence ? ` ${keptSentence}` : ''}` });
           return;
         }
       }

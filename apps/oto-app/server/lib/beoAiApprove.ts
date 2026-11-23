@@ -727,6 +727,7 @@ export async function approveBeoAiFill(
       // SCRUM-1002 ruling 3: a billed and paid line the review lowers below its paid count stays as stored.
       const held = keepPaidBeoLines({ menus: plan?.menus, barItems: undefined }, { menus: nextMenus }, paid);
       if (held.kept.length > 0) {
+        written.kitchenLines = Math.max(0, Number(written.kitchenLines || 0) - held.kept.length);
         paidLinesKept.push(...held.kept);
         kids = asLines(held.menus?.kids);
         adults = asLines(held.menus?.adults);
@@ -792,7 +793,7 @@ export async function approveBeoAiFill(
       const serviceTime = service.barServiceTime ? { serviceTime: service.barServiceTime } : {};
       if (bar) await tx.update(beoBarPlans).set({ items: mergedItems, ...serviceTime, updatedAt: input.now }).where(eq(beoBarPlans.id, bar.id));
       else await tx.insert(beoBarPlans).values({ eventId: event.id, items: mergedItems, ...serviceTime });
-      written.barLines = items.length;
+      written.barLines = Math.max(0, items.length - heldBar.kept.length);
       // SCRUM-958: and the drinks written with a till code.
       const barCoded = items.filter((l) => typeof l.productCode === "string").length;
       if (barCoded > 0) written.tillLines = (Number(written.tillLines) || 0) + barCoded;

@@ -8462,6 +8462,11 @@ export interface paths {
                                             note?: string;
                                         }[];
                                         subtotal?: string;
+                                        discounts?: {
+                                            label: string;
+                                            amount: string;
+                                            detail?: string;
+                                        }[];
                                         service?: string;
                                         vat?: string;
                                         total: string;
@@ -25977,6 +25982,11 @@ export interface paths {
                                                     note?: string;
                                                 }[];
                                                 subtotal?: string;
+                                                discounts?: {
+                                                    label: string;
+                                                    amount: string;
+                                                    detail?: string;
+                                                }[];
                                                 service?: string;
                                                 vat?: string;
                                                 total: string;
@@ -26247,6 +26257,11 @@ export interface paths {
                                                     note?: string;
                                                 }[];
                                                 subtotal?: string;
+                                                discounts?: {
+                                                    label: string;
+                                                    amount: string;
+                                                    detail?: string;
+                                                }[];
                                                 service?: string;
                                                 vat?: string;
                                                 total: string;
@@ -26519,6 +26534,11 @@ export interface paths {
                                                     note?: string;
                                                 }[];
                                                 subtotal?: string;
+                                                discounts?: {
+                                                    label: string;
+                                                    amount: string;
+                                                    detail?: string;
+                                                }[];
                                                 service?: string;
                                                 vat?: string;
                                                 total: string;
@@ -26791,6 +26811,11 @@ export interface paths {
                                                     note?: string;
                                                 }[];
                                                 subtotal?: string;
+                                                discounts?: {
+                                                    label: string;
+                                                    amount: string;
+                                                    detail?: string;
+                                                }[];
                                                 service?: string;
                                                 vat?: string;
                                                 total: string;
@@ -27189,6 +27214,11 @@ export interface paths {
                                                     note?: string;
                                                 }[];
                                                 subtotal?: string;
+                                                discounts?: {
+                                                    label: string;
+                                                    amount: string;
+                                                    detail?: string;
+                                                }[];
                                                 service?: string;
                                                 vat?: string;
                                                 total: string;
@@ -27311,6 +27341,11 @@ export interface paths {
                                     /** @enum {string} */
                                     audience?: "kids" | "adults";
                                     adultsNote?: string;
+                                    adultServing?: {
+                                        serviceTime?: string;
+                                        serviceGroup?: string;
+                                        note: string | null;
+                                    };
                                     lineId?: string;
                                     /** @enum {string} */
                                     origin?: "set_menu" | "extra" | "party_only";
@@ -27373,6 +27408,11 @@ export interface paths {
                                     /** @enum {string} */
                                     audience?: "kids" | "adults";
                                     adultsNote?: string;
+                                    adultServing?: {
+                                        serviceTime?: string;
+                                        serviceGroup?: string;
+                                        note: string | null;
+                                    };
                                     lineId?: string;
                                     /** @enum {string} */
                                     origin?: "set_menu" | "extra" | "party_only";
@@ -27700,6 +27740,11 @@ export interface paths {
                                                     note?: string;
                                                 }[];
                                                 subtotal?: string;
+                                                discounts?: {
+                                                    label: string;
+                                                    amount: string;
+                                                    detail?: string;
+                                                }[];
                                                 service?: string;
                                                 vat?: string;
                                                 total: string;
@@ -28105,6 +28150,11 @@ export interface paths {
                                                     note?: string;
                                                 }[];
                                                 subtotal?: string;
+                                                discounts?: {
+                                                    label: string;
+                                                    amount: string;
+                                                    detail?: string;
+                                                }[];
                                                 service?: string;
                                                 vat?: string;
                                                 total: string;
@@ -28227,6 +28277,11 @@ export interface paths {
                                     /** @enum {string} */
                                     audience?: "kids" | "adults";
                                     adultsNote?: string;
+                                    adultServing?: {
+                                        serviceTime?: string;
+                                        serviceGroup?: string;
+                                        note: string | null;
+                                    };
                                     lineId?: string;
                                     /** @enum {string} */
                                     origin?: "set_menu" | "extra" | "party_only";
@@ -28289,6 +28344,11 @@ export interface paths {
                                     /** @enum {string} */
                                     audience?: "kids" | "adults";
                                     adultsNote?: string;
+                                    adultServing?: {
+                                        serviceTime?: string;
+                                        serviceGroup?: string;
+                                        note: string | null;
+                                    };
                                     lineId?: string;
                                     /** @enum {string} */
                                     origin?: "set_menu" | "extra" | "party_only";
@@ -28395,6 +28455,10 @@ export interface paths {
                                 /** Format: uuid */
                                 id: string;
                                 billingPending?: boolean;
+                                paidLinesKept?: {
+                                    itemName: string;
+                                    paidQuantity: number;
+                                }[];
                                 replayed: boolean;
                             };
                         };
@@ -28841,6 +28905,11 @@ export interface paths {
                                                     note?: string;
                                                 }[];
                                                 subtotal?: string;
+                                                discounts?: {
+                                                    label: string;
+                                                    amount: string;
+                                                    detail?: string;
+                                                }[];
                                                 service?: string;
                                                 vat?: string;
                                                 total: string;
@@ -29169,6 +29238,11 @@ export interface paths {
                                                     note?: string;
                                                 }[];
                                                 subtotal?: string;
+                                                discounts?: {
+                                                    label: string;
+                                                    amount: string;
+                                                    detail?: string;
+                                                }[];
                                                 service?: string;
                                                 vat?: string;
                                                 total: string;
@@ -38888,7 +38962,7 @@ export interface paths {
                         /** Format: uuid */
                         id?: string;
                         /** @enum {string} */
-                        key: "welcome" | "handover_birthday" | "handover_events" | "handover_complaint_online" | "handover_complaint_onsite" | "handover_lost_found" | "handover_marketing" | "out_of_hours" | "handover_general" | "follow_up" | "closing_birthday" | "closing_gm" | "closing_branch" | "closing_unclear" | "closing_booking" | "opener_birthday_advice" | "opener_birthday_advice_park_known" | "party_deposit_request" | "party_deposit_reminder" | "party_deposit_received" | "party_menu_link" | "party_menu_received";
+                        key: "welcome" | "handover_birthday" | "handover_events" | "handover_complaint_online" | "handover_complaint_onsite" | "handover_lost_found" | "handover_marketing" | "out_of_hours" | "handover_general" | "follow_up" | "closing_birthday" | "closing_gm" | "closing_branch" | "closing_unclear" | "closing_booking" | "opener_birthday_advice" | "opener_birthday_advice_park_known" | "party_deposit_request" | "party_deposit_reminder" | "party_deposit_received" | "party_menu_link" | "party_menu_received" | "prebooking_deposit_request" | "prebooking_deposit_received" | "prebooking_date_booked";
                         language: string;
                         /** @enum {string|null} */
                         channel?: "whatsapp" | "instagram" | "facebook" | "line" | "telegram" | "webform" | null;
@@ -40448,7 +40522,7 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
-                    key?: "welcome" | "handover_birthday" | "handover_events" | "handover_complaint_online" | "handover_complaint_onsite" | "handover_lost_found" | "handover_marketing" | "out_of_hours" | "handover_general" | "follow_up" | "closing_birthday" | "closing_gm" | "closing_branch" | "closing_unclear" | "closing_booking" | "opener_birthday_advice" | "opener_birthday_advice_park_known" | "party_deposit_request" | "party_deposit_reminder" | "party_deposit_received" | "party_menu_link" | "party_menu_received";
+                    key?: "welcome" | "handover_birthday" | "handover_events" | "handover_complaint_online" | "handover_complaint_onsite" | "handover_lost_found" | "handover_marketing" | "out_of_hours" | "handover_general" | "follow_up" | "closing_birthday" | "closing_gm" | "closing_branch" | "closing_unclear" | "closing_booking" | "opener_birthday_advice" | "opener_birthday_advice_park_known" | "party_deposit_request" | "party_deposit_reminder" | "party_deposit_received" | "party_menu_link" | "party_menu_received" | "prebooking_deposit_request" | "prebooking_deposit_received" | "prebooking_date_booked";
                     language?: string;
                     archived?: "true" | "false";
                 };

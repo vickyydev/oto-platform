@@ -316,6 +316,7 @@ export interface ApiSaleDetail {
    */
   refundStatus?: RefundStatus;
   /** What may still be refunded, in satang. 0 on a sale that is not finalised. */
+  additionalBillReceipt?: boolean;
   refundableSatang?: number;
   partyDepositReviewRequired?: boolean;
   partyDepositRetainableSatang?: number;

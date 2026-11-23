@@ -198,6 +198,7 @@ export const PartyPlanMenuItemSchema = z.object({
    * beside it. Absent otherwise.
    */
   adultsNote: z.string().optional(),
+  adultServing: z.object({ serviceTime: z.string().optional(), serviceGroup: z.string().optional(), note: z.string().nullable() }).optional(),
   /** SCRUM-906: the BEO line's own id; absent for a set-menu template line no BEO line answers. */
   lineId: z.string().optional(),
   origin: z.enum(PARTY_MENU_ORIGINS).optional(),

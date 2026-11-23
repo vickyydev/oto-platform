@@ -39,6 +39,7 @@ export function AdditionalBillReceipt({
         ))}
       </div>
       <div className="border-t pt-2 space-y-1">
+        {(paper.discounts ?? []).map((discount, at) => <div key={at}>{row(discount.label, discount.amount)}</div>)}
         {(paper.taxRows ?? []).map((tax, at) => <div key={at}>{row(tax.label, tax.amount)}</div>)}
         {row('Total', paper.total, true)}
       </div>

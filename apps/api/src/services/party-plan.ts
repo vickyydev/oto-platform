@@ -121,6 +121,7 @@ function menuItemOf(m: Json, whole906: boolean): PartyPlanMenuItem {
   const price = whole906 ? enteredPrice(m.unit_price_satang) : null;
   const lineId = whole906 ? text(m.line_id) : null;
   const qty = maybe(m.qty);
+  const adultServing = rec(m.adult_serving);
   return {
     productCode,
     name: text(m.name) ?? '',
@@ -137,6 +138,7 @@ function menuItemOf(m: Json, whole906: boolean): PartyPlanMenuItem {
           origin: originOf(productCode, m.source),
           ...(price === null ? {} : { unitPriceSatang: price }),
           ...servingOf(m),
+          ...(adultServing ? { adultServing: { ...servingOf(adultServing), note: text(adultServing.note) } } : {}),
         }
       : {}),
   };

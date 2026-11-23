@@ -355,6 +355,9 @@ describe('platform-sync lays the inbox configuration (I1)', () => {
       'party_deposit_received',
       'party_menu_link',
       'party_menu_received',
+      'prebooking_deposit_request',
+      'prebooking_deposit_received',
+      'prebooking_date_booked',
     ]);
     // SCRUM-825: the assistant's party lines, each with the placeholders the party-messages service fills and no customer's name.
     const placeholdersOf = (body: string) => [...body.matchAll(/\{\{\s*([A-Za-z0-9_]+)\s*\}\}/g)].map((m) => m[1]).sort();

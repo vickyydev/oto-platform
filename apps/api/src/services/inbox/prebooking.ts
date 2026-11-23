@@ -530,7 +530,7 @@ export async function requestPrebookingDeposit(
     const line = await postPartyMessage(tx, ctx.viewer.operatorId, {
       messageId: deriveId(active.request.id, 'request-message'),
       conversationId,
-      key: 'party_deposit_request',
+      key: 'prebooking_deposit_request',
       variables: {
         amount: partyAmountWords(prepared.draft.amountSatang),
         date: partyDateWords(storedBooking.date, lang),
@@ -675,7 +675,7 @@ export async function afterPrebookingDepositPaid(
         return postPartyMessage(tx, draft.operatorId, {
           messageId: partyMessageId(receipt.id, 'prebooking-received'),
           conversationId: draft.conversationId,
-          key: 'party_deposit_received',
+          key: 'prebooking_deposit_received',
           variables: {
             amount: partyAmountWords(draft.amountSatang),
             date: partyDateWords(booking.date, partyMessageLanguageOf(conv.language)),

@@ -204,7 +204,7 @@ async function receivedTemplateIds() {
   const rows = await ctx.db
     .select({ id: s.template.id })
     .from(s.template)
-    .where(and(eq(s.template.operatorId, operatorId), eq(s.template.key, 'party_deposit_received')));
+    .where(and(eq(s.template.operatorId, operatorId), eq(s.template.key, 'prebooking_deposit_received')));
   return new Set(rows.map((r) => r.id));
 }
 
@@ -573,20 +573,12 @@ describe('SCRUM-996 review: what stands, as found', () => {
     expect(row.depositSignal).toBe('paid');
   });
 
-  // FINDING (MEDIUM, owner question; the reused words are the owner's choice 6
-  // and stay the default): the family is told "your party on <date> is
-  // confirmed" when the money is verified, as the request line already
-  // promised ("Your booking is confirmed as soon as the deposit arrives",
-  // SCRUM-987), while the calendar booking still waits for a person to check
-  // capacity and press Book Date. Prescribed fix only if the owner asks: a
-  // pre-booking wording under its own template key, in English, Thai and
-  // Russian. Recorded in deposit-paid-notice.md section 7.
-  it.fails('FINDING: the received line does not tell the family the party is confirmed before Book Date', async () => {
+  it('the received line does not tell the family the party is confirmed before Book Date', async () => {
     const f = await fixture();
     const d = await requested(f);
     await pay(d);
     const received = await receivedTemplateIds();
     const [line] = (await messagesOf(f.conversationId)).filter((m) => m.templateId && received.has(m.templateId));
-    expect(line!.body).not.toContain('is confirmed');
+    expect(line!.body).toContain('confirm your date shortly');
   });
 });

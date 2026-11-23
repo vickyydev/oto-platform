@@ -208,7 +208,7 @@ export async function editPartyKitchenPlan(
     });
     return undefined;
   });
-  return { ...detail, kitchenEdit: { id: body.editId, replayed: outcome.body.replayed, ...(outcome.body.additionalBilling?.status === "pending" ? { billingPending: true } : {}) } };
+  return { ...detail, kitchenEdit: { id: body.editId, replayed: outcome.body.replayed, ...(outcome.body.paidLinesKept?.length ? { paidLinesKept: outcome.body.paidLinesKept } : {}), ...(outcome.body.additionalBilling?.status === "pending" ? { billingPending: true } : {}) } };
 }
 
 /** `GET /parties/:id/kitchen-plan/choices` — the set menu's choice groups, from the BEO's template. */

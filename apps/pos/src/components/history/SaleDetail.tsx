@@ -988,7 +988,7 @@ export function useSaleDetail({ txn, timeZone, onRefunded }: SaleDetailProps) {
    * in cash goes the same way, its deposit untouched.
    */
   const partPaidOpen = detail !== null && status === 'tendering' && attempts.some(tookMoney) && noneInFlight;
-  const refundable = (closed || partPaidOpen) && status !== 'refunded' && !detail?.partyDepositReviewRequired;
+  const refundable = (closed || partPaidOpen) && status !== 'refunded' && !detail?.partyDepositReviewRequired && !detail?.additionalBillReceipt;
   const takenSatang = attempts.filter(tookMoney).reduce((sum, a) => sum + a.amountSatang, 0);
   const remainingSatang = partPaidOpen
     ? Math.max(0, takenSatang - totals.refundedSatang)
@@ -1701,6 +1701,7 @@ export function SaleDetail(props: SaleDetailProps) {
                     {offline ? <WifiOff className="w-5 h-5" /> : <Undo2 className="w-5 h-5" />}
                     {detail?.canCloseWithRetainedDeposit
                       ? 'Close settlement; deposit stays with party'
+                      : detail?.additionalBillReceipt ? 'Additional bill · refunds unavailable'
                       : !refundable
                       ? 'Refund'
                       : offline

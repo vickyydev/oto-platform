@@ -257,6 +257,16 @@ const compose = (plan: ReturnType<typeof planOf>) =>
   });
 
 describe('the slips, composed with serving times', () => {
+  it('keeps separate serving times for one billed dish shared by children and adults', async () => {
+    const id = await appParty({ id: newId(), differ: true,
+      kids: [{ id: 'k', itemName: 'Pizza', quantity: 2, serviceTime: '12:30' }],
+      adults: [{ id: 'a', itemName: 'Pizza', quantity: 2, serviceTime: '13:30' }] });
+    const plan = await readPartyPlan(ctx.db, { branchId: central, eventId: id });
+    expect(plan.plan!.setMenu).toHaveLength(1);
+    const slips = compose(planOf(plan.plan!.setMenu));
+    expect(slips.kitchen!.lines.map(l => l.time)).toEqual(['12:30', '13:30']);
+  });
+
   it('a plan with no times composes exactly as before: no time or group on any line', () => {
     const slips = compose(planOf(
       [food('Chicken nuggets', 10, { productCode: 'ZZ-1051-NUG' }), food('Fruit skewers', 2)],

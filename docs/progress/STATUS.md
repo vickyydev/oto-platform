@@ -1,3 +1,5 @@
+**23 November 2026, BEO feedback staging release.** SCRUM-1006 through SCRUM-1009 and SCRUM-1051: prebooking messages distinguish deposit and booking; the party balance includes additional bills; discounted additional bills carry the till discount on their receipt; refunds of additional-bill receipts are refused by owner decision. Separate adult serving times are carried on the existing billed dish. Targeted staging verification pending.
+
 **23 November 2026, SCRUM-709 Digio USB.** The counter runner now has the native Digio serial driver for Windows and Pi, with a read-only terminal-info command. The one-baht card request and matching approval passed over a mock serial port. Windows saw only Bluetooth ports at the bench. The physical PAX handshake, card-present approval and Pi installation are pending. The staging PromptPay route remains available.
 
 ## 23 November 2026, SCB payment routing

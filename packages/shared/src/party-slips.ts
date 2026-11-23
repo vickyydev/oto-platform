@@ -105,7 +105,7 @@ export const PARTY_NOT_ON_TILL_MENU = 'not on the till menu';
  * UPDATED slip goes out for the release alone. A plan with no times composes
  * exactly as before.
  */
-export const PARTY_SLIP_COMPOSER = 4;
+export const PARTY_SLIP_COMPOSER = 5;
 
 /** "Fried rice: Veggie": a chosen dish under its group's name. */
 export const partyChoiceName = (group: string, choice: string): string => `${group.trim()}: ${choice.trim()}`;
@@ -304,10 +304,17 @@ export function composePartySlips(input: PartySlipInput): Record<PartySlipStatio
     const open = !!item.choiceGroup && !item.chosenOption;
     // SCRUM-906: no till product makes it (an open choice is no dish yet).
     const offMenu = place === null && !open ? PARTY_NOT_ON_TILL_MENU : null;
+    if (item.adultServing) {
+      drafts[station].push({ qty: item.qty, name, dish, origin: item.origin,
+        notes: [PARTY_KIDS_ONLY, note, offMenu].filter((n): n is string => !!n), serving: servingOf(item) });
+      drafts[station].push({ qty: item.qty, name, dish, origin: item.origin,
+        notes: [PARTY_ADULTS_ONLY, item.adultServing.note, offMenu].filter((n): n is string => !!n), serving: servingOf(item.adultServing) });
+      continue;
+    }
     if (item.audience === 'adults') {
       // The line of that dish it copies: one from the same list first (a set-menu copy into the set
       // menu's line, an extra's into the extra), else the first of that dish.
-      const foldable = drafts[station].filter((d) => foldName(d.dish) === foldName(dish) && !d.notes.includes(PARTY_ADULTS_ONLY));
+      const foldable = drafts[station].filter((d) => foldName(d.dish) === foldName(dish) && d.serving.time === servingOf(item).time && !d.notes.includes(PARTY_ADULTS_ONLY));
       const held = foldable.find((d) => d.origin === item.origin) ?? foldable[0];
       if (held) {
         const adultsQty = item.qty ?? 1;

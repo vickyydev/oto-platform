@@ -133,6 +133,7 @@ import { bandsOfSale } from './bands';
 import { refundsOfSale } from './refund-slices';
 import { applySaleExtension, cancelSaleExtension, assertSaleExtensionCollectable } from './sale-extension-lifecycle';
 import { applyEventPassHold, releaseEventPassHold } from './event-pass-hold';
+import { isAdditionalBillReceipt } from './party-additional-bills';
 import { applyPartySettlementClose } from './party-settlement-close';
 import { assertCartStock, stockSharesForLines, takeStockForClose, type PrizeStockTake } from './stock';
 import { printJobsOfSale, routeSalePrinting, type SalePrintingResult } from './sale-printing';
@@ -5964,6 +5965,7 @@ export async function getSaleDetail(
 ): Promise<Record<string, unknown>> {
   const [row] = await db.select().from(sale).where(eq(sale.id, saleId)).limit(1);
   if (!row || row.operatorId !== operatorId) throw errors.notFound('Sale not found');
+  const additionalBillReceipt = await isAdditionalBillReceipt(db, operatorId, saleId);
   const lines = await db
     .select()
     .from(saleLine)
@@ -6026,8 +6028,9 @@ export async function getSaleDetail(
     correctionBandShortCode: correctionBands[0] ? bandShortCode(correctionBands[0].code) : null,
     // SCRUM-891 — a part-paid sale refunded whole reads `refunded`, as the refund's answer says.
     refundStatus: saleRefundStatusOf(row),
+    additionalBillReceipt,
     refundableSatang:
-      row.status === 'finalised'
+      !additionalBillReceipt && row.status === 'finalised'
         ? partyRefund ? partyRefund.reviewRequired ? 0 : partyRefund.remainingSatang : refundableSatang(row.grossSatang, row.refundedSatang)
         : 0,
     partyDepositReviewRequired: partyRefund?.reviewRequired ?? false,

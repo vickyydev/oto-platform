@@ -164,7 +164,8 @@ export function PartyDetailsTillTiles({
   const figures = tillFiguresOf(reading);
   const problem = figures ? null : tillProblemOf(reading);
   const missing = figures ? null : loading && !reading ? "Asking the till…" : (problem?.headline ?? TILL_NOT_REACHABLE);
-  const owed = figures ? figures.outstandingSatang > 0 : false;
+  const balance = partyBillStateOf(reading);
+  const owed = (balance?.outstandingSatang ?? 0) > 0;
   const readAt = figures ? readAtOf(reading) : null;
   return (
     <div className="space-y-2" data-testid="party-details-till">
@@ -195,7 +196,7 @@ export function PartyDetailsTillTiles({
             )}
             data-testid="text-outstanding-balance"
           >
-            {figures ? bahtOfSatang(figures.outstandingSatang) : missing}
+            {balance ? bahtOfSatang(balance.outstandingSatang) : missing}
           </p>
           {figures && owed && figures.depositSatang <= 0 && <p className="text-xs text-red-600">No deposit yet</p>}
         </div>

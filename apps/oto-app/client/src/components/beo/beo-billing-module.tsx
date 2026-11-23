@@ -250,7 +250,7 @@ export function BeoBillingModule({
       });
     }
     lines.push("");
-    lines.push(`Collect Outstanding: ${formatThb(billingTotals.outstandingAmount)}`);
+    lines.push(`Collect Outstanding: ${outstandingWords}`);
     return lines.join("\n");
   };
 
@@ -271,7 +271,7 @@ export function BeoBillingModule({
     lines.push(`Total (Ex VAT): ${formatThb(billingTotals.totalExVat)}`);
     lines.push(`Total VAT (7%): ${formatThb(billingTotals.totalVat)}`);
     lines.push(`Deposit Paid: ${formatThb(billingTotals.depositAmount)}`);
-    lines.push(`Outstanding: ${formatThb(billingTotals.outstandingAmount)}`);
+    lines.push(`Outstanding: ${outstandingWords}`);
     return lines.join("\n");
   };
 
@@ -599,7 +599,7 @@ export function BeoBillingModule({
           </CollapsibleTrigger>
           <CollapsibleContent>
             <CardContent className="pt-0">
-              {payableItems.length === 0 && includedItems.length === 0 ? (
+              {!tillSale && payableItems.length === 0 && includedItems.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Add line items to generate POS checklist</p>
               ) : (
                 <div className="space-y-3">
@@ -653,6 +653,7 @@ export function BeoBillingModule({
                           <span>Grand Total</span>
                           <span>{formatThb(payableInclTotal)}</span>
                         </div>
+                        <div className="flex justify-between font-bold"><span>Collect outstanding</span><span>{outstandingWords}</span></div>
                       </div>
                     );
                   })()}

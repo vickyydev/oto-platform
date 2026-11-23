@@ -33,6 +33,7 @@ import { revokeSaleBands } from './bands';
 import { releaseSaleBenefits } from './benefit-checkout';
 import { releaseRefundedStays } from './checkin-paid-at-till';
 import { restoreTierClaimOf } from './sale-tier';
+import { isAdditionalBillReceipt } from './party-additional-bills';
 import { auditVoidReleases, lockVouchersHeldFor } from './vouchers';
 import { attemptChildMerchant, failAttempt } from './payments/attempt';
 import { queueTerminalCommand } from './payments/terminal';
@@ -226,6 +227,9 @@ export async function refundSale(
     }
   }
 
+  if (await isAdditionalBillReceipt(tx, row.operatorId, saleId)) {
+    throw errors.conflict('ADDITIONAL_BILL_REFUND_BLOCKED', 'Additional party bill receipts cannot be refunded.');
+  }
   if (row.status === 'voided') {
     throw errors.conflict('SALE_VOIDED', 'This sale was voided — there is nothing to refund');
   }

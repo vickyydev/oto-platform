@@ -194,6 +194,9 @@ export const INBOX_TEMPLATE_BODIES: Record<InboxTemplateKey, string> = {
   party_menu_link:
     'Here is the link to choose the menu for your party on {{date}}: {{link}} — pick what the children will enjoy and we will take care of the rest 🍕',
   party_menu_received: 'Thank you! We have received your menu choices for {{date}} — the kitchen will be ready 😊',
+  prebooking_deposit_request: 'To request {{date}}, please pay the deposit of {{amount}} here: {{link}} (valid until {{validUntil}}). Our team will check availability and confirm the date separately.',
+  prebooking_deposit_received: 'Thank you! We received your deposit of {{amount}} for {{date}}. Our team will check availability and confirm your date shortly.',
+  prebooking_date_booked: 'Your party is booked for {{date}}. We look forward to seeing you!',
 };
 
 /**
@@ -254,6 +257,9 @@ export const INBOX_TEMPLATE_TRANSLATIONS: Record<TranslatedLanguage, Record<Tran
     party_menu_link:
       'นี่คือลิงก์สำหรับเลือกเมนูอาหารของปาร์ตี้ในวัน{{date}} ค่ะ: {{link}} เลือกเมนูที่เด็ก ๆ ชอบได้เลยนะคะ ที่เหลือเราจัดการให้ค่ะ 🍕',
     party_menu_received: 'ขอบคุณค่ะ เราได้รับเมนูที่เลือกสำหรับปาร์ตี้ในวัน{{date}} เรียบร้อยแล้ว ทางครัวจะเตรียมให้พร้อมค่ะ 😊',
+    prebooking_deposit_request: 'สำหรับวันที่ {{date}} กรุณาชำระเงินมัดจำ {{amount}} ที่ {{link}} ภายใน {{validUntil}} ทีมงานจะตรวจสอบวันว่างและแจ้งยืนยันวันจัดงานอีกครั้งค่ะ',
+    prebooking_deposit_received: 'ขอบคุณค่ะ เราได้รับเงินมัดจำ {{amount}} สำหรับวันที่ {{date}} แล้ว ทีมงานจะตรวจสอบวันว่างและแจ้งยืนยันวันจัดงานให้ทราบเร็ว ๆ นี้ค่ะ',
+    prebooking_date_booked: 'ยืนยันการจองงานเลี้ยงวันที่ {{date}} เรียบร้อยแล้วค่ะ แล้วพบกันนะคะ',
   },
   ru: {
     welcome: 'Здравствуйте! 👋 Добро пожаловать в OTO Play Park. Чем мы можем вам помочь?',
@@ -287,6 +293,9 @@ export const INBOX_TEMPLATE_TRANSLATIONS: Record<TranslatedLanguage, Record<Tran
     party_menu_link:
       'Вот ссылка для выбора меню на ваш праздник {{date}}: {{link}} — выберите то, что понравится детям, а об остальном позаботимся мы 🍕',
     party_menu_received: 'Спасибо! Мы получили ваш выбор меню на {{date}} — кухня будет готова 😊',
+    prebooking_deposit_request: 'Для заявки на {{date}} внесите депозит {{amount}} по ссылке {{link}} до {{validUntil}}. Мы проверим доступность даты и подтвердим её отдельно.',
+    prebooking_deposit_received: 'Спасибо! Мы получили ваш депозит {{amount}} за мероприятие на {{date}}. Мы проверим доступность даты и вскоре подтвердим её отдельно.',
+    prebooking_date_booked: 'Ваш праздник забронирован на {{date}}. До встречи!',
   },
 };
 

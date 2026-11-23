@@ -30,6 +30,7 @@ import { PermissionDeniedError } from '../../plugins/session';
 import { withTx, type Exec, type OpContext } from '../tx';
 import type { ActionCtx } from './actions';
 import { loadVisibleConversation } from './read-visibility';
+import { partyDateWords, partyMessageId, partyMessageLanguageOf, postPartyMessage } from './party-messages';
 import { claimPrebooking, prebookingEventDeposit } from './prebooking';
 
 /**
@@ -458,6 +459,12 @@ export async function bookConversationDate(
         .update(conversation)
         .set({ eventOrderRef: eventId, updatedAt: ctx.now })
         .where(and(eq(conversation.operatorId, operatorId), eq(conversation.id, conv.id)));
+      await postPartyMessage(tx, operatorId, {
+        messageId: partyMessageId(eventId, 'date-booked'), conversationId: conv.id,
+        key: 'prebooking_date_booked', variables: { date: partyDateWords(made.eventDate, partyMessageLanguageOf(conv.language)) },
+        audit: { action: 'inbox.prebooking.date_booked', entityType: 'prebooking_draft', entityId: eventId },
+        actorAccountId: ctx.viewer.accountId, requestId: ctx.requestId ?? null, now: ctx.now,
+      });
       const payload = {
         eventId,
         title: made.title,

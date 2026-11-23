@@ -17403,6 +17403,28 @@
                                   "subtotal": {
                                     "type": "string"
                                   },
+                                  "discounts": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "label": {
+                                          "type": "string"
+                                        },
+                                        "amount": {
+                                          "type": "string"
+                                        },
+                                        "detail": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "label",
+                                        "amount"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
                                   "service": {
                                     "type": "string"
                                   },
@@ -62131,6 +62153,28 @@
                                             "subtotal": {
                                               "type": "string"
                                             },
+                                            "discounts": {
+                                              "type": "array",
+                                              "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                  "label": {
+                                                    "type": "string"
+                                                  },
+                                                  "amount": {
+                                                    "type": "string"
+                                                  },
+                                                  "detail": {
+                                                    "type": "string"
+                                                  }
+                                                },
+                                                "required": [
+                                                  "label",
+                                                  "amount"
+                                                ],
+                                                "additionalProperties": false
+                                              }
+                                            },
                                             "service": {
                                               "type": "string"
                                             },
@@ -63229,6 +63273,28 @@
                                             },
                                             "subtotal": {
                                               "type": "string"
+                                            },
+                                            "discounts": {
+                                              "type": "array",
+                                              "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                  "label": {
+                                                    "type": "string"
+                                                  },
+                                                  "amount": {
+                                                    "type": "string"
+                                                  },
+                                                  "detail": {
+                                                    "type": "string"
+                                                  }
+                                                },
+                                                "required": [
+                                                  "label",
+                                                  "amount"
+                                                ],
+                                                "additionalProperties": false
+                                              }
                                             },
                                             "service": {
                                               "type": "string"
@@ -64336,6 +64402,28 @@
                                           "subtotal": {
                                             "type": "string"
                                           },
+                                          "discounts": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "object",
+                                              "properties": {
+                                                "label": {
+                                                  "type": "string"
+                                                },
+                                                "amount": {
+                                                  "type": "string"
+                                                },
+                                                "detail": {
+                                                  "type": "string"
+                                                }
+                                              },
+                                              "required": [
+                                                "label",
+                                                "amount"
+                                              ],
+                                              "additionalProperties": false
+                                            }
+                                          },
                                           "service": {
                                             "type": "string"
                                           },
@@ -65440,6 +65528,28 @@
                                           },
                                           "subtotal": {
                                             "type": "string"
+                                          },
+                                          "discounts": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "object",
+                                              "properties": {
+                                                "label": {
+                                                  "type": "string"
+                                                },
+                                                "amount": {
+                                                  "type": "string"
+                                                },
+                                                "detail": {
+                                                  "type": "string"
+                                                }
+                                              },
+                                              "required": [
+                                                "label",
+                                                "amount"
+                                              ],
+                                              "additionalProperties": false
+                                            }
                                           },
                                           "service": {
                                             "type": "string"
@@ -66924,6 +67034,28 @@
                                           "subtotal": {
                                             "type": "string"
                                           },
+                                          "discounts": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "object",
+                                              "properties": {
+                                                "label": {
+                                                  "type": "string"
+                                                },
+                                                "amount": {
+                                                  "type": "string"
+                                                },
+                                                "detail": {
+                                                  "type": "string"
+                                                }
+                                              },
+                                              "required": [
+                                                "label",
+                                                "amount"
+                                              ],
+                                              "additionalProperties": false
+                                            }
+                                          },
                                           "service": {
                                             "type": "string"
                                           },
@@ -67565,6 +67697,25 @@
                               "adultsNote": {
                                 "type": "string"
                               },
+                              "adultServing": {
+                                "type": "object",
+                                "properties": {
+                                  "serviceTime": {
+                                    "type": "string"
+                                  },
+                                  "serviceGroup": {
+                                    "type": "string"
+                                  },
+                                  "note": {
+                                    "type": "string",
+                                    "nullable": true
+                                  }
+                                },
+                                "required": [
+                                  "note"
+                                ],
+                                "additionalProperties": false
+                              },
                               "lineId": {
                                 "type": "string"
                               },
@@ -67857,6 +68008,25 @@
                               },
                               "adultsNote": {
                                 "type": "string"
+                              },
+                              "adultServing": {
+                                "type": "object",
+                                "properties": {
+                                  "serviceTime": {
+                                    "type": "string"
+                                  },
+                                  "serviceGroup": {
+                                    "type": "string"
+                                  },
+                                  "note": {
+                                    "type": "string",
+                                    "nullable": true
+                                  }
+                                },
+                                "required": [
+                                  "note"
+                                ],
+                                "additionalProperties": false
                               },
                               "lineId": {
                                 "type": "string"
@@ -69161,6 +69331,28 @@
                                           },
                                           "subtotal": {
                                             "type": "string"
+                                          },
+                                          "discounts": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "object",
+                                              "properties": {
+                                                "label": {
+                                                  "type": "string"
+                                                },
+                                                "amount": {
+                                                  "type": "string"
+                                                },
+                                                "detail": {
+                                                  "type": "string"
+                                                }
+                                              },
+                                              "required": [
+                                                "label",
+                                                "amount"
+                                              ],
+                                              "additionalProperties": false
+                                            }
                                           },
                                           "service": {
                                             "type": "string"
@@ -70755,6 +70947,28 @@
                                           "subtotal": {
                                             "type": "string"
                                           },
+                                          "discounts": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "object",
+                                              "properties": {
+                                                "label": {
+                                                  "type": "string"
+                                                },
+                                                "amount": {
+                                                  "type": "string"
+                                                },
+                                                "detail": {
+                                                  "type": "string"
+                                                }
+                                              },
+                                              "required": [
+                                                "label",
+                                                "amount"
+                                              ],
+                                              "additionalProperties": false
+                                            }
+                                          },
                                           "service": {
                                             "type": "string"
                                           },
@@ -71396,6 +71610,25 @@
                               "adultsNote": {
                                 "type": "string"
                               },
+                              "adultServing": {
+                                "type": "object",
+                                "properties": {
+                                  "serviceTime": {
+                                    "type": "string"
+                                  },
+                                  "serviceGroup": {
+                                    "type": "string"
+                                  },
+                                  "note": {
+                                    "type": "string",
+                                    "nullable": true
+                                  }
+                                },
+                                "required": [
+                                  "note"
+                                ],
+                                "additionalProperties": false
+                              },
                               "lineId": {
                                 "type": "string"
                               },
@@ -71688,6 +71921,25 @@
                               },
                               "adultsNote": {
                                 "type": "string"
+                              },
+                              "adultServing": {
+                                "type": "object",
+                                "properties": {
+                                  "serviceTime": {
+                                    "type": "string"
+                                  },
+                                  "serviceGroup": {
+                                    "type": "string"
+                                  },
+                                  "note": {
+                                    "type": "string",
+                                    "nullable": true
+                                  }
+                                },
+                                "required": [
+                                  "note"
+                                ],
+                                "additionalProperties": false
                               },
                               "lineId": {
                                 "type": "string"
@@ -72151,6 +72403,25 @@
                         },
                         "billingPending": {
                           "type": "boolean"
+                        },
+                        "paidLinesKept": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "itemName": {
+                                "type": "string"
+                              },
+                              "paidQuantity": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "itemName",
+                              "paidQuantity"
+                            ],
+                            "additionalProperties": false
+                          }
                         },
                         "replayed": {
                           "type": "boolean"
@@ -73667,6 +73938,28 @@
                                           "subtotal": {
                                             "type": "string"
                                           },
+                                          "discounts": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "object",
+                                              "properties": {
+                                                "label": {
+                                                  "type": "string"
+                                                },
+                                                "amount": {
+                                                  "type": "string"
+                                                },
+                                                "detail": {
+                                                  "type": "string"
+                                                }
+                                              },
+                                              "required": [
+                                                "label",
+                                                "amount"
+                                              ],
+                                              "additionalProperties": false
+                                            }
+                                          },
                                           "service": {
                                             "type": "string"
                                           },
@@ -74999,6 +75292,28 @@
                                           },
                                           "subtotal": {
                                             "type": "string"
+                                          },
+                                          "discounts": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "object",
+                                              "properties": {
+                                                "label": {
+                                                  "type": "string"
+                                                },
+                                                "amount": {
+                                                  "type": "string"
+                                                },
+                                                "detail": {
+                                                  "type": "string"
+                                                }
+                                              },
+                                              "required": [
+                                                "label",
+                                                "amount"
+                                              ],
+                                              "additionalProperties": false
+                                            }
                                           },
                                           "service": {
                                             "type": "string"
@@ -102641,7 +102956,10 @@
                       "party_deposit_reminder",
                       "party_deposit_received",
                       "party_menu_link",
-                      "party_menu_received"
+                      "party_menu_received",
+                      "prebooking_deposit_request",
+                      "prebooking_deposit_received",
+                      "prebooking_date_booked"
                     ]
                   },
                   "language": {
@@ -106278,7 +106596,10 @@
                 "party_deposit_reminder",
                 "party_deposit_received",
                 "party_menu_link",
-                "party_menu_received"
+                "party_menu_received",
+                "prebooking_deposit_request",
+                "prebooking_deposit_received",
+                "prebooking_date_booked"
               ]
             },
             "in": "query",

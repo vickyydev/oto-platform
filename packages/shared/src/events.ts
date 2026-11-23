@@ -429,6 +429,7 @@ export const PartyAdditionalBillReceiptSchema = z.object({
     staffName: z.string().optional(),
     lines: z.array(z.object({ qty: z.number(), name: z.string(), price: z.string().optional(), note: z.string().optional() })),
     subtotal: z.string().optional(),
+    discounts: z.array(z.object({ label: z.string(), amount: z.string(), detail: z.string().optional() })).optional(),
     service: z.string().optional(),
     vat: z.string().optional(),
     total: z.string(),

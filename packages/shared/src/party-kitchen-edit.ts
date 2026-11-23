@@ -85,6 +85,7 @@ export const PartyKitchenEditAnswerSchema = PartyDetailWithSlipsAnswerSchema.ext
   kitchenEdit: z.object({
     id: z.string().uuid(),
     billingPending: z.boolean().optional(),
+    paidLinesKept: z.array(z.object({ itemName: z.string(), paidQuantity: z.number() })).optional(),
     /** The same edit id was written before: nothing was written again. */
     replayed: z.boolean(),
   }),

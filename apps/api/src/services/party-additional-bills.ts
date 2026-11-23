@@ -1,8 +1,15 @@
 import { and, asc, eq } from 'drizzle-orm';
-import { partyAdditionalBill } from '@oto/db';
+import { partyAdditionalBill, partyPayment, paymentAttempt } from '@oto/db';
 import { deriveId, type PartyAdditionalBill, type PartyAdditionalBillReceipt, type PartyChargeView, type PartyPaymentView } from '@oto/shared';
 import { errors } from '../lib/errors';
 import type { Exec } from './tx';
+
+export async function isAdditionalBillReceipt(db: Exec, operatorId: string, saleId: string): Promise<boolean> {
+  const rows = await db.select({ billId: partyPayment.additionalBillId }).from(paymentAttempt)
+    .innerJoin(partyPayment, eq(partyPayment.paymentAttemptId, paymentAttempt.id))
+    .where(and(eq(paymentAttempt.saleId, saleId), eq(partyPayment.operatorId, operatorId)));
+  return rows.some(({ billId }) => billId !== null && deriveId(billId, 'party-additional-bill-receipt') === saleId);
+}
 
 export function additionalBillFigures(charges: readonly Pick<PartyChargeView, 'totalSatang'>[], payments: readonly Pick<PartyPaymentView, 'amountSatang' | 'takenAt'>[]) {
   const totalSatang = charges.reduce((sum, row) => sum + row.totalSatang, 0);

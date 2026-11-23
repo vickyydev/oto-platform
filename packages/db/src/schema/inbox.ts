@@ -233,6 +233,9 @@ export const PARTY_LINE_TEMPLATE_KEYS = [
   'party_deposit_received',
   'party_menu_link',
   'party_menu_received',
+  'prebooking_deposit_request',
+  'prebooking_deposit_received',
+  'prebooking_date_booked',
 ] as const;
 export type PartyLineTemplateKey = (typeof PARTY_LINE_TEMPLATE_KEYS)[number];
 

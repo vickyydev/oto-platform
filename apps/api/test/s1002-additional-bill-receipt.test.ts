@@ -272,7 +272,7 @@ describe('SCRUM-1002 ruling 1: an additional bill paid in full gets its own rece
     expect(await firstReceipt(party.mainSaleId)).toBe(first);
   });
 
-  it('a bill whose lines do not come to what it charged gets no receipt; the payment stands and the till is told why', async () => {
+  it('a discounted till charge gets a receipt matching the amount collected', async () => {
     const party = await settledParty('ZZ TEST 1002 discounted bill');
     // Taken on the till with a discount: lines of 200.00 charged at 150.00.
     await call('POST', `/parties/${party.id}/charges`, {
@@ -283,24 +283,14 @@ describe('SCRUM-1002 ruling 1: an additional bill paid in full gets its own rece
     const paid = await payCash(party.id, bill!.id, newId(), 15000, 15000);
     expect(paid.status, JSON.stringify(paid.body)).toBe(200);
     expect(paid.body.payment?.amountSatang).toBe(15000);
-    expect(paid.body.receiptNotes?.join(' ')).toMatch(/no receipt was issued for Additional bill 1/);
-    expect((await billsOf(party.id))[0]).toMatchObject({ state: 'paid', receipt: null });
-    const failed = await ctx.db.select().from(auditLog).where(and(eq(auditLog.action, 'party.additional_bill_receipt_failed'), eq(auditLog.entityId, bill!.id)));
-    expect(failed).toHaveLength(1);
+    const saved = (await billsOf(party.id))[0]!;
+    expect(saved).toMatchObject({ state: 'paid', totalSatang: 15000, receipt: { saleStatus: 'finalised' } });
+    expect(saved.receipt!.document.total).toContain('150');
   });
 });
 
 describe('SCRUM-1002 adversarial review', () => {
-  /**
-   * FINDING (MEDIUM, stands as an owner question, recorded on SCRUM-1002): the
-   * bill's receipt is a sale, so History offers it a refund like any sale. A
-   * refund there gives the money back but the party's bill still reads paid,
-   * because the bill reads its payments, not its receipt. Prescribed fix, once
-   * ruled: either refuse a refund of an additional bill's receipt from History
-   * (409, "refund it from the party") or reopen the bill when its receipt is
-   * refunded. Nothing in this lane decides which.
-   */
-  it.fails('a refunded additional-bill receipt does not leave the bill reading paid', async () => {
+  it('blocks a refund on an additional bill receipt before moving money', async () => {
     const party = await settledParty('ZZ TEST 1002 refund question');
     await beoExtra(party.id, 'ZZ-TEST-1002-refund', 'ZZ TEST 1002 cookie', 'food', 1, 3000);
     const [bill] = await billsOf(party.id);
@@ -313,7 +303,9 @@ describe('SCRUM-1002 adversarial review', () => {
       payload: { mode: 'whole', reason: 'ZZ TEST 1002 refund question', actionId: newId() },
     });
     const after = (await billsOf(party.id))[0]!;
-    expect(refunded.statusCode === 409 || after.state === 'open').toBe(true);
+    expect(refunded.statusCode).toBe(409);
+    expect(refunded.body).toContain('ADDITIONAL_BILL_REFUND_BLOCKED');
+    expect(after.state).toBe('paid');
   });
 });
 
