@@ -352,6 +352,7 @@ import {
         settingsReadRank,
         settingsWritableBy,
 } from "./lib/parkGroupSettings";
+import { shiftRowEffectiveOn } from "./lib/shiftRowEffectiveOn";
 import { retiredShiftEndDate } from "./lib/shiftGroupRequired";
 import { noteScheduleUpdate, noteScheduleWrites, type ScheduleWriteLog } from "./lib/scheduleWriteLog";
 import { setChecklistAssignees, withChecklistAssignees } from "./core/checklistAssignees";
@@ -8499,7 +8500,11 @@ export class DatabaseStorage implements IStorage {
                 const [shiftRow] = await db
                         .select()
                         .from(scheduleShiftRows)
-                        .where(and(eq(scheduleShiftRows.id, shiftRowId), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)));
+                        .where(and(
+                                eq(scheduleShiftRows.id, shiftRowId),
+                                shiftRowEffectiveOn(date),
+                                scheduleParkPredicate("schedule_shift_rows", requestedTenantId),
+                        ));
 
                 if (!shiftRow) return [];
 
@@ -8705,7 +8710,11 @@ export class DatabaseStorage implements IStorage {
                                                 endTime: scheduleShiftRows.endTime,
                                         })
                                         .from(scheduleShiftRows)
-                                        .where(and(inArray(scheduleShiftRows.id, assignedShiftRowIds), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)));
+                                        .where(and(
+                                                inArray(scheduleShiftRows.id, assignedShiftRowIds),
+                                                shiftRowEffectiveOn(date),
+                                                scheduleParkPredicate("schedule_shift_rows", requestedTenantId),
+                                        ));
 
                                 const shiftRowTimes = new Map(
                                         assignedShiftRows.map((r) => [
@@ -8760,7 +8769,11 @@ export class DatabaseStorage implements IStorage {
                 const [shiftRow] = await db
                         .select()
                         .from(scheduleShiftRows)
-                        .where(and(eq(scheduleShiftRows.id, shiftRowId), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)));
+                        .where(and(
+                                eq(scheduleShiftRows.id, shiftRowId),
+                                shiftRowEffectiveOn(date),
+                                scheduleParkPredicate("schedule_shift_rows", requestedTenantId),
+                        ));
                 if (!shiftRow) return { candidates: [], hasSiblingBranches: false };
 
                 // Get the destination branch to find its operator (or tenant for fallback)
@@ -8916,7 +8929,11 @@ export class DatabaseStorage implements IStorage {
                                         endTime: scheduleShiftRows.endTime,
                                 })
                                 .from(scheduleShiftRows)
-                                .where(and(inArray(scheduleShiftRows.id, assignedShiftRowIds), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)));
+                                .where(and(
+                                        inArray(scheduleShiftRows.id, assignedShiftRowIds),
+                                        shiftRowEffectiveOn(date),
+                                        scheduleParkPredicate("schedule_shift_rows", requestedTenantId),
+                                ));
                         shiftRowTimes = new Map(
                                 assignedShiftRows.map((r) => [
                                         r.id,
@@ -9027,7 +9044,11 @@ export class DatabaseStorage implements IStorage {
                 const [shiftRow] = await executor
                         .select()
                         .from(scheduleShiftRows)
-                        .where(and(eq(scheduleShiftRows.id, shiftRowId), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)));
+                        .where(and(
+                                eq(scheduleShiftRows.id, shiftRowId),
+                                shiftRowEffectiveOn(date),
+                                scheduleParkPredicate("schedule_shift_rows", requestedTenantId),
+                        ));
                 if (!shiftRow)
                         return {
                                 ok: false,
@@ -9307,7 +9328,11 @@ export class DatabaseStorage implements IStorage {
                                         endTime: scheduleShiftRows.endTime,
                                 })
                                 .from(scheduleShiftRows)
-                                .where(and(inArray(scheduleShiftRows.id, assignedShiftRowIds), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)));
+                                .where(and(
+                                        inArray(scheduleShiftRows.id, assignedShiftRowIds),
+                                        shiftRowEffectiveOn(date),
+                                        scheduleParkPredicate("schedule_shift_rows", requestedTenantId),
+                                ));
 
                         for (const existingShift of assignedShiftRows) {
                                 const existingStartMin = this.timeToMinutes(
@@ -9359,7 +9384,11 @@ export class DatabaseStorage implements IStorage {
                 const [shiftRow] = await executor
                         .select()
                         .from(scheduleShiftRows)
-                        .where(and(eq(scheduleShiftRows.id, shiftRowId), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)));
+                        .where(and(
+                                eq(scheduleShiftRows.id, shiftRowId),
+                                shiftRowEffectiveOn(date),
+                                scheduleParkPredicate("schedule_shift_rows", requestedTenantId),
+                        ));
 
                 if (!shiftRow) {
                         return {
@@ -9393,7 +9422,11 @@ export class DatabaseStorage implements IStorage {
                                         endTime: scheduleShiftRows.endTime,
                                 })
                                 .from(scheduleShiftRows)
-                                .where(and(inArray(scheduleShiftRows.id, assignedShiftRowIds), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)));
+                                .where(and(
+                                        inArray(scheduleShiftRows.id, assignedShiftRowIds),
+                                        shiftRowEffectiveOn(date),
+                                        scheduleParkPredicate("schedule_shift_rows", requestedTenantId),
+                                ));
 
                         // Helper to convert HH:MM time to minutes for easy comparison
                         const timeToMinutes = (time: string): number => {
@@ -9455,6 +9488,11 @@ export class DatabaseStorage implements IStorage {
                 const query = db
                         .select({ id: scheduleAssignments.id })
                         .from(scheduleAssignments)
+                        .innerJoin(scheduleShiftRows, and(
+                                eq(scheduleAssignments.shiftRowId, scheduleShiftRows.id),
+                                scheduleParkPredicate("schedule_shift_rows", requestedTenantId),
+                                shiftRowEffectiveOn(scheduleAssignments.shiftDate),
+                        ))
                         .where(
                                 and(and(
                                         eq(scheduleAssignments.employeeId, employeeId),
@@ -9497,15 +9535,21 @@ export class DatabaseStorage implements IStorage {
                 employeeId: string,
                 date: string, requestedTenantId?: string,
         ): Promise<ScheduleAssignment[]> {
-                return db
-                        .select()
+                const rows = await db
+                        .select({ assignment: scheduleAssignments })
                         .from(scheduleAssignments)
+                        .innerJoin(scheduleShiftRows, and(
+                                eq(scheduleShiftRows.id, scheduleAssignments.shiftRowId),
+                                scheduleParkPredicate("schedule_shift_rows", requestedTenantId),
+                                shiftRowEffectiveOn(scheduleAssignments.shiftDate),
+                        ))
                         .where(
                                 and(and(
                                         eq(scheduleAssignments.employeeId, employeeId),
                                         eq(scheduleAssignments.shiftDate, date),
                                 ), scheduleParkPredicate("schedule_assignments", requestedTenantId)),
                         );
+                return rows.map(row => row.assignment);
         }
 
         async getBorrowedOutAssignments(
@@ -9558,6 +9602,7 @@ export class DatabaseStorage implements IStorage {
                                 and(and(
                                         eq(employees.branchId, branchId),
                                         ne(scheduleShiftRows.branchId, branchId),
+                                        shiftRowEffectiveOn(scheduleAssignments.shiftDate),
                                         gte(scheduleAssignments.shiftDate, startDate),
                                         lte(scheduleAssignments.shiftDate, endDate),
                                 ), scheduleParkPredicate("schedule_assignments", requestedTenantId)),

@@ -1,3 +1,5 @@
+**23 November 2026, SCRUM-1068.** The retired shift fix passed its database regression. Check CI for the source commit, then verify a replacement and an active overlap on staging. No production assignments were cleared.
+
 **23 November 2026, HR incident review.** The production manager catalogue
 contains the migrated checklists. The two Reception cards were reproduced on
 the personal Today screen. SCRUM-1068 is the open rota defect concerning

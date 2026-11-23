@@ -1,3 +1,4 @@
+import { shiftRowEffectiveOn } from "./lib/shiftRowEffectiveOn";
 import { requireSchedulePark, ScheduleScopeError, scheduleParkPredicate, assertScheduleChangeSetScope } from "./schedule-scope";
 import { deleteWeekPlanNoting, readScheduleChangeSet, recordScheduleChange, scheduleChangeSetOf, undoScheduleChangeSet, weekScope } from "./lib/scheduleChangeSet";
 import { newScheduleWriteLog, noteScheduleWrites } from "./lib/scheduleWriteLog";
@@ -17587,7 +17588,10 @@ OTO Company Limited`,
         departmentId: scheduleShiftRows.departmentId,
       })
         .from(scheduleAssignments)
-        .innerJoin(scheduleShiftRows, eq(scheduleAssignments.shiftRowId, scheduleShiftRows.id))
+        .innerJoin(scheduleShiftRows, and(
+          eq(scheduleAssignments.shiftRowId, scheduleShiftRows.id),
+          shiftRowEffectiveOn(scheduleAssignments.shiftDate),
+        ))
         .where(and(and(
           eq(scheduleShiftRows.tenantId, tenantId),
           branchFilter,
@@ -17737,7 +17741,10 @@ OTO Company Limited`,
         shiftDate: scheduleAssignments.shiftDate,
       })
         .from(scheduleAssignments)
-        .innerJoin(scheduleShiftRows, eq(scheduleAssignments.shiftRowId, scheduleShiftRows.id))
+        .innerJoin(scheduleShiftRows, and(
+          eq(scheduleAssignments.shiftRowId, scheduleShiftRows.id),
+          shiftRowEffectiveOn(scheduleAssignments.shiftDate),
+        ))
         .where(and(and(
           eq(scheduleShiftRows.tenantId, tenantId),
           branchFilter,
@@ -17749,7 +17756,10 @@ OTO Company Limited`,
       // Check every affected parent before the first automatic removal.
       for (const duplicate of duplicates) {
         const candidates = await db.select({ id: scheduleAssignments.id }).from(scheduleAssignments)
-          .innerJoin(scheduleShiftRows, eq(scheduleAssignments.shiftRowId, scheduleShiftRows.id))
+          .innerJoin(scheduleShiftRows, and(
+            eq(scheduleAssignments.shiftRowId, scheduleShiftRows.id),
+            shiftRowEffectiveOn(scheduleAssignments.shiftDate),
+          ))
           .where(and(eq(scheduleAssignments.employeeId, duplicate.employeeId!), eq(scheduleAssignments.shiftDate, duplicate.shiftDate), branchFilter, scheduleParkPredicate("schedule_assignments", tenantId)));
         await assertScheduleDeleteScope("schedule_assignments", candidates.map(candidate => candidate.id), tenantId);
       }
@@ -17766,7 +17776,10 @@ OTO Company Limited`,
           endTime: scheduleShiftRows.endTime,
         })
           .from(scheduleAssignments)
-          .innerJoin(scheduleShiftRows, eq(scheduleAssignments.shiftRowId, scheduleShiftRows.id))
+          .innerJoin(scheduleShiftRows, and(
+            eq(scheduleAssignments.shiftRowId, scheduleShiftRows.id),
+            shiftRowEffectiveOn(scheduleAssignments.shiftDate),
+          ))
           .where(and(and(
             eq(scheduleAssignments.employeeId, dup.employeeId),
             eq(scheduleAssignments.shiftDate, dup.shiftDate),

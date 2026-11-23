@@ -1,3 +1,7 @@
+## 23 November 2026, retired shift assignment fix (SCRUM-1068)
+
+The picker, assignment checks and conflict scan now apply the shift row's effective dates to the day being scheduled. Active overlaps still block, back-to-back shifts remain available, and old assignment records stay in the database. The focused database regression passed for employees and casual workers. The HR typecheck stayed at its recorded 411 diagnostics. CI and staging acceptance are pending.
+
 ## 23 November 2026, HR checklist visibility and a retired rota shift
 
 The production account behind the 11:56 Central Floresta scheduling report has

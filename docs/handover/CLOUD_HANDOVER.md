@@ -19,6 +19,8 @@ work is landed and proven, and the tools. Kept current at every landing._
 
 ## 2. Where the work stands
 
+**23 November 2026, SCRUM-1068.** Scheduling now checks shift effective dates when evaluating an assignment. Source proof passed; staging and production verification remain pending.
+
 **23 November 2026, HR incident review.** Production checklist access was
 verified through the browser. SCRUM-1068 tracks the hidden assignments on a
 retired rota row. See the [status entry](../progress/STATUS.md) for scope.
