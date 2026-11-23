@@ -4,7 +4,11 @@ SCRUM-1051 "BEO: the time per dish or group on the till's kitchen and bar
 slips" is the till's part of the owner's answer of 19 November (ANSWERS.md,
 section 5, SCRUM-1033). This page is the recipe for the lane that builds it.
 
-## State, 20 November 2026: not built, blocked on the seam
+## Staging result, 23 November 2026
+
+Build `bf60a2f36` preserves the adult serving time on the existing billed line. A staged party with the same dish at 12:30 and 13:30 yielded both kitchen entries and one billable line. A park printer check remains open.
+
+## Earlier finding, 20 November 2026
 
 Checked on origin/main a9c955e3a:
 

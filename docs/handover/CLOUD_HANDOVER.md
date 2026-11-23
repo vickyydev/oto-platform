@@ -1,4 +1,4 @@
-**23 November 2026, BEO feedback staging release.** SCRUM-1006 through SCRUM-1009 and SCRUM-1051: prebooking messages distinguish deposit and booking; the party balance includes additional bills; discounted additional bills carry the till discount on their receipt; refunds of additional-bill receipts are refused by owner decision. Separate adult serving times are carried on the existing billed dish. Targeted staging verification pending.
+**23 November 2026, birthday BEO feedback on staging.** Build `bf60a2f36` is live on the API, HR app and both POS staging services. Party Details and the POS Entry Checklist agreed on the balance. A ฿200 item discounted by ฿50 raised the outstanding amount by ฿150. Settling it cleared that amount, produced a ฿150 receipt and blocked a manager refund. Inbox queued the deposit request, payment acknowledgement and date confirmation once each on replay. The kitchen slip showed 12:30 and 13:30 for one billed dish. Render staging job `job-dc2186k9v7es73bvtlpg` passed with its test writes rolled back. Central Floresta has no staging birthday manager contact. Staff notification delivery and physical printing still need a recipient and a printer check.
 
 # Hosted session handover — the platform lane
 
@@ -20,6 +20,8 @@ work is landed and proven, and the tools. Kept current at every landing._
 5. The plan of the story you are on (section 3 names it).
 
 ## 2. Where the work stands
+
+The 23 November BEO release and its staging test are recorded at the top of this file. Begin the next payment notification check by setting the birthday manager contact on the test branch.
 
 **23 November 2026, SCRUM-709 Digio USB.** The counter runner now has the native Digio serial driver for Windows and Pi, with a read-only terminal-info command. The one-baht card request and matching approval passed over a mock serial port. Windows saw only Bluetooth ports at the bench. The physical PAX handshake, card-present approval and Pi installation are pending. The staging PromptPay route remains available.
 
