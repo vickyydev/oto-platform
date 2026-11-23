@@ -1,3 +1,7 @@
+## 23 November 2026, Central Floresta payment routing (SCRUM-709)
+
+The owner confirmed that all three SCB accounts belong to Central Floresta. SCB00 consolidates reporting, SCB01 covers cards and SCB02 covers other methods. The [connection plan](plans/real-payment-test/GATEWAY_CONNECTION_PLAN.md) distinguishes the hosted QR, hosted card and physical Digio paths and records how to verify merchant routing. The staging API reports simulator and missing merchant credentials. The ZDIG counter box is unclaimed. No live payment was initiated.
+
 ## 23 November 2026, retired shift scheduling fix live (SCRUM-1068)
 
 Mariia can choose a replacement for a retired shift at Central Floresta. On production, the deleted 09:30–18:30 opening no longer counts against Hanna on November 23, 25, 26 or 27. Her November 28 closing assignment remains. No replacement was chosen and the original records are retained.

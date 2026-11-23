@@ -19,6 +19,8 @@ work is landed and proven, and the tools. Kept current at every landing._
 
 ## 2. Where the work stands
 
+**23 November 2026, SCRUM-709.** Central Floresta has a master reporting account and separate card and other-payment accounts. Follow the [payment connection plan](../progress/plans/real-payment-test/GATEWAY_CONNECTION_PLAN.md) for merchant selection, first PromptPay sale and the Digio terminal check. The API is still on the simulator.
+
 **23 November 2026, SCRUM-1068 deployed.** The retired-shift fix passed the staging rota check and is live in HR. Hanna's four November 23–27 dates are clear and her November 28 closing shift remains. The most recent scheduling entry in [STATUS](../progress/STATUS.md) records both deployments and screenshots. Owner acceptance is pending.
 
 **23 November 2026, SCRUM-1068.** Scheduling now checks shift effective dates when evaluating an assignment. Source proof passed; staging and production verification remain pending.

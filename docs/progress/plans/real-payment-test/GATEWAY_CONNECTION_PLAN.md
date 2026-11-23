@@ -1,5 +1,19 @@
 # Connecting the real payment gateway: the plan
 
+## 23 November 2026, Central Floresta merchant accounts and first live tests
+
+SCB described one outlet with three accounts. SCB00 provides the consolidated view. SCB01 handles Visa, Mastercard and JCB. SCB02 handles other payment methods. For hosted PromptPay, SCB02 is the expected reporting account. The merchant's PPQR entitlement and the signing credentials issued for its integration still need verification.
+
+| Test | Route | Evidence before acceptance |
+| --- | --- | --- |
+| Hosted PromptPay | ZDIG till requests a 2C2P QR using PPQR. The customer scans it in their banking app. | Generate an unpaid QR, check payee and amount, then close it. On a fresh one-baht sale match the signed inquiry, invoice, amount and single till receipt against the SCB02 transaction and SCB00 consolidated view. Check the payout separately when available. |
+| Physical card | ZDIG sends the amount through the Pi to the bank-provisioned Digio PAX A920Pro. The separate NEXGO N5 uses GHL LinkPOS. | Read the PAX terminal and merchant IDs using terminal info. Match the card slip and reference to the POS sale and acquiring report. Confirm any SCB01 report linkage against that transaction. A terminal approval alone does not prove online card routing. |
+| Hosted card or a deposit link offering both card and QR | The staging platform API selects one gateway merchant and SHA key for hosted requests, inquiry, notifications and maintenance. | Determine whether SCB issued a signing account with channel routing, requires an explicit child account, or issued separate merchant credentials per tender. Prove the card posting under SCB01 and QR under SCB02 before using a mixed-method link. Keep pending invoices and reversals tied to their originating merchant if another credential set is needed. |
+
+The portal selector describes reporting scope. Check which account owns the Merchant ID and SHA key in the merchant onboarding details. Use only the corresponding pair in the staging server secrets. The current payment token and inquiry requests send one merchantID and omit childMerchantID. 2C2P's v4.3 specification supports an explicit child account. Implement that field or credential selection only if required by the park's provisioning. A signed token or matching payee name alone cannot prove which sub-account receives a payment. [2C2P v4.3 changes](https://developer.2c2p.com/changelog/payment-v43) and [backend response fields](https://developer.2c2p.com/docs/api-payment-response-back-end-parameter).
+
+The original hardware guides are in the local imports/_vendor-docs folder. Digio-TLV-LinkPOS-Spec.html covers terminal info, credit sales, PromptPay, inquiry and void. GHL-API-Integration-POS-to-SmartEDC-V1.4-SCB-Jan2025.pdf specifies the NEXGO messages and explicitly excludes card inquiry. Gate_Interface_Specification_EN (1).pdf is available for the separate gate test after payments.
+
 **State, 18 November 2026: a plan only.** The owner asked for it on his
 decisions page on 18 November, after answering the choices of `PLAN.md` in
 this folder. `PLAN.md` stays as it was; this file replaces its plan for the
