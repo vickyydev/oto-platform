@@ -1,5 +1,11 @@
 # Connecting the real payment gateway: the plan
 
+## 23 November 2026, live credential check
+
+The two merchant settings were saved and verified on the staging API. The live 2C2P v4.3 inquiry endpoint returned a signed 2002 for a fresh, unused invoice and the signature verified with the configured key. The token endpoint returned 9058 for an unrestricted payment request, an explicit PPQR request and an explicit CC request. The two channel-specific requests had invoice references SBXCKMWT03BQ8C065 and SBXCKMWT03BZA08B6 respectively. All were token checks; the card terminal was not involved. No payment token, QR or charge resulted.
+
+Keep the staging API on its simulator while SCB/2C2P confirms the online channel assignment for this signing account and whether to pass a registered childMerchantID for SCB02 and SCB01. After confirmation, repeat the unpaid QR check from staging, then verify posting as described below. A signed inquiry proves the credential pair for inquiry. It does not establish the assigned payment channels or settlement account. [Provider response codes](https://developer.2c2p.com/docs/response-code-payment).
+
 ## 23 November 2026, Central Floresta merchant accounts and first live tests
 
 SCB described one outlet with three accounts. SCB00 provides the consolidated view. SCB01 handles Visa, Mastercard and JCB. SCB02 handles other payment methods. For hosted PromptPay, SCB02 is the expected reporting account. The merchant's PPQR entitlement and the signing credentials issued for its integration still need verification.

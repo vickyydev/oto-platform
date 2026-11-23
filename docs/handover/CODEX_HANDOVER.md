@@ -1,3 +1,5 @@
+**23 November 2026, SCRUM-709.** The staging API has the two merchant settings. A live 2C2P inquiry verified the signature. Payment token requests for PromptPay and hosted cards returned 9058. The staging gateway remains on its simulator. The [connection plan](../progress/plans/real-payment-test/GATEWAY_CONNECTION_PLAN.md) contains the two support references and the next merchant-routing check.
+
 **23 November 2026, SCRUM-709.** Central Floresta has a master reporting account and separate card and other-payment accounts. Follow the [payment connection plan](../progress/plans/real-payment-test/GATEWAY_CONNECTION_PLAN.md) for merchant selection, first PromptPay sale and the Digio terminal check. The API is still on the simulator.
 
 **23 November 2026, SCRUM-1068 deployed.** The retired-shift fix passed the staging rota check and is live in HR. Hanna's four November 23–27 dates are clear and her November 28 closing shift remains. The most recent scheduling entry in [STATUS](../progress/STATUS.md) records both deployments and screenshots. Owner acceptance is pending.

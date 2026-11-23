@@ -1,3 +1,7 @@
+## 23 November 2026, 2C2P production endpoint check (SCRUM-709)
+
+The staging API has the two merchant settings. A live 2C2P inquiry verified the signature. Payment token requests for PromptPay and hosted cards returned 9058. The staging gateway remains on its simulator. The [connection plan](plans/real-payment-test/GATEWAY_CONNECTION_PLAN.md) contains the two support references and the next merchant-routing check.
+
 ## 23 November 2026, Central Floresta payment routing (SCRUM-709)
 
 The owner confirmed that all three SCB accounts belong to Central Floresta. SCB00 consolidates reporting, SCB01 covers cards and SCB02 covers other methods. The [connection plan](plans/real-payment-test/GATEWAY_CONNECTION_PLAN.md) distinguishes the hosted QR, hosted card and physical Digio paths and records how to verify merchant routing. The staging API reports simulator and missing merchant credentials. The ZDIG counter box is unclaimed. No live payment was initiated.
