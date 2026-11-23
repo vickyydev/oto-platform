@@ -255,7 +255,8 @@ export function webhookRoutes(app: App): Promise<void> {
     const page = await hostedChoicePage(app.db, attemptId, key);
     const form = (method: string, label: string) =>
       `<form method="post" action="/webhooks/2c2p/checkout/${attemptId}/${key}/${method}"><button>${label}</button></form>`;
-    reply.header('referrer-policy', 'no-referrer');
+    // Send only the origin on the same-site form POST. The checkout key stays out of the referrer.
+    reply.header('referrer-policy', 'strict-origin');
     return sendHtmlPage(reply, 'Choose how to pay', '<h1>Choose how to pay</h1>' +
       `<p>OTO Play Park &middot; ${escapeHtml(formatTHB(page.amount))}</p>` +
       (page.method === 'card' ? '' : form('qr', 'PromptPay QR')) +
