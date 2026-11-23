@@ -1130,6 +1130,9 @@ test('separate display drop-off form is mirrored live on the till and survives a
     // The family names the child on their screen; the till's copy follows.
     await nameChildOnDisplay(fixture.display, consent, 'ZZ TEST Live child', 6);
     await expect(mirror.getByTestId('consent-child-name')).toHaveValue('ZZ TEST Live child', { timeout: 3_000 });
+    // Focusing an existing value changes no answers. Reception should still see which child needs help.
+    await consent.getByTestId('consent-child-name').focus();
+    await expect(mirror.locator('[data-guest-active]')).toContainText('Child', { ignoreCase: true, timeout: 10_000 });
     await captureLocalCheck(page, 's857-mirror-children-local.png');
 
     // The family moves on: the till follows them, step by step.

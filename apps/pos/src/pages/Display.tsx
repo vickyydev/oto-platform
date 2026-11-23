@@ -491,7 +491,7 @@ export default function Display() {
   const consentAnswerPending = busy || !!answer || !!pending.current;
   const isLive = (value: unknown): boolean => {
     const action = (value as { action?: unknown } | null | undefined)?.action;
-    return action === 'fill' || action === 'photo';
+    return action === 'fill' || action === 'view' || action === 'photo';
   };
   const languageOut = pending.current?.type === 'display.set_language';
   const consentLocked = consentAnswerPending
@@ -621,7 +621,7 @@ export default function Display() {
           {t('display.reconnectingSendsItself')}</p>}
         <PublicConsentCapture key={view.consent.visitorId} prompt={view.consent}
           busy={consentLocked} answerPending={consentAnswerPending}
-          onAction={action => { void send('display.consent', action, action.action === 'fill' || action.action === 'photo'); }}
+          onAction={action => { void send('display.consent', action, action.action === 'fill' || action.action === 'view' || action.action === 'photo'); }}
           // SCRUM-857 — the family's photo goes to the platform with this
           // screen's own credential, for this form and child only.
           sendPhoto={(form, dataUrl) => sendDisplayConsentPhoto(bearerRef.current, form, dataUrl)} />

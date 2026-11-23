@@ -18,6 +18,15 @@ export const CONSENT_FORM_STEPS = ['children', 'care', 'agreements'] as const;
 export type ConsentFormStep = (typeof CONSENT_FORM_STEPS)[number];
 const formStep = z.enum(CONSENT_FORM_STEPS);
 
+const fieldIndex = z.number().int().min(0).max(1023);
+const formView = z.object({
+  step: formStep,
+  anchor: fieldIndex.nullable(),
+  offset: z.number().int().min(-1000).max(1000),
+  progress: z.number().int().min(0).max(1000),
+  active: fieldIndex.nullable(),
+}).strict();
+
 const promptObject = z.object({
   kind: z.literal('consent'), requestId, visitorId: id,
   slots: z.array(z.object({ id,
@@ -166,6 +175,7 @@ const promptObject = z.object({
    * the `fill` is never tripped.
    */
   familyStep: formStep.optional(),
+  familyView: formView.nullable().optional(),
   /**
    * SCRUM-857 — the family's Done moves the sale on by itself (the owner's
    * ruling of 8 November: no staff confirmation once every check passes).
@@ -299,6 +309,7 @@ export const ConsentActionSchema = z.discriminatedUnion('action', [
    * finished, so staff watch the form live; a step change alone sends one.
    */
   step: formStep.optional(),
+  view: formView.optional(),
   /**
    * SCRUM-943 — the family's screen cannot take the photo: it has no camera
    * (`none`), or the camera was refused (`refused`). Sent only on a form whose
@@ -306,6 +317,7 @@ export const ConsentActionSchema = z.discriminatedUnion('action', [
    */
   camera: z.enum(['none', 'refused']).optional(),
   consentAcknowledged: z.boolean(), acknowledgedConfirmationIds }).strict(),
+  fence.extend({ action: z.literal('view'), view: formView }).strict(),
   fence.extend({ action: z.literal('done') }).strict(),
   fence.extend({ action: z.literal('staff_help') }).strict(),
   /**
@@ -325,6 +337,7 @@ export function consentActionAllowed(prompt: ConsentPrompt, action: ConsentActio
   if (action.requestId !== prompt.requestId || action.visitorId !== prompt.visitorId || prompt.completed) return false;
   // SCRUM-857 — a till that asks the family to confirm their messaging number
   // takes no `done` before they have (`contactConfirmed` is `false` until then).
+  if (action.action === 'view') return prompt.familyView !== undefined && action.view.step === (prompt.agreementsOnly ? 'agreements' : prompt.familyStep);
   if (action.action === 'done') return prompt.canContinue && prompt.contactConfirmed !== false;
   // SCRUM-857 — a photo only for a child whose form asks the display for one.
   if (action.action === 'photo') return prompt.slots.some(slot => slot.id === action.slotId && slot.photo !== undefined);
@@ -332,6 +345,7 @@ export function consentActionAllowed(prompt: ConsentPrompt, action: ConsentActio
     if (action.consentAcknowledged && !action.guardianName.trim() && (action.action === 'fill' || prompt.consentRequired)) {
       return false;
     }
+    if (action.action === 'fill' && action.view && (prompt.familyView === undefined || action.view.step !== action.step)) return false;
     if (action.action === 'fill' && !action.slots.every(slot => prompt.slots.some(item => item.id === slot.id))) return false;
     // SCRUM-1020 — "no allergies" only for a saved child whose care notes the form shows.
     if (action.action === 'fill' && !action.slots.every(slot => !slot.allergiesNone

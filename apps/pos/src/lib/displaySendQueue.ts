@@ -41,7 +41,7 @@ export function goesAgainByItself(intent: Pick<StationIntent, 'type' | 'payload'
   const action = (intent.payload as { action?: unknown } | undefined)?.action;
   // SCRUM-1014 — a new child's name and age on the returning family's review
   // travel as they are typed, as the form's `fill` does.
-  return intent.type === 'display.consent' && (action === 'fill' || action === 'photo')
+  return intent.type === 'display.consent' && (action === 'fill' || action === 'view' || action === 'photo')
     || intent.type === 'display.child_review' && action === 'new_child';
 }
 

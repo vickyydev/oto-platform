@@ -638,6 +638,7 @@ export default function Till() {
    * Null when the display (or the station between) does not say: the copy
    * then shows every step, one under the other.
    */
+  const [consentFamilyView, setConsentFamilyView] = useState<ConsentPrompt['familyView']>(null);
   const [consentFamilyStep, setConsentFamilyStep] = useState<ConsentFormStep | null>('children');
   /**
    * SCRUM-943 — the paired display said it cannot take the photo it is asked
@@ -2283,6 +2284,7 @@ export default function Till() {
     // forms show it filled in and only staff change it, on the till.
     setSuperParentPhone(customerPhone.trim() || member?.phone || '');
     setSuperParentContactMethod(customerContactChannel);
+    setConsentFamilyView(null);
     setConsentFamilyStep('children');
     setConsentDisplayCamera(null);
     gateRegistrationIdRef.current = null;
@@ -4142,7 +4144,7 @@ export default function Till() {
   const consentPhotoAsked = consentBase.slots.some(slot => slot.photo !== undefined);
   if (consentPhotoAsked) consentBase.reportsCamera = true;
   const consentSignature = JSON.stringify(consentBase);
-  const consentCandidate = { ...consentBase, completed: consentCompletedScope === consentSignature };
+  const consentCandidate = { ...consentBase, familyView: consentFamilyView, completed: consentCompletedScope === consentSignature };
   /**
    * SCRUM-857 — every check the staff's "Continue to payment" makes, on the
    * till's own copy of the form: each child named and aged, the name and the
@@ -4225,7 +4227,7 @@ export default function Till() {
         // The profile's name likewise: staff correct it here.
         phoneFixed: prompt.data.phoneFixed === true,
         nameFixed: prompt.data.guardianFixed === true,
-        setFamilyStep: setConsentFamilyStep,
+        setFamilyStep: setConsentFamilyStep, setFamilyView: setConsentFamilyView,
         setDisplayCamera: setConsentDisplayCamera,
         setConsentAcknowledged: setSuperConsentAck, setAcknowledgedConfirmationIds: setSuperAcknowledgedConfirmationIds,
         setCompletedSignature: (signature) => {

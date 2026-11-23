@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { ChildDobPicker } from '@/components/shared/ChildDobPicker';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { ChannelSelector, PhoneInput } from '@/components/shared/PhoneInput';
+import { useConsentViewport } from './useConsentViewport';
 import { TouchText } from './TouchText';
 import { DISPLAY_TOUCH, NARROW_BAR, NARROW_HEAD, NARROW_HEAD_TOUCH, NARROW_LINE, PLAYING_TODAY_CLEAR, SHORT_HIDE } from './consentFormLayout';
 import { useLanguage } from '@/i18n/LanguageContext';
@@ -587,6 +588,11 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
     const child = draft.slots[slot.id];
     return !!child && child.name.trim().length > 0 && child.ageYears !== null;
   });
+  const { localView, events: viewportEvents } = useConsentViewport({
+    scroller, step, prompt, mirror: !!mirror,
+    canSend: sendable && !unsent && !helpAsked && !prompt.completed,
+    onView: view => onAction({ ...fence, action: 'view', view }),
+  });
   const fillOf = (form: FormDraft, at: Step = step): ConsentAction => ({
     ...fence,
     action: 'fill',
@@ -617,6 +623,7 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
     acknowledgedConfirmationIds: form.confirmations,
     // SCRUM-857 — where the family is, for the till's copy of this screen.
     ...(followsStep ? { step: at } : {}),
+    ...(followsStep && localView?.step === at ? { view: localView } : {}),
     // SCRUM-943 — this screen cannot take the photo, on a form whose till asks.
     ...(camera ? { camera } : {}),
   });
@@ -721,7 +728,7 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
   const careField = (slot: PromptSlot) => {
     const child = draft.slots[slot.id]!;
     const name = child.name.trim() || t('superviseConsent.thisChild');
-    return <div data-testid="consent-saved-care">
+    return <div data-consent-field="" data-testid="consent-saved-care">
       <label className="flex items-center gap-2 text-lg text-foreground/70"><HeartPulse className="h-5 w-5" /> {t('superviseConsent.allergiesMedical')}</label>
       <p className="mt-1 text-base text-foreground/50">{t('superviseConsent.careFromProfile')}</p>
       <TouchText multiline value={child.allergiesMedical} maxLength={500} disabled={locked} testId="consent-saved-allergies"
@@ -732,13 +739,13 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
       {slot.medicalAlert === true && <p className="mt-3 text-base font-semibold text-(--cd-amber)" data-testid="consent-saved-medical-alert">
         {t('superviseConsent.medicalAlertOn')}</p>}
       {child.medicalNotes !== undefined && <>
-        <label className="mt-4 flex items-center gap-2 text-lg text-foreground/70"><HeartPulse className="h-5 w-5" /> {t('superviseConsent.medicalNotes')}</label>
+        <div data-consent-field=""><label className="mt-4 flex items-center gap-2 text-lg text-foreground/70"><HeartPulse className="h-5 w-5" /> {t('superviseConsent.medicalNotes')}</label>
         <TouchText multiline value={child.medicalNotes} maxLength={500} disabled={locked} testId="consent-saved-medical"
           onChange={(medicalNotes) => setChild(slot.id, { medicalNotes })}
           placeholder={t('superviseConsent.medicalNotesPlaceholder')}
           className="mt-2 min-h-[88px] border-foreground/10 bg-foreground/5 text-lg text-foreground placeholder:text-foreground/30" />
-      </>}
-      {careNeedsTick(slot, child) && <label className="mt-3 flex w-full items-start gap-4 rounded-2xl border border-foreground/10 bg-foreground/5 p-4 text-left">
+      </div></>}
+      {careNeedsTick(slot, child) && <label data-consent-field="" className="mt-3 flex w-full items-start gap-4 rounded-2xl border border-foreground/10 bg-foreground/5 p-4 text-left">
         <Checkbox checked={child.allergiesNone === true} disabled={locked} data-testid="public-consent-allergies-none"
           onCheckedChange={(value) => choose((current) => ({ ...current,
             slots: { ...current.slots, [slot.id]: { ...current.slots[slot.id]!, allergiesNone: value === true } } }))}
@@ -759,7 +766,7 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
     const extra = draft.slots[slot.id]?.extraCreditTHB ?? 0;
     const setExtra = (amount: number) => choose((current) => ({ ...current, slots: { ...current.slots,
       [slot.id]: { ...current.slots[slot.id]!, extraCreditTHB: Math.max(0, Math.min(EXTRA_CREDIT_MAX_THB, amount)) } } }));
-    return <div data-testid="consent-food-credit" className="space-y-3">
+    return <div data-consent-field="" data-testid="consent-food-credit" className="space-y-3">
       {included > 0 && <p data-testid="consent-food-included" className="flex items-center gap-2 rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3 text-lg font-semibold text-primary">
         <Wallet className="h-5 w-5 shrink-0" />{t('superviseConsent.foodIncluded', { amount: included })}</p>}
       {slot.extraCreditTHB !== undefined && <div>
@@ -839,20 +846,20 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
         : `${t('superviseConsent.stepOf', { n: index + 1, total: STEPS.length })} · ${t('superviseConsent.teamFollowing')}`}</p>
     </div>
 
-    <div ref={scroller} className="flex-1 min-h-0 space-y-5 overflow-y-auto px-8 pb-6">
+    <div ref={scroller} {...viewportEvents} className="[&_[data-guest-active]]:outline-2 [&_[data-guest-active]]:outline-primary [&_[data-guest-active]]:outline-offset-2 flex-1 min-h-0 space-y-5 overflow-y-auto px-8 pb-6">
       {shows('children') && prompt.slots.map((slot, at) => {
         const child = draft.slots[slot.id]!;
         const meta = requirementOf(slot);
         const Icon = meta.icon;
         return <div key={slot.id} className="rounded-3xl border border-foreground/10 bg-foreground/5 p-6" data-testid="consent-child">
           <div className="flex flex-col gap-4 sm:flex-row">
-            <div className="flex-1">
+            <div data-consent-field="" className="flex-1">
               <label htmlFor={`consent-child-${at}`} className="flex items-center gap-2 text-lg text-foreground/70">
                 <Baby className="h-5 w-5" /> {t('superviseConsent.childName')}</label>
               <TouchText id={`consent-child-${at}`} value={child.name} maxLength={100} disabled={locked} testId="consent-child-name"
                 onChange={(name) => setChild(slot.id, { name })} placeholder={t('superviseConsent.fullName')} className={FIELD} />
             </div>
-            <div className="sm:w-40">
+            <div data-consent-field="" className="sm:w-40">
               <label className="text-lg text-foreground/70">{t('superviseConsent.age')}</label>
               <ChildDobPicker lang={lang} dateOfBirth={child.dateOfBirth ?? undefined} age={child.ageYears} childName={child.name}
                 disabled={locked} className="mt-2" matchSurface touch={!mirror}
@@ -877,16 +884,16 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
           const child = draft.slots[slot.id]!;
           return <div key={slot.id} className="rounded-3xl border border-foreground/10 bg-foreground/5 p-6 space-y-4" data-testid="consent-care">
             <div className="flex items-center gap-2 text-xl font-semibold"><Baby className="h-5 w-5" />{child.name || t('superviseConsent.thisChild')}</div>
-            {photoOf(slot)}
+            {slot.photo !== undefined && <div data-consent-field="">{photoOf(slot)}</div>}
             {slot.saved ? careShown(slot) ? careField(slot) : <p className="text-lg text-foreground/70">{t('superviseConsent.savedOnProfile')}</p> : <>
-              <div>
+              <div data-consent-field="">
                 <label className="flex items-center gap-2 text-lg text-foreground/70"><HeartPulse className="h-5 w-5" /> {t('superviseConsent.allergiesMedical')}</label>
                 {/* SCRUM-893 — the allergies box opens the on-screen keyboard too. */}
                 <TouchText multiline value={child.allergiesMedical} maxLength={500} disabled={locked} onChange={(allergiesMedical) => setChild(slot.id, { allergiesMedical })}
                   placeholder={t('superviseConsent.allergiesPlaceholder')} testId="consent-allergies"
                   className="mt-2 min-h-[88px] border-foreground/10 bg-foreground/5 text-lg text-foreground placeholder:text-foreground/30" />
               </div>
-              <div>
+              <div data-consent-field="">
                 <label className="flex items-center gap-2 text-lg text-foreground/70"><UtensilsCrossed className="h-5 w-5" /> {t('superviseConsent.dietaryNotes')}</label>
                 <TouchText value={child.foodRestrictions} maxLength={200} disabled={locked} onChange={(foodRestrictions) => setChild(slot.id, { foodRestrictions })} testId="consent-dietary"
                   placeholder={t('superviseConsent.dietaryPlaceholder')} className="mt-2 h-12 border-foreground/10 bg-foreground/5 px-4 text-lg text-foreground placeholder:text-foreground/30" />
@@ -907,7 +914,7 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
             <Badge variant={meta.badge} className="gap-1.5 px-3 py-1.5 text-base"><Icon className="h-4 w-4" />{meta.label}</Badge>
             {meta.note && <span className="text-base font-medium text-foreground/70">{meta.note}</span>}
           </div>}
-          {photoOf(slot)}
+          {slot.photo !== undefined && <div data-consent-field="">{photoOf(slot)}</div>}
           {/* SCRUM-1020 — the saved child's allergy and medical notes, to update. */}
           {careShown(slot) && careField(slot)}
           {/* SCRUM-1021 — the food credit: the ticket's own, and the extra to choose. */}
@@ -917,14 +924,14 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
 
       {shows('agreements') && <>
         <div className="rounded-3xl border border-foreground/10 bg-foreground/5 p-6 space-y-5">
-          <div><label htmlFor="public-consent-guardian" className="text-lg text-foreground/70">{t('superviseConsent.parentGuardianName')}</label>
+          <div data-consent-field=""><label htmlFor="public-consent-guardian" className="text-lg text-foreground/70">{t('superviseConsent.parentGuardianName')}</label>
             {nameFixed ? <div data-testid="consent-kept-guardian">
               <div className="mt-2 flex h-14 items-center rounded-md border border-foreground/10 bg-foreground/5 px-4 text-2xl font-semibold">{prompt.guardianName}</div>
               <p className="mt-2 text-base text-foreground/50">{t('superviseConsent.savedOnProfile')}</p>
             </div> : <TouchText id="public-consent-guardian" value={draft.guardianName} maxLength={100} disabled={locked} testId="consent-guardian"
               onChange={(guardianName) => edit((current) => ({ ...current, guardianName }))}
               placeholder={t('superviseConsent.yourFullName')} className={FIELD} />}</div>
-          <div>
+          <div data-consent-field="">
             <label className="flex items-center gap-2 text-lg text-foreground/70"><Phone className="h-5 w-5" /> {t('superviseConsent.phoneNumber')}</label>
             {phoneKept || phoneFixed ? <div data-testid="consent-kept-phone">
               <div className="mt-2 flex h-14 items-center rounded-md border border-foreground/10 bg-foreground/5 px-4 text-2xl font-semibold tabular-nums">{formatStoredPhone(prompt.guardianPhone ?? '')}</div>
@@ -944,13 +951,13 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
                 channel they chose; a changed number or channel asks again. */}
             {asksConfirm && contactProblem === 'empty' && <p className="mt-3 text-base text-foreground/60" data-testid="consent-contact-needed">{t('superviseConsent.phoneNeeded')}</p>}
             {asksConfirm && contactProblem === 'invalid' && <p className="mt-3 text-base text-(--cd-amber)" data-testid="consent-contact-invalid">{t('superviseConsent.phoneInvalid')}</p>}
-            {asksConfirm && <label className="mt-3 flex w-full items-start gap-4 rounded-2xl border border-foreground/10 bg-foreground/5 p-4 text-left">
+            {asksConfirm && <label data-consent-field="" className="mt-3 flex w-full items-start gap-4 rounded-2xl border border-foreground/10 bg-foreground/5 p-4 text-left">
               <Checkbox checked={draft.contactConfirmed === true} disabled={locked || contactProblem !== null} data-testid="public-consent-contact-confirm"
                 onCheckedChange={(value) => choose((current) => ({ ...current, contactConfirmed: value === true }))}
                 className="mt-1 h-6 w-6 border-foreground/30 data-[state=checked]:bg-primary" />
               <span className="text-lg leading-snug text-foreground/80">{t('superviseConsent.confirmContact', { channel: CHANNEL_LABEL[contactChannel] })}</span></label>}
           </div>
-          {prompt.consentRequired && <label className="flex w-full items-start gap-4 rounded-2xl border border-foreground/10 bg-foreground/5 p-4 text-left">
+          {prompt.consentRequired && <label data-consent-field="" className="flex w-full items-start gap-4 rounded-2xl border border-foreground/10 bg-foreground/5 p-4 text-left">
             <Checkbox checked={draft.consentAcknowledged} disabled={locked} data-testid="public-consent-ack"
               onCheckedChange={(value) => choose((current) => ({ ...current, consentAcknowledged: value === true }))}
               className="mt-1 h-6 w-6 border-foreground/30 data-[state=checked]:bg-primary" />
@@ -958,7 +965,7 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
         </div>
         {prompt.confirmations.length > 0 && <div className="rounded-3xl border border-foreground/10 bg-foreground/5 p-6 space-y-3">
           <div className="flex items-center gap-2 text-lg font-semibold text-foreground/80"><ClipboardCheck className="h-5 w-5" />{t('superviseConsent.pleaseConfirm')}</div>
-          {prompt.confirmations.map((item) => <label key={item.id} className="flex w-full items-start gap-4 rounded-2xl border border-foreground/10 bg-foreground/5 p-4 text-left">
+          {prompt.confirmations.map((item) => <label key={item.id} data-consent-field="" className="flex w-full items-start gap-4 rounded-2xl border border-foreground/10 bg-foreground/5 p-4 text-left">
             <Checkbox checked={draft.confirmations.includes(item.id)} disabled={locked} onCheckedChange={(value) => choose((current) => ({
               ...current,
               confirmations: value === true ? [...current.confirmations.filter((id) => id !== item.id), item.id] : current.confirmations.filter((id) => id !== item.id),

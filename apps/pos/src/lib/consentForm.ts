@@ -197,6 +197,7 @@ export interface ConsentFormTill {
    * the till's copy of the form opens on it for staff (and a display that
    * re-pairs comes back to it). Optional, like the confirmation above.
    */
+  setFamilyView?: (view: Extract<ConsentAction, { action: 'view' }>['view'] | null) => void;
   setFamilyStep?: (step: ConsentFormStep | null) => void;
   /**
    * SCRUM-857 — the family took a child's photo on the display: collect the
@@ -228,7 +229,8 @@ export interface ConsentFormTill {
  * copy of the form shows them and cannot change them while the family has it.
  */
 export function takeConsentAction(action: ConsentAction, till: ConsentFormTill): void {
-  if (action.action === 'staff_help') till.askedForHelp();
+  if (action.action === 'view') till.setFamilyView?.(action.view);
+  else if (action.action === 'staff_help') till.askedForHelp();
   // SCRUM-857 — a photo is not a step of the form and never finishes it.
   else if (action.action === 'photo') till.takePhoto?.(action.slotId, action.fileId);
   else if (action.action === 'acknowledge') {
@@ -254,6 +256,7 @@ export function takeConsentAction(action: ConsentAction, till: ConsentFormTill):
     // SCRUM-857 — where the family is on their screen; a step from a display
     // (or a station between) that does not send it leaves the till not knowing.
     till.setFamilyStep?.(action.step ?? null);
+    till.setFamilyView?.(action.view ?? null);
     // SCRUM-943 — the display's camera, as this step said (nothing said: no trouble).
     till.setDisplayCamera?.(action.camera ?? null);
     // SCRUM-857 — the family's tick that this number is the one for the
