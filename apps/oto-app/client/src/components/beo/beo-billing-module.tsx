@@ -61,6 +61,7 @@ interface BeoBillingModuleProps {
    * SCRUM-1001: once the till holds the party's sale, its state as the Billing badge says it
    * (shared/tillBilling.ts partyBillStateOf); null before the party is settled or without the till.
    */
+  tillCollection?: number | null;
   tillSale?: { words: string; paid: boolean; outstandingSatang: number } | null;
 }
 
@@ -89,6 +90,7 @@ export function BeoBillingModule({
   onBillingChange,
   isManager,
   tillSale = null,
+  tillCollection = null,
 }: BeoBillingModuleProps) {
   const additionalBilling = (billing?.addOns as { additionalBilling?: { status?: string; message?: string } } | null)?.additionalBilling;
   const { toast } = useToast();
@@ -235,6 +237,7 @@ export function BeoBillingModule({
   const payableItems = lineItems.filter((item) => !item.isIncluded && item.qty * item.unitPriceIncVat > 0);
   const includedItems = lineItems.filter((item) => item.isIncluded);
 
+  const collectWords = tillCollection === null ? "Check the balance at the till" : bahtOfSatang(tillCollection);
   const generatePosChecklist = () => {
     const lines: string[] = [];
     lines.push("=== POS Entry Checklist ===");
@@ -250,7 +253,7 @@ export function BeoBillingModule({
       });
     }
     lines.push("");
-    lines.push(`Collect Outstanding: ${outstandingWords}`);
+    lines.push(`Collect Outstanding: ${collectWords}`);
     return lines.join("\n");
   };
 
@@ -599,7 +602,7 @@ export function BeoBillingModule({
           </CollapsibleTrigger>
           <CollapsibleContent>
             <CardContent className="pt-0">
-              {!tillSale && payableItems.length === 0 && includedItems.length === 0 ? (
+              {tillCollection === null && payableItems.length === 0 && includedItems.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Add line items to generate POS checklist</p>
               ) : (
                 <div className="space-y-3">
@@ -653,7 +656,7 @@ export function BeoBillingModule({
                           <span>Grand Total</span>
                           <span>{formatThb(payableInclTotal)}</span>
                         </div>
-                        <div className="flex justify-between font-bold"><span>Collect outstanding</span><span>{outstandingWords}</span></div>
+                        <div className="flex justify-between font-bold"><span>Collect outstanding</span><span>{collectWords}</span></div>
                       </div>
                     );
                   })()}

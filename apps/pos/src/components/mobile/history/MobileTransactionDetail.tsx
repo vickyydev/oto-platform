@@ -395,7 +395,9 @@ export function MobileTransactionDetail(props: SaleDetailProps) {
                 </Button>
               ) : state.status === 'voided' ? null : closed && remainingSatang <= 0 && !detail?.canCloseWithRetainedDeposit && !detail?.partyDepositReviewRequired ? (
                 <p className="text-sm text-muted-foreground text-center py-3">
-                  Fully refunded — nothing left to refund.
+                  {detail?.additionalBillReceipt && detail.sale.status !== 'refunded'
+                    ? 'Additional party bill receipts cannot be refunded.'
+                    : 'Fully refunded — nothing left to refund.'}
                 </p>
               ) : (
                 <Button

@@ -1686,7 +1686,9 @@ export function SaleDetail(props: SaleDetailProps) {
                 </>
               ) : status === 'voided' ? null : closed && remainingSatang <= 0 && !detail?.canCloseWithRetainedDeposit && !detail?.partyDepositReviewRequired ? (
                 <div className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
-                  Fully refunded — nothing left to refund.
+                  {detail?.additionalBillReceipt && detail.sale.status !== 'refunded'
+                    ? 'Additional party bill receipts cannot be refunded.'
+                    : 'Fully refunded — nothing left to refund.'}
                 </div>
               ) : (
                 <>

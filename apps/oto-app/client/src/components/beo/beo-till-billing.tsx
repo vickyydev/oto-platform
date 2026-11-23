@@ -760,7 +760,7 @@ export function BeoBillingSection({
         </p>
       </div>
       <div onChangeCapture={deposit.onChangeCapture} onBlur={deposit.onBlur} onKeyDown={deposit.onKeyDown}>
-        <BeoBillingModule eventId={eventId} billing={deposit.billing} onBillingChange={deposit.onBillingChange} isManager={isManager} tillSale={tillSale} />
+        <BeoBillingModule eventId={eventId} billing={deposit.billing} onBillingChange={deposit.onBillingChange} isManager={isManager} tillSale={tillSale} tillCollection={partyBillStateOf(till.data)?.outstandingSatang ?? null} />
       </div>
     </div>
   );

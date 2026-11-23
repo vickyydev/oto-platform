@@ -672,6 +672,9 @@ export async function afterPrebookingDepositPaid(
     try {
       const posted = await withTx(db, scope, 'inbox.prebooking.received', async (tx) => {
         const conv = await lockedConversation(tx, draft.operatorId, draft.conversationId);
+        // Book Date takes this same conversation lock. A delayed payment callback must not
+        // promise a future date confirmation after the team already sent it.
+        if (conv.eventOrderRef === draft.id) return null;
         return postPartyMessage(tx, draft.operatorId, {
           messageId: partyMessageId(receipt.id, 'prebooking-received'),
           conversationId: draft.conversationId,
@@ -703,6 +706,7 @@ export async function afterPrebookingDepositPaid(
           now: new Date(),
         });
       });
+      if (!posted) return;
       ring = !posted.replayed;
       await sendPartyMessages(db, sender, log, posted.replayed ? [] : [posted.messageId], {
         requestId: input.requestId ?? null,
