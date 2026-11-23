@@ -31,6 +31,8 @@ work is landed and proven, and the tools. Kept current at every landing._
 
 ## 2. Where the work stands
 
+**23 November 2026, Central Floresta gates (SCRUM-68), paused at park closing.** Exit reader 6661 sent heartbeats and three denied scan requests to Till 1. The temporary listener was stopped. Confirm rollback on Exit, then verify Entrance 6658, the passage-feedback link, physical band printing and POS occupancy at the next visit. [Field evidence and resume steps](../qa/proof-2026-11-23/SCRUM-68/gate-visit.md).
+
 The 23 November BEO release and its staging test are recorded at the top of this file. The test recipient is configured and the alert-to-conversation path passed.
 
 **23 November 2026, SCRUM-709 Digio USB.** The counter runner now has the native Digio serial driver for Windows and Pi, with a read-only terminal-info command. The one-baht card request and matching approval passed over a mock serial port. Windows saw only Bluetooth ports at the bench. The physical PAX handshake, card-present approval and Pi installation are pending. The staging PromptPay route remains available.
