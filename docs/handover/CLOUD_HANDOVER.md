@@ -31,6 +31,8 @@ work is landed and proven, and the tools. Kept current at every landing._
 
 ## 2. Where the work stands
 
+**24 November 2026, SCRUM-68.** Sprint 2 now holds the [ten gate and POS acceptance checks](../qa/proof-2026-11-23/SCRUM-68/gate-visit.md). Overtime exit handling conflicts with the implemented adult exit rule. The installed Android app handled the reader exchange. Physical commissioning remains paused.
+
 **23 November 2026, Central Floresta gates (SCRUM-68), paused at park closing.** Exit reader 6661 sent heartbeats and three denied scan requests to Till 1. The temporary listener was stopped. Confirm rollback on Exit, then verify Entrance 6658, the passage-feedback link, physical band printing and POS occupancy at the next visit. [Field evidence and resume steps](../qa/proof-2026-11-23/SCRUM-68/gate-visit.md).
 
 The 23 November BEO release and its staging test are recorded at the top of this file. The test recipient is configured and the alert-to-conversation path passed.
