@@ -1,4 +1,4 @@
-**25 November 2026, SCRUM-1070.** The HR checklist saves an operational item's changes and checks whether the run can close in one transaction. The mobile completion button sits above navigation. Staging verification and the single Central Floresta record correction are pending.
+**25 November 2026, SCRUM-1070.** The shared operational checklist fix is live in staging and production. Two staging users finished the same run after the final required photo, and the open phone refreshed its status and evidence count. The Central Floresta Reception Closing run for 24 November now reads Completed at 20:15:59 Bangkok time with all five items and eleven evidence files preserved. [Verification and screenshots](../qa/proof-2026-11-25/SCRUM-1070/verification.md). Owner acceptance is pending.
 
 **24 November 2026, SCRUM-68.** Sprint 2 now holds the [ten gate and POS acceptance checks](../qa/proof-2026-11-23/SCRUM-68/gate-visit.md). Overtime exit handling conflicts with the implemented adult exit rule. The installed Android app handled the reader exchange. Physical commissioning remains paused.
 

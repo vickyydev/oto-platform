@@ -1,4 +1,4 @@
-**25 November 2026, SCRUM-1070.** The HR checklist saves an operational item's changes and checks whether the run can close in one transaction. The mobile completion button sits above navigation. Staging verification and the single Central Floresta record correction are pending.
+**25 November 2026, SCRUM-1070.** The shared operational checklist fix is live in staging and production. Two staging users finished the same run after the final required photo, and the open phone refreshed its status and evidence count. The Central Floresta Reception Closing run for 24 November now reads Completed at 20:15:59 Bangkok time with all five items and eleven evidence files preserved. [Verification and screenshots](../qa/proof-2026-11-25/SCRUM-1070/verification.md). Owner acceptance is pending.
 
 **23 November 2026, SCRUM-1069 staff tablet layout.** The paired guest form occupies the full staff page. Reception can scroll by touch, open Staff checks and edit details. Both POS staging services served 2aaa5b2db. On a paired staging test till, browser tablet emulation verified independent touch scrolling on Care details at 820 x 1180 and 1180 x 820, opening Staff checks and Private child details, and following the next guest edit. The fixture was retired. [Portrait](../qa/jira-comments/attachments/SCRUM-1069/staff-tablet-portrait.png) and [landscape](../qa/jira-comments/attachments/SCRUM-1069/staff-tablet-landscape.png).
 
@@ -32,6 +32,8 @@ work is landed and proven, and the tools. Kept current at every landing._
 5. The plan of the story you are on (section 3 names it).
 
 ## 2. Where the work stands
+
+SCRUM-1070 reached production. The 24 November Reception Closing run was corrected and independently read back.
 
 **24 November 2026, SCRUM-68.** Sprint 2 now holds the [ten gate and POS acceptance checks](../qa/proof-2026-11-23/SCRUM-68/gate-visit.md). Overtime exit handling conflicts with the implemented adult exit rule. The installed Android app handled the reader exchange. Physical commissioning remains paused.
 
