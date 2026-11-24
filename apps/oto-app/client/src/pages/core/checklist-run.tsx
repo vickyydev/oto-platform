@@ -160,23 +160,18 @@ export default function ChecklistRunPage() {
     setMediaViewerOpen(true);
   };
 
-  // Initialize itemPhotos from existing data only on first load
-  const [photosInitialized, setPhotosInitialized] = useState(false);
+  // Refresh evidence saved by another phone without overwriting an upload awaiting a retry.
   useEffect(() => {
-    if (run && !photosInitialized) {
-      const existingPhotos: Record<string, string[]> = {};
-      run.items.forEach(item => {
-        const photos = item.photoEvidenceUrls as string[] || [];
-        if (photos.length > 0) {
-          existingPhotos[item.id] = photos;
-        }
-      });
-      if (Object.keys(existingPhotos).length > 0) {
-        setItemPhotos(prev => ({ ...existingPhotos, ...prev }));
-      }
-      setPhotosInitialized(true);
+    if (!run) return;
+    const photos: Record<string, string[]> = {};
+    for (const item of run.items) {
+      photos[item.id] = unsavedPhotosRef.current.has(item.id)
+        ? itemPhotosRef.current[item.id] ?? []
+        : item.photoEvidenceUrls ?? [];
     }
-  }, [run, photosInitialized]);
+    itemPhotosRef.current = photos;
+    setItemPhotos(photos);
+  }, [run]);
 
   useEffect(() => {
     if (!run || !returnedSourceItemId) return;
@@ -1330,8 +1325,7 @@ export default function ChecklistRunPage() {
 
         {!isCompleted && (
           <div 
-            className="sticky bottom-0 z-40 mt-auto p-4 bg-background/95 backdrop-blur-md border-t border-border"
-            style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1rem)" }}
+            className="sticky bottom-0 z-40 mt-auto p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] bg-background/95 backdrop-blur-md border-t border-border [body:has([data-testid=qa-report-launcher])_&]:pb-16"
           >
             <div className="max-w-lg mx-auto">
               {allCompleted && outstanding.length > 0 && <p role="status" className="mb-2 text-sm">Still needed: {outstanding.join("; ")}</p>}
