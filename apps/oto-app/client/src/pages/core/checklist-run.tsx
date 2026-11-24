@@ -121,6 +121,7 @@ export default function ChecklistRunPage() {
 
   const { data: run, isLoading, isError, error } = useQuery<ChecklistRunWithDetails>({
     queryKey: ["/api/checklist-runs", id],
+    refetchInterval: query => ["pending", "in_progress", "issues"].includes(query.state.data?.status ?? "") ? 10000 : false,
   });
 
   const templateId = run?.template?.id;
@@ -224,32 +225,22 @@ export default function ChecklistRunPage() {
       }
       return { previous };
     },
-    onSuccess: async ({ checkAutoComplete, itemId, updates }) => {
+    onSuccess: async ({ result, checkAutoComplete, itemId, updates }) => {
+      if (result.completed) {
+        queryClient.invalidateQueries({ queryKey: ["/api/checklists/today"] });
+        toast({ title: "Checklist completed!" });
+        return;
+      }
       if (checkAutoComplete && updates.completed === true) {
         const updatedRun = queryClient.getQueryData<ChecklistRunWithDetails>(["/api/checklist-runs", id]);
-        if (updatedRun) {
-          const isChecker = updatedRun.template.checklistType === 'checker';
-          const allItemsComplete = updatedRun.items.every(item => {
-            if (item.id === itemId) return true;
-            if (isChecker) {
-              return item.resultStatus === 'pass' || item.resultStatus === 'fail';
-            }
-            return item.completed;
-          });
-          
-          const requirementsMet = updatedRun.items.every(item => {
-            const requiresPhoto = item.templateItem.linkedToFix !== true
-              && item.templateItem.requiresPhoto === true;
-            if (requiresPhoto) {
-              const photos = (item.photoEvidenceUrls as string[]) || itemPhotos[item.id] || [];
-              if (photos.length === 0) return false;
-            }
-            if (!isChecker && item.templateItem.requiresNote && !item.note && !itemNotes[item.id]) {
-              return false;
-            }
-            return true;
-          });
-          
+        if (updatedRun?.template.checklistType === "checker") {
+          const allItemsComplete = updatedRun.items.every(item =>
+            item.id === itemId || item.resultStatus === "pass" || item.resultStatus === "fail"
+          );
+          const requirementsMet = updatedRun.items.every(item =>
+            item.templateItem.linkedToFix || !item.templateItem.requiresPhoto ||
+            (item.photoEvidenceUrls as string[] | null)?.length || itemPhotos[item.id]?.length
+          );
           if (allItemsComplete && requirementsMet) {
             completeRunMutation.mutate();
           }
@@ -728,13 +719,14 @@ export default function ChecklistRunPage() {
   };
   const runCompletedAt = formatCompletionTime(run.completedAt);
 
-  const canComplete = allCompleted && run.items.every((item) => {
-    const requiresPhoto = item.templateItem.linkedToFix !== true
-      && item.templateItem.requiresPhoto === true;
-    if (!requiresPhoto) return true;
-    const photos = itemPhotos[item.id] || [];
-    return photos.length > 0 && !unsavedPhotos.has(item.id);
+  const outstanding = run.items.flatMap(item => {
+    const fields: string[] = [];
+    if (item.templateItem.requiresPhoto && !item.templateItem.linkedToFix &&
+        (!item.photoEvidenceUrls?.length || unsavedPhotos.has(item.id))) fields.push("photo or video");
+    if (run.template.checklistType === "operational" && item.templateItem.requiresNote && !item.note?.trim()) fields.push("note");
+    return fields.length ? [`${item.templateItem.title}: ${fields.join(" and ")}`] : [];
   });
+  const canComplete = totalCount > 0 && allCompleted && outstanding.length === 0;
 
   return (
     <AppLayout hideNav>
@@ -1338,10 +1330,11 @@ export default function ChecklistRunPage() {
 
         {!isCompleted && (
           <div 
-            className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur-md border-t border-border"
+            className="sticky bottom-0 z-40 mt-auto p-4 bg-background/95 backdrop-blur-md border-t border-border"
             style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1rem)" }}
           >
             <div className="max-w-lg mx-auto">
+              {allCompleted && outstanding.length > 0 && <p role="status" className="mb-2 text-sm">Still needed: {outstanding.join("; ")}</p>}
               <Button
                 className="w-full h-12 text-base font-semibold"
                 disabled={!canComplete || completeRunMutation.isPending}

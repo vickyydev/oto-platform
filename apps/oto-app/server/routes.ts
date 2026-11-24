@@ -22411,7 +22411,7 @@ OTO Company Limited`,
         const needsBackfill = !run.periodStart || !run.periodEnd;
         const shouldMiss = (run.status === "pending" || run.status === "in_progress") && new Date() >= period.end;
         if (needsBackfill || shouldMiss) {
-          await db.update(checklistRuns)
+          const [persisted] = await db.update(checklistRuns)
             .set({
               periodStart: period.start,
               periodEnd: period.end,
@@ -22419,13 +22419,10 @@ OTO Company Limited`,
               ...(shouldMiss ? { status: "missed", missedAt: run.missedAt || new Date() } : {}),
               updatedAt: new Date(),
             })
-            .where(eq(checklistRuns.id, run.id));
-          Object.assign(run, {
-            periodStart: period.start,
-            periodEnd: period.end,
-            dueAt: run.dueAt || period.dueAt,
-            ...(shouldMiss ? { status: "missed", missedAt: run.missedAt || new Date() } : {}),
-          });
+            .where(and(eq(checklistRuns.id, run.id), shouldMiss ? inArray(checklistRuns.status, ["pending", "in_progress"]) : undefined))
+            .returning();
+          const current = persisted ?? (await db.select().from(checklistRuns).where(eq(checklistRuns.id, run.id)))[0];
+          if (current) Object.assign(run, current);
         }
       }
 
@@ -22816,7 +22813,7 @@ OTO Company Limited`,
         .orderBy(desc(checklistRuns.createdAt))
         .limit(1);
       if (existingPeriodRun) {
-        await db.update(checklistRuns)
+        const [started] = await db.update(checklistRuns)
           .set({
             status: "in_progress",
             assignedTo: user.id,
@@ -22824,7 +22821,12 @@ OTO Company Limited`,
             responsibleStaff: existingPeriodRun.responsibleStaff?.length ? existingPeriodRun.responsibleStaff : responsibleStaff,
             updatedAt: now,
           })
-          .where(eq(checklistRuns.id, existingPeriodRun.id));
+          .where(and(eq(checklistRuns.id, existingPeriodRun.id), inArray(checklistRuns.status, ["pending", "in_progress"])))
+          .returning({ id: checklistRuns.id });
+        if (!started) {
+          const [current] = await db.select().from(checklistRuns).where(eq(checklistRuns.id, existingPeriodRun.id));
+          return current ? res.json(current) : res.status(404).json({ message: "Checklist run not found" });
+        }
         return res.json({
           id: existingPeriodRun.id,
           templateId,
@@ -23026,10 +23028,30 @@ OTO Company Limited`,
     const expected = Buffer.from(checklistPhotoClaim(url, itemId, tenantId, userId, expiresAt), "hex");
     return crypto.timingSafeEqual(Buffer.from(signature, "hex"), expected) ? url : null;
   };
+  type ChecklistTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+  // Callers hold the parent row lock so two phones see each other's committed item edits.
+  async function operationalReadiness(tx: ChecklistTransaction, runId: string) {
+    const items = await tx.select({
+      checked: checklistRunItems.isCompleted, note: checklistRunItems.note,
+      photos: checklistRunItems.photoEvidenceUrls, title: checklistTemplateItems.title,
+      requiresNote: checklistTemplateItems.requiresNote, requiresPhoto: checklistTemplateItems.requiresPhoto,
+      linkedToFix: checklistTemplateItems.linkedToFix,
+    }).from(checklistRunItems)
+      .innerJoin(checklistTemplateItems, eq(checklistTemplateItems.id, checklistRunItems.templateItemId))
+      .where(eq(checklistRunItems.runId, runId));
+    const missingPhoto = items.find(i => i.requiresPhoto && !i.linkedToFix && !i.photos?.length);
+    const missingNote = items.find(i => i.requiresNote && !i.note?.trim());
+    const missing = missingPhoto ? `Add photo or video evidence for ${missingPhoto.title}`
+      : missingNote ? `Add a note for ${missingNote.title}` : null;
+    return { missing, checked: items.length > 0 && items.every(i => i.checked) };
+  }
+
   const getAccessibleChecklistPhotoItem = async (user: UserWithBranchAccess, itemId: string) => {
     const tenantId = await resolveTenantId(user.tenantId);
     const [item] = await db.select({
       id: checklistRunItems.id,
+      runId: checklistRunItems.runId,
       branchId: checklistRuns.branchId,
       status: checklistRuns.status,
       photoEvidenceUrls: checklistRunItems.photoEvidenceUrls,
@@ -23118,20 +23140,30 @@ OTO Company Limited`,
       }
       if (resultStatus === "pass") updates.failPhotoUrl = null;
       
-      await db.update(checklistRunItems)
-        .set(updates)
-        .where(and(eq(checklistRunItems.id, itemId), eq(checklistRunItems.tenantId, tenantId)));
-      
-      // Auto-transition run status based on item changes
-      const [updatedItem] = await db.select().from(checklistRunItems).where(eq(checklistRunItems.id, itemId)).limit(1);
-      if (updatedItem) {
-        const [currentRun] = await db.select().from(checklistRuns).where(eq(checklistRuns.id, updatedItem.runId)).limit(1);
-        if (currentRun && currentRun.status === 'pending') {
-          await db.update(checklistRuns)
-            .set({ status: 'in_progress', startedAt: new Date(), updatedAt: new Date() })
-            .where(eq(checklistRuns.id, updatedItem.runId));
+      const saved = await db.transaction(async tx => {
+        const [run] = await tx.select().from(checklistRuns)
+          .where(and(eq(checklistRuns.id, authorizedItem.runId), eq(checklistRuns.tenantId, tenantId)))
+          .for("update");
+        if (!run || run.status === "completed" || run.status === "missed") return null;
+        const [updatedItem] = await tx.update(checklistRunItems).set(updates)
+          .where(and(eq(checklistRunItems.id, itemId), eq(checklistRunItems.runId, run.id))).returning();
+        if (!updatedItem) return null;
+        const [template] = await tx.select({ type: checklistTemplates.checklistType })
+          .from(checklistTemplates).where(eq(checklistTemplates.id, run.templateId));
+        const ready = template?.type === "operational" && await operationalReadiness(tx, run.id);
+        const completed = !!ready && ready.checked && !ready.missing;
+        if (completed || run.status === "pending") {
+          const now = new Date();
+          await tx.update(checklistRuns).set({
+            status: completed ? "completed" : "in_progress", startedAt: run.startedAt ?? now, updatedAt: now,
+            ...(completed ? { completedAt: now, completedBy: user.id } : {}),
+          }).where(eq(checklistRuns.id, run.id));
         }
-
+        return { updatedItem, currentRun: run, completed };
+      });
+      if (!saved) return res.status(409).json({ message: "This checklist run is read-only" });
+      const { updatedItem, currentRun } = saved;
+      if (updatedItem) {
         // Auto-create attention item when checker item is marked FAIL
         if (resultStatus === 'fail' && currentRun) {
           const templateItem = await db.select()
@@ -23182,7 +23214,7 @@ OTO Company Limited`,
         }
       }
       
-      res.json({ success: true });
+      res.json({ success: true, completed: saved.completed });
     } catch (error) {
       next(error);
     }
@@ -23207,6 +23239,28 @@ OTO Company Limited`,
         return res.status(403).json({ message: "Access denied to this checklist run" });
       }
       
+      if (status === "completed") {
+        const [template] = await db.select({ type: checklistTemplates.checklistType })
+          .from(checklistTemplates).where(eq(checklistTemplates.id, authorizedRun.templateId));
+        if (template?.type === "operational") {
+          const result = await db.transaction(async tx => {
+            const [run] = await tx.select().from(checklistRuns).where(eq(checklistRuns.id, id)).for("update");
+            if (!run || run.status === "missed") return { error: "This checklist run is read-only" };
+            if (run.status === "completed") return { status: run.status };
+            const ready = await operationalReadiness(tx, id);
+            if (ready.missing) return { error: ready.missing };
+            const finalStatus = ready.checked ? "completed" : "issues";
+            await tx.update(checklistRuns).set({
+              status: finalStatus, updatedAt: now,
+              ...(ready.checked ? { completedAt: now, completedBy: user.id } : {}),
+            }).where(eq(checklistRuns.id, id));
+            return { status: finalStatus };
+          });
+          if (result.error) return res.status(400).json({ message: result.error });
+          return res.json({ success: true, status: result.status });
+        }
+      }
+
       const updates: any = {
         updatedAt: now,
       };
