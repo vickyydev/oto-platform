@@ -33,6 +33,8 @@ work is landed and proven, and the tools. Kept current at every landing._
 
 ## 2. Where the work stands
 
+**25 November 2026, SCRUM-1067.** An active administrator can now recover access through their unique registered launcher phone before its first verification. The reset verifies the number only after a valid code. The deployed staging API passed both focused recovery tests with simulated SMS in a disposable database (job `job-dc37rtgu01pc73dr7c5g`). Staging release `a35440b2a5ee7a6c5898ed3825ca2f3b5823434c` and production release `5b9bf5b9a3d0a8bac2e1ca25e1b7fa7a105fc123` each build on that environment's previous live API. Production deployment `dep-dc37sre8bjmc73esq2d0` went live at 13:25 Bangkok. The launcher reset route answered through the real domain. The account holder will request the SMS privately. The mainline change is on `lane/admin-registered-phone-recovery` pending merge. [Staging evidence](../qa/jira-comments/attachments/SCRUM-1067/staging-administrator-recovery.png).
+
 SCRUM-1070 reached production. The 24 November Reception Closing run was corrected and independently read back.
 
 **24 November 2026, SCRUM-68.** Sprint 2 now holds the [ten gate and POS acceptance checks](../qa/proof-2026-11-23/SCRUM-68/gate-visit.md). Overtime exit handling conflicts with the implemented adult exit rule. The installed Android app handled the reader exchange. Physical commissioning remains paused.
