@@ -1,3 +1,5 @@
+**25 November 2026, Claude takeover.** Start with the [handover guide](CLAUDE_TAKEOVER_2026-11-25.md) for the release branches, confirmed outcomes and outstanding park tests.
+
 **Resume, 25 November 2026.** Use the [park operations checkpoint](../progress/PARK_CHECKPOINT_2026-11-25.md) for HR access, the Inbox and BEO test, and park hardware. Check the transferred employee's first sign-in, track recovery source PR 14, and resume the gate visit from SCRUM-68 in Sprint 2. SCRUM-709 records the outstanding physical card tests.
 
 **25 November 2026, SCRUM-1070.** The shared operational checklist fix is live in staging and production. Two staging users finished the same run after the final required photo, and the open phone refreshed its status and evidence count. The Central Floresta Reception Closing run for 24 November now reads Completed at 20:15:59 Bangkok time with all five items and eleven evidence files preserved. [Verification and screenshots](../qa/proof-2026-11-25/SCRUM-1070/verification.md). Owner acceptance is pending.

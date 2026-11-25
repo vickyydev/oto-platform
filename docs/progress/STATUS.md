@@ -1,3 +1,5 @@
+**25 November 2026, handover to Claude.** The [takeover guide](../handover/CLAUDE_TAKEOVER_2026-11-25.md) records how to resume staff access, the payments and Inbox walkthrough, AWS face enrolment, and the park hardware tests.
+
 **25 November 2026, park operations.** The [24-ticket Jira review](PARK_CHECKPOINT_2026-11-25.md) records the production staff account repair, separate recovery release, paid THB 1 BEO deposit and pending hardware checks. The employee's first sign-in is still unconfirmed. Live payments are In Progress. Face enrolment is prioritised and awaits the park AWS account.
 
 **25 November 2026, SCRUM-1070.** The shared operational checklist fix is live in staging and production. Two staging users finished the same run after the final required photo, and the open phone refreshed its status and evidence count. The Central Floresta Reception Closing run for 24 November now reads Completed at 20:15:59 Bangkok time with all five items and eleven evidence files preserved. [Verification and screenshots](../qa/proof-2026-11-25/SCRUM-1070/verification.md). Owner acceptance is pending.
