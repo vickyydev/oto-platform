@@ -1,5 +1,9 @@
 # Go-live of the HR app (the OTO App): progress
 
+## 25 November 2026 operating position
+
+Staff enter production through [the launcher](https://otoplay.org) and [the HR app](https://app.otoplay.org). The shared closing checklist and retired-shift fixes are live. The transferred employee has an active linked login, with first sign-in still outstanding. The isolated administrator recovery fix is live and its source PR remains open. Park-owned AWS setup precedes face enrolment. See the [HR ticket register](../../PARK_CHECKPOINT_2026-11-25.md) for exact releases and outstanding checks.
+
 The first piece of going live: the HR app on our own platform, with the
 launcher in front of it, on Render's own addresses until the domains are
 switched. Brief: `docs/handover/GO_LIVE_MAIN_APP_PROMPT.md`. Counts, names of

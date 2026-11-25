@@ -1,5 +1,7 @@
 # Unified Inbox redesign: the proposal (SCRUM-1016)
 
+**25 November 2026, BEO payment acceptance.** A 32-message staging conversation led to a paid THB 1 deposit. Inbox acknowledged it once, the birthday manager received the alert, and staff separately booked the date. Real guest WhatsApp delivery, the physical kitchen slip and owner acceptance remain open. See the [park checkpoint](../../PARK_CHECKPOINT_2026-11-25.md).
+
 **State, 19 November 2026: APPROVED by the owner as drawn ("This seems much better, i approve this design plan. you can start working on it in the workflow"); being built in stages on the branch lane/inbox1016-20261119, to land in one piece.** The six choices of section 6 are taken as drawn: the shorter row labels, coral in the dark theme, "General" folded into Topic, till notices hidden by default with a switch, four figures with the rest behind a tap, and the settings pages brought onto the new look now with their own redesign later. One refinement made at build: the "Needs reply" figure is itself the filter, so the separate "Needs reply" quick button of the mock-up is not built (it would have been a duplicate). The line that follows is the state when the proposal was written.
 
 **State when proposed: not approved, nothing built.** The owner
