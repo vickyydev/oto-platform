@@ -88,8 +88,20 @@ async function recoveryAccount(db: Exec, raw: string, lock = false) {
   if (candidate?.status !== 'active') return { phone, eligible: undefined };
   if (candidate.phoneVerifiedAt) return { phone, eligible: candidate };
 
-  // Staff imported from HR may have a registered login number without an OTP date.
-  // A bootstrap account or an administrator still needs a confirmed recovery number.
+  const grants = await db.select({
+    name: role.name, system: role.isSystem, roleOperatorId: role.operatorId, scope: roleAssignment.scopeType,
+    scopeId: roleAssignment.scopeId, permission: rolePermission.permission,
+  }).from(roleAssignment).innerJoin(role, eq(role.id, roleAssignment.roleId))
+    .innerJoin(rolePermission, eq(rolePermission.roleId, role.id))
+    .where(and(eq(roleAssignment.accountId, candidate.id), isNull(roleAssignment.archivedAt)));
+  const administrator = grants.some(grant =>
+    grant.system && grant.roleOperatorId === null && grant.scope === 'operator' && (
+      (grant.name === 'operator_admin' && grant.scopeId === candidate.operatorId) ||
+      (grant.name === 'platform_admin' && (grant.scopeId === null || grant.scopeId === candidate.operatorId))
+    ));
+  if (administrator) return { phone, eligible: candidate };
+
+  // Imported staff qualify through their active HR or employee record.
   const [identity] = await db.select({ id: appIdentity.externalUserId }).from(appIdentity)
     .where(and(eq(appIdentity.accountId, candidate.id), eq(appIdentity.app, 'oto_app'))).limit(1);
   if (identity) {
@@ -100,12 +112,6 @@ async function recoveryAccount(db: Exec, raw: string, lock = false) {
       .where(and(eq(employee.id, candidate.employeeId), eq(employee.operatorId, candidate.operatorId), isNull(employee.archivedAt)));
     if (!activeEmployee) return { phone, eligible: undefined };
   }
-  const grants = await db.select({
-    name: role.name, system: role.isSystem, scope: roleAssignment.scopeType,
-    scopeId: roleAssignment.scopeId, permission: rolePermission.permission,
-  }).from(roleAssignment).innerJoin(role, eq(role.id, roleAssignment.roleId))
-    .innerJoin(rolePermission, eq(rolePermission.roleId, role.id))
-    .where(and(eq(roleAssignment.accountId, candidate.id), isNull(roleAssignment.archivedAt)));
   const staff = grants.length > 0 && grants.every(grant =>
     !(grant.scope === 'operator' && grant.scopeId === null) &&
     ((grant.system && (grant.name === 'staff' || grant.name === 'branch_manager')) ||
